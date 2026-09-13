@@ -2210,6 +2210,755 @@
       "kbLessonId": "kbl-g8-math-s2-nccd-u9_l4",
       "score": 1,
       "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-eng-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 1,
+      "lesson": 6,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-eng-s1-nccd-u1_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 2,
+      "lesson": 5,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-eng-s1-nccd-u2_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 2,
+      "lesson": 6,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-eng-s1-nccd-u2_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 2,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A blog post",
+      "kbLessonId": "kbl-eng-s1-nccd-u2_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-eng-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 3,
+      "lesson": 5,
+      "bookTitleAr": "المحادثة والمفردات",
+      "kbLessonId": "kbl-eng-s1-nccd-u3_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 3,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-eng-s1-nccd-u3_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "القواعد",
+      "kbLessonId": "kbl-eng-s1-nccd-u4_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 4,
+      "lesson": 5,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-eng-s1-nccd-u4_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 4,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A formal email of enquiry",
+      "kbLessonId": "kbl-eng-s1-nccd-u4_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 5,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: Personal statement as part of a university application",
+      "kbLessonId": "kbl-eng-s1-nccd-u5_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-eng-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 1,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A for-and-against essay",
+      "kbLessonId": "kbl-eng-s2-nccd-u6_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-eng-s2-nccd-u7_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 2,
+      "lesson": 6,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-eng-s2-nccd-u7_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 2,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة والمفردات: A review of a play",
+      "kbLessonId": "kbl-eng-s2-nccd-u7_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-eng-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "المفردات: Money",
+      "kbLessonId": "kbl-eng-s2-nccd-u8_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 3,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: An opinion essay",
+      "kbLessonId": "kbl-eng-s2-nccd-u8_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 4,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-eng-s2-nccd-u9_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 4,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة والمفردات: An article",
+      "kbLessonId": "kbl-eng-s2-nccd-u9_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "القواعد",
+      "kbLessonId": "kbl-eng-s2-nccd-u10_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 5,
+      "lesson": 6,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-eng-s2-nccd-u10_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 5,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A formal letter",
+      "kbLessonId": "kbl-eng-s2-nccd-u10_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "المفردات: Free-time activities and frequency expressions",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 8 English, added 2026-09-13. Grade 8's second subject."
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 1,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A personal profile",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u1_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 3,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A restaurant review",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u3_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u4_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 4,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: An internet forum post",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u4_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 5,
+      "lesson": 5,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u5_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 5,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u5_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 5,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: An informal email",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u5_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "المفردات: Literature",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u6_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 1,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A book review",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u6_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 2,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u7_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 2,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A short message",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u7_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 3,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u8_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 3,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A notice",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u8_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 4,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u9_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 4,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: An online forum post",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u9_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 5,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u10_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 5,
+      "lesson": 5,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u10_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 5,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: An article",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u10_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 1,
+      "lesson": 6,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u1_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 English, added 2026-09-13 — the raster pipeline, same series and same 5x7 catalog shape as Grade 10."
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 1,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: An informal email of introduction",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u1_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "المفردات",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "القواعد",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 2,
+      "lesson": 5,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u2_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 2,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u2_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 3,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u3_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 3,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة والمفردات: A blog post The world is your oyster",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u3_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u4_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 4,
+      "lesson": 5,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u4_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 4,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A formal letter of complaint",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u4_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "المفردات: Household chores",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 5,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u5_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 5,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A note/short message",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u5_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "القواعد والمفردات",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u6_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 1,
+      "lesson": 6,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u6_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 1,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u6_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 2,
+      "lesson": 5,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u7_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 2,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u7_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 2,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة والمفردات: A formal email of application",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u7_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 3,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u8_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 3,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة والمفردات: An opinion essay",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u8_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "المفردات: Creative jobs",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u9_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 4,
+      "lesson": 5,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u9_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u10_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 5,
+      "lesson": 5,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u10_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 5,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A story In December",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u10_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."

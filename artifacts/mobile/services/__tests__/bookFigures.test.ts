@@ -108,6 +108,8 @@ describe('figuresForLesson', () => {
       // here — but note neither can be derived by splitting on '-s', which
       // lands inside '-science'.
       'g8-science': 'g8-science',
+      'g9-eng': 'g9-english',
+      'g8-eng': 'g8-english',
       'g8-math': 'g8-math',
     };
 
@@ -226,11 +228,17 @@ describe('general English carries its book photographs', () => {
   // halves landed 2026-09-05 — the curriculum from the book's contents spread,
   // the photos from a raster extractor (`scripts/extract_book_photos.py`),
   // since this book draws almost nothing and photographs almost everything.
+  // These were `u1_l1`, `u5_l1`, `u6_l1`, `u10_l1` until 2026-09-13, and they
+  // passed for the wrong reason: the extractor stamped EVERY photo `lesson: 1`
+  // of its unit, so lesson 1 was the only lesson that ever had any. Now that
+  // each photo carries the lesson its «LESSON 1A» header names, unit 1's
+  // photos are on l3 and l6 and `u1_l1` has none. Naming lessons that really
+  // hold a photo is the point of the list.
   const LESSONS = [
-    'kbl-eng-s1-nccd-u1_l1',
-    'kbl-eng-s1-nccd-u5_l1',
-    'kbl-eng-s2-nccd-u6_l1',
-    'kbl-eng-s2-nccd-u10_l1',
+    'kbl-eng-s1-nccd-u1_l3',
+    'kbl-eng-s1-nccd-u2_l1',
+    'kbl-eng-s2-nccd-u6_l2',
+    'kbl-eng-s2-nccd-u10_l3',
   ];
 
   for (const id of LESSONS) {
@@ -244,35 +252,54 @@ describe('general English carries its book photographs', () => {
     });
   }
 
+  it('spreads a unit photo set across its lessons, not all onto lesson 1', () => {
+    // The bug this replaced: `extract_book_photos.py` returned only the unit
+    // and stamped `lesson: 1`, which was exact while a unit WAS one lesson and
+    // silently wrong from 2026-09-10, when the catalogs took the seven the
+    // book prints. 38 of Grade 10's 40 photos then sat on a lesson they do not
+    // come from — and a wrong lesson reads exactly like a right one, so
+    // nothing failed. Asserted across all three grades because all three run
+    // through the same extractor.
+    for (const prefix of ['kbl-eng-s', 'kbl-g9-eng-s', 'kbl-g8-eng-s']) {
+      const lessons = lessonsWithFigures().filter(id => id.startsWith(prefix));
+      assert.ok(lessons.length > 0, `${prefix}: no lessons carry photos`);
+      const beyondFirst = lessons.filter(id => !id.endsWith('_l1'));
+      assert.ok(
+        beyondFirst.length > 0,
+        `${prefix}: every photo landed on lesson 1 — the unit-granularity bug is back`,
+      );
+    }
+  });
+
   it('maps semester-2 book units 1-5 onto curriculum units 6-10', () => {
     // The offset worth a test of its own. `extract_book_photos.py` numbers
     // units by counting LESSON-header resets inside one PDF, so the s2 book's
     // units come out 1..5; the curriculum keeps the numbers the book PRINTS on
     // its contents page, 06..10. Reversing this would file every semester-2
     // photo under a real lesson about something else, and nothing would fail.
-    const u6 = figuresForLesson('kbl-eng-s2-nccd-u6_l1');
+    const u6 = figuresForLesson('kbl-eng-s2-nccd-u6_l2');
     assert.ok(u6.length > 0);
     assert.ok(u6.every(f => f.unit === 1), 'curriculum u6 is the book\'s unit 1');
 
-    const u10 = figuresForLesson('kbl-eng-s2-nccd-u10_l1');
+    const u10 = figuresForLesson('kbl-eng-s2-nccd-u10_l3');
     assert.ok(u10.length > 0);
     assert.ok(u10.every(f => f.unit === 5), 'curriculum u10 is the book\'s unit 5');
   });
 
-  it('files every English photo on lesson 1, at unit granularity', () => {
-    // `extract_book_photos.py` reads only the UNIT (it counts LESSON-header
-    // resets) and stamps lesson 1 on every crop. That was exact while the
-    // catalog modelled a unit as one lesson; since 2026-09-10 it models the
-    // seven the book prints, so this is now an approximation — a photo from
-    // the reading spread resolves to the unit's first lesson. It is still the
-    // assertion that catches extractor/catalog drift: any other lesson number
-    // here means the extractor started claiming a precision the map does not
-    // have. Closing the gap means re-running the extractor to read the
-    // LESSON number off the page header; recorded in both English JSONs'
-    // known_gaps.
+  it('files each English photo on the lesson its page header names', () => {
+    // This asserted the OPPOSITE until 2026-09-13 — `f.lesson === 1` for every
+    // photo — because `extract_book_photos.py` read only the UNIT (it counted
+    // LESSON-header resets) and stamped lesson 1 on every crop. Exact while a
+    // unit was one lesson; wrong from 2026-09-10, when the catalogs took the
+    // seven the book prints. The extractor now reads the number out of the
+    // «LESSON 1A» header it was already parsing, so the assertion inverts: a
+    // photo must sit on a lesson the catalog has, and the set must not
+    // collapse onto lesson 1 again.
     for (const id of LESSONS) {
+      const m = /_l(\d+)$/.exec(id);
+      assert.ok(m, `${id} has a lesson number`);
       for (const f of figuresForLesson(id)) {
-        assert.equal(f.lesson, 1, `${f.file} is on lesson ${f.lesson}`);
+        assert.equal(f.lesson, Number(m![1]), `${f.file} is on lesson ${f.lesson}, not ${m![1]}`);
       }
     }
   });

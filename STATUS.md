@@ -689,11 +689,11 @@ and grade?". Measured first, through the real deck builder** — `buildLessonDec
 run over all 1097 catalog lessons with a stub `figureUri`, counting the media
 slides it returns:
 
-| | before | sciences | hist/geo | g8 science | g8 maths |
-| --- | --- | --- | --- | --- | --- |
-| lessons whose deck carries a book figure | **122** | 159 | 210 | 220 | **249** |
-| figure slides across all decks | 388 | 515 | 604 | 643 | **726** |
-| live subject×grade pairs with nothing | 29 of 37 | 25 | 21 | 20 | **19 of 37** |
+| | before | sciences | hist/geo | g8 sci | g8 maths | English |
+| --- | --- | --- | --- | --- | --- | --- |
+| lessons whose deck carries a book figure | **122** | 159 | 210 | 220 | 249 | **324** |
+| figure slides across all decks | 388 | 515 | 604 | 643 | 726 | **822** |
+| live subject×grade pairs with nothing | 29 of 37 | 25 | 21 | 20 | 19 | **17 of 39** |
 
 (The catalog itself grew from 1097 to 1134 lessons over these days, so the
 denominator moves; the numerator is what these changes did.)
@@ -906,17 +906,46 @@ y=90% in S1 and y=84-88% in S2 — so they were culled by that signature after
 sampling 18 of each to confirm, rather than by eye. Note the two books differ
 enough that a filter tuned on S1 caught **none** of S2's.
 
+**English, all three grades, 2026-09-13 — and a wrong-placement bug closed
+with it.** 110 photos extracted, **96 kept**; Grade 9 35 of 70 lessons, Grade 8
+23 of 70, Grade 10 10 → 27 of 100.
+
+The Grade 10 half was already shipped and **already wrong**.
+`extract_book_photos.py` returned only the unit — it counts «LESSON 1A» header
+resets — and stamped `lesson: 1` on every crop. That was exact while the
+catalog modelled a unit as ONE lesson, and silently wrong from 2026-09-10, when
+the catalogs took the seven the book prints: **38 of Grade 10's 40 photos were
+filed under a lesson they do not come from**. Nothing failed, because a wrong
+lesson reads exactly like a right one — and two tests plus both catalogs'
+`known_gaps` recorded the behaviour as a known approximation rather than a
+defect, which is how it survived.
+
+The fix is four lines: the header the extractor already parses carries the
+lesson number, and `where_of_page` now returns `(unit, lesson)` instead of the
+unit alone. Grade 10's index was **re-stamped in place** rather than
+re-extracted, so the human review of those 40 crops was not thrown away; 38 of
+40 moved. The two tests that asserted `lesson === 1` are inverted, and a third
+now fails if any grade's photos collapse back onto lesson 1.
+
+Worth noting for the next book: this is the second silent no-op in this
+workflow in two days. The map-entry generator's SCOPE edit did not match
+(a previous round had appended a key to the line being replaced) and it emitted
+zero English entries without complaining — found only because the count was
+obviously wrong. Both are now assert-on-match.
+
 **What still has no figure at all, and why:**
 
 - **Grade 8 — eight of ten subjects, 286 lessons.** Science S1 and both maths
   books are done (above). Science S2 has no opener text at all. Untouched:
-  Arabic, English, Islamic, social, digital literacy, financial literacy,
+  Arabic, Islamic, social, digital literacy, financial literacy,
   creative arts, vocational.
 - **Arabic and Islamic** (192 lessons): measured and abandoned 2026-09-05, see
   the section below. Unchanged.
-- **English** (240 lessons across three grades): Grade 10 has 40 photos from
-  `extract_book_photos.py`; Grade 9 and Grade 8 English have never been run
-  through it.
+- **English**: done for Grades 10, 9 and 8 (above). **Grade 7** English is
+  the one left — 72 lessons, and its catalog arrived while this was in flight,
+  so it has never been through the photo pipeline. Note its S2 units start at
+  5, not 6 like the other three grades, so it needs its own `UNIT_OFFSET`
+  rather than a copied one.
 - **Grade 9 history S2** (13 lessons) and most of **Grade 9 geography S2** —
   the two books above that this batch could not use.
 - **Civic education and digital literacy**: probed, **0 lesson starts** in
