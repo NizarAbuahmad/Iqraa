@@ -492,11 +492,14 @@ and grade?". Measured first, through the real deck builder** — `buildLessonDec
 run over all 1097 catalog lessons with a stub `figureUri`, counting the media
 slides it returns:
 
-| | before | sciences | history/geography | grade 8 science |
-| --- | --- | --- | --- | --- |
-| lessons whose deck carries a book figure | **122 of 1097** | 159 | 210 | **220** |
-| figure slides across all decks | 388 | 515 | 604 | **643** |
-| live subject×grade pairs with nothing | 29 of 37 | 25 of 37 | 21 of 37 | **20 of 37** |
+| | before | sciences | hist/geo | g8 science | g8 maths |
+| --- | --- | --- | --- | --- | --- |
+| lessons whose deck carries a book figure | **122** | 159 | 210 | 220 | **249** |
+| figure slides across all decks | 388 | 515 | 604 | 643 | **726** |
+| live subject×grade pairs with nothing | 29 of 37 | 25 | 21 | 20 | **19 of 37** |
+
+(The catalog itself grew from 1097 to 1134 lessons over these days, so the
+denominator moves; the numerator is what these changes did.)
 
 **Nothing was wrong with the wiring.** Every deck entry point already passes
 `figureUri` — `buildLessonDeck`, `buildDeckFromQuiz/Worksheet`, `startClass`,
@@ -622,12 +625,40 @@ because those entries were already in the map. Fixed to strip the
 books. Any future book whose subject slug contains an `-s` would have hit the
 same trap.
 
+**Grade 8 maths, 2026-09-13 — and the profile mechanism earned itself.**
+`g8-math-s1` and `-s2`: 438 crops, **121 kept**, covering 29 of the subject's
+37 lessons. Graphs of linear equations, Pythagoras constructions, algebra
+tiles, dilations and reflections on grids, the whole solids set (spheres,
+hemispheres, cones, cylinders with their dimensions), spinners and pie charts
+for the probability unit.
+
+**Its profile took two tries, and the first one was quietly dangerous.**
+Sizes alone — «الدرس» at 17pt where the default wants 20, title 17pt where it
+wants 24 — got 15 of 17 openers in S1 and 14 of 20 in S2. The misses were not
+random: those pages emit «الدرس» **fused to the title in a single span**
+(«الدرسُالنسبةُ المئويّة»), which an equality test cannot see. That is worth
+naming because of what a missed opener does: it does not leave a gap, it
+extends the PREVIOUS lesson across the missing one's pages and files its
+figures under the wrong lesson — the failure that reads exactly like success.
+`OpenerProfile.dars_prefix` switches that one test to `startswith`, per book;
+both books now detect their catalog counts exactly (17/17, 20/20). It is a
+per-book flag rather than a global loosening because `startswith` is a
+superset of what every working book already matches, and would let a heading
+like «الدرسُ السابق» in the top band pass for an opener.
+
+**Two thirds of what these books yield is the page footer.** The navy-and-gold
+footer wave is vector art, so it seeds like a figure: 204 of the 438 crops
+were footers. They are geometrically uniform — 60% of page width, starting at
+y=90% in S1 and y=84-88% in S2 — so they were culled by that signature after
+sampling 18 of each to confirm, rather than by eye. Note the two books differ
+enough that a filter tuned on S1 caught **none** of S2's.
+
 **What still has no figure at all, and why:**
 
-- **Grade 8 — nine of ten subjects, 323 lessons.** Science S1 is done (above);
-  science S2 has no opener text. The Grade 8 **maths** book detects **zero**
-  openers — its 2023 edition prints a different layout, so it needs its own
-  entry in `OPENER_PROFILES`, which now exists as a mechanism.
+- **Grade 8 — eight of ten subjects, 286 lessons.** Science S1 and both maths
+  books are done (above). Science S2 has no opener text at all. Untouched:
+  Arabic, English, Islamic, social, digital literacy, financial literacy,
+  creative arts, vocational.
 - **Arabic and Islamic** (192 lessons): measured and abandoned 2026-09-05, see
   the section below. Unchanged.
 - **English** (240 lessons across three grades): Grade 10 has 40 photos from

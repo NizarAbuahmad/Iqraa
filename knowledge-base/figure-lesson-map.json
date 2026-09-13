@@ -1948,6 +1948,268 @@
       "kbLessonId": "kbl-g8-science-s1-nccd-u4_l3",
       "score": 1,
       "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "الجذور الصماء",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 8 maths, added 2026-09-13. Both books needed a new `OPENER_PROFILES` entry and it took two tries: the sizes alone got 15 of 17 openers in S1 and 14 of 20 in S2, because a handful of pages emit «الدرس» FUSED to the title in one span («الدرسُالنسبةُ المئويّة»), which an equality test cannot see. `dars_prefix` fixes that and both books now detect their catalog counts exactly. Worth knowing why that mattered: a missed opener does not leave a gap, it extends the PREVIOUS lesson over the missing one's pages and files its figures under the wrong lesson."
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "نظرية فيثاغورس",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "الأعداد الحقيقية",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "النسبة المئوية",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u1_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "التحليل بإخراج العامل المشترك الأكبر",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "تحليل ثلاثيات الحدود x²+bx+c",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "حالات خاصة من التحليل",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "المعادلة الخطية بالصورة القياسية",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "ميل المستقيم",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "معادلة المستقيم بصيغة الميل والمقطع",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 3,
+      "lesson": 4,
+      "bookTitleAr": "معادلة المستقيم بصيغة الميل ونقطة",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u3_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 3,
+      "lesson": 5,
+      "bookTitleAr": "المستقيمات المتوازية والمتعامدة",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u3_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "تطابق المثلثات (SSS, SAS, HL)",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "تطابق المثلثات (ASA, AAS)",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "المثلثات المتطابقة الضلعين والمثلثات المتطابقة الأضلاع",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "حلّ المتباينات بالضرب والقسمة",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 5,
+      "lesson": 4,
+      "bookTitleAr": "حلّ المتباينات متعددة الخطوات",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u5_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "حلّ نظام من معادلتين خطّيّتين بيانيًّا",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 6,
+      "lesson": 3,
+      "bookTitleAr": "حلّ نظام من معادلتين خطّيّتين بالحذف",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 7,
+      "lesson": 2,
+      "bookTitleAr": "متوازي الأضلاع",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 7,
+      "lesson": 3,
+      "bookTitleAr": "تمييز متوازي الأضلاع",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u7_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 7,
+      "lesson": 5,
+      "bookTitleAr": "تشابه المثلثات",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u7_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 7,
+      "lesson": 6,
+      "bookTitleAr": "التمدّد",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u7_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 8,
+      "lesson": 1,
+      "bookTitleAr": "رسم الأشكال ثلاثيّة الأبعاد",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 8,
+      "lesson": 2,
+      "bookTitleAr": "المقاطع والمجسّمات الدّورانيّة",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 8,
+      "lesson": 3,
+      "bookTitleAr": "حجم الكرة ومساحة سطحها",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u8_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 9,
+      "lesson": 2,
+      "bookTitleAr": "اختيار التمثيل الأنسب",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 9,
+      "lesson": 3,
+      "bookTitleAr": "عدّ النَّواتج",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u9_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 9,
+      "lesson": 4,
+      "bookTitleAr": "احتمال الحوادث المركَّبة",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u9_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."
