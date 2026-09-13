@@ -447,6 +447,68 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Comprehension drills, graded in the browser on purpose, 2026-09-13
+
+**13 comprehension questions on the three read-aloud passages** — multiple
+choice and true/false — inside the same card as the passage they ask about.
+Reading aloud and understanding it are one activity; two panels would let a
+student do the first and never see the second.
+
+**Graded on the client, which is a deliberate departure from every other
+question in this product**, and the reasoning matters more than the code:
+
+- Marks are graded server-side because a client that decides its own score
+  decides its own mark. **Practice records nothing** — no attempt row, no mark,
+  no competency — so there is no result here for a visible key to corrupt.
+- For these two kinds the check is an equality test. A round trip would not make
+  it more correct.
+- And it is what makes the feature exist at all. **The API cannot deploy**, so a
+  route would join `/practice/read-aloud` in the undeployed pile. This ships over
+  the air with everything else.
+
+**The answers therefore ship in the client bundle**, and
+`practice_questions.json` says so in a field of its own rather than leaving it to
+be discovered. The guard is structural, not a convention:
+`validatePracticeQuestions` refuses a question whose resource is not
+`readAloudPractice`-flagged and has no passage, so an item cannot exist for
+anything but a practice passage. **Never source an exam from this file** — an
+answer key reaching a client is precisely what `sanitizeForStudent` exists to
+prevent, and these items would hand it over by the front door.
+
+Questions are written against the **excerpt**, not the article. The passages run
+99–110 words and their sources run 375–1,100, so "the source says so" is not the
+test; "the words on screen say so" is. Stems and multiple-choice options stay
+English because they quote an English passage — «صحيح/خطأ» is Arabic because that
+is a control a student presses, not content.
+
+**One authoring bug caught by its own test.** The first draft had every
+`answerIndex` at 0 — the natural way to type options is correct-one-first, and it
+teaches a student to pick the first option rather than to read. The test now
+asserts the answers sit at three or more distinct positions.
+
+### How stale the API actually is, measured
+
+Worth writing down because a single probe misled me twice today, in both
+directions. `/api/healthz/version` answered 200 once and **404 on 20 consecutive
+probes**; `/api/practice/read-aloud` answered 401 once and **404 on 10**. And a
+401 there proves nothing anyway — `/practice` sits behind a prefix
+`authMiddleware`, so it answers 401 for paths that do not exist, the same trap
+`/media/external` sets.
+
+The clean discriminator is a **public** route, where 404 and not-404 separate:
+
+| probe | result | means |
+| --- | --- | --- |
+| `POST /api/take/attempt/audio/abc` (landed 2026-09-10) | **401** ×6 | route exists, bad token |
+| `GET /api/take/definitely-not-real` | **404** ×3 | control: this is what missing looks like |
+| `GET /api/healthz/version` (landed 2026-09-12) | **404** ×20 | not deployed |
+
+So the deployed revision carries 2026-09-10's code and not 2026-09-12's. It sits
+in a two-day window, which leaves `GET /media/external/:id` (2026-09-11)
+genuinely **undetermined** — it is behind the same prefix guard, so it cannot be
+told apart without a token, and I did not authenticate. If the 10 curated images
+are not rendering in production, that is the first thing to check.
+
 ## The student has a place to go, 2026-09-13
 
 **A student opening this app landed in a chat inbox.** Not a home screen — the

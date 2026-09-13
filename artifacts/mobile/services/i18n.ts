@@ -1129,6 +1129,14 @@ const translations = {
     practiceFailed: 'تعذّر تقييم التسجيل. أعِدْ المحاولة.',
     practiceScore: (pct: string) => `${pct}% من الكلمات مطابقة`,
     practiceWordsMatched: (n: string, total: string) => `${n} من ${total} كلمة`,
+    practiceQuestionsTitle: 'تحقّق من فهمك',
+    practiceQuestionsScore: (n: string, total: string) => `${n} من ${total}`,
+    // Arabic, unlike the stems and the multiple-choice options. Those are
+    // quotations from an English passage and have to stay English; «صحيح/خطأ» is
+    // the control a student presses, not content — asking them to parse a second
+    // language to answer would test the wrong thing.
+    practiceTrue: 'صحيح',
+    practiceFalse: 'خطأ',
     readAloudAddTitle: 'إضافة سؤال قراءة جهرية',
     readAloudAddBtn: 'أضِف السؤال',
     readAloudAddFailed: 'تعذّرت إضافة السؤال.',
@@ -2395,6 +2403,10 @@ const translations = {
     practiceFailed: 'Could not score that recording. Please try again.',
     practiceScore: (pct: string) => `${pct}% of the words matched`,
     practiceWordsMatched: (n: string, total: string) => `${n} of ${total} words`,
+    practiceQuestionsTitle: 'Check your understanding',
+    practiceQuestionsScore: (n: string, total: string) => `${n} of ${total}`,
+    practiceTrue: 'True',
+    practiceFalse: 'False',
     readAloudAddTitle: 'Add a read-aloud question',
     readAloudAddBtn: 'Add question',
     readAloudAddFailed: 'Could not add the question.',

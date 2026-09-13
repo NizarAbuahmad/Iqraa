@@ -19,11 +19,16 @@ import {
   MAX_PRACTICE_WORDS,
   MIN_PRACTICE_WORDS,
   PRACTICE_PASSAGES,
+  PRACTICE_QUESTIONS,
   countPassageWords,
   getPracticePassage,
+  isPracticeAnswerCorrect,
   practicePassagesForLesson,
+  practiceQuestionsForResource,
   validatePracticePassages,
+  validatePracticeQuestions,
   type PracticePassage,
+  type PracticeQuestion,
 } from '../practice.ts';
 import { EXTERNAL_RESOURCES } from '../external.ts';
 import { usePolicy } from '../bank.ts';
@@ -99,5 +104,104 @@ describe('lookup', () => {
   it('counts words the way the recorder and the scorer do', () => {
     assert.equal(countPassageWords('  one   two\nthree '), 3);
     assert.equal(countPassageWords(''), 0);
+  });
+});
+
+describe('the shipped comprehension questions', () => {
+  it('are structurally valid', () => {
+    assert.deepEqual(validatePracticeQuestions(), []);
+  });
+
+  it('only ask about a passage the student can see', () => {
+    // The point of the cross-check: a question on a resource with no passage is
+    // a question about text that is not on screen.
+    for (const q of PRACTICE_QUESTIONS) {
+      assert.ok(
+        getPracticePassage(q.resourceId),
+        `${q.resourceId} has a question but no passage`,
+      );
+    }
+  });
+
+  it('reaches every passage', () => {
+    // The other direction. A passage with no questions is not broken, but all
+    // three have them today and silently losing one would not show up anywhere.
+    for (const p of PRACTICE_PASSAGES) {
+      assert.ok(
+        practiceQuestionsForResource(p.resourceId).length > 0,
+        `${p.resourceId} has a passage but no questions`,
+      );
+    }
+  });
+
+  it('does not put the answer in the same place every time', () => {
+    // Authoring guard, not a data-shape guard. Writing options with the correct
+    // one first is the natural way to type them, and it teaches a student to
+    // pick the first option rather than to read — which is the opposite of the
+    // exercise. Caught this in the first draft: every answerIndex was 0.
+    const indices = PRACTICE_QUESTIONS
+      .filter(q => q.kind === 'multiple_choice')
+      .map(q => q.answerIndex);
+    assert.ok(new Set(indices).size >= 3, `answers sit at only ${new Set(indices).size} position(s)`);
+  });
+
+  it('grades an answer, and only the right one', () => {
+    for (const q of PRACTICE_QUESTIONS) {
+      if (q.kind === 'true_false') {
+        assert.equal(isPracticeAnswerCorrect(q, q.answer as boolean), true);
+        assert.equal(isPracticeAnswerCorrect(q, !q.answer), false);
+        // A wrong-typed answer must not read as correct: `0 === false` is true
+        // in a loose comparison, and `false` is a legal pick on this kind.
+        assert.equal(isPracticeAnswerCorrect(q, 0), false);
+      } else {
+        const right = q.answerIndex as number;
+        assert.equal(isPracticeAnswerCorrect(q, right), true);
+        for (let i = 0; i < (q.options ?? []).length; i++) {
+          if (i !== right) assert.equal(isPracticeAnswerCorrect(q, i), false);
+        }
+        assert.equal(isPracticeAnswerCorrect(q, false), false);
+      }
+    }
+  });
+
+  it('returns nothing for an unknown or empty resource', () => {
+    assert.deepEqual(practiceQuestionsForResource(''), []);
+    assert.deepEqual(practiceQuestionsForResource('nope'), []);
+  });
+});
+
+describe('question validation catches each way an item goes wrong', () => {
+  const ok = PRACTICE_QUESTIONS.find(q => q.kind === 'multiple_choice')!;
+  const check = (q: Partial<PracticeQuestion>) =>
+    validatePracticeQuestions([{ ...ok, ...q }], PRACTICE_PASSAGES).join('\n');
+
+  it('rejects an answerIndex outside the options', () => {
+    assert.match(check({ answerIndex: 9 }), /outside the options/);
+    assert.match(check({ answerIndex: -1 }), /outside the options/);
+  });
+
+  it('rejects too few or duplicate options', () => {
+    assert.match(check({ options: ['a', 'b'], answerIndex: 0 }), /needs 3/);
+    assert.match(check({ options: ['a', 'a', 'b'], answerIndex: 0 }), /duplicate options/);
+  });
+
+  it('rejects a question about a passage that does not exist', () => {
+    assert.match(check({ resourceId: 'noaa-ocean-surface-currents' }), /not flagged readAloudPractice/);
+    assert.match(check({ resourceId: 'not-a-resource' }), /names no resource/);
+  });
+
+  it('rejects a kind carrying the other kind’s answer', () => {
+    assert.match(check({ answer: true }), /carries a true\/false answer/);
+    assert.match(
+      validatePracticeQuestions(
+        [{ resourceId: ok.resourceId, kind: 'true_false', stem: 'x', options: ['a', 'b', 'c'] }],
+        PRACTICE_PASSAGES,
+      ).join('\n'),
+      /carries options/,
+    );
+  });
+
+  it('rejects an empty stem', () => {
+    assert.match(check({ stem: '   ' }), /empty stem/);
   });
 });

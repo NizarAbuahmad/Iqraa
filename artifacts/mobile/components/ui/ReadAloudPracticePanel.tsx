@@ -18,7 +18,13 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { practicePassagesForLesson, type PracticePassage } from '@workspace/curriculum/practice';
+import {
+  isPracticeAnswerCorrect,
+  practicePassagesForLesson,
+  practiceQuestionsForResource,
+  type PracticePassage,
+  type PracticeQuestion,
+} from '@workspace/curriculum/practice';
 import { getExternalResource } from '@workspace/curriculum';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -28,6 +34,106 @@ import { scorePracticeReadAloud, type PracticeResult } from '@/services/practice
 
 /** Where a reading stops being worth repeating and starts being worth moving on from. */
 const GOOD_ENOUGH = 0.9;
+
+const RIGHT = '#15803D';
+const WRONG = '#B91C1C';
+
+/**
+ * Did you understand what you just read?
+ *
+ * Graded in the browser, which is a deliberate departure from every other
+ * question in this product. Marks are graded server-side because a client that
+ * decides its own score decides its own mark — but practice records nothing, so
+ * there is no mark here to protect, and for these two kinds the check is an
+ * equality test that a round trip would not make more correct. It also has to
+ * be this way to work at all right now: the API revision serving production
+ * predates `/practice/read-aloud`, which is why the recorder above renders and
+ * cannot score. A drill graded here ships over the air with everything else.
+ *
+ * Answer revealed as soon as one is picked, and changeable. This is the read
+ * you just did out loud, not a test — being told immediately is the whole value,
+ * and there is nothing to invigilate.
+ */
+function PassageQuestions({ questions }: { questions: readonly PracticeQuestion[] }) {
+  const colors = useColors();
+  const { t, isRTL } = useLanguage();
+  const [picked, setPicked] = useState<Record<number, number | boolean>>({});
+
+  if (questions.length === 0) return null;
+
+  const answered = Object.keys(picked).length;
+  const right = questions.filter((q, i) => i in picked && isPracticeAnswerCorrect(q, picked[i])).length;
+
+  return (
+    <View style={{ gap: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 14 }}>
+      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
+        <Ionicons name="help-circle-outline" size={16} color={ACCENT} />
+        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
+          {t('practiceQuestionsTitle')}
+        </Text>
+        {answered > 0 ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>
+            {t('practiceQuestionsScore', String(right), String(questions.length))}
+          </Text>
+        ) : null}
+      </View>
+
+      {questions.map((q, qi) => {
+        const choice = picked[qi];
+        const done = qi in picked;
+        // The stem and the options are the passage's own language, so they are
+        // LTR whatever the screen direction — same reason as the passage above.
+        const choices: { key: string; label: string; value: number | boolean }[] =
+          q.kind === 'true_false'
+            ? [
+                { key: 'true', label: t('practiceTrue'), value: true },
+                { key: 'false', label: t('practiceFalse'), value: false },
+              ]
+            : (q.options ?? []).map((o, oi) => ({ key: String(oi), label: o, value: oi }));
+
+        return (
+          <View key={qi} style={{ gap: 6 }}>
+            <Text style={{ color: colors.foreground, fontSize: 14, lineHeight: 22, textAlign: 'left', writingDirection: 'ltr' }}>
+              {q.stem}
+            </Text>
+            <View style={{ gap: 6 }}>
+              {choices.map(c => {
+                const isPicked = done && choice === c.value;
+                const isAnswer = isPracticeAnswerCorrect(q, c.value);
+                // Once answered, the right option is marked whether or not it
+                // was the one picked — being shown the answer is the point.
+                const border = !done ? colors.border : isAnswer ? RIGHT : isPicked ? WRONG : colors.border;
+                return (
+                  <Pressable
+                    key={c.key}
+                    onPress={() => setPicked(p => ({ ...p, [qi]: c.value }))}
+                    style={[
+                      styles.choice,
+                      { borderColor: border, backgroundColor: isPicked ? border + '12' : 'transparent' },
+                    ]}
+                  >
+                    {done && (isAnswer || isPicked) ? (
+                      <Ionicons
+                        name={isAnswer ? 'checkmark-circle' : 'close-circle'}
+                        size={15}
+                        color={isAnswer ? RIGHT : WRONG}
+                      />
+                    ) : (
+                      <View style={[styles.choiceDot, { borderColor: colors.border }]} />
+                    )}
+                    <Text style={{ color: colors.foreground, fontSize: 13.5, flex: 1, textAlign: 'left', writingDirection: 'ltr' }}>
+                      {c.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 function PassageCard({ passage }: { passage: PracticePassage }) {
   const colors = useColors();
@@ -143,6 +249,12 @@ function PassageCard({ passage }: { passage: PracticePassage }) {
           </Text>
         </View>
       )}
+
+      {/* Comprehension, in the same card as the passage it asks about. Reading
+          aloud and understanding are one activity; splitting them into two
+          panels would let a student do the first and never see the second.
+          Works today, unlike the recorder above — no server, so no deploy. */}
+      <PassageQuestions questions={practiceQuestionsForResource(passage.resourceId)} />
     </View>
   );
 }
@@ -190,4 +302,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 14,
   },
+  choice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+  },
+  choiceDot: { width: 13, height: 13, borderRadius: 7, borderWidth: 1.5 },
 });
