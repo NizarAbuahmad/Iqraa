@@ -7,26 +7,50 @@ them.
 
 | | Where | How it deploys |
 | --- | --- | --- |
-| `iqraa-web` | Render (static) | **Automatic** on merge to `main` |
+| `iqraa-web` | Cloudflare Pages (static) | **Automatic** on merge to `main`, via GitHub Actions |
 | `iqraa-api` | Cloud Run | **By hand**, command below |
 | `iqraa-verifier` | Cloud Run | **By hand**, command below |
 | Database | Neon | Never automatic — see *Schema* below |
 
 Cloud Run project `iqraa-auth-507315`, region `europe-west1` (nearest Google
-region to Neon in Frankfurt). Only `iqraa-web` is left in `render.yaml`; the
-Render API and verifier were retired from the blueprint on 2026-09-05.
+region to Neon in Frankfurt). The Render API and verifier were retired from the
+blueprint on 2026-09-05, and `iqraa-web`'s deploy moved off Render on
+2026-09-13. The `iqraa-web` block is still in `render.yaml` on purpose, as a
+rollback path — Render is no longer the deploy target, and its builds stay
+capped, so it will simply serve whatever it last built. Delete the block once
+Cloudflare has been serving for a while.
 
 ## The web app
 
-Nothing to do. Render auto-deploys `iqraa-web` on merge to `main`, and the
-build inlines every `EXPO_PUBLIC_*` value — so changing one of those needs a
-**web rebuild**, not just an API redeploy.
+Nothing to do. `.github/workflows/web-deploy.yml` builds the bundle on every
+merge to `main` and publishes it to Cloudflare Pages, and the build inlines
+every `EXPO_PUBLIC_*` value — so changing one of those needs a **web rebuild**,
+not just an API redeploy. Those values live in that workflow now, not in
+`render.yaml`.
+
+It moved off Render on 2026-09-13. Render's free tier meters **build minutes**
+(500/month), and `pnpm install` plus an Expo export of this monorepo at ten
+merges a day does not fit. On 2026-09-12 the workspace hit the cap and every
+deploy was cancelled after 0.9s for a day while the site served a stale bundle —
+CI green, `render.yaml` correct, nothing down. This repo is public, so Actions
+runners are free and unmetered, and Cloudflare receives an already-built
+directory, so neither side has a build ceiling any more.
+
+Two things a future host change must carry, both of which bite silently:
+
+- **The SPA catch-all.** `artifacts/mobile/public/_redirects` maps `/* →
+  /index.html` with a `200`. Without it, `/workspace` and every other Expo
+  Router deep link 404s on refresh.
+- **The commit stamp.** `scripts/inject-pwa.mjs` reads `BUILD_COMMIT` (then
+  `RENDER_GIT_COMMIT`, then `'dev'`) for `<meta name="build-commit">`. A host
+  that sets neither stamps every deployed bundle `dev`, which destroys the one
+  marker that answers "is this live?".
 
 To check a change is actually live rather than trusting the dashboard, grep the
 served bundle for something the change added or removed:
 
 ```bash
-curl -s https://iqraa-web.onrender.com/ | grep -oE '/_expo/static/js/web/[A-Za-z0-9._-]+\.js'
+curl -s https://<web-host>/ | grep -oE '/_expo/static/js/web/[A-Za-z0-9._-]+\.js'
 ```
 
 then `curl` that path and grep it. String literals survive minification, so a

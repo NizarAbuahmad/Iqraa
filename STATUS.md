@@ -1045,6 +1045,50 @@ vocational, PE and art additionally need `SUBJECTS.grades` extended before a
 Grade 6 book can attach; `subjectGradeCoverage.test.ts` splits all sixteen
 bookless grade-6 pairs into permanent and closable, and says which is which.
 
+**The web app moved off Render, 2026-09-13.** `.github/workflows/web-deploy.yml`
+now builds the bundle on every merge to `main` and publishes it to Cloudflare
+Pages by Direct Upload. Render's `iqraa-web` block stays in `render.yaml` as a
+rollback route and is no longer the deploy target.
+
+The reason is the ceiling, not the incident. Render meters **build minutes** —
+500/month on Hobby — and `pnpm install --frozen-lockfile` plus an Expo export of
+this monorepo costs a few minutes a merge. At this cadence that is ~100 builds a
+month, and `buildFilter` (added the day before) could only reduce how often the
+meter ran, never raise it. The second ceiling was already visible behind it:
+Hobby caps outbound bandwidth at **5 GB/month** and the served JS bundle is
+**8.7 MB**, so roughly 575 cold loads.
+
+Both ceilings are gone rather than raised. **This repo is public**, so Actions
+standard runners are free and unmetered — no build cap at any cadence — and
+Cloudflare receives an already-built directory, so its own 500-builds/month
+limit never applies and static bandwidth is unmetered. Cost is $0 either side.
+
+What the move actually required, beyond the workflow — both silent failures if
+missed:
+
+- **The SPA catch-all**, `render.yaml`'s `routes: [{rewrite, /*, /index.html}]`,
+  is now `artifacts/mobile/public/_redirects` (`/*  /index.html  200`). Expo
+  copies `public/` verbatim into `dist/`. Without it every Expo Router deep link
+  404s on refresh, and only on refresh — in-app navigation looks fine.
+- **The commit stamp.** `inject-pwa.mjs` read `RENDER_GIT_COMMIT`, which does not
+  exist off Render, so every deployed bundle would have silently stamped `dev`.
+  It now prefers a host-neutral `BUILD_COMMIT` and keeps the old name as a
+  fallback. That meta tag is the marker that answers "is this live?" — the exact
+  question nobody could answer for a day.
+
+Two things that did **not** need changing, both checked rather than assumed:
+`app.use(cors())` in `api-server/src/app.ts` takes no options, so every origin is
+already allowed and the API needed no redeploy; and `EXPO_PUBLIC_DEMO_MODE` is
+left unset, exactly as `render.yaml` left it, so the web bundle keeps shipping in
+demo mode. Setting it would have flipped live AI generation on for every web
+teacher as a side effect of a hosting change. Note `mobile-update.yml` does set
+it to `"false"`, so web and Android differ — that gap predates this move.
+
+Still requires a human once: the Cloudflare project plus `CLOUDFLARE_API_TOKEN`
+and `CLOUDFLARE_ACCOUNT_ID` repo secrets, and adding the new origin to the Google
+OAuth client's authorised JavaScript origins. Sign-in fails without that last one
+while everything else looks healthy, because email+password keeps working.
+
 **Grade 8 gets its first figures, 2026-09-12.** `g8-science-s1` alone: 133
 crops, **65 kept**, covering all 10 of its Semester 1 lessons. What survived is
 strong — DNA and chromosome diagrams, binary-fission stages, Mendel's pea
