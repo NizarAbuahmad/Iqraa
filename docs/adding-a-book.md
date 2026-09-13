@@ -38,6 +38,15 @@ is extracted from it, and it grounds nothing. If you upload a book only to
 `iqraa-public`, the app will offer teachers a download and will still know
 nothing about the book's content.
 
+**`iqraa-public` gained its first runtime writer, 2026-09-09.** Every book PDF
+in it so far arrived by hand through the Cloudflare dashboard — nothing in the
+API server wrote there. `POST /auth/users/avatar` (`routes/auth.ts`) is the
+first exception: a teacher's own profile picture goes in under `avatars/`,
+written by `lib/r2.ts`'s `putPublicObject`/`newAvatarKey`, gated on
+`R2_PUBLIC_BUCKET`/`R2_PUBLIC_BASE_URL` being set (see `LOCAL_SETUP.md`). Same
+account and credentials as `iqraa-media`, just a different `Bucket` name — no
+new secret to rotate, only the token's scope needs to cover both buckets.
+
 For a book to influence what the AI writes, its text must go through
 `iqraa-media` (or a committed local copy) and out the other side as
 `extracted/<sourceId>.json`. Tracks A–C below are that path.

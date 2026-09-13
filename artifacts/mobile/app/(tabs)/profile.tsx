@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,8 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { confirm } from '@/services/confirm';
+import { pickAvatarPhoto } from '@/services/avatarPick';
+import { Toast } from '@/components/ui/Toast';
 
 function InfoRow({ icon, label, value, color, isRTL }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; color: string; isRTL: boolean }) {
   const colors = useColors();
@@ -49,7 +51,11 @@ export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useLanguage();
-  const { user, logout } = useAuth();
+  const { user, logout, uploadAvatar, removeAvatar } = useAuth();
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
+  const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
@@ -85,6 +91,41 @@ export default function ProfileScreen() {
     router.replace('/(auth)/login');
   };
 
+  const handleChangePhoto = () => {
+    void (async () => {
+      const dataUrl = await pickAvatarPhoto();
+      if (!dataUrl) return;
+      setAvatarBusy(true);
+      try {
+        await uploadAvatar(dataUrl);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : t('photoUpdateFailed'));
+      } finally {
+        setAvatarBusy(false);
+      }
+    })();
+  };
+
+  const handleRemovePhoto = () => {
+    void (async () => {
+      const ok = await confirm({
+        title: t('removePhotoConfirm'),
+        confirmLabel: t('removePhoto'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      });
+      if (!ok) return;
+      setAvatarBusy(true);
+      try {
+        await removeAvatar();
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : t('photoRemoveFailed'));
+      } finally {
+        setAvatarBusy(false);
+      }
+    })();
+  };
+
   const handleLogout = () => {
     // Only the question is passed, not a title as well. `signOut` ("تسجيل
     // الخروج") and `signOutConfirm` ("هل تريد تسجيل الخروج؟") say the same
@@ -104,18 +145,49 @@ export default function ProfileScreen() {
   };
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={{ flex: 1 }}
       contentContainerStyle={{ paddingBottom: 120 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
       <View style={[styles.headerBg, { backgroundColor: colors.primary, paddingTop: topPad + 16 }]}>
         <View style={styles.avatarWrap}>
-          <View style={[styles.avatar, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
-            <Text style={[styles.initials, { color: colors.primaryForeground, fontFamily: 'Cairo_700Bold' }]}>
-              {initials}
-            </Text>
+          <View>
+            <Pressable
+              onPress={handleChangePhoto}
+              disabled={avatarBusy}
+              style={({ pressed }) => [
+                styles.avatar,
+                { backgroundColor: 'rgba(255,255,255,0.25)', opacity: pressed ? 0.85 : 1 },
+              ]}
+            >
+              {user?.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} style={styles.avatarPhoto} />
+              ) : (
+                <Text style={[styles.initials, { color: colors.primaryForeground, fontFamily: 'Cairo_700Bold' }]}>
+                  {initials}
+                </Text>
+              )}
+              {avatarBusy ? (
+                <View style={styles.avatarBusyOverlay}>
+                  <ActivityIndicator color={colors.primaryForeground} />
+                </View>
+              ) : (
+                <View style={[styles.avatarEditBadge, { backgroundColor: colors.primaryForeground }]}>
+                  <Ionicons name="camera" size={14} color={colors.primary} />
+                </View>
+              )}
+            </Pressable>
+            {user?.avatarUrl && !avatarBusy ? (
+              <Pressable
+                onPress={handleRemovePhoto}
+                style={[styles.avatarRemoveBadge, { backgroundColor: colors.destructive }]}
+              >
+                <Ionicons name="close" size={12} color={colors.primaryForeground} />
+              </Pressable>
+            ) : null}
           </View>
           <Text style={[styles.userName, { color: colors.primaryForeground, fontFamily: 'Cairo_700Bold' }]}>
             {user ? `${user.firstName} ${user.lastName}` : t('roleTeacher')}
@@ -227,13 +299,28 @@ export default function ProfileScreen() {
         </View>
       </View>
     </ScrollView>
+    <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   headerBg: { paddingBottom: 32, alignItems: 'center' },
   avatarWrap: { alignItems: 'center', gap: 8 },
-  avatar: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  avatar: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 4, overflow: 'hidden' },
+  avatarPhoto: { width: 88, height: 88, borderRadius: 44 },
+  avatarBusyOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  avatarEditBadge: {
+    position: 'absolute', bottom: 4, right: 0, width: 24, height: 24, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  avatarRemoveBadge: {
+    position: 'absolute', top: 0, right: 0, width: 22, height: 22, borderRadius: 11,
+    alignItems: 'center', justifyContent: 'center',
+  },
   initials: { fontSize: 34 },
   userName: { fontSize: 22 },
   roleBadge: { paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20, marginTop: 2 },

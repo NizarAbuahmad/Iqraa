@@ -21,7 +21,7 @@ import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.j
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import { emailKey } from "../lib/rateLimitKeys.js";
-import { deleteObject } from "../lib/r2.js";
+import { deleteObject, deletePublicObject, isPublicR2Configured, newAvatarKey, publicUrl, putPublicObject } from "../lib/r2.js";
 import { googleClientIds } from "../lib/googleClients.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import {
@@ -43,8 +43,15 @@ import {
 } from "../lib/passwordReset.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
+import { extensionForAvatarMime, MAX_AVATAR_DATA_URL_LENGTH } from "../lib/avatarUpload.js";
+import { parseDataUrl } from "../lib/lessonMediaUpload.js";
 
 const router = Router();
+
+/** null key -> null url, so every response-building site below can stay a one-liner. */
+function avatarUrlFor(avatarKey: string | null): string | null {
+  return avatarKey ? publicUrl(avatarKey) : null;
+}
 
 /*
  * A school is one NAT address. An IP-keyed signup limit is therefore a limit
@@ -381,6 +388,7 @@ router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, asyn
         email: verified.email,
         role: verified.role,
         preferredLanguage: verified.preferredLanguage,
+        avatarUrl: avatarUrlFor(verified.avatarKey),
         createdAt: verified.createdAt,
         // This is the call that hands back the session register used to, so
         // it owes the client the same field login does — without it a
@@ -911,6 +919,7 @@ router.post("/login", loginLimiter, async (req, res) => {
         email: user.email,
         role: user.role,
         preferredLanguage: user.preferredLanguage,
+        avatarUrl: avatarUrlFor(user.avatarKey),
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
         ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
@@ -1055,6 +1064,7 @@ router.post("/google", googleLimiter, async (req, res) => {
         email: user.email,
         role: user.role,
         preferredLanguage: user.preferredLanguage,
+        avatarUrl: avatarUrlFor(user.avatarKey),
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
         ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
@@ -1172,6 +1182,7 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       email: user.email,
       role: user.role,
       preferredLanguage: user.preferredLanguage,
+      avatarUrl: avatarUrlFor(user.avatarKey),
       emailVerified: user.emailVerified,
       // Which proof `DELETE /auth/users/me` will accept from this account: a
       // password, or — for a Google-only account, which has no hash to check
@@ -1228,11 +1239,96 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
       email: updated.email,
       role: updated.role,
       preferredLanguage: updated.preferredLanguage,
+      avatarUrl: avatarUrlFor(updated.avatarKey),
       createdAt: updated.createdAt,
     });
   } catch (err) {
     logger.error({ err }, "update profile failed");
     res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
+function fail503Avatar(res: Parameters<Parameters<typeof router.post>[1]>[1]): void {
+  res.status(503).json({
+    code: "avatar_unavailable",
+    error: "Profile pictures are not set up on this server yet.",
+  });
+}
+
+// POST /users/avatar — set or replace the caller's own profile picture.
+router.post("/users/avatar", authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!isPublicR2Configured()) {
+      fail503Avatar(res);
+      return;
+    }
+
+    const dataUrl = typeof req.body?.dataUrl === "string" ? req.body.dataUrl : "";
+    if (dataUrl.length > MAX_AVATAR_DATA_URL_LENGTH) {
+      res.status(413).json({
+        error: "That photo is too large. Try a different one.",
+        code: "file_too_large",
+      });
+      return;
+    }
+    const parsed = parseDataUrl(dataUrl);
+    if (!parsed) {
+      res.status(400).json({ error: "dataUrl must be a data: URL", code: "bad_data_url" });
+      return;
+    }
+    const extension = extensionForAvatarMime(parsed.mime);
+    if (!extension) {
+      res.status(400).json({ error: `Unsupported image type: ${parsed.mime}`, code: "unsupported_type" });
+      return;
+    }
+
+    const [existing] = await db.select().from(users).where(eq(users.id, req.user!.id));
+    if (!existing) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const key = newAvatarKey(extension);
+    await putPublicObject(key, parsed.buffer, parsed.mime);
+
+    const [updated] = await db
+      .update(users)
+      .set({ avatarKey: key })
+      .where(eq(users.id, req.user!.id))
+      .returning();
+
+    // Old object is orphaned otherwise — deleted only after the new one is
+    // safely written and recorded, so a mid-request failure never leaves a
+    // user with no photo at all.
+    if (existing.avatarKey && existing.avatarKey !== key) {
+      await deletePublicObject(existing.avatarKey);
+    }
+
+    res.json({ avatarUrl: avatarUrlFor(updated!.avatarKey) });
+  } catch (err) {
+    logger.error({ err }, "avatar upload failed");
+    res.status(500).json({ error: "Failed to update profile picture" });
+  }
+});
+
+// DELETE /users/avatar — revert the caller's own profile picture to initials.
+router.delete("/users/avatar", authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    const [existing] = await db.select().from(users).where(eq(users.id, req.user!.id));
+    if (!existing) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    if (existing.avatarKey) {
+      await deletePublicObject(existing.avatarKey);
+      await db.update(users).set({ avatarKey: null }).where(eq(users.id, req.user!.id));
+    }
+
+    res.json({ avatarUrl: null });
+  } catch (err) {
+    logger.error({ err }, "avatar removal failed");
+    res.status(500).json({ error: "Failed to remove profile picture" });
   }
 });
 
