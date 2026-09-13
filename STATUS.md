@@ -548,16 +548,19 @@ fixed offset, because PhET's ~100-character credit wraps.
 
 ### What does not work
 
-- **No practice passages exist.** `practice_passages.json` holds `"passages":
-  []` on purpose, and no resource carries the `readAloudPractice` flag yet, so
-  `ReadAloudPracticePanel` renders nothing on every lesson — inert, not
-  broken. A passage must be the source's verbatim words (60–150 words,
-  `MIN_PRACTICE_WORDS`/`MAX_PRACTICE_WORDS`); a paraphrase credited to VOA is
-  the same misattribution the curation rejected candidates over. Blocked on a
-  Firecrawl API key: the article body renders client-side so `curl` returns only
-  metadata, RSS descriptions are empty, and WebFetch answers with a summary.
-  Validation refuses a flagged resource with no passage, so this cannot ship
-  silently.
+- ~~No practice passages exist.~~ **Three exist as of 2026-09-13** — one per VOA
+  article, 110/106/99 words, on six English lessons in units 1, 3 and 5. It was
+  never an API key that was missing: Firecrawl's **keyless hosted mode** returns
+  the full article body, which is what `curl` cannot do because the body renders
+  client-side. Each excerpt is **one contiguous run**, verified against the live
+  page rather than by re-reading the draft — the check ran `indexOf` inside the
+  page and confirmed the only text between segments is the section heading.
+  **Watch the third-party-inside-public-domain trap**: the nouns article ends by
+  quoting Beatles lyrics and the future-tenses article quotes a MacArthur
+  speech, so both excerpts stop short of those deliberately (1,558 and 1,141
+  characters clear). That is the AP-inside-VOA problem one level down, inside a
+  single article that passes the byline test. All three bylines were re-checked
+  on the live pages: VOA staff writer plus VOA editor, no agency credit.
 - **No microphone on the phone.** Web only. `expo-audio` is a native module and
   `runtimeVersion.policy` is `fingerprint`, so adding it **moves the fingerprint
   and cannot ship over the air** — installed apps keep taking OTA updates and
@@ -567,7 +570,14 @@ fixed offset, because PhET's ~100-character credit wraps.
 - **Nothing has run against a real microphone**, and the practice endpoint has
   never transcribed anything. The assessment path was driven end to end against
   a local API, but the transcription span is unverified — this machine's OpenAI
-  key is a placeholder.
+  key is a placeholder. What *has* been checked is the scoring either side of it:
+  each passage scores 1.0 against itself and against a Whisper-shaped rendering
+  (straight apostrophes, lower case, quotes stripped), and ~0.90 with one word in
+  ten dropped. So the passage and the scorer agree; only the audio leg is unseen.
+- **The card has never been rendered in a browser.** Reaching lesson-detail means
+  signing in, and `dev:mobile:web` authenticates against **production** — so
+  this needs a person, not a script. Nothing about the passage data is unverified;
+  it is the layout of the card holding it.
 - **Neither half has reached production.** The API is pinned to `00032-279`
   pending the Resend domain, so `POST /practice/read-aloud` answers from a
   revision that does not have it. The web bundle has not taken it either —

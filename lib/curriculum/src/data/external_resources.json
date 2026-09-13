@@ -18,11 +18,12 @@
       "licenseUrl": "https://learningenglish.voanews.com/p/6021.html",
       "sourceUrl": "https://learningenglish.voanews.com/a/nutrients-and-nutrition/5827060.html",
       "attribution": "Voice of America — learningenglish.voanews.com",
-      "licenseCheckedAt": "2026-09-11",
+      "licenseCheckedAt": "2026-09-13",
       "authority": "third-party",
       "words": 375,
       "durationSec": 187,
-      "level": "b1"
+      "level": "b1",
+      "readAloudPractice": true
     },
     {
       "id": "voa-nouns-as-adjectives",
@@ -38,10 +39,11 @@
       "licenseUrl": "https://learningenglish.voanews.com/p/6021.html",
       "sourceUrl": "https://learningenglish.voanews.com/a/everyday-grammar-when-nouns-act-like-adjectives/2998821.html",
       "attribution": "Voice of America — learningenglish.voanews.com",
-      "licenseCheckedAt": "2026-09-11",
+      "licenseCheckedAt": "2026-09-13",
       "authority": "third-party",
       "words": 900,
-      "level": "b1"
+      "level": "b1",
+      "readAloudPractice": true
     },
     {
       "id": "voa-fun-with-future-tenses",
@@ -57,11 +59,12 @@
       "licenseUrl": "https://learningenglish.voanews.com/p/6021.html",
       "sourceUrl": "https://learningenglish.voanews.com/a/everyday-grammar-fun-with-future-tenses/2935173.html",
       "attribution": "Voice of America — learningenglish.voanews.com",
-      "licenseCheckedAt": "2026-09-11",
+      "licenseCheckedAt": "2026-09-13",
       "authority": "third-party",
       "words": 1100,
       "durationSec": 374,
-      "level": "b1"
+      "level": "b1",
+      "readAloudPractice": true
     },
 
     {

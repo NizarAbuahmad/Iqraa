@@ -71,7 +71,11 @@ describe('validation catches the two ways the split drifts', () => {
     // The flag is what the client reads to decide a lesson offers practice.
     // Prose without it is invisible; prose against an unflagged resource means
     // the two files disagree about what this resource is for.
-    assert.match(check({}), /not flagged readAloudPractice/);
+    //
+    // An image resource, because every *text* resource now carries the flag —
+    // this assertion used to pass against the VOA article by accident, back
+    // when nothing was flagged at all.
+    assert.match(check({ resourceId: 'noaa-ocean-surface-currents' }), /not flagged readAloudPractice/);
   });
 
   it('rejects a passage outside the recordable length', () => {

@@ -1,7 +1,25 @@
 {
   "note": "Read-aloud practice passages. Schema and rules: ../practice.ts. Each entry names an ExternalResource in external_resources.json, which carries the licence and the credit — so a passage may only exist where usePolicy() says quotable, and the resource must be flagged readAloudPractice. Both directions are checked by validatePracticePassages.",
   "verbatimRule": "A passage must be the source's ACTUAL words, excerpted, never summarised or paraphrased. Attributing a paraphrase to VOA (or anyone) is a misattribution, and it is the specific failure this curation has rejected candidates over twice already — AP bylines inside VOA, and ESA imagery inside NASA. If the verbatim text cannot be obtained, the passage does not get added.",
+  "contiguityRule": "Each passage is ONE CONTIGUOUS run of the article, not sentences gathered from across it. Stitching separated sentences produces prose that reads as continuous and does not exist in the source in that order, which is a quieter version of the same misattribution. Only two things are dropped inside a run: the bold section headings (they are navigation, not prose) and inline emphasis markers, because the panel renders plain text. Every word, and the order of every word, is the source's.",
+  "thirdPartyRule": "A public-domain page can still quote material that is not. Check what a candidate excerpt contains, not just who published it: 'when-nouns-act-like-adjectives' closes by quoting the lyrics of a Beatles song, and 'fun-with-future-tenses' quotes a MacArthur speech. Both excerpts below stop short of those passages deliberately. This is the AP-inside-VOA problem one level down — inside a single article that passes the byline test.",
   "lengthRule": "60-150 words. The ceiling comes from the recording limit, not taste: uploads stop at 120 seconds and read-aloud speech runs ~130 words a minute, so a longer passage guarantees the student is cut off and scored on a fragment. Note the three VOA articles in the manifest run 375, 900 and 1100 words — full articles are reference material; an excerpt has to be chosen.",
-  "capturedAt": "2026-09-12",
-  "passages": []
+  "capturedAt": "2026-09-13",
+  "passages": [
+    {
+      "resourceId": "voa-nutrients-and-nutrition",
+      "level": "b1",
+      "passage": "Nutrients are the individual substances in food that humans and animals need to live and grow. Vitamins, minerals, proteins and carbohydrates are examples of nutrients. Nutrients are measurable. For instance, if you read the packaging on a food product, you can see exactly which nutrients it contains, and in what amounts. Plants, too, need nutrients to live and grow. Plant nutrients are found in (or added to) soil. The soil contains substances like phosphorus and nitrogen. Nutrition is the process of eating the right kinds of nutrients over time in order to support growth and stay healthy. So it is a more general term for a person’s overall food intake."
+    },
+    {
+      "resourceId": "voa-nouns-as-adjectives",
+      "level": "b1",
+      "passage": "You know that an adjective modifies, describing a quality of a noun. For example, you drink a cup of hot tea. The adjective is hot and the noun is tea. What about lemon tea? Lemon is a noun, isn’t it? Why is it modifying tea? English often uses nouns as adjectives - to modify other nouns. For example, a car that people drive in races is a race car. A car with extra power or speed is a sports car. Nouns that modify other nouns are called adjectival nouns or noun modifiers. For our purposes, they are called attributive nouns. So we will use that term."
+    },
+    {
+      "resourceId": "voa-fun-with-future-tenses",
+      "level": "b1",
+      "passage": "This week, we are going to talk about the future tenses. There are several ways to talk about future events in English. Compared to the past and present, future tenses are usually more flexible. Let’s start with will. To form the simple future, use will and then the simple form of the verb. For example, “I will go to the store.” In everyday conversation, will often gets shortened, which can be difficult for English learners to hear. For example, “I’ll leave tomorrow” or “He’ll go to the store.” You can use will to express a desire to do something."
+    }
+  ]
 }
