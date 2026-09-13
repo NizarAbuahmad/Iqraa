@@ -1,6 +1,17 @@
 /**
  * React hook for voice recording using MediaRecorder API.
  * Negotiates a supported MIME type across browsers (Chrome, Firefox, Safari).
+ *
+ * Exported from this package under its own subpath, `./audio/useVoiceRecorder`,
+ * separately from the `./audio` barrel — that barrel also reaches
+ * `useVoiceStream` and `useAudioPlayback`, which need an AudioWorklet file
+ * served from the host app's public directory. A consumer that only wants to
+ * record should not have to ship one.
+ *
+ * Browser-only by nature: `MediaRecorder` and `navigator.mediaDevices` do not
+ * exist under React Native. The references are inside the callbacks rather
+ * than at module scope, so importing this on native is safe — calling it is
+ * not, and callers are expected to gate on platform.
  */
 import { useRef, useCallback, useState } from "react";
 

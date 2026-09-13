@@ -1,0 +1,533 @@
+{
+  "sourceId": "g9-physics-s1-student-book",
+  "figures": [
+    {
+      "file": "p014.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 14,
+      "rect": [
+        98.1,
+        359.7,
+        191.2,
+        463.6
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p020.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 20,
+      "rect": [
+        240.0,
+        608.4,
+        340.3,
+        715.3
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p020b.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 20,
+      "rect": [
+        93.5,
+        622.5,
+        239.2,
+        699.8
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p029b.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 29,
+      "rect": [
+        61.4,
+        134.7,
+        184.2,
+        257.5
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p030b.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 30,
+      "rect": [
+        64.8,
+        575.1,
+        366.0,
+        747.0
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 30
+    },
+    {
+      "file": "p032.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 32,
+      "rect": [
+        64.9,
+        57.8,
+        157.2,
+        151.3
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 30
+    },
+    {
+      "file": "p034.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 34,
+      "rect": [
+        398.6,
+        39.9,
+        537.1,
+        195.8
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 30
+    },
+    {
+      "file": "p034b.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 34,
+      "rect": [
+        398.6,
+        209.3,
+        537.1,
+        363.7
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 30
+    },
+    {
+      "file": "p034c.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 34,
+      "rect": [
+        398.6,
+        378.7,
+        537.1,
+        533.2
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 30
+    },
+    {
+      "file": "p038.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 38,
+      "rect": [
+        53.4,
+        106.7,
+        297.2,
+        277.5
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 30
+    },
+    {
+      "file": "p059b.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 59,
+      "rect": [
+        75.2,
+        377.7,
+        247.3,
+        516.4
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p061.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 61,
+      "rect": [
+        53.0,
+        261.3,
+        165.3,
+        332.4
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p061b.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 61,
+      "rect": [
+        66.9,
+        361.2,
+        141.3,
+        492.9
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p062.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 62,
+      "rect": [
+        0.0,
+        21.9,
+        196.1,
+        215.1
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p062b.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 62,
+      "rect": [
+        46.7,
+        447.6,
+        135.2,
+        522.3
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p065.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 65,
+      "rect": [
+        11.8,
+        144.5,
+        233.8,
+        338.3
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p066.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 66,
+      "rect": [
+        35.4,
+        421.5,
+        466.1,
+        736.7
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 66
+    },
+    {
+      "file": "p067.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 67,
+      "rect": [
+        412.1,
+        45.6,
+        503.3,
+        206.3
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 66
+    },
+    {
+      "file": "p067b.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 67,
+      "rect": [
+        228.4,
+        70.2,
+        319.1,
+        209.1
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 66
+    },
+    {
+      "file": "p068.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 68,
+      "rect": [
+        52.0,
+        212.6,
+        198.2,
+        438.3
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 66
+    },
+    {
+      "file": "p071.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 71,
+      "rect": [
+        50.5,
+        166.6,
+        175.6,
+        238.6
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 66
+    },
+    {
+      "file": "p071b.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 71,
+      "rect": [
+        50.5,
+        238.3,
+        182.2,
+        331.7
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 66
+    },
+    {
+      "file": "p073.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 73,
+      "rect": [
+        280.2,
+        520.5,
+        446.7,
+        702.2
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 66
+    },
+    {
+      "file": "p077.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 77,
+      "rect": [
+        187.1,
+        595.2,
+        533.4,
+        713.3
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 76
+    },
+    {
+      "file": "p079.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 79,
+      "rect": [
+        61.4,
+        582.6,
+        207.5,
+        676.8
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 76
+    },
+    {
+      "file": "p080.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 80,
+      "rect": [
+        117.3,
+        398.7,
+        276.1,
+        710.7
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 76
+    },
+    {
+      "file": "p083.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 83,
+      "rect": [
+        208.3,
+        39.6,
+        511.9,
+        242.5
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 76
+    },
+    {
+      "file": "p083b.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 83,
+      "rect": [
+        83.5,
+        603.1,
+        163.0,
+        678.8
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 76
+    },
+    {
+      "file": "p084.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 84,
+      "rect": [
+        65.7,
+        214.9,
+        284.4,
+        335.8
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 76
+    },
+    {
+      "file": "p086b.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 86,
+      "rect": [
+        452.1,
+        239.2,
+        532.8,
+        404.2
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 76
+    },
+    {
+      "file": "p086c.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 86,
+      "rect": [
+        227.9,
+        253.3,
+        367.6,
+        333.6
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 76
+    },
+    {
+      "file": "p086d.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 86,
+      "rect": [
+        68.7,
+        431.5,
+        306.6,
+        548.8
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 76
+    },
+    {
+      "file": "p088.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 88,
+      "rect": [
+        44.0,
+        257.4,
+        175.8,
+        353.5
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 76
+    }
+  ]
+}

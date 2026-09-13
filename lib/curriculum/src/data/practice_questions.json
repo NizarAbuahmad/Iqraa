@@ -1,0 +1,105 @@
+{
+  "note": "Comprehension questions for read-aloud practice passages. Schema and rules: ../practice.ts. Each question names an ExternalResource that is flagged readAloudPractice and has a passage — so a question can only exist where the words it asks about are on screen, under a licence that permits showing them.",
+  "answersArePublic": "THESE ANSWERS SHIP TO THE CLIENT, ON PURPOSE, and that is the whole reason this file is separate from anything the evaluation module reads. Practice records nothing — no attempt row, no mark, no competency — so there is no result for a visible answer to corrupt; a student who reads the key instead of the passage has only skipped their own practice. NEVER source an exam, quiz or question bank from this file. An exam answer key reaching a client is what sanitizeForStudent() in the api-server's questionTypes.ts exists to prevent, and reusing these items would hand it over by the front door.",
+  "answerableRule": "A question must be answerable from the EXCERPT the student sees, never from the rest of the source article. The passages run 99-110 words and the articles they come from run 375-1100, so 'it says so in the source' is not the test — 'it says so in the words on screen' is. Each stem below was written against the excerpt text in practice_passages.json.",
+  "languageRule": "Stems and options are in English because the passage is, and because this is English comprehension: asking in Arabic about an English sentence tests translation instead of reading. Rendered LTR for the same reason the passage is.",
+  "capturedAt": "2026-09-13",
+  "questions": [
+    {
+      "resourceId": "voa-nutrients-and-nutrition",
+      "kind": "multiple_choice",
+      "stem": "According to the passage, which of these is an example of a nutrient?",
+      "options": ["Packaging", "Carbohydrates", "Soil", "Nutrition"],
+      "answerIndex": 1
+    },
+    {
+      "resourceId": "voa-nutrients-and-nutrition",
+      "kind": "true_false",
+      "stem": "The passage says that nutrients can be measured.",
+      "answer": true
+    },
+    {
+      "resourceId": "voa-nutrients-and-nutrition",
+      "kind": "true_false",
+      "stem": "According to the passage, only humans and animals need nutrients.",
+      "answer": false
+    },
+    {
+      "resourceId": "voa-nutrients-and-nutrition",
+      "kind": "multiple_choice",
+      "stem": "Where does the passage say plant nutrients are found?",
+      "options": ["On food packaging", "In vitamins", "In soil", "In carbohydrates"],
+      "answerIndex": 2
+    },
+    {
+      "resourceId": "voa-nutrients-and-nutrition",
+      "kind": "multiple_choice",
+      "stem": "The passage describes nutrition as:",
+      "options": [
+        "A single substance in food",
+        "A type of mineral",
+        "A food product",
+        "A person's overall food intake"
+      ],
+      "answerIndex": 3
+    },
+    {
+      "resourceId": "voa-nouns-as-adjectives",
+      "kind": "multiple_choice",
+      "stem": "In the example \"hot tea\", which word is the adjective?",
+      "options": ["Tea", "Hot", "Cup", "Drink"],
+      "answerIndex": 1
+    },
+    {
+      "resourceId": "voa-nouns-as-adjectives",
+      "kind": "multiple_choice",
+      "stem": "What term does the passage use for a noun that modifies another noun?",
+      "options": ["A pronoun", "A verb", "An attributive noun", "A comparative"],
+      "answerIndex": 2
+    },
+    {
+      "resourceId": "voa-nouns-as-adjectives",
+      "kind": "true_false",
+      "stem": "In \"lemon tea\", the word \"lemon\" is a noun.",
+      "answer": true
+    },
+    {
+      "resourceId": "voa-nouns-as-adjectives",
+      "kind": "multiple_choice",
+      "stem": "According to the passage, a car with extra power or speed is called:",
+      "options": ["A race car", "A sports car", "A lemon car", "A hot car"],
+      "answerIndex": 1
+    },
+    {
+      "resourceId": "voa-fun-with-future-tenses",
+      "kind": "multiple_choice",
+      "stem": "To form the simple future, the passage says to use \"will\" and then:",
+      "options": [
+        "The past form of the verb",
+        "A noun",
+        "The -ing form of the verb",
+        "The simple form of the verb"
+      ],
+      "answerIndex": 3
+    },
+    {
+      "resourceId": "voa-fun-with-future-tenses",
+      "kind": "true_false",
+      "stem": "The passage says future tenses are usually more flexible than the past and present.",
+      "answer": true
+    },
+    {
+      "resourceId": "voa-fun-with-future-tenses",
+      "kind": "multiple_choice",
+      "stem": "\"I'll leave tomorrow\" is given as an example of:",
+      "options": ["A question", "\"Will\" being shortened", "The past tense", "The -ing form"],
+      "answerIndex": 1
+    },
+    {
+      "resourceId": "voa-fun-with-future-tenses",
+      "kind": "true_false",
+      "stem": "According to the passage, there is only one way to talk about future events in English.",
+      "answer": false
+    }
+  ]
+}

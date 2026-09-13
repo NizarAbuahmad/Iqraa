@@ -1,0 +1,238 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "الثقافة المالية",
+    "subject_en": "Financial Literacy",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحدتانِ ودروسُهما الأحدَ عشرَ من كتاب الطالب (sourceId: g9-financial-literacy-s1-student-book) في 2026-09-09، بقراءةِ فهرسِ الكتابِ (صفحة 3) لعناوينِ الدروسِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF (5.9 ميغابايت، ضمنَ حدِّ أداةِ القراءةِ المباشرةِ) — لا حاجةَ للتعرُّفِ الضوئيِّ هنا رغمَ أنَّ الاستخراجَ النصيَّ الأوّليَّ (pdf-parse) كان قدْ رُفض لهذا الكتابِ سابقًا لانقلابِ الحروفِ الشاملِ؛ العناوينُ والنتاجاتُ والمصطلحاتُ هنا كلُّها منقولةٌ منْ صورِ الصفحاتِ مباشرةً، لا منَ الاستخراجِ.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة الثقافة المالية - الصف التاسع - الفصل الدراسي الأول - المركز الوطني لتطوير المناهج والتقويم (sourceId: g9-financial-literacy-s1-student-book)"
+    },
+    "known_gaps": [
+      "لا صندوقَ «الفكرةُ الرَّئيسةُ» في هذا الكتابِ (خلافًا للتربيةِ الإسلاميةِ والعلومِ)؛ كلُّ درسٍ يفتتحُ بفقرةِ «أستكشِفُ» (سيناريو أوْ سؤالٌ استهلاليٌّ) بدلًا منْ فكرةٍ رئيسةٍ مُلخَّصةٍ، فـ main_idea_ar فارغٌ لكلِّ درسٍ عمدًا. نتاجاتُ التعلُّمِ ومفاهيمُه الرئيسةُ مطبوعةٌ في الكتابِ نفسِه لكلِّ درسٍ (خلافًا للتربيةِ الإسلاميةِ)، فهيَ منقولةٌ حرفيًّا هنا.",
+      "لا فقرةَ عامةً لصفحةِ افتتاحِ أيِّ وحدةٍ (الوحدةُ 6 غلافُها صورةٌ فقط، بلا نصٍّ)، فـ general_idea_ar فارغٌ لكلتا الوحدتينِ.",
+      "عددُ الحصصِ لكلِّ درسٍ غيرُ معروفٍ (periods وtotal_periods = null): لا دليلَ معلمٍ لهذه المادةِ على القرصِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "الاستثمارُ",
+      "title_en": "Investment",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, learning outcomes and key-terms lists copied verbatim from each lesson's own printed «نتاجات التعلّم» / «المفاهيم والمصطلحات الرئيسة» boxes; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "مفهومُ الاستثمارِ ودوافعُهُ",
+          "title_en": "The Concept of Investment and Its Motives",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "توضيحُ مفهومِ الاستثمارِ.",
+            "ذكرُ مصادرِ الأموالِ اللازمةِ للاستثمارِ.",
+            "تحديدُ دوافعِ الاستثمارِ المختلفةِ."
+          ],
+          "vocabulary": [
+            { "ar": "الاستثمارُ", "en": "Investment" },
+            { "ar": "العائدُ", "en": "Return" },
+            { "ar": "الأصولُ", "en": "Assets" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "أهمّيّةُ الاستثمارِ",
+          "title_en": "The Importance of Investment",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "بيانُ أهمّيّةِ الاستثمارِ.",
+            "تقديرُ دورِ الاستثمارِ في دعمِ الاقتصادِ الوطنيِّ.",
+            "توضيحُ المزايا الاستثماريةِ التي تجعلُ الأردنَّ بيئةً جاذبةً للاستثمارِ."
+          ],
+          "vocabulary": [
+            { "ar": "التضخُّمُ", "en": "Inflation" },
+            { "ar": "المناخُ الاستثماريُّ", "en": "Investment Climate" }
+          ]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "أُسُسُ الاستثمارِ",
+          "title_en": "Principles of Investment",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "توضيحُ أُسُسِ الاستثمارِ."
+          ],
+          "vocabulary": [
+            { "ar": "أُسُسُ الاستثمارِ", "en": "Principles of Investment" }
+          ]
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "أنواعُ الاستثمارِ",
+          "title_en": "Types of Investment",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "التمييزُ بينَ أنواعِ الاستثمارِ.",
+            "المقارنةُ بينَ أنواعِ الاستثمارِ منْ حيثُ المخاطرِ والعوائدِ المُتوقَّعةِ."
+          ],
+          "vocabulary": [
+            { "ar": "الاستثماراتُ العقاريةُ", "en": "Real Estate Investments" },
+            { "ar": "الاستثماراتُ الماديةُ", "en": "Tangible Investments" },
+            { "ar": "الأسهمُ", "en": "Stocks" },
+            { "ar": "السنداتُ", "en": "Bonds" },
+            { "ar": "صناديقُ الاستثمارِ", "en": "Investment Funds" },
+            { "ar": "الأصولُ غيرُ الملموسةِ", "en": "Intangible Assets" }
+          ]
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "تحدِّياتُ الاستثمارِ",
+          "title_en": "Investment Challenges",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "اكتشافُ التحدِّياتِ التي قدْ تُواجِهُها أنواعُ الاستثمارِ."
+          ],
+          "vocabulary": [
+            { "ar": "دورانُ العملِ", "en": "Business Cycle" }
+          ]
+        },
+        {
+          "id": "u1_l6",
+          "order": 6,
+          "title_ar": "تأثيرُ التحوُّلِ الرقميِّ في عملياتِ الاستثمارِ",
+          "title_en": "The Impact of Digital Transformation on Investment Operations",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ مفهومِ التحوُّلِ الرقميِّ.",
+            "بيانُ تأثيرِ التحوُّلِ الرقميِّ في عملياتِ الاستثمارِ.",
+            "تعرُّفُ الأدواتِ الرقميةِ المُستخدَمةِ في الاستثمارِ.",
+            "استنتاجُ مُعوّقاتِ التحوُّلِ الرقميِّ."
+          ],
+          "vocabulary": [
+            { "ar": "التحوُّلُ الرقميُّ في الاستثمارِ", "en": "Digital Transformation in Investment" },
+            { "ar": "الاستثمارُ الآليُّ", "en": "Automated Investment" },
+            { "ar": "المستشارُ الآليُّ", "en": "Robo-Advisor" },
+            { "ar": "التطبيقاتُ الماليةُ", "en": "Financial Applications" },
+            { "ar": "روبوتاتُ التداولِ", "en": "Trading Bots" },
+            { "ar": "المواطنةُ الرقميةُ الإيجابيةُ", "en": "Positive Digital Citizenship" },
+            { "ar": "المحفظةُ الاستثماريةُ", "en": "Investment Portfolio" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "الاقتراضُ وإدارةُ الديونِ",
+      "title_en": "Borrowing and Debt Management",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, learning outcomes and key-terms lists copied verbatim from each lesson's own printed «نتاجات التعلّم» / «المفاهيم والمصطلحات الرئيسة» boxes; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "مفهومُ الاقتراضِ ودوافعُهُ",
+          "title_en": "The Concept of Borrowing and Its Motives",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "توضيحُ مفهومِ الاقتراضِ.",
+            "تحديدُ دوافعِ الاقتراضِ."
+          ],
+          "vocabulary": [
+            { "ar": "الاقتراضُ", "en": "Borrowing" },
+            { "ar": "المَدينُ", "en": "Debtor" },
+            { "ar": "الدائنُ", "en": "Creditor" },
+            { "ar": "الفائدةُ", "en": "Interest" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "أنواعُ القروضِ",
+          "title_en": "Types of Loans",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "التمييزُ بينَ أنواعِ القروضِ المختلفةِ."
+          ],
+          "vocabulary": [
+            { "ar": "الضماناتُ", "en": "Collateral" },
+            { "ar": "الكفيلُ", "en": "Guarantor" }
+          ]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "أساسياتُ الاقتراضِ",
+          "title_en": "Borrowing Basics",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ أساسياتِ الاقتراضِ."
+          ],
+          "vocabulary": [
+            { "ar": "نسبةُ التمويلِ", "en": "Financing Ratio" },
+            { "ar": "مُدّةُ السدادِ", "en": "Repayment Period" },
+            { "ar": "سعرُ الفائدةِ", "en": "Interest Rate" }
+          ]
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "إدارةُ الديونِ",
+          "title_en": "Debt Management",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ مفهومِ إدارةِ الديونِ.",
+            "استنتاجُ أهمّيّةِ إدارةِ الديونِ.",
+            "تحديدُ الخطواتِ الإجرائيةِ لإدارةِ الديونِ.",
+            "تعرُّفُ كيفَ تُدارُ جميعُ أنواعِ الديونِ بصورةٍ صحيحةٍ.",
+            "تعرُّفُ مخاطرِ الديونِ."
+          ],
+          "vocabulary": [
+            { "ar": "إدارةُ الديونِ", "en": "Debt Management" },
+            { "ar": "السجلُّ الائتمانيُّ", "en": "Credit Record" }
+          ]
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "استراتيجياتُ إدارةِ الديونِ",
+          "title_en": "Debt Management Strategies",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تحليلُ استراتيجياتِ تخفيفِ أعباءِ الديونِ."
+          ],
+          "vocabulary": [
+            { "ar": "استراتيجيةُ كرةِ الثلجِ", "en": "Snowball Strategy" },
+            { "ar": "استراتيجيةُ الانهيارِ الجليديِّ", "en": "Avalanche Strategy" },
+            { "ar": "استراتيجيةُ الدمجِ", "en": "Consolidation Strategy" },
+            { "ar": "استراتيجيةُ التسويةِ", "en": "Settlement Strategy" },
+            { "ar": "عِبْءُ الدَّيْنِ", "en": "Debt Burden" }
+          ]
+        }
+      ]
+    }
+  ]
+}

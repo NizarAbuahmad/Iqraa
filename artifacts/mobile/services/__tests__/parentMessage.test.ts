@@ -19,6 +19,7 @@ import assert from 'node:assert/strict';
 
 import {
   composeParentMessage,
+  guardiansForStudent,
   kindLabel,
   MESSAGE_KINDS,
   needsDetails,
@@ -26,6 +27,7 @@ import {
   type MessageKind,
   type ParentMessageInput,
 } from '../parentMessage.ts';
+import type { ContactStudent } from '../messaging.ts';
 
 const BASE: ParentMessageInput = {
   studentName: 'سارة',
@@ -217,5 +219,52 @@ describe('seedDetailsFromNote', () => {
   it('leaves the box alone when the student has no note', () => {
     assert.equal(seedDetailsFromNote('', ''), '');
     assert.equal(seedDetailsFromNote('', '   '), '');
+  });
+});
+
+/**
+ * This is the branch that decides who receives a letter about a named child, so
+ * it is worth more than a click-through. The failure that matters is not
+ * "delivered nothing" — it is "delivered to the wrong person", which no toast
+ * would catch and no teacher could take back.
+ */
+describe('guardiansForStudent', () => {
+  const CONTACTS: ContactStudent[] = [
+    {
+      studentId: 's1',
+      studentName: 'سارة',
+      contacts: [
+        { userId: 'u-parent', firstName: 'هدى', lastName: 'العلي', role: 'parent' },
+        { userId: 'u-self', firstName: 'سارة', lastName: 'العلي', role: 'student' },
+      ],
+    },
+    {
+      studentId: 's2',
+      studentName: 'أحمد',
+      contacts: [{ userId: 'u-other', firstName: 'ماجد', lastName: 'الحاج', role: 'parent' }],
+    },
+    { studentId: 's3', studentName: 'ليان', contacts: [] },
+  ];
+
+  it('returns nothing when the teacher typed the name by hand', () => {
+    // No roster row picked, so there is no student to look a guardian up behind.
+    assert.deepEqual(guardiansForStudent(CONTACTS, null), []);
+  });
+
+  it('returns nothing for a student outside this teacher’s contacts', () => {
+    assert.deepEqual(guardiansForStudent(CONTACTS, 'nope'), []);
+  });
+
+  it('excludes the student’s own account — the letter is written about them', () => {
+    const found = guardiansForStudent(CONTACTS, 's1');
+    assert.deepEqual(found.map(c => c.userId), ['u-parent']);
+  });
+
+  it('never leaks another student’s guardian', () => {
+    assert.deepEqual(guardiansForStudent(CONTACTS, 's2').map(c => c.userId), ['u-other']);
+  });
+
+  it('returns nothing for a student nobody has linked yet', () => {
+    assert.deepEqual(guardiansForStudent(CONTACTS, 's3'), []);
   });
 });

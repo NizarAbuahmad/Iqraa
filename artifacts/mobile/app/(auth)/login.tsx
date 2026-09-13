@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { AuthModeSwitch } from '@/components/ui/AuthModeSwitch';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { Button } from '@/components/ui/Button';
 import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
@@ -55,6 +56,12 @@ export default function LoginScreen() {
     try {
       await login(email, password);
     } catch (e: any) {
+      if (e.code === 'email_not_verified') {
+        // Their only way back in if the original code email never arrived —
+        // this is the recovery path for it, not just a nicer error message.
+        router.push({ pathname: '/(auth)/verify-email', params: { email: email.trim() } });
+        return;
+      }
       setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول' : 'Login failed'));
     } finally {
       setLoading(false);
@@ -113,7 +120,7 @@ export default function LoginScreen() {
         </Text>
 
         <BrandLogo
-          variant="lockup"
+          variant="mark"
           onDark
           style={[styles.logo, isWide ? styles.logoWide : styles.logoNarrow]}
           accessibilityLabel="IQRA"
@@ -154,6 +161,15 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        <AuthModeSwitch
+          mode="login"
+          loginLabel={t('signIn')}
+          registerLabel={t('createAccount')}
+          onSwitch={m => router.replace(m === 'login' ? '/(auth)/login' : '/(auth)/register')}
+          colors={colors}
+          isRTL={isRTL}
+        />
+
         <View style={styles.formHeader}>
           <Text
             style={[
@@ -255,11 +271,11 @@ export default function LoginScreen() {
         />
 
         <Pressable
-          onPress={() => router.push('/(auth)/forgot-password')}
-          style={[styles.forgotRow, { alignItems: isRTL ? 'flex-start' : 'flex-end' }]}
+          onPress={() => router.push('/(auth)/forgot-password' as any)}
+          style={{ alignSelf: isRTL ? 'flex-start' : 'flex-end', paddingVertical: 4 }}
         >
-          <Text style={[styles.forgotText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
-            {t('forgotPassword')}
+          <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+            {t('forgotPasswordLink')}
           </Text>
         </Pressable>
 
@@ -273,16 +289,6 @@ export default function LoginScreen() {
           style={styles.signInBtn}
         />
 
-        <View style={[styles.registerRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Text style={[styles.registerPrompt, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-            {t('newToIqra')}
-          </Text>
-          <Pressable onPress={() => router.push('/(auth)/register')}>
-            <Text style={[styles.registerLink, { color: colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
-              {t('createAccount')}
-            </Text>
-          </Pressable>
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -409,15 +415,5 @@ const styles = StyleSheet.create({
   dividerLine: { flex: 1, height: 1 },
   dividerText: { fontSize: 12 },
   googleLoadingText: { fontSize: 12, textAlign: 'center', marginTop: -6 },
-  forgotRow: { marginTop: -2, marginBottom: 4 },
-  forgotText: { fontSize: 13 },
   signInBtn: { marginTop: 4 },
-  registerRow: {
-    justifyContent: 'center',
-    gap: 6,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  registerPrompt: { fontSize: 14 },
-  registerLink: { fontSize: 14 },
 });

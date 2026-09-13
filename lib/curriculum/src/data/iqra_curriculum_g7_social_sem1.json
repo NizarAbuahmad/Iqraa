@@ -1,0 +1,355 @@
+{
+  "meta": {
+    "grade": "الصف السابع",
+    "grade_en": "Grade 7",
+    "subject": "الدراسات الاجتماعية",
+    "subject_en": "Social Studies",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الستُّ ودروسُها العشرونَ من كتابِ الطالبِ (الطبعةُ الثانيةُ مزيدةٌ ومنقّحةٌ، 1447هـ/2026م، رقمُ الإيداعِ 2024/2/1079، ISBN 978-9923-41-580-1، 132 صفحةً) في 2026-09-12، بقراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ وصفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF كاملًا (132 صفحةً). لا يوجدُ دليلُ معلمٍ لهذه المادةِ على القرصِ إطلاقًا — لا لهذا الصفِّ ولا لأيِّ صفٍّ آخَرَ من هذه المادةِ — بخلافِ موادَّ أخرى في هذا المستودَعِ حيثُ دليلُ المعلمِ موجودٌ ولو بطبعةٍ مختلفةِ التاريخِ؛ لذا periods وtotal_periods = null لكلِّ درسٍ ووحدةٍ، وprior_knowledge = [] لكلِّ وحدةٍ، توثيقًا صريحًا لا استنتاجًا. لكلِّ وحدةٍ: title_ar/title_en وnumber من صفحةِ افتتاحِ الوحدةِ ومنْ قائمةِ المحتوياتِ (ص3-4)، وgeneral_idea_ar منْ صندوقِ «الفكرةِ العامّةِ» الذي يظهرُ على صفحةِ افتتاحِ كلِّ وحدةٍ. ولكلِّ درسٍ: title_ar/title_en منْ ترويسةِ الدرسِ، وmain_idea_ar منْ صندوقِ «الفكرةِ الرئيسةِ» الجانبيِّ، وvocabulary منْ صندوقِ «المفاهيمِ والمصطلحاتِ» الثنائيِّ اللغةِ الذي يطبعُ المصطلحَ عربيًّا وإنجليزيًّا جنبًا إلى جنبٍ — وكلُّها منقولةٌ حرفيًّا منَ الصفحةِ المطبوعةِ نفسِها التي فُتِحَتْ لكلِّ درسٍ في هذا الملفِّ، لا نقلًا عنْ فهرسٍ أوْ عنْ صندوقِ «مهاراتِ التعلُّمِ» المرافقِ (انظرْ known_gaps بشأنِ الأخيرِ). هذا ثاني كتابٍ يدخُلُ المستودَعَ تحتَ subjectId الداخليِّ (social) بعدَ الدراساتِ الاجتماعيةِ للصفِّ الثامنِ؛ ونمطُ الفجواتِ فيه (لا objectives مُرقَّمةٌ، لا دليلَ معلمٍ) مطابقٌ لذلك الكتابِ حرفيًّا.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة الدراسات الاجتماعية - الصف السابع - الفصل الدراسي الأول - المركز الوطني لتطوير المناهج والتقويم (الطبعة الثانية مزيدة ومنقّحة، 1447هـ/2026م، رقم الإيداع 2024/2/1079، ISBN 978-9923-41-580-1، 132 صفحة)"
+    },
+    "known_gaps": [
+      "لا دليلَ معلمٍ لهذه المادةِ على القرصِ لأيِّ صفٍّ، فحقلُ periods وtotal_periods = null لكلِّ درسٍ ووحدةٍ، وprior_knowledge = [] لكلِّ وحدةٍ — هذه فجوةٌ على مستوى المادةِ كلِّها، لا خاصّةٌ بهذا الفصلِ الدراسيِّ.",
+      "يطبَعُ كتابُ الطالبِ صندوقَ «ماذا سأتعلَّمُ؟» مرّةً واحدةً في افتتاحِ كلِّ وحدةٍ (لا في افتتاحِ كلِّ درسٍ على حِدةٍ)، وهوَ يسرُدُ عناوينَ دروسِ الوحدةِ نفسِها (مثلًا: «المُواطَنةُ ومُقوِّماتُها»، «الهويّةُ الوطنيّةُ»، «المُواطَنةُ العالميّةُ» في افتتاحِ الوحدةِ الأولى) لا نتاجاتِ تعلُّمٍ مُرقَّمةً بصيغةِ المتكلِّمِ لكلِّ درسٍ بمفردِه؛ فتجنُّبًا لفرضِ صياغةٍ لمْ تُطبَعْ، تُرِكَ objectives فارغًا لكلِّ دروسِ هذه المادةِ عمدًا، واعتُمِدَ main_idea_ar (منْ صندوقِ «الفكرةِ الرئيسةِ» الجانبيِّ لكلِّ درسٍ) بديلًا عنهُ — وهوَ النمطُ نفسُهُ المُتَّبَعُ في الدراساتِ الاجتماعيةِ للصفِّ الثامنِ، الذي لا دليلَ معلمٍ له أيضًا.",
+      "يطبَعُ كلُّ درسٍ أيضًا صندوقَ «مهاراتِ التعلُّمِ» الجانبيَّ — مهاراتٌ بحثيةٌ عامّةٌ (كالتصنيفِ، واستخلاصِ النتائجِ، والسببِ والنتيجةِ، والشبهِ والاختلافِ) لا مصطلحاتٌ مُعرَّفةٌ في متنِ الدرسِ، فلمْ تُنقَلْ كمفرداتٍ.",
+      "عددُ أزواجِ vocabulary يتفاوتُ منْ درسٍ لآخَرَ (منْ زوجٍ واحدٍ إلى أربعةِ أزواجٍ) لأنَّ صندوقَ «المفاهيمِ والمصطلحاتِ» نفسَه يتفاوتُ حجمُه من درسٍ لآخَرَ في الكتابِ المطبوعِ؛ لمْ يُضَفْ أوْ يُحذَفْ أيُّ مصطلحٍ لتوحيدِ العددِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "المُواطَنةُ",
+      "title_en": "Citizenship",
+      "general_idea_ar": "تتضمّنُ المُواطَنةُ حُقوقَ المُواطنِ المدنيّةَ والسياسيّةَ والاقتصاديّةَ والاجتماعيّةَ والثقافيّةَ، وواجباتِه في الدولةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea and bilingual vocabulary from each lesson's own boxes; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk for this subject at all, so no periods and no prior knowledge)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "المُواطَنةُ ومُقوِّماتُها",
+          "title_en": "Citizenship and Its Pillars",
+          "main_idea_ar": "التعرُّفُ إلى مفهومِ المُواطَنةِ ومُقوِّماتِها ومظاهرِ المُواطَنةِ الفاعلةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المُواطَنةُ", "en": "Citizenship" },
+            { "ar": "المُواطِنُ", "en": "Citizen" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "الهويّةُ الوطنيّةُ",
+          "title_en": "National Identity",
+          "main_idea_ar": "التعرُّفُ إلى مفهومِ الهويّةِ الوطنيّةِ ومُقوِّماتِها وأبعادِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الهويّةُ الوطنيّةُ", "en": "National Identity" }
+          ]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "المُواطَنةُ العالميّةُ",
+          "title_en": "Global Citizenship",
+          "main_idea_ar": "التعرُّفُ إلى مفهومِ المُواطَنةِ العالميّةِ وأهمّيّتِها وأبعادِها، والتحدّياتِ التي تواجهُها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المُواطَنةُ العالميّةُ", "en": "Global Citizenship" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "الديمقراطيّةُ وحُقوقُ الإنسانِ",
+      "title_en": "Democracy and Human Rights",
+      "general_idea_ar": "الديمقراطيّةُ أسلوبُ حياةٍ وثقافةٍ، تُؤكّدُ على قيَمِ العدالةِ والمُساواةِ والمُشاركةِ، والمحافظةِ على حُقوقِ الإنسانِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea and bilingual vocabulary from each lesson's own boxes; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk for this subject at all, so no periods and no prior knowledge)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "الديمقراطيّةُ",
+          "title_en": "Democracy",
+          "main_idea_ar": "التعرُّفُ إلى مفهومِ الديمقراطيّةِ، وصُوَرٍ منْ ممارسةِ الفكرِ الديمقراطيِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الديمقراطيّةُ", "en": "Democracy" },
+            { "ar": "التربيةُ الديمقراطيّةُ", "en": "Democratic Education" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "الإعلانُ العالميُّ لحُقوقِ الإنسانِ",
+          "title_en": "The Universal Declaration of Human Rights",
+          "main_idea_ar": "التعرُّفُ إلى الإعلانِ العالميِّ لحُقوقِ الإنسانِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "حُقوقُ الإنسانِ", "en": "Human Rights" },
+            { "ar": "الإعلانُ العالميُّ لحُقوقِ الإنسانِ", "en": "Universal Declaration of Human Rights" }
+          ]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "حُقوقُ المرأةِ والطفلِ",
+          "title_en": "Women's and Children's Rights",
+          "main_idea_ar": "التعرُّفُ إلى حُقوقِ المرأةِ والطفلِ في القوانينِ والتشريعاتِ الأردنيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "حُقوقُ المرأةِ", "en": "Women's Rights" },
+            { "ar": "حُقوقُ الطفلِ", "en": "Child Rights" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "البيئةُ والمواردُ والسكّانُ",
+      "title_en": "Environment, Resources, and Population",
+      "general_idea_ar": "تطوّرتِ العَلاقةُ بينَ السكّانِ والبيئةِ عبرَ الزمنِ، واختلفتْ طبيعةُ التأثيرِ وسرعتُهُ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea and bilingual vocabulary from each lesson's own boxes; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk for this subject at all, so no periods and no prior knowledge)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "تطوُّرُ عَلاقةِ الإنسانِ بالبيئةِ",
+          "title_en": "The Evolution of Human-Environment Relations",
+          "main_idea_ar": "التعرُّفُ إلى مراحلِ تطوُّرِ عَلاقةِ الإنسانِ بالبيئةِ، والجهودِ المحلّيّةِ في حمايةِ البيئةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "البيئةُ", "en": "The Environment" },
+            { "ar": "التوازنُ البيئيُّ", "en": "Ecological Balance" },
+            { "ar": "حمايةُ البيئةِ", "en": "Environment Conservation" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "العواملُ الطبيعيّةُ وتوزُّعُ السكّانِ",
+          "title_en": "Natural Factors and Population Distribution",
+          "main_idea_ar": "التعرُّفُ إلى أثرِ أشكالِ سطحِ الأرضِ والمُناخِ في توزُّعِ السكّانِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "السهولُ الفَيضيّةُ", "en": "Floodplain" },
+            { "ar": "المُناخُ", "en": "Climate" }
+          ]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "الأنشطةُ البشريّةُ وأشكالُ سطحِ الأرضِ",
+          "title_en": "Human Activities and Landforms",
+          "main_idea_ar": "التعرُّفُ إلى الأنشطةِ البشريّةِ التي يُمارِسُها الإنسانُ وعَلاقتِها بأشكالِ سطحِ الأرضِ المتنوّعةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التضاريسُ", "en": "Landforms" },
+            { "ar": "الرعيُ التجاريُّ", "en": "Commercial Grazing" }
+          ]
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "التجارةُ الدوليّةُ",
+          "title_en": "International Trade",
+          "main_idea_ar": "التعرُّفُ إلى أسبابِ قيامِ التجارةِ الدوليّةِ وأهمّيّتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التجارةُ الدوليّةُ", "en": "International Trade" },
+            { "ar": "الميزانُ التجاريُّ", "en": "Trade Balance" }
+          ]
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "الاقتصادُ والريادةُ",
+          "title_en": "Economy and Entrepreneurship",
+          "main_idea_ar": "التعرُّفُ إلى مفهومِ ريادةِ الأعمالِ ومزايا العملِ الرياديِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "علمُ الاقتصادِ", "en": "Economics" },
+            { "ar": "التنميةُ المُستدامةُ", "en": "Sustainable Development" },
+            { "ar": "الموارِدُ الاقتصاديّةُ", "en": "Economic Resources" },
+            { "ar": "ريادةُ الأعمالِ", "en": "Entrepreneurship" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "حضاراتُ بلادِ الشامِ",
+      "title_en": "Civilizations of Bilad al-Sham (the Levant)",
+      "general_idea_ar": "التعرُّفُ إلى بعضِ الحضاراتِ التي نشأتْ في بلادِ الشامِ، وإنجازاتِهم الحضاريّةِ وأسبابِ الانهيارِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea and bilingual vocabulary from each lesson's own boxes; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk for this subject at all, so no periods and no prior knowledge)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "حضاراتُ بلادِ الشامِ القديمةُ (النشأةُ)",
+          "title_en": "Ancient Civilizations of Bilad al-Sham (Origins)",
+          "main_idea_ar": "التعرُّفُ إلى الحضاراتِ القديمةِ التي قامتْ على أرضِ بلادِ الشامِ، ودورِ البيئةِ الطبيعيّةِ في نُشوءِ الحضاراتِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الحضارةُ", "en": "Civilization" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "حضاراتُ بلادِ الشامِ القديمةُ (المظاهرُ الحضاريّةُ والإنجازاتُ)",
+          "title_en": "Ancient Civilizations of Bilad al-Sham (Cultural Features and Achievements)",
+          "main_idea_ar": "التعرُّفُ إلى المظاهرِ والإنجازاتِ الحضاريّةِ في بلادِ الشامِ، وأثرِ الحروفِ الأبجديّةِ في انتشارِ الحضارةِ والتواصُلِ بينَ الشعوبِ والأُمَمِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الأبجديّةُ الفينيقيّةُ", "en": "Phoenician Alphabet" }
+          ]
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "حضاراتُ الممالكِ القديمةِ في الأُردنِّ",
+          "title_en": "Civilizations of the Ancient Kingdoms in Jordan",
+          "main_idea_ar": "بيانُ أهمّيّةِ موقعِ الأردنِّ في العصورِ القديمةِ، والتعرُّفُ إلى الممالكِ القديمةِ التي قامتْ على أرضِ الأردنِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الطريقُ الملوكيُّ", "en": "Royal Road" },
+            { "ar": "مسلّةُ ميشَع", "en": "Mesha Stele" },
+            { "ar": "قارورةُ تلِّ سيرانَ", "en": "Tel Siran bottle" }
+          ]
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "حضاراتُ بلادِ الشامِ القديمةُ (مرحلةُ الانهيارِ)",
+          "title_en": "Ancient Civilizations of Bilad al-Sham (The Collapse Stage)",
+          "main_idea_ar": "بيانُ عواملِ انهيارِ حضاراتِ بلادِ الشامِ القديمةِ، وأثرِ الحروبِ في الحياةِ العامّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "العصرُ الهلنستيُّ", "en": "Hellenistic Period" },
+            { "ar": "حلفُ الديكابوليس (المدنُ العشرُ)", "en": "The Decapolis" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "التنوُّعُ الثقافيُّ والتراثُ",
+      "title_en": "Cultural Diversity and Heritage",
+      "general_idea_ar": "التعرُّفُ إلى مفهومِ التنوُّعِ الثقافيِّ ونماذجِه، وعاداتِ الزواجِ وتقاليدِه في الأردنِّ، وبعضِ الأكلاتِ الشعبيّةِ الأردنيّةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea and bilingual vocabulary from each lesson's own boxes; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk for this subject at all, so no periods and no prior knowledge)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "التنوُّعُ الثقافيُّ",
+          "title_en": "Cultural Diversity",
+          "main_idea_ar": "إدراكُ أهمّيّةِ التنوُّعِ الثقافيِّ والتواصُلِ بينَ الثقافاتِ المختلفةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الثقافةُ", "en": "Culture" },
+            { "ar": "التنوُّعُ الثقافيُّ", "en": "Cultural Diversity" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "نماذجُ منْ تُراثِنا الأردنيِّ",
+          "title_en": "Examples from Our Jordanian Heritage",
+          "main_idea_ar": "إدراكُ أهمّيّةِ المحافظةِ على التراثِ الأردنيِّ، والتعرُّفُ إلى أبرزِ العاداتِ المتعلّقةِ بالزواجِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "العاداتُ", "en": "Habit" },
+            { "ar": "التقاليدُ", "en": "Traditions" },
+            { "ar": "التراثُ غيرُ الماديِّ", "en": "Intangible Heritage" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "المهاراتُ الحياتيّةُ",
+      "title_en": "Life Skills",
+      "general_idea_ar": "التعرُّفُ إلى عددٍ منْ نماذجِ السلوكِ الإيجابيِّ، وأثرِها في حياةِ الأفرادِ والمجتمعِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea and bilingual vocabulary from each lesson's own boxes; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk for this subject at all, so no periods and no prior knowledge)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "السلوكُ الإيجابيُّ",
+          "title_en": "Positive Behavior",
+          "main_idea_ar": "التعرُّفُ إلى مفهومِ السلوكِ الإيجابيِّ ومصادرِه وإلى نماذجَ منهُ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "السلوكُ الإيجابيُّ", "en": "Positive Behavior" },
+            { "ar": "الإصغاءُ", "en": "Listening" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "لُغةُ الجسدِ",
+          "title_en": "Body Language",
+          "main_idea_ar": "التعرُّفُ إلى لُغةِ الجسدِ وأهمّيّتِها ووسائلِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "لُغةُ الجسدِ", "en": "Body Language" }
+          ]
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "احترامُ خُصوصيّةِ الآخرينَ",
+          "title_en": "Respecting Others' Privacy",
+          "main_idea_ar": "إدراكُ أهمّيّةِ احترامِ خُصوصيّةِ الآخرينَ، والآثارِ المترتّبةِ على اختراقِ الخُصوصيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الخُصوصيّةُ الشخصيّةُ", "en": "Personal Privacy" },
+            { "ar": "العَلاقاتُ الإنسانيّةُ", "en": "Human Relations" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -14,11 +14,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { useStudentAccountsEnabled } from '@/services/features';
-import { generateClaimCode, unlinkAccount, RosterError } from '@/services/roster';
-import { confirm } from '@/services/confirm';
+import { generateClaimCode, getClaimCode, unlinkAccount, RosterError } from '@/services/roster';
 import { MessagingError, getTeacherContacts, startThread, type ChatRole } from '@/services/messaging';
-import { copyToClipboard } from '@/services/share.ts';
+import { copyToClipboard, shareAsText } from '@/services/share.ts';
+import { composeClaimCodeMessage } from '@/services/claimCodeMessage.ts';
+import { confirm } from '@/services/confirm.ts';
+import { useStudentAccountsEnabled } from '@/services/features';
 import { Avatar } from '@/components/ui/Avatar';
 import { Toast } from '@/components/ui/Toast';
 
@@ -33,7 +34,7 @@ export default function ClaimCodeScreen() {
   const { studentId, studentName } = useLocalSearchParams<{ studentId: string; studentName?: string }>();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   // The entry point in classes/[id].tsx is hidden while this is false, but a
   // deep link, a back gesture or a stale history entry can still land here.
   const studentAccounts = useStudentAccountsEnabled();
@@ -49,22 +50,53 @@ export default function ClaimCodeScreen() {
 
   const load = useCallback(async () => {
     if (!studentId) return;
+    // Nothing to fetch when no account can redeem a code — and asking would
+    // just 403. The screen renders its own explanation instead.
+    if (!studentAccounts) {
+      setLoading(false);
+      return;
+    }
     try {
-      const byStudent = await getTeacherContacts();
+      // The code first: without it, re-opening this screen showed an empty
+      // card whose only button silently replaced the code already shared.
+      const [existing, byStudent] = await Promise.all([
+        getClaimCode(studentId),
+        getTeacherContacts(),
+      ]);
+      setCode(
+        existing.claimCode && existing.claimCodeExpiresAt
+          ? { value: existing.claimCode, expiresAt: existing.claimCodeExpiresAt }
+          : null,
+      );
       const mine = byStudent.find(s => s.studentId === studentId);
       setGuardians(mine?.contacts ?? []);
       setError('');
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingLoadError'));
+      setError(
+        e instanceof RosterError || e instanceof MessagingError ? e.message : t('messagingLoadError'),
+      );
     } finally {
       setLoading(false);
     }
-  }, [studentId, t]);
+  }, [studentId, studentAccounts, t]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   const handleGenerate = async () => {
     if (!studentId) return;
+    // Replacing a live code breaks it for whoever already has it, so say so
+    // first. `confirm` rather than Alert.alert: Alert's handlers never fire on
+    // react-native web, which is the build teachers are demoed on.
+    if (code) {
+      const ok = await confirm({
+        title: t('messagingRegenerateWarnTitle'),
+        message: t('messagingRegenerateWarnBody'),
+        confirmLabel: t('messagingRegenerateConfirm'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
     setGenerating(true);
     try {
       const result = await generateClaimCode(studentId);
@@ -81,6 +113,24 @@ export default function ClaimCodeScreen() {
     if (!code) return;
     await copyToClipboard(code.value);
     setToast(t('messagingCodeCopied'));
+  };
+
+  const handleShare = async () => {
+    if (!code) return;
+    const message = composeClaimCodeMessage(
+      {
+        studentName: studentName ?? '',
+        code: code.value,
+        expiresOn: expiresLabel,
+        // Web only — there is no window on native, and the composer drops the
+        // "open this link" line rather than emitting a hostless URL.
+        origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+        fieldLabel: t('classCode'),
+      },
+      lang === 'ar',
+    );
+    const outcome = await shareAsText(message, t('messagingClaimCodeTitle'));
+    setToast(outcome === 'shared' ? t('messagingCodeShared') : t('copiedToClipboard'));
   };
 
   const onUnlink = async (guardian: Guardian) => {
@@ -131,6 +181,20 @@ export default function ClaimCodeScreen() {
       </View>
 
       <View style={{ padding: 20, gap: 20 }}>
+        {!studentAccounts ? (
+          /* The entry points to this screen are hidden when the flag is off,
+             but the route stays reachable — a bookmark, a typed URL, a stale
+             back-stack. Explain rather than offer a button that would 403.
+             The server refusal is the boundary; this is only courtesy. */
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+            <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+              {t('messagingStudentAccountsOffTitle')}
+            </Text>
+            <Text style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+              {t('messagingStudentAccountsOffBody')}
+            </Text>
+          </View>
+        ) : (
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
             {t('messagingClaimCodeTitle')}
@@ -139,50 +203,73 @@ export default function ClaimCodeScreen() {
             {t('messagingClaimCodeDesc')}
           </Text>
 
-          {code ? (
-            <View style={[styles.codeRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Text style={[styles.codeText, { color: colors.primary, fontFamily: 'Cairo_700Bold' }]}>{code.value}</Text>
-              <Pressable onPress={handleCopy} hitSlop={8}>
-                <Ionicons name="copy-outline" size={20} color={colors.mutedForeground} />
-              </Pressable>
-            </View>
+          {loading ? <ActivityIndicator color={colors.primary} style={{ marginTop: 12 }} /> : null}
+
+          {!loading && code ? (
+            <>
+              <View style={[styles.codeRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Text style={[styles.codeText, { color: colors.primary, fontFamily: 'Cairo_700Bold' }]}>{code.value}</Text>
+                <Pressable onPress={handleCopy} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('messagingCopyCode')}>
+                  <Ionicons name="copy-outline" size={20} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
+              <Text style={[styles.expiresText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {t('messagingCodeExpires')}: {expiresLabel}
+              </Text>
+            </>
           ) : null}
-          {code ? (
+
+          {!loading && !code ? (
             <Text style={[styles.expiresText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-              {t('messagingCodeExpires')}: {expiresLabel}
+              {t('messagingNoCodeYet')}
             </Text>
           ) : null}
 
-          {studentAccounts ? (
+          {/* Sharing is the primary action once a code exists; minting is the
+              rare, destructive one and reads as such. Before this screen knew
+              about existing codes, the destructive action was the only one. */}
+          {!loading && code ? (
+            <Pressable
+              onPress={handleShare}
+              style={[styles.generateBtn, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
+            >
+              <Text style={{ color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+                {t('messagingShareCode')}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {!loading ? (
             <Pressable
               onPress={handleGenerate}
               disabled={generating}
-              style={[styles.generateBtn, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
+              style={
+                code
+                  ? styles.regenerateBtn
+                  : [styles.generateBtn, { backgroundColor: colors.primary, borderRadius: colors.radius }]
+              }
             >
               {generating ? (
-                <ActivityIndicator color={colors.primaryForeground} />
+                <ActivityIndicator color={code ? colors.mutedForeground : colors.primaryForeground} />
               ) : (
-                <Text style={{ color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
-                  {t('messagingGenerateCode')}
+                <Text
+                  style={
+                    code
+                      ? { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center' }
+                      : { color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }
+                  }
+                >
+                  {code ? t('messagingRegenerateCode') : t('messagingCreateCode')}
                 </Text>
               )}
             </Pressable>
-          ) : (
-            // Deliberately not a disabled button and not an error: nothing has
-            // failed, the capability is not in this release. A disabled control
-            // invites "when?", which this screen cannot answer.
-            <Text
-              style={[
-                styles.cardDesc,
-                { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align },
-              ]}
-            >
-              {t('messagingClaimCodeUnavailable')}
-            </Text>
-          )}
+          ) : null}
         </View>
+        )}
 
-        <View>
+        {/* Suppressed with the rest: "linked accounts — none yet" implies an
+            account could turn up, when nothing in this build can create one. */}
+        <View style={studentAccounts ? undefined : { display: 'none' }}>
           <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
             {t('messagingGuardiansTitle')}
           </Text>
@@ -260,6 +347,7 @@ const styles = StyleSheet.create({
   codeRow: { alignItems: 'center', gap: 10, marginTop: 8 },
   codeText: { fontSize: 24, letterSpacing: 3 },
   expiresText: { fontSize: 12 },
+  regenerateBtn: { marginTop: 4, paddingVertical: 8 },
   generateBtn: { marginTop: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
   sectionTitle: { fontSize: 15 },
   emptyGuardians: { fontSize: 13, marginTop: 8 },

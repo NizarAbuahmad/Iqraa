@@ -78,6 +78,22 @@ const router = Router();
 router.use("/evaluations", authMiddleware, requireRole(...TEACHER_ROLES));
 
 const ALL_TYPES = Object.keys(QUESTION_TYPES) as QuestionType[];
+
+/**
+ * Types a model may not be asked to write.
+ *
+ * `read_aloud` needs an English passage at a controlled reading level, and the
+ * prompt builder hands an uncontracted type to the model as `- <type>: {}` —
+ * free rein. Asked for one, it would invent the passage, which is the "no
+ * invented subject content" line every other generator here declines to cross,
+ * and would put text nobody vetted in front of a class as a reading exercise.
+ * Passages come from the curated external-resource manifest instead.
+ *
+ * Enforced server-side as well as hidden in the picker, because the picker is
+ * a client and a stale one still gets a vote.
+ */
+const NOT_AI_GENERATABLE: readonly QuestionType[] = ["read_aloud"];
+const GENERATABLE_TYPES = ALL_TYPES.filter(t => !NOT_AI_GENERATABLE.includes(t));
 const DIFFICULTIES: Difficulty[] = ["basic", "standard", "advanced"];
 const MAX_QUESTIONS = 50;
 
@@ -154,7 +170,7 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
       : "standard";
 
     const requestedTypes: QuestionType[] = Array.isArray(req.body?.assessmentTypes)
-      ? req.body.assessmentTypes.filter((t: QuestionType) => ALL_TYPES.includes(t))
+      ? req.body.assessmentTypes.filter((t: QuestionType) => GENERATABLE_TYPES.includes(t))
       : [];
     if (requestedTypes.length === 0) {
       res.status(400).json({ error: "Select at least one assessment type" });
@@ -692,6 +708,119 @@ router.put("/evaluations/:id/questions/paper", async (req: AuthenticatedRequest,
 });
 
 // ─── Question editing ────────────────────────────────────────────────────────
+
+/**
+ * Add one question a teacher wrote themselves.
+ *
+ * Every other question in this system arrives in bulk — generated, or typed
+ * into the paper grid — and both of those replace the whole set. This appends
+ * a single one, which is what a type the generator must never write needs:
+ * `read_aloud` carries an English passage that has to be real text at a known
+ * reading level, so a person chooses it and pastes it. See NOT_AI_GENERATABLE.
+ *
+ * Deliberately not restricted to that type. The endpoint validates through the
+ * same registry as everything else, so any type a teacher can fill in
+ * correctly is one they may add; narrowing it to read_aloud would be a rule
+ * with no reason behind it beyond "that is what we needed first".
+ *
+ * `source: "teacher"` is the point of the provenance field — these are not
+ * AI output and must never be counted as it.
+ */
+router.post("/evaluations/:id/questions", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    if (evaluation.status !== "draft") {
+      // Same rule the paper grid holds: a published paper has a share code and
+      // students may already be sitting it.
+      res.status(409).json({ error: "Only a draft can be edited" });
+      return;
+    }
+
+    const type = trimmed(req.body?.type) as QuestionType;
+    if (!ALL_TYPES.includes(type)) {
+      res.status(400).json({ error: "Unknown question type" });
+      return;
+    }
+
+    const objectiveId = trimmed(req.body?.objectiveId);
+    if (!evaluation.objectiveIds.includes(objectiveId)) {
+      res.status(400).json({ error: "Objective is not in this evaluation's scope" });
+      return;
+    }
+
+    const competencyKey = trimmed(req.body?.competencyKey) as CompetencyKey;
+    if (!COMPETENCY_KEYS.includes(competencyKey)) {
+      res.status(400).json({ error: "Unknown competency" });
+      return;
+    }
+
+    const marks = Number(req.body?.marks ?? 1);
+    if (!(marks > 0)) {
+      res.status(400).json({ error: "Marks must be greater than zero" });
+      return;
+    }
+
+    const difficulty: Difficulty = DIFFICULTIES.includes(req.body?.difficulty)
+      ? req.body.difficulty
+      : "standard";
+
+    const body = (req.body?.body ?? {}) as Record<string, unknown>;
+    const expectedAnswer = (req.body?.expectedAnswer ?? {}) as Record<string, unknown>;
+    const rubric = (req.body?.rubric ?? null) as Record<string, unknown> | null;
+
+    const problems = QUESTION_TYPES[type].validate({ type, body, expectedAnswer, rubric });
+    if (problems.length > 0) {
+      res.status(400).json({ error: problems.join("; ") });
+      return;
+    }
+
+    const existingCount = await db
+      .select({ id: evaluationQuestions.id })
+      .from(evaluationQuestions)
+      .where(
+        and(
+          eq(evaluationQuestions.evaluationId, evaluation.id),
+          isNull(evaluationQuestions.deletedAt),
+        ),
+      );
+    if (existingCount.length >= MAX_QUESTIONS) {
+      res.status(400).json({ error: `An evaluation may hold ${MAX_QUESTIONS} questions` });
+      return;
+    }
+
+    const [created] = await db
+      .insert(evaluationQuestions)
+      .values({
+        evaluationId: evaluation.id,
+        // Appended, not inserted: `orderIndex` counts from the current length,
+        // so adding a question never renumbers one a teacher has already
+        // placed. Soft-deleted rows are excluded above, so a gap in the
+        // sequence is possible and harmless — order is relative, not dense.
+        orderIndex: existingCount.length,
+        type,
+        body,
+        expectedAnswer,
+        rubric,
+        objectiveId,
+        competencyKey,
+        marks: marks.toFixed(2),
+        difficulty,
+        gradingMode: QUESTION_TYPES[type].defaultGradingMode,
+        source: "teacher",
+      })
+      .returning();
+
+    const totalMarks = await recomputeTotal(evaluation.id);
+    res.status(201).json({ question: created, totalMarks });
+  } catch (err) {
+    logger.error({ err }, "add question failed");
+    res.status(500).json({ error: "Failed to add the question" });
+  }
+});
 
 router.patch(
   "/evaluations/:id/questions/:qid",

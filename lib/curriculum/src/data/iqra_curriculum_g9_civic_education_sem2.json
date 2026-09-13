@@ -1,0 +1,214 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "التربية الوطنية والمدنية",
+    "subject_en": "National and Civic Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الأربعُ (الخامسةُ والسادسةُ والسابعةُ والثامنةُ، مُكمِّلةً لترقيمِ الفصلِ الأولِ) ودروسُها الأحدَ عشرَ من كتاب الطالب في 2026-09-09، بنفسِ طريقةِ الفصلِ الأولِ: قراءةِ صفحةِ المحتوياتِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ ودرسٍ مباشرةً منَ الـ PDF (8.2 ميغابايت). هذه النسخةُ من الملفِّ تحملُ علامةَ «نسخة قيد الإعداد» مائيةً على كلِّ صفحةٍ — وهيَ مسودةٌ رسميةٌ لا مصدرٌ غيرُ رسميٍّ، والمحتوى النصيُّ غيرُ متأثرٍ بها.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة التربية الوطنية والمدنية - الصف التاسع - الفصل الدراسي الثاني - المركز الوطني لتطوير المناهج والتقويم"
+    },
+    "known_gaps": [
+      "نفسُ الفجواتِ المُسجَّلةِ في ملفِّ الفصلِ الأولِ: لا نتاجاتِ تعلُّمٍ مُرقَّمةً (objectives فارغةٌ)، ولا دليلَ معلمٍ (periods وtotal_periods = null)، وصندوقُ «مهاراتِ التعلُّمِ» غيرُ منقولٍ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "حقوقُ الإنسانِ",
+      "title_en": "Human Rights",
+      "general_idea_ar": "حقوقُ الإنسانِ فطريةٌ وعالميةٌ تتّسِمُ بالشمولِ والتكامُلِ، وهيَ متأصِّلةٌ في البشرِ جميعًا دونَ النظرِ إلى عرقِهم أو دينِهم أو لُغتِهم أو جنسِهم.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "حقوقُ المرأةِ والطفلِ",
+          "title_en": "The Rights of Women and Children",
+          "main_idea_ar": "حقوقُ المرأةِ والطفلِ في العهودِ والمواثيقِ الدوليةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المرأةُ", "en": "The Woman" },
+            { "ar": "الطفلُ", "en": "The Child" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "حقوقُ الأشخاصِ ذوي الإعاقةِ",
+          "title_en": "The Rights of Persons with Disabilities",
+          "main_idea_ar": "حقوقُ الأشخاصِ ذوي الإعاقةِ في التشريعاتِ الأردنيةِ وطرائقُ إدماجِهم في المجتمعِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الشخصُ ذو الإعاقةِ", "en": "Person with a disability" },
+            { "ar": "الدمجُ", "en": "Inclusion" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "التفكيرُ",
+      "title_en": "Thinking",
+      "general_idea_ar": "التفكيرُ منْ أبرزِ القُدُراتِ العقليةِ التي تُميّزُ الإنسانَ عنْ سائرِ المخلوقاتِ، وهوَ نشاطٌ ذهنيٌّ مُنظَّمٌ يعتمِدُ على المُلاحظةِ والتحليلِ والتقييمِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "التفكيرُ الناقدُ",
+          "title_en": "Critical Thinking",
+          "main_idea_ar": "مفهومُ التفكيرِ الناقدِ وأهمّيّتُهُ وخطواتُهُ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التفكيرُ الناقدُ", "en": "Critical Thinking" },
+            { "ar": "الاستدلالُ", "en": "Inference" },
+            { "ar": "الشكُّ المنهجيُّ", "en": "Methodological doubt" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "التفكيرُ الإبداعيُّ",
+          "title_en": "Creative Thinking",
+          "main_idea_ar": "مفهومُ التفكيرِ الإبداعيِّ وأهمّيّتُهُ ومهاراتُهُ وأثرُهُ في الفردِ والمجتمعِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التفكيرُ الإبداعيُّ", "en": "Creative thinking" },
+            { "ar": "الأصالةُ", "en": "Originality" },
+            { "ar": "الطلاقةُ", "en": "Fluency" }
+          ]
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "مهارةُ حلِّ المُشكلاتِ",
+          "title_en": "Problem-Solving Skill",
+          "main_idea_ar": "مهارةُ حلِّ المُشكلاتِ، وأهمّيّتُها، وخطواتُها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "حلُّ المشكلاتِ", "en": "Problem Solving" },
+            { "ar": "التعاونُ", "en": "Cooperation" },
+            { "ar": "التقييمُ", "en": "Evaluation" }
+          ]
+        },
+        {
+          "id": "u6_l4",
+          "order": 4,
+          "title_ar": "الابتكارُ والريادةُ",
+          "title_en": "Innovation and Entrepreneurship",
+          "main_idea_ar": "مهاراتُ الابتكارِ والريادةِ وأهمّيّتُها وأثرُها في الفردِ والمجتمعِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الريادةُ", "en": "Entrepreneurship" },
+            { "ar": "الابتكارُ", "en": "Innovation" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "الثقافةُ الإعلاميةُ",
+      "title_en": "Media Literacy",
+      "general_idea_ar": "يشهدُ العالمُ تحوُّلاتٍ تقنيةً سريعةً أحدثَتْ تغييرًا جذريًّا في طرائقِ تفاعُلِ الناسِ وتواصُلِهم ووصولِهم إلى المعلوماتِ، لذا فإنَّ الثقافةَ الإعلاميةَ التي تتضمّنُ الرسالةَ الإعلاميةَ وتحليلَها ونقدَها تصبحُ ضرورةً في ضوءِ انتشارِ الأخبارِ المكذوبةِ التي تهدفُ إلى خداعِ الناسِ لإحداثِ ضررٍ في المجتمعِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "الرسالةُ الإعلاميّةُ وخصائصُها",
+          "title_en": "The Media Message and Its Characteristics",
+          "main_idea_ar": "مفهومُ الرسالةِ الإعلاميّةِ وأهمّيّتُها وأنواعُها وخصائصُها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الرسالةُ الإعلاميّةُ", "en": "Media Message" },
+            { "ar": "الرأيُ العامُّ", "en": "Public Opinion" }
+          ]
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "الخبرُ الصحفيُّ",
+          "title_en": "The Press Release",
+          "main_idea_ar": "مفهومُ الخبرِ الصحفيِّ وأنواعُهُ وأسلوبُ كتابتِهِ، والخبرُ المكذوبُ وأثرُهُ في الفردِ والمجتمعِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الخبرُ الصحفيُّ", "en": "Press Release" },
+            { "ar": "الخبرُ المكذوبُ", "en": "Fake News" }
+          ]
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "تحليلُ الخبرِ الصحفيّ",
+          "title_en": "Analyzing the Press Release",
+          "main_idea_ar": "مفهومُ تحليلِ الخبرِ الصحفيِّ وخطواتُهُ، والأدواتُ التي يمكنُ استخدامُها في تحليلِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "وكالةُ الأنباءِ الأردنيةُ (بترا)", "en": "Jordan News Agency" },
+            { "ar": "سياسةُ النشرِ", "en": "Publication policy" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "التواصلُ الاجتماعيُّ",
+      "title_en": "Social Communication",
+      "general_idea_ar": "التعارفُ، والإصغاءُ، والخصوصيةُ الشخصيةُ مهاراتٌ أساسيةٌ في بناءِ العلاقاتِ الاجتماعيةِ والتفاعُلِ الإنسانيِّ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "مهاراتٌ اجتماعيّةٌ",
+          "title_en": "Social Skills",
+          "main_idea_ar": "مهاراتُ التعارفِ والتحدُّثِ والإصغاءِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التعارُفُ", "en": "Introduction" },
+            { "ar": "الإصغاءُ", "en": "Listening" }
+          ]
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "الخصوصيةُ الشخصيّةُ",
+          "title_en": "Personal Privacy",
+          "main_idea_ar": "مفهومُ الخصوصيةِ الشخصيّةِ وأهمّيّتُها وطرائقُ المحافظةِ عليها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الخصوصيةُ الشخصيةُ", "en": "Personal Privacy" },
+            { "ar": "الخصوصيةُ الرقميةُ", "en": "Digital Privacy" }
+          ]
+        }
+      ]
+    }
+  ]
+}

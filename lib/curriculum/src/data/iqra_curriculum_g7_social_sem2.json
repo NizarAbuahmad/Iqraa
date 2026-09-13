@@ -1,0 +1,362 @@
+{
+  "meta": {
+    "grade": "الصف السابع",
+    "grade_en": "Grade 7",
+    "subject": "الدراسات الاجتماعية",
+    "subject_en": "Social Studies",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الستُّ (السابعةُ إلى الثانيةَ عشرةَ) ودروسُها الواحدُ والعشرونَ من كتاب الطالب (الطبعةُ الأولى التجريبيةُ، 2023م، رقمُ الإيداعِ 2023/7/3778، ISBN 978-9923-41-531-3) في 2026-09-12، بقراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ وصفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF (140 صفحةً، قُرِئَتْ كاملةً).",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة الدراسات الاجتماعية - الصف السابع - الفصل الدراسي الثاني - المركز الوطني لتطوير المناهج (الطبعة الأولى التجريبية، 2023)"
+    },
+    "known_gaps": [
+      "لا دليلَ معلمٍ لهذه المادةِ إطلاقًا (periods وtotal_periods = null لكلِّ الوحداتِ والدروسِ)، وصندوقُ «ماذا سأتعلَّمُ؟» في افتتاحيةِ كلِّ وحدةٍ يسردُ عناوينَ الدروسِ لا نتاجاتِ تعلُّمٍ مُرقَّمةً؛ وصندوقُ «الفكرةُ الرئيسةُ» في افتتاحيةِ كلِّ درسٍ يصوغُ غرضًا عامًّا واحدًا لا نتاجاتٍ قابلةً للقياسِ، فحقلُ objectives فارغٌ عمدًا لكلِّ دروسِ هذا الملفِّ — فجوةٌ متوقَّعةٌ على مستوى المادةِ كلِّها (تكرَّرَتْ في كلِّ ملفٍّ آخرَ لهذه المادةِ في هذه الدفعةِ)، وليست خاصّةً بهذا الفصلِ.",
+      "صندوقُ «مهاراتِ التعلُّمِ» الظاهرُ في هامشِ كلِّ درسٍ (مثل: استخلاصُ النتائجِ، التصنيفُ، السببُ والنتيجةُ) لم يُنقَلْ لأنّه يسمّي مهاراتٍ عامّةً لا نتاجاتِ تعلُّمٍ خاصّةً بمحتوى الدرسِ.",
+      "بعضُ مصطلحاتِ وحدةِ «الحضارةُ الإسلاميةُ» (الخلافةُ، العهدةُ العُمَريّةُ، الشيعةُ، الخوارجُ) لا تحمِلُ مقابلًا إنجليزيًّا مطبوعًا في صندوقِ «المفاهيم والمصطلحات» بخلافِ بقيّةِ مصطلحاتِ الكتابِ، فتُرِكَ حقلُ en فارغًا لها تحديدًا (وليس لعدمِ محاولةِ الترجمةِ)."
+    ]
+  },
+  "units": [
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "أنا والإعلامُ",
+      "title_en": "Me and the Media",
+      "general_idea_ar": "يُعدُّ الإعلامُ ركيزةً أساسيّةً في حياةِ الأفرادِ والمجتمعاتِ، فهُوَ أداةٌ قويّةٌ لتحقيقِ التواصلِ بينَ الأفرادِ والمجتمعِ، ونقلِ المعلوماتِ والمعرفةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "المُحتوى الإعلاميُّ",
+          "title_en": "Media Content",
+          "main_idea_ar": "التعرّفُ إلى مفهومِ المُحتوى الإعلاميِّ، وآليّةِ عملِ وسائلِ الإعلامِ ومبادئِها الأخلاقيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المُحتوى الإعلاميُّ", "en": "Media Content" }
+          ]
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "التضليلُ الإعلاميُّ",
+          "title_en": "Media Misinformation",
+          "main_idea_ar": "التعرّفُ إلى مفهومِ التضليلِ الإعلاميِّ، وأساليبِه، وطرائقِ مواجهتِه.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التضليلُ الإعلاميُّ", "en": "Media Misinformation" },
+            { "ar": "التفكيرُ الناقدُ", "en": "Critical Thinking" }
+          ]
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "الشائعاتُ",
+          "title_en": "Rumours",
+          "main_idea_ar": "التعرّفُ إلى مفهومِ الشائعاتِ، وعناصرِها، وأسبابِها، وآثارِها في الفردِ والمجتمعِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الشائعاتُ", "en": "Rumours" }
+          ]
+        },
+        {
+          "id": "u7_l4",
+          "order": 4,
+          "title_ar": "وسائلُ التواصلِ الاجتماعيِّ",
+          "title_en": "Social Media",
+          "main_idea_ar": "التعرّفُ إلى مفهومِ وسائلِ التواصلِ الاجتماعيِّ وأهمّيّتِها، والمخاطرِ المُتعلِّقةِ بها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "وسائلُ التواصلِ الاجتماعيِّ", "en": "Social Media" },
+            { "ar": "الجرائمُ الإلكترونيةُ", "en": "Cyber Crimes" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "السُّلطةُ والحُكمُ",
+      "title_en": "Authority and Governance",
+      "general_idea_ar": "يقومُ النظامُ السياسيُّ الأردنيُّ على مبدإِ الفصلِ بينَ السُّلطاتِ الثلاثِ: التنفيذيّةِ والتشريعيّةِ والقضائيّةِ، وتعزيزِ مبدإِ سيادةِ القانونِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "تطوُّرُ السُّلُطاتِ الدستوريّةِ في الأُردنِّ",
+          "title_en": "Development of the Constitutional Authorities in Jordan",
+          "main_idea_ar": "التعرّفُ إلى عواملِ تطوُّرِ السُّلُطاتِ الدستوريّةِ في الأردنِّ، وإدراكِ العلاقةِ بينَ المواطنِ والسُّلطةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "السُّلطةُ", "en": "Authority" },
+            { "ar": "مجلسُ الأُمّةِ", "en": "Parliament" }
+          ]
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "سِيادةُ القانونِ",
+          "title_en": "Rule of Law",
+          "main_idea_ar": "التعرّفُ إلى مفهومِ سِيادةِ القانونِ، وآثارِ القانونِ في الفردِ والمجتمعِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "سِيادةُ القانونِ", "en": "Rule of Law" }
+          ]
+        },
+        {
+          "id": "u8_l3",
+          "order": 3,
+          "title_ar": "النزاهةُ والشفافيّةُ",
+          "title_en": "Integrity and Transparency",
+          "main_idea_ar": "التعرّفُ إلى مفهومَي النزاهةِ والشفافيّةِ، وأهمّيّتِهما ومؤشِّراتِهما.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "النزاهةُ والشفافيّةُ", "en": "Integrity and Transparency" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_ar": "نَحيا معًا",
+      "title_en": "We Live Together",
+      "general_idea_ar": "تعيشُ المجتمعاتُ الإنسانيّةُ في تغيُّرٍ مستمرٍّ، وترتقي بالتسامحِ ونبذِ العنفِ، وتتطوَّرُ بالمساواةِ وعدمِ التمييزِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_ar": "التسامُحُ ونبذُ التعصُّبِ",
+          "title_en": "Tolerance and Rejecting Fanaticism",
+          "main_idea_ar": "التعرّفُ إلى مفهومِ التسامُحِ ونبذِ التعصُّبِ والعنفِ بأشكالِهما المختلفةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التسامُحُ", "en": "Tolerance" },
+            { "ar": "التعصُّبُ", "en": "Fanaticism" }
+          ]
+        },
+        {
+          "id": "u9_l2",
+          "order": 2,
+          "title_ar": "المساواةُ وعدمُ التمييزِ",
+          "title_en": "Equality and Non-Discrimination",
+          "main_idea_ar": "التعرّفُ إلى مفهومِ المساواةِ، وصُوَرِ تطبيقِها في الأسرةِ والمدرسةِ والمجتمعِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المساواةُ", "en": "Equality" },
+            { "ar": "التمييزُ", "en": "Discrimination" }
+          ]
+        },
+        {
+          "id": "u9_l3",
+          "order": 3,
+          "title_ar": "التغيُّرُ الاجتماعيُّ",
+          "title_en": "Social Change",
+          "main_idea_ar": "معرفةُ مفهومِ التغيُّرِ الاجتماعيِّ، وعواملِه، ونتائجِه.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التغيُّرُ الاجتماعيُّ", "en": "Social Change" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u10",
+      "number": 10,
+      "title_ar": "رِحلةٌ في وَطني",
+      "title_en": "A Journey in My Homeland",
+      "general_idea_ar": "التعرّفُ إلى أبرزِ المعالمِ التاريخيّةِ والسياحيّةِ في وَطني.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u10_l1",
+          "order": 1,
+          "title_ar": "رِحلةٌ في محافظةِ الكركِ",
+          "title_en": "A Journey in Karak Governorate",
+          "main_idea_ar": "التعرّفُ إلى المواقعِ السياحيّةِ والتاريخيّةِ في محافظةِ الكركِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "قلعةُ الكركِ", "en": "Karak Castle" },
+            { "ar": "محميةُ الموجبِ", "en": "Mujib Reserve" }
+          ]
+        },
+        {
+          "id": "u10_l2",
+          "order": 2,
+          "title_ar": "رِحلةٌ في محافظةِ الزرقاءِ",
+          "title_en": "A Journey in Zarqa Governorate",
+          "main_idea_ar": "التعرّفُ إلى المواقعِ الأثريّةِ والتاريخيّةِ في محافظةِ الزرقاءِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "محميةُ الشُّومَريِّ", "en": "Al-Shaumary Reserve" },
+            { "ar": "محميةُ الأزرقِ المائيةُ", "en": "Azraq Wetland Reserve" }
+          ]
+        },
+        {
+          "id": "u10_l3",
+          "order": 3,
+          "title_ar": "رِحلةٌ في محافظةِ جرشَ",
+          "title_en": "A Journey in Jerash Governorate",
+          "main_idea_ar": "التعرّفُ إلى المواقعِ السياحيّةِ والتاريخيّةِ في محافظةِ جرشَ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "محميةُ ديبِّينَ", "en": "Dibbeen Forest Reserve" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u11",
+      "number": 11,
+      "title_ar": "الحضارةُ الإسلاميةُ",
+      "title_en": "The Islamic Civilization",
+      "general_idea_ar": "معرفةُ الأحداثِ التاريخيّةِ والإنجازاتِ الحضاريّةِ في العصرَينِ الراشديِّ والأمويِّ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list where a printed English gloss exists — four terms here (الخلافة، العهدة العمرية، الشيعة، الخوارج) have none printed, so en is left empty for them; no measurable objectives printed, so objectives is empty for every lesson; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u11_l1",
+          "order": 1,
+          "title_ar": "عهدُ الخُلفاءِ الراشدينَ",
+          "title_en": "The Era of the Rightly Guided Caliphs",
+          "main_idea_ar": "التعرّفُ إلى أهمِّ الأحداثِ التاريخيّةِ في عهدِ الخُلفاءِ الراشدينَ، وبيانُ دورِهم في نشرِ الإسلامِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الخلافةُ", "en": "" },
+            { "ar": "العُهدةُ العُمَريّةُ", "en": "" }
+          ]
+        },
+        {
+          "id": "u11_l2",
+          "order": 2,
+          "title_ar": "الدولةُ الأمويّةُ (النشأةُ والتوسُّعُ)",
+          "title_en": "The Umayyad State (Founding and Expansion)",
+          "main_idea_ar": "بيانُ عواملِ قوّةِ الدولةِ الأمويّةِ، وأسبابِ توسُّعِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "وليُّ العهدِ", "en": "Crown Prince" }
+          ]
+        },
+        {
+          "id": "u11_l3",
+          "order": 3,
+          "title_ar": "الدولةُ الأمويّةُ (الإنجازاتُ الحضاريّةُ)",
+          "title_en": "The Umayyad State (Civilizational Achievements)",
+          "main_idea_ar": "التعرّفُ إلى أهمِّ الإنجازاتِ الحضاريّةِ للدولةِ الأمويّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الإسطرلابُ", "en": "Astrolabe" },
+            { "ar": "المَنجَنيقُ", "en": "Catapult" }
+          ]
+        },
+        {
+          "id": "u11_l4",
+          "order": 4,
+          "title_ar": "نهايةُ الدولةِ الأمويّةِ",
+          "title_en": "The End of the Umayyad State",
+          "main_idea_ar": "التعرّفُ إلى عواملِ ضعفِ الدولةِ الأمويّةِ وأسبابِ سقوطِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الشيعةُ", "en": "" },
+            { "ar": "الخوارجُ", "en": "" }
+          ]
+        },
+        {
+          "id": "u11_l5",
+          "order": 5,
+          "title_ar": "المصادرُ التاريخيّةُ الأوّليّةُ والثانويّةُ",
+          "title_en": "Primary and Secondary Historical Sources",
+          "main_idea_ar": "التمييزُ بينَ المصادرِ التاريخيّةِ الأوّليّةِ والثانويّةِ، وإتقانُ مهارةِ تحليلِ النصوصِ التاريخيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المصادرُ الأوّليّةُ", "en": "Primary Sources" },
+            { "ar": "المصادرُ الثانويّةُ", "en": "Secondary Sources" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u12",
+      "number": 12,
+      "title_ar": "السُّكّانُ في الأُردنِّ",
+      "title_en": "Population in Jordan",
+      "general_idea_ar": "التعرّفُ إلى الخصائصِ العامّةِ للسُّكّانِ في الأردنِّ، منْ حيثُ النموُّ والتوزُّعُ السكّانيُّ والتركيبُ العُمريُّ والنوعيُّ، والعواملُ المؤثِّرةُ فيها.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u12_l1",
+          "order": 1,
+          "title_ar": "النموُّ السكّانيُّ في الأُردنِّ",
+          "title_en": "Population Growth in Jordan",
+          "main_idea_ar": "التعرّفُ إلى مفهومِ النموِّ السكّانيِّ وأسبابِه.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "النموُّ السكّانيُّ", "en": "Population Growth" },
+            { "ar": "الزيادةُ الطبيعيةُ", "en": "Natural Increase" },
+            { "ar": "الهجرةُ", "en": "Immigration" }
+          ]
+        },
+        {
+          "id": "u12_l2",
+          "order": 2,
+          "title_ar": "التوزُّعُ السكّانيُّ في الأُردنِّ",
+          "title_en": "Population Distribution in Jordan",
+          "main_idea_ar": "التعرّفُ إلى التوزُّعِ السكّانيِّ في الأُردنِّ، والعواملِ المؤثِّرةِ فيه.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "توزُّعُ السكّانِ", "en": "Population Distribution" },
+            { "ar": "الكثافةُ السكّانيةُ", "en": "Population Density" }
+          ]
+        },
+        {
+          "id": "u12_l3",
+          "order": 3,
+          "title_ar": "التركيبُ العُمريُّ والتركيبُ النوعيُّ للسكّانِ في الأُردنِّ",
+          "title_en": "Age and Sex Structure of the Population in Jordan",
+          "main_idea_ar": "التعرّفُ إلى التركيبِ العُمريِّ والتركيبِ النوعيِّ للسكّانِ في الأُردنِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التركيبُ العُمريُّ", "en": "Age Structure" },
+            { "ar": "التركيبُ النوعيُّ", "en": "Sex Structure" },
+            { "ar": "الهرمُ السكّانيُّ", "en": "Population Pyramid" }
+          ]
+        }
+      ]
+    }
+  ]
+}

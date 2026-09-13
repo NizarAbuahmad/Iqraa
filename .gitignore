@@ -63,6 +63,14 @@ __pycache__/
 knowledge-base/**/support-pdfs/
 knowledge-base/**/*.pdf
 
+# Figure contact sheets. `extract_book_figures.py` / `extract_book_photos.py`
+# write one `_review.png` per book for the human pass that decides which crops
+# to keep, and nothing reads them afterwards — not `index.json`, not
+# `gen_book_figure_assets.mjs`, not the app. Thirty of them were committed and
+# came to 30 MB, all of it bundled into the app. Re-run the extractor when you
+# need one again.
+knowledge-base/**/figures/**/_review.png
+
 # Replit
 .cache/
 .local/

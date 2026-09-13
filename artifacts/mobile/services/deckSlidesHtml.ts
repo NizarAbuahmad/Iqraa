@@ -69,11 +69,35 @@ function deckHeader(title: string, accent: string, fallbackGlyph: string): strin
       </div>`;
 }
 
-/** Full-bleed photo + dark gradient, or a flat accent panel with no photo — used by both the title and divider slides. */
-function deckHeroLayer(mediaUrl: string | undefined): string {
+/**
+ * Full-bleed photo + dark gradient, or a flat accent panel with no photo — used
+ * by both the title and divider slides.
+ *
+ * `alt` used to be empty here, which told a screen reader the photo carried no
+ * meaning. The caption is the best description we hold, so it goes in.
+ */
+function deckHeroLayer(mediaUrl: string | undefined, mediaCaption?: string): string {
   if (!mediaUrl) return '';
-  return `<img class="deck-hero-img" src="${mediaUrl.replace(/"/g, '&quot;')}" alt="" />
+  return `<img class="deck-hero-img" src="${mediaUrl.replace(/"/g, '&quot;')}" alt="${esc(mediaCaption ?? '')}" />
       <div class="deck-hero-gradient"></div>`;
+}
+
+/**
+ * The photo credit, for the two slide types that render a photo full-bleed.
+ *
+ * A licence condition, not decoration: Unsplash requires photographer
+ * attribution, CC-BY requires it by name, VOA asks for it. This exporter
+ * carried `mediaCaption` to the hero slides and then drew nothing, so every
+ * hero photo reached the PDF uncredited.
+ *
+ * Emitted as a flex child between the content and the footer rather than
+ * absolutely positioned above it: a long credit — PhET's required string is
+ * ~100 characters — wraps to a second line, and a fixed offset chosen to clear
+ * a 30px footer stops clearing it the moment that happens.
+ */
+function deckHeroCredit(mediaUrl: string | undefined, mediaCaption?: string): string {
+  if (!mediaUrl || !mediaCaption) return '';
+  return `<div class="deck-hero-credit">${esc(mediaCaption)}</div>`;
 }
 
 /**
@@ -124,7 +148,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   const titleSlide = (slide: ActivitySlide, num: number) => {
     const [meta, ...rest] = slide.content.split('\n\n');
     return `<div class="deck-slide deck-title-slide${slide.mediaUrl ? ' deck-on-photo' : ''}">
-      ${deckHeroLayer(slide.mediaUrl)}
+      ${deckHeroLayer(slide.mediaUrl, slide.mediaCaption)}
       <div class="deck-title-content">
         <div class="deck-title-badge">IQRA</div>
         <h1 class="deck-title-main">${esc(slide.title)}</h1>
@@ -132,17 +156,19 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         ${meta ? `<div class="deck-title-meta">${esc(meta)}</div>` : ''}
         ${rest.length ? `<div class="deck-title-summary">${esc(rest.join(' '))}</div>` : ''}
       </div>
+      ${deckHeroCredit(slide.mediaUrl, slide.mediaCaption)}
       ${footer(num)}</div>`;
   };
 
   const dividerSlide = (slide: ActivitySlide, num: number) => {
     const accent = deckSlideAccent('divider');
     return `<div class="deck-slide deck-divider-slide" style="${slide.mediaUrl ? '' : `background:${accent}`}">
-      ${deckHeroLayer(slide.mediaUrl)}
+      ${deckHeroLayer(slide.mediaUrl, slide.mediaCaption)}
       <div class="deck-divider-content">
         <h1 class="deck-divider-title">${esc(slide.title)}</h1>
         ${slide.content ? `<div class="deck-divider-subtitle">${esc(slide.content)}</div>` : ''}
       </div>
+      ${deckHeroCredit(slide.mediaUrl, slide.mediaCaption)}
       ${footer(num)}</div>`;
   };
 
@@ -401,6 +427,10 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-title-slide { background:radial-gradient(circle at 30% 20%, ${DECK_BLOB}, transparent 60%), ${DECK_BG}; }
 .deck-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
 .deck-hero-gradient { position:absolute; inset:0; z-index:1; background:linear-gradient(180deg, rgba(13,13,20,0.35), rgba(13,13,20,0.92)); }
+/* A flow child above the footer, not an overlay pinned near it: PhET's required
+   credit is ~100 characters and wraps, and a fixed offset would stop clearing
+   the footer the moment it did. */
+.deck-hero-credit { position:relative; z-index:2; flex-shrink:0; text-align:center; padding:0 32px 8px; font-size:9px; line-height:1.5; color:rgba(255,255,255,0.72); }
 .deck-title-content { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px; text-align:center; }
 .deck-divider-slide { display:flex; flex-direction:column; }
 /* The projected deck sits on two low-contrast circles; pseudo-elements keep

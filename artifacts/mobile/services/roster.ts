@@ -172,9 +172,23 @@ export async function archiveClass(classId: string): Promise<void> {
 }
 
 /**
+ * The code this student currently has, or `null` when there is none.
+ *
+ * The server reports an expired code as no code, so a caller never has to ask
+ * whether what it is about to display would actually still work.
+ */
+export async function getClaimCode(
+  studentId: string,
+): Promise<{ claimCode: string | null; claimCodeExpiresAt: string | null }> {
+  const res = await apiFetch(`/students/${studentId}/claim-code`);
+  return readJson(res, 'Loading link code');
+}
+
+/**
  * Mints a fresh code so a parent or the student can link to this exact
  * roster row when they sign up — see services/messaging.ts. Regenerating
- * invalidates any code shared before.
+ * invalidates any code shared before, which is why the screen confirms first
+ * when `getClaimCode` says one is already live.
  */
 export async function generateClaimCode(
   studentId: string,
@@ -214,16 +228,38 @@ export interface JoinRosterEntry {
 
 /**
  * Reads the class behind a join code so the joiner can pick their own name.
- * Public — called from the signup screen before any account exists. A 404 here
- * is the normal answer for a per-student claim code, which names its own
- * student and needs no picker; callers should treat it as "not a class code"
- * rather than an error.
+ * Hits a public, unauthenticated server route (`GET /auth/join/:code` in
+ * auth.ts) even though every caller today — `claim-required.tsx`,
+ * `join-class.tsx` — already has a session; the route stays public because
+ * it's the one lookup a not-yet-authenticated screen could need again later.
+ * A 404 here is the normal answer for a per-student claim code, which names
+ * its own student and needs no picker; callers should treat it as "not a
+ * class code" rather than an error.
  */
 export async function lookupJoinCode(
   code: string,
 ): Promise<{ class: { name: string; nameAr: string }; students: JoinRosterEntry[] }> {
   const res = await apiFetch(`/auth/join/${encodeURIComponent(code)}`);
   return readJson(res, 'Opening class code');
+}
+
+/**
+ * Links the signed-in student/parent account to one more roster row — a
+ * second child, a second parent, or a second teacher's class. This is the
+ * only way a parent/student account ever claims a roster row: registration no
+ * longer accepts a code at all, so the mandatory first claim right after
+ * signup (`app/claim-required.tsx`) calls this exact function too. See
+ * `POST /auth/claim` in auth.ts.
+ */
+export async function claimRosterCode(
+  code: string,
+  studentId?: string,
+): Promise<{ studentId: string; relation: 'self' | 'guardian' }> {
+  const res = await apiFetch('/auth/claim', {
+    method: 'POST',
+    body: JSON.stringify({ claimCode: code, studentId }),
+  });
+  return readJson(res, 'Joining class');
 }
 
 /** Re-exported so screens have one roster import. Lives apart to stay testable. */

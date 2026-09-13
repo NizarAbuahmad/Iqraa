@@ -8,10 +8,14 @@ import {
   setOnRefreshFailed,
   getApiBaseUrl,
 } from '@/services/apiClient';
+import { fetchWithTimeout } from '@/services/fetchWithTimeout';
 import { setActiveLessonContextUser } from '@/services/lessonContext';
 import { setActiveMediaUser } from '@/services/lessonMedia';
 import { warmUpVerifier } from '@/services/ai/verifyMath';
-import { registerPushToken, unregisterPushToken } from '@/services/pushTokens';
+import { registerNotificationTapHandler, registerPushToken, unregisterPushToken } from '@/services/pushTokens';
+// Same package GoogleSignInButton uses — safe to import on web too, it ships
+// a `.web.js` stub so Metro never fails to resolve a native-only module.
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export type UserRole = 'teacher' | 'school_admin' | 'system_admin' | 'student' | 'parent';
 
@@ -27,6 +31,19 @@ export function isTeacherRole(role: UserRole | null | undefined): boolean {
   return !!role && TEACHER_ROLES.includes(role);
 }
 
+/**
+ * A student specifically, which is not the same as "not a teacher".
+ *
+ * `!isTeacherRole(...)` covers parents too, and the two want different things:
+ * a parent opens this app for messages about their child, a student opens it to
+ * study. Every student check used to be a hand-written `role === 'student'`
+ * literal in four files, which is how the landing screen ended up treating both
+ * roles alike.
+ */
+export function isStudentRole(role: UserRole | null | undefined): boolean {
+  return role === 'student';
+}
+
 export interface User {
   id: string;
   firstName: string;
@@ -36,7 +53,15 @@ export interface User {
   email: string;
   role: UserRole;
   preferredLanguage: 'en' | 'ar';
+  /** A public, stable R2 URL, or null to show initials. */
+  avatarUrl: string | null;
   createdAt: string;
+  /**
+   * Whether a parent/student account has claimed any roster row yet. Absent
+   * for a teacher (never applicable) — see `needsRosterClaim` in
+   * services/routeGating.ts, the gate this field exists for.
+   */
+  hasRosterLink?: boolean;
   // Legacy optional fields kept for profile screen compatibility
   phone?: string;
   school?: string;
@@ -53,28 +78,61 @@ export interface RegisterData {
   confirmPassword?: string;
   /** Defaults to 'teacher' server-side when omitted. */
   role?: 'teacher' | 'student' | 'parent';
-  /** Required when role is 'student' or 'parent' — see services/messaging.ts. */
-  claimCode?: string;
-  /** Which roster name was picked, when `claimCode` is a whole-class join code. A per-student code names its own student and ignores this. */
-  studentId?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (credential: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
-  logout: () => Promise<void>;
+  /**
+   * `signup` is only consulted if this credential mints a brand-new account
+   * (an existing user's role never changes here) — see the register screen's
+   * "Continue with Google" button, which used to ignore the role pill
+   * entirely and silently create a teacher.
+   */
+  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role'>) => Promise<void>;
+  /**
+   * Creates the account but does NOT sign in — a password account starts
+   * unverified and the server refuses login until `verifyEmail` succeeds.
+   * Returns the email the code was sent to, for the caller to carry to the
+   * verify screen (the trimmed/lowercased form the server actually used).
+   */
+  register: (data: RegisterData) => Promise<{ email: string }>;
+  /** Submits the 6-digit code from the verification email. Signs the user in on success, same as login. */
+  verifyEmail: (email: string, code: string) => Promise<void>;
+  /** Requests a fresh code for an unverified account. Always resolves — the server never confirms whether the email exists. */
+  resendVerification: (email: string) => Promise<void>;
+  /**
+   * Repoints a pending signup at a different address when the one typed at
+   * signup was wrong. Needs the password: the account has no session yet, so
+   * that is the only proof it belongs to whoever is asking. Returns the
+   * address the new code went to.
+   */
+  changeUnverifiedEmail: (email: string, password: string, newEmail: string) => Promise<{ email: string }>;
+  /**
+   * Always resolves when the request was accepted, whether or not that address
+   * has an account — the server refuses to say, so the UI must not imply it
+   * either (see the subtitle on the reset screen).
+   */
   forgotPassword: (email: string) => Promise<void>;
-  resetPassword: (token: string, password: string, confirmPassword: string) => Promise<void>;
+  resetPassword: (email: string, code: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
   updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
+  /** Throws with the server's own message (e.g. "too large", "not set up yet") on failure. */
+  uploadAvatar: (dataUrl: string) => Promise<void>;
+  removeAvatar: () => Promise<void>;
   /**
    * Irreversible. Pass `password` for an ordinary account, or `confirmEmail`
    * for a Google-only one — the server picks which it will accept based on
    * whether the account has a password hash at all, and refuses 401 otherwise.
    */
   deleteAccount: (proof: { password?: string; confirmEmail?: string }) => Promise<void>;
+  /**
+   * Flips `hasRosterLink` to true locally right after a successful
+   * `POST /auth/claim`, so the routing gate clears without a round trip to
+   * `/auth/me` just to learn something this call already knows.
+   */
+  markRosterClaimed: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -86,8 +144,10 @@ type ApiUser = {
   email: string;
   role: string;
   preferredLanguage: string;
+  avatarUrl?: string | null;
   createdAt: string;
   lastLogin?: string;
+  hasRosterLink?: boolean;
 };
 
 function toUser(apiUser: ApiUser): User {
@@ -100,7 +160,9 @@ function toUser(apiUser: ApiUser): User {
     role: apiUser.role as UserRole,
     preferredLanguage: (apiUser.preferredLanguage as 'en' | 'ar') ?? 'en',
     language: (apiUser.preferredLanguage as 'en' | 'ar') ?? 'en',
+    avatarUrl: apiUser.avatarUrl ?? null,
     createdAt: apiUser.createdAt,
+    hasRosterLink: apiUser.hasRosterLink,
     subjects: [],
     grades: [],
   };
@@ -126,6 +188,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       warmUpVerifier();
       void registerPushToken();
     }
+  }, [user?.id]);
+
+  /**
+   * Tapping a push opens the thread it names.
+   *
+   * Registered here, keyed on the signed-in user, rather than in the root
+   * layout: `/messaging/*` is not a public route, so a tap handled while
+   * signed out is one that route gating turns into a trip to the login
+   * screen, and the thread the notification named is gone. Keying it on
+   * `user?.id` also means a tap that cold-starts the app while signed out is
+   * still honoured — it lands once sign-in completes, rather than being
+   * swallowed by a handler that ran too early.
+   *
+   * The cleanup matters: without it, signing in and out repeatedly stacks
+   * listeners, and one tap would navigate once per accumulated listener.
+   */
+  useEffect(() => {
+    if (!user?.id) return;
+    return registerNotificationTapHandler();
   }, [user?.id]);
 
   // Register redirect callback so token-refresh failures can navigate to login
@@ -164,7 +245,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           try {
-            const res = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
+            // Needs the deadline more than anywhere else: `setIsLoading(false)`
+            // happens in this block's `finally`, and the splash now stays up
+            // until that flips.
+            const res = await fetchWithTimeout(`${getApiBaseUrl()}/auth/refresh`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ refreshToken }),
@@ -205,12 +289,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(toUser(data.user));
   }, []);
 
-  const loginWithGoogle = useCallback(async (credential: string) => {
+  const loginWithGoogle = useCallback(async (
+    credential: string,
+    signup?: Pick<RegisterData, 'role'>,
+  ) => {
     const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
       '/auth/google',
       {
         method: 'POST',
-        body: JSON.stringify({ credential }),
+        body: JSON.stringify({
+          credential,
+          role: signup?.role,
+        }),
       },
     );
 
@@ -226,10 +316,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Password must be at least 8 characters');
     if (payload.confirmPassword && payload.confirmPassword !== payload.password)
       throw new Error('Passwords do not match');
-    if (payload.role && payload.role !== 'teacher' && !payload.claimCode?.trim())
-      throw new Error('A class code is required');
 
-    const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
+    const data = await apiJson<{ email: string; message: string }>(
       '/auth/register',
       {
         method: 'POST',
@@ -240,14 +328,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           password: payload.password,
           confirmPassword: payload.confirmPassword,
           role: payload.role,
-          claimCode: payload.claimCode?.trim(),
-          studentId: payload.studentId,
         }),
+      },
+    );
+
+    return { email: data.email };
+  }, []);
+
+  const verifyEmail = useCallback(async (email: string, code: string) => {
+    const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
+      '/auth/verify-email',
+      {
+        method: 'POST',
+        body: JSON.stringify({ email: email.trim(), code: code.trim() }),
       },
     );
 
     await storeTokens(data.accessToken, data.refreshToken);
     setUser(toUser(data.user));
+  }, []);
+
+  const resendVerification = useCallback(async (email: string) => {
+    await apiJson('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim() }),
+    });
+  }, []);
+
+  const changeUnverifiedEmail = useCallback(
+    async (email: string, password: string, newEmail: string) => {
+      const data = await apiJson<{ email: string; message: string }>(
+        '/auth/change-unverified-email',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            email: email.trim(),
+            password,
+            newEmail: newEmail.trim(),
+          }),
+        },
+      );
+      return { email: data.email };
+    },
+    [],
+  );
+
+  const forgotPassword = useCallback(async (email: string) => {
+    await apiJson('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim() }),
+    });
+  }, []);
+
+  /**
+   * Deliberately does not sign the user in on success, unlike verifyEmail.
+   * The server ends every session the account had — including any an attacker
+   * held — and handing back a fresh one here would undo half of that.
+   */
+  const resetPassword = useCallback(async (email: string, code: string, password: string) => {
+    await apiJson('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim(), code: code.trim(), password }),
+    });
   }, []);
 
   const logout = useCallback(async () => {
@@ -261,27 +403,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Ignore errors — clear local state regardless
     }
+    try {
+      // The native SDK caches the last Google account and `signIn()` silently
+      // returns it on the next call, with no account picker — without this, a
+      // teacher can never sign up/in with a different Google account from the
+      // same device. Throws if Google was never configured on this device
+      // (password-only session), which is fine to ignore.
+      await GoogleSignin.signOut();
+    } catch {
+      // Ignore — device may never have used Google sign-in.
+    }
     await clearTokens();
     setUser(null);
-  }, []);
-
-  const forgotPassword = useCallback(async (email: string) => {
-    if (!email?.includes('@')) throw new Error('Valid email is required');
-    await apiJson('/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ email: email.trim() }),
-    });
-  }, []);
-
-  const resetPassword = useCallback(async (
-    token: string,
-    password: string,
-    confirmPassword: string,
-  ) => {
-    await apiJson('/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ token, password, confirmPassword }),
-    });
   }, []);
 
   const updateProfile = useCallback(async (data: {
@@ -294,6 +427,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify(data),
     });
     setUser(toUser(updated));
+  }, []);
+
+  const uploadAvatar = useCallback(async (dataUrl: string) => {
+    const { avatarUrl } = await apiJson<{ avatarUrl: string | null }>('/auth/users/avatar', {
+      method: 'POST',
+      body: JSON.stringify({ dataUrl }),
+    });
+    setUser(prev => (prev ? { ...prev, avatarUrl } : prev));
+  }, []);
+
+  const removeAvatar = useCallback(async () => {
+    await apiJson<{ avatarUrl: string | null }>('/auth/users/avatar', { method: 'DELETE' });
+    setUser(prev => (prev ? { ...prev, avatarUrl: null } : prev));
   }, []);
 
   const deleteAccount = useCallback(
@@ -310,11 +456,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: 'DELETE',
         body: JSON.stringify(proof),
       });
+      try {
+        // Same reason logout() does this — without it the native SDK still
+        // hands back the deleted account's session on the next sign-in.
+        await GoogleSignin.signOut();
+      } catch {
+        // Ignore — device may never have used Google sign-in.
+      }
       await clearTokens();
       setUser(null);
     },
     [],
   );
+
+  const markRosterClaimed = useCallback(() => {
+    setUser(u => (u ? { ...u, hasRosterLink: true } : u));
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -324,11 +481,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         loginWithGoogle,
         register,
-        logout,
+        verifyEmail,
+        resendVerification,
+        changeUnverifiedEmail,
         forgotPassword,
         resetPassword,
+        logout,
         updateProfile,
+        uploadAvatar,
+        removeAvatar,
         deleteAccount,
+        markRosterClaimed,
       }}
     >
       {children}

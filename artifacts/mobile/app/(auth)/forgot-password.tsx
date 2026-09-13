@@ -1,22 +1,36 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  KeyboardAvoidingView, Platform, Pressable, ScrollView,
+  StyleSheet, Text, View,
+} from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Ionicons } from '@expo/vector-icons';
 
+/**
+ * One screen, two steps, rather than two routed screens like register →
+ * verify-email. The address is already in hand after the first step, so a
+ * second route would exist only to carry it, and stepping back from the code
+ * to the address you just typed should not be a navigation event.
+ */
 export default function ForgotPasswordScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { forgotPassword } = useAuth();
+  const { forgotPassword, resetPassword } = useAuth();
+  const { t, isRTL } = useLanguage();
 
+  const [step, setStep] = useState<'email' | 'code'>('email');
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
 
   const handleSend = async () => {
@@ -25,14 +39,35 @@ export default function ForgotPasswordScreen() {
     try {
       await forgotPassword(email.trim());
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setSent(true);
+      setStep('code');
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(e.message ?? 'Something went wrong. Try again.');
+      setError(e.message ?? t('invalidVerificationCode'));
     } finally {
       setLoading(false);
     }
   };
+
+  const handleReset = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await resetPassword(email.trim(), code.trim(), password);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Straight to login rather than signing them in. The code proves they
+      // control the mailbox, not that they will remember the password they
+      // just chose — typing it once more is the cheapest confirmation there is.
+      router.replace('/(auth)/login');
+    } catch (e: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError(e.message ?? t('invalidVerificationCode'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const canSend = email.includes('@');
+  const canReset = /^\d{6}$/.test(code) && password.length >= 8;
 
   return (
     <KeyboardAvoidingView
@@ -40,57 +75,97 @@ export default function ForgotPasswordScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <Ionicons name="arrow-back" size={22} color={colors.foreground} />
+        <Pressable
+          onPress={() => (step === 'code' ? setStep('email') : router.replace('/(auth)/login'))}
+          style={[styles.back, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
+        >
+          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
 
-        <View style={[styles.iconWrap, { backgroundColor: colors.secondary, borderRadius: 40 }]}>
-          <Ionicons name="key-outline" size={32} color={colors.primary} />
+        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+          {step === 'email' ? t('forgotPasswordTitle') : t('resetPasswordTitle')}
+        </Text>
+        <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          {step === 'email' ? t('forgotPasswordSubtitle') : t('resetPasswordSubtitle', email.trim())}
+        </Text>
+
+        <View style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius * 1.5, borderColor: colors.border }]}>
+          {error ? (
+            <View style={[styles.banner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Text style={[styles.bannerText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text>
+            </View>
+          ) : null}
+
+          {step === 'email' ? (
+            <>
+              <Input
+                label={t('email')}
+                placeholder={t('emailPlaceholder')}
+                value={email}
+                onChangeText={setEmail}
+                leftIcon="mail-outline"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                isRTL={isRTL}
+                autoFocus
+              />
+              <Button
+                label={t('forgotPasswordSendButton')}
+                onPress={handleSend}
+                loading={loading}
+                disabled={!canSend}
+                fullWidth
+              />
+            </>
+          ) : (
+            <>
+              <Input
+                label={t('verificationCode')}
+                placeholder={t('verificationCodePlaceholder')}
+                value={code}
+                onChangeText={text => setCode(text.replace(/\D/g, '').slice(0, 6))}
+                leftIcon="key-outline"
+                keyboardType="number-pad"
+                maxLength={6}
+                isRTL={isRTL}
+                autoFocus
+              />
+              <Input
+                label={t('newPassword')}
+                placeholder={t('passwordPlaceholder')}
+                value={password}
+                onChangeText={setPassword}
+                leftIcon="lock-closed-outline"
+                secureTextEntry={!showPassword}
+                rightIcon={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                onRightIconPress={() => setShowPassword(v => !v)}
+                autoCapitalize="none"
+                isRTL={isRTL}
+              />
+              <Button
+                label={t('resetPasswordButton')}
+                onPress={handleReset}
+                loading={loading}
+                disabled={!canReset}
+                fullWidth
+              />
+              <Pressable onPress={handleSend} disabled={loading} style={styles.resendRow}>
+                <Text style={[styles.resendText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
+                  {t('resendCode')}
+                </Text>
+              </Pressable>
+            </>
+          )}
         </View>
-
-        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
-          Reset your password
-        </Text>
-        <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-          Enter your email address and we'll send you a reset link.
-        </Text>
-
-        {sent ? (
-          <View style={[styles.successBox, { backgroundColor: colors.success + '18', borderColor: colors.success + '44', borderRadius: colors.radius }]}>
-            <Ionicons name="checkmark-circle" size={22} color={colors.success} />
-            <Text style={[styles.successText, { color: colors.success, fontFamily: 'Cairo_500Medium' }]}>
-              Reset link sent! Check your inbox.
-            </Text>
-          </View>
-        ) : (
-          <>
-            {error ? (
-              <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius }]}>
-                <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular' }]}>{error}</Text>
-              </View>
-            ) : null}
-            <Input
-              label="Email address"
-              placeholder="you@school.edu.jo"
-              value={email}
-              onChangeText={setEmail}
-              leftIcon="mail-outline"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <Button label="Send Reset Link" onPress={handleSend} loading={loading} fullWidth />
-          </>
-        )}
-
-        <Pressable onPress={() => router.replace('/(auth)/login')} style={styles.backToLogin}>
-          <Text style={[styles.backToLoginText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
-            ← Back to sign in
-          </Text>
-        </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -98,13 +173,12 @@ export default function ForgotPasswordScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flexGrow: 1, paddingHorizontal: 24 },
-  back: { marginBottom: 24, width: 40 },
-  iconWrap: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  heading: { fontSize: 24, marginBottom: 8 },
-  sub: { fontSize: 14, lineHeight: 21, marginBottom: 28 },
-  errorBanner: { padding: 12, borderWidth: 1, marginBottom: 16 },
-  successBox: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, borderWidth: 1, marginBottom: 20 },
-  successText: { fontSize: 14, flex: 1 },
-  backToLogin: { marginTop: 24, alignSelf: 'center' },
-  backToLoginText: { fontSize: 14 },
+  back: { marginBottom: 20, width: 40 },
+  heading: { fontSize: 26, marginBottom: 6 },
+  sub: { fontSize: 14, marginBottom: 24 },
+  card: { padding: 24, borderWidth: 1, marginBottom: 24, gap: 16 },
+  banner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
+  bannerText: { flex: 1, fontSize: 13 },
+  resendRow: { alignItems: 'center', paddingVertical: 8 },
+  resendText: { fontSize: 14 },
 });

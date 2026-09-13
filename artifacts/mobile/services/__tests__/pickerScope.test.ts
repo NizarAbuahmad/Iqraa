@@ -1,11 +1,20 @@
 /**
  * The AI-tools pickers offer grade and subject as two independent lists, so a
- * teacher can land on a pair no book covers — الصف التاسع + اللغة الإنجليزية,
- * where english is in the MVP subject list for its Grade 10 books and SUBJECTS
- * claims grade-9 as well, but no Grade 9 English book was ever ingested.
- * Unlike the curriculum browser, that pair does not dead-end on an empty list:
- * the topic field is free text, so generation proceeded and invented a Grade 9
- * English paper with no curriculum behind it.
+ * teacher can land on a pair no book covers — الصف العاشر + التربية الرياضية،
+ * حيث joined physical-education MVP_SUBJECT_IDS on 2026-09-09 as a brand-new
+ * subject with only a Grade 9 book behind it, so SUBJECTS scopes it to
+ * grade-9 only but the picker still offers it against every MVP grade.
+ * Unlike the curriculum browser, that pair does not dead-end on an empty
+ * list: the topic field is free text, so generation would proceed and invent
+ * a Grade 10 paper with no curriculum behind it.
+ *
+ * The worked example has moved before — english, then islamic, then
+ * financial-literacy, then geography, then history, then civic education
+ * (each retired the same week its Grade 10 book arrived — see
+ * `subjectGradeCoverage.test.ts`'s `KNOWN_BOOKLESS`). That churn is the
+ * allowlist doing its job — a pair gaining a book is meant to fail a test and
+ * make someone look, and each subject losing this slot the day its Grade 10
+ * book arrives is expected, not a regression.
  *
  * The list itself cannot shrink to fix this — `getPickerSubjects()` positions
  * are persisted as bare `subjectIdx` values in formState and route URLs, and
@@ -54,11 +63,11 @@ describe('picker scope — grade/subject pairs with no book', () => {
 
   // The reported case, pinned by name: it is the PAIR that fails, so the same
   // subject must stay pickable on the grade whose book does exist.
-  it('hides english for grade-9 but not for grade-10', () => {
-    const idx = getPickerSubjects().findIndex(s => s.id === 'english');
-    assert.ok(idx >= 0, 'english is expected in the MVP picker list');
-    assert.equal(subjectsWithoutCurriculum('grade-9')[idx], true);
-    assert.equal(subjectsWithoutCurriculum('grade-10')[idx], false);
+  it('hides physical education for grade-10 but not for grade-9', () => {
+    const idx = getPickerSubjects().findIndex(s => s.id === 'physical-education');
+    assert.ok(idx >= 0, 'physical-education is expected in the MVP picker list');
+    assert.equal(subjectsWithoutCurriculum('grade-10')[idx], true);
+    assert.equal(subjectsWithoutCurriculum('grade-9')[idx], false);
   });
 
   it('leaves the grades own subjects alone', () => {
@@ -82,12 +91,18 @@ describe('picker scope — grade/subject pairs with no book', () => {
     const subjects = getPickerSubjects();
     assert.ok(subjects.length >= 3, 'need a few subjects for this to mean anything');
 
-    // The mask is synthetic on purpose. Real data hides only a TRAILING run —
-    // grade-9 keeps mathematics at index 0 and drops everything after it — so a
-    // mask taken from the catalogue cannot tell a position-preserving filter
-    // from one that re-indexes 0..n: both produce [0]. Hiding the FIRST entry
-    // is the case that separates them, and it is the case a Grade 9 book for
-    // chemistry would create for real.
+    // The mask is synthetic on purpose. When this was written, real data hid
+    // only a TRAILING run — grade-9 kept mathematics at index 0 and dropped
+    // everything after it — so a catalogue mask could not tell a
+    // position-preserving filter from one that re-indexes 0..n: both produce
+    // [0]. Hiding the FIRST entry is the case that separates them.
+    //
+    // As of 2026-09-10 the real bookless mask still lives on grade-10 rather
+    // than grade-9, though the gaps there keep closing — geography, history
+    // and civic education all gained Grade 10 books. The synthetic mask
+    // stays regardless —
+    // it pins the property directly instead of depending on the catalogue
+    // continuing to supply an interesting shape.
     const hidden = subjects.map((_, i) => i === 0);
     const visible = subjects
       .map((s, i) => ({ value: i, id: s.id }))
@@ -132,20 +147,23 @@ describe('picker scope — the generate-time backstop', () => {
   // The pickers grey the pair out, but gradeIdx/subjectIdx also arrive from
   // formState and bookmarked URLs written before they did.
   it('names the offending pair so the message can say which', () => {
-    const scope = scopeWithoutCurriculum('grade-9', 'english', 'ar');
-    assert.ok(scope, 'grade-9 + english must be refused');
-    assert.equal(scope.subject, 'اللغة الإنجليزية');
-    assert.equal(scope.grade, 'الصف التاسع');
+    const scope = scopeWithoutCurriculum('grade-10', 'physical-education', 'ar');
+    assert.ok(scope, 'grade-10 + physical-education must be refused');
+    assert.equal(scope.subject, 'التربية الرياضية');
+    assert.equal(scope.grade, 'الصف العاشر');
   });
 
   it('answers in the display language', () => {
-    const scope = scopeWithoutCurriculum('grade-9', 'english', 'en');
+    const scope = scopeWithoutCurriculum('grade-10', 'physical-education', 'en');
     assert.ok(scope);
-    assert.equal(scope.subject, 'English');
+    assert.equal(scope.subject, 'Physical Education');
   });
 
   it('passes a pair that has a book', () => {
-    assert.equal(scopeWithoutCurriculum('grade-10', 'english', 'ar'), null);
+    assert.equal(scopeWithoutCurriculum('grade-9', 'physical-education', 'ar'), null);
+    assert.equal(scopeWithoutCurriculum('grade-10', 'geography', 'ar'), null);
+    assert.equal(scopeWithoutCurriculum('grade-10', 'history', 'ar'), null);
+    assert.equal(scopeWithoutCurriculum('grade-10', 'civic-education', 'ar'), null);
     assert.equal(scopeWithoutCurriculum('grade-10', 'mathematics', 'ar'), null);
     assert.equal(scopeWithoutCurriculum('grade-9', 'mathematics', 'ar'), null);
   });
@@ -173,7 +191,7 @@ describe('picker scope — the generate-time backstop', () => {
   // Never block on something the pickers cannot even express — an unknown id
   // is a routing bug, and refusing it here would only mask it.
   it('stays out of the way for ids the pickers do not carry', () => {
-    assert.equal(scopeWithoutCurriculum('grade-99', 'english', 'ar'), null);
+    assert.equal(scopeWithoutCurriculum('grade-99', 'islamic', 'ar'), null);
     assert.equal(scopeWithoutCurriculum('grade-10', 'not-a-subject', 'ar'), null);
   });
 });

@@ -4,8 +4,11 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as Updates from 'expo-updates';
+import Constants from 'expo-constants';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { versionLabel } from '@/services/versionLabel';
 
 export default function SettingsScreen() {
   const colors = useColors();
@@ -20,6 +23,16 @@ export default function SettingsScreen() {
   };
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+
+  // Read inline rather than in a hook or service: `pnpm test` is bare
+  // `node --test` with no RN transform, so a module importing expo-updates at
+  // module scope cannot be loaded by the runner. Only the formatting is
+  // extracted (services/versionLabel.ts), and that part is tested.
+  const buildLabel = versionLabel({
+    appVersion: Constants.expoConfig?.version,
+    updateId: Updates.updateId,
+    channel: Updates.channel,
+  });
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -99,7 +112,7 @@ export default function SettingsScreen() {
             label={t('version')}
             isRTL={isRTL}
             colors={colors}
-            right={<Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13 }]}>1.0.0</Text>}
+            right={<Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13 }]}>{buildLabel}</Text>}
           />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <SettingRow

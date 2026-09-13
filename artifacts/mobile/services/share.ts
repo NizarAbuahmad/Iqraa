@@ -162,6 +162,42 @@ export async function exportAsPDF(html: string, filename: string): Promise<void>
   await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: filename });
 }
 
+// ─── Remote image download (chat attachments) ────────────────────────────────
+
+/**
+ * Saves an already-hosted image (a chat attachment's R2 URL) to the device.
+ * Same web-vs-native split as `exportAsWord` above: on web there is no file
+ * system to write into, so a fetched blob becomes a synthetic `<a download>`
+ * click; natively the blob is written to cache and handed to the share sheet,
+ * which is where "Save Image" actually lives on both iOS and Android.
+ */
+export async function saveRemoteImage(url: string, filename: string): Promise<void> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to download image (${res.status})`);
+  const blob = await res.blob();
+
+  if (Platform.OS === 'web') {
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(objectUrl); }, 1000);
+    return;
+  }
+
+  const b64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve((reader.result as string).split(',')[1] ?? '');
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+  const file = new File(Paths.cache, filename);
+  file.write(b64, { encoding: 'base64' });
+  await Sharing.shareAsync(file.uri, { mimeType: blob.type || 'image/jpeg', dialogTitle: filename });
+}
+
 // ─── Word (.docx) export ──────────────────────────────────────────────────────
 
 export async function exportAsWord(

@@ -18,10 +18,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { countBlanks, showBlanks } from '@/services/evaluationBlanks';
 import { isolateForeignRuns } from '@/services/mathRender';
+import { blobToDataUrl, formatDuration } from '@/services/readAloudRecorder';
+import { useReadAloudRecorder } from '@/hooks/useReadAloudRecorder';
+import { uploadReadAloud } from '@/services/studentExam';
 import { setBlankAt, setMatchPair, type MatchPair, type StudentResponse } from '@/services/studentAnswers';
 import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
+
+/** Mirrors MAX_TAKES_PER_QUESTION in api-server's lib/readAloudUpload.ts. */
+const MAX_TAKES = 3;
 
 interface Shared {
   body: Record<string, unknown>;
@@ -152,7 +158,145 @@ export function FillBlankInput({
   );
 }
 
+/**
+ * Read a passage aloud, record it, hear it back.
+ *
+ * Web only, and that is a product fact rather than a temporary gap: this app
+ * ships with `microphonePermission: false` on both native platforms, so there
+ * is no microphone to ask for. Students open the exam link in a browser, which
+ * is where this works; native shows the fallback below rather than a control
+ * that would fail on tap.
+ *
+ * The passage renders LTR inside an otherwise RTL screen. It is English, and
+ * an English sentence laid out right-to-left is not a styling nitpick — it is
+ * unreadable, and this question asks the student to read it aloud.
+ *
+ * The server owns the transcript. What comes back is displayed so the student
+ * can see what was heard and decide whether to spend one of their remaining
+ * takes; the score is deliberately not returned, because releasing a mark here
+ * would tell them their result before the teacher has the paper.
+ */
+export function ReadAloudInput({
+  body,
+  response,
+  questionId,
+  token,
+  onSaved,
+  colors,
+  t,
+}: {
+  body: Record<string, unknown>;
+  response: StudentResponse;
+  questionId: string;
+  token: string;
+  onSaved: (response: StudentResponse) => void;
+  colors: ReturnType<typeof useColors>;
+  t: (key: TranslationKey, ...args: string[]) => string;
+}) {
+  const passage = typeof body['passage'] === 'string' ? body['passage'] : '';
+  const transcript = typeof response['transcript'] === 'string' ? response['transcript'] : '';
+  const takes = typeof response['takes'] === 'number' ? response['takes'] : 0;
+  const takesLeft = Math.max(0, MAX_TAKES - takes);
+
+  // The recorder, the timer and the 120-second ceiling come from the shared
+  // hook — the practice card on the lesson page runs the same machine, and two
+  // copies of that ceiling would eventually disagree about what the server
+  // accepts. What stays local is the only part that differs: this screen
+  // uploads against a question and keeps the audio.
+  const recorder = useReadAloudRecorder({
+    micErrorMessage: t('readAloudNoMic'),
+    failureMessage: t('readAloudFailed'),
+    onRecorded: async (audio, durationMs) => {
+      const dataUrl = await blobToDataUrl(audio);
+      const result = await uploadReadAloud(token, questionId, dataUrl, durationMs);
+      onSaved({ audioKey: 'saved', transcript: result.transcript, durationMs, takes: takes + 1 });
+    },
+  });
+  const { phase, elapsedMs, error, supported } = recorder;
+
+  return (
+    <View style={{ marginTop: 12, gap: 12 }}>
+      {/* The passage. LTR and left-aligned regardless of the screen's
+          direction, because it is English and this is the thing being read. */}
+      <View style={[styles.passage, { borderColor: colors.border, backgroundColor: colors.muted }]}>
+        <Text
+          style={{
+            color: colors.foreground,
+            fontSize: 17,
+            lineHeight: 30,
+            textAlign: 'left',
+            writingDirection: 'ltr',
+          }}
+        >
+          {passage}
+        </Text>
+      </View>
+
+      {!supported ? (
+        <Text style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 22 }}>
+          {t('readAloudWebOnly')}
+        </Text>
+      ) : takesLeft <= 0 ? (
+        <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>{t('readAloudNoTakesLeft')}</Text>
+      ) : (
+        <Pressable
+          onPress={recorder.toggle}
+          disabled={phase === 'working'}
+          style={[
+            styles.recordBtn,
+            {
+              backgroundColor: phase === 'recording' ? '#C2410C' : ACCENT,
+              opacity: phase === 'working' ? 0.6 : 1,
+            },
+          ]}
+        >
+          <Ionicons
+            name={phase === 'recording' ? 'stop' : phase === 'working' ? 'hourglass' : 'mic'}
+            size={20}
+            color="#fff"
+          />
+          <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            {phase === 'recording'
+              ? t('readAloudStop', formatDuration(elapsedMs))
+              : phase === 'working'
+                ? t('readAloudUploading')
+                : t('readAloudStart')}
+          </Text>
+        </Pressable>
+      )}
+
+      {!!error && <Text style={{ color: '#B91C1C', fontSize: 13 }}>{error}</Text>}
+
+      {!!transcript && (
+        <View style={{ gap: 4 }}>
+          <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{t('readAloudHeard')}</Text>
+          <Text
+            style={{ color: colors.foreground, fontSize: 15, textAlign: 'left', writingDirection: 'ltr' }}
+          >
+            {transcript}
+          </Text>
+        </View>
+      )}
+
+      {takes > 0 && takesLeft > 0 && (
+        <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
+          {t('readAloudTakesLeft', String(takesLeft))}
+        </Text>
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  passage: { borderWidth: 1, borderRadius: 12, padding: 16 },
+  recordBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
   matchRow: { alignItems: 'center', gap: 8 },
   matchPicker: { alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, minWidth: 120, justifyContent: 'space-between' },
   matchOptions: { borderWidth: 1, borderRadius: 8, marginTop: 4, overflow: 'hidden' },

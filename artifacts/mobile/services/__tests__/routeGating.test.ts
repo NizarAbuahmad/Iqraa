@@ -6,11 +6,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isEntryRoute, isNonTeacherRoute, isPublicRoute } from '../routeGating.ts';
+import { isEntryRoute, isNonTeacherRoute, isPublicRoute, needsRosterClaim } from '../routeGating.ts';
 
 describe('isEntryRoute', () => {
   it('treats the auth and onboarding routes as entries', () => {
-    for (const p of ['/login', '/register', '/forgot-password', '/onboarding']) {
+    for (const p of ['/login', '/register', '/onboarding']) {
       assert.equal(isEntryRoute(p), true, p);
     }
   });
@@ -96,7 +96,13 @@ describe('isNonTeacherRoute', () => {
       '/messaging/abc-123',
       '/curriculum',
       '/curriculum/lesson-detail',
+      // The library. Reachable only because this allowlist matches by prefix —
+      // pinned here so converting it to exact matching fails loudly instead of
+      // quietly ejecting a student to /notifications.
+      '/curriculum/resources',
       '/profile',
+      '/join-class',
+      '/claim-required',
     ]) {
       assert.equal(isNonTeacherRoute(p), true, p);
     }
@@ -141,5 +147,32 @@ describe('isNonTeacherRoute', () => {
     assert.equal(isNonTeacherRoute(null), false);
     assert.equal(isNonTeacherRoute(undefined), false);
     assert.equal(isNonTeacherRoute(''), false);
+  });
+});
+
+describe('needsRosterClaim', () => {
+  it('never gates a teacher, regardless of hasRosterLink', () => {
+    assert.equal(needsRosterClaim({ role: 'teacher', hasRosterLink: false }), false);
+    assert.equal(needsRosterClaim({ role: 'teacher' }), false);
+  });
+
+  it('gates a parent or student with zero roster links', () => {
+    assert.equal(needsRosterClaim({ role: 'parent', hasRosterLink: false }), true);
+    assert.equal(needsRosterClaim({ role: 'student', hasRosterLink: false }), true);
+  });
+
+  it('clears once a roster link exists', () => {
+    assert.equal(needsRosterClaim({ role: 'parent', hasRosterLink: true }), false);
+    assert.equal(needsRosterClaim({ role: 'student', hasRosterLink: true }), false);
+  });
+
+  it('fails open on an unanswered/undefined flag — not yet known is not a reason to block', () => {
+    assert.equal(needsRosterClaim({ role: 'parent', hasRosterLink: undefined }), false);
+    assert.equal(needsRosterClaim({ role: 'parent' }), false);
+  });
+
+  it('fails open on no user', () => {
+    assert.equal(needsRosterClaim(null), false);
+    assert.equal(needsRosterClaim(undefined), false);
   });
 });

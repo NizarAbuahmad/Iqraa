@@ -1,0 +1,207 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "التربية الوطنية والمدنية",
+    "subject_en": "National and Civic Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الأربعُ ودروسُها العشرةُ من كتاب الطالب (edition: الطبعة الثانية، مزيدة ومنقحة، 2026) في 2026-09-09، بقراءةِ صفحةِ المحتوياتِ لعناوينِ الوحداتِ والدروسِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ (لِـ«الفكرةِ العامّةِ») وصفحةِ افتتاحِ كلِّ درسٍ (لِـ«الفكرةِ الرئيسةِ» و«المصطلحاتِ») مباشرةً منَ الـ PDF (9.5 ميغابايت، ضمنَ حدِّ أداةِ القراءةِ المباشرةِ). هذا أوّلُ كتابِ تربيةٍ وطنيةٍ ومدنيةٍ يُدخَلُ في نظامِ إقرأ.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة التربية الوطنية والمدنية - الصف التاسع - الفصل الدراسي الأول - المركز الوطني لتطوير المناهج والتقويم (الطبعة الثانية، 2026)"
+    },
+    "known_gaps": [
+      "لا نتاجاتِ تعلُّمٍ مُرقَّمةً في هذا الكتابِ؛ بدلًا منها صندوقُ «الفكرةِ الرئيسةِ» (فقرةٌ واحدةٌ) لكلِّ درسٍ، وصندوقُ «الفكرةِ العامّةِ» لكلِّ وحدةٍ — وكلاهما منقولٌ هنا (main_idea_ar وgeneral_idea_ar). لا دليلَ معلمٍ لهذه المادةِ على القرصِ، فحقلُ objectives فارغٌ لكلِّ درسٍ عمدًا.",
+      "كلُّ درسٍ يحملُ أيضًا صندوقَ «مهاراتِ التعلُّمِ» — وسمٌ تربويٌّ للمهارةِ المُمارَسةِ في الدرسِ (كالتصنيفِ، أوِ السببِ والنتيجةِ) لا مصطلحًا مُعرَّفًا، فلا حقلَ لهُ في هذا المخطَّطِ ولمْ يُنقَلْ.",
+      "عددُ الحصصِ لكلِّ درسٍ غيرُ معروفٍ (periods وtotal_periods = null): لا دليلَ معلمٍ لهذه المادةِ على القرصِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "المجتمعُ الأردنيُّ",
+      "title_en": "Jordanian Society",
+      "general_idea_ar": "المجتمعُ الأردنيُّ مجتمعٌ ديمقراطيٌّ مُتسامِحٌ ومُعاصِرٌ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "المجتمعُ الأردنيُّ وخصائصُهُ",
+          "title_en": "Jordanian Society and Its Characteristics",
+          "main_idea_ar": "التعرُّفُ إلى المجتمعِ الأردنيِّ وخصائصِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المجتمعُ", "en": "Society" },
+            { "ar": "العاداتُ", "en": "Traditions" },
+            { "ar": "الأُسرةُ النَّواةُ", "en": "Nuclear Family" },
+            { "ar": "الأُسرةُ المُمتَدُّةُ", "en": "Extended Family" },
+            { "ar": "البطالةُ", "en": "Unemployment" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "الثقافةُ الوطنيةُ الأُردنيةُ",
+          "title_en": "Jordanian National Culture",
+          "main_idea_ar": "التعرُّفُ إلى الثقافةِ الوطنيةِ الأُردنيةِ، وأهمّيّتِها ومكوّناتِها، وآثارِها في الفردِ والمجتمعِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الثقافةُ الوطنيةُ", "en": "National Culture" },
+            { "ar": "الرموزُ الوطنيةُ", "en": "National Symbols" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "المشاركةُ السياسيةُ",
+      "title_en": "Political Participation",
+      "general_idea_ar": "المشاركةُ السياسيةُ حقٌّ للأُردنيّينَ ووسيلةٌ للنهوضِ بالوطنِ، وممارستُها في حياتِنا اليوميةِ تُحقِّقُ تأثيرًا وتغيُّرًا إيجابيًّا في المجتمعِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "الديمقراطيّةُ",
+          "title_en": "Democracy",
+          "main_idea_ar": "التعرُّفُ إلى مفهومِ الديمقراطيّةِ وأهمّيّتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الديمقراطيّةُ", "en": "Democracy" },
+            { "ar": "المواطنةُ", "en": "Citizenship" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "الانتخاباتُ",
+          "title_en": "Elections",
+          "main_idea_ar": "التعرُّفُ إلى آلياتِ العمليةِ الانتخابيةِ في الأُردنِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الانتخاباتُ", "en": "Elections" },
+            { "ar": "الناخبُ", "en": "Voter" },
+            { "ar": "المرشَّحُ", "en": "Candidate" }
+          ]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "مُنظَّماتُ المجتمعِ المدنيِّ",
+          "title_en": "Civil Society Organizations",
+          "main_idea_ar": "التعرُّفُ إلى مُنظَّماتِ المجتمعِ المدنيِّ في الأُردنِّ وأهدافِها وأنواعِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المجتمعُ المدنيُّ", "en": "Civil Society" },
+            { "ar": "مُنظَّماتُ المجتمعِ المدنيِّ", "en": "Civil Society Organizations" },
+            { "ar": "الجمعيّاتُ الخيريّةُ", "en": "Charities" }
+          ]
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "العملُ التطوُّعيُّ",
+          "title_en": "Volunteerism",
+          "main_idea_ar": "التعرُّفُ إلى العملِ التطوُّعيِّ وأهمّيّتِهِ ومجالاتِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "العملُ التطوُّعيُّ", "en": "Volunteerism" },
+            { "ar": "مبادرةُ مدرستي", "en": "Madrasati Initiative" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "دولةُ القانونِ",
+      "title_en": "The State of Law",
+      "general_idea_ar": "تقومُ دولةُ القانونِ على سيادةِ القانونِ، واحترامِ حقوقِ الإنسانِ، ومبادئِ المواطنةِ؛ لتحقيقِ الاستقرارِ والتقدُّمِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "سيادةُ القانونِ",
+          "title_en": "Rule of Law",
+          "main_idea_ar": "التعرُّفُ إلى مبدأِ سيادةِ القانونِ وأهمّيّتِهِ ومظاهرِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "سيادةُ القانونِ", "en": "Rule of Law" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "المُساءَلةُ والمُحاسبةُ",
+          "title_en": "Accountability",
+          "main_idea_ar": "التعرُّفُ إلى مفهومَي المُساءَلةِ والمُحاسبةِ، وآثارِهما في الفردِ والمجتمعِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المُساءَلةُ والمُحاسبةُ", "en": "Accountability" },
+            { "ar": "المحكمةُ الدستوريةُ", "en": "Constitutional Court" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "التراثُ",
+      "title_en": "Heritage",
+      "general_idea_ar": "الحفاظُ على الموروثِ الحضاريِّ الأُردنيِّ جزءٌ منَ الهُويّةِ الوطنيةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "التراثُ الوطنيُّ",
+          "title_en": "National Heritage",
+          "main_idea_ar": "التعرُّفُ إلى مفهومِ التراثِ الوطنيِّ وأهمّيّتِهِ وأنواعِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التراثُ", "en": "Heritage" },
+            { "ar": "التراثُ الماديُّ", "en": "Tangible Heritage" },
+            { "ar": "التراثُ غيرُ الماديِّ", "en": "Intangible Heritage" },
+            { "ar": "المَثَلُ الشعبيُّ", "en": "Proverb" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "دورُ المتاحفِ في حفظِ التراثِ الوطنيِّ",
+          "title_en": "The Role of Museums in Preserving National Heritage",
+          "main_idea_ar": "التعرُّفُ إلى دورِ المتاحفِ في حفظِ التراثِ الوطنيِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "متحفٌ", "en": "Museum" },
+            { "ar": "التراثُ الشعبيُّ", "en": "Folklore" },
+            { "ar": "الفنونُ الجميلةُ", "en": "Fine Arts" }
+          ]
+        }
+      ]
+    }
+  ]
+}

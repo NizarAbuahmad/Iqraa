@@ -43,6 +43,26 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **A teacher can set, replace and remove their own profile picture**
+  (2026-09-09): `app/(tabs)/profile.tsx`, `POST`/`DELETE /auth/users/avatar`.
+  Uploads into the `iqraa-public` R2 bucket (anonymous-read, non-expiring
+  URL) rather than `iqraa-media`'s presigned-URL pattern, since an avatar is
+  rendered small and repeatedly. Scope is deliberately self-only: the shared
+  `Avatar.tsx` used in messaging/notifications/groups still shows initials
+  for everyone else — see «A profile picture landed, and it stops at the
+  signed-in user» below. Verified end to end against a local Postgres and a
+  stand-in for the public bucket, in a real browser: upload, the photo
+  rendering in the circular avatar, remove reverting to initials, and the
+  confirm dialog. **Not verified against real Cloudflare R2** — no
+  credentials in this sandbox — though `putPublicObject` is the same
+  `S3Client` call `putObject` already makes in production, just a different
+  `Bucket` name. **Schema pushed to production 2026-09-13** — `avatar_key` was
+  added to Neon directly as `ALTER TABLE users ADD COLUMN avatar_key text`
+  rather than through `drizzle-kit push`; the column is nullable with no
+  default, which is what the schema declares, so the two are identical in
+  effect. `R2_PUBLIC_BUCKET`/`R2_PUBLIC_BASE_URL` are **still unset on Cloud
+  Run**, so the upload route 503s in production until they are set and the API
+  is hand-deployed.
 - **In-app messaging between teachers, parents and students** (2026-09-04):
   claim-code signup, teacher↔parent and teacher↔student direct threads,
   class-group and teacher-made custom groups, image attachments, block and
@@ -143,6 +163,23 @@ an announcement by default» below.
     publish, validators), plus deterministic marking and level aggregation.
     What is missing is any evaluation UI, the attempts/answer-entry endpoints,
     and the dashboard.
+- **A student has a place to go, as of 2026-09-13.** They land on the curriculum
+  rather than an empty chat inbox, `/curriculum/resources` lists the **169
+  working QR links printed in the ministry books** (98 video, 32 documents, 20
+  audio) by book and page, and the book's own figures now appear on the lesson
+  page instead of only inside an exam — **1,505 figures across 324 lessons**,
+  measured 2026-09-13 and growing with each book. Grades 6–8 have no printed codes,
+  so the entry hides itself there. See «The student has a place to go» below —
+  particularly why these are link-outs and can never be inline players.
+- **Read-aloud works as an assigned question type; practice mode is built but
+  has no passages.** A teacher can set a passage, a student reads it in a
+  browser, and `scoreReading` marks it deterministically (word-level WER).
+  Student practice — unlimited retries, nothing recorded — is merged and renders
+  **nothing**, because `practice_passages.json` is deliberately empty. Web only;
+  the microphone cannot reach the phone over the air. There are 19 curated
+  openly-licensed resources attached to lessons, none for biology. Read «The
+  English lab» below before touching any of it — particularly the licence rules,
+  which are stricter than the providers' reputations suggest.
 - **Every Grade 10 source PDF is now inventoried** in
   `lib/curriculum/src/data/g10_sources.json`, read through
   `lib/curriculum/src/sources.ts` (`usableSources()`, `pendingSources()`,
@@ -410,6 +447,997 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Comprehension drills, graded in the browser on purpose, 2026-09-13
+
+**13 comprehension questions on the three read-aloud passages** — multiple
+choice and true/false — inside the same card as the passage they ask about.
+Reading aloud and understanding it are one activity; two panels would let a
+student do the first and never see the second.
+
+**Graded on the client, which is a deliberate departure from every other
+question in this product**, and the reasoning matters more than the code:
+
+- Marks are graded server-side because a client that decides its own score
+  decides its own mark. **Practice records nothing** — no attempt row, no mark,
+  no competency — so there is no result here for a visible key to corrupt.
+- For these two kinds the check is an equality test. A round trip would not make
+  it more correct.
+- And it is what makes the feature exist at all. **The API cannot deploy**, so a
+  route would join `/practice/read-aloud` in the undeployed pile. This ships over
+  the air with everything else.
+
+**The answers therefore ship in the client bundle**, and
+`practice_questions.json` says so in a field of its own rather than leaving it to
+be discovered. The guard is structural, not a convention:
+`validatePracticeQuestions` refuses a question whose resource is not
+`readAloudPractice`-flagged and has no passage, so an item cannot exist for
+anything but a practice passage. **Never source an exam from this file** — an
+answer key reaching a client is precisely what `sanitizeForStudent` exists to
+prevent, and these items would hand it over by the front door.
+
+Questions are written against the **excerpt**, not the article. The passages run
+99–110 words and their sources run 375–1,100, so "the source says so" is not the
+test; "the words on screen say so" is. Stems and multiple-choice options stay
+English because they quote an English passage — «صحيح/خطأ» is Arabic because that
+is a control a student presses, not content.
+
+**One authoring bug caught by its own test.** The first draft had every
+`answerIndex` at 0 — the natural way to type options is correct-one-first, and it
+teaches a student to pick the first option rather than to read. The test now
+asserts the answers sit at three or more distinct positions.
+
+### How stale the API actually is, measured
+
+Worth writing down because a single probe misled me twice today, in both
+directions. `/api/healthz/version` answered 200 once and **404 on 20 consecutive
+probes**; `/api/practice/read-aloud` answered 401 once and **404 on 10**. And a
+401 there proves nothing anyway — `/practice` sits behind a prefix
+`authMiddleware`, so it answers 401 for paths that do not exist, the same trap
+`/media/external` sets.
+
+The clean discriminator is a **public** route, where 404 and not-404 separate:
+
+| probe | result | means |
+| --- | --- | --- |
+| `POST /api/take/attempt/audio/abc` (landed 2026-09-10) | **401** ×6 | route exists, bad token |
+| `GET /api/take/definitely-not-real` | **404** ×3 | control: this is what missing looks like |
+| `GET /api/healthz/version` (landed 2026-09-12) | **404** ×20 | not deployed |
+
+So the deployed revision carries 2026-09-10's code and not 2026-09-12's. It sits
+in a two-day window, which leaves `GET /media/external/:id` (2026-09-11)
+genuinely **undetermined** — it is behind the same prefix guard, so it cannot be
+told apart without a token, and I did not authenticate. If the 10 curated images
+are not rendering in production, that is the first thing to check.
+
+## The student has a place to go, 2026-09-13
+
+**A student opening this app landed in a chat inbox.** Not a home screen — the
+message thread list, empty for most of them. `(tabs)/index.tsx` branched
+teacher-or-everyone-else, so students and parents got the same destination, and
+a student's tab bar has no home. They now land on the curriculum, which was
+already their first visible tab. Parents still land on Messages, which is what a
+parent opens this app for. `isStudentRole` exists now beside `isTeacherRole` —
+there was no student helper at all, so every student check was a hand-written
+`role === 'student'` in four files, which is how one branch came to serve two
+roles that want different things.
+
+**The library is `/curriculum/resources`, and it cost no gating change.**
+`isNonTeacherRoute` matches by prefix and `/curriculum` was already allowlisted,
+so the route is student-reachable because the file exists. `routeGating.test.ts`
+now pins `/curriculum/resources` so converting that allowlist to exact matching
+fails loudly rather than silently ejecting a student. A new tab would have cost
+an allowlist entry, a role-gated tab, two icons and a locale pair for the same
+result.
+
+**What it holds: the 169 reachable QR codes the ministry printed in the books.**
+`knowledge-base/book-qr-links.json` had sat unread since it was decoded. 98
+video, 32 documents, **20 audio**, 16 pages, 3 images, across 22 books —
+grade-10 97, grade-9 72, and nothing at all for grades 6–8, which is why the
+entry row hides itself rather than opening onto an empty screen. Grouped by the
+book and the printed page, deliberately: only 12 of 186 carry a lesson id, and
+«صفحة ٤٥» is a better locator anyway for someone holding the book.
+
+**Three things in that data would each have failed silently**, and each is now a
+test:
+
+- **All 20 `.mp3` rows are declared `kind: "page"`.** The entire curriculum audio
+  inventory — 13 English, 7 music — was labelled "web page". `kindOf` derives
+  from the extension where there is one; reading the declared kind finds zero
+  audio and nothing looks broken.
+- **3 rows declared `video` have no extension**, so deriving from the extension
+  *alone* files those as pages. Both directions are needed.
+- **`art`, `civic`, `pe` and `math` are not catalog subject ids.** The alias map
+  is spelled out because the obvious shortcut is wrong: a substring test for
+  `art` resolves to `earth-science`.
+
+**Grouped by the manifest's own book string, never a catalog `Book`.**
+`creative-arts` and `physical-education` have **no book in the catalog at all**,
+so a catalog join drops those 16 rows — including 7 of the 20 audio files —
+without an error. The printed filename is already a correct Arabic title.
+
+**These are link-outs and cannot become players.** Every code prints
+`https://qr.nccd.gov.jo/…` and that certificate has expired; the same path over
+`http://` serves the file. So over https the handshake fails with no
+click-through a subresource can offer, and over http a page served from https
+blocks it as mixed content. An inline `<audio>` here would look right and render
+dead. The insecure ones say so **per row**, not once per screen — on a screen
+mixing both, a header note tells you nothing about the link you are about to tap.
+Proxying was considered and rejected: it needs an undeployable route, pays our
+egress for ministry video, and would make us the redistributor of material with
+no `licenseCheckedAt`, which is the one thing `ingestRefusal` exists to prevent.
+
+**The book figures were bundled and a student could only see them in an exam.**
+`BookFiguresPanel` was on six teacher screens and `/take/[code]` but not on the
+lesson page — the one place a diagram from your own book is most obviously
+wanted. It is now on `lesson-detail`, at zero added bundle bytes since the PNGs
+already ship unconditionally. It needed a new note key: the existing student one
+says «الدروس التي يغطّيها هذا الاختبار», which would name an exam that does not
+exist on that page.
+
+**Measured after merging #413, which added English's photographs mid-change:
+`lessonsWithFigures()` returns 324 lessons carrying 1,505 figures.** Worth
+re-measuring rather than quoting this line — it moved from 249/1,409 to
+324/1,505 inside one afternoon because another branch landed, and it will move
+again with the next book. `lessonsWithFigures()` is the number that matters
+because it is what the panel actually reads; the raw map currently holds 332
+joined entries, and the gap is sources the mobile asset map does not carry.
+
+### Three bugs on the path a student already had
+
+- **The teacher guide was offered to students.** `catalog.ts` says «Hidden from
+  students» on `guidePdfUrl`; `subjects.tsx` rendered it to everyone on the
+  strength of a comment claiming `UserRole` has no `'student'`. It has had one
+  since student accounts went live.
+- **Tapping a shelf row ejected a student from the curriculum.** Bank rows push
+  `/(tabs)/iqra`, which is not allowlisted, so the root guard bounced them to
+  `/notifications` and they lost the lesson. The whole bank half is now
+  teacher-only — a guard on the row would have left a list that looks tappable
+  and does nothing, and the PDFs are gitignored so there is nothing to hand over
+  either. The count pill counts what is rendered, not what is hidden.
+- **`Linking.openURL` replaced the running app on web** — the exact failure
+  `services/externalLinks.ts` was written to fix. Five call sites still had it,
+  three of them student-reachable, including the book-download chips. All now use
+  `openExternal`. `presentation.tsx` also held a **fourth hand-rolled copy** of
+  that helper; `externalLinks.ts`'s header records that "a third copy was about
+  to land, so it moved here instead".
+
+**Not verified in a browser.** Two reasons, both worth knowing. Reaching
+`/curriculum/resources` needs a signed-in student. And **the dev server cannot
+serve a worktree**: `artifacts/mobile/node_modules` is a junction to the main
+checkout, so `expo start` reports «Starting project at …/Iqraa/artifacts/mobile»
+and bundles the original repo whatever the cwd — so a preview from a worktree
+shows main's code and reads as a pass. Logic and data are covered by 9 new tests
+in `services/__tests__/bookQrLinks.test.ts` pinning the counts (169 / 97 / 72 /
+20) and every normalisation above; what nobody has looked at is the layout.
+
+## The web app stopped deploying for a day, and nobody noticed, 2026-09-13
+
+**Render ran out of build pipeline minutes (500/500) and cancelled every
+deploy.** For roughly a day, every push to `main` produced a "deploy" that
+failed in **0.9 seconds** with `Build canceled: your workspace has run out of
+build pipeline minutes for the current billing period`. Five merges sat
+undeployed while the site quietly kept serving an older bundle.
+
+**The failure shape is the point.** Nothing was broken. CI was green, the
+merges were clean, `render.yaml` was correct, the GitHub connection was
+healthy, and the site stayed up. A merged change simply never appeared, and
+nothing anywhere said why. It was found only by fetching the served JS bundle
+and grepping it for a string the new code adds.
+
+**How to check this in future, in one command.** Do not trust the dashboard's
+"Deployed" wording — a cancelled build still lists as a deploy:
+
+```bash
+curl -s https://iqraa-web.onrender.com/ | grep -oE '/_expo/static/js/web/[A-Za-z0-9._-]+\.js'
+```
+
+then fetch that path and grep for something the change added or removed. Pick a
+marker that survives minification: a regex literal or a string constant, not a
+function or variable name. Always grep for a control too — a string that was
+there before AND after — or an absent marker cannot be told from a mangled one.
+
+**The cause was cadence, not any one change.** Ten PRs in a day, each
+triggering a full `pnpm install --frozen-lockfile` plus an Expo export of the
+monorepo, and most could not have changed a byte of the bundle: API work,
+content ingestion, STATUS.md edits. `render.yaml` now carries a `buildFilter`
+with `ignoredPaths` for the paths that provably cannot reach the web bundle.
+Denylist, not allowlist, on purpose: an allowlist fails by NOT deploying
+something that mattered, which is the failure that cost a day here.
+
+**`buildFilter` only takes effect if the service reads this file.** If
+`iqraa-web` was created in the dashboard rather than synced from the Blueprint,
+the ignore list has to be entered under Settings -> Build -> Ignored Paths as
+well. Check both before assuming it works.
+
+**Also: `Remove-Item -Recurse` on a worktree can delete the main checkout.**
+`link-main-assets.ps1` junctions the main checkout's `node_modules` and its
+3.2GB PDF library into a worktree, and `Remove-Item -Recurse` follows a
+junction into its target. A cleanup on 2026-09-12 ran exactly that over three
+worktrees; nothing was lost only because those three had no junctions. The
+`g9-*` extraction worktrees, which exist to read those PDFs, would have taken
+the library down.
+
+`.claude/scripts/remove-worktree.ps1` replaces the ad-hoc one-liner: it
+unlinks first, verifies, and refuses to delete if any junction survives. Two
+things it learned the hard way, both worth knowing before editing it:
+
+- **Only junctions pointing OUTSIDE the worktree matter.** pnpm links every
+  package in `node_modules` as a junction into its own store — `g8-batch`
+  reports **3545** of them. They point inside and are supposed to die with the
+  worktree. Note `unlink-main-assets.ps1` does the unfiltered recursive scan,
+  so running it in a worktree with dependencies installed severs pnpm's links
+  too. Not destructive, but not intended.
+- **Resolve the main checkout with `git rev-parse --git-common-dir`.** Every
+  worktree carries a copy of the script, so "two levels up from this file"
+  resolves to whichever worktree you are standing in, finds no
+  `.claude/worktrees` under it, and reports every target as "absent" while
+  doing nothing.
+
+The script is ASCII-only on purpose: PowerShell 5.1 reads a `.ps1` as ANSI
+without a BOM, so a UTF-8 em dash arrives as three bytes of garbage and the
+parser fails on a line nowhere near the real one.
+
+## The English lab: read-aloud, a licensed resource shelf, and no passages, 2026-09-13
+
+**This entry is late, and that is the first thing to record.** Six PRs landed
+this work — #377, #380, #384, #387, #398, #406 — and none of them edited this
+file, so a reader of STATUS.md had no way to know read-aloud, the external
+resource shelf or practice mode existed. Written after the last of them merged,
+which is exactly the drift this file's own rule exists to prevent.
+
+**What a teacher can use today.** Read-aloud is a question type
+(`QUESTION_TYPES` in `modules/assessment/questionTypes.ts`), so it rides the existing
+evaluation → publish → `/take/:code` pipeline and inherits grading, marks and
+reports. A teacher pastes a passage; the student reads it into the browser;
+Whisper transcribes **at upload time** so `grade()` stays synchronous like every
+other type, and `scoreReading`
+(`api-server/src/modules/assessment/readAloud.ts`) scores it.
+
+**The score is word-level Levenshtein → WER, not similarity.** The repo's
+existing `stemSimilarity` (`modules/assessment/validator.ts`) is Jaccard over a
+token `Set`, which is order-insensitive — under it a student reading the passage
+backwards scores a perfect 1.0. Ceilings: `MAX_WORDS = 600` per passage,
+`MAX_AUDIO_SECONDS = 120`, `MAX_TAKES_PER_QUESTION = 3` (`lib/readAloudUpload.ts`).
+
+**Practice mode is separate from marks, deliberately.** `POST
+/practice/read-aloud` scores with the same function and **stores nothing** — no
+attempt row, no R2 object, no audio. Unlimited retries, score shown immediately.
+The student replays from the `Blob` the browser already holds, which is how the
+useful part of a recording survives without retaining children's voice
+recordings. Read the route's own header before changing it: `resourceId` only
+picks the reference to score against, so the endpoint is **a paid transcription
+oracle for any signed-in account**, and what bounds that is the per-user dollar
+cap, not the retry count.
+
+**`recordAudioUsage` was invisible to that cap until #406.** It bumped an
+in-memory total and wrote no row, so `assertUserQuotaAvailable` — which sums
+`ai_generations` — could not see audio at all, on the assessment path too. Fixed
+for both. If audio spend ever looks untracked again, check that first.
+
+**The resource shelf is 19 curated third-party items** in
+`lib/curriculum/src/data/external_resources.json`: 3 VOA texts, 10 Wikimedia
+images, 6 YouTube videos, across 19 lessons — English 6, earth science 11,
+physics 7, chemistry 5. **Biology has none.** Only the 10 images are ingested to
+R2 (`ingest.sha256`); `verify-external-ingest.ts` re-downloads and compares the
+digest. Videos are embed-only by licence and are never copied.
+
+**Licence is a closed set that fails closed.** `LicenseId` →
+`POLICY_BY_LICENSE` → `quotable | reference-only | embed-only` in `bank.ts`;
+an unknown licence resolves to `reference-only`. Every entry carries
+`licenseCheckedAt` and ingestion refuses a check older than 180 days. **Do not
+add an entry from memory of what a provider "is"** — PhET relicensed its entire
+library to CC BY-NC on 2026-03-29, so any code trusting a remembered CC BY was
+wrong the next day. Reputation ran narrower than reality repeatedly: of ~15
+candidates, 6+ were rejected — AP wire copy inside a VOA page, ESA imagery
+inside a NASA page, CC BY-SA rock photographs, and a "NASA" video that was a
+private re-upload.
+
+**Attribution is a licence condition, not decoration**, and it has three
+independent render paths (presenter, deck HTML, PPTX) that all dropped it once.
+In `deckSlidesHtml.ts` the credit is a flex child above the footer rather than a
+fixed offset, because PhET's ~100-character credit wraps.
+
+### What does not work
+
+- ~~No practice passages exist.~~ **Three exist as of 2026-09-13** — one per VOA
+  article, 110/106/99 words, on six English lessons in units 1, 3 and 5. It was
+  never an API key that was missing: Firecrawl's **keyless hosted mode** returns
+  the full article body, which is what `curl` cannot do because the body renders
+  client-side. Each excerpt is **one contiguous run**, verified against the live
+  page rather than by re-reading the draft — the check ran `indexOf` inside the
+  page and confirmed the only text between segments is the section heading.
+  **Watch the third-party-inside-public-domain trap**: the nouns article ends by
+  quoting Beatles lyrics and the future-tenses article quotes a MacArthur
+  speech, so both excerpts stop short of those deliberately (1,558 and 1,141
+  characters clear). That is the AP-inside-VOA problem one level down, inside a
+  single article that passes the byline test. All three bylines were re-checked
+  on the live pages: VOA staff writer plus VOA editor, no agency credit.
+- **No microphone on the phone.** Web only. `expo-audio` is a native module and
+  `runtimeVersion.policy` is `fingerprint`, so adding it **moves the fingerprint
+  and cannot ship over the air** — installed apps keep taking OTA updates and
+  will never see practice until a new store build. That is the guard working.
+  Native renders the `readAloudWebOnly` string rather than a control that fails
+  on tap.
+- **Nothing has run against a real microphone**, and the practice endpoint has
+  never transcribed anything. The assessment path was driven end to end against
+  a local API, but the transcription span is unverified — this machine's OpenAI
+  key is a placeholder. What *has* been checked is the scoring either side of it:
+  each passage scores 1.0 against itself and against a Whisper-shaped rendering
+  (straight apostrophes, lower case, quotes stripped), and ~0.90 with one word in
+  ten dropped. So the passage and the scorer agree; only the audio leg is unseen.
+- **The card has never been rendered in a browser.** Reaching lesson-detail means
+  signing in, and `dev:mobile:web` authenticates against **production** — so
+  this needs a person, not a script. Nothing about the passage data is unverified;
+  it is the layout of the card holding it.
+- **Neither half has reached production.** The API is pinned to `00032-279`
+  pending the Resend domain, so `POST /practice/read-aloud` answers from a
+  revision that does not have it. The web bundle has not taken it either —
+  measured with the probe in «The web app stopped deploying for a day»:
+  `practice/read-aloud` is absent from the served JS while `take/attempt/audio`
+  (the assessment route, shipped earlier) is present, so the probe works and the
+  gap is real. Read-aloud **assessment** is live on the web; practice is not.
+- **No lawfully embeddable simulation exists.** PhET is CC BY-NC; GeoGebra needs
+  a commercial agreement (see «The GeoGebra embed is gone»). The interactive
+  half of the original plan has no source.
+- **The book's 71 labs are parked.** Auto-parsing Arabic activity-book text into
+  safety-critical lab cards is not safe — those books sit outside the repair
+  wordlist's witness coverage for the `pdf-parse` lam contamination. Vision
+  extraction is the revisit path.
+- **`ReadAloudPracticePanel` and `useReadAloudRecorder` have no tests and cannot
+  get any.** The mobile runner is bare `node --test` over `services/__tests__/**`
+  with no React Native transform, and both import `react-native` at module
+  scope. `readAloudRecorder.ts` is split out for that reason, as
+  `routeGating.ts` and `fetchWithTimeout.ts` already are.
+
+**One bug found on the way that had nothing to do with audio.** `/curriculum` is
+on the non-teacher allowlist, so a student reaches lesson-detail — and both
+header actions rendered for every role. «حضّر» runs generation; the server
+refuses without a teacher role, but `RemoteAIService` falls back to
+`MockAIService` on failure, so **a student did not get a 403, they got a
+fabricated lesson plan presented as their curriculum.** Now gated on
+`isTeacherRole` at the component, not in `routeGating` — allowlisting the iQra
+tab would hand students the teacher chat.
+
+## The first-run carousel stopped promising what the app does not do, 2026-09-12
+
+Shipped inside #390 rather than under its own PR — the branch it sat on was cut
+from this work and merged with it, so the reasoning lives here and in the two
+commit messages (`e5da577`, `64ae2ce`).
+
+**This screen is the one place the product describes itself, and it is shown
+before login — to every role, not to teachers.** Read that way, three of its
+five slides said something the rest of the app contradicts.
+
+**«رمز الصف» came back, four days after being renamed away.** The 2026-09-06
+entry below («The link code a teacher shares») ends by saying the teacher's
+screen and the parent's field both say «رمز الربط» now. That was true when
+written. Then three new strings were added — `joinAnotherClassDesc`
+(`41f3e84`, 09-08), `claimRequiredDesc` (`f367193`, 09-10) and
+`onboardingSlide5Desc` (`81c4fc7`, 09-10) — and each independently reached for
+«رمز الصف» again.
+
+**The test that was supposed to stop this cannot see a new string.**
+`claimCodeMessage.test.ts` pins the composer's `fieldLabel` against the
+register form's own label, which is why the composer takes it as an input at
+all. That guards one path. Nothing guards a *fourth* screen that writes the
+name into a fresh translation key — and three of them did, in four days. The
+rename is applied again; the gap that let it regress is still open. A grep-level
+test over `i18n.ts` would close it and does not exist yet.
+
+«رمز الربط» is also the truthful name, not merely the consistent one: the claim
+screen accepts a per-student code as well as a class code (`student-code` in
+`claimCodeGate.ts`), and a parent is usually handed the former.
+
+**Two slides claimed more than the code does.**
+
+| slide | said | why it was wrong |
+| --- | --- | --- |
+| 2 | «بضغطة واحدة» — one tap | the flow needs grade/subject/unit/lesson picked first, then runs six steps. English already said "one pass"; Arabic now matches it |
+| 1 | "fully in Arabic" | wrong about content — `curriculumG10EnglishSem1` and `curriculumG8EngSem1` exist — and in the English locale it was a sentence *in English* announcing that everything is in Arabic, directly beneath the toggle that got you there. Now "Arabic-first" |
+
+Slide 1 also stopped naming grades 8–10 (Nizar's call): the grade set expands,
+and the slide reads as a statement about the national curriculum either way.
+Both locales, so they cannot drift apart again.
+
+**The math-verification slide is gone.** Four slides now: what this is, how a
+lesson comes together, the in-class tools, the parent/student one. Symbolic
+verification is still the strongest thing the product does, but it applies to
+maths answer keys only — and a teacher of any other subject, and every parent,
+were reading it before login as a description of what they were about to use.
+The claim is better made where it is true: the «تم التحقق من الإجابة رياضيًا
+(SymPy)» badge in `deckSlidesHtml.ts`, which says it about one answer rather
+than about the app.
+
+The surviving keys keep their numbers — `onboardingSlide4*`/`5*` follow
+`Slide2*`. They are identifiers, not positions, and renumbering costs every one
+of them in two locales for nothing. The comment above `SLIDES` says so, so the
+gap does not read as an accident.
+
+Also: «إقرأ» → «اقرأ» in the two `parentMsg*` strings, against 27 correct
+spellings elsewhere. Hamzat wasl.
+
+**What was checked and left alone.** Each remaining claim was read against the
+code rather than taken from the copy: grades 8/9/10 coverage (46 G8/G9 + 26 G10
+curriculum files), the SymPy badge, the phone-free team challenge
+(`classGame.ts`), and slide 5's promises to parents — `/curriculum` and
+`/messaging` are both in `NON_TEACHER_ROUTES`, so browsing the curriculum and
+receiving a teacher's messages are real. `DEMO_MODE` is false in the preview and
+production EAS profiles, so slides 2 and 3 were not selling sample content.
+
+`pnpm test` in `artifacts/mobile`: 1297 passed, 0 failed, 10 skipped.
+`tsc --noEmit` clean. The carousel was driven end to end in the web build in
+both locales — four dots, slide 3 is the in-class tools one, the last slide
+swaps تخطي for ابدأ الآن. `schema-push:` **none.**
+
+One thing noticed and not fixed: the five pager dots are bare `Pressable`s with
+no `accessibilityRole` or label, so the a11y tree shows five unnamed targets
+with no position.
+
+## Grade 9's sciences, then history and geography, get the book's figures, 2026-09-11/12
+
+**The question was "do the slides show the book's pictures for every subject
+and grade?". Measured first, through the real deck builder** — `buildLessonDeck`
+run over all 1097 catalog lessons with a stub `figureUri`, counting the media
+slides it returns:
+
+| | before | sciences | hist/geo | g8 sci | g8 maths | English | +g7 | +g6 | +g8 rest |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lessons whose deck carries a book figure | **122** | 159 | 210 | 220 | 249 | 324 | 336 | 353 | **380** |
+| figure slides across all decks | 388 | 515 | 604 | 643 | 726 | 822 | 835 | 872 | **916** |
+| live subject×grade pairs with nothing | 29 of 37 | 25 | 21 | 20 | 19 | 17 | 16 | 15 | **13 of 40** |
+
+(The catalog itself grew from 1097 to 1134 lessons over these days, so the
+denominator moves; the numerator is what these changes did.)
+
+**Nothing was wrong with the wiring.** Every deck entry point already passes
+`figureUri` — `buildLessonDeck`, `buildDeckFromQuiz/Worksheet`, `startClass`,
+the four `/ai-tools` screens, the exam panel and the four document exports.
+The 2026-09-04 sweep closed those gaps and they stayed closed. What is missing
+is **supply**: a lesson gets a picture only if its book was run through
+`extract_book_figures.py` and its crops were mapped, and eight books had been.
+
+**Four Grade 9 sciences, eight books, added to `BOOKS` and `EXPECTED_UNITS`.**
+No detector work was needed: these are the same NCCD series as their Grade 10
+counterparts, down to the page furniture.
+
+| book | extracted | kept after review | lessons |
+| --- | --- | --- | --- |
+| g9-physics-s1 | 45 | 33 | 6 of 7 |
+| g9-physics-s2 | 73 | 63 | 5 of 5 |
+| g9-chemistry-s1 | 37 | 17 | 4 of 4 |
+| g9-chemistry-s2 | 52 | 28 | 4 of 4 |
+| g9-biology-s1 | 44 | 29 | 4 of 5 |
+| g9-biology-s2 | 57 | 45 | 4 of 5 |
+| g9-earth-science-s1 | 39 | 17 | 4 of 4 |
+| g9-earth-science-s2 | 46 | 18 | 6 of 6 |
+
+**250 kept of 393, and the 143 dropped are all page furniture** — the orange
+«مراد» wave bands, «الدرسُ ٢» opener cards, «الفكرةُ العامة» banners, cover
+pages, and crops that sliced a table or a question in half. `BOOK_FIGURE_COUNT`
+875 → 1125, and 1223 once history and geography landed. Coverage by subject: physics 0 → 11/12, chemistry 0 → 8/8, earth
+science 0 → 10/10, biology 0 → 8/10. Grade 9 was maths-and-nothing-else before
+this. **Cost: +30 MB of PNGs.** The `_review.png` contact sheets are no longer
+part of that: all thirty were deleted and gitignored on 2026-09-12 (30 MB, and
+every byte of it bundled into the app for a file the human pass reads once and
+nothing reads at runtime). Re-run the extractor to get one back. The other
+lever on figure weight is still unused — quantisation, not fewer figures.
+
+**The lesson join is 1:1 and was read, not assumed.** Each book's lesson-opener
+pages print the curriculum's own lesson titles in order — «المائعُ الساكنُ»
+opens u4 l1 of physics S2, and so on for all 33 mapped lessons — so the printed
+lesson number IS the curriculum's, with none of the offset Grade 10 maths has.
+The one detector miss is recorded on the map entry rather than left to be
+rediscovered: in `g9-bio-s2` the unit-4 lesson-2 opener («دراسةُ الجماعاتِ
+الحيويةِ», p49) is not seen, so pages 49-54 file under u4_l1 — harmless today
+because no crop from them survived review, and a trap for the next re-run.
+Three crops were dropped rather than filed: two sat on chemistry's unit-opener
+spread, which belongs to no lesson, and physics's `p045` is unit 2's opening
+experiment printed on the last page of unit 1 lesson 3, where the outline would
+have captioned it as a measurement-errors figure.
+
+**`g9-bio-s2` took an hour on its own** — one page's vector cluster takes
+`drawing_cluster` into the tens of minutes, with nothing on stdout to say so.
+Worth knowing before anyone assumes a hung run: it finishes. Running the eight
+books as eight processes rather than one sequential pass is what kept the whole
+set inside an afternoon.
+
+**Then history and geography, seven of eight books, 2026-09-12.** 89 more
+figures on 51 more lessons.
+
+| book | extracted | kept after review | lessons |
+| --- | --- | --- | --- |
+| history-s1 | 29 | 17 | 11 of 12 |
+| history-s2 | 43 | 12 | 9 of 11 |
+| geo-s1 | 35 | 19 | 7 of 9 |
+| geo-s2 | 38 | 19 | 7 of 9 |
+| g9-history-s1 | 29 | 12 | 8 of 10 |
+| g9-geography-s1 | 39 | 18 | 8 of 9 |
+| g9-geography-s2 | 14 | **1** | 1 of 9 |
+
+Coverage: Grade 10 history 0 → 20/23, Grade 10 geography 0 → 14/18, Grade 9
+geography 0 → 9/18, Grade 9 history 0 → 8/23. Cost: **+23 MB of PNGs**, less
+the contact sheets (see above). What
+these books draw is **maps,
+timelines and process diagrams** — the vector extractor finds them, which the
+op counts alone would not have predicted: history runs ~8-14k drawing ops per
+60 pages against physics's ~509k, close to the ~3.4k that sent English to the
+raster pipeline. Measure the yield, not just the density.
+
+**Three findings from this batch that cost time to learn:**
+
+- **The Grade 9 science source ids had to be renamed first.** They were minted
+  `g9-phys-s1-student-book`; `g10_sources.json` spells those same books
+  `g9-physics-s1-student-book`, and `docs/adding-a-book.md` makes the manifest
+  the contract precisely so a figure can be traced to its source row. Renamed
+  across the eight directories, their `index.json` `sourceId`s, the map, the
+  imports and the test's prefix table. Note Grade 10 abbreviates in the other
+  direction (`phys-s1-student-book` for physics), so the prefix table now
+  carries three spellings and cannot be derived by string surgery.
+- **`EXPECTED_UNITS` is wrong for these four subjects, and the entry was
+  removed.** These books print no «الوحدة N» running header, so `outline`
+  falls back to counting opener resets inside one PDF and every S2 book reports
+  units 1-3 where the curriculum says 4-6. The first entry written for them
+  rejected all four S2 books outright. The offset lives on the map entries
+  instead, as it already does for English S2, and was verified against printed
+  titles: all eight of history-s2's unit-3 lesson titles land exactly on the
+  opener page `outline` detected, and five of geo-s2's nine.
+- **Grade 9 history S2 is the one book left out.** `lesson_start` finds ONE
+  opener in it against 13 catalog lessons, so `outline` refuses the book and
+  every crop would be unplaced. Its S1 sibling detects all 10. Recorded in
+  `BOOKS` with the measurement so the next run does not rediscover it.
+  Grade 9 geography S2 is nearly as thin for a different reason — 14 crops, of
+  which **one** is a figure and the rest are drawn page furniture, because its
+  maps are rasters. That book wants `extract_book_photos.py`.
+
+**Grade 6 joins the product — Maths S1 and Science S1/S2, 2026-09-13.**
+`MVP_GRADE_IDS` is now `['grade-10', 'grade-9', 'grade-8', 'grade-7',
+'grade-6']`. Appended at index 4, **after** grade-7: that ordering is not
+cosmetic. This work was built against a tree that predated Grade 7, where the
+natural append put grade-6 at index 3 — precisely where grade-7 has since
+landed. Committing that draft would have silently repointed every stored
+`gradeIdx` of 3. Rebased onto current main and re-verified before commit.
+
+Three books, 37 lessons: maths S1 (4 units, 18 lessons) and science S1+S2
+(9 units, 19 lessons, numbered 1-4 then 5-9 continuously like Grade 7 and 8).
+The grade-6 tile shows exactly الرياضيات and العلوم rather than a page of dead
+tiles. No S2 maths student book was supplied — only the S2 guide and exercise
+book — so maths is one semester by necessity, not omission.
+
+**`science` was missing from the manifest vocabulary entirely**, and neither
+Grade 7 nor Grade 8 noticed because both were catalogued without Tracks A/B —
+no manifest rows, no extracted text. Adding it meant the full new-subject path:
+`CurriculumSource['subject']` in `sources.ts`, then `BANK_SUBJECT_IDS` and both
+`SUBJECT_LABEL_AR/EN` in `bank.ts`. Those three are `Record<…subject, string>`,
+so TypeScript named every site — including a per-subject regex map in
+`bank.test.ts` a hand-search would have missed. `curriculumIds.ts` already had
+the slug, and needed nothing for the first sub-Grade-7 book: `gradeSlug()`
+handles any `grade-N`, `UNIT_ID_RE` already matched an optional grade segment,
+and `bankTagsForParsedUnit` reserves the bare `s1-u1` vocabulary for Grade 10
+alone, so these units tag `g6-math-s1-u1` and cannot collide with it.
+
+**Lesson content was read from the PDF pages, not the extracted text, and that
+was not optional.** `pdf-parse` drops the assimilated lam in these books —
+«الخَلِيَّةُ» comes out «الَْلِيَّةُ» — fine for retrieval, unusable for
+curriculum text shown to a teacher. The maths book additionally reverses whole
+lines on 6 of 126 pages, concentrated in the contents spread. Worse for both
+science teacher guides: pdf-parse rejected each at 87% letter transposition and
+they fell back to OCR, and comparing the S1 OCR of matrix page 7B against the
+page image shows it **drops whole outcome lines** («تفسير سبب صغر حجم
+الخلايا»), truncates others, and interleaves table columns.
+
+So **science `objectives` is empty for all 19 lessons** and `periods` is null
+for 18 of them (u1_l1 = 5, read off the guide's page image). That is a
+deliberate refusal, not an oversight: the outcomes live only in the guides'
+«مصفوفةُ مؤشِّراتِ الأداءِ», which additionally mixes lesson-specific indicators
+with generic ones (عاداتُ العقلِ، البحثُ العلميُّ) repeated across lessons.
+Maths is the opposite case — all 18 lessons carry official outcomes, because
+that book prints «فِكْرَةُ الدَّرْسِ» as a real outcomes list. What the science
+student books *do* print is carried verbatim: unit «الفِكْرَةُ العامَّةُ»,
+per-lesson «الفِكْرَةُ الرَّئيسَةُ», and a genuinely bilingual «المَفاهيمُ
+وَالمُصْطَلَحاتُ» (86 terms with real English). Filling the outcomes means
+reading ~30 matrix pages as images; the JSONs' `known_gaps` say so and say why.
+
+Seven PDFs registered, extracted and `ingested` (5 via pdf-parse, both guides
+via OCR). The rest of the Grade 6 batch supplied the same day — Arabic,
+English, Islamic, social studies, digital skills, vocational, PE, art — is
+**not ingested**: those files sit outside the repo, unregistered. Note that
+vocational, PE and art additionally need `SUBJECTS.grades` extended before a
+Grade 6 book can attach; `subjectGradeCoverage.test.ts` splits all sixteen
+bookless grade-6 pairs into permanent and closable, and says which is which.
+
+**Grade 8 gets its first figures, 2026-09-12.** `g8-science-s1` alone: 133
+crops, **65 kept**, covering all 10 of its Semester 1 lessons. What survived is
+strong — DNA and chromosome diagrams, binary-fission stages, Mendel's pea
+traits with a Punnett square, sixteen per-element electron-shell diagrams
+(Na, Mg, Ne, Ar, Cl, S and their ions), the pressure/buoyancy set, tectonic
+maps, the ring of fire, acid rain. What was dropped is almost entirely purple
+banner strips. Nine of the ten lesson titles land exactly on their detected
+opener page.
+
+**Semester 2 of the same book is out**: only two pages in it carry «الدرس» as
+text and both are the contents spread, so `outline` returns nothing. Same
+failure as `g9-history-s2`, and not fixable with a profile — there is no
+opener text to profile.
+
+**A generator bug found while wiring this, worth knowing about.** The
+map-entry generator derived a book's prefix with `sid.split("-s")[0]`, which
+splits inside `-science`: `g8-science-s1-student-book` became `g8`, matched no
+scope, and emitted **nothing, silently**. It had already been wrong for
+`g9-earth-science-*` since the 2026-09-11 rename and went unnoticed only
+because those entries were already in the map. Fixed to strip the
+`-s{n}-student-book` suffix; the generator now emits 98 entries across all 16
+books. Any future book whose subject slug contains an `-s` would have hit the
+same trap.
+
+**Grade 8 maths, 2026-09-13 — and the profile mechanism earned itself.**
+`g8-math-s1` and `-s2`: 438 crops, **121 kept**, covering 29 of the subject's
+37 lessons. Graphs of linear equations, Pythagoras constructions, algebra
+tiles, dilations and reflections on grids, the whole solids set (spheres,
+hemispheres, cones, cylinders with their dimensions), spinners and pie charts
+for the probability unit.
+
+**Its profile took two tries, and the first one was quietly dangerous.**
+Sizes alone — «الدرس» at 17pt where the default wants 20, title 17pt where it
+wants 24 — got 15 of 17 openers in S1 and 14 of 20 in S2. The misses were not
+random: those pages emit «الدرس» **fused to the title in a single span**
+(«الدرسُالنسبةُ المئويّة»), which an equality test cannot see. That is worth
+naming because of what a missed opener does: it does not leave a gap, it
+extends the PREVIOUS lesson across the missing one's pages and files its
+figures under the wrong lesson — the failure that reads exactly like success.
+`OpenerProfile.dars_prefix` switches that one test to `startswith`, per book;
+both books now detect their catalog counts exactly (17/17, 20/20). It is a
+per-book flag rather than a global loosening because `startswith` is a
+superset of what every working book already matches, and would let a heading
+like «الدرسُ السابق» in the top band pass for an opener.
+
+**Two thirds of what these books yield is the page footer.** The navy-and-gold
+footer wave is vector art, so it seeds like a figure: 204 of the 438 crops
+were footers. They are geometrically uniform — 60% of page width, starting at
+y=90% in S1 and y=84-88% in S2 — so they were culled by that signature after
+sampling 18 of each to confirm, rather than by eye. Note the two books differ
+enough that a filter tuned on S1 caught **none** of S2's.
+
+**English, all three grades, 2026-09-13 — and a wrong-placement bug closed
+with it.** 110 photos extracted, **96 kept**; Grade 9 35 of 70 lessons, Grade 8
+23 of 70, Grade 10 10 → 27 of 100.
+
+The Grade 10 half was already shipped and **already wrong**.
+`extract_book_photos.py` returned only the unit — it counts «LESSON 1A» header
+resets — and stamped `lesson: 1` on every crop. That was exact while the
+catalog modelled a unit as ONE lesson, and silently wrong from 2026-09-10, when
+the catalogs took the seven the book prints: **38 of Grade 10's 40 photos were
+filed under a lesson they do not come from**. Nothing failed, because a wrong
+lesson reads exactly like a right one — and two tests plus both catalogs'
+`known_gaps` recorded the behaviour as a known approximation rather than a
+defect, which is how it survived.
+
+The fix is four lines: the header the extractor already parses carries the
+lesson number, and `where_of_page` now returns `(unit, lesson)` instead of the
+unit alone. Grade 10's index was **re-stamped in place** rather than
+re-extracted, so the human review of those 40 crops was not thrown away; 38 of
+40 moved. The two tests that asserted `lesson === 1` are inverted, and a third
+now fails if any grade's photos collapse back onto lesson 1.
+
+Worth noting for the next book: this is the second silent no-op in this
+workflow in two days. The map-entry generator's SCOPE edit did not match
+(a previous round had appended a key to the line being replaced) and it emitted
+zero English entries without complaining — found only because the count was
+obviously wrong. Both are now assert-on-match.
+
+**Grade 7 English, 2026-09-13 — the same series, and none of the same rules.**
+31 photos extracted, **16 kept**, 12 of its 72 lessons. Its yield is poor
+because this book renders many whole text pages as images and the raster
+filters cannot tell one from a photo.
+
+Three differences from Grades 8-10, each of which silently breaks placement on
+its own, and none of which announces itself:
+
+- **Its header is «Lesson 7» at 14.999968528747559pt**, not «LESSON 7A» at
+  18pt. A `>= 15` gate — which is what anyone would write — matches NONE of the
+  94 headers, and the book yields nothing with no error. The gate is 14.5.
+- **Its body cross-references lessons**: «Read the dialogue in Lesson 2» at
+  13-14pt. Counted as headers, those produced **17 units for a 4-unit book**.
+- **Its lesson numbers have gaps** — 1,2,3,5,6,8,9,10,11, nine per unit — so
+  "the number went down" is not a unit boundary. The boundary is «In this unit
+  I will …», which appears exactly 4 times per semester book.
+
+**And the two semesters number their lessons differently.** Both books PRINT
+the gapped set; the S1 catalog carries those numbers verbatim, the S2 catalog
+renumbers them 1..9. They are positionally identical — checked title by title
+against u4 against u7: Vocabulary, Team Talk, Grammar, Book Club, Vocabulary
+and Grammar, Culture, English in action, Reading, Writing — so the S2 join is
+the printed number's POSITION, held in `LESSON_REMAP`. Joining l9 to l9 there
+would have filed «English in action» photos under «Writing», which is the
+failure that reads like success. The S2 unit offset is +4, not the +5 the other
+three grades use.
+
+One crop was dropped rather than mapped: S1 unit 4 prints a «Lesson 4» the
+catalog has no lesson for, so its photo is unused rather than filed against an
+id that does not exist.
+
+**Grade 6 science, 2026-09-13 — 52 kept of 147 crops, 17 of its 19 lessons**,
+the week its curriculum landed. Cells and organelles, diffusion and osmosis,
+the digestive organs, atoms and shells, circuits and levers, waves and
+echolocation, convection, galaxies.
+
+**Its openers set the lesson number at 37.08pt on some pages and 40.0pt on
+others, in the same book.** The default profile's `>= 40` therefore found 3 of
+the 9 in S1 — the worst possible result, because the six misses do not leave
+gaps, they extend the previous lesson across their pages. `G6_SCIENCE_OPENER`
+lowers that one gate to 35 and nothing else; detection is then 9/9 and 10/10.
+
+The S2 offset is +4 (extractor 1-5, catalog 5-9) and was corroborated by
+content, not arithmetic: the waves and bat-echolocation crops land on
+«الموجات»/«الصوت والسمع», the kettle and convection arrows on «الحرارة», the
+star discs on «المجرات».
+
+**Grade 6 MATHS is registered and deliberately not extracted.** It prints the
+same small-maths layout as Grade 8 — so it reuses `G8_MATH_OPENER` rather than
+a copy — but yields 6 openers against the catalog's 18, and five of those six
+resolve to unit `None`. Two independent causes: most of its openers do not
+carry the big lesson number the profile keys on (p43's «الدرس» sits beside
+11.78pt digits, not 50pt), and one stray unit header on p67 defeats
+`outline`'s reset-derived fallback, which only fires when NOTHING found a unit
+anywhere. Extracting it would file most of the book against no lesson at all.
+
+**Grade 8's remaining subjects, 2026-09-13.** Five probed together, two
+shipped: **social studies 24 of 43 lessons** (49 figures kept of 154 crops) and
+**financial literacy 3 of 8** (5 of 8 — a thin book, kept on the "carry on"
+call rather than a yield judgement).
+
+**Social was nearly written off on a false reading.** The first summary said
+0 openers for all eight books; that was a counting command run before the
+probes finished, not a result. Re-read, the default found 15 of 21 and 14 of
+22 — and the misses were not missing headers. Those six pages carry «الدرس» at
+21.6pt with a 57.3pt number at **y=69**, where the default ceiling is y<65.
+Four points. `G8_SOCIAL_OPENER` raises only that ceiling, to 75 — still far
+above the y=120+ where this book's contents pages put the word — and detection
+becomes 21/21 and 22/22, unit-for-unit against the catalog.
+
+That the misses were REAL lessons rather than a catalog that over-splits was
+proved against the book's own contents spread, which lists all 21 with their
+pages (6, 8, 14, 19, 26, 28, 36, 43, …).
+
+**Three subjects are closed on measurement**, all with the same shape as
+Arabic: creative arts (29 lessons) and vocational education (26) yield no
+readable openers — vocational carries «الدرس» on 5 pages, all of them the
+contents spread — and **digital literacy (13) carries it on ZERO of its 187
+pages**.
+
+**The contents spread is the mechanism that would unlock them.** Every book
+that has defeated the opener detector — Arabic, Islamic, vocational, creative
+arts, Grade 6 maths, Grade 8 science S2, Grade 9 history S2 — prints a
+contents page listing each lesson against its page number, and the Grade 8
+social diagnosis above shows those tables are accurate. Parsing them would give
+an exact page→lesson join with no opener needed, worth roughly 250 lessons.
+That is a new mechanism, not a threshold, and is the next thing to build.
+
+**What still has no figure at all, and why:**
+
+- **Grade 8 — five of ten subjects, 165 lessons.** English, maths, science,
+  social and financial literacy are done (above). Left: Arabic and Islamic
+  (closed on measurement), creative arts, vocational education and digital
+  literacy (no readable openers; the contents-spread parser is the way in).
+- **Arabic and Islamic** (192 lessons): measured and abandoned 2026-09-05, see
+  the section below. Unchanged.
+- **English**: done for Grades 10, 9, 8 and 7 (above). Grade 7 is thin at
+  12 of 72 lessons — the ceiling is its book, not the pipeline.
+- **Grade 9 history S2** (13 lessons) and most of **Grade 9 geography S2** —
+  the two books above that this batch could not use.
+- **Civic education and digital literacy**: probed, **0 lesson starts** in
+  either Grade 10 S1 book. Like Islamic, they print an opener the detector does
+  not know, so they need a per-subject profile before extraction is worth
+  running.
+- **PE, social, creative arts, vocational**: never run, no measurement either
+  way.
+
+## Every QR code in the books, decoded — and the ministry's certificate expired
+
+**186 QR codes in 23 of the 48 student books**, in
+`knowledge-base/book-qr-links.json`. They are drawn, not embedded as images,
+and **not one book in the set carries a clickable link annotation** — so they
+are invisible to both the text layer and `page.get_links()`, and were found by
+rendering every page and running OpenCV's detector over it. 112 are videos
+(mostly ministry-hosted `.mp4`, 3 YouTube), 33 are PDFs, 38 public pages, 3
+images.
+
+**One render scale is not enough, and the under-count is silent.** The first
+pass rendered at 150 dpi and reported 44 codes; at 150/200/260 the same books
+yield 186 — only 44 of them decode at 150. The detector is scale-sensitive in
+both directions, not just "higher is better": the Grade 10 history S1 code on
+page 12 decodes at 200 and fails at 150, 300 **and** 400. Anything re-running
+this must take the union of several scales or it will quietly agree with a
+number that was four times too low.
+
+**The printed URLs do not work.** Every ministry code prints
+`https://qr.nccd.gov.jo/…` and that host's TLS certificate has expired
+(`SEC_E_CERT_EXPIRED`), so the URL as printed fails — 100 of the 186. The same
+paths over `http://` serve the file, and that is what `workingUrl` holds; 169
+of 186 resolve that way and 17 are dead even then. Note an https page cannot
+embed an http video, so these are open-in-a-new-tab links, not slides that
+play.
+
+**12 are joined to a lesson; the rest carry a page only.** A code is located by
+page, and a page becomes a lesson only in books whose openers `outline()` can
+read — which since 2026-09-12 means history and geography (5 and 7 codes). The
+other 174 sit in Islamic (80), Arabic (34), English (24), art (13), civic (8),
+digital literacy (9), PE (3) and maths (3), none of which have a readable
+lesson outline. Joining those needs a per-book page→lesson table read off each
+contents spread.
+
+**Where the codes are is almost exactly where the figures are not.** Islamic,
+Arabic, art, civic education and PE have zero extracted figures between them,
+and 138 of these 186 codes — so for those lessons the book's QR video is the
+only media the book offers. ~~Nothing consumes the manifest yet.~~
+**`artifacts/mobile/services/bookQrLinks.ts` reads it since 2026-09-13** — see
+«The student has a place to go» below.
+
+## The plot sampler learned trigonometry, 2026-09-12
+
+**`sin`, `cos` and `tan` now plot.** They were not merely unsupported — they
+were untokenisable: `tokenize` emitted one token per letter, so `sin` became
+`s*i*n`, three unknown symbols, and `compileExpression` refused it. That is why
+«حساب المثلثات» lessons projected no curve at all. The tokenizer now reads a
+run of letters as one identifier, the shunting-yard treats known function names
+as prefix operators, and `evalRpn` applies them.
+
+**Radians, decided deliberately.** The books write «جا ٣٠ = ٠٫٥», which is
+degrees — but this module plots curves rather than evaluating values, and
+`f(x)=sin(x)` sampled over a degree domain is a nearly flat line instead of the
+wave a teacher points at. Value questions stay SymPy's job. `sin(30)` here is
+−0.988, not 0.5, and a test pins that so nobody "fixes" it by accident.
+
+**Two traps found while building it, both now guarded:**
+
+- **`tan` does not return Infinity** near π/2 — it returns about 1e15, which is
+  finite, so the existing filter kept it. One such point set the y-range for the
+  whole slide and flattened every other curve on it into a horizontal line.
+  `SampleOptions.maxAbsY` drops those points, leaving a gap at the asymptote —
+  the same thing the sampler already did for a hyperbola, and what the
+  mathematics actually looks like.
+- **Brackets are now required after a function.** `sin x + 1` would otherwise
+  parse as `sin(x + 1)`: the shunting-yard drains `sin` last and swallows the
+  whole sum. A different curve, drawn confidently. It is refused instead.
+
+**The window is per slide, not per curve** (`sampleOptionsFor`). Trig widens to
+−2π..2π at 240 steps; everything else keeps −5..5 at 80. All series on a slide
+share one window, because they share one set of axes — a line sampled −5..5
+beside a wave sampled −2π..2π stops short of the edge and reads as a bug.
+
+**Three existing tests changed meaning and were updated, not deleted.** They
+used `sin(x)` as the canonical example of something the evaluator refuses. They
+now use `log`/`sqrt`/`sec`, which are still outside it, and a new test asserts
+`expressionFromCommand('f(x)=sin(x)')` returns the body rather than null.
+
+**Not done:** circles. `Circle((h,k),r)` fits `PlotSeries.points` without a type
+change (a parametric polyline), but `plotGeometry` scales x and y independently
+to fill the box, so a circle would render as an ellipse — worse than nothing in
+a maths lesson. Fixing that needs an equal-aspect mode honoured by all three
+renderers, and `exportPptx` draws through a native PowerPoint chart that may not
+support it. Decide that before starting.
+
+## The GeoGebra embed is gone; graph slides draw their own curve, 2026-09-11
+
+**The class deck no longer frames geogebra.org.** `GraphView` in
+`app/ai-tools/classroom/presentation.tsx` used to render an `<iframe>` of
+GeoGebra's calculator on web (native already opened a browser instead). It now
+renders `VisualView` — the same `visualForSlide` → react-native-svg plot the
+PDF and PPTX exports have drawn since `services/deckVisuals.ts` landed, so all
+three surfaces finally show the same picture.
+
+**Why, since the iframe was the better teaching tool.** GeoGebra's licence
+(read 2026-09-10, November 2025 revision) makes any commercial use subject to a
+separate agreement, and says explicitly that "non-commercial" **depends on the
+use, not the user**. Its commercial examples name online schools and even
+non-profits, and catch materials given away free that are "used to gain a
+commercial advantage". The non-commercial grant is limited to "personal or
+individual classroom teaching" and is **personal to the holder** — clause 10
+forbids permitting "any third party to benefit from it" without written
+consent. Framing their calculator inside a product we distribute to teachers is
+not something that grant covers. Their own commercial terms name framing as a
+restricted act (cl. 3.1a).
+
+**The link-out stayed, deliberately, and now runs on web too.** A teacher
+opening geogebra.org in a browser is an ordinary visit to a free site.
+It is also the only fallback when `visualForSlide` refuses a command it cannot
+plot honestly (`Circle(...)`, trig), where `VisualView` renders nothing at all
+— so the button is load-bearing, not a leftover. `visualForSlide` gained its
+first direct tests in `services/__tests__/deckVisuals.test.ts` for exactly this
+reason: it is now the only thing that puts a curve on a classroom wall.
+
+**Not decided here:** whether to pursue a License and Collaboration Agreement
+(office@geogebra.org). That is a business call. One thing to weigh first —
+clause 7.2 of their commercial terms makes GeoGebra **joint copyright owner of
+materials generated using it**, which for a product whose output is generated
+decks is a larger concession than the fee. Nothing is signed, and nothing here
+depends on signing.
+
+**Not verified in a browser.** The presenter sits behind auth and
+`dev:mobile:web` signs in against production, and `.claude/launch.json` lives
+at the main checkout rather than the worktree. Typecheck and the full mobile
+suite (1280 tests) pass; the projected slide itself has not been looked at.
+
+**Still parked:** the GeoGebra tool card in `services/toolCatalog.ts` remains
+`hidden: true` (since 2026-08-18) and was not touched. The «GeoGebra» strings
+in `lib/curriculum/src/data/extracted/*.json` are the MoE textbooks telling
+students to use it — quoted curriculum, not an integration.
+
+## A profile picture landed, and it stops at the signed-in user, 2026-09-09
+
+A teacher can now tap their own avatar on `app/(tabs)/profile.tsx` to pick a
+photo (`services/avatarPick.ts`, downscaled to a 512px long edge — an avatar
+never needs a lesson-scan-sized image) or remove it back to initials. Server
+side: `lib/db/src/schema/users.ts` gained a nullable `avatarKey` (a key, not
+a URL — `DELETE` needs something to hand `deletePublicObject` without
+parsing one back out of a URL); `POST`/`DELETE /auth/users/avatar`
+(`routes/auth.ts`) follow `routes/lessonMedia.ts`'s existing data-URL-in-JSON
+pattern, with their own narrower `avatarUpload.ts` (image mimes only, a
+4MB cap — a third of lesson media's 8MB, since the client already downscaled)
+and `avatarUrlFor()` folding a null key to a null URL at every one of the
+five sites that serialise a `User` (register, login, google, `/me`, `PATCH
+/users/profile`).
+
+**Chose the public bucket over the private/presigned pattern deliberately.**
+`lessonMedia.ts` signs a 1-hour URL per fetch — fine for a document opened
+once, awkward for something rendered in a list repeatedly. An avatar goes
+into `iqraa-public` instead (see `docs/adding-a-book.md`'s "The two
+buckets") behind a stable, non-expiring URL. This is that bucket's **first
+runtime writer** — every book PDF in it before now arrived by hand through
+the Cloudflare dashboard. `lib/r2.ts` gained `putPublicObject`,
+`deletePublicObject`, `newAvatarKey` and `publicUrl`, all sharing the
+existing `S3Client` (same account, same credentials, just a different
+`Bucket` name) and gated by their own `isPublicR2Configured()` — true only
+when `R2_PUBLIC_BASE_URL` is *also* set, since composing a URL (rather than
+signing one) needs the bucket's own `pub-<hash>.r2.dev` origin.
+
+**Deliberately does not touch `components/ui/Avatar.tsx`.** That component
+renders *other* people — message senders, thread participants, group
+members — in six screens across messaging, notifications and group
+management. Making their photos appear there means threading `avatarUrl`
+through every message/notification/roster payload those screens read, not
+just adding an `<Image>` to one component; out of scope for "a teacher can
+change their own profile picture." `Avatar.tsx`'s own header comment now
+says so, so the gap reads as a decision, not a stale claim next time someone
+reaches for it.
+
+**Verified, with the limits stated plainly:**
+- Started a local Postgres, pushed the schema (`avatarKey` column exists —
+  confirmed with `\d users`), ran the real built api-server against it.
+  `POST /auth/register`, `GET /auth/me` and `PATCH /users/profile` all
+  return `avatarUrl` (null on a fresh account).
+- `POST /auth/users/avatar` correctly answers 503
+  (`{"code":"avatar_unavailable"}`) with `R2_PUBLIC_BASE_URL` unset —
+  proving the feature fails closed rather than silently, the same shape
+  every other optional integration in this app uses.
+- Full round trip in a real browser (Playwright against Expo web): set the
+  database's `avatar_key` to an object served by a local stand-in for the
+  public bucket, confirmed the photo actually renders inside the circular
+  avatar (not just that the URL resolves), that tapping the camera badge
+  opens a real OS file chooser, that the X badge only appears when a photo
+  is set, that removing it fires the Arabic confirm dialog
+  («هل تريد إزالة صورة الملف الشخصي؟») and reverts the UI to initials, and
+  that the DB's `avatar_key` actually clears — not merely that the client
+  stopped rendering it.
+- `pnpm run typecheck` clean across the whole monorepo; api-server 517/517
+  (8 new: `avatarUpload.test.ts`, `r2.test.ts`); mobile 1259/1259 (10 skipped,
+  pre-existing, unrelated).
+- **Not verified: real Cloudflare R2.** No credentials in this sandbox, so
+  `putPublicObject`/`deletePublicObject` were exercised against a local
+  stand-in, not the actual `iqraa-public` bucket — though the call shape is
+  identical to `putObject`, which is proven in production (see the R2 rows
+  in `docs/deploying.md`'s secret-proving table).
+- **Production, partly.** The schema half is done: `avatar_key` was added to
+  Neon on 2026-09-13, applied as the equivalent `ALTER TABLE users ADD COLUMN
+  avatar_key text` rather than through `drizzle-kit push` — nullable, no
+  default, exactly what the schema declares. Confirm with `pnpm --filter
+  @workspace/db run verify-schema`, which asks only whether the table exists,
+  so it will not catch a column typo; the `/auth/me` payload carrying
+  `avatarUrl` will. Still outstanding: `R2_PUBLIC_BUCKET` and
+  `R2_PUBLIC_BASE_URL` on Cloud Run, and the hand deploy of `iqraa-api` that a
+  merge does not do — see `docs/deploying.md`'s R2 section, updated with them.
+  Until those land this ships correctly gated: the upload route 503s rather
+  than 500ing or writing to the wrong place.
+
 ## A half-marked paper counted as a finished one, 2026-09-07
 
 Found by walking the evaluations lifecycle end to end against a local stack —
@@ -473,6 +1501,185 @@ cannot change it. All six generated questions were stamped
 as `levels: [1, 1, 0]`. A teacher following the printed rubric over-awards.
 There is no sensible integer partial on a 1-mark question, so the fix is to
 omit the band, not to floor it.
+
+## Student accounts went live, reversing the v1 decision, 2026-09-07
+
+**`STUDENT_ACCOUNTS` is `true` in production.** Nizar was asked directly
+whether to leave it open or close it, and chose to leave it open. That reverses
+«v1 is teacher-only, and a roster now needs a consent to exist» below, which
+stays in this file as the record of the earlier decision — but its factual
+claims about the running system are **no longer true** and are marked where
+they appear.
+
+**Nothing in a git log marks the moment it turned on.** The environment
+variable had been set on the Cloud Run service long before any revision read
+it; the deploy that shipped `lib/features.ts` made it take effect silently. A
+config value that predates the code reading it is invisible to every
+change-tracking habit this project has.
+
+**Verified by probe, not assumed** — and the obvious probe is wrong. A bare
+`POST /auth/register` returns «First name is required» from the validation at
+`auth.ts:117`, long before the flag gate at `:143`, so it proves nothing. Fill
+every field and the student-role request reaches the class-code lookup instead
+of a 403 `student_accounts_disabled`:
+
+```bash
+API=https://iqraa-api-613126375862.europe-west1.run.app/api
+curl -s -X POST "$API/auth/register" -H 'Content-Type: application/json' \
+  -d '{"role":"student","firstName":"P","lastName":"D","email":"p@example.invalid","password":"Str0ng!Passw0rd#2026","claimCode":"ZZZZZZ"}'
+# {"error":"That code is invalid or has expired"}   <- past the gate
+```
+
+**What that opens:** student and parent registration, `POST /auth/claim`,
+`GET /auth/join/:code`, and with them the whole messaging surface — direct
+teacher↔parent/student threads and class groups. The join-code feature is no
+longer dormant.
+
+**Three things were already right, and are worth not re-litigating:**
+
+1. `constants/legal.ts` was deliberately written to describe the
+   students-and-parents world, on the reasoning that over-describing is the
+   safe direction. So the flip made nothing published false.
+2. **Suspension is enforced.** `middlewares/auth.ts:76` gates every
+   authenticated request through `suspendedMayReach()`, which covers
+   `/messaging/*` even though `messaging.ts` never mentions `suspendedAt`. A
+   note claiming otherwise was wrong.
+3. `join_code` and `join_code_expires_at` **do exist** in the production
+   database — `GET /api/auth/join/ABC234` returns **404** with a clean body,
+   and since the query reads both columns a missing one would 500 instead.
+   That closes a long-standing worry recorded against the join-code work.
+
+**One real gap was found and closed:** `POST /messaging/threads/:id/messages`
+had no rate limiter while every other public entry point had one, and it
+writes 12MB attachments to R2. Fixed in PR #314 — keyed by user id rather than
+client IP, because a school shares one NAT address and an IP-keyed limit would
+let one class 429 the building.
+
+**Still open, deliberately:**
+
+- **Blocks are soft on send.** `POST /messaging/threads` refuses when either
+  party has blocked the other, but sending into an existing thread does not
+  re-check `chatBlocks`. The reader filters blocked senders and push skips
+  them, so it works from the blocker's side — messages still accumulate and
+  would appear in bulk on unblock. Whether a blocked sender should see an
+  error is a product decision, not a bug.
+**Found and fixed the same day: every rate limiter was per-instance while the
+service scales to 20.** `lib/rateLimit.ts` counted in container memory and its
+own header called that fine "for a single-instance pilot deployment" — but
+`maxScale` is **20**, so the login limiter's 10-per-15-minutes was really up to
+10 × instances. The counter now lives in Postgres (`rate_limit_buckets`,
+`api-server/src/lib/rateLimitStore.ts`) as a single
+`INSERT ... ON CONFLICT DO UPDATE`; PR #319, deployed as revision
+`iqraa-api-00023-4vt`. Not inferred from a digest: five requests to
+`/auth/join/:code` against production produced one `join-lookup:` row with
+count exactly 5, where the old code wrote nothing at all.
+
+Two consequences worth knowing. It **fails open** — if the database is
+unreachable the request passes and an error is logged, on the grounds that
+every route behind a limiter needs the database anyway and a 429 would relabel
+an outage as abuse; so a database outage is also a rate-limiting outage. And
+every rate-limited route now does one extra query, `/take` at 240/min being the
+busiest.
+
+Read-then-write was deliberately avoided: `SELECT` then `UPDATE` across
+instances is a lost-update race that would be *worse* than the per-instance
+bucket, because it still passes every single-process test. Verified against a
+real Postgres — 40 concurrent hits returned exactly 1..40 with none lost.
+## The parent message can be delivered, not just copied, 2026-09-07
+
+`ai-tools/parent-message` composed a letter to a guardian and then could not
+deliver it. «أرسل» called `shareAsText`, which opens the OS share sheet — and on
+desktop web `navigator.share` does not exist, so it fell back to the clipboard.
+On the browser teachers are demoed in, «أرسل» and «نسخ» did the same thing, and
+the toast read «تم فتح المشاركة» because that was all that had happened. No
+email was ever involved: there is no provider, no env var and no guardian
+address column anywhere in the repo.
+
+It now sends through the messenger from PR #245 — `startThread` + `sendMessage`
+per linked guardian. No new endpoint, no schema change, no server code, no
+dependency. Three buttons where there were two, labelled for the difference:
+**أرسل عبر إقرأ** (real delivery), **مشاركة** (the old share sheet), **نسخ**.
+Collapsing them back into one «أرسل» would mean the same tap sometimes reaching
+a parent and sometimes only filling a clipboard, with nothing on screen to say
+which.
+
+**This shipped inert and is no longer inert.** It was written on 2026-09-07 when
+`STUDENT_ACCOUNTS` was false, so `POST /messaging/threads` refused every send —
+`isConnected()` needs a `roster_links` row and the claim flow that mints one
+answered 403. The flag went **true** in production the same day, confirmed live
+(`/healthz/features` → `{"studentAccounts":true}`), so guardians can hold
+accounts, claim a roster row, and receive these notes for real. The button is
+enabled exactly when the picked student has a linked guardian.
+
+Two rules in the code that are easy to lose later:
+
+- **Guardians only.** `guardiansForStudent()` filters to `role === 'parent'`. A
+  roster link can also be `relation: "self"` — the child's own account — and the
+  letter talks about them in the third person («ابنكم»). Sending it there is the
+  wrong reader receiving a message written to be read over their head, not a
+  redundant send. Five cases in `parentMessage.test.ts`.
+- **Editing the name drops the recipient.** Picking «أحمد» then typing over the
+  name clears `pickedStudentId`, so a note can never go to the guardian of a
+  student nobody chose. Fails back to sharing.
+
+When the button is disabled the screen says which reason applies — «اختر
+الطالب/ة من قائمة صفوفك» when the name was typed by hand, «لم يربط وليّ أمر هذا
+الطالب/ة حسابه بعد» when nobody has claimed that student.
+
+**One real gap now that the flag is on:** `/messaging/*` has **no rate limiter**
+— checked against `routes/messaging.ts`, zero `createRateLimiter` calls — while
+`/take` runs 240/min and `/auth/join/:code` 60/min. Sends accept attachments
+that upload to R2, so it is a cost vector, not only a spam one.
+
+Two adjacent worries were investigated and are **not** gaps, contrary to an
+earlier draft of this entry: `users.suspendedAt` is enforced globally at
+`middlewares/auth.ts:76` through `suspendedMayReach()`, which covers
+`/messaging/*` even though `messaging.ts` never mentions it; and `chatBlocks` is
+checked when a direct thread is created (`messaging.ts:433`), with the read path
+and push filtering blocked senders — only posting into an already-open thread
+skips the check.
+
+## Password reset is gone rather than pretending, 2026-09-07
+
+`forgot-password` told the teacher «أرسلنا رابط استعادة كلمة المرور إلى بريدك»
+and sent nothing. `POST /auth/forgot-password` mints a token, stores its hash,
+`console.log`s it when `NODE_ENV !== "production"`, and returns `{ok:true}` —
+there is no email provider anywhere in this repo, so in production the token was
+created and discarded. There was also no reset screen: `AuthContext.resetPassword()`
+existed and nothing called it, so even a delivered link had nowhere to land.
+
+A reset link cannot go through in-app messaging — the person is locked out of
+the app, so the one channel we have is the one they cannot reach. The choice was
+build an email provider or remove the flow. **Removed.** Google sign-in already
+works and already sets `emailVerified`, and it is the prominent button on the
+login screen.
+
+Gone from the client: `app/(auth)/forgot-password.tsx`, its `Stack.Screen` in
+`(auth)/_layout.tsx`, the «نسيت كلمة المرور؟» link in `login.tsx` (and its two
+orphaned styles), `forgotPassword`/`resetPassword` on `AuthContext`,
+`/forgot-password` in `ENTRY_ROUTES`, and seven now-unused i18n keys in both
+languages. The compiled web bundle contains zero occurrences of any of them.
+
+**The cost, stated plainly:** an account created with email + password now has
+no recovery route. Anyone in that position needs Google sign-in or manual
+intervention. That was accepted deliberately, not overlooked — worth revisiting
+if the share of email+password teachers turns out to be material.
+
+**The server side followed, same day.** `POST /auth/forgot-password` and
+`POST /auth/reset-password` are gone from `routes/auth.ts` (122 lines), along
+with `forgotPasswordLimiter` and the `passwordResetTokens` import. Both now
+answer 404 on a running server while `/auth/login` still answers 401 and
+`/healthz/features` 200 — the router is intact, only those two routes left.
+It shipped as its own PR because **the API is hand-deployed**: until someone
+runs that deploy, production still carries the old routes. They are unreachable
+from the app either way, since the client no longer calls them.
+
+The `password_reset_tokens` table stays. Dropping it needs a manual schema push
+and buys nothing.
+
+**Verified:** 1246 mobile tests pass (0 fail), monorepo typecheck clean, no
+dangling references in source, and the login screen rendered in the running app
+without the link.
 
 ## Financial literacy and English S2 have readable text at last, 2026-09-06
 
@@ -725,6 +1932,175 @@ button with a sentence saying the capability is not in this release, both off
 `useStudentAccountsEnabled()`. A disabled control was rejected deliberately —
 it invites "when?", which neither screen can answer.
 
+## The link code a teacher shares, 2026-09-06
+
+**Written the day before student accounts went live** (see the entry above) —
+the off-state behaviour below (`STUDENT_ACCOUNTS` false: entry points hidden,
+screen explains) describes what the code does when that flag is false, which
+was production's state at the time and is not any more. The rest — the
+destructive-regenerate fix, the share message, the normalisation fix, the rate
+limiter — is unconditional and stayed exactly as true after the flip.
+
+Asked "where does a teacher find the code to share?", the answer was: حسابي →
+الإعدادات → صفوفي → a class → an unlabelled grey speech-bubble icon on a
+student row, between a pencil and an ×. Classes are not on the tab bar at all.
+
+Chasing that found something worse than a hidden button.
+
+**The only action on that screen destroyed the code you had already shared.**
+Nothing returned an existing code — `claimCode` appeared in `routes/roster.ts`
+only inside the mint handler, never in a projection — so re-opening the screen
+showed an empty card whose one button minted a *new* code, overwriting the old
+one in place. A teacher who generated a code, gave it to a parent, and came
+back silently broke it. No warning existed because nothing knew.
+
+`GET /students/:id/claim-code` now returns the live code, and an expired one as
+`null` so the screen has two states rather than three. Sharing became the
+primary action; replacing is a demoted text button whose label states the
+consequence («إنشاء رمز جديد بدل الحالي») behind a confirm that spells it out.
+The confirm goes through `services/confirm.ts` and not `Alert.alert`, which
+does nothing on react-native web — the build teachers are demoed on.
+
+**The code also left the app as six bare characters.** It now leaves as a
+message: greeting, the child's name, the code alone on its own line so a
+long-press selects it, the expiry, and a link to the web app with what to tap.
+`services/claimCodeMessage.ts` composes it — pure, so `node --test` can load
+it, and deliberately *not* `parentMessage.ts`, which requires a
+`studentGender` the roster does not record.
+
+Three smaller things the same trail turned up:
+
+- **The teacher and the parent called it different names.** The screen said
+  «رمز الربط»; the sign-up field said «رمز الصف». A teacher relaying the first
+  sent a parent hunting for a label that did not exist. Both are «رمز الربط»
+  now, and the composer is *passed* the register screen's own label so a rename
+  cannot silently re-open the gap — `claimCodeMessage.test.ts` asserts it.
+  **Held for two days.** Three strings added on 09-08 and 09-10 each wrote
+  «رمز الصف» again; the test above pins the composer, and cannot see a new
+  screen that hardcodes the name. Renamed again 2026-09-12 — see the entry at
+  the top of this file.
+- **A pasted code was rejected for being pasted.** `normalizeShareCode` was
+  applied to exam codes and never to claim codes; both call sites only
+  `.trim()`. «abc-234 » answered "invalid or has expired", which was neither.
+  Normalising now happens once in the shared resolver, so the third caller
+  cannot forget. Verified live: a parent redeemed `sp7-p2c` for `SP7P2C`.
+- **`POST /auth/claim` had no rate limiter** while register, login and
+  forgot-password all did — an authenticated 6-character guessing surface. 10/hr.
+
+**Reconciled with a teacher-only v1 rather than shipped against it.** Two
+unmerged branches pulled opposite ways: one made the code findable (key icon,
+class-chat menu entry), the other turned parent and student accounts off by
+default. Landed as written, a teacher would have got a clearly-labelled key
+leading to a button that 403s. So when `STUDENT_ACCOUNTS` is off the entry
+points are **hidden** — an affordance whose only purpose is handing out a
+redeemable code is meaningless when nothing can redeem it — and the screen
+itself **explains**, because the route stays reachable by URL. Hiding is not
+the enforcement: the server refuses both routes regardless, and that was
+verified separately with a real teacher token.
+
+Also corrected: the findability branch renamed the icon and left the sentence
+naming it, so `messagingNoContactsDesc` still told teachers to press «أيقونة
+المحادثة». That string is rendered in two places and was false the moment that
+branch landed.
+
+**Verified against a running stack, both ways.** Flag off: both routes 403
+`student_accounts_disabled` with a teacher token; the key icon absent from the
+roster; the screen explaining. Flag on: read-before-mint returns null; mint;
+**re-read returns the same code** — the bug, gone; another teacher gets 404;
+the confirm fires and cancelling leaves the code untouched; the old code is
+rejected after a replace. The share message was captured from the page.
+`schema-push:` **none** — both columns already exist.
+
+## Arabic and Islamic Studies do not carry extractable figures, 2026-09-05
+## — re-tested 2026-09-12, and the conclusion holds for a sharper reason
+
+**Retested in full on 2026-09-12 because the note below named a fixable
+blocker.** It was fixable, and fixing it did not help. `OPENER_PROFILES` in
+`extract_book_figures.py` now carries the Islamic opener geometry this section
+asked for, and it finds **24 of 24** openers in the Grade 10 S1 book. All four
+Islamic books were then extracted and reviewed. The result:
+
+- **Grade 10 crops the whole page.** These pages carry an ornamental vector
+  border, so `drawing_cluster` grows every seed out to the page frame — median
+  crop **94% × 96%** of the page, 28 of 36 covering more than half of it,
+  against g9-physics-s1's healthy 23% × 17%. `MAX_W`/`MAX_H` do not catch this
+  because they filter *seeds*, not the grown cluster.
+- **Grade 9 crops small — and that is not good news.** Median 5% of page area,
+  which looks healthy and is not: what it crops is small blocks of Quranic
+  text. All 15 crops across both semesters were verse boxes, header banners or
+  the NCC logo.
+- **The real blocker is the data model, not the detector.** What all four books
+  genuinely have is one good illustration card per unit (the Kaaba, the Dome of
+  the Rock, a gavel on a Quran, a microscope) — and every one sits on the
+  front-matter contents spread **before lesson 1**, so a map keyed on
+  `(sourceId, unit, lesson)` cannot address it whatever extractor produces it.
+
+Everything extracted was deleted; only the profile and this note survive. The
+estimate below of "~12 usable across 50 lessons" for Islamic was optimistic:
+placed and usable, it is **zero**.
+
+**Arabic was re-confirmed in the same pass and needs no re-test.** Its «الدرس»
+is a 13pt *running header* at y=9-16 and there is no lesson-number span
+anywhere near the top of any opener — so there is no third threshold to tune,
+which is what separates it from Islamic. Placing its figures would need a
+page→lesson table parsed from each book's contents spread.
+
+The 2026-09-05 measurement follows, unchanged.
+
+Measured, then abandoned. Recording it so the next person does not spend the
+same afternoon rediscovering it — everything below is a count, not an
+impression.
+
+**These are text-and-ornament books, not diagram-bearing ones.** Both
+extractors misfire on them in the same way: the vector tool captures whole
+pages of Quranic text, ruled exercise boxes and «الدَّرْسُ الأوَّل» banners; the
+raster tool finds page-background washes. What each actually yielded:
+
+| | vector crops | usable | raster candidates | usable | lesson outline |
+| --- | --- | --- | --- | --- | --- |
+| Arabic s1+s2 | 173 | ~20 of the 105 reviewed | 56 | ~8 of the 26 reviewed | **none** |
+| Islamic s1+s2 | 106 | ~10 of the 36 reviewed | 14 | ~6 of the 8 reviewed | readable, wrong shape |
+
+For scale, physics semester 2 alone yields **84** usable crops across 7
+lessons. Islamic would yield roughly 12 across 50.
+
+**Arabic cannot be placed at lesson level at all.** Its lesson headers are
+*rendered as images*, not text — which is why the opener detector returns
+nothing and why those banners turn up as crops in the contact sheet. No font
+threshold reaches them. Its UNIT openers are text and detectable
+(«الوحدة الأولى» at 18-20pt, 5 per book, matching the catalog's units 1-5 and
+6-10 exactly), so unit-level placement is possible — but
+`figure-lesson-map.json` keys on `(sourceId, unit, lesson)` and a unit here
+spans five lessons, so that needs a model change, not a map entry.
+
+**Islamic prints a third opener layout the detector does not know.** It is the
+better of the two — 24 opener pages against the catalog's 24 lessons in
+semester 1, and 26 against 26 in semester 2, an exact join with no offset —
+but every threshold in `lesson_start` is tuned for the maths and science
+layouts. Measured on its own pages, what it would need:
+
+| | maths / science | Islamic |
+| --- | --- | --- |
+| «الدرس» size | ≥20pt | **15.9pt**, y=48-57 |
+| lesson number | ≥40pt, bare digits, y<65 | **15.9pt, parenthesised `(1)`**, y=75 |
+| lesson title | ≥24pt, y<60 | **21.9pt**, y=62 |
+
+Raising only the first (tried, as a per-subject override) still placed zero,
+because `lesson_start` returns `None` when it cannot read a number. Supporting
+Islamic means a per-subject opener *profile* — three geometry facts, not one
+threshold — and the payoff is ~12 photographs.
+
+**Nothing was kept.** The `BOOKS` entries, the per-subject opener size and 279
+crops were all reverted; only this note survives. That is the point: the
+figures pipeline was built for books that draw their content, and this is the
+edge of where it pays.
+
+**If it is ever revisited**, start from the table above rather than from the
+extractors — and note the one thing both books genuinely do have is a good
+unit-opener illustration card (scales, the Kaaba, a gavel on a Quran, a
+microscope; a caravan, Jerusalem, manuscript pages). Ten of those, one per
+unit, is a smaller and much better-defined target than "the figures in this
+book".
 ## The app has been built for a real device, 2026-09-05
 
 The first EAS build in the project's life. `artifacts/mobile` has always been
@@ -785,6 +2161,7 @@ push has the credentials it needs» below.**
 It was parked because v1 ships teacher-only and `constants/legal.ts` states in
 print that no minor holds an account; that is still true, and every line here
 is still gated behind `STUDENT_ACCOUNTS=false`, so nothing below is reachable
+[**NO LONGER TRUE as of 2026-09-07** — `STUDENT_ACCOUNTS` is `true` in production; see «Student accounts went live, reversing the v1 decision».]
 today. Turning that flag on remains a change to a published legal document, not
 a config change — see «v1 is teacher-only» below.
 
@@ -882,7 +2259,8 @@ repeated adds.
    success while production is untouched — check the host before trusting it.
    `verify-schema` would not have caught the gap either: it checks table
    *names* only, so it reports `ok` with a column missing.
-2. **`STUDENT_ACCOUNTS` is still false**, so none of this is reachable — by
+2. ~~**`STUDENT_ACCOUNTS` is still false**, so none of this is reachable.~~
+   **NO LONGER TRUE as of 2026-09-07** — `STUDENT_ACCOUNTS` is `true` in production; see «Student accounts went live, reversing the v1 decision». It is reachable. Was: by
    design, and it is also the reason nobody has contacts today. Worth checking
    that first if "my groups are empty" comes up again.
 3. **Not exercised end to end.** Typecheck and the full suites pass (re-run on
@@ -904,7 +2282,11 @@ decision rather than a gap. Two answers shaped it: **student and parent
 accounts are off in v1**, and consent for student data is **teacher
 attestation of school-held parental consent** — not an in-app age gate.
 
-**No minor holds an account.** `STUDENT_ACCOUNTS` (default false, and the
+**No minor holds an account.** **NO LONGER TRUE as of 2026-09-07** — `STUDENT_ACCOUNTS` is `true` in production; see «Student accounts went live, reversing the v1 decision». A minor with a valid class code can
+hold one. The paragraph below describes the decision as taken on 2026-09-05 and
+is kept for that record, not as a description of the running system.
+
+`STUDENT_ACCOUNTS` (default false, and the
 default *is* the decision) makes `/auth/register` and `/auth/claim` refuse a
 student or parent outright, and `/students/:id/claim-code` refuse to mint a
 code nobody could redeem. Refused server-side, not merely hidden: the app is
@@ -1208,71 +2590,66 @@ nothing that can act on a report or eject a user (`routes/admin.ts` has one
 route, `usage-summary`),~~ **also closed the same day — see «The report button
 now reaches someone»** — and ~~students get accounts by claim code with no
 birthdate, age or guardian-consent field anywhere in the schema~~ **the last
-one closed the same day too: v1 has no student accounts at all, and a teacher
-now attests to school-held parental consent before entering any child's name.
-See «v1 is teacher-only, and a roster now needs a consent to exist».** **No EAS
-build has ever been made**, so push delivery, image picking and the app icon
-remain unverified on a device, and `newArchEnabled` + `reactCompiler` are both
-experimental — Expo Go over LAN is not evidence that a release build runs.
+one closed the same day too — a teacher now attests to school-held parental
+consent before entering any child's name. See «v1 is teacher-only, and a roster
+now needs a consent to exist».** The clause that said «v1 has no student accounts
+at all» was true when written and is **no longer true as of 2026-09-07**:
+`STUDENT_ACCOUNTS` is on in production, so the attestation is now the only
+consent mechanism in play rather than a belt beside a closed door. See
+«Student accounts went live, reversing the v1 decision».** ~~No EAS
+build has ever been made~~ **— four have, as of 2026-09-07: `5c38a5fb`,
+`68522384`, `d32f5c0c` and `e9388ee1`, all Android `preview`, all finished.
+But building is not installing: nobody has put one on a phone, so push
+delivery, image picking and the app icon remain exactly as unverified on a
+device as when nothing had been compiled at all.** `newArchEnabled` +
+`reactCompiler` are both experimental — Expo Go over LAN is not evidence that a
+release build runs, and neither is a build artifact nobody has opened.
+
+**No `production`-profile build has been made**, which is the one that matters
+for submission: `preview` produces an APK for sideloading, Play needs the
+app-bundle that only `production` emits, and that profile carries
+`autoIncrement`. It would also be the first build to exercise `.easignore`,
+which was added *after* the build that motivated it.
+
+**The signing key changed on 2026-09-07.** `e9388ee1` and everything after it
+are signed with a new keystore (cert SHA256 `D1:32:E5:D6…`, alias
+`9f4ba23f…`); the three builds before it carry the retired one
+(`B4:A6:3B:ED…`, alias `96e2be27…`). Installing a new build over an old one
+therefore fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE` until the old app is
+uninstalled — expected, not a broken build. Verified by reading the
+certificate out of both APKs' signing blocks and out of the keystore itself,
+not by trusting the console.
+
+**That break also breaks Google sign-in, which was missed at the time.** An
+Android OAuth client is bound to a *signing certificate*, so changing the
+keystore invalidates it. `google-services.json` registers SHA-1
+`b1a46cca7dd267fd46af9e1ba578b2f7a6595ed2`, which is the **retired** key —
+verified by reading the certificate out of both APKs:
+
+| build | signing SHA-1 | registered in Firebase |
+| --- | --- | --- |
+| `d32f5c0c` (2026-09-06) | `b1a46cca…` | yes — Google sign-in verified working on a device |
+| `e9388ee1` (2026-09-07) and later | `189f8482…` | **no** |
+
+So `e9388ee1` fails Google sign-in with `DEVELOPER_ERROR`, and the successful
+device test of sign-in and account linking was performed on `d32f5c0c`, the
+older build. A config check done at the time reported the chain "verified end
+to end" — it compared `google-services.json` against `eas.json` and the server's
+accepted audiences, all of which agreed, and none of which is the signing key.
+Every link matched except the one nobody looked at.
+
+**To fix:** add SHA-1 `18:9F:84:82:5D:A3:1C:7B:5D:81:2C:02:53:20:4F:13:E0:4E:79:50`
+in the Firebase console (Project settings → Your apps → Add fingerprint), then
+re-download `google-services.json`, commit it and rebuild. Adding a fingerprint
+binds the *existing* Android client rather than creating a second one. Keeping
+the old fingerprint alongside costs nothing and keeps `d32f5c0c` working.
+
+**Read the certificate, do not trust the config.** `unzip` finds nothing:
+these APKs are signed v2/v3 only, so there is no `META-INF/*.RSA` and the
+certificate lives in the APK Signing Block before the central directory.
+
 There are no store assets. ~~and no `google-services.json` for Android FCM~~
 — the Firebase side landed 2026-09-06, see below.
-
-## Arabic and Islamic Studies do not carry extractable figures, 2026-09-05
-
-Measured, then abandoned. Recording it so the next person does not spend the
-same afternoon rediscovering it — everything below is a count, not an
-impression.
-
-**These are text-and-ornament books, not diagram-bearing ones.** Both
-extractors misfire on them in the same way: the vector tool captures whole
-pages of Quranic text, ruled exercise boxes and «الدَّرْسُ الأوَّل» banners; the
-raster tool finds page-background washes. What each actually yielded:
-
-| | vector crops | usable | raster candidates | usable | lesson outline |
-| --- | --- | --- | --- | --- | --- |
-| Arabic s1+s2 | 173 | ~20 of the 105 reviewed | 56 | ~8 of the 26 reviewed | **none** |
-| Islamic s1+s2 | 106 | ~10 of the 36 reviewed | 14 | ~6 of the 8 reviewed | readable, wrong shape |
-
-For scale, physics semester 2 alone yields **84** usable crops across 7
-lessons. Islamic would yield roughly 12 across 50.
-
-**Arabic cannot be placed at lesson level at all.** Its lesson headers are
-*rendered as images*, not text — which is why the opener detector returns
-nothing and why those banners turn up as crops in the contact sheet. No font
-threshold reaches them. Its UNIT openers are text and detectable
-(«الوحدة الأولى» at 18-20pt, 5 per book, matching the catalog's units 1-5 and
-6-10 exactly), so unit-level placement is possible — but
-`figure-lesson-map.json` keys on `(sourceId, unit, lesson)` and a unit here
-spans five lessons, so that needs a model change, not a map entry.
-
-**Islamic prints a third opener layout the detector does not know.** It is the
-better of the two — 24 opener pages against the catalog's 24 lessons in
-semester 1, and 26 against 26 in semester 2, an exact join with no offset —
-but every threshold in `lesson_start` is tuned for the maths and science
-layouts. Measured on its own pages, what it would need:
-
-| | maths / science | Islamic |
-| --- | --- | --- |
-| «الدرس» size | ≥20pt | **15.9pt**, y=48-57 |
-| lesson number | ≥40pt, bare digits, y<65 | **15.9pt, parenthesised `(1)`**, y=75 |
-| lesson title | ≥24pt, y<60 | **21.9pt**, y=62 |
-
-Raising only the first (tried, as a per-subject override) still placed zero,
-because `lesson_start` returns `None` when it cannot read a number. Supporting
-Islamic means a per-subject opener *profile* — three geometry facts, not one
-threshold — and the payoff is ~12 photographs.
-
-**Nothing was kept.** The `BOOKS` entries, the per-subject opener size and 279
-crops were all reverted; only this note survives. That is the point: the
-figures pipeline was built for books that draw their content, and this is the
-edge of where it pays.
-
-**If it is ever revisited**, start from the table above rather than from the
-extractors — and note the one thing both books genuinely do have is a good
-unit-opener illustration card (scales, the Kaaba, a gavel on a Quran, a
-microscope; a caravan, Jerusalem, manuscript pages). Ten of those, one per
-unit, is a smaller and much better-defined target than "the figures in this
-book".
 
 ## English teaches something at last, and its book photographs reach it, 2026-09-05
 
@@ -1604,6 +2981,33 @@ verified. The app's own Messages tab is the check that covers the third one.
 For the next schema change, prefer generating the SQL and applying it where
 you can see the connection, over swapping a URL into a file that four
 directories share.
+
+## Deleted 39 orphaned math-S2 crop PNGs, 2026-09-04
+
+`knowledge-base/grade-10-math/figures/math-s2-student-book/` held 144 `p*.png`
+against 105 `index.json` entries. The 39 extras are 1.44 MB of unreachable
+files — the same half-followed review step as the 13 chemistry-S1 crops below,
+in a second book.
+
+Not "never indexed". All 39 had a real `index.json` entry immediately before
+`29f2a8c` ("Stop cropping figures through their own labels, and let them be
+enlarged"), which removed 45 entries and added 14. These are the old crops that
+cut through their own labels — deliberately rejected by that re-extraction,
+which dropped the index entries and left the PNGs on disk. That is the reverse
+of `docs/adding-a-book.md` step 19: delete **both** the PNG and its
+`index.json` entry.
+
+Nothing referenced them. `figuresForLesson` and `gen_book_figure_assets.mjs`
+read `index.json` and never scan the directory; the generator re-runs to a
+no-op with `BOOK_FIGURE_COUNT` still 600 and no diff to `bookFigureAssets.ts`.
+
+**One grep here is a trap worth recording.** Searching the asset map for
+`math-s2-student-book/` matches every Grade 9 key too — `g9-math-s2-student-book/`
+ends with that string. It reported 6 of the 39 as still referenced; all six were
+substring hits on Grade 9 files. Match on the full quoted key
+(`'math-s2-student-book/p012.png'`), not the directory fragment.
+
+mobile 1131/1131, typecheck clean.
 
 ## The book's figures reach the surfaces that were quietly skipping them, 2026-09-04
 
@@ -5854,10 +7258,32 @@ product to Grade 10 is `INVESTOR_MVP_CURRICULUM = true` plus
 `isPickerCurriculumVisible` — **six call sites, all in `knowledgeBase.ts`.**
 Unlocking a grade is small; having content worth unlocking is not.
 
-**Correction to an earlier note in this file: Grade 9 is العلوم, not الكيمياء.**
+~~**Correction to an earlier note in this file: Grade 9 is العلوم, not الكيمياء.**
 The catalog already has this right — `science` is grades 1–9, and
 `chemistry`/`physics`/`biology` start at grade 10 — which matches the Jordanian
-system. Anyone sourcing Grade 9 books wants **الرياضيات + العلوم**.
+system. Anyone sourcing Grade 9 books wants **الرياضيات + العلوم**.~~
+
+**Struck 2026-09-08 — the books say otherwise.** NCCD publishes a separate
+Grade 9 student book, both semesters, for each of **الكيمياء، الفيزياء، العلوم
+الحياتية، علوم الأرض والبيئة** and **الثقافة المالية**; all ten were delivered
+and registered that day. Grade 9 is not served by a combined العلوم, so
+"anyone sourcing Grade 9 books wants الرياضيات + العلوم" was wrong, and so was
+"the catalog already has this right".
+
+The correction above was itself asserted from the catalog rather than from a
+book, which is how it survived: `SUBJECTS` said grades 1–9 for `science`, the
+note read that back as evidence, and the note was then cited as confirmation
+that `SUBJECTS` was right. Nothing in the loop had opened a Grade 9 book.
+
+The catalog was fixed the same day — `SPECIALISED_FROM = 8` in `catalog.ts`
+moves those five subjects to start at grade 9. The consequence of leaving it
+was silent rather than loud: `getSubjectsForGrade` filters on `Subject.grades`
+before anything else, so a Grade 9 chemistry book could have been catalogued,
+indexed and searchable while the subject never appeared in the grade.
+
+`science` is deliberately left spanning grades 1–9: no Grade 9 «العلوم» book
+arrived, and the absence of a book is not evidence that the subject stops at
+grade 8 — which is the same inference that produced the struck note.
 
 **What shipped:** `lib/curriculum/src/validateCurriculum.ts` plus
 `pnpm --filter @workspace/curriculum run verify`, wired into CI.

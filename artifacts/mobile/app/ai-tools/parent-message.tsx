@@ -7,8 +7,8 @@
  * tone or kind is what makes it obvious the tool is arranging *your* facts
  * rather than writing its own.
  */
-import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,7 +21,12 @@ import { copyToClipboard, shareAsText } from '@/services/share';
 import { StudentPickerSheet } from '@/components/ui/StudentPickerSheet';
 import type { RosterStudent } from '@/services/roster';
 import {
-  composeParentMessage, kindEmoji, kindLabel, MESSAGE_KINDS, needsDetails, seedDetailsFromNote,
+  MessagingError, getTeacherContacts, sendMessage, startThread,
+  type ContactStudent,
+} from '@/services/messaging';
+import {
+  composeParentMessage, guardiansForStudent, kindEmoji, kindLabel, MESSAGE_KINDS, needsDetails,
+  seedDetailsFromNote,
   type Gender, type MessageKind, type Tone,
 } from '@/services/parentMessage';
 
@@ -46,6 +51,14 @@ export default function ParentMessageScreen() {
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const [pickingStudent, setPickingStudent] = useState(false);
+  /**
+   * The roster row this note is about, when there is one. Null means the
+   * teacher typed a name by hand — in-app delivery needs a student id to find
+   * the guardian behind, so that path stays share-only.
+   */
+  const [pickedStudentId, setPickedStudentId] = useState<string | null>(null);
+  const [guardians, setGuardians] = useState<ContactStudent['contacts']>([]);
+  const [sending, setSending] = useState(false);
   const showToast = (m: string) => { setToastMsg(m); setToastVisible(true); };
 
   /**
@@ -68,8 +81,31 @@ export default function ParentMessageScreen() {
   const onPickStudent = (student: RosterStudent) => {
     setPickingStudent(false);
     setStudentName(student.displayName);
+    setPickedStudentId(student.id);
     setDetails(seedDetailsFromNote(details, student.teacherNote));
   };
+
+  /**
+   * The guardians this note could reach in-app. Filtered client-side off the
+   * existing contacts endpoint rather than adding a route for it — same
+   * reasoning as `app/messaging/claim/[studentId].tsx`: a teacher's own roster
+   * is small enough that the filtering isn't worth a backend round of its own.
+   *
+   * A failure here degrades to "no guardians", which disables in-app send and
+   * leaves sharing working. Erroring the whole screen over a contacts fetch
+   * would take away the button that works today to protect one that may not.
+   */
+  useEffect(() => {
+    if (!pickedStudentId) {
+      setGuardians([]);
+      return;
+    }
+    let cancelled = false;
+    getTeacherContacts()
+      .then(contacts => { if (!cancelled) setGuardians(guardiansForStudent(contacts, pickedStudentId)); })
+      .catch(() => { if (!cancelled) setGuardians([]); });
+    return () => { cancelled = true; };
+  }, [pickedStudentId]);
 
   const message = useMemo(
     () => composeParentMessage(
@@ -88,13 +124,42 @@ export default function ParentMessageScreen() {
     showToast(t('copiedToClipboard'));
   };
 
-  const onSend = async () => {
+  const onShare = async () => {
     if (!ready) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     // shareAsText falls back to the clipboard where the OS share sheet is
     // unavailable (desktop web), and says which happened so the toast is honest.
     const how = await shareAsText(message, t('parentMsgTitle'));
     showToast(how === 'shared' ? t('parentMsgSent') : t('copiedToClipboard'));
+  };
+
+  const canSendInApp = ready && guardians.length > 0 && !sending;
+
+  /**
+   * Deliver inside the app, to each linked guardian. `startThread` is
+   * get-or-create, so a teacher who writes twice reuses the same conversation
+   * rather than stacking threads.
+   *
+   * `sending` guards the double-tap: there is no rate limit on `/messaging/*`
+   * to catch a second press, so a duplicate note would simply be delivered.
+   */
+  const onSendInApp = async () => {
+    if (!canSendInApp) return;
+    setSending(true);
+    try {
+      for (const g of guardians) {
+        const thread = await startThread(g.userId);
+        await sendMessage(thread.id, message);
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast(t('parentMsgSentInApp'));
+    } catch (e) {
+      // The server's own wording here is already teacher-facing ("You are not
+      // connected to this person"), so it beats a generic failure line.
+      showToast(e instanceof MessagingError ? e.message : t('messagingSendError'));
+    } finally {
+      setSending(false);
+    }
   };
 
   const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -168,7 +233,11 @@ export default function ParentMessageScreen() {
           <Field label={t('parentMsgStudentName')}>
             <TextInput
               value={studentName}
-              onChangeText={setStudentName}
+              // Editing the name by hand drops the picked student, and with it
+              // the in-app send. Picking «أحمد» and typing over the name must
+              // never leave the note pointed at Ahmad's parent — fail back to
+              // sharing rather than deliver to a guardian nobody chose.
+              onChangeText={(v) => { setStudentName(v); setPickedStudentId(null); }}
               placeholder={t('parentMsgStudentNamePlaceholder')}
               placeholderTextColor={colors.mutedForeground}
               style={input()}
@@ -303,18 +372,46 @@ export default function ParentMessageScreen() {
             )}
           </View>
 
-          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10, marginTop: 12 }}>
+          {/* Two ways out, labelled for the difference. In-app delivery is the
+              real send; sharing hands the text to the OS and is what teachers
+              have today. Collapsing them into one «أرسل» would mean the same
+              tap sometimes reaches a parent and sometimes only fills a
+              clipboard, with nothing on screen to say which. */}
+          <Pressable
+            onPress={onSendInApp}
+            disabled={!canSendInApp}
+            style={({ pressed }) => [styles.primaryBtn, {
+              backgroundColor: ACCENT, borderRadius: colors.radius,
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+              marginTop: 12,
+              opacity: !canSendInApp ? 0.4 : pressed ? 0.88 : 1,
+            }]}
+          >
+            {sending
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Ionicons name="paper-plane-outline" size={18} color="#fff" />}
+            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 14 }}>{t('parentMsgSendInApp')}</Text>
+          </Pressable>
+
+          {ready && guardians.length === 0 ? (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 17, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+              {pickedStudentId ? t('parentMsgNoGuardian') : t('parentMsgPickForSend')}
+            </Text>
+          ) : null}
+
+          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10, marginTop: 10 }}>
             <Pressable
-              onPress={onSend}
+              onPress={onShare}
               disabled={!ready}
-              style={({ pressed }) => [styles.primaryBtn, {
-                backgroundColor: ACCENT, borderRadius: colors.radius,
+              style={[styles.secondaryBtn, {
+                flex: 1,
+                borderColor: colors.border, borderRadius: colors.radius,
                 flexDirection: isRTL ? 'row-reverse' : 'row',
-                opacity: !ready ? 0.4 : pressed ? 0.88 : 1,
+                opacity: ready ? 1 : 0.4,
               }]}
             >
-              <Ionicons name="paper-plane-outline" size={18} color="#fff" />
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 14 }}>{t('parentMsgSend')}</Text>
+              <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('parentMsgShare')}</Text>
             </Pressable>
             <Pressable
               onPress={onCopy}

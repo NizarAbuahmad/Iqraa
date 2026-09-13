@@ -116,6 +116,7 @@ Without an OpenAI key, the API process will not start (AI client initializes at 
 | `UNSPLASH_ACCESS_KEY` | unset (Slides Maker skips the image slide) | Free Unsplash "Demo" key — Slides Maker fetches one topic photo per deck when set |
 | `YOUTUBE_API_KEY` | unset (Slides Maker skips the video slide) | Free YouTube Data API key — Slides Maker searches for one real explainer video per lesson when set |
 | `R2_ENDPOINT` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET` | unset (R2 simply not used) | Cloudflare R2 (S3-compatible), `R2_BUCKET` defaults to `iqraa-media`. See "Hosting source PDFs on R2" below |
+| `R2_PUBLIC_BUCKET` / `R2_PUBLIC_BASE_URL` | `R2_PUBLIC_BUCKET` defaults to `iqraa-public`; `R2_PUBLIC_BASE_URL` unset (profile-picture upload answers 503) | The anonymous-read bucket profile pictures upload into (`POST /auth/users/avatar`) — same account/credentials as the three vars above, just a different bucket name. `R2_PUBLIC_BASE_URL` is that bucket's `https://pub-<hash>.r2.dev` origin, from the Cloudflare dashboard's R2 → bucket → Settings → Public Development URL |
 
 ### Testing against real AI (optional)
 

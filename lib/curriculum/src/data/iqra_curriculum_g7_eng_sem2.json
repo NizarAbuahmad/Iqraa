@@ -1,0 +1,515 @@
+{
+  "meta": {
+    "grade": "الصف السابع",
+    "grade_en": "Grade 7",
+    "subject": "اللغة الإنجليزية",
+    "subject_en": "English",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ ودروسُها من كتاب الطالب «Jordan Team Together، الصف السابع، الفصل الثاني» (Pearson/York Press، طبعة أولى تجريبية 2024) في 2026-09-12 بالقراءة الكاملة لصفحاته الأربعِ والستين. هذه سلسلةٌ وقالبٌ مختلفانِ عن سلسلة «Jordan High Note» المستخدَمةِ في ملفَّي الصفِّ الثامنِ والتاسعِ؛ وقد تحقَّقنا من بنيته الفعلية بقراءة جدول المحتوياتِ وصفحاتِ افتتاحِ كلِّ وحدةٍ ودروسِها واحدًا تلو الآخر بدلًا من افتراضِ قالبِ الصفِّ الثامنِ: هذا الكتابُ يضمُّ أربعَ وحداتٍ لا خمسًا، مرقَّمةً 5-8 (مطبوعةً هكذا على دائرةِ افتتاحِ كلِّ وحدةٍ) استكمالًا لترقيمِ وحداتِ الفصلِ الأولِ (u1-u4). كلُّ وحدةٍ تضمُّ 12 درسًا حسبَ جدولِ «Lesson division» في دليلِ المعلمِ (ص7: الدرسُ 1 Vocabulary، 2 Team Talk، 3 Grammar، 4 Activity Book Grammar، 5 Book Club، 6 Vocabulary and Grammar، 7 Activity Book Vocabulary and Grammar، 8 Culture، 9 English in action، 10 Literacy، 11 Writing، 12 Activity Book Writing)، لكنَّ كتابَ الطالبِ - المصدرَ الأساسيَّ لهذا الملفِّ - يطبعُ تسعةً منها فقط (الدروسَ 1، 2، 3، 5، 6، 8، 9، 10، 11)؛ الدروسُ 4 و7 و12 تخصُّ كتابَ الأنشطةِ حصرًا ولا صفحةَ لها في كتابِ الطالبِ، فاستُبعدت من هذا الملفِّ. مُعرِّفُ كلِّ درسٍ (id) يحتفظُ برقمِ الدرسِ المطبوعِ في الكتابِ (1، 2، 3، 5، 6، 8، 9، 10، 11) بينما حقلُ order هو ترتيبُهُ التسلسليُّ ضمنَ هذا الملفِّ (1-9)؛ الفارقُ بينهما متعمَّدٌ ويعكسُ الفجواتِ في ترقيمِ الكتابِ نفسِه. لا يطبعُ هذا الكتابُ عبارةَ «I can» في صندوقٍ مرقَّمٍ في نهايةِ كلِّ درسٍ كما تفعلُ سلسلةُ الصفِّ الثامنِ، بل يطبعُ فقط في مفتتحِ كلِّ وحدةٍ قائمةَ أهدافٍ واحدةً بعنوانِ «In this unit I will …» (7-8 عباراتٍ لكلِّ وحدةٍ). لذلك استُخدمت العبارةُ أو العبارتانِ الأنسبُ من تلك القائمةِ - منقولةً حرفيًّا - كحقلِ objectives لكلِّ درسٍ، بعد التحقُّقِ درسًا درسًا من أنَّ محتواه الفعليَّ يطابقُ تلك العبارةَ (فمثلًا عبارةُ «use reflexive pronouns and the Past perfect tense» في وحدةِ Adventure sports قُسِّمت بين درسِ القواعدِ Reflexive pronouns ودرسِ Past perfect لاحقًا، وليس نسخةً واحدةً على كلِّ الدروسِ). أما main_idea_ar فجملةٌ واحدةٌ من صياغتنا نحن تلخِّصُ المحتوى الفعليَّ المقروءَ في صفحةِ الدرسِ (نشاطَ المطابقةِ، سؤالَ الفهمِ المطبوعَ تحتَ «Listen and read»، أو موضوعَ صندوقِ القواعدِ)، وليست جملةً مطبوعةً في الكتابِ لأنَّه لا يطبعُ مثلَها على مستوى الدرسِ؛ أُبقيت بالإنجليزيةِ لأنَّ الكتابَ إنجليزيٌّ بالكاملِ، بالمعاملةِ نفسِها المسجَّلةِ في ملفِّ الصفِّ الثامنِ. عناوينُ الوحداتِ ولافتاتُ المهارةِ العامةِ (Vocabulary، Team Talk، Grammar، Book Club، Culture، English in Action) عربيَّتُها ترجمتُنا نحن؛ أما وصفُ نوعِ نصِّ القراءةِ/الكتابةِ في درسَي Literacy (10 و11) من كلِّ وحدةٍ (Brochures and adverts، Emails، Interviews، Letters) فأُبقي بالإنجليزيةِ كما يُطبَع.",
+    "source_books": {
+      "student_book": "كتاب الطالب - اللغة الإنجليزية - الصف السابع - الفصل الدراسي الثاني - Jordan Team Together (Pearson/York Press، طبعة أولى تجريبية 2024) - المركز الوطني لتطوير المناهج والتقويم (64 صفحة، قُرئت كاملةً)",
+      "teacher_guide": "دليل المعلم - اللغة الإنجليزية - الصف السابع - الفصل الدراسي الثاني - Jordan Team Together (Pearson/York Press، طبعة أولى تجريبية 2024)، 144 صفحة — رُوجعت صفحاتُ المقدمةِ وجدولِ المحتوياتِ ونطاقِ التسلسلِ (Scope and sequence) وجدولِ «Lesson division» (ص1-10) لتحديدِ بنيةِ الدروسِ وعددِ الحصصِ؛ لا يطبعُ هذا الدليلُ جدولَ عددِ حصصٍ لكلِّ درسٍ أو وحدةٍ (فقط جدولُ تركيزِ كلِّ درسٍ رقمٍ 1-12 على كتابِ الطالبِ أو كتابِ الأنشطةِ)، فبقي periods/total_periods فارغين — الأمرُ نفسُه المسجَّلُ في ملفِّ الصفِّ الثامنِ.",
+      "activity_book": "كتاب الأنشطة - اللغة الإنجليزية - الصف السابع - الفصل الدراسي الثاني - Jordan Team Together، 58 صفحة — مرجعٌ فقط، لم يُنقل منه محتوًى مباشرةً في هذا الملفِّ (وهو مصدرُ الدروسِ 4، 7، 12 المستبعدةِ هنا)."
+    },
+    "known_gaps": [
+      "تسعةُ دروسٍ فقط لكلِّ وحدةٍ من أصلِ 12: الدروسُ 4 و7 و12 (Activity Book Grammar، Activity Book Vocabulary and Grammar، Activity Book Writing على التوالي) تخصُّ كتابَ الأنشطةِ حصرًا ولا تظهرُ في كتابِ الطالبِ إطلاقًا، فاستُبعدت من هذا الملفِّ المبنيِّ على كتابِ الطالبِ. هذا موثَّقٌ صراحةً في جدولِ «Lesson division» بدليلِ المعلمِ (ص7: «There are 12 lessons in each main unit»)، وليس استنتاجًا، وتحقَّقنا أيضًا بقراءةِ كلِّ صفحاتِ الوحداتِ الأربعِ في كتابِ الطالبِ وتأكيدِ أنَّ ترقيمَ «Lesson» المطبوعَ يقفزُ فعلًا من 3 إلى 5 ومن 6 إلى 8 في كلِّ وحدةٍ من الأربعِ.",
+      "أربعُ وحداتٍ لا خمسٌ: بخلافِ سلسلةِ الصفِّ الثامنِ/التاسعِ (خمسُ وحداتٍ، سبعةُ دروسٍ لكلٍّ منها)، يقسِّمُ هذا الكتابُ الفصلَ الثاني إلى أربعِ وحداتٍ فقط (5-8، تكملةً لوحداتِ الفصلِ الأولِ 1-4)، كلُّ واحدةٍ منها بتسعةِ دروسٍ مطبوعةٍ في كتابِ الطالبِ. هذا مُتحقَّقٌ من جدولِ المحتوياتِ (ص iii) ومن ترقيمِ دوائرِ افتتاحِ الوحداتِ نفسِها (5، 6، 7، 8) في الكتابِ.",
+      "لا عبارةَ «I can» لكلِّ درسٍ: هذا الكتابُ - خلافًا لسلسلةِ الصفِّ الثامنِ - لا يطبعُ صندوقًا مرقَّمًا بعبارةِ «I can …» في نهايةِ كلِّ درسٍ. الموجودُ فقط قائمةُ أهدافٍ واحدةٌ بعنوانِ «In this unit I will …» في مفتتحِ كلِّ وحدةٍ (7-8 عباراتٍ). استُخدمت هذه العباراتُ - منقولةً حرفيًّا وموزَّعةً على الدروسِ بحسبِ محتواها الفعليِّ المتحقَّقِ منه - كحقلِ objectives؛ فبعضُ الدروسِ (كدرسَي Team Talk وGrammar في الوحدةِ نفسِها) يتشاركانِ العبارةَ نفسَها لأنَّ دليلَ المعلمِ (ص4، فقرة Grammar) يذكرُ صراحةً أنَّ «القواعدَ الجديدةَ تُقدَّمُ في سياقِ حواراتِ Team Talk» قبلَ أن يُصاغَ الشرحُ الرسميُّ في درسِ Grammar.",
+      "المصطلحاتُ (vocabulary) فارغةٌ: يطبعُ هذا الكتابُ فعليًّا صندوقَ كلماتٍ إنجليزيةً صرفةً في مفتتحِ كلِّ وحدةٍ وفي نشاطِ «Look and match» بدرسَي Vocabulary وVocabulary and Grammar (12 كلمةً لكلِّ نشاطٍ)، لكن من دون أيِّ ترجمةٍ عربيةٍ مطبوعةٍ بجانبها؛ فتعبئةُ زوجِ {ar, en} تتطلَّبُ ترجمتَنا نحن للكلمةِ الإنجليزيةِ، وهو خارجَ نطاقِ هذا الملفِّ، فبقيت vocabulary فارغةً - المعاملةُ نفسُها المسجَّلةُ في ملفِّ الصفِّ الثامنِ لسببٍ مشابهٍ.",
+      "عددُ الحصصِ فارغٌ (periods وtotal_periods = null): لا يطبعُ دليلُ المعلمِ جدولَ عددِ حصصٍ لكلِّ درسٍ أو وحدةٍ؛ الجدولُ الوحيدُ المطبوعُ (ص7) يذكرُ فقط أيَّ مكوِّنٍ (كتابِ الطالبِ أو كتابِ الأنشطةِ) يركِّزُ عليه كلُّ رقمِ درسٍ، لا مدتَه الزمنيةَ.",
+      "قسمُ «Dana's Learning Club» (Language booster 3 و4 وThink like a scientist! مرتينِ) وصفحاتُ «Festivals» (World Book Day وWorld Space Week) وقسمُ Welcome الافتتاحيُّ (مراجعةٌ لمفرداتِ وقواعدِ الفصلِ الأولِ) ليست دروسًا ولم تُدرَج؛ فهي فواصلُ بينَ الوحداتِ لا تحملُ رقمَ وحدةٍ ولا رقمَ درسٍ ضمنَ التسلسلِ 1-11 نفسِه، بالمعاملةِ نفسِها المطبَّقةِ على صفحاتِ LIFE SKILLS في ملفِّ الصفِّ الثامنِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "الرياضات الاستكشافية",
+      "title_en": "Adventure sports",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit-opener vocabulary banner and printed \"In this unit I will ...\" objectives list, per-lesson skill banner and printed instructions/comprehension questions; no boxed \"I can\" outcome per lesson and no per-lesson period count in the teacher guide)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "المفردات",
+          "title_en": "Vocabulary",
+          "main_idea_ar": "Match twelve extreme-sports words (rock climbing, horse-riding, ice hockey, motor-racing, go-karting, surfboarding, water skiing, kite surfing, diving, squash, jogging, golf) to pictures, then read a WOW! blog in which Alex, Sami, Dana and Mei say which extreme sports they like or dislike and why.",
+          "periods": null,
+          "objectives": [
+            "learn words for extreme sports and places"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "حوار الفريق",
+          "title_en": "Team Talk",
+          "main_idea_ar": "Read the Team Talk dialogue in which Dana tells Mei she hurt herself rock climbing at Wadi Rum, and find out what the two girls disagree about — whether children should do extreme sports.",
+          "periods": null,
+          "objectives": [
+            "use reflexive pronouns and the Past perfect tense"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "القواعد",
+          "title_en": "Grammar",
+          "main_idea_ar": "Study the reflexive-pronoun grammar box built from the Lesson 2 dialogue (myself, themselves, herself, yourself) and practise saying sentences about accidents using reflexive pronouns.",
+          "periods": null,
+          "objectives": [
+            "use reflexive pronouns and the Past perfect tense"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l5",
+          "order": 4,
+          "title_ar": "نادي الكتاب",
+          "title_en": "Book Club",
+          "main_idea_ar": "Read the Book Club adventure story ‘Old-fashioned explorers’, in which Abbas, Hala and Laila cross a valley with a compass and guidebook and rescue an injured hiker, then find out why the children are glad they weren’t really old-fashioned explorers.",
+          "periods": null,
+          "objectives": [
+            "read an adventure story"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l6",
+          "order": 5,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary and Grammar",
+          "main_idea_ar": "Match twelve geography words (north, south, east, west, sunrise, sunset, wood, field, valley, scenery, tide, bay) to pictures, then study the Past perfect grammar box built from the Lesson 5 story and practise ordering a set of daily events with the Past perfect.",
+          "periods": null,
+          "objectives": [
+            "learn words for extreme sports and places",
+            "use reflexive pronouns and the Past perfect tense"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l8",
+          "order": 6,
+          "title_ar": "الثقافة",
+          "title_en": "Culture",
+          "main_idea_ar": "Read the Culture article ‘Ready for something new?’ about three unusual sports (underwater hockey, tuna throwing and canyoning) around the world, then work in a group to research and present a poster about a new sport for PE lessons.",
+          "periods": null,
+          "objectives": [
+            "learn about unusual sports around the world",
+            "work in a group to make a poster about an unusual sport"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l9",
+          "order": 7,
+          "title_ar": "اللغة في الاستخدام",
+          "title_en": "English in Action",
+          "main_idea_ar": "Listen to and read a dialogue in which Oliver and Jack plan an adventure holiday and choose between activities (rock climbing/horse-riding, hiking/diving, water skiing/kite surfing), then practise the ‘Asking and saying what you prefer’ functional language (Would you rather...?/I’d rather.../I’d prefer to...) in pairs.",
+          "periods": null,
+          "objectives": [
+            "learn how to ask and talk about things I prefer"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l10",
+          "order": 8,
+          "title_ar": "القراءة: الإعلانات والمنشورات الترويجية",
+          "title_en": "Literacy: Reading — Brochures and adverts",
+          "main_idea_ar": "Read the Literacy: brochures and adverts text ‘Make your next holiday an Adams’ Adventure!’, which advertises extreme-sport, safari, climbing and desert holidays, and match each of four people to their best adventure holiday.",
+          "periods": null,
+          "objectives": [
+            "read and write brochures"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l11",
+          "order": 9,
+          "title_ar": "الكتابة: منشور ترويجي",
+          "title_en": "Literacy: Writing — A brochure",
+          "main_idea_ar": "Study the ‘Kite surfing at Tala Bay’ brochure model and the How to write... a brochure box, then plan and write an own brochure advertising a different extreme sport.",
+          "periods": null,
+          "objectives": [
+            "read and write brochures"
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "الإنفاق أم الادخار؟",
+      "title_en": "Spend or save?",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit-opener vocabulary banner and printed \"In this unit I will ...\" objectives list, per-lesson skill banner and printed instructions/comprehension questions; no boxed \"I can\" outcome per lesson and no per-lesson period count in the teacher guide)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "المفردات",
+          "title_en": "Vocabulary",
+          "main_idea_ar": "Match twelve shopping words (on sale, queue, till, designer labels, get a refund, exchange, shop assistant, credit card, customer, second-hand, receipt, online shopping) to pictures, then read a WOW! blog in which Mei, Sami, Dana and Alex give their opinions about shopping, saving and buying fairly-made or second-hand goods.",
+          "periods": null,
+          "objectives": [
+            "learn words for shopping and for imaginary situations"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "حوار الفريق",
+          "title_en": "Team Talk",
+          "main_idea_ar": "Read the Team Talk dialogue in which Alex invites Sami to go shopping and the two discuss the advantages and disadvantages of online shopping versus going to shops, and find out whether Alex and Sami both like online shopping.",
+          "periods": null,
+          "objectives": [
+            "use the zero, first and second conditionals"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "القواعد",
+          "title_en": "Grammar",
+          "main_idea_ar": "Study the Zero and First conditional grammar box built from the Lesson 2 dialogue (If I need something, I ask my parents to buy it online. / If we buy everything online, shops will close.) and practise making zero- and first-conditional sentences about shopping habits.",
+          "periods": null,
+          "objectives": [
+            "use the zero, first and second conditionals"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l5",
+          "order": 4,
+          "title_ar": "نادي الكتاب",
+          "title_en": "Book Club",
+          "main_idea_ar": "Read the Book Club poem ‘If you could...’, in which the speaker imagines travelling back in time to Ancient Jordan, becoming a book character, going into space and travelling the world, and find out which four places the speaker would like to visit.",
+          "periods": null,
+          "objectives": [
+            "read a poem"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l6",
+          "order": 5,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary and Grammar",
+          "main_idea_ar": "Match twelve ‘imaginary situations’ phrases (go into space, meet a famous person, travel the world, donate to a charity, have a lot of money, have three wishes, travel back in time, pass exams, become an Olympic athlete, become a book or film character, be invisible, win a cup) to pictures, then study the Second conditional grammar box built from the Lesson 5 poem and practise a second-conditional sentence-chain game.",
+          "periods": null,
+          "objectives": [
+            "learn words for shopping and for imaginary situations",
+            "use the zero, first and second conditionals"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l8",
+          "order": 6,
+          "title_ar": "الثقافة",
+          "title_en": "Culture",
+          "main_idea_ar": "Read the Culture article ‘Interesting markets’, about Muara Kuin floating market (Indonesia), Djemaa el Fna (Marrakech), Chiang Mai Night Bazaar (Thailand) and Souk Jara (Amman), then work in a group to research and present a tourist leaflet about an interesting market.",
+          "periods": null,
+          "objectives": [
+            "learn about interesting markets around the world",
+            "work in a group to make a tourist leaflet about an interesting market"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l9",
+          "order": 7,
+          "title_ar": "اللغة في الاستخدام",
+          "title_en": "English in Action",
+          "main_idea_ar": "Listen to and read a dialogue in which Ali makes a complaint at a shop about a missing button and a damaged scarf and asks for an exchange and a refund, then practise the ‘Making a complaint’ functional language (I’m afraid I have a complaint about.../Please could I have a refund?) in pairs.",
+          "periods": null,
+          "objectives": [
+            "learn how to make a complaint in a shop"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l10",
+          "order": 8,
+          "title_ar": "القراءة: الرسائل الإلكترونية",
+          "title_en": "Literacy: Reading — Emails",
+          "main_idea_ar": "Read the Literacy: emails texts, a pair of informal emails between Hala and Abeer about a huge Dubai shopping centre and an embarrassing shop mix-up, then answer comprehension questions about them.",
+          "periods": null,
+          "objectives": [
+            "read and write emails"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l11",
+          "order": 9,
+          "title_ar": "الكتابة: رسالة إلكترونية غير رسمية",
+          "title_en": "Literacy: Writing — An informal email",
+          "main_idea_ar": "Study Camila’s email model and the How to write... an informal email box, then plan and write Zeinab’s reply email answering Camila’s questions about shops and shopping in Zeinab’s town.",
+          "periods": null,
+          "objectives": [
+            "read and write emails"
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "لنتحدث!",
+      "title_en": "Let's talk!",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit-opener vocabulary banner and printed \"In this unit I will ...\" objectives list, per-lesson skill banner and printed instructions/comprehension questions; no boxed \"I can\" outcome per lesson and no per-lesson period count in the teacher guide)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "المفردات",
+          "title_en": "Vocabulary",
+          "main_idea_ar": "Match twelve communication words/phrases (receive a text message, chat to friends, use social media, insert an emoji, listen to a podcast, watch a vlog, tell the truth, tell a lie, keep a secret, keep a promise, get on well, have an argument) to pictures, then read a WOW! blog in which Dana, Alex, Sami and Mei say which children are talking about communication and which about friendship.",
+          "periods": null,
+          "objectives": [
+            "learn words for communication, friendship and feelings"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "حوار الفريق",
+          "title_en": "Team Talk",
+          "main_idea_ar": "Read the Team Talk dialogue in which Dana tells Mei about an argument with her sister over a ruined T-shirt during her ‘get on well with everyone for a month’ experiment, and find out what Dana is trying to do this month.",
+          "periods": null,
+          "objectives": [
+            "compare things with as … as and not as … as"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "القواعد",
+          "title_en": "Grammar",
+          "main_idea_ar": "Study the ‘as ... as’ / ‘not as ... as’ comparing-things grammar box built from the Lesson 2 dialogue (Podcasts can be as good as vlogs. / Podcasts aren’t as interesting as vlogs.) and practise comparing two people using adjectives.",
+          "periods": null,
+          "objectives": [
+            "compare things with as … as and not as … as"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l5",
+          "order": 4,
+          "title_ar": "نادي الكتاب",
+          "title_en": "Book Club",
+          "main_idea_ar": "Read the Book Club playscript ‘Let’s talk!’, in which Faisal, Ibrahim and Hamed realise they are chatting online while sitting in the same room and play a Yes/No guessing game instead, then identify the game’s rules.",
+          "periods": null,
+          "objectives": [
+            "read a play"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l6",
+          "order": 5,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary and Grammar",
+          "main_idea_ar": "Match twelve feelings words (embarrassed, disappointed, jealous, upset, confused, curious, delighted, nervous, calm, serious, proud, miserable) to pictures, then study the Question tags grammar box built from the Lesson 5 play and practise guessing a partner’s feelings using question tags.",
+          "periods": null,
+          "objectives": [
+            "learn words for communication, friendship and feelings",
+            "use question tags"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l8",
+          "order": 6,
+          "title_ar": "الثقافة",
+          "title_en": "Culture",
+          "main_idea_ar": "Read the Culture article ‘Communicating without words’, about emoji, Ancient Egyptian hieroglyphics and sign language, then work in a group to research and present a poster about a language that doesn’t use words.",
+          "periods": null,
+          "objectives": [
+            "learn about languages without words",
+            "work in a group to find out more about a language that doesn't have words"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l9",
+          "order": 7,
+          "title_ar": "اللغة في الاستخدام",
+          "title_en": "English in Action",
+          "main_idea_ar": "Listen to and read a dialogue in which Miyu tells Yuki that Kiyo broke a promise to keep a secret, then practise the ‘Giving your opinion’ functional language (Personally, I think.../I’m sure that.../I guess that...) by giving opinions on statements about friendship.",
+          "periods": null,
+          "objectives": [
+            "learn how to give my opinion"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l10",
+          "order": 8,
+          "title_ar": "القراءة: المقابلات",
+          "title_en": "Literacy: Reading — Interviews",
+          "main_idea_ar": "Read the Literacy: interviews text ‘Interview with Abbas Alra’i’, about an author’s new book on friendship, and decide whether six statements about the interview are true or false.",
+          "periods": null,
+          "objectives": [
+            "read and write interviews"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l11",
+          "order": 9,
+          "title_ar": "الكتابة: مقابلة",
+          "title_en": "Literacy: Writing — An interview",
+          "main_idea_ar": "Study the ‘An interview with Asma’ model interview about social-media use and the How to write... an interview box, then plan, conduct and write up an interview with a partner about how they use social media.",
+          "periods": null,
+          "objectives": [
+            "read and write interviews"
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "الاختراعات",
+      "title_en": "Inventions",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit-opener vocabulary banner and printed \"In this unit I will ...\" objectives list, per-lesson skill banner and printed instructions/comprehension questions; no boxed \"I can\" outcome per lesson and no per-lesson period count in the teacher guide)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "المفردات",
+          "title_en": "Vocabulary",
+          "main_idea_ar": "Match twelve invention words (electricity, light bulb, spacecraft, battery, photography, radio, wheel, steam engine, aeroplane, X-ray, vaccination, antibiotics) to pictures, then read a WOW! quiz in which Sami, Mei, Alex and Dana each describe which invention from the list they think is most important and why.",
+          "periods": null,
+          "objectives": [
+            "learn words for inventions and medicine"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "حوار الفريق",
+          "title_en": "Team Talk",
+          "main_idea_ar": "Read the Team Talk dialogue in which Alex and Sami visit a science museum and discuss the light bulb (Thomas Edison, 1879) and the first radio (Guglielmo Marconi, 1904), and find out what two inventions the children look at.",
+          "periods": null,
+          "objectives": [
+            "use relative pronouns and embedded questions"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l3",
+          "order": 3,
+          "title_ar": "القواعد",
+          "title_en": "Grammar",
+          "main_idea_ar": "Study the Relative pronouns grammar box built from the Lesson 2 dialogue (Guglielmo Marconi is the person who invented it. / That’s the radio that my great-grandmother told me about. / This is the room where...) and play a guessing game describing a thing, place, time or person.",
+          "periods": null,
+          "objectives": [
+            "use relative pronouns and embedded questions"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l5",
+          "order": 4,
+          "title_ar": "نادي الكتاب",
+          "title_en": "Book Club",
+          "main_idea_ar": "Read the Book Club story ‘An important discovery’, in which Mariam researches and presents on scientist Dorothy Hodgkin’s discovery of Penicillin’s structure after getting a prescription for the medicine herself, and identify the story’s plot, characters and setting.",
+          "periods": null,
+          "objectives": [
+            "read a story about an important discovery"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l6",
+          "order": 5,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary and Grammar",
+          "main_idea_ar": "Match twelve health-and-medicine phrases (feel ill, feel better, get a prescription, take some pills, have an injection, have a fever, have an X-ray, have an operation, do some research, win a prize, make a discovery, carry out an experiment) to pictures, then study the Embedded questions grammar box built from the Lesson 5 story and practise asking polite questions at the doctor’s or pharmacy.",
+          "periods": null,
+          "objectives": [
+            "learn words for inventions and medicine",
+            "use relative pronouns and embedded questions"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l8",
+          "order": 6,
+          "title_ar": "الثقافة",
+          "title_en": "Culture",
+          "main_idea_ar": "Read the Culture article ‘Young inventors’, about Adeeb Sulaiman Alblooshi (UAE), Anurudh Ganesan (India) and Thato Kgatlhanye (South Africa), then work in a group to research and present a fact file about a famous inventor.",
+          "periods": null,
+          "objectives": [
+            "learn about young inventors",
+            "work in a group to make a fact file about a famous inventor"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l9",
+          "order": 7,
+          "title_ar": "اللغة في الاستخدام",
+          "title_en": "English in Action",
+          "main_idea_ar": "Listen to and read a dialogue in which Noura and Suha disagree about whether Leonardo da Vinci or Ibn al-Haytham was the greatest inventor, then practise the ‘Talking about how sure you are’ functional language (I’m absolutely sure. / I’m quite sure. / Maybe. / I doubt it.) by giving and rating opinions.",
+          "periods": null,
+          "objectives": [
+            "use expressions to talk about how sure I am"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l10",
+          "order": 8,
+          "title_ar": "القراءة: الرسائل",
+          "title_en": "Literacy: Reading — Letters",
+          "main_idea_ar": "Read the Literacy: letters text about builder Tom Harris finding a 1953 time-capsule letter from a student named Marion at Northgate School, and decide whether six statements about the letter are true or false.",
+          "periods": null,
+          "objectives": [
+            "read and write letters"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l11",
+          "order": 9,
+          "title_ar": "الكتابة: رسالة غير رسمية",
+          "title_en": "Literacy: Writing — An informal letter",
+          "main_idea_ar": "Study Khalil’s model time-capsule letter about life today and the How to write... an informal letter box, then plan and write an own letter to a future pupil for a time capsule.",
+          "periods": null,
+          "objectives": [
+            "read and write letters"
+          ],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

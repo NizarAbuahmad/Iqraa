@@ -51,6 +51,7 @@ import { G10_SOURCES } from '../src/sources.ts';
 import { downloadFromR2, isLfsPointer, isR2Configured } from './r2.ts';
 import { LOCAL_FILES } from './localSources.ts';
 import { rejectReason } from './textQuality.ts';
+import { repairWithCounts } from './untranspose.ts';
 import { ocrPdf } from './ocr.ts';
 import { loadEnvFile } from '../../../scripts/load-env.mjs';
 
@@ -114,7 +115,39 @@ async function ensureLocal(sourceId: string, abs: string): Promise<string | null
   return null;
 }
 
-async function parseWithPdfParse(buf: Buffer): Promise<{ pages: ExtractedPage[]; reason: string | null }> {
+/**
+ * Undo pdf-parse's ordering artifacts before anything judges the text.
+ *
+ * Order matters both ways. Ahead of `rejectReason`, because a book that only
+ * failed on these should now pass rather than fall through to a slow OCR pass
+ * that would read it less accurately. And ahead of the extracted JSON being
+ * written, because that file is what every generator and the passage index
+ * read — repairing later would leave the defect in the one artefact that
+ * matters.
+ *
+ * Applied to pdf-parse output only. OCR misreads a letter rather than
+ * misplacing one, so it produces no article to put back; running the repair
+ * over OCR text changes 17 words across the eight OCR extractions, all of
+ * them genuine instances of the same pattern, which is not worth coupling the
+ * two paths for.
+ *
+ * Neither repair rescues a book whose *runs* are reversed rather than its
+ * letters — `history-s1-student-book` reads «سأتعلم؟ ماذا» for «ماذا
+ * سأتعلم؟» — and that failure is not measured by any gate here. Such a book
+ * now passes where it used to be rejected for transposition, so it needs
+ * `--ocr` and an eye, not this.
+ */
+function repairArtifacts(sourceId: string, pages: ExtractedPage[]): ExtractedPage[] {
+  const { pages: fixed, marks, articles, ligatures, negations } = repairWithCounts(pages.map(p => p.text));
+  if (marks || articles || ligatures || negations) {
+    console.log(
+      `  ⤷ ${sourceId} — ${marks} mark(s), ${articles} article(s), ${ligatures} ligature(s), ${negations} negation(s)`,
+    );
+  }
+  return pages.map((p, i) => ({ ...p, text: fixed[i] }));
+}
+
+async function parseWithPdfParse(sourceId: string, buf: Buffer): Promise<{ pages: ExtractedPage[]; reason: string | null }> {
   const parser = new PDFParse({ data: new Uint8Array(buf) });
   try {
     const result = await parser.getText();
@@ -130,7 +163,8 @@ async function parseWithPdfParse(buf: Buffer): Promise<{ pages: ExtractedPage[];
     if (!pages.length && result.text) {
       pages.push({ page: 1, text: result.text.trim() });
     }
-    return { pages, reason: rejectReason(pages.map(p => p.text).join('')) };
+    const repaired = repairArtifacts(sourceId, pages);
+    return { pages: repaired, reason: rejectReason(repaired.map(p => p.text).join('')) };
   } finally {
     await parser.destroy();
   }
@@ -144,8 +178,32 @@ async function parseWithPdfParse(buf: Buffer): Promise<{ pages: ExtractedPage[];
  * image, so OCR output is checked against the same `rejectReason` gate
  * rather than assumed clean.
  */
-async function tryOcr(abs: string): Promise<{ pages: ExtractedPage[]; reason: string | null } | null> {
-  const ocred = await ocrPdf(abs);
+/**
+ * Which tesseract model to read a book with.
+ *
+ * The default is Arabic, which is right for every book here but one kind. The
+ * English teacher's books are English on the page — `eng-s2-teacher-guide` is
+ * 451,343 Latin letters against 636 Arabic — and reading those pages with the
+ * Arabic model returns «0200110090065 عأسثانا 116 100111109» where the page
+ * says "Jordan High Note is a dynamic and intensive five-level course".
+ *
+ * That output passed the quality gate, because every gate here measures an
+ * Arabic defect and there was no recognisable Arabic left to measure. A book
+ * can therefore fail on a few pages of Arabic front matter, fall to OCR, come
+ * back destroyed, and be marked ingested with nothing red — which is what
+ * happened on 2026-09-07 before this existed.
+ *
+ * Both models together, rather than English alone, because the front matter
+ * and the rubrics really are Arabic.
+ */
+function ocrLanguageFor(sourceId: string): string | undefined {
+  const subject = G10_SOURCES.find(s => s.id === sourceId)?.subject;
+  return subject === 'english' ? 'eng+ara' : undefined;
+}
+
+async function tryOcr(abs: string, sourceId: string): Promise<{ pages: ExtractedPage[]; reason: string | null } | null> {
+  const lang = ocrLanguageFor(sourceId);
+  const ocred = await ocrPdf(abs, lang ? { lang } : {});
   if (!ocred) return null;
   const pages: ExtractedPage[] = ocred.map(p => ({ page: p.page, text: p.text.trim() }));
   return { pages, reason: rejectReason(pages.map(p => p.text).join('')) };
@@ -164,7 +222,7 @@ async function extractOne(
   if (isLfsPointer(buf)) return `Git-LFS pointer, run \`git lfs pull\`: ${rel}`;
 
   if (forceOcr) {
-    const ocrResult = await tryOcr(abs);
+    const ocrResult = await tryOcr(abs, sourceId);
     if (!ocrResult) {
       return `--ocr requested but OCR is unavailable — see lib/curriculum/scripts/ocr.ts. ${rel}`;
     }
@@ -176,12 +234,12 @@ async function extractOne(
     return buildDoc(sourceId, rel, buf, ocrResult.pages, 'tesseract-ocr (--ocr requested)');
   }
 
-  let { pages, reason } = await parseWithPdfParse(buf);
+  let { pages, reason } = await parseWithPdfParse(sourceId, buf);
   let tool = 'pdf-parse@2';
 
   if (reason) {
     const pdfParseReason = reason;
-    const ocrResult = await tryOcr(abs);
+    const ocrResult = await tryOcr(abs, sourceId);
     if (ocrResult && !ocrResult.reason) {
       ({ pages, reason } = ocrResult);
       tool = `tesseract-ocr (pdf-parse rejected: ${pdfParseReason})`;

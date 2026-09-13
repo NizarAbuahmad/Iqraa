@@ -183,7 +183,16 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
   });
 
   it("guards the OpenAI-backed routes", async () => {
-    for (const route of ["/chat", "/generate/lesson-plan", "/generate/classroom-activity"]) {
+    // `/practice/read-aloud` belongs here for the same reason as the rest: it
+    // spends money on transcription per call. Unauthenticated it would have no
+    // identity to bill and no per-user cap to sit behind, which would make it
+    // a free transcription service rather than a practice feature.
+    for (const route of [
+      "/chat",
+      "/generate/lesson-plan",
+      "/generate/classroom-activity",
+      "/practice/read-aloud",
+    ]) {
       const res = await fetch(`${base}${route}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -191,6 +200,20 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       });
       assert.equal(res.status, 401, `${route} must require a token`);
     }
+  });
+
+  it("mounts both claim-code routes inside the roster's guarded prefix", async () => {
+    // The read route is new. Had it landed outside `router.use(["/classes",
+    // "/students"], …)` it would answer 404 rather than 401 — and a teacher's
+    // link code would be readable with no token at all. That is the exact
+    // mount-order failure this suite exists to catch, and it is invisible from
+    // the client, which would just see a working screen.
+    const id = "00000000-0000-0000-0000-000000000000";
+    const get = await fetch(`${base}/students/${id}/claim-code`);
+    assert.equal(get.status, 401, "reading a link code must require a token");
+
+    const post = await fetch(`${base}/students/${id}/claim-code`, { method: "POST" });
+    assert.equal(post.status, 401, "minting a link code must require a token");
   });
 
   it("mounts account deletion, and refuses it without a token", async () => {
@@ -201,6 +224,22 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     // which this suite deliberately does not have.
     const res = await fetch(`${base}/auth/users/me`, { method: "DELETE" });
     assert.equal(res.status, 401, "account deletion must exist and require a token");
+  });
+
+  it("keeps the unverified-email routes public, since the caller has no session yet", async () => {
+    // All three serve the verify screen, which by definition runs before any
+    // session exists — a 401 on any of them means somebody moved them behind
+    // authMiddleware and locked every pending signup out of finishing.
+    // 400 is the intended answer to an empty body, and it is reached before
+    // the database this suite deliberately cannot supply.
+    for (const path of ["/auth/verify-email", "/auth/resend-verification", "/auth/change-unverified-email"]) {
+      const res = await fetch(`${base}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      assert.equal(res.status, 400, `${path} must be mounted, public, and validate its body`);
+    }
   });
 
   it("reports that student accounts are off, and refuses one", async () => {
@@ -345,6 +384,20 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401);
   });
 
+  it("guards the external-asset route, and never takes a bucket key", async () => {
+    // It hands out signed URLs into a private bucket, so it must sit behind
+    // the same auth as the rest of /media.
+    const res = await fetch(`${base}/media/external/voa-nutrients-and-nutrition`);
+    assert.equal(res.status, 401);
+
+    // And the id is looked up in the manifest rather than used as a key —
+    // a traversal attempt must not even reach the bucket. It is refused by
+    // auth first here, which is the point: there is no unauthenticated path
+    // to it at all.
+    const traversal = await fetch(`${base}/media/external/${encodeURIComponent("../../secret")}`);
+    assert.equal(traversal.status, 401);
+  });
+
   it("guards feedback and admin-usage-summary routes", async () => {
     const postRes = await fetch(`${base}/feedback`, {
       method: "POST",
@@ -378,6 +431,69 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       body: "{}",
     });
     assert.equal(res.status, 404);
+  });
+});
+
+describe("API register (student accounts enabled)", { skip: built ? false : "run `pnpm build` first" }, () => {
+  // Separate server/describe from the suite above: that one pins the
+  // shipping default (STUDENT_ACCOUNTS unset), so proving the *other* branch
+  // — the code requirement actually removed from /register's validation —
+  // needs its own child process with the flag flipped on.
+  let child: ChildProcess;
+  let base: string;
+
+  before(async () => {
+    const port = 8500 + Math.floor(Math.random() * 400);
+    base = `http://127.0.0.1:${port}/api`;
+    child = spawn(process.execPath, [entry], {
+      env: {
+        ...process.env,
+        PORT: String(port),
+        STUDENT_ACCOUNTS: "true",
+        DATABASE_URL: "postgres://u:p@127.0.0.1:5432/none",
+        SESSION_SECRET: "test-secret",
+        OPENAI_API_KEY: "sk-test-placeholder",
+      },
+      stdio: "ignore",
+    });
+
+    const deadline = Date.now() + 20_000;
+    for (;;) {
+      try {
+        const res = await fetch(`${base}/healthz`);
+        if (res.ok) break;
+      } catch {
+        /* not listening yet */
+      }
+      if (Date.now() > deadline) throw new Error("server did not start");
+      await new Promise((r) => setTimeout(r, 150));
+    }
+  });
+
+  after(() => child?.kill());
+
+  it("no longer requires a class code to register as a parent or student", async () => {
+    // Decoupled account creation from roster-code claiming: a parent/student
+    // account is created bare now, and claims a roster row afterwards through
+    // POST /auth/claim. The old behavior refused this with 400 "A class code
+    // is required..." before ever touching the database — proving that is
+    // gone means proving the request instead reaches the database call, which
+    // this suite's deliberately unreachable DATABASE_URL turns into a 500.
+    // A 500 here is progress, not a flaw — same reasoning the /take/:code and
+    // /auth/join/:code tests above rely on.
+    const res = await fetch(`${base}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firstName: "A",
+        lastName: "B",
+        email: "child@example.com",
+        password: "Sufficiently1Strong!",
+        role: "parent",
+      }),
+    });
+    assert.notEqual(res.status, 400, "a missing class code must not be refused anymore");
+    assert.equal(res.status, 500, "no database in this suite — reaching it is the proof");
   });
 });
 

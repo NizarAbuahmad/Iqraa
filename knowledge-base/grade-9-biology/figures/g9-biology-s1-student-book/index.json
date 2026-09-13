@@ -1,0 +1,469 @@
+{
+  "sourceId": "g9-biology-s1-student-book",
+  "figures": [
+    {
+      "file": "p018.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 18,
+      "rect": [
+        89.6,
+        426.5,
+        200.5,
+        519.3
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 17
+    },
+    {
+      "file": "p032.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 32,
+      "rect": [
+        40.1,
+        285.5,
+        357.5,
+        614.5
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p033.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 33,
+      "rect": [
+        382.4,
+        242.2,
+        490.8,
+        329.9
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p036.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 36,
+      "rect": [
+        102.1,
+        109.4,
+        245.1,
+        211.7
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p037.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 37,
+      "rect": [
+        44.2,
+        32.7,
+        311.7,
+        189.5
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p038.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 38,
+      "rect": [
+        68.9,
+        457.2,
+        388.7,
+        732.5
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p039.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 39,
+      "rect": [
+        123.3,
+        291.1,
+        274.5,
+        397.9
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p040.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 40,
+      "rect": [
+        254.1,
+        29.6,
+        548.8,
+        266.0
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p041.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 41,
+      "rect": [
+        320.4,
+        44.3,
+        542.9,
+        161.3
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p042.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 42,
+      "rect": [
+        146.9,
+        399.7,
+        421.5,
+        730.7
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p042b.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 42,
+      "rect": [
+        413.5,
+        418.4,
+        542.6,
+        729.8
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p043.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 43,
+      "rect": [
+        287.0,
+        442.9,
+        537.2,
+        638.6
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p044.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 44,
+      "rect": [
+        86.2,
+        110.9,
+        202.9,
+        224.6
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p044b.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 44,
+      "rect": [
+        46.7,
+        557.9,
+        389.7,
+        730.8
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p046.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 46,
+      "rect": [
+        46.9,
+        539.3,
+        386.6,
+        732.5
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p048.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 48,
+      "rect": [
+        187.9,
+        294.8,
+        406.2,
+        493.1
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p050.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 50,
+      "rect": [
+        46.9,
+        418.4,
+        386.6,
+        729.2
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 49
+    },
+    {
+      "file": "p051.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 51,
+      "rect": [
+        207.3,
+        485.3,
+        547.0,
+        729.7
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 49
+    },
+    {
+      "file": "p052.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 52,
+      "rect": [
+        135.4,
+        298.7,
+        271.0,
+        395.3
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 49
+    },
+    {
+      "file": "p053.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 53,
+      "rect": [
+        47.0,
+        380.5,
+        332.8,
+        720.7
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 49
+    },
+    {
+      "file": "p055.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 55,
+      "rect": [
+        214.7,
+        32.8,
+        551.6,
+        270.3
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 49
+    },
+    {
+      "file": "p056.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 56,
+      "rect": [
+        114.3,
+        453.5,
+        380.7,
+        569.5
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 49
+    },
+    {
+      "file": "p057b.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 57,
+      "rect": [
+        35.4,
+        292.6,
+        360.4,
+        597.9
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 57
+    },
+    {
+      "file": "p058.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 58,
+      "rect": [
+        47.0,
+        32.8,
+        386.7,
+        336.0
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 57
+    },
+    {
+      "file": "p063.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 63,
+      "rect": [
+        218.4,
+        414.4,
+        300.8,
+        501.9
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 57
+    },
+    {
+      "file": "p063b.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 63,
+      "rect": [
+        51.1,
+        551.9,
+        265.8,
+        727.3
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 57
+    },
+    {
+      "file": "p065.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 65,
+      "rect": [
+        47.2,
+        216.8,
+        270.3,
+        446.5
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 57
+    },
+    {
+      "file": "p067b.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 67,
+      "rect": [
+        314.4,
+        340.2,
+        473.2,
+        500.0
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 57
+    },
+    {
+      "file": "p068.png",
+      "sourceId": "g9-biology-s1-student-book",
+      "pdfPage": 68,
+      "rect": [
+        74.0,
+        129.1,
+        144.3,
+        245.1
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 57
+    }
+  ]
+}

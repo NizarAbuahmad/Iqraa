@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "الجغرافيا",
+    "subject_en": "Geography",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ (الرابعةُ والخامسةُ والسادسةُ، مُكمِّلةً لترقيمِ الفصلِ الأولِ) ودروسُها التسعةُ من كتاب الطالب في 2026-09-09، بنفسِ طريقةِ الفصلِ الأولِ: قراءةِ صفحةِ المحتوياتِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ ودرسٍ مباشرةً منَ الـ PDF (62.5 ميغابايت). هذه النسخةُ من الملفِّ تحملُ علامةَ «نسخة قيد الإعداد» مائيةً على كلِّ صفحةٍ — وهيَ مسودةٌ رسميةٌ لا مصدرٌ غيرُ رسميٍّ، والمحتوى النصيُّ غيرُ متأثرٍ بها.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة الجغرافيا - الصف التاسع - الفصل الدراسي الثاني - المركز الوطني لتطوير المناهج والتقويم"
+    },
+    "known_gaps": [
+      "نفسُ الفجواتِ المُسجَّلةِ في ملفِّ الفصلِ الأولِ: لا نتاجاتِ تعلُّمٍ مُرقَّمةً (objectives فارغةٌ)، ولا دليلَ معلمٍ (periods وtotal_periods = null)، ووسمُ «مهاراتِ التعلُّمِ» لكلِّ درسٍ غيرُ منقولٍ لأنَّهُ لا حقلَ لهُ في هذا المخطَّطِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "تحدّياتٌ بيئيةٌ",
+      "title_en": "Environmental Challenges",
+      "general_idea_ar": "تعاني البيئةُ في عالمِنا المُعاصِرِ تحدّياتٍ كبيرةً، مِنْ أبرزِها: تلوُّثُ المياهِ، وتلوُّثُ الهواءِ، والتصحُّرُ، وهيَ مُشكِلاتٌ تؤثِّرُ في صحّةِ الإنسانِ، وتُخِلُّ بتوازنِ الطبيعةِ، وتهدِّدُ استدامةَ المواردِ. إنَّ إدراكَ خطورةِ هذهِ المُشكِلاتِ والسعيَ الجادَّ إلى الحدِّ منها يُعَدُّ مسؤوليةً جماعيةً تسهمُ في حمايةِ البيئةِ وتحقيقِ أهدافِ التنميةِ المُستدامةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "تلوُّثُ المياهِ",
+          "title_en": "Water Pollution",
+          "main_idea_ar": "يُعدُّ تلوُّثُ المياهِ منْ أبرزِ التحدّياتِ البيئيةِ التي تهدِّدُ صحّةَ الإنسانِ وتؤثِّرُ في النظمِ البيئيةِ والأمنِ الغذائيِّ، وتقتضي مواجهتُهُ اعتمادَ حلولٍ مُستدامةٍ، إلى جانبِ إدارةٍ رشيدةٍ للمواردِ المائيةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التلوُّثُ", "en": "Pollution" },
+            { "ar": "التلوُّثُ المائيُّ", "en": "Water Pollution" },
+            { "ar": "الأمطارُ الحمضيةُ", "en": "Acid Rain" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "تلوُّثُ التربةِ",
+          "title_en": "Soil Pollution",
+          "main_idea_ar": "تؤدّي التربةُ دورًا أساسيًّا في إنتاجِ الغذاءِ، وتنقيةِ المياهِ، وتنظيمِ المناخِ، وتشكِّلُ أساسًا للأنشطةِ الاقتصاديةِ والبشريةِ، ما يجعلُ حمايتَها وإدارتَها السليمةَ ضرورةً مُلِحّةً لضمانِ استمراريةِ النظمِ البيئيةِ واستدامةِ الحياةِ على كوكبِ الأرضِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التربةُ", "en": "Soil" },
+            { "ar": "تلوُّثُ التربةِ", "en": "Soil Pollution" },
+            { "ar": "الرعيُ الجائرُ", "en": "Overgrazing" },
+            { "ar": "التعريةُ", "en": "Erosion" },
+            { "ar": "التنوُّعُ البيولوجيُّ", "en": "Biodiversity" }
+          ]
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "التصحُّرُ",
+          "title_en": "Desertification",
+          "main_idea_ar": "التصحُّرُ ظاهرةٌ بيئيةٌ تسهمُ في تدهورِ النظمِ البيئيةِ، وفقدانِ التنوُّعِ الحيويِّ، وتفاقمِ الفقرِ الغذائيِّ، ما يُبرزُ الحاجةَ إلى اتّخاذِ إجراءاتٍ وقائيةٍ وتطبيقِ إدارةٍ مُستدامةٍ للأراضي، بما يضمنُ الحفاظَ على البيئةِ ويدعمُ مسارَ التنميةِ المُستدامةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التصحُّرُ", "en": "Desertification" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "جغرافيةُ المدنِ",
+      "title_en": "Geography of Cities",
+      "general_idea_ar": "تُعنى جغرافيةُ المدنِ بدراسةِ نشأةِ المدنِ وتوزيعِها وتطوُّرِها المكانيِّ، إلى جانبِ تحليلِ علاقاتِها بالبيئةِ الطبيعيةِ والاجتماعيةِ والاقتصاديةِ، وتتناولُ هذهِ الدراسةُ أيضًا الأنماطَ السكّانيةَ والبنيةَ العمرانيةَ، والعواملَ المُؤثِّرةَ في النموِّ الحضريِّ، وتخطيطَ المدنِ بطريقةٍ مُستدامةٍ، وإدارةَ المواردِ الحضريةِ بكفاءةٍ بما يضمنُ تحسينَ جودةِ الحياةِ لسكّانِ المدنِ، وتحقيقَ التوازنِ بينَ التنميةِ والبيئةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "نشأةُ المدنِ وتطوُّرُها",
+          "title_en": "The Origin and Development of Cities",
+          "main_idea_ar": "تُعنى دراسةُ نشأةِ المدنِ وتطوُّرِها بفهمِ العملياتِ التاريخيةِ والاجتماعيةِ والاقتصاديةِ التي أسهمَتْ في تأسيسِ التجمُّعاتِ الحضريةِ وتحوُّلِها تدريجيًّا إلى مراكزَ سكّانيةٍ مُتكامِلةٍ ذاتِ وظائفَ مُتعدِّدةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المدينةُ", "en": "City" },
+            { "ar": "المدنُ التجاريةُ", "en": "Commercial Cities" },
+            { "ar": "مدنُ القوافلِ", "en": "Caravan Cities" },
+            { "ar": "دولةُ المدينةِ", "en": "City State" },
+            { "ar": "المدينةُ الصناعيةُ", "en": "Industrial Cities" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "التحضُّرُ",
+          "title_en": "Urbanization",
+          "main_idea_ar": "التحضُّرُ عمليةٌ اجتماعيةٌ وجغرافيةٌ ترافقُها توسُّعاتٌ في المناطقِ الحضريةِ وتغيُّراتٌ في الأنشطةِ الاقتصاديةِ والاجتماعيةِ، وهوَ مُؤشِّرٌ على تطوُّرِ المُجتمعاتِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التحضُّرُ", "en": "Urbanization" },
+            { "ar": "الحضريةُ", "en": "Urbanism" },
+            { "ar": "الفقرُ الحضريُّ", "en": "Urban Poverty" }
+          ]
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "المدنُ الذكيةُ",
+          "title_en": "Smart Cities",
+          "main_idea_ar": "يُساعدُ استخدامُ التقنياتِ الحديثةِ على تحسينِ جودةِ الحياةِ والخدماتِ العامّةِ، وإدارةِ المواردِ بكفاءةٍ، ويجعلُ التواصلَ معَ الجهاتِ الحكوميةِ أسهلَ، ويسهمُ في اتّخاذِ قراراتٍ دقيقةٍ عنْ طريقِ تحليلِ البياناتِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المدنُ الذكيةُ", "en": "Smart Cities" },
+            { "ar": "الحوسبةُ السحابيةُ", "en": "Cloud Computing" },
+            { "ar": "الذكاءُ الاصطناعيُّ", "en": "Artificial Intelligence" },
+            { "ar": "الأمنُ السيبرانيُّ", "en": "Cyber Security" },
+            { "ar": "الأتمتةُ", "en": "Automation" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "جغرافيةُ العالمِ القديمِ",
+      "title_en": "Geography of the Old World",
+      "general_idea_ar": "الجغرافيةُ الإقليميةُ أحدُ فروعِ علمِ الجغرافيا، تُعنى بدراسةِ الأقاليمِ المختلفةِ في العالمِ منْ حيثُ خصائصُها الطبيعيةُ والبشريةُ، وتحليلِ العلاقاتِ المُتبادلةِ بينَ هذهِ العناصرِ داخلَ كلِّ إقليمٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "قارّةُ آسيا: الملامحُ الطبيعيةُ والبشريةُ",
+          "title_en": "The Continent of Asia: Physical and Human Features",
+          "main_idea_ar": "قارّةُ آسيا هيَ أكبرُ القارّاتِ منْ حيثُ المساحةُ وعددُ السكّانِ، وتُعدُّ مهدَ الحضاراتِ والأديانِ الكبرى في العالمِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "دولٌ عابرةٌ للقارّاتِ", "en": "Transcontinental Countries" },
+            { "ar": "مضيقُ بيرنغ", "en": "Bering Strait" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "قارّةُ إفريقيا: الملامحُ الطبيعيةُ والبشريةُ",
+          "title_en": "The Continent of Africa: Physical and Human Features",
+          "main_idea_ar": "تُعدُّ إفريقيا منَ القارّاتِ الكبرى على مستوى العالمِ، إذْ تحتلُّ المرتبةَ الثانيةَ منْ حيثُ الاتساعُ الجغرافيُّ وعددُ السكّانِ، وتتميّزُ بتنوُّعٍ طبيعيٍّ وثقافيٍّ واسعٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الهضبةُ الإفريقيةُ الكبرى", "en": "Great African Plateau" },
+            { "ar": "الأخدودُ الإفريقيُّ العظيمُ", "en": "Great Rift Valley" }
+          ]
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "قارّةُ أوروبّا: الملامحُ الطبيعيةُ والبشريةُ",
+          "title_en": "The Continent of Europe: Physical and Human Features",
+          "main_idea_ar": "تُساعدُ دراسةُ الجغرافيا الإقليميةِ لقارّةِ أوروبّا على فهمِ الخصائصِ الطبيعيةِ والأنشطةِ البشريةِ، وكيفَ أسهمَتْ في تمييزِ القارّةِ وتشكيلِ دورِها الحضاريِّ والاقتصاديِّ في العالمِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "سهولُ أوروبّا العظمى", "en": "Great European Plains" }
+          ]
+        }
+      ]
+    }
+  ]
+}

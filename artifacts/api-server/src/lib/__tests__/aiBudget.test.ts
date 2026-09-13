@@ -13,12 +13,14 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import {
   getChatModel,
   getGenerationModel,
   getPricing,
   pricedModels,
+  recordAudioUsage,
 } from "../aiBudget.ts";
 
 describe("getPricing", () => {
@@ -104,5 +106,55 @@ describe("generation vs chat model", () => {
       assert.equal(getGenerationModel(), "gpt-4o-mini");
       assert.equal(getChatModel(), "gpt-5.4-nano");
     });
+  });
+});
+
+/**
+ * Transcription spend has to reach the ledger, not just an in-memory total.
+ *
+ * `recordAudioUsage` used to bump `spentUsd` and stop there. Nothing wrote a
+ * row, so `assertUserQuotaAvailable` — which sums `ai_generations` — could not
+ * see audio at all: `AI_USER_BUDGET_USD` bounded every workload except the one
+ * a caller can trigger cheaply. The global cap was all that stood behind it.
+ *
+ * The row itself cannot be observed here: there is no DATABASE_URL under
+ * `node --test` and no module mocking anywhere in this suite. So one property
+ * is asserted behaviourally and one structurally — and the structural one says
+ * so, rather than being dressed up as a functional check.
+ */
+describe("recordAudioUsage", () => {
+  it("never throws when there is no database to write to", () => {
+    // The point of the fire-and-forget: the transcription is already paid for
+    // and the student already has their recording. Awaiting that insert, or
+    // letting it reject, would fail their attempt over a metrics row.
+    assert.doesNotThrow(() => {
+      recordAudioUsage(12, "gpt-4o-mini-transcribe", "00000000-0000-0000-0000-000000000000");
+    });
+  });
+
+  it("accepts a null owner, for a caller with no account", () => {
+    // A student sitting an exam has no user of their own — the link is the
+    // identity — so `null` must be a legal answer rather than a bug.
+    assert.doesNotThrow(() => recordAudioUsage(3, "gpt-4o-mini-transcribe", null));
+    assert.doesNotThrow(() => recordAudioUsage(3, "gpt-4o-mini-transcribe"));
+  });
+
+  it("treats a nonsense duration as zero rather than crediting the budget", () => {
+    for (const seconds of [-30, Number.NaN, Number.POSITIVE_INFINITY]) {
+      assert.doesNotThrow(() => recordAudioUsage(seconds, "gpt-4o-mini-transcribe", null));
+    }
+  });
+
+  it("writes a ledger row carrying the userId (structural)", () => {
+    // Read from source deliberately: the write is fire-and-forget into a
+    // database this suite cannot reach, so the only assertable thing is that
+    // the call exists and carries the owner. Same posture as the question-type
+    // parity check — crude, but it pins the exact line whose absence left the
+    // per-user cap blind to audio.
+    const src = readFileSync(new URL("../aiBudget.ts", import.meta.url), "utf8");
+    const body = /export function recordAudioUsage\(([\s\S]*?)\n}/.exec(src);
+    assert.ok(body, "recordAudioUsage not found — has it been renamed?");
+    assert.match(body[1]!, /recordGeneration\(/, "audio spend must reach ai_generations");
+    assert.match(body[1]!, /userId:\s*userId\s*\?\?\s*null/, "the ledger row must carry the owner");
   });
 });

@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { getTeacherContacts } from '@/services/messaging';
+import { useStudentAccountsEnabled } from '@/services/features';
 import {
   buildPickerContacts,
   matchesQuery,
@@ -42,6 +43,7 @@ export function ParticipantPickerSheet({
 }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
+  const studentAccounts = useStudentAccountsEnabled();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [query, setQuery] = useState('');
@@ -251,7 +253,7 @@ export function ParticipantPickerSheet({
                         { paddingVertical: 0, lineHeight: 20, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' },
                       ]}
                     >
-                      {t('messagingNoContactsDesc')}
+                      {studentAccounts ? t('messagingNoContactsDesc') : t('messagingDisabledDesc')}
                     </Text>
                   </View>
                 )

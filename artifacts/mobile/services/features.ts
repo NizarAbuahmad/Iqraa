@@ -66,19 +66,31 @@ export function resetFeatureCache(): void {
  * Starts closed and opens if the server says so, rather than the reverse: a
  * frame of "signup available" that then disappears is a worse thing to render
  * than a frame without it.
+ *
+ * `loading` is true only until the first answer arrives (success or failure —
+ * fetchFeatures never rejects). A screen that lets the user submit before
+ * this settles can silently register someone as the closed-state default
+ * (teacher, no code) even though they meant to pick parent/student.
  */
-export function useStudentAccountsEnabled(): boolean {
-  const [enabled, setEnabled] = useState(cached?.studentAccounts ?? false);
+export function useStudentAccountsStatus(): { enabled: boolean; loading: boolean } {
+  const [state, setState] = useState(() =>
+    cached ? { enabled: cached.studentAccounts, loading: false } : { enabled: false, loading: true },
+  );
 
   useEffect(() => {
+    if (cached) return;
     let live = true;
     fetchFeatures().then(f => {
-      if (live) setEnabled(f.studentAccounts);
+      if (live) setState({ enabled: f.studentAccounts, loading: false });
     });
     return () => {
       live = false;
     };
   }, []);
 
-  return enabled;
+  return state;
+}
+
+export function useStudentAccountsEnabled(): boolean {
+  return useStudentAccountsStatus().enabled;
 }

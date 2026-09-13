@@ -28,7 +28,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { hasSeenAppIntro } from '@/services/appIntro';
-import { isEntryRoute, isNonTeacherRoute, isPublicRoute } from '@/services/routeGating';
+import { CLAIM_REQUIRED_ROUTE, isEntryRoute, isNonTeacherRoute, isPublicRoute, needsRosterClaim } from '@/services/routeGating';
 import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackScreen } from '@/services/analytics';
 
 SplashScreen.preventAutoHideAsync();
@@ -64,6 +64,21 @@ function RootLayoutNav() {
     // signed-out one would send them to a login screen they can never pass,
     // and the signed-in one would yank a teacher testing the link to the tabs.
     if (isPublicRoute(pathname)) {
+      wasLoading.current = false;
+      wasSignedIn.current = signedIn;
+      return;
+    }
+
+    // A parent/student with zero roster links has nothing to do in the app
+    // yet — every data-serving endpoint scopes by rosterLinks.userId, so an
+    // unlinked account would see empty everywhere. Checked before the
+    // non-teacher bounce below (and before entry routes get their usual
+    // free pass) so it applies right after signup, on every login, and on
+    // every app boot/refresh — not just once. `/claim-required` itself is in
+    // NON_TEACHER_ROUTES, so once there this check no-ops and the next block
+    // leaves them alone.
+    if (signedIn && user && needsRosterClaim(user) && pathname !== CLAIM_REQUIRED_ROUTE) {
+      router.replace(CLAIM_REQUIRED_ROUTE as any);
       wasLoading.current = false;
       wasSignedIn.current = signedIn;
       return;
@@ -118,6 +133,26 @@ function RootLayoutNav() {
     if (pathname) trackScreen(pathname);
   }, [pathname]);
 
+  /**
+   * Hold the logo until the app knows where it is going.
+   *
+   * This used to fire as soon as the fonts loaded, which is well before
+   * `/auth/me` answers — so reopening the app after Android had killed it
+   * revealed a bare header and tab bar with an empty screen between them, and
+   * only then the real destination. Gating on `isLoading` means the user sees
+   * the logo and then their screen, with nothing in between.
+   *
+   * Declared after the navigation effect above on purpose: that one dispatches
+   * its `router.replace` in the same commit, so the destination is already
+   * chosen by the time this reveals anything.
+   *
+   * It cannot stick: `isLoading` flips in AuthContext's `finally`, and every
+   * await inside that block now goes through `fetchWithTimeout`.
+   */
+  useEffect(() => {
+    if (!isLoading) SplashScreen.hideAsync().catch(() => {});
+  }, [isLoading]);
+
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
@@ -144,6 +179,8 @@ function RootLayoutNav() {
       <Stack.Screen name="dev" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="faq" options={{ headerShown: false }} />
+      <Stack.Screen name="join-class" options={{ headerShown: false }} />
+      <Stack.Screen name="claim-required" options={{ headerShown: false, gestureEnabled: false }} />
     </Stack>
   );
 }
@@ -163,12 +200,9 @@ export default function RootLayout() {
     initAnalytics();
   }, []);
 
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
-
+  // The splash is hidden in RootLayoutNav, once auth has resolved — not here.
+  // Returning null while the fonts load is invisible because the splash is
+  // still up; it is only the *reason* AuthProvider cannot mount any earlier.
   if (!fontsLoaded && !fontError) return null;
 
   return (

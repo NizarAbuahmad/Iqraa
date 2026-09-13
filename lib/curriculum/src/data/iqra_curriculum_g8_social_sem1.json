@@ -1,0 +1,394 @@
+{
+  "meta": {
+    "grade": "الصف الثامن",
+    "grade_en": "Grade 8",
+    "subject": "الدراسات الاجتماعية",
+    "subject_en": "Social Studies",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الستُّ ودروسُها الحادي والعشرونَ من كتاب الطالب (الطبعةُ الثانيةُ، 2024م، رقمُ الإيداعِ 2025/2/728، ISBN 978-9923-41-847-5) في 2026-09-09، بقراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ وصفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF. هذا الكتابُ يجمَعُ مجالاتِ التربيةِ الوطنيةِ والمدنيةِ والتاريخِ والجغرافيا والفلسفةِ في مادّةٍ واحدةٍ (خلافًا لكتُبِ الصفَّينِ التاسعِ والعاشرِ حيثُ تُفصَلُ هذهِ المجالاتُ) — هذا سِمةُ منهاجِ هذا الصفِّ، لا خطأٌ في النقلِ. subjectId الداخليُّ (social) نفسُهُ الذي كانَ مُعرَّفًا سلفًا في هذا المستودَعِ (يمتدُّ للصفوفِ 1-9) لكنَّهُ لمْ يحمِلْ أيَّ كتابٍ فعليٍّ قبلَ هذا.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة الدراسات الاجتماعية - الصف الثامن - الفصل الدراسي الأول - المركز الوطني لتطوير المناهج (الطبعة الثانية، 2024)"
+    },
+    "known_gaps": [
+      "لا دليلَ معلمٍ لهذه المادةِ على القرصِ، فحقلُ periods وtotal_periods = null لكلِّ درسٍ.",
+      "يطبَعُ كلُّ درسٍ صندوقَ «ماذا سأتعلَّمُ؟» في صفحتِهِ الافتتاحيةِ، لكنَّهُ يسرُدُ عناوينَ محاورِ الدرسِ الفرعيةِ (مثلَ: «الأمم المتحدة: أهميتها وأجهزتها»)، لا نتاجاتِ تعلُّمٍ مُرقَّمةً بصيغةِ الفعلِ المضارعِ كما في مادّةِ التربيةِ المهنيةِ لهذا الصفِّ؛ فتجنُّبًا لفرضِ صياغةٍ لمْ تُطبَعْ، تُرِكَ objectives فارغًا لكلِّ دروسِ هذه المادةِ عمدًا، واعتُمِدَ main_idea_ar (منْ صندوقِ «الفكرةِ الرئيسةِ») بديلًا عنهُ.",
+      "يطبَعُ كلُّ درسٍ أيضًا صندوقَ «مهاراتِ التعلُّمِ» — مهاراتٌ بحثيةٌ عامّةٌ (كالاستنتاجِ والتصنيفِ) لا مصطلحاتٌ مُعرَّفةٌ، فلمْ تُنقَلْ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "حقوقُ الإنسانِ",
+      "title_en": "Human Rights",
+      "general_idea_ar": "تعرُّفُ الأُمَمِ المتحدةِ وأهميّتِها وأجهزتِها وأبرزِ مهامِّها، وتعرُّفُ الشِّرعةِ الدَّوْليةِ لحقوقِ الإنسانِ، والميثاقِ العربيِّ لحقوقِ الإنسانِ، وحقوقِ الإنسانِ في التشريعاتِ الأردنيةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "الأُمَمُ المتحدةُ: أهميّتُها وأجهزتُها",
+          "title_en": "The United Nations: Its Importance and Bodies",
+          "main_idea_ar": "تعرُّفُ الأُمَمِ المتحدةِ، وأجهزتِها، ومهامِّها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الأُمَمُ المتحدةُ", "en": "United Nations (UN)" },
+            { "ar": "الجمعيةُ العامّةُ", "en": "UN General Assembly" },
+            { "ar": "مجلسُ الأمنِ", "en": "UN Security Council" },
+            { "ar": "المجلسُ الاقتصاديُّ والاجتماعيُّ", "en": "The Economic and Social Council" },
+            { "ar": "محكمةُ العدلِ الدَّوْليةُ", "en": "International Court of Justice" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "الشِّرعةُ الدَّوْليةُ لحقوقِ الإنسانِ",
+          "title_en": "The International Bill of Human Rights",
+          "main_idea_ar": "تعرُّفُ أهميّةِ الشِّرعةِ الدَّوْليةِ لحقوقِ الإنسانِ في إرساءِ أُسُسِ المساواةِ والعدلِ والحُرّيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الشِّرعةُ الدَّوْليةُ لحقوقِ الإنسانِ", "en": "Human Rights Bill" },
+            { "ar": "العهدُ الدَّوْليُّ الخاصُّ بالحقوقِ المدنيةِ والسياسيةِ", "en": "International Covenant on Civic and Political Rights" },
+            { "ar": "العهدُ الدَّوْليُّ الخاصُّ بالحقوقِ الاقتصاديةِ والاجتماعيةِ والثقافيةِ", "en": "International Covenant on Economic, Social and Cultural Rights" }
+          ]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "حقوقُ الإنسانِ في التشريعاتِ الأردنيةِ",
+          "title_en": "Human Rights in Jordanian Legislation",
+          "main_idea_ar": "تعرُّفُ حقوقِ الإنسانِ في التشريعاتِ الأردنيةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التشريعاتُ", "en": "Legislation" },
+            { "ar": "الدستورُ الأردنيُّ", "en": "Jordanian Constitution" },
+            { "ar": "المحكمةُ الدستوريةُ", "en": "Constitutional Court" },
+            { "ar": "المركزُ الوطنيُّ لحقوقِ الإنسانِ", "en": "The National Center for Human Rights" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "البيئةُ",
+      "title_en": "The Environment",
+      "general_idea_ar": "يختلِفُ المُناخُ على سطحِ الأرضِ منْ مكانٍ لآخَرَ حسَبَ الموقعِ على درجاتِ العرضِ، ما يُسهِمُ في تنوُّعِ البيئاتِ الطبيعيةِ التي تتعرَّضُ لأخطارٍ طبيعيةٍ عديدةٍ تُحدِثُ تغيُّراتٍ كبيرةً في المظاهرِ التضاريسيةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "عناصرُ المُناخِ",
+          "title_en": "Elements of Climate",
+          "main_idea_ar": "تعرُّفُ المُناخِ وعناصرِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المُناخُ", "en": "Climate" },
+            { "ar": "الطقسُ", "en": "Weather" },
+            { "ar": "درجةُ الحرارةِ", "en": "Temperature" },
+            { "ar": "الضغطُ الجوّيُّ", "en": "Atmospheric Pressure" },
+            { "ar": "الرياحُ", "en": "Wind" },
+            { "ar": "الرطوبةُ", "en": "Humidity" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "البيئاتُ الطبيعيةُ",
+          "title_en": "Natural Environments",
+          "main_idea_ar": "تعرُّفُ مفهومِ النظامِ الطبيعيِّ وأنواعِ الأنظمةِ البيئيةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "النظامُ البيئيُّ الطبيعيُّ", "en": "Natural Ecosystem" },
+            { "ar": "السافانا", "en": "Savannah" }
+          ]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "الأخطارُ والكوارثُ الطبيعيةُ",
+          "title_en": "Natural Hazards and Disasters",
+          "main_idea_ar": "تعرُّفُ الأخطارِ والكوارثِ الطبيعيةِ، وطرقِ التعاملِ معَها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الخطرُ الطبيعيُّ", "en": "Natural Hazard" },
+            { "ar": "الكارثةُ", "en": "Disaster" },
+            { "ar": "الأعاصيرُ المداريةُ", "en": "Tropical Cyclones" },
+            { "ar": "الزلازلُ", "en": "Earthquakes" },
+            { "ar": "البراكينُ", "en": "Volcanoes" },
+            { "ar": "تسونامي", "en": "Tsunami" }
+          ]
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "إدارةُ الكوارثِ الطبيعيةِ",
+          "title_en": "Natural Disaster Management",
+          "main_idea_ar": "تعرُّفُ مفهومِ إدارةِ الكوارثِ الطبيعيةِ، ومراحلِ إدارتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "إدارةُ الكوارثِ الطبيعيةِ", "en": "Natural Disaster Management" },
+            { "ar": "النزوحُ البيئيُّ", "en": "Environmental Displacement" },
+            { "ar": "نظامُ الإنذارِ المُبكِّرِ", "en": "Early Warning System" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "حضاراتُ بلادِ الرافدَينِ",
+      "title_en": "Civilizations of Mesopotamia",
+      "general_idea_ar": "نشأتْ في منطقةِ بلادِ الرافدَينِ ما بينَ نهرَيْ دجلةَ والفراتِ أقدمُ الحضاراتِ في العالَمِ وأعرِقُها.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الحضارةُ السومريةُ (4000-2200 ق.م)",
+          "title_en": "The Sumerian Civilization (4000–2200 BC)",
+          "main_idea_ar": "تعرُّفُ الحضارةِ السومريةِ، وأهمِّ إنجازاتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الحضارةُ السومريةُ", "en": "Sumerian Civilization" },
+            { "ar": "الكتابةُ المسماريةُ", "en": "Cuneiform Writing" },
+            { "ar": "دولةُ المدينةِ", "en": "City State" },
+            { "ar": "المقايضةُ", "en": "Barter" },
+            { "ar": "ملحمةُ جلجامش", "en": "The Epic of Gilgamesh" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الحضارةُ الأكاديةُ (2350-2159 ق.م)",
+          "title_en": "The Akkadian Civilization (2350–2159 BC)",
+          "main_idea_ar": "تعرُّفُ الحضارةِ الأكاديةِ وأهمِّ إنجازاتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الحضارةُ الأكاديةُ", "en": "The Akkadian Civilization" },
+            { "ar": "مِسَلّةُ النصرِ", "en": "Victory Obelisk" }
+          ]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "الحضارةُ البابليةُ (1894-1174 ق.م)",
+          "title_en": "The Babylonian Civilization (1894–1174 BC)",
+          "main_idea_ar": "تعرُّفُ الحضارةِ البابليةِ، وأهمِّ إنجازاتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الحضارةُ البابليةُ", "en": "Babel Civilization" },
+            { "ar": "أسدُ بابلَ", "en": "Lion of Babylon" },
+            { "ar": "قانونُ حمورابي", "en": "Code of Hammurabi" }
+          ]
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "الحضارةُ الآشوريةُ (1150-612 ق.م)",
+          "title_en": "The Assyrian Civilization (1150–612 BC)",
+          "main_idea_ar": "تعرُّفُ الحضارةِ الآشوريةِ، وأهمِّ إنجازاتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الحضارةُ الآشوريةُ", "en": "Assyrian Civilization" },
+            { "ar": "مكتبةُ آشور بانيبال", "en": "Ashurbanipal Library" }
+          ]
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "الحضارةُ الكلدانيةُ (612-464 ق.م)",
+          "title_en": "The Chaldean Civilization (612–464 BC)",
+          "main_idea_ar": "تعرُّفُ الحضارةِ الكلدانيةِ، وأهمِّ إنجازاتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الحضارةُ الكلدانيةُ", "en": "Chaldean Civilization" },
+            { "ar": "بوابةُ عشتارَ", "en": "Ishtar Gate" },
+            { "ar": "حدائقُ بابلَ المُعلَّقةُ", "en": "Hanging Gardens of Babylon" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "السّكّانُ والتنميةُ",
+      "title_en": "Population and Development",
+      "general_idea_ar": "ترتبِطُ خططُ التنميةِ الاقتصاديةِ والاجتماعيةِ ارتباطًا وثيقًا بالخصائصِ العامّةِ للسّكّانِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "الخصائصُ العامّةُ للسّكّانِ",
+          "title_en": "General Characteristics of Population",
+          "main_idea_ar": "تعرُّفُ مفهومِ علمِ السّكّانِ، وأهمِّ الخصائصِ السّكّانيةِ في العالَمِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "علمُ السّكّانِ", "en": "Demography" },
+            { "ar": "النُّمُوُّ السّكّانيُّ", "en": "Population Growth" },
+            { "ar": "صافي الهجرةِ", "en": "Net Migration" },
+            { "ar": "مُعدَّلُ الخصوبةِ", "en": "Fertility Rate" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "السّكّانُ والتنميةُ",
+          "title_en": "Population and Development",
+          "main_idea_ar": "التمييزُ بينَ النُّمُوِّ الاقتصاديِّ والتنميةِ الاقتصاديةِ، وتعرُّفُ العواملِ المُؤثِّرةِ في التنميةِ الاقتصاديةِ ومُعوِّقاتِها، وطرقِ مواجهةِ التحدّياتِ التنمويةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "النُّمُوُّ الاقتصاديُّ", "en": "Economic Growth" },
+            { "ar": "التنميةُ الاقتصاديةُ", "en": "Economical Development" }
+          ]
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "التنميةُ المُستدامةُ",
+          "title_en": "Sustainable Development",
+          "main_idea_ar": "تعرُّفُ مفهومِ التنميةِ المُستدامةِ، وأبعادِها، وأهدافِها، والفرقِ بينَ التنميةِ المُستدامةِ والنُّمُوِّ الاقتصاديِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التنميةُ المُستدامةُ", "en": "Sustainable Development" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "الإعلامُ والرأيُ العامُّ",
+      "title_en": "Media and Public Opinion",
+      "general_idea_ar": "نعيشُ في زمنٍ أصبَحَ الإعلامُ فيهِ أحدَ أهمِّ مؤسّساتِ التنشئةِ الاجتماعيةِ، إذْ يُؤدّي دورًا حيويًّا في التعليمِ والتوجيهِ والإرشادِ، إضافةً إلى تأثيرِهِ في القِيَمِ والحصولِ على المعلومةِ، حيثُ تُشكِّلُ وسائلُ الإعلامِ البناءَ الإدراكيَّ والمعرفيَّ للفردِ والمجتمعِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "الإعلامُ",
+          "title_en": "Media",
+          "main_idea_ar": "تعرُّفُ مفهومِ الإعلامِ وأهمّيّتِهِ، ومفهومِ الخبرِ وخصائصِهِ، ودورِ وسائلِ التواصلِ الاجتماعيِّ في الإعلامِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الإعلامُ", "en": "Media" },
+            { "ar": "الإعلامُ المجتمعيُّ", "en": "Community Media" },
+            { "ar": "الخبرُ الإعلاميُّ", "en": "Media News" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "الرأيُ العامُّ والسياساتُ العامّةُ",
+          "title_en": "Public Opinion and Public Policies",
+          "main_idea_ar": "تعرُّفُ مفهومِ الرأيِ العامِّ ومُحدِّداتِهِ وأنواعِهِ، وتعرُّفُ مفهومِ السياساتِ العامّةِ وعلاقتِها بالرأيِ العامِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الرأيُ العامُّ", "en": "Public Opinion" },
+            { "ar": "السياساتُ العامّةُ", "en": "Public Policies" }
+          ]
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "قياسُ الرأيِ العامِّ",
+          "title_en": "Measuring Public Opinion",
+          "main_idea_ar": "تعرُّفُ مفهومِ استطلاعِ الرأيِ العامِّ، ودورِ شبكاتِ التواصلِ الاجتماعيِّ في التأثيرِ في الرأيِ العامِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "استطلاعُ الرأيِ العامِّ", "en": "Public Opinion Poll" },
+            { "ar": "شبكاتُ التواصلِ الاجتماعيِّ", "en": "Social Media Networks" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "الفلسفةُ",
+      "title_en": "Philosophy",
+      "general_idea_ar": "تعرُّفُ مفهومِ الفلسفةِ، وسِماتِ التفكيرِ الفلسفيِّ، وأهمِّ ملامحِ الفلسفةِ اليونانيةِ والفلسفةِ العربيةِ والإسلاميةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "مفهومُ الفلسفةِ وأهمّيّتُها",
+          "title_en": "The Concept of Philosophy and Its Importance",
+          "main_idea_ar": "تعرُّفُ مفهومِ الفلسفةِ، وأهمّيّتِها، وسِماتِ التفكيرِ الفلسفيِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الفلسفةُ", "en": "Philosophy" },
+            { "ar": "الدهشةُ", "en": "Amazement" },
+            { "ar": "المنطقُ", "en": "Logic" },
+            { "ar": "الشَّكُّ", "en": "Doubt" },
+            { "ar": "الشُّموليةُ", "en": "Inclusivity" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "الفلسفةُ اليونانيةُ",
+          "title_en": "Greek Philosophy",
+          "main_idea_ar": "تعرُّفُ فلاسفةِ العصرِ اليونانيِّ وأهمِّ إنجازاتِهِمْ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الثقافةُ الهيلينيةُ", "en": "Hellenistic Culture" },
+            { "ar": "المنهجُ السقراطيُّ", "en": "Socratic Method" }
+          ]
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "الفلسفةُ العربيةُ الإسلاميةُ",
+          "title_en": "Arab Islamic Philosophy",
+          "main_idea_ar": "تعرُّفُ فلاسفةِ العربِ والمسلمينَ وأهمِّ إنجازاتِهِمْ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "علمُ الكلامِ", "en": "Theology" },
+            { "ar": "الكِنديُّ", "en": "AL-Kindi" },
+            { "ar": "الفارابيُّ", "en": "Al-Farabi" },
+            { "ar": "ابنُ رُشْدٍ (أفرويس)", "en": "Ibn Rushd (Averroes)" }
+          ]
+        }
+      ]
+    }
+  ]
+}

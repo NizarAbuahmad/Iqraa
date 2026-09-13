@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -38,7 +38,7 @@ import {
   searchKBRanked,
   searchKBSemantic,
 } from '@/services/knowledgeBase';
-import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
 import { loadLessonPick, saveLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
@@ -332,6 +332,38 @@ function ContextBanner({
   // `TopicSelectionDetail.lessonId`.
   const [draftLessonId, setDraftLessonId] = useState<string | null>(null);
 
+  /**
+   * Which of CONTEXT_SUBJECTS to actually show, for the grade drafted in this
+   * sheet. The eight `/ai-tools` screens have always done this — they pass
+   * `subjectsWithoutCurriculum(grade)` into PickerField, which drops the
+   * masked options — but this sheet does not use PickerField and so offered
+   * all eighteen against every grade. On Grade 8 that meant pills for
+   * chemistry, physics, biology, earth science, geography, history and civic
+   * education, none of which NCCD teaches as Grade 8 subjects; they are folded
+   * into the combined Science and Social Studies books.
+   *
+   * These are indices INTO the canonical array, not a re-indexed list. The
+   * array stays whole so `draftSubjIdx` keeps meaning what it meant — see
+   * CLAUDE.md on picker positions being meaning-bearing. Only what renders is
+   * filtered.
+   */
+  const visibleSubjIdxs = useMemo(
+    () => CONTEXT_SUBJECTS
+      .map((s, i) => ({ s, i }))
+      .filter(({ s }) => hasCurriculumForSubjectGrade(s.subjectId, draftGradeId))
+      .map(({ i }) => i),
+    [draftGradeId],
+  );
+
+  // Changing grade can strand the current pick on a subject that grade does
+  // not teach. Move to the first subject it does, rather than leaving a
+  // selection the teacher can no longer see.
+  useEffect(() => {
+    if (visibleSubjIdxs.length > 0 && !visibleSubjIdxs.includes(draftSubjIdx)) {
+      setDraftSubjIdx(visibleSubjIdxs[0]);
+    }
+  }, [visibleSubjIdxs, draftSubjIdx]);
+
   const subj = CONTEXT_SUBJECTS[draftSubjIdx];
   const isOpen = externalOpen ?? modalOpen;
   const setOpen = (v: boolean) => {
@@ -493,7 +525,9 @@ function ContextBanner({
               {lang === 'ar' ? 'المادة' : 'Subject'}
             </Text>
             <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              {CONTEXT_SUBJECTS.map((s, i) => (
+              {visibleSubjIdxs.map(i => CONTEXT_SUBJECTS[i]).map((s, vi) => {
+                const i = visibleSubjIdxs[vi];
+                return (
                 <Pressable
                   key={s.subjectId}
                   onPress={() => { setDraftSubjIdx(i); setDraftTopic(''); setDraftLessonId(null); }}
@@ -511,25 +545,27 @@ function ContextBanner({
                     {lang === 'ar' ? s.labelAr : s.labelEn}
                   </Text>
                 </Pressable>
-              ))}
+                );
+              })}
             </View>
 
-            {/* Topic selector */}
-            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: 18 }]}>
-              {lang === 'ar' ? 'الدرس' : 'Lesson'}
-            </Text>
-            <TopicSelector
-              subjectId={subj.subjectId}
-              gradeId={draftGradeId}
-              value={draftTopic}
-              onChange={setDraftTopic}
-              onSelectionDetail={d => setDraftLessonId(d.lessonId)}
-              lang={lang}
-              isRTL={isRTL}
-              colors={colors}
-              accent={colors.primary}
-              t={t}
-            />
+            {/* Topic selector — no section header here: TopicSelector renders its
+                own «موضوع الدرس» label, so one field carried two labels. The
+                wrapper keeps the 18px gap the removed header used to provide. */}
+            <View style={{ marginTop: 18 }}>
+              <TopicSelector
+                subjectId={subj.subjectId}
+                gradeId={draftGradeId}
+                value={draftTopic}
+                onChange={setDraftTopic}
+                onSelectionDetail={d => setDraftLessonId(d.lessonId)}
+                lang={lang}
+                isRTL={isRTL}
+                colors={colors}
+                accent={colors.primary}
+                t={t}
+              />
+            </View>
           </ScrollView>
 
           {/* CTA at bottom */}
@@ -2467,7 +2503,7 @@ export default function IqraScreen() {
           demo pill, which stays because hiding it would let sample content
           read as real.
         */}
-        <View style={[styles.headerTop, centered, isRTL && { flexDirection: 'row-reverse' }]}>
+        <View style={[styles.headerTop, centered]}>
           {/*
             The mark, not the lockup. BrandLogo is the full two-line lockup —
             اقرأ stacked over the IQRA wordmark — in a 1024px square; at the 28px
@@ -2476,12 +2512,29 @@ export default function IqraScreen() {
             (see its own note), and the word beside it is live text, so it stays
             sharp and reads at a glance.
           */}
-          <View style={[styles.brandRow, isRTL && { flexDirection: 'row-reverse' }]}>
+          <View style={[styles.brandCentre, isRTL && { flexDirection: 'row-reverse' }]}>
             <IqraaMark size={30} tone="brand" />
             <Text style={[styles.brandWord, { color: colors.foreground }]}>
               {t('appName')}
             </Text>
           </View>
+        </View>
+
+        {/*
+          The badge gets its own line rather than sharing the brand's row.
+          Sharing it is what pushed اقرأ off-centre, and centring the brand
+          while the badge stayed in the row would have overlapped it: the badge
+          renders «وضع العرض · محتوى تجريبي» or «تعذّر الاتصال · محتوى تجريبي»,
+          roughly 170-200px, against ~85px of centred brand on a 360px screen —
+          they collide, and DEMO_MODE defaults on, so the long label is the
+          normal case rather than an edge one. Truncating it was the
+          alternative and a worse one: the half that would disappear is
+          «محتوى تجريبي», which is the half that stops sample output reading as
+          real. This costs one row of header height, against the note above
+          about keeping this header short — a deliberate trade, not an
+          oversight.
+        */}
+        <View style={[styles.headerBadgeRow, centered]}>
           <AiSourceBadge isRTL={isRTL} />
         </View>
       </View>
@@ -2857,8 +2910,13 @@ const CONTENT_MAX_WIDTH = 760;
 
 const styles = StyleSheet.create({
   header: { borderBottomWidth: StyleSheet.hairlineWidth, paddingBottom: 10 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  // `center`, not `space-between`: the brand is now this row's only child, and
+  // space-between would pin a lone child to the start — which is exactly where
+  // اقرأ used to sit.
+  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  // Replaces the old `brandRow`, which space-between pinned to the row's start.
+  brandCentre: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  headerBadgeRow: { flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 16, marginTop: 4 },
   brandWord: { fontFamily: 'Cairo_700Bold', fontSize: 19, letterSpacing: 0.2 },
   chip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 12 },
@@ -2936,8 +2994,13 @@ const ctxStyles = StyleSheet.create({
   pill:       { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   pillText:   { fontSize: 12 },
   clearBtn:   { padding: 4 },
-  subjRow:    { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  subjPill:   { paddingHorizontal: 14, paddingVertical: 6 },
+  // Must wrap: Grade 10 offers 13 subjects, and an unwrapped row pushed all but
+  // the first four off the screen edge (RTL row-reverse, so off to the left)
+  // with no scroll to reach them — the subjects were rendered but unreachable.
+  subjRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
+  // paddingVertical 8, not 6: at 6 the pill is ~26px tall, well under the 44px
+  // touch target, and these wrap to several rows of small tap targets.
+  subjPill:   { paddingHorizontal: 14, paddingVertical: 8 },
   subjText:   { fontSize: 13 },
   // Modal
   modal:        { flex: 1 },

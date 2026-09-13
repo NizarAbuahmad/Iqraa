@@ -28,6 +28,8 @@
  * from the output.
  */
 
+import type { ContactStudent } from './messaging.ts';
+
 export type MessageKind =
   | 'praise'
   | 'academic-concern'
@@ -270,4 +272,27 @@ export function composeParentMessage(input: ParentMessageInput, isAr: boolean): 
     studentName: input.studentName.trim(),
   };
   return isAr ? composeArabic(normalised) : composeEnglish(normalised);
+}
+
+/**
+ * Who this note may be delivered to inside the app — the guardians linked to
+ * the picked student, out of the teacher's whole contact list.
+ *
+ * Filtered to `role === 'parent'` deliberately, not incidentally. A roster link
+ * can also be `relation: "self"` — the child's own account — and this letter
+ * talks *about* the child in the third person («لم يُسلّم واجب الوحدة الثالثة»,
+ * «ابنكم»). Delivering it to them is not a redundant send, it is the wrong
+ * reader receiving a message written to be read over their head.
+ *
+ * `studentId` is null when the teacher typed the name by hand instead of
+ * picking off the roster. There is then no student row to look up and nothing
+ * to deliver to, so the caller falls back to sharing the text out.
+ */
+export function guardiansForStudent(
+  contacts: ContactStudent[],
+  studentId: string | null,
+): ContactStudent['contacts'] {
+  if (!studentId) return [];
+  const entry = contacts.find(c => c.studentId === studentId);
+  return (entry?.contacts ?? []).filter(c => c.role === 'parent');
 }
