@@ -142,6 +142,9 @@ export const BANK_SUBJECT_IDS: Record<CurriculumSource['subject'], string> = {
   art: 'art',
   vocational: 'vocational',
   'physical-education': 'physical-education',
+  // The combined «العلوم» book, at Grades 6, 7 and 8 — the grades NCCD teaches
+  // science as one subject. Grade 9/10 split it into the four subjects above.
+  science: 'science',
 };
 
 export function appSubjectId(subject: CurriculumSource['subject']): string {
@@ -426,6 +429,7 @@ const SUBJECT_LABEL_AR: Record<CurriculumSource['subject'], string> = {
   art: 'التربية الفنية',
   vocational: 'التربية المهنية',
   'physical-education': 'التربية الرياضية',
+  science: 'العلوم',
 };
 
 const SUBJECT_LABEL_EN: Record<CurriculumSource['subject'], string> = {
@@ -445,6 +449,7 @@ const SUBJECT_LABEL_EN: Record<CurriculumSource['subject'], string> = {
   art: 'Art Education',
   vocational: 'Vocational Education',
   'physical-education': 'Physical Education',
+  science: 'Science',
 };
 
 /**

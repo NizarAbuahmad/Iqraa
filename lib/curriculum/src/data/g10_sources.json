@@ -4504,6 +4504,233 @@
         "localPath": "knowledge-base/grade-9-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الثاني.pdf",
         "sha256": "6a54112fbf6dacffc96e184d4cedc3f25e8d5eea43103df910f4cb1fe4604470"
       }
+    },
+    {
+      "id": "g6-math-s1-student-book",
+      "title": "كتاب الطالب لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+      "bytes": 23961926,
+      "subject": "math",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "رياضيات",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرج النص من نسخة NCCD المحلية في 2026-09-12. ست صفحات من 126 (4، 5، 51، 57، 92، 125) تحمل حروفًا معكوسة لم يصلحها untranspose، وأغلبها صفحات فهرس؛ النثر سليم.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-12",
+        "pages": 126,
+        "chars": 174402,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+        "sha256": "28dd4a2cf22318e146fb492cb1f826ea538f1be17eba1018a1462943d7ae82dc"
+      }
+    },
+    {
+      "id": "g6-science-s1-student-book",
+      "title": "كتاب الطالب لمادة العلوم الصف السادس الفصل الأول.pdf",
+      "bytes": 52865907,
+      "subject": "science",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "science",
+        "علوم",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-12",
+        "pages": 108,
+        "chars": 117617,
+        "localPath": "knowledge-base/grade-6-science/support-pdfs/كتاب الطالب لمادة العلوم الصف السادس الفصل الأول.pdf",
+        "sha256": "494f4a8bd5870ba681758ee81a4074610c84520818961eb4e5c8116fdbc16678"
+      }
+    },
+    {
+      "id": "g6-science-s2-student-book",
+      "title": "كتاب الطالب لمادة العلوم الصف السادس الفصل الثاني.pdf",
+      "bytes": 67512641,
+      "subject": "science",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "science",
+        "علوم",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-12",
+        "pages": 120,
+        "chars": 127248,
+        "localPath": "knowledge-base/grade-6-science/support-pdfs/كتاب الطالب لمادة العلوم الصف السادس الفصل الثاني.pdf",
+        "sha256": "bf12db7c183e1d663e694e55c5ce60513650632f0da2c60e291372ae24f0c187"
+      }
+    },
+    {
+      "id": "g6-science-s1-activity-book",
+      "title": "كتاب الأنشطة والتمارين لمادة العلوم الصف السادس الفصل الأول.pdf",
+      "bytes": 12979432,
+      "subject": "science",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتمارين لمادة العلوم الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "science",
+        "علوم",
+        "سادس",
+        "كتاب الأنشطة والتمارين",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-12",
+        "pages": 48,
+        "chars": 70241,
+        "localPath": "knowledge-base/grade-6-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف السادس الفصل الأول.pdf",
+        "sha256": "d6ef028abe0396b245832621e5af0764e3af1f6a6e2c8059ad9bbd375e3f66f7"
+      }
+    },
+    {
+      "id": "g6-science-s2-activity-book",
+      "title": "كتاب الأنشطة والتمارين لمادة العلوم الصف السادس الفصل الثاني.pdf",
+      "bytes": 5034852,
+      "subject": "science",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتمارين لمادة العلوم الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "science",
+        "علوم",
+        "سادس",
+        "كتاب الأنشطة والتمارين",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-12",
+        "pages": 48,
+        "chars": 68510,
+        "localPath": "knowledge-base/grade-6-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف السادس الفصل الثاني.pdf",
+        "sha256": "f4ebd0b67b3c975e4a73859c439b688532421484388df8eeb160a8a70046dd53"
+      }
+    },
+    {
+      "id": "g6-science-s1-teacher-guide",
+      "title": "دليل المعلم لمادة العلوم الصف السادس الفصل الأول.pdf",
+      "bytes": 67854103,
+      "subject": "science",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العلوم الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "science",
+        "علوم",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 87% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-12",
+        "pages": 206,
+        "chars": 353263,
+        "localPath": "knowledge-base/grade-6-science/support-pdfs/دليل المعلم لمادة العلوم الصف السادس الفصل الأول.pdf",
+        "sha256": "83f86f556c99e45010522246b750b6fe69a4078fa9275649659a5971627b26ea"
+      },
+      "notes": "رفضَ pdf-parse هذا الملفَّ (تبديلُ حروفٍ في 87% من العيِّناتِ) فاستُخرِجَ بـ OCR في 2026-09-12. الناتِجُ صالحٌ للبحثِ والتأسيسِ لا للاقتباسِ الحرفيِّ: قورِنَتْ صفحةُ 7B بصورتِها فظهرَ إسقاطُ سطورِ نتاجاتٍ كاملةٍ وبترُ أخرى وخلطُ أعمدةِ المصفوفةِ. نتاجاتُ الدروسِ وعددُ الحصصِ تُقرَأُ من صفحاتِ PDF مباشرةً، لا من هذا النصِّ."
+    },
+    {
+      "id": "g6-science-s2-teacher-guide",
+      "title": "دليل المعلم لمادة العلوم الصف السادس الفصل الثاني.pdf",
+      "bytes": 62010020,
+      "subject": "science",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العلوم الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "science",
+        "علوم",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 87% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-12",
+        "pages": 176,
+        "chars": 313451,
+        "localPath": "knowledge-base/grade-6-science/support-pdfs/دليل المعلم لمادة العلوم الصف السادس الفصل الثاني.pdf",
+        "sha256": "92f545bebabecb63f657ad0f002d1b3ff712c5b0779e86f8d8c5a0fcb44935eb"
+      },
+      "notes": "رفضَ pdf-parse هذا الملفَّ فاستُخرِجَ بـ OCR في 2026-09-12، كما جرى لدليلِ الفصلِ الأوَّلِ. الناتِجُ صالحٌ للبحثِ والتأسيسِ لا للاقتباسِ الحرفيِّ: ناتِجُ الـ OCR في دليلِ الفصلِ الأوَّلِ قورِنَ بصورةِ صفحةِ المصفوفةِ فظهرَ إسقاطُ سطورِ نتاجاتٍ كاملةٍ وخلطُ أعمدةِ الجدولِ، ولا سببَ يدعو لافتراضِ أنَّ هذا الملفَّ أفضلُ. نتاجاتُ الدروسِ وعددُ الحصصِ تُقرَأُ من صفحاتِ PDF مباشرةً، لا من هذا النصِّ."
     }
   ],
   "mergedAt": "2026-08-25"

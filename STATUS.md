@@ -598,6 +598,62 @@ raster pipeline. Measure the yield, not just the density.
   which **one** is a figure and the rest are drawn page furniture, because its
   maps are rasters. That book wants `extract_book_photos.py`.
 
+**Grade 6 joins the product — Maths S1 and Science S1/S2, 2026-09-13.**
+`MVP_GRADE_IDS` is now `['grade-10', 'grade-9', 'grade-8', 'grade-7',
+'grade-6']`. Appended at index 4, **after** grade-7: that ordering is not
+cosmetic. This work was built against a tree that predated Grade 7, where the
+natural append put grade-6 at index 3 — precisely where grade-7 has since
+landed. Committing that draft would have silently repointed every stored
+`gradeIdx` of 3. Rebased onto current main and re-verified before commit.
+
+Three books, 37 lessons: maths S1 (4 units, 18 lessons) and science S1+S2
+(9 units, 19 lessons, numbered 1-4 then 5-9 continuously like Grade 7 and 8).
+The grade-6 tile shows exactly الرياضيات and العلوم rather than a page of dead
+tiles. No S2 maths student book was supplied — only the S2 guide and exercise
+book — so maths is one semester by necessity, not omission.
+
+**`science` was missing from the manifest vocabulary entirely**, and neither
+Grade 7 nor Grade 8 noticed because both were catalogued without Tracks A/B —
+no manifest rows, no extracted text. Adding it meant the full new-subject path:
+`CurriculumSource['subject']` in `sources.ts`, then `BANK_SUBJECT_IDS` and both
+`SUBJECT_LABEL_AR/EN` in `bank.ts`. Those three are `Record<…subject, string>`,
+so TypeScript named every site — including a per-subject regex map in
+`bank.test.ts` a hand-search would have missed. `curriculumIds.ts` already had
+the slug, and needed nothing for the first sub-Grade-7 book: `gradeSlug()`
+handles any `grade-N`, `UNIT_ID_RE` already matched an optional grade segment,
+and `bankTagsForParsedUnit` reserves the bare `s1-u1` vocabulary for Grade 10
+alone, so these units tag `g6-math-s1-u1` and cannot collide with it.
+
+**Lesson content was read from the PDF pages, not the extracted text, and that
+was not optional.** `pdf-parse` drops the assimilated lam in these books —
+«الخَلِيَّةُ» comes out «الَْلِيَّةُ» — fine for retrieval, unusable for
+curriculum text shown to a teacher. The maths book additionally reverses whole
+lines on 6 of 126 pages, concentrated in the contents spread. Worse for both
+science teacher guides: pdf-parse rejected each at 87% letter transposition and
+they fell back to OCR, and comparing the S1 OCR of matrix page 7B against the
+page image shows it **drops whole outcome lines** («تفسير سبب صغر حجم
+الخلايا»), truncates others, and interleaves table columns.
+
+So **science `objectives` is empty for all 19 lessons** and `periods` is null
+for 18 of them (u1_l1 = 5, read off the guide's page image). That is a
+deliberate refusal, not an oversight: the outcomes live only in the guides'
+«مصفوفةُ مؤشِّراتِ الأداءِ», which additionally mixes lesson-specific indicators
+with generic ones (عاداتُ العقلِ، البحثُ العلميُّ) repeated across lessons.
+Maths is the opposite case — all 18 lessons carry official outcomes, because
+that book prints «فِكْرَةُ الدَّرْسِ» as a real outcomes list. What the science
+student books *do* print is carried verbatim: unit «الفِكْرَةُ العامَّةُ»,
+per-lesson «الفِكْرَةُ الرَّئيسَةُ», and a genuinely bilingual «المَفاهيمُ
+وَالمُصْطَلَحاتُ» (86 terms with real English). Filling the outcomes means
+reading ~30 matrix pages as images; the JSONs' `known_gaps` say so and say why.
+
+Seven PDFs registered, extracted and `ingested` (5 via pdf-parse, both guides
+via OCR). The rest of the Grade 6 batch supplied the same day — Arabic,
+English, Islamic, social studies, digital skills, vocational, PE, art — is
+**not ingested**: those files sit outside the repo, unregistered. Note that
+vocational, PE and art additionally need `SUBJECTS.grades` extended before a
+Grade 6 book can attach; `subjectGradeCoverage.test.ts` splits all sixteen
+bookless grade-6 pairs into permanent and closable, and says which is which.
+
 **Grade 8 gets its first figures, 2026-09-12.** `g8-science-s1` alone: 133
 crops, **65 kept**, covering all 10 of its Semester 1 lessons. What survived is
 strong — DNA and chromosome diagrams, binary-fission stages, Mendel's pea

@@ -114,6 +114,18 @@ import {
   buildG7ScienceSem2BrowserCatalog,
 } from './catalogs/g7ScienceSem2.ts';
 import {
+  G6_MATH_S1_CURRICULUM_BOOK_ID,
+  buildG6MathSem1BrowserCatalog,
+} from './catalogs/g6MathSem1.ts';
+import {
+  G6_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  buildG6ScienceSem1BrowserCatalog,
+} from './catalogs/g6ScienceSem1.ts';
+import {
+  G6_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  buildG6ScienceSem2BrowserCatalog,
+} from './catalogs/g6ScienceSem2.ts';
+import {
   G7_DIGITAL_S1_CURRICULUM_BOOK_ID,
   buildG7DigitalSem1BrowserCatalog,
 } from './catalogs/g7DigitalSem1.ts';
@@ -598,7 +610,16 @@ export const INVESTOR_MVP_CURRICULUM = true;
 // from grade-8/9's precedent of turning the grade on with their first
 // subject, since getSubjectsForGrade's same bookless-filtering made that
 // unnecessary caution rather than a real requirement.
-export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7'];
+// 'grade-6' joined 2026-09-13 with Mathematics S1 and Science S1/S2 behind
+// it — the same shape as grade-8's and grade-7's arrivals:
+// getSubjectsForGrade filters to subjects that are both in MVP_SUBJECT_IDS
+// and have a book, so the grade-6 tile shows exactly those two subjects
+// rather than a page of dead tiles. APPENDED at index 4, AFTER grade-7 —
+// note grade-7 landed while this work was in progress and took index 3, so
+// an earlier draft of this line would have collided with it. The remaining
+// MVP subjects are deliberately bookless at grade-6 for now — see
+// KNOWN_BOOKLESS in subjectGradeCoverage.test.ts.
+export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7', 'grade-6'];
 // Appended, never inserted: these positions are persisted as bare indices in
 // formState and route URLs, so inserting shifts what a saved URL resolves to.
 // 'physics' joined on 2026-09-03 with the Grade 10 S1 curriculum. Without it,
@@ -820,6 +841,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // Semester 1's 1-5 rather than restarting.
   G7_SCIENCE_S1_CURRICULUM_BOOK_ID,
   G7_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  // Grade 6 Mathematics S1 and Science S1/S2 — the three books that bring
+  // grade-6 into MVP_GRADE_IDS below. 'science' and 'mathematics' are both
+  // already in MVP_SUBJECT_IDS, so no subject append is needed.
+  G6_MATH_S1_CURRICULUM_BOOK_ID,
+  G6_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  G6_SCIENCE_S2_CURRICULUM_BOOK_ID,
   // Grade 7 Digital Skills — both semesters attached. Same held-out
   // treatment as Grade 7 Math above.
   G7_DIGITAL_S1_CURRICULUM_BOOK_ID,
@@ -1453,6 +1480,52 @@ export const BOOKS: Book[] = [
   // continuing Semester 1's 1-5. See g7ScienceSem1.ts/g7ScienceSem2.ts and
   // the JSONs' known_gaps. Same held-out picker treatment as the other
   // Grade 7 subjects above.
+  // ── Grade 6 – Mathematics S1, Science S1 & S2 ─────────────────────────────
+  // The first Grade 6 books in the repo. Maths carries four units and eighteen
+  // lessons from the student book alone (no S2 student book was supplied);
+  // science carries nine units and nineteen lessons across both semesters,
+  // numbered 1-4 then 5-9 continuously, the same convention as Grade 7 and 8.
+  // See g6MathSem1.ts / g6ScienceSem1.ts for what each book does and does not
+  // print, and the JSONs' known_gaps for what is deliberately empty.
+  {
+    id: G6_MATH_S1_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 6, Semester 1',
+    titleAr: 'الرياضيات – الصف السادس – الفصل الأول',
+    subjectId: 'mathematics',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G6_SCIENCE_S1_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 6, Semester 1',
+    titleAr: 'العلوم – الصف السادس – الفصل الأول',
+    subjectId: 'science',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G6_SCIENCE_S2_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 6, Semester 2',
+    titleAr: 'العلوم – الصف السادس – الفصل الثاني',
+    subjectId: 'science',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
   {
     id: G7_SCIENCE_S1_CURRICULUM_BOOK_ID,
     title: 'Science – Grade 7, Semester 1',
@@ -3444,6 +3517,9 @@ const _g7MathSem1Browser = buildG7MathSem1BrowserCatalog();
 const _g7IslamicSem1Browser = buildG7IslamicSem1BrowserCatalog();
 const _g7IslamicSem2Browser = buildG7IslamicSem2BrowserCatalog();
 const _g7ScienceSem1Browser = buildG7ScienceSem1BrowserCatalog();
+const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
+const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
+const _g6ScienceSem2Browser = buildG6ScienceSem2BrowserCatalog();
 const _g7ScienceSem2Browser = buildG7ScienceSem2BrowserCatalog();
 const _g7DigitalSem1Browser = buildG7DigitalSem1BrowserCatalog();
 const _g7DigitalSem2Browser = buildG7DigitalSem2BrowserCatalog();
@@ -3675,6 +3751,9 @@ export const UNITS: Unit[] = [
   ..._g7IslamicSem1Browser.units,
   ..._g7IslamicSem2Browser.units,
   ..._g7ScienceSem1Browser.units,
+  ..._g6MathSem1Browser.units,
+  ..._g6ScienceSem1Browser.units,
+  ..._g6ScienceSem2Browser.units,
   ..._g7ScienceSem2Browser.units,
   ..._g7DigitalSem1Browser.units,
   ..._g7DigitalSem2Browser.units,
@@ -3776,6 +3855,9 @@ export const LESSONS: Lesson[] = [
   ..._g7IslamicSem1Browser.lessons,
   ..._g7IslamicSem2Browser.lessons,
   ..._g7ScienceSem1Browser.lessons,
+  ..._g6MathSem1Browser.lessons,
+  ..._g6ScienceSem1Browser.lessons,
+  ..._g6ScienceSem2Browser.lessons,
   ..._g7ScienceSem2Browser.lessons,
   ..._g7DigitalSem1Browser.lessons,
   ..._g7DigitalSem2Browser.lessons,
