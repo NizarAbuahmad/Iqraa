@@ -880,11 +880,11 @@ and grade?". Measured first, through the real deck builder** — `buildLessonDec
 run over all 1097 catalog lessons with a stub `figureUri`, counting the media
 slides it returns:
 
-| | before | sciences | hist/geo | g8 sci | g8 maths | English | +g7 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| lessons whose deck carries a book figure | **122** | 159 | 210 | 220 | 249 | 324 | **336** |
-| figure slides across all decks | 388 | 515 | 604 | 643 | 726 | 822 | **835** |
-| live subject×grade pairs with nothing | 29 of 37 | 25 | 21 | 20 | 19 | 17 | **16 of 40** |
+| | before | sciences | hist/geo | g8 sci | g8 maths | English | +g7 | +g6 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lessons whose deck carries a book figure | **122** | 159 | 210 | 220 | 249 | 324 | 336 | **353** |
+| figure slides across all decks | 388 | 515 | 604 | 643 | 726 | 822 | 835 | **872** |
+| live subject×grade pairs with nothing | 29 of 37 | 25 | 21 | 20 | 19 | 17 | 16 | **15 of 40** |
 
 (The catalog itself grew from 1097 to 1134 lessons over these days, so the
 denominator moves; the numerator is what these changes did.)
@@ -1154,6 +1154,31 @@ three grades use.
 One crop was dropped rather than mapped: S1 unit 4 prints a «Lesson 4» the
 catalog has no lesson for, so its photo is unused rather than filed against an
 id that does not exist.
+
+**Grade 6 science, 2026-09-13 — 52 kept of 147 crops, 17 of its 19 lessons**,
+the week its curriculum landed. Cells and organelles, diffusion and osmosis,
+the digestive organs, atoms and shells, circuits and levers, waves and
+echolocation, convection, galaxies.
+
+**Its openers set the lesson number at 37.08pt on some pages and 40.0pt on
+others, in the same book.** The default profile's `>= 40` therefore found 3 of
+the 9 in S1 — the worst possible result, because the six misses do not leave
+gaps, they extend the previous lesson across their pages. `G6_SCIENCE_OPENER`
+lowers that one gate to 35 and nothing else; detection is then 9/9 and 10/10.
+
+The S2 offset is +4 (extractor 1-5, catalog 5-9) and was corroborated by
+content, not arithmetic: the waves and bat-echolocation crops land on
+«الموجات»/«الصوت والسمع», the kettle and convection arrows on «الحرارة», the
+star discs on «المجرات».
+
+**Grade 6 MATHS is registered and deliberately not extracted.** It prints the
+same small-maths layout as Grade 8 — so it reuses `G8_MATH_OPENER` rather than
+a copy — but yields 6 openers against the catalog's 18, and five of those six
+resolve to unit `None`. Two independent causes: most of its openers do not
+carry the big lesson number the profile keys on (p43's «الدرس» sits beside
+11.78pt digits, not 50pt), and one stray unit header on p67 defeats
+`outline`'s reset-derived fallback, which only fires when NOTHING found a unit
+anywhere. Extracting it would file most of the book against no lesson at all.
 
 **What still has no figure at all, and why:**
 
