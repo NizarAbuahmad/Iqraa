@@ -16,7 +16,7 @@
       ]
     },
     "runtimeVersion": {
-      "policy": "fingerprint"
+      "policy": "appVersion"
     },
     "splash": {
       "image": "./assets/images/splash-icon.png",
