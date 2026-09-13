@@ -13,6 +13,7 @@ import {
 } from '@/services/curriculumData';
 import { LessonPrepPanel } from '@/components/ui/LessonPrepPanel';
 import { LessonMediaPanel } from '@/components/ui/LessonMediaPanel';
+import { ReadAloudPracticePanel } from '@/components/ui/ReadAloudPracticePanel';
 import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
 
 const BLOOMS_COLORS: Record<string, string> = {
@@ -170,6 +171,11 @@ export default function LessonDetailScreen() {
             nothing when the lesson has no curated media, which is most of
             them until the library is curated. */}
         <LessonMediaPanel lessonId={lesson.id} accent={color} />
+
+        {/* The one thing on this page built for a student rather than a
+            teacher. Renders nothing when the lesson has no curated passage,
+            which is most of them until the library is filled. */}
+        <ReadAloudPracticePanel lessonId={lesson.id} accent={color} />
 
         {/* Objectives */}
         <Section title={t('learningObjectives')} icon="checkmark-circle-outline" color={color} isRTL={isRTL}>

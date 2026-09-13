@@ -12,18 +12,14 @@
  * Their response is one value with nothing to get wrong, and the two screens
  * deliberately present them differently.
  */
-import React, { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { countBlanks, showBlanks } from '@/services/evaluationBlanks';
 import { isolateForeignRuns } from '@/services/mathRender';
-import {
-  MAX_RECORD_MS,
-  blobToDataUrl,
-  formatDuration,
-  isRecordingSupported,
-} from '@/services/readAloudRecorder';
+import { blobToDataUrl, formatDuration } from '@/services/readAloudRecorder';
+import { useReadAloudRecorder } from '@/hooks/useReadAloudRecorder';
 import { uploadReadAloud } from '@/services/studentExam';
 import { setBlankAt, setMatchPair, type MatchPair, type StudentResponse } from '@/services/studentAnswers';
 import type { TranslationKey } from '@/services/i18n';
@@ -202,82 +198,21 @@ export function ReadAloudInput({
   const takes = typeof response['takes'] === 'number' ? response['takes'] : 0;
   const takesLeft = Math.max(0, MAX_TAKES - takes);
 
-  const [phase, setPhase] = useState<'idle' | 'recording' | 'uploading'>('idle');
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [error, setError] = useState('');
-  const startedAtRef = useRef(0);
-  const recorderRef = useRef<{ stop: () => Promise<Blob> } | null>(null);
-
-  const supported = Platform.OS === 'web' && isRecordingSupported();
-
-  // Tick the visible timer, and stop the recording at the ceiling rather than
-  // letting the student talk into an upload that the server will reject.
-  useEffect(() => {
-    if (phase !== 'recording') return;
-    const id = setInterval(() => {
-      const ms = Date.now() - startedAtRef.current;
-      setElapsedMs(ms);
-      if (ms >= MAX_RECORD_MS) void finish();
-    }, 250);
-    return () => clearInterval(id);
-    // `finish` is stable for the life of a recording; re-subscribing on every
-    // tick would reset the interval and the timer would never advance.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
-
-  async function begin() {
-    setError('');
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = [
-        'audio/webm;codecs=opus',
-        'audio/webm',
-        'audio/mp4',
-      ].find(m => MediaRecorder.isTypeSupported(m));
-      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = e => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-      recorderRef.current = {
-        stop: () =>
-          new Promise<Blob>(resolve => {
-            recorder.onstop = () => {
-              recorder.stream.getTracks().forEach(track => track.stop());
-              resolve(new Blob(chunks, { type: mimeType ?? recorder.mimeType ?? 'audio/webm' }));
-            };
-            recorder.stop();
-          }),
-      };
-      recorder.start();
-      startedAtRef.current = Date.now();
-      setElapsedMs(0);
-      setPhase('recording');
-    } catch {
-      // Almost always a denied permission prompt. Saying which is more use
-      // than "something went wrong", because the fix is in the browser's UI.
-      setError(t('readAloudNoMic'));
-      setPhase('idle');
-    }
-  }
-
-  async function finish() {
-    const recorder = recorderRef.current;
-    if (!recorder) return;
-    recorderRef.current = null;
-    const durationMs = Math.min(Date.now() - startedAtRef.current, MAX_RECORD_MS);
-    setPhase('uploading');
-    try {
-      const blob = await recorder.stop();
-      const dataUrl = await blobToDataUrl(blob);
+  // The recorder, the timer and the 120-second ceiling come from the shared
+  // hook — the practice card on the lesson page runs the same machine, and two
+  // copies of that ceiling would eventually disagree about what the server
+  // accepts. What stays local is the only part that differs: this screen
+  // uploads against a question and keeps the audio.
+  const recorder = useReadAloudRecorder({
+    micErrorMessage: t('readAloudNoMic'),
+    failureMessage: t('readAloudFailed'),
+    onRecorded: async (audio, durationMs) => {
+      const dataUrl = await blobToDataUrl(audio);
       const result = await uploadReadAloud(token, questionId, dataUrl, durationMs);
       onSaved({ audioKey: 'saved', transcript: result.transcript, durationMs, takes: takes + 1 });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('readAloudFailed'));
-    } finally {
-      setPhase('idle');
-    }
-  }
+    },
+  });
+  const { phase, elapsedMs, error, supported } = recorder;
 
   return (
     <View style={{ marginTop: 12, gap: 12 }}>
@@ -305,25 +240,25 @@ export function ReadAloudInput({
         <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>{t('readAloudNoTakesLeft')}</Text>
       ) : (
         <Pressable
-          onPress={() => (phase === 'recording' ? void finish() : void begin())}
-          disabled={phase === 'uploading'}
+          onPress={recorder.toggle}
+          disabled={phase === 'working'}
           style={[
             styles.recordBtn,
             {
               backgroundColor: phase === 'recording' ? '#C2410C' : ACCENT,
-              opacity: phase === 'uploading' ? 0.6 : 1,
+              opacity: phase === 'working' ? 0.6 : 1,
             },
           ]}
         >
           <Ionicons
-            name={phase === 'recording' ? 'stop' : phase === 'uploading' ? 'hourglass' : 'mic'}
+            name={phase === 'recording' ? 'stop' : phase === 'working' ? 'hourglass' : 'mic'}
             size={20}
             color="#fff"
           />
           <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
             {phase === 'recording'
               ? t('readAloudStop', formatDuration(elapsedMs))
-              : phase === 'uploading'
+              : phase === 'working'
                 ? t('readAloudUploading')
                 : t('readAloudStart')}
           </Text>
