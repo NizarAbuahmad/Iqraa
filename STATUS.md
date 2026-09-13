@@ -143,6 +143,15 @@ an announcement by default» below.
     publish, validators), plus deterministic marking and level aggregation.
     What is missing is any evaluation UI, the attempts/answer-entry endpoints,
     and the dashboard.
+- **Read-aloud works as an assigned question type; practice mode is built but
+  has no passages.** A teacher can set a passage, a student reads it in a
+  browser, and `scoreReading` marks it deterministically (word-level WER).
+  Student practice — unlimited retries, nothing recorded — is merged and renders
+  **nothing**, because `practice_passages.json` is deliberately empty. Web only;
+  the microphone cannot reach the phone over the air. There are 19 curated
+  openly-licensed resources attached to lessons, none for biology. Read «The
+  English lab» below before touching any of it — particularly the licence rules,
+  which are stricter than the providers' reputations suggest.
 - **Every Grade 10 source PDF is now inventoried** in
   `lib/curriculum/src/data/g10_sources.json`, read through
   `lib/curriculum/src/sources.ts` (`usableSources()`, `pendingSources()`,
@@ -476,6 +485,117 @@ things it learned the hard way, both worth knowing before editing it:
 The script is ASCII-only on purpose: PowerShell 5.1 reads a `.ps1` as ANSI
 without a BOM, so a UTF-8 em dash arrives as three bytes of garbage and the
 parser fails on a line nowhere near the real one.
+
+## The English lab: read-aloud, a licensed resource shelf, and no passages, 2026-09-13
+
+**This entry is late, and that is the first thing to record.** Six PRs landed
+this work — #377, #380, #384, #387, #398, #406 — and none of them edited this
+file, so a reader of STATUS.md had no way to know read-aloud, the external
+resource shelf or practice mode existed. Written after the last of them merged,
+which is exactly the drift this file's own rule exists to prevent.
+
+**What a teacher can use today.** Read-aloud is a question type
+(`QUESTION_TYPES` in `modules/assessment/questionTypes.ts`), so it rides the existing
+evaluation → publish → `/take/:code` pipeline and inherits grading, marks and
+reports. A teacher pastes a passage; the student reads it into the browser;
+Whisper transcribes **at upload time** so `grade()` stays synchronous like every
+other type, and `scoreReading`
+(`api-server/src/modules/assessment/readAloud.ts`) scores it.
+
+**The score is word-level Levenshtein → WER, not similarity.** The repo's
+existing `stemSimilarity` (`modules/assessment/validator.ts`) is Jaccard over a
+token `Set`, which is order-insensitive — under it a student reading the passage
+backwards scores a perfect 1.0. Ceilings: `MAX_WORDS = 600` per passage,
+`MAX_AUDIO_SECONDS = 120`, `MAX_TAKES_PER_QUESTION = 3` (`lib/readAloudUpload.ts`).
+
+**Practice mode is separate from marks, deliberately.** `POST
+/practice/read-aloud` scores with the same function and **stores nothing** — no
+attempt row, no R2 object, no audio. Unlimited retries, score shown immediately.
+The student replays from the `Blob` the browser already holds, which is how the
+useful part of a recording survives without retaining children's voice
+recordings. Read the route's own header before changing it: `resourceId` only
+picks the reference to score against, so the endpoint is **a paid transcription
+oracle for any signed-in account**, and what bounds that is the per-user dollar
+cap, not the retry count.
+
+**`recordAudioUsage` was invisible to that cap until #406.** It bumped an
+in-memory total and wrote no row, so `assertUserQuotaAvailable` — which sums
+`ai_generations` — could not see audio at all, on the assessment path too. Fixed
+for both. If audio spend ever looks untracked again, check that first.
+
+**The resource shelf is 19 curated third-party items** in
+`lib/curriculum/src/data/external_resources.json`: 3 VOA texts, 10 Wikimedia
+images, 6 YouTube videos, across 19 lessons — English 6, earth science 11,
+physics 7, chemistry 5. **Biology has none.** Only the 10 images are ingested to
+R2 (`ingest.sha256`); `verify-external-ingest.ts` re-downloads and compares the
+digest. Videos are embed-only by licence and are never copied.
+
+**Licence is a closed set that fails closed.** `LicenseId` →
+`POLICY_BY_LICENSE` → `quotable | reference-only | embed-only` in `bank.ts`;
+an unknown licence resolves to `reference-only`. Every entry carries
+`licenseCheckedAt` and ingestion refuses a check older than 180 days. **Do not
+add an entry from memory of what a provider "is"** — PhET relicensed its entire
+library to CC BY-NC on 2026-03-29, so any code trusting a remembered CC BY was
+wrong the next day. Reputation ran narrower than reality repeatedly: of ~15
+candidates, 6+ were rejected — AP wire copy inside a VOA page, ESA imagery
+inside a NASA page, CC BY-SA rock photographs, and a "NASA" video that was a
+private re-upload.
+
+**Attribution is a licence condition, not decoration**, and it has three
+independent render paths (presenter, deck HTML, PPTX) that all dropped it once.
+In `deckSlidesHtml.ts` the credit is a flex child above the footer rather than a
+fixed offset, because PhET's ~100-character credit wraps.
+
+### What does not work
+
+- **No practice passages exist.** `practice_passages.json` holds `"passages":
+  []` on purpose, and no resource carries the `readAloudPractice` flag yet, so
+  `ReadAloudPracticePanel` renders nothing on every lesson — inert, not
+  broken. A passage must be the source's verbatim words (60–150 words,
+  `MIN_PRACTICE_WORDS`/`MAX_PRACTICE_WORDS`); a paraphrase credited to VOA is
+  the same misattribution the curation rejected candidates over. Blocked on a
+  Firecrawl API key: the article body renders client-side so `curl` returns only
+  metadata, RSS descriptions are empty, and WebFetch answers with a summary.
+  Validation refuses a flagged resource with no passage, so this cannot ship
+  silently.
+- **No microphone on the phone.** Web only. `expo-audio` is a native module and
+  `runtimeVersion.policy` is `fingerprint`, so adding it **moves the fingerprint
+  and cannot ship over the air** — installed apps keep taking OTA updates and
+  will never see practice until a new store build. That is the guard working.
+  Native renders the `readAloudWebOnly` string rather than a control that fails
+  on tap.
+- **Nothing has run against a real microphone**, and the practice endpoint has
+  never transcribed anything. The assessment path was driven end to end against
+  a local API, but the transcription span is unverified — this machine's OpenAI
+  key is a placeholder.
+- **Neither half has reached production.** The API is pinned to `00032-279`
+  pending the Resend domain, so `POST /practice/read-aloud` answers from a
+  revision that does not have it. The web bundle has not taken it either —
+  measured with the probe in «The web app stopped deploying for a day»:
+  `practice/read-aloud` is absent from the served JS while `take/attempt/audio`
+  (the assessment route, shipped earlier) is present, so the probe works and the
+  gap is real. Read-aloud **assessment** is live on the web; practice is not.
+- **No lawfully embeddable simulation exists.** PhET is CC BY-NC; GeoGebra needs
+  a commercial agreement (see «The GeoGebra embed is gone»). The interactive
+  half of the original plan has no source.
+- **The book's 71 labs are parked.** Auto-parsing Arabic activity-book text into
+  safety-critical lab cards is not safe — those books sit outside the repair
+  wordlist's witness coverage for the `pdf-parse` lam contamination. Vision
+  extraction is the revisit path.
+- **`ReadAloudPracticePanel` and `useReadAloudRecorder` have no tests and cannot
+  get any.** The mobile runner is bare `node --test` over `services/__tests__/**`
+  with no React Native transform, and both import `react-native` at module
+  scope. `readAloudRecorder.ts` is split out for that reason, as
+  `routeGating.ts` and `fetchWithTimeout.ts` already are.
+
+**One bug found on the way that had nothing to do with audio.** `/curriculum` is
+on the non-teacher allowlist, so a student reaches lesson-detail — and both
+header actions rendered for every role. «حضّر» runs generation; the server
+refuses without a teacher role, but `RemoteAIService` falls back to
+`MockAIService` on failure, so **a student did not get a 403, they got a
+fabricated lesson plan presented as their curriculum.** Now gated on
+`isTeacherRole` at the component, not in `routeGating` — allowlisting the iQra
+tab would hand students the teacher chat.
 
 ## The first-run carousel stopped promising what the app does not do, 2026-09-12
 
