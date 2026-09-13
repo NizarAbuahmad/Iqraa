@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "784063967007-odvcl8ube4uhahs07f9lclotf6etv3ta.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.iqra.teachingassistant",
+            "certificate_hash": "189f84825da31c7b5d812c0253204f13e04e7950"
+          }
+        },
+        {
           "client_id": "784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com",
           "client_type": 3
         }
