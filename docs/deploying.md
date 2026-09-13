@@ -252,6 +252,20 @@ say `schema-push: done` or `schema-push: n/a` in its description
 (`.github/workflows/ci.yml`), and `schema-check.yml` verifies production
 against the schema daily.
 
+Two things about that line, both of which have cost a CI cycle:
+
+- **It is matched literally, at the start of a line, with nothing between the
+  colon and the word.** `schema-push: **done.**` does not match — the bold
+  markers sit where the regex expects `done`, and the check fails while the
+  body appears to say the right thing. Write it bare and put any prose on the
+  following line.
+- **Editing the body does not re-run the check.** The job reads
+  `github.event.pull_request.body` from the event payload, and the workflow's
+  `on: pull_request` has no `types:`, so it fires on opened/synchronize/reopened
+  and not on edited. Re-running the job replays the stored payload with the old
+  body, so it fails identically. Only a new commit re-evaluates it — which
+  means getting this line right the first time is worth the ten seconds.
+
 ## Point-of-no-return changes go up as drafts
 
 Some changes cannot be undone by reverting the commit — removing a service
