@@ -3242,6 +3242,252 @@
       "kbLessonId": "kbl-g6-science-s2-nccd-u9_l2",
       "score": 1,
       "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-finlit-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "قراراتي الماليّةُ وترشيدُ الاستهلاكِ",
+      "kbLessonId": "kbl-g8-finlit-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 8 financial literacy, added 2026-09-13 — the only one of Grade 8's five remaining subjects whose openers `outline` can read (8 of 8, exact). A thin book: 8 crops, 5 kept. Social studies detects 15 of 21 and 14 of 22 and is NOT here — its misses are real openers the detector cannot see, and a missed opener extends the previous lesson over its pages rather than leaving a gap. Creative arts, digital literacy and vocational education detect zero; digital literacy carries «الدرس» on no page of its 187."
+    },
+    {
+      "sourceId": "g8-finlit-s1-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "أثرُ الإعلاناتِ في اتّخاذِ القراراتِ الماليّةِ",
+      "kbLessonId": "kbl-g8-finlit-s1-nccd-u1_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-finlit-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "العملُ والدخلُ",
+      "kbLessonId": "kbl-g8-finlit-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "عناصرُ المُناخِ",
+      "kbLessonId": "kbl-g8-social-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 8 social studies, added 2026-09-13, and nearly written off. The default profile found 15 of its 21 openers and 14 of S2's 22 — and the six misses were NOT missing headers: they carry «الدرس» at 21.6pt with a 57.3pt number sitting at y=69, where the default ceiling is y<65. Four points. `G8_SOCIAL_OPENER` raises only that ceiling, to 75, still far above the y=120+ where this book's contents pages put the word. Detection is then 21/21 and 22/22, unit-for-unit against the catalog.\n\nThe misses were proved real against the book's own contents spread, which lists all 21 lessons with their pages (6, 8, 14, 19, 26, 28, 36, 43, …) — worth knowing because that spread is also the mechanism that would unlock the books no opener profile can reach."
+    },
+    {
+      "sourceId": "g8-social-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "البيئاتُ الطبيعيةُ",
+      "kbLessonId": "kbl-g8-social-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الحضارةُ السومريةُ (4000-2200 ق.م)",
+      "kbLessonId": "kbl-g8-social-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s1-student-book",
+      "unit": 3,
+      "lesson": 5,
+      "bookTitleAr": "الحضارةُ الكلدانيةُ (612-464 ق.م)",
+      "kbLessonId": "kbl-g8-social-s1-nccd-u3_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "السّكّانُ والتنميةُ",
+      "kbLessonId": "kbl-g8-social-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s1-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "التنميةُ المُستدامةُ",
+      "kbLessonId": "kbl-g8-social-s1-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "العدالةُ وتكافؤُ الفُرَصِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Offset by 6: extractor reports units 1-6, catalog numbers them 7-12."
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "النزاهةُ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u7_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الحضارةُ المصريةُ القديمةُ: الموقعُ والنشأةُ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "مظاهرُ الحياةِ العامّةِ في الحضارةِ المصريةِ القديمةِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "إنجازاتُ الحضارةِ المصريةِ القديمةِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u8_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الخرائطُ: أنواعُها، وأهمّيّتُها",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u9_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الصورُ الجوّيّةُ والفضائيةُ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "نُظُمُ المعلوماتِ الجغرافيةِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u9_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "الشبابُ والحياةُ العامّةُ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u10_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "تحدّياتٌ اجتماعيةٌ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u10_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "السلوكُ الاجتماعيُّ الإيجابيُّ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u10_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "الدولةُ العباسيةُ: النشأةُ والتطوُّرُ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u11_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "المظاهرُ الحضاريةُ في الدولةِ العباسيةِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u11_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "ضعفُ الدولةِ العباسيةِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u11_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 5,
+      "lesson": 4,
+      "bookTitleAr": "الدولةُ الأمويّةُ في الأندلسِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u11_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "رحلةٌ في محافظةِ مأدبا",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u12_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 6,
+      "lesson": 2,
+      "bookTitleAr": "رحلةٌ في محافظةِ الطفيلةِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u12_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 6,
+      "lesson": 3,
+      "bookTitleAr": "رحلةٌ في محافظةِ عجلونَ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u12_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."
