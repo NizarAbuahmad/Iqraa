@@ -410,6 +410,73 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The web app stopped deploying for a day, and nobody noticed, 2026-09-13
+
+**Render ran out of build pipeline minutes (500/500) and cancelled every
+deploy.** For roughly a day, every push to `main` produced a "deploy" that
+failed in **0.9 seconds** with `Build canceled: your workspace has run out of
+build pipeline minutes for the current billing period`. Five merges sat
+undeployed while the site quietly kept serving an older bundle.
+
+**The failure shape is the point.** Nothing was broken. CI was green, the
+merges were clean, `render.yaml` was correct, the GitHub connection was
+healthy, and the site stayed up. A merged change simply never appeared, and
+nothing anywhere said why. It was found only by fetching the served JS bundle
+and grepping it for a string the new code adds.
+
+**How to check this in future, in one command.** Do not trust the dashboard's
+"Deployed" wording — a cancelled build still lists as a deploy:
+
+```bash
+curl -s https://iqraa-web.onrender.com/ | grep -oE '/_expo/static/js/web/[A-Za-z0-9._-]+\.js'
+```
+
+then fetch that path and grep for something the change added or removed. Pick a
+marker that survives minification: a regex literal or a string constant, not a
+function or variable name. Always grep for a control too — a string that was
+there before AND after — or an absent marker cannot be told from a mangled one.
+
+**The cause was cadence, not any one change.** Ten PRs in a day, each
+triggering a full `pnpm install --frozen-lockfile` plus an Expo export of the
+monorepo, and most could not have changed a byte of the bundle: API work,
+content ingestion, STATUS.md edits. `render.yaml` now carries a `buildFilter`
+with `ignoredPaths` for the paths that provably cannot reach the web bundle.
+Denylist, not allowlist, on purpose: an allowlist fails by NOT deploying
+something that mattered, which is the failure that cost a day here.
+
+**`buildFilter` only takes effect if the service reads this file.** If
+`iqraa-web` was created in the dashboard rather than synced from the Blueprint,
+the ignore list has to be entered under Settings -> Build -> Ignored Paths as
+well. Check both before assuming it works.
+
+**Also: `Remove-Item -Recurse` on a worktree can delete the main checkout.**
+`link-main-assets.ps1` junctions the main checkout's `node_modules` and its
+3.2GB PDF library into a worktree, and `Remove-Item -Recurse` follows a
+junction into its target. A cleanup on 2026-09-12 ran exactly that over three
+worktrees; nothing was lost only because those three had no junctions. The
+`g9-*` extraction worktrees, which exist to read those PDFs, would have taken
+the library down.
+
+`.claude/scripts/remove-worktree.ps1` replaces the ad-hoc one-liner: it
+unlinks first, verifies, and refuses to delete if any junction survives. Two
+things it learned the hard way, both worth knowing before editing it:
+
+- **Only junctions pointing OUTSIDE the worktree matter.** pnpm links every
+  package in `node_modules` as a junction into its own store — `g8-batch`
+  reports **3545** of them. They point inside and are supposed to die with the
+  worktree. Note `unlink-main-assets.ps1` does the unfiltered recursive scan,
+  so running it in a worktree with dependencies installed severs pnpm's links
+  too. Not destructive, but not intended.
+- **Resolve the main checkout with `git rev-parse --git-common-dir`.** Every
+  worktree carries a copy of the script, so "two levels up from this file"
+  resolves to whichever worktree you are standing in, finds no
+  `.claude/worktrees` under it, and reports every target as "absent" while
+  doing nothing.
+
+The script is ASCII-only on purpose: PowerShell 5.1 reads a `.ps1` as ANSI
+without a BOM, so a UTF-8 em dash arrives as three bytes of garbage and the
+parser fails on a line nowhere near the real one.
+
 ## The first-run carousel stopped promising what the app does not do, 2026-09-12
 
 Shipped inside #390 rather than under its own PR — the branch it sat on was cut
