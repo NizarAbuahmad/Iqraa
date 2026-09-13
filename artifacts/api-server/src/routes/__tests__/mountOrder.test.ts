@@ -183,7 +183,16 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
   });
 
   it("guards the OpenAI-backed routes", async () => {
-    for (const route of ["/chat", "/generate/lesson-plan", "/generate/classroom-activity"]) {
+    // `/practice/read-aloud` belongs here for the same reason as the rest: it
+    // spends money on transcription per call. Unauthenticated it would have no
+    // identity to bill and no per-user cap to sit behind, which would make it
+    // a free transcription service rather than a practice feature.
+    for (const route of [
+      "/chat",
+      "/generate/lesson-plan",
+      "/generate/classroom-activity",
+      "/practice/read-aloud",
+    ]) {
       const res = await fetch(`${base}${route}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -13,6 +13,7 @@ import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
 import studentAttemptRouter from "./studentAttempt";
 import mediaRouter from "./media";
+import practiceRouter from "./practice";
 import lessonMediaRouter from "./lessonMedia";
 import feedbackRouter from "./feedback";
 import adminRouter from "./admin";
@@ -61,11 +62,16 @@ router.use("/verify", authMiddleware);
 // Unsplash lookup shares one server-side access key across every teacher —
 // unauthenticated callers could otherwise exhaust the whole app's rate limit.
 router.use("/media", authMiddleware);
+// Read-aloud practice spends money on transcription for whoever is signed in,
+// so it needs an identity to bill and to cap. Any role may practise — a teacher
+// trying the exercise before setting it is a legitimate use.
+router.use("/practice", authMiddleware);
 router.use(chatRouter);
 router.use(generateRouter);
 router.use(verifiedMathRouter);
 router.use(mediaRouter);
 router.use("/media", lessonMediaRouter);
+router.use(practiceRouter);
 // feedback.ts and admin.ts declare authMiddleware/requireRole per-route
 // themselves (a mix of any-signed-in-user and admin-only routes lives in the
 // same file), so no blanket guard is needed at this mount site.
