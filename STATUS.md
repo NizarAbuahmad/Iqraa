@@ -56,11 +56,13 @@ an announcement by default» below.
   confirm dialog. **Not verified against real Cloudflare R2** — no
   credentials in this sandbox — though `putPublicObject` is the same
   `S3Client` call `putObject` already makes in production, just a different
-  `Bucket` name. **Schema not pushed to production** — `avatar_key` exists
-  only in the local DB this was tested against; `pnpm --filter @workspace/db
-  run push` still needs a human run against Neon, and `R2_PUBLIC_BUCKET`/
-  `R2_PUBLIC_BASE_URL` are unset there, so the feature will 503 until both
-  land.
+  `Bucket` name. **Schema pushed to production 2026-09-13** — `avatar_key` was
+  added to Neon directly as `ALTER TABLE users ADD COLUMN avatar_key text`
+  rather than through `drizzle-kit push`; the column is nullable with no
+  default, which is what the schema declares, so the two are identical in
+  effect. `R2_PUBLIC_BUCKET`/`R2_PUBLIC_BASE_URL` are **still unset on Cloud
+  Run**, so the upload route 503s in production until they are set and the API
+  is hand-deployed.
 - **In-app messaging between teachers, parents and students** (2026-09-04):
   claim-code signup, teacher↔parent and teacher↔student direct threads,
   class-group and teacher-made custom groups, image attachments, block and
@@ -853,13 +855,17 @@ reaches for it.
   stand-in, not the actual `iqraa-public` bucket — though the call shape is
   identical to `putObject`, which is proven in production (see the R2 rows
   in `docs/deploying.md`'s secret-proving table).
-- **Not verified: production.** The schema push
-  (`pnpm --filter @workspace/db run push`) and the two new env vars
-  (`R2_PUBLIC_BUCKET`, `R2_PUBLIC_BASE_URL`) are both still manual steps a
-  human has to run/set against Neon and Cloud Run — see
-  `docs/deploying.md`'s R2 section, updated with them. Until both land, this
-  ships correctly gated: the upload route 503s rather than 500ing or writing
-  to the wrong place.
+- **Production, partly.** The schema half is done: `avatar_key` was added to
+  Neon on 2026-09-13, applied as the equivalent `ALTER TABLE users ADD COLUMN
+  avatar_key text` rather than through `drizzle-kit push` — nullable, no
+  default, exactly what the schema declares. Confirm with `pnpm --filter
+  @workspace/db run verify-schema`, which asks only whether the table exists,
+  so it will not catch a column typo; the `/auth/me` payload carrying
+  `avatarUrl` will. Still outstanding: `R2_PUBLIC_BUCKET` and
+  `R2_PUBLIC_BASE_URL` on Cloud Run, and the hand deploy of `iqraa-api` that a
+  merge does not do — see `docs/deploying.md`'s R2 section, updated with them.
+  Until those land this ships correctly gated: the upload route 503s rather
+  than 500ing or writing to the wrong place.
 
 ## Student accounts went live, reversing the v1 decision, 2026-09-07
 
