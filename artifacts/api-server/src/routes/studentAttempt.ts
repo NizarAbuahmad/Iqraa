@@ -490,7 +490,31 @@ router.post("/take/attempt/audio/:questionId", async (req, res) => {
     // `ensureCompatibleFormat`: it shells out to ffmpeg, which is not in the
     // runtime image, so every browser recording would fail on conversion.
     const transcript = await speechToText(parsed.buffer, verdict.transcribeAs);
-    recordAudioUsage(verdict.durationMs / 1000, "gpt-4o-mini-transcribe");
+
+    /*
+     * Bill the spend to the teacher who owns the exam.
+     *
+     * The student has no account — the link is the identity — so there is no
+     * user of their own to charge, and an unattributed row makes "which class
+     * is costing money" unanswerable. The owning teacher is the only honest
+     * answer available.
+     *
+     * Its own try/catch on purpose: this is a metrics attribution, and a
+     * failed lookup must not fail a recording the student has already made and
+     * we have already paid to transcribe.
+     */
+    let owningTeacherId: string | null = null;
+    try {
+      const [owner] = await db
+        .select({ teacherId: evaluations.teacherId })
+        .from(evaluations)
+        .where(eq(evaluations.id, attempt.evaluationId))
+        .limit(1);
+      owningTeacherId = owner?.teacherId ?? null;
+    } catch (err) {
+      logger.warn({ err }, "could not attribute read-aloud spend to a teacher");
+    }
+    recordAudioUsage(verdict.durationMs / 1000, "gpt-4o-mini-transcribe", owningTeacherId);
 
     const response = { audioKey: key, transcript, durationMs: verdict.durationMs, takes: takes + 1 };
     await db

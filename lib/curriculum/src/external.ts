@@ -33,7 +33,7 @@
  * way `passages.ts` does, for the reason recorded there.
  */
 import raw from './data/external_resources.json' with { type: 'json' };
-import type { LicenseId } from './bank.ts';
+import { usePolicy, type LicenseId } from './bank.ts';
 
 /** What the resource is, which decides how a screen offers it. */
 export type ExternalResourceKind =
@@ -112,6 +112,20 @@ export interface ExternalResource {
   durationSec?: number;
   /** CEFR band, where the provider states one. Not inferred. */
   level?: 'a1' | 'a2' | 'b1' | 'b2' | 'c1';
+  /**
+   * This resource has a read-aloud practice passage, in `./practice`.
+   *
+   * A flag rather than the prose itself. The manifest is re-exported from
+   * `index.ts` precisely because nothing in it grows with the size of the
+   * library (see that file's note); passage text is content, and putting it
+   * here would quietly break that while every test stayed green —
+   * `extraction.test.ts` only guards `data/extracted`.
+   *
+   * The client still gets what it needs with zero fetches: which lessons offer
+   * practice. The words live behind their own subpath, the way `passages.ts`
+   * does it.
+   */
+  readAloudPractice?: true;
   ingest?: ExternalIngest;
 }
 
@@ -221,6 +235,17 @@ export function validateExternalResources(
     }
     if (!r.sourceUrl.startsWith('https://')) {
       errors.push(`${r.id}: sourceUrl must be https`);
+    }
+    if (r.readAloudPractice) {
+      // Practice reproduces the passage on screen and scores a student against
+      // it, so the licence has to permit reproduction — an embed-only or
+      // reference-only source may be pointed at, never read aloud from.
+      if (r.kind !== 'text') {
+        errors.push(`${r.id}: readAloudPractice is only meaningful on a text resource`);
+      }
+      if (usePolicy(r) !== 'quotable') {
+        errors.push(`${r.id}: ${r.license} does not permit reproducing the passage`);
+      }
     }
     if (r.ingest && !isRedistributable(r)) {
       // The dangerous direction: a copy taken under a licence that never

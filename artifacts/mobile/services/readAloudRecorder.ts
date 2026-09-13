@@ -24,6 +24,59 @@
  */
 export const MAX_RECORD_MS = 120_000;
 
+/** A recording in progress. `stop` resolves with what was captured. */
+export interface ActiveRecording {
+  stop(): Promise<Blob>;
+}
+
+/**
+ * Start recording, negotiating a MIME type the browser will actually produce.
+ *
+ * Chrome and Firefox emit webm/opus; Safari emits mp4. Asking for an
+ * unsupported type throws, and passing none leaves the choice to the browser —
+ * which is fine, but then the resulting Blob's type is the only record of what
+ * it picked, so it is read back off the recorder rather than assumed.
+ *
+ * Lives here rather than inside a component because two screens need it: the
+ * exam question and the practice card. Two copies of MediaRecorder wiring is
+ * the same shape of bug this repo already warns about for question inputs —
+ * a second chance to produce something the server cannot read, and silent
+ * either way.
+ *
+ * Throws when permission is denied, which is almost always what a failure is.
+ * The caller turns that into a message naming the microphone, because the fix
+ * lives in the browser's own UI.
+ */
+export async function startRecording(): Promise<ActiveRecording> {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const mimeType = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4',
+  ].find(m => MediaRecorder.isTypeSupported(m));
+
+  const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+  const chunks: Blob[] = [];
+  recorder.ondataavailable = e => {
+    if (e.data.size > 0) chunks.push(e.data);
+  };
+  recorder.start();
+
+  return {
+    stop: () =>
+      new Promise<Blob>(resolve => {
+        recorder.onstop = () => {
+          // Release the microphone. Without this the browser keeps showing the
+          // recording indicator after the student has finished, which reads as
+          // the app still listening.
+          recorder.stream.getTracks().forEach(track => track.stop());
+          resolve(new Blob(chunks, { type: mimeType ?? recorder.mimeType ?? 'audio/webm' }));
+        };
+        recorder.stop();
+      }),
+  };
+}
+
 /** Whether this browser can record at all. */
 export function isRecordingSupported(): boolean {
   return (
