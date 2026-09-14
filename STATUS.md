@@ -1482,6 +1482,86 @@ reaches for it.
   Until those land this ships correctly gated: the upload route 503s rather
   than 500ing or writing to the wrong place.
 
+## A half-marked paper counted as a finished one, 2026-09-07
+
+Found by walking the evaluations lifecycle end to end against a local stack —
+create → generate → publish → student link → answer in a browser → mark →
+results — rather than by reading the code, which looked right.
+
+**The class dashboard reported a class average that no student had earned.**
+A link submission is auto-marked the moment it arrives, and `recomputeResult`
+writes an `attempt_results` row scored over *only* the questions the machine
+could mark. A student who answered 2 of 8 questions therefore carries
+`3.00/3.00 = 100%`, `levelKey: proficient`, `isProvisional: true`, with six
+written answers still untouched.
+
+Both halves of `/evaluations/:id/results` counted that row as a marked paper:
+
+- `results.tsx` filtered on `a.result && Number(a.result.totalMarks) > 0` —
+  a *result row with marks*, never `isProvisional`. Measured live with one
+  finished paper at 43.75% and one provisional at 100%: «قُيِّم ٢ من ٣»,
+  «المتوسط العام: ٧١٫٨٨٪», and a **متمكّن** in the level histogram off a paper
+  with six unmarked answers.
+- `GET /evaluations/:id/insights` selected every `attempt_results` row for the
+  evaluation with no status filter, so «ما الذي فات الصف» said «٢ طالبًا
+  صُحّحت أوراقهم» — on the panel whose own label makes that claim.
+
+The error ran the wrong way: it **overstates**. Auto-mark a batch of link
+submissions, glance at the dashboard before hand-marking, and the class looks
+better than it is. `answers/[studentId].tsx:508` had honoured `isProvisional`
+since the feature shipped, so the two screens disagreed about the same attempt
+— one printed «نتيجة أولية» while the other averaged it in at face value.
+
+The rule now lives in tested pure functions on both sides, because there are no
+screen tests and no DB-backed tests: `summariseAttempts`
+(`artifacts/mobile/services/attemptSummary.ts`, 8 tests) and `finishedAttempts`
+(`artifacts/api-server/src/modules/assessment/classInsights.ts`, 4 tests).
+Both are **verified by mutation** — dropping the `isProvisional` guard fails 5
+of the 8 mobile tests. Provisional papers are counted and named on their own
+line («N بانتظار إكمال التصحيح — خارج المتوسط») rather than dropped, so a
+teacher whose average covers 1 of 3 papers can see where the other two went.
+
+Re-measured on the same data after the fix: «قُيِّم ١ من ٣», «١ بانتظار إكمال
+التصحيح», «٤٣٫٧٥٪», متمكّن back to 0, and the gaps panel down to «١ طالبًا» —
+client and server now agreeing on the same number instead of two wrong ones.
+
+**Also confirmed on the same run, and not changed:** the roster-consent gate
+(403 before any student row exists), the mock's refusal to fake self-grading
+types, regenerate variation (0 of 6 stems repeated, structure identical),
+`name_taken` on a double claim, no answer key anywhere in the serialised
+student payload, `already_submitted` on a post-hand-in edit, marks *rejected*
+rather than clamped, a teacher's mark surviving a re-submit, and the
+competency sufficiency rule reporting `null` rather than a number off one
+question. The 2026-08-25 ceiling still holds exactly as written: the two
+self-grading questions used here had to be inserted with `psql`, because
+`PATCH /evaluations/:id/questions/:qid` validates against `existing.type` and
+cannot change it. All six generated questions were stamped
+`gradingMode: "ai_rubric"`, a mode nothing implements.
+
+**A printed rubric told teachers to award full marks for a partial answer**,
+found on the same run and fixed on 2026-09-13. `buildRubric` in
+`mockGenerator.ts` computed its partial band as
+`Math.max(1, Math.round(marks / 2))`, so on every **1-mark** question
+"partially correct" was worth the full mark — `levels: [1, 1, 0]` in the live
+payload. That is not a rare shape: `MARKS_BY_COMPETENCY.knowledge` is 1, so
+every knowledge question on every mock paper carried it.
+
+Nothing grades against these bands — a teacher reads them while marking by
+hand — which makes the error quieter than a wrong grader and no less costly:
+it moves real marks and nothing on screen contradicts it.
+
+The `Math.max(1, …)` floor existed to avoid a partial band worth 0, identical
+to the "incorrect" band. The honest answer to that is **no partial band at
+all**: there is no integer strictly between 0 and 1. A 1-mark rubric is now
+`[1, 0]`, and every multi-mark rubric is byte-for-byte what it was — verified
+by printing a real generated paper: `2/1/0`, `3/2/0`, `4/2/0` unchanged,
+1-mark down to two levels. `rubricBands.test.ts` pins all four rules
+(no band ties full, none on a 1-mark question, one wherever it can honestly
+exist, strictly descending) and is verified by mutation: restoring the floor
+fails 3 of its 4. Note the third test **passed before the fix** — the
+multi-mark path was already right, and it now guards against a fix that
+over-reaches.
+
 ## Student accounts went live, reversing the v1 decision, 2026-09-07
 
 **`STUDENT_ACCOUNTS` is `true` in production.** Nizar was asked directly

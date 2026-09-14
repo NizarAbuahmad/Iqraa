@@ -7,7 +7,7 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { aggregateClass } from "../classInsights.ts";
+import { aggregateClass, finishedAttempts } from "../classInsights.ts";
 import type { ObjectiveScore } from "../scoring.ts";
 
 function o(
@@ -106,5 +106,46 @@ describe("aggregateClass", () => {
       { objectiveScores: [o("x", 1, 10, { bloomsRank: 1 })] },
     ];
     assert.equal(aggregateClass(attempts).objectiveScores[0]!.bloomsRank, 1);
+  });
+});
+
+/**
+ * A link submission is auto-marked the moment it arrives, and its result is
+ * scored over only the questions the machine could mark. Counting it here
+ * would let the class view say a paper was marked when six of its answers are
+ * still waiting for the teacher — and say it on the very panel headed "marks
+ * across N students whose papers were marked".
+ */
+describe("finishedAttempts", () => {
+  it("drops a paper the teacher has not finished marking", () => {
+    const rows = [
+      { isProvisional: false, objectiveScores: [o("x", 5, 10)] },
+      { isProvisional: true, objectiveScores: [o("x", 3, 3)] },
+    ];
+    const kept = finishedAttempts(rows);
+    assert.equal(kept.length, 1);
+    assert.equal(kept[0]!.objectiveScores[0]!.earned, 5);
+  });
+
+  it("stops a half-marked paper inflating the class percentage", () => {
+    const rows = [
+      { isProvisional: false, objectiveScores: [o("x", 5, 10)] },
+      { isProvisional: true, objectiveScores: [o("x", 3, 3)] },
+    ];
+    assert.equal(aggregateClass(finishedAttempts(rows)).percent, 50);
+    assert.equal(aggregateClass(finishedAttempts(rows)).studentCount, 1);
+  });
+
+  it("keeps every paper when all of them are finished", () => {
+    const rows = [
+      { isProvisional: false, objectiveScores: [o("x", 5, 10)] },
+      { isProvisional: false, objectiveScores: [o("x", 7, 10)] },
+    ];
+    assert.equal(finishedAttempts(rows).length, 2);
+  });
+
+  it("reports an empty class rather than a wrong one when none are finished", () => {
+    const rows = [{ isProvisional: true, objectiveScores: [o("x", 3, 3)] }];
+    assert.equal(aggregateClass(finishedAttempts(rows)).studentCount, 0);
   });
 });

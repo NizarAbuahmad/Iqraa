@@ -1309,6 +1309,7 @@ const translations = {
     classAverageLabel: 'المتوسط العام',
     levelDistributionLabel: 'توزيع المستويات',
     gradedCountLabel: (n: number, total: number) => `قُيِّم ${n} من ${total} طالبًا`,
+    provisionalCountLabel: (n: number) => `${n} بانتظار إكمال التصحيح — خارج المتوسط`,
     noAttemptsYet: 'لا محاولات بعد',
     noAttemptsYetDesc: 'لم تُدخَل إجابات أي طالب لهذا التقييم بعد',
 
@@ -2595,6 +2596,7 @@ const translations = {
     classAverageLabel: 'Class average',
     levelDistributionLabel: 'Level distribution',
     gradedCountLabel: (n: number, total: number) => `${n} of ${total} students graded`,
+    provisionalCountLabel: (n: number) => `${n} awaiting marking — not in the average`,
     noAttemptsYet: 'No attempts yet',
     noAttemptsYetDesc: "No student's answers have been entered for this evaluation yet",
 
