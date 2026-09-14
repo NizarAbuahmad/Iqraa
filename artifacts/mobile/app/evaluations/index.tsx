@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { EvaluationError, listEvaluations, type Evaluation } from '@/services/evaluations';
+import { bookLabel, formatListDate } from '@/services/evaluationRow';
 import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
@@ -144,8 +145,43 @@ export default function EvaluationsScreen() {
                     </Text>
                   </View>
                 </View>
+                {/* What the row was missing: which exam this actually is.
+                    Book and date both come back on every list row and were
+                    simply not rendered, which is how seven exams came to look
+                    like four copies of «تقييم جديد». Either may be absent, so
+                    the separator is built from what survived rather than
+                    printed unconditionally. */}
+                {(() => {
+                  const scope = [bookLabel(item.bookId, lang), formatListDate(item.createdAt, lang)]
+                    .filter(Boolean)
+                    .join(' · ');
+                  return scope ? (
+                    <Text
+                      style={[styles.cardMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
+                      numberOfLines={1}
+                    >
+                      {scope}
+                    </Text>
+                  ) : null;
+                })()}
                 <Text style={[styles.cardMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-                  {t('evalTotalMarks', item.totalMarks)}
+                  {[
+                    t('evalTotalMarks', item.totalMarks),
+                    // `questionCount` is what the paper holds; the list
+                    // endpoint does not return targetQuestionCount, so
+                    // reading that here would print "undefined".
+                    typeof item.questionCount === 'number' ? t('evalRowQuestions', item.questionCount) : null,
+                    // Marking progress is only a question once an exam is out
+                    // in front of students — on a draft it would always read
+                    // zero and mean nothing.
+                    item.status === 'published'
+                      ? item.markedCount
+                        ? t('evalRowMarked', item.markedCount)
+                        : t('evalRowNoneMarked')
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </Text>
               </View>
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />

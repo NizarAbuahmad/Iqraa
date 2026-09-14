@@ -250,16 +250,27 @@ router.get("/evaluations", async (req: AuthenticatedRequest, res) => {
           WHERE eq.evaluation_id = evaluations.id AND eq.deleted_at IS NULL
         )`,
         /**
-         * How many papers are actually marked. Counted from `attempt_results`
-         * rather than from attempt status, because an attempt can sit in
-         * `needs_review` with real marks on it — status answers "is it
-         * finished", and the teacher's question here is "how many are done".
+         * How many papers the teacher has FINISHED marking.
+         *
+         * Counted from `attempt_results` rather than from attempt status,
+         * because status alone does not say whether marks exist. But a result
+         * row is not the same thing as a finished paper: a link submission is
+         * auto-marked on arrival and gets a row scored over only the questions
+         * the machine could mark, so a student who answered 2 of 8 carries
+         * `total_marks > 0` with six answers still untouched.
+         *
+         * `is_provisional` is the server's own word for that difference, and
+         * excluding it here is the same rule `finishedAttempts` applies to the
+         * class insights and `summariseAttempts` to the results dashboard —
+         * the alternative is a list telling a teacher three papers are marked
+         * when nobody has marked one.
          */
         markedCount: sql<number>`(
           SELECT count(*)::int FROM attempt_results ar
           JOIN attempts a ON a.id = ar.attempt_id
           WHERE a.evaluation_id = evaluations.id
             AND ar.total_marks > 0
+            AND ar.is_provisional = false
         )`,
       })
       .from(evaluations)
