@@ -37,11 +37,9 @@ import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { logger } from "../lib/logger.js";
 import { deleteObject, isR2Configured, newLessonMediaKey, presignedGetUrl, putObject } from "../lib/r2.js";
 import { EXTENSION_BY_MIME, MAX_DATA_URL_LENGTH, kindForMime, parseDataUrl } from "../lib/lessonMediaUpload.js";
+import { isMediaKind, isValidLibraryLink } from "../lib/mediaLibrary.js";
 
 const router = Router();
-
-/** Every kind a library row may claim. Only `video` has no upload path. */
-const MEDIA_KINDS = new Set(["image", "video", "audio", "document"]);
 
 /**
  * A library listing is a browse surface, so it takes a ceiling rather than a
@@ -88,14 +86,12 @@ router.post("/lesson", async (req: AuthenticatedRequest, res) => {
 
     // ── A reference: nothing to store, so R2 need not be configured ─────────
     if (!dataUrl) {
-      const kind = typeof req.body?.kind === "string" ? req.body.kind : "";
-      if (!MEDIA_KINDS.has(kind)) {
-        res.status(400).json({ error: `Unsupported kind: ${kind}`, code: "unsupported_kind" });
+      const kind: unknown = req.body?.kind;
+      if (!isMediaKind(kind)) {
+        res.status(400).json({ error: `Unsupported kind: ${String(kind)}`, code: "unsupported_kind" });
         return;
       }
-      // http:// is refused rather than upgraded: it loads as mixed content on
-      // Expo web, which projects a blank frame in front of a class.
-      if (!/^https:\/\//i.test(sourceUrl)) {
+      if (!isValidLibraryLink(sourceUrl)) {
         res.status(400).json({ error: "sourceUrl must be an https URL", code: "bad_source_url" });
         return;
       }
@@ -194,7 +190,7 @@ router.get("/library", async (req: AuthenticatedRequest, res) => {
 
     const filters = [eq(lessonMedia.userId, req.user!.id)];
     if (q) filters.push(ilike(lessonMedia.caption, `%${q}%`));
-    if (MEDIA_KINDS.has(kind)) filters.push(eq(lessonMedia.kind, kind));
+    if (isMediaKind(kind)) filters.push(eq(lessonMedia.kind, kind));
 
     const rows = await db
       .select()

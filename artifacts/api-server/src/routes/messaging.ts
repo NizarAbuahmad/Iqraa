@@ -63,6 +63,7 @@ import { sendExpoPush } from "../lib/pushNotifications.js";
 import { isR2Configured, newChatMediaKey, presignedGetUrl, putObject } from "../lib/r2.js";
 import { syncClassGroupThread } from "../lib/classThread.js";
 import { EXTENSION_BY_MIME, MAX_DATA_URL_LENGTH, kindForMime, parseDataUrl } from "../lib/lessonMediaUpload.js";
+import { librarySharePayload, type SharePayload } from "../lib/mediaLibrary.js";
 
 const router = Router();
 
@@ -166,54 +167,20 @@ async function toClientMessages(rows: (typeof chatMessages.$inferSelect)[]) {
 }
 
 /**
- * Turn a media-library item into something a message can carry.
- *
- * An upload is attached by **reusing its R2 key**, not by copying the bytes.
- * One object, two rows pointing at it — which is only safe because
- * `routes/lessonMedia.ts`'s DELETE refuses to remove an object a chat message
- * still references. The alternative, a server-side copy per send, would
- * duplicate a 4MB photo for every student in a class to buy back an
- * independence nothing needs.
- *
- * A reference item (a YouTube link) has no object at all, so it goes as a line
- * of text. That is not a downgrade: a link in a message is exactly what a
- * student can tap, and it is what they would have received anyway.
+ * Look up a media-library item and work out how it travels in a message.
  *
  * Returns null when the item is not this user's — a teacher may only send
  * their own media, and a missing item and someone else's item are deliberately
- * indistinguishable from outside.
+ * indistinguishable from outside. The shape decision itself lives in
+ * `lib/mediaLibrary.ts`, which is where its tests are.
  */
-async function shareFromLibrary(
-  libraryItemId: string,
-  userId: string,
-): Promise<{
-  attachment: { key: string; kind: "image" | "audio" | "document"; mime: string; sizeBytes: number } | null;
-  bodyLine: string;
-} | null> {
+async function shareFromLibrary(libraryItemId: string, userId: string): Promise<SharePayload | null> {
   const [item] = await db
     .select()
     .from(lessonMedia)
     .where(and(eq(lessonMedia.id, libraryItemId), eq(lessonMedia.userId, userId)))
     .limit(1);
-  if (!item) return null;
-
-  if (item.r2Key) {
-    return {
-      attachment: {
-        key: item.r2Key,
-        // `video` never has an r2Key (no upload path), so whatever is stored
-        // here is one of the three kinds a chat attachment can be.
-        kind: item.kind as "image" | "audio" | "document",
-        mime: item.mimeType ?? "application/octet-stream",
-        sizeBytes: item.sizeBytes ?? 0,
-      },
-      bodyLine: "",
-    };
-  }
-
-  const url = item.sourceUrl ?? "";
-  if (!url) return null;
-  return { attachment: null, bodyLine: item.caption ? `${item.caption}\n${url}` : url };
+  return item ? librarySharePayload(item) : null;
 }
 
 /** Every userId `viewerId` has blocked — teachers never filter (see file header), so callers should skip this for them. */

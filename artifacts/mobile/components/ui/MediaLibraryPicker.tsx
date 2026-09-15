@@ -14,6 +14,8 @@ import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { searchDeckPhotos, markPhotoUsed, type DeckPhoto } from '@/services/unsplashImage';
 import { searchDeckVideos, type DeckVideo } from '@/services/youtubeVideo';
 import { getItems, type SavedMaterial } from '@/services/workspace';
+import { useStudentAccountsEnabled } from '@/services/features';
+import { ShareToStudentsSheet } from './ShareToStudentsSheet';
 
 const TEAL = '#1B6B62';
 
@@ -76,6 +78,16 @@ export function MediaLibraryPicker({
   const [searched, setSearched] = useState(false);
 
   const [games, setGames] = useState<SavedMaterial[]>([]);
+
+  /**
+   * The library item the teacher is sending, if any.
+   *
+   * Sharing is gated on STUDENT_ACCOUNTS: with the flag off no thread can be
+   * created at all, so offering the button would only produce a failure. The
+   * hook fails closed, so an unreachable server hides it too.
+   */
+  const canShare = useStudentAccountsEnabled();
+  const [sharing, setSharing] = useState<LessonMediaItem | null>(null);
 
   const figures = useMemo(
     () => (lessonId ? bookFigureRefsForLesson(lessonId, isAr) : []),
@@ -289,6 +301,19 @@ export function MediaLibraryPicker({
                     <Text numberOfLines={2} style={[styles.caption, { color: colors.mutedForeground }]}>
                       {item.caption || (isAr ? 'بدون وصف' : 'Untitled')}
                     </Text>
+                    {canShare && (
+                      // Send this one thing to a student or a class, without
+                      // putting it in a lesson first — the other half of what
+                      // a library is for.
+                      <Pressable
+                        onPress={() => setSharing(item)}
+                        hitSlop={8}
+                        style={styles.shareBadge}
+                        accessibilityLabel={isAr ? 'مشاركة' : 'Share'}
+                      >
+                        <Ionicons name="paper-plane-outline" size={14} color="#fff" />
+                      </Pressable>
+                    )}
                   </Pressable>
                 )}
               />
@@ -415,6 +440,13 @@ export function MediaLibraryPicker({
           )}
         </View>
       </View>
+
+      <ShareToStudentsSheet
+        visible={sharing !== null}
+        onClose={() => setSharing(null)}
+        libraryItemId={sharing?.id ?? ''}
+        caption={sharing?.caption}
+      />
     </Modal>
   );
 }
@@ -437,6 +469,10 @@ const styles = StyleSheet.create({
   thumb: { width: '100%', aspectRatio: 1, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.05)' },
   thumbFallback: { alignItems: 'center', justifyContent: 'center' },
   caption: { fontSize: 11, marginTop: 4 },
+  shareBadge: {
+    position: 'absolute', top: 8, right: 8,
+    backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 12, padding: 5,
+  },
   sectionLabel: { fontSize: 14, fontWeight: '700', marginTop: 16, marginBottom: 8 },
   videoRow: { alignItems: 'center', gap: 10, paddingVertical: 10 },
   videoTitle: { flex: 1, fontSize: 13 },

@@ -457,6 +457,85 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Media a teacher can reuse, and send, 2026-09-15
+
+**Everything a teacher uploaded was trapped in the lesson they uploaded it
+to.** `lesson_media` required a `lessonId`, and the only listing endpoint
+filtered by it, so a diagram attached to «الاشتقاق» was unreachable while
+planning any other lesson. There was also no way to send any of it to a
+student: attaching a material to a class sets `class_group_id`, which is
+filing, not delivery — nobody sees it.
+
+The table now backs a library. A row is either an **upload** (`r2Key` +
+`mimeType` + `sizeBytes`) or a **link** (`sourceUrl`), exactly one set —
+the same all-or-nothing column-group convention `chat_messages`'s
+attachment columns already use. `lessonId` became nullable, so an item can
+be library-only; `kind` gained `video`, which only ever arrives as a link
+because there is still no multipart upload path anywhere in this server and
+a video file fits neither the 8MB data-URL cap nor the storage budget.
+
+- `GET /media/library?q=&kind=` lists across lessons, newest first, capped
+  at 200 with no cursor (`ponytail:` — folders before pagination).
+  `GET /media/lesson?lessonId=` is **unchanged**, so `LessonAttachments.tsx`
+  kept working untouched.
+- `POST /media/lesson` takes either `dataUrl` or `sourceUrl` + `kind`. The
+  kind is **not** re-derived server-side: the app already classifies the URL
+  with `classifyMediaUrl()`, and a second copy of that rule is the
+  two-places-that-must-move failure CLAUDE.md records for activity formats
+  and difficulty tiers. A wrong kind costs one row in one teacher's library.
+- `components/ui/MediaLibraryPicker.tsx` — four sources, deliberately not
+  merged into one list: مكتبتي (the library), الكتاب
+  (`bookFigureRefsForLesson`, bundled, no network), بحث (Unsplash +
+  YouTube), ألعاب (saved decks). Everything leaves as `AttachedResource`,
+  the shape `insertLessonResources` already consumed, so nothing downstream
+  learned a new type. Wired into `slides.tsx` and `classroom/builder.tsx`.
+
+**Sharing reuses messaging rather than inventing a delivery surface.**
+`POST /messaging/threads/:id/messages` gained `libraryItemId`: an upload is
+attached by **reusing its existing R2 key** — no copy, so one photo to a
+class of thirty moves zero bytes — and a link is appended to the body as
+text, because there is no object to attach. `ShareToStudentsSheet.tsx`
+sends to a class once (its own thread) or to picked people individually,
+and reports partial failure by name rather than "something went wrong".
+Gated on `useStudentAccountsEnabled()`, which fails closed.
+
+That key reuse is only safe because of a guard added with it: **DELETE on a
+library item no longer erases the R2 object when a chat message still
+references it.** Without it, tidying your library would blank a photo out
+of a student's thread days later, with nothing to explain it. Orphaning an
+object is the cheaper mistake.
+
+**A pre-existing bug the library made obvious, fixed at the root.** An
+upload's URL is signed and expires in an hour, but a deck is stored as JSON
+in `saved_materials.content` and reopened weeks later — so the pictures in
+a saved deck silently stopped loading (an expired signature is a 403 that
+`<Image>` renders as nothing). Slides now carry `mediaItemId` and
+`refreshDeckMedia` (`services/classMedia.ts`, pure, tested) re-points them
+on load. The three deck renderers are **untouched** — they still read
+`mediaUrl` and know nothing about libraries, which is the point of
+`deckVisuals.ts`'s one-spec-three-renderers rule.
+
+Unsplash search returns a page for the picker instead of a single photo
+(`count`, max 10). It pings the download endpoint only for the photo
+actually chosen (`POST /media/unsplash-used`), not for every one listed —
+the API terms ask for uses, not impressions, and the same obligation is
+what puts the photographer's name in `mediaCaption`.
+
+Tests: `services/__tests__/classMedia.test.ts` (provenance + all five
+`refreshDeckMedia` cases), `lib/__tests__/mediaLibrary.test.ts` (the
+upload/link share split, extracted to `lib/mediaLibrary.ts` so it is
+testable without a database — there is no DB-backed route-test harness in
+this repo). Mobile 1385 pass / 0 fail, api-server 619 pass / 0 fail.
+
+**Not deployed by this change — the two steps this repo keeps manual:**
+1. `lesson_media` gains `source_url` and drops NOT NULL on `lesson_id`,
+   `r2_key`, `mime_type`, `size_bytes`. Until that push runs, the library
+   endpoints answer 503 and uploads fail. Note the root `.env` carries two
+   `DATABASE_URL` lines — confirm which one a push would hit before running
+   it, or do it from the Neon console.
+2. The API deploys by hand (`docs/deploying.md`); a merge ships the web app
+   only, so the client will briefly call endpoints that do not exist yet.
+
 ## A class's evidence starts accumulating, 2026-09-13 (#415)
 
 **The evaluation feature produced data that never compounded.** `objectiveScores`
