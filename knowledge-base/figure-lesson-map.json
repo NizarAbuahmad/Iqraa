@@ -3597,6 +3597,233 @@
       "kbLessonId": "kbl-g8-voc-s1-nccd-u7_l1",
       "score": 1,
       "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "طَهْيُ الطعامِ",
+      "kbLessonId": "kbl-g8-voc-s2-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "contents-table",
+      "why": "Placed from the contents spread. Grade 8 science S2 carries «الدرس» on only its two contents pages, and vocational S2 on none — neither has an opener to read. Both reproduce their catalog exactly at a Y tolerance of 6.0, where 4.0 reads vocational S2 one row short of 14 and science S2 two short of 11; the tolerance is per-book because contents-column alignment is."
+    },
+    {
+      "sourceId": "g8-voc-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الزخارفُ",
+      "kbLessonId": "kbl-g8-voc-s2-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "تطويرُ التفكيرِ الإبداعيِّ",
+      "kbLessonId": "kbl-g8-voc-s2-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "تطبيقُ الإبداعِ في المشاريعِ العمليّةِ",
+      "kbLessonId": "kbl-g8-voc-s2-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "أدواتُ SCAMPER لتوليدِ الأفكارِ الإبداعيّةِ",
+      "kbLessonId": "kbl-g8-voc-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "توظيفُ الخيالِ في توليدِ الأفكارِ الإبداعيّةِ",
+      "kbLessonId": "kbl-g8-voc-s2-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "أنواعُ الفِطرِ وأهمّيّتُهُ",
+      "kbLessonId": "kbl-g8-voc-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "إنتاجُ فِطرِ المحارِ",
+      "kbLessonId": "kbl-g8-voc-s2-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s2-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "الاستخدامُ الآمنُ لوسائلِ الاتصالِ",
+      "kbLessonId": "kbl-g8-voc-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s2-student-book",
+      "unit": 7,
+      "lesson": 1,
+      "bookTitleAr": "إدارةُ النفاياتِ الصُّلبةِ",
+      "kbLessonId": "kbl-g8-voc-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s2-student-book",
+      "unit": 8,
+      "lesson": 1,
+      "bookTitleAr": "صناعةُ الأثاثِ المنزليِّ والمكتبيِّ وصيانتُهُ",
+      "kbLessonId": "kbl-g8-voc-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s2-student-book",
+      "unit": 9,
+      "lesson": 1,
+      "bookTitleAr": "تسويقُ الأماكنِ السياحيّةِ الأردنيّةِ",
+      "kbLessonId": "kbl-g8-voc-s2-nccd-u9_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s2-student-book",
+      "unit": 10,
+      "lesson": 1,
+      "bookTitleAr": "الزراعةُ البعليّةُ والزراعةُ المرويّةُ",
+      "kbLessonId": "kbl-g8-voc-s2-nccd-u10_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s2-student-book",
+      "unit": 10,
+      "lesson": 2,
+      "bookTitleAr": "إنتاجُ أشتالِ الخضراواتِ",
+      "kbLessonId": "kbl-g8-voc-s2-nccd-u10_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-science-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الضبطُ والتنظيمُ",
+      "kbLessonId": "kbl-g8-science-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "contents-table",
+      "why": "UNIT OFFSET +4, and it is not cosmetic. The catalog numbers this book's units u5-u9 because units 1-4 are semester 1, but the contents parser infers units from the lesson numbering resetting and so counts them 1-5. Joined without the offset, every figure in the book would land on a semester-1 lesson. Placed from the contents spread. Grade 8 science S2 carries «الدرس» on only its two contents pages, and vocational S2 on none — neither has an opener to read. Both reproduce their catalog exactly at a Y tolerance of 6.0, where 4.0 reads vocational S2 one row short of 14 and science S2 two short of 11; the tolerance is per-book because contents-column alignment is."
+    },
+    {
+      "sourceId": "g8-science-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "المناعةُ",
+      "kbLessonId": "kbl-g8-science-s2-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-science-s2-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "التكاثرُ والنموُّ",
+      "kbLessonId": "kbl-g8-science-s2-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-science-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "درجةُ الحرارةِ وتدريجاتُ قياسِها",
+      "kbLessonId": "kbl-g8-science-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-science-s2-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الحرارةُ والمادّةُ",
+      "kbLessonId": "kbl-g8-science-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-science-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الروابطُ الكيميائيةُ",
+      "kbLessonId": "kbl-g8-science-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-science-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "التفاعلاتُ الكيميائيّةُ",
+      "kbLessonId": "kbl-g8-science-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-science-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "المجالُ المغناطيسيُّ",
+      "kbLessonId": "kbl-g8-science-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-science-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "الكهرمغناطيسيّةُ",
+      "kbLessonId": "kbl-g8-science-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-science-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "الكتلُ الهوائيةُ وتأثيرُها في الطقسِ",
+      "kbLessonId": "kbl-g8-science-s2-nccd-u9_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-science-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "استكشافُ الفضاءِ",
+      "kbLessonId": "kbl-g8-science-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."
