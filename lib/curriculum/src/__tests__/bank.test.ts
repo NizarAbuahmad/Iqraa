@@ -92,9 +92,12 @@ describe('manifest shape', () => {
       geography: /^geo-s[12]$/,
       'digital-literacy': /^(digital-s[12]|g9-digital-s[12])$/,
       civic: /^civic-s[12]$/,
-      art: /^art-g10-general$/,
-      vocational: /^vocational-s[12]$/,
-      'physical-education': /^pe-s[12]$/,
+      // Grade 6 joined 2026-09-15. The id slug is `arts`, not this record's
+      // `art` key — one of the spellings the comment above warns about.
+      art: /^(art-g10-general|g\d+-arts-s[12])$/,
+      // Slug is `voc`, not `vocational`.
+      vocational: /^(vocational-s[12]|g\d+-voc-s[12])$/,
+      'physical-education': /^(pe-s[12]|g\d+-pe-s[12])$/,
     };
     for (const s of G10_SOURCES) {
       for (const t of s.unitTags) {

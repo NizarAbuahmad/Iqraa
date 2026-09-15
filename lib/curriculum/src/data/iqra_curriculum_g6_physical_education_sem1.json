@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "grade": "الصف السادس",
+    "grade_en": "Grade 6",
+    "subject": "التربية الرياضية",
+    "subject_en": "Physical Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة التربية الرياضية الصف السادس الفصل الأول (g6-pe-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الأربعُ ودروسُها الأربعةَ عشرَ من قائمةِ المحتوياتِ (ص 4-5) في 2026-09-15. قُرِئَتِ الوحدتانِ الأولى والثانيةُ من صورةِ الصفحةِ، والثالثةُ والرابعةُ من النصِّ المستخرَجِ بعدَ مقابلتِهِما بالأرقامِ المطبوعةِ.",
+    "known_gaps": [
+      "هذا الملفُّ عناوينُ فقط (title-only): نُقِلَتْ بنيةُ الوحداتِ والدروسِ من قائمةِ المحتوياتِ، ولم تُنقَلْ نتاجاتٌ ولا مصطلحاتٌ ولا فكرةٌ رئيسةٌ. objectives و vocabulary فارغتانِ، والدروسُ موسومةٌ title-only في الواجهةِ عبرَ isBrowserLessonTitleOnly.",
+      "periods و total_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ في قائمةِ المحتوياتِ.",
+      "لا كتابَ للفصلِ الثاني في الملفّاتِ المرسَلةِ؛ هذهِ المادَّةُ نصفُ سنةٍ في النظامِ لا في المنهاجِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "كُرَةُ القَدَمِ",
+      "title_en": "Football",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "الجَرْيُ بِالكُرَةِ بِوَجْهَيِ القَدَمِ الدّاخِلِيِّ وَالخارِجِيِّ",
+          "title_en": "Dribbling with the Inside and Outside of the Foot",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "امْتِصاصُ الكُرَةِ بِالفَخْذِ",
+          "title_en": "Trapping the Ball with the Thigh",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "ضَرْبُ الكُرَةِ بِالرَّأْسِ مِنَ الثَّباتِ",
+          "title_en": "Heading the Ball from a Standing Position",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "التَّصْويبُ عَلى المَرْمى مِنَ الجَرْيِ",
+          "title_en": "Shooting at Goal while Running",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "رَبْطُ المَهاراتِ بِالتَّدْريباتِ وَاللَّعِبِ الجَماعِيِّ",
+          "title_en": "Linking Skills to Drills and Team Play",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "الرّيشَةُ الطّائِرَةُ",
+      "title_en": "Badminton",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "حَرَكاتُ القَدَمَيْنِ",
+          "title_en": "Footwork",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "الضَّرْبَةُ المَدْفوعَةُ الأَمامِيَّةُ",
+          "title_en": "The Forehand Drive",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "الضَّرْبَةُ المَدْفوعَةُ الخَلْفِيَّةُ",
+          "title_en": "The Backhand Drive",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "رَبْطُ المَهاراتِ بِتَدْريباتٍ وَمُنافَساتٍ فَرْدِيَّةٍ",
+          "title_en": "Linking Skills to Drills and Individual Contests",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "الإيقاعُ الحَرَكِيُّ",
+      "title_en": "Movement Rhythm",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الحَجْلُ",
+          "title_en": "Hopping",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الثَّنْيُ وَالمَدُّ",
+          "title_en": "Bending and Stretching",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "التَّزَحْلُقُ",
+          "title_en": "Sliding",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "الانْتِقالُ بِاتِّجاهاتٍ وَمَساراتٍ أَرْضِيَّةٍ مُخْتَلِفَةٍ",
+          "title_en": "Moving in Different Directions and Floor Pathways",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "السَّلامَةُ العامَّةُ",
+      "title_en": "General Safety",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "الإِسْعافاتُ الأَوَّلِيَّةُ في حالَةِ الجُروحِ البَسيطَةِ",
+          "title_en": "First Aid for Minor Wounds",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,228 @@
+{
+  "meta": {
+    "grade": "الصف السادس",
+    "grade_en": "Grade 6",
+    "subject": "التربية المهنية",
+    "subject_en": "Vocational Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الثاني (g6-voc-s2-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الثمانِ ودروسُها الإحدى عشرةَ من قائمةِ المحتوياتِ (ص 3-4) في 2026-09-15، وقُرِئَتْ من ملفِّ PDF مباشرةً بعدَ أن خرجَ النصُّ المستخرَجُ مُبدَّلَ الحروفِ: أعطى عنوانَ الوحدةِ الثانيةِ «الجَمالُ وَالتَّغْذِيَةُ» مقلوبًا، وصوابُهُ «التَّغْذِيَةُ وَالجَمالُ» كما تطبعُهُ الصفحةُ.",
+    "known_gaps": [
+      "هذا الملفُّ عناوينُ فقط (title-only): نُقِلَتْ بنيةُ الوحداتِ والدروسِ من قائمةِ المحتوياتِ، ولم تُنقَلْ نتاجاتٌ ولا مصطلحاتٌ ولا فكرةٌ رئيسةٌ. objectives و vocabulary فارغتانِ، والدروسُ موسومةٌ title-only في الواجهةِ عبرَ isBrowserLessonTitleOnly.",
+      "periods و total_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ في قائمةِ المحتوياتِ.",
+      "وحداتُ هذا الفصلِ تبدأُ الترقيمَ من جديدٍ (1 إلى 8) ولا تُكمِلُ ترقيمَ الفصلِ الأوَّلِ (1 إلى 6)، فتتكرَّرُ مُعرِّفاتُ u1..u6 في الفصلينِ. لا تعارُضَ: مُعرِّفُ الوحدةِ في قاعدةِ المعرفةِ يحملُ الفصلَ. هذا وصفٌ لما يطبعُهُ الكتابُ، فلا يُصحَّحْ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "مَهاراتٌ في حَياتِنا",
+      "title_en": "Skills in Our Lives",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "التَّرْبِيَةُ الإعْلامِيَّةُ",
+          "title_en": "Media Education",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "التَّغْذِيَةُ وَالجَمالُ",
+      "title_en": "Nutrition and Beauty",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "الحُبوبُ وَالبُقولِيّاتُ",
+          "title_en": "Grains and Legumes",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "أَساسِيّاتُ مِهْنَةِ التَّجْميلِ",
+          "title_en": "Fundamentals of the Beauty Profession",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "المَهاراتُ الرِّياديَّةُ",
+      "title_en": "Entrepreneurial Skills",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "تَنْمِيَةُ مَهاراتِ التَّفْكيرِ",
+          "title_en": "Developing Thinking Skills",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "تَكْثيرُ النَّباتاتِ",
+      "title_en": "Plant Propagation",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "تَكْثيرُ النَّباتاتِ بِالبُذورِ",
+          "title_en": "Propagating Plants by Seed",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "نَباتاتُ الزّينَةِ",
+          "title_en": "Ornamental Plants",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "الصِّناعاتُ الغِذائِيَّةُ",
+      "title_en": "Food Industries",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "تَصْنيعُ مُنْتَجاتِ الحَليبِ",
+          "title_en": "Making Dairy Products",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "الصِّيانَةُ",
+      "title_en": "Maintenance",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "صِيانَةُ الأَثاثِ الخَشَبِيِّ",
+          "title_en": "Maintaining Wooden Furniture",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "الصِّحَّةُ وَالسَّلامَةُ",
+      "title_en": "Health and Safety",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "الإِسْعافاتُ الأَوَّلِيَّةُ",
+          "title_en": "First Aid",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "اللَّعِبُ الآمِنُ",
+          "title_en": "Safe Play",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "المَطاعِمُ",
+      "title_en": "Restaurants",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "إِدارَةُ المَطاعِمِ",
+          "title_en": "Restaurant Management",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
