@@ -287,4 +287,6 @@ export const LOCAL_FILES: Record<string, string> = {
   // grade-4-digital-literacy
   'g4-digital-s1-activity-book': 'knowledge-base/grade-4-digital-literacy/support-pdfs/كتاب الأنشطة لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf',
   'g4-digital-s1-teacher-guide': 'knowledge-base/grade-4-digital-literacy/support-pdfs/دليل المعلم لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf',
+  // grade-4-art
+  'g4-arts-s1-student-book': 'knowledge-base/grade-4-art/support-pdfs/كتاب الطالب لمادة التربية الفنية للصف الرابع.pdf',
 };
