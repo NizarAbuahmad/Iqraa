@@ -71,6 +71,14 @@ import g8SocialS2 from '../../../knowledge-base/grade-8-social/figures/g8-social
 import g8VocS1 from '../../../knowledge-base/grade-8-vocational/figures/g8-voc-s1-student-book/index.json' with { type: 'json' };
 import g8VocS2 from '../../../knowledge-base/grade-8-vocational/figures/g8-voc-s2-student-book/index.json' with { type: 'json' };
 import g8SciS2 from '../../../knowledge-base/grade-8-science/figures/g8-science-s2-student-book/index.json' with { type: 'json' };
+import g6VocS1 from '../../../knowledge-base/grade-6-vocational/figures/g6-voc-s1-student-book/index.json' with { type: 'json' };
+import g7VocS1 from '../../../knowledge-base/grade-7-vocational/figures/g7-voc-s1-student-book/index.json' with { type: 'json' };
+import g7FinlitS1 from '../../../knowledge-base/grade-7-finlit/figures/g7-finlit-s1-student-book/index.json' with { type: 'json' };
+import g7FinlitS2 from '../../../knowledge-base/grade-7-finlit/figures/g7-finlit-s2-student-book/index.json' with { type: 'json' };
+import g7SciS1 from '../../../knowledge-base/grade-7-science/figures/g7-science-s1-student-book/index.json' with { type: 'json' };
+import g7SciS2 from '../../../knowledge-base/grade-7-science/figures/g7-science-s2-student-book/index.json' with { type: 'json' };
+import g7SocialS1 from '../../../knowledge-base/grade-7-social/figures/g7-social-s1-student-book/index.json' with { type: 'json' };
+import g7SocialS2 from '../../../knowledge-base/grade-7-social/figures/g7-social-s2-student-book/index.json' with { type: 'json' };
 
 export type BookFigure = {
   /** File name inside the book's figure directory, e.g. `p021.png`. */
@@ -146,6 +154,14 @@ const INDEXES: { sourceId: string; figures: BookFigure[] }[] = [
   g8VocS1 as { sourceId: string; figures: BookFigure[] },
   g8VocS2 as { sourceId: string; figures: BookFigure[] },
   g8SciS2 as { sourceId: string; figures: BookFigure[] },
+  g6VocS1 as { sourceId: string; figures: BookFigure[] },
+  g7VocS1 as { sourceId: string; figures: BookFigure[] },
+  g7FinlitS1 as { sourceId: string; figures: BookFigure[] },
+  g7FinlitS2 as { sourceId: string; figures: BookFigure[] },
+  g7SciS1 as { sourceId: string; figures: BookFigure[] },
+  g7SciS2 as { sourceId: string; figures: BookFigure[] },
+  g7SocialS1 as { sourceId: string; figures: BookFigure[] },
+  g7SocialS2 as { sourceId: string; figures: BookFigure[] },
 ];
 
 /** `sourceId|unit|lesson`, the only key both files share. */

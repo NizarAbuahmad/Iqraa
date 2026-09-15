@@ -1865,6 +1865,63 @@ maths (16 rows of 18, none carrying a parenthesised lesson number) and Grade 9
 history S2 (10 rows of 13, same). Arabic is untouched — its books are not in
 `BOOKS` at all.
 
+## Grades 6 and 7: 28 books registered, 8 shipped, 2026-09-16
+
+**416 → 498 lessons illustrated, 2106 figures.** Grade 6 and Grade 7 had 3
+books between them in `BOOKS` against 36 catalogs — the gap was never the
+detector, it was that the PDFs had not been registered. Every Grade 6/7 student
+book the NCCD library holds that also has a catalog is now in `BOOKS` (28 new
+entries), except English, which photographs rather than draws and goes through
+`extract_book_photos.py`.
+
+**Registering a book is not a claim that it yields.** Each was probed against
+its catalog both ways — opener detector and contents table across five Y
+tolerances — before anything was extracted.
+
+| Shipped | Route | Kept | Lessons |
+| --- | --- | --- | --- |
+| Grade 7 vocational S1 | contents 4.0 | 88 of 154 | **12 of 12** |
+| Grade 6 vocational S1 | contents 4.0 | 56 of 122 | **12 of 12** |
+| Grade 7 science S1 | opener | 45 of 105 | **12 of 12** |
+| Grade 7 science S2 | opener | 44 of 125 | 9 of 11 |
+| Grade 7 social S1 | contents 12.0 | 39 of 85 | 14 of 20 |
+| Grade 7 social S2 | contents 12.0 | 34 of 99 | 12 of 21 |
+| Grade 7 finlit S1 | opener | 13 of 23 | 6 of 12 |
+| Grade 7 finlit S2 | opener | 9 of 15 | 5 of 11 |
+
+**Grade 7 social S2 carries a +6 UNIT OFFSET, and the shape check is blind to
+it.** Its catalog numbers units u7-u12 because units 1-6 are semester 1, while
+the contents parser infers units from the lesson numbering resetting and counts
+them 1-6. The gate compares unit COUNTS, so a uniform shift passes it
+unnoticed; this was caught by measuring the extracted index against the catalog
+afterwards, not by the probe. Every S2 book in this batch was checked the same
+way — finlit S2 and science S2 print their catalogs' own numbers and need no
+offset.
+
+**Tolerance 12.0 is the loosest in `CONTENTS_PLACEMENT` and is accepted on
+convergence, not on the match alone.** Grade 7 social S1 finds 3 contents rows
+at 2.0, then 14, 18, 19, and all 20 at 12.0 — and the unit split locks onto the
+catalog's [3,3,5,4,2,3] exactly where the row count also becomes exact. A
+coincidence does not approach the answer from below.
+
+**Ten near misses, and one of them is a pattern worth naming.** Four books find
+contents rows in EXACTLY their catalog's lesson count — Grade 6 PE 14/14,
+Grade 7 PE 14/14 and 15/15, Grade 7 arabic 25/25 — and place none of them,
+because those rows do not print a parenthesised lesson number. That is 78
+lessons behind one missing signal. Numbering the rows positionally would impose
+the catalog's shape and then "verify" against it, which is no check at all: one
+out-of-order lesson misfiles everything after it and nothing detects it. The
+honest version is matching row titles to catalog lesson titles, which is
+deferred rather than dismissed. The others are genuinely short: Grade 6 arabic
+22 rows of 25, Grade 6 maths 16 of 18, Grade 7 maths 18 of 20 and 22 of 23,
+Grade 7 arabic S2 24 of 25, and Grade 7 vocational S2 finds all 10 lessons but
+splits them into 8 units against the catalog's 7.
+
+**Eleven closed, 214 lessons:** Grade 6 and Grade 7 Islamic (both semesters),
+Grade 6 social S1/S2, Grade 6 vocational S2, Grade 6 arabic S2, Grade 7 art and
+Grade 7 digital literacy S1/S2. No contents rows at any tolerance and no
+openers — there is nothing in these books to read.
+
 **What still has no figure at all, and why:**
 
 - **Grade 8 — five of ten subjects, 165 lessons.** English, maths, science,
