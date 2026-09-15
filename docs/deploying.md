@@ -238,6 +238,40 @@ gcloud run services update-traffic iqraa-api --region europe-west1 \
 That `0 percent of traffic` in the output of a deploy or an env-var update is
 the tell. It is not noise.
 
+**Still pinned to `iqraa-api-00032-279` on 2026-09-15**, so the paragraph above
+describes the live service, not a past incident. A deploy that day created
+`iqraa-api-00042-brg`, healthy and serving nobody.
+
+**The new revision gets a `candidate` tag, and that is useful.** Rather than
+being unreachable, it comes up on its own URL:
+
+```
+https://candidate---iqraa-api-lqzcxyoxva-ew.a.run.app
+```
+
+So the build can be proved good *before* any production traffic moves:
+
+```bash
+curl -s https://candidate---iqraa-api-lqzcxyoxva-ew.a.run.app/api/healthz/version
+```
+
+That returns `{commit, revision}`. If the commit is the one you deployed, the
+image is fine and only the traffic split is in the way. On 2026-09-15 the
+candidate answered `c0a0303` while the production URL answered
+`Cannot GET /api/healthz/version` — same service, two different builds, and the
+difference was entirely traffic.
+
+**Do not reflexively `--to-latest`.** Read the pin as possibly deliberate until
+you know otherwise: a revision can be held precisely because something newer is
+broken, and unpinning then ships the breakage. Check what changed between the
+pinned revision and the candidate before promoting.
+
+**One more trap in the check itself:** `status.traffic` is a *list*. A format
+string like `--format="value(status.traffic[0].revisionName)"` reads one entry,
+and with a tagged revision present the first entry is not reliably the one
+serving. Ask for the whole block — `--format="json(status.traffic)"` — or the
+command will confirm something that is not true.
+
 ### A health check does not test a secret
 
 `/api/healthz` returns a static `{ status: "ok" }` and touches no credential at
