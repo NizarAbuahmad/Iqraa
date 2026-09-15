@@ -260,4 +260,10 @@ export const LOCAL_FILES: Record<string, string> = {
   'g4-science-s2-activity-book': 'knowledge-base/grade-4-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الثاني.pdf',
   'g4-science-s1-teacher-guide': 'knowledge-base/grade-4-science/support-pdfs/دليل المعلم لمادة العلوم الصف الرابع الفصل الأول.pdf',
   'g4-science-s2-teacher-guide': 'knowledge-base/grade-4-science/support-pdfs/دليل المعلم العلوم الصف الرابع الفصل الثاني.pdf',
+  // grade-4-arabic
+  'g4-arabic-s1-student-book': 'knowledge-base/grade-4-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف الرابع الفصل الأول.pdf',
+  'g4-arabic-s2-student-book': 'knowledge-base/grade-4-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف الرابع الفصل الثاني.pdf',
+  'g4-arabic-s1-exercise-book': 'knowledge-base/grade-4-arabic/support-pdfs/كتاب التمارين لمادة العربية لغتي للصف الرابع الفصل الأول.pdf',
+  'g4-arabic-s2-exercise-book': 'knowledge-base/grade-4-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف الرابع الفصل الثاني.pdf',
+  'g4-arabic-s1-teacher-guide': 'knowledge-base/grade-4-arabic/support-pdfs/دليل المعلم لمادة العربية لغتي الصف الرابع الفصل الأول.pdf',
 };
