@@ -289,4 +289,16 @@ export const LOCAL_FILES: Record<string, string> = {
   'g4-digital-s1-teacher-guide': 'knowledge-base/grade-4-digital-literacy/support-pdfs/دليل المعلم لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf',
   // grade-4-art
   'g4-arts-s1-student-book': 'knowledge-base/grade-4-art/support-pdfs/كتاب الطالب لمادة التربية الفنية للصف الرابع.pdf',
+
+  // Single units lifted out of a teacher guide that is also here in full.
+  // Named so they can be extracted and compared against their parent; the
+  // manifest decides afterwards whether each is a `duplicate` — two ingested
+  // copies of one unit would put the same passage into grounding twice and
+  // quietly outweigh every other unit in the book.
+  'g4-math-u1-guide-extract': 'knowledge-base/grade-4-math/support-pdfs/الوحدة الأولى من دليل المعلم لمادة الرياضيات للصف الرابع.pdf',
+  'g4-math-u2-guide-extract': 'knowledge-base/grade-4-math/support-pdfs/الوحدة الثانية من دليل المعلم لمادة الرياضيات للصف الرابع.pdf',
+  'g4-math-u3-guide-extract': 'knowledge-base/grade-4-math/support-pdfs/الوحدة الثالثة من دليل المعلم لمادة الرياضيات للصف الرابع.pdf',
+  'g4-math-u6-guide-extract': 'knowledge-base/grade-4-math/support-pdfs/الوحدة السادسة من دليل المعلم لمادة الرياضيات الصف الرابع.pdf',
+  'g4-math-u7-guide-extract': 'knowledge-base/grade-4-math/support-pdfs/الوحدة السابعة من دليل المعلم لمادة الرياضيات الصف الرابع.pdf',
+  'g4-science-u6-u7-guide-extract': 'knowledge-base/grade-4-science/support-pdfs/الوحدتان السادسة والسابعة من دليل المعلم لمادة العلوم الصف الرابع.pdf',
 };
