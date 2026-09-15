@@ -146,7 +146,8 @@ describe('subject isolation', () => {
       // 2026-09-09, Grade 7 joined 2026-09-12.
       'financial-literacy': /^(finlit-s[12]|g9-finlit-s[12]|g8-finlit-s[12]|g7-finlit-s[12])$/,
       // Digital Skills spans every grade the same way arabic/islamic do.
-      'digital-literacy': /^(digital-s[12]|g9-digital-s[12]|g8-digital-s[12]|g7-digital-s[12])$/,
+      // Grade 6 joined 2026-09-15, collapsing the per-grade enumeration.
+      'digital-literacy': /^(digital-s[12]|g\d+-digital-s[12])$/,
       // Social Studies only ever has Grade 7/8 books — it splits into
       // geography/history/civic-education from Grade 9 up, so there is no
       // bare or g9- form to allow (see subjectGradeCoverage.test.ts).

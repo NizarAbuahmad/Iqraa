@@ -1581,6 +1581,48 @@ anything that was quoting Grade 9/10 English passages will now return nothing
 rather than returning them unlawfully. That is the correct trade and it is worth
 saying out loud rather than discovering it as a regression.
 
+**Grade 6 is complete, 2026-09-15.** Digital skills catalogued and the last five
+maths books registered. **Every Grade 6 book supplied is now in the repo** — 26
+sources across nine subjects: الرياضيات, اللغة العربية, اللغة الإنجليزية,
+التربية الإسلامية, المهارات الرقمية, التربية الرياضية, التربية الفنّيّة,
+التربية المهنية, الدراسات الاجتماعية, العلوم.
+
+**Digital skills is not a subject book, and the catalogue had to bend to that.**
+Its content is «لَبِنات» — blocks attached to units of OTHER subjects — and the
+block titles are those units' titles verbatim: «مِنَ الخَلِيَّةِ إلى الجِسْمِ»,
+«المادَّةُ», «المَخاليطُ وَطَرائِقُ فَصْلِها», «الصَّوْتُ» from science;
+«التَّحْويلاتُ وَالإِنْشاءاتُ الهَنْدَسِيَّةُ», «الهَنْدَسَةُ وَالقِياسُ» from
+maths. Six blocks became six units, four «مشاريع تعلُّم» four more.
+
+Two consequences, both verified against the running catalog rather than reasoned
+about:
+
+- **A unit title now genuinely duplicates across subjects.**
+  `kbu-g6-science-s1-nccd-u1` and `kbu-g6-digital-s1-nccd-u1` are two units with
+  the same `nameAr`. Nothing collides, because the id carries the subject — but
+  a title-based lookup across subjects would conflate them, which is the same
+  trap as "a lesson title does not identify a lesson" in CLAUDE.md, now with a
+  concrete instance in the data.
+- **Its semester label does not match the subjects it plugs into.** The book is
+  Semester 1, but blocks 4 and 6 attach to «المَخاليطُ» and «الصَّوْتُ» — science
+  Semester 2, units 6 and 7. `semester: 1` follows the cover, not the content,
+  and the JSON says so.
+
+There is no digital-skills student book and no Semester 2 book at all; the
+activity book and teacher guide are everything that exists, which makes it the
+narrowest subject in the grade.
+
+**The five maths books are support material — registered and extracted, no
+catalogue**, per docs/adding-a-book.md ("Stop here for support material"). One of
+them closes a sourceless gap rather than adding one: `g6-math-s1-teacher-guide`
+(228 pages, 568k chars, straight through pdf-parse) carries the periods and
+lesson outcomes that are null/empty in `iqra_curriculum_g6_math_sem1.json`. That
+gap now has a source on disk instead of a note saying the guide exists somewhere.
+
+Maths Semester 2 still has no student book — exercise book and teacher guide
+only — so there is still no Semester 2 maths unit list, and that is the supplied
+set's limit rather than a transcription gap.
+
 **Grade 8 gets its first figures, 2026-09-12.** `g8-science-s1` alone: 133
 crops, **65 kept**, covering all 10 of its Semester 1 lessons. What survived is
 strong — DNA and chromosome diagrams, binary-fission stages, Mendel's pea
