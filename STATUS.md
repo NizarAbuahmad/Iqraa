@@ -535,6 +535,30 @@ upload/link share split, extracted to `lib/mediaLibrary.ts` so it is
 testable without a database — there is no DB-backed route-test harness in
 this repo). Mobile 1385 pass / 0 fail, api-server 619 pass / 0 fail.
 
+**Exercised end to end on 2026-09-15** against a running API, the local
+Postgres and real R2 — 42 assertions, all passing. Worth repeating rather
+than re-deriving, because four of them are the ones that would fail
+silently in production:
+
+- an upload's signed URL is fetched and actually returns the bytes (not
+  just "a url came back");
+- a message sent by `libraryItemId` carries **the same `r2_key` the library
+  row holds** — proof nothing was copied, checked against the row in SQL
+  rather than inferred;
+- deleting that library item afterwards returns 204, removes the row, and
+  the recipient's message **still fetches 200** — the delete guard doing
+  the one job it exists for;
+- a second teacher sending someone else's `libraryItemId` gets 404
+  `library_item_not_found`. Note that assertion needs its own roster link
+  or the thread is refused 403 first, and the ownership check is never
+  reached — a fixture that skips it silently proves nothing.
+
+Two notes for whoever repeats this. Sharing needs `STUDENT_ACCOUNTS=true`,
+which local dev does **not** set while production does, so messaging is
+inert locally and looks broken rather than gated. And the root `.env` ends
+with **no trailing newline**, so `>>` appends onto the last variable and
+corrupts it — the same env-append bug that once leaked a key; prepend `\n`.
+
 **Schema: dev pushed 2026-09-15, production still pending.**
 `lesson_media` gained `source_url` and dropped NOT NULL on `lesson_id`,
 `r2_key`, `mime_type`, `size_bytes`. Confirmed on `localhost:5432/iqraa`
