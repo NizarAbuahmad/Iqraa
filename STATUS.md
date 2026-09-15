@@ -390,15 +390,25 @@ an announcement by default» below.
   see LOCAL_SETUP.md).
 - `mockup-sandbox` is excluded from the workspace — it is a design sandbox,
   not product UI, and its type errors used to block the whole monorepo build.
-- **Hosted demo: all three services are live** (free tier — see render.yaml).
-  All three are blueprint-managed and show **Deployed** in the Render dashboard:
-  - Web: https://iqraa-web.onrender.com (static, always awake) — **up**
-  - API: https://iqraa-api-dfxu.onrender.com (`iqraa-api` name was taken —
-    note the `-dfxu` suffix; sleeps after ~15 min idle, ~30-60s to wake.
-    **Warm it up before demos.**) — **up**, login verified 2026-08-10
-  - Verifier: https://iqraa-verifier.onrender.com (SymPy/FastAPI,
-    `artifacts/math-verifier`) — **up since 2026-08-09**. `/healthz` returns
-    `{"status":"ok","topics":["derivative_frac_neg_exp","derivative_polynomial"]}`.
+- **Where the three services actually live** (re-checked 2026-09-15 against the
+  running system — the Render list below was a month stale and had already sent
+  one reader to a dead host):
+  - Web: **Cloudflare Pages**, https://iqraa-web-buq.pages.dev — built by
+    `.github/workflows/web-deploy.yml` on every merge to `main`. Moved off
+    Render 2026-09-13. `iqraa-web.onrender.com` still answered 200 on
+    2026-09-15 because Render serves its last build forever; it is a stale
+    bundle, not a second deploy target.
+  - API: **Cloud Run**, https://iqraa-api-613126375862.europe-west1.run.app —
+    deployed **by hand**, never by a merge. Ask it what it is running:
+    `GET /api/healthz/version` → `{commit, revision}`.
+  - Verifier: **Cloud Run**, `iqraa-verifier` in `europe-west1`. The Render
+    verifier is **gone** — `iqraa-verifier.onrender.com` times out as of
+    2026-09-15. Both Cloud Run services date from the 2026-09-05 cutover.
+  - `render.yaml` is a rollback stub only. See `docs/deploying.md`, which is
+    current where this file was not.
+
+  **Everything below in this bullet is Render-era history**, kept for the
+  incidents it records, not as a description of today.
     - **The API now reaches it.** `MATH_VERIFIER_URL` on `iqraa-api` is set to
       the public URL `https://iqraa-verifier.onrender.com`. Verified end to end
       2026-08-10: correct key → `verified: true`; wrong key → `verified: false`,
@@ -446,6 +456,72 @@ an announcement by default» below.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## A class's evidence starts accumulating, 2026-09-13 (#415)
+
+**The evaluation feature produced data that never compounded.** `objectiveScores`
+was computed on every attempt and then buried inside it, so the app could say
+"Layla was weak on quadratics in this exam" and never "weak on quadratics across
+four checks since September". The second sentence is the one that changes what
+gets taught on Monday.
+
+`GET /classes/:id/mastery` (in `routes/roster.ts`, inheriting that router's
+existing path-scoped guard) reuses `aggregateClass` **unchanged** — its input was
+already generic — and feeds it every marked attempt in a class rather than one
+evaluation's. Marks-weighted, for the reason `classInsights.ts` already
+documents. **No new table:** a class is roughly five evaluations by thirty
+students, and a rollup table to avoid summing 150 rows would be a cache to
+maintain and a second place for the truth to live. Surfaced on the class screen's
+exams tab, ordered by marks lost.
+
+**A quick evaluation, because the weekly case was priced like the yearly one.**
+Authoring an exam asks seven questions before it generates anything — right for
+an exam, wrong for the three questions worth asking at the end of a lesson.
+`/evaluations/mini` answers them in advance and leaves one decision (which
+objective) and one judgement (are these three questions any good). Review is
+*delegated* to the ordinary evaluation screen, not skipped. Named «تقييم سريع»
+because the classroom-activity generator already owns both `quick-check` and
+`exit-ticket` as `activityType`s — **two features cannot share a name**, and that
+collision also cost an existing test file, which was overwritten and restored.
+
+**The default paper was the most expensive one.** `new.tsx` pre-selected
+`short_answer` + `open_ended`, both types `gradeAttempt` leaves out entirely, so
+accepting the defaults meant ten questions to hand-mark for every student. Now
+`multiple_choice` + `short_answer`.
+
+**The concrete maths bank moved to `@workspace/math-practice`.** A quick
+evaluation asks only for self-marking types, and the mock generator could produce
+none of them, so it returned an empty paper whenever live AI was off. The bank
+that can do this already existed in the mobile bundle; it needed only a lesson
+type and one `getBookForLesson` lookup from `knowledgeBase.ts`, so both are
+parameters now and the package carries none of the 3,000 lines of catalogs.
+`usedIds` was module state — one bank shared by every teacher on a long-running
+server, draining until later requests got nothing — so `takeConcreteMath` takes
+an optional per-request session. **Only `multiple_choice` is wired:** the bank
+emits prose ending in a question for true/false and a literal `__________` rather
+than `{{n}}` placeholders for fill-blank, and a mis-mapped key does not look like
+a bug from outside — the paper generates, the class sits it, and the right answer
+scores zero.
+
+Verified with `AI_LIVE_MODE=false` against a live local stack: three maths
+questions, all `deterministic`, keys checked by hand — `2^(x+1)=32 → 4`,
+`3^(2x)=81 → 2`, `8^x=4^(x+1) → 2`.
+
+**Corrects a claim made while planning this.** Three questions do *not* clear the
+competency evidence floor. `allocateQuestions` spreads a paper across the four
+competencies, so they land one apiece and each correctly reports "not enough
+evidence". That is the right outcome — all three sit on the single objective
+chosen, and the objective is what the rollup aggregates.
+
+**Not live yet, and this is the split-deploy trap again.** Merged 2026-09-13, so
+the web app shipped that day. The API did not: on 2026-09-15 production was
+serving revision `iqraa-api-00040-xxq` at commit `e7920c3`, **25 commits behind
+`main`** and predating this merge by three and a half hours. The mastery section
+therefore renders nothing in production — `getClassMastery(...).catch(() => null)`
+fails closed on the 404, by design, so nothing errors. **`GET /api/classes/:id/mastery`
+answering 401 is not evidence the route exists** — the `/classes` guard matches
+the prefix and rejects before routing, and that false signal was believed once
+during this work. Ask `GET /api/healthz/version` instead; it reports the commit.
 
 ## A list of exams that could not tell itself apart, 2026-09-14
 
@@ -675,7 +751,7 @@ and grepping it for a string the new code adds.
 "Deployed" wording — a cancelled build still lists as a deploy:
 
 ```bash
-curl -s https://iqraa-web.onrender.com/ | grep -oE '/_expo/static/js/web/[A-Za-z0-9._-]+\.js'
+curl -s https://iqraa-web-buq.pages.dev/ | grep -oE '/_expo/static/js/web/[A-Za-z0-9._-]+\.js'
 ```
 
 then fetch that path and grep for something the change added or removed. Pick a
