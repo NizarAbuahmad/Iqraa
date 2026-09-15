@@ -3488,6 +3488,115 @@
       "kbLessonId": "kbl-g8-social-s2-nccd-u12_l3",
       "score": 1,
       "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-voc-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "مهاراتُ العرضِ التقديميِّ",
+      "kbLessonId": "kbl-g8-voc-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "contents-table",
+      "why": "First book placed from its CONTENTS SPREAD rather than its lesson openers (`scripts/contents_outline.py`): «الدرس» appears on no page of this book at any size, so `outline` returns nothing. The contents table reproduces the catalog exactly — seven units of [2,2,2,2,1,2,1] — which is the condition for entering CONTENTS_PLACEMENT. Book unit/lesson numbering is the catalog's own, so the join is the identity. Each unit's first lesson is anchored to the «الوحدة ...» banner page, not to the contents-listed page: the unit opener spread sits outside every listed lesson and would otherwise be filed on the previous unit's last lesson."
+    },
+    {
+      "sourceId": "g8-voc-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "تنظيمُ الوقتِ",
+      "kbLessonId": "kbl-g8-voc-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "تدويرُ الملابسِ",
+      "kbLessonId": "kbl-g8-voc-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "لَفُّ الشعرِ وتسريحُهُ",
+      "kbLessonId": "kbl-g8-voc-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الزراعةُ المكشوفةُ والزراعةُ المَحميّةُ",
+      "kbLessonId": "kbl-g8-voc-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "زراعةُ الأسطحِ",
+      "kbLessonId": "kbl-g8-voc-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "التعاملُ معَ الموادِّ الكيماويّةِ والمُبيداتِ",
+      "kbLessonId": "kbl-g8-voc-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "التعاملُ معَ الأجهزةِ الكهربائيّةِ ووسائلِ التدفئةِ",
+      "kbLessonId": "kbl-g8-voc-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s1-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "صيانةُ الأبوابِ والشبابيكِ",
+      "kbLessonId": "kbl-g8-voc-s1-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s1-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "حلولٌ إبداعيّةٌ لمشكلاتٍ مجتمعيّةٍ",
+      "kbLessonId": "kbl-g8-voc-s1-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s1-student-book",
+      "unit": 6,
+      "lesson": 2,
+      "bookTitleAr": "حلولٌ إبداعيّةٌ لمشكلاتٍ تجاريّةٍ",
+      "kbLessonId": "kbl-g8-voc-s1-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-voc-s1-student-book",
+      "unit": 7,
+      "lesson": 1,
+      "bookTitleAr": "طرقُ التسويقِ السياحيِّ في الأردنِّ",
+      "kbLessonId": "kbl-g8-voc-s1-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."
