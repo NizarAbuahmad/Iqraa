@@ -456,6 +456,55 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## One account could spend everyone's AI budget, 2026-09-15
+
+**`/chat` and `/generate` had no per-caller ceiling of any kind.** No rate
+limiter at their mount sites, and neither called `assertUserQuotaAvailable` —
+the per-user allowance that `attempts.ts`, `evaluations.ts` and `practice.ts`
+already use. They were the two largest spenders in the API and the only ones
+with nothing between a caller and the shared monthly cap.
+
+**Nothing capped the size of a request either.** `CHAT_HISTORY_TURNS` bounded
+how *many* turns were forwarded, and nothing bounded how long each one was;
+`context` was interpolated into the system prompt whole. The only ceiling
+underneath was `express.json({ limit: "12mb" })` — on the order of three
+million input tokens in a single call. And `assertBudgetAvailable()` reads the
+ledger *before* the call rather than reserving against it, so one request could
+overshoot `AI_BUDGET_USD` outright rather than being refused at the line.
+
+The cap is shared, so the consequence is not "that account overspends" but
+"AI stops working for every teacher". `/chat` needs only `authMiddleware`, not
+a teacher role — a student or parent account reaches it.
+
+**Three changes, and they are not interchangeable:**
+
+- **Per-user limiters** at the `/chat` and `/generate` mounts (30 and 15 per
+  minute, keyed by user id, not IP — a school is one NAT address). This is the
+  part that protects a deployment *today*.
+- **`assertUserQuotaAvailable`** in `chat.ts` and in `generateContent`, which
+  covers every route in `generate.ts`. Placed after the pooled-artifact lookup,
+  like the global cap, so serving a pooled variant costs nobody their
+  allowance.
+- **`clampPromptText`** on `context` (24,000 chars) and on each history turn
+  (2,000), applied in the route rather than in the prompt builders — the route
+  is where caller-supplied text enters, so capping once there covers both
+  language builders and any future one.
+
+**The quota is still inert in production, and this PR cannot fix that.**
+`getUserBudgetLimitUsd()` returns 0 unless `AI_USER_BUDGET_USD` is set, and it
+is set in neither `render.yaml` nor `deploy.yml` — those AI vars live in the
+Cloud Run service config. Until somebody sets it there, the limiters and the
+clamp are the whole of the protection. The code comment in `aiBudget.ts` had
+already stated the risk exactly: "with fifty teachers sharing a single project
+budget, one enthusiastic user can spend everyone else's month in an afternoon."
+
+**Not covered:** `/generate/verified-derivative/*`. Those reach the model
+through `derivativeVerified.ts`, which does meter against the global cap
+(`assertBudgetAvailable` + `recordUsage`), but their handlers take `_req` and
+so have no user to bill. They sit under the `/generate` prefix, so the limiter
+bounds them; giving them a quota would mean threading a user id through
+`generateBatch`.
+
 ## The practice slides say where their content went, 2026-09-15
 
 **Reported from a real deck on the projector:** «🤝 تدريب موجّه» showing a

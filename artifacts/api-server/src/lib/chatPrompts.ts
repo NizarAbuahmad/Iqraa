@@ -124,3 +124,35 @@ export const CHAT_MAX_TOKENS = 1200;
 
 /** Turns of history the route forwards; older turns are dropped. */
 export const CHAT_HISTORY_TURNS = 12;
+
+/*
+ * Ceilings on caller-supplied text reaching a prompt.
+ *
+ * `CHAT_HISTORY_TURNS` capped how *many* turns were forwarded but nothing
+ * capped how long each one was, and `context` was interpolated whole. The only
+ * ceiling underneath was `express.json({ limit: "12mb" })` in app.ts — roughly
+ * three million input tokens in a single call, which is more than the whole
+ * month's `AI_BUDGET_USD` in one request. Because `assertBudgetAvailable()`
+ * checks the ledger *before* the call rather than reserving against it, one
+ * request can overshoot the global cap outright, and the cap is shared, so the
+ * account that does it takes AI down for every teacher.
+ *
+ * Sized for the real workload, not for the limit: `context` is book passages
+ * the client retrieves, and a turn is something a person typed.
+ */
+export const CHAT_CONTEXT_MAX_CHARS = 24_000;
+export const CHAT_MESSAGE_MAX_CHARS = 2_000;
+
+/**
+ * Truncates caller-supplied text before it is interpolated into a prompt.
+ *
+ * Silent truncation is the right failure here: the tail of an over-long
+ * grounding block is the least relevant part of it, and answering 400 would
+ * break a legitimate client that retrieved one passage too many.
+ */
+export function clampPromptText(text: string, maxChars: number): string;
+export function clampPromptText(text: string | undefined, maxChars: number): string | undefined;
+export function clampPromptText(text: string | undefined, maxChars: number): string | undefined {
+  if (typeof text !== "string") return undefined;
+  return text.length <= maxChars ? text : text.slice(0, maxChars);
+}
