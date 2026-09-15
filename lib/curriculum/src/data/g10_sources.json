@@ -5113,6 +5113,204 @@
         "localPath": "knowledge-base/grade-6-art/support-pdfs/دليل المعلم لمادة التربية الفنية الصف السادس.pdf",
         "sha256": "59c69f277940f0f4dc89e1ae1a0ff75a296299a4016454563bf607cea78bce4d"
       }
+    },
+    {
+      "id": "g6-eng-s1-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf",
+      "bytes": 72097741,
+      "subject": "english",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "english",
+        "اللغة الإنجليزية",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "كتابٌ تجاريٌّ اعتمدَتْهُ الوزارةُ: Jordan Team Together © Pearson Education Limited و York Press، وعليهِ إشعارُ حفظِ الحقوقِ كاملًا. authority = third-party قصدًا، على غرارِ كتبِ الصفِّ العاشرِ من السلسلةِ نفسِها: المقاطعُ لا تُقتبَسُ حرفيًّا (quotableOnly تقتصرُ على nccd)، فالبنيةُ وحدَها هيَ ما يُنقَلُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 64,
+        "chars": 114298,
+        "localPath": "knowledge-base/grade-6-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf",
+        "sha256": "7005a6dc1fc507bf91dede9c5afdd07c2a6a9a7bc8cc98e06fe555f3eb207c97"
+      }
+    },
+    {
+      "id": "g6-eng-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf",
+      "bytes": 49078093,
+      "subject": "english",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "english",
+        "اللغة الإنجليزية",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "كتابٌ تجاريٌّ اعتمدَتْهُ الوزارةُ: Jordan Team Together © Pearson Education Limited و York Press، وعليهِ إشعارُ حفظِ الحقوقِ كاملًا. authority = third-party قصدًا، على غرارِ كتبِ الصفِّ العاشرِ من السلسلةِ نفسِها: المقاطعُ لا تُقتبَسُ حرفيًّا (quotableOnly تقتصرُ على nccd)، فالبنيةُ وحدَها هيَ ما يُنقَلُ. رفضَ pdf-parse هذا الملفَّ بسببِ تبديلِ حروفٍ عربيَّةٍ — وهوَ كتابٌ إنجليزيٌّ، والذي أثارَ البوّابةَ صفحاتُ التصديرِ العربيَّةُ في مقدِّمتِهِ — فاستُخرِجَ بـ OCR. لا أثرَ لذلكَ على هذا الفهرسِ: بِنيةُ الوحداتِ قُرِئَتْ من صورةِ صفحةِ المحتوياتِ لا من النصِّ.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-15",
+        "pages": 64,
+        "chars": 109945,
+        "localPath": "knowledge-base/grade-6-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf",
+        "sha256": "053a809fcf40a3a8c99983d892959ccd8937fb919cbb61de8e74d6c3545cb6a8"
+      }
+    },
+    {
+      "id": "g6-eng-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf",
+      "bytes": 15071428,
+      "subject": "english",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "english",
+        "اللغة الإنجليزية",
+        "سادس",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "كتابٌ تجاريٌّ اعتمدَتْهُ الوزارةُ: Jordan Team Together © Pearson Education Limited و York Press، وعليهِ إشعارُ حفظِ الحقوقِ كاملًا. authority = third-party قصدًا، على غرارِ كتبِ الصفِّ العاشرِ من السلسلةِ نفسِها: المقاطعُ لا تُقتبَسُ حرفيًّا (quotableOnly تقتصرُ على nccd)، فالبنيةُ وحدَها هيَ ما يُنقَلُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 60,
+        "chars": 79470,
+        "localPath": "knowledge-base/grade-6-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf",
+        "sha256": "fde6d8b970bb4b1e7e9b15be729614fd5ce8646e7fa326940f8c04ebaac04cca"
+      }
+    },
+    {
+      "id": "g6-eng-s2-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf",
+      "bytes": 3452238,
+      "subject": "english",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "english",
+        "اللغة الإنجليزية",
+        "سادس",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "كتابٌ تجاريٌّ اعتمدَتْهُ الوزارةُ: Jordan Team Together © Pearson Education Limited و York Press، وعليهِ إشعارُ حفظِ الحقوقِ كاملًا. authority = third-party قصدًا، على غرارِ كتبِ الصفِّ العاشرِ من السلسلةِ نفسِها: المقاطعُ لا تُقتبَسُ حرفيًّا (quotableOnly تقتصرُ على nccd)، فالبنيةُ وحدَها هيَ ما يُنقَلُ. رفضَ pdf-parse هذا الملفَّ بسببِ تبديلِ حروفٍ عربيَّةٍ — وهوَ كتابٌ إنجليزيٌّ، والذي أثارَ البوّابةَ صفحاتُ التصديرِ العربيَّةُ في مقدِّمتِهِ — فاستُخرِجَ بـ OCR. لا أثرَ لذلكَ على هذا الفهرسِ: بِنيةُ الوحداتِ قُرِئَتْ من صورةِ صفحةِ المحتوياتِ لا من النصِّ.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-15",
+        "pages": 60,
+        "chars": 76438,
+        "localPath": "knowledge-base/grade-6-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf",
+        "sha256": "7db3ee4229619f2edeb9fa606249eaea650b2a42bcff225512dfcbda5d4e23f4"
+      }
+    },
+    {
+      "id": "g6-eng-s1-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الأول.pdf",
+      "bytes": 51381479,
+      "subject": "english",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "english",
+        "اللغة الإنجليزية",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "دليلُ المعلِّمِ من السلسلةِ نفسِها ويحملُ حقوقَ الناشرِ نفسَها: © Pearson Education Limited و York Press 2025 (صفحةُ الحقوقِ، ص ii). سُجِّلَ أوَّلَ الأمرِ authority = nccd محاكاةً لكتبِ الصفِّ العاشرِ، ثمَّ صُحِّحَ في 2026-09-15 بعدَ قراءةِ صفحةِ حقوقِهِ. ⚠ أدلَّةُ الصفِّ العاشرِ من السلسلةِ نفسِها (eng-s1-teacher-guide و eng-s2-teacher-guide) ما تزالُ مُسجَّلةً nccd، ويُرجَّحُ أنَّ ذلكَ خطأٌ للسببِ نفسِهِ — يحتاجُ مراجعةً مستقلَّةً.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 144,
+        "chars": 573253,
+        "localPath": "knowledge-base/grade-6-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الأول.pdf",
+        "sha256": "de39881e6ec411a31dca8dab088bad8c38983f37dde8c5db4a809aa103c25564"
+      }
+    },
+    {
+      "id": "g6-eng-s2-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الثاني.pdf",
+      "bytes": 54804399,
+      "subject": "english",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "english",
+        "اللغة الإنجليزية",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "دليلُ المعلِّمِ من السلسلةِ نفسِها ويحملُ حقوقَ الناشرِ نفسَها: © Pearson Education Limited و York Press 2025 (صفحةُ الحقوقِ، ص ii). سُجِّلَ أوَّلَ الأمرِ authority = nccd محاكاةً لكتبِ الصفِّ العاشرِ، ثمَّ صُحِّحَ في 2026-09-15 بعدَ قراءةِ صفحةِ حقوقِهِ. ⚠ أدلَّةُ الصفِّ العاشرِ من السلسلةِ نفسِها (eng-s1-teacher-guide و eng-s2-teacher-guide) ما تزالُ مُسجَّلةً nccd، ويُرجَّحُ أنَّ ذلكَ خطأٌ للسببِ نفسِهِ — يحتاجُ مراجعةً مستقلَّةً. رفضَ pdf-parse هذا الملفَّ بسببِ تبديلِ حروفٍ عربيَّةٍ — وهوَ كتابٌ إنجليزيٌّ، والذي أثارَ البوّابةَ صفحاتُ التصديرِ العربيَّةُ في مقدِّمتِهِ — فاستُخرِجَ بـ OCR. لا أثرَ لذلكَ على هذا الفهرسِ: بِنيةُ الوحداتِ قُرِئَتْ من صورةِ صفحةِ المحتوياتِ لا من النصِّ.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-15",
+        "pages": 144,
+        "chars": 514686,
+        "localPath": "knowledge-base/grade-6-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الثاني.pdf",
+        "sha256": "ddb61cb49f2724887217c1a2a927226b40a31e841bccb0e5a3fbfcccbcfd5389"
+      }
     }
   ],
   "mergedAt": "2026-08-25"

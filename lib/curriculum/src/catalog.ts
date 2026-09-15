@@ -166,6 +166,18 @@ import {
   isG6ArtSem1TitleOnlyLesson,
 } from './catalogs/g6ArtSem1.ts';
 import {
+  G6_ENGLISH_S1_CURRICULUM_BOOK_ID,
+  buildG6EnglishSem1BrowserCatalog,
+  isG6EnglishSem1TitleOnlyUnit,
+  isG6EnglishSem1TitleOnlyLesson,
+} from './catalogs/g6EnglishSem1.ts';
+import {
+  G6_ENGLISH_S2_CURRICULUM_BOOK_ID,
+  buildG6EnglishSem2BrowserCatalog,
+  isG6EnglishSem2TitleOnlyUnit,
+  isG6EnglishSem2TitleOnlyLesson,
+} from './catalogs/g6EnglishSem2.ts';
+import {
   G6_ARABIC_S1_CURRICULUM_BOOK_ID,
   buildG6ArabicSem1BrowserCatalog,
   isG6ArabicSem1TitleOnlyUnit,
@@ -916,6 +928,9 @@ export const MVP_BOOK_IDS: readonly string[] = [
   G6_VOCATIONAL_S2_CURRICULUM_BOOK_ID,
   G6_PE_S1_CURRICULUM_BOOK_ID,
   G6_ART_S1_CURRICULUM_BOOK_ID,
+  // Grade 6 English, both semesters. 'english' is already in MVP_SUBJECT_IDS.
+  G6_ENGLISH_S1_CURRICULUM_BOOK_ID,
+  G6_ENGLISH_S2_CURRICULUM_BOOK_ID,
   // Grade 6 Islamic Education and Social Studies, both semesters. Both
   // subjectIds are already in MVP_SUBJECT_IDS, so no subject append is needed.
   G6_ISLAMIC_S1_CURRICULUM_BOOK_ID,
@@ -1702,6 +1717,36 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // ── English, Grade 6 ──────────────────────────────────────────────────────
+  // Jordan Team Together (Pearson / York Press). Every source is third-party,
+  // so these lessons are browsable but NOT groundable — see g6EnglishSem1.ts.
+  // Semester 2 numbers its units 5-8, continuing Semester 1's 1-4.
+  {
+    id: G6_ENGLISH_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 6, Semester 1',
+    titleAr: 'اللغة الإنجليزية – الصف السادس – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-6',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G6_ENGLISH_S2_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 6, Semester 2',
+    titleAr: 'اللغة الإنجليزية – الصف السادس – الفصل الثاني',
+    subjectId: 'english',
+    gradeId: 'grade-6',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // The first Grade 6 books in the repo. Maths carries four units and eighteen
   // lessons from the student book alone (no S2 student book was supplied);
@@ -3746,6 +3791,8 @@ const _g6VocationalSem1Browser = buildG6VocationalSem1BrowserCatalog();
 const _g6VocationalSem2Browser = buildG6VocationalSem2BrowserCatalog();
 const _g6PhysicalEducationSem1Browser = buildG6PhysicalEducationSem1BrowserCatalog();
 const _g6ArtSem1Browser = buildG6ArtSem1BrowserCatalog();
+const _g6EnglishSem1Browser = buildG6EnglishSem1BrowserCatalog();
+const _g6EnglishSem2Browser = buildG6EnglishSem2BrowserCatalog();
 const _g6IslamicSem1Browser = buildG6IslamicSem1BrowserCatalog();
 const _g6IslamicSem2Browser = buildG6IslamicSem2BrowserCatalog();
 const _g6SocialSem1Browser = buildG6SocialSem1BrowserCatalog();
@@ -3990,6 +4037,8 @@ export const UNITS: Unit[] = [
   ..._g6VocationalSem2Browser.units,
   ..._g6PhysicalEducationSem1Browser.units,
   ..._g6ArtSem1Browser.units,
+  ..._g6EnglishSem1Browser.units,
+  ..._g6EnglishSem2Browser.units,
   ..._g6IslamicSem1Browser.units,
   ..._g6IslamicSem2Browser.units,
   ..._g6SocialSem1Browser.units,
@@ -4104,6 +4153,8 @@ export const LESSONS: Lesson[] = [
   ..._g6VocationalSem2Browser.lessons,
   ..._g6PhysicalEducationSem1Browser.lessons,
   ..._g6ArtSem1Browser.lessons,
+  ..._g6EnglishSem1Browser.lessons,
+  ..._g6EnglishSem2Browser.lessons,
   ..._g6IslamicSem1Browser.lessons,
   ..._g6IslamicSem2Browser.lessons,
   ..._g6SocialSem1Browser.lessons,
@@ -4150,6 +4201,8 @@ export function isBrowserUnitTitleOnly(unitId: string): boolean {
     || isG6VocationalSem2TitleOnlyUnit(unitId)
     || isG6PhysicalEducationSem1TitleOnlyUnit(unitId)
     || isG6ArtSem1TitleOnlyUnit(unitId)
+    || isG6EnglishSem1TitleOnlyUnit(unitId)
+    || isG6EnglishSem2TitleOnlyUnit(unitId)
     || isG6IslamicSem1TitleOnlyUnit(unitId)
     || isG6IslamicSem2TitleOnlyUnit(unitId)
     || isG6SocialSem1TitleOnlyUnit(unitId)
@@ -4167,6 +4220,8 @@ export function isBrowserLessonTitleOnly(lessonId: string): boolean {
     || isG6VocationalSem2TitleOnlyLesson(lessonId)
     || isG6PhysicalEducationSem1TitleOnlyLesson(lessonId)
     || isG6ArtSem1TitleOnlyLesson(lessonId)
+    || isG6EnglishSem1TitleOnlyLesson(lessonId)
+    || isG6EnglishSem2TitleOnlyLesson(lessonId)
     || isG6IslamicSem1TitleOnlyLesson(lessonId)
     || isG6IslamicSem2TitleOnlyLesson(lessonId)
     || isG6SocialSem1TitleOnlyLesson(lessonId)

@@ -88,7 +88,8 @@ describe('manifest shape', () => {
       // Combined «الدراسات الاجتماعية», taught as one subject at Grade 8 and
       // below. No bare form: Grade 10 splits it into geography/history/civic.
       social: /^g\d+-social-s[12]$/,
-      english: /^(eng-s[12]|g9-eng-s[12])$/,
+      // Grade 6 joined 2026-09-15. Slug is `eng`, not this record's `english` key.
+      english: /^(eng-s[12]|g\d+-eng-s[12])$/,
       geography: /^geo-s[12]$/,
       'digital-literacy': /^(digital-s[12]|g9-digital-s[12])$/,
       civic: /^civic-s[12]$/,

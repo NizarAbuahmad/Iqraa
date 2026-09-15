@@ -181,7 +181,9 @@ describe('subject isolation', () => {
       // forms are the Grade 10 vocational ESP tracks — separate
       // curriculumIds.ts subject slugs, but the same 'english' app
       // subjectId, so they show up under this key too.
-      english: /^(eng-s[12]|g9-eng-s[12]|g8-eng-s[12]|g7-eng-s[12]|eng-(commerce|agri|hospitality|industry)-s[12])$/,
+      // Grade 6 joined 2026-09-15. Grade half collapsed to g\d+; the four
+      // vocational ESP tracks keep their own alternative.
+      english: /^(eng-s[12]|g\d+-eng-s[12]|eng-(commerce|agri|hospitality|industry)-s[12])$/,
       // Grade 10 Islamic predates this map too and was likewise silently
       // unchecked. Added alongside the Grade 9 Islamic books.
       // Grade 8 joined 2026-09-10, semester 1 then semester 2. Grade 7

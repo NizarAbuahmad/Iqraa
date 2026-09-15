@@ -245,4 +245,10 @@ export const LOCAL_FILES: Record<string, string> = {
   'g6-voc-s2-student-book': 'knowledge-base/grade-6-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الثاني.pdf',
   'g6-pe-s1-student-book': 'knowledge-base/grade-6-pe/support-pdfs/كتاب الطالب لمادة التربية الرياضية الصف السادس الفصل الأول.pdf',
   'g6-arts-s1-teacher-guide': 'knowledge-base/grade-6-art/support-pdfs/دليل المعلم لمادة التربية الفنية الصف السادس.pdf',
+  'g6-eng-s1-student-book': 'knowledge-base/grade-6-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf',
+  'g6-eng-s2-student-book': 'knowledge-base/grade-6-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf',
+  'g6-eng-s1-activity-book': 'knowledge-base/grade-6-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf',
+  'g6-eng-s2-activity-book': 'knowledge-base/grade-6-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf',
+  'g6-eng-s1-teacher-guide': 'knowledge-base/grade-6-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الأول.pdf',
+  'g6-eng-s2-teacher-guide': 'knowledge-base/grade-6-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الثاني.pdf',
 };

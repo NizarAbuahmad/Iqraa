@@ -1,0 +1,431 @@
+{
+  "meta": {
+    "grade": "الصف السادس",
+    "grade_en": "Grade 6",
+    "subject": "اللغة الإنجليزية",
+    "subject_en": "English",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الثاني (g6-eng-s2-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الأربعُ من قائمةِ محتوياتِ كتابِ الطالبِ في 2026-09-15. الوحداتُ مرقَّمةٌ من 5 إلى 8، تُكمِلُ ترقيمَ الفصلِ الأوَّلِ (1-4). تسلسلُ الدروسِ هوَ القالبُ نفسُهُ المنصوصُ عليهِ في دليلِ المعلِّمِ.",
+    "known_gaps": [
+      "هذا الملفُّ عناوينُ فقط (title-only)، وهوَ هنا قرارٌ يتعلَّقُ بالحقوقِ لا بالجهدِ. الكتابُ وكتابُ الأنشطةِ ودليلُ المعلِّمِ كلُّها © Pearson Education Limited و York Press، وكلُّها مُسجَّلةٌ authority = third-party، فلا يُقتبَسُ منها نصٌّ. ما نُقِلَ هنا بِنيةٌ مَحضٌ: أسماءُ الوحداتِ كما تطبعُها قائمةُ المحتوياتِ، وتسلسلُ الدروسِ التسعةِ كما ينصُّ عليهِ «Unit walkthrough» في دليلِ المعلِّمِ. objectives و vocabulary فارغتانِ عمدًا: دليلُ المعلِّمِ يطبعُ في «Scope and sequence» نتاجاتِ كلِّ وحدةٍ ومفرداتِها وقواعدَها، وهيَ مادَّةٌ محفوظةُ الحقوقِ لا تُنقَلُ.",
+      "الدروسُ التسعةُ في كلِّ وحدةٍ ليست استنتاجًا من وحدةٍ واحدةٍ: «Unit walkthrough» في دليلِ المعلِّمِ (ص 8-9) يعرضُ القالبَ بوصفِهِ قالبَ كلِّ وحدةٍ — الدرسُ 1 مجلَّةُ World of Wonder! والمفرداتُ، والدروسُ 2-4 المحادثةُ والقواعدُ، والدروسُ 5-7 نادي الكتابِ، والدرسانِ 8-9 الثقافةُ والمشروعُ. الدرسانِ 4 و7 هما درسا كتابِ الأنشطةِ المرافقانِ للدرسينِ 3 و6، كما يقولُ الدليلُ نصًّا.",
+      "periods و total_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ.",
+      "الدروسُ غيرُ مؤسَّسةٍ (not groundable): المقاطعُ المقتبَسَةُ تقتصرُ على مصادرِ nccd، وهذهِ كلُّها third-party. فالوحداتُ والدروسُ صالحةٌ للتصفُّحِ والاختيارِ، لا لتوليدِ محتوًى مُستنِدٍ إلى نصِّ الكتابِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "Favourite clothes",
+      "title_en": "Favourite clothes",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (pupil's book contents + teacher's book unit walkthrough)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "Lesson 1: World of Wonder! Magazine and Vocabulary",
+          "title_en": "Lesson 1: World of Wonder! Magazine and Vocabulary",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "Lesson 2: Fun Talk",
+          "title_en": "Lesson 2: Fun Talk",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "Lesson 3: Grammar",
+          "title_en": "Lesson 3: Grammar",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l4",
+          "order": 4,
+          "title_ar": "Lesson 4: Activity Book (accompanying Lesson 3)",
+          "title_en": "Lesson 4: Activity Book (accompanying Lesson 3)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l5",
+          "order": 5,
+          "title_ar": "Lesson 5: Book Club",
+          "title_en": "Lesson 5: Book Club",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l6",
+          "order": 6,
+          "title_ar": "Lesson 6: Vocabulary and Grammar",
+          "title_en": "Lesson 6: Vocabulary and Grammar",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l7",
+          "order": 7,
+          "title_ar": "Lesson 7: Activity Book (accompanying Lesson 6)",
+          "title_en": "Lesson 7: Activity Book (accompanying Lesson 6)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l8",
+          "order": 8,
+          "title_ar": "Lesson 8: Culture and Project",
+          "title_en": "Lesson 8: Culture and Project",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l9",
+          "order": 9,
+          "title_ar": "Lesson 9: English in action",
+          "title_en": "Lesson 9: English in action",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "Adventures",
+      "title_en": "Adventures",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (pupil's book contents + teacher's book unit walkthrough)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "Lesson 1: World of Wonder! Magazine and Vocabulary",
+          "title_en": "Lesson 1: World of Wonder! Magazine and Vocabulary",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "Lesson 2: Fun Talk",
+          "title_en": "Lesson 2: Fun Talk",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "Lesson 3: Grammar",
+          "title_en": "Lesson 3: Grammar",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l4",
+          "order": 4,
+          "title_ar": "Lesson 4: Activity Book (accompanying Lesson 3)",
+          "title_en": "Lesson 4: Activity Book (accompanying Lesson 3)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l5",
+          "order": 5,
+          "title_ar": "Lesson 5: Book Club",
+          "title_en": "Lesson 5: Book Club",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l6",
+          "order": 6,
+          "title_ar": "Lesson 6: Vocabulary and Grammar",
+          "title_en": "Lesson 6: Vocabulary and Grammar",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l7",
+          "order": 7,
+          "title_ar": "Lesson 7: Activity Book (accompanying Lesson 6)",
+          "title_en": "Lesson 7: Activity Book (accompanying Lesson 6)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l8",
+          "order": 8,
+          "title_ar": "Lesson 8: Culture and Project",
+          "title_en": "Lesson 8: Culture and Project",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l9",
+          "order": 9,
+          "title_ar": "Lesson 9: English in action",
+          "title_en": "Lesson 9: English in action",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "Entertainment",
+      "title_en": "Entertainment",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (pupil's book contents + teacher's book unit walkthrough)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "Lesson 1: World of Wonder! Magazine and Vocabulary",
+          "title_en": "Lesson 1: World of Wonder! Magazine and Vocabulary",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "Lesson 2: Fun Talk",
+          "title_en": "Lesson 2: Fun Talk",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "Lesson 3: Grammar",
+          "title_en": "Lesson 3: Grammar",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l4",
+          "order": 4,
+          "title_ar": "Lesson 4: Activity Book (accompanying Lesson 3)",
+          "title_en": "Lesson 4: Activity Book (accompanying Lesson 3)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l5",
+          "order": 5,
+          "title_ar": "Lesson 5: Book Club",
+          "title_en": "Lesson 5: Book Club",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l6",
+          "order": 6,
+          "title_ar": "Lesson 6: Vocabulary and Grammar",
+          "title_en": "Lesson 6: Vocabulary and Grammar",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l7",
+          "order": 7,
+          "title_ar": "Lesson 7: Activity Book (accompanying Lesson 6)",
+          "title_en": "Lesson 7: Activity Book (accompanying Lesson 6)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l8",
+          "order": 8,
+          "title_ar": "Lesson 8: Culture and Project",
+          "title_en": "Lesson 8: Culture and Project",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l9",
+          "order": 9,
+          "title_ar": "Lesson 9: English in action",
+          "title_en": "Lesson 9: English in action",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "Awesome animals",
+      "title_en": "Awesome animals",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (pupil's book contents + teacher's book unit walkthrough)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "Lesson 1: World of Wonder! Magazine and Vocabulary",
+          "title_en": "Lesson 1: World of Wonder! Magazine and Vocabulary",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "Lesson 2: Fun Talk",
+          "title_en": "Lesson 2: Fun Talk",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l3",
+          "order": 3,
+          "title_ar": "Lesson 3: Grammar",
+          "title_en": "Lesson 3: Grammar",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l4",
+          "order": 4,
+          "title_ar": "Lesson 4: Activity Book (accompanying Lesson 3)",
+          "title_en": "Lesson 4: Activity Book (accompanying Lesson 3)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l5",
+          "order": 5,
+          "title_ar": "Lesson 5: Book Club",
+          "title_en": "Lesson 5: Book Club",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l6",
+          "order": 6,
+          "title_ar": "Lesson 6: Vocabulary and Grammar",
+          "title_en": "Lesson 6: Vocabulary and Grammar",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l7",
+          "order": 7,
+          "title_ar": "Lesson 7: Activity Book (accompanying Lesson 6)",
+          "title_en": "Lesson 7: Activity Book (accompanying Lesson 6)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l8",
+          "order": 8,
+          "title_ar": "Lesson 8: Culture and Project",
+          "title_en": "Lesson 8: Culture and Project",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l9",
+          "order": 9,
+          "title_ar": "Lesson 9: English in action",
+          "title_en": "Lesson 9: English in action",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
