@@ -25,8 +25,10 @@ import {
 import {
   AiBudgetExceededError,
   AiLiveModeOffError,
+  AiUserQuotaExceededError,
   assertBudgetAvailable,
   assertLiveModeEnabled,
+  assertUserQuotaAvailable,
   getGenerationModel,
   recordCacheHit,
   recordUsage,
@@ -222,6 +224,15 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
   }
 
   assertBudgetAvailable();
+  // Same placement as the global cap, and for the same reason: a pooled hit
+  // above costs nothing to serve, so it must not spend a teacher's allowance.
+  //
+  // This covers every route in this file. It does NOT cover
+  // /generate/verified-derivative/* — those live in verifiedMath.ts and reach
+  // the model through derivativeVerified.ts, which meters against the global
+  // cap but has no user to bill (the handlers take `_req`). The per-user
+  // limiter at the mount site is what bounds them.
+  await assertUserQuotaAvailable(userId);
 
   // What this teacher has already been shown for this key: the pooled variants
   // they were served, plus whatever the screen says it is holding. Only the
@@ -370,6 +381,10 @@ function withMeta(parsed: unknown, grounding: Grounding | null, variantId?: stri
 function respondAiError(err: unknown, res: Response, label: string): void {
   if (err instanceof AiLiveModeOffError) {
     res.status(503).json({ error: err.message });
+    return;
+  }
+  if (err instanceof AiUserQuotaExceededError) {
+    res.status(429).json({ error: err.message, code: "user_quota_exceeded" });
     return;
   }
   if (err instanceof AiBudgetExceededError) {

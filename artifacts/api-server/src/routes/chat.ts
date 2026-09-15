@@ -4,8 +4,10 @@ import { logger } from "../lib/logger";
 import {
   AiBudgetExceededError,
   AiLiveModeOffError,
+  AiUserQuotaExceededError,
   assertBudgetAvailable,
   assertLiveModeEnabled,
+  assertUserQuotaAvailable,
   getChatModel,
   recordUsage,
 } from "../lib/aiBudget.ts";
@@ -14,8 +16,11 @@ import type { AuthenticatedRequest } from "../middlewares/auth.ts";
 import {
   buildSystemPromptAr,
   buildSystemPromptEn,
+  CHAT_CONTEXT_MAX_CHARS,
   CHAT_HISTORY_TURNS,
   CHAT_MAX_TOKENS,
+  CHAT_MESSAGE_MAX_CHARS,
+  clampPromptText,
 } from "../lib/chatPrompts.ts";
 
 const chatRouter = Router();
@@ -43,20 +48,28 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     const isArabic = language === "ar";
     const isTeacher = mode !== "student";
 
+    // Clamped here, at the boundary, rather than inside the prompt builders:
+    // this is where caller-supplied text enters, and both builders and every
+    // future one are covered by capping it once on the way in.
+    const groundedContext = clampPromptText(context, CHAT_CONTEXT_MAX_CHARS);
     const systemPrompt = isArabic
-      ? buildSystemPromptAr(isTeacher, context)
-      : buildSystemPromptEn(isTeacher, context);
+      ? buildSystemPromptAr(isTeacher, groundedContext)
+      : buildSystemPromptEn(isTeacher, groundedContext);
 
     const chatMessages: { role: "system" | "user" | "assistant"; content: string }[] = [
       { role: "system", content: systemPrompt },
       ...messages.slice(-CHAT_HISTORY_TURNS).map((m) => ({
         role: (m.role === "user" ? "user" : "assistant") as "user" | "assistant",
-        content: m.content,
+        content: clampPromptText(String(m.content ?? ""), CHAT_MESSAGE_MAX_CHARS),
       })),
     ];
 
     assertLiveModeEnabled();
     assertBudgetAvailable();
+    // Per-user allowance on top of the shared monthly cap. /chat is reachable by
+    // any signed-in account — student and parent included — and was the largest
+    // spender with no per-caller ceiling of its own.
+    await assertUserQuotaAvailable(req.user?.id);
 
     const completion = await openai.chat.completions.create({
       model: getChatModel(),
@@ -80,6 +93,10 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
   } catch (err) {
     if (err instanceof AiLiveModeOffError) {
       res.status(503).json({ error: err.message });
+      return;
+    }
+    if (err instanceof AiUserQuotaExceededError) {
+      res.status(429).json({ error: err.message, code: "user_quota_exceeded" });
       return;
     }
     if (err instanceof AiBudgetExceededError) {

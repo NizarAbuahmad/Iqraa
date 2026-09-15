@@ -1,5 +1,6 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request } from "express";
 import { authMiddleware, requireRole, TEACHER_ROLES } from "../middlewares/auth.js";
+import { createRateLimiter } from "../lib/rateLimit.js";
 import healthRouter from "./health";
 import chatRouter from "./chat";
 import generateRouter from "./generate";
@@ -21,6 +22,41 @@ import messagingRouter from "./messaging";
 import moderationRouter from "./moderation";
 
 const router: IRouter = Router();
+
+/*
+ * Burst ceilings on the two model-backed surfaces, keyed per user.
+ *
+ * These are the DoS half of the AI cost controls, and the half that works with
+ * no configuration: `assertUserQuotaAvailable` is a no-op unless
+ * AI_USER_BUDGET_USD is set (`getUserBudgetLimitUsd` returns 0 otherwise, and
+ * neither render.yaml nor deploy.yml sets it), so on a deployment that has not
+ * set it these limiters are the only thing standing between one account and
+ * the whole shared monthly budget.
+ *
+ * Keyed by user id rather than IP on purpose — see rateLimit.ts: a school is
+ * one NAT address, so an IP-keyed limit here would let one busy classroom
+ * throttle the whole building. The IP fallback applies only if authMiddleware
+ * let an unauthenticated request through, which would itself be a bug.
+ *
+ * The numbers are burst protection, not workload shaping: a teacher chatting
+ * briskly sends a handful of turns a minute, and a generation takes seconds to
+ * come back, so neither ceiling is reachable by hand.
+ */
+const perUser = (req: Request): string =>
+  (req as { user?: { id?: string } }).user?.id ?? req.ip ?? "unknown";
+
+const chatLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 30,
+  name: "ai-chat",
+  key: perUser,
+});
+const generateLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 15,
+  name: "ai-generate",
+  key: perUser,
+});
 
 /**
  * Mount order note: several routers below are mounted without a path prefix,
@@ -53,11 +89,11 @@ router.use(studentAttemptRouter);
 // the middleware at "/" and reproduces the original bug, answering 401 for
 // paths no router owns. The prefixes below cover every route these four
 // declare: /chat, /generate/*, /verify/*, and /media/*.
-router.use("/chat", authMiddleware);
+router.use("/chat", authMiddleware, chatLimiter);
 // /generate produces teacher materials from a teacher's own class/roster
 // context, so — unlike /chat — it also requires the teacher role, not just
 // any authenticated user.
-router.use("/generate", authMiddleware, requireRole(...TEACHER_ROLES));
+router.use("/generate", authMiddleware, requireRole(...TEACHER_ROLES), generateLimiter);
 router.use("/verify", authMiddleware);
 // Unsplash lookup shares one server-side access key across every teacher —
 // unauthenticated callers could otherwise exhaust the whole app's rate limit.
