@@ -839,6 +839,10 @@ const translations = {
     graphMathOnlyHint: 'الرسم البياني يظهر في دروس الرياضيات.',
     mediaAttachedCount: (n: number) => `${n} وسائط للحصة`,
     openGraph: 'افتح الرسم البياني',
+    // Shown on the guided/independent practice slides, whose body is one line
+    // by design. Names the button («ملاحظات المعلم») rather than saying "see
+    // below", so a teacher meeting a near-empty slide knows where to look.
+    teacherLedHint: 'إرشادات هذا النشاط في ملاحظات المعلم.',
     openMedia: 'افتح الوسائط',
     enlargeImage: 'تكبير الصورة',
     closeImage: 'إغلاق',
@@ -2147,6 +2151,7 @@ const translations = {
     graphMathOnlyHint: 'The graph slide appears in mathematics lessons.',
     mediaAttachedCount: (n: number) => `${n} media for class`,
     openGraph: 'Open the graph',
+    teacherLedHint: 'Guidance for this activity is in Teacher Notes.',
     openMedia: 'Open media',
     enlargeImage: 'Enlarge image',
     closeImage: 'Close',

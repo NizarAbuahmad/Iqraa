@@ -456,6 +456,44 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The practice slides say where their content went, 2026-09-15
+
+**Reported from a real deck on the projector:** «🤝 تدريب موجّه» showing a
+title, the one line «لنحلّ هذا معًا خطوة بخطوة.», and then roughly 90% empty
+slide. It reads as a bug mid-lesson.
+
+**It was not a bug.** `guidedPractice` / `independentPractice` in the plan are
+the teacher's facilitation narration ("swap boards, then answer in front of
+the class"), which the class must not read off a screen — so `lessonSlides.ts`
+deliberately projects a bare prompt and routes the narration to the teacher
+panel. That split was itself a fix; projecting the narration is what the deck
+used to do.
+
+**What was missing was the cue.** Nothing on the slide said the substance was
+one tap away behind «ملاحظات المعلم». The codebase already makes this argument
+one slide type over — the graph slide's comment reads *"A blank calculator
+with no explanation reads as a bug mid-lesson"*, which is why `graphEmptyHint`
+exists. Guided practice had the same shape and no equivalent.
+
+Slides now carry `teacherLed?: boolean`, set on exactly those two, and the
+presenter renders «إرشادات هذا النشاط في ملاحظات المعلم.» beneath the prompt.
+
+**Three things worth keeping straight if you touch this:**
+
+- **It is a declared flag, not a heuristic.** The warm-up and example slides
+  are the same `type: 'intro'` with the same teacher panel and DO carry real
+  content, so "the body looks short" would put the cue on them too. A test
+  asserts exactly two slides are flagged, and that every flagged slide has
+  `teachingTips` — a cue pointing at an empty panel is worse than none.
+- **Presenter-only, on purpose.** The HTML and PPTX exports have no
+  teacher-notes button, so the cue would dangle there. Those renderers ignore
+  the flag, which is why it is rendered in `presentation.tsx` rather than
+  baked into `content` the way a third renderer would force.
+- **`SlideView` calls `useLanguage()` for this and nothing else.** Its `isRTL`
+  still comes from the prop, which follows the *slide's own payload* rather
+  than the app's UI language — an English question in an Arabic deck must not
+  be laid out right-to-left.
+
 ## A class's evidence starts accumulating, 2026-09-13 (#415)
 
 **The evaluation feature produced data that never compounded.** `objectiveScores`

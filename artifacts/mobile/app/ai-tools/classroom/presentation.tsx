@@ -564,6 +564,9 @@ function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: bo
   // so direction here follows the slide's actual payload (its body, not its
   // title, which is deliberately bilingual and would always read as Arabic).
   const isRTL = isEnglishSlideContent(slide.content, ...(slide.options ?? [])) ? false : appIsRTL;
+  // Only for the teacher-led cue below. `isRTL` stays the prop-derived one
+  // above: it follows the slide's own payload, not the app's UI language.
+  const { t } = useLanguage();
   const accent = slideTypeAccent(slide.type);
   const align = isRTL ? ('right' as const) : ('left' as const);
   // Alignment is not direction. Every body line here is model-written prose
@@ -716,6 +719,27 @@ function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: bo
             </Text>
           );
         })}
+
+        {/* Guided and independent practice project one line on purpose: the
+            plan's text for them is the teacher's own facilitation script and
+            must not be read off the wall (see the practice block in
+            lessonSlides.ts). The cost is a slide that is almost entirely
+            empty, which mid-lesson reads as a bug rather than a choice — the
+            same failure `graphEmptyHint` exists to prevent one slide type
+            over. This says the substance is one tap away.
+
+            Presenter-only: the HTML and PPTX exports have no teacher-notes
+            button, so this cue would point at nothing there. */}
+        {slide.teacherLed && !!slide.teacher && (
+          <Text
+            style={[
+              slideStyles.teacherLedHint,
+              { textAlign: align, writingDirection: dir, fontFamily: 'Almarai_400Regular' },
+            ]}
+          >
+            {t('teacherLedHint')}
+          </Text>
+        )}
       </View>
       {/* The book's own diagram of this rule, beside it rather than a click
           later. React Native has no document direction to inherit, so
@@ -1425,6 +1449,9 @@ const slideStyles = StyleSheet.create({
   splitImg: { width: '100%', height: 340, borderRadius: 12 },
   splitCaption: { fontSize: 13, color: '#7C6A65', textAlign: 'center' },
   bodyLine: { fontSize: 21, color: TEXT_PRIMARY, lineHeight: 36 },
+  // Addressed to the teacher, not the class: smaller and muted, so from the
+  // back of the room it reads as chrome rather than as part of the lesson.
+  teacherLedHint: { fontSize: 15, color: TEXT_MUTED, lineHeight: 26, marginTop: 6, opacity: 0.85 },
   card: { alignItems: 'center', gap: 14, backgroundColor: CARD_BG, borderRadius: 14, borderWidth: 1, borderColor: BORDER, paddingVertical: 15, paddingHorizontal: 16 },
   cardBar: { width: 5, alignSelf: 'stretch', borderRadius: 3 },
   cardText: { flex: 1, fontSize: 21, color: TEXT_PRIMARY, lineHeight: 34 },
