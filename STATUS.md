@@ -50,19 +50,18 @@ an announcement by default» below.
   rendered small and repeatedly. Scope is deliberately self-only: the shared
   `Avatar.tsx` used in messaging/notifications/groups still shows initials
   for everyone else — see «A profile picture landed, and it stops at the
-  signed-in user» below. Verified end to end against a local Postgres and a
-  stand-in for the public bucket, in a real browser: upload, the photo
-  rendering in the circular avatar, remove reverting to initials, and the
-  confirm dialog. **Not verified against real Cloudflare R2** — no
-  credentials in this sandbox — though `putPublicObject` is the same
-  `S3Client` call `putObject` already makes in production, just a different
-  `Bucket` name. **Schema pushed to production 2026-09-13** — `avatar_key` was
-  added to Neon directly as `ALTER TABLE users ADD COLUMN avatar_key text`
-  rather than through `drizzle-kit push`; the column is nullable with no
-  default, which is what the schema declares, so the two are identical in
-  effect. `R2_PUBLIC_BUCKET`/`R2_PUBLIC_BASE_URL` are **still unset on Cloud
-  Run**, so the upload route 503s in production until they are set and the API
-  is hand-deployed.
+  signed-in user» below. **Live in production and verified there on
+  2026-09-15**, against real Cloudflare R2: a photo uploaded from the deployed
+  web app, stored in `iqraa-public`, and rendered in the circular avatar from
+  its own `pub-<hash>.r2.dev` URL — which is also what proves
+  `R2_PUBLIC_BASE_URL` is right, since the browser fetches that URL directly.
+  `avatar_key` reached Neon on 2026-09-13 as `ALTER TABLE users ADD COLUMN
+  avatar_key text` rather than through `drizzle-kit push`; nullable, no
+  default, identical in effect to what the schema declares. Getting there took
+  three production faults that had nothing to do with this code — Cloud Run
+  traffic pinned to an old revision, a stale Cloud Shell clone deploying
+  week-old code, and an R2 token scoped to `iqraa-media` only — each now
+  written up in `docs/deploying.md`.
 - **In-app messaging between teachers, parents and students** (2026-09-04):
   claim-code signup, teacher↔parent and teacher↔student direct threads,
   class-group and teacher-made custom groups, image attachments, block and
@@ -1711,22 +1710,32 @@ reaches for it.
 - `pnpm run typecheck` clean across the whole monorepo; api-server 517/517
   (8 new: `avatarUpload.test.ts`, `r2.test.ts`); mobile 1259/1259 (10 skipped,
   pre-existing, unrelated).
-- **Not verified: real Cloudflare R2.** No credentials in this sandbox, so
-  `putPublicObject`/`deletePublicObject` were exercised against a local
-  stand-in, not the actual `iqraa-public` bucket — though the call shape is
-  identical to `putObject`, which is proven in production (see the R2 rows
-  in `docs/deploying.md`'s secret-proving table).
-- **Production, partly.** The schema half is done: `avatar_key` was added to
-  Neon on 2026-09-13, applied as the equivalent `ALTER TABLE users ADD COLUMN
-  avatar_key text` rather than through `drizzle-kit push` — nullable, no
-  default, exactly what the schema declares. Confirm with `pnpm --filter
-  @workspace/db run verify-schema`, which asks only whether the table exists,
-  so it will not catch a column typo; the `/auth/me` payload carrying
-  `avatarUrl` will. Still outstanding: `R2_PUBLIC_BUCKET` and
-  `R2_PUBLIC_BASE_URL` on Cloud Run, and the hand deploy of `iqraa-api` that a
-  merge does not do — see `docs/deploying.md`'s R2 section, updated with them.
-  Until those land this ships correctly gated: the upload route 503s rather
-  than 500ing or writing to the wrong place.
+- **Real Cloudflare R2: verified 2026-09-15.** Written at the time as "not
+  verified — no credentials in this sandbox", and the local stand-in it was
+  tested against is exactly what hid the token-scope problem below: a stand-in
+  has no notion of per-bucket grants, so it accepted a write the real bucket
+  refused. A local double proves the call shape and nothing about permission.
+- **Production, and it took three unrelated faults to get there (2026-09-15).**
+  `avatar_key` reached Neon on 2026-09-13 as the equivalent `ALTER TABLE users
+  ADD COLUMN avatar_key text` — nullable, no default, exactly what the schema
+  declares. Worth knowing that this column gates sign-in, not just avatars:
+  `/auth/me`, `/auth/login` and `/auth/google` read the user with a bare
+  `db.select().from(users)`, which names every declared column, so against a
+  database that never got the push those routes error and nobody can log in.
+  `verify-schema` will not catch it either — it asks `to_regclass` whether each
+  table *name* exists, so `users` reports `ok` whether or not the column
+  landed. Check the column directly, or watch `/auth/me` return `avatarUrl`.
+
+  The three faults, none of them in this feature's code, all now in
+  `docs/deploying.md`: Cloud Run traffic was pinned to revision `00032-279`, so
+  two `--update-env-vars` calls setting `R2_PUBLIC_BUCKET`/`R2_PUBLIC_BASE_URL`
+  each said `Done.` and `0 percent of traffic`, landing on revisions nothing
+  reached; a persistent Cloud Shell clone made `git clone` fail silently inside
+  a pasted block and deployed `cf1c2b7`, eight days stale, over a current API;
+  and the R2 token was scoped to `iqraa-media` alone, so the first
+  `putPublicObject` came back `403 AccessDenied` and surfaced as a plain
+  `Failed to update profile picture`. Each looked like a bug in this feature
+  and none was.
 
 ## A half-marked paper counted as a finished one, 2026-09-07
 
