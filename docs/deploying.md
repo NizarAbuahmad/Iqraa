@@ -1,16 +1,36 @@
 # Deploying
 
-Three services, and **they do not deploy the same way** — which is the reason
-this file exists. Merging to `main` ships the web app and nothing else. The API
-and the verifier are Cloud Run, deployed by hand, and a merge does not touch
-them.
+Three services, and **the order they deploy in matters** — which is the reason
+this file exists. `.github/workflows/deploy.yml` ships all three from `main`:
+the API and verifier to Cloud Run first, the web bundle to Cloudflare Pages
+after, and it skips the web deploy entirely if either server deploy failed.
 
 | | Where | How it deploys |
 | --- | --- | --- |
-| `iqraa-web` | Cloudflare Pages (static) | **Automatic** on merge to `main`, via GitHub Actions |
-| `iqraa-api` | Cloud Run | **By hand**, command below |
-| `iqraa-verifier` | Cloud Run | **By hand**, command below |
+| `iqraa-api` | Cloud Run | **Automatic** on merge to `main` |
+| `iqraa-verifier` | Cloud Run | **Automatic** on merge to `main` |
+| `iqraa-web` | Cloudflare Pages (static) | **Automatic**, gated on the two above |
 | Database | Neon | Never automatic — see *Schema* below |
+
+**Server before client, on purpose.** A new API behind an old bundle is
+harmless: the bundle simply does not call the new route. The reverse is an
+outage. That is not hypothetical — on 2026-09-10 a web bundle went live against
+an API that lacked the matching route and broke production signups. From the
+2026-09-05 Cloud Run cutover until 2026-09-15 the API and verifier were
+deployed by hand, which is what made that possible; automating them closed it.
+
+Each surface deploys only when its own paths changed (`lib/**` counts as an API
+change, because the API bundles those packages), and each job verifies against
+the running system rather than trusting the tool: the API asserts
+`/api/healthz/version` reports the deployed short SHA, because `gcloud` has
+printed a success line while traffic stayed pinned to an older revision
+(2026-09-07).
+
+CI authenticates to GCP with **Workload Identity Federation** — no service
+account key is stored in GitHub. The provider is bound by attribute condition to
+this repository alone and mints a short-lived token per run, which matters
+because this repo is public. The hand commands below still work and are the
+right tool for an emergency, but they are no longer the normal path.
 
 Cloud Run project `iqraa-auth-507315`, region `europe-west1` (nearest Google
 region to Neon in Frankfurt). The Render API and verifier were retired from the
@@ -22,8 +42,8 @@ Cloudflare has been serving for a while.
 
 ## The web app
 
-Nothing to do. `.github/workflows/web-deploy.yml` builds the bundle on every
-merge to `main` and publishes it to Cloudflare Pages, and the build inlines
+Nothing to do. The `web` job in `.github/workflows/deploy.yml` builds the bundle
+on every merge to `main` and publishes it to Cloudflare Pages, and the build inlines
 every `EXPO_PUBLIC_*` value — so changing one of those needs a **web rebuild**,
 not just an API redeploy. Those values live in that workflow now, not in
 `render.yaml`.
