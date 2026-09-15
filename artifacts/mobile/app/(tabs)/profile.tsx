@@ -174,12 +174,21 @@ export default function ProfileScreen() {
                 <View style={styles.avatarBusyOverlay}>
                   <ActivityIndicator color={colors.primaryForeground} />
                 </View>
-              ) : (
-                <View style={[styles.avatarEditBadge, { backgroundColor: colors.primaryForeground }]}>
-                  <Ionicons name="camera" size={14} color={colors.primary} />
-                </View>
-              )}
+              ) : null}
             </Pressable>
+            {/* Outside the Pressable: it clips to a circle, so a badge inside it
+                loses its outer edge to the radius. */}
+            {avatarBusy ? null : (
+              <Pressable
+                onPress={handleChangePhoto}
+                style={[
+                  styles.avatarEditBadge,
+                  { backgroundColor: colors.primaryForeground, borderColor: colors.primary },
+                ]}
+              >
+                <Ionicons name="camera" size={14} color={colors.primary} />
+              </Pressable>
+            )}
             {user?.avatarUrl && !avatarBusy ? (
               <Pressable
                 onPress={handleRemovePhoto}
@@ -313,12 +322,16 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)',
   },
+  // `start`, not `right`: the leading edge, which stays put under RTL and
+  // mirrors if anything ever renders LTR. Offsets sit the badge across the
+  // circle's rim rather than inside it, and the ring keeps it legible against
+  // a photo of any colour.
   avatarEditBadge: {
-    position: 'absolute', bottom: 4, right: 0, width: 24, height: 24, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center',
+    position: 'absolute', bottom: 2, start: -2, width: 28, height: 28, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 2,
   },
   avatarRemoveBadge: {
-    position: 'absolute', top: 0, right: 0, width: 22, height: 22, borderRadius: 11,
+    position: 'absolute', top: 0, start: 0, width: 22, height: 22, borderRadius: 11,
     alignItems: 'center', justifyContent: 'center',
   },
   initials: { fontSize: 34 },
