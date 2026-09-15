@@ -6079,6 +6079,72 @@
         "localPath": "knowledge-base/grade-4-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الثاني.pdf",
         "sha256": "4586f8c9bc30899ca171b55e55c327ee1e5317ece2860b3482dc66763bd2fa1c"
       }
+    },
+    {
+      "id": "g4-voc-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الأول.pdf",
+      "bytes": 36736212,
+      "subject": "vocational",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-voc-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "vocational",
+        "تربية مهنية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 32.8% مقيسةً بشواهدِ الكلماتِ، و8 صفحةً من 108 مقلوبةٌ في مُعظَمِها (17، 26، 31، 33، 39، 41، 46، 80).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 108,
+        "chars": 121937,
+        "localPath": "knowledge-base/grade-4-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الأول.pdf",
+        "sha256": "5d76aedf44b3d6c0b2fe4a5ae9cd6e0b483ad6de09aa9545cd0925d5fdaadac3"
+      }
+    },
+    {
+      "id": "g4-voc-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الثاني.pdf",
+      "bytes": 24092073,
+      "subject": "vocational",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-voc-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "vocational",
+        "تربية مهنية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 33.1% مقيسةً بشواهدِ الكلماتِ، و9 صفحةً من 112 مقلوبةٌ في مُعظَمِها (24، 38، 40، 41، 50، 55، 61، 65، 109).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 112,
+        "chars": 121766,
+        "localPath": "knowledge-base/grade-4-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الثاني.pdf",
+        "sha256": "37adfdf3b10f87ce08d7abbb7830ce21573c0db2257507779a05fe3852814ae8"
+      }
     }
   ],
   "mergedAt": "2026-08-25"

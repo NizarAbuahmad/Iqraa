@@ -281,4 +281,7 @@ export const LOCAL_FILES: Record<string, string> = {
   // grade-4-social
   'g4-social-s1-student-book': 'knowledge-base/grade-4-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الأول.pdf',
   'g4-social-s2-student-book': 'knowledge-base/grade-4-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الثاني.pdf',
+  // grade-4-vocational
+  'g4-voc-s1-student-book': 'knowledge-base/grade-4-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الأول.pdf',
+  'g4-voc-s2-student-book': 'knowledge-base/grade-4-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الثاني.pdf',
 };
