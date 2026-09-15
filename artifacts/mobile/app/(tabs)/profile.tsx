@@ -322,16 +322,27 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)',
   },
-  // `start`, not `right`: the leading edge, which stays put under RTL and
-  // mirrors if anything ever renders LTR. Offsets sit the badge across the
-  // circle's rim rather than inside it, and the ring keeps it legible against
-  // a photo of any colour.
+  // `right`, deliberately physical — do not "fix" these to `start`/`end`.
+  // Direction is not stable here to resolve them against: the deployed HTML
+  // ships `dir="rtl"` from `scripts/inject-pwa.mjs`, and `LanguageContext`
+  // pins the document back to LTR about 400ms after load, on purpose (read the
+  // comment there before touching either side). A logical offset therefore
+  // resolves one way during that window and the other way after, and lands on
+  // opposite sides on web and native besides. `start` was tried on 2026-09-15
+  // and put both badges on the wrong side of the avatar in production. The app
+  // expresses direction per component rather than trusting the document —
+  // ~190 `flexDirection: isRTL ? …` call sites — and physical values are that
+  // convention.
+  //
+  // The offsets sit the edit badge across the circle's rim rather than inside
+  // it, where the parent's `overflow: hidden` clips its outer edge into a
+  // semicircle; the ring keeps it legible on a photo of any colour.
   avatarEditBadge: {
-    position: 'absolute', bottom: 2, start: -2, width: 28, height: 28, borderRadius: 14,
+    position: 'absolute', bottom: 2, right: -2, width: 28, height: 28, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center', borderWidth: 2,
   },
   avatarRemoveBadge: {
-    position: 'absolute', top: 0, start: 0, width: 22, height: 22, borderRadius: 11,
+    position: 'absolute', top: 0, right: 0, width: 22, height: 22, borderRadius: 11,
     alignItems: 'center', justifyContent: 'center',
   },
   initials: { fontSize: 34 },
