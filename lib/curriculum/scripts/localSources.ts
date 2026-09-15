@@ -241,4 +241,8 @@ export const LOCAL_FILES: Record<string, string> = {
   'g6-islamic-s2-student-book': 'knowledge-base/grade-6-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الثاني.pdf',
   'g6-social-s1-student-book': 'knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الأول.pdf',
   'g6-social-s2-student-book': 'knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الثاني.pdf',
+  'g6-voc-s1-student-book': 'knowledge-base/grade-6-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الأول.pdf',
+  'g6-voc-s2-student-book': 'knowledge-base/grade-6-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الثاني.pdf',
+  'g6-pe-s1-student-book': 'knowledge-base/grade-6-pe/support-pdfs/كتاب الطالب لمادة التربية الرياضية الصف السادس الفصل الأول.pdf',
+  'g6-arts-s1-teacher-guide': 'knowledge-base/grade-6-art/support-pdfs/دليل المعلم لمادة التربية الفنية الصف السادس.pdf',
 };

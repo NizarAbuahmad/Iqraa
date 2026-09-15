@@ -155,12 +155,15 @@ describe('subject isolation', () => {
       social: /^g\d+-social-s[12]$/,
       // Vocational Education: Grade 7/8 only, a different seven tracks per
       // book — no grade-9/10 form exists.
-      'vocational-education': /^(g8-voc-s[12]|g7-voc-s[12])$/,
+      // Grade 6 joined 2026-09-15, once SUBJECTS.grades was extended for it.
+      'vocational-education': /^g\d+-voc-s[12]$/,
       // Art, Music and Drama Education: Grade 7/8 only, one book per grade
       // with no semester split — CurriculumIdScope still requires a
       // semester number for id-namespacing, hardcoded to 1, so only the
       // `-s1` form ever appears.
-      'creative-arts': /^(g8-arts-s1|g7-arts-s1)$/,
+      // Grade 6 joined 2026-09-15. Still s1-only for every grade: this book
+      // is not split by semester at any of them.
+      'creative-arts': /^g\d+-arts-s1$/,
       // Grade 10 Arabic predates this map and was silently unchecked — no
       // entry meant `continue`, not a pass. Added on 2026-09-08 alongside the
       // Grade 9 Arabic S1 book, so both grades are covered from here on.
@@ -197,7 +200,7 @@ describe('subject isolation', () => {
       'civic-education': /^(civ-s[12]|g9-civ-s[12])$/,
       // Grade 9 predates Grade 7 here (no Grade 8 PE book exists at all).
       // Grade 7 joined 2026-09-12.
-      'physical-education': /^(g9-pe-s[12]|g7-pe-s[12])$/,
+      'physical-education': /^g\d+-pe-s[12]$/,
       // The combined «العلوم» books at Grades 6, 7 and 8, the only ones this
       // subject has. No grade-10 alternative here: Grade 10 splits science into
       // the four subjects above, so there is no bare `science-s[12]` form to

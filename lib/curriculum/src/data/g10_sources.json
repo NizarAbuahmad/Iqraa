@@ -4987,6 +4987,132 @@
         "localPath": "knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الثاني.pdf",
         "sha256": "341cc88c8f6de7db414104530003526da753aababd6104a73ffb13cfab4e6c29"
       }
+    },
+    {
+      "id": "g6-voc-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الأول.pdf",
+      "bytes": 21879731,
+      "subject": "vocational",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-voc-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "vocational",
+        "التربية المهنية",
+        "سادس",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 104,
+        "chars": 133795,
+        "localPath": "knowledge-base/grade-6-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الأول.pdf",
+        "sha256": "dd738e7b2f79107c527dcbda30f4db4f3418b75041abe18dd2b8ef8bd7a960b2"
+      }
+    },
+    {
+      "id": "g6-voc-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الثاني.pdf",
+      "bytes": 31997850,
+      "subject": "vocational",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-voc-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "vocational",
+        "التربية المهنية",
+        "سادس",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 106,
+        "chars": 129773,
+        "localPath": "knowledge-base/grade-6-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الثاني.pdf",
+        "sha256": "8e74e6e112ab9fc56d8b7ce6a9a9f6aeb05e3ef7b1c01c569d8708858dba93c1"
+      }
+    },
+    {
+      "id": "g6-pe-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الرياضية الصف السادس الفصل الأول.pdf",
+      "bytes": 5490091,
+      "subject": "physical-education",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الرياضية الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-pe-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "physical-education",
+        "التربية الرياضية",
+        "سادس",
+        "الفصل الأول"
+      ],
+      "notes": "لا كتابَ للفصلِ الثاني في الملفّاتِ المرسَلةِ؛ الفصلُ الأوَّلُ وحدَهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 57,
+        "chars": 55991,
+        "localPath": "knowledge-base/grade-6-pe/support-pdfs/كتاب الطالب لمادة التربية الرياضية الصف السادس الفصل الأول.pdf",
+        "sha256": "f1ad0bcffb70c36312cadf1f16a56e3e34f82f172b76d657a762cff204eaae1f"
+      }
+    },
+    {
+      "id": "g6-arts-s1-teacher-guide",
+      "title": "دليل المعلم لمادة التربية الفنية الصف السادس.pdf",
+      "bytes": 54333570,
+      "subject": "art",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة التربية الفنية الصف السادس.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-arts-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "art",
+        "التربية الفنية",
+        "سادس",
+        "الفصل الأول"
+      ],
+      "notes": "كتابُ التربيةِ الفنّيّةِ للصفِّ السادسِ غيرُ مقسَّمٍ إلى فصلينِ، ولا كتابَ طالبٍ في الملفّاتِ المرسَلةِ — دليلُ المعلِّمِ وحدَهُ. يحملُ semester = 1 اصطلاحًا، على غرارِ كتابِ التربيةِ الفنّيّةِ للصفِّ الثامنِ (يُنظَرُ g8CreativeArts.ts).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 163,
+        "chars": 97721,
+        "localPath": "knowledge-base/grade-6-art/support-pdfs/دليل المعلم لمادة التربية الفنية الصف السادس.pdf",
+        "sha256": "59c69f277940f0f4dc89e1ae1a0ff75a296299a4016454563bf607cea78bce4d"
+      }
     }
   ],
   "mergedAt": "2026-08-25"

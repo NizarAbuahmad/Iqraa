@@ -1,0 +1,225 @@
+{
+  "meta": {
+    "grade": "الصف السادس",
+    "grade_en": "Grade 6",
+    "subject": "التربية الفنية",
+    "subject_en": "Art Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "دليل المعلم لمادة التربية الفنية الصف السادس (g6-arts-s1-teacher-guide)"
+    ],
+    "provenance_note": "نُقلت المحاورُ الخمسةُ ودروسُها الأربعةَ عشرَ من قائمةِ محتوياتِ دليلِ المعلِّمِ (ص 4-5) في 2026-09-15. الكتابُ ينظِّمُ محتواهُ في «محاورَ» لا «وحداتٍ»، وقد نُقِلَ المحورُ بوصفِهِ وحدةً لأنَّهُ موقعُهُ نفسُهُ في البِنيةِ.",
+    "known_gaps": [
+      "هذا الملفُّ عناوينُ فقط (title-only): نُقِلَتْ بنيةُ الوحداتِ والدروسِ من قائمةِ المحتوياتِ، ولم تُنقَلْ نتاجاتٌ ولا مصطلحاتٌ ولا فكرةٌ رئيسةٌ. objectives و vocabulary فارغتانِ، والدروسُ موسومةٌ title-only في الواجهةِ عبرَ isBrowserLessonTitleOnly.",
+      "periods و total_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ في قائمةِ المحتوياتِ.",
+      "لا كتابَ طالبٍ لهذهِ المادَّةِ في الملفّاتِ المرسَلةِ — دليلُ المعلِّمِ وحدَهُ، وهوَ المصدرُ الوحيدُ لهذهِ البنيةِ.",
+      "هذا الدليلُ طبعةُ 2015 (قرارُ اعتمادٍ رقم 22/2015)، أي أقدمُ بعَشْرِ سنواتٍ من سائرِ كتبِ الصفِّ السادسِ في هذا المستودَعِ (2025-2026). يُرجَّحُ أنَّ لهُ طبعةً أحدثَ لم تصِلْ، فلا يُعتمَدْ عليهِ في دعوى «هذا هوَ منهاجُ اليومِ» دونَ تحقُّقٍ.",
+      "نصُّ هذا الدليلِ غيرُ مشكولٍ، بخلافِ سائرِ كتبِ الصفِّ السادسِ؛ نُقِلَتِ العناوينُ كما طُبِعَتْ بلا إضافةِ حركاتٍ.",
+      "الكتابُ غيرُ مقسَّمٍ إلى فصلينِ؛ يحملُ semester = 1 اصطلاحًا، كما في التربيةِ الفنّيّةِ للصفِّ الثامنِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "التعبير الفنيّ بالرسم والتلوين",
+      "title_en": "Artistic Expression through Drawing and Colouring",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (teacher guide table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "دلالات الألوان",
+          "title_en": "The Meanings of Colours",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "علاقات لونيّة",
+          "title_en": "Colour Relationships",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "مهارات الرسم والتلوين",
+          "title_en": "Drawing and Colouring Skills",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "التّصميم",
+      "title_en": "Design",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (teacher guide table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "أسس التصميم في العمل الفنيّ",
+          "title_en": "Principles of Design in Artwork",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "فن الفسيفساء الورقيّة",
+          "title_en": "The Art of Paper Mosaic",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "الزخرفة في التراث الشعبيّ",
+          "title_en": "Ornament in Folk Heritage",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "التشكيل والتركيب والبناء",
+      "title_en": "Forming, Assembly and Construction",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (teacher guide table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "أسس التصميم في المجسّمات الكاملة",
+          "title_en": "Principles of Design in Full Three-Dimensional Forms",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "أسس التصميم في المجسّمات البارزة",
+          "title_en": "Principles of Design in Relief Forms",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "الفنون المسرحيّة",
+      "title_en": "Theatre Arts",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (teacher guide table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "الإمكانات التقنيّة في الدراما",
+          "title_en": "Technical Resources in Drama",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "عناصر البناء الدراميّ",
+          "title_en": "Elements of Dramatic Construction",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "فن الإلقاء",
+          "title_en": "The Art of Recitation",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "الفن وتطبيقات الحاسوب",
+      "title_en": "Art and Computer Applications",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (teacher guide table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "قائمة إدراج في برنامج معالج النصوص",
+          "title_en": "The Insert Menu in a Word Processor",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "تصميم لوحة فنيّة من الأشكال التلقائيّة",
+          "title_en": "Designing Artwork from AutoShapes",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "رسم وإدراج صورة وتلوينها",
+          "title_en": "Drawing, Inserting and Colouring an Image",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

@@ -223,6 +223,22 @@ import {
   buildG6SocialSem2Catalog,
 } from './curriculumG6SocialSem2.ts';
 import {
+  G6_VOCATIONAL_S1_BOOK_ID,
+  buildG6VocationalSem1Catalog,
+} from './curriculumG6VocationalSem1.ts';
+import {
+  G6_VOCATIONAL_S2_BOOK_ID,
+  buildG6VocationalSem2Catalog,
+} from './curriculumG6VocationalSem2.ts';
+import {
+  G6_PE_S1_BOOK_ID,
+  buildG6PhysicalEducationSem1Catalog,
+} from './curriculumG6PhysicalEducationSem1.ts';
+import {
+  G6_ART_S1_BOOK_ID,
+  buildG6ArtSem1Catalog,
+} from './curriculumG6ArtSem1.ts';
+import {
   G6_ARABIC_S1_BOOK_ID,
   buildG6ArabicSem1Catalog,
 } from './curriculumG6ArabicSem1.ts';
@@ -1097,6 +1113,42 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Social Studies – Grade 6 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g6_social_sem2.json (NCCD)',
+  },
+  {
+    id: G6_VOCATIONAL_S1_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف السادس – الفصل الأول',
+    titleEn: 'Vocational Education – Grade 6 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g6_vocational_sem1.json (NCCD)',
+  },
+  {
+    id: G6_VOCATIONAL_S2_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف السادس – الفصل الثاني',
+    titleEn: 'Vocational Education – Grade 6 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g6_vocational_sem2.json (NCCD)',
+  },
+  {
+    id: G6_PE_S1_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'physical-education',
+    titleAr: 'التربية الرياضية – الصف السادس – الفصل الأول',
+    titleEn: 'Physical Education – Grade 6 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g6_physical_education_sem1.json (NCCD)',
+  },
+  {
+    id: G6_ART_S1_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'creative-arts',
+    titleAr: 'التربية الفنية – الصف السادس',
+    titleEn: 'Art Education – Grade 6',
+    semester: 1,
+    source: 'iqra_curriculum_g6_art_sem1.json (NCCD)',
   },
   {
     id: G6_ARABIC_S1_BOOK_ID,
@@ -2418,6 +2470,10 @@ const _g7ScienceSem1 = buildG7ScienceSem1Catalog();
 const _g6MathSem1 = buildG6MathSem1Catalog();
 const _g6ScienceSem1 = buildG6ScienceSem1Catalog();
 const _g6ArabicSem1 = buildG6ArabicSem1Catalog();
+const _g6VocationalSem1 = buildG6VocationalSem1Catalog();
+const _g6VocationalSem2 = buildG6VocationalSem2Catalog();
+const _g6PhysicalEducationSem1 = buildG6PhysicalEducationSem1Catalog();
+const _g6ArtSem1 = buildG6ArtSem1Catalog();
 const _g6IslamicSem1 = buildG6IslamicSem1Catalog();
 const _g6IslamicSem2 = buildG6IslamicSem2Catalog();
 const _g6SocialSem1 = buildG6SocialSem1Catalog();
@@ -2664,6 +2720,10 @@ export const KB_UNITS: KBUnit[] = [
   ..._g6MathSem1.units,
   ..._g6ScienceSem1.units,
   ..._g6ArabicSem1.units,
+  ..._g6VocationalSem1.units,
+  ..._g6VocationalSem2.units,
+  ..._g6PhysicalEducationSem1.units,
+  ..._g6ArtSem1.units,
   ..._g6IslamicSem1.units,
   ..._g6IslamicSem2.units,
   ..._g6SocialSem1.units,
@@ -2782,6 +2842,10 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g6MathSem1.lessons,
   ..._g6ScienceSem1.lessons,
   ..._g6ArabicSem1.lessons,
+  ..._g6VocationalSem1.lessons,
+  ..._g6VocationalSem2.lessons,
+  ..._g6PhysicalEducationSem1.lessons,
+  ..._g6ArtSem1.lessons,
   ..._g6IslamicSem1.lessons,
   ..._g6IslamicSem2.lessons,
   ..._g6SocialSem1.lessons,
