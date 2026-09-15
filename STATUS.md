@@ -535,14 +535,28 @@ upload/link share split, extracted to `lib/mediaLibrary.ts` so it is
 testable without a database — there is no DB-backed route-test harness in
 this repo). Mobile 1385 pass / 0 fail, api-server 619 pass / 0 fail.
 
-**Not deployed by this change — the two steps this repo keeps manual:**
-1. `lesson_media` gains `source_url` and drops NOT NULL on `lesson_id`,
-   `r2_key`, `mime_type`, `size_bytes`. Until that push runs, the library
-   endpoints answer 503 and uploads fail. Note the root `.env` carries two
-   `DATABASE_URL` lines — confirm which one a push would hit before running
-   it, or do it from the Neon console.
-2. The API deploys by hand (`docs/deploying.md`); a merge ships the web app
-   only, so the client will briefly call endpoints that do not exist yet.
+**Schema: dev pushed 2026-09-15, production still pending.**
+`lesson_media` gained `source_url` and dropped NOT NULL on `lesson_id`,
+`r2_key`, `mime_type`, `size_bytes`. Confirmed on `localhost:5432/iqraa`
+by reading `information_schema.columns` directly, not by trusting
+drizzle-kit's «Changes applied» line; `verify-schema` then reported 36/36
+tables, so nothing else drifted. **Production has not had this push** —
+until it does, the library endpoints answer 503 there and uploads fail.
+
+> **The root `.env` carries two `DATABASE_URL` lines, and only the first
+> one is live.** `scripts/load-env.mjs` assigns a key only when it is
+> `undefined`, so first-wins; `lib/db/scripts/push.mjs` also deletes
+> `DATABASE_URL` first so a shell value cannot override the file. The first
+> line is localhost, which is why `run push` reaches dev and silently never
+> reaches production. The second line is a Neon URL and is **dead** — but
+> only by ordering. Reorder or delete a line and the same command
+> retargets a live database with no prompt and no diff to review. Resolve
+> the host before any push (`new URL(process.env.DATABASE_URL).hostname`)
+> rather than reading the file and assuming.
+
+**Still not deployed:** the API deploys by hand (`docs/deploying.md`); a
+merge ships the web app only, so the client will briefly call endpoints
+that do not exist yet.
 
 ## A class's evidence starts accumulating, 2026-09-13 (#415)
 
