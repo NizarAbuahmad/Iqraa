@@ -237,4 +237,8 @@ export const LOCAL_FILES: Record<string, string> = {
   'g6-arabic-s2-student-book': 'knowledge-base/grade-6-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الثاني.pdf',
   'g6-arabic-s1-exercise-book': 'knowledge-base/grade-6-arabic/support-pdfs/كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الأول.pdf',
   'g6-arabic-s2-exercise-book': 'knowledge-base/grade-6-arabic/support-pdfs/كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الثاني.pdf',
+  'g6-islamic-s1-student-book': 'knowledge-base/grade-6-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الأول.pdf',
+  'g6-islamic-s2-student-book': 'knowledge-base/grade-6-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الثاني.pdf',
+  'g6-social-s1-student-book': 'knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الأول.pdf',
+  'g6-social-s2-student-book': 'knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الثاني.pdf',
 };

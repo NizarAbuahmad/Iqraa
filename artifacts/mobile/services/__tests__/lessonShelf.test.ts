@@ -150,7 +150,9 @@ describe('subject isolation', () => {
       // Social Studies only ever has Grade 7/8 books — it splits into
       // geography/history/civic-education from Grade 9 up, so there is no
       // bare or g9- form to allow (see subjectGradeCoverage.test.ts).
-      social: /^(g8-social-s[12]|g7-social-s[12])$/,
+      // Grade 6 joined 2026-09-15. Collapsed to g\d+ — no bare form exists,
+      // since Grade 9 and up split this into geography/history/civic.
+      social: /^g\d+-social-s[12]$/,
       // Vocational Education: Grade 7/8 only, a different seven tracks per
       // book — no grade-9/10 form exists.
       'vocational-education': /^(g8-voc-s[12]|g7-voc-s[12])$/,
@@ -181,7 +183,9 @@ describe('subject isolation', () => {
       // unchecked. Added alongside the Grade 9 Islamic books.
       // Grade 8 joined 2026-09-10, semester 1 then semester 2. Grade 7
       // joined 2026-09-12, same treatment.
-      islamic: /^(islamic-s[12]|g9-islamic-s[12]|g8-islamic-s[12]|g7-islamic-s[12])$/,
+      // Grade 6 joined 2026-09-15. Collapsed to g\d+ rather than a fifth
+      // alternative: only Grade 10 carries the bare islamic-s1 form.
+      islamic: /^(islamic-s[12]|g\d+-islamic-s[12])$/,
       // Geography is new to this repo entirely. Grade 10 (curriculumIds.ts's
       // implicit grade) carries a bare tag; Grade 9 carries the explicit
       // g9- form, same split as every pre-existing subject above.

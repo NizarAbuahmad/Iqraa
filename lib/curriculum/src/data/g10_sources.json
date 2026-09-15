@@ -4859,6 +4859,134 @@
         "localPath": "knowledge-base/grade-6-arabic/support-pdfs/كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الثاني.pdf",
         "sha256": "3ace0a37d9cddc4cb324d626587dee7f6d1532a39df4bd054ec0de546c11b893"
       }
+    },
+    {
+      "id": "g6-islamic-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الأول.pdf",
+      "bytes": 62994310,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "islamic",
+        "التربية الإسلامية",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 124,
+        "chars": 137330,
+        "localPath": "knowledge-base/grade-6-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الأول.pdf",
+        "sha256": "cedaf07f84d775f2a838a1c65299c4d0f1688adc4345db60f057586834a5acd5"
+      }
+    },
+    {
+      "id": "g6-islamic-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الثاني.pdf",
+      "bytes": 92953126,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "islamic",
+        "التربية الإسلامية",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 130,
+        "chars": 157214,
+        "localPath": "knowledge-base/grade-6-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الثاني.pdf",
+        "sha256": "8affa88a02ab1a8e8c92acffeb21257594cceaa61ffc5ae6999794ba056dd484"
+      }
+    },
+    {
+      "id": "g6-social-s1-student-book",
+      "title": "كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الأول.pdf",
+      "bytes": 23744090,
+      "subject": "social",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-social-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "social",
+        "الدراسات الاجتماعية",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 120,
+        "chars": 147180,
+        "localPath": "knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الأول.pdf",
+        "sha256": "1be3f8ff5fc23e1a02fa1e018d2f4030f308f7d2b293c4c4d00aefcc2ca5f182"
+      }
+    },
+    {
+      "id": "g6-social-s2-student-book",
+      "title": "كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الثاني.pdf",
+      "bytes": 28780103,
+      "subject": "social",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-social-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "social",
+        "الدراسات الاجتماعية",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 128,
+        "chars": 164787,
+        "localPath": "knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الثاني.pdf",
+        "sha256": "341cc88c8f6de7db414104530003526da753aababd6104a73ffb13cfab4e6c29"
+      }
     }
   ],
   "mergedAt": "2026-08-25"

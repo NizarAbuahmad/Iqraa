@@ -1,0 +1,242 @@
+{
+  "meta": {
+    "grade": "الصف السادس",
+    "grade_en": "Grade 6",
+    "subject": "الدراسات الاجتماعية",
+    "subject_en": "Social Studies",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الثاني (g6-social-s2-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الخمسُ ودروسُها السِّتَّةَ عشرَ من فهرسِ كتابِ الطالبِ (ص 3-4) في 2026-09-15. الوحداتُ مرقَّمةٌ من 6 إلى 10، تُكمِلُ ترقيمَ الفصلِ الأوَّلِ (1-5) — على خلافِ كتابِ التربيةِ الإسلاميَّةِ للصفِّ نفسِهِ الذي يبدأُ الترقيمَ من جديدٍ في فصلِهِ الثاني.",
+    "known_gaps": [
+      "هذا الملفُّ عناوينُ فقط (title-only): نُقِلَتْ بنيةُ الوحداتِ والدروسِ من فهرسِ كتابِ الطالبِ، ولم تُنقَلْ نتاجاتٌ ولا مصطلحاتٌ. objectives و vocabulary فارغتانِ لكلِّ الدروسِ، والدروسُ موسومةٌ title-only في الواجهةِ عبرَ isBrowserLessonTitleOnly حتّى يرى المعلِّمُ ذلكَ صراحةً بدلَ درسٍ يبدو فارغًا بلا سببٍ.",
+      "main_idea_ar فارغةٌ، معَ أنَّ صفحةَ الدرسِ تطبعُ فقرةً تمهيديَّةً تصلحُ لها. لم تُنقَلْ لأنَّ نقلَها يقتضي قراءةَ صفحةِ كلِّ درسٍ على حِدَةٍ من ملفِّ PDF — النصُّ المستخرَجُ يُسقِطُ لامَ التعريفِ المُدغَمَ فلا يصلحُ للنقلِ الحرفيِّ — وهوَ عملٌ مؤجَّلٌ لا ساقطٌ. الكتابُ مُستخرَجٌ ومُسجَّلٌ، فالدروسُ مؤسَّسةٌ (groundable) وإنْ كانت صفوفُها في الفهرسِ رقيقةً.",
+      "periods و total_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ في كتابِ الطالبِ، ولا دليلَ معلِّمٍ لهذهِ المادَّةِ في الملفّاتِ المرسَلةِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "فَجْرُ الإِسْلامِ",
+      "title_en": "The Dawn of Islam",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "بِدايَةُ الدَّعْوَةِ الإِسْلامِيَّةِ",
+          "title_en": "The Beginning of the Islamic Call",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "المُجْتَمَعُ في المَدينَةِ المُنَوَّرَةِ",
+          "title_en": "Society in Medina",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "الدَّعْوَةُ خارِجَ شِبْهِ الجَزيرَةِ العَرَبِيَّةِ",
+          "title_en": "The Call beyond the Arabian Peninsula",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "النِّظامُ الطَّبيعِيُّ",
+      "title_en": "The Natural System",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "عَناصِرُ المُناخِ (الحَرارَةُ، وَالتَّكاثُفُ، وَالتَّساقُطُ)",
+          "title_en": "Elements of Climate (Temperature, Condensation, Precipitation)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "عَناصِرُ المُناخِ (الضَّغْطُ الجَوِّيُّ، وَالرِّياحُ)",
+          "title_en": "Elements of Climate (Air Pressure and Winds)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "أَثَرُ المُناخِ في الأَنْشِطَةِ البَشَرِيَّةِ",
+          "title_en": "The Effect of Climate on Human Activity",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l4",
+          "order": 4,
+          "title_ar": "الأَقاليمُ المُناخِيَّةُ في الأُرْدُنِّ",
+          "title_en": "The Climatic Regions of Jordan",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "مَفاهيمُ اقْتِصادِيَّةٌ",
+      "title_en": "Economic Concepts",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "التَّنْمِيَةُ المُسْتَدامَةُ",
+          "title_en": "Sustainable Development",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "الاسْتِثْمارُ الأَمْثَلُ لِلْمَواردِ الطَّبيعِيَّةِ",
+          "title_en": "Optimal Investment of Natural Resources",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l3",
+          "order": 3,
+          "title_ar": "الإِنْتاجُ، التَّوْزيعُ، الاسْتِهْلاكُ",
+          "title_en": "Production, Distribution, Consumption",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_ar": "المَهاراتُ الحَياتِيَّةُ",
+      "title_en": "Life Skills",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_ar": "إِدارَةُ الوَقْتِ",
+          "title_en": "Time Management",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l2",
+          "order": 2,
+          "title_ar": "الاحْتِرامُ",
+          "title_en": "Respect",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l3",
+          "order": 3,
+          "title_ar": "التَّعاوُنُ",
+          "title_en": "Cooperation",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u10",
+      "number": 10,
+      "title_ar": "رِحْلَةٌ في وَطَني",
+      "title_en": "A Journey through My Homeland",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u10_l1",
+          "order": 1,
+          "title_ar": "رِحْلَةٌ في مُحافَظَةِ المَفْرَقِ",
+          "title_en": "A Journey through Mafraq Governorate",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l2",
+          "order": 2,
+          "title_ar": "رِحْلَةٌ في مُحافَظَةِ البَلْقاءِ",
+          "title_en": "A Journey through Balqa Governorate",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l3",
+          "order": 3,
+          "title_ar": "رِحْلَةٌ في مُحافَظَةِ العَقَبَةِ",
+          "title_en": "A Journey through Aqaba Governorate",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

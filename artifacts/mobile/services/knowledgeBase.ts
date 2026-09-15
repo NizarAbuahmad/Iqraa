@@ -207,6 +207,22 @@ import {
   buildG6MathSem1Catalog,
 } from './curriculumG6MathSem1.ts';
 import {
+  G6_ISLAMIC_S1_BOOK_ID,
+  buildG6IslamicSem1Catalog,
+} from './curriculumG6IslamicSem1.ts';
+import {
+  G6_ISLAMIC_S2_BOOK_ID,
+  buildG6IslamicSem2Catalog,
+} from './curriculumG6IslamicSem2.ts';
+import {
+  G6_SOCIAL_S1_BOOK_ID,
+  buildG6SocialSem1Catalog,
+} from './curriculumG6SocialSem1.ts';
+import {
+  G6_SOCIAL_S2_BOOK_ID,
+  buildG6SocialSem2Catalog,
+} from './curriculumG6SocialSem2.ts';
+import {
   G6_ARABIC_S1_BOOK_ID,
   buildG6ArabicSem1Catalog,
 } from './curriculumG6ArabicSem1.ts';
@@ -1045,6 +1061,42 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Mathematics – Grade 6 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g6_math_sem1.json (NCCD)',
+  },
+  {
+    id: G6_ISLAMIC_S1_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف السادس – الفصل الأول',
+    titleEn: 'Islamic Education – Grade 6 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g6_islamic_sem1.json (NCCD)',
+  },
+  {
+    id: G6_ISLAMIC_S2_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف السادس – الفصل الثاني',
+    titleEn: 'Islamic Education – Grade 6 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g6_islamic_sem2.json (NCCD)',
+  },
+  {
+    id: G6_SOCIAL_S1_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'social',
+    titleAr: 'الدراسات الاجتماعية – الصف السادس – الفصل الأول',
+    titleEn: 'Social Studies – Grade 6 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g6_social_sem1.json (NCCD)',
+  },
+  {
+    id: G6_SOCIAL_S2_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'social',
+    titleAr: 'الدراسات الاجتماعية – الصف السادس – الفصل الثاني',
+    titleEn: 'Social Studies – Grade 6 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g6_social_sem2.json (NCCD)',
   },
   {
     id: G6_ARABIC_S1_BOOK_ID,
@@ -2366,6 +2418,10 @@ const _g7ScienceSem1 = buildG7ScienceSem1Catalog();
 const _g6MathSem1 = buildG6MathSem1Catalog();
 const _g6ScienceSem1 = buildG6ScienceSem1Catalog();
 const _g6ArabicSem1 = buildG6ArabicSem1Catalog();
+const _g6IslamicSem1 = buildG6IslamicSem1Catalog();
+const _g6IslamicSem2 = buildG6IslamicSem2Catalog();
+const _g6SocialSem1 = buildG6SocialSem1Catalog();
+const _g6SocialSem2 = buildG6SocialSem2Catalog();
 const _g6ArabicSem2 = buildG6ArabicSem2Catalog();
 const _g6ScienceSem2 = buildG6ScienceSem2Catalog();
 const _g7ScienceSem2 = buildG7ScienceSem2Catalog();
@@ -2608,6 +2664,10 @@ export const KB_UNITS: KBUnit[] = [
   ..._g6MathSem1.units,
   ..._g6ScienceSem1.units,
   ..._g6ArabicSem1.units,
+  ..._g6IslamicSem1.units,
+  ..._g6IslamicSem2.units,
+  ..._g6SocialSem1.units,
+  ..._g6SocialSem2.units,
   ..._g6ArabicSem2.units,
   ..._g6ScienceSem2.units,
   ..._g7ScienceSem2.units,
@@ -2722,6 +2782,10 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g6MathSem1.lessons,
   ..._g6ScienceSem1.lessons,
   ..._g6ArabicSem1.lessons,
+  ..._g6IslamicSem1.lessons,
+  ..._g6IslamicSem2.lessons,
+  ..._g6SocialSem1.lessons,
+  ..._g6SocialSem2.lessons,
   ..._g6ArabicSem2.lessons,
   ..._g6ScienceSem2.lessons,
   ..._g7ScienceSem2.lessons,

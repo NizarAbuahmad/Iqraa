@@ -1,0 +1,281 @@
+{
+  "meta": {
+    "grade": "الصف السادس",
+    "grade_en": "Grade 6",
+    "subject": "التربية الإسلامية",
+    "subject_en": "Islamic Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الثاني (g6-islamic-s2-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الأربعُ ودروسُها الواحدُ والعشرونَ من فهرسِ كتابِ الطالبِ (ص 4) في 2026-09-15، وقُرِئَ الفهرسُ من ملفِّ PDF مباشرةً.",
+    "known_gaps": [
+      "هذا الملفُّ عناوينُ فقط (title-only): نُقِلَتْ بنيةُ الوحداتِ والدروسِ من فهرسِ كتابِ الطالبِ، ولم تُنقَلْ نتاجاتٌ ولا مصطلحاتٌ. objectives و vocabulary فارغتانِ لكلِّ الدروسِ، والدروسُ موسومةٌ title-only في الواجهةِ عبرَ isBrowserLessonTitleOnly حتّى يرى المعلِّمُ ذلكَ صراحةً بدلَ درسٍ يبدو فارغًا بلا سببٍ.",
+      "main_idea_ar فارغةٌ، معَ أنَّ صفحةَ الدرسِ تطبعُ فقرةً تمهيديَّةً تصلحُ لها. لم تُنقَلْ لأنَّ نقلَها يقتضي قراءةَ صفحةِ كلِّ درسٍ على حِدَةٍ من ملفِّ PDF — النصُّ المستخرَجُ يُسقِطُ لامَ التعريفِ المُدغَمَ فلا يصلحُ للنقلِ الحرفيِّ — وهوَ عملٌ مؤجَّلٌ لا ساقطٌ. الكتابُ مُستخرَجٌ ومُسجَّلٌ، فالدروسُ مؤسَّسةٌ (groundable) وإنْ كانت صفوفُها في الفهرسِ رقيقةً.",
+      "periods و total_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ في كتابِ الطالبِ، ولا دليلَ معلِّمٍ لهذهِ المادَّةِ في الملفّاتِ المرسَلةِ.",
+      "وحداتُ هذا الفصلِ تبدأُ الترقيمَ من جديدٍ (الأولى إلى الرابعةِ) ولا تُكمِلُ ترقيمَ الفصلِ الأوَّلِ، بخلافِ كتبِ العلومِ والعربيَّةِ والدراساتِ الاجتماعيَّةِ للصفِّ نفسِهِ التي تُكمِلُ. لذا تتكرَّرُ مُعرِّفاتُ الوحداتِ u1..u4 في الفصلينِ، ولا تعارُضَ: مُعرِّفُ الوحدةِ في قاعدةِ المعرفةِ يحملُ الفصلَ (kbu-g6-islamic-s1-nccd-u1 مقابلَ kbu-g6-islamic-s2-nccd-u1). هذا وصفٌ لما يطبعُهُ الكتابُ، فلا يُصحَّحْ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "مَحَبَّةُ اللهِ تَعالى",
+      "title_en": "The Love of God Almighty",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "سورَةُ نوحٍ: الآياتُ الكَريمَةُ (1-4)",
+          "title_en": "Surat Nuh, Verses 1-4",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "مَحَبَّةُ المُسْلِمِ للهِ تَعالى",
+          "title_en": "The Muslim's Love for God",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "التِّلاوَةُ وَالتَّجْويدُ: الإِظْهارُ الشَّفَوِيُّ",
+          "title_en": "Recitation and Tajwid: Labial Manifestation",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "الحَديثُ الشَّريفُ: مِنْ ثَمَراتِ الإيمانِ",
+          "title_en": "Hadith: Among the Fruits of Faith",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "صَلاةُ الوِتْرِ",
+          "title_en": "The Witr Prayer",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "الدَّعْوَةُ إِلى اللهِ تَعالى",
+      "title_en": "The Call to God Almighty",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "سورَةُ نوحٍ: الآياتُ الكَريمَةُ (5-12)",
+          "title_en": "Surat Nuh, Verses 5-12",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "بِناءُ الكَعْبَةِ المُشَرَّفَةِ",
+          "title_en": "The Building of the Holy Kaaba",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "التِّلاوَةُ وَالتَّجْويدُ: النّونُ وَالميمُ المُشَدَّدَتانِ",
+          "title_en": "Recitation and Tajwid: Doubled Nun and Mim",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "المَسْحُ عَلى الخُفَّيْنِ",
+          "title_en": "Wiping over the Leather Socks",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "الصَّحابِيُّ الجَليلُ مُصْعَبُ بْنُ عُمَيْرٍ",
+          "title_en": "The Companion Mus'ab ibn Umayr",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "قُدْرَةُ اللهِ تَعالى",
+      "title_en": "The Power of God Almighty",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "سورَةُ نوحٍ: الآياتُ الكَريمَةُ (13-20)",
+          "title_en": "Surat Nuh, Verses 13-20",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الإِسْراءُ وَالمِعْراجُ",
+          "title_en": "The Night Journey and Ascension",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "التِّلاوَةُ وَالتَّجْويدُ: القَلْقَلَةُ",
+          "title_en": "Recitation and Tajwid: Qalqalah",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "الحَديثُ الشَّريفُ: طَلَبُ العِلْمِ",
+          "title_en": "Hadith: The Pursuit of Knowledge",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "التَّيَمُّمُ",
+          "title_en": "Dry Ablution (Tayammum)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l6",
+          "order": 6,
+          "title_ar": "حَقُّ الإِنْسانِ في المَسْكَنِ",
+          "title_en": "The Human Right to Housing",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "طاعَةُ اللهِ تَعالى",
+      "title_en": "Obedience to God Almighty",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "سورَةُ نوحٍ: الآياتُ الكَريمَةُ (21-28)",
+          "title_en": "Surat Nuh, Verses 21-28",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "الصَّحابِيَّةُ الجَليلَةُ نُسَيْبَةُ بِنْتُ كَعْبٍ",
+          "title_en": "The Companion Nusaybah bint Ka'b",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "التِّلاوَةُ وَالتَّجْويدُ: تَطْبيقاتٌ",
+          "title_en": "Recitation and Tajwid: Applications",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "آدابُ التَّنَزُّهِ وَالرَّحَلاتِ",
+          "title_en": "The Etiquette of Outings and Trips",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l5",
+          "order": 5,
+          "title_ar": "تَرْشيدُ الاسْتِهْلاكِ",
+          "title_en": "Rationalising Consumption",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

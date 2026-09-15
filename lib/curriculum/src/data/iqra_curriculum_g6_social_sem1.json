@@ -1,0 +1,242 @@
+{
+  "meta": {
+    "grade": "الصف السادس",
+    "grade_en": "Grade 6",
+    "subject": "الدراسات الاجتماعية",
+    "subject_en": "Social Studies",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الأول (g6-social-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الخمسُ ودروسُها السِّتَّةَ عشرَ من فهرسِ كتابِ الطالبِ (ص 3-4) في 2026-09-15، وقُرِئَ الفهرسُ من ملفِّ PDF مباشرةً. الكتابُ يجمعُ التربيةَ الوطنيَّةَ والتاريخَ والجغرافيا في مادَّةٍ واحدةٍ، وهوَ ما تفعلُهُ المناهجُ الأردنيَّةُ حتّى الصفِّ الثامنِ؛ ومن الصفِّ التاسعِ تنقسمُ إلى جغرافيا وتاريخٍ وتربيةٍ وطنيَّةٍ، ولذا تبقى هذهِ الموادُّ الثلاثُ بلا كتبٍ في الصفِّ السادسِ.",
+    "known_gaps": [
+      "هذا الملفُّ عناوينُ فقط (title-only): نُقِلَتْ بنيةُ الوحداتِ والدروسِ من فهرسِ كتابِ الطالبِ، ولم تُنقَلْ نتاجاتٌ ولا مصطلحاتٌ. objectives و vocabulary فارغتانِ لكلِّ الدروسِ، والدروسُ موسومةٌ title-only في الواجهةِ عبرَ isBrowserLessonTitleOnly حتّى يرى المعلِّمُ ذلكَ صراحةً بدلَ درسٍ يبدو فارغًا بلا سببٍ.",
+      "main_idea_ar فارغةٌ، معَ أنَّ صفحةَ الدرسِ تطبعُ فقرةً تمهيديَّةً تصلحُ لها. لم تُنقَلْ لأنَّ نقلَها يقتضي قراءةَ صفحةِ كلِّ درسٍ على حِدَةٍ من ملفِّ PDF — النصُّ المستخرَجُ يُسقِطُ لامَ التعريفِ المُدغَمَ فلا يصلحُ للنقلِ الحرفيِّ — وهوَ عملٌ مؤجَّلٌ لا ساقطٌ. الكتابُ مُستخرَجٌ ومُسجَّلٌ، فالدروسُ مؤسَّسةٌ (groundable) وإنْ كانت صفوفُها في الفهرسِ رقيقةً.",
+      "periods و total_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ في كتابِ الطالبِ، ولا دليلَ معلِّمٍ لهذهِ المادَّةِ في الملفّاتِ المرسَلةِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "السُّلْطَةُ وَالحُكْمُ",
+      "title_en": "Authority and Governance",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "الدَّوْلَةُ وَمُكَوِّناتُها",
+          "title_en": "The State and Its Components",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "الدُّسْتورُ",
+          "title_en": "The Constitution",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "القَوانينُ",
+          "title_en": "Laws",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "التّاريخُ وَالحَضارَةُ",
+      "title_en": "History and Civilisation",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "عُصورُ ما قَبْلَ التّاريخِ",
+          "title_en": "Prehistoric Ages",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "العُصورُ التّاريخِيَّةُ",
+          "title_en": "The Historical Ages",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "الحَضارَةُ",
+          "title_en": "Civilisation",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "الجُغْرافيا",
+      "title_en": "Geography",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الخَريطَةُ: مَفْهومُها، وَأَنْواعُها",
+          "title_en": "The Map: Its Concept and Types",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "حَرَكَةُ الأَرْضِ وَما عَلَيْها",
+          "title_en": "The Motion of the Earth and What Is upon It",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "الإِقْليمُ",
+          "title_en": "The Region",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "التَّفاعُلُ بَيْنَ الإِنْسانِ وَالبيئَةِ",
+          "title_en": "Interaction between Humans and the Environment",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "الحَضاراتُ القَديمَةُ في شِبْهِ الجَزيرَةِ العَرَبِيَّةِ",
+      "title_en": "Ancient Civilisations of the Arabian Peninsula",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "شِبْهُ الجَزيرَةِ العَرَبِيَّةِ: المَوْقِعُ وَالأَهَمِّيَّةُ",
+          "title_en": "The Arabian Peninsula: Location and Importance",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "الحَضاراتُ القَديمَةُ في اليَمَنِ",
+          "title_en": "Ancient Civilisations of Yemen",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "حَضارَةُ مُدُنِ الحِجازِ",
+          "title_en": "The Civilisation of the Cities of the Hijaz",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "الإِعْلامُ",
+      "title_en": "Media",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "حُرِّيَّةُ التَّعْبيرِ",
+          "title_en": "Freedom of Expression",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "أَخْلاقِيّاتُ الإِعْلامِ",
+          "title_en": "Media Ethics",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "النَّقْدُ",
+          "title_en": "Criticism",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
