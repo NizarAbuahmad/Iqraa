@@ -239,6 +239,14 @@ import {
   buildG6ArtSem1Catalog,
 } from './curriculumG6ArtSem1.ts';
 import {
+  G6_ENGLISH_S1_BOOK_ID,
+  buildG6EnglishSem1Catalog,
+} from './curriculumG6EnglishSem1.ts';
+import {
+  G6_ENGLISH_S2_BOOK_ID,
+  buildG6EnglishSem2Catalog,
+} from './curriculumG6EnglishSem2.ts';
+import {
   G6_ARABIC_S1_BOOK_ID,
   buildG6ArabicSem1Catalog,
 } from './curriculumG6ArabicSem1.ts';
@@ -1149,6 +1157,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Art Education – Grade 6',
     semester: 1,
     source: 'iqra_curriculum_g6_art_sem1.json (NCCD)',
+  },
+  {
+    id: G6_ENGLISH_S1_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف السادس – الفصل الأول',
+    titleEn: 'English – Grade 6 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g6_english_sem1.json (Pearson / York Press, third-party)',
+  },
+  {
+    id: G6_ENGLISH_S2_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف السادس – الفصل الثاني',
+    titleEn: 'English – Grade 6 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g6_english_sem2.json (Pearson / York Press, third-party)',
   },
   {
     id: G6_ARABIC_S1_BOOK_ID,
@@ -2474,6 +2500,8 @@ const _g6VocationalSem1 = buildG6VocationalSem1Catalog();
 const _g6VocationalSem2 = buildG6VocationalSem2Catalog();
 const _g6PhysicalEducationSem1 = buildG6PhysicalEducationSem1Catalog();
 const _g6ArtSem1 = buildG6ArtSem1Catalog();
+const _g6EnglishSem1 = buildG6EnglishSem1Catalog();
+const _g6EnglishSem2 = buildG6EnglishSem2Catalog();
 const _g6IslamicSem1 = buildG6IslamicSem1Catalog();
 const _g6IslamicSem2 = buildG6IslamicSem2Catalog();
 const _g6SocialSem1 = buildG6SocialSem1Catalog();
@@ -2724,6 +2752,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g6VocationalSem2.units,
   ..._g6PhysicalEducationSem1.units,
   ..._g6ArtSem1.units,
+  ..._g6EnglishSem1.units,
+  ..._g6EnglishSem2.units,
   ..._g6IslamicSem1.units,
   ..._g6IslamicSem2.units,
   ..._g6SocialSem1.units,
@@ -2846,6 +2876,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g6VocationalSem2.lessons,
   ..._g6PhysicalEducationSem1.lessons,
   ..._g6ArtSem1.lessons,
+  ..._g6EnglishSem1.lessons,
+  ..._g6EnglishSem2.lessons,
   ..._g6IslamicSem1.lessons,
   ..._g6IslamicSem2.lessons,
   ..._g6SocialSem1.lessons,
