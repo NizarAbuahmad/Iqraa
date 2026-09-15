@@ -1,0 +1,149 @@
+{
+  "sourceId": "g7-finlit-s2-student-book",
+  "figures": [
+    {
+      "file": "p011.png",
+      "sourceId": "g7-finlit-s2-student-book",
+      "pdfPage": 11,
+      "rect": [
+        18.9,
+        66.1,
+        215.3,
+        187.0
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُميزانيتي الشخصيُة",
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p016.png",
+      "sourceId": "g7-finlit-s2-student-book",
+      "pdfPage": 16,
+      "rect": [
+        46.7,
+        576.7,
+        336.9,
+        745.4
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُأُخِّطُِطُ ميزانيتي الشخصيَة",
+      "lessonStartPage": 14
+    },
+    {
+      "file": "p034.png",
+      "sourceId": "g7-finlit-s2-student-book",
+      "pdfPage": 34,
+      "rect": [
+        89.3,
+        197.1,
+        168.4,
+        307.6
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "وُمُ االِّدِخاِرِ وأهِّمِيُتُُه مفه",
+      "lessonStartPage": 34
+    },
+    {
+      "file": "p035.png",
+      "sourceId": "g7-finlit-s2-student-book",
+      "pdfPage": 35,
+      "rect": [
+        340.6,
+        587.0,
+        549.3,
+        735.8
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "وُمُ االِّدِخاِرِ وأهِّمِيُتُُه مفه",
+      "lessonStartPage": 34
+    },
+    {
+      "file": "p042.png",
+      "sourceId": "g7-finlit-s2-student-book",
+      "pdfPage": 42,
+      "rect": [
+        50.7,
+        606.4,
+        508.7,
+        741.9
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "األهداُفُ الماليُةُ وأنواُعُها",
+      "lessonStartPage": 41
+    },
+    {
+      "file": "p044.png",
+      "sourceId": "g7-finlit-s2-student-book",
+      "pdfPage": 44,
+      "rect": [
+        471.8,
+        533.8,
+        562.6,
+        607.8
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "األهداُفُ الماليُةُ وأنواُعُها",
+      "lessonStartPage": 41
+    },
+    {
+      "file": "p081.png",
+      "sourceId": "g7-finlit-s2-student-book",
+      "pdfPage": 81,
+      "rect": [
+        45.8,
+        532.8,
+        218.1,
+        738.5
+      ],
+      "unit": 6,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "فوائُدُ التكنولوجيا الماليِةِ يف حياِتِنا",
+      "lessonStartPage": 79
+    },
+    {
+      "file": "p082.png",
+      "sourceId": "g7-finlit-s2-student-book",
+      "pdfPage": 82,
+      "rect": [
+        47.2,
+        500.2,
+        215.6,
+        732.3
+      ],
+      "unit": 6,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "فوائُدُ التكنولوجيا الماليِةِ يف حياِتِنا",
+      "lessonStartPage": 79
+    },
+    {
+      "file": "p082b.png",
+      "sourceId": "g7-finlit-s2-student-book",
+      "pdfPage": 82,
+      "rect": [
+        212.9,
+        500.8,
+        381.3,
+        732.3
+      ],
+      "unit": 6,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "فوائُدُ التكنولوجيا الماليِةِ يف حياِتِنا",
+      "lessonStartPage": 79
+    }
+  ]
+}

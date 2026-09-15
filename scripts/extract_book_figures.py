@@ -377,6 +377,41 @@ BOOKS: dict[str, tuple[str, str]] = {
         "grade-8-vocational",
         MIRROR_G8 + "mhni/كتاب الطالب لمادة التربية المهنية الصف الثامن الفصل الثاني.pdf",
     ),
+
+    # Grades 6 and 7, added 2026-09-15. Every student book the NCCD
+    # library holds for these grades that also has a catalog, EXCEPT
+    # English — that series photographs rather than draws, so it goes
+    # through `extract_book_photos.py` instead. Registering a book is not
+    # a claim that it yields: each one is probed against its catalog
+    # before extraction, and several will not pass.
+    "g6-islamic-s1-student-book": ("grade-6-islamic", "knowledge-base/grade-6-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الأول.pdf"),
+    "g6-islamic-s2-student-book": ("grade-6-islamic", "knowledge-base/grade-6-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الثاني.pdf"),
+    "g6-pe-s1-student-book": ("grade-6-pe", "knowledge-base/grade-6-pe/support-pdfs/كتاب الطالب لمادة التربية الرياضية الصف السادس الفصل الأول.pdf"),
+    "g6-voc-s1-student-book": ("grade-6-vocational", "knowledge-base/grade-6-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الأول.pdf"),
+    "g6-voc-s2-student-book": ("grade-6-vocational", "knowledge-base/grade-6-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الثاني.pdf"),
+    "g6-social-s1-student-book": ("grade-6-social", "knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الأول.pdf"),
+    "g6-social-s2-student-book": ("grade-6-social", "knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الثاني.pdf"),
+    "g6-arabic-s1-student-book": ("grade-6-arabic", "knowledge-base/grade-6-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الأول.pdf"),
+    "g6-arabic-s2-student-book": ("grade-6-arabic", "knowledge-base/grade-6-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الثاني.pdf"),
+    "g7-pe-s1-student-book": ("grade-7-pe", "knowledge-base/grade-7-pe/support-pdfs/كتاب الطالب التربية الرياضية الصف السابع الفصل الأول.pdf"),
+    "g7-pe-s2-student-book": ("grade-7-pe", "knowledge-base/grade-7-pe/support-pdfs/كتاب الطالب التربية الرياضية الصف السابع الفصل الثاني.pdf"),
+    "g7-islamic-s1-student-book": ("grade-7-islamic", "knowledge-base/grade-7-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السابع الفصل الأول.pdf"),
+    "g7-islamic-s2-student-book": ("grade-7-islamic", "knowledge-base/grade-7-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السابع الفصل الثاني.pdf"),
+    "g7-arts-student-book": ("grade-7-art", "knowledge-base/grade-7-art/support-pdfs/كتاب الطالب لمادة التربية الفنية للصف السابع.pdf"),
+    "g7-voc-s1-student-book": ("grade-7-vocational", "knowledge-base/grade-7-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف السابع الفصل الأول.pdf"),
+    "g7-voc-s2-student-book": ("grade-7-vocational", "knowledge-base/grade-7-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف السابع الفصل الثاني.pdf"),
+    "g7-finlit-s1-student-book": ("grade-7-finlit", "knowledge-base/grade-7-finlit/support-pdfs/كتاب الطالب لمادة الثقافة المالية للصف السابع الفصل الأول.pdf"),
+    "g7-finlit-s2-student-book": ("grade-7-finlit", "knowledge-base/grade-7-finlit/support-pdfs/كتاب الطالب لمادة الثقافة المالية للصف السابع الفصل الثاني.pdf"),
+    "g7-social-s1-student-book": ("grade-7-social", "knowledge-base/grade-7-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السابع الفصل الأول.pdf"),
+    "g7-social-s2-student-book": ("grade-7-social", "knowledge-base/grade-7-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السابع الفصل الثاني.pdf"),
+    "g7-math-s1-student-book": ("grade-7-math", "knowledge-base/grade-7-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف السابع الفصل الأول.pdf"),
+    "g7-math-s2-student-book": ("grade-7-math", "knowledge-base/grade-7-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف السابع الفصل الثاني.pdf"),
+    "g7-arabic-s1-student-book": ("grade-7-arabic", "knowledge-base/grade-7-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف السابع الفصل الأول.pdf"),
+    "g7-arabic-s2-student-book": ("grade-7-arabic", "knowledge-base/grade-7-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف السابع الفصل الثاني.pdf"),
+    "g7-science-s1-student-book": ("grade-7-science", "knowledge-base/grade-7-science/support-pdfs/كتاب الطالب لمادة العلوم الصف السابع الفصل الأول.pdf"),
+    "g7-science-s2-student-book": ("grade-7-science", "knowledge-base/grade-7-science/support-pdfs/كتاب الطالب لمادة العلوم الصف السابع الفصل الثاني.pdf"),
+    "g7-digital-s1-student-book": ("grade-7-digital", "knowledge-base/grade-7-digital/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف السابع الفصل الأول.pdf"),
+    "g7-digital-s2-student-book": ("grade-7-digital", "knowledge-base/grade-7-digital/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف السابع الفصل الثاني.pdf"),
     "g8-digital-s1-student-book": (
         "grade-8-digital-literacy",
         MIRROR_G8 + "7asob/كتاب الطالب لمادة المهارات الرقمية الصف الثامن الفصل الأول.pdf",
@@ -1216,6 +1251,16 @@ CONTENTS_PLACEMENT: dict[str, float] = {
     "g8-voc-s1-student-book": 4.0,
     "g8-voc-s2-student-book": 6.0,
     "g8-science-s2-student-book": 6.0,
+    "g6-voc-s1-student-book": 4.0,
+    "g7-voc-s1-student-book": 4.0,
+    # Grade 7 social needs 12.0, and that is the loosest tolerance here by a
+    # wide margin — accepted because the convergence is monotonic rather than
+    # lucky. S1 finds 3 rows at 2.0, then 14, 18, 19 and finally all 20 at
+    # 12.0, and the unit split locks onto the catalog's [3,3,5,4,2,3] only at
+    # the point the row count also becomes exact. A coincidence does not
+    # approach the answer from below.
+    "g7-social-s1-student-book": 12.0,
+    "g7-social-s2-student-book": 12.0,
 }
 
 

@@ -3824,6 +3824,1008 @@
       "kbLessonId": "kbl-g8-science-s2-nccd-u9_l2",
       "score": 1,
       "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g6-voc-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "أَنْماطُ التَّعَلُّمِ",
+      "kbLessonId": "kbl-g6-voc-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "contents-table",
+      "why": "Grades 6 and 7, 2026-09-16. 28 student books were registered and probed against their catalogs; 8 reproduce a catalog exactly and ship, 10 are near misses and 11 are closed — see STATUS.md for the table. Nothing was extracted on the strength of a registration."
+    },
+    {
+      "sourceId": "g6-voc-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "مَهاراتُ العَرْضِ النّاجِحَةُ",
+      "kbLessonId": "kbl-g6-voc-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g6-voc-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "مَهارَةُ العَرْضِ المُؤَثِّرِ",
+      "kbLessonId": "kbl-g6-voc-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g6-voc-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "تَصْميمُ ديكورِ المَنْزِلِ",
+      "kbLessonId": "kbl-g6-voc-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g6-voc-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الكُلَفُ وَالإِكْسِسْوارات",
+      "kbLessonId": "kbl-g6-voc-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g6-voc-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الفِكْرَةُ المُبْتَكَرَةُ",
+      "kbLessonId": "kbl-g6-voc-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g6-voc-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "مَهاراتُ التَّفْكيرِ",
+      "kbLessonId": "kbl-g6-voc-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g6-voc-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "بيئَةٌ نَظيفَةٌ مَزْروعَةٌ",
+      "kbLessonId": "kbl-g6-voc-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g6-voc-s1-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "حِفْظُ الزَّيْتونِ",
+      "kbLessonId": "kbl-g6-voc-s1-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g6-voc-s1-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "تَصْنيعُ المُرَبَّياتِ",
+      "kbLessonId": "kbl-g6-voc-s1-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g6-voc-s1-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "المَنْزِلُ الصِّحِّيُّ",
+      "kbLessonId": "kbl-g6-voc-s1-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g6-voc-s1-student-book",
+      "unit": 6,
+      "lesson": 2,
+      "bookTitleAr": "السَّلامَةُ في حالاتِ الكَوارِثِ",
+      "kbLessonId": "kbl-g6-voc-s1-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-voc-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "لغةُ الجسدِ",
+      "kbLessonId": "kbl-g7-voc-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-voc-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "السلوكُ الإيجابيُّ في موقعِ العملِ",
+      "kbLessonId": "kbl-g7-voc-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-voc-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "إدارةُ دخلِ الأسرةِ",
+      "kbLessonId": "kbl-g7-voc-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-voc-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "العنايةُ بالشعرِ",
+      "kbLessonId": "kbl-g7-voc-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-voc-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "مهاراتُ القيادةِ",
+      "kbLessonId": "kbl-g7-voc-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-voc-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "الزراعةُ المائيةُ",
+      "kbLessonId": "kbl-g7-voc-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-voc-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "حفظُ الأغذيةِ بالتبريدِ والتجميدِ",
+      "kbLessonId": "kbl-g7-voc-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-voc-s1-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "الإسعافاتُ الأوليةُ",
+      "kbLessonId": "kbl-g7-voc-s1-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-voc-s1-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "مُتطلَّباتُ الأمنِ والسلامةِ في المنزلِ",
+      "kbLessonId": "kbl-g7-voc-s1-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-voc-s1-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "سلامتي والأجهزةُ الإلكترونيةُ",
+      "kbLessonId": "kbl-g7-voc-s1-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-voc-s1-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "صناعةُ الكريماتِ وموادِّ التجميلِ",
+      "kbLessonId": "kbl-g7-voc-s1-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-voc-s1-student-book",
+      "unit": 7,
+      "lesson": 1,
+      "bookTitleAr": "وصلاتُ نهاياتِ الأسلاكِ الكهربائيةِ",
+      "kbLessonId": "kbl-g7-voc-s1-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-finlit-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "مفهومُ المالِ وأشكالُهُ",
+      "kbLessonId": "kbl-g7-finlit-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "استخداماتُ المالِ",
+      "kbLessonId": "kbl-g7-finlit-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "أهمّيّةُ المالِ",
+      "kbLessonId": "kbl-g7-finlit-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "وظائفُ المالِ في المجتمعِ",
+      "kbLessonId": "kbl-g7-finlit-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الحاجاتُ",
+      "kbLessonId": "kbl-g7-finlit-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الرغباتُ",
+      "kbLessonId": "kbl-g7-finlit-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "الاقتصادُ",
+      "kbLessonId": "kbl-g7-finlit-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "المشكلةُ الاقتصاديةُ",
+      "kbLessonId": "kbl-g7-finlit-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "إدارةُ المالِ الشخصيِّ",
+      "kbLessonId": "kbl-g7-finlit-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "بطاقاتُ الدفعِ الإلكترونيِّ",
+      "kbLessonId": "kbl-g7-finlit-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "العملاتُ الرقميةُ",
+      "kbLessonId": "kbl-g7-finlit-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s1-student-book",
+      "unit": 3,
+      "lesson": 4,
+      "bookTitleAr": "أخلاقياتُ التعاملِ معَ المالِ",
+      "kbLessonId": "kbl-g7-finlit-s1-nccd-u3_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "ميزانيتي الشخصيةُ",
+      "kbLessonId": "kbl-g7-finlit-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "أُخطِّطُ ميزانيتي الشخصيةَ",
+      "kbLessonId": "kbl-g7-finlit-s2-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s2-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "أُعِدُّ ميزانيتي الشخصيةَ",
+      "kbLessonId": "kbl-g7-finlit-s2-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s2-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "المسؤوليةُ الماليةُ",
+      "kbLessonId": "kbl-g7-finlit-s2-nccd-u4_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "مفهومُ الادِّخارِ وأهمّيّتُهُ",
+      "kbLessonId": "kbl-g7-finlit-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "الأهدافُ الماليةُ وأنواعُها",
+      "kbLessonId": "kbl-g7-finlit-s2-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "أنواعُ الادِّخارِ وطرائقُهُ",
+      "kbLessonId": "kbl-g7-finlit-s2-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s2-student-book",
+      "unit": 5,
+      "lesson": 4,
+      "bookTitleAr": "أشكالُ الادِّخارِ",
+      "kbLessonId": "kbl-g7-finlit-s2-nccd-u5_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s2-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "منَ النقودِ المعدنيةِ إلى الأصولِ الرقميةِ",
+      "kbLessonId": "kbl-g7-finlit-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s2-student-book",
+      "unit": 6,
+      "lesson": 2,
+      "bookTitleAr": "العقودُ الذكيةُ",
+      "kbLessonId": "kbl-g7-finlit-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-finlit-s2-student-book",
+      "unit": 6,
+      "lesson": 3,
+      "bookTitleAr": "فوائدُ التكنولوجيا الماليةِ في حياتِنا",
+      "kbLessonId": "kbl-g7-finlit-s2-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "المعادنُ والصخورُ",
+      "kbLessonId": "kbl-g7-science-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "العمرُ النسبيُّ للصخورِ والعمرُ المطلقُ",
+      "kbLessonId": "kbl-g7-science-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "كواكبُ النظامِ الشمسيِّ",
+      "kbLessonId": "kbl-g7-science-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الدوريّةُ في النظامِ الشمسيِّ",
+      "kbLessonId": "kbl-g7-science-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "علمُ التصنيفِ",
+      "kbLessonId": "kbl-g7-science-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "مملكتا الحيواناتِ والنباتاتِ",
+      "kbLessonId": "kbl-g7-science-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "مملكتا الفُطريّاتِ والطلائعيّاتِ",
+      "kbLessonId": "kbl-g7-science-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s1-student-book",
+      "unit": 3,
+      "lesson": 4,
+      "bookTitleAr": "نطاقا البكتيريا والأثرياتِ",
+      "kbLessonId": "kbl-g7-science-s1-nccd-u3_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "الماءُ في حياتِنا",
+      "kbLessonId": "kbl-g7-science-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "الذائبيّةُ",
+      "kbLessonId": "kbl-g7-science-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s1-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "وصفُ الحركةِ",
+      "kbLessonId": "kbl-g7-science-s1-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s1-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "القوى وتأثيرُها في الأجسامِ",
+      "kbLessonId": "kbl-g7-science-s1-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s2-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "خصائصُ الحُموضِ والقواعدِ",
+      "kbLessonId": "kbl-g7-science-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s2-student-book",
+      "unit": 6,
+      "lesson": 2,
+      "bookTitleAr": "الكواشفُ والرقمُ الهيدروجينيُّ",
+      "kbLessonId": "kbl-g7-science-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s2-student-book",
+      "unit": 7,
+      "lesson": 1,
+      "bookTitleAr": "الضوءُ: مفهومُه وخصائصُه",
+      "kbLessonId": "kbl-g7-science-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s2-student-book",
+      "unit": 7,
+      "lesson": 2,
+      "bookTitleAr": "تطبيقاتٌ على انعكاسِ الضوءِ",
+      "kbLessonId": "kbl-g7-science-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s2-student-book",
+      "unit": 8,
+      "lesson": 1,
+      "bookTitleAr": "الكهرباءُ الساكنةُ",
+      "kbLessonId": "kbl-g7-science-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s2-student-book",
+      "unit": 8,
+      "lesson": 2,
+      "bookTitleAr": "الكهرباءُ المتحرّكةُ",
+      "kbLessonId": "kbl-g7-science-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s2-student-book",
+      "unit": 9,
+      "lesson": 1,
+      "bookTitleAr": "سلوكُ الحيواناتِ",
+      "kbLessonId": "kbl-g7-science-s2-nccd-u9_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s2-student-book",
+      "unit": 9,
+      "lesson": 2,
+      "bookTitleAr": "التكيّفُ والانقراضُ",
+      "kbLessonId": "kbl-g7-science-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s2-student-book",
+      "unit": 9,
+      "lesson": 3,
+      "bookTitleAr": "الأحافيرُ",
+      "kbLessonId": "kbl-g7-science-s2-nccd-u9_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s2-student-book",
+      "unit": 10,
+      "lesson": 1,
+      "bookTitleAr": "المناطقُ البيئيةُ",
+      "kbLessonId": "kbl-g7-science-s2-nccd-u10_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-science-s2-student-book",
+      "unit": 10,
+      "lesson": 2,
+      "bookTitleAr": "انتقالُ الطاقةِ ودوراتُ الموادِّ في الأنظمةِ البيئيةِ",
+      "kbLessonId": "kbl-g7-science-s2-nccd-u10_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "المُواطَنةُ ومُقوِّماتُها",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "contents-table",
+      "why": "Placed from the contents spread at a Y tolerance of 12.0 — the loosest in CONTENTS_PLACEMENT, accepted because the convergence is monotonic: 3 rows at 2.0, then 14, 18, 19, and all 20 at 12.0, with the unit split locking onto the catalog only where the row count also becomes exact."
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "الهويّةُ الوطنيّةُ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "المُواطَنةُ العالميّةُ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الديمقراطيّةُ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الإعلانُ العالميُّ لحُقوقِ الإنسانِ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "حُقوقُ المرأةِ والطفلِ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "تطوُّرُ عَلاقةِ الإنسانِ بالبيئةِ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "العواملُ الطبيعيّةُ وتوزُّعُ السكّانِ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "الأنشطةُ البشريّةُ وأشكالُ سطحِ الأرضِ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 3,
+      "lesson": 4,
+      "bookTitleAr": "التجارةُ الدوليّةُ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u3_l4",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 3,
+      "lesson": 5,
+      "bookTitleAr": "الاقتصادُ والريادةُ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u3_l5",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "حضاراتُ بلادِ الشامِ القديمةُ (النشأةُ)",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "حضاراتُ بلادِ الشامِ القديمةُ (المظاهرُ الحضاريّةُ والإنجازاتُ)",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "حضاراتُ الممالكِ القديمةِ في الأُردنِّ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "حضاراتُ بلادِ الشامِ القديمةُ (مرحلةُ الانهيارِ)",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u4_l4",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "التنوُّعُ الثقافيُّ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "نماذجُ منْ تُراثِنا الأردنيِّ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "السلوكُ الإيجابيُّ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 6,
+      "lesson": 2,
+      "bookTitleAr": "لُغةُ الجسدِ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s1-student-book",
+      "unit": 6,
+      "lesson": 3,
+      "bookTitleAr": "احترامُ خُصوصيّةِ الآخرينَ",
+      "kbLessonId": "kbl-g7-social-s1-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "المُحتوى الإعلاميُّ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "contents-table",
+      "why": "UNIT OFFSET +6. The catalog numbers this book's units u7-u12 because units 1-6 are semester 1, but the contents parser infers units from the lesson numbering resetting and counts them 1-6. Joined without the offset, every figure in the book lands on a semester-1 lesson. The shape check that admitted this book compares unit COUNTS and is blind to the shift, so it was measured against the extracted index after the fact."
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "التضليلُ الإعلاميُّ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الشائعاتُ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u7_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "وسائلُ التواصلِ الاجتماعيِّ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u7_l4",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "تطوُّرُ السُّلُطاتِ الدستوريّةِ في الأُردنِّ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "سِيادةُ القانونِ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "النزاهةُ والشفافيّةُ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u8_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "التسامُحُ ونبذُ التعصُّبِ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u9_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "المساواةُ وعدمُ التمييزِ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "التغيُّرُ الاجتماعيُّ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u9_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "رِحلةٌ في محافظةِ الكركِ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u10_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "رِحلةٌ في محافظةِ الزرقاءِ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u10_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "رِحلةٌ في محافظةِ جرشَ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u10_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "عهدُ الخُلفاءِ الراشدينَ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u11_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "الدولةُ الأمويّةُ (النشأةُ والتوسُّعُ)",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u11_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "الدولةُ الأمويّةُ (الإنجازاتُ الحضاريّةُ)",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u11_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 5,
+      "lesson": 4,
+      "bookTitleAr": "نهايةُ الدولةِ الأمويّةِ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u11_l4",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 5,
+      "lesson": 5,
+      "bookTitleAr": "المصادرُ التاريخيّةُ الأوّليّةُ والثانويّةُ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u11_l5",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "النموُّ السكّانيُّ في الأُردنِّ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u12_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 6,
+      "lesson": 2,
+      "bookTitleAr": "التوزُّعُ السكّانيُّ في الأُردنِّ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u12_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g7-social-s2-student-book",
+      "unit": 6,
+      "lesson": 3,
+      "bookTitleAr": "التركيبُ العُمريُّ والتركيبُ النوعيُّ للسكّانِ في الأُردنِّ",
+      "kbLessonId": "kbl-g7-social-s2-nccd-u12_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."

@@ -1,0 +1,213 @@
+{
+  "sourceId": "g7-finlit-s1-student-book",
+  "figures": [
+    {
+      "file": "p008.png",
+      "sourceId": "g7-finlit-s1-student-book",
+      "pdfPage": 8,
+      "rect": [
+        69.9,
+        154.8,
+        447.2,
+        344.1
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُمفهوُمُ الماِلِ وأشكاُلُُه",
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p011.png",
+      "sourceId": "g7-finlit-s1-student-book",
+      "pdfPage": 11,
+      "rect": [
+        64.6,
+        36.8,
+        262.2,
+        173.1
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُمفهوُمُ الماِلِ وأشكاُلُُه",
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p019.png",
+      "sourceId": "g7-finlit-s1-student-book",
+      "pdfPage": 19,
+      "rect": [
+        46.8,
+        544.6,
+        214.5,
+        730.6
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "أهِّمِيُةُ الماِل",
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p020.png",
+      "sourceId": "g7-finlit-s1-student-book",
+      "pdfPage": 20,
+      "rect": [
+        381.0,
+        230.3,
+        548.7,
+        451.6
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "أهِّمِيُةُ الماِل",
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p034.png",
+      "sourceId": "g7-finlit-s1-student-book",
+      "pdfPage": 34,
+      "rect": [
+        78.4,
+        168.9,
+        191.5,
+        277.4
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الحاجاُت",
+      "lessonStartPage": 34
+    },
+    {
+      "file": "p034b.png",
+      "sourceId": "g7-finlit-s1-student-book",
+      "pdfPage": 34,
+      "rect": [
+        213.8,
+        191.7,
+        390.6,
+        280.8
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الحاجاُت",
+      "lessonStartPage": 34
+    },
+    {
+      "file": "p035.png",
+      "sourceId": "g7-finlit-s1-student-book",
+      "pdfPage": 35,
+      "rect": [
+        57.9,
+        481.8,
+        248.1,
+        670.2
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الحاجاُت",
+      "lessonStartPage": 34
+    },
+    {
+      "file": "p036.png",
+      "sourceId": "g7-finlit-s1-student-book",
+      "pdfPage": 36,
+      "rect": [
+        140.6,
+        70.1,
+        458.7,
+        380.9
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الحاجاُت",
+      "lessonStartPage": 34
+    },
+    {
+      "file": "p041.png",
+      "sourceId": "g7-finlit-s1-student-book",
+      "pdfPage": 41,
+      "rect": [
+        71.7,
+        187.1,
+        217.4,
+        364.1
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالرغباُت",
+      "lessonStartPage": 41
+    },
+    {
+      "file": "p041b.png",
+      "sourceId": "g7-finlit-s1-student-book",
+      "pdfPage": 41,
+      "rect": [
+        370.6,
+        279.7,
+        487.3,
+        357.2
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالرغباُت",
+      "lessonStartPage": 41
+    },
+    {
+      "file": "p044.png",
+      "sourceId": "g7-finlit-s1-student-book",
+      "pdfPage": 44,
+      "rect": [
+        133.2,
+        139.1,
+        487.6,
+        297.5
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالرغباُت",
+      "lessonStartPage": 41
+    },
+    {
+      "file": "p048.png",
+      "sourceId": "g7-finlit-s1-student-book",
+      "pdfPage": 48,
+      "rect": [
+        53.6,
+        55.6,
+        376.4,
+        259.1
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "االقتصاُد",
+      "lessonStartPage": 47
+    },
+    {
+      "file": "p075.png",
+      "sourceId": "g7-finlit-s1-student-book",
+      "pdfPage": 75,
+      "rect": [
+        0.0,
+        562.6,
+        207.5,
+        778.2
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "العمالُتُ الرقميُة",
+      "lessonStartPage": 74
+    }
+  ]
+}

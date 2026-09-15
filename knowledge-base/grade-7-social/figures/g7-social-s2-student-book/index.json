@@ -1,0 +1,549 @@
+{
+  "sourceId": "g7-social-s2-student-book",
+  "figures": [
+    {
+      "file": "p003.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 3,
+      "rect": [
+        456.2,
+        324.4,
+        530.5,
+        420.2
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p018b.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 18,
+      "rect": [
+        60.4,
+        478.4,
+        454.1,
+        704.5
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p020.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 20,
+      "rect": [
+        226.9,
+        82.8,
+        562.5,
+        270.7
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p020b.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 20,
+      "rect": [
+        276.7,
+        253.8,
+        562.5,
+        432.4
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p040.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 40,
+      "rect": [
+        314.3,
+        299.9,
+        550.1,
+        491.3
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 39
+    },
+    {
+      "file": "p040b.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 40,
+      "rect": [
+        71.9,
+        344.1,
+        307.6,
+        538.2
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 39
+    },
+    {
+      "file": "p040c.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 40,
+      "rect": [
+        314.3,
+        490.1,
+        550.1,
+        681.2
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 39
+    },
+    {
+      "file": "p040d.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 40,
+      "rect": [
+        71.9,
+        535.1,
+        307.6,
+        728.1
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 39
+    },
+    {
+      "file": "p045.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 45,
+      "rect": [
+        35.0,
+        62.7,
+        239.9,
+        253.0
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 43
+    },
+    {
+      "file": "p051.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 51,
+      "rect": [
+        98.5,
+        408.2,
+        534.0,
+        565.8
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 50
+    },
+    {
+      "file": "p069.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 69,
+      "rect": [
+        322.4,
+        31.6,
+        540.6,
+        249.8
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 68
+    },
+    {
+      "file": "p070.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 70,
+      "rect": [
+        51.1,
+        427.9,
+        251.3,
+        628.1
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 68
+    },
+    {
+      "file": "p076.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 76,
+      "rect": [
+        62.2,
+        550.8,
+        561.2,
+        670.1
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 74
+    },
+    {
+      "file": "p087.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 87,
+      "rect": [
+        144.1,
+        116.2,
+        421.3,
+        400.6
+      ],
+      "unit": 4,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 80
+    },
+    {
+      "file": "p093.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 93,
+      "rect": [
+        31.1,
+        106.5,
+        206.9,
+        318.5
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 90
+    },
+    {
+      "file": "p093b.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 93,
+      "rect": [
+        196.4,
+        106.5,
+        372.2,
+        318.5
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 90
+    },
+    {
+      "file": "p093c.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 93,
+      "rect": [
+        359.1,
+        106.5,
+        534.8,
+        318.6
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 90
+    },
+    {
+      "file": "p099.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 99,
+      "rect": [
+        30.9,
+        34.0,
+        401.1,
+        354.5
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 98
+    },
+    {
+      "file": "p100.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 100,
+      "rect": [
+        67.8,
+        346.5,
+        554.6,
+        645.0
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 98
+    },
+    {
+      "file": "p101.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 101,
+      "rect": [
+        41.2,
+        239.5,
+        506.2,
+        512.0
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 98
+    },
+    {
+      "file": "p102.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 102,
+      "rect": [
+        255.3,
+        466.8,
+        535.2,
+        680.6
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 98
+    },
+    {
+      "file": "p104.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 104,
+      "rect": [
+        61.7,
+        458.4,
+        302.6,
+        612.5
+      ],
+      "unit": 5,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 103
+    },
+    {
+      "file": "p114.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 114,
+      "rect": [
+        60.2,
+        116.0,
+        315.1,
+        312.4
+      ],
+      "unit": 5,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 113
+    },
+    {
+      "file": "p114b.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 114,
+      "rect": [
+        307.1,
+        116.0,
+        562.0,
+        372.7
+      ],
+      "unit": 5,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 113
+    },
+    {
+      "file": "p114c.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 114,
+      "rect": [
+        63.0,
+        304.8,
+        317.9,
+        563.0
+      ],
+      "unit": 5,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 113
+    },
+    {
+      "file": "p114d.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 114,
+      "rect": [
+        307.1,
+        369.5,
+        562.0,
+        544.0
+      ],
+      "unit": 5,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 113
+    },
+    {
+      "file": "p115.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 115,
+      "rect": [
+        278.0,
+        84.3,
+        532.0,
+        373.9
+      ],
+      "unit": 5,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 113
+    },
+    {
+      "file": "p115b.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 115,
+      "rect": [
+        32.2,
+        379.8,
+        286.2,
+        726.3
+      ],
+      "unit": 5,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 113
+    },
+    {
+      "file": "p116.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 116,
+      "rect": [
+        308.1,
+        31.4,
+        562.1,
+        256.3
+      ],
+      "unit": 5,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 113
+    },
+    {
+      "file": "p116b.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 116,
+      "rect": [
+        62.4,
+        79.6,
+        316.4,
+        304.8
+      ],
+      "unit": 5,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 113
+    },
+    {
+      "file": "p116c.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 116,
+      "rect": [
+        308.1,
+        293.0,
+        562.1,
+        526.5
+      ],
+      "unit": 5,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 113
+    },
+    {
+      "file": "p116d.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 116,
+      "rect": [
+        62.4,
+        324.2,
+        316.4,
+        597.6
+      ],
+      "unit": 5,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 113
+    },
+    {
+      "file": "p131.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 131,
+      "rect": [
+        37.0,
+        136.1,
+        273.7,
+        440.9
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 130
+    },
+    {
+      "file": "p131b.png",
+      "sourceId": "g7-social-s2-student-book",
+      "pdfPage": 131,
+      "rect": [
+        279.5,
+        139.3,
+        528.8,
+        433.7
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 130
+    }
+  ]
+}
