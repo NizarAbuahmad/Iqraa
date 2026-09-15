@@ -6013,6 +6013,72 @@
         "localPath": "knowledge-base/grade-4-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf",
         "sha256": "f4974a38ed1c321138469fe741c92d432389e55718038b2b31ca6e71be238c77"
       }
+    },
+    {
+      "id": "g4-social-s1-student-book",
+      "title": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الأول.pdf",
+      "bytes": 22639631,
+      "subject": "social",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-social-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "social",
+        "دراسات اجتماعية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 17.2% مقيسةً بشواهدِ الكلماتِ، و3 صفحةً من 80 مقلوبةٌ في مُعظَمِها (9، 12، 18).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 80,
+        "chars": 89017,
+        "localPath": "knowledge-base/grade-4-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الأول.pdf",
+        "sha256": "fe0a504643e8c6cd9c96e8345443423040bc7132a0944adefe5f3a0b6708f91b"
+      }
+    },
+    {
+      "id": "g4-social-s2-student-book",
+      "title": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الثاني.pdf",
+      "bytes": 18311632,
+      "subject": "social",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-social-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "social",
+        "دراسات اجتماعية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 33.7% مقيسةً بشواهدِ الكلماتِ، و15 صفحةً من 92 مقلوبةٌ في مُعظَمِها (11، 24، 40، 48، 49، 52، 54، 64، 78، 81، 84، 86).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 92,
+        "chars": 90034,
+        "localPath": "knowledge-base/grade-4-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الثاني.pdf",
+        "sha256": "4586f8c9bc30899ca171b55e55c327ee1e5317ece2860b3482dc66763bd2fa1c"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
