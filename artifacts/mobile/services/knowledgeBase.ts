@@ -247,6 +247,10 @@ import {
   buildG6EnglishSem2Catalog,
 } from './curriculumG6EnglishSem2.ts';
 import {
+  G6_DIGITAL_S1_BOOK_ID,
+  buildG6DigitalSem1Catalog,
+} from './curriculumG6DigitalSem1.ts';
+import {
   G6_ARABIC_S1_BOOK_ID,
   buildG6ArabicSem1Catalog,
 } from './curriculumG6ArabicSem1.ts';
@@ -1175,6 +1179,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'English – Grade 6 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g6_english_sem2.json (Pearson / York Press, third-party)',
+  },
+  {
+    id: G6_DIGITAL_S1_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'digital-literacy',
+    titleAr: 'المهارات الرقمية – الصف السادس – الفصل الأول',
+    titleEn: 'Digital Skills – Grade 6 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g6_digital_sem1.json (NCCD)',
   },
   {
     id: G6_ARABIC_S1_BOOK_ID,
@@ -2496,6 +2509,7 @@ const _g7ScienceSem1 = buildG7ScienceSem1Catalog();
 const _g6MathSem1 = buildG6MathSem1Catalog();
 const _g6ScienceSem1 = buildG6ScienceSem1Catalog();
 const _g6ArabicSem1 = buildG6ArabicSem1Catalog();
+const _g6DigitalSem1 = buildG6DigitalSem1Catalog();
 const _g6VocationalSem1 = buildG6VocationalSem1Catalog();
 const _g6VocationalSem2 = buildG6VocationalSem2Catalog();
 const _g6PhysicalEducationSem1 = buildG6PhysicalEducationSem1Catalog();
@@ -2748,6 +2762,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g6MathSem1.units,
   ..._g6ScienceSem1.units,
   ..._g6ArabicSem1.units,
+  ..._g6DigitalSem1.units,
   ..._g6VocationalSem1.units,
   ..._g6VocationalSem2.units,
   ..._g6PhysicalEducationSem1.units,
@@ -2872,6 +2887,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g6MathSem1.lessons,
   ..._g6ScienceSem1.lessons,
   ..._g6ArabicSem1.lessons,
+  ..._g6DigitalSem1.lessons,
   ..._g6VocationalSem1.lessons,
   ..._g6VocationalSem2.lessons,
   ..._g6PhysicalEducationSem1.lessons,

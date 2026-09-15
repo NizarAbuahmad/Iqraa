@@ -5311,6 +5311,227 @@
         "localPath": "knowledge-base/grade-6-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الثاني.pdf",
         "sha256": "ddb61cb49f2724887217c1a2a927226b40a31e841bccb0e5a3fbfcccbcfd5389"
       }
+    },
+    {
+      "id": "g6-digital-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+      "bytes": 14549800,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "digital-literacy",
+        "سادس",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "لا كتابَ طالبٍ لهذهِ المادَّةِ في الملفّاتِ المرسَلةِ، ولا كتابَ فصلٍ ثانٍ. هذا الكتابُ ودليلُ المعلِّمِ هما المصدرانِ الوحيدانِ، وعنهُما أُخِذَتْ بِنيةُ الوحداتِ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 175,
+        "chars": 244166,
+        "localPath": "knowledge-base/grade-6-digital-literacy/support-pdfs/كتاب الأنشطة لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+        "sha256": "e5276f6b434487424218a6ac91730e845d8e5720d50a39c98987cbae19b67677"
+      }
+    },
+    {
+      "id": "g6-digital-s1-teacher-guide",
+      "title": "دليل المعلم لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+      "bytes": 6082571,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "digital-literacy",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 64% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-15",
+        "pages": 99,
+        "chars": 93581,
+        "localPath": "knowledge-base/grade-6-digital-literacy/support-pdfs/دليل المعلم لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+        "sha256": "3d8338817c057b9bb293d189d4c34d8650915475b610f4c0b23c45dbf6b3362f"
+      },
+      "notes": "رفضَ pdf-parse هذا الملفَّ فاستُخرِجَ بـ OCR؛ صالحٌ للبحثِ لا للاقتباسِ الحرفيِّ."
+    },
+    {
+      "id": "g6-math-s1-exercise-book",
+      "title": "كتاب التمارين لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+      "bytes": 6566172,
+      "subject": "math",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "كتاب التمارين",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 62,
+        "chars": 67625,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+        "sha256": "96641139ed4450d9b88d43fa57f0745c85212124770679d7e4a0ae6ad30f966c"
+      }
+    },
+    {
+      "id": "g6-math-s2-exercise-book",
+      "title": "كتاب التمارين لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+      "bytes": 12160677,
+      "subject": "math",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "كتاب التمارين",
+        "الفصل الثاني"
+      ],
+      "notes": "الفصلُ الثاني من الرياضيّاتِ لا كتابَ طالبٍ لهُ في الملفّاتِ المرسَلةِ — كتابُ التمارينِ ودليلُ المعلِّمِ فقط — ولذلكَ لا فهرسَ لوحداتِ الفصلِ الثاني.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 56,
+        "chars": 58117,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+        "sha256": "e30049f340fd890f8413ff1ac9c0942701fbf67290a79a68cd160655ac556945"
+      }
+    },
+    {
+      "id": "g6-math-s1-teacher-guide",
+      "title": "دليل المعلم لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+      "bytes": 44418494,
+      "subject": "math",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "يحملُ عددَ الحصصِ ونتاجاتِ الدروسِ للفصلِ الأوَّلِ — وهيَ الحقولُ الفارغةُ في iqra_curriculum_g6_math_sem1.json. سُجِّلَ واستُخرِجَ هنا حتّى يصيرَ مصدرًا متاحًا لملئِها لاحقًا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 228,
+        "chars": 567603,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+        "sha256": "1127391a1be32c2f881df5350d9acf51ae12e6a1f25457b6515f62102287c2a0"
+      }
+    },
+    {
+      "id": "g6-math-s2-teacher-guide",
+      "title": "دليل المعلم لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+      "bytes": 58182541,
+      "subject": "math",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 247,
+        "chars": 609598,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+        "sha256": "0654470f4eab65ae26da0d3e04180e332e37bb645bd529db11a2842593085ba8"
+      }
+    },
+    {
+      "id": "g6-math-s2-support-guide",
+      "title": "دليل المعلم إلى المواد المساندة للتعلم الرياضيات سادس الفصل الثاني.pdf",
+      "bytes": 1789501,
+      "subject": "math",
+      "semester": 2,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم إلى المواد المساندة للتعلم الرياضيات سادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "دليل المواد المساندة",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 32,
+        "chars": 42220,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/دليل المعلم إلى المواد المساندة للتعلم الرياضيات سادس الفصل الثاني.pdf",
+        "sha256": "c47ee61f62a0c64dd6cfcfe20cd90e014ee1aa55837112eabbba9f0e37541053"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
