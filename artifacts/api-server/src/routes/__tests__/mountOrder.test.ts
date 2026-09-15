@@ -226,6 +226,19 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401, "account deletion must exist and require a token");
   });
 
+  it("mounts the account-type switch behind a token", async () => {
+    // The only route that rewrites users.role after signup. A 404 here means
+    // the screen holding a mis-registered parent has no way out; a 200 would
+    // mean anyone could ask for anybody's role to change. 401 is the mount
+    // plus the guard — the rules themselves are in lib/__tests__/roleSwitch.
+    const res = await fetch(`${base}/auth/role`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role: "teacher" }),
+    });
+    assert.equal(res.status, 401, "the account-type switch must exist and require a token");
+  });
+
   it("keeps the unverified-email routes public, since the caller has no session yet", async () => {
     // All three serve the verify screen, which by definition runs before any
     // session exists — a 401 on any of them means somebody moved them behind

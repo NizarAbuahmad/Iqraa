@@ -19,7 +19,8 @@ export interface RosterCodeClaimFormProps {
   onSelectStudent: (id: string) => void;
   /** What the lookup made of the code — see hooks/useJoinCodeLookup.ts. */
   state: JoinCodeState;
-  /** A name already claimed by a student account blocks another student — one account per child — but not a second parent. */
+  /** Also picks the hint under the code field: a student has no child's teacher to ask.
+   *  A name already claimed by a student account blocks another student — one account per child — but not a second parent. */
   userRole: string | undefined;
   colors: any;
   isRTL: boolean;
@@ -44,7 +45,7 @@ export function RosterCodeClaimForm({
       <Input
         label={t('classCode')}
         placeholder={t('classCodePlaceholder')}
-        hint={t('classCodeHint')}
+        hint={t(userRole === 'student' ? 'classCodeHintStudent' : 'classCodeHint')}
         value={code}
         onChangeText={text => onChangeCode(text.toUpperCase())}
         leftIcon="key-outline"
