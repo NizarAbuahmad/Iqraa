@@ -23,6 +23,7 @@ import { createRateLimiter } from "../lib/rateLimit.js";
 import { emailKey } from "../lib/rateLimitKeys.js";
 import { deleteObject, deletePublicObject, isPublicR2Configured, newAvatarKey, publicUrl, putPublicObject } from "../lib/r2.js";
 import { googleClientIds } from "../lib/googleClients.js";
+import { decideGoogleLink } from "../lib/googleLink.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import {
   ROSTER_CONSENT_STATEMENT_EN,
@@ -1025,6 +1026,25 @@ router.post("/google", googleLimiter, async (req, res) => {
       return;
     }
 
+    /*
+     * `verifyIdToken` proved Google minted this token for an audience we
+     * accept. It did NOT prove Google ever verified the address inside it —
+     * that is what `email_verified` says, and it is a separate claim.
+     *
+     * The address is used as an account key three lines down, so trusting an
+     * unverified one hands whoever holds it the matching account. Not
+     * theoretical here: a Workspace admin can mint any address on their own
+     * domain, and the customers are schools on Workspace domains.
+     *
+     * Same 401 as a bad token, since to the caller both are "this credential
+     * won't get you in" and the distinction is only useful to someone probing.
+     */
+    if (payload.email_verified !== true) {
+      logger.warn({ sub: payload.sub }, "google id token rejected — email not verified by google");
+      res.status(401).json({ error: "Invalid Google credential" });
+      return;
+    }
+
     const email = payload.email.toLowerCase().trim();
 
     let [user] = await db.select().from(users).where(eq(users.googleId, payload.sub)).limit(1);
@@ -1041,11 +1061,40 @@ router.post("/google", googleLimiter, async (req, res) => {
       [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
       if (user) {
+        // Why a row that was never verified loses its password here: see
+        // lib/googleLink.ts. Short version — /register lets anyone pre-create
+        // an account on someone else's address, and this is the line that
+        // would otherwise turn that password into a working credential.
+        const decision = decideGoogleLink(user, payload.sub);
+        const linkedId = user.id;
         [user] = await db
           .update(users)
-          .set({ googleId: payload.sub, emailVerified: true })
-          .where(eq(users.id, user.id))
+          .set(decision.update)
+          .where(eq(users.id, linkedId))
           .returning();
+
+        if (decision.revokeExistingCredentials) {
+          // Nothing should hold a session on this row — /register issues none
+          // — but anything that somehow does was minted before the address was
+          // proved, so it is exactly what must not outlive the link.
+          await db.delete(refreshTokens).where(eq(refreshTokens.userId, linkedId));
+          // Codes already in flight were sent on behalf of whoever created the
+          // row. Google has settled verification; leaving them live leaves a
+          // second door into an account that now has a real owner.
+          await db
+            .update(emailVerificationTokens)
+            .set({ used: true })
+            .where(
+              and(
+                eq(emailVerificationTokens.userId, linkedId),
+                eq(emailVerificationTokens.used, false),
+              ),
+            );
+          logger.info(
+            { userId: linkedId },
+            "google linked to an unverified account — password cleared, pending codes burned",
+          );
+        }
       } else {
         // A brand-new account: the register screen's role picker reaches this
         // route too (its "Continue with Google" button), and used to always
