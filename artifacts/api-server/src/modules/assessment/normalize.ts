@@ -25,18 +25,27 @@ export function numericValue(normalized: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Decimal places written in an already-normalised numeric string. */
+function decimalPlaces(normalized: string): number {
+  const dot = normalized.indexOf(".");
+  return dot === -1 ? 0 : normalized.length - dot - 1;
+}
+
 /**
  * Compares an answer to one accepted key.
  *
- * Numbers compare with a relative tolerance so `7`, `٧` and `7.0` all match,
- * and a key of `0.333` accepts `0.3333`. Everything else compares as normalised
- * text.
+ * Numbers compare so that `7`, `٧` and `7.0` all match, and a key of `0.333`
+ * accepts `0.3333`. Everything else compares as normalised text.
+ *
+ * The tolerance is about how precisely a decimal was written, never about how
+ * big the number is. This was a 1% *relative* tolerance until 2026-09-15, which
+ * is the same thing for `0.333` and catastrophic for the whole numbers Grade 10
+ * maths is full of: 1% of 360 is 3.6, so a key of 360 accepted 357, and 1000
+ * accepted 1009. Every integer answer from 99 up marked its neighbours correct,
+ * unattended — `fill_blank` grades deterministically, with no teacher in the
+ * loop.
  */
-export function answersMatch(
-  studentRaw: unknown,
-  keyRaw: unknown,
-  relativeTolerance = 0.01,
-): boolean {
+export function answersMatch(studentRaw: unknown, keyRaw: unknown): boolean {
   const student = normalizeArabic(studentRaw);
   const key = normalizeArabic(keyRaw);
   if (!student || !key) return false;
@@ -47,9 +56,17 @@ export function answersMatch(
   if (a === null || b === null) return false;
   if (a === b) return true;
 
-  const scale = Math.max(Math.abs(a), Math.abs(b));
-  if (scale === 0) return false;
-  return Math.abs(a - b) / scale <= relativeTolerance;
+  // Both written as whole numbers: nothing was rounded, so there is nothing to
+  // forgive. A different integer is a different answer.
+  if (Number.isInteger(a) && Number.isInteger(b)) return false;
+
+  // One side carries decimals, so one of them may be the other rounded. Accept
+  // a difference of up to half a unit in the last place the *coarser* side
+  // wrote — that is the most it could have lost to rounding. Comparing at the
+  // finer precision instead would reject `0.3333` against a key of `0.333`,
+  // which is the case this tolerance exists for.
+  const dp = Math.min(decimalPlaces(student), decimalPlaces(key));
+  return Math.abs(a - b) <= 0.5 * 10 ** -dp;
 }
 
 /** True when the answer matches any of the accepted forms for a blank. */

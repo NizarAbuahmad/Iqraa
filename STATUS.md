@@ -456,6 +456,38 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A wrong answer was marked correct if the right one was big enough, 2026-09-15
+
+**`answersMatch` compared numbers with a 1% *relative* tolerance.** One percent
+of 360 is 3.6, so a student who answered 357 to a key of 360 was marked correct.
+So was 1009 against 1000, and 101 against 100 — every whole-number answer from
+99 up silently accepted its neighbours, and the bigger the right answer, the
+wider the band of wrong ones that passed. `fill_blank`'s `defaultGradingMode` is
+`deterministic`, so nothing put a teacher in the loop to notice.
+
+**The tolerance was not wrong to exist, only to scale.** It is there so a key of
+`0.3333` accepts `0.333`: a student who rounds a repeating decimal has not
+answered incorrectly. But rounding is a property of how precisely a number was
+*written*, and has nothing to do with how large it is — which is the one thing a
+relative tolerance ties it to.
+
+Comparison is now precision-based. Two numbers both written whole must be equal;
+otherwise they may differ by up to half a unit in the last decimal place the
+**coarser** side wrote. `0.333` still matches a key of `0.3333`, and `357`
+matches nothing but `357`.
+
+**Why the test suite did not catch it.** `grading.test.ts` asserted
+`!answersMatch("8", "7")` — 12.5% apart, nowhere near the 1% boundary, so it
+passed identically before and after. A tolerance needs its boundary pinned, not
+a case far outside it. The six new cases all fail against the old implementation.
+
+**Judging at the coarser precision is deliberate.** Taking the finer of the two
+would reject `0.333` against a key of `0.3333`, which is the case the tolerance
+exists for. `normalize.ts` is also the only numeric answer comparison in the
+repo — the client-side graders in `quiz.tsx`, `presentation.tsx` and
+`evaluations/new.tsx` all compare option *indices*, so there is no second copy
+of this to fix.
+
 ## The practice slides say where their content went, 2026-09-15
 
 **Reported from a real deck on the projector:** «🤝 تدريب موجّه» showing a
