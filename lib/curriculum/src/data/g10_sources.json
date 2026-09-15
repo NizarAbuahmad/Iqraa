@@ -6145,6 +6145,64 @@
         "localPath": "knowledge-base/grade-4-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الثاني.pdf",
         "sha256": "37adfdf3b10f87ce08d7abbb7830ce21573c0db2257507779a05fe3852814ae8"
       }
+    },
+    {
+      "id": "g4-digital-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf",
+      "bytes": 13084714,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "digital-literacy",
+        "مهارات رقمية",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 19.8% مقيسةً بشواهدِ الكلماتِ، و7 صفحةً من 149 مقلوبةٌ في مُعظَمِها (26، 27، 28، 54، 55، 70، 79).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 149,
+        "chars": 222901,
+        "localPath": "knowledge-base/grade-4-digital-literacy/support-pdfs/كتاب الأنشطة لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf",
+        "sha256": "3264c49219facb69273376a444bce5c7ef167c6340d9b1f562d076bd9e8be053"
+      }
+    },
+    {
+      "id": "g4-digital-s1-teacher-guide",
+      "title": "دليل المعلم لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf",
+      "bytes": 5058858,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "digital-literacy",
+        "مهارات رقمية",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "لم يُستخرَجْ بعدُ: توقّفَتِ الدُّفعةُ عندَ امتلاءِ القرصِ. لا عيبَ معروفًا في الملفِّ نفسِهِ، ويُعادُ المحاولةُ عندَ توفُّرِ المساحةِ."
     }
   ],
   "mergedAt": "2026-08-25"

@@ -284,4 +284,7 @@ export const LOCAL_FILES: Record<string, string> = {
   // grade-4-vocational
   'g4-voc-s1-student-book': 'knowledge-base/grade-4-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الأول.pdf',
   'g4-voc-s2-student-book': 'knowledge-base/grade-4-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الثاني.pdf',
+  // grade-4-digital-literacy
+  'g4-digital-s1-activity-book': 'knowledge-base/grade-4-digital-literacy/support-pdfs/كتاب الأنشطة لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf',
+  'g4-digital-s1-teacher-guide': 'knowledge-base/grade-4-digital-literacy/support-pdfs/دليل المعلم لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf',
 };
