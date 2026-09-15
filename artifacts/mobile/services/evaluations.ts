@@ -36,8 +36,19 @@ export interface Evaluation {
   id: string;
   /** The class the teacher attached this exam to, or null. */
   classGroupId?: string | null;
-  /** Papers with marks on them. Only meaningful for a class-scoped list. */
+  /**
+   * Papers the teacher has finished marking, counted server-side from
+   * `attempt_results` excluding provisional ones. Returned by the LIST
+   * endpoint only — `GET /evaluations/:id` does not carry it.
+   */
   markedCount?: number;
+  /**
+   * Questions actually on the paper right now, counted server-side. Returned
+   * by the LIST endpoint only, and **not** the same as `targetQuestionCount`:
+   * that is what was asked for, this is what the generator produced, and the
+   * list endpoint does not return the former at all.
+   */
+  questionCount?: number;
   /** The student link's code. Issued at publish; null before that. */
   shareCode?: string | null;
   title: string;

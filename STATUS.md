@@ -447,6 +447,53 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A list of exams that could not tell itself apart, 2026-09-14
+
+«تقييماتي» rendered title + status + marks and nothing else, so seven exams
+showed as four rows reading «تقييم جديد» with no way to pick one out. Every
+field needed was already on the wire and simply not read: the list endpoint
+returns `bookId`, `createdAt`, `questionCount` and `markedCount` per row.
+
+Each row now carries the book and the date it was created, then marks,
+question count, and — only once published — how many papers are marked.
+
+Three things this turned up, none of them cosmetic:
+
+- **`markedCount` counted provisional papers as marked**, the same defect
+  #304 removed from the results dashboard and the class-insights endpoint,
+  surviving in a third place. A link submission is auto-marked on arrival, so
+  `total_marks > 0` was true of a paper with six answers untouched. The
+  subselect now carries `AND ar.is_provisional = false`, the same rule
+  `finishedAttempts` and `summariseAttempts` apply. **Measured against the
+  walkthrough data: the old query says 2 papers marked, the new one says 1** —
+  and the second paper is 3 of 16 marks at «100%», provisional.
+- **`questionCount` was returned by the server and absent from the client
+  type**, while `targetQuestionCount` was declared and is *not* returned by
+  the list endpoint at all. Reading the declared field would have printed
+  `undefined` on every row. Both are now documented as list-only, with the
+  difference between "asked for" and "produced" spelled out.
+- **Arabic number agreement.** `${n} سؤالًا` is what a template literal gives
+  and it is wrong for 3–10, which is where a question count lives — a teacher
+  reads «٨ أسئلة». Fixed with the existing `arCountPhrase`
+  (`services/arCount.ts`), **not** a second helper: the first attempt here
+  added one before noticing `i18n.ts` already imports that one in a dozen
+  places.
+
+**A rendering bug reported here in an earlier draft was not real.** Reading the
+screenshot, the day in «١٤ أيلول ٢٠٢٦» looked reversed next to the `·`
+separator, and a bidi-isolate fix was written and tested for it. Measuring the
+actual glyph positions in the browser — walking the text node and sorting the
+characters by x — showed the plain join already renders `١٤` correctly and in
+the right place, and that the isolates put a stray PDI glyph mid-line. The fix
+was reverted. Rasterised Arabic is not readable by eye at screenshot
+resolution; measure the layout instead of squinting at it.
+
+Verified by rendering the real screen against a local stack, not by tests
+alone: there are no screen tests, and the whole change is what the row looks
+like. `evaluationRow.test.ts` covers the two helpers that fail silently — an
+unresolvable book id (renders nothing, never the raw id) and an unparseable
+timestamp (renders nothing, never the string "Invalid Date").
+
 ## Comprehension drills, graded in the browser on purpose, 2026-09-13
 
 **13 comprehension questions on the three read-aloud passages** — multiple
