@@ -47,6 +47,7 @@ import {
   classMemberships,
   users,
   devicePushTokens,
+  lessonMedia,
   type DevicePushPlatform,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, inArray, isNull, lt, ne, or } from "drizzle-orm";
@@ -162,6 +163,57 @@ async function toClientMessage(row: typeof chatMessages.$inferSelect) {
 
 async function toClientMessages(rows: (typeof chatMessages.$inferSelect)[]) {
   return Promise.all(rows.map(toClientMessage));
+}
+
+/**
+ * Turn a media-library item into something a message can carry.
+ *
+ * An upload is attached by **reusing its R2 key**, not by copying the bytes.
+ * One object, two rows pointing at it — which is only safe because
+ * `routes/lessonMedia.ts`'s DELETE refuses to remove an object a chat message
+ * still references. The alternative, a server-side copy per send, would
+ * duplicate a 4MB photo for every student in a class to buy back an
+ * independence nothing needs.
+ *
+ * A reference item (a YouTube link) has no object at all, so it goes as a line
+ * of text. That is not a downgrade: a link in a message is exactly what a
+ * student can tap, and it is what they would have received anyway.
+ *
+ * Returns null when the item is not this user's — a teacher may only send
+ * their own media, and a missing item and someone else's item are deliberately
+ * indistinguishable from outside.
+ */
+async function shareFromLibrary(
+  libraryItemId: string,
+  userId: string,
+): Promise<{
+  attachment: { key: string; kind: "image" | "audio" | "document"; mime: string; sizeBytes: number } | null;
+  bodyLine: string;
+} | null> {
+  const [item] = await db
+    .select()
+    .from(lessonMedia)
+    .where(and(eq(lessonMedia.id, libraryItemId), eq(lessonMedia.userId, userId)))
+    .limit(1);
+  if (!item) return null;
+
+  if (item.r2Key) {
+    return {
+      attachment: {
+        key: item.r2Key,
+        // `video` never has an r2Key (no upload path), so whatever is stored
+        // here is one of the three kinds a chat attachment can be.
+        kind: item.kind as "image" | "audio" | "document",
+        mime: item.mimeType ?? "application/octet-stream",
+        sizeBytes: item.sizeBytes ?? 0,
+      },
+      bodyLine: "",
+    };
+  }
+
+  const url = item.sourceUrl ?? "";
+  if (!url) return null;
+  return { attachment: null, bodyLine: item.caption ? `${item.caption}\n${url}` : url };
 }
 
 /** Every userId `viewerId` has blocked — teachers never filter (see file header), so callers should skip this for them. */
@@ -826,11 +878,18 @@ const sendMessageLimiter = createRateLimiter({
 });
 
 /**
- * Text and/or one attachment (`attachmentDataUrl`, a `data:` URL — same
- * shape `lessonMedia.ts` uses; there is no multipart path in this server).
- * At least one of the two is required. Attachment upload reuses R2 and the
- * mime allowlist from lib/lessonMediaUpload.ts wholesale — a chat photo has
- * the same size/type constraints a lesson photo does.
+ * Text and/or one attachment. At least one is required.
+ *
+ * An attachment arrives one of two ways:
+ *
+ *   - `attachmentDataUrl`, a `data:` URL — same shape `lessonMedia.ts` uses;
+ *     there is no multipart path in this server. Upload reuses R2 and the mime
+ *     allowlist from lib/lessonMediaUpload.ts wholesale — a chat photo has the
+ *     same size/type constraints a lesson photo does.
+ *   - `libraryItemId`, something already in the sender's own media library.
+ *     Nothing is re-uploaded: an upload's R2 key is reused on the message, and
+ *     a reference item (a YouTube link) becomes a line of body text, because
+ *     there is no object to attach. See `shareFromLibrary`.
  */
 router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: AuthenticatedRequest, res) => {
   try {
@@ -854,9 +913,10 @@ router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: A
       return;
     }
 
-    const body = trimmed(req.body?.body);
+    let body = trimmed(req.body?.body);
     const dataUrl = typeof req.body?.attachmentDataUrl === "string" ? req.body.attachmentDataUrl : "";
-    if (!body && !dataUrl) {
+    const libraryItemId = typeof req.body?.libraryItemId === "string" ? req.body.libraryItemId.trim() : "";
+    if (!body && !dataUrl && !libraryItemId) {
       res.status(400).json({ error: "body or an attachment is required" });
       return;
     }
@@ -866,6 +926,20 @@ router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: A
     }
 
     let attachment: { key: string; kind: "image" | "audio" | "document"; mime: string; sizeBytes: number } | null = null;
+
+    if (libraryItemId) {
+      const shared = await shareFromLibrary(libraryItemId, req.user!.id);
+      if (!shared) {
+        res.status(404).json({ error: "Media not found", code: "library_item_not_found" });
+        return;
+      }
+      if (shared.attachment) attachment = shared.attachment;
+      // A reference has no object to attach, so it travels as text. Appended
+      // rather than substituted: the teacher's own covering note is the part
+      // the student actually reads.
+      if (shared.bodyLine) body = body ? `${body}\n${shared.bodyLine}` : shared.bodyLine;
+    }
+
     if (dataUrl) {
       if (!isR2Configured()) {
         res.status(503).json({

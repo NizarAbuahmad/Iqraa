@@ -282,8 +282,63 @@ export function insertVideoSlide(
   return next.map((s, i) => ({ ...s, slideNumber: i + 1 }));
 }
 
-/** What a teacher pinned to a lesson — the shape `lessonMedia` stores. */
-export type AttachedResource = { kind: 'image' | 'video' | 'audio' | 'document'; url: string; caption: string };
+/**
+ * What a teacher pinned to a lesson or picked out of their media library.
+ *
+ * `id` is present when the resource came from the library and absent for
+ * anything built inline (a book figure, a one-off pasted URL). It rides
+ * through to the slide as `mediaItemId` so a saved deck can be re-resolved —
+ * see `refreshDeckMedia`.
+ */
+export type AttachedResource = {
+  kind: 'image' | 'video' | 'audio' | 'document';
+  url: string;
+  caption: string;
+  id?: string;
+};
+
+/**
+ * A library item as the deck needs to see it — structurally, so this module
+ * stays free of `apiClient` (and therefore of react-native) and keeps loading
+ * under bare `node --test`.
+ */
+export type LibraryMediaRef = { id: string; url: string | null };
+
+/**
+ * Re-point a saved deck's media at fresh URLs.
+ *
+ * An uploaded file's URL is signed and expires in an hour (see `lib/r2.ts`),
+ * but a deck is stored as JSON in `saved_materials.content` and outlives it by
+ * weeks. Reopening one showed blank frames where the pictures used to be —
+ * silently, because an expired signature is a 403 an `<Image>` renders as
+ * nothing at all.
+ *
+ * So the slide keeps the library item's `id` and the URL is treated as a
+ * cache. Anything with no `mediaItemId`, no match in `items`, or a match that
+ * failed to sign is left exactly as it was: a YouTube link and a bundled book
+ * figure never expire, and an item R2 could not sign right now should keep
+ * showing the URL it had rather than lose it.
+ */
+export function refreshDeckMedia<T extends { slides: ActivitySlide[] }>(
+  deck: T,
+  items: readonly LibraryMediaRef[],
+): T {
+  if (items.length === 0) return deck;
+  const fresh = new Map(items.filter(i => i.url).map(i => [i.id, i.url as string]));
+  if (fresh.size === 0) return deck;
+
+  let changed = false;
+  const slides = deck.slides.map(slide => {
+    if (!slide.mediaItemId) return slide;
+    const url = fresh.get(slide.mediaItemId);
+    if (!url || url === slide.mediaUrl) return slide;
+    changed = true;
+    return { ...slide, mediaUrl: url };
+  });
+  // Same object back when nothing moved, so a re-render is not forced on
+  // every deck open.
+  return changed ? { ...deck, slides } : deck;
+}
 
 /**
  * Put the teacher's own resources into a generated deck.
@@ -303,7 +358,12 @@ export function insertLessonResources(
   const beforeExamples = slides.findIndex(s => s.type === 'challenge');
   const beforeSummary = slides.findIndex(s => s.type === 'summary');
   const at = beforeExamples >= 0 ? beforeExamples : beforeSummary >= 0 ? beforeSummary : slides.length;
-  const built = items.map(m => buildMediaSlide(m.kind, m.url, m.caption, isAr, 0));
+  const built = items.map(m => {
+    const slide = buildMediaSlide(m.kind, m.url, m.caption, isAr, 0);
+    // Carried so a saved deck can be re-signed later; absent for resources
+    // with no library row behind them (see AttachedResource).
+    return m.id ? { ...slide, mediaItemId: m.id } : slide;
+  });
   return [...slides.slice(0, at), ...built, ...slides.slice(at)]
     .map((s, i) => ({ ...s, slideNumber: i + 1 }));
 }

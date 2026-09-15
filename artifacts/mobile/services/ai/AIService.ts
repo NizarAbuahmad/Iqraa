@@ -330,6 +330,20 @@ export interface ActivitySlide {
   mediaUrl?: string;
   mediaCaption?: string;
   /**
+   * The media-library item `mediaUrl` came from, when it came from one.
+   *
+   * `mediaUrl` for an uploaded file is a *signed* R2 URL that expires in an
+   * hour, so a deck saved to `saved_materials.content` carries a dead link the
+   * next day — the images simply stop loading, with nothing to say why. This
+   * id is what lets `refreshDeckMedia` (services/classMedia.ts) re-point the
+   * slide at a fresh URL when a saved deck is opened.
+   *
+   * Only the resolver reads it. The three renderers still read `mediaUrl` and
+   * know nothing about libraries, which is the point — see deckVisuals.ts on
+   * why a slide carries data and not an embed.
+   */
+  mediaItemId?: string;
+  /**
    * Position of this question in the game's scoring ledger (Class Challenge).
    *
    * Deliberately NOT the same as slideNumber: intro, scoreboard and podium
