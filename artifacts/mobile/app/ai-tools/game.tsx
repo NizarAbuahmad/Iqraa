@@ -28,7 +28,7 @@ import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { ClassroomActivity } from '@/services/ai/AIService';
 import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
@@ -159,7 +159,7 @@ export default function ClassGameScreen() {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (e) {
       // A cancel is the teacher's own action, not a failure to report.
-      if (!isAbortError(e)) setError(t('generationFailed'));
+      if (!isAbortError(e)) setError(t(aiErrorMessageKey(e)));
     } finally {
       abortRef.current = null;
       setLoading(false);

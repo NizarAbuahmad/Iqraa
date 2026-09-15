@@ -65,11 +65,20 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     ];
 
     assertLiveModeEnabled();
-    assertBudgetAvailable();
+    // Keyed on the signed-in account, and on its role: students draw on
+    // AI_STUDENT_BUDGET_USD, everyone else on AI_USER_BUDGET_USD. There is no
+    // pooled fallback here as there is for generation — a chat turn is unique
+    // to its conversation and can never be served from the shared pool, so
+    // every turn is a live call and a refusal is the only option a cap has.
+    //
+    // `mode` from the body is NOT the identity used here. It selects the prompt
+    // and a student's client could send either value; the role on the verified
+    // session is the one that decides whose allowance pays.
     // Per-user allowance on top of the shared monthly cap. /chat is reachable by
     // any signed-in account — student and parent included — and was the largest
     // spender with no per-caller ceiling of its own.
-    await assertUserQuotaAvailable(req.user?.id);
+    await assertUserQuotaAvailable(req.user?.id, req.user?.role);
+    assertBudgetAvailable();
 
     const completion = await openai.chat.completions.create({
       model: getChatModel(),
@@ -91,8 +100,11 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     const answer = completion.choices[0]?.message?.content ?? "";
     res.json({ content: answer });
   } catch (err) {
+    // Each carries a `code`, as evaluations.ts and generate.ts do: the API
+    // answers in English, the app is Arabic, and the code is the only thing the
+    // client can translate from without matching on message text.
     if (err instanceof AiLiveModeOffError) {
-      res.status(503).json({ error: err.message });
+      res.status(503).json({ error: err.message, code: "live_mode_off" });
       return;
     }
     if (err instanceof AiUserQuotaExceededError) {
@@ -100,7 +112,7 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
       return;
     }
     if (err instanceof AiBudgetExceededError) {
-      res.status(429).json({ error: err.message });
+      res.status(429).json({ error: err.message, code: "budget_exceeded" });
       return;
     }
     logger.error({ err }, "chat error");

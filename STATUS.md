@@ -6135,6 +6135,44 @@ user_quota_exceeded`. A ledger that cannot be read does not block generation —
 the global cap still applies underneath, and turning a database blip into a
 total outage is the worse failure.
 
+> **Updated 2026-09-15 — the allowance now covers the routes that spend most,
+> and students have their own.**
+>
+> `assertUserQuotaAvailable` reached only `evaluations`, `attempts` and
+> `practice`. The two largest spenders never called it: all six `/generate/*`
+> routes (8000 output tokens each) and `/chat`, which is open to students, sends
+> a history window every turn, and had **no rate limiter of any kind**. Both now
+> call it, and `getUserBudgetLimitUsd(role)` reads `AI_STUDENT_BUDGET_USD` for
+> students — a class is thirty of them and their traffic is chat, which can
+> never be pooled, so every turn is live.
+>
+> **The caps apply to live calls only, and that is the point.** The per-user
+> check sits on the same line as `assertBudgetAvailable()` in
+> `generateContent`, *after* the shared-pool lookup, so a teacher who is out of
+> allowance is still served every pooled artifact without limit. When a cap does
+> refuse and the pool holds something the teacher has already seen, they get
+> that repeat rather than an error, carrying `servedReason` — and the provenance
+> badge that every generator screen already renders says «نسخة محفوظة». A
+> degrade nobody can see is the same failure as mock content nobody can see.
+>
+> Also: `generateWithProvenance` no longer substitutes mock content on a cap
+> refusal (it did, so a spent budget rendered a complete fabricated worksheet —
+> same carve-out the cancel path already had); and the verified-derivative
+> amplifier is down from **100 live calls per request to 10** (`MAX_REGEN` 5 → 2,
+> batch `ai` clamp 20 → 5), with `userId` finally threaded into its handlers and
+> ledger rows — without it that route was the one workload that escaped the
+> per-user cap entirely, which is what the note in `generateContent` used to say
+> and no longer needs to. `CHAT_HISTORY_TURNS` 12 → 6, bounding how many turns
+> are forwarded where `clampPromptText` (#445) bounds how long each may be.
+>
+> The per-user burst limiters and the two `assertUserQuotaAvailable` call sites
+> came from **#445**, which landed first; this builds on them rather than
+> repeating them.
+>
+> **Not yet verified end-to-end**: the pool-stays-free and degrade paths are
+> unit-tested but have not been run against a live key and database. See the
+> plan's verification steps 4–7.
+
 ### Two things tidied on the way, both duplication of a security control
 
 - **`sanitizeQuestionForStudent` now delegates to the type registry.** Every

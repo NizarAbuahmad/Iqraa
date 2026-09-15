@@ -170,6 +170,7 @@ const translations = {
     demoModeHint: 'محتوى تجريبي للعرض — دون اتصال بنموذج خارجي',
     aiLiveBadge: 'ذكاء اصطناعي مباشر',
     aiFallbackBadge: 'تعذّر الاتصال · محتوى تجريبي',
+    aiSavedCopyBadge: 'نسخة محفوظة · انتهت حصة هذا الشهر',
     slideMediaUrlField: 'رابط الفيديو أو الصورة',
     slideMediaUrlHint: 'الصق رابط يوتيوب لاستبدال الفيديو المقترح، أو رابط صورة مباشرًا.',
     slideMediaCaptionField: 'وصف الوسائط (اختياري)',
@@ -416,6 +417,15 @@ const translations = {
     scopeNoCurriculumHint:
       'لا يتوفر منهاج لهذه المادة في الصف المحدد، لذلك لا تظهر ضمن قائمة المواد. غيّر الصف أو اختر مادة أخرى.',
     generationFailed: 'تعذر إتمام العملية. حاول مرة أخرى.',
+    // Two states a teacher can act on, kept apart from generationFailed: one
+    // says «wait, or reuse what you have», the other «this is switched off» —
+    // and neither is «try again», which is the one thing that will not help.
+    aiQuotaSpent:
+      'انتهت حصة التوليد الجديد لهذا الشهر. لا يزال بإمكانك فتح الأوراق والدروس المحفوظة.',
+    aiUnavailable: 'خدمة الذكاء الاصطناعي متوقفة حالياً. حاول لاحقاً.',
+    // Shown with a result, not instead of one: the teacher asked for something
+    // new and got a saved copy, and must not mistake it for a fresh generation.
+    aiServedSavedCopy: 'هذه نسخة محفوظة — انتهت حصة التوليد الجديد لهذا الشهر.',
     curriculumUngroundedNotice: 'هذا الموضوع غير موجود في المنهاج المتاح حالياً. الخطة عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
     curriculumUngroundedNoticeWorksheet: 'هذا الموضوع غير موجود في المنهاج المتاح حالياً. ورقة العمل عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
     includePriorReviewLabel: 'تضمين أسئلة مراجعة سابقة',
@@ -1536,6 +1546,7 @@ const translations = {
     demoModeHint: 'Sample output for demonstration — no external model call',
     aiLiveBadge: 'Live AI',
     aiFallbackBadge: 'Connection failed · sample content',
+    aiSavedCopyBadge: "Saved copy · this month's allowance is used up",
     slideMediaUrlField: 'Video or image link',
     slideMediaUrlHint: 'Paste a YouTube link to replace the suggested video, or a direct image URL.',
     slideMediaCaptionField: 'Media caption (optional)',
@@ -1766,6 +1777,10 @@ const translations = {
     scopeNoCurriculumHint:
       'There is no curriculum for this subject in the selected grade, so it is not in the subject list. Change the grade, or pick another subject.',
     generationFailed: 'Generation failed. Please try again.',
+    aiQuotaSpent:
+      "This month's allowance for new generations is used up. You can still open saved worksheets and lessons.",
+    aiUnavailable: 'The AI service is switched off right now. Try again later.',
+    aiServedSavedCopy: "This is a saved copy — this month's allowance for new generations is used up.",
     curriculumUngroundedNotice: 'This topic is not in the currently available curriculum. The plan is generic and not grounded in a specific textbook lesson.',
     curriculumUngroundedNoticeWorksheet: 'This topic is not in the currently available curriculum. The worksheet is generic and not grounded in a specific textbook lesson.',
     includePriorReviewLabel: 'Include prior-knowledge review questions',
