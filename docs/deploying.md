@@ -238,9 +238,32 @@ gcloud run services update-traffic iqraa-api --region europe-west1 \
 That `0 percent of traffic` in the output of a deploy or an env-var update is
 the tell. It is not noise.
 
-**Still pinned to `iqraa-api-00032-279` on 2026-09-15**, so the paragraph above
-describes the live service, not a past incident. A deploy that day created
-`iqraa-api-00042-brg`, healthy and serving nobody.
+**The pin comes back. Treat `--to-latest` as part of deploying, not as a
+repair.** It was cleared on 2026-09-13 and was pinned to `iqraa-api-00032-279`
+again by 2026-09-15 — the same revision, which by then was old enough to
+predate `/healthz/version` itself. So `curl …/api/healthz/version` answered
+`Cannot GET`, and the API read as having gone *backwards* while four healthy
+revisions from that morning (`00041` through `00044`) served nobody. Every one
+of those deploys had reported `Done.`
+
+What re-establishes it is a deploy that does not take traffic — `--tag`, or
+`--no-traffic`. That writes an explicit revision into the traffic block, and an
+explicit revision is a pin. The tell on 2026-09-15 was a `candidate` tag left
+on `iqraa-api-00042-brg`; the pin it created then swallowed every later deploy
+silently. Cleared again at 11:26 UTC that day, with `00044-trh` serving.
+
+So after any deploy, read the traffic block. The two-line habit:
+
+```bash
+gcloud run services describe iqraa-api --region europe-west1 \
+  --project iqraa-auth-507315 --format="value(status.traffic)"
+curl -s https://iqraa-api-613126375862.europe-west1.run.app/api/healthz/version
+```
+
+The first must say `latestRevision: True`; the second must report the commit
+you deployed. Neither alone is enough — the first can be right while the build
+is stale, and the second cannot be read at all when the serving revision is old
+enough to lack the route.
 
 **The new revision gets a `candidate` tag, and that is useful.** Rather than
 being unreachable, it comes up on its own URL:

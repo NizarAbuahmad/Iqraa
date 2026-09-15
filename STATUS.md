@@ -61,7 +61,10 @@ an announcement by default» below.
   three production faults that had nothing to do with this code — Cloud Run
   traffic pinned to an old revision, a stale Cloud Shell clone deploying
   week-old code, and an R2 token scoped to `iqraa-media` only — each now
-  written up in `docs/deploying.md`.
+  written up in `docs/deploying.md`. The traffic pin then returned two days
+  later and took the whole API back to a revision older than
+  `/healthz/version`, which is why that entry now treats it as a recurring
+  mode rather than an incident.
 - **In-app messaging between teachers, parents and students** (2026-09-04):
   claim-code signup, teacher↔parent and teacher↔student direct threads,
   class-group and teacher-made custom groups, image attachments, block and
