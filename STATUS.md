@@ -456,6 +456,48 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A report could name anyone, and moderation believed it, 2026-09-15
+
+**`POST /messaging/reports` checked the reporter and trusted the rest.** It
+verified that whoever filed the report was a participant of `threadId` — and
+then wrote `reportedUserId` and `messageId` to `chat_reports` exactly as they
+arrived in the body, neither one checked against that thread.
+
+**`PATCH /moderation/reports/:id` acts on both fields directly.** `suspendUser`
+sets `suspendedAt` on `report.reportedUserId`; `hideMessage` archives
+`report.messageId` by id alone. Neither consults the thread. So a participant
+of *any* thread could file a report naming a teacher they had never messaged,
+or a message from a thread they cannot see, and an admin approving it would
+carry it out. The only existing guard is that an admin cannot be suspended
+(`ADMIN_ROLES`, added so moderators could not lock each other out) — every
+other account was nameable.
+
+It needs a person to approve, which is what keeps this below the grading and
+budget bugs in priority. But the approving admin has no signal that anything is
+wrong: the report renders identically whether the target was in the
+conversation or not.
+
+Both ids are now checked against the thread before the row is written. The
+rules live in `lib/reportDecision.ts` rather than in the route, for the reason
+`claimDecision.ts` gives in its own header — `@workspace/db` throws at import
+without `DATABASE_URL`, so a rule tested through the route would need a live
+database and this repo has none. Trust-boundary rules should not be untestable
+forever. `reportDecision.test.ts` covers both vectors, the group-thread case
+(membership of the thread, not a two-party relationship), and that no message
+lookup happens when no message was named.
+
+**Rows written before this are not retroactively safe.** The fix is on the
+write path, so any report already in `chat_reports` still carries whatever it
+was given. If any exist, they are worth a look before they are actioned:
+
+```sql
+select r.id, r.thread_id, r.reported_user_id
+from chat_reports r
+left join chat_participants p
+  on p.thread_id = r.thread_id and p.user_id = r.reported_user_id
+where p.user_id is null;
+```
+
 ## One account could spend everyone's AI budget, 2026-09-15
 
 **`/chat` and `/generate` had no per-caller ceiling of any kind.** No rate
