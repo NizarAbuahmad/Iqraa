@@ -260,6 +260,25 @@ export interface ActivitySlide {
   durationSeconds: number;
   teacher?: TeacherCompanion;
   /**
+   * This slide's substance lives in the teacher panel, not on the wall.
+   *
+   * Guided and independent practice carry a deliberately bare prompt: the
+   * plan's text for them is facilitation narration ("swap boards, then answer
+   * in front of the class"), which the class must not read off a screen. See
+   * the comment at the practice block in `lessonSlides.ts`.
+   *
+   * The cost of that split is a slide that is ~90% empty and reads as broken
+   * mid-lesson, with nothing saying the content is one tap away. The presenter
+   * renders a cue when this is set. It is a declared flag rather than "content
+   * looks short", because the warm-up and example slides are the same `type`
+   * with the same teacher panel and DO carry real content — a heuristic would
+   * put the cue on them too.
+   *
+   * Presenter-only on purpose: the HTML and PPTX exports have no teacher-notes
+   * button, so a cue pointing at one would dangle. Those renderers ignore it.
+   */
+  teacherLed?: boolean;
+  /**
    * Whole-class MCQ payload — only for type 'question'.
    * Options are display-ready (already shuffled); wrong options are built
    * from real misconception distractors so the show of hands tells the

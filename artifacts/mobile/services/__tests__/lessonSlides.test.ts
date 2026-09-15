@@ -166,6 +166,27 @@ describe('practice slides', () => {
     assert.equal(guided!.teacher?.teachingTips, PLAN.guidedPractice);
     assert.equal(independent!.teacher?.teachingTips, PLAN.independentPractice);
   });
+
+  // The split above leaves these two slides with a single projected line, so
+  // they look broken on a wall. `teacherLed` is what lets the presenter say
+  // the substance is one tap away, and it has to stay ON exactly these two:
+  // the warm-up and example slides share the type AND the teacher panel but
+  // carry real content, so a cue on them would be noise.
+  it('marks the practice slides as teacher-led, and only those', () => {
+    const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: PLAN });
+    const guided = deck.slides.find(s => s.title.includes('تدريب موجّه'));
+    const independent = deck.slides.find(s => s.title.includes('تدريب مستقل'));
+    assert.equal(guided!.teacherLed, true);
+    assert.equal(independent!.teacherLed, true);
+
+    const flagged = deck.slides.filter(s => s.teacherLed).map(s => s.title);
+    assert.equal(flagged.length, 2, `unexpected teacher-led slides: ${flagged.join(' | ')}`);
+
+    // A cue that points at an empty panel is worse than no cue.
+    for (const s of deck.slides.filter(x => x.teacherLed)) {
+      assert.ok(s.teacher?.teachingTips, `${s.title} is teacher-led with no teachingTips`);
+    }
+  });
 });
 
 describe('hook / introduction', () => {

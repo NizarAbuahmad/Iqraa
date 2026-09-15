@@ -662,6 +662,10 @@ export function buildLessonDeck(
         title: T('🤝 تدريب موجّه', '🤝 Guided Practice'),
         content: L('لنحلّ هذا معًا خطوة بخطوة.', "Let's work through this together, step by step."),
         durationSeconds: 0,
+        // The prompt above is the whole slide, by design. Say so, or the
+        // teacher meets a blank wall and reads it as a bug — the same reason
+        // `graphEmptyHint` exists on the graph slide.
+        teacherLed: true,
         teacher: {
           expectedAnswer: L('لا توجد إجابة واحدة ثابتة — راقب تنفيذ الطلبة ووجّههم أثناء العمل.',
             'There is no single fixed answer — monitor the class and guide them as they work.'),
@@ -676,6 +680,7 @@ export function buildLessonDeck(
         title: T('✍️ تدريب مستقل', '✍️ Independent Practice'),
         content: L('حان دوركم — حاولوا بمفردكم.', "Now it's your turn — try it on your own."),
         durationSeconds: 0,
+        teacherLed: true,
         teacher: {
           expectedAnswer: L('تختلف الإجابات باختلاف النظام أو المسألة المطروحة — راجعها بعد وقت العمل الفردي.',
             'Answers vary with the system or problem given — review them after independent work time.'),
