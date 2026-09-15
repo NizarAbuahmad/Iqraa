@@ -20,5 +20,24 @@
 # Cloudflare Pages reads _headers from the root of what it serves;
 # `expo export --platform web` copies public/ verbatim into dist/, which is
 # why this sits beside _redirects rather than in some build config.
+
+# Clickjacking, for the same single rule below: app.iqrra.com is a signed-in
+# tool and nothing frames it. There is no <iframe> and no WebView anywhere in
+# the app — the only two WebView mentions in the codebase are comments saying
+# it deliberately carries no such dependency — so the strict answer is the
+# correct one, and nobody can overlay an invisible copy of a teacher's session
+# to harvest clicks on whatever sits under the cursor, «حذف الحساب» included.
+#
+# frame-ancestors only, deliberately NOT a full CSP. A script-src/style-src
+# policy over a React Native Web bundle is worth doing and is a separate
+# change: Expo emits inline styles, and the bundle's own eval-shaped paths
+# would need auditing first. A CSP that breaks the app is worse than no CSP.
+# This directive governs who may embed the page and says nothing about what
+# the page may load, so it cannot break rendering.
+#
+# Both spellings, because they are not the same coverage: frame-ancestors is
+# the modern one, X-Frame-Options is what older browsers still honour.
 /*
   X-Robots-Tag: noindex, nofollow
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
