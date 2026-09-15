@@ -5707,6 +5707,180 @@
         "localPath": "knowledge-base/grade-4-arabic/support-pdfs/دليل المعلم لمادة العربية لغتي الصف الرابع الفصل الأول.pdf",
         "sha256": "61603e9ca493fc74595ef8b3501f77bd64cfa397e20c233ccd7bc37674d18acd"
       }
+    },
+    {
+      "id": "g4-english-s1-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+      "bytes": 41345920,
+      "subject": "english",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "english",
+        "لغة إنجليزية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ، فقياسُ انعكاسِ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 60,
+        "chars": 67893,
+        "localPath": "knowledge-base/grade-4-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+        "sha256": "311fd299fb1e6b682e9cea9aa0bc743a54103e2d0832c93ca4984f9ec38c1119"
+      }
+    },
+    {
+      "id": "g4-english-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+      "bytes": 43735218,
+      "subject": "english",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "english",
+        "لغة إنجليزية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "تعذَّرَ الاستخراجُ: خريطةُ محارفِ الخطِّ معطوبةٌ، فالحروفُ اللاتينيّةُ تُقرَأُ رموزًا عربيّةً بلا معنًى (صِفر% من المحارفِ لاتينيّةٌ في كتابٍ إنجليزيٍّ). يبقى pending حتى يُمرَّرَ عبرَ OCR؛ النسخةُ المقابلةُ للفصلِ الأوّلِ سليمةٌ، فالعطبُ في ملفّاتِ الفصلِ الثاني وحدَها."
+    },
+    {
+      "id": "g4-english-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+      "bytes": 4729119,
+      "subject": "english",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "english",
+        "لغة إنجليزية",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ، فقياسُ انعكاسِ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 56,
+        "chars": 43513,
+        "localPath": "knowledge-base/grade-4-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+        "sha256": "6d467e4699c2caefa94ed911503d8b072e74179e084fbf04bd00b4bed7a4bb02"
+      }
+    },
+    {
+      "id": "g4-english-s2-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+      "bytes": 19215373,
+      "subject": "english",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "pending",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "english",
+        "لغة إنجليزية",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "تعذَّرَ الاستخراجُ: خريطةُ محارفِ الخطِّ معطوبةٌ، فالحروفُ اللاتينيّةُ تُقرَأُ رموزًا عربيّةً بلا معنًى (صِفر% من المحارفِ لاتينيّةٌ في كتابٍ إنجليزيٍّ). يبقى pending حتى يُمرَّرَ عبرَ OCR؛ النسخةُ المقابلةُ للفصلِ الأوّلِ سليمةٌ، فالعطبُ في ملفّاتِ الفصلِ الثاني وحدَها."
+    },
+    {
+      "id": "g4-english-s1-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+      "bytes": 37525259,
+      "subject": "english",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "english",
+        "لغة إنجليزية",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ، فقياسُ انعكاسِ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 134,
+        "chars": 411280,
+        "localPath": "knowledge-base/grade-4-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+        "sha256": "f01e4ae8acd35c4d6f8089a39c503271578fbab443f24a93dec22446280e632b"
+      }
+    },
+    {
+      "id": "g4-english-s2-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+      "bytes": 40801568,
+      "subject": "english",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "third-party",
+      "status": "pending",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "english",
+        "لغة إنجليزية",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "تعذَّرَ الاستخراجُ: حروفٌ عربيّةٌ بأشكالِ العرضِ المعكوسةِ رفضَتْها البوّابةُ، ثمّ أخفقَ OCR لامتلاءِ القرصِ أثناءَ الرَّسْتَرَةِ. يبقى pending حتى يُعادَ بمساحةٍ كافيةٍ."
     }
   ],
   "mergedAt": "2026-08-25"
