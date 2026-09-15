@@ -273,4 +273,9 @@ export const LOCAL_FILES: Record<string, string> = {
   'g4-english-s2-activity-book': 'knowledge-base/grade-4-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf',
   'g4-english-s1-teacher-guide': 'knowledge-base/grade-4-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf',
   'g4-english-s2-teacher-guide': 'knowledge-base/grade-4-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf',
+  // grade-4-islamic
+  'g4-islamic-s1-student-book': 'knowledge-base/grade-4-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf',
+  'g4-islamic-s2-student-book': 'knowledge-base/grade-4-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf',
+  'g4-islamic-s1-teacher-guide': 'knowledge-base/grade-4-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf',
+  'g4-islamic-s2-teacher-guide': 'knowledge-base/grade-4-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf',
 };

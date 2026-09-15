@@ -5881,6 +5881,138 @@
         "الفصل الثاني"
       ],
       "notes": "تعذَّرَ الاستخراجُ: حروفٌ عربيّةٌ بأشكالِ العرضِ المعكوسةِ رفضَتْها البوّابةُ، ثمّ أخفقَ OCR لامتلاءِ القرصِ أثناءَ الرَّسْتَرَةِ. يبقى pending حتى يُعادَ بمساحةٍ كافيةٍ."
+    },
+    {
+      "id": "g4-islamic-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf",
+      "bytes": 44834969,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "islamic",
+        "تربية إسلامية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 1.1% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 90 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 90,
+        "chars": 93350,
+        "localPath": "knowledge-base/grade-4-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf",
+        "sha256": "f3407c5d45f8e707bbb10ec7e4a5a35ebd8a704b819370e4cb67df61839c6c48"
+      }
+    },
+    {
+      "id": "g4-islamic-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf",
+      "bytes": 55724745,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "islamic",
+        "تربية إسلامية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.7% مقيسةً بشواهدِ الكلماتِ، و1 صفحةً من 114 مقلوبةٌ في مُعظَمِها (92).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 114,
+        "chars": 113578,
+        "localPath": "knowledge-base/grade-4-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf",
+        "sha256": "06900efc202f7759047f066a8a1d2fd954a184e7442a8ed8853773ae46d8d008"
+      }
+    },
+    {
+      "id": "g4-islamic-s1-teacher-guide",
+      "title": "دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf",
+      "bytes": 57001801,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "islamic",
+        "تربية إسلامية",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 1.1% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 224 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 224,
+        "chars": 369318,
+        "localPath": "knowledge-base/grade-4-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf",
+        "sha256": "698b4be1c8563dd51ee954f8c788d0e55fba1acd4a1d909d0f2efe0bd681a159"
+      }
+    },
+    {
+      "id": "g4-islamic-s2-teacher-guide",
+      "title": "دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf",
+      "bytes": 64253561,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "islamic",
+        "تربية إسلامية",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 2.7% مقيسةً بشواهدِ الكلماتِ، و1 صفحةً من 256 مقلوبةٌ في مُعظَمِها (46).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 256,
+        "chars": 437049,
+        "localPath": "knowledge-base/grade-4-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf",
+        "sha256": "f4974a38ed1c321138469fe741c92d432389e55718038b2b31ca6e71be238c77"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
