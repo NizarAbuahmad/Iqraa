@@ -253,4 +253,11 @@ export const LOCAL_FILES: Record<string, string> = {
   'g4-math-s1-teacher-guide': 'knowledge-base/grade-4-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف الرابع الفصل الأول 2023.pdf',
   'g4-math-s2-teacher-guide': 'knowledge-base/grade-4-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف الرابع الفصل الثاني.pdf',
   'g4-math-s2-support-guide': 'knowledge-base/grade-4-math/support-pdfs/دليل المعلم إلى المواد المساندة للتعلم الرياضيات رابع الفصل الثاني.pdf',
+  // grade-4-science
+  'g4-science-s1-student-book': 'knowledge-base/grade-4-science/support-pdfs/كتاب الطالب لمادة العلوم الصف الرابع الفصل الأول.pdf',
+  'g4-science-s2-student-book': 'knowledge-base/grade-4-science/support-pdfs/كتاب الطالب لمادة العلوم الصف الرابع الفصل الثاني.pdf',
+  'g4-science-s1-activity-book': 'knowledge-base/grade-4-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الأول.pdf',
+  'g4-science-s2-activity-book': 'knowledge-base/grade-4-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الثاني.pdf',
+  'g4-science-s1-teacher-guide': 'knowledge-base/grade-4-science/support-pdfs/دليل المعلم لمادة العلوم الصف الرابع الفصل الأول.pdf',
+  'g4-science-s2-teacher-guide': 'knowledge-base/grade-4-science/support-pdfs/دليل المعلم العلوم الصف الرابع الفصل الثاني.pdf',
 };

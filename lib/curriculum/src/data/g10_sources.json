@@ -5344,6 +5344,204 @@
         "localPath": "knowledge-base/grade-4-math/support-pdfs/دليل المعلم إلى المواد المساندة للتعلم الرياضيات رابع الفصل الثاني.pdf",
         "sha256": "6f048da2ede9a348a728441e8241f5cf387699906d2ca8a61d8478f08e6b3d00"
       }
+    },
+    {
+      "id": "g4-science-s1-student-book",
+      "title": "كتاب الطالب لمادة العلوم الصف الرابع الفصل الأول.pdf",
+      "bytes": 24724101,
+      "subject": "science",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "science",
+        "علوم",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.5% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 88 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 88,
+        "chars": 83201,
+        "localPath": "knowledge-base/grade-4-science/support-pdfs/كتاب الطالب لمادة العلوم الصف الرابع الفصل الأول.pdf",
+        "sha256": "8f6a4d17726ce00233c137f690a792d6cdd870b440ca71cb4c7e335683967f0b"
+      }
+    },
+    {
+      "id": "g4-science-s2-student-book",
+      "title": "كتاب الطالب لمادة العلوم الصف الرابع الفصل الثاني.pdf",
+      "bytes": 51216775,
+      "subject": "science",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "science",
+        "علوم",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.7% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 102 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 102,
+        "chars": 98976,
+        "localPath": "knowledge-base/grade-4-science/support-pdfs/كتاب الطالب لمادة العلوم الصف الرابع الفصل الثاني.pdf",
+        "sha256": "1ae48d69a57250f1f663f1ba129b3c34183c65eadcf2359ed56e1e7a8f4e097d"
+      }
+    },
+    {
+      "id": "g4-science-s1-activity-book",
+      "title": "كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الأول.pdf",
+      "bytes": 4829883,
+      "subject": "science",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "science",
+        "علوم",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 2.3% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 36 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 36,
+        "chars": 49735,
+        "localPath": "knowledge-base/grade-4-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الأول.pdf",
+        "sha256": "cd365b408f6257a10eb9905b994e8643887dee84c57a1c524991f0e655de449b"
+      }
+    },
+    {
+      "id": "g4-science-s2-activity-book",
+      "title": "كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الثاني.pdf",
+      "bytes": 8697243,
+      "subject": "science",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "science",
+        "علوم",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.9% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 42 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 42,
+        "chars": 48989,
+        "localPath": "knowledge-base/grade-4-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الثاني.pdf",
+        "sha256": "26e80ea5e47214d124ffb54eb561fd4b18dc51c5fce9811aa2855b64b62c91a0"
+      }
+    },
+    {
+      "id": "g4-science-s1-teacher-guide",
+      "title": "دليل المعلم لمادة العلوم الصف الرابع الفصل الأول.pdf",
+      "bytes": 53874620,
+      "subject": "science",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العلوم الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "science",
+        "علوم",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 95% of samples — readable by eye, not quotable). نسبةُ انعكاسِ الحروفِ 0.4% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 178 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 95% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-15",
+        "pages": 178,
+        "chars": 262299,
+        "localPath": "knowledge-base/grade-4-science/support-pdfs/دليل المعلم لمادة العلوم الصف الرابع الفصل الأول.pdf",
+        "sha256": "534cf146ee0e8cea23db2f95279eb0dca7e07d5a9be9560984cc311e6584715a"
+      }
+    },
+    {
+      "id": "g4-science-s2-teacher-guide",
+      "title": "دليل المعلم العلوم الصف الرابع الفصل الثاني.pdf",
+      "bytes": 43009628,
+      "subject": "science",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم العلوم الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "science",
+        "علوم",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 91% of samples — readable by eye, not quotable). نسبةُ انعكاسِ الحروفِ 0.2% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 164 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 91% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-15",
+        "pages": 164,
+        "chars": 217379,
+        "localPath": "knowledge-base/grade-4-science/support-pdfs/دليل المعلم العلوم الصف الرابع الفصل الثاني.pdf",
+        "sha256": "459124a90447bd7a0ab167eb19c3e2632414aa7512c83f6eeb62e39507d6f31e"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
