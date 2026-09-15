@@ -1,0 +1,11 @@
+# Deliberately permissive. See _headers: the app is de-indexed with
+# X-Robots-Tag, and that only works if crawlers are allowed to fetch the pages
+# and read it. Disallowing here would hide the noindex and leave URLs stuck in
+# the index with no title — the opposite of the intent.
+#
+# This file also exists so /robots.txt stops returning the app shell with a 200.
+# The SPA catch-all in _redirects answers every unmatched path; Cloudflare Pages
+# serves real static files first, so a file here wins over that rule.
+
+User-agent: *
+Allow: /
