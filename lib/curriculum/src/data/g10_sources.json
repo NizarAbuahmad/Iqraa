@@ -3854,7 +3854,7 @@
       "subject": "english",
       "semester": 1,
       "kind": "teacher-guide",
-      "authority": "nccd",
+      "authority": "third-party",
       "status": "ingested",
       "filename": "دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
       "authorAr": null,
@@ -3869,7 +3869,7 @@
         "دليل المعلم",
         "عاشر"
       ],
-      "notes": "نُزّل من nccd.gov.jo في 2026-09-06 واستُخرج في 2026-09-07 بـ pdf-parse. 170 صفحة، نصّ إنجليزي سليم.",
+      "notes": "نُزّل من nccd.gov.jo في 2026-09-06 واستُخرج في 2026-09-07 بـ pdf-parse. 170 صفحة، نصّ إنجليزي سليم. © Pearson Education Limited و York Press، وعليهِ إشعارُ حفظِ الحقوقِ كاملًا (\"All rights reserved; no part of this publication may be reproduced…\"). كانَ مُسجَّلًا authority = nccd حتّى 2026-09-15، و nccd تعني «يُقتبَسُ حرفيًّا» (quotableOnly في passages.ts)، فكانَ نصُّ كتابٍ تجاريٍّ محفوظِ الحقوقِ مؤهَّلًا للاسترجاعِ والاقتباسِ. صُحِّحَ إلى third-party بعدَ قراءةِ صفحةِ الحقوقِ في النصِّ المستخرَجِ نفسِهِ. كتبُ الطالبِ والأنشطةِ للصفِّ العاشرِ من السلسلةِ نفسِها كانت مُسجَّلةً third-party أصلًا، وهوَ ما جعلَ التناقضَ ظاهرًا.",
       "extraction": {
         "tool": "pdf-parse@2",
         "extractedAt": "2026-09-07",
@@ -3886,7 +3886,7 @@
       "subject": "english",
       "semester": 2,
       "kind": "teacher-guide",
-      "authority": "nccd",
+      "authority": "third-party",
       "status": "ingested",
       "filename": "دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf",
       "authorAr": null,
@@ -3901,7 +3901,7 @@
         "دليل المعلم",
         "عاشر"
       ],
-      "notes": "نُزّل من nccd.gov.jo في 2026-09-06. رفضه pdf-parse بسبب عربية بأشكال العرض في صفحات المقدمة فقط، مع أن متن الكتاب إنجليزي. أول محاولة تعرّف ضوئي استخدمت النموذج العربي (الافتراضي) فأعادت خليطًا لا معنى له («0200110090065 عأسثانا 116») واجتازت بوابة الجودة، لأن كل فحوص البوابة تقيس عطبًا عربيًا ولم يبقَ في النص عربية تُقاس. أُعيدت القراءة بـ eng+ara فجاء النص سليمًا (451,343 حرفًا لاتينيًا مقابل 636 عربيًا). اختيار اللغة صار مشتقًا من مادة الكتاب في extract-text.ts.",
+      "notes": "نُزّل من nccd.gov.jo في 2026-09-06. رفضه pdf-parse بسبب عربية بأشكال العرض في صفحات المقدمة فقط، مع أن متن الكتاب إنجليزي. أول محاولة تعرّف ضوئي استخدمت النموذج العربي (الافتراضي) فأعادت خليطًا لا معنى له («0200110090065 عأسثانا 116») واجتازت بوابة الجودة، لأن كل فحوص البوابة تقيس عطبًا عربيًا ولم يبقَ في النص عربية تُقاس. أُعيدت القراءة بـ eng+ara فجاء النص سليمًا (451,343 حرفًا لاتينيًا مقابل 636 عربيًا). اختيار اللغة صار مشتقًا من مادة الكتاب في extract-text.ts. © Pearson Education Limited و York Press، وعليهِ إشعارُ حفظِ الحقوقِ كاملًا (\"All rights reserved; no part of this publication may be reproduced…\"). كانَ مُسجَّلًا authority = nccd حتّى 2026-09-15، و nccd تعني «يُقتبَسُ حرفيًّا» (quotableOnly في passages.ts)، فكانَ نصُّ كتابٍ تجاريٍّ محفوظِ الحقوقِ مؤهَّلًا للاسترجاعِ والاقتباسِ. صُحِّحَ إلى third-party بعدَ قراءةِ صفحةِ الحقوقِ في النصِّ المستخرَجِ نفسِهِ. كتبُ الطالبِ والأنشطةِ للصفِّ العاشرِ من السلسلةِ نفسِها كانت مُسجَّلةً third-party أصلًا، وهوَ ما جعلَ التناقضَ ظاهرًا.",
       "extraction": {
         "tool": "tesseract-ocr (--ocr requested)",
         "extractedAt": "2026-09-07",
@@ -3984,7 +3984,7 @@
       "subject": "english",
       "semester": 1,
       "kind": "student-book",
-      "authority": "nccd",
+      "authority": "third-party",
       "status": "ingested",
       "filename": "كتاب الطالب لمادة اللغة الإنجليزية الصف التاسع الفصل الأول.pdf",
       "authorAr": null,
@@ -4000,7 +4000,7 @@
         "كتاب الطالب",
         "الفصل الأول"
       ],
-      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه. الكتابُ إنجليزيٌّ، فبوابةُ قلبِ اللامِ لا تقيسُ فيه شيئًا وتعيدُ n/a — وهذا انعدامُ قياسٍ لا شهادةُ سلامة. قُرئ بالعينِ: نصُّه نظيفٌ وعناوينُ الدروسِ (LESSON 2A) ظاهرةٌ صراحةً.",
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه. الكتابُ إنجليزيٌّ، فبوابةُ قلبِ اللامِ لا تقيسُ فيه شيئًا وتعيدُ n/a — وهذا انعدامُ قياسٍ لا شهادةُ سلامة. قُرئ بالعينِ: نصُّه نظيفٌ وعناوينُ الدروسِ (LESSON 2A) ظاهرةٌ صراحةً. © Pearson Education Limited و York Press، وعليهِ إشعارُ حفظِ الحقوقِ كاملًا (\"All rights reserved; no part of this publication may be reproduced…\"). كانَ مُسجَّلًا authority = nccd حتّى 2026-09-15، و nccd تعني «يُقتبَسُ حرفيًّا» (quotableOnly في passages.ts)، فكانَ نصُّ كتابٍ تجاريٍّ محفوظِ الحقوقِ مؤهَّلًا للاسترجاعِ والاقتباسِ. صُحِّحَ إلى third-party بعدَ قراءةِ صفحةِ الحقوقِ في النصِّ المستخرَجِ نفسِهِ. كتبُ الطالبِ والأنشطةِ للصفِّ العاشرِ من السلسلةِ نفسِها كانت مُسجَّلةً third-party أصلًا، وهوَ ما جعلَ التناقضَ ظاهرًا.",
       "extraction": {
         "tool": "pdf-parse@2",
         "extractedAt": "2026-09-08",
@@ -4017,7 +4017,7 @@
       "subject": "english",
       "semester": 2,
       "kind": "student-book",
-      "authority": "nccd",
+      "authority": "third-party",
       "status": "ingested",
       "filename": "كتاب الطالب لمادة اللغة الإنجليزية الصف التاسع الفصل الثاني.pdf",
       "authorAr": null,
@@ -4033,7 +4033,7 @@
         "كتاب الطالب",
         "الفصل الثاني"
       ],
-      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه. إنجليزيٌّ كذلك، n/a للسببِ نفسِه، ونصُّه نظيفٌ بالقراءة.",
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه. إنجليزيٌّ كذلك، n/a للسببِ نفسِه، ونصُّه نظيفٌ بالقراءة. © Pearson Education Limited و York Press، وعليهِ إشعارُ حفظِ الحقوقِ كاملًا (\"All rights reserved; no part of this publication may be reproduced…\"). كانَ مُسجَّلًا authority = nccd حتّى 2026-09-15، و nccd تعني «يُقتبَسُ حرفيًّا» (quotableOnly في passages.ts)، فكانَ نصُّ كتابٍ تجاريٍّ محفوظِ الحقوقِ مؤهَّلًا للاسترجاعِ والاقتباسِ. صُحِّحَ إلى third-party بعدَ قراءةِ صفحةِ الحقوقِ في النصِّ المستخرَجِ نفسِهِ. كتبُ الطالبِ والأنشطةِ للصفِّ العاشرِ من السلسلةِ نفسِها كانت مُسجَّلةً third-party أصلًا، وهوَ ما جعلَ التناقضَ ظاهرًا.",
       "extraction": {
         "tool": "pdf-parse@2",
         "extractedAt": "2026-09-08",
@@ -4731,6 +4731,807 @@
         "sha256": "92f545bebabecb63f657ad0f002d1b3ff712c5b0779e86f8d8c5a0fcb44935eb"
       },
       "notes": "رفضَ pdf-parse هذا الملفَّ فاستُخرِجَ بـ OCR في 2026-09-12، كما جرى لدليلِ الفصلِ الأوَّلِ. الناتِجُ صالحٌ للبحثِ والتأسيسِ لا للاقتباسِ الحرفيِّ: ناتِجُ الـ OCR في دليلِ الفصلِ الأوَّلِ قورِنَ بصورةِ صفحةِ المصفوفةِ فظهرَ إسقاطُ سطورِ نتاجاتٍ كاملةٍ وخلطُ أعمدةِ الجدولِ، ولا سببَ يدعو لافتراضِ أنَّ هذا الملفَّ أفضلُ. نتاجاتُ الدروسِ وعددُ الحصصِ تُقرَأُ من صفحاتِ PDF مباشرةً، لا من هذا النصِّ."
+    },
+    {
+      "id": "g6-arabic-s1-student-book",
+      "title": "كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الأول.pdf",
+      "bytes": 17833587,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "arabic",
+        "العربية لغتي",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 128,
+        "chars": 203677,
+        "localPath": "knowledge-base/grade-6-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الأول.pdf",
+        "sha256": "46bff0bdb429acc9a0fd6a383605e12494b9be7559578d3aedee85754840e606"
+      }
+    },
+    {
+      "id": "g6-arabic-s2-student-book",
+      "title": "كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الثاني.pdf",
+      "bytes": 19636466,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "arabic",
+        "العربية لغتي",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 126,
+        "chars": 216055,
+        "localPath": "knowledge-base/grade-6-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الثاني.pdf",
+        "sha256": "d1f2a00eff4ec86786e01f00a69180cb3979a7b2691ac7b0665f6fa041bee3e4"
+      }
+    },
+    {
+      "id": "g6-arabic-s1-exercise-book",
+      "title": "كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الأول.pdf",
+      "bytes": 2799000,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "arabic",
+        "العربية لغتي",
+        "سادس",
+        "كتاب التمارين",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 48,
+        "chars": 70332,
+        "localPath": "knowledge-base/grade-6-arabic/support-pdfs/كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الأول.pdf",
+        "sha256": "c8c3be8304a28b3ced2c284b123c696a0759362fb42c4f91d6648041b476a912"
+      }
+    },
+    {
+      "id": "g6-arabic-s2-exercise-book",
+      "title": "كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الثاني.pdf",
+      "bytes": 8057481,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "arabic",
+        "العربية لغتي",
+        "سادس",
+        "كتاب التمارين",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 52,
+        "chars": 80871,
+        "localPath": "knowledge-base/grade-6-arabic/support-pdfs/كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الثاني.pdf",
+        "sha256": "3ace0a37d9cddc4cb324d626587dee7f6d1532a39df4bd054ec0de546c11b893"
+      }
+    },
+    {
+      "id": "g6-islamic-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الأول.pdf",
+      "bytes": 62994310,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "islamic",
+        "التربية الإسلامية",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 124,
+        "chars": 137330,
+        "localPath": "knowledge-base/grade-6-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الأول.pdf",
+        "sha256": "cedaf07f84d775f2a838a1c65299c4d0f1688adc4345db60f057586834a5acd5"
+      }
+    },
+    {
+      "id": "g6-islamic-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الثاني.pdf",
+      "bytes": 92953126,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "islamic",
+        "التربية الإسلامية",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 130,
+        "chars": 157214,
+        "localPath": "knowledge-base/grade-6-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الثاني.pdf",
+        "sha256": "8affa88a02ab1a8e8c92acffeb21257594cceaa61ffc5ae6999794ba056dd484"
+      }
+    },
+    {
+      "id": "g6-social-s1-student-book",
+      "title": "كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الأول.pdf",
+      "bytes": 23744090,
+      "subject": "social",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-social-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "social",
+        "الدراسات الاجتماعية",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 120,
+        "chars": 147180,
+        "localPath": "knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الأول.pdf",
+        "sha256": "1be3f8ff5fc23e1a02fa1e018d2f4030f308f7d2b293c4c4d00aefcc2ca5f182"
+      }
+    },
+    {
+      "id": "g6-social-s2-student-book",
+      "title": "كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الثاني.pdf",
+      "bytes": 28780103,
+      "subject": "social",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-social-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "social",
+        "الدراسات الاجتماعية",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 128,
+        "chars": 164787,
+        "localPath": "knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الثاني.pdf",
+        "sha256": "341cc88c8f6de7db414104530003526da753aababd6104a73ffb13cfab4e6c29"
+      }
+    },
+    {
+      "id": "g6-voc-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الأول.pdf",
+      "bytes": 21879731,
+      "subject": "vocational",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-voc-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "vocational",
+        "التربية المهنية",
+        "سادس",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 104,
+        "chars": 133795,
+        "localPath": "knowledge-base/grade-6-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الأول.pdf",
+        "sha256": "dd738e7b2f79107c527dcbda30f4db4f3418b75041abe18dd2b8ef8bd7a960b2"
+      }
+    },
+    {
+      "id": "g6-voc-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الثاني.pdf",
+      "bytes": 31997850,
+      "subject": "vocational",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-voc-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "vocational",
+        "التربية المهنية",
+        "سادس",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 106,
+        "chars": 129773,
+        "localPath": "knowledge-base/grade-6-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الثاني.pdf",
+        "sha256": "8e74e6e112ab9fc56d8b7ce6a9a9f6aeb05e3ef7b1c01c569d8708858dba93c1"
+      }
+    },
+    {
+      "id": "g6-pe-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الرياضية الصف السادس الفصل الأول.pdf",
+      "bytes": 5490091,
+      "subject": "physical-education",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الرياضية الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-pe-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "physical-education",
+        "التربية الرياضية",
+        "سادس",
+        "الفصل الأول"
+      ],
+      "notes": "لا كتابَ للفصلِ الثاني في الملفّاتِ المرسَلةِ؛ الفصلُ الأوَّلُ وحدَهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 57,
+        "chars": 55991,
+        "localPath": "knowledge-base/grade-6-pe/support-pdfs/كتاب الطالب لمادة التربية الرياضية الصف السادس الفصل الأول.pdf",
+        "sha256": "f1ad0bcffb70c36312cadf1f16a56e3e34f82f172b76d657a762cff204eaae1f"
+      }
+    },
+    {
+      "id": "g6-arts-s1-teacher-guide",
+      "title": "دليل المعلم لمادة التربية الفنية الصف السادس.pdf",
+      "bytes": 54333570,
+      "subject": "art",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة التربية الفنية الصف السادس.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-arts-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "art",
+        "التربية الفنية",
+        "سادس",
+        "الفصل الأول"
+      ],
+      "notes": "كتابُ التربيةِ الفنّيّةِ للصفِّ السادسِ غيرُ مقسَّمٍ إلى فصلينِ، ولا كتابَ طالبٍ في الملفّاتِ المرسَلةِ — دليلُ المعلِّمِ وحدَهُ. يحملُ semester = 1 اصطلاحًا، على غرارِ كتابِ التربيةِ الفنّيّةِ للصفِّ الثامنِ (يُنظَرُ g8CreativeArts.ts).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 163,
+        "chars": 97721,
+        "localPath": "knowledge-base/grade-6-art/support-pdfs/دليل المعلم لمادة التربية الفنية الصف السادس.pdf",
+        "sha256": "59c69f277940f0f4dc89e1ae1a0ff75a296299a4016454563bf607cea78bce4d"
+      }
+    },
+    {
+      "id": "g6-eng-s1-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf",
+      "bytes": 72097741,
+      "subject": "english",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "english",
+        "اللغة الإنجليزية",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "كتابٌ تجاريٌّ اعتمدَتْهُ الوزارةُ: Jordan Team Together © Pearson Education Limited و York Press، وعليهِ إشعارُ حفظِ الحقوقِ كاملًا. authority = third-party قصدًا، على غرارِ كتبِ الصفِّ العاشرِ من السلسلةِ نفسِها: المقاطعُ لا تُقتبَسُ حرفيًّا (quotableOnly تقتصرُ على nccd)، فالبنيةُ وحدَها هيَ ما يُنقَلُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 64,
+        "chars": 114298,
+        "localPath": "knowledge-base/grade-6-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf",
+        "sha256": "7005a6dc1fc507bf91dede9c5afdd07c2a6a9a7bc8cc98e06fe555f3eb207c97"
+      }
+    },
+    {
+      "id": "g6-eng-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf",
+      "bytes": 49078093,
+      "subject": "english",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "english",
+        "اللغة الإنجليزية",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "كتابٌ تجاريٌّ اعتمدَتْهُ الوزارةُ: Jordan Team Together © Pearson Education Limited و York Press، وعليهِ إشعارُ حفظِ الحقوقِ كاملًا. authority = third-party قصدًا، على غرارِ كتبِ الصفِّ العاشرِ من السلسلةِ نفسِها: المقاطعُ لا تُقتبَسُ حرفيًّا (quotableOnly تقتصرُ على nccd)، فالبنيةُ وحدَها هيَ ما يُنقَلُ. رفضَ pdf-parse هذا الملفَّ بسببِ تبديلِ حروفٍ عربيَّةٍ — وهوَ كتابٌ إنجليزيٌّ، والذي أثارَ البوّابةَ صفحاتُ التصديرِ العربيَّةُ في مقدِّمتِهِ — فاستُخرِجَ بـ OCR. لا أثرَ لذلكَ على هذا الفهرسِ: بِنيةُ الوحداتِ قُرِئَتْ من صورةِ صفحةِ المحتوياتِ لا من النصِّ.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-15",
+        "pages": 64,
+        "chars": 109945,
+        "localPath": "knowledge-base/grade-6-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf",
+        "sha256": "053a809fcf40a3a8c99983d892959ccd8937fb919cbb61de8e74d6c3545cb6a8"
+      }
+    },
+    {
+      "id": "g6-eng-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf",
+      "bytes": 15071428,
+      "subject": "english",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "english",
+        "اللغة الإنجليزية",
+        "سادس",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "كتابٌ تجاريٌّ اعتمدَتْهُ الوزارةُ: Jordan Team Together © Pearson Education Limited و York Press، وعليهِ إشعارُ حفظِ الحقوقِ كاملًا. authority = third-party قصدًا، على غرارِ كتبِ الصفِّ العاشرِ من السلسلةِ نفسِها: المقاطعُ لا تُقتبَسُ حرفيًّا (quotableOnly تقتصرُ على nccd)، فالبنيةُ وحدَها هيَ ما يُنقَلُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 60,
+        "chars": 79470,
+        "localPath": "knowledge-base/grade-6-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf",
+        "sha256": "fde6d8b970bb4b1e7e9b15be729614fd5ce8646e7fa326940f8c04ebaac04cca"
+      }
+    },
+    {
+      "id": "g6-eng-s2-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf",
+      "bytes": 3452238,
+      "subject": "english",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "english",
+        "اللغة الإنجليزية",
+        "سادس",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "كتابٌ تجاريٌّ اعتمدَتْهُ الوزارةُ: Jordan Team Together © Pearson Education Limited و York Press، وعليهِ إشعارُ حفظِ الحقوقِ كاملًا. authority = third-party قصدًا، على غرارِ كتبِ الصفِّ العاشرِ من السلسلةِ نفسِها: المقاطعُ لا تُقتبَسُ حرفيًّا (quotableOnly تقتصرُ على nccd)، فالبنيةُ وحدَها هيَ ما يُنقَلُ. رفضَ pdf-parse هذا الملفَّ بسببِ تبديلِ حروفٍ عربيَّةٍ — وهوَ كتابٌ إنجليزيٌّ، والذي أثارَ البوّابةَ صفحاتُ التصديرِ العربيَّةُ في مقدِّمتِهِ — فاستُخرِجَ بـ OCR. لا أثرَ لذلكَ على هذا الفهرسِ: بِنيةُ الوحداتِ قُرِئَتْ من صورةِ صفحةِ المحتوياتِ لا من النصِّ.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-15",
+        "pages": 60,
+        "chars": 76438,
+        "localPath": "knowledge-base/grade-6-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf",
+        "sha256": "7db3ee4229619f2edeb9fa606249eaea650b2a42bcff225512dfcbda5d4e23f4"
+      }
+    },
+    {
+      "id": "g6-eng-s1-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الأول.pdf",
+      "bytes": 51381479,
+      "subject": "english",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "english",
+        "اللغة الإنجليزية",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "دليلُ المعلِّمِ من السلسلةِ نفسِها ويحملُ حقوقَ الناشرِ نفسَها: © Pearson Education Limited و York Press 2025 (صفحةُ الحقوقِ، ص ii). سُجِّلَ أوَّلَ الأمرِ authority = nccd محاكاةً لكتبِ الصفِّ العاشرِ، ثمَّ صُحِّحَ في 2026-09-15 بعدَ قراءةِ صفحةِ حقوقِهِ. ⚠ أدلَّةُ الصفِّ العاشرِ من السلسلةِ نفسِها (eng-s1-teacher-guide و eng-s2-teacher-guide) ما تزالُ مُسجَّلةً nccd، ويُرجَّحُ أنَّ ذلكَ خطأٌ للسببِ نفسِهِ — يحتاجُ مراجعةً مستقلَّةً.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 144,
+        "chars": 573253,
+        "localPath": "knowledge-base/grade-6-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الأول.pdf",
+        "sha256": "de39881e6ec411a31dca8dab088bad8c38983f37dde8c5db4a809aa103c25564"
+      }
+    },
+    {
+      "id": "g6-eng-s2-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الثاني.pdf",
+      "bytes": 54804399,
+      "subject": "english",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "english",
+        "اللغة الإنجليزية",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "دليلُ المعلِّمِ من السلسلةِ نفسِها ويحملُ حقوقَ الناشرِ نفسَها: © Pearson Education Limited و York Press 2025 (صفحةُ الحقوقِ، ص ii). سُجِّلَ أوَّلَ الأمرِ authority = nccd محاكاةً لكتبِ الصفِّ العاشرِ، ثمَّ صُحِّحَ في 2026-09-15 بعدَ قراءةِ صفحةِ حقوقِهِ. ⚠ أدلَّةُ الصفِّ العاشرِ من السلسلةِ نفسِها (eng-s1-teacher-guide و eng-s2-teacher-guide) ما تزالُ مُسجَّلةً nccd، ويُرجَّحُ أنَّ ذلكَ خطأٌ للسببِ نفسِهِ — يحتاجُ مراجعةً مستقلَّةً. رفضَ pdf-parse هذا الملفَّ بسببِ تبديلِ حروفٍ عربيَّةٍ — وهوَ كتابٌ إنجليزيٌّ، والذي أثارَ البوّابةَ صفحاتُ التصديرِ العربيَّةُ في مقدِّمتِهِ — فاستُخرِجَ بـ OCR. لا أثرَ لذلكَ على هذا الفهرسِ: بِنيةُ الوحداتِ قُرِئَتْ من صورةِ صفحةِ المحتوياتِ لا من النصِّ.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-15",
+        "pages": 144,
+        "chars": 514686,
+        "localPath": "knowledge-base/grade-6-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الثاني.pdf",
+        "sha256": "ddb61cb49f2724887217c1a2a927226b40a31e841bccb0e5a3fbfcccbcfd5389"
+      }
+    },
+    {
+      "id": "g6-digital-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+      "bytes": 14549800,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "digital-literacy",
+        "سادس",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "لا كتابَ طالبٍ لهذهِ المادَّةِ في الملفّاتِ المرسَلةِ، ولا كتابَ فصلٍ ثانٍ. هذا الكتابُ ودليلُ المعلِّمِ هما المصدرانِ الوحيدانِ، وعنهُما أُخِذَتْ بِنيةُ الوحداتِ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 175,
+        "chars": 244166,
+        "localPath": "knowledge-base/grade-6-digital-literacy/support-pdfs/كتاب الأنشطة لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+        "sha256": "e5276f6b434487424218a6ac91730e845d8e5720d50a39c98987cbae19b67677"
+      }
+    },
+    {
+      "id": "g6-digital-s1-teacher-guide",
+      "title": "دليل المعلم لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+      "bytes": 6082571,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "digital-literacy",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 64% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-15",
+        "pages": 99,
+        "chars": 93581,
+        "localPath": "knowledge-base/grade-6-digital-literacy/support-pdfs/دليل المعلم لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+        "sha256": "3d8338817c057b9bb293d189d4c34d8650915475b610f4c0b23c45dbf6b3362f"
+      },
+      "notes": "رفضَ pdf-parse هذا الملفَّ فاستُخرِجَ بـ OCR؛ صالحٌ للبحثِ لا للاقتباسِ الحرفيِّ."
+    },
+    {
+      "id": "g6-math-s1-exercise-book",
+      "title": "كتاب التمارين لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+      "bytes": 6566172,
+      "subject": "math",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "كتاب التمارين",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 62,
+        "chars": 67625,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+        "sha256": "96641139ed4450d9b88d43fa57f0745c85212124770679d7e4a0ae6ad30f966c"
+      }
+    },
+    {
+      "id": "g6-math-s2-exercise-book",
+      "title": "كتاب التمارين لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+      "bytes": 12160677,
+      "subject": "math",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "كتاب التمارين",
+        "الفصل الثاني"
+      ],
+      "notes": "الفصلُ الثاني من الرياضيّاتِ لا كتابَ طالبٍ لهُ في الملفّاتِ المرسَلةِ — كتابُ التمارينِ ودليلُ المعلِّمِ فقط — ولذلكَ لا فهرسَ لوحداتِ الفصلِ الثاني.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 56,
+        "chars": 58117,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+        "sha256": "e30049f340fd890f8413ff1ac9c0942701fbf67290a79a68cd160655ac556945"
+      }
+    },
+    {
+      "id": "g6-math-s1-teacher-guide",
+      "title": "دليل المعلم لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+      "bytes": 44418494,
+      "subject": "math",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "يحملُ عددَ الحصصِ ونتاجاتِ الدروسِ للفصلِ الأوَّلِ — وهيَ الحقولُ الفارغةُ في iqra_curriculum_g6_math_sem1.json. سُجِّلَ واستُخرِجَ هنا حتّى يصيرَ مصدرًا متاحًا لملئِها لاحقًا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 228,
+        "chars": 567603,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+        "sha256": "1127391a1be32c2f881df5350d9acf51ae12e6a1f25457b6515f62102287c2a0"
+      }
+    },
+    {
+      "id": "g6-math-s2-teacher-guide",
+      "title": "دليل المعلم لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+      "bytes": 58182541,
+      "subject": "math",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 247,
+        "chars": 609598,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+        "sha256": "0654470f4eab65ae26da0d3e04180e332e37bb645bd529db11a2842593085ba8"
+      }
+    },
+    {
+      "id": "g6-math-s2-support-guide",
+      "title": "دليل المعلم إلى المواد المساندة للتعلم الرياضيات سادس الفصل الثاني.pdf",
+      "bytes": 1789501,
+      "subject": "math",
+      "semester": 2,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم إلى المواد المساندة للتعلم الرياضيات سادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "دليل المواد المساندة",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 32,
+        "chars": 42220,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/دليل المعلم إلى المواد المساندة للتعلم الرياضيات سادس الفصل الثاني.pdf",
+        "sha256": "c47ee61f62a0c64dd6cfcfe20cd90e014ee1aa55837112eabbba9f0e37541053"
+      }
     }
   ],
   "mergedAt": "2026-08-25"

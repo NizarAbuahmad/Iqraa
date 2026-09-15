@@ -24,7 +24,7 @@ import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
@@ -251,7 +251,7 @@ export default function LessonPlanScreen() {
       // Deliberately not the raw error: "HTTP 500" is not a sentence in any
       // language a teacher reads. The technical text is already recorded in
       // aiProvenance, where the badge carries it for support.
-      else setError(t('generationFailed'));
+      else setError(t(aiErrorMessageKey(e)));
     } finally {
       abortRef.current = null;
       setLoading(false);

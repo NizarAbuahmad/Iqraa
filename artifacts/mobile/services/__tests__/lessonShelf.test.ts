@@ -146,25 +146,35 @@ describe('subject isolation', () => {
       // 2026-09-09, Grade 7 joined 2026-09-12.
       'financial-literacy': /^(finlit-s[12]|g9-finlit-s[12]|g8-finlit-s[12]|g7-finlit-s[12])$/,
       // Digital Skills spans every grade the same way arabic/islamic do.
-      'digital-literacy': /^(digital-s[12]|g9-digital-s[12]|g8-digital-s[12]|g7-digital-s[12])$/,
+      // Grade 6 joined 2026-09-15, collapsing the per-grade enumeration.
+      'digital-literacy': /^(digital-s[12]|g\d+-digital-s[12])$/,
       // Social Studies only ever has Grade 7/8 books — it splits into
       // geography/history/civic-education from Grade 9 up, so there is no
       // bare or g9- form to allow (see subjectGradeCoverage.test.ts).
-      social: /^(g8-social-s[12]|g7-social-s[12])$/,
+      // Grade 6 joined 2026-09-15. Collapsed to g\d+ — no bare form exists,
+      // since Grade 9 and up split this into geography/history/civic.
+      social: /^g\d+-social-s[12]$/,
       // Vocational Education: Grade 7/8 only, a different seven tracks per
       // book — no grade-9/10 form exists.
-      'vocational-education': /^(g8-voc-s[12]|g7-voc-s[12])$/,
+      // Grade 6 joined 2026-09-15, once SUBJECTS.grades was extended for it.
+      'vocational-education': /^g\d+-voc-s[12]$/,
       // Art, Music and Drama Education: Grade 7/8 only, one book per grade
       // with no semester split — CurriculumIdScope still requires a
       // semester number for id-namespacing, hardcoded to 1, so only the
       // `-s1` form ever appears.
-      'creative-arts': /^(g8-arts-s1|g7-arts-s1)$/,
+      // Grade 6 joined 2026-09-15. Still s1-only for every grade: this book
+      // is not split by semester at any of them.
+      'creative-arts': /^g\d+-arts-s1$/,
       // Grade 10 Arabic predates this map and was silently unchecked — no
       // entry meant `continue`, not a pass. Added on 2026-09-08 alongside the
       // Grade 9 Arabic S1 book, so both grades are covered from here on.
       // Grade 8 joined 2026-09-10, semester 1 then semester 2.
       // Grade 7 joined 2026-09-12.
-      arabic: /^(arabic-s[12]|g9-arabic-s[12]|g8-arabic-s[12]|g7-arabic-s[12])$/,
+      // Grade 6 joined 2026-09-15, making this the fourth grade appended one at
+      // a time. Collapsed to `g\d+` rather than a fifth alternative: only Grade
+      // 10 (the implicit grade) carries the bare `arabic-s1` form, and every
+      // other grade is explicit, so the enumeration was never doing real work.
+      arabic: /^(arabic-s[12]|g\d+-arabic-s[12])$/,
       // English spans every grade the same way. Grade 7 joined 2026-09-12,
       // from a different publisher series than Grade 8/9/10 (see
       // g7EngSem1.ts) — the unit-tag namespace is identical either way.
@@ -172,12 +182,16 @@ describe('subject isolation', () => {
       // forms are the Grade 10 vocational ESP tracks — separate
       // curriculumIds.ts subject slugs, but the same 'english' app
       // subjectId, so they show up under this key too.
-      english: /^(eng-s[12]|g9-eng-s[12]|g8-eng-s[12]|g7-eng-s[12]|eng-(commerce|agri|hospitality|industry)-s[12])$/,
+      // Grade 6 joined 2026-09-15. Grade half collapsed to g\d+; the four
+      // vocational ESP tracks keep their own alternative.
+      english: /^(eng-s[12]|g\d+-eng-s[12]|eng-(commerce|agri|hospitality|industry)-s[12])$/,
       // Grade 10 Islamic predates this map too and was likewise silently
       // unchecked. Added alongside the Grade 9 Islamic books.
       // Grade 8 joined 2026-09-10, semester 1 then semester 2. Grade 7
       // joined 2026-09-12, same treatment.
-      islamic: /^(islamic-s[12]|g9-islamic-s[12]|g8-islamic-s[12]|g7-islamic-s[12])$/,
+      // Grade 6 joined 2026-09-15. Collapsed to g\d+ rather than a fifth
+      // alternative: only Grade 10 carries the bare islamic-s1 form.
+      islamic: /^(islamic-s[12]|g\d+-islamic-s[12])$/,
       // Geography is new to this repo entirely. Grade 10 (curriculumIds.ts's
       // implicit grade) carries a bare tag; Grade 9 carries the explicit
       // g9- form, same split as every pre-existing subject above.
@@ -189,7 +203,7 @@ describe('subject isolation', () => {
       'civic-education': /^(civ-s[12]|g9-civ-s[12])$/,
       // Grade 9 predates Grade 7 here (no Grade 8 PE book exists at all).
       // Grade 7 joined 2026-09-12.
-      'physical-education': /^(g9-pe-s[12]|g7-pe-s[12])$/,
+      'physical-education': /^g\d+-pe-s[12]$/,
       // The combined «العلوم» books at Grades 6, 7 and 8, the only ones this
       // subject has. No grade-10 alternative here: Grade 10 splits science into
       // the four subjects above, so there is no bare `science-s[12]` form to

@@ -1,16 +1,36 @@
 # Deploying
 
-Three services, and **they do not deploy the same way** — which is the reason
-this file exists. Merging to `main` ships the web app and nothing else. The API
-and the verifier are Cloud Run, deployed by hand, and a merge does not touch
-them.
+Three services, and **the order they deploy in matters** — which is the reason
+this file exists. `.github/workflows/deploy.yml` ships all three from `main`:
+the API and verifier to Cloud Run first, the web bundle to Cloudflare Pages
+after, and it skips the web deploy entirely if either server deploy failed.
 
 | | Where | How it deploys |
 | --- | --- | --- |
-| `iqraa-web` | Cloudflare Pages (static) | **Automatic** on merge to `main`, via GitHub Actions |
-| `iqraa-api` | Cloud Run | **By hand**, command below |
-| `iqraa-verifier` | Cloud Run | **By hand**, command below |
+| `iqraa-api` | Cloud Run | **Automatic** on merge to `main` |
+| `iqraa-verifier` | Cloud Run | **Automatic** on merge to `main` |
+| `iqraa-web` | Cloudflare Pages (static) | **Automatic**, gated on the two above |
 | Database | Neon | Never automatic — see *Schema* below |
+
+**Server before client, on purpose.** A new API behind an old bundle is
+harmless: the bundle simply does not call the new route. The reverse is an
+outage. That is not hypothetical — on 2026-09-10 a web bundle went live against
+an API that lacked the matching route and broke production signups. From the
+2026-09-05 Cloud Run cutover until 2026-09-15 the API and verifier were
+deployed by hand, which is what made that possible; automating them closed it.
+
+Each surface deploys only when its own paths changed (`lib/**` counts as an API
+change, because the API bundles those packages), and each job verifies against
+the running system rather than trusting the tool: the API asserts
+`/api/healthz/version` reports the deployed short SHA, because `gcloud` has
+printed a success line while traffic stayed pinned to an older revision
+(2026-09-07).
+
+CI authenticates to GCP with **Workload Identity Federation** — no service
+account key is stored in GitHub. The provider is bound by attribute condition to
+this repository alone and mints a short-lived token per run, which matters
+because this repo is public. The hand commands below still work and are the
+right tool for an emergency, but they are no longer the normal path.
 
 Cloud Run project `iqraa-auth-507315`, region `europe-west1` (nearest Google
 region to Neon in Frankfurt). The Render API and verifier were retired from the
@@ -22,8 +42,8 @@ Cloudflare has been serving for a while.
 
 ## The web app
 
-Nothing to do. `.github/workflows/web-deploy.yml` builds the bundle on every
-merge to `main` and publishes it to Cloudflare Pages, and the build inlines
+Nothing to do. The `web` job in `.github/workflows/deploy.yml` builds the bundle
+on every merge to `main` and publishes it to Cloudflare Pages, and the build inlines
 every `EXPO_PUBLIC_*` value — so changing one of those needs a **web rebuild**,
 not just an API redeploy. Those values live in that workflow now, not in
 `render.yaml`.
@@ -82,6 +102,29 @@ gcloud run deploy iqraa-verifier --source artifacts/math-verifier --region europ
 The API's build context is the **repo root**, not `artifacts/api-server`: the
 build copies a data directory out of `lib/curriculum` and pnpm needs the
 workspace manifests. The verifier's context is its own directory.
+
+**"Clean checkout" is the whole instruction, and Cloud Shell will quietly
+defeat it.** Its home directory persists between sessions, so a `git clone` run
+there a second time fails with `destination path 'Iqraa' already exists`. Paste
+clone-then-`cd`-then-deploy as one block and the clone's failure scrolls past
+while `cd` and the deploy both succeed — against whatever that directory held.
+On 2026-09-13 that deployed `cf1c2b7`, eight days and about 150 pull requests
+stale, over a current API; `/api/healthz/version` answered `Cannot GET` because
+the route did not exist yet in code that old. Always:
+
+```bash
+cd ~/Iqraa && git checkout main && git pull   # or clone somewhere new
+git log --oneline -1                          # and read it
+```
+
+Then confirm what is running, after the deploy, from outside:
+
+```bash
+curl -s https://iqraa-api-613126375862.europe-west1.run.app/api/healthz/version
+```
+
+The `commit` it reports must match that `git log`. This is the check that
+catches a stale build, and it costs one request.
 
 **Do not re-enter the secrets.** `DATABASE_URL`, `OPENAI_API_KEY`,
 `GOOGLE_CLIENT_ID`, `YOUTUBE_API_KEY` and the R2 keys already live on the Cloud
@@ -186,13 +229,68 @@ gcloud run services update iqraa-api \
   --update-env-vars KEY_NAME=NEW_VALUE
 ```
 
-Traffic is `latestRevision: true`, so the new revision takes traffic by itself.
-Confirm it did — a revision can be created and serve nothing:
+**Check that the new revision actually took traffic.** This file used to say
+traffic is `latestRevision: true` so it happens by itself. That is the normal
+state, not a guarantee, and when it is not true nothing tells you: a
+`gcloud run services update` reports `Done.` and creates a revision that serves
+nobody, with the old one still answering every request.
 
 ```bash
 gcloud run services describe iqraa-api --region europe-west1 \
-  --project iqraa-auth-507315 --format="value(status.traffic[0].revisionName)"
+  --project iqraa-auth-507315 --format="value(status.traffic)"
 ```
+
+Read the whole `traffic` block, not just the first revision name. You want
+`latestRevision: True` with `percent: 100`. A bare `revisionName` and no
+`latestRevision` means traffic is **pinned** to that specific revision.
+
+On 2026-09-13 it was pinned to `iqraa-api-00032-279`. Two `--update-env-vars`
+calls adding `R2_PUBLIC_BUCKET` and `R2_PUBLIC_BASE_URL` each answered `Done.`
+and each ended `is serving 0 percent of traffic` — a line easy to read past.
+The variables were set on revisions nothing reached, so the feature that needed
+them kept failing while the config looked correct. Unpin with:
+
+```bash
+gcloud run services update-traffic iqraa-api --region europe-west1 \
+  --project iqraa-auth-507315 --to-latest
+```
+
+That `0 percent of traffic` in the output of a deploy or an env-var update is
+the tell. It is not noise.
+
+**Still pinned to `iqraa-api-00032-279` on 2026-09-15**, so the paragraph above
+describes the live service, not a past incident. A deploy that day created
+`iqraa-api-00042-brg`, healthy and serving nobody.
+
+**The new revision gets a `candidate` tag, and that is useful.** Rather than
+being unreachable, it comes up on its own URL:
+
+```
+https://candidate---iqraa-api-lqzcxyoxva-ew.a.run.app
+```
+
+So the build can be proved good *before* any production traffic moves:
+
+```bash
+curl -s https://candidate---iqraa-api-lqzcxyoxva-ew.a.run.app/api/healthz/version
+```
+
+That returns `{commit, revision}`. If the commit is the one you deployed, the
+image is fine and only the traffic split is in the way. On 2026-09-15 the
+candidate answered `c0a0303` while the production URL answered
+`Cannot GET /api/healthz/version` — same service, two different builds, and the
+difference was entirely traffic.
+
+**Do not reflexively `--to-latest`.** Read the pin as possibly deliberate until
+you know otherwise: a revision can be held precisely because something newer is
+broken, and unpinning then ships the breakage. Check what changed between the
+pinned revision and the candidate before promoting.
+
+**One more trap in the check itself:** `status.traffic` is a *list*. A format
+string like `--format="value(status.traffic[0].revisionName)"` reads one entry,
+and with a tagged revision present the first entry is not reliably the one
+serving. Ask for the whole block — `--format="json(status.traffic)"` — or the
+command will confirm something that is not true.
 
 ### A health check does not test a secret
 
@@ -233,6 +331,31 @@ R2_PUBLIC_BASE_URL     leave alone
 Create the token in Cloudflare → R2 → Manage API Tokens, scoped to the
 **`iqraa-media` and `iqraa-public` buckets only** with Object Read & Write. A
 token with account-wide scope is the thing you are trying not to have.
+
+**A bucket the server starts writing to needs adding to that token first, and
+the failure looks like a code bug.** The scope is per-bucket, so a token that
+was fine yesterday refuses a write to a bucket nobody had written to before.
+Until 2026-09-15 the live `iqraa-api prod` token was scoped to `iqraa-media`
+alone — correct for years, because `iqraa-public` only ever received book PDFs
+uploaded by hand through the dashboard. The first profile picture made the
+server its first programmatic writer, and every upload came back
+`Failed to update profile picture`: a 500 whose cause was a Cloudflare
+`403 AccessDenied` on `PutObject`, three layers down. Nothing in the app said
+"permissions".
+
+So when a feature writes to a new bucket, open the token and add it before
+blaming the code. The error only exists in the API's own logs:
+
+```bash
+gcloud logging read 'resource.labels.service_name="iqraa-api" AND severity>=ERROR' \
+  --project iqraa-auth-507315 --limit 5 --freshness=1d
+```
+
+Grab the `trace` from the failing request's log line and read that trace back
+to get the application log beside it — the request log carries the status, the
+stdout log carries the exception, and they are separate streams. Editing a
+token's bucket scope keeps the same Access Key ID and secret, so no Cloud Run
+change and no redeploy follow.
 `R2_PUBLIC_BASE_URL` is `iqraa-public`'s own `https://pub-<hash>.r2.dev`
 Public Development URL, not something the token grants — see
 `docs/adding-a-book.md`'s "The two buckets" for why a profile picture (and

@@ -75,21 +75,32 @@ describe('manifest shape', () => {
       physics: /^(phys-s[12]|g9-phys-s[12])$/,
       biology: /^(bio-s[12]|bio-g10-general|g9-biology-s[12])$/,
       'earth-science': /^(earth-s[12]|g9-earth-science-s[12])$/,
-      arabic: /^(arabic-s[12]|g9-arabic-s[12])$/,
-      islamic: /^(islamic-s[12]|g9-islamic-s[12])$/,
+      // Grade 6 joined 2026-09-15. Only Grade 10 (curriculumIds.ts's implicit
+      // grade) carries the bare `arabic-s1` form; every other grade is explicit.
+      arabic: /^(arabic-s[12]|g\d+-arabic-s[12])$/,
+      islamic: /^(islamic-s[12]|g\d+-islamic-s[12])$/,
       history: /^history-s[12]$/,
       // Combined «العلوم», taught as one subject at Grade 8 and below. No bare
       // form: Grade 10 (the implicit grade) splits science into the four
       // subjects above, so `science-s1` would name a book that cannot exist.
       // The slug and this record's key agree here, unlike the five noted above.
       science: /^g\d+-science-s[12]$/,
-      english: /^(eng-s[12]|g9-eng-s[12])$/,
+      // Combined «الدراسات الاجتماعية», taught as one subject at Grade 8 and
+      // below. No bare form: Grade 10 splits it into geography/history/civic.
+      social: /^g\d+-social-s[12]$/,
+      // Grade 6 joined 2026-09-15. Slug is `eng`, not this record's `english` key.
+      english: /^(eng-s[12]|g\d+-eng-s[12])$/,
       geography: /^geo-s[12]$/,
-      'digital-literacy': /^(digital-s[12]|g9-digital-s[12])$/,
+      // Grade 6 joined 2026-09-15. Slug is `digital`, not this record's
+      // `digital-literacy` key.
+      'digital-literacy': /^(digital-s[12]|g\d+-digital-s[12])$/,
       civic: /^civic-s[12]$/,
-      art: /^art-g10-general$/,
-      vocational: /^vocational-s[12]$/,
-      'physical-education': /^pe-s[12]$/,
+      // Grade 6 joined 2026-09-15. The id slug is `arts`, not this record's
+      // `art` key — one of the spellings the comment above warns about.
+      art: /^(art-g10-general|g\d+-arts-s[12])$/,
+      // Slug is `voc`, not `vocational`.
+      vocational: /^(vocational-s[12]|g\d+-voc-s[12])$/,
+      'physical-education': /^(pe-s[12]|g\d+-pe-s[12])$/,
     };
     for (const s of G10_SOURCES) {
       for (const t of s.unitTags) {

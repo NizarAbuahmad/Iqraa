@@ -118,6 +118,84 @@ import {
   buildG6MathSem1BrowserCatalog,
 } from './catalogs/g6MathSem1.ts';
 import {
+  G6_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  buildG6IslamicSem1BrowserCatalog,
+  isG6IslamicSem1TitleOnlyUnit,
+  isG6IslamicSem1TitleOnlyLesson,
+} from './catalogs/g6IslamicSem1.ts';
+import {
+  G6_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  buildG6IslamicSem2BrowserCatalog,
+  isG6IslamicSem2TitleOnlyUnit,
+  isG6IslamicSem2TitleOnlyLesson,
+} from './catalogs/g6IslamicSem2.ts';
+import {
+  G6_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  buildG6SocialSem1BrowserCatalog,
+  isG6SocialSem1TitleOnlyUnit,
+  isG6SocialSem1TitleOnlyLesson,
+} from './catalogs/g6SocialSem1.ts';
+import {
+  G6_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  buildG6SocialSem2BrowserCatalog,
+  isG6SocialSem2TitleOnlyUnit,
+  isG6SocialSem2TitleOnlyLesson,
+} from './catalogs/g6SocialSem2.ts';
+import {
+  G6_VOCATIONAL_S1_CURRICULUM_BOOK_ID,
+  buildG6VocationalSem1BrowserCatalog,
+  isG6VocationalSem1TitleOnlyUnit,
+  isG6VocationalSem1TitleOnlyLesson,
+} from './catalogs/g6VocationalSem1.ts';
+import {
+  G6_VOCATIONAL_S2_CURRICULUM_BOOK_ID,
+  buildG6VocationalSem2BrowserCatalog,
+  isG6VocationalSem2TitleOnlyUnit,
+  isG6VocationalSem2TitleOnlyLesson,
+} from './catalogs/g6VocationalSem2.ts';
+import {
+  G6_PE_S1_CURRICULUM_BOOK_ID,
+  buildG6PhysicalEducationSem1BrowserCatalog,
+  isG6PhysicalEducationSem1TitleOnlyUnit,
+  isG6PhysicalEducationSem1TitleOnlyLesson,
+} from './catalogs/g6PhysicalEducationSem1.ts';
+import {
+  G6_ART_S1_CURRICULUM_BOOK_ID,
+  buildG6ArtSem1BrowserCatalog,
+  isG6ArtSem1TitleOnlyUnit,
+  isG6ArtSem1TitleOnlyLesson,
+} from './catalogs/g6ArtSem1.ts';
+import {
+  G6_ENGLISH_S1_CURRICULUM_BOOK_ID,
+  buildG6EnglishSem1BrowserCatalog,
+  isG6EnglishSem1TitleOnlyUnit,
+  isG6EnglishSem1TitleOnlyLesson,
+} from './catalogs/g6EnglishSem1.ts';
+import {
+  G6_ENGLISH_S2_CURRICULUM_BOOK_ID,
+  buildG6EnglishSem2BrowserCatalog,
+  isG6EnglishSem2TitleOnlyUnit,
+  isG6EnglishSem2TitleOnlyLesson,
+} from './catalogs/g6EnglishSem2.ts';
+import {
+  G6_DIGITAL_S1_CURRICULUM_BOOK_ID,
+  buildG6DigitalSem1BrowserCatalog,
+  isG6DigitalSem1TitleOnlyUnit,
+  isG6DigitalSem1TitleOnlyLesson,
+} from './catalogs/g6DigitalSem1.ts';
+import {
+  G6_ARABIC_S1_CURRICULUM_BOOK_ID,
+  buildG6ArabicSem1BrowserCatalog,
+  isG6ArabicSem1TitleOnlyUnit,
+  isG6ArabicSem1TitleOnlyLesson,
+} from './catalogs/g6ArabicSem1.ts';
+import {
+  G6_ARABIC_S2_CURRICULUM_BOOK_ID,
+  buildG6ArabicSem2BrowserCatalog,
+  isG6ArabicSem2TitleOnlyUnit,
+  isG6ArabicSem2TitleOnlyLesson,
+} from './catalogs/g6ArabicSem2.ts';
+import {
   G6_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG6ScienceSem1BrowserCatalog,
 } from './catalogs/g6ScienceSem1.ts';
@@ -559,18 +637,18 @@ export const SUBJECTS: Subject[] = [
   // rather than knowledge-based one — see g9PeSem1.ts for what that changes
   // about the data shape. Extended to grade-7 on 2026-09-12 once its book
   // arrived — the two are not contiguous (no Grade 8 PE book exists).
-  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-7', 'grade-9'] },
+  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-6', 'grade-7', 'grade-9'] },
   // Sixth brand-new subject, added 2026-09-09 as part of the Grade 8 batch.
   // Combines three domains (Art, Music, Drama) NCCD prints as one book —
   // see g8CreativeArts.ts. Extended to grade-7 on 2026-09-12 once its book
   // arrived (also one book, no semester split, same as grade-8's).
-  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-7', 'grade-8'] },
+  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-6', 'grade-7', 'grade-8'] },
   // Seventh brand-new subject, added 2026-09-09 as part of the Grade 8
   // batch. Seven vocational tracks packed into one book per semester
   // (life skills, home economics, agriculture, health/safety, industry,
   // entrepreneurship, tourism) — see g8VocationalSem1.ts. Extended to
   // grade-7 on 2026-09-12 once its book arrived (a different seven tracks).
-  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-7', 'grade-8'] },
+  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-6', 'grade-7', 'grade-8'] },
 ];
 
 /**
@@ -847,6 +925,26 @@ export const MVP_BOOK_IDS: readonly string[] = [
   G6_MATH_S1_CURRICULUM_BOOK_ID,
   G6_SCIENCE_S1_CURRICULUM_BOOK_ID,
   G6_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  // Grade 6 Arabic, both semesters — 'arabic' has been in MVP_SUBJECT_IDS
+  // since 2026-09-05, so no subject append is needed here either.
+  G6_ARABIC_S1_CURRICULUM_BOOK_ID,
+  G6_ARABIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 6 Digital Skills — 'digital-literacy' is already in MVP_SUBJECT_IDS.
+  G6_DIGITAL_S1_CURRICULUM_BOOK_ID,
+  // Grade 6 vocational, PE and art — see the SUBJECTS.grades note above.
+  G6_VOCATIONAL_S1_CURRICULUM_BOOK_ID,
+  G6_VOCATIONAL_S2_CURRICULUM_BOOK_ID,
+  G6_PE_S1_CURRICULUM_BOOK_ID,
+  G6_ART_S1_CURRICULUM_BOOK_ID,
+  // Grade 6 English, both semesters. 'english' is already in MVP_SUBJECT_IDS.
+  G6_ENGLISH_S1_CURRICULUM_BOOK_ID,
+  G6_ENGLISH_S2_CURRICULUM_BOOK_ID,
+  // Grade 6 Islamic Education and Social Studies, both semesters. Both
+  // subjectIds are already in MVP_SUBJECT_IDS, so no subject append is needed.
+  G6_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  G6_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  G6_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  G6_SOCIAL_S2_CURRICULUM_BOOK_ID,
   // Grade 7 Digital Skills — both semesters attached. Same held-out
   // treatment as Grade 7 Math above.
   G7_DIGITAL_S1_CURRICULUM_BOOK_ID,
@@ -1481,6 +1579,201 @@ export const BOOKS: Book[] = [
   // the JSONs' known_gaps. Same held-out picker treatment as the other
   // Grade 7 subjects above.
   // ── Grade 6 – Mathematics S1, Science S1 & S2 ─────────────────────────────
+  // ── Arabic Grade 6 – Semester 1 & 2 ───────────────────────────────────────
+  // Title-only: this book prints no learning outcomes, main idea or glossary,
+  // so both halves answer true to isBrowserUnitTitleOnly/LessonTitleOnly and
+  // the UI labels them rather than showing an apparently empty lesson.
+  // Semester 2's units are numbered 6-10, continuing Semester 1's 1-5.
+  // See g6ArabicSem1.ts.
+  {
+    id: G6_ARABIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 6, Semester 1',
+    titleAr: 'اللغة العربية – الصف السادس – الفصل الأول',
+    subjectId: 'arabic',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G6_ARABIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 6, Semester 2',
+    titleAr: 'اللغة العربية – الصف السادس – الفصل الثاني',
+    subjectId: 'arabic',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Islamic Education and Social Studies, Grade 6 ─────────────────────────
+  // Both title-only, carried from each student book's table of contents —
+  // see g6IslamicSem1.ts for what these books do and do not print. Note the
+  // two disagree on numbering: social studies continues 1-5 → 6-10 across
+  // semesters, Islamic restarts at 1. Both are as printed.
+  {
+    id: G6_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 6, Semester 1',
+    titleAr: 'التربية الإسلامية – الصف السادس – الفصل الأول',
+    subjectId: 'islamic',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G6_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 6, Semester 2',
+    titleAr: 'التربية الإسلامية – الصف السادس – الفصل الثاني',
+    subjectId: 'islamic',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  {
+    id: G6_SOCIAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 6, Semester 1',
+    titleAr: 'الدراسات الاجتماعية – الصف السادس – الفصل الأول',
+    subjectId: 'social',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G6_SOCIAL_S2_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 6, Semester 2',
+    titleAr: 'الدراسات الاجتماعية – الصف السادس – الفصل الثاني',
+    subjectId: 'social',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Vocational, PE and Art, Grade 6 ───────────────────────────────────────
+  // All three needed SUBJECTS.grades extended to grade-6 above before they
+  // could attach — each was declared for grade-7/8 (or 7/9) alone, which
+  // would have left the book catalogued and permanently unreachable, the
+  // trap 'physics' hit in 2026-09-03. Art is the thinnest source in the set:
+  // teacher guide only, 2015 edition, strands rather than units.
+  {
+    id: G6_VOCATIONAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 6, Semester 1',
+    titleAr: 'التربية المهنية – الصف السادس – الفصل الأول',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G6_VOCATIONAL_S2_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 6, Semester 2',
+    titleAr: 'التربية المهنية – الصف السادس – الفصل الثاني',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  {
+    id: G6_PE_S1_CURRICULUM_BOOK_ID,
+    title: 'Physical Education – Grade 6, Semester 1',
+    titleAr: 'التربية الرياضية – الصف السادس – الفصل الأول',
+    subjectId: 'physical-education',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G6_ART_S1_CURRICULUM_BOOK_ID,
+    title: 'Art Education – Grade 6',
+    titleAr: 'التربية الفنية – الصف السادس',
+    subjectId: 'creative-arts',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  // ── English, Grade 6 ──────────────────────────────────────────────────────
+  // Jordan Team Together (Pearson / York Press). Every source is third-party,
+  // so these lessons are browsable but NOT groundable — see g6EnglishSem1.ts.
+  // Semester 2 numbers its units 5-8, continuing Semester 1's 1-4.
+  {
+    id: G6_ENGLISH_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 6, Semester 1',
+    titleAr: 'اللغة الإنجليزية – الصف السادس – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-6',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G6_ENGLISH_S2_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 6, Semester 2',
+    titleAr: 'اللغة الإنجليزية – الصف السادس – الفصل الثاني',
+    subjectId: 'english',
+    gradeId: 'grade-6',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Digital Skills, Grade 6 ───────────────────────────────────────────────
+  // A cross-curricular companion, not a subject book: its units are blocks
+  // attached to science and maths units and carry those units' titles
+  // verbatim. See g6DigitalSem1.ts — including why its Semester 1 label does
+  // not match the semesters of the subjects it plugs into.
+  {
+    id: G6_DIGITAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Digital Skills – Grade 6, Semester 1',
+    titleAr: 'المهارات الرقمية – الصف السادس – الفصل الأول',
+    subjectId: 'digital-literacy',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
   // The first Grade 6 books in the repo. Maths carries four units and eighteen
   // lessons from the student book alone (no S2 student book was supplied);
   // science carries nine units and nineteen lessons across both semesters,
@@ -3519,6 +3812,19 @@ const _g7IslamicSem2Browser = buildG7IslamicSem2BrowserCatalog();
 const _g7ScienceSem1Browser = buildG7ScienceSem1BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
+const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
+const _g6DigitalSem1Browser = buildG6DigitalSem1BrowserCatalog();
+const _g6VocationalSem1Browser = buildG6VocationalSem1BrowserCatalog();
+const _g6VocationalSem2Browser = buildG6VocationalSem2BrowserCatalog();
+const _g6PhysicalEducationSem1Browser = buildG6PhysicalEducationSem1BrowserCatalog();
+const _g6ArtSem1Browser = buildG6ArtSem1BrowserCatalog();
+const _g6EnglishSem1Browser = buildG6EnglishSem1BrowserCatalog();
+const _g6EnglishSem2Browser = buildG6EnglishSem2BrowserCatalog();
+const _g6IslamicSem1Browser = buildG6IslamicSem1BrowserCatalog();
+const _g6IslamicSem2Browser = buildG6IslamicSem2BrowserCatalog();
+const _g6SocialSem1Browser = buildG6SocialSem1BrowserCatalog();
+const _g6SocialSem2Browser = buildG6SocialSem2BrowserCatalog();
+const _g6ArabicSem2Browser = buildG6ArabicSem2BrowserCatalog();
 const _g6ScienceSem2Browser = buildG6ScienceSem2BrowserCatalog();
 const _g7ScienceSem2Browser = buildG7ScienceSem2BrowserCatalog();
 const _g7DigitalSem1Browser = buildG7DigitalSem1BrowserCatalog();
@@ -3753,6 +4059,19 @@ export const UNITS: Unit[] = [
   ..._g7ScienceSem1Browser.units,
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
+  ..._g6ArabicSem1Browser.units,
+  ..._g6DigitalSem1Browser.units,
+  ..._g6VocationalSem1Browser.units,
+  ..._g6VocationalSem2Browser.units,
+  ..._g6PhysicalEducationSem1Browser.units,
+  ..._g6ArtSem1Browser.units,
+  ..._g6EnglishSem1Browser.units,
+  ..._g6EnglishSem2Browser.units,
+  ..._g6IslamicSem1Browser.units,
+  ..._g6IslamicSem2Browser.units,
+  ..._g6SocialSem1Browser.units,
+  ..._g6SocialSem2Browser.units,
+  ..._g6ArabicSem2Browser.units,
   ..._g6ScienceSem2Browser.units,
   ..._g7ScienceSem2Browser.units,
   ..._g7DigitalSem1Browser.units,
@@ -3857,6 +4176,19 @@ export const LESSONS: Lesson[] = [
   ..._g7ScienceSem1Browser.lessons,
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
+  ..._g6ArabicSem1Browser.lessons,
+  ..._g6DigitalSem1Browser.lessons,
+  ..._g6VocationalSem1Browser.lessons,
+  ..._g6VocationalSem2Browser.lessons,
+  ..._g6PhysicalEducationSem1Browser.lessons,
+  ..._g6ArtSem1Browser.lessons,
+  ..._g6EnglishSem1Browser.lessons,
+  ..._g6EnglishSem2Browser.lessons,
+  ..._g6IslamicSem1Browser.lessons,
+  ..._g6IslamicSem2Browser.lessons,
+  ..._g6SocialSem1Browser.lessons,
+  ..._g6SocialSem2Browser.lessons,
+  ..._g6ArabicSem2Browser.lessons,
   ..._g6ScienceSem2Browser.lessons,
   ..._g7ScienceSem2Browser.lessons,
   ..._g7DigitalSem1Browser.lessons,
@@ -3891,14 +4223,40 @@ export function isBrowserCurriculumPreparing(_bookId: string): boolean {
 export function isBrowserUnitTitleOnly(unitId: string): boolean {
   return isNccdSem1TitleOnlyUnit(unitId)
     || isG9MathSem1TitleOnlyUnit(unitId)
-    || isG9MathSem2TitleOnlyUnit(unitId);
+    || isG9MathSem2TitleOnlyUnit(unitId)
+    || isG6ArabicSem1TitleOnlyUnit(unitId)
+    || isG6ArabicSem2TitleOnlyUnit(unitId)
+    || isG6DigitalSem1TitleOnlyUnit(unitId)
+    || isG6VocationalSem1TitleOnlyUnit(unitId)
+    || isG6VocationalSem2TitleOnlyUnit(unitId)
+    || isG6PhysicalEducationSem1TitleOnlyUnit(unitId)
+    || isG6ArtSem1TitleOnlyUnit(unitId)
+    || isG6EnglishSem1TitleOnlyUnit(unitId)
+    || isG6EnglishSem2TitleOnlyUnit(unitId)
+    || isG6IslamicSem1TitleOnlyUnit(unitId)
+    || isG6IslamicSem2TitleOnlyUnit(unitId)
+    || isG6SocialSem1TitleOnlyUnit(unitId)
+    || isG6SocialSem2TitleOnlyUnit(unitId);
 }
 
 /** UI: Sem1 units 2–4 lessons — title confirmed, no per-lesson objectives yet. */
 export function isBrowserLessonTitleOnly(lessonId: string): boolean {
   return isNccdSem1TitleOnlyLesson(lessonId)
     || isG9MathSem1TitleOnlyLesson(lessonId)
-    || isG9MathSem2TitleOnlyLesson(lessonId);
+    || isG9MathSem2TitleOnlyLesson(lessonId)
+    || isG6ArabicSem1TitleOnlyLesson(lessonId)
+    || isG6ArabicSem2TitleOnlyLesson(lessonId)
+    || isG6DigitalSem1TitleOnlyLesson(lessonId)
+    || isG6VocationalSem1TitleOnlyLesson(lessonId)
+    || isG6VocationalSem2TitleOnlyLesson(lessonId)
+    || isG6PhysicalEducationSem1TitleOnlyLesson(lessonId)
+    || isG6ArtSem1TitleOnlyLesson(lessonId)
+    || isG6EnglishSem1TitleOnlyLesson(lessonId)
+    || isG6EnglishSem2TitleOnlyLesson(lessonId)
+    || isG6IslamicSem1TitleOnlyLesson(lessonId)
+    || isG6IslamicSem2TitleOnlyLesson(lessonId)
+    || isG6SocialSem1TitleOnlyLesson(lessonId)
+    || isG6SocialSem2TitleOnlyLesson(lessonId);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

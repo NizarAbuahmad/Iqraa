@@ -157,11 +157,13 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // ORDINARY GAPS — the subject is declared at grade-6 and a Grade 6 book for
   // it exists on disk; it is simply not ingested yet. Delete the line when it
   // is.
-  'arabic:grade-6',
-  'english:grade-6',
-  'islamic:grade-6',
-  'social:grade-6',
-  'digital-literacy:grade-6',
+  // arabic:grade-6 closed 2026-09-15, both semesters (title-only).
+  // english:grade-6 closed 2026-09-15, both semesters (title-only, third-party).
+  // islamic:grade-6 closed 2026-09-15, both semesters (title-only).
+  // social:grade-6 closed 2026-09-15, both semesters (title-only).
+  // digital-literacy:grade-6 closed 2026-09-15 (title-only, S1 only).
+  // creative-arts / vocational-education / physical-education at grade-6 all
+  // closed 2026-09-15: SUBJECTS.grades extended and the books attached.
   //
   // ORDINARY GAPS, WITH AN EXTRA STEP — a Grade 6 book exists for each, but
   // SUBJECTS.grades does not declare grade-6 for them yet (grade-7/8 for the
@@ -169,9 +171,6 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // array as well as ingesting the book, so do not read the undeclared range
   // as evidence the subject stops above Grade 6 — for these three it is the
   // declaration that trails the curriculum, not the reverse.
-  'creative-arts:grade-6',
-  'vocational-education:grade-6',
-  'physical-education:grade-6',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

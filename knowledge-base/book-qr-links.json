@@ -3,7 +3,7 @@
   "howFound": "scripts render each page at 150, 200 and 260 dpi and take the union. One scale is not enough and the failure is silent: only 44 of these 186 decode at 150 dpi, and the Grade 10 history S1 code on page 12 decodes at 200 while failing at 150, 300 AND 400. A single-dpi pass under-counted this set by 4x.",
   "printedUrlIsBroken": "Every ministry code prints https://qr.nccd.gov.jo/… and that host's certificate has EXPIRED (SEC_E_CERT_EXPIRED), so the URL as printed fails. The same path over http:// serves the file; that is workingUrl. An https page cannot embed an http video, so these are open-in-a-tab links, not slides that play.",
   "kbLessonId": "Present only for books whose lesson openers `outline()` can read — history and geography. A code is located by PAGE, and in Islamic/Arabic/social there is no page→lesson mapping to join through; those entries carry the page alone.",
-  "checkedAt": "2026-09-12",
+  "checkedAt": "2026-09-15",
   "entries": [
     {
       "gradeId": "grade-10",
@@ -14,7 +14,7 @@
       "kind": "document",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/10/1/S/Arabic101S_46%202.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -26,7 +26,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/10/1/S/Arabic101S_75%201.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -38,7 +38,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/10/1/S/Arabic101S_75%202.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -50,7 +50,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/10/1/S/ARABIC10.PAGE78.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -62,7 +62,7 @@
       "kind": "document",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/10/1/S/Arabic101S_104.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -74,7 +74,7 @@
       "kind": "document",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/10/1/S/Arabic101S_131%201.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -86,7 +86,7 @@
       "kind": "document",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/10/1/S/Arabic101S_131%202.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -131,7 +131,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "https://b.top4top.io/m_28067pyof1.mp4",
-      "httpStatus": "206"
+      "httpStatus": "200"
     },
     {
       "gradeId": "grade-10",
@@ -153,7 +153,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "https://c.top4top.io/m_2805w1jdo1.mp4",
-      "httpStatus": "206"
+      "httpStatus": "200"
     },
     {
       "gradeId": "grade-10",
@@ -175,7 +175,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": null,
-      "httpStatus": "404"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -186,7 +186,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Art%20and%20Music/2025/%D9%81%D9%86%20%D8%B5%D9%81%2010/p19.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -198,7 +198,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Art%20and%20Music/2025/%D9%81%D9%86%20%D8%B5%D9%81%2010/p32.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -210,7 +210,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Art%20and%20Music/2025/%D9%81%D9%86%20%D8%B5%D9%81%2010/P36.MP4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -222,7 +222,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Art%20and%20Music/2025/new/%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%B5%D9%81%2010/Music%20Grade10%20Lesson3%20P66%20no1.mp3",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -234,7 +234,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Art%20and%20Music/2025/new/%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%B5%D9%81%2010/Music%20Grade10%20Lesson3%20P66%20no2.mp3",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -246,7 +246,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Art%20and%20Music/2025/new/%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%B5%D9%81%2010/Music%20Grade10%20Lesson3%20P66%20no3.mp3",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -258,7 +258,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Art%20and%20Music/2025/new/%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%B5%D9%81%2010/Music%20Grade10%20Lesson4%20P68.mp3",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -270,7 +270,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Art%20and%20Music/2025/new/%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%B5%D9%81%2010/Music%20Grade10%20Lesson5%20P72.mp3",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -282,7 +282,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Art%20and%20Music/2025/new/%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%B5%D9%81%2010/Music%20Grade10%20Lesson7%20P80%20No.1.mp3",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -294,7 +294,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Art%20and%20Music/2025/new/%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%B5%D9%81%2010/Music%20Grade10%20Lesson7%20P80%20No.2.mp3",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -306,7 +306,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Art%20and%20Music/2025/%D9%85%D8%B3%D8%B1%D8%AD%20%D8%B9%D8%A7%D8%B4%D8%B1/p116.MP4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -318,7 +318,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Art%20and%20Music/2025/new/%D9%85%D8%B3%D8%B1%D8%AD%20%D8%B5%D9%81%2010/%D8%A7%D9%84%D9%86%D8%A7%D9%82%D8%AF%20%D8%AC%D8%B2%D8%A1%201.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -330,7 +330,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Art%20and%20Music/2025/new/%D9%85%D8%B3%D8%B1%D8%AD%20%D8%B5%D9%81%2010/%D9%86%D9%82%D8%AF%20%D8%A7%D9%84%D8%B9%D8%B1%D8%B6%20%D8%AC%202.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -353,7 +353,7 @@
       "kind": "page",
       "decodedAtDpi": 200,
       "workingUrl": null,
-      "httpStatus": "000"
+      "httpStatus": "200"
     },
     {
       "gradeId": "grade-10",
@@ -364,7 +364,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/SS/history/2/page62.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -376,7 +376,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "https://www.memr.gov.jo/EBV4.0/Root_Storage/AR/EB_Info_Page/%D8%A7%D9%84%D8%AF%D8%B3%D8%AA%D9%88%D8%B1_2022.pdf",
-      "httpStatus": "206"
+      "httpStatus": "200"
     },
     {
       "gradeId": "grade-10",
@@ -420,7 +420,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/SS/10%20W/page%2055.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -432,7 +432,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": null,
-      "httpStatus": "404"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -443,7 +443,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": null,
-      "httpStatus": "404"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -454,7 +454,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": null,
-      "httpStatus": "404"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -465,7 +465,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": null,
-      "httpStatus": "404"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -476,7 +476,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "qr.nccd.gov.jo/QR/Eng/10/S1/SB4v.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -487,7 +487,7 @@
       "kind": "page",
       "decodedAtDpi": 200,
       "workingUrl": "qr.nccd.gov.jo/QR/Eng/10/S1/SB17.mp3",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -498,7 +498,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "qr.nccd.gov.jo/QR/Eng/10/S1/SB66.1.mp3",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -509,7 +509,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "qr.nccd.gov.jo/QR/Eng/10/S1/SB66.2.mp3",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -520,7 +520,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "qr.nccd.gov.jo/QR/Eng/10/S1/SB66.5.mp3",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -533,7 +533,7 @@
       "sourceId": "geo-s1-student-book",
       "kbLessonId": "kbl-geo-s1-nccd-u1_l2",
       "workingUrl": "http://qr.nccd.gov.jo/QR/Science/10%20Geography/page15.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -547,7 +547,7 @@
       "sourceId": "geo-s1-student-book",
       "kbLessonId": "kbl-geo-s1-nccd-u1_l3",
       "workingUrl": "http://qr.nccd.gov.jo/QR/Science/10%20Geography/page22.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -561,7 +561,7 @@
       "sourceId": "geo-s1-student-book",
       "kbLessonId": "kbl-geo-s1-nccd-u2_l2",
       "workingUrl": "http://qr.nccd.gov.jo/QR/Science/10%20Geography/page45.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -575,7 +575,7 @@
       "sourceId": "geo-s1-student-book",
       "kbLessonId": "kbl-geo-s1-nccd-u2_l3",
       "workingUrl": "http://qr.nccd.gov.jo/QR/Science/10%20Geography/page49.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -589,7 +589,7 @@
       "sourceId": "geo-s2-student-book",
       "kbLessonId": "kbl-geo-s2-nccd-u4_l1",
       "workingUrl": "http://qr.nccd.gov.jo/QR/geography/page%2012.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -616,7 +616,7 @@
       "sourceId": "geo-s2-student-book",
       "kbLessonId": "kbl-geo-s2-nccd-u5_l3",
       "workingUrl": "http://qr.nccd.gov.jo/QR/geography/page%2051.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -630,7 +630,7 @@
       "sourceId": "history-s1-student-book",
       "kbLessonId": "kbl-hist-s1-nccd-u1_l1",
       "workingUrl": "http://qr.nccd.gov.jo/QR/NE/10/1/NE101_1.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -644,7 +644,7 @@
       "sourceId": "history-s2-student-book",
       "kbLessonId": "kbl-hist-s2-nccd-u3_l1",
       "workingUrl": "http://qr.nccd.gov.jo/QR/NE/10/2/page14.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -658,7 +658,7 @@
       "sourceId": "history-s2-student-book",
       "kbLessonId": "kbl-hist-s2-nccd-u3_l6",
       "workingUrl": "http://qr.nccd.gov.jo/QR/NE/10/2/page41.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -672,7 +672,7 @@
       "sourceId": "history-s2-student-book",
       "kbLessonId": "kbl-hist-s2-nccd-u3_l7",
       "workingUrl": "http://qr.nccd.gov.jo/QR/NE/10/2/page50.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -686,7 +686,7 @@
       "sourceId": "history-s2-student-book",
       "kbLessonId": "kbl-hist-s2-nccd-u4_l2",
       "workingUrl": "http://qr.nccd.gov.jo/QR/NE/10/2/page83.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -698,7 +698,7 @@
       "kind": "document",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/1/Islam%2010%201%209.pdf",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -709,7 +709,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/1/Islam%2010%201%2030%201.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -720,7 +720,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/1/Islam%2010%201%2030%202.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -731,7 +731,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/1/Islam%2010%201%2030%203.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -742,7 +742,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/1/Islam%2010%201%2030%204.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -753,7 +753,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/1/Islam%2010%201%2030%205.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -764,7 +764,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/1/Islam%2010%201%2049.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -775,7 +775,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/1/Islam%2010%201%2069.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -786,7 +786,7 @@
       "kind": "page",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/1/Islam101105.html",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -797,7 +797,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/1/Islam%2010%201%20115.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -808,7 +808,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/1/Islam%2010%201%20151.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -819,7 +819,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/1/Islam%2010%201%20159.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -830,7 +830,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%207.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -852,7 +852,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%2039.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -863,7 +863,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%2043.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -874,7 +874,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%2049.pdf",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -885,7 +885,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%2050.pdf",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -896,7 +896,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islamic10254.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -907,7 +907,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%2060.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -918,7 +918,7 @@
       "kind": "page",
       "decodedAtDpi": 150,
       "workingUrl": "https://sunnah.one",
-      "httpStatus": "206"
+      "httpStatus": "200"
     },
     {
       "gradeId": "grade-10",
@@ -929,7 +929,7 @@
       "kind": "document",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%2074.pdf",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -940,7 +940,7 @@
       "kind": "document",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam102_75.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -952,7 +952,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%2084.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -963,7 +963,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%2087.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -974,7 +974,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%2097%202.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -985,7 +985,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%2097%203.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -996,7 +996,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam102_97_3.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1008,7 +1008,7 @@
       "kind": "image",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%2098.png",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -1019,7 +1019,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%20107.html",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -1030,7 +1030,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%20117.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -1041,7 +1041,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%20118.pdf",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -1052,7 +1052,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%20122.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -1063,7 +1063,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%20125.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -1074,7 +1074,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%20135.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -1085,7 +1085,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islamic102141.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -1096,7 +1096,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%20143.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -1107,7 +1107,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%20148.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -1140,7 +1140,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%20167.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -1151,7 +1151,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%20169.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -1162,7 +1162,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%20173.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -1173,7 +1173,7 @@
       "kind": "document",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%20173.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1185,7 +1185,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/10/2/Islam%2010%202%20179.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-10",
@@ -1196,7 +1196,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/sport/VTS013.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1208,7 +1208,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/sport/fitness.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1220,7 +1220,7 @@
       "kind": "document",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/sport/king.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1232,7 +1232,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/1/p21.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1244,7 +1244,7 @@
       "kind": "document",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/1/p21.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1256,7 +1256,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/1/p39.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1268,7 +1268,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/1/p46.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1280,7 +1280,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/1/p62.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1303,7 +1303,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/1/p72.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1315,7 +1315,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/1/p90.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1327,7 +1327,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/1/p91.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1339,7 +1339,7 @@
       "kind": "document",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/1/p100.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1351,7 +1351,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/1/p129.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1363,7 +1363,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/2/p11.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1375,7 +1375,7 @@
       "kind": "document",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/2/p19.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1387,7 +1387,7 @@
       "kind": "document",
       "decodedAtDpi": 260,
       "workingUrl": null,
-      "httpStatus": "404"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-9",
@@ -1398,7 +1398,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/2/p93.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1410,7 +1410,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/2/p97.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1422,7 +1422,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/2/p110.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1434,7 +1434,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/2/p119.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1446,7 +1446,7 @@
       "kind": "document",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Arabic/9/2/p123.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1469,7 +1469,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/IT/G9/1/G9.u2.l4.p111.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1481,7 +1481,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/IT/G9/1/G9.u2.l2.p84.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1493,7 +1493,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/IT/G9/1/G9.u2.l1.p74.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1505,7 +1505,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/IT/G9/1/G9.u2.l2.p85.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1517,7 +1517,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": null,
-      "httpStatus": "404"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-9",
@@ -1528,7 +1528,7 @@
       "kind": "page",
       "decodedAtDpi": 200,
       "workingUrl": "qr.nccd.gov.jo/QR/Eng/9/new/G9/S1/SB6.mp3",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-9",
@@ -1539,7 +1539,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "qr.nccd.gov.jo/QR/Eng/9/new/G9/S1/SB10.3.mp3",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-9",
@@ -1550,7 +1550,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "qr.nccd.gov.jo/QR/Eng/9/new/G9/S1/SB10.5.mp3",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-9",
@@ -1561,7 +1561,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": null,
-      "httpStatus": "404"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-9",
@@ -1572,7 +1572,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "qr.nccd.gov.jo/QR/Eng/9/new/G9/S1/SB21.2.mp3",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-9",
@@ -1583,7 +1583,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "qr.nccd.gov.jo/QR/Eng/9/new/G9/S1/SB21.4.mp3",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-9",
@@ -1594,7 +1594,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": null,
-      "httpStatus": "404"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-9",
@@ -1605,7 +1605,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": null,
-      "httpStatus": "404"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-9",
@@ -1616,7 +1616,7 @@
       "kind": "page",
       "decodedAtDpi": 200,
       "workingUrl": "qr.nccd.gov.jo/QR/Eng/9/new/G9/S1/SB40.mp3",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-9",
@@ -1627,7 +1627,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": null,
-      "httpStatus": "404"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-9",
@@ -1638,7 +1638,7 @@
       "kind": "page",
       "decodedAtDpi": 200,
       "workingUrl": "qr.nccd.gov.jo/QR/Eng/9/new/G9/S1/SB58.mp3",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-9",
@@ -1649,7 +1649,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Eng/9/part2/SB4v.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1661,7 +1661,7 @@
       "kind": "page",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Eng/9/part2/SB5.3.mp3",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1673,7 +1673,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Eng/9/part2/SB16v.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1685,7 +1685,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Eng/9/part2/SB26v.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1697,7 +1697,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Eng/9/part2/SB38v.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1709,7 +1709,7 @@
       "kind": "page",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Eng/9/part2/SB43.mp3",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1721,7 +1721,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Eng/9/part2/SB48v.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1733,7 +1733,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_7.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1745,7 +1745,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_21.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1757,7 +1757,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_22.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1769,7 +1769,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_24.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1781,7 +1781,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_40.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1793,7 +1793,7 @@
       "kind": "image",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_49.JPG",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1805,7 +1805,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_55.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1817,7 +1817,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_57.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1829,7 +1829,7 @@
       "kind": "image",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_63_1.JPG",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1841,7 +1841,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_70.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1853,7 +1853,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_78.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1865,7 +1865,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_83.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1877,7 +1877,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_85.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1889,7 +1889,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_88.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1901,7 +1901,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_97.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1913,7 +1913,7 @@
       "kind": "document",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_98.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1925,7 +1925,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_106.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1937,7 +1937,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_109.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1949,7 +1949,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_112.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1961,7 +1961,7 @@
       "kind": "document",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_121.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1973,7 +1973,7 @@
       "kind": "document",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/1/Islam091_122.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1985,7 +1985,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/2/10.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -1997,7 +1997,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/2/22.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -2009,7 +2009,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/2/25.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -2021,7 +2021,7 @@
       "kind": "document",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/2/29.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -2033,7 +2033,7 @@
       "kind": "video",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/2/60.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -2045,7 +2045,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/2/63.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -2057,7 +2057,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/2/72.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -2069,7 +2069,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/2/78.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -2081,7 +2081,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/2/83.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -2115,7 +2115,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/2/109.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -2127,7 +2127,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/2/122.mp4",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -2139,7 +2139,7 @@
       "kind": "document",
       "decodedAtDpi": 260,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Islam/9/2/130.pdf",
-      "httpStatus": "206",
+      "httpStatus": "000",
       "note": "printed https fails: expired certificate on qr.nccd.gov.jo"
     },
     {
@@ -2162,7 +2162,7 @@
       "kind": "video",
       "decodedAtDpi": 150,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Math/3.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     },
     {
       "gradeId": "grade-9",
@@ -2173,7 +2173,7 @@
       "kind": "video",
       "decodedAtDpi": 200,
       "workingUrl": "http://qr.nccd.gov.jo/QR/Math/4.mp4",
-      "httpStatus": "206"
+      "httpStatus": "000"
     }
   ]
 }

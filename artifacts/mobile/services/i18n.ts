@@ -170,6 +170,7 @@ const translations = {
     demoModeHint: 'محتوى تجريبي للعرض — دون اتصال بنموذج خارجي',
     aiLiveBadge: 'ذكاء اصطناعي مباشر',
     aiFallbackBadge: 'تعذّر الاتصال · محتوى تجريبي',
+    aiSavedCopyBadge: 'نسخة محفوظة · انتهت حصة هذا الشهر',
     slideMediaUrlField: 'رابط الفيديو أو الصورة',
     slideMediaUrlHint: 'الصق رابط يوتيوب لاستبدال الفيديو المقترح، أو رابط صورة مباشرًا.',
     slideMediaCaptionField: 'وصف الوسائط (اختياري)',
@@ -266,6 +267,16 @@ const translations = {
     qrKindDocument: 'مستند',
     qrKindImage: 'صورة',
     qrKindPage: 'صفحة ويب',
+    // Vocabulary practice, from the book's own Word List.
+    vocabTitle: 'مفردات الدرس',
+    vocabIntro: 'كلماتُ هذا الدرس من كتابك، في جملٍ من الكتاب نفسه. جرّب كما تشاء؛ لا يُسجَّل شيء.',
+    vocabWordCount: (n: number) => arCountPhrase(n, 'كلمة', 'كلمتان', 'كلمات'),
+    vocabGapFill: 'أكمل الفراغ',
+    vocabPartOfSpeech: 'نوع الكلمة',
+    vocabRight: 'إجابة صحيحة',
+    vocabWrong: 'إجابة غير صحيحة',
+    vocabShowList: 'اعرض قائمة الكلمات',
+    vocabHideList: 'أخفِ قائمة الكلمات',
     books: 'الكتب',
     units: 'الوحدات',
     lessons: 'الدروس',
@@ -406,6 +417,15 @@ const translations = {
     scopeNoCurriculumHint:
       'لا يتوفر منهاج لهذه المادة في الصف المحدد، لذلك لا تظهر ضمن قائمة المواد. غيّر الصف أو اختر مادة أخرى.',
     generationFailed: 'تعذر إتمام العملية. حاول مرة أخرى.',
+    // Two states a teacher can act on, kept apart from generationFailed: one
+    // says «wait, or reuse what you have», the other «this is switched off» —
+    // and neither is «try again», which is the one thing that will not help.
+    aiQuotaSpent:
+      'انتهت حصة التوليد الجديد لهذا الشهر. لا يزال بإمكانك فتح الأوراق والدروس المحفوظة.',
+    aiUnavailable: 'خدمة الذكاء الاصطناعي متوقفة حالياً. حاول لاحقاً.',
+    // Shown with a result, not instead of one: the teacher asked for something
+    // new and got a saved copy, and must not mistake it for a fresh generation.
+    aiServedSavedCopy: 'هذه نسخة محفوظة — انتهت حصة التوليد الجديد لهذا الشهر.',
     curriculumUngroundedNotice: 'هذا الموضوع غير موجود في المنهاج المتاح حالياً. الخطة عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
     curriculumUngroundedNoticeWorksheet: 'هذا الموضوع غير موجود في المنهاج المتاح حالياً. ورقة العمل عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
     includePriorReviewLabel: 'تضمين أسئلة مراجعة سابقة',
@@ -839,6 +859,10 @@ const translations = {
     graphMathOnlyHint: 'الرسم البياني يظهر في دروس الرياضيات.',
     mediaAttachedCount: (n: number) => `${n} وسائط للحصة`,
     openGraph: 'افتح الرسم البياني',
+    // Shown on the guided/independent practice slides, whose body is one line
+    // by design. Names the button («ملاحظات المعلم») rather than saying "see
+    // below", so a teacher meeting a near-empty slide knows where to look.
+    teacherLedHint: 'إرشادات هذا النشاط في ملاحظات المعلم.',
     openMedia: 'افتح الوسائط',
     enlargeImage: 'تكبير الصورة',
     closeImage: 'إغلاق',
@@ -1349,6 +1373,7 @@ const translations = {
     classCode: 'رمز الربط',
     classCodePlaceholder: 'مثال: YHFM8Y',
     classCodeHint: 'اطلب رمز الربط من معلم ابنك أو ابنتك',
+    classCodeHintStudent: 'اطلب رمز الربط من معلمك',
     messagingEmptyDesc: 'ابدأ محادثة مع معلم أو ولي أمر مرتبط بحسابك',
     messagingLoadError: 'تعذّر تحميل المحادثات',
     messagingSendError: 'تعذّر إرسال الرسالة',
@@ -1401,7 +1426,19 @@ const translations = {
     joinAnotherClassFailed: 'تعذّر الانضمام إلى هذا الصف',
     claimRequiredTitle: 'اربط حساب ابنك أو ابنتك',
     claimRequiredDesc: 'أدخل رمز الربط الذي حصلت عليه من المعلم لإكمال إعداد حسابك.',
+    // The same screen serves a student, who has no child to link. Without
+    // these two it told them to link «حساب ابنك أو ابنتك» — the clearest sign
+    // a student could get that they had picked the wrong account type, and no
+    // way at all to act on it.
+    claimRequiredTitleStudent: 'اربط حسابك بصفّك',
+    claimRequiredDescStudent: 'أدخل رمز الربط الذي حصلت عليه من معلمك لإكمال إعداد حسابك.',
     claimRequiredSubmit: 'متابعة',
+    claimRequiredSignedInAs: (role: string) => `نوع حسابك: ${role}`,
+    claimRequiredWrongRole: 'ليس هذا نوع حسابي الصحيح',
+    claimRequiredPickRole: 'اختر نوع الحساب الصحيح',
+    claimRequiredSwitchNote: 'يمكن تغيير النوع الآن فقط — قبل ربط الحساب بأي صف.',
+    claimRequiredSwitchSubmit: 'تغيير نوع الحساب',
+    claimRequiredSwitchFailed: 'تعذّر تغيير نوع الحساب',
     // Rejections from POST /auth/claim, keyed by the server's `code` — the
     // server answers in English (services/claimCodeGate.ts).
     claimCodeInvalid: 'هذا الرمز غير صالح أو انتهت صلاحيته',
@@ -1509,6 +1546,7 @@ const translations = {
     demoModeHint: 'Sample output for demonstration — no external model call',
     aiLiveBadge: 'Live AI',
     aiFallbackBadge: 'Connection failed · sample content',
+    aiSavedCopyBadge: "Saved copy · this month's allowance is used up",
     slideMediaUrlField: 'Video or image link',
     slideMediaUrlHint: 'Paste a YouTube link to replace the suggested video, or a direct image URL.',
     slideMediaCaptionField: 'Media caption (optional)',
@@ -1599,6 +1637,15 @@ const translations = {
     qrKindDocument: 'Document',
     qrKindImage: 'Image',
     qrKindPage: 'Web page',
+    vocabTitle: 'Lesson vocabulary',
+    vocabIntro: "This lesson's words from your book, in sentences from the book itself. Try as often as you like — nothing is recorded.",
+    vocabWordCount: (n: number) => `${n} word${n === 1 ? '' : 's'}`,
+    vocabGapFill: 'Fill the gap',
+    vocabPartOfSpeech: 'Part of speech',
+    vocabRight: 'Correct',
+    vocabWrong: 'Not quite',
+    vocabShowList: 'Show the word list',
+    vocabHideList: 'Hide the word list',
     books: 'Books',
     units: 'Units',
     lessons: 'Lessons',
@@ -1730,6 +1777,10 @@ const translations = {
     scopeNoCurriculumHint:
       'There is no curriculum for this subject in the selected grade, so it is not in the subject list. Change the grade, or pick another subject.',
     generationFailed: 'Generation failed. Please try again.',
+    aiQuotaSpent:
+      "This month's allowance for new generations is used up. You can still open saved worksheets and lessons.",
+    aiUnavailable: 'The AI service is switched off right now. Try again later.',
+    aiServedSavedCopy: "This is a saved copy — this month's allowance for new generations is used up.",
     curriculumUngroundedNotice: 'This topic is not in the currently available curriculum. The plan is generic and not grounded in a specific textbook lesson.',
     curriculumUngroundedNoticeWorksheet: 'This topic is not in the currently available curriculum. The worksheet is generic and not grounded in a specific textbook lesson.',
     includePriorReviewLabel: 'Include prior-knowledge review questions',
@@ -2147,6 +2198,7 @@ const translations = {
     graphMathOnlyHint: 'The graph slide appears in mathematics lessons.',
     mediaAttachedCount: (n: number) => `${n} media for class`,
     openGraph: 'Open the graph',
+    teacherLedHint: 'Guidance for this activity is in Teacher Notes.',
     openMedia: 'Open media',
     enlargeImage: 'Enlarge image',
     closeImage: 'Close',
@@ -2636,6 +2688,7 @@ const translations = {
     classCode: 'Link code',
     classCodePlaceholder: 'e.g. YHFM8Y',
     classCodeHint: "Ask your child's teacher for the link code",
+    classCodeHintStudent: 'Ask your teacher for the link code',
     messagingEmptyDesc: 'Start a conversation with a teacher or a linked parent',
     messagingLoadError: 'Could not load conversations',
     messagingSendError: 'Could not send message',
@@ -2688,7 +2741,15 @@ const translations = {
     joinAnotherClassFailed: 'Could not join this class',
     claimRequiredTitle: "Link your child's class",
     claimRequiredDesc: "Enter the link code your teacher gave you to finish setting up your account.",
+    claimRequiredTitleStudent: 'Link your class',
+    claimRequiredDescStudent: 'Enter the link code your teacher gave you to finish setting up your account.',
     claimRequiredSubmit: 'Continue',
+    claimRequiredSignedInAs: (role: string) => `Account type: ${role}`,
+    claimRequiredWrongRole: "This isn't the right account type",
+    claimRequiredPickRole: 'Pick the right account type',
+    claimRequiredSwitchNote: 'This can only be changed now — before the account is linked to a class.',
+    claimRequiredSwitchSubmit: 'Change account type',
+    claimRequiredSwitchFailed: "Couldn't change the account type",
     // Rejections from POST /auth/claim, keyed by the server's `code` — the
     // server answers in English (services/claimCodeGate.ts).
     claimCodeInvalid: 'That code is invalid or has expired',

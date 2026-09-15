@@ -1,0 +1,1349 @@
+{
+  "sourceId": "g8-science-s2-student-book",
+  "figures": [
+    {
+      "file": "p003.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 3,
+      "rect": [
+        419.8,
+        193.2,
+        548.1,
+        321.5
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p003b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 3,
+      "rect": [
+        419.8,
+        407.3,
+        548.1,
+        535.7
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p003c.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 3,
+      "rect": [
+        419.8,
+        601.9,
+        548.1,
+        730.3
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p004.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 4,
+      "rect": [
+        451.6,
+        169.2,
+        579.9,
+        297.6
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p004b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 4,
+      "rect": [
+        451.6,
+        427.1,
+        579.9,
+        555.4
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p011.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 11,
+      "rect": [
+        175.6,
+        242.1,
+        312.8,
+        624.0
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p011b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 11,
+      "rect": [
+        384.1,
+        412.8,
+        488.3,
+        529.1
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p012.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 12,
+      "rect": [
+        173.4,
+        359.4,
+        530.0,
+        550.5
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p013.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 13,
+      "rect": [
+        46.2,
+        448.5,
+        552.3,
+        717.2
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p014.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 14,
+      "rect": [
+        83.1,
+        272.7,
+        558.8,
+        576.7
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p017.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 17,
+      "rect": [
+        54.1,
+        351.1,
+        548.6,
+        715.7
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p018.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 18,
+      "rect": [
+        123.1,
+        378.9,
+        576.4,
+        697.7
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p019.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 19,
+      "rect": [
+        338.0,
+        420.8,
+        505.9,
+        686.6
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p021.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 21,
+      "rect": [
+        53.9,
+        431.1,
+        200.1,
+        585.7
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p021b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 21,
+      "rect": [
+        224.5,
+        431.1,
+        370.7,
+        575.5
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p021c.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 21,
+      "rect": [
+        396.5,
+        431.1,
+        542.7,
+        570.1
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p021d.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 21,
+      "rect": [
+        54.9,
+        573.4,
+        204.8,
+        660.3
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p021e.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 21,
+      "rect": [
+        220.6,
+        575.2,
+        376.6,
+        652.7
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p027.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 27,
+      "rect": [
+        46.9,
+        515.3,
+        298.3,
+        708.0
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 25
+    },
+    {
+      "file": "p027b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 27,
+      "rect": [
+        296.7,
+        515.3,
+        548.1,
+        708.0
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 25
+    },
+    {
+      "file": "p028.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 28,
+      "rect": [
+        327.8,
+        386.7,
+        421.4,
+        480.2
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 25
+    },
+    {
+      "file": "p031b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 31,
+      "rect": [
+        177.5,
+        487.9,
+        248.9,
+        561.1
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 31
+    },
+    {
+      "file": "p033.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 33,
+      "rect": [
+        51.8,
+        432.2,
+        236.7,
+        540.7
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 31
+    },
+    {
+      "file": "p034.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 34,
+      "rect": [
+        87.8,
+        311.8,
+        281.2,
+        424.7
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 31
+    },
+    {
+      "file": "p036b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 36,
+      "rect": [
+        31.1,
+        210.9,
+        391.1,
+        372.8
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 31
+    },
+    {
+      "file": "p040.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 40,
+      "rect": [
+        211.6,
+        244.5,
+        327.7,
+        353.1
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 31
+    },
+    {
+      "file": "p041b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 41,
+      "rect": [
+        0.0,
+        239.7,
+        169.2,
+        420.3
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 31
+    },
+    {
+      "file": "p049.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 49,
+      "rect": [
+        83.5,
+        583.7,
+        271.7,
+        703.4
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 46
+    },
+    {
+      "file": "p050.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 50,
+      "rect": [
+        267.7,
+        475.0,
+        399.3,
+        663.8
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 46
+    },
+    {
+      "file": "p050b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 50,
+      "rect": [
+        387.8,
+        475.0,
+        548.4,
+        663.8
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 46
+    },
+    {
+      "file": "p051.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 51,
+      "rect": [
+        0.0,
+        47.2,
+        257.1,
+        289.7
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 46
+    },
+    {
+      "file": "p055.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 55,
+      "rect": [
+        53.8,
+        95.2,
+        191.9,
+        212.1
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p055b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 55,
+      "rect": [
+        54.0,
+        276.7,
+        197.0,
+        398.6
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p060b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 60,
+      "rect": [
+        146.4,
+        217.2,
+        239.9,
+        288.9
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p066.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 66,
+      "rect": [
+        387.3,
+        0.0,
+        623.6,
+        488.5
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p067b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 67,
+      "rect": [
+        116.1,
+        209.1,
+        357.0,
+        354.4
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p071b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 71,
+      "rect": [
+        126.8,
+        270.7,
+        201.3,
+        341.6
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p073.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 73,
+      "rect": [
+        67.3,
+        591.2,
+        284.5,
+        734.3
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p073b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 73,
+      "rect": [
+        411.6,
+        604.1,
+        520.4,
+        716.8
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p073c.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 73,
+      "rect": [
+        323.8,
+        616.7,
+        407.8,
+        700.8
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p074.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 74,
+      "rect": [
+        467.8,
+        548.6,
+        547.9,
+        628.7
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p074b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 74,
+      "rect": [
+        89.1,
+        555.7,
+        303.5,
+        732.6
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p074c.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 74,
+      "rect": [
+        371.6,
+        603.6,
+        451.6,
+        683.7
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p074d.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 74,
+      "rect": [
+        467.8,
+        648.4,
+        547.9,
+        728.5
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p075.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 75,
+      "rect": [
+        55.2,
+        577.0,
+        291.2,
+        716.7
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p075b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 75,
+      "rect": [
+        405.1,
+        587.8,
+        531.0,
+        713.7
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p083.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 83,
+      "rect": [
+        158.4,
+        295.8,
+        331.3,
+        503.2
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p086b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 86,
+      "rect": [
+        290.7,
+        611.1,
+        597.6,
+        785.7
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 86
+    },
+    {
+      "file": "p096.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 96,
+      "rect": [
+        416.9,
+        444.0,
+        577.6,
+        746.5
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 86
+    },
+    {
+      "file": "p104b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 104,
+      "rect": [
+        483.1,
+        239.7,
+        623.6,
+        427.0
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 86
+    },
+    {
+      "file": "p104c.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 104,
+      "rect": [
+        499.5,
+        462.8,
+        623.6,
+        545.8
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 86
+    },
+    {
+      "file": "p111.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 111,
+      "rect": [
+        45.1,
+        299.9,
+        208.5,
+        425.3
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 110
+    },
+    {
+      "file": "p111b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 111,
+      "rect": [
+        233.0,
+        518.9,
+        503.6,
+        766.6
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 110
+    },
+    {
+      "file": "p113.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 113,
+      "rect": [
+        33.8,
+        177.8,
+        201.5,
+        263.3
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 110
+    },
+    {
+      "file": "p113b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 113,
+      "rect": [
+        46.3,
+        423.7,
+        196.6,
+        507.5
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 110
+    },
+    {
+      "file": "p113c.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 113,
+      "rect": [
+        236.6,
+        664.6,
+        380.8,
+        740.2
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 110
+    },
+    {
+      "file": "p115b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 115,
+      "rect": [
+        87.6,
+        284.5,
+        170.7,
+        367.6
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 110
+    },
+    {
+      "file": "p115c.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 115,
+      "rect": [
+        234.8,
+        310.5,
+        407.7,
+        448.0
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 110
+    },
+    {
+      "file": "p116b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 116,
+      "rect": [
+        132.6,
+        529.1,
+        293.7,
+        608.6
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p116c.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 116,
+      "rect": [
+        382.2,
+        534.6,
+        543.3,
+        611.4
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p116d.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 116,
+      "rect": [
+        141.9,
+        599.3,
+        246.4,
+        676.6
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p116e.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 116,
+      "rect": [
+        404.4,
+        598.8,
+        491.8,
+        681.9
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p119.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 119,
+      "rect": [
+        46.6,
+        578.2,
+        352.9,
+        785.7
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p120.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 120,
+      "rect": [
+        228.3,
+        239.0,
+        393.6,
+        375.5
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p120b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 120,
+      "rect": [
+        145.0,
+        555.2,
+        228.6,
+        664.9
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p120c.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 120,
+      "rect": [
+        119.1,
+        664.9,
+        308.1,
+        751.0
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p126b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 126,
+      "rect": [
+        134.0,
+        321.0,
+        205.5,
+        401.7
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p126c.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 126,
+      "rect": [
+        230.7,
+        321.0,
+        302.1,
+        401.7
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p126d.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 126,
+      "rect": [
+        332.6,
+        320.8,
+        404.0,
+        401.5
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p126f.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 126,
+      "rect": [
+        80.6,
+        470.0,
+        323.7,
+        625.5
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p127.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 127,
+      "rect": [
+        0.0,
+        0.0,
+        130.4,
+        236.1
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p127b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 127,
+      "rect": [
+        0.0,
+        239.7,
+        224.9,
+        482.5
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p135.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 135,
+      "rect": [
+        198.8,
+        448.9,
+        547.8,
+        766.8
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p136.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 136,
+      "rect": [
+        76.2,
+        388.0,
+        575.8,
+        746.6
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p144.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 144,
+      "rect": [
+        75.5,
+        140.9,
+        560.0,
+        362.4
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 141
+    },
+    {
+      "file": "p144b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 144,
+      "rect": [
+        75.5,
+        574.4,
+        293.0,
+        752.4
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 141
+    },
+    {
+      "file": "p144c.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 144,
+      "rect": [
+        280.9,
+        574.4,
+        498.5,
+        752.3
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 141
+    },
+    {
+      "file": "p145.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 145,
+      "rect": [
+        47.2,
+        241.7,
+        549.3,
+        698.5
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 141
+    },
+    {
+      "file": "p147.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 147,
+      "rect": [
+        322.0,
+        506.1,
+        579.1,
+        763.2
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 141
+    },
+    {
+      "file": "p148.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 148,
+      "rect": [
+        87.4,
+        313.7,
+        576.4,
+        689.3
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 141
+    },
+    {
+      "file": "p149.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 149,
+      "rect": [
+        45.3,
+        334.1,
+        266.7,
+        555.5
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 141
+    },
+    {
+      "file": "p150b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 150,
+      "rect": [
+        129.5,
+        571.9,
+        326.1,
+        697.9
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 141
+    },
+    {
+      "file": "p153.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 153,
+      "rect": [
+        42.1,
+        344.0,
+        197.1,
+        494.0
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 141
+    },
+    {
+      "file": "p157b.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 157,
+      "rect": [
+        177.5,
+        259.8,
+        427.3,
+        376.6
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 141
+    }
+  ]
+}

@@ -50,19 +50,18 @@ an announcement by default» below.
   rendered small and repeatedly. Scope is deliberately self-only: the shared
   `Avatar.tsx` used in messaging/notifications/groups still shows initials
   for everyone else — see «A profile picture landed, and it stops at the
-  signed-in user» below. Verified end to end against a local Postgres and a
-  stand-in for the public bucket, in a real browser: upload, the photo
-  rendering in the circular avatar, remove reverting to initials, and the
-  confirm dialog. **Not verified against real Cloudflare R2** — no
-  credentials in this sandbox — though `putPublicObject` is the same
-  `S3Client` call `putObject` already makes in production, just a different
-  `Bucket` name. **Schema pushed to production 2026-09-13** — `avatar_key` was
-  added to Neon directly as `ALTER TABLE users ADD COLUMN avatar_key text`
-  rather than through `drizzle-kit push`; the column is nullable with no
-  default, which is what the schema declares, so the two are identical in
-  effect. `R2_PUBLIC_BUCKET`/`R2_PUBLIC_BASE_URL` are **still unset on Cloud
-  Run**, so the upload route 503s in production until they are set and the API
-  is hand-deployed.
+  signed-in user» below. **Live in production and verified there on
+  2026-09-15**, against real Cloudflare R2: a photo uploaded from the deployed
+  web app, stored in `iqraa-public`, and rendered in the circular avatar from
+  its own `pub-<hash>.r2.dev` URL — which is also what proves
+  `R2_PUBLIC_BASE_URL` is right, since the browser fetches that URL directly.
+  `avatar_key` reached Neon on 2026-09-13 as `ALTER TABLE users ADD COLUMN
+  avatar_key text` rather than through `drizzle-kit push`; nullable, no
+  default, identical in effect to what the schema declares. Getting there took
+  three production faults that had nothing to do with this code — Cloud Run
+  traffic pinned to an old revision, a stale Cloud Shell clone deploying
+  week-old code, and an R2 token scoped to `iqraa-media` only — each now
+  written up in `docs/deploying.md`.
 - **In-app messaging between teachers, parents and students** (2026-09-04):
   claim-code signup, teacher↔parent and teacher↔student direct threads,
   class-group and teacher-made custom groups, image attachments, block and
@@ -119,11 +118,19 @@ an announcement by default» below.
   boots the built bundle, so run `pnpm build` before `pnpm test` or it skips.
 - **CI runs on every pull request** (`.github/workflows/ci.yml`, added
   2026-08-12): typecheck, then the api-server build *before* its tests, then
-  both suites, plus the SymPy verification regressions. Node and pnpm are
-  pinned to the versions the Render build uses. Before this the repo had no
-  checks at all, which is how a `dist/` bundle built from an older commit was
-  read as two failing tests on `main` for two days — the api-server suite boots
-  `dist/index.mjs` and `pnpm test` does not build it.
+  every package suite that has one — api-server, mobile, curriculum, and
+  math-verify since 2026-09-15 — plus the SymPy verification regressions. Node
+  and pnpm are pinned to the versions the Render build uses. Before this the
+  repo had no checks at all, which is how a `dist/` bundle built from an older
+  commit was read as two failing tests on `main` for two days — the api-server
+  suite boots `dist/index.mjs` and `pnpm test` does not build it.
+  - The package list is **hand-maintained inside the workflow**, and nothing
+    checks it against the packages that declare a `test` script. That is how
+    `@workspace/math-verify` went unrun from the day it was written until
+    2026-09-15: typechecked by the `typecheck` step, never executed. Adding a
+    package's tests is two edits, not one. (`@workspace/math-practice` declares
+    the script too and has no test files; `node --test` over an empty glob
+    exits 0, so adding it would prove nothing until it has some.)
 - Local dev runs end to end: Express API (:8080) + Postgres 17 (`iqraa` db,
   6 tables) + Expo web (:8083). Login/register work against the local DB.
 - Curriculum data loads in-app (math S1: 4 units / 18 lessons). It now lives in
@@ -457,6 +464,166 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A report could name anyone, and moderation believed it, 2026-09-15
+
+**`POST /messaging/reports` checked the reporter and trusted the rest.** It
+verified that whoever filed the report was a participant of `threadId` — and
+then wrote `reportedUserId` and `messageId` to `chat_reports` exactly as they
+arrived in the body, neither one checked against that thread.
+
+**`PATCH /moderation/reports/:id` acts on both fields directly.** `suspendUser`
+sets `suspendedAt` on `report.reportedUserId`; `hideMessage` archives
+`report.messageId` by id alone. Neither consults the thread. So a participant
+of *any* thread could file a report naming a teacher they had never messaged,
+or a message from a thread they cannot see, and an admin approving it would
+carry it out. The only existing guard is that an admin cannot be suspended
+(`ADMIN_ROLES`, added so moderators could not lock each other out) — every
+other account was nameable.
+
+It needs a person to approve, which is what keeps this below the grading and
+budget bugs in priority. But the approving admin has no signal that anything is
+wrong: the report renders identically whether the target was in the
+conversation or not.
+
+Both ids are now checked against the thread before the row is written. The
+rules live in `lib/reportDecision.ts` rather than in the route, for the reason
+`claimDecision.ts` gives in its own header — `@workspace/db` throws at import
+without `DATABASE_URL`, so a rule tested through the route would need a live
+database and this repo has none. Trust-boundary rules should not be untestable
+forever. `reportDecision.test.ts` covers both vectors, the group-thread case
+(membership of the thread, not a two-party relationship), and that no message
+lookup happens when no message was named.
+
+**Rows written before this are not retroactively safe.** The fix is on the
+write path, so any report already in `chat_reports` still carries whatever it
+was given. If any exist, they are worth a look before they are actioned:
+
+```sql
+select r.id, r.thread_id, r.reported_user_id
+from chat_reports r
+left join chat_participants p
+  on p.thread_id = r.thread_id and p.user_id = r.reported_user_id
+where p.user_id is null;
+```
+
+## One account could spend everyone's AI budget, 2026-09-15
+
+**`/chat` and `/generate` had no per-caller ceiling of any kind.** No rate
+limiter at their mount sites, and neither called `assertUserQuotaAvailable` —
+the per-user allowance that `attempts.ts`, `evaluations.ts` and `practice.ts`
+already use. They were the two largest spenders in the API and the only ones
+with nothing between a caller and the shared monthly cap.
+
+**Nothing capped the size of a request either.** `CHAT_HISTORY_TURNS` bounded
+how *many* turns were forwarded, and nothing bounded how long each one was;
+`context` was interpolated into the system prompt whole. The only ceiling
+underneath was `express.json({ limit: "12mb" })` — on the order of three
+million input tokens in a single call. And `assertBudgetAvailable()` reads the
+ledger *before* the call rather than reserving against it, so one request could
+overshoot `AI_BUDGET_USD` outright rather than being refused at the line.
+
+The cap is shared, so the consequence is not "that account overspends" but
+"AI stops working for every teacher". `/chat` needs only `authMiddleware`, not
+a teacher role — a student or parent account reaches it.
+
+**Three changes, and they are not interchangeable:**
+
+- **Per-user limiters** at the `/chat` and `/generate` mounts (30 and 15 per
+  minute, keyed by user id, not IP — a school is one NAT address). This is the
+  part that protects a deployment *today*.
+- **`assertUserQuotaAvailable`** in `chat.ts` and in `generateContent`, which
+  covers every route in `generate.ts`. Placed after the pooled-artifact lookup,
+  like the global cap, so serving a pooled variant costs nobody their
+  allowance.
+- **`clampPromptText`** on `context` (24,000 chars) and on each history turn
+  (2,000), applied in the route rather than in the prompt builders — the route
+  is where caller-supplied text enters, so capping once there covers both
+  language builders and any future one.
+
+**The quota is still inert in production, and this PR cannot fix that.**
+`getUserBudgetLimitUsd()` returns 0 unless `AI_USER_BUDGET_USD` is set, and it
+is set in neither `render.yaml` nor `deploy.yml` — those AI vars live in the
+Cloud Run service config. Until somebody sets it there, the limiters and the
+clamp are the whole of the protection. The code comment in `aiBudget.ts` had
+already stated the risk exactly: "with fifty teachers sharing a single project
+budget, one enthusiastic user can spend everyone else's month in an afternoon."
+
+**Not covered:** `/generate/verified-derivative/*`. Those reach the model
+through `derivativeVerified.ts`, which does meter against the global cap
+(`assertBudgetAvailable` + `recordUsage`), but their handlers take `_req` and
+so have no user to bill. They sit under the `/generate` prefix, so the limiter
+bounds them; giving them a quota would mean threading a user id through
+`generateBatch`.
+
+## A wrong answer was marked correct if the right one was big enough, 2026-09-15
+
+**`answersMatch` compared numbers with a 1% *relative* tolerance.** One percent
+of 360 is 3.6, so a student who answered 357 to a key of 360 was marked correct.
+So was 1009 against 1000, and 101 against 100 — every whole-number answer from
+99 up silently accepted its neighbours, and the bigger the right answer, the
+wider the band of wrong ones that passed. `fill_blank`'s `defaultGradingMode` is
+`deterministic`, so nothing put a teacher in the loop to notice.
+
+**The tolerance was not wrong to exist, only to scale.** It is there so a key of
+`0.3333` accepts `0.333`: a student who rounds a repeating decimal has not
+answered incorrectly. But rounding is a property of how precisely a number was
+*written*, and has nothing to do with how large it is — which is the one thing a
+relative tolerance ties it to.
+
+Comparison is now precision-based. Two numbers both written whole must be equal;
+otherwise they may differ by up to half a unit in the last decimal place the
+**coarser** side wrote. `0.333` still matches a key of `0.3333`, and `357`
+matches nothing but `357`.
+
+**Why the test suite did not catch it.** `grading.test.ts` asserted
+`!answersMatch("8", "7")` — 12.5% apart, nowhere near the 1% boundary, so it
+passed identically before and after. A tolerance needs its boundary pinned, not
+a case far outside it. The six new cases all fail against the old implementation.
+
+**Judging at the coarser precision is deliberate.** Taking the finer of the two
+would reject `0.333` against a key of `0.3333`, which is the case the tolerance
+exists for. `normalize.ts` is also the only numeric answer comparison in the
+repo — the client-side graders in `quiz.tsx`, `presentation.tsx` and
+`evaluations/new.tsx` all compare option *indices*, so there is no second copy
+of this to fix.
+
+## The practice slides say where their content went, 2026-09-15
+
+**Reported from a real deck on the projector:** «🤝 تدريب موجّه» showing a
+title, the one line «لنحلّ هذا معًا خطوة بخطوة.», and then roughly 90% empty
+slide. It reads as a bug mid-lesson.
+
+**It was not a bug.** `guidedPractice` / `independentPractice` in the plan are
+the teacher's facilitation narration ("swap boards, then answer in front of
+the class"), which the class must not read off a screen — so `lessonSlides.ts`
+deliberately projects a bare prompt and routes the narration to the teacher
+panel. That split was itself a fix; projecting the narration is what the deck
+used to do.
+
+**What was missing was the cue.** Nothing on the slide said the substance was
+one tap away behind «ملاحظات المعلم». The codebase already makes this argument
+one slide type over — the graph slide's comment reads *"A blank calculator
+with no explanation reads as a bug mid-lesson"*, which is why `graphEmptyHint`
+exists. Guided practice had the same shape and no equivalent.
+
+Slides now carry `teacherLed?: boolean`, set on exactly those two, and the
+presenter renders «إرشادات هذا النشاط في ملاحظات المعلم.» beneath the prompt.
+
+**Three things worth keeping straight if you touch this:**
+
+- **It is a declared flag, not a heuristic.** The warm-up and example slides
+  are the same `type: 'intro'` with the same teacher panel and DO carry real
+  content, so "the body looks short" would put the cue on them too. A test
+  asserts exactly two slides are flagged, and that every flagged slide has
+  `teachingTips` — a cue pointing at an empty panel is worse than none.
+- **Presenter-only, on purpose.** The HTML and PPTX exports have no
+  teacher-notes button, so the cue would dangle there. Those renderers ignore
+  the flag, which is why it is rendered in `presentation.tsx` rather than
+  baked into `content` the way a third renderer would force.
+- **`SlideView` calls `useLanguage()` for this and nothing else.** Its `isRTL`
+  still comes from the prop, which follows the *slide's own payload* rather
+  than the app's UI language — an English question in an Arabic deck must not
+  be laid out right-to-left.
 ## Media a teacher can reuse, and send, 2026-09-15
 
 **Everything a teacher uploaded was trapped in the lesson they uploaded it
@@ -579,9 +746,26 @@ until it does, the library endpoints answer 503 there and uploads fail.
 > first-wins), so the honest check is to run that same load and print
 > `new URL(process.env.DATABASE_URL).hostname`.
 
-**Still not deployed:** the API deploys by hand (`docs/deploying.md`); a
-merge ships the web app only, so the client will briefly call endpoints
-that do not exist yet.
+**What merging this actually does, as of the 2026-09-15 deploy change:** the
+API no longer lags the client — `deploy.yml`'s `web` job is `needs: [changes,
+api, verifier]`, so a merge ships the API and verifier to Cloud Run first and
+skips the web deploy if either fails. The half of this entry that warned about
+a bundle going live against an API without the route is therefore obsolete.
+
+The schema is the one thing that still does not deploy itself, and it is now
+the *only* gap: **merge this without applying the DDL to production and the
+API goes live with routes whose column does not exist.** The library endpoints
+answer 503, and because the picker degrades to an empty library rather than an
+error, production looks fine rather than broken. Apply it first, in the Neon
+console (production database is `neondb`, not `iqraa`):
+
+```sql
+ALTER TABLE lesson_media ADD COLUMN IF NOT EXISTS source_url text;
+ALTER TABLE lesson_media ALTER COLUMN lesson_id  DROP NOT NULL;
+ALTER TABLE lesson_media ALTER COLUMN r2_key     DROP NOT NULL;
+ALTER TABLE lesson_media ALTER COLUMN mime_type  DROP NOT NULL;
+ALTER TABLE lesson_media ALTER COLUMN size_bytes DROP NOT NULL;
+```
 
 ## A class's evidence starts accumulating, 2026-09-13 (#415)
 
@@ -757,6 +941,99 @@ in a two-day window, which leaves `GET /media/external/:id` (2026-09-11)
 genuinely **undetermined** — it is behind the same prefix guard, so it cannot be
 told apart without a token, and I did not authenticate. If the 10 curated images
 are not rendering in production, that is the first thing to check.
+
+## The library was a list of dead links; the books had the practice all along, 2026-09-15
+
+**The resources library does not work, and had not since roughly the day it
+shipped.** `qr.nccd.gov.jo` refuses connections over http *and* https — verified
+from a browser in Jordan and from a build machine, 186 URLs re-probed: **18
+answered, 165 gave no response at all.** The manifest's `httpStatus` was
+captured on 2026-09-12 and shipped as though it were a standing fact. Every
+surviving link is on a non-ministry host (`youtu.be`, `archive.org`,
+`kingabdullah.jo`); every `qr.nccd.gov.jo` row is gone.
+
+`pnpm --filter @workspace/curriculum run verify-qr-links` re-probes and rewrites
+the statuses, and `bookQrLinks.ts` already filters on them, so the library now
+shows 18 rows rather than 169 dead ones. **It refuses to write when almost
+nothing answers but plenty did last time** — a captive portal, a DNS outage and
+"the ministry took it down" are indistinguishable from one machine, and zeroing
+186 rows on that evidence would delete the library for everyone.
+
+**Two tests had pinned the old counts** (169 rows, 97 on grade 10, 20 audio) and
+would have failed on any re-probe while a screen full of dead links looked
+tested. They now derive from the manifest: the assertion is that the filter
+agrees with the recorded statuses, which is the part that can regress.
+
+### What was actually being asked for
+
+The student-facing work up to here was a **reference library**, not a practice
+space: 169 links, 1,505 figures, and — as practice — three passages and thirteen
+questions on six lessons. About ten minutes of student work, and the links did
+not open.
+
+**The English books carry their own Word List**, and nothing read it. Every NCCD
+English student book prints the lesson's new words with part of speech and IPA,
+grouped under `WL<unit>.<lesson>` markers that map straight onto curriculum
+lesson ids. `scripts/extract-english-vocabulary.ts` now mines them:
+
+| | |
+| --- | --- |
+| Words | **730** |
+| Lessons covered | **72** (against 6) |
+| With a verbatim book sentence for gap-fill | **237** |
+| With a part of speech | 545 |
+
+Per book: G10 S1 **262**, G9 S1 **339**, G9 S2 **144**. `eng-s2-student-book`
+yields **zero** — OCR-damaged, no `WL` marker survives — and is left out of the
+book list on purpose, so an empty result reads as a source problem rather than a
+parser regression.
+
+**The drills are graded in the browser by an index comparison**, so they ship
+over the air and work on every platform. Distractors come from the *same
+lesson*: same topic, same register, nothing invented — and a lesson with fewer
+than four words shows no drill rather than padding from elsewhere, because
+"which of these did this lesson teach" is answerable without knowing any of them
+once an outside word is in the list. Option order is seeded from the word, not
+`Math.random()`, or a React re-render would reshuffle the options under the
+student's finger between picking and seeing the mark.
+
+### Five layout traps, each of which returned a silent zero
+
+Worth reading before touching the parse — none of these raised an error:
+
+- **The contents page says "Word List"** with its page number, so matching that
+  string anywhere stops the scan on page 4. And only one of the three books
+  *opens* the section with it; the others start `UNIT 1` and `LESSON 1A`. The
+  reliable signal is the `WL<n>.<n>` marker, which appears nowhere else.
+- **The books are set in narrow columns**, so nothing is one line: IPA wraps
+  (`at the moment /ˌæt ðə` + `ˈməʊmənt/`) and so does prose. Entries rejoin until
+  the IPA closes; sentences need the page flattened *then* split — line-by-line
+  yields nothing and join-until-punctuation yields whole paragraphs.
+- **Headwords contain slashes** (`close/good friend`) and so does IPA, so
+  splitting on the first slash mangles them. Walk slashes backwards while the
+  remainder still holds phonetic characters.
+- **The book's own gap-fill exercises have the answer already removed** — page
+  20 reads "the water is too strong" where `pressure` belongs. Mining those
+  gives a sentence that cannot teach the word it was chosen for.
+- **The Grammar Reference and irregular-verbs tables share those pages** and
+  carry no stress marks, so they pass every phonetic filter. `"They do not
+  (don't) like milk."` is letters and apostrophes like any headword; what
+  separates them is shape, not characters.
+
+**Grade 9 semester 2 numbers its units 6–10**, matching the curriculum —
+checked, not assumed. A 1–5 assumption files every word five units off, the same
+silent mis-join `bookFigures.ts` warns about.
+
+### Still missing
+
+- **Listening has no source.** The 20 ministry MP3s were the entire curriculum
+  audio inventory and they are among the dead links.
+- **Writing** is sentence-level only once it exists; `ai_rubric` remains a label
+  for a grader nobody wrote (`gradeAttempt.ts` drops those questions entirely).
+- **Grammar drills** need the activity-book exercises paired with the teacher
+  guides' answer keys — 330 and 404 `Answers` blocks exist, unpaired.
+- **Nothing here has been seen in a browser**, for the reason the entry below
+  gives: a worktree's dev server bundles the main checkout.
 
 ## The student has a place to go, 2026-09-13
 
@@ -1338,6 +1615,164 @@ and `CLOUDFLARE_ACCOUNT_ID` repo secrets, and adding the new origin to the Googl
 OAuth client's authorised JavaScript origins. Sign-in fails without that last one
 while everything else looks healthy, because email+password keeps working.
 
+**Grade 6 Arabic, both semesters, 2026-09-15.** Ten units and fifty lessons
+(`book-arabic-6-s1` / `-s2`), units numbered 1-5 then 6-10 continuously. Grade 6
+now shows three subjects: الرياضيات, اللغة العربية, العلوم.
+
+**It is title-only, and that is what the book is, not where the work stopped.**
+The Arabic student book prints none of what the science books print: no
+«نتاجاتُ التعلُّمِ», no «الفِكْرَةُ الرَّئيسَةُ», no «المَفاهيمُ وَالمُصْطَلَحاتُ».
+A lesson page opens straight into an activity. So `objectives`, `vocabulary` and
+`main_idea_ar` are empty for all fifty lessons — `verify` reports 0/25 official
+outcomes per semester, correctly.
+
+Rather than ship fifty lessons that merely look empty, both books answer true to
+`isBrowserUnitTitleOnly` / `isBrowserLessonTitleOnly`, the affordance Grade 10
+Sem1 units 2-4 and Grade 9 maths already use, so the UI says "title confirmed, no
+per-lesson objectives yet". The predicates are an unconditional prefix test, not
+a `data_tier` lookup, because the answer is the same for the entire book — there
+is no mixed tier here as there is in g9MathSem1.
+
+What it does carry is the structure, which is unusually regular: five units a
+semester, each with the same five lessons in the same order — listening,
+speaking, reading, writing, then «أَبْني لُغَتي» for the grammar point. The
+parenthetical in each lesson title is that lesson's topic as the contents page
+prints it, so «أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (عِزُّ الأَمانَةِ)» names the actual
+text. Both student books extracted cleanly through pdf-parse (203k and 216k
+chars), so the lessons are groundable even though the catalogue rows are thin.
+
+**Reading the contents page twice was not belt-and-braces.** Reading the S1
+image alone gave «أُرِدْنَ أَنْتَ الهَوى» for unit 2 and «أَصِفُ مُعَلِّمًا» for
+its second lesson. The extracted text corrected both to «أُرْدُنُّ أَنْتَ الهَوى»
+and «أَصِفُ مَعْلَمًا» — a landmark, not a teacher, which is what a unit about
+Jordan would have — and the unit opener page (ص 28) confirmed the first via
+عارِف اللّافي's line. S2's extraction is too transposed to cross-check that way
+(«عَرَبِيُّ الرّايَةِ يا وَطَني» comes out as «َوََطَنيِ ياُةَ يّارُ الِبيَ رَعَِب»),
+so that half was read from the page image only; the JSON's provenance_note says
+which half rests on what.
+
+The two exercise books are registered and extracted for grounding but no
+structure was derived from them: their exercises follow the same lessons and
+carry no independent numbering.
+
+Still open at grade-6: English, Islamic, social studies and digital skills are
+ingestable as-is; vocational, PE and art additionally need `SUBJECTS.grades`
+extended. Maths remains Semester 1 only — no Grade 6 maths S2 *student* book was
+supplied, only the S2 guide and exercise book.
+
+**Grade 6 Islamic Education and Social Studies, 2026-09-15.** Eighteen units
+and seventy-four lessons across four books. Grade 6 now offers five subjects:
+الرياضيات, اللغة العربية, التربية الإسلامية, الدراسات الاجتماعية, العلوم.
+
+Both are **title-only**, on the same footing as Grade 6 Arabic and for a
+related reason — but note the difference from Arabic, which is honest rather
+than cosmetic. The Arabic book prints nothing more than titles; these two DO
+print a per-lesson introductory paragraph that would serve as `main_idea_ar`.
+It is not transcribed, because pdf-parse drops the assimilated lam in these
+books so it cannot be quoted from the extracted text, and reading 74 lesson
+pages as images is deferred work. Both books are extracted and registered, so
+the lessons are groundable; only the catalogue rows are thin. Each JSON's
+`known_gaps` says this in those terms rather than implying the books are bare.
+
+**The two books disagree about unit numbering, and both are right.** Social
+studies continues 1-5 → 6-10 across semesters, like the science and Arabic
+books. Islamic Education restarts at 1 in Semester 2. That means `u1`…`u4`
+appear in both Islamic semesters — which is safe, because the KB id carries the
+semester (`kbu-g6-islamic-s1-nccd-u1` vs `…-s2-nccd-u1`), and it was checked
+against the running catalog rather than reasoned about: S1 `u1_l1` resolves to
+«سورَةُ الزَّلْزَلَةِ» and S2 `u1_l1` to «سورَةُ نوحٍ». Do not "fix" it.
+
+**`social` was missing from the manifest subject vocabulary**, exactly as
+`science` was before Grade 6 science. Grade 7 and Grade 8 social studies never
+noticed because both were catalogued without Tracks A/B. Adding it meant the
+full new-subject path again — `CurriculumSource['subject']` in `sources.ts`,
+then `BANK_SUBJECT_IDS` and both `SUBJECT_LABEL_AR/EN` in `bank.ts` — with
+TypeScript naming every site, including the per-subject regex map in
+`bank.test.ts`.
+
+Three per-subject tag allowlists were collapsed from one alternative per grade
+(`g9|g8|g7`) to `g\d+`. Only Grade 10, `curriculumIds.ts`'s implicit grade,
+carries a bare form, so the enumeration was never doing work the prefix test
+does not — and it had already needed editing once per grade for four grades
+running.
+
+Still open at grade-6: English (Pearson, must be `third-party` like Grade 10's
+— catalogable but never quotable), digital skills (no student book), and
+vocational, PE and art, which need `SUBJECTS.grades` extended to grade-6 first.
+
+**A commercial textbook was marked quotable, 2026-09-15.** Four English sources
+carried `authority: 'nccd'` while their own copyright pages read
+«© Pearson Education Limited and York Press Ltd.» with a full all-rights-reserved
+notice: both Grade 10 teacher guides and **both Grade 9 student books**.
+
+That is not a labelling slip. `nccd` is a permission — `usePolicy` maps it to
+`quotable`, and `searchPassages({ quotableOnly: true })` will reproduce that
+book's text verbatim. `third-party` maps to `reference-only` and never is. So a
+copyrighted commercial series was eligible for verbatim retrieval, on two grades
+already in production.
+
+All four are corrected. Every English source is now `reference-only`, checked
+against the running manifest rather than the diff.
+
+**Nothing failed when it was fixed, and nothing had failed while it was wrong** —
+which is the whole lesson. It surfaced only because the Grade 6 books of the same
+Pearson series were being registered alongside, and the inconsistency showed:
+Grade 10's pupil's and activity books were `third-party` while its teacher guides
+were not.
+
+`quotableAuthority.test.ts` now asserts the invariant by reading each extracted
+file's front matter, so a book added next year is covered without anyone
+remembering the rule. It was confirmed to fail on the old data before being kept:
+reverting one row reproduces
+`eng-s1-teacher-guide (english) — found "Pearson Education"`.
+
+What this costs: English grounding. Those books were already the thin ones, and
+anything that was quoting Grade 9/10 English passages will now return nothing
+rather than returning them unlawfully. That is the correct trade and it is worth
+saying out loud rather than discovering it as a regression.
+
+**Grade 6 is complete, 2026-09-15.** Digital skills catalogued and the last five
+maths books registered. **Every Grade 6 book supplied is now in the repo** — 26
+sources across nine subjects: الرياضيات, اللغة العربية, اللغة الإنجليزية,
+التربية الإسلامية, المهارات الرقمية, التربية الرياضية, التربية الفنّيّة,
+التربية المهنية, الدراسات الاجتماعية, العلوم.
+
+**Digital skills is not a subject book, and the catalogue had to bend to that.**
+Its content is «لَبِنات» — blocks attached to units of OTHER subjects — and the
+block titles are those units' titles verbatim: «مِنَ الخَلِيَّةِ إلى الجِسْمِ»,
+«المادَّةُ», «المَخاليطُ وَطَرائِقُ فَصْلِها», «الصَّوْتُ» from science;
+«التَّحْويلاتُ وَالإِنْشاءاتُ الهَنْدَسِيَّةُ», «الهَنْدَسَةُ وَالقِياسُ» from
+maths. Six blocks became six units, four «مشاريع تعلُّم» four more.
+
+Two consequences, both verified against the running catalog rather than reasoned
+about:
+
+- **A unit title now genuinely duplicates across subjects.**
+  `kbu-g6-science-s1-nccd-u1` and `kbu-g6-digital-s1-nccd-u1` are two units with
+  the same `nameAr`. Nothing collides, because the id carries the subject — but
+  a title-based lookup across subjects would conflate them, which is the same
+  trap as "a lesson title does not identify a lesson" in CLAUDE.md, now with a
+  concrete instance in the data.
+- **Its semester label does not match the subjects it plugs into.** The book is
+  Semester 1, but blocks 4 and 6 attach to «المَخاليطُ» and «الصَّوْتُ» — science
+  Semester 2, units 6 and 7. `semester: 1` follows the cover, not the content,
+  and the JSON says so.
+
+There is no digital-skills student book and no Semester 2 book at all; the
+activity book and teacher guide are everything that exists, which makes it the
+narrowest subject in the grade.
+
+**The five maths books are support material — registered and extracted, no
+catalogue**, per docs/adding-a-book.md ("Stop here for support material"). One of
+them closes a sourceless gap rather than adding one: `g6-math-s1-teacher-guide`
+(228 pages, 568k chars, straight through pdf-parse) carries the periods and
+lesson outcomes that are null/empty in `iqra_curriculum_g6_math_sem1.json`. That
+gap now has a source on disk instead of a note saying the guide exists somewhere.
+
+Maths Semester 2 still has no student book — exercise book and teacher guide
+only — so there is still no Semester 2 maths unit list, and that is the supplied
+set's limit rather than a transcription gap.
+
 **Grade 8 gets its first figures, 2026-09-12.** `g8-science-s1` alone: 133
 crops, **65 kept**, covering all 10 of its Semester 1 lessons. What survived is
 strong — DNA and chromosome diagrams, binary-fission stages, Mendel's pea
@@ -1539,9 +1974,80 @@ rows where the catalog has 14, 9 units where it has 10 — and so is every other
 candidate until measured the same way. The rule exists because a parser that
 half-reads a table produces the same silent misfiling the opener detector does.
 
-**Still to widen:** Arabic, Islamic, creative arts, digital literacy, Grade 6
-maths, Grade 8 science S2, Grade 9 history S2, vocational S2. Each is a
-measurement, not a code change.
+**Widened the same day — and "each is a measurement, not a code change" was
+wrong. The extractor could not finish these books at all.**
+
+`page.get_text("dict")` takes **35 seconds** on page 45 of vocational S2 (660
+blocks), and `figures_in` asked for it three times per seed — `with_labels`,
+`uncut_labels`, `text_fraction` — across that page's 24 curve seeds. 72
+identical parses, about **42 minutes on one page**, and the run just stopped
+writing PNGs because `figures_in` is a generator that yields only on pages
+that produce something. Two separate runs stalled at exactly p044 before this
+was read as a hang rather than as slowness. `get_drawings()` had the same
+shape. Both are now parsed once per page and cached on the page object: that
+page went 42 minutes → 34 seconds. Verified behaviour-neutral by re-running
+`figures_in` over two committed books — all 23 bio-S1 and all 5 g8-finlit-S1
+figures still found at identical rects.
+
+So the reason several of these books had no figures was never their layout.
+
+**Two more books ship, +25 lessons.** Grade 8 **vocational S2** (48 kept of
+130, **all 14 lessons** — furniture-making illustrations, mushroom cultivation
+end to end, waste management, Petra) and Grade 8 **science S2** (84 kept of
+169, **all 11 lessons** — neuron and ear and eye anatomy, the three muscle
+types, fetal development, thermometer calibration, heating curves, a complete
+set of electron-shell diagrams for ionic bonding, magnetic domains, satellites).
+Both at a Y tolerance of 6.0, where the 4.0 default reads each one row short.
+
+**Grade 8 science S2 carries a +4 UNIT OFFSET, and it is not cosmetic.** Its
+catalog numbers the units u5-u9 because units 1-4 are semester 1, while the
+contents parser infers units from the lesson numbering resetting and counts
+them 1-5. Joined without the offset every figure in the book lands on a
+semester-1 lesson. The offset lives in the map entries.
+
+**The four Islamic books place correctly and yield nothing.** They were listed
+as closed on measurement since 2026-09-05 and never extracted; re-probed, they
+place through the ORDINARY opener route — three of four reproduce their catalog
+exactly (24, 20 and 22 lessons) once two real bugs are fixed, both recorded
+below. But the crops are **whole pages**: 28 of 36 in Grade 10 S1 and 66 of 70
+in S2 cover more than 70% of the page in both dimensions, because the green
+decorative frame reads as one drawing cluster. Behind that, the content is
+Qur'an, hadith and fiqh — text, not diagrams. What is not a whole page is a
+unit banner. **Not shipped**: putting a page of Arabic prose on a slide is
+worse than leaving the lesson bare. The placement fixes are kept because they
+are correct.
+
+**Two bugs the Islamic probe found in `outline`:**
+
+- **`unit_start` finds ZERO unit openers in all four**, so their units came
+  only from the running header — and a lesson runs up to the NEXT lesson, so a
+  unit's last lesson contains the next unit's opener and reads one too high.
+  Grade 9 S1 came out as five units of [4,1,5,5,5] against a catalog of four
+  fives. `unit_banner_pages` reads the banner as text instead, and finds all
+  four in every one of those books. **Gated twice**, because an unconditional
+  union regressed two shipped books: geography's `unit_start` is also empty,
+  its banner reader found exactly one page, and that single bogus opener both
+  forced every lesson to unit 1 and disabled the numbering-reset pass that had
+  been assigning geography's units correctly — all 19 figures moved. Grade 8
+  social was worse: `unit_banner_pages` read its CONTENTS SPREAD as six banners
+  on two pages, which inverted to page→unit and filed all 49 figures under unit
+  6. So a banner page must name exactly one unit, and the fallback fires only
+  when `unit_start` found nothing AND the banner reader found two units or more.
+- **`number_parenthesised` only tolerated the bracket instead of requiring
+  it.** Grade 9 Islamic unit 1 lesson 5 is «يومُ أُحُد (3 هـ)», and the Hijri
+  year 3 is set at 22.9pt in the same band as the real «)5(». Last match won,
+  so the lesson was recorded as 3 — unit 1 then had two disjoint lesson-3 page
+  ranges and lesson 5's figures would have been filed under lesson 3.
+
+**A lesson also never runs past the banner that opens the next unit.** Grade 10
+Islamic S2 misses one opener (25 of 26), which handed pages 58-66 to unit 1's
+last lesson. Truncating leaves them unplaced, which is the honest answer.
+
+**Still closed, and now for measured reasons:** Grade 8 creative arts and
+digital literacy S1/S2 («الدرس» on no contents row at any tolerance), Grade 6
+maths (16 rows of 18, none carrying a parenthesised lesson number) and Grade 9
+history S2 (10 rows of 13, same). Arabic is untouched — its books are not in
+`BOOKS` at all.
 
 **What still has no figure at all, and why:**
 
@@ -1752,22 +2258,32 @@ reaches for it.
 - `pnpm run typecheck` clean across the whole monorepo; api-server 517/517
   (8 new: `avatarUpload.test.ts`, `r2.test.ts`); mobile 1259/1259 (10 skipped,
   pre-existing, unrelated).
-- **Not verified: real Cloudflare R2.** No credentials in this sandbox, so
-  `putPublicObject`/`deletePublicObject` were exercised against a local
-  stand-in, not the actual `iqraa-public` bucket — though the call shape is
-  identical to `putObject`, which is proven in production (see the R2 rows
-  in `docs/deploying.md`'s secret-proving table).
-- **Production, partly.** The schema half is done: `avatar_key` was added to
-  Neon on 2026-09-13, applied as the equivalent `ALTER TABLE users ADD COLUMN
-  avatar_key text` rather than through `drizzle-kit push` — nullable, no
-  default, exactly what the schema declares. Confirm with `pnpm --filter
-  @workspace/db run verify-schema`, which asks only whether the table exists,
-  so it will not catch a column typo; the `/auth/me` payload carrying
-  `avatarUrl` will. Still outstanding: `R2_PUBLIC_BUCKET` and
-  `R2_PUBLIC_BASE_URL` on Cloud Run, and the hand deploy of `iqraa-api` that a
-  merge does not do — see `docs/deploying.md`'s R2 section, updated with them.
-  Until those land this ships correctly gated: the upload route 503s rather
-  than 500ing or writing to the wrong place.
+- **Real Cloudflare R2: verified 2026-09-15.** Written at the time as "not
+  verified — no credentials in this sandbox", and the local stand-in it was
+  tested against is exactly what hid the token-scope problem below: a stand-in
+  has no notion of per-bucket grants, so it accepted a write the real bucket
+  refused. A local double proves the call shape and nothing about permission.
+- **Production, and it took three unrelated faults to get there (2026-09-15).**
+  `avatar_key` reached Neon on 2026-09-13 as the equivalent `ALTER TABLE users
+  ADD COLUMN avatar_key text` — nullable, no default, exactly what the schema
+  declares. Worth knowing that this column gates sign-in, not just avatars:
+  `/auth/me`, `/auth/login` and `/auth/google` read the user with a bare
+  `db.select().from(users)`, which names every declared column, so against a
+  database that never got the push those routes error and nobody can log in.
+  `verify-schema` will not catch it either — it asks `to_regclass` whether each
+  table *name* exists, so `users` reports `ok` whether or not the column
+  landed. Check the column directly, or watch `/auth/me` return `avatarUrl`.
+
+  The three faults, none of them in this feature's code, all now in
+  `docs/deploying.md`: Cloud Run traffic was pinned to revision `00032-279`, so
+  two `--update-env-vars` calls setting `R2_PUBLIC_BUCKET`/`R2_PUBLIC_BASE_URL`
+  each said `Done.` and `0 percent of traffic`, landing on revisions nothing
+  reached; a persistent Cloud Shell clone made `git clone` fail silently inside
+  a pasted block and deployed `cf1c2b7`, eight days stale, over a current API;
+  and the R2 token was scoped to `iqraa-media` alone, so the first
+  `putPublicObject` came back `403 AccessDenied` and surfaced as a plain
+  `Failed to update profile picture`. Each looked like a bug in this feature
+  and none was.
 
 ## A half-marked paper counted as a finished one, 2026-09-07
 
@@ -5760,6 +6276,44 @@ no per-teacher cap, which is right for one teacher and wrong for fifty.
 user_quota_exceeded`. A ledger that cannot be read does not block generation —
 the global cap still applies underneath, and turning a database blip into a
 total outage is the worse failure.
+
+> **Updated 2026-09-15 — the allowance now covers the routes that spend most,
+> and students have their own.**
+>
+> `assertUserQuotaAvailable` reached only `evaluations`, `attempts` and
+> `practice`. The two largest spenders never called it: all six `/generate/*`
+> routes (8000 output tokens each) and `/chat`, which is open to students, sends
+> a history window every turn, and had **no rate limiter of any kind**. Both now
+> call it, and `getUserBudgetLimitUsd(role)` reads `AI_STUDENT_BUDGET_USD` for
+> students — a class is thirty of them and their traffic is chat, which can
+> never be pooled, so every turn is live.
+>
+> **The caps apply to live calls only, and that is the point.** The per-user
+> check sits on the same line as `assertBudgetAvailable()` in
+> `generateContent`, *after* the shared-pool lookup, so a teacher who is out of
+> allowance is still served every pooled artifact without limit. When a cap does
+> refuse and the pool holds something the teacher has already seen, they get
+> that repeat rather than an error, carrying `servedReason` — and the provenance
+> badge that every generator screen already renders says «نسخة محفوظة». A
+> degrade nobody can see is the same failure as mock content nobody can see.
+>
+> Also: `generateWithProvenance` no longer substitutes mock content on a cap
+> refusal (it did, so a spent budget rendered a complete fabricated worksheet —
+> same carve-out the cancel path already had); and the verified-derivative
+> amplifier is down from **100 live calls per request to 10** (`MAX_REGEN` 5 → 2,
+> batch `ai` clamp 20 → 5), with `userId` finally threaded into its handlers and
+> ledger rows — without it that route was the one workload that escaped the
+> per-user cap entirely, which is what the note in `generateContent` used to say
+> and no longer needs to. `CHAT_HISTORY_TURNS` 12 → 6, bounding how many turns
+> are forwarded where `clampPromptText` (#445) bounds how long each may be.
+>
+> The per-user burst limiters and the two `assertUserQuotaAvailable` call sites
+> came from **#445**, which landed first; this builds on them rather than
+> repeating them.
+>
+> **Not yet verified end-to-end**: the pool-stays-free and degrade paths are
+> unit-tested but have not been run against a live key and database. See the
+> plan's verification steps 4–7.
 
 ### Two things tidied on the way, both duplication of a security control
 

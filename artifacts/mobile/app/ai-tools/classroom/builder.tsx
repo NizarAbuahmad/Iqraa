@@ -18,6 +18,7 @@ import { ClassroomActivity } from '@/services/ai/AIService';
 import { isolateForeignRuns } from '@/services/mathRender';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId } from '@/services/kbContext';
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum } from '@/services/lessonPrep';
+import { aiErrorMessageKey } from '@/services/ai/aiProvenance';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ACTIVITY_CARDS, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
 import { insertLessonResources, type AttachedResource } from '@/services/classMedia';
@@ -106,8 +107,8 @@ export default function ClassroomBuilderScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
-    } catch {
-      setError(t('generationFailed'));
+    } catch (e) {
+      setError(t(aiErrorMessageKey(e)));
     } finally {
       setLoading(false);
     }

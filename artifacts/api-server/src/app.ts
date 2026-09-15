@@ -1,6 +1,13 @@
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
-import pinoHttp from "pino-http";
+// Named, not default. `pino-http` exports both (`export default PinoHttp` and
+// `export { PinoHttp as pinoHttp }`), and the default form is only callable
+// under `esModuleInterop` or `moduleResolution: bundler` — which this repo
+// sets, so `pnpm run typecheck` is happy, and which a bare `tsc` elsewhere does
+// not, so it reports "this expression is not callable" plus two spurious
+// implicit-any errors on the serializers below. The named import is callable
+// under both, which is cheaper than owning that argument.
+import { pinoHttp } from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 

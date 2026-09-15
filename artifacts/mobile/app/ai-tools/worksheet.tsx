@@ -28,7 +28,7 @@ import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
@@ -317,7 +317,7 @@ export default function WorksheetScreen() {
       // is deliberately not shown: "HTTP 500" is not a sentence in a language
       // a teacher reads, and aiProvenance already records it for the badge.
       if (isAbortError(e)) setCancelled(true);
-      else setError(t('generationFailed'));
+      else setError(t(aiErrorMessageKey(e)));
     } finally {
       abortRef.current = null;
       setLoading(false);

@@ -13,6 +13,7 @@ import { PROMPT_VERSION } from "./generationKey.ts";
 import {
   assertBudgetAvailable,
   assertLiveModeEnabled,
+  assertUserQuotaAvailable,
   getGenerationModel,
   recordUsage,
 } from "./aiBudget.ts";
@@ -187,7 +188,16 @@ Return ONLY valid JSON (latin x, ascii digits, no Arabic):
 }
 Distractors must NOT be equivalent to the correct answer.`;
 
-const MAX_REGEN = 5;
+/**
+ * Live calls per item before giving up.
+ *
+ * Was 5. Each one is a paid completion, and `/generate/verified-derivative/batch`
+ * multiplies this by its `ai` count — at 5 x 20 a single request was worth up to
+ * 100 completions, the largest amplifier in the API by an order of magnitude.
+ * Two still absorbs the occasional bad draw, which is what the retry is for;
+ * five was paying to grind against a model that has already failed twice.
+ */
+const MAX_REGEN = 2;
 
 type LlmContract = {
   topic?: string;
@@ -196,8 +206,9 @@ type LlmContract = {
   distractors?: Distractor[];
 };
 
-async function callLlm(): Promise<LlmContract> {
+async function callLlm(userId?: string | null): Promise<LlmContract> {
   assertLiveModeEnabled();
+  await assertUserQuotaAvailable(userId);
   assertBudgetAvailable();
   const { openai } = await import("@workspace/integrations-openai-ai-server");
   const completion = await openai.chat.completions.create({
@@ -216,9 +227,14 @@ async function callLlm(): Promise<LlmContract> {
   // *fresh, varied* item, so it is uncacheable by design. Cost is still worth
   // recording — see GenerationDetail on why a constant key would be worse than
   // none at all.
+  // `userId` is what makes the per-user cap real here. Without it these rows
+  // land with a null user, `readUserPeriodSpendUsd` cannot see them, and this —
+  // the route that can issue more completions per request than any other —
+  // would be the one workload that escaped AI_USER_BUDGET_USD entirely.
   recordUsage(completion.usage, getGenerationModel(), {
     kind: "derivative-verified",
     promptVersion: PROMPT_VERSION,
+    userId,
   });
   const raw = completion.choices[0]?.message?.content ?? "{}";
   return extractJSON(raw) as LlmContract;
@@ -235,12 +251,13 @@ export type AiGenerateResult = {
  */
 export async function generateAiVerifiedItem(
   verify: VerifyFn = verifyDerivative,
+  userId?: string | null,
 ): Promise<AiGenerateResult> {
   const attempts: string[] = [];
   for (let i = 0; i < MAX_REGEN; i++) {
     let proposed: LlmContract;
     try {
-      proposed = await callLlm();
+      proposed = await callLlm(userId);
     } catch (err) {
       attempts.push(`llm_error:${err instanceof Error ? err.message : String(err)}`);
       continue;
@@ -287,6 +304,8 @@ export async function generateBatch(
   opts: {
     template?: number;
     ai?: number;
+    /** Whose allowance the AI half of the batch is billed to. */
+    userId?: string | null;
   },
   verify: VerifyFn = verifyDerivative,
 ): Promise<{
@@ -303,7 +322,7 @@ export async function generateBatch(
 
   for (let i = 0; i < templateN; i++) items.push(await generateTemplateItem(verify));
   for (let i = 0; i < aiN; i++) {
-    const { item, attempts } = await generateAiVerifiedItem(verify);
+    const { item, attempts } = await generateAiVerifiedItem(verify, opts.userId);
     items.push(item);
     attempts_per_ai_item.push(attempts.length);
   }

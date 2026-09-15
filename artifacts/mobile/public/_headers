@@ -1,0 +1,43 @@
+# Keep the app out of search results.
+#
+# app.iqrra.com is a signed-in tool, not an audience page. It has nothing to
+# rank for, and it cannot rank well anyway: every route serves the same empty
+# Expo shell — same <title>, no description, no content until the bundle boots.
+#
+# It was worse than useless before this file. The SPA catch-all in _redirects
+# answers 200 to EVERY path, existing or not, so /anything-at-all returned a
+# page instead of a 404 — an unbounded set of identical thin URLs, all of them
+# crawlable, all reachable from the three followed links on iqrra.com. Google's
+# quality assessment is site-wide, so that sprawl is a drag on the one page
+# that is actually trying to rank.
+#
+# A header, not robots.txt, and the difference matters: Disallow stops the
+# crawl, and a crawler that never fetches the page never reads the noindex —
+# so disallowed URLs linked from elsewhere stay in the index, listed with no
+# title. To REMOVE pages you must let Googlebot in and hand it this header.
+# public/robots.txt therefore allows everything on purpose.
+#
+# Cloudflare Pages reads _headers from the root of what it serves;
+# `expo export --platform web` copies public/ verbatim into dist/, which is
+# why this sits beside _redirects rather than in some build config.
+
+# Clickjacking, for the same single rule below: app.iqrra.com is a signed-in
+# tool and nothing frames it. There is no <iframe> and no WebView anywhere in
+# the app — the only two WebView mentions in the codebase are comments saying
+# it deliberately carries no such dependency — so the strict answer is the
+# correct one, and nobody can overlay an invisible copy of a teacher's session
+# to harvest clicks on whatever sits under the cursor, «حذف الحساب» included.
+#
+# frame-ancestors only, deliberately NOT a full CSP. A script-src/style-src
+# policy over a React Native Web bundle is worth doing and is a separate
+# change: Expo emits inline styles, and the bundle's own eval-shaped paths
+# would need auditing first. A CSP that breaks the app is worse than no CSP.
+# This directive governs who may embed the page and says nothing about what
+# the page may load, so it cannot break rendering.
+#
+# Both spellings, because they are not the same coverage: frame-ancestors is
+# the modern one, X-Frame-Options is what older browsers still honour.
+/*
+  X-Robots-Tag: noindex, nofollow
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'

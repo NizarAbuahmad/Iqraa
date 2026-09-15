@@ -29,6 +29,7 @@ import {
 } from '@/constants/activityType';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
+import { aiErrorMessageKey } from '@/services/ai/aiProvenance';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
@@ -164,8 +165,8 @@ export default function ActivityScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
-    } catch {
-      setError(t('generationFailed'));
+    } catch (e) {
+      setError(t(aiErrorMessageKey(e)));
     } finally {
       setLoading(false);
     }

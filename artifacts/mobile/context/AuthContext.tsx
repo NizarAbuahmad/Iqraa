@@ -133,6 +133,13 @@ interface AuthContextType {
    * `/auth/me` just to learn something this call already knows.
    */
   markRosterClaimed: () => void;
+  /**
+   * Changes the role picked at signup. The server (POST /auth/role) allows it
+   * only while this account has claimed no roster row — i.e. exactly while the
+   * gate is holding it on `/claim-required`, which is the only screen that
+   * offers it. Throws with the server's own `code` in `message` otherwise.
+   */
+  switchRole: (role: 'teacher' | 'parent' | 'student') => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -473,6 +480,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(u => (u ? { ...u, hasRosterLink: true } : u));
   }, []);
 
+  const switchRole = useCallback(async (role: 'teacher' | 'parent' | 'student') => {
+    const updated = await apiJson<{ role: UserRole; hasRosterLink?: boolean }>('/auth/role', {
+      method: 'POST',
+      body: JSON.stringify({ role }),
+    });
+    // No token refresh: the API re-reads users.role on every request, so the
+    // role inside the access token decides nothing (middlewares/auth.ts).
+    // `hasRosterLink` is absent for a teacher, where the field is not
+    // applicable — dropping it is what clears the routing gate.
+    setUser(u => {
+      if (!u) return u;
+      const { hasRosterLink: _drop, ...rest } = u;
+      return updated.hasRosterLink === undefined
+        ? { ...rest, role: updated.role }
+        : { ...rest, role: updated.role, hasRosterLink: updated.hasRosterLink };
+    });
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -492,6 +517,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         removeAvatar,
         deleteAccount,
         markRosterClaimed,
+        switchRole,
       }}
     >
       {children}

@@ -43,7 +43,7 @@ PAGE_NUM = re.compile(r"^[0-9٠-٩]{1,3}$")
 # Unit banner page: «الوحدة الثالثة» set as a heading. The extra spelling of
 # «الأولى» is the lam-alef the text extractor hands back for it.
 ORDINALS = ["الأولى|الاولى|األولى", "الثانية", "الثالثة", "الرابعة",
-            "الخامسة", "السادسة", "السابعة", "الثامنة"]
+            "الخامسة", "السادسة", "السابعة", "الثامنة", "التاسعة", "العاشرة"]
 UNIT_BANNERS = [re.compile(rf"{WAHDA}\s*(?:{o})") for o in ORDINALS]
 BANNER_SIZE = 20.0
 # «(1)» in the extracted stream is RTL-reversed to «)1(» as often as not.
@@ -113,19 +113,26 @@ def unit_banner_pages(doc: pymupdf.Document) -> dict[int, int]:
     plus «الفكرة العامة» — falls outside every listed lesson and lands on the
     tail of the PREVIOUS unit's last lesson, which is where the figures on it
     would be filed. Reading the banner puts that spread on the unit it opens.
+
+    A banner page names exactly ONE unit. Without that rule the Grade 8 social
+    contents spread, which lists «الوحدة الأولى» through «الوحدة السادسة» on two
+    pages, read as six banners on pages 3 and 4 — and since the result is
+    inverted to page→unit by its caller, all six collapsed onto one page and
+    filed every figure in the book under unit 6.
     """
     at: dict[int, int] = {}
     for n in range(doc.page_count):
         text = _bare(doc[n].get_text())
-        for i, pattern in enumerate(UNIT_BANNERS, start=1):
-            if i in at or not pattern.search(text):
-                continue
-            if any(span["size"] >= BANNER_SIZE
-                   for block in doc[n].get_text("dict")["blocks"]
-                   for line in block.get("lines", [])
-                   for span in line.get("spans", [])
-                   if WAHDA in _bare(span["text"])):
-                at[i] = n + 1
+        hits = [i for i, pattern in enumerate(UNIT_BANNERS, start=1)
+                if pattern.search(text)]
+        if len(hits) != 1 or hits[0] in at:
+            continue
+        if any(span["size"] >= BANNER_SIZE
+               for block in doc[n].get_text("dict")["blocks"]
+               for line in block.get("lines", [])
+               for span in line.get("spans", [])
+               if WAHDA in _bare(span["text"])):
+            at[hits[0]] = n + 1
     return at
 
 
@@ -171,13 +178,17 @@ def contents_outline(doc: pymupdf.Document, tol: float = 4.0) -> dict[int, dict]
 if __name__ == "__main__":
     import sys, os
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from extract_book_figures import BOOKS, resolve_pdf
+    from extract_book_figures import BOOKS, CONTENTS_PLACEMENT, resolve_pdf
     for sid in sys.argv[1:]:
+        # The tolerance extraction will actually use, so the probe and the run
+        # cannot disagree — it is per-book, and the default reads several books
+        # one row short of their catalog.
+        tol = CONTENTS_PLACEMENT.get(sid, 4.0)
         doc = pymupdf.open(resolve_pdf(BOOKS[sid][1]))
-        rows = contents_rows(doc)
-        at = contents_outline(doc)
+        rows = contents_rows(doc, tol)
+        at = contents_outline(doc, tol)
         slots = sorted({(v["unit"], v["lesson"]) for v in at.values()})
-        print(f"{sid}: {len(rows)} contents rows -> {len(slots)} lesson slots")
+        print(f"{sid} (tol {tol}): {len(rows)} contents rows -> {len(slots)} lesson slots")
         print(f"    unit banners: {unit_banner_pages(doc)}")
         for u in sorted({u for u, _ in slots}):
             print(f"    u{u}: {[l for uu, l in slots if uu == u]}")

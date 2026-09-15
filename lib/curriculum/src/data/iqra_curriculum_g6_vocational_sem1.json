@@ -1,0 +1,213 @@
+{
+  "meta": {
+    "grade": "الصف السادس",
+    "grade_en": "Grade 6",
+    "subject": "التربية المهنية",
+    "subject_en": "Vocational Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الأول (g6-voc-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ السِّتُّ ودروسُها الاثنا عشرَ من قائمةِ المحتوياتِ (ص 3-4) في 2026-09-15، وقُرِئَتْ من ملفِّ PDF مباشرةً. كلُّ وحدةٍ موسومةٌ في الكتابِ بأحدِ المسالكِ المهنيَّةِ (المهاراتُ الحياتيَّةُ، الاقتصادُ المنزليُّ، ريادةُ الأعمالِ، الزراعةُ، الصناعةُ، السلامةُ والصحةُ والبيئةُ)، على غرارِ كتابِ الصفِّ الثامنِ.",
+    "known_gaps": [
+      "هذا الملفُّ عناوينُ فقط (title-only): نُقِلَتْ بنيةُ الوحداتِ والدروسِ من قائمةِ المحتوياتِ، ولم تُنقَلْ نتاجاتٌ ولا مصطلحاتٌ ولا فكرةٌ رئيسةٌ. objectives و vocabulary فارغتانِ، والدروسُ موسومةٌ title-only في الواجهةِ عبرَ isBrowserLessonTitleOnly.",
+      "periods و total_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ في قائمةِ المحتوياتِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "مَهاراتٌ في حَياتِنا",
+      "title_en": "Skills in Our Lives",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "أَنْماطُ التَّعَلُّمِ",
+          "title_en": "Learning Styles",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "مَهاراتُ العَرْضِ النّاجِحَةُ",
+          "title_en": "Successful Presentation Skills",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "مَهارَةُ العَرْضِ المُؤَثِّرِ",
+          "title_en": "The Skill of Persuasive Presentation",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "الدّيكورُ وَالإِكْسِسْوارات",
+      "title_en": "Décor and Accessories",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "تَصْميمُ ديكورِ المَنْزِلِ",
+          "title_en": "Designing Home Décor",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "الكُلَفُ وَالإِكْسِسْوارات",
+          "title_en": "Trimmings and Accessories",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "المَهاراتُ الرِّياديَّةُ",
+      "title_en": "Entrepreneurial Skills",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الفِكْرَةُ المُبْتَكَرَةُ",
+          "title_en": "The Innovative Idea",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "مَهاراتُ التَّفْكيرِ",
+          "title_en": "Thinking Skills",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "المُحافَظَةُ عَلى البيئَةِ",
+      "title_en": "Protecting the Environment",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "بيئَةٌ نَظيفَةٌ مَزْروعَةٌ",
+          "title_en": "A Clean, Planted Environment",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "الصِّناعاتُ الغِذائِيَّةُ",
+      "title_en": "Food Industries",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "حِفْظُ الزَّيْتونِ",
+          "title_en": "Preserving Olives",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "تَصْنيعُ المُرَبَّياتِ",
+          "title_en": "Making Jams",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "المَنْزِلُ الصِّحِّيُّ وَالسَّلامَةُ في الكَوارِثِ",
+      "title_en": "The Healthy Home and Safety in Disasters",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "المَنْزِلُ الصِّحِّيُّ",
+          "title_en": "The Healthy Home",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "السَّلامَةُ في حالاتِ الكَوارِثِ",
+          "title_en": "Safety in Disaster Situations",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
