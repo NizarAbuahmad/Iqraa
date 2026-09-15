@@ -122,6 +122,12 @@ describe('building the catalog', () => {
     }
   });
 
+  it('carries the insecure-link flag per row, so the warning can be shown per row', () => {
+    const rows = buildResourceCatalog(input).filter(i => i.source === 'book-qr');
+    assert.equal(rows.find(r => r.page === 31)?.insecure, true);
+    assert.equal(rows.find(r => r.page === 12)?.insecure, false);
+  });
+
   it('never offers an action it cannot carry out', () => {
     for (const item of buildResourceCatalog(input)) {
       if (item.actions.includes('open')) assert.ok(item.url, `${item.key} opens nothing`);

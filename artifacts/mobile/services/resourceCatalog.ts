@@ -71,6 +71,14 @@ export interface ResourceItem {
   url?: string;
   /** The printed page a book-QR code sits on — the locator a student can act on. */
   page?: number;
+  /**
+   * The row opens over plain http.
+   *
+   * Carried per row rather than warned about once per screen: on a list where
+   * one link is insecure and the rest are not, a header note tells a student
+   * nothing about the one they are about to tap.
+   */
+  insecure?: boolean;
   actions: ResourceAction[];
 }
 
@@ -182,6 +190,7 @@ function fromQrBook(book: QrResourceBook): ResourceItem[] {
     subjectId: book.subjectId,
     url: resource.url,
     page: resource.pdfPage,
+    insecure: resource.isHttp,
     actions: ['open' as const],
   }));
 }
