@@ -1539,9 +1539,80 @@ rows where the catalog has 14, 9 units where it has 10 — and so is every other
 candidate until measured the same way. The rule exists because a parser that
 half-reads a table produces the same silent misfiling the opener detector does.
 
-**Still to widen:** Arabic, Islamic, creative arts, digital literacy, Grade 6
-maths, Grade 8 science S2, Grade 9 history S2, vocational S2. Each is a
-measurement, not a code change.
+**Widened the same day — and "each is a measurement, not a code change" was
+wrong. The extractor could not finish these books at all.**
+
+`page.get_text("dict")` takes **35 seconds** on page 45 of vocational S2 (660
+blocks), and `figures_in` asked for it three times per seed — `with_labels`,
+`uncut_labels`, `text_fraction` — across that page's 24 curve seeds. 72
+identical parses, about **42 minutes on one page**, and the run just stopped
+writing PNGs because `figures_in` is a generator that yields only on pages
+that produce something. Two separate runs stalled at exactly p044 before this
+was read as a hang rather than as slowness. `get_drawings()` had the same
+shape. Both are now parsed once per page and cached on the page object: that
+page went 42 minutes → 34 seconds. Verified behaviour-neutral by re-running
+`figures_in` over two committed books — all 23 bio-S1 and all 5 g8-finlit-S1
+figures still found at identical rects.
+
+So the reason several of these books had no figures was never their layout.
+
+**Two more books ship, +25 lessons.** Grade 8 **vocational S2** (48 kept of
+130, **all 14 lessons** — furniture-making illustrations, mushroom cultivation
+end to end, waste management, Petra) and Grade 8 **science S2** (84 kept of
+169, **all 11 lessons** — neuron and ear and eye anatomy, the three muscle
+types, fetal development, thermometer calibration, heating curves, a complete
+set of electron-shell diagrams for ionic bonding, magnetic domains, satellites).
+Both at a Y tolerance of 6.0, where the 4.0 default reads each one row short.
+
+**Grade 8 science S2 carries a +4 UNIT OFFSET, and it is not cosmetic.** Its
+catalog numbers the units u5-u9 because units 1-4 are semester 1, while the
+contents parser infers units from the lesson numbering resetting and counts
+them 1-5. Joined without the offset every figure in the book lands on a
+semester-1 lesson. The offset lives in the map entries.
+
+**The four Islamic books place correctly and yield nothing.** They were listed
+as closed on measurement since 2026-09-05 and never extracted; re-probed, they
+place through the ORDINARY opener route — three of four reproduce their catalog
+exactly (24, 20 and 22 lessons) once two real bugs are fixed, both recorded
+below. But the crops are **whole pages**: 28 of 36 in Grade 10 S1 and 66 of 70
+in S2 cover more than 70% of the page in both dimensions, because the green
+decorative frame reads as one drawing cluster. Behind that, the content is
+Qur'an, hadith and fiqh — text, not diagrams. What is not a whole page is a
+unit banner. **Not shipped**: putting a page of Arabic prose on a slide is
+worse than leaving the lesson bare. The placement fixes are kept because they
+are correct.
+
+**Two bugs the Islamic probe found in `outline`:**
+
+- **`unit_start` finds ZERO unit openers in all four**, so their units came
+  only from the running header — and a lesson runs up to the NEXT lesson, so a
+  unit's last lesson contains the next unit's opener and reads one too high.
+  Grade 9 S1 came out as five units of [4,1,5,5,5] against a catalog of four
+  fives. `unit_banner_pages` reads the banner as text instead, and finds all
+  four in every one of those books. **Gated twice**, because an unconditional
+  union regressed two shipped books: geography's `unit_start` is also empty,
+  its banner reader found exactly one page, and that single bogus opener both
+  forced every lesson to unit 1 and disabled the numbering-reset pass that had
+  been assigning geography's units correctly — all 19 figures moved. Grade 8
+  social was worse: `unit_banner_pages` read its CONTENTS SPREAD as six banners
+  on two pages, which inverted to page→unit and filed all 49 figures under unit
+  6. So a banner page must name exactly one unit, and the fallback fires only
+  when `unit_start` found nothing AND the banner reader found two units or more.
+- **`number_parenthesised` only tolerated the bracket instead of requiring
+  it.** Grade 9 Islamic unit 1 lesson 5 is «يومُ أُحُد (3 هـ)», and the Hijri
+  year 3 is set at 22.9pt in the same band as the real «)5(». Last match won,
+  so the lesson was recorded as 3 — unit 1 then had two disjoint lesson-3 page
+  ranges and lesson 5's figures would have been filed under lesson 3.
+
+**A lesson also never runs past the banner that opens the next unit.** Grade 10
+Islamic S2 misses one opener (25 of 26), which handed pages 58-66 to unit 1's
+last lesson. Truncating leaves them unplaced, which is the honest answer.
+
+**Still closed, and now for measured reasons:** Grade 8 creative arts and
+digital literacy S1/S2 («الدرس» on no contents row at any tolerance), Grade 6
+maths (16 rows of 18, none carrying a parenthesised lesson number) and Grade 9
+history S2 (10 rows of 13, same). Arabic is untouched — its books are not in
+`BOOKS` at all.
 
 **What still has no figure at all, and why:**
 

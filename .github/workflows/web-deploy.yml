@@ -29,10 +29,18 @@ on:
     #
     # pnpm-lock.yaml is deliberately absent, so a dependency change inside an
     # ignored package still ships.
+    #
+    # `knowledge-base/**` was here and was WRONG. The bundle imports the figure
+    # indexes and `figure-lesson-map.json` directly, so a commit touching only
+    # those is a web change — and a placement correction, which is exactly the
+    # shape of the two shipped bugs in this area (38 Grade 10 English photos
+    # stamped on lesson 1; five Grade 8 vocational unit openers filed on the
+    # previous unit), touches nothing else. It would have merged green and
+    # never deployed. Adding figures was always safe by accident, because new
+    # crops regenerate `bookFigureAssets.ts`.
     paths-ignore:
       - 'artifacts/api-server/**'
       - 'artifacts/math-verifier/**'
-      - 'knowledge-base/**'
       - 'attached_assets/**'
       - 'cqv-reports/**'
       - 'docs/**'
