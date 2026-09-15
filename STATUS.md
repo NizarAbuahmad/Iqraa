@@ -1427,6 +1427,37 @@ Still open at grade-6: English (Pearson, must be `third-party` like Grade 10's
 — catalogable but never quotable), digital skills (no student book), and
 vocational, PE and art, which need `SUBJECTS.grades` extended to grade-6 first.
 
+**A commercial textbook was marked quotable, 2026-09-15.** Four English sources
+carried `authority: 'nccd'` while their own copyright pages read
+«© Pearson Education Limited and York Press Ltd.» with a full all-rights-reserved
+notice: both Grade 10 teacher guides and **both Grade 9 student books**.
+
+That is not a labelling slip. `nccd` is a permission — `usePolicy` maps it to
+`quotable`, and `searchPassages({ quotableOnly: true })` will reproduce that
+book's text verbatim. `third-party` maps to `reference-only` and never is. So a
+copyrighted commercial series was eligible for verbatim retrieval, on two grades
+already in production.
+
+All four are corrected. Every English source is now `reference-only`, checked
+against the running manifest rather than the diff.
+
+**Nothing failed when it was fixed, and nothing had failed while it was wrong** —
+which is the whole lesson. It surfaced only because the Grade 6 books of the same
+Pearson series were being registered alongside, and the inconsistency showed:
+Grade 10's pupil's and activity books were `third-party` while its teacher guides
+were not.
+
+`quotableAuthority.test.ts` now asserts the invariant by reading each extracted
+file's front matter, so a book added next year is covered without anyone
+remembering the rule. It was confirmed to fail on the old data before being kept:
+reverting one row reproduces
+`eng-s1-teacher-guide (english) — found "Pearson Education"`.
+
+What this costs: English grounding. Those books were already the thin ones, and
+anything that was quoting Grade 9/10 English passages will now return nothing
+rather than returning them unlawfully. That is the correct trade and it is worth
+saying out loud rather than discovering it as a regression.
+
 **Grade 8 gets its first figures, 2026-09-12.** `g8-science-s1` alone: 133
 crops, **65 kept**, covering all 10 of its Semester 1 lessons. What survived is
 strong — DNA and chromosome diagrams, binary-fission stages, Mendel's pea
