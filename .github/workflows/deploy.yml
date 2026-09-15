@@ -1,0 +1,318 @@
+# Deploy everything that ships from `main`, in the order that keeps them
+# consistent with each other.
+#
+# Why this replaced web-deploy.yml: from the 2026-09-05 Cloud Run cutover until
+# now, a merge deployed the web app and nothing else. The API and verifier were
+# deployed by hand, so the two halves of a contract change shipped at different
+# times — or the server half never shipped at all. On 2026-09-10 that put a web
+# bundle live against an API without the matching route and broke production
+# signups. `docs/deploying.md` had to warn that a stale API is
+# indistinguishable from a current one without probing /api/healthz/version.
+#
+# The ordering rule: SERVER BEFORE CLIENT. A new API with an old bundle in
+# front of it is harmless — the bundle simply does not call the new route. The
+# reverse is an outage. So `web` waits on `api` and `verifier`, and is skipped
+# if either fails.
+#
+# Auth is keyless (Workload Identity Federation). This repo is PUBLIC, so a
+# long-lived service-account JSON key in repository secrets is the wrong risk.
+# The provider is bound by attribute condition to this repository alone and
+# mints a short-lived token per run; nothing durable is stored in GitHub.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  # Deploy one surface without a junk commit — for re-running a failed deploy,
+  # or pushing the API alone after a hand-fix. Same reasoning as the manual
+  # trigger on mobile-update.yml.
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which surface to deploy
+        type: choice
+        options: [all, api, verifier, web]
+        default: all
+
+# id-token is what lets google-github-actions/auth exchange this run's OIDC
+# token for GCP credentials. Without it the auth step fails with a bare 403
+# that does not mention the missing permission.
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  # Which surfaces does this push actually touch?
+  #
+  # A denylist for the web app rather than an allowlist, for the reason
+  # render.yaml gave and web-deploy.yml kept: an allowlist fails by NOT
+  # deploying something that mattered, which is the failure that cost a day on
+  # 2026-09-12. A denylist fails by deploying too often, which now costs
+  # nothing — Actions is free on a public repo.
+  #
+  # The API list includes lib/** because the API bundles those packages. A
+  # change to lib/db or lib/curriculum reaches the server even though nothing
+  # under artifacts/api-server/ was touched.
+  changes:
+    name: what changed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      verifier: ${{ steps.filter.outputs.verifier }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: filter
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          EVENT: ${{ github.event_name }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            t="${TARGET:-all}"
+            for k in api verifier web; do
+              if [ "$t" = "all" ] || [ "$t" = "$k" ]; then
+                echo "$k=true" >> "$GITHUB_OUTPUT"
+              else
+                echo "$k=false" >> "$GITHUB_OUTPUT"
+              fi
+            done
+            echo "Manual dispatch, target=$t"
+            exit 0
+          fi
+
+          # A force-push or a first push gives an all-zero or unreachable
+          # BEFORE. Deploy everything rather than silently deploying nothing —
+          # failing toward too many deploys is the cheap direction.
+          if [ -z "$BEFORE" ] \
+            || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] \
+            || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            printf 'api=true\nverifier=true\nweb=true\n' >> "$GITHUB_OUTPUT"
+            echo "No usable base commit; deploying everything."
+            exit 0
+          fi
+
+          FILES=$(git diff --name-only "$BEFORE" "$AFTER")
+          echo "Changed files:"
+          printf '%s\n' "$FILES" | sed 's/^/  /'
+
+          if printf '%s\n' "$FILES" | grep -qE '^(artifacts/api-server/|lib/|Dockerfile$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$)'; then
+            echo "api=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "api=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if printf '%s\n' "$FILES" | grep -qE '^artifacts/math-verifier/'; then
+            echo "verifier=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "verifier=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Everything not provably unable to reach the web bundle.
+          if printf '%s\n' "$FILES" \
+            | grep -vE '^(artifacts/api-server/|artifacts/math-verifier/|knowledge-base/|attached_assets/|cqv-reports/|docs/|main\.py$|pyproject\.toml$|uv\.lock$)' \
+            | grep -qvE '\.md$'; then
+            echo "web=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "web=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  api:
+    name: iqraa-api
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Never cancel a Cloud Run deploy in flight — a half-applied revision is
+    # worse than a queued one. The web job cancels; this one deliberately does
+    # not.
+    concurrency:
+      group: deploy-api
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          project_id: iqraa-auth-507315
+          workload_identity_provider: projects/613126375862/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: github-deploy@iqraa-auth-507315.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      # These resource flags are the settings the service ALREADY had on
+      # 2026-09-15, written down rather than changed. They lived only in the
+      # GCP console until now, so nobody could tell from the repo what the
+      # service was running on — and `--source` deploys inherit whatever is
+      # there, which means a console edit could silently become permanent.
+      #
+      # Stating them here means a review can see them and a deliberate change
+      # becomes a diff instead of a click. If you want the API on 1Gi — there
+      # is a good argument, since express.json holds a 12MB body and its
+      # decoded buffer at once, and lib/curriculum caches parsed corpus JSON in
+      # an unbounded module-level Map — change it here, in its own commit, so a
+      # regression has exactly one suspect.
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy iqraa-api \
+            --source . \
+            --region europe-west1 \
+            --allow-unauthenticated \
+            --port 8080 \
+            --memory 512Mi \
+            --cpu 1 \
+            --concurrency 80 \
+            --timeout 300 \
+            --update-env-vars "GIT_SHA=${GITHUB_SHA::7}"
+
+      # gcloud reporting success is not evidence the new code is serving. It
+      # has printed a success line while traffic stayed pinned to an older
+      # revision (2026-09-07). Probe the route body instead of trusting it.
+      - name: Verify the deployed commit
+        run: |
+          set -euo pipefail
+          sleep 10
+          BODY=$(curl -fsS --max-time 30 https://iqraa-api-613126375862.europe-west1.run.app/api/healthz/version)
+          echo "$BODY"
+          echo "$BODY" | grep -q "\"commit\":\"${GITHUB_SHA::7}\"" \
+            || { echo "::error::Serving commit is not ${GITHUB_SHA::7} — traffic may be pinned to an older revision."; exit 1; }
+
+  verifier:
+    name: iqraa-verifier
+    needs: changes
+    if: needs.changes.outputs.verifier == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: deploy-verifier
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          project_id: iqraa-auth-507315
+          workload_identity_provider: projects/613126375862/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: github-deploy@iqraa-auth-507315.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      # Current settings, written down — same reasoning as the API above.
+      #
+      # `--concurrency 80` looks wrong next to app.py, which runs
+      # `uvicorn --workers 1` behind a ProcessPoolExecutor(max_workers=1) and
+      # therefore serialises. It is left alone on purpose: dropping it to 1
+      # makes Cloud Run start an instance per concurrent request, and a cold
+      # verifier takes ~4.6s against a client timeout of 8s (VERIFY_TIMEOUT_MS
+      # in mathVerifierClient.ts). Whether that trade is worth making needs a
+      # measurement, not a guess.
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy iqraa-verifier \
+            --source artifacts/math-verifier \
+            --region europe-west1 \
+            --allow-unauthenticated \
+            --port 8080 \
+            --memory 512Mi \
+            --cpu 1 \
+            --concurrency 80 \
+            --timeout 300
+
+      - name: Verify it answers
+        run: |
+          set -euo pipefail
+          sleep 10
+          curl -fsS --max-time 30 https://iqraa-api-613126375862.europe-west1.run.app/api/healthz/verifier
+
+  web:
+    name: iqraa-web
+    needs: [changes, api, verifier]
+    # `always()` is load-bearing, not decorative: without it a skipped `api`
+    # job would skip `web` too, and most merges do not touch the API. The
+    # explicit result checks are what actually enforce server-before-client — a
+    # skipped dependency is fine, a failed one is not.
+    if: |
+      always()
+      && needs.changes.result == 'success'
+      && needs.changes.outputs.web == 'true'
+      && needs.api.result != 'failure' && needs.api.result != 'cancelled'
+      && needs.verifier.result != 'failure' && needs.verifier.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # A newer merge supersedes one still building — devices should land on
+    # whichever was merged last, not whichever finished last.
+    concurrency:
+      group: deploy-web
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same Node and pnpm as ci.yml, so a green CI means this build has
+      # already been exercised on these versions.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      # scripts/preinstall.mjs hard-fails any non-pnpm agent, so corepack has
+      # to activate pnpm before install.
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web bundle
+        working-directory: artifacts/mobile
+        env:
+          # Every EXPO_PUBLIC_* is inlined into the JS bundle by Metro at
+          # EXPORT time, so these are public the moment the site ships and are
+          # plain values here on purpose — the same call mobile-update.yml
+          # makes, for the same reason. Treating them as secrets would hide
+          # them from the repo and not from the browser.
+          EXPO_PUBLIC_API_BASE_URL: https://iqraa-api-613126375862.europe-west1.run.app/api
+          EXPO_PUBLIC_GOOGLE_CLIENT_ID: 784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com
+          EXPO_PUBLIC_POSTHOG_API_KEY: phc_t7Gd3Z4L7v3zDkPAciXoCvndiVqGfVxzGquEfbJPq9r8
+          # Read by scripts/inject-pwa.mjs for <meta name="build-commit">, and
+          # the only way to tell which commit a served bundle came from.
+          BUILD_COMMIT: ${{ github.sha }}
+          #
+          # EXPO_PUBLIC_DEMO_MODE is deliberately NOT set — demoMode.ts
+          # defaults it to true, so the web app ships with mocked AI prose, as
+          # it always has. Setting it here would flip live generation on for
+          # every web teacher as a side effect of a deploy change.
+          # mobile-update.yml DOES set "false", so web and Android differ; that
+          # gap predates this workflow.
+        run: pnpm run build:web
+
+      # Direct Upload: Cloudflare receives artifacts/mobile/dist as-is and runs
+      # no build of its own, which keeps its build quota out of the picture.
+      #
+      # Invoked through `pnpm dlx` rather than cloudflare/wrangler-action@v3.
+      # That action installs its own copy with `pnpm add wrangler@3.90.0`,
+      # which pnpm refuses at a workspace root without `-w`
+      # (ERR_PNPM_ADDING_TO_ROOT). It killed the first real deploy — run
+      # 34765478605, the #418 merge — before the credentials were ever read, so
+      # the failure looked like an auth problem and was not.
+      - name: Publish to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm dlx wrangler@3.90.0 pages deploy artifacts/mobile/dist --project-name=iqraa-web --branch=main
+
+      - name: Verify the deployed bundle
+        run: |
+          set -euo pipefail
+          sleep 15
+          SERVED=$(curl -fsS --max-time 30 https://app.iqrra.com/ | grep -o 'content="[a-f0-9]\{40\}"' | head -1 | sed 's/content="//;s/"//')
+          echo "served=$SERVED wanted=$GITHUB_SHA"
+          [ "$SERVED" = "$GITHUB_SHA" ] \
+            || { echo "::error::app.iqrra.com is serving $SERVED, not $GITHUB_SHA."; exit 1; }
