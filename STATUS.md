@@ -486,9 +486,17 @@ a video file fits neither the 8MB data-URL cap nor the storage budget.
 - `components/ui/MediaLibraryPicker.tsx` — four sources, deliberately not
   merged into one list: مكتبتي (the library), الكتاب
   (`bookFigureRefsForLesson`, bundled, no network), بحث (Unsplash +
-  YouTube), ألعاب (saved decks). Everything leaves as `AttachedResource`,
-  the shape `insertLessonResources` already consumed, so nothing downstream
+  YouTube), ألعاب (saved decks). Media leaves as `AttachedResource`, the
+  shape `insertLessonResources` already consumed, so nothing downstream
   learned a new type. Wired into `slides.tsx` and `classroom/builder.tsx`.
+- **A game opens; it is not spliced in.** `ClassroomActivity.game` is what
+  switches the presenter into scoring mode (`presentation.tsx:797`), and it
+  is a property of the whole deck, not of its slides — so merging a game's
+  slides into a lesson deck would project its scoreboard and podium with
+  nothing keeping score behind them. The tab therefore launches the saved
+  activity (`setPendingClassroomActivity` + push, so the deck being built is
+  still there on the way back) and says so in a line above the list. Embedding
+  a game properly means a per-slide scoring scope, which this does not have.
 
 **Sharing reuses messaging rather than inventing a delivery surface.**
 `POST /messaging/threads/:id/messages` gained `libraryItemId`: an upload is

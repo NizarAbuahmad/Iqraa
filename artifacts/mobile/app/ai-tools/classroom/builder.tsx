@@ -22,6 +22,7 @@ import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ACTIVITY_CARDS, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
 import { insertLessonResources, type AttachedResource } from '@/services/classMedia';
 import { MediaLibraryPicker } from '@/components/ui/MediaLibraryPicker';
+import type { SavedMaterial } from '@/services/workspace';
 
 const ACCENT = '#4F46E5';
 
@@ -122,6 +123,18 @@ export default function ClassroomBuilderScreen() {
   const addFromLibrary = (picked: AttachedResource[]) => {
     if (!result || picked.length === 0) return;
     setResult({ ...result, slides: insertLessonResources(result.slides, picked, lang === 'ar') });
+  };
+
+  /**
+   * Open a saved game rather than splice it in — see the picker's
+   * `onPickGame` for why its slides cannot be merged into another deck.
+   */
+  const openSavedGame = (m: SavedMaterial) => {
+    let parsed: ClassroomActivity | null = null;
+    try { parsed = JSON.parse(m.content); } catch { return; }
+    if (!parsed?.slides?.length) return;
+    setPendingClassroomActivity(parsed);
+    router.push('/ai-tools/classroom/presentation' as any);
   };
 
   const difficultyOpts: { value: Difficulty; label: string }[] = [
@@ -381,6 +394,7 @@ export default function ClassroomBuilderScreen() {
       lessonId={generatorLessonId(topic.trim(), lang as 'ar' | 'en')}
       defaultQuery={topic.trim()}
       onPick={addFromLibrary}
+      onPickGame={openSavedGame}
     />
     </View>
   );

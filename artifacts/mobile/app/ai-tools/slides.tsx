@@ -49,7 +49,7 @@ import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { timerSecondsForSlide } from '@/services/presentationUtils';
-import { deleteItem, getAllItems, saveItem, updateItem } from '@/services/workspace';
+import { deleteItem, getAllItems, saveItem, updateItem, type SavedMaterial } from '@/services/workspace';
 import { findMatchingItem } from '@/services/savedMaterialMatch';
 import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
@@ -219,6 +219,19 @@ export default function SlidesScreen() {
       return;
     }
     setLibraryPicks(prev => [...prev, ...picked]);
+  };
+
+  /**
+   * Open a saved game rather than splice it in — see the picker's
+   * `onPickGame` for why its slides cannot be merged. A push, so the deck
+   * being built here is still here on the way back.
+   */
+  const openSavedGame = (m: SavedMaterial) => {
+    let parsed: ClassroomActivity | null = null;
+    try { parsed = JSON.parse(m.content); } catch { return; }
+    if (!parsed?.slides?.length) return;
+    setPendingClassroomActivity(parsed);
+    router.push('/ai-tools/classroom/presentation' as any);
   };
 
   const openEdit = (i: number) => {
@@ -1215,6 +1228,7 @@ export default function SlidesScreen() {
         lessonId={groundedLessonId}
         defaultQuery={topic.trim()}
         onPick={addFromLibrary}
+        onPickGame={openSavedGame}
       />
 
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />

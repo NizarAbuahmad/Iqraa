@@ -904,7 +904,20 @@ router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: A
       // A reference has no object to attach, so it travels as text. Appended
       // rather than substituted: the teacher's own covering note is the part
       // the student actually reads.
-      if (shared.bodyLine) body = body ? `${body}\n${shared.bodyLine}` : shared.bodyLine;
+      if (shared.bodyLine) {
+        body = body ? `${body}\n${shared.bodyLine}` : shared.bodyLine;
+        // Checked again, because the link is what pushed it over. Silently
+        // storing 4,300 characters under a rule that says 4,000 would make
+        // the limit above a decoration; truncating instead would cut the
+        // link off the end and send a message that points nowhere.
+        if (body.length > MAX_BODY_LENGTH) {
+          res.status(400).json({
+            error: `body and the shared link must be at most ${MAX_BODY_LENGTH} characters together`,
+            code: "body_too_long",
+          });
+          return;
+        }
+      }
     }
 
     if (dataUrl) {

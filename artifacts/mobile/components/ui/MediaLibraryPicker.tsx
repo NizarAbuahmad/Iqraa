@@ -36,8 +36,15 @@ type Props = {
   /** Chosen media, ready for `insertLessonResources`. */
   onPick: (items: AttachedResource[]) => void;
   /**
-   * Chosen game. Omit and the games tab is hidden — a host that cannot merge
-   * another deck's slides should not offer to.
+   * A saved game or activity the teacher chose to OPEN.
+   *
+   * Deliberately not "insert into the current deck": a game is a whole
+   * activity, and `ClassroomActivity.game` — the config that turns scoring on
+   * — is a property of the deck, not of its slides. Splicing a game's slides
+   * into a lesson deck would project its scoreboard and podium with nothing
+   * keeping score behind them.
+   *
+   * Omit and the games tab hides itself.
    */
   onPickGame?: (material: SavedMaterial) => void;
 };
@@ -434,8 +441,22 @@ export function MediaLibraryPicker({
                       {item.topic}
                     </Text>
                   </View>
+                  <Ionicons
+                    name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                    size={16}
+                    color={colors.mutedForeground}
+                  />
                 </Pressable>
               )}
+              ListHeaderComponent={
+                games.length === 0 ? null : (
+                  <Text style={[styles.hint, text, { color: colors.mutedForeground }]}>
+                    {isAr
+                      ? 'تُفتح اللعبة كنشاط كامل — لا تُدمج داخل شرائح الدرس.'
+                      : 'A game opens as its own activity — it is not merged into the lesson slides.'}
+                  </Text>
+                )
+              }
             />
           )}
         </View>
@@ -469,6 +490,7 @@ const styles = StyleSheet.create({
   thumb: { width: '100%', aspectRatio: 1, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.05)' },
   thumbFallback: { alignItems: 'center', justifyContent: 'center' },
   caption: { fontSize: 11, marginTop: 4 },
+  hint: { fontSize: 12, lineHeight: 18, paddingBottom: 8 },
   shareBadge: {
     position: 'absolute', top: 8, right: 8,
     backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 12, padding: 5,
