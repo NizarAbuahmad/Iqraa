@@ -116,8 +116,19 @@ jobs:
           fi
 
           # Everything not provably unable to reach the web bundle.
+          #
+          # `knowledge-base/` is deliberately NOT in this list, though it was
+          # in web-deploy.yml's. The bundle imports the figure indexes and
+          # `figure-lesson-map.json` directly, so a commit touching only those
+          # IS a web change — and a figure placement correction, which is
+          # exactly the shape of the two shipped bugs in that area (38 Grade 10
+          # English photos stamped on lesson 1; five Grade 8 vocational unit
+          # openers filed on the previous unit), touches nothing else. Excluded,
+          # such a fix merges green and never deploys. Adding figures was only
+          # ever safe by accident, because new crops regenerate
+          # `bookFigureAssets.ts`.
           if printf '%s\n' "$FILES" \
-            | grep -vE '^(artifacts/api-server/|artifacts/math-verifier/|knowledge-base/|attached_assets/|cqv-reports/|docs/|main\.py$|pyproject\.toml$|uv\.lock$)' \
+            | grep -vE '^(artifacts/api-server/|artifacts/math-verifier/|attached_assets/|cqv-reports/|docs/|main\.py$|pyproject\.toml$|uv\.lock$)' \
             | grep -qvE '\.md$'; then
             echo "web=true" >> "$GITHUB_OUTPUT"
           else
