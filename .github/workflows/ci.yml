@@ -60,6 +60,17 @@ jobs:
       - name: Test curriculum
         run: pnpm --filter @workspace/curriculum run test
 
+      # The client-side half of the answer-key gate, and the one package with
+      # real tests that CI was not running. lib/math-verify refuses to
+      # transliterate «ق(س)» into `f(x)` before anything reaches SymPy —
+      # CLAUDE.md names this a safety rail, because SymPy does not reject
+      # Arabic, it multiplies it, and returns `answer_mismatch` that is
+      # indistinguishable from a genuinely wrong key. The suite was typechecked
+      # by the step above and never executed, so a regression to that gate
+      # would have shipped silently.
+      - name: Test math-verify
+        run: pnpm --filter @workspace/math-verify run test
+
       # Structural errors in curriculum data fail the build; content gaps are
       # printed and do not. Phase one is grades 1-10, so this table is the only
       # thing that will keep saying how much of it is actually grounded.

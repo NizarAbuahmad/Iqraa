@@ -118,11 +118,19 @@ an announcement by default» below.
   boots the built bundle, so run `pnpm build` before `pnpm test` or it skips.
 - **CI runs on every pull request** (`.github/workflows/ci.yml`, added
   2026-08-12): typecheck, then the api-server build *before* its tests, then
-  both suites, plus the SymPy verification regressions. Node and pnpm are
-  pinned to the versions the Render build uses. Before this the repo had no
-  checks at all, which is how a `dist/` bundle built from an older commit was
-  read as two failing tests on `main` for two days — the api-server suite boots
-  `dist/index.mjs` and `pnpm test` does not build it.
+  every package suite that has one — api-server, mobile, curriculum, and
+  math-verify since 2026-09-15 — plus the SymPy verification regressions. Node
+  and pnpm are pinned to the versions the Render build uses. Before this the
+  repo had no checks at all, which is how a `dist/` bundle built from an older
+  commit was read as two failing tests on `main` for two days — the api-server
+  suite boots `dist/index.mjs` and `pnpm test` does not build it.
+  - The package list is **hand-maintained inside the workflow**, and nothing
+    checks it against the packages that declare a `test` script. That is how
+    `@workspace/math-verify` went unrun from the day it was written until
+    2026-09-15: typechecked by the `typecheck` step, never executed. Adding a
+    package's tests is two edits, not one. (`@workspace/math-practice` declares
+    the script too and has no test files; `node --test` over an empty glob
+    exits 0, so adding it would prove nothing until it has some.)
 - Local dev runs end to end: Express API (:8080) + Postgres 17 (`iqraa` db,
   6 tables) + Expo web (:8083). Login/register work against the local DB.
 - Curriculum data loads in-app (math S1: 4 units / 18 lessons). It now lives in
