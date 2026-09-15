@@ -75,7 +75,9 @@ describe('manifest shape', () => {
       physics: /^(phys-s[12]|g9-phys-s[12])$/,
       biology: /^(bio-s[12]|bio-g10-general|g9-biology-s[12])$/,
       'earth-science': /^(earth-s[12]|g9-earth-science-s[12])$/,
-      arabic: /^(arabic-s[12]|g9-arabic-s[12])$/,
+      // Grade 6 joined 2026-09-15. Only Grade 10 (curriculumIds.ts's implicit
+      // grade) carries the bare `arabic-s1` form; every other grade is explicit.
+      arabic: /^(arabic-s[12]|g\d+-arabic-s[12])$/,
       islamic: /^(islamic-s[12]|g9-islamic-s[12])$/,
       history: /^history-s[12]$/,
       // Combined «العلوم», taught as one subject at Grade 8 and below. No bare

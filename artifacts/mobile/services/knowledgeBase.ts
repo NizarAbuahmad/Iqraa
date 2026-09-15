@@ -207,6 +207,14 @@ import {
   buildG6MathSem1Catalog,
 } from './curriculumG6MathSem1.ts';
 import {
+  G6_ARABIC_S1_BOOK_ID,
+  buildG6ArabicSem1Catalog,
+} from './curriculumG6ArabicSem1.ts';
+import {
+  G6_ARABIC_S2_BOOK_ID,
+  buildG6ArabicSem2Catalog,
+} from './curriculumG6ArabicSem2.ts';
+import {
   G6_SCIENCE_S1_BOOK_ID,
   buildG6ScienceSem1Catalog,
 } from './curriculumG6ScienceSem1.ts';
@@ -1037,6 +1045,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Mathematics – Grade 6 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g6_math_sem1.json (NCCD)',
+  },
+  {
+    id: G6_ARABIC_S1_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف السادس – الفصل الأول',
+    titleEn: 'Arabic – Grade 6 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g6_arabic_sem1.json (NCCD)',
+  },
+  {
+    id: G6_ARABIC_S2_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف السادس – الفصل الثاني',
+    titleEn: 'Arabic – Grade 6 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g6_arabic_sem2.json (NCCD)',
   },
   {
     id: G6_SCIENCE_S1_BOOK_ID,
@@ -2339,6 +2365,8 @@ const _g7IslamicSem2 = buildG7IslamicSem2Catalog();
 const _g7ScienceSem1 = buildG7ScienceSem1Catalog();
 const _g6MathSem1 = buildG6MathSem1Catalog();
 const _g6ScienceSem1 = buildG6ScienceSem1Catalog();
+const _g6ArabicSem1 = buildG6ArabicSem1Catalog();
+const _g6ArabicSem2 = buildG6ArabicSem2Catalog();
 const _g6ScienceSem2 = buildG6ScienceSem2Catalog();
 const _g7ScienceSem2 = buildG7ScienceSem2Catalog();
 const _g7DigitalSem1 = buildG7DigitalSem1Catalog();
@@ -2579,6 +2607,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g7ScienceSem1.units,
   ..._g6MathSem1.units,
   ..._g6ScienceSem1.units,
+  ..._g6ArabicSem1.units,
+  ..._g6ArabicSem2.units,
   ..._g6ScienceSem2.units,
   ..._g7ScienceSem2.units,
   ..._g7DigitalSem1.units,
@@ -2691,6 +2721,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g7ScienceSem1.lessons,
   ..._g6MathSem1.lessons,
   ..._g6ScienceSem1.lessons,
+  ..._g6ArabicSem1.lessons,
+  ..._g6ArabicSem2.lessons,
   ..._g6ScienceSem2.lessons,
   ..._g7ScienceSem2.lessons,
   ..._g7DigitalSem1.lessons,

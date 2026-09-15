@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "grade": "الصف السادس",
+    "grade_en": "Grade 6",
+    "subject": "اللغة العربية",
+    "subject_en": "Arabic",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الأول (g6-arabic-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الخمسُ ودروسُها الخمسةُ والعشرونَ من فهرسِ كتابِ الطالبِ (ص 5) في 2026-09-15، وقُرِئَ الفهرسُ من ملفِّ PDF مباشرةً ثمَّ قوبِلَ بالنصِّ المستخرَجِ حرفًا حرفًا. المقابلةُ ليست احتياطًا زائدًا: قراءةُ الصورةِ وحدَها أعطَتْ «أُرِدْنَ أَنْتَ الهَوى» لعنوانِ الوحدةِ الثانيةِ و«أَصِفُ مُعَلِّمًا» لدرسِها الثاني، وصوَّبَهُما النصُّ المستخرَجُ إلى «أُرْدُنُّ أَنْتَ الهَوى» و«أَصِفُ مَعْلَمًا»، وأكَّدَتْ صفحةُ افتتاحِ الوحدةِ (ص 28) الأوَّلَ ببيتِ عارِفٍ اللّافي.\n\nبِنيةُ الكتابِ منتظمةٌ: خمسُ وحداتٍ، في كلٍّ منها خمسةُ دروسٍ بالترتيبِ نفسِهِ — استماعٌ، ثمَّ تحدُّثٌ، ثمَّ قراءةٌ، ثمَّ كتابةٌ، ثمَّ «أَبْني لُغَتي» للقاعدةِ النحويَّةِ أو الصرفيَّةِ. العنوانُ الفرعيُّ بينَ قوسينِ هوَ موضوعُ الدرسِ كما يطبعُهُ الفهرسُ.",
+    "known_gaps": [
+      "هذا الملفُّ عناوينُ فقط (title-only). كتابُ العربيَّةِ لا يطبعُ ما تطبعُهُ كتبُ العلومِ: لا صندوقَ «نتاجاتُ التعلُّمِ»، ولا «الفِكْرَةُ الرَّئيسَةُ»، ولا «المَفاهيمُ وَالمُصْطَلَحاتُ». صفحةُ الدرسِ تبدأُ بنشاطٍ مباشرةً (أَسْتَعِدُّ لِلاسْتِماعِ، أَسْتَمِعُ وَأَتَذَكَّرُ، ثمَّ أسئلةٌ). لذا objectives و vocabulary فارغتانِ لكلِّ الدروسِ الخمسةِ والعشرينَ، و main_idea_ar فارغةٌ، وليسَ ذلكَ نقصًا في النقلِ بل وصفٌ أمينٌ لما يطبعُهُ الكتابُ. الدروسُ موسومةٌ title-only في الواجهةِ عبرَ isBrowserLessonTitleOnly حتّى يرى المعلِّمُ ذلكَ صراحةً بدلَ درسٍ يبدو فارغًا بلا سببٍ.",
+      "general_idea_ar فارغةٌ لكلِّ الوحداتِ: مفتتحُ الوحدةِ يطبعُ شاهدًا (آيةً أو بيتَ شعرٍ) لا صندوقَ «الفِكْرَةُ العامَّةُ». الوحدةُ الأولى تفتتحُ بقولِهِ تعالى ﴿لَقَدْ كَانَ فِي قَصَصِهِمْ عِبْرَةٌ لِأُولِي الْأَلْبَابِ﴾ (يوسف: 111)، والثانيةُ ببيتِ عارِفٍ اللّافي «أُرْدُنُّ أَنْتَ الهَوى وَالعِشْقُ وَالأَرَبُ». لم تُنقَلِ الشواهدُ لأنَّها تحتاجُ قراءةَ عشرِ صفحاتِ افتتاحٍ من ملفَّي الفصلينِ، والحقلُ لا يُعرَضُ في أيِّ واجهةٍ.",
+      "periods و total_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ في كتابِ الطالبِ، ولا دليلَ معلِّمٍ للعربيَّةِ في الملفّاتِ المرسَلةِ.",
+      "كتابُ التمارينِ (g6-arabic-s1-exercise-book) مُسجَّلٌ ومُستخرَجٌ للتأسيسِ والبحثِ، ولم تُشتَقَّ منهُ بنيةٌ: تمارينُهُ تتبعُ الدروسَ نفسَها ولا تحملُ ترقيمًا مستقلًّا."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "في قَصَصِهِم عِبْرَةٌ",
+      "title_en": "In Their Stories Is a Lesson",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        { "id": "u1_l1", "order": 1, "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ", "title_en": "I Listen with Attention and Focus", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u1_l2", "order": 2, "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (أُلَخِّصُ شَفَوِيًّا)", "title_en": "I Speak Fluently (I Summarise Orally)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u1_l3", "order": 3, "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (ناقَةُ صالِحٍ -عَلَيْهِ السَّلامُ-)", "title_en": "I Read Fluently and with Understanding (The She-Camel of Salih)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u1_l4", "order": 4, "title_ar": "أَكْتُبُ (أَكْتُبُ قِصَّةً)", "title_en": "I Write (I Write a Story)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u1_l5", "order": 5, "title_ar": "أَبْني لُغَتي (مُراجَعَةُ الاسْمِ مِنْ حَيْثُ العَدَدُ، وَأَنْواعُ الجَمْعِ)", "title_en": "I Build My Language (Nouns by Number, and Types of Plural)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "أُرْدُنُّ أَنْتَ الهَوى",
+      "title_en": "Jordan, You Are the Beloved",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        { "id": "u2_l1", "order": 1, "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ", "title_en": "I Listen with Attention and Focus", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u2_l2", "order": 2, "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (أَصِفُ مَعْلَمًا)", "title_en": "I Speak Fluently (I Describe a Landmark)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u2_l3", "order": 3, "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (وَطَني الأُرْدُنُّ)", "title_en": "I Read Fluently and with Understanding (My Homeland Jordan)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u2_l4", "order": 4, "title_ar": "أَكْتُبُ (أَكْتُبُ نَصًّا وَصْفِيًّا)", "title_en": "I Write (I Write a Descriptive Text)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u2_l5", "order": 5, "title_ar": "أَبْني لُغَتي (كانَ وَأَخَواتُها)", "title_en": "I Build My Language (Kana and Its Sisters)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "في الفَضاءِ الرَّحْبِ",
+      "title_en": "In the Vast Expanse of Space",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        { "id": "u3_l1", "order": 1, "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ", "title_en": "I Listen with Attention and Focus", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u3_l2", "order": 2, "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (أُوَظِّفُ اللُّغَةَ غَيْرَ اللَّفْظِيَّةِ)", "title_en": "I Speak Fluently (I Use Non-Verbal Language)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u3_l3", "order": 3, "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (تَحِيَّةٌ مِنَ الفَضاءِ)", "title_en": "I Read Fluently and with Understanding (A Greeting from Space)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u3_l4", "order": 4, "title_ar": "أَكْتُبُ (أُلَخِّصُ نَصًّا)", "title_en": "I Write (I Summarise a Text)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u3_l5", "order": 5, "title_ar": "أَبْني لُغَتي (المَعارِفُ)", "title_en": "I Build My Language (Definite Nouns)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "مِنْ جَواهِرِ الأَدَبِ",
+      "title_en": "Among the Gems of Literature",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        { "id": "u4_l1", "order": 1, "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ", "title_en": "I Listen with Attention and Focus", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u4_l2", "order": 2, "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (أَسْرُدُ سيرَةَ شَخْصِيَّةٍ مَشْهورَةٍ)", "title_en": "I Speak Fluently (I Narrate the Life of a Famous Figure)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u4_l3", "order": 3, "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (حِكَمٌ شِعْرِيَّةٌ)", "title_en": "I Read Fluently and with Understanding (Poetic Maxims)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u4_l4", "order": 4, "title_ar": "أَكْتُبُ (أَنْثُرُ شِعْرًا)", "title_en": "I Write (I Paraphrase Poetry into Prose)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u4_l5", "order": 5, "title_ar": "أَبْني لُغَتي (الأَعْدادُ المُرَكَّبَةُ (11-19))", "title_en": "I Build My Language (Compound Numbers 11-19)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "صِحَّتُنا مَسْؤولِيَّتُنا",
+      "title_en": "Our Health Is Our Responsibility",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        { "id": "u5_l1", "order": 1, "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ", "title_en": "I Listen with Attention and Focus", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u5_l2", "order": 2, "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (أَبْني حُجَّةً)", "title_en": "I Speak Fluently (I Build an Argument)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u5_l3", "order": 3, "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (أَسْرارُ النَّوْمِ)", "title_en": "I Read Fluently and with Understanding (The Secrets of Sleep)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u5_l4", "order": 4, "title_ar": "أَكْتُبُ (أَكْتُبُ مَقالَةً عِلْمِيَّةً)", "title_en": "I Write (I Write a Scientific Article)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] },
+        { "id": "u5_l5", "order": 5, "title_ar": "أَبْني لُغَتي (مَصادِرُ الأَفْعالِ الثُّلاثِيَّةِ)", "title_en": "I Build My Language (Verbal Nouns of Trilateral Verbs)", "main_idea_ar": "", "periods": null, "objectives": [], "vocabulary": [] }
+      ]
+    }
+  ]
+}

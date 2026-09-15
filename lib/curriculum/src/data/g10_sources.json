@@ -4731,6 +4731,134 @@
         "sha256": "92f545bebabecb63f657ad0f002d1b3ff712c5b0779e86f8d8c5a0fcb44935eb"
       },
       "notes": "رفضَ pdf-parse هذا الملفَّ فاستُخرِجَ بـ OCR في 2026-09-12، كما جرى لدليلِ الفصلِ الأوَّلِ. الناتِجُ صالحٌ للبحثِ والتأسيسِ لا للاقتباسِ الحرفيِّ: ناتِجُ الـ OCR في دليلِ الفصلِ الأوَّلِ قورِنَ بصورةِ صفحةِ المصفوفةِ فظهرَ إسقاطُ سطورِ نتاجاتٍ كاملةٍ وخلطُ أعمدةِ الجدولِ، ولا سببَ يدعو لافتراضِ أنَّ هذا الملفَّ أفضلُ. نتاجاتُ الدروسِ وعددُ الحصصِ تُقرَأُ من صفحاتِ PDF مباشرةً، لا من هذا النصِّ."
+    },
+    {
+      "id": "g6-arabic-s1-student-book",
+      "title": "كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الأول.pdf",
+      "bytes": 17833587,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "arabic",
+        "العربية لغتي",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 128,
+        "chars": 203677,
+        "localPath": "knowledge-base/grade-6-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الأول.pdf",
+        "sha256": "46bff0bdb429acc9a0fd6a383605e12494b9be7559578d3aedee85754840e606"
+      }
+    },
+    {
+      "id": "g6-arabic-s2-student-book",
+      "title": "كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الثاني.pdf",
+      "bytes": 19636466,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "arabic",
+        "العربية لغتي",
+        "سادس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 126,
+        "chars": 216055,
+        "localPath": "knowledge-base/grade-6-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الثاني.pdf",
+        "sha256": "d1f2a00eff4ec86786e01f00a69180cb3979a7b2691ac7b0665f6fa041bee3e4"
+      }
+    },
+    {
+      "id": "g6-arabic-s1-exercise-book",
+      "title": "كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الأول.pdf",
+      "bytes": 2799000,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "arabic",
+        "العربية لغتي",
+        "سادس",
+        "كتاب التمارين",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 48,
+        "chars": 70332,
+        "localPath": "knowledge-base/grade-6-arabic/support-pdfs/كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الأول.pdf",
+        "sha256": "c8c3be8304a28b3ced2c284b123c696a0759362fb42c4f91d6648041b476a912"
+      }
+    },
+    {
+      "id": "g6-arabic-s2-exercise-book",
+      "title": "كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الثاني.pdf",
+      "bytes": 8057481,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "arabic",
+        "العربية لغتي",
+        "سادس",
+        "كتاب التمارين",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 52,
+        "chars": 80871,
+        "localPath": "knowledge-base/grade-6-arabic/support-pdfs/كتاب التمارين لمادة العربية لغتي الصف السادس الفصل الثاني.pdf",
+        "sha256": "3ace0a37d9cddc4cb324d626587dee7f6d1532a39df4bd054ec0de546c11b893"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
