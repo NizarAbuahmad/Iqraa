@@ -17,6 +17,7 @@ import { ReadAloudPracticePanel } from '@/components/ui/ReadAloudPracticePanel';
 import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
 import { askAboutLessonHandoff } from '@/services/lessonShelf';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
+import { VocabularyPracticePanel } from '@/components/ui/VocabularyPracticePanel';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 
 const BLOOMS_COLORS: Record<string, string> = {
@@ -203,6 +204,12 @@ export default function LessonDetailScreen() {
             teacher. Renders nothing when the lesson has no curated passage,
             which is most of them until the library is filled. */}
         <ReadAloudPracticePanel lessonId={lesson.id} accent={color} />
+
+        {/* The lesson's own vocabulary, drilled. Unlike read-aloud above — which
+            needs a curated passage and so reaches six lessons — this comes from
+            the book's printed Word List and reaches 72, on every platform,
+            with no server call to make. Renders nothing elsewhere. */}
+        <VocabularyPracticePanel lessonId={lesson.id} accent={color} />
 
         {/* Objectives */}
         <Section title={t('learningObjectives')} icon="checkmark-circle-outline" color={color} isRTL={isRTL}>

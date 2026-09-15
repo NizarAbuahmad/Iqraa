@@ -632,6 +632,99 @@ genuinely **undetermined** — it is behind the same prefix guard, so it cannot 
 told apart without a token, and I did not authenticate. If the 10 curated images
 are not rendering in production, that is the first thing to check.
 
+## The library was a list of dead links; the books had the practice all along, 2026-09-15
+
+**The resources library does not work, and had not since roughly the day it
+shipped.** `qr.nccd.gov.jo` refuses connections over http *and* https — verified
+from a browser in Jordan and from a build machine, 186 URLs re-probed: **18
+answered, 165 gave no response at all.** The manifest's `httpStatus` was
+captured on 2026-09-12 and shipped as though it were a standing fact. Every
+surviving link is on a non-ministry host (`youtu.be`, `archive.org`,
+`kingabdullah.jo`); every `qr.nccd.gov.jo` row is gone.
+
+`pnpm --filter @workspace/curriculum run verify-qr-links` re-probes and rewrites
+the statuses, and `bookQrLinks.ts` already filters on them, so the library now
+shows 18 rows rather than 169 dead ones. **It refuses to write when almost
+nothing answers but plenty did last time** — a captive portal, a DNS outage and
+"the ministry took it down" are indistinguishable from one machine, and zeroing
+186 rows on that evidence would delete the library for everyone.
+
+**Two tests had pinned the old counts** (169 rows, 97 on grade 10, 20 audio) and
+would have failed on any re-probe while a screen full of dead links looked
+tested. They now derive from the manifest: the assertion is that the filter
+agrees with the recorded statuses, which is the part that can regress.
+
+### What was actually being asked for
+
+The student-facing work up to here was a **reference library**, not a practice
+space: 169 links, 1,505 figures, and — as practice — three passages and thirteen
+questions on six lessons. About ten minutes of student work, and the links did
+not open.
+
+**The English books carry their own Word List**, and nothing read it. Every NCCD
+English student book prints the lesson's new words with part of speech and IPA,
+grouped under `WL<unit>.<lesson>` markers that map straight onto curriculum
+lesson ids. `scripts/extract-english-vocabulary.ts` now mines them:
+
+| | |
+| --- | --- |
+| Words | **730** |
+| Lessons covered | **72** (against 6) |
+| With a verbatim book sentence for gap-fill | **237** |
+| With a part of speech | 545 |
+
+Per book: G10 S1 **262**, G9 S1 **339**, G9 S2 **144**. `eng-s2-student-book`
+yields **zero** — OCR-damaged, no `WL` marker survives — and is left out of the
+book list on purpose, so an empty result reads as a source problem rather than a
+parser regression.
+
+**The drills are graded in the browser by an index comparison**, so they ship
+over the air and work on every platform. Distractors come from the *same
+lesson*: same topic, same register, nothing invented — and a lesson with fewer
+than four words shows no drill rather than padding from elsewhere, because
+"which of these did this lesson teach" is answerable without knowing any of them
+once an outside word is in the list. Option order is seeded from the word, not
+`Math.random()`, or a React re-render would reshuffle the options under the
+student's finger between picking and seeing the mark.
+
+### Five layout traps, each of which returned a silent zero
+
+Worth reading before touching the parse — none of these raised an error:
+
+- **The contents page says "Word List"** with its page number, so matching that
+  string anywhere stops the scan on page 4. And only one of the three books
+  *opens* the section with it; the others start `UNIT 1` and `LESSON 1A`. The
+  reliable signal is the `WL<n>.<n>` marker, which appears nowhere else.
+- **The books are set in narrow columns**, so nothing is one line: IPA wraps
+  (`at the moment /ˌæt ðə` + `ˈməʊmənt/`) and so does prose. Entries rejoin until
+  the IPA closes; sentences need the page flattened *then* split — line-by-line
+  yields nothing and join-until-punctuation yields whole paragraphs.
+- **Headwords contain slashes** (`close/good friend`) and so does IPA, so
+  splitting on the first slash mangles them. Walk slashes backwards while the
+  remainder still holds phonetic characters.
+- **The book's own gap-fill exercises have the answer already removed** — page
+  20 reads "the water is too strong" where `pressure` belongs. Mining those
+  gives a sentence that cannot teach the word it was chosen for.
+- **The Grammar Reference and irregular-verbs tables share those pages** and
+  carry no stress marks, so they pass every phonetic filter. `"They do not
+  (don't) like milk."` is letters and apostrophes like any headword; what
+  separates them is shape, not characters.
+
+**Grade 9 semester 2 numbers its units 6–10**, matching the curriculum —
+checked, not assumed. A 1–5 assumption files every word five units off, the same
+silent mis-join `bookFigures.ts` warns about.
+
+### Still missing
+
+- **Listening has no source.** The 20 ministry MP3s were the entire curriculum
+  audio inventory and they are among the dead links.
+- **Writing** is sentence-level only once it exists; `ai_rubric` remains a label
+  for a grader nobody wrote (`gradeAttempt.ts` drops those questions entirely).
+- **Grammar drills** need the activity-book exercises paired with the teacher
+  guides' answer keys — 330 and 404 `Answers` blocks exist, unpaired.
+- **Nothing here has been seen in a browser**, for the reason the entry below
+  gives: a worktree's dev server bundles the main checkout.
+
 ## The student has a place to go, 2026-09-13
 
 **A student opening this app landed in a chat inbox.** Not a home screen — the
