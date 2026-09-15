@@ -118,6 +118,18 @@ import {
   buildG6MathSem1BrowserCatalog,
 } from './catalogs/g6MathSem1.ts';
 import {
+  G6_ARABIC_S1_CURRICULUM_BOOK_ID,
+  buildG6ArabicSem1BrowserCatalog,
+  isG6ArabicSem1TitleOnlyUnit,
+  isG6ArabicSem1TitleOnlyLesson,
+} from './catalogs/g6ArabicSem1.ts';
+import {
+  G6_ARABIC_S2_CURRICULUM_BOOK_ID,
+  buildG6ArabicSem2BrowserCatalog,
+  isG6ArabicSem2TitleOnlyUnit,
+  isG6ArabicSem2TitleOnlyLesson,
+} from './catalogs/g6ArabicSem2.ts';
+import {
   G6_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG6ScienceSem1BrowserCatalog,
 } from './catalogs/g6ScienceSem1.ts';
@@ -847,6 +859,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   G6_MATH_S1_CURRICULUM_BOOK_ID,
   G6_SCIENCE_S1_CURRICULUM_BOOK_ID,
   G6_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  // Grade 6 Arabic, both semesters — 'arabic' has been in MVP_SUBJECT_IDS
+  // since 2026-09-05, so no subject append is needed here either.
+  G6_ARABIC_S1_CURRICULUM_BOOK_ID,
+  G6_ARABIC_S2_CURRICULUM_BOOK_ID,
   // Grade 7 Digital Skills — both semesters attached. Same held-out
   // treatment as Grade 7 Math above.
   G7_DIGITAL_S1_CURRICULUM_BOOK_ID,
@@ -1481,6 +1497,38 @@ export const BOOKS: Book[] = [
   // the JSONs' known_gaps. Same held-out picker treatment as the other
   // Grade 7 subjects above.
   // ── Grade 6 – Mathematics S1, Science S1 & S2 ─────────────────────────────
+  // ── Arabic Grade 6 – Semester 1 & 2 ───────────────────────────────────────
+  // Title-only: this book prints no learning outcomes, main idea or glossary,
+  // so both halves answer true to isBrowserUnitTitleOnly/LessonTitleOnly and
+  // the UI labels them rather than showing an apparently empty lesson.
+  // Semester 2's units are numbered 6-10, continuing Semester 1's 1-5.
+  // See g6ArabicSem1.ts.
+  {
+    id: G6_ARABIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 6, Semester 1',
+    titleAr: 'اللغة العربية – الصف السادس – الفصل الأول',
+    subjectId: 'arabic',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G6_ARABIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 6, Semester 2',
+    titleAr: 'اللغة العربية – الصف السادس – الفصل الثاني',
+    subjectId: 'arabic',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
   // The first Grade 6 books in the repo. Maths carries four units and eighteen
   // lessons from the student book alone (no S2 student book was supplied);
   // science carries nine units and nineteen lessons across both semesters,
@@ -3519,6 +3567,8 @@ const _g7IslamicSem2Browser = buildG7IslamicSem2BrowserCatalog();
 const _g7ScienceSem1Browser = buildG7ScienceSem1BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
+const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
+const _g6ArabicSem2Browser = buildG6ArabicSem2BrowserCatalog();
 const _g6ScienceSem2Browser = buildG6ScienceSem2BrowserCatalog();
 const _g7ScienceSem2Browser = buildG7ScienceSem2BrowserCatalog();
 const _g7DigitalSem1Browser = buildG7DigitalSem1BrowserCatalog();
@@ -3753,6 +3803,8 @@ export const UNITS: Unit[] = [
   ..._g7ScienceSem1Browser.units,
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
+  ..._g6ArabicSem1Browser.units,
+  ..._g6ArabicSem2Browser.units,
   ..._g6ScienceSem2Browser.units,
   ..._g7ScienceSem2Browser.units,
   ..._g7DigitalSem1Browser.units,
@@ -3857,6 +3909,8 @@ export const LESSONS: Lesson[] = [
   ..._g7ScienceSem1Browser.lessons,
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
+  ..._g6ArabicSem1Browser.lessons,
+  ..._g6ArabicSem2Browser.lessons,
   ..._g6ScienceSem2Browser.lessons,
   ..._g7ScienceSem2Browser.lessons,
   ..._g7DigitalSem1Browser.lessons,
@@ -3891,14 +3945,18 @@ export function isBrowserCurriculumPreparing(_bookId: string): boolean {
 export function isBrowserUnitTitleOnly(unitId: string): boolean {
   return isNccdSem1TitleOnlyUnit(unitId)
     || isG9MathSem1TitleOnlyUnit(unitId)
-    || isG9MathSem2TitleOnlyUnit(unitId);
+    || isG9MathSem2TitleOnlyUnit(unitId)
+    || isG6ArabicSem1TitleOnlyUnit(unitId)
+    || isG6ArabicSem2TitleOnlyUnit(unitId);
 }
 
 /** UI: Sem1 units 2–4 lessons — title confirmed, no per-lesson objectives yet. */
 export function isBrowserLessonTitleOnly(lessonId: string): boolean {
   return isNccdSem1TitleOnlyLesson(lessonId)
     || isG9MathSem1TitleOnlyLesson(lessonId)
-    || isG9MathSem2TitleOnlyLesson(lessonId);
+    || isG9MathSem2TitleOnlyLesson(lessonId)
+    || isG6ArabicSem1TitleOnlyLesson(lessonId)
+    || isG6ArabicSem2TitleOnlyLesson(lessonId);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

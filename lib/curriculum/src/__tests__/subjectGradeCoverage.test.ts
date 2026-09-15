@@ -157,7 +157,7 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // ORDINARY GAPS — the subject is declared at grade-6 and a Grade 6 book for
   // it exists on disk; it is simply not ingested yet. Delete the line when it
   // is.
-  'arabic:grade-6',
+  // arabic:grade-6 closed 2026-09-15, both semesters (title-only).
   'english:grade-6',
   'islamic:grade-6',
   'social:grade-6',

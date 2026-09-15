@@ -164,7 +164,11 @@ describe('subject isolation', () => {
       // Grade 9 Arabic S1 book, so both grades are covered from here on.
       // Grade 8 joined 2026-09-10, semester 1 then semester 2.
       // Grade 7 joined 2026-09-12.
-      arabic: /^(arabic-s[12]|g9-arabic-s[12]|g8-arabic-s[12]|g7-arabic-s[12])$/,
+      // Grade 6 joined 2026-09-15, making this the fourth grade appended one at
+      // a time. Collapsed to `g\d+` rather than a fifth alternative: only Grade
+      // 10 (the implicit grade) carries the bare `arabic-s1` form, and every
+      // other grade is explicit, so the enumeration was never doing real work.
+      arabic: /^(arabic-s[12]|g\d+-arabic-s[12])$/,
       // English spans every grade the same way. Grade 7 joined 2026-09-12,
       // from a different publisher series than Grade 8/9/10 (see
       // g7EngSem1.ts) — the unit-tag namespace is identical either way.

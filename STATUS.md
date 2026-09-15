@@ -1212,6 +1212,51 @@ and `CLOUDFLARE_ACCOUNT_ID` repo secrets, and adding the new origin to the Googl
 OAuth client's authorised JavaScript origins. Sign-in fails without that last one
 while everything else looks healthy, because email+password keeps working.
 
+**Grade 6 Arabic, both semesters, 2026-09-15.** Ten units and fifty lessons
+(`book-arabic-6-s1` / `-s2`), units numbered 1-5 then 6-10 continuously. Grade 6
+now shows three subjects: الرياضيات, اللغة العربية, العلوم.
+
+**It is title-only, and that is what the book is, not where the work stopped.**
+The Arabic student book prints none of what the science books print: no
+«نتاجاتُ التعلُّمِ», no «الفِكْرَةُ الرَّئيسَةُ», no «المَفاهيمُ وَالمُصْطَلَحاتُ».
+A lesson page opens straight into an activity. So `objectives`, `vocabulary` and
+`main_idea_ar` are empty for all fifty lessons — `verify` reports 0/25 official
+outcomes per semester, correctly.
+
+Rather than ship fifty lessons that merely look empty, both books answer true to
+`isBrowserUnitTitleOnly` / `isBrowserLessonTitleOnly`, the affordance Grade 10
+Sem1 units 2-4 and Grade 9 maths already use, so the UI says "title confirmed, no
+per-lesson objectives yet". The predicates are an unconditional prefix test, not
+a `data_tier` lookup, because the answer is the same for the entire book — there
+is no mixed tier here as there is in g9MathSem1.
+
+What it does carry is the structure, which is unusually regular: five units a
+semester, each with the same five lessons in the same order — listening,
+speaking, reading, writing, then «أَبْني لُغَتي» for the grammar point. The
+parenthetical in each lesson title is that lesson's topic as the contents page
+prints it, so «أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (عِزُّ الأَمانَةِ)» names the actual
+text. Both student books extracted cleanly through pdf-parse (203k and 216k
+chars), so the lessons are groundable even though the catalogue rows are thin.
+
+**Reading the contents page twice was not belt-and-braces.** Reading the S1
+image alone gave «أُرِدْنَ أَنْتَ الهَوى» for unit 2 and «أَصِفُ مُعَلِّمًا» for
+its second lesson. The extracted text corrected both to «أُرْدُنُّ أَنْتَ الهَوى»
+and «أَصِفُ مَعْلَمًا» — a landmark, not a teacher, which is what a unit about
+Jordan would have — and the unit opener page (ص 28) confirmed the first via
+عارِف اللّافي's line. S2's extraction is too transposed to cross-check that way
+(«عَرَبِيُّ الرّايَةِ يا وَطَني» comes out as «َوََطَنيِ ياُةَ يّارُ الِبيَ رَعَِب»),
+so that half was read from the page image only; the JSON's provenance_note says
+which half rests on what.
+
+The two exercise books are registered and extracted for grounding but no
+structure was derived from them: their exercises follow the same lessons and
+carry no independent numbering.
+
+Still open at grade-6: English, Islamic, social studies and digital skills are
+ingestable as-is; vocational, PE and art additionally need `SUBJECTS.grades`
+extended. Maths remains Semester 1 only — no Grade 6 maths S2 *student* book was
+supplied, only the S2 guide and exercise book.
+
 **Grade 8 gets its first figures, 2026-09-12.** `g8-science-s1` alone: 133
 crops, **65 kept**, covering all 10 of its Semester 1 lessons. What survived is
 strong — DNA and chromosome diagrams, binary-fission stages, Mendel's pea
