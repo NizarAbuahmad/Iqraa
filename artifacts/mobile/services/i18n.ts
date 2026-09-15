@@ -1363,6 +1363,7 @@ const translations = {
     classCode: 'رمز الربط',
     classCodePlaceholder: 'مثال: YHFM8Y',
     classCodeHint: 'اطلب رمز الربط من معلم ابنك أو ابنتك',
+    classCodeHintStudent: 'اطلب رمز الربط من معلمك',
     messagingEmptyDesc: 'ابدأ محادثة مع معلم أو ولي أمر مرتبط بحسابك',
     messagingLoadError: 'تعذّر تحميل المحادثات',
     messagingSendError: 'تعذّر إرسال الرسالة',
@@ -1415,7 +1416,19 @@ const translations = {
     joinAnotherClassFailed: 'تعذّر الانضمام إلى هذا الصف',
     claimRequiredTitle: 'اربط حساب ابنك أو ابنتك',
     claimRequiredDesc: 'أدخل رمز الربط الذي حصلت عليه من المعلم لإكمال إعداد حسابك.',
+    // The same screen serves a student, who has no child to link. Without
+    // these two it told them to link «حساب ابنك أو ابنتك» — the clearest sign
+    // a student could get that they had picked the wrong account type, and no
+    // way at all to act on it.
+    claimRequiredTitleStudent: 'اربط حسابك بصفّك',
+    claimRequiredDescStudent: 'أدخل رمز الربط الذي حصلت عليه من معلمك لإكمال إعداد حسابك.',
     claimRequiredSubmit: 'متابعة',
+    claimRequiredSignedInAs: (role: string) => `نوع حسابك: ${role}`,
+    claimRequiredWrongRole: 'ليس هذا نوع حسابي الصحيح',
+    claimRequiredPickRole: 'اختر نوع الحساب الصحيح',
+    claimRequiredSwitchNote: 'يمكن تغيير النوع الآن فقط — قبل ربط الحساب بأي صف.',
+    claimRequiredSwitchSubmit: 'تغيير نوع الحساب',
+    claimRequiredSwitchFailed: 'تعذّر تغيير نوع الحساب',
     // Rejections from POST /auth/claim, keyed by the server's `code` — the
     // server answers in English (services/claimCodeGate.ts).
     claimCodeInvalid: 'هذا الرمز غير صالح أو انتهت صلاحيته',
@@ -2660,6 +2673,7 @@ const translations = {
     classCode: 'Link code',
     classCodePlaceholder: 'e.g. YHFM8Y',
     classCodeHint: "Ask your child's teacher for the link code",
+    classCodeHintStudent: 'Ask your teacher for the link code',
     messagingEmptyDesc: 'Start a conversation with a teacher or a linked parent',
     messagingLoadError: 'Could not load conversations',
     messagingSendError: 'Could not send message',
@@ -2712,7 +2726,15 @@ const translations = {
     joinAnotherClassFailed: 'Could not join this class',
     claimRequiredTitle: "Link your child's class",
     claimRequiredDesc: "Enter the link code your teacher gave you to finish setting up your account.",
+    claimRequiredTitleStudent: 'Link your class',
+    claimRequiredDescStudent: 'Enter the link code your teacher gave you to finish setting up your account.',
     claimRequiredSubmit: 'Continue',
+    claimRequiredSignedInAs: (role: string) => `Account type: ${role}`,
+    claimRequiredWrongRole: "This isn't the right account type",
+    claimRequiredPickRole: 'Pick the right account type',
+    claimRequiredSwitchNote: 'This can only be changed now — before the account is linked to a class.',
+    claimRequiredSwitchSubmit: 'Change account type',
+    claimRequiredSwitchFailed: "Couldn't change the account type",
     // Rejections from POST /auth/claim, keyed by the server's `code` — the
     // server answers in English (services/claimCodeGate.ts).
     claimCodeInvalid: 'That code is invalid or has expired',
