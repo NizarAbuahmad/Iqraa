@@ -55,7 +55,7 @@ import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels, topicPickerParams } from '@/services/lessonPrep';
 
 const ACCENT = '#0EA5E9';
 
@@ -89,6 +89,10 @@ export default function SlidesScreen() {
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
   const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  // Labels are per-grade too: Grade 6's creative-arts book has no music in
+  // it, so it must not be offered under the combined name. Same index
+  // alignment as the mask above.
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, isAr ? 'ar' : 'en');
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
   // Live as the teacher types, not gated behind pressing Generate — same
@@ -783,7 +787,7 @@ export default function SlidesScreen() {
           <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
           <PillSelector
             label={t('subjects')}
-            options={subjects.map((s, i) => ({ value: i, label: isAr ? s.nameAr : s.name })).filter(o => !subjectHidden[o.value])}
+            options={subjects.map((s, i) => ({ value: i, label: subjectNames[i] })).filter(o => !subjectHidden[o.value])}
             value={subjectIdx}
             onChange={setSubjectIdx}
             colors={colors}

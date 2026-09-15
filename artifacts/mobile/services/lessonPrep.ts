@@ -21,6 +21,7 @@ import {
   getPickerSubjects,
   getUnitById,
   hasCurriculumForSubjectGrade,
+  subjectForGrade,
 } from './curriculumData.ts';
 import type { Subject } from './curriculumData.ts';
 import { getBookForLesson } from './knowledgeBase.ts';
@@ -220,6 +221,27 @@ export function groundedSubjectConflict(
  */
 export function subjectsWithoutCurriculum(gradeId: string): boolean[] {
   return getPickerSubjects().map(s => !hasCurriculumForSubjectGrade(s.id, gradeId));
+}
+
+/**
+ * Subject labels for this grade — index-aligned with `getPickerSubjects()`,
+ * the display sibling of `subjectsWithoutCurriculum` above.
+ *
+ * A subject's name can depend on the grade: Grade 6's creative-arts book has
+ * no music in it, so it must not be offered as «التربية الفنّيّة والموسيقيّة
+ * والمسرحيّة» (see `subjectForGrade` in the catalog). `getPickerSubjects()`
+ * cannot apply that itself — it deliberately takes no gradeId, because the
+ * screens rebuild it bare and its positions are persisted — so the label is
+ * resolved here, at render, where the picked grade is known.
+ *
+ * Every picker builds its options through this rather than reading `nameAr`
+ * directly, so a new override reaches all of them at once instead of landing
+ * on whichever screen someone remembered.
+ */
+export function subjectPickerLabels(gradeId: string | undefined, lang: 'ar' | 'en'): string[] {
+  return getPickerSubjects()
+    .map(s => subjectForGrade(s, gradeId))
+    .map(s => (lang === 'ar' ? s.nameAr : s.name));
 }
 
 /**
