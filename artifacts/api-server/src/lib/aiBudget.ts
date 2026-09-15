@@ -269,23 +269,45 @@ export function assertLiveModeEnabled(): void {
 
 /** Throws AiBudgetExceededError once the running total meets the configured cap. */
 export class AiUserQuotaExceededError extends Error {
-  constructor(spentUsd: number, limitUsd: number) {
+  constructor(spentUsd: number, limitUsd: number, role?: string | null) {
+    // Names the var that actually governs this caller. It used to say "this
+    // teacher" and "AI_USER_BUDGET_USD" unconditionally, which became wrong the
+    // moment students got their own allowance — and an error that points at the
+    // wrong setting sends whoever reads it to change something that has no
+    // effect on the account in front of them.
+    const who = role === "student" ? "This student" : "This teacher";
+    const envVar = role === "student" ? "AI_STUDENT_BUDGET_USD" : "AI_USER_BUDGET_USD";
     super(
-      `This teacher has used $${spentUsd.toFixed(4)} of their $${limitUsd.toFixed(2)} monthly ` +
-        `allowance. Raise AI_USER_BUDGET_USD to change it.`,
+      `${who} has used $${spentUsd.toFixed(4)} of their $${limitUsd.toFixed(2)} monthly ` +
+        `allowance. Raise ${envVar} to change it.`,
     );
     this.name = "AiUserQuotaExceededError";
   }
 }
 
 /**
- * Per-teacher monthly allowance. Zero or unset means no per-teacher cap, which
- * is the right default for a single-teacher deployment and the wrong one for a
- * pilot — with fifty teachers sharing a single project budget, one enthusiastic
- * user can spend everyone else's month in an afternoon.
+ * Per-user monthly allowance, by role.
+ *
+ * Zero or unset means no per-user cap, which is the right default for a
+ * single-teacher deployment and the wrong one for a pilot — with fifty teachers
+ * sharing a single project budget, one enthusiastic user can spend everyone
+ * else's month in an afternoon.
+ *
+ * Students get their own var rather than sharing the teacher's. They are the
+ * larger and less predictable workload: a class is thirty of them, and their
+ * traffic is chat, which — unlike generation — can never be served from the
+ * shared pool, so every turn is a live call. Billing that to the teacher who
+ * created the class would let one talkative student spend their colleague's
+ * month, and would make the teacher's own allowance mean nothing.
+ *
+ * An unrecognised role reads as a teacher. The roles that exist are teacher,
+ * school_admin, system_admin, parent and student, and of those only `student`
+ * is the high-volume one; defaulting the rest to the teacher allowance keeps a
+ * new role from silently landing on the tighter cap.
  */
-export function getUserBudgetLimitUsd(): number {
-  const raw = Number(process.env["AI_USER_BUDGET_USD"]);
+export function getUserBudgetLimitUsd(role?: string | null): number {
+  const key = role === "student" ? "AI_STUDENT_BUDGET_USD" : "AI_USER_BUDGET_USD";
+  const raw = Number(process.env[key]);
   return Number.isFinite(raw) && raw > 0 ? raw : 0;
 }
 
@@ -300,12 +322,15 @@ export function getUserBudgetLimitUsd(): number {
  * still in force underneath, and refusing every teacher because a query failed
  * turns a database blip into a total outage.
  */
-export async function assertUserQuotaAvailable(userId: string | null | undefined): Promise<void> {
-  const limit = getUserBudgetLimitUsd();
+export async function assertUserQuotaAvailable(
+  userId: string | null | undefined,
+  role?: string | null,
+): Promise<void> {
+  const limit = getUserBudgetLimitUsd(role);
   if (!limit || !userId) return;
   const spent = await readUserPeriodSpendUsd(userId);
   if (spent === null) return;
-  if (spent >= limit) throw new AiUserQuotaExceededError(spent, limit);
+  if (spent >= limit) throw new AiUserQuotaExceededError(spent, limit, role);
 }
 
 export function assertBudgetAvailable(): void {

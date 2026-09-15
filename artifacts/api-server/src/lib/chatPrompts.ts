@@ -122,8 +122,20 @@ Professional, supportive, confident, and clear. Never sound robotic. Never use e
  */
 export const CHAT_MAX_TOKENS = 1200;
 
-/** Turns of history the route forwards; older turns are dropped. */
-export const CHAT_HISTORY_TURNS = 12;
+/**
+ * Turns of history the route forwards; older turns are dropped.
+ *
+ * Was 12. Every forwarded turn is re-sent as input on every subsequent turn, so
+ * this multiplies the cost of a long conversation rather than adding to it —
+ * and chat is the one workload that can never be served from the shared
+ * artifact pool, so all of it is paid for live. Six still carries a
+ * back-and-forth about one homework problem, which is what the window is for;
+ * twelve was paying to re-send the start of a conversation nobody refers to.
+ *
+ * This bounds how *many* turns; the two ceilings below bound how *long* each
+ * one may be. Both are needed — see the note there.
+ */
+export const CHAT_HISTORY_TURNS = 6;
 
 /*
  * Ceilings on caller-supplied text reaching a prompt.

@@ -20,7 +20,7 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
@@ -364,6 +364,11 @@ export default function SlidesScreen() {
         .catch((): ActivitySlide[] => []);
 
       let lessonPlan: LessonPlanOutput | null = null;
+      // Kept so the failure can still be named if the deck turns out to be
+      // unbuildable. The plan error is deliberately swallowed below — the book
+      // alone makes a deck — but when there is no book either, "why" is the
+      // only useful thing left to say, and a quota reads nothing like a fault.
+      let planError: unknown = null;
       try {
         lessonPlan = await aiService.generateLessonPlan({
           // Localised: this string is carried into generated content verbatim —
@@ -387,11 +392,12 @@ export default function SlidesScreen() {
         // that must not be absorbed here: continuing would answer "stop" with
         // a finished deck the teacher asked not to have.
         if (isAbortError(e)) throw e;
+        planError = e;
         lessonPlan = null;
       }
 
       if (!lessonPlan && !grounding.lesson) {
-        setError(t('generationFailed'));
+        setError(t(aiErrorMessageKey(planError)));
         return;
       }
 
@@ -561,7 +567,7 @@ export default function SlidesScreen() {
       // Reached only by a cancel today: every other failure inside is handled
       // where it happens, because a partial deck still has value.
       if (isAbortError(e)) setCancelled(true);
-      else setError(t('generationFailed'));
+      else setError(t(aiErrorMessageKey(e)));
     } finally {
       abortRef.current = null;
       setLoading(false);

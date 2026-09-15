@@ -30,8 +30,15 @@ export type AiSource = 'live' | 'mock' | 'none';
  *                should be: an abort is the one failure that must never reach
  *                the mock fallback, or pressing Cancel would hand back a
  *                fabricated lesson plan indistinguishable from a real one.
+ *  'saved-copy' — the API answered, but with an artifact from the shared pool
+ *                because a spending cap refused a fresh generation. Real
+ *                content, really generated, just not now and not for this
+ *                request — which is exactly the distinction a teacher who
+ *                pressed "regenerate" needs, and the one nothing on screen
+ *                would otherwise make.
  */
-export type AiSourceReason = 'demo-mode' | 'live' | 'fallback' | 'failed' | 'cancelled';
+export type AiSourceReason =
+  | 'demo-mode' | 'live' | 'fallback' | 'failed' | 'cancelled' | 'saved-copy';
 
 /** Which generator ran — matches the API path segment, e.g. 'lesson-plan'. */
 export type AiGenerationKind =
@@ -114,6 +121,60 @@ export function isAbortError(e: unknown): boolean {
 }
 
 /**
+ * The server refused because a spending cap is reached, not because anything
+ * broke.
+ *
+ * Read off `code` rather than `instanceof ApiError`, for the same reason
+ * `isAbortError` reads a name: `apiClient` reaches react-native, and this module
+ * is deliberately loadable by bare `node --test` so the fallback policy can be
+ * tested. Duck-typing the field keeps that true.
+ *
+ * `live_mode_off` belongs here too. It is the switch that says this API makes no
+ * claim about AI content at all, so answering it with mock content is the one
+ * substitution that most directly contradicts the switch.
+ */
+const CAP_CODES = new Set(['user_quota_exceeded', 'budget_exceeded', 'live_mode_off']);
+
+export function isCapError(e: unknown): boolean {
+  if (!e || typeof e !== 'object') return false;
+  const code = (e as { code?: unknown }).code;
+  return typeof code === 'string' && CAP_CODES.has(code);
+}
+
+/**
+ * Which message a failed generation should show the teacher.
+ *
+ * One mapping, shared by the eight generator screens, rather than the same
+ * four-branch ternary copied into each — the reason `scanBudgetSpent` reached
+ * only the mark-scanning screen is that the mapping lived inside it. A screen
+ * added later gets the quota wording by default instead of having to remember.
+ *
+ * Returns an i18n key rather than a string: this module is deliberately free of
+ * react-native imports so it stays testable, and `t()` is not.
+ */
+/**
+ * Did the API serve this from the pool because a cap said no?
+ *
+ * Duck-typed for the same reason as the rest of this module: the generator
+ * output types live in AIService, which reaches react-native.
+ */
+export function servedReasonOf(out: unknown): 'quota' | 'budget' | null {
+  if (!out || typeof out !== 'object') return null;
+  const reason = (out as { servedReason?: unknown }).servedReason;
+  return reason === 'quota' || reason === 'budget' ? reason : null;
+}
+
+export function aiErrorMessageKey(
+  e: unknown,
+): 'aiQuotaSpent' | 'aiUnavailable' | 'generationFailed' {
+  if (!e || typeof e !== 'object') return 'generationFailed';
+  const code = (e as { code?: unknown }).code;
+  if (code === 'user_quota_exceeded' || code === 'budget_exceeded') return 'aiQuotaSpent';
+  if (code === 'live_mode_off') return 'aiUnavailable';
+  return 'generationFailed';
+}
+
+/**
  * Run a generator and record which of the two paths produced the answer.
  *
  * Lives here rather than in `RemoteAIService` so the fallback policy can be
@@ -137,7 +198,17 @@ export async function generateWithProvenance<T>(
 
   try {
     const out = await live();
-    recordGeneration({ kind, source: 'live', reason: 'live', at: now() });
+    // The API says when a cap turned a fresh generation into a pooled repeat.
+    // Recorded here rather than handled per screen: the badge that reads this
+    // log already renders on every generator screen, for the neighbouring
+    // problem of mock content being indistinguishable from real content. A
+    // month-old variant presented as newly generated is the same problem.
+    recordGeneration({
+      kind,
+      source: 'live',
+      reason: servedReasonOf(out) ? 'saved-copy' : 'live',
+      at: now(),
+    });
     return out;
   } catch (e) {
     const error = describeAiError(e);
@@ -146,6 +217,20 @@ export async function generateWithProvenance<T>(
     // exact substitution this module exists to make visible.
     if (isAbortError(e)) {
       recordGeneration({ kind, source: 'none', reason: 'cancelled', at: now() });
+      throw e;
+    }
+    // A cap is not a failure to paper over either, and the argument is the one
+    // directly above: answering "you have used this month's allowance" with a
+    // full, plausible, entirely fabricated worksheet is the exact substitution
+    // this module exists to make visible. It is worse than the cancel case,
+    // because the teacher did not ask for it to stop and has no reason to
+    // suspect the content in front of them was never generated.
+    //
+    // Note the server already tries the shared pool before refusing, so getting
+    // here means there was no real artifact to serve either — falling back
+    // would be inventing one where none exists.
+    if (isCapError(e)) {
+      recordGeneration({ kind, source: 'none', reason: 'failed', error, at: now() });
       throw e;
     }
     if (strict) {
@@ -162,8 +247,8 @@ export async function generateWithProvenance<T>(
 
 /** What the badge should say — the i18n key, and how loud to be about it. */
 export interface AiSourceBadgeState {
-  labelKey: 'demoModeBadge' | 'aiLiveBadge' | 'aiFallbackBadge';
-  icon: 'flask-outline' | 'sparkles-outline' | 'warning-outline';
+  labelKey: 'demoModeBadge' | 'aiLiveBadge' | 'aiFallbackBadge' | 'aiSavedCopyBadge';
+  icon: 'flask-outline' | 'sparkles-outline' | 'warning-outline' | 'bookmark-outline';
   /** 'warn' is the only state that breaks out of the quiet header styling. */
   tone: 'quiet' | 'warn';
   /** The failure text, for the accessibility label. Never in the visible label. */
@@ -193,6 +278,12 @@ export function aiSourceBadgeState(
       labelKey: 'aiFallbackBadge', icon: 'warning-outline', tone: 'warn',
       detail: last.error,
     };
+  }
+  // Real content, but not generated for this request. Quiet rather than warn:
+  // nothing has gone wrong and the artifact is genuine — it is the claim of
+  // freshness that would be false, and this is what withdraws it.
+  if (last.reason === 'saved-copy') {
+    return { labelKey: 'aiSavedCopyBadge', icon: 'bookmark-outline', tone: 'quiet' };
   }
   return { labelKey: 'aiLiveBadge', icon: 'sparkles-outline', tone: 'quiet' };
 }
