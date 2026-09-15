@@ -1124,6 +1124,20 @@ def card_boundary(page: pymupdf.Page, seed: pymupdf.Rect) -> pymupdf.Rect | None
     return best
 
 
+# Books placed from their CONTENTS SPREAD rather than their lesson openers,
+# mapped to the y-tolerance their columns need. See scripts/contents_outline.py
+# for why the join runs from the table for these.
+#
+# A book earns a place here only when the parsed table reproduces its catalog
+# EXACTLY, unit for unit — vocational S1 gives [2,2,2,2,1,2,1] against the
+# catalog's [2,2,2,2,1,2,1]. Its S2 sibling finds 13 rows of 14 and infers 9
+# units against 10, which would shift every later lesson id, so it is absent:
+# a partial contents table is the same trap as a partial opener sweep.
+CONTENTS_PLACEMENT: dict[str, float] = {
+    "g8-voc-s1-student-book": 4.0,
+}
+
+
 def figures_in(pdf: Path, source_id: str | None = None):
     """Yield (page_number, page, rect, lesson) for every figure found.
 
@@ -1133,7 +1147,11 @@ def figures_in(pdf: Path, source_id: str | None = None):
     invisible to it. Seeds that grow into the same region are one figure.
     """
     doc = pymupdf.open(pdf)
-    where = outline(doc, OPENER_PROFILES.get(source_id or "", DEFAULT_OPENER))
+    if source_id in CONTENTS_PLACEMENT:
+        from contents_outline import contents_outline
+        where = contents_outline(doc, CONTENTS_PLACEMENT[source_id])
+    else:
+        where = outline(doc, OPENER_PROFILES.get(source_id or "", DEFAULT_OPENER))
     for n in range(len(doc)):
         page = doc[n]
 

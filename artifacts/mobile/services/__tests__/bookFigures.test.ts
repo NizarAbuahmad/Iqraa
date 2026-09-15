@@ -115,6 +115,7 @@ describe('figuresForLesson', () => {
       'g8-finlit': 'g8-finlit',
       'g8-social': 'g8-social',
       'g8-math': 'g8-math',
+      'g8-voc': 'g8-voc',
     };
 
     for (const id of lessonsWithFigures()) {

@@ -1303,12 +1303,50 @@ social diagnosis above shows those tables are accurate. Parsing them would give
 an exact page→lesson join with no opener needed, worth roughly 250 lessons.
 That is a new mechanism, not a threshold, and is the next thing to build.
 
+**Built, and proven on one book: Grade 8 vocational S1, 2026-09-15.**
+`scripts/contents_outline.py` reads the contents table and returns
+`outline()`'s own shape, so `extract_book_figures.py` needed one branch and a
+`CONTENTS_PLACEMENT` dict to use it. Vocational S1 — «الدرس» on five pages, all
+of them the contents spread, so zero openers — now places **41 figures across
+11 of its 12 lessons** (129 crops, culled by eye). Hairdressing photos,
+greenhouse and open-field vegetable beds, protective gear and spraying,
+sanding and door maintenance, a pharmacy sign, the tourism-marketing wheel,
+Jerash.
+
+**Three parts of a row, three unrelated text positions.** «الدرس», its «(N)»,
+the title and the page number are separate spans in an order that reading-order
+pairs wrongly. Only geometry pairs them, so spans are grouped by the y-centre
+they share and `Y_TOLERANCE` is per-book (vocational sits within 2.4pt, Grade 8
+social spreads to about 8). The «(1)» arrives RTL-reversed as «)1(» as often as
+not, and the page number is taken as the largest number on the row, because the
+lesson number is parenthesised and 1–2 digits while the page is bare.
+
+**A contents table does not list the unit opener, and that misfiles figures
+FORWARDS into the previous unit.** The first run put the lettuce fields from
+unit 3's opener spread on unit 2's hairdressing lesson, the protective gear
+from unit 4's on unit 3's roof gardening, and Jerash on «حلول إبداعية» — five
+unit boundaries, all the same way, and every one looks like success in the
+counts. `unit_banner_pages()` reads the «الوحدة الثالثة» banner (32pt, one per
+unit, all seven found) and anchors each unit's first lesson there instead of at
+its contents-listed page. Confirmed by image content, unit for unit.
+
+**A book enters `CONTENTS_PLACEMENT` only when its parsed table reproduces its
+catalog exactly, unit for unit.** Vocational S1 gives [2,2,2,2,1,2,1] against a
+catalog of [2,2,2,2,1,2,1]. Vocational **S2 is excluded on that rule** — 13
+rows where the catalog has 14, 9 units where it has 10 — and so is every other
+candidate until measured the same way. The rule exists because a parser that
+half-reads a table produces the same silent misfiling the opener detector does.
+
+**Still to widen:** Arabic, Islamic, creative arts, digital literacy, Grade 6
+maths, Grade 8 science S2, Grade 9 history S2, vocational S2. Each is a
+measurement, not a code change.
+
 **What still has no figure at all, and why:**
 
 - **Grade 8 — five of ten subjects, 165 lessons.** English, maths, science,
-  social and financial literacy are done (above). Left: Arabic and Islamic
-  (closed on measurement), creative arts, vocational education and digital
-  literacy (no readable openers; the contents-spread parser is the way in).
+  social, financial literacy and vocational S1 are done (above). Left: Arabic
+  and Islamic (closed on measurement), creative arts and digital literacy (no
+  readable openers; the contents-spread parser is built and is the way in).
 - **Arabic and Islamic** (192 lessons): measured and abandoned 2026-09-05, see
   the section below. Unchanged.
 - **English**: done for Grades 10, 9, 8 and 7 (above). Grade 7 is thin at
@@ -1319,8 +1357,8 @@ That is a new mechanism, not a threshold, and is the next thing to build.
   either Grade 10 S1 book. Like Islamic, they print an opener the detector does
   not know, so they need a per-subject profile before extraction is worth
   running.
-- **PE, social, creative arts, vocational**: never run, no measurement either
-  way.
+- **PE and creative arts**: never run, no measurement either way. Social and
+  vocational are done (above).
 
 ## Every QR code in the books, decoded — and the ministry's certificate expired
 
