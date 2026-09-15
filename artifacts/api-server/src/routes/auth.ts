@@ -42,6 +42,7 @@ import {
   RESET_CODE_TTL_MS,
 } from "../lib/passwordReset.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
+import { decideRoleSwitch } from "../lib/roleSwitch.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 import { extensionForAvatarMime, MAX_AVATAR_DATA_URL_LENGTH } from "../lib/avatarUpload.js";
 import { parseDataUrl } from "../lib/lessonMediaUpload.js";
@@ -732,6 +733,56 @@ router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedReq
   } catch (err) {
     logger.error({ err }, "claim failed");
     res.status(500).json({ error: "Failed to link account" });
+  }
+});
+
+/**
+ * Change the role picked at signup, while nothing depends on it yet.
+ *
+ * Its own limiter rather than claimLimiter's: sharing one quota would mean a
+ * parent who burned ten wrong codes could no longer get off the screen those
+ * codes are asked for, which is the opposite of what this route is for.
+ */
+const roleSwitchLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "role-switch" });
+
+/**
+ * `POST /auth/role` — the way back from a role picked wrong at signup. Who may
+ * still use it, and why it closes, is decided in lib/roleSwitch.ts.
+ *
+ * Mints no new tokens: authMiddleware re-reads `users.role` from the row on
+ * every request, so the role inside an access token never decides anything and
+ * the change is live on the caller's next call.
+ */
+router.post("/role", roleSwitchLimiter, authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    const decision = await decideRoleSwitch({
+      currentRole: req.user!.role,
+      requestedRole: (req.body ?? {}).role,
+      studentAccountsEnabled: studentAccountsEnabled(),
+      hasRosterLink: () => hasAnyRosterLink(req.user!.id),
+    });
+
+    if (!decision.ok) {
+      // `code` as well as `error`, for the reason POST /claim gives: the screen
+      // showing this is Arabic and these sentences are not.
+      res.status(decision.status).json({ error: decision.error, code: decision.code });
+      return;
+    }
+
+    if (decision.changed) {
+      await db.update(users).set({ role: decision.role }).where(eq(users.id, req.user!.id));
+      logger.info({ userId: req.user!.id, from: req.user!.role, to: decision.role }, "role switched");
+    }
+
+    // An `ok` decision has already established there is no roster link, so
+    // this is not a guess — it is the same false the gate was reading before.
+    res.json({
+      role: decision.role,
+      ...(decision.role === "teacher" ? {} : { hasRosterLink: false }),
+    });
+  } catch (err) {
+    logger.error({ err }, "role switch failed");
+    res.status(500).json({ error: "Failed to change account type" });
   }
 });
 

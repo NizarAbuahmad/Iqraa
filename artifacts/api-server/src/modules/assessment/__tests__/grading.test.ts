@@ -54,6 +54,29 @@ describe("Arabic normalisation", () => {
     // An empty answer is never a match, even against an empty key.
     assert.ok(!answersMatch("", ""));
   });
+
+  it("never accepts a neighbouring whole number, however large", () => {
+    // The old 1% relative tolerance passed every one of these: 1% of 360 is
+    // 3.6, so 357 marked correct, unattended. The tolerance scaled with the
+    // magnitude of the answer, which is precisely what it must not do — these
+    // are the sizes Grade 10 answers actually come in (degrees, sums, counts).
+    assert.ok(!answersMatch("357", "360"));
+    assert.ok(!answersMatch("359", "360"));
+    assert.ok(!answersMatch("101", "100"));
+    assert.ok(!answersMatch("1009", "1000"));
+    assert.ok(!answersMatch("99", "100"));
+    // A decimal answer is not exempt from the same scaling bug.
+    assert.ok(!answersMatch("1009.5", "1000.5"));
+  });
+
+  it("still forgives the rounding a student legitimately writes", () => {
+    // The reason a tolerance exists at all: a repeating decimal, written to
+    // fewer places than the key. Judged at the coarser of the two precisions.
+    assert.ok(answersMatch("0.333", "0.3333"));
+    assert.ok(answersMatch("3.14", "3.14159"));
+    assert.ok(answersMatch("٣٫٥", "3.5"));
+    assert.ok(!answersMatch("0.34", "0.3333"));
+  });
 });
 
 describe("multiple choice grading", () => {
