@@ -8,8 +8,10 @@
  */
 import { Router } from "express";
 import { getExternalResource } from "@workspace/curriculum";
-import { logger } from "../lib/logger";
-import { isR2Configured, presignedGetUrl } from "../lib/r2";
+// Explicit .ts extensions: esbuild resolves without them, but `node --test`
+// does not, and this module is now imported by a test (see CLAUDE.md).
+import { logger } from "../lib/logger.ts";
+import { isR2Configured, presignedGetUrl } from "../lib/r2.ts";
 
 const mediaRouter = Router();
 
@@ -56,6 +58,19 @@ mediaRouter.get("/media/unsplash-photo", async (req, res) => {
       headers: { Authorization: `Client-ID ${accessKey}` },
     });
     if (!response.ok) {
+      // Logged, because the answer the client gets for a refused key, an
+      // exhausted hourly allowance and a genuinely unphotogenic query is the
+      // same `{ photo: null }` — the deck just skips the image slide either
+      // way. Without a line here, running out of Unsplash quota is invisible:
+      // it looks exactly like a search that found nothing, and the only other
+      // place it would show up is a teacher wondering why decks stopped having
+      // pictures. 429 is the rate limit; 401/403 is the key.
+      logger.warn(
+        { status: response.status, query, service: "unsplash" },
+        response.status === 429
+          ? "unsplash rate limit reached — decks will render without images until it resets"
+          : "unsplash search failed",
+      );
       res.json({ photo: null });
       return;
     }
@@ -90,6 +105,32 @@ interface YouTubeSearchResponse {
   }>;
 }
 
+/** The error envelope, whose `reason` separates a spent quota from a bad key. */
+interface YouTubeErrorResponse {
+  error?: { errors?: Array<{ reason?: string }> };
+}
+
+/**
+ * The machine-readable reason out of a failed YouTube response, or undefined.
+ *
+ * Exported for its test. Everything here is a way of not throwing: a quota
+ * failure arrives as JSON, but a proxy or an outage can answer 403 with HTML,
+ * and this runs on the error path of a route whose whole contract is that a
+ * missing video is never an error. Turning "no video today" into a 500 because
+ * the explanation would not parse is the one outcome worse than not logging.
+ */
+export async function youtubeFailureReason(
+  response: Pick<Response, "json">,
+): Promise<string | undefined> {
+  try {
+    const body = (await response.json()) as YouTubeErrorResponse;
+    const reason = body?.error?.errors?.[0]?.reason;
+    return typeof reason === "string" ? reason : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 mediaRouter.get("/media/youtube-video", async (req, res) => {
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) {
@@ -121,6 +162,25 @@ mediaRouter.get("/media/youtube-video", async (req, res) => {
       + `&safeSearch=strict&videoEmbeddable=true&videoDuration=medium&relevanceLanguage=${lang}`;
     const response = await fetch(url);
     if (!response.ok) {
+      // The client cannot tell these apart — an exhausted quota, a rejected
+      // key and a topic with no embeddable results all return
+      // `{ video: null }`, and the deck simply skips the video slide. So this
+      // is the only place the difference can be recorded.
+      //
+      // Worth naming the reason rather than just the status: YouTube answers
+      // 403 both for `quotaExceeded` (wait until the daily reset at midnight
+      // Pacific, or raise the quota) and for a key that has been disabled or
+      // restricted (nothing resets; someone has to fix it). One search costs
+      // 100 of a default 10,000 units a day, so the ceiling is roughly a
+      // hundred decks a day across every teacher, and hitting it is a normal
+      // Tuesday rather than an attack.
+      const reason = await youtubeFailureReason(response);
+      logger.warn(
+        { status: response.status, reason, query, service: "youtube" },
+        reason === "quotaExceeded"
+          ? "youtube daily quota exhausted — decks will render without videos until it resets"
+          : "youtube search failed",
+      );
       res.json({ video: null, videos: [] });
       return;
     }
