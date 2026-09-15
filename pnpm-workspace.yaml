@@ -87,6 +87,18 @@ overrides:
   # drizzle-kit uses esbuild internally on an older version that's vulnerable, this overrides it
   "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0"
   esbuild: "0.27.3"
+  # express -> body-parser -> qs parses the body of every single API request,
+  # which makes it the one transitive dependency in this workspace that an
+  # anonymous caller reaches directly. 6.15.3 (what the range resolved to)
+  # carries two DoS advisories — GHSA on the array-limit bypass via
+  # bracket-key comma parsing, and the attacker-controlled `isBuffer` — and
+  # 6.16.0 is the first release clear of both.
+  #
+  # Worth distinguishing from the rest of `pnpm audit`, which reports 40-odd
+  # "high" findings in @expo/cli, config-plugins, babel-jest and xcpretty:
+  # those are build tooling and never reach an image or a bundle. This one
+  # runs in production on every request.
+  qs: "^6.16.0"
 
 allowBuilds:
   esbuild: true

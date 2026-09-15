@@ -445,6 +445,52 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     });
     assert.equal(res.status, 404);
   });
+
+  /*
+   * Response headers, asserted here rather than in a file of their own so
+   * they share this suite's already-booted bundle — a second `describe` means
+   * a second process and another twenty seconds of waiting for a health check,
+   * to test middleware that is installed three lines away from the mounts
+   * above.
+   *
+   * NODE_ENV is not "production" under `node --test`, so the localhost origins
+   * are in the allowlist here; that is why the refused case below uses an
+   * outside origin rather than a localhost port.
+   */
+  it("answers a first-party browser origin with permission to read the response", async () => {
+    const res = await fetch(`${base}/healthz`, {
+      headers: { Origin: "https://app.iqrra.com" },
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("access-control-allow-origin"), "https://app.iqrra.com");
+  });
+
+  it("withholds that permission from every other origin", async () => {
+    // Not a 4xx: the server answers normally and simply omits the header, and
+    // it is the browser that then refuses to hand the body to the page. A
+    // status assertion here would be asserting the wrong mechanism.
+    const res = await fetch(`${base}/healthz`, {
+      headers: { Origin: "https://not-ours.example" },
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("access-control-allow-origin"), null);
+  });
+
+  it("still answers a request with no Origin at all", async () => {
+    // Every native app request, curl, and Cloud Run's own health check. An
+    // allowlist that refused these would take the whole mobile app down, which
+    // is the expensive way to find out `Origin` is a browser-only header.
+    const res = await fetch(`${base}/healthz`);
+    assert.equal(res.status, 200);
+  });
+
+  it("sends the baseline security headers, and never caches a response", async () => {
+    const res = await fetch(`${base}/healthz`);
+    assert.equal(res.headers.get("x-content-type-options"), "nosniff");
+    assert.match(res.headers.get("strict-transport-security") ?? "", /max-age=\d+/);
+    // Everything this API returns is a roster, a paper or a child's marks.
+    assert.equal(res.headers.get("cache-control"), "no-store");
+  });
 });
 
 describe("API register (student accounts enabled)", { skip: built ? false : "run `pnpm build` first" }, () => {
