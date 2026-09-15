@@ -1257,6 +1257,46 @@ ingestable as-is; vocational, PE and art additionally need `SUBJECTS.grades`
 extended. Maths remains Semester 1 only — no Grade 6 maths S2 *student* book was
 supplied, only the S2 guide and exercise book.
 
+**Grade 6 Islamic Education and Social Studies, 2026-09-15.** Eighteen units
+and seventy-four lessons across four books. Grade 6 now offers five subjects:
+الرياضيات, اللغة العربية, التربية الإسلامية, الدراسات الاجتماعية, العلوم.
+
+Both are **title-only**, on the same footing as Grade 6 Arabic and for a
+related reason — but note the difference from Arabic, which is honest rather
+than cosmetic. The Arabic book prints nothing more than titles; these two DO
+print a per-lesson introductory paragraph that would serve as `main_idea_ar`.
+It is not transcribed, because pdf-parse drops the assimilated lam in these
+books so it cannot be quoted from the extracted text, and reading 74 lesson
+pages as images is deferred work. Both books are extracted and registered, so
+the lessons are groundable; only the catalogue rows are thin. Each JSON's
+`known_gaps` says this in those terms rather than implying the books are bare.
+
+**The two books disagree about unit numbering, and both are right.** Social
+studies continues 1-5 → 6-10 across semesters, like the science and Arabic
+books. Islamic Education restarts at 1 in Semester 2. That means `u1`…`u4`
+appear in both Islamic semesters — which is safe, because the KB id carries the
+semester (`kbu-g6-islamic-s1-nccd-u1` vs `…-s2-nccd-u1`), and it was checked
+against the running catalog rather than reasoned about: S1 `u1_l1` resolves to
+«سورَةُ الزَّلْزَلَةِ» and S2 `u1_l1` to «سورَةُ نوحٍ». Do not "fix" it.
+
+**`social` was missing from the manifest subject vocabulary**, exactly as
+`science` was before Grade 6 science. Grade 7 and Grade 8 social studies never
+noticed because both were catalogued without Tracks A/B. Adding it meant the
+full new-subject path again — `CurriculumSource['subject']` in `sources.ts`,
+then `BANK_SUBJECT_IDS` and both `SUBJECT_LABEL_AR/EN` in `bank.ts` — with
+TypeScript naming every site, including the per-subject regex map in
+`bank.test.ts`.
+
+Three per-subject tag allowlists were collapsed from one alternative per grade
+(`g9|g8|g7`) to `g\d+`. Only Grade 10, `curriculumIds.ts`'s implicit grade,
+carries a bare form, so the enumeration was never doing work the prefix test
+does not — and it had already needed editing once per grade for four grades
+running.
+
+Still open at grade-6: English (Pearson, must be `third-party` like Grade 10's
+— catalogable but never quotable), digital skills (no student book), and
+vocational, PE and art, which need `SUBJECTS.grades` extended to grade-6 first.
+
 **Grade 8 gets its first figures, 2026-09-12.** `g8-science-s1` alone: 133
 crops, **65 kept**, covering all 10 of its Semester 1 lessons. What survived is
 strong — DNA and chromosome diagrams, binary-fission stages, Mendel's pea

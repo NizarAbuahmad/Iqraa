@@ -159,8 +159,8 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // is.
   // arabic:grade-6 closed 2026-09-15, both semesters (title-only).
   'english:grade-6',
-  'islamic:grade-6',
-  'social:grade-6',
+  // islamic:grade-6 closed 2026-09-15, both semesters (title-only).
+  // social:grade-6 closed 2026-09-15, both semesters (title-only).
   'digital-literacy:grade-6',
   //
   // ORDINARY GAPS, WITH AN EXTRA STEP — a Grade 6 book exists for each, but

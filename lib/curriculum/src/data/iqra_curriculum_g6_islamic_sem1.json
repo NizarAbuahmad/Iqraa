@@ -1,0 +1,280 @@
+{
+  "meta": {
+    "grade": "الصف السادس",
+    "grade_en": "Grade 6",
+    "subject": "التربية الإسلامية",
+    "subject_en": "Islamic Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الأول (g6-islamic-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الأربعُ ودروسُها الواحدُ والعشرونَ من فهرسِ كتابِ الطالبِ (ص 4) في 2026-09-15، وقُرِئَ الفهرسُ من ملفِّ PDF مباشرةً. بِنيةُ الوحدةِ ثابتةٌ تقريبًا: سورةٌ، ثمَّ عقيدةٌ أو سيرةٌ، ثمَّ درسُ تلاوةٍ وتجويدٍ، ثمَّ فقهٌ، ثمَّ قضيَّةٌ معاصرةٌ.",
+    "known_gaps": [
+      "هذا الملفُّ عناوينُ فقط (title-only): نُقِلَتْ بنيةُ الوحداتِ والدروسِ من فهرسِ كتابِ الطالبِ، ولم تُنقَلْ نتاجاتٌ ولا مصطلحاتٌ. objectives و vocabulary فارغتانِ لكلِّ الدروسِ، والدروسُ موسومةٌ title-only في الواجهةِ عبرَ isBrowserLessonTitleOnly حتّى يرى المعلِّمُ ذلكَ صراحةً بدلَ درسٍ يبدو فارغًا بلا سببٍ.",
+      "main_idea_ar فارغةٌ، معَ أنَّ صفحةَ الدرسِ تطبعُ فقرةً تمهيديَّةً تصلحُ لها. لم تُنقَلْ لأنَّ نقلَها يقتضي قراءةَ صفحةِ كلِّ درسٍ على حِدَةٍ من ملفِّ PDF — النصُّ المستخرَجُ يُسقِطُ لامَ التعريفِ المُدغَمَ فلا يصلحُ للنقلِ الحرفيِّ — وهوَ عملٌ مؤجَّلٌ لا ساقطٌ. الكتابُ مُستخرَجٌ ومُسجَّلٌ، فالدروسُ مؤسَّسةٌ (groundable) وإنْ كانت صفوفُها في الفهرسِ رقيقةً.",
+      "periods و total_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ في كتابِ الطالبِ، ولا دليلَ معلِّمٍ لهذهِ المادَّةِ في الملفّاتِ المرسَلةِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "عَظَمَةُ اللهِ تَعالى",
+      "title_en": "The Greatness of God Almighty",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "سورَةُ الزَّلْزَلَةِ",
+          "title_en": "Surat al-Zalzalah",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "مِنْ أَسْماءِ اللهِ تَعالى الحُسْنى: المُحْيي، وَالمُميتُ",
+          "title_en": "Among God's Beautiful Names: al-Muhyi and al-Mumit",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "التِّلاوَةُ وَالتَّجْويدُ: الميمُ السّاكِنَةُ",
+          "title_en": "Recitation and Tajwid: The Silent Mim",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "نُزولُ القُرْآنِ الكَريمِ",
+          "title_en": "The Revelation of the Noble Qur'an",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "قَضاءُ الصَّلاةِ",
+          "title_en": "Making Up Missed Prayers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "جَزاءُ المُؤْمِنينَ الجَنَّةُ",
+      "title_en": "Paradise, the Reward of the Believers",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "سورَةُ الأَنْفالِ، الآياتُ الكَريمَةُ (2-4)",
+          "title_en": "Surat al-Anfal, Verses 2-4",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "نَعيمُ الجَنَّةِ",
+          "title_en": "The Bliss of Paradise",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "التِّلاوَةُ وَالتَّجْويدُ: الإِدْغامُ الشَّفَوِيُّ",
+          "title_en": "Recitation and Tajwid: Labial Assimilation",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "سَيِّدُنا عُثْمانُ بْنُ عَفّانَ",
+          "title_en": "Uthman ibn Affan",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "صَلاةُ المَسْبوقِ",
+          "title_en": "The Prayer of the Latecomer",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "الإِسْلامُ دينُ الرَّحْمَةِ",
+      "title_en": "Islam, the Religion of Mercy",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "سورَةُ الجُمُعَةِ، الآياتُ الكَريمَةُ (9-11)",
+          "title_en": "Surat al-Jumu'ah, Verses 9-11",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الحَديثُ الشَّريفُ: خُلُقُ الرِّفْقِ",
+          "title_en": "Hadith: The Virtue of Gentleness",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "التِّلاوَةُ وَالتَّجْويدُ: الإِخْفاءُ الشَّفَوِيُّ",
+          "title_en": "Recitation and Tajwid: Labial Concealment",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "دَعْوَةُ أَهْلِ الطّائِفِ إِلى الإِسْلامِ",
+          "title_en": "The Call of the People of Ta'if to Islam",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "أَعْذارُ الإِفْطارِ في رَمَضانَ",
+          "title_en": "Valid Excuses for Not Fasting in Ramadan",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l6",
+          "order": 6,
+          "title_ar": "حَقُّ الإِنْسانِ في الحَياةِ",
+          "title_en": "The Human Right to Life",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "التَّعامُلُ بِالأَخْلاقِ الحَميدَةِ",
+      "title_en": "Conducting Oneself with Good Character",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (student book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "سورَةُ اللَّيْلِ",
+          "title_en": "Surat al-Layl",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "الحَديثُ الشَّريفُ: مُراعاةُ مَشاعِرِ الآخَرينَ",
+          "title_en": "Hadith: Regard for the Feelings of Others",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "التِّلاوَةُ وَالتَّجْويدُ: تَطْبيقاتٌ عَلى أَحْكامِ الميمِ السّاكِنَةِ",
+          "title_en": "Recitation and Tajwid: Applying the Rules of the Silent Mim",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "الأَمانَةُ",
+          "title_en": "Trustworthiness",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l5",
+          "order": 5,
+          "title_ar": "مَوْقِفُ الإِسْلامِ مِنَ التَّدْخينِ",
+          "title_en": "The Position of Islam on Smoking",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

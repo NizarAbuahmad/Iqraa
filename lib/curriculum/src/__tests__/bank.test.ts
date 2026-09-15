@@ -78,13 +78,16 @@ describe('manifest shape', () => {
       // Grade 6 joined 2026-09-15. Only Grade 10 (curriculumIds.ts's implicit
       // grade) carries the bare `arabic-s1` form; every other grade is explicit.
       arabic: /^(arabic-s[12]|g\d+-arabic-s[12])$/,
-      islamic: /^(islamic-s[12]|g9-islamic-s[12])$/,
+      islamic: /^(islamic-s[12]|g\d+-islamic-s[12])$/,
       history: /^history-s[12]$/,
       // Combined «العلوم», taught as one subject at Grade 8 and below. No bare
       // form: Grade 10 (the implicit grade) splits science into the four
       // subjects above, so `science-s1` would name a book that cannot exist.
       // The slug and this record's key agree here, unlike the five noted above.
       science: /^g\d+-science-s[12]$/,
+      // Combined «الدراسات الاجتماعية», taught as one subject at Grade 8 and
+      // below. No bare form: Grade 10 splits it into geography/history/civic.
+      social: /^g\d+-social-s[12]$/,
       english: /^(eng-s[12]|g9-eng-s[12])$/,
       geography: /^geo-s[12]$/,
       'digital-literacy': /^(digital-s[12]|g9-digital-s[12])$/,

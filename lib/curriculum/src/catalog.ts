@@ -118,6 +118,30 @@ import {
   buildG6MathSem1BrowserCatalog,
 } from './catalogs/g6MathSem1.ts';
 import {
+  G6_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  buildG6IslamicSem1BrowserCatalog,
+  isG6IslamicSem1TitleOnlyUnit,
+  isG6IslamicSem1TitleOnlyLesson,
+} from './catalogs/g6IslamicSem1.ts';
+import {
+  G6_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  buildG6IslamicSem2BrowserCatalog,
+  isG6IslamicSem2TitleOnlyUnit,
+  isG6IslamicSem2TitleOnlyLesson,
+} from './catalogs/g6IslamicSem2.ts';
+import {
+  G6_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  buildG6SocialSem1BrowserCatalog,
+  isG6SocialSem1TitleOnlyUnit,
+  isG6SocialSem1TitleOnlyLesson,
+} from './catalogs/g6SocialSem1.ts';
+import {
+  G6_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  buildG6SocialSem2BrowserCatalog,
+  isG6SocialSem2TitleOnlyUnit,
+  isG6SocialSem2TitleOnlyLesson,
+} from './catalogs/g6SocialSem2.ts';
+import {
   G6_ARABIC_S1_CURRICULUM_BOOK_ID,
   buildG6ArabicSem1BrowserCatalog,
   isG6ArabicSem1TitleOnlyUnit,
@@ -863,6 +887,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // since 2026-09-05, so no subject append is needed here either.
   G6_ARABIC_S1_CURRICULUM_BOOK_ID,
   G6_ARABIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 6 Islamic Education and Social Studies, both semesters. Both
+  // subjectIds are already in MVP_SUBJECT_IDS, so no subject append is needed.
+  G6_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  G6_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  G6_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  G6_SOCIAL_S2_CURRICULUM_BOOK_ID,
   // Grade 7 Digital Skills — both semesters attached. Same held-out
   // treatment as Grade 7 Math above.
   G7_DIGITAL_S1_CURRICULUM_BOOK_ID,
@@ -1521,6 +1551,63 @@ export const BOOKS: Book[] = [
     title: 'Arabic – Grade 6, Semester 2',
     titleAr: 'اللغة العربية – الصف السادس – الفصل الثاني',
     subjectId: 'arabic',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Islamic Education and Social Studies, Grade 6 ─────────────────────────
+  // Both title-only, carried from each student book's table of contents —
+  // see g6IslamicSem1.ts for what these books do and do not print. Note the
+  // two disagree on numbering: social studies continues 1-5 → 6-10 across
+  // semesters, Islamic restarts at 1. Both are as printed.
+  {
+    id: G6_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 6, Semester 1',
+    titleAr: 'التربية الإسلامية – الصف السادس – الفصل الأول',
+    subjectId: 'islamic',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G6_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 6, Semester 2',
+    titleAr: 'التربية الإسلامية – الصف السادس – الفصل الثاني',
+    subjectId: 'islamic',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  {
+    id: G6_SOCIAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 6, Semester 1',
+    titleAr: 'الدراسات الاجتماعية – الصف السادس – الفصل الأول',
+    subjectId: 'social',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G6_SOCIAL_S2_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 6, Semester 2',
+    titleAr: 'الدراسات الاجتماعية – الصف السادس – الفصل الثاني',
+    subjectId: 'social',
     gradeId: 'grade-6',
     academicYear: '2024-2025',
     language: 'Arabic',
@@ -3568,6 +3655,10 @@ const _g7ScienceSem1Browser = buildG7ScienceSem1BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
 const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
+const _g6IslamicSem1Browser = buildG6IslamicSem1BrowserCatalog();
+const _g6IslamicSem2Browser = buildG6IslamicSem2BrowserCatalog();
+const _g6SocialSem1Browser = buildG6SocialSem1BrowserCatalog();
+const _g6SocialSem2Browser = buildG6SocialSem2BrowserCatalog();
 const _g6ArabicSem2Browser = buildG6ArabicSem2BrowserCatalog();
 const _g6ScienceSem2Browser = buildG6ScienceSem2BrowserCatalog();
 const _g7ScienceSem2Browser = buildG7ScienceSem2BrowserCatalog();
@@ -3804,6 +3895,10 @@ export const UNITS: Unit[] = [
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
   ..._g6ArabicSem1Browser.units,
+  ..._g6IslamicSem1Browser.units,
+  ..._g6IslamicSem2Browser.units,
+  ..._g6SocialSem1Browser.units,
+  ..._g6SocialSem2Browser.units,
   ..._g6ArabicSem2Browser.units,
   ..._g6ScienceSem2Browser.units,
   ..._g7ScienceSem2Browser.units,
@@ -3910,6 +4005,10 @@ export const LESSONS: Lesson[] = [
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
   ..._g6ArabicSem1Browser.lessons,
+  ..._g6IslamicSem1Browser.lessons,
+  ..._g6IslamicSem2Browser.lessons,
+  ..._g6SocialSem1Browser.lessons,
+  ..._g6SocialSem2Browser.lessons,
   ..._g6ArabicSem2Browser.lessons,
   ..._g6ScienceSem2Browser.lessons,
   ..._g7ScienceSem2Browser.lessons,
@@ -3947,7 +4046,11 @@ export function isBrowserUnitTitleOnly(unitId: string): boolean {
     || isG9MathSem1TitleOnlyUnit(unitId)
     || isG9MathSem2TitleOnlyUnit(unitId)
     || isG6ArabicSem1TitleOnlyUnit(unitId)
-    || isG6ArabicSem2TitleOnlyUnit(unitId);
+    || isG6ArabicSem2TitleOnlyUnit(unitId)
+    || isG6IslamicSem1TitleOnlyUnit(unitId)
+    || isG6IslamicSem2TitleOnlyUnit(unitId)
+    || isG6SocialSem1TitleOnlyUnit(unitId)
+    || isG6SocialSem2TitleOnlyUnit(unitId);
 }
 
 /** UI: Sem1 units 2–4 lessons — title confirmed, no per-lesson objectives yet. */
@@ -3956,7 +4059,11 @@ export function isBrowserLessonTitleOnly(lessonId: string): boolean {
     || isG9MathSem1TitleOnlyLesson(lessonId)
     || isG9MathSem2TitleOnlyLesson(lessonId)
     || isG6ArabicSem1TitleOnlyLesson(lessonId)
-    || isG6ArabicSem2TitleOnlyLesson(lessonId);
+    || isG6ArabicSem2TitleOnlyLesson(lessonId)
+    || isG6IslamicSem1TitleOnlyLesson(lessonId)
+    || isG6IslamicSem2TitleOnlyLesson(lessonId)
+    || isG6SocialSem1TitleOnlyLesson(lessonId)
+    || isG6SocialSem2TitleOnlyLesson(lessonId);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
