@@ -12,6 +12,7 @@
     "./bank": "./src/bank.ts",
     "./external": "./src/external.ts",
     "./practice": "./src/practice.ts",
+    "./premade": "./src/premade.ts",
     "./vocabulary": "./src/vocabulary.ts",
     "./passages": "./src/passages.ts",
     "./catalogs/*": "./src/catalogs/*.ts",
