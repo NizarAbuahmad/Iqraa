@@ -64,10 +64,13 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
 
 - Feature branches + PRs. `main` is merge-only, and **only `main` is deployed** —
   if a change "isn't showing", check it is merged before debugging anything visual.
-  Merged is necessary but **no longer sufficient**: since the 2026-09-05 Cloud
-  Run cutover a merge auto-deploys the web app only, and the API and verifier
-  are deployed by hand ([`docs/deploying.md`](./docs/deploying.md)). A merged
-  server change that "isn't showing" has probably just not been deployed.
+  Since 2026-09-15 a merge deploys **all three** services —
+  `.github/workflows/deploy.yml` ships the API and verifier to Cloud Run first,
+  then the web bundle, and skips the web deploy if either failed
+  ([`docs/deploying.md`](./docs/deploying.md)). Between the 2026-09-05 Cloud Run
+  cutover and then, only the web app auto-deployed, which is how a bundle once
+  went live against an API without the matching route. The schema is still the
+  one edit that does not deploy itself — see *Schema* in that file.
 - Arabic is the product language; the UI is RTL-first. Compute maths in latin
   `x` and convert to `س` / Arabic digits **only at display time**.
 - `DEMO_MODE = true` in `artifacts/mobile/services/ai/demoMode.ts` mocks all
