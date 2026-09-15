@@ -27,6 +27,7 @@ import {
   isLikelyImageUrl,
   applyMediaEdit,
   insertLessonResources,
+  refreshDeckMedia,
   shouldSearchForVideo,
   nextVideoSuggestion,
   videoCaption,
@@ -568,5 +569,103 @@ describe('the shape the prompt teaches the model to write', () => {
     const arabicVars = 'يمثل الرسم البياني المستقيمين y = 2س + 1 و y = -س + 4';
     assert.equal(referencesShownVisual(arabicVars), true);
     assert.deepEqual(scanGraphCommands(arabicVars).commands, []);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The media library: an item carries its id onto the slide, and a saved deck
+// re-resolves the signed URLs that id stands for.
+
+describe('insertLessonResources — library provenance', () => {
+  const deck: ActivitySlide[] = [
+    { slideNumber: 1, type: 'intro', title: 'الدرس', content: '', durationSeconds: 0 },
+    { slideNumber: 2, type: 'challenge', title: 'مثال 1', content: 'س', durationSeconds: 60 },
+  ];
+
+  it('carries a library id onto the slide it built', () => {
+    const out = insertLessonResources(
+      deck,
+      [{ kind: 'image', url: 'https://r2.example/signed.png?sig=1', caption: 'مخطط', id: 'item-1' }],
+      true,
+    );
+    const media = out.find(s => s.type === 'media');
+    assert.equal(media?.mediaItemId, 'item-1');
+  });
+
+  it('leaves mediaItemId off a resource with no library row behind it', () => {
+    const out = insertLessonResources(
+      deck,
+      [{ kind: 'image', url: 'https://example.com/book-figure.png', caption: 'شكل من الكتاب' }],
+      true,
+    );
+    const media = out.find(s => s.type === 'media');
+    assert.equal(media?.mediaItemId, undefined);
+    assert.equal(media?.mediaUrl, 'https://example.com/book-figure.png');
+  });
+});
+
+describe('refreshDeckMedia', () => {
+  const stale: ActivitySlide[] = [
+    { slideNumber: 1, type: 'intro', title: 'الدرس', content: '', durationSeconds: 0 },
+    {
+      slideNumber: 2,
+      type: 'media',
+      title: 'صورة',
+      content: 'مخطط',
+      mediaKind: 'image',
+      mediaUrl: 'https://r2.example/x.png?sig=EXPIRED',
+      mediaItemId: 'item-1',
+      durationSeconds: 0,
+    },
+  ];
+
+  it('re-points a slide at the freshly signed url', () => {
+    const out = refreshDeckMedia({ slides: stale }, [
+      { id: 'item-1', url: 'https://r2.example/x.png?sig=FRESH' },
+    ]);
+    assert.equal(out.slides[1]!.mediaUrl, 'https://r2.example/x.png?sig=FRESH');
+  });
+
+  it('leaves a slide alone when its item is not in the listing', () => {
+    const out = refreshDeckMedia({ slides: stale }, [
+      { id: 'other-item', url: 'https://r2.example/y.png?sig=FRESH' },
+    ]);
+    assert.equal(out.slides[1]!.mediaUrl, 'https://r2.example/x.png?sig=EXPIRED');
+  });
+
+  // An item R2 could not sign should keep whatever url the slide already had.
+  // Blanking it would turn a temporary outage into a permanently broken deck.
+  it('keeps the existing url when the fresh one is null', () => {
+    const out = refreshDeckMedia({ slides: stale }, [{ id: 'item-1', url: null }]);
+    assert.equal(out.slides[1]!.mediaUrl, 'https://r2.example/x.png?sig=EXPIRED');
+  });
+
+  it('never touches a slide with no mediaItemId — links and book figures do not expire', () => {
+    const youtube: ActivitySlide[] = [
+      {
+        slideNumber: 1,
+        type: 'media',
+        title: 'فيديو',
+        content: '',
+        mediaKind: 'video',
+        mediaUrl: 'https://youtu.be/dQw4w9WgXcQ',
+        durationSeconds: 0,
+      },
+    ];
+    const out = refreshDeckMedia({ slides: youtube }, [
+      { id: 'item-1', url: 'https://r2.example/x.png?sig=FRESH' },
+    ]);
+    assert.equal(out.slides[0]!.mediaUrl, 'https://youtu.be/dQw4w9WgXcQ');
+  });
+
+  it('returns the very same object when nothing moved', () => {
+    const deck = { slides: stale };
+    assert.equal(refreshDeckMedia(deck, []), deck);
+    assert.equal(refreshDeckMedia(deck, [{ id: 'nope', url: 'https://x' }]), deck);
+    // Already fresh — same url in, same object out.
+    assert.equal(
+      refreshDeckMedia(deck, [{ id: 'item-1', url: 'https://r2.example/x.png?sig=EXPIRED' }]),
+      deck,
+    );
   });
 });

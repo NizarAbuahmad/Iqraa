@@ -21,6 +21,9 @@ import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurricu
 import { aiErrorMessageKey } from '@/services/ai/aiProvenance';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ACTIVITY_CARDS, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
+import { insertLessonResources, type AttachedResource } from '@/services/classMedia';
+import { MediaLibraryPicker } from '@/components/ui/MediaLibraryPicker';
+import type { SavedMaterial } from '@/services/workspace';
 
 const ACCENT = '#4F46E5';
 
@@ -59,6 +62,7 @@ export default function ClassroomBuilderScreen() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ClassroomActivity | null>(null);
   const [error, setError] = useState('');
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   const prevGradeRef = useRef(gradeIdx);
   const prevSubjectRef = useRef(subjectIdx);
@@ -113,6 +117,24 @@ export default function ClassroomBuilderScreen() {
   const handleStartPresentation = () => {
     if (!result) return;
     setPendingClassroomActivity(result);
+    router.push('/ai-tools/classroom/presentation' as any);
+  };
+
+  /** Media goes straight into the built activity — there is nothing to wait for. */
+  const addFromLibrary = (picked: AttachedResource[]) => {
+    if (!result || picked.length === 0) return;
+    setResult({ ...result, slides: insertLessonResources(result.slides, picked, lang === 'ar') });
+  };
+
+  /**
+   * Open a saved game rather than splice it in — see the picker's
+   * `onPickGame` for why its slides cannot be merged into another deck.
+   */
+  const openSavedGame = (m: SavedMaterial) => {
+    let parsed: ClassroomActivity | null = null;
+    try { parsed = JSON.parse(m.content); } catch { return; }
+    if (!parsed?.slides?.length) return;
+    setPendingClassroomActivity(parsed);
     router.push('/ai-tools/classroom/presentation' as any);
   };
 
@@ -331,6 +353,22 @@ export default function ClassroomBuilderScreen() {
             </View>
           ) : null}
 
+          {/* Add media to the built activity before projecting it — same
+              picker and the same insert point Slides Maker uses, so a deck
+              built here and a deck built there carry media identically. */}
+          <Pressable
+            onPress={() => setLibraryOpen(true)}
+            style={[styles.regenBtn, {
+              borderColor: ACCENT, borderRadius: colors.radius,
+              flexDirection: isRTL ? 'row-reverse' : 'row', marginBottom: 10,
+            }]}
+          >
+            <Ionicons name="images-outline" size={16} color={ACCENT} />
+            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>
+              {lang === 'ar' ? 'أضف من المكتبة' : 'Add from library'}
+            </Text>
+          </Pressable>
+
           {/* CTA */}
           <Pressable
             onPress={handleStartPresentation}
@@ -350,6 +388,15 @@ export default function ClassroomBuilderScreen() {
         </View>
       )}
     </ScrollView>
+
+    <MediaLibraryPicker
+      visible={libraryOpen}
+      onClose={() => setLibraryOpen(false)}
+      lessonId={generatorLessonId(topic.trim(), lang as 'ar' | 'en')}
+      defaultQuery={topic.trim()}
+      onPick={addFromLibrary}
+      onPickGame={openSavedGame}
+    />
     </View>
   );
 }

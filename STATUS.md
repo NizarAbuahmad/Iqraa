@@ -624,6 +624,148 @@ presenter renders «إرشادات هذا النشاط في ملاحظات ال�
   still comes from the prop, which follows the *slide's own payload* rather
   than the app's UI language — an English question in an Arabic deck must not
   be laid out right-to-left.
+## Media a teacher can reuse, and send, 2026-09-15
+
+**Everything a teacher uploaded was trapped in the lesson they uploaded it
+to.** `lesson_media` required a `lessonId`, and the only listing endpoint
+filtered by it, so a diagram attached to «الاشتقاق» was unreachable while
+planning any other lesson. There was also no way to send any of it to a
+student: attaching a material to a class sets `class_group_id`, which is
+filing, not delivery — nobody sees it.
+
+The table now backs a library. A row is either an **upload** (`r2Key` +
+`mimeType` + `sizeBytes`) or a **link** (`sourceUrl`), exactly one set —
+the same all-or-nothing column-group convention `chat_messages`'s
+attachment columns already use. `lessonId` became nullable, so an item can
+be library-only; `kind` gained `video`, which only ever arrives as a link
+because there is still no multipart upload path anywhere in this server and
+a video file fits neither the 8MB data-URL cap nor the storage budget.
+
+- `GET /media/library?q=&kind=` lists across lessons, newest first, capped
+  at 200 with no cursor (`ponytail:` — folders before pagination).
+  `GET /media/lesson?lessonId=` is **unchanged**, so `LessonAttachments.tsx`
+  kept working untouched.
+- `POST /media/lesson` takes either `dataUrl` or `sourceUrl` + `kind`. The
+  kind is **not** re-derived server-side: the app already classifies the URL
+  with `classifyMediaUrl()`, and a second copy of that rule is the
+  two-places-that-must-move failure CLAUDE.md records for activity formats
+  and difficulty tiers. A wrong kind costs one row in one teacher's library.
+- `components/ui/MediaLibraryPicker.tsx` — four sources, deliberately not
+  merged into one list: مكتبتي (the library), الكتاب
+  (`bookFigureRefsForLesson`, bundled, no network), بحث (Unsplash +
+  YouTube), ألعاب (saved decks). Media leaves as `AttachedResource`, the
+  shape `insertLessonResources` already consumed, so nothing downstream
+  learned a new type. Wired into `slides.tsx` and `classroom/builder.tsx`.
+- **A game opens; it is not spliced in.** `ClassroomActivity.game` is what
+  switches the presenter into scoring mode (`presentation.tsx:797`), and it
+  is a property of the whole deck, not of its slides — so merging a game's
+  slides into a lesson deck would project its scoreboard and podium with
+  nothing keeping score behind them. The tab therefore launches the saved
+  activity (`setPendingClassroomActivity` + push, so the deck being built is
+  still there on the way back) and says so in a line above the list. Embedding
+  a game properly means a per-slide scoring scope, which this does not have.
+
+**Sharing reuses messaging rather than inventing a delivery surface.**
+`POST /messaging/threads/:id/messages` gained `libraryItemId`: an upload is
+attached by **reusing its existing R2 key** — no copy, so one photo to a
+class of thirty moves zero bytes — and a link is appended to the body as
+text, because there is no object to attach. `ShareToStudentsSheet.tsx`
+sends to a class once (its own thread) or to picked people individually,
+and reports partial failure by name rather than "something went wrong".
+Gated on `useStudentAccountsEnabled()`, which fails closed.
+
+That key reuse is only safe because of a guard added with it: **DELETE on a
+library item no longer erases the R2 object when a chat message still
+references it.** Without it, tidying your library would blank a photo out
+of a student's thread days later, with nothing to explain it. Orphaning an
+object is the cheaper mistake.
+
+**A pre-existing bug the library made obvious, fixed at the root.** An
+upload's URL is signed and expires in an hour, but a deck is stored as JSON
+in `saved_materials.content` and reopened weeks later — so the pictures in
+a saved deck silently stopped loading (an expired signature is a 403 that
+`<Image>` renders as nothing). Slides now carry `mediaItemId` and
+`refreshDeckMedia` (`services/classMedia.ts`, pure, tested) re-points them
+on load. The three deck renderers are **untouched** — they still read
+`mediaUrl` and know nothing about libraries, which is the point of
+`deckVisuals.ts`'s one-spec-three-renderers rule.
+
+Unsplash search returns a page for the picker instead of a single photo
+(`count`, max 10). It pings the download endpoint only for the photo
+actually chosen (`POST /media/unsplash-used`), not for every one listed —
+the API terms ask for uses, not impressions, and the same obligation is
+what puts the photographer's name in `mediaCaption`.
+
+Tests: `services/__tests__/classMedia.test.ts` (provenance + all five
+`refreshDeckMedia` cases), `lib/__tests__/mediaLibrary.test.ts` (the
+upload/link share split, extracted to `lib/mediaLibrary.ts` so it is
+testable without a database — there is no DB-backed route-test harness in
+this repo). Mobile 1385 pass / 0 fail, api-server 619 pass / 0 fail.
+
+**Exercised end to end on 2026-09-15** against a running API, the local
+Postgres and real R2 — 42 assertions, all passing. Worth repeating rather
+than re-deriving, because four of them are the ones that would fail
+silently in production:
+
+- an upload's signed URL is fetched and actually returns the bytes (not
+  just "a url came back");
+- a message sent by `libraryItemId` carries **the same `r2_key` the library
+  row holds** — proof nothing was copied, checked against the row in SQL
+  rather than inferred;
+- deleting that library item afterwards returns 204, removes the row, and
+  the recipient's message **still fetches 200** — the delete guard doing
+  the one job it exists for;
+- a second teacher sending someone else's `libraryItemId` gets 404
+  `library_item_not_found`. Note that assertion needs its own roster link
+  or the thread is refused 403 first, and the ownership check is never
+  reached — a fixture that skips it silently proves nothing.
+
+Two notes for whoever repeats this. Sharing needs `STUDENT_ACCOUNTS=true`,
+which local dev does **not** set while production does, so messaging is
+inert locally and looks broken rather than gated. And the root `.env` ends
+with **no trailing newline**, so `>>` appends onto the last variable and
+corrupts it — the same env-append bug that once leaked a key; prepend `\n`.
+
+**Schema: dev pushed 2026-09-15, production still pending.**
+`lesson_media` gained `source_url` and dropped NOT NULL on `lesson_id`,
+`r2_key`, `mime_type`, `size_bytes`. Confirmed on `localhost:5432/iqraa`
+by reading `information_schema.columns` directly, not by trusting
+drizzle-kit's «Changes applied» line; `verify-schema` then reported 36/36
+tables, so nothing else drifted. **Production has not had this push** —
+until it does, the library endpoints answer 503 there and uploads fail.
+
+> **Resolve the host before a push; do not eyeball the file.** The root
+> `.env` has one live `DATABASE_URL` (localhost) and a commented-out Neon
+> one below it, which is why `run push` reaches dev and never production.
+> That is easy to misread: `grep -o 'DATABASE_URL=...'` strips the leading
+> `#` and prints the commented line as though it were live, which is
+> exactly how this entry first claimed there were two active URLs. Ask the
+> loader instead of the file — `lib/db/scripts/push.mjs` deletes
+> `DATABASE_URL` and re-reads the root `.env` through
+> `scripts/load-env.mjs` (which assigns a key only when `undefined`, so
+> first-wins), so the honest check is to run that same load and print
+> `new URL(process.env.DATABASE_URL).hostname`.
+
+**What merging this actually does, as of the 2026-09-15 deploy change:** the
+API no longer lags the client — `deploy.yml`'s `web` job is `needs: [changes,
+api, verifier]`, so a merge ships the API and verifier to Cloud Run first and
+skips the web deploy if either fails. The half of this entry that warned about
+a bundle going live against an API without the route is therefore obsolete.
+
+The schema is the one thing that still does not deploy itself, and it is now
+the *only* gap: **merge this without applying the DDL to production and the
+API goes live with routes whose column does not exist.** The library endpoints
+answer 503, and because the picker degrades to an empty library rather than an
+error, production looks fine rather than broken. Apply it first, in the Neon
+console (production database is `neondb`, not `iqraa`):
+
+```sql
+ALTER TABLE lesson_media ADD COLUMN IF NOT EXISTS source_url text;
+ALTER TABLE lesson_media ALTER COLUMN lesson_id  DROP NOT NULL;
+ALTER TABLE lesson_media ALTER COLUMN r2_key     DROP NOT NULL;
+ALTER TABLE lesson_media ALTER COLUMN mime_type  DROP NOT NULL;
+ALTER TABLE lesson_media ALTER COLUMN size_bytes DROP NOT NULL;
+```
 
 ## A class's evidence starts accumulating, 2026-09-13 (#415)
 
