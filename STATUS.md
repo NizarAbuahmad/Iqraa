@@ -543,16 +543,17 @@ drizzle-kit's «Changes applied» line; `verify-schema` then reported 36/36
 tables, so nothing else drifted. **Production has not had this push** —
 until it does, the library endpoints answer 503 there and uploads fail.
 
-> **The root `.env` carries two `DATABASE_URL` lines, and only the first
-> one is live.** `scripts/load-env.mjs` assigns a key only when it is
-> `undefined`, so first-wins; `lib/db/scripts/push.mjs` also deletes
-> `DATABASE_URL` first so a shell value cannot override the file. The first
-> line is localhost, which is why `run push` reaches dev and silently never
-> reaches production. The second line is a Neon URL and is **dead** — but
-> only by ordering. Reorder or delete a line and the same command
-> retargets a live database with no prompt and no diff to review. Resolve
-> the host before any push (`new URL(process.env.DATABASE_URL).hostname`)
-> rather than reading the file and assuming.
+> **Resolve the host before a push; do not eyeball the file.** The root
+> `.env` has one live `DATABASE_URL` (localhost) and a commented-out Neon
+> one below it, which is why `run push` reaches dev and never production.
+> That is easy to misread: `grep -o 'DATABASE_URL=...'` strips the leading
+> `#` and prints the commented line as though it were live, which is
+> exactly how this entry first claimed there were two active URLs. Ask the
+> loader instead of the file — `lib/db/scripts/push.mjs` deletes
+> `DATABASE_URL` and re-reads the root `.env` through
+> `scripts/load-env.mjs` (which assigns a key only when `undefined`, so
+> first-wins), so the honest check is to run that same load and print
+> `new URL(process.env.DATABASE_URL).hostname`.
 
 **Still not deployed:** the API deploys by hand (`docs/deploying.md`); a
 merge ships the web app only, so the client will briefly call endpoints
