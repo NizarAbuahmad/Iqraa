@@ -5113,6 +5113,237 @@
         "localPath": "knowledge-base/grade-6-art/support-pdfs/دليل المعلم لمادة التربية الفنية الصف السادس.pdf",
         "sha256": "59c69f277940f0f4dc89e1ae1a0ff75a296299a4016454563bf607cea78bce4d"
       }
+    },
+    {
+      "id": "g4-math-s1-student-book",
+      "title": "كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الأول.pdf",
+      "bytes": 12436432,
+      "subject": "math",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رياضيات",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 12.1% مقيسةً بشواهدِ الكلماتِ، و6 صفحةً من 105 مقلوبةٌ في مُعظَمِها (38، 39، 40، 41، 56، 86).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 105,
+        "chars": 138591,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الأول.pdf",
+        "sha256": "93fe8d2335a99675cd9b4f562cf9045e9cbee15bdaad65fa8a52f869b66c1808"
+      }
+    },
+    {
+      "id": "g4-math-s2-student-book",
+      "title": "كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+      "bytes": 24173373,
+      "subject": "math",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رياضيات",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.1% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 129 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 129,
+        "chars": 158876,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+        "sha256": "91f97f5cf0705faa4cab94e3866e6b8dd4d168aa45aad8befb8980470f0773b6"
+      }
+    },
+    {
+      "id": "g4-math-s1-exercise-book",
+      "title": "كتاب التمارين لمادة الرياضيات الصف الرابع الفصل الأول.pdf",
+      "bytes": 3540741,
+      "subject": "math",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الرياضيات الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رياضيات",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 10.7% مقيسةً بشواهدِ الكلماتِ، و1 صفحةً من 60 مقلوبةٌ في مُعظَمِها (37).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 60,
+        "chars": 50475,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف الرابع الفصل الأول.pdf",
+        "sha256": "f487ffbda3382c75a9ef95487f47d71dc05388cc35c6ab74c218d0ee6ec55619"
+      }
+    },
+    {
+      "id": "g4-math-s2-exercise-book",
+      "title": "كتاب التمارين لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+      "bytes": 2657393,
+      "subject": "math",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رياضيات",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.5% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 58 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 58,
+        "chars": 49600,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+        "sha256": "c03d94681440e4a6261dc739f419c9e11f209117f78279d54f3a81f39d4edd21"
+      }
+    },
+    {
+      "id": "g4-math-s1-teacher-guide",
+      "title": "دليل المعلم لمادة الرياضيات الصف الرابع الفصل الأول 2023.pdf",
+      "bytes": 39075881,
+      "subject": "math",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الرياضيات الصف الرابع الفصل الأول 2023.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رياضيات",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.1% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 208 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 208,
+        "chars": 502688,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف الرابع الفصل الأول 2023.pdf",
+        "sha256": "5defd62e1f9441b8047fdd16e2bffd3b48f8e5177dfaec05b23dcd3cb4b02f5a"
+      }
+    },
+    {
+      "id": "g4-math-s2-teacher-guide",
+      "title": "دليل المعلم لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+      "bytes": 48768398,
+      "subject": "math",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رياضيات",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.3% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 223 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 223,
+        "chars": 529507,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+        "sha256": "928f53b766f0191f6fec3a044ec53df905bdaefb4d51b4153a99e2222e1a8320"
+      }
+    },
+    {
+      "id": "g4-math-s2-support-guide",
+      "title": "دليل المعلم إلى المواد المساندة للتعلم الرياضيات رابع الفصل الثاني.pdf",
+      "bytes": 1620449,
+      "subject": "math",
+      "semester": 2,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم إلى المواد المساندة للتعلم الرياضيات رابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رياضيات",
+        "رابع",
+        "مواد مساندة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.0% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 32 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 32,
+        "chars": 31438,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/دليل المعلم إلى المواد المساندة للتعلم الرياضيات رابع الفصل الثاني.pdf",
+        "sha256": "6f048da2ede9a348a728441e8241f5cf387699906d2ca8a61d8478f08e6b3d00"
+      }
     }
   ],
   "mergedAt": "2026-08-25"

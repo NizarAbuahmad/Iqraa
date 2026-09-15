@@ -245,4 +245,12 @@ export const LOCAL_FILES: Record<string, string> = {
   'g6-voc-s2-student-book': 'knowledge-base/grade-6-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الثاني.pdf',
   'g6-pe-s1-student-book': 'knowledge-base/grade-6-pe/support-pdfs/كتاب الطالب لمادة التربية الرياضية الصف السادس الفصل الأول.pdf',
   'g6-arts-s1-teacher-guide': 'knowledge-base/grade-6-art/support-pdfs/دليل المعلم لمادة التربية الفنية الصف السادس.pdf',
+  // grade-4-math
+  'g4-math-s1-student-book': 'knowledge-base/grade-4-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الأول.pdf',
+  'g4-math-s2-student-book': 'knowledge-base/grade-4-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الثاني.pdf',
+  'g4-math-s1-exercise-book': 'knowledge-base/grade-4-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف الرابع الفصل الأول.pdf',
+  'g4-math-s2-exercise-book': 'knowledge-base/grade-4-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف الرابع الفصل الثاني.pdf',
+  'g4-math-s1-teacher-guide': 'knowledge-base/grade-4-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف الرابع الفصل الأول 2023.pdf',
+  'g4-math-s2-teacher-guide': 'knowledge-base/grade-4-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف الرابع الفصل الثاني.pdf',
+  'g4-math-s2-support-guide': 'knowledge-base/grade-4-math/support-pdfs/دليل المعلم إلى المواد المساندة للتعلم الرياضيات رابع الفصل الثاني.pdf',
 };
