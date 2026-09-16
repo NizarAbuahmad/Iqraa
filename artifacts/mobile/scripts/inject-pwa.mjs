@@ -29,6 +29,8 @@ if (!existsSync(indexPath)) {
 
 let html = readFileSync(indexPath, 'utf8');
 
+// One marker for the whole block — every tag above goes in together or not
+// at all, so the manifest link standing in for all of them is safe.
 if (html.includes('manifest.webmanifest')) {
   console.log('[pwa] already injected, nothing to do.');
   process.exit(0);
@@ -75,8 +77,43 @@ html = html.replace(/\s*<meta name="theme-color" content="[^"]*">/g, '');
 // correctly.
 const buildCommit = process.env.BUILD_COMMIT ?? process.env.RENDER_GIT_COMMIT ?? 'dev';
 
+// The share card. app.iqrra.com is the link in every button on the marketing
+// site, so it is the address teachers actually paste into a WhatsApp group —
+// and without these it arrives as a bare URL with the domain for a title.
+//
+// Absolute URLs, not paths: a crawler resolves og:image against the document,
+// and the one crawler that matters here fetches the image from a different
+// host than the one that rendered the page.
+//
+// og.jpg is the marketing site's card, copied into public/ rather than linked
+// across to www.iqrra.com — one origin, so a change of hosting there cannot
+// silently blank the app's preview.
+//
+// The canonical is deliberately the bare origin on every route: _redirects
+// serves this same index.html for /workspace, /settings and the rest, so
+// without it Google sees one page under a hundred URLs, twice over
+// (app.iqrra.com and iqraa-web-buq.pages.dev).
+const ORIGIN = 'https://app.iqrra.com';
+const TITLE = 'اقرأ — حضّر حصّتك بالعربي، وفق المنهاج الأردني';
+const DESC =
+  'مساعد عربي يبني خطة الدرس وورقة العمل والاختبار القصير، مربوطة بأهداف منهاج الوزارة وجاهزة للطباعة خلال دقائق.';
+
 const TAGS = `
     <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="description" content="${DESC}" />
+    <link rel="canonical" href="${ORIGIN}/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="${ORIGIN}/" />
+    <meta property="og:site_name" content="اقرأ" />
+    <meta property="og:locale" content="ar_JO" />
+    <meta property="og:title" content="${TITLE}" />
+    <meta property="og:description" content="${DESC}" />
+    <meta property="og:image" content="${ORIGIN}/og.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="${TITLE}." />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="build-commit" content="${buildCommit}" />
     <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0D2247" media="(prefers-color-scheme: dark)" />
@@ -99,4 +136,4 @@ if (!html.includes('</head>')) {
 html = html.replace('</head>', `${TAGS}  </head>`);
 
 writeFileSync(indexPath, html, 'utf8');
-console.log('[pwa] manifest + install meta injected into dist/index.html');
+console.log('[pwa] manifest + install meta + share card injected into dist/index.html');
