@@ -20,7 +20,7 @@ import {
   takeConcreteMathBatch,
   type DiffTier,
 } from './mathPractice.ts';
-import { isChemContext, takeConcreteChem } from './chemPractice.ts';
+import { isChemContext, takeConcreteChem, takeConcreteChemBatch } from './chemPractice.ts';
 import { buildActivityBlueprint } from './activityBlueprints.ts';
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
@@ -1075,7 +1075,12 @@ export class MockAIService extends AIService {
     const math = isMathContext(topic, kb, req.subject);
     // A warm-up poses one item; the main activity needs three (worked
     // example, faded item, unaided item / jigsaw parts / game rounds).
-    const practice = math ? takeConcreteMathBatch(isWarmup ? 1 : 3, topic, kb, lang, 'medium') : [];
+    const wantItems = isWarmup ? 1 : 3;
+    const practice = math
+      ? takeConcreteMathBatch(wantItems, topic, kb, lang, 'medium')
+      : isChemContext(topic, kb, req.subject)
+        ? takeConcreteChemBatch(wantItems, topic, kb, lang, 'medium')
+        : [];
 
     const blueprint = buildActivityBlueprint(actType, {
       topic, lang, math, practice, kb, duration,
@@ -1112,12 +1117,15 @@ export class MockAIService extends AIService {
     const slideDuration = Math.round((dur * 60) / 5);
     const actType = req.activityType ?? 'escape-challenge';
     const math = isMathContext(topic, kb, req.subject);
-    const bingoItems = math && actType === 'bingo'
-      ? takeConcreteMathBatch(8, topic, kb, isAr ? 'ar' : 'en', 'medium')
-      : [];
-    const relayItems = math && actType === 'relay'
-      ? takeConcreteMathBatch(4, topic, kb, isAr ? 'ar' : 'en', 'medium')
-      : [];
+    const chem = !math && isChemContext(topic, kb, req.subject);
+    const batch = (n: number) =>
+      math
+        ? takeConcreteMathBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
+        : chem
+          ? takeConcreteChemBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
+          : [];
+    const bingoItems = actType === 'bingo' ? batch(8) : [];
+    const relayItems = actType === 'relay' ? batch(4) : [];
 
     // ── Quick Check (whole-class ABCD response) ────────────────────────────────
     // Every student answers every question (hands raised / mini-whiteboards) —
@@ -1133,9 +1141,11 @@ export class MockAIService extends AIService {
       // bad caller cannot drain the concrete bank in one call.
       const wanted = Math.max(1, Math.min(8, Math.floor(req.numQuestions ?? 4) || 4));
       const mcqs: { text: string; options: string[]; answer: string }[] = [];
-      if (math) {
+      if (math || chem) {
         for (let i = 0; i < wanted; i++) {
-          const q = takeConcreteMath('multiple_choice', topic, kb, tier, isAr ? 'ar' : 'en', 0);
+          const q = math
+            ? takeConcreteMath('multiple_choice', topic, kb, tier, isAr ? 'ar' : 'en', 0)
+            : takeConcreteChem('multiple_choice', topic, kb, tier, isAr ? 'ar' : 'en', 0);
           if (q?.options?.length) mcqs.push({ text: q.text, options: q.options, answer: q.answer });
         }
       }
@@ -1144,11 +1154,19 @@ export class MockAIService extends AIService {
         // Ask the SymPy verifier to actually prove what it can (derivative
         // slice today). Runs in parallel with a per-item timeout; anything
         // it cannot prove stays labelled as a reviewed bank item.
-        const outcomes = await Promise.all(
-          mcqs.map(q =>
-            verifyIfPossible(q.text, q.answer, q.options.filter(o => o !== q.answer)),
-          ),
-        );
+        // Only maths goes to the symbolic verifier. A chemistry stem can
+        // carry an `=` — «q = m·c·ΔT», «Z = 11» — which is enough for
+        // `classifyVerifiableTopic` to hand it to SymPy as an equation, and a
+        // verdict there renders «تم التحقق من الإجابة رياضيًا»: a claim this
+        // product makes carefully and would be making falsely. A bank item is
+        // labelled as a bank item, which is what it is.
+        const outcomes = math
+          ? await Promise.all(
+              mcqs.map(q =>
+                verifyIfPossible(q.text, q.answer, q.options.filter(o => o !== q.answer)),
+              ),
+            )
+          : mcqs.map(() => BANK_OUTCOME);
 
         const qSlides = mcqs.map((q, i) => {
           const correctIndex = Math.max(0, q.options.indexOf(q.answer));
@@ -2217,7 +2235,9 @@ export class MockAIService extends AIService {
 
     const challengePractice = math
       ? takeConcreteMath('short_answer', topic, kb, 'hard', lang, 12)
-      : null;
+      : isChemContext(topic, kb, req.subject)
+        ? takeConcreteChem('short_answer', topic, kb, 'hard', lang, 12)
+        : null;
     const challenge: WQ = challengePractice
       ? {
           text: lang === 'ar'
