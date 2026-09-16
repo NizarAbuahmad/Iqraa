@@ -1592,6 +1592,94 @@ anything that was quoting Grade 9/10 English passages will now return nothing
 rather than returning them unlawfully. That is the correct trade and it is worth
 saying out loud rather than discovering it as a regression.
 
+**And the test that was written to catch it missed 49 more, 2026-09-16.** All of
+maths and science — grades 4, 6, 9 and 10 — print «© HarperCollins Publishers
+Limited» on page 2, under the same all-rights-reserved notice, prepared
+originally in English *for* the NCCD and then translated, adapted and published
+by it. Every one was `nccd`, and so quotable, and so being reproduced verbatim
+into generated worksheets.
+
+The reason `quotableAuthority.test.ts` stayed green is one character. Its generic
+mark was transcribed off the Pearson page as «All rights reserved**;** no part of
+this publication may be reproduced». Collins prints a **period**. A check
+copied from one example matches one example.
+
+These are not the Pearson case repeated, which is why the fix is not the same.
+The NCCD really is the publisher of the Arabic edition and the Ministry mandates
+these books in every school; filing them as `third-party` would put them beside a
+worksheet from شبكة منهاجي and lose that. So `authority` stays `nccd` and the
+rows carry `license: 'nccd-collins'`, a new `LicenseId` in `bank.ts` mapping to
+`reference-only`. `usePolicy` already preferred an explicit licence over
+`authority`, so no policy code changed — the rows record the fact, one line in
+`POLICY_BY_LICENSE` records the permission, and reversing it if the NCCD grants
+written permission is that one line rather than 49 rows.
+
+`reference-only` is a holding position, not a legal opinion. The reading that the
+NCCD is itself "the publisher" whose permission the notice demands is a real one,
+and nobody with the authority to ask the NCCD has asked. It is the conservative
+direction and the reversible one.
+
+What this costs, measured rather than feared — grounded units across the whole
+catalog go **100 → 65** of 446. Lost entirely: all of Grade 9 maths, chemistry,
+physics, biology and earth science (26 units), Grade 10 chemistry (5), Grade 6
+maths (4). Survived: Grade 10 maths, physics, biology and earth science, whose
+teacher guides and ministry support material the NCCD wrote itself and which
+carry no Collins notice — they simply become the ranked source. Grade 10
+chemistry has no such fallback; its only extracted book is the student book.
+
+Two things the fix also had to repair. The test read only `data/extracted/`, so
+the two Grade 9 maths files in `data/extracted-g9/` were invisible to it whatever
+the pattern. And it asserted on the *label* (`authority !== 'nccd'`) rather than
+the *permission*, which would now fail on exactly the rows that have been dealt
+with; it reads `usePolicy(s) !== 'quotable'` instead. Marks are regexes now,
+`HarperCollins` among them.
+
+**Only 39 of the 49 are on this branch**, and 49 is already stale. The ten Grade
+4 rows exist solely on `worktree-grade-5-books`, where Grade 5 is being
+registered behind them — 8 more confirmed by scan, with Grade 5 science still
+extracting. That branch merges second and adds the licence in a commit of its
+own; the fixed test is the backstop either way, since a row arriving as `nccd`
+with no licence fails CI on whichever branch carries it.
+
+**Scan each file, never the series.** Confirmed twice now, independently. The
+Grade 10 biology, physics and earth-science teacher guides and both Grade 6
+science teacher guides carry no Collins notice anywhere — the NCCD wrote them
+itself — while the student and activity books beside them do. Grade 4 repeats it
+exactly: `g4-science-s1-teacher-guide` and `g4-science-s2-teacher-guide` are
+clean, their student and activity books are not. Going by series would have
+mislabelled both, in the direction that matters.
+
+The Grade 4 maths guide-extract booklets (`g4-math-u{1,2,3,6,7}-guide-extract`,
+`g4-math-s2-support-guide`) are likewise clean while their parent teacher guides
+carry the notice — independent evidence that they are separate publications
+rather than excerpts, which matches the page-overlap measurement that led to
+registering them as distinct.
+
+**Images are not covered and are the larger exposure.** `usePolicy` gates text
+retrieval only. `extract_book_photos.py`, `extract_book_figures.py`,
+`gen_book_figure_assets.mjs` and the `bookFigure*` services consult no authority
+or licence field at all — there is no licence check anywhere in the figure
+pipeline.
+
+**1507 of 2145 committed figures come from Collins books**, read off page 2 of
+each PDF rather than inferred: 28 of the 36 books with a committed figure
+directory carry the notice. Grades 7 and 8 have no manifest rows and were checked
+directly — `g7-science-s1/s2`, `g8-science-s1/s2` and `g8-math-s1/s2` all print
+«© HarperCollins Publishers Limited 2022», 359 figures between them. So maths and
+science carry it at every grade from 6 to 10.
+
+A useful negative: `g7-social-s1` has no Collins notice in its first eight pages.
+It is subject-specific, not a blanket NCCD thing — social studies, vocational,
+financial literacy and PE look clean on the same test. Worth checking the rest
+the same way rather than assuming in either direction.
+
+A whole figure reproduced on a teacher-facing slide is a stronger claim than a
+sentence of quoted text, not a weaker one, so a ruling that makes the text
+reference-only is hard to reconcile with leaving the figures. **Open, and owed a
+decision alongside the text one.** No new extraction from any maths or science
+book until then; nothing has been reverted, because reverting 1507 committed
+images is not a call to make on a reading of a copyright page.
+
 **Grade 6 is complete, 2026-09-15.** Digital skills catalogued and the last five
 maths books registered. **Every Grade 6 book supplied is now in the repo** — 26
 sources across nine subjects: الرياضيات, اللغة العربية, اللغة الإنجليزية,
