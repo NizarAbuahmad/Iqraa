@@ -8,10 +8,23 @@
 > `lib/googleLink.ts` with its own tests, precisely so it can be exercised
 > without a database.
 >
-> Everything below HIGH-2 is **as written and not re-checked** — the MEDIUM and
-> LOW findings, the operational list, and the dependency table have not been
-> revisited since. Read this as a record of the review, not as a current
-> statement of what is outstanding. Re-verify before acting on any single item.
+> **The MEDIUM findings were re-checked against `main` on 2026-09-16.** Six of
+> eight are closed. The findings below are left as written — this is a record of
+> the review, not a live worklist — and the current state is:
+>
+> | | status |
+> |---|---|
+> | M-1 refresh token in `localStorage` on production web | **OPEN.** The stale comment is corrected; the 30-day lifetime, reuse detection and `script-src` CSP are not done. |
+> | M-2 wildcard CORS | Fixed — `app.ts` now takes an origin allowlist. |
+> | M-3 no security headers on the API | Fixed — `helmet` plus `Cache-Control: no-store`. |
+> | M-4 web `_headers` incomplete | Fixed — HSTS, nosniff, Referrer-Policy and Permissions-Policy all present. |
+> | M-5 per-user AI budget inert | **OPEN** in the repo. `AI_USER_BUDGET_USD` appears in no workflow or `render.yaml`; it may be set directly on the Cloud Run service, which cannot be checked from here — verify without printing values. |
+> | M-6 `/media/lesson` any-signed-in and unmetered | Fixed — `requireRole(...TEACHER_ROLES)` and a per-user limiter, 20/hour. |
+> | M-7 `qs` advisories in production | Fixed. `pnpm audit --prod` now reports exactly one advisory on an api-server path, the `uuid` one this review already called low. |
+> | M-8 exam share codes never expire | Fixed — `shareCodeExpiresAt` on the schema and enforced in `evaluationByCode`. |
+>
+> The LOW/hardening list and the operational list are **still not re-checked**.
+> Re-verify before acting on any single item there.
 
 Reviewed 2026-09-16 against `ce81f3d5`. Scope: `artifacts/api-server` (all 21 routers,
 middleware, libs), `artifacts/mobile` auth/storage, `lib/db` query construction,
