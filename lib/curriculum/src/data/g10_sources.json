@@ -7377,6 +7377,72 @@
         "localPath": "knowledge-base/grade-5-science/support-pdfs/دليل المعلم لمادة العلوم الصف الخامس الفصل الثاني.pdf",
         "sha256": "104418d78943646f968c6b7dda439a2fea3ce0557dee6f06a20d1e143b295c5d"
       }
+    },
+    {
+      "id": "g5-social-s1-student-book",
+      "title": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الأول.pdf",
+      "bytes": 18811233,
+      "subject": "social",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-social-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "social",
+        "دراسات اجتماعية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 84 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 92,
+        "chars": 104834,
+        "localPath": "knowledge-base/grade-5-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الأول.pdf",
+        "sha256": "acf6e649f89634e29c4d66bf26f24e2fa7ddefa08a32ffcf16babed0f8153c7f"
+      }
+    },
+    {
+      "id": "g5-social-s2-student-book",
+      "title": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الثاني.pdf",
+      "bytes": 21825614,
+      "subject": "social",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-social-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "social",
+        "دراسات اجتماعية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 94 صفحةٍ نثريّةٍ، 13 صفحةً (14%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 100,
+        "chars": 107862,
+        "localPath": "knowledge-base/grade-5-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الثاني.pdf",
+        "sha256": "8eac37f7842f9096b09fe153bf62ba4216555951a328a4c1e79463242ebe5935"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
