@@ -1604,35 +1604,51 @@ mark was transcribed off the Pearson page as «All rights reserved**;** no part 
 this publication may be reproduced». Collins prints a **period**. A check
 copied from one example matches one example.
 
-These are not the Pearson case repeated, which is why the fix is not the same.
-The NCCD really is the publisher of the Arabic edition and the Ministry mandates
-these books in every school; filing them as `third-party` would put them beside a
-worksheet from شبكة منهاجي and lose that. So `authority` stays `nccd` and the
-rows carry `license: 'nccd-collins'`, a new `LicenseId` in `bank.ts` mapping to
-`reference-only`. `usePolicy` already preferred an explicit licence over
-`authority`, so no policy code changed — the rows record the fact, one line in
-`POLICY_BY_LICENSE` records the permission, and reversing it if the NCCD grants
-written permission is that one line rather than 49 rows.
+These are not the Pearson case repeated, which is why the outcome is not the
+same. **Nizar's ruling, 2026-09-16: Iqraa holds the right to use these books.**
+He was given the notice verbatim, the reading that the copyright sits with
+HarperCollins, and the measured cost of the alternative, and confirmed the right
+exists. They are quotable and nothing is withdrawn.
 
-`reference-only` is a holding position, not a legal opinion. The reading that the
-NCCD is itself "the publisher" whose permission the notice demands is a real one,
-and nobody with the authority to ask the NCCD has asked. It is the conservative
-direction and the reversible one.
+The rows still carry `license: 'nccd-collins'`, a new `LicenseId` in `bank.ts`,
+mapping to `quotable`. **That is not a no-op and should not be deleted as one.**
+Page 2 of these books will alarm the next person who reads it exactly as it
+alarmed us; the licence is the answer sitting in the data, so the investigation
+happens once. It is also what `quotableAuthority.test.ts` keys its `RULED_ON`
+allowlist off — strip the field and all 49 books become unexplained copyright
+notices on quotable rows again, which is precisely the state that went unnoticed
+for months. And if the rights position ever changes it is one line in
+`POLICY_BY_LICENSE`, not 49 rows.
 
-What this costs, measured rather than feared — grounded units across the whole
-catalog go **100 → 65** of 446. Lost entirely: all of Grade 9 maths, chemistry,
-physics, biology and earth science (26 units), Grade 10 chemistry (5), Grade 6
-maths (4). Survived: Grade 10 maths, physics, biology and earth science, whose
-teacher guides and ministry support material the NCCD wrote itself and which
-carry no Collins notice — they simply become the ranked source. Grade 10
-chemistry has no such fallback; its only extracted book is the student book.
+What restricting them *would* have cost, measured before the ruling rather than
+argued after it: grounded units across the whole catalog **100 → 65** of 446.
+Lost entirely would have been all of Grade 9 maths, chemistry, physics, biology
+and earth science (26 units), Grade 10 chemistry (5) and Grade 6 maths (4) —
+Grade 10 chemistry has no fallback at all, its only extracted book being the
+student book. Kept here because it is the number that made the decision worth
+escalating, and the number anyone re-opening the question will want.
 
 Two things the fix also had to repair. The test read only `data/extracted/`, so
 the two Grade 9 maths files in `data/extracted-g9/` were invisible to it whatever
-the pattern. And it asserted on the *label* (`authority !== 'nccd'`) rather than
-the *permission*, which would now fail on exactly the rows that have been dealt
-with; it reads `usePolicy(s) !== 'quotable'` instead. Marks are regexes now,
+the pattern. And it asked the wrong question. Marks are regexes now,
 `HarperCollins` among them.
+
+**The question it asks now is "has anyone looked at this book?", not "is it
+ours?"** Once the Collins books are quotable, a test phrased as "nothing quotable
+carries a third-party mark" is red about a settled question on 49 rows — and a
+test that is red about a settled question does not get investigated, it gets
+deleted, taking the Pearson case it was written for with it. So a book carrying
+someone else's copyright notice must be *accounted for*: either it is not
+quotable, or it carries a licence listed in `RULED_ON` naming the decision. What
+still fails is the case that matters — a book nobody has read, quotable by
+default, with another publisher's name on page 2. That is exactly the state all
+49 of these were in the day before.
+
+`RULED_ON` is deliberately a list of decisions, not of publishers, and each entry
+points at where its decision is recorded. A second test strips the licence off a
+Collins row in memory and asserts it *would* be caught, so if the exemption ever
+goes blind — the most likely place this breaks — that fails rather than passing
+quietly.
 
 **Only 39 of the 49 are on this branch**, and 49 is already stale. The ten Grade
 4 rows exist solely on `worktree-grade-5-books`, where Grade 5 is being
@@ -1655,11 +1671,10 @@ carry the notice — independent evidence that they are separate publications
 rather than excerpts, which matches the page-overlap measurement that led to
 registering them as distinct.
 
-**Images are not covered and are the larger exposure.** `usePolicy` gates text
-retrieval only. `extract_book_photos.py`, `extract_book_figures.py`,
-`gen_book_figure_assets.mjs` and the `bookFigure*` services consult no authority
-or licence field at all — there is no licence check anywhere in the figure
-pipeline.
+**Images were the larger half of the same question**, and the scan that answered
+it is worth keeping whatever the ruling. `usePolicy` gates text retrieval only:
+`extract_book_photos.py`, `extract_book_figures.py`, `gen_book_figure_assets.mjs`
+and the `bookFigure*` services consult no authority or licence field at all.
 
 **1507 of 2145 committed figures come from Collins books**, read off page 2 of
 each PDF rather than inferred: 28 of the 36 books with a committed figure
@@ -1673,12 +1688,17 @@ It is subject-specific, not a blanket NCCD thing — social studies, vocational,
 financial literacy and PE look clean on the same test. Worth checking the rest
 the same way rather than assuming in either direction.
 
-A whole figure reproduced on a teacher-facing slide is a stronger claim than a
-sentence of quoted text, not a weaker one, so a ruling that makes the text
-reference-only is hard to reconcile with leaving the figures. **Open, and owed a
-decision alongside the text one.** No new extraction from any maths or science
-book until then; nothing has been reverted, because reverting 1507 committed
-images is not a call to make on a reading of a copyright page.
+**Covered by the same ruling.** Nizar's 2026-09-16 answer was the right to use
+the books, not the right to quote their sentences, and the figures were put to
+him as part of it. Nothing is reverted and figure extraction from maths and
+science resumes.
+
+Recorded because the pipeline is still ungated: no licence check exists anywhere
+in `extract_book_photos.py`, `extract_book_figures.py`,
+`gen_book_figure_assets.mjs` or the `bookFigure*` services, and nothing would
+stop a future book whose rights *are* in doubt from having its figures cut out
+and shipped. That is fine while every source is one we hold rights to. It stops
+being fine the first time one isn't, and there is no test that will say so.
 
 **Grade 6 is complete, 2026-09-15.** Digital skills catalogued and the last five
 maths books registered. **Every Grade 6 book supplied is now in the repo** — 26
