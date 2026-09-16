@@ -20,6 +20,7 @@ import {
   takeConcreteMathBatch,
   type DiffTier,
 } from './mathPractice.ts';
+import { isChemContext, takeConcreteChem } from './chemPractice.ts';
 import { buildActivityBlueprint } from './activityBlueprints.ts';
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
@@ -141,7 +142,28 @@ function questionStemKey(text: string): string {
     .trim();
 }
 
-/** Shared entry: concrete math practice, else null (caller may use non-math templates). */
+/**
+ * Shared entry: a concrete bank item, else null (caller falls back to the
+ * subject-blind templates below).
+ *
+ * Chemistry was added 2026-09-16. Before that this returned null for every
+ * chemistry lesson — correctly, since `isMathContext` is subject-authoritative
+ * — and every chemistry question came from the generic templates, which name
+ * the topic but ask nothing about it («أيّ مما يلي يُعرِّف {الموضوع} بشكل
+ * صحيح؟», distractor «لا شيء مما ذُكر»). That is the whole of "the exams feel
+ * generic" for chemistry.
+ *
+ * Chemistry is asked first, and the order is load-bearing for exactly one
+ * case: a free-text topic with no lesson picked and no subject passed, where
+ * both fall back to matching words. `MATH_TEXT_RE` contains «معادل» and
+ * «أسس», so «المعادلة الكيميائية» matches it; the chemistry pattern is the
+ * narrower of the two and does not match maths topics. Asking it first means
+ * the specific signal wins. Whenever a subject or a resolved lesson IS present
+ * — which is every path through the app's own forms — the two are exclusive by
+ * construction and the order changes nothing.
+ *
+ * The name is unchanged so the ten call sites below read as they did.
+ */
 function tryMathPractice(
   type: QType,
   topic: string,
@@ -151,9 +173,14 @@ function tryMathPractice(
   points: number,
   subject?: string,
 ): WQ | null {
-  if (!isMathContext(topic, kb, subject)) return null;
   const tier: DiffTier = diff === 'easy' || diff === 'hard' ? diff : 'medium';
-  return takeConcreteMath(type, topic, kb, tier, lang, points);
+  if (isChemContext(topic, kb, subject)) {
+    return takeConcreteChem(type, topic, kb, tier, lang, points);
+  }
+  if (isMathContext(topic, kb, subject)) {
+    return takeConcreteMath(type, topic, kb, tier, lang, points);
+  }
+  return null;
 }
 
 // ─── Lesson Plan helpers (Arabic) ────────────────────────────────────────────

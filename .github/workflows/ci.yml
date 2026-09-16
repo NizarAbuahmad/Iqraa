@@ -73,6 +73,12 @@ jobs:
       - name: Test curriculum
         run: pnpm --filter @workspace/curriculum run test
 
+      # The package has declared a `test` script since it was split out, and
+      # nothing ever ran it — the maths bank's invariants were unguarded in CI
+      # for the same reason the chemistry bank's would have been.
+      - name: Test practice banks
+        run: pnpm --filter @workspace/math-practice run test
+
       # The client-side half of the answer-key gate, and the one package with
       # real tests that CI was not running. lib/math-verify refuses to
       # transliterate «ق(س)» into `f(x)` before anything reaches SymPy —
