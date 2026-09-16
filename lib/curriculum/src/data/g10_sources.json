@@ -7179,6 +7179,204 @@
         "localPath": "knowledge-base/grade-5-art/support-pdfs/كتاب الطالب التربية الفنية الصف الخامس.pdf",
         "sha256": "a213f0a6c70c189f9a921084b7a775133b49384e190a42de32f807758d68b23a"
       }
+    },
+    {
+      "id": "g5-science-s1-activity-book",
+      "title": "كتاب الأنشطة والتمارين لمادة العلوم الصف الخامس الفصل الأول.pdf",
+      "bytes": 3350048,
+      "subject": "science",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتمارين لمادة العلوم الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "science",
+        "علوم",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 39 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. يحملُ الكتابُ إشعارَ «© HarperCollins Publishers Limited» مع «All rights reserved»، مفحوصًا في ملفِّهِ كاملًا لا في مقدّمتِهِ وحدَها. يستحقُّ license: nccd-collins، ويُضافُ الحقلُ في دفعةٍ واحدةٍ بعدَ دمجِ الفرعِ الذي يُعرّفُهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 48,
+        "chars": 71172,
+        "localPath": "knowledge-base/grade-5-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف الخامس الفصل الأول.pdf",
+        "sha256": "a9470fd4f78df52015405a483caed6bd1040c14a3a1fc7fa2f7d7aaa8afd147e"
+      }
+    },
+    {
+      "id": "g5-science-s1-student-book",
+      "title": "كتاب الطالب لمادة  العلوم الصف الخامس الفصل الأول.pdf",
+      "bytes": 37358064,
+      "subject": "science",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة  العلوم الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "science",
+        "علوم",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 91 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. يحملُ الكتابُ إشعارَ «© HarperCollins Publishers Limited» مع «All rights reserved»، مفحوصًا في ملفِّهِ كاملًا لا في مقدّمتِهِ وحدَها. يستحقُّ license: nccd-collins، ويُضافُ الحقلُ في دفعةٍ واحدةٍ بعدَ دمجِ الفرعِ الذي يُعرّفُهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 104,
+        "chars": 107779,
+        "localPath": "knowledge-base/grade-5-science/support-pdfs/كتاب الطالب لمادة  العلوم الصف الخامس الفصل الأول.pdf",
+        "sha256": "70a77191a24c9c229fa87aa80de43f5ad958dd3ff3ad079c3a87ef92e7238348"
+      }
+    },
+    {
+      "id": "g5-science-s1-teacher-guide",
+      "title": "دليل المعلم لمادة العلوم الصف الخامس الفصل الأول.pdf",
+      "bytes": 68562407,
+      "subject": "science",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العلوم الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "science",
+        "علوم",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 92% of samples — readable by eye, not quotable). من أصلِ 159 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 92% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-16",
+        "pages": 189,
+        "chars": 277706,
+        "localPath": "knowledge-base/grade-5-science/support-pdfs/دليل المعلم لمادة العلوم الصف الخامس الفصل الأول.pdf",
+        "sha256": "cff5163c77f6ef28a3cd5de1e467c23921949550cbea9aca69d736f83b637649"
+      }
+    },
+    {
+      "id": "g5-science-s2-activity-book",
+      "title": "كتاب الأنشطة والتمارين لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+      "bytes": 2752038,
+      "subject": "science",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتمارين لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "science",
+        "علوم",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 44 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. يحملُ الكتابُ إشعارَ «© HarperCollins Publishers Limited» مع «All rights reserved»، مفحوصًا في ملفِّهِ كاملًا لا في مقدّمتِهِ وحدَها. يستحقُّ license: nccd-collins، ويُضافُ الحقلُ في دفعةٍ واحدةٍ بعدَ دمجِ الفرعِ الذي يُعرّفُهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 46,
+        "chars": 55047,
+        "localPath": "knowledge-base/grade-5-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+        "sha256": "1945537b16d36dfe2c500bf11af59ca5b2c502042f27ee5a4d1ef5481e529c00"
+      }
+    },
+    {
+      "id": "g5-science-s2-student-book",
+      "title": "كتاب الطالب لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+      "bytes": 95904273,
+      "subject": "science",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "science",
+        "علوم",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 96 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. يحملُ الكتابُ إشعارَ «© HarperCollins Publishers Limited» مع «All rights reserved»، مفحوصًا في ملفِّهِ كاملًا لا في مقدّمتِهِ وحدَها. يستحقُّ license: nccd-collins، ويُضافُ الحقلُ في دفعةٍ واحدةٍ بعدَ دمجِ الفرعِ الذي يُعرّفُهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 108,
+        "chars": 117772,
+        "localPath": "knowledge-base/grade-5-science/support-pdfs/كتاب الطالب لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+        "sha256": "1a09795ae4f025f96dd3a7ce27d1184eed33157583318c1ee22a31847d9d440d"
+      }
+    },
+    {
+      "id": "g5-science-s2-teacher-guide",
+      "title": "دليل المعلم لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+      "bytes": 88884137,
+      "subject": "science",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "science",
+        "علوم",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 92% of samples — readable by eye, not quotable). من أصلِ 136 صفحةٍ نثريّةٍ، 3 صفحةً (2%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 92% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-16",
+        "pages": 156,
+        "chars": 255767,
+        "localPath": "knowledge-base/grade-5-science/support-pdfs/دليل المعلم لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+        "sha256": "104418d78943646f968c6b7dda439a2fea3ce0557dee6f06a20d1e143b295c5d"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
