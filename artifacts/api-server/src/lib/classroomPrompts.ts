@@ -43,7 +43,7 @@ export function classroomSetupClause(b: any, isAr: boolean): string {
   if (isAr) {
     return board
       ? '\n\nمهم: لا يوجد جهاز عرض في هذه الحصة. صمّم النشاط ليُدار على السبورة وبأوراق مطبوعة، واذكر في materials أدوات السبورة والمطبوعات التي يحتاجها المعلّم فعلًا.'
-      : '\n\nمهم: الشرائح ستُعرض على شاشة/جهاز عرض. لا تطلب طباعة ما تعرضه الشرائح نفسها؛ اذكر في materials جهاز العرض وما يحتاجه الطلاب فقط (دفتر، قلم، ورقة عمل إن لزمت).';
+      : '\n\nمهم: الشرائح ستُعرض على شاشة/جهاز عرض. لا تطلب طباعة ما تعرضه الشرائح نفسها؛ اذكر في materials جهاز العرض وما يحتاجه الطلبة فقط (دفتر، قلم، ورقة عمل إن لزمت).';
   }
   return board
     ? '\n\nImportant: there is no projector in this room. Design the activity to run on the board with printed handouts, and list in materials only the board tools and printouts the teacher genuinely needs.'
@@ -68,7 +68,7 @@ function quickCheckPromptAr(b: any): string {
 المدة: ${b.duration} دقيقة | الصعوبة: ${b.difficulty} | الهدف: ${b.teachingGoal}
 ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
 
-هذا نشاط تشخيصي جماعي: يظهر السؤال على الشاشة، يفكر كل الطلاب بصمت، ثم يرفع الجميع أيديهم للإجابة معًا (لا فردي، ولا تنافس بين فرق).
+هذا نشاط تشخيصي جماعي: يظهر السؤال على الشاشة، يفكر كل الطلبة بصمت، ثم يرفع الجميع أيديهم للإجابة معًا (لا فردي، ولا تنافس بين فرق).
 
 أعد JSON بالشكل الآتي (بالعربية الكاملة):
 {
@@ -95,7 +95,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
       "durationSeconds": 45,
       "teacher": {
         "expectedAnswer": "الإجابة الصحيحة بالتفصيل",
-        "commonMisconceptions": "لماذا يختار الطلاب كل خيار خاطئ",
+        "commonMisconceptions": "لماذا يختار الطلبة كل خيار خاطئ",
         "teachingTips": "الكل يجيب معًا: اقرأ توزيع الأيدي قبل الكشف."
       }
     }
@@ -287,11 +287,11 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
     { "slideNumber": 1, "type": "intro", "title": "🔍 المحقق الرياضي", "content": "شرح آلية النشاط", "durationSeconds": 0 },
     {
       "slideNumber": 2, "type": "challenge", "title": "🕵️ القضية 1 – اعثر على الخطأ",
-      "content": "اعرض حلًّا مكتوبًا يحتوي على خطأ واحد متعمّد ليكتشفه الطلاب",
+      "content": "اعرض حلًّا مكتوبًا يحتوي على خطأ واحد متعمّد ليكتشفه الطلبة",
       "hint": "تلميح يوجّه نحو نوع الخطأ",
       "answer": "الخطأ المحدد والحل الصحيح",
       "durationSeconds": ${Math.round((b.duration * 60) / 4)},
-      "teacher": { "expectedAnswer": "الحل الصحيح كاملًا", "commonMisconceptions": "لماذا يقع الطلاب في هذا الخطأ", "teachingTips": "كيف تناقش الخطأ بشكل بنّاء" }
+      "teacher": { "expectedAnswer": "الحل الصحيح كاملًا", "commonMisconceptions": "لماذا يقع الطلبة في هذا الخطأ", "teachingTips": "كيف تناقش الخطأ بشكل بنّاء" }
     },
     { "slideNumber": 3, "type": "reveal", "title": "✅ الحل الصحيح", "content": "الحل الصحيح كاملًا مع الشرح", "durationSeconds": 0 }
   ],
@@ -322,7 +322,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
     { "slideNumber": 1, "type": "intro", "title": "🖼️ جولة المعارض", "content": "شرح قواعد التنقّل والوقت المخصص لكل محطة", "durationSeconds": 0 },
     {
       "slideNumber": 2, "type": "challenge", "title": "📌 المحطة 1 – الأساسيات",
-      "content": "مسألة أساسية يحلّها الطلاب ويكتبونها على الملصق",
+      "content": "مسألة أساسية يحلّها الطلبة ويكتبونها على الملصق",
       "hint": "تلميح موجّه",
       "answer": "انظر الملصق عند هذه المحطة",
       "durationSeconds": ${Math.round((b.duration * 60) / 6)},

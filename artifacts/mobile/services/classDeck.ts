@@ -207,7 +207,7 @@ export function buildDeckFromQuiz(
     difficulty: 'standard',
     groupType: 'whole-class',
     learningObjective: isAr
-      ? `مراجعة «${lessonTitle}» بإجابة كل الطلاب على كل سؤال`
+      ? `مراجعة «${lessonTitle}» بإجابة كل الطلبة على كل سؤال`
       : `Review “${lessonTitle}” with every student answering every question`,
     materials: isAr
       ? ['شاشة عرض', 'ألواح صغيرة (اختياري)']
@@ -325,7 +325,7 @@ export function buildDeckFromWorksheet(
       ? ['شاشة عرض', 'ألواح صغيرة (اختياري)']
       : ['Projector', 'Mini whiteboards (optional)'],
     teacherPreparation: isAr
-      ? 'يمكن عرض الورقة نفسها التي وزّعتها على الطلاب.'
+      ? 'يمكن عرض الورقة نفسها التي وزّعتها على الطلبة.'
       : 'Project the same worksheet you handed out.',
     teacherNotes: [],
     answerKey: answers,
@@ -479,7 +479,7 @@ export function buildGameDeckFromQuiz(
     difficulty: 'standard',
     groupType: 'groups',
     learningObjective: isAr
-      ? `مراجعة «${lessonTitle}» كمنافسة بين الفرق مع إجابة كل الطلاب`
+      ? `مراجعة «${lessonTitle}» كمنافسة بين الفرق مع إجابة كل الطلبة`
       : `Review “${lessonTitle}” as a team contest with every student answering`,
     materials: isAr
       ? ['شاشة عرض', 'تقسيم الصف إلى فرق']

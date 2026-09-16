@@ -202,7 +202,7 @@ describe('hook / introduction', () => {
   });
 
   it('still projects a lifted question directly, unchanged', () => {
-    const quoted: LessonPlanOutput = { ...PLAN, introduction: 'اسأل الطلاب: "كم يساوي محيط المربع؟" ثم استمع لإجاباتهم.' };
+    const quoted: LessonPlanOutput = { ...PLAN, introduction: 'اسأل الطلبة: "كم يساوي محيط المربع؟" ثم استمع لإجاباتهم.' };
     const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: quoted });
     const warmup = deck.slides.find(s => s.title.includes('تمهيد'));
     assert.equal(warmup!.content, 'كم يساوي محيط المربع؟');
@@ -610,7 +610,7 @@ describe('checks that point at a figure', () => {
 
 describe('splitWarmup', () => {
   it('projects only the question and keeps the stage directions for the teacher', () => {
-    const intro = `ابدأ بطرح السؤال: “أين نلتقي بالأقواس في حياتنا؟” سجّل إجابات الطلاب على السبورة.`;
+    const intro = `ابدأ بطرح السؤال: “أين نلتقي بالأقواس في حياتنا؟” سجّل إجابات الطلبة على السبورة.`;
     const { projected, notes } = splitWarmup(intro);
     assert.equal(projected, 'أين نلتقي بالأقواس في حياتنا؟');
     assert.equal(notes, intro);
@@ -626,7 +626,7 @@ describe('splitWarmup', () => {
   });
 
   it('projects the text unchanged when there is no quoted or colon-introduced question', () => {
-    const intro = 'لعبة ما أعرفه: يكتب الطلاب ما يعرفونه عن الدرس.';
+    const intro = 'لعبة ما أعرفه: يكتب الطلبة ما يعرفونه عن الدرس.';
     assert.deepEqual(splitWarmup(intro), { projected: intro, notes: '' });
   });
 });

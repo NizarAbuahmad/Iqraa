@@ -437,7 +437,7 @@ export function buildLessonPlanHTML(
     ${section(L('الختام', 'Closure'), '⏹', '#8B5CF6', plan.closure)}
     ${section(L('التقييم', 'Assessment'), '✅', '#16A34A', plan.assessment)}
     ${section(L('التمايز', 'Differentiation'), '🔀', '#0891B2', plan.differentiation)}
-    ${section(L('الواجب المنزلي', 'Homework'), '🏠', '#F59E0B', plan.homework)}
+    ${section(L('الواجب البيتي', 'Homework'), '🏠', '#F59E0B', plan.homework)}
     ${figuresSectionHTML(figures, isAr)}
   `;
   return htmlBase(content, isAr, title, 'lesson');
@@ -670,10 +670,10 @@ export function buildLessonPlanSlidesHTML(
     </div>`;
 
   const slide6 = `${slideOpen()}
-    ${header(L('التمايز والواجب المنزلي', 'Differentiation & Homework'))}
+    ${header(L('التمايز والواجب البيتي', 'Differentiation & Homework'))}
     <div class="slide-body two-col">
       ${sectionBlock('📚', L('التمايز', 'Differentiation'), `<p>${esc(plan.differentiation)}</p>`)}
-      ${sectionBlock('🏠', L('الواجب المنزلي', 'Homework'), `<p>${esc(plan.homework)}</p>`)}
+      ${sectionBlock('🏠', L('الواجب البيتي', 'Homework'), `<p>${esc(plan.homework)}</p>`)}
     </div>`;
 
   // Numbered after assembly so an optional slide never desyncs the footer

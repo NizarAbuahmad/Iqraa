@@ -161,7 +161,7 @@ export function buildGraphSlide(
     type: 'graph',
     title: isAr ? '📈 الرسم البياني' : '📈 Graph',
     content: isAr
-      ? `${titleAr}\n\nجرّب مع الطلاب: غيّر المعامل وشاهد أثره على المنحنى قبل أن تشرح السبب.`
+      ? `${titleAr}\n\nجرّب مع الطلبة: غيّر المعامل وشاهد أثره على المنحنى قبل أن تشرح السبب.`
       : `${titleAr}\n\nTry with the class: change a coefficient and watch the curve move before explaining why.`,
     graphCommands: commands,
     durationSeconds: 0,
@@ -188,7 +188,7 @@ export function buildChartSlide(
     type: 'intro',
     title: isAr ? '📊 البيانات' : '📊 The data',
     content: isAr
-      ? `${titleAr}\n\nاقرأ الرسم مع الطلاب قبل الشرح: أيّ بند الأكبر؟ ولماذا؟`
+      ? `${titleAr}\n\nاقرأ الرسم مع الطلبة قبل الشرح: أيّ بند الأكبر؟ ولماذا؟`
       : `${titleAr}\n\nRead the chart with the class first: which item is largest, and why?`,
     visual,
     durationSeconds: 0,

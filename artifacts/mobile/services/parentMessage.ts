@@ -127,7 +127,7 @@ function arBody(input: ParentMessageInput): string {
     case 'progress':
       return `أودّ إطلاعكم على تقرير موجز حول مستوى ${child} ${n}${inSubject} خلال الفترة الماضية.`;
     case 'missing-homework':
-      return `ألاحظ في الفترة الأخيرة أنّ ${child} ${n} ${hasNot} الواجبات المطلوبة${inSubject}. والواجب المنزلي جزء أساسي من ترسيخ ما نتعلّمه في الحصة.`;
+      return `ألاحظ في الفترة الأخيرة أنّ ${child} ${n} ${hasNot} الواجبات المطلوبة${inSubject}. والواجب البيتي جزء أساسي من ترسيخ ما نتعلّمه في الحصة.`;
     case 'academic-concern':
       return `أودّ إطلاعكم على ملاحظة تتعلّق بمستوى ${child} ${n}${inSubject}، رغبةً في معالجتها مبكرًا قبل أن تتراكم.`;
     case 'absence':

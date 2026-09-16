@@ -338,7 +338,7 @@ export default function WorksheetScreen() {
   const handleSave = async () => {
     if (!result) return;
     const title = (isHomework
-      ? (lang === 'ar' ? `واجب منزلي: ${topic.trim()}` : `Homework: ${topic.trim()}`)
+      ? (lang === 'ar' ? `واجب بيتي: ${topic.trim()}` : `Homework: ${topic.trim()}`)
       : (lang === 'ar' ? `ورقة عمل: ${topic.trim()}` : `Worksheet: ${topic.trim()}`)) + levelSuffix;
     const formState = {
       gradeIdx, subjectIdx, topic: topic.trim(),

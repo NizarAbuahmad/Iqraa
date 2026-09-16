@@ -43,6 +43,19 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
+      # i18nTerminology.test.ts bans the misspelling «إقرأ», but it only reads
+      # i18n.ts — so the name still reached verification emails, the chat
+      # system prompt and the Play listing. Same ban, over the files that
+      # actually ship copy. Book text under lib/curriculum quotes ministry
+      # PDFs verbatim and is deliberately out of scope.
+      - name: Brand is «اقرأ», never «إقرأ»
+        run: |
+          paths=(artifacts/*/src artifacts/mobile/app artifacts/mobile/components artifacts/mobile/services marketing ':!*i18nTerminology.test.ts')
+          if git grep -nI 'إقرأ' -- "${paths[@]}"; then
+            echo "::error::«إقرأ» is hamzat qatʿ — the brand is «اقرأ» (hamzat wasl)."
+            exit 1
+          fi
+
       # MUST run before the api-server tests. Its mount-order suite boots
       # dist/index.mjs rather than the source, and `pnpm test` does not build.
       # Without this step the suite either skips (no bundle) or — worse —

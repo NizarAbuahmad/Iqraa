@@ -33,7 +33,7 @@ export const CQV_ARTIFACTS: CqvArtifactDef[] = [
   {
     id: 'homework',
     label: 'Homework',
-    labelAr: 'واجب منزلي',
+    labelAr: 'واجب بيتي',
     route: '/ai-tools/worksheet',
     note: 'Demo path: homework uses the worksheet generator.',
     noteAr: 'مسار العرض: الواجب يستخدم مولّد ورقة العمل.',
