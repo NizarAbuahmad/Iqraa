@@ -64,6 +64,12 @@ concurrency:
   group: mobile-update
   cancel-in-progress: false
 
+# See the note in ci.yml: without this, the job inherits the repository default
+# token scope. Publishing an OTA update authenticates to Expo with EXPO_TOKEN
+# and needs nothing from GitHub but the checkout.
+permissions:
+  contents: read
+
 jobs:
   publish:
     name: eas update

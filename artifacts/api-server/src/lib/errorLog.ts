@@ -20,14 +20,54 @@ export type RecordedError = {
 const MAX_ERRORS = 50;
 const recent: RecordedError[] = [];
 
+/**
+ * What may be kept from a log call's context object.
+ *
+ * This used to spread the whole thing. That is more than the route's docstring
+ * promises ("no request bodies") and more than it should hold: every
+ * `logger.error({ ... })` in this codebase decides, by accident, what
+ * `/healthz/errors` will serve. At least one call site passes an address —
+ * `logger.error({ userId, email }, "verification email not sent")` — and a
+ * Postgres unique-violation arrives with the offending value inside
+ * `err.message`, so "no request bodies" was true only in the narrowest sense.
+ *
+ * An allowlist instead: identifiers that say *where* something broke, never
+ * the content that broke it. The route is `ADMIN_DEBUG_KEY`-gated, so this is
+ * defence in depth rather than the only thing standing between a leak and a
+ * reader — but a debugging endpoint is exactly the kind of thing that gets
+ * opened up later, and the time to bound it is before that.
+ */
+const KEPT_DETAIL_KEYS: readonly string[] = [
+  "url",
+  "limiter",
+  "userId",
+  "attemptId",
+  "evaluationId",
+  "threadId",
+  "kind",
+  "code",
+  "status",
+];
+
 function summarizeDetail(detail: unknown): Record<string, unknown> | undefined {
   if (detail == null || typeof detail !== "object") return undefined;
   const obj = detail as Record<string, unknown>;
-  const err = obj.err ?? obj.error;
-  if (err instanceof Error) {
-    return { ...obj, err: { name: err.name, message: err.message } };
+
+  const kept: Record<string, unknown> = {};
+  for (const key of KEPT_DETAIL_KEYS) {
+    if (key in obj) kept[key] = obj[key];
   }
-  return obj;
+
+  const err = obj["err"] ?? obj["error"];
+  if (err instanceof Error) {
+    // `message` only, and no `cause`: a driver error's message can still carry
+    // a value, but dropping it entirely would leave "something threw" with
+    // nothing to act on. The name and message are the smallest thing that is
+    // still worth reading.
+    kept["err"] = { name: err.name, message: err.message };
+  }
+
+  return Object.keys(kept).length > 0 ? kept : undefined;
 }
 
 export function recordError(message: string, detail?: unknown): void {

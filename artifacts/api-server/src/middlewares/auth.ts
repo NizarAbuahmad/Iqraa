@@ -35,7 +35,13 @@ export async function authMiddleware(
   }
 
   try {
-    const payload = jwt.verify(token, secret) as {
+    // `algorithms` pinned rather than left to the library's default. With a
+    // string secret jsonwebtoken v9 already restricts itself to HMAC, so this
+    // changes nothing today — it is here so that a future change to how the
+    // secret is supplied (a KeyObject, a PEM) cannot quietly widen the set to
+    // include the asymmetric algorithms, where a token signed with a public
+    // key would verify.
+    const payload = jwt.verify(token, secret, { algorithms: ["HS256"] }) as {
       sub: string;
       email: string;
       role: string;
