@@ -1750,6 +1750,50 @@ stop a future book whose rights *are* in doubt from having its figures cut out
 and shipped. That is fine while every source is one we hold rights to. It stops
 being fine the first time one isn't, and there is no test that will say so.
 
+**The extraction gate was blind where the damage is worst, 2026-09-16.** Every
+check in `rejectReason` measures a *rate* — what share of the recognisable
+Arabic came out corrupted — and both rate functions return `null` under 100
+samples, which `rejectReason` skips. That is right for an English coursebook.
+It is catastrophic for a file decoded against the wrong font cmap, which yields
+fluent-looking Arabic letters that spell nothing: no «في» survives, no «يف» is
+created either, both denominators collapse to zero, every check is skipped, and
+the document passes **because** none of its Arabic was readable. Absence of
+evidence was being read as evidence of absence.
+
+Two documents in the corpus are in exactly that state, found by writing the
+check and running it over all 231 extracted files: `chem-s1-summary-shawata`
+(7,319 Arabic words, **one** probe hit) and `chem-s2-pack-shawata` (10,531
+words, 31 hits). Both read as «ػذد ١ِّضاد اٌط١ف اٌّشئ» — not transposed Arabic,
+not Arabic at all. Both were extracted, marked `ingested`, and have been served
+since. Both are `authority: teacher` and so reference-only, which bounds it:
+they reach a prompt as context and are never quoted into a worksheet. The rows
+now say so; the remedy is `--force --ocr`, not deletion.
+
+The sixth gate is **not a new readability score, deliberately** — three of those
+have been tried and all three were wrong (see the memory note). It adds no
+measure at all. It says that when the existing probes both answer "I could not
+get a reading" on a document carrying 4,000+ Arabic words, that silence is
+itself the finding, because real prose of that length cannot avoid «في», «على»
+and the definite article. 4,000 sits in an empty stretch: the largest document
+legitimately blind is `math-foundation-lafi` at 1,956 Arabic words (a تأسيس
+pack that is mostly equations, and reads correctly), the smallest blind because
+it is garbage is 7,319, and nothing lies between.
+
+**Validated in both directions, which is the part that has gone wrong before.**
+Reading only the pages a measure *flags* tests precision, and every previous
+attempt here failed on recall. So: the two it rejects were read and are
+genuinely unreadable; the nearest document it passes was read and is genuinely
+fine; and across the other 229 it changes nothing.
+
+**What it does not catch, said plainly.** A second corruption class — real
+letters, tashkeel interleaved, word boundaries shattered — passes this gate
+untouched. `g5-arts-s1-student-book` is the known case at 2.57% probe density,
+and reading `g6-voc-s1-student-book` and `g5-voc-s1-student-book` (1.95%, 2.01%)
+found their body text shattered too while their headings read cleanly. Those
+sit among legitimately low-density books, so no threshold separates them and
+none is proposed. They need OCR and sampled reading, and this gate is not the
+instrument for them.
+
 **Grade 8 gets its first figures, 2026-09-12.** `g8-science-s1` alone: 133
 crops, **65 kept**, covering all 10 of its Semester 1 lessons. What survived is
 strong — DNA and chromosome diagrams, binary-fission stages, Mendel's pea

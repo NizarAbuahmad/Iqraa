@@ -1890,7 +1890,8 @@
         "chars": 46557,
         "localPath": "attached_assets/knowledge-base-pending/chem-s1-summary-shawata.pdf",
         "sha256": "ec3ca27a2c474c36d8acc4871029e8c677f531362a788e6dceb3ad0fe3623f3a"
-      }
+      },
+      "notes": "نص الاستخراج غير قابل للقراءة — decoded against the wrong font cmap, so the text is Arabic letters that spell nothing («ػذد ١ِّضاد اٌط١ف»). Found 2026-09-16 by the new blindness gate in textQuality.ts, which rejects it; the file on disk predates that gate and is still served. Reference-only (teacher-authored), so it reaches prompts as context and is never quoted into a worksheet. Remedy is re-extraction with --force --ocr, not deletion."
     },
     {
       "id": "chem-s2-pack-sartawi",
@@ -1945,7 +1946,8 @@
         "chars": 78249,
         "localPath": "attached_assets/knowledge-base-pending/chem-s2-pack-shawata.pdf",
         "sha256": "4d4249ce3e3efa693c23b5add1be17557b792cc6c7e0bec139ea463e01b186af"
-      }
+      },
+      "notes": "نص الاستخراج غير قابل للقراءة — decoded against the wrong font cmap, so the text is Arabic letters that spell nothing («ػذد ١ِّضاد اٌط١ف»). Found 2026-09-16 by the new blindness gate in textQuality.ts, which rejects it; the file on disk predates that gate and is still served. Reference-only (teacher-authored), so it reaches prompts as context and is never quoted into a worksheet. Remedy is re-extraction with --force --ocr, not deletion."
     },
     {
       "id": "chem-s2-pack-almasri",
