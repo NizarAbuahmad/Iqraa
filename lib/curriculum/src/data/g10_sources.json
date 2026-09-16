@@ -7080,6 +7080,72 @@
         "localPath": "knowledge-base/grade-5-pe/support-pdfs/كتاب الطالب التربية الرياضية الصف الخامس الفصل الثاني.pdf",
         "sha256": "02cc062e3fdb84a6b761ee31deb9650e97711bbe3444e06edda200ee9cab434a"
       }
+    },
+    {
+      "id": "g5-digital-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf",
+      "bytes": 12848687,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "digital-literacy",
+        "مهارات رقمية",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 133 صفحةٍ نثريّةٍ، 9 صفحةً (7%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 147,
+        "chars": 182663,
+        "localPath": "knowledge-base/grade-5-digital-literacy/support-pdfs/كتاب الأنشطة لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf",
+        "sha256": "0346e00d87a75e6a065c3201255967baa304bdf6a4f638398bae802c5ccdd357"
+      }
+    },
+    {
+      "id": "g5-digital-s1-teacher-guide",
+      "title": "دليل المعلم لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf",
+      "bytes": 5081795,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "digital-literacy",
+        "مهارات رقمية",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 62% of samples — readable by eye, not quotable). من أصلِ 85 صفحةٍ نثريّةٍ، 2 صفحةً (2%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 62% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-16",
+        "pages": 91,
+        "chars": 83272,
+        "localPath": "knowledge-base/grade-5-digital-literacy/support-pdfs/دليل المعلم لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf",
+        "sha256": "2b52c644ef4b4943e408bc9356422bcca1eff18a5542235b7af1fd1a3da64e4b"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
