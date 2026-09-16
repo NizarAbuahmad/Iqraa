@@ -771,6 +771,7 @@ export const BOOK_FIGURE_ASSETS: Record<string, BookFigureAsset> = {
   'g8-math-s2-student-book/p138e.png': require('../../../knowledge-base/grade-8-math/figures/g8-math-s2-student-book/p138e.png'),
   'g8-math-s2-student-book/p138f.png': require('../../../knowledge-base/grade-8-math/figures/g8-math-s2-student-book/p138f.png'),
   'g8-math-s2-student-book/p138g.png': require('../../../knowledge-base/grade-8-math/figures/g8-math-s2-student-book/p138g.png'),
+  'g8-math-s2-student-book/p138h.png': require('../../../knowledge-base/grade-8-math/figures/g8-math-s2-student-book/p138h.png'),
   'g8-math-s2-student-book/p140.png': require('../../../knowledge-base/grade-8-math/figures/g8-math-s2-student-book/p140.png'),
   'g8-math-s2-student-book/p141.png': require('../../../knowledge-base/grade-8-math/figures/g8-math-s2-student-book/p141.png'),
   'g8-math-s2-student-book/p157.png': require('../../../knowledge-base/grade-8-math/figures/g8-math-s2-student-book/p157.png'),
@@ -2098,4 +2099,4 @@ export const BOOK_FIGURE_ASSETS: Record<string, BookFigureAsset> = {
 };
 
 /** How many figures ship with the app. Asserted by the drift test. */
-export const BOOK_FIGURE_COUNT = 2077;
+export const BOOK_FIGURE_COUNT = 2078;
