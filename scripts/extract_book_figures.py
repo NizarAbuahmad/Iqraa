@@ -412,6 +412,39 @@ BOOKS: dict[str, tuple[str, str]] = {
     "g7-science-s2-student-book": ("grade-7-science", "knowledge-base/grade-7-science/support-pdfs/كتاب الطالب لمادة العلوم الصف السابع الفصل الثاني.pdf"),
     "g7-digital-s1-student-book": ("grade-7-digital", "knowledge-base/grade-7-digital/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف السابع الفصل الأول.pdf"),
     "g7-digital-s2-student-book": ("grade-7-digital", "knowledge-base/grade-7-digital/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف السابع الفصل الثاني.pdf"),
+
+    # Grades 8, 9 and 10 — the subjects that were never registered,
+    # added 2026-09-16. Same gap grades 6/7 had: nothing was wrong with
+    # the detector, these books had simply never been listed. Probed
+    # against their catalogs before any extraction, like every other
+    # entry here.
+    #
+    # Source ids follow g10_sources.json where it already names the book,
+    # which is why Grade 9 digital literacy is `g9-digital-literacy-` and
+    # not `g9-digital-`, and why Grade 10 carries no grade segment.
+    #
+    # Grade 8 arabic is S1 only: the library's 8th-grade arabic folder
+    # holds a file named «للصف السابع الفصل الثاني», which is Grade 7's
+    # S2 book misfiled, not Grade 8's. Grade 8 arabic S2 does not exist.
+    "g8-arabic-s1-student-book": ("grade-8-arabic", "knowledge-base/grade-8-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية (العربية لغتي) للصف الثامن الفصل الأول.pdf"),
+    "g8-islamic-s1-student-book": ("grade-8-islamic", "knowledge-base/grade-8-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف الثامن الفصل الأول.pdf"),
+    "g8-islamic-s2-student-book": ("grade-8-islamic", "knowledge-base/grade-8-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف الثامن الفصل الثاني.pdf"),
+    "g9-arabic-s1-student-book": ("grade-9-arabic", "knowledge-base/grade-9-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف التاسع الفصل الأول.pdf"),
+    "g9-arabic-s2-student-book": ("grade-9-arabic", "knowledge-base/grade-9-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف التاسع الفصل الثاني.pdf"),
+    "g9-civic-s1-student-book": ("grade-9-civic", "knowledge-base/grade-9-civic/support-pdfs/كتاب الطالب لمادة التربية الوطنية والمدنية للصف التاسع الفصل الأول.pdf"),
+    "g9-civic-s2-student-book": ("grade-9-civic", "knowledge-base/grade-9-civic/support-pdfs/كتاب الطالب لمادة التربية الوطنية والمدنية للصف التاسع الفصل الثاني.pdf"),
+    "g9-digital-literacy-s1-student-book": ("grade-9-digital-literacy", "knowledge-base/grade-9-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الأول.pdf"),
+    "g9-digital-literacy-s2-student-book": ("grade-9-digital-literacy", "knowledge-base/grade-9-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الثاني.pdf"),
+    "g9-finlit-s1-student-book": ("grade-9-finlit", "knowledge-base/grade-9-finlit/support-pdfs/كتاب الطالب لمادة الثقافة المالية للصف التاسع الفصل الأول.pdf"),
+    "g9-finlit-s2-student-book": ("grade-9-finlit", "knowledge-base/grade-9-finlit/support-pdfs/كتاب الطالب لمادة الثقافة المالية للصف التاسع الفصل الثاني.pdf"),
+    "g9-pe-s1-student-book": ("grade-9-pe", "knowledge-base/grade-9-pe/support-pdfs/كتاب الطالب لمادة التربية الرياضية الصف التاسع الفصل الأول.pdf"),
+    "g9-pe-s2-student-book": ("grade-9-pe", "knowledge-base/grade-9-pe/support-pdfs/كتاب الطالب التربية الرياضية الصف التاسع الفصل الثاني.pdf"),
+    "arabic-s1-student-book": ("grade-10-arabic", "knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf"),
+    "arabic-s2-student-book": ("grade-10-arabic", "knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf"),
+    "civic-s1-student-book": ("grade-10-civic", "knowledge-base/grade-10-civic/support-pdfs/كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الأول.pdf"),
+    "civic-s2-student-book": ("grade-10-civic", "knowledge-base/grade-10-civic/support-pdfs/كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الثاني.pdf"),
+    "digital-s1-student-book": ("grade-10-digital-literacy", "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf"),
+    "digital-s2-student-book": ("grade-10-digital-literacy", "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الثاني.pdf"),
     "g8-digital-s1-student-book": (
         "grade-8-digital-literacy",
         MIRROR_G8 + "7asob/كتاب الطالب لمادة المهارات الرقمية الصف الثامن الفصل الأول.pdf",

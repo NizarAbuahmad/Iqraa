@@ -2181,6 +2181,66 @@ Grade 6 social S1/S2, Grade 6 vocational S2, Grade 6 arabic S2, Grade 7 art and
 Grade 7 digital literacy S1/S2. No contents rows at any tolerance and no
 openers — there is nothing in these books to read.
 
+## Grades 8, 9 and 10: the last 19 books registered, 0 shipped, 2026-09-16
+
+Every remaining Grade 8/9/10 subject with a catalog and no `BOOKS` entry was
+registered and probed: Grade 8 arabic S1 and islamic S1/S2, Grade 9 arabic,
+civics, digital literacy, financial literacy and PE (both semesters each), and
+Grade 10 arabic, civics and digital literacy (both semesters each). 19 books,
+304 catalog lessons. **None of them ship**, and the reason is worth recording
+because it is not the reason grades 6/7 failed.
+
+**Six are closed outright, 98 lessons** — Grade 8 islamic S1/S2, Grade 9 arabic
+S1, Grade 9 digital literacy S1/S2, Grade 10 digital literacy S2. No contents
+rows at any tolerance and no openers.
+
+**Ten of the thirteen near misses find contents rows in EXACTLY their catalog's
+lesson count and place none** — Grade 8 arabic S1 25/25, Grade 10 arabic S1 and
+S2 25/25, Grade 9 PE S1/S2 16/16, Grade 9 finlit S1/S2 11/11, Grade 9 civics S1
+and Grade 10 civics S1/S2 10/10. Same wall as Grade 6/7 PE and arabic: the rows
+are all there, the lesson number is not printed in them. With those four that
+is **14 books and roughly 237 lessons behind one missing signal**, which is now
+the single largest blocked category in this work.
+
+**Registration was not the gap here.** In grades 6/7 it was: 28 books had never
+been listed and 8 shipped immediately. These 19 were equally unlisted and
+yielded nothing, so "register the rest" is finished as a strategy.
+
+### The unit-banner partition, and why it was not enough
+
+After title matching failed (above), one independent signal remained. Banners
+are read off the book's own pages, so the partition they induce over the
+contents rows is evidence rather than assumption: if the banners cut N rows
+into groups whose sizes equal the catalog's per-unit lesson counts, the book
+agrees with the catalog about where the units break. Measured across all 14
+exact-count books, the banner set is COMPLETE for only three:
+
+| Book | rows | banners | catalog shape | test |
+| --- | --- | --- | --- | --- |
+| g9 finlit S1 | 11/11 | 2 of 2 | [6,5] asymmetric | strong |
+| g9 finlit S2 | 11/11 | 2 of 2 | [6,5] asymmetric | strong |
+| g8 arabic S1 | 25/25 | 5 of 5 | [5,5,5,5,5] uniform | weak |
+
+The other eleven have 0 to 4 of the banners they need — Grade 9 PE and Grade 10
+civics find none at all — and an incomplete banner set proves nothing about the
+boundaries it did not find.
+
+**Even for those three it is only the UNIT boundaries that are evidenced.**
+Within a unit the numbering is still positional: row *i* is assumed to be
+lesson *i*. That assumption cannot be checked by titles, because siblings
+inside one unit are exactly the pairs that share a long prefix — which is the
+case the title matcher demonstrably gets wrong. Being wrong costs a figure
+landing on an adjacent lesson in the same unit, which is far milder than the
+cross-semester shifts caught in g8-science-s2 (+4) and g7-social-s2 (+6), but
+it is a weaker standard than every book shipped so far.
+
+**Not shipped on that standard.** 47 lessons, on books whose figure yield is
+likely thin anyway — Arabic is text-heavy and financial literacy produced 13
+and 9 figures at grades 7 and 8. Lowering the evidentiary bar across the
+project for that return is a bad trade, and it is a product decision rather
+than a technical one. The measurement is here so it can be revisited
+deliberately.
+
 **What still has no figure at all, and why:**
 
 - **Grade 8 — five of ten subjects, 165 lessons.** English, maths, science,
