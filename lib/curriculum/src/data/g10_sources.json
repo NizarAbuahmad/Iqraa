@@ -6816,6 +6816,204 @@
         "localPath": "knowledge-base/grade-5-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الثاني.pdf",
         "sha256": "ba7c817a1b27fb6425400ff925548fe571c5c1d07864880f9c1709c1efc3c06f"
       }
+    },
+    {
+      "id": "g5-eng-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+      "bytes": 3800859,
+      "subject": "english",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "english",
+        "لغة إنجليزية",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ (70% من المحارفِ)، فمقياسُ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 56,
+        "chars": 49327,
+        "localPath": "knowledge-base/grade-5-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+        "sha256": "db19555086761e834aa4d518676dfe555adbc022339afbfdbe10fe8aecc65542"
+      }
+    },
+    {
+      "id": "g5-eng-s1-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+      "bytes": 84757760,
+      "subject": "english",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "english",
+        "لغة إنجليزية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ (73% من المحارفِ)، فمقياسُ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 64,
+        "chars": 73318,
+        "localPath": "knowledge-base/grade-5-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+        "sha256": "576fe8032ffca7ed6dee5af9de8c91dd8bd7a2f36e4505ae49cbd514039c7987"
+      }
+    },
+    {
+      "id": "g5-eng-s1-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+      "bytes": 55035435,
+      "subject": "english",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "english",
+        "لغة إنجليزية",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ (76% من المحارفِ)، فمقياسُ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 144,
+        "chars": 468247,
+        "localPath": "knowledge-base/grade-5-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+        "sha256": "71292398b3f5414b50f6917bfbf3981e0be9e346d502743f378d1719e597d35d"
+      }
+    },
+    {
+      "id": "g5-eng-s2-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+      "bytes": 17312480,
+      "subject": "english",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "english",
+        "لغة إنجليزية",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ (71% من المحارفِ)، فمقياسُ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 60,
+        "chars": 52377,
+        "localPath": "knowledge-base/grade-5-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+        "sha256": "d467c38392e32f319f87e98c214e1c55f88a4884b8441a6939cf215c9319cb67"
+      }
+    },
+    {
+      "id": "g5-eng-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+      "bytes": 58919234,
+      "subject": "english",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "english",
+        "لغة إنجليزية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ (74% من المحارفِ)، فمقياسُ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 64,
+        "chars": 81062,
+        "localPath": "knowledge-base/grade-5-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+        "sha256": "04def1a39a90c671ff4631dd969f00f2fc341ca14f0fb65247f636713d7f31db"
+      }
+    },
+    {
+      "id": "g5-eng-s2-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+      "bytes": 48826071,
+      "subject": "english",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "english",
+        "لغة إنجليزية",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ (76% من المحارفِ)، فمقياسُ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 144,
+        "chars": 487467,
+        "localPath": "knowledge-base/grade-5-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+        "sha256": "369b75972d6e1492244479be84b856ef682bb2a995b990823d17a0beacbfcb80"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
