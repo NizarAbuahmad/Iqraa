@@ -13569,3 +13569,31 @@ case.
 
 Verified: curriculum suite 105/105 (was 90), `verify` 0 errors, monorepo
 typecheck clean.
+
+
+## Source PDFs are no longer committed, 2026-09-16
+
+GitHub warned the account had used 9 of its 10 GB monthly Git-LFS bandwidth.
+The repo's only LFS object was the 58 MB math S1 teacher guide; PR #468
+untracked it the same morning. This entry is the rest of the job: the other
+62 PDFs under `attached_assets/` (174 MB of plain git blobs) are untracked
+too, and `attached_assets/**/*.pdf` is gitignored. Only the 33 KB logo PDF
+the icon scripts read stays tracked.
+
+Nothing that runs needed them in git. `actions/checkout` was already
+skipping the LFS one, the Python figure/exercise extractors read from local
+disk, and `extract-text.ts` falls back to R2 (`ensureLocal`) for any
+`LOCAL_FILES` entry missing on disk — that fallback has existed since
+2026-08-30 and is now the only path a fresh clone has. `extraction.test.ts`
+already tolerates an absent source. The 3,400 clones a fortnight CI makes
+stop transferring the corpus; nothing else changes. The bytes remain in git
+history, so this is untracking, not deletion.
+
+**Not done in this PR, and it matters:** the R2 backfill. `upload-r2 --all`
+is the one-command way to put every local PDF into `iqraa-media` as
+`<sourceId>.pdf`, but the local `.env` token answers `401 Unauthorized`
+(checked 2026-09-16 with `audit-r2`) — presumably revoked in the 2026-09-08
+production rotation. Until a fresh token is minted and `audit-r2` reports
+zero sources with "no bytes in R2 or on disk", the only copies of any PDF
+not yet uploaded are the local checkouts and git history. Do that before
+extracting anything on a machine that is not this one.
