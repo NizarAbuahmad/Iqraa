@@ -203,6 +203,18 @@ import {
   buildG7ScienceSem1Catalog,
 } from './curriculumG7ScienceSem1.ts';
 import {
+  G5_MATH_S1_BOOK_ID,
+  buildG5MathSem1Catalog,
+} from './curriculumG5MathSem1.ts';
+import {
+  G5_SCIENCE_S1_BOOK_ID,
+  buildG5ScienceSem1Catalog,
+} from './curriculumG5ScienceSem1.ts';
+import {
+  G5_SCIENCE_S2_BOOK_ID,
+  buildG5ScienceSem2Catalog,
+} from './curriculumG5ScienceSem2.ts';
+import {
   G6_MATH_S1_BOOK_ID,
   buildG6MathSem1Catalog,
 } from './curriculumG6MathSem1.ts';
@@ -1080,6 +1092,33 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Islamic Education – Grade 7 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g7_islamic_sem2.json (NCCD)',
+  },
+  {
+    id: G5_MATH_S1_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف الخامس – الفصل الأول',
+    titleEn: 'Mathematics – Grade 5 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g5_math_sem1.json (NCCD)',
+  },
+  {
+    id: G5_SCIENCE_S1_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف الخامس – الفصل الأول',
+    titleEn: 'Science – Grade 5 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g5_science_sem1.json (NCCD)',
+  },
+  {
+    id: G5_SCIENCE_S2_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف الخامس – الفصل الثاني',
+    titleEn: 'Science – Grade 5 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g5_science_sem2.json (NCCD)',
   },
   {
     id: G6_MATH_S1_BOOK_ID,
@@ -2506,6 +2545,9 @@ const _g7MathSem1 = buildG7MathSem1Catalog();
 const _g7IslamicSem1 = buildG7IslamicSem1Catalog();
 const _g7IslamicSem2 = buildG7IslamicSem2Catalog();
 const _g7ScienceSem1 = buildG7ScienceSem1Catalog();
+const _g5MathSem1 = buildG5MathSem1Catalog();
+const _g5ScienceSem1 = buildG5ScienceSem1Catalog();
+const _g5ScienceSem2 = buildG5ScienceSem2Catalog();
 const _g6MathSem1 = buildG6MathSem1Catalog();
 const _g6ScienceSem1 = buildG6ScienceSem1Catalog();
 const _g6ArabicSem1 = buildG6ArabicSem1Catalog();
@@ -2759,6 +2801,9 @@ export const KB_UNITS: KBUnit[] = [
   ..._g7IslamicSem1.units,
   ..._g7IslamicSem2.units,
   ..._g7ScienceSem1.units,
+  ..._g5MathSem1.units,
+  ..._g5ScienceSem1.units,
+  ..._g5ScienceSem2.units,
   ..._g6MathSem1.units,
   ..._g6ScienceSem1.units,
   ..._g6ArabicSem1.units,
@@ -2884,6 +2929,9 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g7IslamicSem1.lessons,
   ..._g7IslamicSem2.lessons,
   ..._g7ScienceSem1.lessons,
+  ..._g5MathSem1.lessons,
+  ..._g5ScienceSem1.lessons,
+  ..._g5ScienceSem2.lessons,
   ..._g6MathSem1.lessons,
   ..._g6ScienceSem1.lessons,
   ..._g6ArabicSem1.lessons,

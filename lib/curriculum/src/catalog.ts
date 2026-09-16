@@ -114,6 +114,14 @@ import {
   buildG7ScienceSem2BrowserCatalog,
 } from './catalogs/g7ScienceSem2.ts';
 import {
+  G5_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  buildG5ScienceSem1BrowserCatalog,
+} from './catalogs/g5ScienceSem1.ts';
+import {
+  G5_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  buildG5ScienceSem2BrowserCatalog,
+} from './catalogs/g5ScienceSem2.ts';
+import {
   G5_MATH_S1_CURRICULUM_BOOK_ID,
   buildG5MathSem1BrowserCatalog,
 } from './catalogs/g5MathSem1.ts';
@@ -989,6 +997,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // brings grade-5 into MVP_GRADE_IDS below. 'mathematics' is already in
   // MVP_SUBJECT_IDS, so no subject append is needed.
   G5_MATH_S1_CURRICULUM_BOOK_ID,
+  // Grade 5 Science, both semesters — 'science' is already in
+  // MVP_SUBJECT_IDS, so no subject append is needed.
+  G5_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  G5_SCIENCE_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1895,6 +1907,36 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // Grade 5 Science, both semesters — the second Grade 5 subject. Units are
+  // numbered 1-5 then 6-10 continuously across the two semesters, the same
+  // convention as Grade 6/7/8 science. See g5ScienceSem1.ts / g5ScienceSem2.ts
+  // for what the books do and do not print.
+  {
+    id: G5_SCIENCE_S1_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 5, Semester 1',
+    titleAr: 'العلوم – الصف الخامس – الفصل الأول',
+    subjectId: 'science',
+    gradeId: 'grade-5',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G5_SCIENCE_S2_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 5, Semester 2',
+    titleAr: 'العلوم – الصف الخامس – الفصل الثاني',
+    subjectId: 'science',
+    gradeId: 'grade-5',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // The first Grade 6 books in the repo. Maths carries four units and eighteen
   // lessons from the student book alone (no S2 student book was supplied);
@@ -4030,6 +4072,8 @@ const _g7IslamicSem1Browser = buildG7IslamicSem1BrowserCatalog();
 const _g7IslamicSem2Browser = buildG7IslamicSem2BrowserCatalog();
 const _g7ScienceSem1Browser = buildG7ScienceSem1BrowserCatalog();
 const _g5MathSem1Browser = buildG5MathSem1BrowserCatalog();
+const _g5ScienceSem1Browser = buildG5ScienceSem1BrowserCatalog();
+const _g5ScienceSem2Browser = buildG5ScienceSem2BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
 const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
@@ -4278,6 +4322,8 @@ export const UNITS: Unit[] = [
   ..._g7IslamicSem2Browser.units,
   ..._g7ScienceSem1Browser.units,
   ..._g5MathSem1Browser.units,
+  ..._g5ScienceSem1Browser.units,
+  ..._g5ScienceSem2Browser.units,
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
   ..._g6ArabicSem1Browser.units,
@@ -4396,6 +4442,8 @@ export const LESSONS: Lesson[] = [
   ..._g7IslamicSem2Browser.lessons,
   ..._g7ScienceSem1Browser.lessons,
   ..._g5MathSem1Browser.lessons,
+  ..._g5ScienceSem1Browser.lessons,
+  ..._g5ScienceSem2Browser.lessons,
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
   ..._g6ArabicSem1Browser.lessons,
