@@ -80,6 +80,30 @@ export const evaluations = pgTable(
     shareCode: text("share_code").unique(),
 
     /**
+     * When the link stops opening. Refreshed on every publish.
+     *
+     * `GET /take/:code` returns the class roster — every student's display
+     * name — to anyone holding the code, with no login. That is the accepted
+     * price of a link a teacher can write on a board for thirty students. What
+     * was not accepted, and was simply never decided, is that the price ran
+     * forever: the only check was `status === "published"`, so one photograph
+     * of a whiteboard exposed a list of minors for as long as the exam existed.
+     * `classGroups.joinCode` has had an expiry since it was written; this is
+     * the same idea arriving late.
+     *
+     * Nullable, and null means no expiry — so every exam published before this
+     * column existed keeps working exactly as it did. Closing those is a
+     * backfill, which is a decision about live classrooms rather than a
+     * migration, and it is written down in the PR that added this.
+     *
+     * Re-publishing extends it rather than issuing a new code: the code itself
+     * is deliberately stable across re-publishes (see the publish route), so a
+     * teacher who edits a paper the day before a sitting should not find the
+     * link they already handed out has a week less life than they expect.
+     */
+    shareCodeExpiresAt: timestamp("share_code_expires_at", { withTimezone: true }),
+
+    /**
      * The class this exam belongs to, chosen by the teacher after the fact —
      * never at authoring time. Same shape and same reasoning as
      * `saved_materials.class_group_id`: `SET NULL` because archiving a class
