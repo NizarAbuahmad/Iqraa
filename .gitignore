@@ -101,3 +101,4 @@ eval-out/
 # the APK and only identifies the Firebase project to the client.
 *firebase-adminsdk*.json
 *-service-account*.json
+attached_assets/TE010_Book-teacher_guiede,_10th_grade,_semster_one_1785147998881.pdf
