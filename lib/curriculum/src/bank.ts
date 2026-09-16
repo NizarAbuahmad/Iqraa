@@ -107,7 +107,27 @@ export type LicenseId =
   /** Reprintable in principle, but see the policy map — we decline it. */
   | 'CC-BY-SA-4.0'
   /** No redistribution right; the terms permit an embed or a link only. */
-  | 'embed-terms';
+  | 'embed-terms'
+  /**
+   * The NCCD's Collins-prepared series — maths and science at grades 4, 6, 9
+   * and 10. «© HarperCollins Publishers Limited», prepared originally in
+   * English *for* the NCCD, then translated, adapted, customised and published
+   * by the NCCD, and mandated by the Ministry in every school in the Kingdom.
+   *
+   * It exists because neither existing value describes it. `authority` answers
+   * "who stands behind this", and for these books the honest answer is still
+   * `nccd` — it is the publisher of the Arabic edition and the only body named
+   * on the spine. What `authority` cannot express is that the copyright sits
+   * with a British trade publisher, under a full all-rights-reserved notice
+   * ending «without the prior written permission of the publisher».
+   *
+   * Recording it here rather than by demoting 49 rows to `third-party` keeps
+   * those two facts separate, which matters because only one of them is in
+   * doubt. If a written permission is obtained from the NCCD, this is one line
+   * in the map below rather than 49 rows and another chance to land it
+   * half-way.
+   */
+  | 'nccd-collins';
 
 const POLICY_BY_LICENSE: Record<LicenseId, BankUsePolicy> = {
   'public-domain': 'quotable',
@@ -122,6 +142,18 @@ const POLICY_BY_LICENSE: Record<LicenseId, BankUsePolicy> = {
   // conservative direction, and reversible.
   'CC-BY-SA-4.0': 'reference-only',
   'embed-terms': 'embed-only',
+  // The same conservative direction as the share-alike line above, and for the
+  // same reason: the notice names HarperCollins as the copyright holder and
+  // demands prior written permission, and a Ministry decision to *teach* a book
+  // in every school is not a licence to *reprint* it inside a commercial
+  // product. Being wrong this way costs grounding on 35 units and is undone by
+  // editing this line; being wrong the other way puts a British publisher's
+  // textbook, verbatim, into worksheets teachers export and hand out.
+  //
+  // Not a legal opinion and not a permanent answer — the reading that NCCD is
+  // itself "the publisher" whose permission is required is a real one. This is
+  // what we do until someone with the authority to ask the NCCD has asked.
+  'nccd-collins': 'reference-only',
 };
 
 /** The `subject` values the manifest uses, mapped to the app's `subjectId`. */
