@@ -201,11 +201,12 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // unmerged as of 2026-09-16), but no catalog has been built from it yet —
   // see docs/g345-blocked. Delete each line once its catalog and BOOKS row
   // land. science:grade-5 closed 2026-09-16, both semesters (second Grade 5
-  // subject); islamic:grade-5 closed the same day, both semesters (third).
+  // subject); islamic:grade-5 closed the same day, both semesters (third);
+  // social:grade-5 closed the same day, both semesters, title-only (see
+  // g5SocialSem1.ts — a corrupted PDF text layer, not a missing source).
   'arabic:grade-5',
   'english:grade-5',
   'digital-literacy:grade-5',
-  'social:grade-5',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {
