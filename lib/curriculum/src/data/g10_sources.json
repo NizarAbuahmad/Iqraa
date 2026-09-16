@@ -6684,6 +6684,138 @@
         "localPath": "knowledge-base/grade-5-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف الخامس الفصل الثاني.pdf",
         "sha256": "fd4dbd72a15a2f76fd835cd84be72732a3f26a0485e381bbf316efe9cd482377"
       }
+    },
+    {
+      "id": "g5-islamic-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الأول.pdf",
+      "bytes": 54190596,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "islamic",
+        "تربية إسلامية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 89 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 97,
+        "chars": 107794,
+        "localPath": "knowledge-base/grade-5-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الأول.pdf",
+        "sha256": "55869f12f70fdd76d3cbf417f220364ed8bdaa6d58d2371e8315e53a1b397ff2"
+      }
+    },
+    {
+      "id": "g5-islamic-s1-teacher-guide",
+      "title": "دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الأول.pdf",
+      "bytes": 66181367,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "islamic",
+        "تربية إسلامية",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 229 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 235,
+        "chars": 443348,
+        "localPath": "knowledge-base/grade-5-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الأول.pdf",
+        "sha256": "5a81c71a4a53edc3a200687d7a98ffb4803aa6f54c05d886b12e62cbda1c637b"
+      }
+    },
+    {
+      "id": "g5-islamic-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الثاني.pdf",
+      "bytes": 72520681,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "islamic",
+        "تربية إسلامية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 113 صفحةٍ نثريّةٍ، 3 صفحةً (3%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 126,
+        "chars": 147814,
+        "localPath": "knowledge-base/grade-5-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الثاني.pdf",
+        "sha256": "803407d504316bcf871d8f3bcc41fdce0dd292c317ea717df46dc3b9165854f9"
+      }
+    },
+    {
+      "id": "g5-islamic-s2-teacher-guide",
+      "title": "دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الثاني.pdf",
+      "bytes": 105857639,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "islamic",
+        "تربية إسلامية",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 215 صفحةٍ نثريّةٍ، 1 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 224,
+        "chars": 467691,
+        "localPath": "knowledge-base/grade-5-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الثاني.pdf",
+        "sha256": "ba7c817a1b27fb6425400ff925548fe571c5c1d07864880f9c1709c1efc3c06f"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
