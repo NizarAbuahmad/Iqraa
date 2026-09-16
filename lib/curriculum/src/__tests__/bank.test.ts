@@ -201,8 +201,12 @@ describe('bankItems', () => {
 });
 
 describe('use policy', () => {
-  it('makes NCCD quotable and everything else reference-only', () => {
+  it('makes unlicensed NCCD quotable and everything else reference-only', () => {
     for (const s of G10_SOURCES) {
+      // A licence, where there is one, is a direct statement from the
+      // rightsholder and outranks the pedigree — see `usePolicy`. The rule below
+      // is what governs every row that has none, which is most of them.
+      if (s.license) continue;
       assert.equal(usePolicy(s), s.authority === 'nccd' ? 'quotable' : 'reference-only', s.id);
     }
   });
@@ -223,7 +227,10 @@ describe('use policy', () => {
   });
 
   it('lets NCCD material through', () => {
-    const book = bankItems({ authority: 'nccd', kind: 'student-book' })[0];
+    // Unlicensed, because the Collins-prepared books are `nccd` student books
+    // too and are restricted by their licence. Taking `[0]` of all NCCD student
+    // books now picks one of those, and this test is about the other case.
+    const book = bankItems({ authority: 'nccd', kind: 'student-book' }).find(s => !s.license);
     assert.ok(book);
     assert.doesNotThrow(() => assertQuotable(book));
   });
@@ -272,11 +279,33 @@ describe('use policy — explicit licences', () => {
     assert.equal(usePolicy(item('CC-BY-9000' as LicenseId)), 'reference-only');
   });
 
-  it('leaves every existing source on the authority rule', () => {
-    // The licence field is additive. Nothing in G10_SOURCES carries one, so
-    // this is the guard that the change moved no existing document.
-    for (const s of G10_SOURCES) {
-      assert.equal(usePolicy(s), s.authority === 'nccd' ? 'quotable' : 'reference-only', s.id);
+  it('keeps the Collins books NCCD in name and reference-only in permission', () => {
+    // Until 2026-09-16 nothing in G10_SOURCES carried a licence and this test
+    // asserted so. Now 39 rows do — the maths and science books the NCCD had
+    // HarperCollins prepare, which print «© HarperCollins Publishers Limited»
+    // and a full all-rights-reserved notice on page 2.
+    //
+    // Both halves matter. They stay `nccd` because the NCCD *is* the publisher
+    // of the Arabic edition and demoting them to `third-party` would file them
+    // beside a teacher's worksheet from شبكة منهاجي. They are reference-only
+    // because the copyright is not the NCCD's to sub-license to us. Deleting the
+    // licence field to "fix" a grounding regression would restore verbatim
+    // reproduction of a British publisher's textbook, silently — so it is
+    // pinned here as well as in `quotableAuthority.test.ts`, which reads the
+    // books themselves.
+    const collins = G10_SOURCES.filter(s => s.license === 'nccd-collins');
+    // A floor, not a count. The same series at grades 4 and 5 is still being
+    // registered on `worktree-grade-5-books` — 18 more confirmed by scan as of
+    // 2026-09-16, with Grade 5 science still extracting — so any exact number
+    // written here is wrong by the time it merges, and would fail that merge
+    // for doing the right thing. Removal is what this guards, and removal is
+    // what `quotableAuthority.test.ts` catches from the other direction, by
+    // reading the copyright page rather than the manifest.
+    assert.ok(collins.length >= 39, `only ${collins.length} Collins rows licensed`);
+    for (const s of collins) {
+      assert.equal(s.authority, 'nccd', s.id);
+      assert.equal(usePolicy(s), 'reference-only', s.id);
+      assert.throws(() => assertQuotable(s), /nccd-collins/, s.id);
     }
   });
 

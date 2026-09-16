@@ -29,6 +29,9 @@
  * registry, so there is nothing left to drift against.
  */
 import raw from './data/g10_sources.json' with { type: 'json' };
+// Type-only, and it has to stay that way: `bank.ts` imports this module for
+// `G10_SOURCES`, so a value import here would close the cycle.
+import type { LicenseId } from './bank.ts';
 
 /** What kind of document this is — decides how much it can be trusted and how it gets mined. */
 export type SourceKind =
@@ -162,6 +165,22 @@ export interface CurriculumSource {
   semester: 1 | 2 | null;
   kind: SourceKind;
   authority: SourceAuthority;
+  /**
+   * What the document's own copyright page permits, when it says something
+   * `authority` cannot.
+   *
+   * Absent on most rows, and absence is not "unlicensed": it means the book is
+   * an NCCD original and `authority` alone decides, which is the rule
+   * `usePolicy` applied before this field existed. Present, it *wins* — see
+   * `usePolicy` in `bank.ts`, the one place that reads it.
+   *
+   * Every row carrying one today carries `nccd-collins`, added 2026-09-16 after
+   * 49 sources marked `nccd` — and so quotable, and so reproduced verbatim into
+   * generated worksheets — turned out to print «© HarperCollins Publishers
+   * Limited» on page 2. They are still NCCD books; the copyright is still not
+   * ours. Two facts, and `authority` only had room for one.
+   */
+  license?: LicenseId;
   status: SourceStatus;
   /** Set on a 'duplicate': the entry it copies. */
   duplicateOf?: string;
