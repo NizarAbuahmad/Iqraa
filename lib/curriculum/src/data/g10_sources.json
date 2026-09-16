@@ -7509,6 +7509,138 @@
         "localPath": "knowledge-base/grade-5-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الخامس الفصل الثاني.pdf",
         "sha256": "2b419c67df289a15e02897b103cc592a4a3f898431f6348b7783f81452f60076"
       }
+    },
+    {
+      "id": "g5-arabic-s1-exercise-book",
+      "title": "كتاب التمارين لمادة العربية لغتي للصف الخامس الفصل الأول.pdf",
+      "bytes": 8690931,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة العربية لغتي للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "arabic",
+        "لغة عربية",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 51 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 56,
+        "chars": 71097,
+        "localPath": "knowledge-base/grade-5-arabic/support-pdfs/كتاب التمارين لمادة العربية لغتي للصف الخامس الفصل الأول.pdf",
+        "sha256": "191bad25742b0a4508771326f29c29218e6cbda9c106680819dfbedc5ad3276f"
+      }
+    },
+    {
+      "id": "g5-arabic-s1-student-book",
+      "title": "كتاب الطالب لمادة العربية لغتي للصف الخامس الفصل الأول.pdf",
+      "bytes": 20333413,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العربية لغتي للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "arabic",
+        "لغة عربية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 128 صفحةٍ نثريّةٍ، 2 صفحةً (2%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 143,
+        "chars": 155407,
+        "localPath": "knowledge-base/grade-5-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف الخامس الفصل الأول.pdf",
+        "sha256": "94273bf2597f6eb7004f4db96fbab4e0d331ede5921a11e498f8565fd95e5e48"
+      }
+    },
+    {
+      "id": "g5-arabic-s2-exercise-book",
+      "title": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف الخامس الفصل الثاني.pdf",
+      "bytes": 4854056,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "arabic",
+        "لغة عربية",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ tesseract-ocr (--ocr requested). من أصلِ 44 صفحةٍ نثريّةٍ، 1 صفحةً (2%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-16",
+        "pages": 52,
+        "chars": 35416,
+        "localPath": "knowledge-base/grade-5-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف الخامس الفصل الثاني.pdf",
+        "sha256": "5219a499e1682d5afa3b06c0d2926016eda7025cb7b25115ea89a1eb019b0466"
+      }
+    },
+    {
+      "id": "g5-arabic-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة العربية للصف الخامس الفصل الثاني.pdf",
+      "bytes": 19983319,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة العربية للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "arabic",
+        "لغة عربية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 122 صفحةٍ نثريّةٍ، 18 صفحةً (15%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 136,
+        "chars": 179244,
+        "localPath": "knowledge-base/grade-5-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف الخامس الفصل الثاني.pdf",
+        "sha256": "bf152b122de3819dd338a0b38249c0d9d8ed6a39f5e745642a5c78f2062b0108"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
