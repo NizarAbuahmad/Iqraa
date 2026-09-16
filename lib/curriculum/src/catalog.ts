@@ -1404,6 +1404,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Financial%20culture/G8/1/%D8%A7%D9%84%D8%AB%D9%82%D8%A7%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9%208%20%D9%811%20small%20.pdf',
   },
   // ── Arabic Grade 10 – Semester 1 ───────────────────────────────────────────
   // No pdfUrl/guidePdfUrl: the three S1 PDFs (student book, teacher guide,
@@ -1533,6 +1535,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G08/MT08/SE/Grade_08.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2024/%D8%A7%D9%84%D8%A7%D8%AF%D9%84%D8%A9/Grade%2008/MT08_TE2.Book_Proof7_WEB.pdf',
   },
   // ── Math Grade 8 – Semester 1 ────────────────────────────────────────────
   // Closes the Grade 8 Math gap. The attached teacher guide is a later,
@@ -1552,6 +1557,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Math/G8/1/ST/2026_MT08_SE1.pdf',
   },
   // ── Math Grade 7 – Semesters 1 and 2 ────────────────────────────────────
   // First Grade 7 book in this repo. Both semesters have a full teacher
@@ -1572,6 +1579,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Math/G7/1/SE/2026_MT07_SE1.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/7.12.2023/action%20pack/TE07_Book.pdf',
   },
   {
     id: G7_MATH_S2_CURRICULUM_BOOK_ID,
@@ -1585,6 +1595,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G07/7/MT07/SE/MT07_SE2.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2024/%D8%A7%D9%84%D8%A7%D8%AF%D9%84%D8%A9/Grade%2007/Book07_2_Proof4_WEB.pdf',
   },
   // ── Islamic Education Grade 7 – Semesters 1 and 2 ──────────────────────────
   // Second Grade 7 book in this repo. Both semesters have a full teacher
@@ -1606,6 +1619,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Islamic/G7/1/%D8%A5%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9%207%20%D9%811%20Pdf%202026%20.pdf',
   },
   {
     id: G7_ISLAMIC_S2_CURRICULUM_BOOK_ID,
@@ -1619,6 +1634,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Islam/Islam/2025/G7/2/Grade%20G7%20P2%20.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Islam/Islam/2025/%D8%A3%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D8%A5%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9/7/Islamic-TG%20G7%20P2%20HQ%20.pdf',
   },
   // ── Science Grade 7 – Semesters 1 and 2 ────────────────────────────────────
   // Third Grade 7 book. Grade 7/8 both teach combined «العلوم» before it
@@ -1651,6 +1669,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/arabic/G6/1/006%20S.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/arabic/G6/1/006%20E.pdf',
   },
   {
     id: G6_ARABIC_S2_CURRICULUM_BOOK_ID,
@@ -1664,6 +1685,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/2025/%D8%B9%D8%B1%D8%A8%D9%8A%206.7.2025/6/PART2/6th%20II%20Student.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/2025/%D8%B9%D8%B1%D8%A8%D9%8A%206.7.2025/6/PART2/6TH%20II%20EXE%20BOOK.pdf',
   },
   // ── Islamic Education and Social Studies, Grade 6 ─────────────────────────
   // Both title-only, carried from each student book's table of contents —
@@ -1682,6 +1706,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Islamic/G6/1/%D8%A5%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9%206%20%D9%811%20Pdf%202026%20.pdf',
   },
   {
     id: G6_ISLAMIC_S2_CURRICULUM_BOOK_ID,
@@ -1695,6 +1721,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Islam/Islam/2025/G6/2/Islamic%20G6%20P2.pdf',
   },
   {
     id: G6_SOCIAL_S1_CURRICULUM_BOOK_ID,
@@ -1708,6 +1736,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G6/1/%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9%20%D8%B3%D8%A7%D8%AF%D8%B3%20%D9%811%202026%20.pdf',
   },
   {
     id: G6_SOCIAL_S2_CURRICULUM_BOOK_ID,
@@ -1721,6 +1751,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G6/2/-%D8%A7%D9%84%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9-%D8%A7%D9%84%D8%B3%D8%A7%D8%AF%D8%B3%20%D9%812.pdf',
   },
   // ── Vocational, PE and Art, Grade 6 ───────────────────────────────────────
   // All three needed SUBJECTS.grades extended to grade-6 above before they
@@ -1740,6 +1772,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Vocational%20Education/G6/%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%20%D8%B3%D8%A7%D8%AF%D8%B3%20%D9%811%202026%20S%20.pdf',
   },
   {
     id: G6_VOCATIONAL_S2_CURRICULUM_BOOK_ID,
@@ -1753,6 +1787,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%D8%A9/6/2/%D9%85%D9%87%D9%86%D9%8A%20%D8%B3%D8%A7%D8%AF%D8%B3%20%D9%812%202025%20.pdf',
   },
   {
     id: G6_PE_S1_CURRICULUM_BOOK_ID,
@@ -1766,6 +1802,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Sport/G6/1/Sport%20G6%20S1%202026%20.pdf',
   },
   {
     id: G6_ART_S1_CURRICULUM_BOOK_ID,
@@ -1779,6 +1817,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Mm/G6/%D9%81%D9%86%20%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%B3%D8%A7%D8%AF%D8%B3%202026%20.pdf',
   },
   // ── English, Grade 6 ──────────────────────────────────────────────────────
   // Jordan Team Together (Pearson / York Press). Every source is third-party,
@@ -1796,6 +1836,10 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G6/Jordan-Team%20together-G6-SB-S1.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G6/JOR%20TT%20G6%20S1%20Teachers%20Book%20Print.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G6/Jordan-TT-G6-AB-S1.pdf',
   },
   {
     id: G6_ENGLISH_S2_CURRICULUM_BOOK_ID,
@@ -1809,6 +1853,10 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G6/2/Jordan-Team%20Together-G6-SB-S2.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G6/2/Jordan-Team%20Together-G6-TB-S2.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G6/2/Jordan-Team%20Together-G6-AB-S2.pdf',
   },
   // ── Digital Skills, Grade 6 ───────────────────────────────────────────────
   // A cross-curricular companion, not a subject book: its units are blocks
@@ -1827,6 +1875,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D9%85%D9%87%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A%D8%A9/G6/1/G6%20AB%20S1%20-S2%20V3.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D9%85%D9%87%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A%D8%A9/G6/1/G6%20TG%20Full%20Bookv13.pdf',
   },
   // The first Grade 5 book in the repo. Maths carries five units and
   // twenty-five lessons from the student book alone (no S2 student book was
@@ -1863,6 +1914,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Math/G6/1/ST/2026_MT06_SE1.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/7.12.2023/action%20pack/TE06_Book.pdf',
   },
   {
     id: G6_SCIENCE_S1_CURRICULUM_BOOK_ID,
@@ -1876,6 +1930,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G6/1/StBook6.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G6/1/AcBook6.pdf',
   },
   {
     id: G6_SCIENCE_S2_CURRICULUM_BOOK_ID,
@@ -1889,6 +1946,10 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B3%D8%A7%D8%AF%D8%B3%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%B3%D8%A7%D8%AF%D8%B3%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85%20%D9%85%D9%86%201-10/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%20%D8%B9%D9%84%D9%88%D9%85%20(5-8)%20%D8%AC%D8%B2%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A/%D8%AF%D9%84%D9%8A%D9%84%20%D9%85%D8%B9%D9%84%D9%85%20%D8%B9%D9%84%D9%88%D9%85%20%D8%B5%D9%81%20%D8%B3%D8%A7%D8%AF%D8%B3%20%D8%AC%D8%B2%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A%20(2025).pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B3%D8%A7%D8%AF%D8%B3%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%B3%D8%A7%D8%AF%D8%B3%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A%20%D9%86%D8%B4%D8%A7%D8%B7.pdf',
   },
   {
     id: G7_SCIENCE_S1_CURRICULUM_BOOK_ID,
@@ -1902,6 +1963,10 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G7/1/StBook7.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/Science%20date%2010.9.2023/%D8%A7%D9%84%D8%B3%D8%A7%D8%A8%D8%B9/%D8%AF%D9%84%D9%8A%D9%84%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%20%D8%B9%D9%84%D9%88%D9%85%20%D8%B5%D9%81%20%D8%B3%D8%A7%D8%A8%D8%B9%20%D9%811%20.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G7/1/AcBook7.pdf',
   },
   {
     id: G7_SCIENCE_S2_CURRICULUM_BOOK_ID,
@@ -1915,6 +1980,10 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B3%D8%A7%D8%A8%D8%B9%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%B3%D8%A7%D8%A8%D8%B9%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85%20%D9%85%D9%86%201-10/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%20%D8%B9%D9%84%D9%88%D9%85%20(5-8)%20%D8%AC%D8%B2%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A/%D8%AF%D9%84%D9%8A%D9%84%20%D9%85%D8%B9%D9%84%D9%85%20%D8%B9%D9%84%D9%88%D9%85%20%D8%B5%D9%81%20%D8%B3%D8%A7%D8%A8%D8%B9%20%D8%AC%D8%B2%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A%20(2025).pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20(2)/%D8%B9%D9%84%D9%88%D9%85%20%D8%B3%D8%A7%D8%A8%D8%B9%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%B3%D8%A7%D8%A8%D8%B9%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A%20%D9%86%D8%B4%D8%A7%D8%B7.pdf',
   },
   // ── Digital Skills Grade 7 – Semesters 1 and 2 ─────────────────────────────
   // Fourth Grade 7 book. Semester 1 has a full teacher guide (real periods);
@@ -1932,6 +2001,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D9%85%D9%87%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A%D8%A9/G7/1/G7%20Digital%20Skills%20S1%20SB%20.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D9%85%D9%87%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A%D8%A9/G7/1/G7%20Digital%20Skills%20S1%20TG%20.pdf',
   },
   {
     id: G7_DIGITAL_S2_CURRICULUM_BOOK_ID,
@@ -1945,6 +2017,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D9%85%D9%87%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A%D8%A9/G7/2/G7%20Digital%20Skills%20StB%20P2%20U3%20.pdf',
   },
   // ── Social Studies Grade 7 – Semesters 1 and 2 ─────────────────────────────
   // Grade 7/8 both teach combined «الدراسات الاجتماعية» before it splits
@@ -1963,6 +2037,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G7/1/%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9%20%D8%B3%D8%A7%D8%A8%D8%B9%20%D9%811%202026.pdf',
   },
   {
     id: G7_SOCIAL_S2_CURRICULUM_BOOK_ID,
@@ -1976,6 +2052,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G7/2/%D8%A7%D9%84%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9-%D8%A7%D9%84%D8%B3%D8%A7%D8%A8%D8%B9%20%20%D9%812.pdf',
   },
   // ── Financial Literacy Grade 7 – Semesters 1 and 2 ─────────────────────────
   // Extends the subject to grade-7 (SUBJECTS.grades updated). No teacher
@@ -1993,6 +2071,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Financial%20culture/G7/1/%D8%A7%D9%84%D8%AB%D9%82%D8%A7%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9%207%20%D9%811%20%20small%20.pdf',
   },
   {
     id: G7_FINLIT_S2_CURRICULUM_BOOK_ID,
@@ -2006,6 +2086,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B3%D8%A7%D8%A8%D8%B9/%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%AF%D8%B1%D8%A7%D8%B3%D9%8A%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A/Financial_7_S2.pdf',
   },
   // ── Vocational Education Grade 7 – Semesters 1 and 2 ───────────────────────
   // Extends the subject to grade-7 (SUBJECTS.grades updated). Seven
@@ -2023,6 +2105,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Vocational%20Education/G7/%D9%85%D9%87%D9%86%D9%8A%D8%A9%20%D8%B3%D8%A7%D8%A8%D8%B9%20%D9%811%202026%20.pdf',
   },
   {
     id: G7_VOC_S2_CURRICULUM_BOOK_ID,
@@ -2036,6 +2120,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%D8%A9/7/2/%D9%85%D9%87%D9%86%D9%8A%20%D8%B3%D8%A7%D8%A8%D8%B9%20%D9%812%202025%20.pdf',
   },
   // ── Art, Music and Drama Education Grade 7 ─────────────────────────────────
   // Extends the subject to grade-7 (SUBJECTS.grades updated). One book, no
@@ -2052,6 +2138,8 @@ export const BOOKS: Book[] = [
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Mm/G7/%D9%81%D9%86%20%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%B3%D8%A7%D8%A8%D8%B9%202026%20.pdf',
   },
   // ── Physical Education Grade 7 – Semesters 1 and 2 ─────────────────────────
   // Extends the subject to grade-7 (SUBJECTS.grades updated) — the first
@@ -2069,6 +2157,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Sport/G7/1/Sport%20G7%20P1%202026%20.pdf',
   },
   {
     id: G7_PE_S2_CURRICULUM_BOOK_ID,
@@ -2082,6 +2172,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6%D9%8A%D8%A9/7/2/Grade%2007_SE2.pdf',
   },
   // ── Arabic Grade 7 – Semesters 1 and 2 ──────────────────────────────────────
   // Tenth Grade 7 book (series title «العربية لغتي», printed as «اللغة
@@ -2101,6 +2193,10 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/arabic/G7/1/007%20S.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/%D8%A7%D9%84%D8%A7%D8%AF%D9%84%D8%A9%202025/G7/G7_AR_TE01-PQ.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/arabic/G7/1/007%20E.pdf',
   },
   {
     id: G7_ARABIC_S2_CURRICULUM_BOOK_ID,
@@ -2114,6 +2210,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/2025/%D8%B9%D8%B1%D8%A8%D9%8A%206.7.2025/7/P2/%D8%B3%D8%A7%D8%A8%D8%B9%20-%20%D8%B7%D8%A7%D9%84%D8%A8%20-%20%D9%812.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/2025/%D8%B9%D8%B1%D8%A8%D9%8A%206.7.2025/7/P2/%D8%B3%D8%A7%D8%A8%D8%B9-%20%D8%AA%D9%85%D8%A7%D8%B1%D9%8A%D9%86%20%D9%812%20.pdf',
   },
   // ── English Grade 7 – Semesters 1 and 2 ─────────────────────────────────────
   // Eleventh and last Grade 7 subject in this batch. A DIFFERENT publisher
@@ -2134,6 +2233,10 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G7/JOR-TT-G7-S1-PB-Reprint-2026-Combined.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G7/JOR%20TT%20G7%20S1%20Reprints%20TB%20Print%20Updated.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G7/JOR-TT-G7-S1-AB-Reprint-2025-Combined.pdf',
   },
   {
     id: G7_ENG_S2_CURRICULUM_BOOK_ID,
@@ -2147,6 +2250,10 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G7/2/JOR-TT-G7-S2-Reprints-2025-Pupils-Book-Updated.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G7/2/JOR-TT-G7-S2-Reprints-2025-Teachers-Book-Updated.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G7/2/JOR-TT-G7-S2-Reprints-2025-Activity-Book-Updated.pdf',
   },
   // ── Chemistry Grade 9 – Semesters 1 and 2 ──────────────────────────────────
   // The first Grade 9 subject after mathematics, catalogued 2026-09-08 from
@@ -2322,6 +2429,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D9%85%D9%87%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A%D8%A9/G8/1/G8%20Digital%20Skills%20S1%20SB.pdf',
   },
   {
     id: G8_DIGITAL_S2_CURRICULUM_BOOK_ID,
@@ -2335,6 +2444,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D9%85%D9%87%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A%D8%A9/G8/2/G8%20Digital%20Skills%20S2%20SB%20(1).pdf',
   },
   // ── Art, Music and Drama Education Grade 8 ────────────────────────────────
   // Sixth brand-new subject added this week. One book for the whole year —
@@ -2350,6 +2461,8 @@ export const BOOKS: Book[] = [
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Mm/G8/%D9%81%D9%86%20%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%AB%D8%A7%D9%85%D9%86%202026%20.pdf',
   },
   // ── Vocational Education Grade 8 – Semesters 1 and 2 ──────────────────────
   // Seventh brand-new subject added this week. Seven vocational tracks in
@@ -2367,6 +2480,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Vocational%20Education/G8/%D9%85%D9%87%D9%86%D9%8A%20%D8%AB%D8%A7%D9%85%D9%86%20%D9%811%202026%20S%20.pdf',
   },
   {
     id: G8_VOC_S2_CURRICULUM_BOOK_ID,
@@ -2380,6 +2495,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%D8%A9/8/2/%D9%85%D9%87%D9%86%D9%8A%20%D8%AB%D8%A7%D9%85%D9%86%20%D9%812%202025%20.pdf',
   },
   // ── Social Studies Grade 8 – Semesters 1 and 2 ────────────────────────────
   // First real book behind the pre-existing 'social' subject (declared
@@ -2398,6 +2515,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G8/1/%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9%20%D8%AB%D8%A7%D9%85%D9%86%20%D9%811%202026%20.pdf',
   },
   {
     id: G8_SOCIAL_S2_CURRICULUM_BOOK_ID,
@@ -2411,6 +2530,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G8/2/%D8%A7%D9%84%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9-%D8%A7%D9%84%D8%AB%D8%A7%D9%85%D9%86%20%20%D9%812%20(1).pdf',
   },
   // ── Arabic Grade 8 – Semester 1 ───────────────────────────────────────────
   // First Grade 8 book behind the pre-existing 'arabic' subject (already
@@ -2431,6 +2552,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/arabic/G8/1/008%20S.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/arabic/G8/1/008%20E.pdf',
   },
   // ── Arabic Grade 8 – Semester 2 ───────────────────────────────────────────
   // Direct sequel to Semester 1, closing out grade-8 Arabic. Same «العربية
@@ -2450,6 +2574,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/2025/%D8%B9%D8%B1%D8%A8%D9%8A%206.7.2025/8/P2/%D8%AB%D8%A7%D9%85%D9%86%20-%20%D8%B7%D8%A7%D9%84%D8%A8%20-%20%D9%812%20.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/2025/%D8%B9%D8%B1%D8%A8%D9%8A%206.7.2025/8/P2/%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%AB%D8%A7%D9%85%D9%86%20%D9%812%20%D8%AA%D9%85%D8%A7%D8%B1%D9%8A%D9%86%202-11.pdf',
   },
   // ── Islamic Education Grade 8 – Semester 1 ────────────────────────────────
   // First Grade 8 book behind the pre-existing 'islamic' subject (already
@@ -2471,6 +2598,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Islamic/G8/1/%D8%A5%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9%208%20%D9%811%20Pdf%202026%20.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Islam/Islam/2025/%D8%A3%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D8%A5%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9/8/%D9%811/Islamic_TG_G8_T1_(PQ).pdf',
   },
   // ── Islamic Education Grade 8 – Semester 2 ────────────────────────────────
   // Direct sequel to Semester 1, now closing out grade-8 Islamic Education.
@@ -2491,6 +2621,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Islam/Islam/2025/G8/2/Islamic_G8_SE2.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Islam/Islam/2025/%D8%A3%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D8%A5%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9/8/%D9%812/Islamic_TG_G8_T2.pdf',
   },
   // ── English Grade 8 – Semester 1 ──────────────────────────────────────────
   // Same Pearson "Jordan High Note" series/format as the Grade 9 English rows
@@ -2508,6 +2641,10 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G8/Jordan-High%20Note-G8-S1-SB.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G8/JOR%20HN%20G8%20S1%20Teachers%20Book%20Print.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G8/Jordan-High%20Note-G8-T1-WB.pdf',
   },
   // ── English Grade 8 – Semester 2 ──────────────────────────────────────────
   // Continues the Semester 1 row's unit numbering (u6-u10). See g8EngSem2.ts
@@ -2524,6 +2661,10 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G8/2/Jordan%20High%20Note%20G8%20SB%20S2.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G8/2/Jordan%20High%20Note%20G8%20TB%20S2.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G8/2/Jordan%20High%20Note%20G8%20WB%20S2.pdf',
   },
   // ── Science Grade 8 – Semester 1 ──────────────────────────────────────────
   // First real book behind the pre-existing 'science' subject (declared
@@ -2543,6 +2684,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G8/1/StBook8.pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G8/1/AcBook8.pdf',
   },
   // ── Science Grade 8 – Semester 2 ──────────────────────────────────────────
   // Five more units — the human body, heat, chemical bonds and reactions,
@@ -2560,6 +2704,10 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20(2)/%D8%B9%D9%84%D9%88%D9%85%20%D8%AB%D8%A7%D9%85%D9%86%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%AB%D8%A7%D9%85%D9%86%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf',
+    guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85%20%D9%85%D9%86%201-10/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%20%D8%B9%D9%84%D9%88%D9%85%20(5-8)%20%D8%AC%D8%B2%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A/%D8%AF%D9%84%D9%8A%D9%84%20%D9%85%D8%B9%D9%84%D9%85%20%D8%B9%D9%84%D9%88%D9%85%20%D8%B5%D9%81%20%D8%AB%D8%A7%D9%85%D9%86%20%D8%AC%D8%B2%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A%20(2025).pdf',
+    activityPdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20(2)/%D8%B9%D9%84%D9%88%D9%85%20%D8%AB%D8%A7%D9%85%D9%86%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%AB%D8%A7%D9%85%D9%86%20%D9%812%20%D9%86%D8%B4%D8%A7%D8%B7%20.pdf',
   },
   // ── English Grade 9 – Semesters 1 and 2 ───────────────────────────────────
   // Seven lessons per unit, unlike the Grade 10 English rows further down
