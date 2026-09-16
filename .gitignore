@@ -108,4 +108,8 @@ eval-out/
 # the APK and only identifies the Firebase project to the client.
 *firebase-adminsdk*.json
 *-service-account*.json
-attached_assets/TE010_Book-teacher_guiede,_10th_grade,_semster_one_1785147998881.pdf
+# Source curriculum PDFs live in the iqraa-media R2 bucket as <sourceId>.pdf
+# (docs/adding-a-book.md); extract-text.ts fetches any LOCAL_FILES entry that
+# is missing on disk. Untracked 2026-09-16: 174 MB that every clone paid for.
+attached_assets/**/*.pdf
+!attached_assets/Iqra_logo_1785192418025.pdf
