@@ -46,17 +46,10 @@ describe("groundingFor", () => {
   it("prefers an explicit unit id over the topic", () => {
     // The screen knows which lesson the teacher picked; a title match only
     // infers it. A topic naming a different subject must not win.
-    //
-    // Biology rather than chemistry since 2026-09-16. This read
-    // `kbu-chem-s1-nccd-u1` until the Collins-prepared books became
-    // reference-only, and chemistry's only extracted book at this grade is the
-    // student book — so the unit now grounds on nothing and the assertion had
-    // no subject left to be about. Biology keeps its teacher guide, which the
-    // NCCD wrote itself and which carries no Collins notice.
-    const g = groundingFor({ unitId: "kbu-biology-s1-nccd-u1", topic: CIRCLE_LESSON }, true);
+    const g = groundingFor({ unitId: "kbu-chem-s1-nccd-u1", topic: CIRCLE_LESSON }, true);
     assert.ok(g);
-    assert.equal(g.unitId, "kbu-biology-s1-nccd-u1");
-    assert.ok(g.sources.every(s => s.sourceId.startsWith("bio-")), "a maths book answered a biology unit");
+    assert.equal(g.unitId, "kbu-chem-s1-nccd-u1");
+    assert.ok(g.sources.every(s => s.sourceId.startsWith("chem-")), "a maths book answered a chemistry unit");
   });
 
   it("ignores a unit id that is not one", () => {

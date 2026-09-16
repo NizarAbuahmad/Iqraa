@@ -174,11 +174,14 @@ export interface CurriculumSource {
    * `usePolicy` applied before this field existed. Present, it *wins* — see
    * `usePolicy` in `bank.ts`, the one place that reads it.
    *
-   * Every row carrying one today carries `nccd-collins`, added 2026-09-16 after
-   * 49 sources marked `nccd` — and so quotable, and so reproduced verbatim into
-   * generated worksheets — turned out to print «© HarperCollins Publishers
-   * Limited» on page 2. They are still NCCD books; the copyright is still not
-   * ours. Two facts, and `authority` only had room for one.
+   * Every row carrying one today carries `nccd-collins`, added 2026-09-16 when
+   * 49 sources marked `nccd` turned out to print «© HarperCollins Publishers
+   * Limited» on page 2. Iqraa holds the right to use them, so they are quotable
+   * — the field is not restricting anything. It is here so that the alarming
+   * copyright page is answered *in the data* rather than re-investigated every
+   * time someone reads one, and so the notice test can tell a book that has been
+   * ruled on from one nobody has looked at. Two facts about a book, and
+   * `authority` only had room for one.
    */
   license?: LicenseId;
   status: SourceStatus;
