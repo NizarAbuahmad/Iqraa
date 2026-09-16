@@ -7014,6 +7014,72 @@
         "localPath": "knowledge-base/grade-5-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
         "sha256": "369b75972d6e1492244479be84b856ef682bb2a995b990823d17a0beacbfcb80"
       }
+    },
+    {
+      "id": "g5-pe-s1-student-book",
+      "title": "كتاب الطالب التربية الرياضية الصف الخامس الفصل الأول.pdf",
+      "bytes": 2950214,
+      "subject": "physical-education",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب التربية الرياضية الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-pe-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "physical-education",
+        "تربية رياضية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 54 صفحةٍ نثريّةٍ، 2 صفحةً (4%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 59,
+        "chars": 48986,
+        "localPath": "knowledge-base/grade-5-pe/support-pdfs/كتاب الطالب التربية الرياضية الصف الخامس الفصل الأول.pdf",
+        "sha256": "031a6c89f4abc526c58bccd41f8d4b5bda7f2b1cb02f22a7bec1694799dc350b"
+      }
+    },
+    {
+      "id": "g5-pe-s2-student-book",
+      "title": "كتاب الطالب التربية الرياضية الصف الخامس الفصل الثاني.pdf",
+      "bytes": 5087864,
+      "subject": "physical-education",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب التربية الرياضية الصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-pe-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "physical-education",
+        "تربية رياضية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 50 صفحةٍ نثريّةٍ، 1 صفحةً (2%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 54,
+        "chars": 49430,
+        "localPath": "knowledge-base/grade-5-pe/support-pdfs/كتاب الطالب التربية الرياضية الصف الخامس الفصل الثاني.pdf",
+        "sha256": "02cc062e3fdb84a6b761ee31deb9650e97711bbe3444e06edda200ee9cab434a"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
