@@ -114,6 +114,10 @@ import {
   buildG7ScienceSem2BrowserCatalog,
 } from './catalogs/g7ScienceSem2.ts';
 import {
+  G5_MATH_S1_CURRICULUM_BOOK_ID,
+  buildG5MathSem1BrowserCatalog,
+} from './catalogs/g5MathSem1.ts';
+import {
   G6_MATH_S1_CURRICULUM_BOOK_ID,
   buildG6MathSem1BrowserCatalog,
 } from './catalogs/g6MathSem1.ts';
@@ -697,7 +701,15 @@ export const INVESTOR_MVP_CURRICULUM = true;
 // an earlier draft of this line would have collided with it. The remaining
 // MVP subjects are deliberately bookless at grade-6 for now — see
 // KNOWN_BOOKLESS in subjectGradeCoverage.test.ts.
-export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7', 'grade-6'];
+// 'grade-5' joined 2026-09-16 with only Mathematics S1 behind it — same
+// shape as grade-8's and grade-6's single-subject arrivals. APPENDED at
+// index 5, after grade-6. Grade 3/4/5 figures were recorded as blocked on
+// exactly this — no curriculum catalog existed for any of them — in
+// docs/g345-blocked (STATUS.md, 2026-09-16); this catalog is that blocker
+// resolved for Grade 5 Math. Grade 4 and the rest of Grade 5 have extracted
+// text (worktree-grade-5-books) but no catalogs yet, and Grade 3 has nothing
+// at all — see KNOWN_BOOKLESS in subjectGradeCoverage.test.ts.
+export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7', 'grade-6', 'grade-5'];
 // Appended, never inserted: these positions are persisted as bare indices in
 // formState and route URLs, so inserting shifts what a saved URL resolves to.
 // 'physics' joined on 2026-09-03 with the Grade 10 S1 curriculum. Without it,
@@ -973,6 +985,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // the "Jordan High Note" series used at Grade 8/9/10 (see g7EngSem1.ts).
   G7_ENG_S1_CURRICULUM_BOOK_ID,
   G7_ENG_S2_CURRICULUM_BOOK_ID,
+  // Grade 5 Mathematics S1 — the first Grade 5 book, and the book that
+  // brings grade-5 into MVP_GRADE_IDS below. 'mathematics' is already in
+  // MVP_SUBJECT_IDS, so no subject append is needed.
+  G5_MATH_S1_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1805,6 +1821,23 @@ export const BOOKS: Book[] = [
     titleAr: 'المهارات الرقمية – الصف السادس – الفصل الأول',
     subjectId: 'digital-literacy',
     gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  // The first Grade 5 book in the repo. Maths carries five units and
+  // twenty-five lessons from the student book alone (no S2 student book was
+  // supplied). See g5MathSem1.ts for what it does and does not print, and the
+  // JSON's known_gaps for what is deliberately empty.
+  {
+    id: G5_MATH_S1_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 5, Semester 1',
+    titleAr: 'الرياضيات – الصف الخامس – الفصل الأول',
+    subjectId: 'mathematics',
+    gradeId: 'grade-5',
     academicYear: '2024-2025',
     language: 'Arabic',
     edition: '1st',
@@ -3848,6 +3881,7 @@ const _g7MathSem1Browser = buildG7MathSem1BrowserCatalog();
 const _g7IslamicSem1Browser = buildG7IslamicSem1BrowserCatalog();
 const _g7IslamicSem2Browser = buildG7IslamicSem2BrowserCatalog();
 const _g7ScienceSem1Browser = buildG7ScienceSem1BrowserCatalog();
+const _g5MathSem1Browser = buildG5MathSem1BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
 const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
@@ -4095,6 +4129,7 @@ export const UNITS: Unit[] = [
   ..._g7IslamicSem1Browser.units,
   ..._g7IslamicSem2Browser.units,
   ..._g7ScienceSem1Browser.units,
+  ..._g5MathSem1Browser.units,
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
   ..._g6ArabicSem1Browser.units,
@@ -4212,6 +4247,7 @@ export const LESSONS: Lesson[] = [
   ..._g7IslamicSem1Browser.lessons,
   ..._g7IslamicSem2Browser.lessons,
   ..._g7ScienceSem1Browser.lessons,
+  ..._g5MathSem1Browser.lessons,
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
   ..._g6ArabicSem1Browser.lessons,
