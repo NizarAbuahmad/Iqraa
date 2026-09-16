@@ -1691,7 +1691,7 @@ Collins row in memory and asserts it *would* be caught, so if the exemption ever
 goes blind — the most likely place this breaks — that fails rather than passing
 quietly.
 
-**43 rows are licensed, and the count is a moving target** — which is the point.
+**47 rows are licensed, and the count is a moving target** — which is the point.
 The original scan found 49. Ten are Grade 4 rows living only on
 `worktree-grade-5-books`, where Grade 5 is being registered behind them (8 more
 confirmed by scan, science still extracting); that branch adds the licence in a
@@ -1707,13 +1707,38 @@ and it named all four. That is the argument for a check that reads each book's
 own front matter instead of a list someone maintains: the list said 39 and was
 wrong inside a day.
 
-**Scan each file, never the series.** Confirmed twice now, independently. The
-Grade 10 biology, physics and earth-science teacher guides and both Grade 6
-science teacher guides carry no Collins notice anywhere — the NCCD wrote them
-itself — while the student and activity books beside them do. Grade 4 repeats it
-exactly: `g4-science-s1-teacher-guide` and `g4-science-s2-teacher-guide` are
-clean, their student and activity books are not. Going by series would have
-mislabelled both, in the direction that matters.
+**Scan each file, never the series — and never the subject either.** The Grade 10
+biology, physics and earth-science teacher guides and the Grade 4, 5 and 6
+science teacher guides carry no Collins notice anywhere, while the student and
+activity books beside them do. Going by series would mislabel every one of them,
+in the direction that matters: the NCCD's own writing filed as someone else's.
+
+That observation was then generalised to "science teacher guides are the NCCD's
+own", and **the generalisation is false.** Both Grade 10 chemistry teacher
+guides carry «© HarperCollins Publishers Limited 2020» — read off the PDFs with
+`pdftotext` on 2026-09-16, ISBN 978-9923-41-116-2 and 978-9923-41-115-5, two
+distinct books. Chemistry sits with maths, not with the other sciences: Collins
+prepared the maths and chemistry lines end to end, and the science *student*
+materials, while the NCCD wrote the biology/physics/earth/combined-science
+guides.
+
+Worth dwelling on, because the failure was structural rather than unlucky. The
+rule was induced from eight guides that happened to be extracted, and the two
+that were not extracted were the two that broke it — they read as "clean" in the
+manifest only because nothing had ever been read from them, and an un-scanned
+row is indistinguishable from a scanned-clean one in that file. The exception
+was 2 of the 10 unexamined guides, so per-file scanning is not a precaution
+against a rare case; it is the only thing that was ever load-bearing. No
+subject-level shorthand belongs here.
+
+`finlit-s2-student-book` is the one row still genuinely unscanned — a `conflict`
+entry whose PDF is not on disk under any name. Recorded as unknown, not clean.
+
+The Grade 4 maths guide-extract booklets (`g4-math-u{1,2,3,6,7}-guide-extract`,
+`g4-math-s2-support-guide`) are clean while their parent teacher guides carry the
+notice — independent evidence that they are separate publications rather than
+excerpts, which matches the page-overlap measurement that led to registering them
+as distinct.
 
 The Grade 4 maths guide-extract booklets (`g4-math-u{1,2,3,6,7}-guide-extract`,
 `g4-math-s2-support-guide`) are likewise clean while their parent teacher guides
