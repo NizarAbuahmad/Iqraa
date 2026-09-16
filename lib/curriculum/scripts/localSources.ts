@@ -301,4 +301,50 @@ export const LOCAL_FILES: Record<string, string> = {
   'g4-math-u6-guide-extract': 'knowledge-base/grade-4-math/support-pdfs/الوحدة السادسة من دليل المعلم لمادة الرياضيات الصف الرابع.pdf',
   'g4-math-u7-guide-extract': 'knowledge-base/grade-4-math/support-pdfs/الوحدة السابعة من دليل المعلم لمادة الرياضيات الصف الرابع.pdf',
   'g4-science-u6-u7-guide-extract': 'knowledge-base/grade-4-science/support-pdfs/الوحدتان السادسة والسابعة من دليل المعلم لمادة العلوم الصف الرابع.pdf',
+  // grade-5-arabic
+  'g5-arabic-s1-exercise-book': 'knowledge-base/grade-5-arabic/support-pdfs/كتاب التمارين لمادة العربية لغتي للصف الخامس الفصل الأول.pdf',
+  'g5-arabic-s1-student-book': 'knowledge-base/grade-5-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف الخامس الفصل الأول.pdf',
+  'g5-arabic-s2-exercise-book': 'knowledge-base/grade-5-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف الخامس الفصل الثاني.pdf',
+  'g5-arabic-s2-student-book': 'knowledge-base/grade-5-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف الخامس الفصل الثاني.pdf',
+  // grade-5-art
+  'g5-arts-s1-student-book': 'knowledge-base/grade-5-art/support-pdfs/كتاب الطالب التربية الفنية الصف الخامس.pdf',
+  // grade-5-digital-literacy
+  'g5-digital-s1-activity-book': 'knowledge-base/grade-5-digital-literacy/support-pdfs/كتاب الأنشطة لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf',
+  'g5-digital-s1-teacher-guide': 'knowledge-base/grade-5-digital-literacy/support-pdfs/دليل المعلم لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf',
+  // grade-5-english
+  'g5-eng-s1-activity-book': 'knowledge-base/grade-5-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf',
+  'g5-eng-s1-student-book': 'knowledge-base/grade-5-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf',
+  'g5-eng-s1-teacher-guide': 'knowledge-base/grade-5-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf',
+  'g5-eng-s2-activity-book': 'knowledge-base/grade-5-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf',
+  'g5-eng-s2-student-book': 'knowledge-base/grade-5-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf',
+  'g5-eng-s2-teacher-guide': 'knowledge-base/grade-5-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf',
+  // grade-5-islamic
+  'g5-islamic-s1-student-book': 'knowledge-base/grade-5-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الأول.pdf',
+  'g5-islamic-s1-teacher-guide': 'knowledge-base/grade-5-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الأول.pdf',
+  'g5-islamic-s2-student-book': 'knowledge-base/grade-5-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الثاني.pdf',
+  'g5-islamic-s2-teacher-guide': 'knowledge-base/grade-5-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الثاني.pdf',
+  // grade-5-math
+  'g5-math-s1-exercise-book': 'knowledge-base/grade-5-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف الخامس الفصل الأول.pdf',
+  'g5-math-s1-student-book': 'knowledge-base/grade-5-math/support-pdfs/كتاب الطالب لمادة الرياضيات للصف الخامس الفصل الأول.pdf',
+  'g5-math-s1-teacher-guide': 'knowledge-base/grade-5-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف الخامس الفصل الأول 2023.pdf',
+  'g5-math-s2-exercise-book': 'knowledge-base/grade-5-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف الخامس الفصل الثاني.pdf',
+  'g5-math-s2-student-book': 'knowledge-base/grade-5-math/support-pdfs/كتاب الطالب لمادة الرياضيات للصف الخامس الفصل الثاني.pdf',
+  'g5-math-s2-support-guide': 'knowledge-base/grade-5-math/support-pdfs/دليل المعلم إلى المواد المساندة للتعلم الرياضيات خامس الفصل الثاني.pdf',
+  'g5-math-s2-teacher-guide': 'knowledge-base/grade-5-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف الخامس الفصل الثاني.pdf',
+  // grade-5-pe
+  'g5-pe-s1-student-book': 'knowledge-base/grade-5-pe/support-pdfs/كتاب الطالب التربية الرياضية الصف الخامس الفصل الأول.pdf',
+  'g5-pe-s2-student-book': 'knowledge-base/grade-5-pe/support-pdfs/كتاب الطالب التربية الرياضية الصف الخامس الفصل الثاني.pdf',
+  // grade-5-science
+  'g5-science-s1-activity-book': 'knowledge-base/grade-5-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف الخامس الفصل الأول.pdf',
+  'g5-science-s1-student-book': 'knowledge-base/grade-5-science/support-pdfs/كتاب الطالب لمادة  العلوم الصف الخامس الفصل الأول.pdf',
+  'g5-science-s1-teacher-guide': 'knowledge-base/grade-5-science/support-pdfs/دليل المعلم لمادة العلوم الصف الخامس الفصل الأول.pdf',
+  'g5-science-s2-activity-book': 'knowledge-base/grade-5-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف الخامس الفصل الثاني.pdf',
+  'g5-science-s2-student-book': 'knowledge-base/grade-5-science/support-pdfs/كتاب الطالب لمادة العلوم الصف الخامس الفصل الثاني.pdf',
+  'g5-science-s2-teacher-guide': 'knowledge-base/grade-5-science/support-pdfs/دليل المعلم لمادة العلوم الصف الخامس الفصل الثاني.pdf',
+  // grade-5-social
+  'g5-social-s1-student-book': 'knowledge-base/grade-5-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الأول.pdf',
+  'g5-social-s2-student-book': 'knowledge-base/grade-5-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الثاني.pdf',
+  // grade-5-vocational
+  'g5-voc-s1-student-book': 'knowledge-base/grade-5-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الخامس الفصل الأول.pdf',
+  'g5-voc-s2-student-book': 'knowledge-base/grade-5-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الخامس الفصل الثاني.pdf',
 };
