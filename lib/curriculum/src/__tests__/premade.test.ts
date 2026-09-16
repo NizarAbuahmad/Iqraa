@@ -22,6 +22,7 @@ import {
   premadeForLesson,
   premadeForGradeSubject,
   PREMADE_LEVELS,
+  VERIFICATION_SOURCES,
   type PremadeWorksheet,
 } from '../premade.ts';
 
@@ -79,7 +80,7 @@ describe('the pre-made sheet manifest', () => {
       );
       for (const entry of sheet.keyVerification) {
         assert.ok(
-          entry.verificationSource === 'symbolic' || entry.verificationSource === 'none',
+          (VERIFICATION_SOURCES as readonly string[]).includes(entry.verificationSource),
           `${sheet.id} q${entry.num}: ${entry.verificationSource} is not a source we can stand behind`,
         );
       }

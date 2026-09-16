@@ -38,23 +38,39 @@ describe('coverage of Grade 10 mathematics', () => {
   );
 
   /**
-   * 33, not 36: the grade has 36 lessons and three of them are the GeoGebra
-   * lab lessons (`order === 0`), which are an activity to run rather than a
-   * lesson to set questions on, so they get no sheet. Measured by running the
-   * catalog builders, not read off a doc.
+   * 28, arrived at by subtraction and measured rather than read off a doc:
+   *
+   *   36 lessons in Grade 10 maths
+   *   −3 GeoGebra lab lessons (`order === 0`) — an activity to run, not a
+   *      lesson to set questions on
+   *   −5 held back in `scripts/build-premade-sheets.ts` because
+   *      `detectMathFamily` picks the wrong branch of maths for them and the
+   *      sheet comes out about the wrong subject
+   *   = 28
+   *
+   * Raise this as entries leave `HELD_BACK`; the ceiling is 33.
    */
   it(
-    'ships a sheet for every teachable lesson',
+    'ships a sheet for every lesson not held back',
     {
       skip:
         sheets.length === 0
-          ? 'the manifest is empty until scripts/build-premade-sheets.ts runs with a real OPENAI_API_KEY'
+          ? 'the manifest is empty until scripts/build-premade-sheets.ts has been run'
           : false,
     },
     () => {
-      assert.ok(sheets.length >= 33, `expected at least 33 sheets, got ${sheets.length}`);
+      assert.ok(sheets.length >= 28, `expected at least 28 sheets, got ${sheets.length}`);
+      assert.ok(sheets.length <= 33, `more sheets than there are teachable lessons: ${sheets.length}`);
     },
   );
+
+  it('never ships a blank answer', () => {
+    for (const sheet of sheets) {
+      for (const entry of sheet.content.answerKey) {
+        assert.ok(entry.answer.trim(), `${sheet.id} q${entry.num} has a blank answer`);
+      }
+    }
+  });
 
   it('never lists the same lesson twice at one level', () => {
     const seen = new Set<string>();

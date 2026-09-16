@@ -43,16 +43,31 @@ export const PREMADE_LEVELS = ['easy', 'medium', 'hard'] as const;
 export type PremadeLevel = (typeof PREMADE_LEVELS)[number];
 
 /**
- * How one answer key was established.
+ * How one answer key was established. Three states, kept apart on purpose.
  *
- * `'symbolic'` means the SymPy verifier confirmed it. `'none'` means nothing
- * did — which is a fact worth recording, not a reason to hide the question.
- * There is deliberately no value meaning "the generator said so": a key the
- * model asserted and nothing checked is exactly `'none'`.
+ * - `'symbolic'` — the SymPy verifier proved it. Only this may show a badge.
+ * - `'bank'` — the question and its key were produced together from the
+ *   question bank, so the key is as sound as the template that wrote it. No
+ *   verifier saw it. This is the same word the app's own `verifiedBy` uses.
+ * - `'none'` — nothing established it. A key a model asserted and nothing
+ *   checked is exactly this.
+ *
+ * `'bank'` exists because folding it into either neighbour would lie in one
+ * direction or the other: calling it verified claims a proof nobody ran,
+ * calling it `'none'` throws away the fact that the answer was computed rather
+ * than guessed.
  */
+export type VerificationSource = 'symbolic' | 'bank' | 'none';
+
+export const VERIFICATION_SOURCES: readonly VerificationSource[] = [
+  'symbolic',
+  'bank',
+  'none',
+];
+
 export interface KeyVerification {
   num: number;
-  verificationSource: 'symbolic' | 'none';
+  verificationSource: VerificationSource;
 }
 
 export interface PremadeWorksheetQuestion {
