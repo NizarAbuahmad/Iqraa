@@ -2140,9 +2140,38 @@ Grade 7 PE 14/14 and 15/15, Grade 7 arabic 25/25 — and place none of them,
 because those rows do not print a parenthesised lesson number. That is 78
 lessons behind one missing signal. Numbering the rows positionally would impose
 the catalog's shape and then "verify" against it, which is no check at all: one
-out-of-order lesson misfiles everything after it and nothing detects it. The
-honest version is matching row titles to catalog lesson titles, which is
-deferred rather than dismissed. The others are genuinely short: Grade 6 arabic
+out-of-order lesson misfiles everything after it and nothing detects it.
+
+**The honest version — matching row titles to catalog lesson titles — was
+built on 2026-09-16 and DOES NOT WORK. Do not rebuild it.** The idea: number a
+row only if its title matches the catalog lesson it would be assigned, accept
+the book only if every row matches in order, fail closed otherwise. Compare
+normalised Arabic character MULTISETS rather than words, because this corpus
+transposes letters around the definite article («الحركة» → «احلركة») and
+transposition preserves the letters.
+
+It was tested against the seven books whose lesson numbers ARE printed, where
+`contents_outline` already gives the right answer. It failed all seven, and the
+measurement says why:
+
+- **True-pair scores run 0.000 to 1.000; the best WRONG pair reaches 0.897.**
+  The distributions overlap completely, so no threshold separates them.
+- **The title is not always in the row.** Grade 8 vocational S1 row 0 extracts
+  as «8 : ) 1( الدرس» — the geometry grouping caught the lesson marker and the
+  page number and no title at all. Nothing to match.
+- **Truncation biases toward the WRONG sibling, structurally.** Grade 7 social
+  S1 row 12 extracts as «حضارات بلاد الشام القديمة (المظاهر», cut off by the
+  column width. Its true lesson is «…(المظاهرُ الحضاريّةُ والإنجازاتُ)» at
+  0.617; the sibling «…(النشأةُ)» scores 0.897 and wins. Sibling lessons here
+  share a long prefix, so the discriminating text is the tail — exactly what
+  truncation removes — and similarity divided by the longer string pulls a
+  truncated row toward the SHORTER sibling. That is a bias, not noise, and
+  tuning cannot fix it.
+
+Ordering accuracy on books where it should have been perfect was 11 of 12 and
+19 of 20. A mechanism that exists to be trusted where its answer cannot be
+checked has no business being wrong where it can be. These 78 lessons stay
+closed. The others are genuinely short: Grade 6 arabic
 22 rows of 25, Grade 6 maths 16 of 18, Grade 7 maths 18 of 20 and 22 of 23,
 Grade 7 arabic S2 24 of 25, and Grade 7 vocational S2 finds all 10 lessons but
 splits them into 8 units against the catalog's 7.
