@@ -1691,12 +1691,21 @@ Collins row in memory and asserts it *would* be caught, so if the exemption ever
 goes blind — the most likely place this breaks — that fails rather than passing
 quietly.
 
-**Only 39 of the 49 are on this branch**, and 49 is already stale. The ten Grade
-4 rows exist solely on `worktree-grade-5-books`, where Grade 5 is being
-registered behind them — 8 more confirmed by scan, with Grade 5 science still
-extracting. That branch merges second and adds the licence in a commit of its
-own; the fixed test is the backstop either way, since a row arriving as `nccd`
+**43 rows are licensed, and the count is a moving target** — which is the point.
+The original scan found 49. Ten are Grade 4 rows living only on
+`worktree-grade-5-books`, where Grade 5 is being registered behind them (8 more
+confirmed by scan, science still extracting); that branch adds the licence in a
+commit of its own, and the test is the backstop, since a row arriving as `nccd`
 with no licence fails CI on whichever branch carries it.
+
+The other four are the reason this paragraph is worth reading.
+`g6-math-s1-exercise-book`, `g6-math-s2-exercise-book`, `g6-math-s1-teacher-guide`
+and `g6-math-s2-teacher-guide` reached `main` between the finding and the fix
+landing — carrying the notice, marked `nccd`, quotable. Nobody spotted them.
+**The test did**, on its first contact with rows it had not been written against,
+and it named all four. That is the argument for a check that reads each book's
+own front matter instead of a list someone maintains: the list said 39 and was
+wrong inside a day.
 
 **Scan each file, never the series.** Confirmed twice now, independently. The
 Grade 10 biology, physics and earth-science teacher guides and both Grade 6
