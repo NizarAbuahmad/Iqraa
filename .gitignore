@@ -71,6 +71,13 @@ knowledge-base/**/*.pdf
 # need one again.
 knowledge-base/**/figures/**/_review.png
 
+# Crops the flat-panel test rejected, set aside by `extract_book_figures.py`
+# instead of deleted so the human pass can see what was taken and put a real
+# figure back. Working material for a review, like `_review.png` above, and
+# bulkier — about one candidate in six lands here. A figure kept from this pile
+# is moved up into the book's own directory, which is what gets committed.
+knowledge-base/**/figures/**/_dropped/
+
 # Replit
 .cache/
 .local/

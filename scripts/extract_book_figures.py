@@ -412,39 +412,6 @@ BOOKS: dict[str, tuple[str, str]] = {
     "g7-science-s2-student-book": ("grade-7-science", "knowledge-base/grade-7-science/support-pdfs/كتاب الطالب لمادة العلوم الصف السابع الفصل الثاني.pdf"),
     "g7-digital-s1-student-book": ("grade-7-digital", "knowledge-base/grade-7-digital/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف السابع الفصل الأول.pdf"),
     "g7-digital-s2-student-book": ("grade-7-digital", "knowledge-base/grade-7-digital/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف السابع الفصل الثاني.pdf"),
-
-    # Grades 8, 9 and 10 — the subjects that were never registered,
-    # added 2026-09-16. Same gap grades 6/7 had: nothing was wrong with
-    # the detector, these books had simply never been listed. Probed
-    # against their catalogs before any extraction, like every other
-    # entry here.
-    #
-    # Source ids follow g10_sources.json where it already names the book,
-    # which is why Grade 9 digital literacy is `g9-digital-literacy-` and
-    # not `g9-digital-`, and why Grade 10 carries no grade segment.
-    #
-    # Grade 8 arabic is S1 only: the library's 8th-grade arabic folder
-    # holds a file named «للصف السابع الفصل الثاني», which is Grade 7's
-    # S2 book misfiled, not Grade 8's. Grade 8 arabic S2 does not exist.
-    "g8-arabic-s1-student-book": ("grade-8-arabic", "knowledge-base/grade-8-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية (العربية لغتي) للصف الثامن الفصل الأول.pdf"),
-    "g8-islamic-s1-student-book": ("grade-8-islamic", "knowledge-base/grade-8-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف الثامن الفصل الأول.pdf"),
-    "g8-islamic-s2-student-book": ("grade-8-islamic", "knowledge-base/grade-8-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف الثامن الفصل الثاني.pdf"),
-    "g9-arabic-s1-student-book": ("grade-9-arabic", "knowledge-base/grade-9-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف التاسع الفصل الأول.pdf"),
-    "g9-arabic-s2-student-book": ("grade-9-arabic", "knowledge-base/grade-9-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف التاسع الفصل الثاني.pdf"),
-    "g9-civic-s1-student-book": ("grade-9-civic", "knowledge-base/grade-9-civic/support-pdfs/كتاب الطالب لمادة التربية الوطنية والمدنية للصف التاسع الفصل الأول.pdf"),
-    "g9-civic-s2-student-book": ("grade-9-civic", "knowledge-base/grade-9-civic/support-pdfs/كتاب الطالب لمادة التربية الوطنية والمدنية للصف التاسع الفصل الثاني.pdf"),
-    "g9-digital-literacy-s1-student-book": ("grade-9-digital-literacy", "knowledge-base/grade-9-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الأول.pdf"),
-    "g9-digital-literacy-s2-student-book": ("grade-9-digital-literacy", "knowledge-base/grade-9-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الثاني.pdf"),
-    "g9-finlit-s1-student-book": ("grade-9-finlit", "knowledge-base/grade-9-finlit/support-pdfs/كتاب الطالب لمادة الثقافة المالية للصف التاسع الفصل الأول.pdf"),
-    "g9-finlit-s2-student-book": ("grade-9-finlit", "knowledge-base/grade-9-finlit/support-pdfs/كتاب الطالب لمادة الثقافة المالية للصف التاسع الفصل الثاني.pdf"),
-    "g9-pe-s1-student-book": ("grade-9-pe", "knowledge-base/grade-9-pe/support-pdfs/كتاب الطالب لمادة التربية الرياضية الصف التاسع الفصل الأول.pdf"),
-    "g9-pe-s2-student-book": ("grade-9-pe", "knowledge-base/grade-9-pe/support-pdfs/كتاب الطالب التربية الرياضية الصف التاسع الفصل الثاني.pdf"),
-    "arabic-s1-student-book": ("grade-10-arabic", "knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf"),
-    "arabic-s2-student-book": ("grade-10-arabic", "knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf"),
-    "civic-s1-student-book": ("grade-10-civic", "knowledge-base/grade-10-civic/support-pdfs/كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الأول.pdf"),
-    "civic-s2-student-book": ("grade-10-civic", "knowledge-base/grade-10-civic/support-pdfs/كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الثاني.pdf"),
-    "digital-s1-student-book": ("grade-10-digital-literacy", "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf"),
-    "digital-s2-student-book": ("grade-10-digital-literacy", "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الثاني.pdf"),
     "g8-digital-s1-student-book": (
         "grade-8-digital-literacy",
         MIRROR_G8 + "7asob/كتاب الطالب لمادة المهارات الرقمية الصف الثامن الفصل الأول.pdf",
@@ -1158,6 +1125,43 @@ MAX_TEXT_SHARE = 0.30
 # It cannot catch everything, and is not meant to. Dense Arabic prose has a
 # high edge count too, so text blocks that slip past MAX_TEXT_SHARE still need
 # the human pass — see this file's docstring.
+#
+# THE «zero false positives» ABOVE HOLDS FOR PHYSICS ONLY. That sample was 57
+# phys-s1 crops; maths and chemistry draw sparse line art on white, which is
+# mostly background and therefore scores like a flat fill. Re-measured
+# 2026-09-16 over 858 hand-labelled maths/chemistry crops: real figures run
+# 8.8-54.3 (median 18.8, 5th percentile 11.6) and the junk this is meant to
+# remove runs 4.1-11.0. The two overlap across the whole 8.8-11.0 band.
+#
+# So DO NOT try to fix this with a per-subject number — that was the obvious
+# move and it does not work. The trade measured on those crops:
+#
+#     threshold   real kept        junk re-admitted
+#       11.0        2 of 8            1 of 111
+#       10.6        5 of 8           16 of 111
+#       10.0        6 of 8           67 of 111
+#        8.7        8 of 8           81 of 111
+#
+# Keeping every real figure means re-admitting three quarters of the junk,
+# because edge density is not measuring the thing that separates them. The junk
+# is «الدرسُ N» divider badges, page-corner ornaments, page-number banners and
+# footers — junk by WHAT IT DEPICTS, not by how few edges it carries. Neither a
+# saturation nor a whitespace feature separates them either: junk sits at 0.52
+# median saturated-pixel share, but real figures reach 0.40 at the 90th
+# percentile. A feature that actually separates these classes is unfound.
+#
+# What changed instead: a crop rejected here is no longer deleted. It moves to
+# `_dropped/` beside the book's figures, with its record and its own contact
+# sheet, so what this is wrong about can be seen and put back. The value stays
+# at 11.0 because every lower value measured is worse; what was fixed is that
+# being wrong used to be invisible. Six real figures were recovered this way —
+# see `main()`.
+#
+# How often it is wrong depends entirely on the book, so do not carry a single
+# number around: 7 of 119 set-aside crops were real across g8-math-s1/s2 and
+# g9-chemistry-s1/s2, but 3 of 9 on g7-math-s1, whose geometry is drawn as a
+# few thin rays on white — the cleanest possible case for this to misjudge.
+# Read every `_dropped/_review.png`; do not sample it.
 MIN_EDGE_DENSITY = 11.0
 
 
@@ -1541,61 +1545,97 @@ def main() -> None:
         outdir = ROOT / "knowledge-base" / subject / "figures" / source_id
         outdir.mkdir(parents=True, exist_ok=True)
         index, written = [], []
-        flat = 0
+        # Crops the flat-panel test rejected. Kept, not deleted — see
+        # `_dropped/` below and MIN_EDGE_DENSITY's own comment.
+        dropped, dropped_files = [], []
+        dropdir = outdir / "_dropped"
         # A page can now yield several figures, so the page number alone is no
         # longer a unique name. The first keeps the bare `p035.png` it has
         # always had; the rest get a letter. Filenames are referenced from the
         # generated asset map, not from the lesson map, so this churns only
         # what `gen_book_figure_assets.mjs` regenerates.
         seen_on_page: dict[int, int] = {}
+        # Every candidate on the page, including the ones set aside. Separate
+        # from `seen_on_page` precisely BECAUSE that one rewinds on a drop: two
+        # drops on one page would otherwise be handed the same name and the
+        # second would overwrite the first.
+        cand_on_page: dict[int, int] = {}
         for n, page, r, lesson in figures_in(pdf, source_id):
             k = seen_on_page.get(n, 0)
             seen_on_page[n] = k + 1
+            c = cand_on_page.get(n, 0)
+            cand_on_page[n] = c + 1
             suffix = "" if k == 0 else chr(ord("b") + k - 1)
             name = f"p{n + 1:03d}{suffix}.png"
             path = outdir / name
             page.get_pixmap(clip=r, dpi=DPI_OVERRIDES.get(source_id, DPI)).save(path)
-            # Rendered, measured, and dropped again if it turned out to be a
-            # flat decorative panel. Judged after rendering because that is
-            # what the measure needs; the file is unlinked and the page's
-            # suffix counter rewound so the next real figure keeps the
-            # unbroken `p035`, `p035b`, `p035c` naming.
-            if edge_density(path) < MIN_EDGE_DENSITY:
-                path.unlink()
+            record = {
+                "file": name,
+                "sourceId": source_id,
+                # 1-based, matching how a teacher cites a page.
+                "pdfPage": n + 1,
+                "rect": [round(v, 1) for v in r],
+                # As PRINTED in the book, so «الوحدة 5» finds unit 5.
+                "unit": lesson["unit"] if lesson else None,
+                "lesson": lesson["lesson"] if lesson else None,
+                "lessonTitleEn": lesson["titleEn"] if lesson else None,
+                # Chemistry states no English lesson title the opener band
+                # can reach, so the Arabic one is its only identifier — and
+                # it is what the curriculum's titles are written in anyway.
+                "lessonTitleAr": lesson.get("titleAr") if lesson else None,
+                "lessonStartPage": lesson["startPage"] if lesson else None,
+            }
+            # Rendered, measured, and set aside if it looks like a flat
+            # decorative panel. Judged after rendering because that is what the
+            # measure needs; the page's suffix counter is rewound so the next
+            # real figure keeps the unbroken `p035`, `p035b`, `p035c` naming.
+            #
+            # Set aside, NOT deleted. This test is wrong often enough to matter
+            # — 7 of 119 on the Grade 8/9 books, 3 of 9 on g7-math-s1 — and it
+            # used to be wrong invisibly. See MIN_EDGE_DENSITY.
+            # The crop moves to `_dropped/` with its record, so the review pass
+            # can see what was taken and put a real figure back without having
+            # to re-derive its rect.
+            edge = edge_density(path)
+            if edge < MIN_EDGE_DENSITY:
                 seen_on_page[n] = k
-                flat += 1
+                dropdir.mkdir(parents=True, exist_ok=True)
+                # `pNNN.png` may yet be taken by the next crop on this page,
+                # which is the whole point of rewinding the counter — so the
+                # set-aside copy carries the candidate's position instead.
+                record["file"] = f"p{n + 1:03d}_c{c}.png"
+                record["edgeDensity"] = round(edge, 1)
+                path.replace(dropdir / record["file"])
+                dropped.append(record)
+                dropped_files.append(dropdir / record["file"])
                 continue
             written.append(path)
-            index.append(
-                {
-                    "file": name,
-                    "sourceId": source_id,
-                    # 1-based, matching how a teacher cites a page.
-                    "pdfPage": n + 1,
-                    "rect": [round(v, 1) for v in r],
-                    # As PRINTED in the book, so «الوحدة 5» finds unit 5.
-                    "unit": lesson["unit"] if lesson else None,
-                    "lesson": lesson["lesson"] if lesson else None,
-                    "lessonTitleEn": lesson["titleEn"] if lesson else None,
-                    # Chemistry states no English lesson title the opener band
-                    # can reach, so the Arabic one is its only identifier — and
-                    # it is what the curriculum's titles are written in anyway.
-                    "lessonTitleAr": lesson.get("titleAr") if lesson else None,
-                    "lessonStartPage": lesson["startPage"] if lesson else None,
-                }
-            )
+            index.append(record)
         check_semester(source_id, subject, index)
         (outdir / "index.json").write_text(
             json.dumps({"sourceId": source_id, "figures": index}, ensure_ascii=False, indent=1),
             encoding="utf-8",
         )
         review_sheet(written, outdir / "_review.png")
+        if dropped:
+            # Its own index and its own contact sheet, both gitignored with the
+            # crops. Putting a figure back means moving the PNG up one level
+            # and pasting its record into index.json — the rect is already
+            # right, because it is the rect this run computed.
+            (dropdir / "index.json").write_text(
+                json.dumps({"sourceId": source_id, "figures": dropped},
+                           ensure_ascii=False, indent=1),
+                encoding="utf-8",
+            )
+            review_sheet(dropped_files, dropdir / "_review.png")
         placed = sum(1 for f in index if f["unit"] is not None)
-        flat_note = f", {flat} flat panels dropped" if flat else ""
+        flat_note = f", {len(dropped)} set aside as flat" if dropped else ""
         print(f"{source_id}: {len(index)} figures ({placed} placed in a lesson"
               f"{flat_note}) → {outdir.relative_to(ROOT)}")
     print("\nReview each _review.png and delete any crop that grabbed the wrong")
     print("thing before wiring these into the app.")
+    print("Then check each _dropped/_review.png in full: the flat-panel test")
+    print("misjudges sparse line art, and what it took are real figures.")
 
 
 if __name__ == "__main__":
