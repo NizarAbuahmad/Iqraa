@@ -7,7 +7,7 @@ import type {
   WorksheetOutput, WorksheetSection,
 } from './AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
-import { getUnitForLesson, resolveGroundedKbLesson } from '../knowledgeBase.ts';
+import { getLessonById, getUnitForLesson, resolveGroundedKbLesson } from '../knowledgeBase.ts';
 import { figuresForLesson } from '../bookFigures.ts';
 import {
   parseDocumentGrounding,
@@ -55,8 +55,26 @@ type Lang = 'ar' | 'en';
 type QType = 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem';
 interface WQ { text: string; options?: string[]; answer: string; points: number }
 
-/** KB lesson only when the topic clears the grounding confidence bar. */
-function groundedKb(topic: string, lang: Lang): KBLesson | null {
+/**
+ * The KB lesson to ground on: the id when the caller supplied one, otherwise
+ * the topic if it clears the grounding confidence bar.
+ *
+ * **An id identifies a lesson; a title does not.** Four of the 33 Grade 10
+ * maths lesson titles exist verbatim elsewhere in the curriculum, so resolving
+ * by title alone grounded «النسب المثلثية» and «تبسيط المقادير الأسية» on Grade
+ * 9 lessons, «المتتاليات» on a Grade 7 one, and «جمع المتجهات وطرحها» on Grade
+ * 10 **physics** — a maths worksheet built from physics key terms. Every
+ * `/ai-tools` screen already sends `AIRequest.lessonId`; this path simply threw
+ * it away and asked the semantic search to guess what the caller already knew.
+ *
+ * The title path stays for callers that genuinely only hold a topic string —
+ * chat, and a screen opened with a bare `topic` param.
+ */
+function groundedKb(topic: string, lang: Lang, lessonId?: string): KBLesson | null {
+  if (lessonId) {
+    const byId = getLessonById(lessonId);
+    if (byId) return byId;
+  }
   return resolveGroundedKbLesson(topic, lang);
 }
 
@@ -313,6 +331,40 @@ function lpPriorReview(priorConcepts: string[], notes: string, lang: Lang): stri
   return parts.join(' ');
 }
 
+// ─── Key-term definitions ─────────────────────────────────────────────────────
+
+/**
+ * A key term's definition, or null when there is not one to use.
+ *
+ * `definitionAr` is frequently an **empty string** rather than absent — 8 of
+ * the 36 Grade 10 maths lessons have one, «المعادلة الأسية» and «قانون جيب
+ * التمام» among them. That matters because `??` does not fire on `''`, so
+ * `t0?.definitionAr?.split(' ').slice(0, 9).join(' ') ?? fallback` evaluated to
+ * `''` and flowed straight through as the answer. The multiple-choice factory
+ * then shipped an item whose *correct option* was the empty string, and the
+ * worksheet's answer key had a blank entry for it — roughly half the
+ * generations on those lessons, because the affected template is one of two in
+ * the easy tier.
+ *
+ * Every site that reads a definition goes through here, so a blank one can only
+ * ever become a stated fallback and never a blank answer.
+ */
+function definitionOf(definition: string | undefined): string | null {
+  const trimmed = definition?.trim();
+  return trimmed ? trimmed : null;
+}
+
+/** First `words` words of a definition, or null when there is no definition. */
+function defWords(definition: string | undefined, words: number): string | null {
+  const full = definitionOf(definition);
+  return full ? full.split(/\s+/).slice(0, words).join(' ') : null;
+}
+
+/** First `chars` characters of a definition, or null when there is none. */
+function defChars(definition: string | undefined, chars: number): string | null {
+  return definitionOf(definition)?.substring(0, chars) ?? null;
+}
+
 // ─── Points helpers ───────────────────────────────────────────────────────────
 
 function mcPts(diff: string) { return diff === 'easy' ? 2 : diff === 'hard' ? 6 : 4; }
@@ -331,7 +383,7 @@ function makeMCQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
   const c1 = kb?.keyConceptsAr?.[1] ?? `تطبيق ${topic}`;
 
-  const correct0 = t0?.definitionAr?.split(' ').slice(0, 9).join(' ') ?? `الوصف الصحيح لـ${topic}`;
+  const correct0 = defWords(t0?.definitionAr, 9) ?? `الوصف الصحيح لـ${topic}`;
   const templates: TieredTemplate[] = [
     { tier: 'easy', make: () => ({ text: `أيّ مما يلي يُعرِّف ${t0?.ar ?? topic} بشكل صحيح؟`, options: placeCorrect(correct0, [`مفهوم يختلف عن ${topic}`, 'وصف لظاهرة أخرى', 'لا شيء مما ذُكر']), answer: correct0, points: pts }) },
     { tier: 'medium', make: () => ({ text: `عند تطبيق ${topic} في مسألة حياتية، ما الخطوة الأولى الصحيحة؟`, options: placeCorrect('تحديد المعطيات والمطلوب بدقة', ['كتابة الإجابة النهائية مباشرة', 'تخمين النتيجة دون تحليل', 'تجاهل البيانات الناقصة']), answer: 'تحديد المعطيات والمطلوب بدقة', points: pts }) },
@@ -354,7 +406,7 @@ function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
   const c1 = kb?.keyConceptsAr?.[1] ?? `تطبيق ${topic}`;
   const templates: TieredTemplate[] = [
-    { tier: 'easy', make: () => ({ text: `اشرح بأسلوبك الخاص مفهوم ${t0?.ar ?? topic} مع إعطاء مثال تطبيقي.`, answer: t0 ? `التعريف: ${t0.definitionAr.split(' ').slice(0, 10).join(' ')}... + مثال حياتي.` : `التعريف الدقيق + مثال واضح.`, points: pts }) },
+    { tier: 'easy', make: () => ({ text: `اشرح بأسلوبك الخاص مفهوم ${t0?.ar ?? topic} مع إعطاء مثال تطبيقي.`, answer: defWords(t0?.definitionAr, 10) ? `التعريف: ${defWords(t0?.definitionAr, 10)}... + مثال حياتي.` : `التعريف الدقيق + مثال واضح.`, points: pts }) },
     { tier: 'easy', make: () => ({ text: `صِف الخطوات المنهجية التي تتبعها لحل مسألة تتعلق بـ${topic}. استخدم قائمة مرقّمة.`, answer: 'الخطوات: 1. تحديد المعطيات 2. اختيار الأسلوب 3. التنفيذ 4. التحقق.', points: pts }) },
     { tier: 'medium', make: () => ({ text: `كيف يرتبط ${topic} بما درسناه سابقًا؟ اذكر ارتباطًا واحدًا على الأقل وفسّره.`, answer: 'ارتباط منطقي موثّق مع وحدة أو مادة سابقة.', points: pts }) },
     { tier: 'medium', make: () => ({ text: `ما أهمية دراسة ${topic}؟ اذكر فائدتين على الأقل وأعطِ مثالًا لكل منهما.`, answer: 'فائدتان: 1. بناء مهارة… 2. تطبيق على… مع مثالين.', points: pts }) },
@@ -373,7 +425,7 @@ function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const t1 = kb?.keyTerms?.[1];
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
   const templates: TieredTemplate[] = [
-    { tier: 'easy', make: () => ({ text: `أكمل: ${t0?.ar ?? topic} يُعرَّف بأنه __________.`, answer: `${t0?.definitionAr?.split(' ').slice(0, 6).join(' ') ?? 'راجع تعريف الكتاب المدرسي'}`, points: pts }) },
+    { tier: 'easy', make: () => ({ text: `أكمل: ${t0?.ar ?? topic} يُعرَّف بأنه __________.`, answer: defWords(t0?.definitionAr, 6) ?? 'راجع تعريف الكتاب المدرسي', points: pts }) },
     { tier: 'medium', make: () => ({ text: `عند تطبيق ${topic}، فإن __________ يتغير نتيجة __________.`, answer: 'المتغير / السبب (راجع الكتاب المدرسي)', points: pts }) },
     { tier: 'easy', make: () => ({ text: `الخطوات الثلاث الرئيسية لتطبيق ${topic} هي: __________، __________، __________.`, answer: '1. تحديد المعطيات 2. التطبيق 3. التحقق', points: pts }) },
     { tier: 'medium', make: () => ({ text: `${c0} يرتبط بمفهوم أساسي ويؤدي إلى نتيجة محددة — اذكرهما.`, answer: 'يذكر الطالب المفهوم المرتبط والنتيجة المترتبة عليه (راجع الكتاب المدرسي)', points: pts }) },
@@ -449,7 +501,7 @@ function makeMCQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const t1 = kb?.keyTerms?.[1];
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
   const c1 = kb?.keyConceptsEn?.[1] ?? `application of ${topic}`;
-  const correct0 = t0?.definitionEn?.substring(0, 60) ?? `The correct description of ${topic}`;
+  const correct0 = defChars(t0?.definitionEn, 60) ?? `The correct description of ${topic}`;
   const templates: TieredTemplate[] = [
     { tier: 'easy', make: () => ({ text: `Which of the following correctly defines ${t0?.en ?? topic}?`, options: placeCorrect(correct0, [`An unrelated concept`, 'A description of a different phenomenon', 'None of the above']), answer: correct0, points: pts }) },
     { tier: 'medium', make: () => ({ text: `When applying ${topic} to a real-world problem, what is the first step?`, options: placeCorrect('Identify what is given and what is asked', ['Write the final answer immediately', 'Guess the answer without analysis', 'Ignore any missing data']), answer: 'Identify what is given and what is asked', points: pts }) },
@@ -472,7 +524,7 @@ function makeSAQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
   const c1 = kb?.keyConceptsEn?.[1] ?? `application of ${topic}`;
   const templates: TieredTemplate[] = [
-    { tier: 'easy', make: () => ({ text: `Explain in your own words what ${t0?.en ?? topic} means and give one real-world example.`, answer: t0 ? `Definition: ${t0.definitionEn.substring(0, 60)}... + real example.` : 'Accurate definition + concrete example.', points: pts }) },
+    { tier: 'easy', make: () => ({ text: `Explain in your own words what ${t0?.en ?? topic} means and give one real-world example.`, answer: defChars(t0?.definitionEn, 60) ? `Definition: ${defChars(t0?.definitionEn, 60)}... + real example.` : 'Accurate definition + concrete example.', points: pts }) },
     { tier: 'easy', make: () => ({ text: `Describe the systematic steps you would follow to solve a problem involving ${topic}. Use a numbered list.`, answer: 'Steps: 1. Identify given/asked 2. Choose method 3. Execute 4. Verify.', points: pts }) },
     { tier: 'medium', make: () => ({ text: `How is ${topic} connected to what we have studied previously? Give at least one documented connection.`, answer: 'Logical, documented connection to a prior unit or subject.', points: pts }) },
     { tier: 'medium', make: () => ({ text: `State two benefits of studying ${topic} and give a real-world example for each.`, answer: 'Benefit 1: … example. Benefit 2: … example.', points: pts }) },
@@ -491,7 +543,7 @@ function makeFBQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const t1 = kb?.keyTerms?.[1];
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
   const templates: TieredTemplate[] = [
-    { tier: 'easy', make: () => ({ text: `${t0?.en ?? topic} is __________ characterised by __________.`, answer: `${t0?.en ?? topic} / ${t0?.definitionEn?.split(' ').slice(0, 4).join(' ') ?? 'see textbook'}`, points: pts }) },
+    { tier: 'easy', make: () => ({ text: `${t0?.en ?? topic} is __________ characterised by __________.`, answer: `${t0?.en ?? topic} / ${defWords(t0?.definitionEn, 4) ?? 'see textbook'}`, points: pts }) },
     { tier: 'medium', make: () => ({ text: `When applying ${topic}, __________ changes as a result of __________.`, answer: 'The dependent variable / the cause (see textbook)', points: pts }) },
     { tier: 'easy', make: () => ({ text: `The three main steps for applying ${topic} are: __________, __________, and __________.`, answer: '1. Identify given 2. Apply method 3. Verify', points: pts }) },
     { tier: 'medium', make: () => ({ text: `${c0} is related to __________ and leads to __________.`, answer: `${c0} / related phenomenon or outcome`, points: pts }) },
@@ -632,7 +684,7 @@ export class MockAIService extends AIService {
             .replace(/^(تبسيط\s*الشرح|بسّط\s*الشرح|بسط\s*الشرح|simplify(\s+explanation)?)\s*[:：\-]?\s*/i, '')
             .trim()
     ) || rawTopic;
-    const kb = docs.present ? null : groundedKb(topic, lang);
+    const kb = docs.present ? null : groundedKb(topic, lang, req.lessonId);
     const dur = req.duration ?? 45;
     const style = req.teachingStyle ?? 'direct';
     const fileLabel = docs.fileNames[0]
@@ -802,7 +854,7 @@ export class MockAIService extends AIService {
     const docs = docsFromReq(req);
     const topic = (docs.present && docs.title) ? docs.title : req.topic;
     // Prefer uploaded materials over a weakly matching KB lesson
-    const kb = docs.present ? null : groundedKb(topic, lang);
+    const kb = docs.present ? null : groundedKb(topic, lang, req.lessonId);
     const selectedTypes: QType[] = (req.questionTypes as QType[])?.length
       ? (req.questionTypes as QType[])
       : ['multiple_choice', 'short_answer'];
@@ -970,7 +1022,7 @@ export class MockAIService extends AIService {
     await this.delay();
     beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
-    const kb = groundedKb(req.topic, lang);
+    const kb = groundedKb(req.topic, lang, req.lessonId);
     const topic = req.topic;
     const totalMarks = req.totalMarks ?? 20;
     const duration = req.duration ?? 20;
@@ -1067,7 +1119,7 @@ export class MockAIService extends AIService {
     if (!req.continueMathPractice) beginMathPracticeSession();
 
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
-    const kb = groundedKb(req.topic, lang);
+    const kb = groundedKb(req.topic, lang, req.lessonId);
     const topic = req.topic;
     const isWarmup = req.activityVariant === 'warmup';
     const actType = isWarmup ? 'warmup' : (req.activityType ?? 'group');
@@ -1112,7 +1164,7 @@ export class MockAIService extends AIService {
     beginMathPracticeSession();
     const isAr = req.language === 'arabic';
     const topic = req.topic;
-    const kb = groundedKb(topic, isAr ? 'ar' : 'en');
+    const kb = groundedKb(topic, isAr ? 'ar' : 'en', req.lessonId);
     const dur = req.duration ?? 20;
     const slideDuration = Math.round((dur * 60) / 5);
     const actType = req.activityType ?? 'escape-challenge';
@@ -2203,7 +2255,7 @@ export class MockAIService extends AIService {
     await this.delay();
     beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
-    const kb = groundedKb(req.topic, lang);
+    const kb = groundedKb(req.topic, lang, req.lessonId);
     const topic = req.topic;
     const estMinutes = 25;
     const math = isMathContext(topic, kb, req.subject);
