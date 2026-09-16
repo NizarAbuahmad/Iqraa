@@ -49,9 +49,15 @@ mediaRouter.get("/media/unsplash-photo", async (req, res) => {
     return;
   }
 
+  // `count` turns one lookup into a browsable set for the media-library
+  // picker. Absent means 1, which is the deck builder's original call and
+  // keeps its exact behaviour — including the download ping below.
+  const requested = Number(req.query.count ?? 1);
+  const count = Number.isFinite(requested) ? Math.min(Math.max(Math.trunc(requested), 1), 10) : 1;
+
   try {
     const url = `${UNSPLASH_SEARCH_URL}?query=${encodeURIComponent(query)}`
-      + `&per_page=1&orientation=landscape&content_filter=high`;
+      + `&per_page=${count}&orientation=landscape&content_filter=high`;
     const response = await fetch(url, {
       headers: { Authorization: `Client-ID ${accessKey}` },
     });
@@ -60,27 +66,54 @@ mediaRouter.get("/media/unsplash-photo", async (req, res) => {
       return;
     }
     const data = (await response.json()) as UnsplashSearchResponse;
-    const result = data.results?.[0];
-    if (!result) {
+    const results = data.results ?? [];
+    if (results.length === 0) {
       res.json({ photo: null });
       return;
     }
 
-    pingDownload(result.links.download_location, accessKey);
+    // Unsplash requires the download endpoint to be hit when a photo is
+    // actually *used*, not merely listed. Asking for one photo is the deck
+    // builder about to put it on a slide, so that still pings here; a picker
+    // asking for ten is browsing, and pings the one the teacher chooses
+    // through POST /media/unsplash-used instead. Pinging all ten would report
+    // nine uses that never happened.
+    if (count === 1) pingDownload(results[0]!.links.download_location, accessKey);
 
-    res.json({
-      photo: {
-        url: result.urls.regular,
-        thumbUrl: result.urls.small,
-        photographer: result.user.name,
-        photographerUrl: `${result.user.links.html}?utm_source=iqraa&utm_medium=referral`,
-        unsplashLink: `${result.links.html}?utm_source=iqraa&utm_medium=referral`,
-      },
-    });
+    const photos = results.map(result => ({
+      url: result.urls.regular,
+      thumbUrl: result.urls.small,
+      photographer: result.user.name,
+      photographerUrl: `${result.user.links.html}?utm_source=iqraa&utm_medium=referral`,
+      unsplashLink: `${result.links.html}?utm_source=iqraa&utm_medium=referral`,
+      downloadLocation: result.links.download_location,
+    }));
+
+    // `photo` stays the first result so existing callers are untouched.
+    res.json({ photo: photos[0], photos });
   } catch (err) {
     logger.error({ err }, "unsplash-photo lookup failed");
     res.json({ photo: null });
   }
+});
+
+/**
+ * Report that a listed photo is now actually being used.
+ *
+ * The other half of the licence obligation described above: the picker lists
+ * without pinging, so the ping has to happen when the teacher picks. Answers
+ * 204 whatever happens — a failed attribution ping must never look like a
+ * failed "add this picture to my lesson".
+ */
+mediaRouter.post("/media/unsplash-used", (req, res) => {
+  const accessKey = process.env.UNSPLASH_ACCESS_KEY;
+  const downloadLocation = String(req.body?.downloadLocation ?? "");
+  // Only ever Unsplash's own endpoint — this takes a URL from a client and
+  // fetches it, so without the host check it is an open request proxy.
+  if (accessKey && /^https:\/\/api\.unsplash\.com\//.test(downloadLocation)) {
+    pingDownload(downloadLocation, accessKey);
+  }
+  res.status(204).end();
 });
 
 interface YouTubeSearchResponse {

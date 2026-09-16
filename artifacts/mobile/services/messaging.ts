@@ -284,15 +284,25 @@ export async function listMessages(
 
 /** Merging a polled page into what is on screen lives in ./messageMerge.ts — see the note there on why it is not in this file. */
 
-/** `attachmentDataUrl` is a `data:<mime>;base64,...` string — see services/lessonMediaPick.ts for how one gets built. */
+/**
+ * `attachmentDataUrl` is a `data:<mime>;base64,...` string — see
+ * services/lessonMediaPick.ts for how one gets built.
+ *
+ * `libraryItemId` sends something already in the teacher's media library
+ * instead, with no re-upload: an uploaded file is attached by reference, and a
+ * saved link is appended to the message as text (the server does both — see
+ * `shareFromLibrary` in routes/messaging.ts). Prefer it over re-encoding a
+ * file the server already has.
+ */
 export async function sendMessage(
   threadId: string,
   body: string,
   attachmentDataUrl?: string,
+  libraryItemId?: string,
 ): Promise<ChatMessage> {
   const res = await apiFetch(`/messaging/threads/${threadId}/messages`, {
     method: 'POST',
-    body: JSON.stringify({ body, attachmentDataUrl }),
+    body: JSON.stringify({ body, attachmentDataUrl, libraryItemId }),
   });
   const data = await readJson<{ message: ChatMessage }>(res, 'Sending message');
   return data.message;

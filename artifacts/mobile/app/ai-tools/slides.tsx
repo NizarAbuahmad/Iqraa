@@ -41,6 +41,7 @@ import {
 import type { AttachedResource } from '@/services/classMedia';
 import { LessonResources } from '@/components/ui/LessonResources';
 import { LessonAttachments } from '@/components/ui/LessonAttachments';
+import { MediaLibraryPicker } from '@/components/ui/MediaLibraryPicker';
 import type { LessonMediaItem } from '@/services/lessonMedia';
 import type { LessonMediaItem as UploadedAttachment } from '@/services/lessonMediaApi';
 import type { DeckVideo } from '@/services/youtubeVideo';
@@ -48,7 +49,7 @@ import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { timerSecondsForSlide } from '@/services/presentationUtils';
-import { deleteItem, getAllItems, saveItem, updateItem } from '@/services/workspace';
+import { deleteItem, getAllItems, saveItem, updateItem, type SavedMaterial } from '@/services/workspace';
 import { findMatchingItem } from '@/services/savedMaterialMatch';
 import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
@@ -172,6 +173,15 @@ export default function SlidesScreen() {
   const [attached, setAttached] = useState<LessonMediaItem[]>([]);
   /** The teacher's own uploaded photos/files for this lesson (server-side, R2-backed). */
   const [uploadedAttachments, setUploadedAttachments] = useState<UploadedAttachment[]>([]);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  /**
+   * Media chosen from the library for THIS deck — a photo from another
+   * lesson, a book figure, a video off the search tab. Kept apart from
+   * `attached`/`uploadedAttachments`, which are what is pinned to the lesson
+   * itself and come back every time it is opened. A one-off pick should not
+   * quietly become a permanent fixture of the lesson.
+   */
+  const [libraryPicks, setLibraryPicks] = useState<AttachedResource[]>([]);
   /**
    * Every uploaded kind — image, audio, document — now has a slide renderer.
    * Merged with the pinned-URL resources so both sources land in the deck
@@ -185,12 +195,48 @@ export default function SlidesScreen() {
     ...uploadedAttachments
       .filter((m): m is UploadedAttachment & { url: string } => !!m.url)
       .map(m => ({ kind: m.kind, url: m.url, caption: m.caption })),
-  ] : []), [attached, uploadedAttachments, includeAttachments]);
+    ...libraryPicks,
+  ] : []), [attached, uploadedAttachments, includeAttachments, libraryPicks]);
   /** Whether there is anything to offer — no attachments, no switch. */
   const hasAttachments = attached.length + uploadedAttachments.length > 0;
   /** True once the example-verification pass has resolved — the summary row
       stays silent while a check is still in flight. */
   const [verifyDone, setVerifyDone] = useState(false);
+
+  /**
+   * Take what the picker returned.
+   *
+   * With a deck already on screen the slides go in immediately — a teacher who
+   * just chose a picture expects to see it, not to have to rebuild the deck to
+   * find out where it went. Before that, the pick is held for generation,
+   * which lands it in the same slot the lesson's own attachments use.
+   *
+   * Picking also switches `includeAttachments` on: choosing media and then
+   * watching the deck build without it is the toggle silently overriding an
+   * explicit choice.
+   */
+  const addFromLibrary = (picked: AttachedResource[]) => {
+    if (picked.length === 0) return;
+    setIncludeAttachments(true);
+    if (deck) {
+      setDeck({ ...deck, slides: insertLessonResources(deck.slides, picked, isAr) });
+      return;
+    }
+    setLibraryPicks(prev => [...prev, ...picked]);
+  };
+
+  /**
+   * Open a saved game rather than splice it in — see the picker's
+   * `onPickGame` for why its slides cannot be merged. A push, so the deck
+   * being built here is still here on the way back.
+   */
+  const openSavedGame = (m: SavedMaterial) => {
+    let parsed: ClassroomActivity | null = null;
+    try { parsed = JSON.parse(m.content); } catch { return; }
+    if (!parsed?.slides?.length) return;
+    setPendingClassroomActivity(parsed);
+    router.push('/ai-tools/classroom/presentation' as any);
+  };
 
   const openEdit = (i: number) => {
     if (!deck) return;
@@ -815,6 +861,30 @@ export default function SlidesScreen() {
           <LessonResources topic={topic.trim()} onChange={setAttached} />
           <LessonAttachments lessonId={groundedLessonId} onChange={setUploadedAttachments} />
 
+          {/* Everything that is NOT pinned to this lesson: the teacher's whole
+              library, the book's own figures, and a search across free stock
+              photos and YouTube. */}
+          <Pressable
+            onPress={() => setLibraryOpen(true)}
+            style={{
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+              alignItems: 'center',
+              gap: 8,
+              paddingVertical: 10,
+              marginBottom: 12,
+            }}
+          >
+            <Ionicons name="images-outline" size={18} color={colors.primary} />
+            <Text style={{ color: colors.primary, fontFamily: 'Almarai_700Bold', fontSize: 13 }}>
+              {isAr ? 'أضف من المكتبة' : 'Add from library'}
+            </Text>
+            {libraryPicks.length > 0 ? (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
+                {isAr ? `(${libraryPicks.length} جاهزة)` : `(${libraryPicks.length} ready)`}
+              </Text>
+            ) : null}
+          </Pressable>
+
           <View style={{ gap: 10, marginBottom: 18 }}>
             <Toggle label={t('slidesIncludeExamples')} value={includeExamples} onChange={setIncludeExamples} />
             <Toggle label={t('slidesIncludePractice')} value={includePractice} onChange={setIncludePractice} />
@@ -1161,6 +1231,15 @@ export default function SlidesScreen() {
           </View>
         </View>
       </Modal>
+
+      <MediaLibraryPicker
+        visible={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        lessonId={groundedLessonId}
+        defaultQuery={topic.trim()}
+        onPick={addFromLibrary}
+        onPickGame={openSavedGame}
+      />
 
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>

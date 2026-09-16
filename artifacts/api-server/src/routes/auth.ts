@@ -1514,8 +1514,12 @@ router.delete(
       // unreachable. A failure here leaves an unreferenced blob behind —
       // logged at error level because nothing else will ever notice it.
       // ponytail: no retry queue. Add one if these lines actually appear.
+      // A library item that is only a link (a saved YouTube video) has no
+      // `r2Key` and so nothing to erase — filtered out rather than passed
+      // through, since `deleteObject(null)` would count as an orphan and log
+      // an error for storage that never existed.
       const keys = [
-        ...media.map(m => m.key),
+        ...media.map(m => m.key).filter((k): k is string => Boolean(k)),
         ...attachments.map(a => a.key as string),
       ];
       let orphaned = 0;

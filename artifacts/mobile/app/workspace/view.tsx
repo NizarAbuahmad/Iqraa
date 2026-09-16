@@ -15,6 +15,8 @@ import {
   QuizOutput, WorksheetOutput,
 } from '@/services/ai/AIService';
 import { looksLikeActivityContent } from '@/services/materialShape';
+import { refreshDeckMedia, type LibraryMediaRef } from '@/services/classMedia';
+import { listLibrary } from '@/services/lessonMediaApi';
 import { arCountPhrase } from '@/services/arCount';
 // One map, not two. This screen kept its own copy of the same five colours;
 // adding a sixth to a private copy is exactly the drift `materialKind.ts` was
@@ -36,6 +38,19 @@ import {
   shareAsText,
 } from '@/services/share';
 
+/**
+ * Whether a stored material is a deck with at least one slide pointing at a
+ * media-library item — a string test on the raw JSON, deliberately, so the
+ * decision to spend a request is made before anything is parsed.
+ */
+function deckNeedsFreshMedia(rawContent: string): boolean {
+  return rawContent.includes('"mediaItemId"');
+}
+
+function hasSlides(content: unknown): content is { slides: ClassroomActivity['slides'] } {
+  return Array.isArray((content as { slides?: unknown }).slides);
+}
+
 export default function WorkspaceViewScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -49,6 +64,8 @@ export default function WorkspaceViewScreen() {
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const [loadingPDF, setLoadingPDF] = useState(false);
+  /** Freshly signed library URLs, fetched only for a deck that needs them. */
+  const [freshMedia, setFreshMedia] = useState<LibraryMediaRef[]>([]);
   const [loadingWord, setLoadingWord] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
@@ -56,10 +73,18 @@ export default function WorkspaceViewScreen() {
 
   useEffect(() => {
     if (id) {
-      getItem(id).then(m => {
+      getItem(id).then(async m => {
         setItem(m);
         setFavorited(m?.isFavorite ?? false);
         setLoading(false);
+        // A deck's media URLs are signed and expire in an hour, but the deck
+        // itself is stored as JSON and reopened weeks later — so the pictures
+        // quietly stop loading. Re-sign them from the library. Only asked for
+        // when a slide actually names a library item, so nothing else pays
+        // for a request it has no use for.
+        if (m && deckNeedsFreshMedia(m.content)) {
+          setFreshMedia(await listLibrary({}));
+        }
       });
     }
   }, [id]);
@@ -90,6 +115,12 @@ export default function WorkspaceViewScreen() {
     | LessonPlanOutput | WorksheetOutput | QuizOutput | ClassroomActivity | ActivityOutput
     | null = null;
   try { content = JSON.parse(item.content); } catch { /* noop */ }
+
+  // Swap the expired signed URLs for fresh ones. A no-op for every other
+  // material type, and for a deck whose media are links or book figures.
+  if (content && freshMedia.length > 0 && hasSlides(content)) {
+    content = refreshDeckMedia(content, freshMedia);
+  }
 
   /**
    * The kind this material is rendered, exported and edited as.
