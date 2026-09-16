@@ -2195,6 +2195,45 @@ Grade 6 social S1/S2, Grade 6 vocational S2, Grade 6 arabic S2, Grade 7 art and
 Grade 7 digital literacy S1/S2. No contents rows at any tolerance and no
 openers — there is nothing in these books to read.
 
+## Grades 3, 4 and 5 figures are blocked on CATALOGS, 2026-09-16
+
+Asked for and not started, because the blocker is upstream of the figure
+pipeline: **there is no Grade 3/4/5 curriculum catalog.** No
+`iqra_curriculum_g3/g4/g5_*.json`, nothing in `lib/curriculum/src/catalogs/`,
+and no `g3-`/`g4-`/`g5-` rows in `g10_sources.json`.
+
+**A catalog is a hard prerequisite, not a nicety.** Figures are stored with
+`(sourceId, unit, lesson)` exactly as the BOOK prints them, and
+`figure-lesson-map.json` joins that to a `kbl-` lesson id. With no catalog
+there is no id to join to and `figuresForLesson()` has nothing to key on, so
+the images would sit in the repo permanently unreferenced. And the entry rule
+every book passes — *its detected unit/lesson structure must reproduce its
+catalog exactly* — is inert without one. That rule is what caught the +4 unit
+offset in Grade 8 science S2 and the +6 in Grade 7 social S2, each of which
+would otherwise have put a whole book's figures on the wrong semester.
+
+Grade 4 text (41 sources) and Grade 5 extraction were done by another session
+on `worktree-grade-5-books`, unmerged as of this writing. Sources and extracted
+text are not catalogs; units and lessons still have to exist.
+
+**Two things will decide whether these books place once catalogs land, and both
+argue for doing work BEFORE extraction rather than after:**
+
+- **Grade 4/5 contents spreads are the worst-extracting pages in those books** —
+  index pages come out unreadable while the body prose is clean (the Grade 6
+  maths note says the same: «أغلبها صفحات فهرس؛ النثر سليم»). `CONTENTS_PLACEMENT`
+  reads exactly that spread, and all 14 books currently blocked across grades
+  6-10 fail for a contents-page reason. **OCR the contents spread before
+  probing.** For this job a clean contents spread is worth more than clean body
+  text, which is the opposite of what text ingestion optimises for.
+- **Disk headroom.** The automatic OCR fallback rasterizes every page before it
+  can discover it cannot finish, so on a full disk it presents as a hang rather
+  than an error. Free space was 7.9 GB of 475 GB when this was written.
+
+Figure extraction for these grades belongs with the rest of the figure work
+rather than being rebuilt alongside the text track — the placement machinery,
+the per-book probe and the entry rule already exist.
+
 ## Grades 8, 9 and 10: the last 19 books registered, 0 shipped, 2026-09-16
 
 Every remaining Grade 8/9/10 subject with a catalog and no `BOOKS` entry was
