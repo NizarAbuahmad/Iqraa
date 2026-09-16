@@ -28,6 +28,40 @@ so the plan travels with the repo.
 work must happen in a new worktree off `main`, because the main checkout is on another task's branch
 with uncommitted changes to `STATUS.md`, which Task 8 also edits.
 
+## Revision, 2026-09-15 — the media library is not on `main`
+
+The three exploration scans read the **main checkout**, which has
+`feat/islamic-and-s2-figures` checked out. That branch carries 7 unmerged commits containing the whole
+teacher media library — nullable `lessonId`, `sourceUrl`, the `video` kind, `GET /media/library`,
+`saveLibraryLink`, `MediaLibraryPicker`, `ShareToStudentsSheet`. **None of it is on `main`,** which has
+a much simpler `lesson_media`: `lessonId` NOT NULL, `r2Key`/`mimeType`/`sizeBytes` NOT NULL, kinds
+`image | audio | document`, and a 163-line route file with no library endpoint. There is no open PR for
+that branch, so its merge date is unknown.
+
+This plan was therefore written against a codebase state `main` does not have — the trap CLAUDE.md
+names first ("Verify claims against the running system").
+
+**Decision: stay on `main` and defer everything that needs the library.**
+
+- **Task 3 is deferred, not done.** It edits `lib/db/src/schema/lessonMedia.ts`, the exact file that
+  branch rewrites; adding a column now guarantees a hard conflict for no v1 benefit.
+- **Task 7 is deferred** with it — it only exists to display what Task 3 attaches.
+- **Task 4 covers four sources, not five.** `my-library` is dropped; `ResourceSource` is
+  `premade-sheet | activity | curriculum-media | book-qr`.
+- **Task 5 renders four sections, not five.** Every one is bundled, so the `loading`/`ready`/
+  `unavailable` three-state handling is not needed in v1 — there is no network call behind any section.
+- **Task 6 attaches sheets and activities only.** Curated media and book-QR rows offer `open`, because
+  `saveLibraryLink` — the call that would give a teacher their own row to attach — is on that branch.
+
+What v1 still delivers: pre-made sheets, the 7 activity/game cards, 19 curated licensed resources and
+186 book-QR resources, browsable and filterable, with print for sheets and add-to-class for sheets and
+activities. Media attach slots in behind the same `ResourceItem` view-model when the library merges,
+with no rework of the tab.
+
+**Count correction: 33 sheets, not 36.** Measured by running the catalog builders: Grade 10 maths has
+36 lessons, of which 3 are GeoGebra labs (`order === 0`) that get no sheet. Task 4's assertion is
+`>= 33`.
+
 ## Global Constraints
 
 - Arabic is the product language; the UI is **RTL-first**. Every new string needs an `ar` + `en` pair in
