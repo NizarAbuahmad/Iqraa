@@ -194,22 +194,6 @@
    "lessonStartPage": 19
   },
   {
-   "file": "p030.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 30,
-   "rect": [
-    451.0,
-    0.0,
-    573.7,
-    137.8
-   ],
-   "unit": 5,
-   "lesson": 2,
-   "lessonTitleEn": "Bisectors in Triangle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 19
-  },
-  {
    "file": "p032.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 32,

@@ -1450,11 +1450,82 @@ def check_semester(source_id: str, subject: str, index: list[dict]) -> None:
 def main() -> None:
     # Optional source-id arguments run only those books.
     #
-    # Re-running everything rewrites the seven already-committed books too, and
-    # their output moves — the current script finds more in chem-s2, finlit and
-    # both Grade 9 maths books than the committed index holds, because those
-    # were extracted before later detector work. That is a real improvement and
-    # a separate change; sweeping it into an unrelated commit would bury it.
+    # DO NOT re-run an already-committed book hoping to refresh it. Measured
+    # 2026-09-16 across all 47 committed indexes: `figures_in` returns the
+    # identical rect and the identical (unit, lesson) for every figure that
+    # survived review, in every book. There is no detector drift to recover.
+    #
+    # This comment used to say the opposite — that the script "finds more in
+    # chem-s2, finlit and both Grade 9 maths books than the committed index
+    # holds, because those were extracted before later detector work". It was
+    # comparing the fresh total against the CULLED index and reading the cull
+    # as drift. The commits say so outright: chem-s2 was cut 59 -> 18 and
+    # finlit 18 -> 6 (2363e03c), Grade 9 maths 285 -> 242 (7aef1bc6), and
+    # those are exactly the totals this script still produces.
+    #
+    # Re-running is not neutral, it LOSES figures. `MIN_EDGE_DENSITY` was
+    # calibrated on physics crops (28462845) and reads sparse maths and
+    # chemistry line art as flat: 15 real figures currently committed score
+    # under it — a labelled coastline, a central-angle circle, an archery
+    # target, two burning-magnesium photos, a Planck portrait. A re-run
+    # deletes all 15 silently. Any future re-extraction of a maths or
+    # chemistry book needs that threshold made per-subject FIRST.
+    #
+    # Do NOT read that as "remove the threshold". Audited 2026-09-16 on the
+    # four maths/chemistry books extracted AFTER it landed — g8-math-s1/s2,
+    # g9-chemistry-s1/s2 — by re-rendering every candidate and keeping what
+    # the threshold threw away: 119 crops dropped out of 646, and only about
+    # 7 of the 119 were real. The rest was g8-math's blue-and-gold page
+    # footer (~50 of them), chemistry's magenta page-corner ornaments, page
+    # -number banners and author credits. It is ~94% precise on these books
+    # and it is carrying real weight; the fix is recalibration, not removal.
+    #
+    # Those it cost were RESTORED on 2026-09-16, carrying the extractor's own
+    # rects rather than hand-drawn ones, since that is what they are — a rect
+    # `figures_in` still returns, rendered and then unlinked before the
+    # contact sheet was built. Restored: the Thomson plum-pudding model
+    # (g9-chem-s1 p014b, u1 l1), a circle with an inscribed square
+    # (g8-math-s1 p054, u2 l1), a vehicle-type pie chart (g8-math-s2 p160d,
+    # u9 l2), a sweets bag for a probability question (g8-math-s2 p167b,
+    # u9 l4), and 3-D coordinate axes (g8-math-s2 p076, u7 l1 — index only,
+    # that lesson has no figure-lesson-map row so nothing can reach it).
+    # No lesson had been left with zero figures by the threshold; the
+    # thinnest was g8-math-s1 u2 l1, down to one until p054 came back.
+    #
+    # Two NOT restored, each for its own reason:
+    #   g8-math-s2 p138 c6, a sphere labelled 14 ft — real, but the crop
+    #   swallowed the page footer under it. Re-cropping is a separate job.
+    #
+    #   g8-math-s2 p160 c2, the 2008 medals pie. Page 160 prints 2008 and
+    #   2012 as ONE figure sharing ONE legend, and the detector split it
+    #   down the middle: committed `p160b` held the pies' legend TEXT with
+    #   no colour swatches, the dropped crop held the swatches with no text.
+    #   Restoring it would have shipped a second broken half. `p160b` is now
+    #   the union of the two rects — both pies, whole legend, edge 13.8 —
+    #   which is the figure the book actually prints.
+    #
+    # And lowering it is not enough on its own. The 42 junk crops cut below
+    # and those 15 real figures are the SAME measurement — a threshold low
+    # enough to keep the coastline re-admits every «الدرسُ N» badge and page
+    # ornament with it. Those are junk by what they depict, not by how few
+    # edges they carry, so separating them needs something edge density
+    # cannot express. The 2026-09-16 cull holds only because it was done by
+    # hand, figure by figure.
+    #
+    # Re-running chem-s1 additionally destroys three figures no detector can
+    # rebuild. `p009/p010/p011.png` were HAND-cropped in 2363e03c — the
+    # spectroscopy apparatus, «الشكلُ (1)» the electromagnetic spectrum and
+    # «الشكلُ (2/أ)» the continuous spectrum — because neither shape is a
+    # crossing-axis pair or a Bezier cluster. They are real unit 1 lesson 1
+    # content and correctly placed; `p009`'s `pdfPage` sitting one before
+    # `lessonStartPage` is the book's layout, not a misfiling. A re-run
+    # rewrites index.json without them and they are gone for good. Their
+    # integer rects and different key order are the tell that they are
+    # hand-authored, if this comment is ever lost.
+    #
+    # What a committed book can still want is a fresh REVIEW pass, which
+    # needs no re-extraction — see the 2026-09-16 cull of 42 divider badges
+    # and page ornaments out of chem-s1, math-s1/s2 and g9-math-s2.
     only = set(sys.argv[1:])
     unknown = only - BOOKS.keys()
     if unknown:
