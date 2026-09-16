@@ -32,7 +32,7 @@ import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
  * teacher needs.
  *
  * Generated intros are written *at the teacher* — "ابدأ بطرح السؤال: «…»
- * سجّل إجابات الطلاب على السبورة" — and this slide is projected on the class
+ * سجّل إجابات الطلبة على السبورة" — and this slide is projected on the class
  * screen. Stage directions up there tell the room what the teacher is about
  * to do instead of giving it something to think about, so the question is
  * projected alone and the full instruction moves to the teacher notes.

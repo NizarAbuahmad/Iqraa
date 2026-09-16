@@ -23,9 +23,18 @@ import assert from 'node:assert/strict';
 import { aiService } from '@/services/ai/generators.ts';
 import type { AIRequest, QuizOutput, WorksheetOutput } from '@/services/ai/AIService.ts';
 
-/** A chemistry lesson, so the template path is exercised rather than the
- *  concrete math bank — the two take different routes through the factories. */
-const CHEM = { topic: 'الروابط الأيونية', subject: 'الكيمياء', grade: 'الصف العاشر' };
+/**
+ * A lesson with no concrete bank behind it, so the template path is exercised
+ * rather than a bank — the two take different routes through the factories.
+ *
+ * This was a chemistry lesson until 2026-09-16, when chemistry got a bank of
+ * its own and stopped being a template subject. The tier assertions below are
+ * about the TEMPLATE tiers specifically (`pickTiered`), so the fixture has to
+ * be a subject that still has no bank; biology is one. Swapping it kept these
+ * tests testing what they were written to test. If biology ever gains a bank,
+ * move this again rather than deleting the assertions.
+ */
+const TEMPLATED = { topic: 'الخلية ووظائفها', subject: 'الأحياء', grade: 'الصف العاشر' };
 /**
  * An exponential-equations lesson, not «قانون الجيوب».
  *
@@ -50,14 +59,14 @@ const worksheetText = (w: WorksheetOutput) =>
   w.sections.flatMap(s => s.questions.map(q => q.text)).join('\n');
 const quizText = (q: QuizOutput) => q.questions.map(x => x.text).join('\n');
 
-async function worksheet(base: typeof CHEM, difficulty: AIRequest['difficulty']) {
+async function worksheet(base: typeof TEMPLATED, difficulty: AIRequest['difficulty']) {
   return aiService.generateWorksheet({
     ...base, language: 'arabic', difficulty, numQuestions: 8,
     questionTypes: ['multiple_choice', 'short_answer', 'true_false'],
   } as AIRequest);
 }
 
-async function quiz(base: typeof CHEM, difficulty: AIRequest['difficulty']) {
+async function quiz(base: typeof TEMPLATED, difficulty: AIRequest['difficulty']) {
   return aiService.generateQuiz({
     ...base, language: 'arabic', difficulty, totalMarks: 20, duration: 20,
     questionTypes: ['multiple_choice', 'true_false', 'short_answer'],
@@ -69,7 +78,7 @@ describe('quiz difficulty selects the tier', () => {
     // Sampled: one paper could miss a hard template by chance even when the
     // tier is ignored. Across many papers it cannot.
     for (let i = 0; i < 12; i++) {
-      const text = quizText(await quiz(CHEM, 'easy'));
+      const text = quizText(await quiz(TEMPLATED, 'easy'));
       for (const phrase of HARD_ONLY_AR) {
         assert.ok(!text.includes(phrase), `easy quiz contained hard-tier stem «${phrase}»:\n${text}`);
       }
@@ -78,7 +87,7 @@ describe('quiz difficulty selects the tier', () => {
 
   it('a hard quiz never serves an easy-tier question', async () => {
     for (let i = 0; i < 12; i++) {
-      const text = quizText(await quiz(CHEM, 'hard'));
+      const text = quizText(await quiz(TEMPLATED, 'hard'));
       for (const phrase of EASY_ONLY_AR) {
         assert.ok(!text.includes(phrase), `hard quiz contained easy-tier stem «${phrase}»:\n${text}`);
       }
@@ -89,7 +98,7 @@ describe('quiz difficulty selects the tier', () => {
     // Guards the opposite failure: a tier filter that matches nothing and
     // silently falls back would pass the two tests above.
     const texts: string[] = [];
-    for (let i = 0; i < 12; i++) texts.push(quizText(await quiz(CHEM, 'hard')));
+    for (let i = 0; i < 12; i++) texts.push(quizText(await quiz(TEMPLATED, 'hard')));
     const all = texts.join('\n');
     assert.ok(
       HARD_ONLY_AR.some(p => all.includes(p)),
@@ -126,7 +135,7 @@ describe('quiz difficulty selects the tier', () => {
 
   it('mixed spreads tiers across the paper rather than collapsing to medium', async () => {
     const texts: string[] = [];
-    for (let i = 0; i < 12; i++) texts.push(quizText(await quiz(CHEM, 'mixed')));
+    for (let i = 0; i < 12; i++) texts.push(quizText(await quiz(TEMPLATED, 'mixed')));
     const all = texts.join('\n');
     assert.ok(HARD_ONLY_AR.some(p => all.includes(p)), 'mixed never produced a hard-tier question');
     assert.ok(EASY_ONLY_AR.some(p => all.includes(p)), 'mixed never produced an easy-tier question');
@@ -138,7 +147,7 @@ describe('worksheet difficulty shifts the band, keeping the progression', () => 
 
   it('bucket difficulty never decreases across the three sections', async () => {
     for (const difficulty of ['easy', 'medium', 'hard'] as const) {
-      const w = await worksheet(CHEM, difficulty);
+      const w = await worksheet(TEMPLATED, difficulty);
       const main = w.sections.filter(s => /تمهيدية|صفية|تحدٍّ/.test(s.title));
       assert.equal(main.length, 3, `expected three main sections, got ${main.length}`);
       const tiers = main.map(s => {
@@ -154,8 +163,8 @@ describe('worksheet difficulty shifts the band, keeping the progression', () => 
   });
 
   it('the requested tier moves the band, and the titles say so', async () => {
-    const easy = await worksheet(CHEM, 'easy');
-    const hard = await worksheet(CHEM, 'hard');
+    const easy = await worksheet(TEMPLATED, 'easy');
+    const hard = await worksheet(TEMPLATED, 'hard');
     const titles = (w: WorksheetOutput) => w.sections.map(s => s.title).join(' | ');
     assert.notEqual(titles(easy), titles(hard), 'section titles identical across easy and hard');
     // The old bug: a "hard" worksheet still headed its first section «سهل».
@@ -165,7 +174,7 @@ describe('worksheet difficulty shifts the band, keeping the progression', () => 
 
   it('an easy worksheet never serves a hard-tier question', async () => {
     for (let i = 0; i < 8; i++) {
-      const text = worksheetText(await worksheet(CHEM, 'easy'));
+      const text = worksheetText(await worksheet(TEMPLATED, 'easy'));
       for (const phrase of HARD_ONLY_AR) {
         assert.ok(!text.includes(phrase), `easy worksheet contained hard-tier stem «${phrase}»`);
       }
@@ -188,7 +197,7 @@ describe('a section names the question types it actually holds', () => {
   };
 
   it('reports mixed rather than whichever question came last', async () => {
-    const w = await worksheet(CHEM, 'medium');
+    const w = await worksheet(TEMPLATED, 'medium');
     const main = w.sections.filter(s => /تمهيدية|صفية|تحدٍّ/.test(s.title));
     assert.ok(main.length > 0, 'no main sections generated');
     let sawMixed = false;
@@ -209,7 +218,7 @@ describe('a section names the question types it actually holds', () => {
 
   it('a single-type request produces single-type sections, not mixed', async () => {
     const w = await aiService.generateWorksheet({
-      ...CHEM, language: 'arabic', difficulty: 'medium', numQuestions: 8,
+      ...TEMPLATED, language: 'arabic', difficulty: 'medium', numQuestions: 8,
       questionTypes: ['multiple_choice'],
     } as AIRequest);
     for (const section of w.sections.filter(s => /تمهيدية|صفية|تحدٍّ/.test(s.title))) {

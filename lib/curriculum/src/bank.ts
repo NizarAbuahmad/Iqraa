@@ -107,7 +107,27 @@ export type LicenseId =
   /** Reprintable in principle, but see the policy map — we decline it. */
   | 'CC-BY-SA-4.0'
   /** No redistribution right; the terms permit an embed or a link only. */
-  | 'embed-terms';
+  | 'embed-terms'
+  /**
+   * The NCCD's Collins-prepared series — maths and science at grades 4, 6, 9
+   * and 10. «© HarperCollins Publishers Limited», prepared originally in
+   * English *for* the NCCD, then translated, adapted, customised and published
+   * by the NCCD, and mandated by the Ministry in every school in the Kingdom.
+   *
+   * It exists because neither existing value describes it. `authority` answers
+   * "who stands behind this", and for these books the answer is `nccd` — it is
+   * the publisher of the Arabic edition and the only body named on the spine.
+   * What `authority` cannot express is that the copyright line names a British
+   * trade publisher, under a full all-rights-reserved notice.
+   *
+   * **Quotable** — see the map below. Iqraa holds the right to use these books;
+   * that was confirmed on 2026-09-16 after the notice surfaced. The licence is
+   * not a restriction, it is a record: it says *why these books look alarming
+   * when you read page 2*, so the next person to find «© HarperCollins» does not
+   * re-run the same investigation, and so the copyright-notice test can tell a
+   * book that has been ruled on from one nobody has looked at yet.
+   */
+  | 'nccd-collins';
 
 const POLICY_BY_LICENSE: Record<LicenseId, BankUsePolicy> = {
   'public-domain': 'quotable',
@@ -122,6 +142,18 @@ const POLICY_BY_LICENSE: Record<LicenseId, BankUsePolicy> = {
   // conservative direction, and reversible.
   'CC-BY-SA-4.0': 'reference-only',
   'embed-terms': 'embed-only',
+  // Quotable by Nizar's decision, 2026-09-16: Iqraa holds the right to use
+  // these books. He was given the notice verbatim, the reading that the
+  // copyright sits with HarperCollins, and the measured cost of restricting
+  // them (grounded units 100 -> 65 of 446), and confirmed the right exists.
+  //
+  // This entry stayed `reference-only` for the few hours between the finding and
+  // that answer, which is why the licence exists at all — and it is why it stays
+  // now that the answer is yes. The row still records that the book is
+  // Collins-prepared, `quotableAuthority.test.ts` keys its allowlist off this
+  // exact id rather than going blind to the name HarperCollins, and if the
+  // rights position ever changes it is this line that changes, not 49 rows.
+  'nccd-collins': 'quotable',
 };
 
 /** The `subject` values the manifest uses, mapped to the app's `subjectId`. */

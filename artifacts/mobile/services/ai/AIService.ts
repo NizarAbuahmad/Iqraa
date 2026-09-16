@@ -153,6 +153,10 @@ export interface LessonPlanOutput {
   homework: string;
   sources?: GroundedSource[];
   variantId?: string;
+  /** Present when a spending cap turned this into a saved copy — see
+   *  `servedReason` in api-server's routes/generate.ts. The screen must say so
+   *  rather than present a repeat as newly generated. */
+  servedReason?: 'quota' | 'budget';
 }
 
 export interface WorksheetOutput {
@@ -162,6 +166,10 @@ export interface WorksheetOutput {
   answerKey: WorksheetAnswerKeyItem[];
   sources?: GroundedSource[];
   variantId?: string;
+  /** Present when a spending cap turned this into a saved copy — see
+   *  `servedReason` in api-server's routes/generate.ts. The screen must say so
+   *  rather than present a repeat as newly generated. */
+  servedReason?: 'quota' | 'budget';
 }
 
 export interface WorksheetSection {
@@ -204,6 +212,10 @@ export interface QuizOutput {
   questions: QuizQuestion[];
   sources?: GroundedSource[];
   variantId?: string;
+  /** Present when a spending cap turned this into a saved copy — see
+   *  `servedReason` in api-server's routes/generate.ts. The screen must say so
+   *  rather than present a repeat as newly generated. */
+  servedReason?: 'quota' | 'budget';
 }
 
 export interface QuizQuestion {
@@ -236,6 +248,10 @@ export interface ActivityOutput {
   assessment: string;
   sources?: GroundedSource[];
   variantId?: string;
+  /** Present when a spending cap turned this into a saved copy — see
+   *  `servedReason` in api-server's routes/generate.ts. The screen must say so
+   *  rather than present a repeat as newly generated. */
+  servedReason?: 'quota' | 'budget';
 }
 
 // ─── Interactive Classroom Engine ────────────────────────────────────────────

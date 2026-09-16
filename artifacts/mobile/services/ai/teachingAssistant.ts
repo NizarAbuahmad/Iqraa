@@ -225,7 +225,7 @@ function prepStepLabel(step: PrepStepId, isAr: boolean): string {
     worksheet: 'ورقة عمل',
     quiz: 'اختبار قصير',
     activity: 'نشاط صفي',
-    homework: 'واجب منزلي',
+    homework: 'واجب بيتي',
   };
   const en: Record<PrepStepId, string> = {
     explanation: 'Explain the idea',
@@ -412,7 +412,7 @@ export function detectIntent(query: string): Intent {
   if (/مثال|example|تمارين?\s*محلول|أضف\s*مثالاً?|اضف\s*مثال|add\s*an?\s*example/i.test(q)) {
     return 'example';
   }
-  if (/كيف\s*أشرح|شرح|explain|simplify|بسّ?ط|سهلة|بطريقة|للطلاب\s*الضعفاء|للطلاب\s*المتفوقين/i.test(q)) {
+  if (/كيف\s*أشرح|شرح|explain|simplify|بسّ?ط|سهلة|بطريقة|للطلبة\s*الضعفاء|للطلبة\s*المتفوقين/i.test(q)) {
     return 'explain';
   }
   if (isReferentialQuery(q)) return 'follow_up';
@@ -444,7 +444,7 @@ function hashPick<T>(items: T[], seed: string): T {
 function pickAck(isAr: boolean, intent: Intent, seed: string): string {
   const ar: Record<string, string[]> = {
     explain: [
-      'لنبسّطها لطلابك خطوة بخطوة.',
+      'لنبسّطها لطلبتك خطوة بخطوة.',
       'فكرة ممتازة — الشرح الواضح يوفّر وقت الحصة.',
       'حاضر، نبدأ من زاوية تناسب الصف العاشر.',
     ],
@@ -458,7 +458,7 @@ function pickAck(isAr: boolean, intent: Intent, seed: string): string {
     ],
     quiz: [
       'حسناً، نجهّز تقويماً سريعاً يقيس الفهم.',
-      'تمام، اختبار قصير يساعدنا على معرفة أين وصل الطلاب.',
+      'تمام، اختبار قصير يساعدنا على معرفة أين وصل الطلبة.',
     ],
     homework: [
       'حاضر، واجب قصير ومركّز خير من واجب طويل.',
@@ -537,7 +537,7 @@ function actionMenu(isAr: boolean, omitted?: TeachingActionType): string {
         '• خطة درس',
         '• ورقة عمل',
         '• اختبار قصير',
-        '• واجب منزلي',
+        '• واجب بيتي',
         '• نشاط صفي تعاوني',
       ]
     : [
@@ -564,7 +564,7 @@ export function defaultTeachingActions(): TeachingAction[] {
     { type: 'lesson-plan', labelAr: 'خطة درس', labelEn: 'Create lesson plan', emoji: '📄' },
     { type: 'worksheet', labelAr: 'ورقة عمل', labelEn: 'Create worksheet', emoji: '📝' },
     { type: 'quiz', labelAr: 'اختبار قصير', labelEn: 'Create quiz', emoji: '❓' },
-    { type: 'homework', labelAr: 'واجب منزلي', labelEn: 'Create homework', emoji: '🏠' },
+    { type: 'homework', labelAr: 'واجب بيتي', labelEn: 'Create homework', emoji: '🏠' },
     { type: 'activity', labelAr: 'نشاط صفي', labelEn: 'Classroom activity', emoji: '🎯' },
   ];
 }
@@ -808,7 +808,7 @@ function buildDocumentGroundedReply(
       ? `${lead}\n\n**ورقة عمل صفية**\nأ) تمهيد سهل · ب) تدريب متوسط · ج) سؤال أصعب.\nكلها مبنية على مفاهيم الملفات — بدون ملاحظات معلم في ورقة الطالب.\n\nهل تريد نسخة أصعب أو أبسط؟`
       : `${lead}\n\n**In-class worksheet**\nA) Easy warm-up · B) Medium practice · C) Stretch item.\nAll grounded in the uploaded concepts — student sheet only.\n\nWant a harder or simpler version?`,
     homework: isAr
-      ? `${lead}\n\n**واجب منزلي مستقل** (~25 دقيقة)\n1) تدريب مستقل · 2) سؤال تحدٍّ · 3) تأمل قصير.\nمصمم للإنجاز في المنزل اعتمادًا على ${files}.`
+      ? `${lead}\n\n**واجب بيتي مستقل** (~25 دقيقة)\n1) تدريب مستقل · 2) سؤال تحدٍّ · 3) تأمل قصير.\nمصمم للإنجاز في المنزل اعتمادًا على ${files}.`
       : `${lead}\n\n**Independent homework** (~25 min)\n1) Independent practice · 2) Challenge · 3) Short reflection.\nDesigned for home completion using ${files}.`,
     quiz: isAr
       ? `${lead}\n\n**اختبار قصير**\n• اختيار من متعدد · صح/خطأ · سؤال قصير.\nمبني على الأهداف والمفاهيم المستخرجة من الملفات.\nهل أضيف أسئلة بلوم أعلى؟`

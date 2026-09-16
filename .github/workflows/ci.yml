@@ -12,6 +12,15 @@ on:
   push:
     branches: [main]
 
+# Without this block a workflow inherits the repository default, which can be
+# write-all — so every job here would run holding a token able to push to main,
+# publish a release or open an issue, to check out a branch and run tests.
+# deploy.yml already declares its own (it needs `id-token: write` for the
+# Google OIDC exchange); this is the same statement for the workflows that need
+# nothing but the source.
+permissions:
+  contents: read
+
 # A new push supersedes the run in flight for the same ref.
 concurrency:
   group: ci-${{ github.ref }}
@@ -43,6 +52,19 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
+      # i18nTerminology.test.ts bans the misspelling «إقرأ», but it only reads
+      # i18n.ts — so the name still reached verification emails, the chat
+      # system prompt and the Play listing. Same ban, over the files that
+      # actually ship copy. Book text under lib/curriculum quotes ministry
+      # PDFs verbatim and is deliberately out of scope.
+      - name: Brand is «اقرأ», never «إقرأ»
+        run: |
+          paths=(artifacts/*/src artifacts/mobile/app artifacts/mobile/components artifacts/mobile/services marketing ':!*i18nTerminology.test.ts')
+          if git grep -nI 'إقرأ' -- "${paths[@]}"; then
+            echo "::error::«إقرأ» is hamzat qatʿ — the brand is «اقرأ» (hamzat wasl)."
+            exit 1
+          fi
+
       # MUST run before the api-server tests. Its mount-order suite boots
       # dist/index.mjs rather than the source, and `pnpm test` does not build.
       # Without this step the suite either skips (no bundle) or — worse —
@@ -59,6 +81,12 @@ jobs:
 
       - name: Test curriculum
         run: pnpm --filter @workspace/curriculum run test
+
+      # The package has declared a `test` script since it was split out, and
+      # nothing ever ran it — the maths bank's invariants were unguarded in CI
+      # for the same reason the chemistry bank's would have been.
+      - name: Test practice banks
+        run: pnpm --filter @workspace/math-practice run test
 
       # The client-side half of the answer-key gate, and the one package with
       # real tests that CI was not running. lib/math-verify refuses to

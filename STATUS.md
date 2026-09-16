@@ -61,7 +61,10 @@ an announcement by default» below.
   three production faults that had nothing to do with this code — Cloud Run
   traffic pinned to an old revision, a stale Cloud Shell clone deploying
   week-old code, and an R2 token scoped to `iqraa-media` only — each now
-  written up in `docs/deploying.md`.
+  written up in `docs/deploying.md`. The traffic pin then returned two days
+  later and took the whole API back to a revision older than
+  `/healthz/version`, which is why that entry now treats it as a recurring
+  mode rather than an incident.
 - **In-app messaging between teachers, parents and students** (2026-09-04):
   claim-code signup, teacher↔parent and teacher↔student direct threads,
   class-group and teacher-made custom groups, image attachments, block and
@@ -1630,6 +1633,205 @@ gap now has a source on disk instead of a note saying the guide exists somewhere
 Maths Semester 2 still has no student book — exercise book and teacher guide
 only — so there is still no Semester 2 maths unit list, and that is the supplied
 set's limit rather than a transcription gap.
+**And the test that was written to catch it missed 49 more, 2026-09-16.** All of
+maths and science — grades 4, 6, 9 and 10 — print «© HarperCollins Publishers
+Limited» on page 2, under the same all-rights-reserved notice, prepared
+originally in English *for* the NCCD and then translated, adapted and published
+by it. Every one was `nccd`, and so quotable, and so being reproduced verbatim
+into generated worksheets.
+
+The reason `quotableAuthority.test.ts` stayed green is one character. Its generic
+mark was transcribed off the Pearson page as «All rights reserved**;** no part of
+this publication may be reproduced». Collins prints a **period**. A check
+copied from one example matches one example.
+
+These are not the Pearson case repeated, which is why the outcome is not the
+same. **Nizar's ruling, 2026-09-16: Iqraa holds the right to use these books.**
+He was given the notice verbatim, the reading that the copyright sits with
+HarperCollins, and the measured cost of the alternative, and confirmed the right
+exists. They are quotable and nothing is withdrawn.
+
+The rows still carry `license: 'nccd-collins'`, a new `LicenseId` in `bank.ts`,
+mapping to `quotable`. **That is not a no-op and should not be deleted as one.**
+Page 2 of these books will alarm the next person who reads it exactly as it
+alarmed us; the licence is the answer sitting in the data, so the investigation
+happens once. It is also what `quotableAuthority.test.ts` keys its `RULED_ON`
+allowlist off — strip the field and all 49 books become unexplained copyright
+notices on quotable rows again, which is precisely the state that went unnoticed
+for months. And if the rights position ever changes it is one line in
+`POLICY_BY_LICENSE`, not 49 rows.
+
+What restricting them *would* have cost, measured before the ruling rather than
+argued after it: grounded units across the whole catalog **100 → 65** of 446.
+Lost entirely would have been all of Grade 9 maths, chemistry, physics, biology
+and earth science (26 units), Grade 10 chemistry (5) and Grade 6 maths (4) —
+Grade 10 chemistry has no fallback at all, its only extracted book being the
+student book. Kept here because it is the number that made the decision worth
+escalating, and the number anyone re-opening the question will want.
+
+The fix also had to repair the question the test asked. Marks are regexes now,
+`HarperCollins` among them.
+
+**A second "repair" in that change was wrong and is reverted, 2026-09-16.** It
+also made the test read `data/extracted-g9/`, on the stated ground that the two
+Grade 9 maths files lived only there and had been invisible whatever the
+pattern. They do not and were not: both sit in `data/extracted/` in the ordinary
+page-array schema and the test had always seen them. `extracted-g9/` holds stale
+duplicates of those same two books in reversed presentation-form Arabic under a
+different schema, and this file already listed it as dead data read by nothing —
+including by `passages.ts` — several thousand lines below, which is where the
+claim should have been checked before it was written.
+
+It never changed an outcome: `extracted/` is checked first and always hits. That
+is the whole reason it survived review and a green suite — a wrong reason
+attached to a right result costs nothing until someone re-derives it, and then
+it costs the re-derivation. Same shape as the three findings above it, and worth
+recording rather than quietly deleting.
+
+**The question it asks now is "has anyone looked at this book?", not "is it
+ours?"** Once the Collins books are quotable, a test phrased as "nothing quotable
+carries a third-party mark" is red about a settled question on 49 rows — and a
+test that is red about a settled question does not get investigated, it gets
+deleted, taking the Pearson case it was written for with it. So a book carrying
+someone else's copyright notice must be *accounted for*: either it is not
+quotable, or it carries a licence listed in `RULED_ON` naming the decision. What
+still fails is the case that matters — a book nobody has read, quotable by
+default, with another publisher's name on page 2. That is exactly the state all
+49 of these were in the day before.
+
+`RULED_ON` is deliberately a list of decisions, not of publishers, and each entry
+points at where its decision is recorded. A second test strips the licence off a
+Collins row in memory and asserts it *would* be caught, so if the exemption ever
+goes blind — the most likely place this breaks — that fails rather than passing
+quietly.
+
+**47 rows are licensed, and the count is a moving target** — which is the point.
+The original scan found 49. Ten are Grade 4 rows living only on
+`worktree-grade-5-books`, where Grade 5 is being registered behind them (8 more
+confirmed by scan, science still extracting); that branch adds the licence in a
+commit of its own, and the test is the backstop, since a row arriving as `nccd`
+with no licence fails CI on whichever branch carries it.
+
+The other four are the reason this paragraph is worth reading.
+`g6-math-s1-exercise-book`, `g6-math-s2-exercise-book`, `g6-math-s1-teacher-guide`
+and `g6-math-s2-teacher-guide` reached `main` between the finding and the fix
+landing — carrying the notice, marked `nccd`, quotable. Nobody spotted them.
+**The test did**, on its first contact with rows it had not been written against,
+and it named all four. That is the argument for a check that reads each book's
+own front matter instead of a list someone maintains: the list said 39 and was
+wrong inside a day.
+
+**Scan each file, never the series — and never the subject either.** The Grade 10
+biology, physics and earth-science teacher guides and the Grade 4, 5 and 6
+science teacher guides carry no Collins notice anywhere, while the student and
+activity books beside them do. Going by series would mislabel every one of them,
+in the direction that matters: the NCCD's own writing filed as someone else's.
+
+That observation was then generalised to "science teacher guides are the NCCD's
+own", and **the generalisation is false.** Both Grade 10 chemistry teacher
+guides carry «© HarperCollins Publishers Limited 2020» — read off the PDFs with
+`pdftotext` on 2026-09-16, ISBN 978-9923-41-116-2 and 978-9923-41-115-5, two
+distinct books. Chemistry sits with maths, not with the other sciences: Collins
+prepared the maths and chemistry lines end to end, and the science *student*
+materials, while the NCCD wrote the biology/physics/earth/combined-science
+guides.
+
+Worth dwelling on, because the failure was structural rather than unlucky. The
+rule was induced from eight guides that happened to be extracted, and the two
+that were not extracted were the two that broke it — they read as "clean" in the
+manifest only because nothing had ever been read from them, and an un-scanned
+row is indistinguishable from a scanned-clean one in that file. The exception
+was 2 of the 10 unexamined guides, so per-file scanning is not a precaution
+against a rare case; it is the only thing that was ever load-bearing. No
+subject-level shorthand belongs here.
+
+`finlit-s2-student-book` is the one row still genuinely unscanned — a `conflict`
+entry whose PDF is not on disk under any name. Recorded as unknown, not clean.
+
+The Grade 4 maths guide-extract booklets (`g4-math-u{1,2,3,6,7}-guide-extract`,
+`g4-math-s2-support-guide`) are clean while their parent teacher guides carry the
+notice — independent evidence that they are separate publications rather than
+excerpts, which matches the page-overlap measurement that led to registering them
+as distinct.
+
+The Grade 4 maths guide-extract booklets (`g4-math-u{1,2,3,6,7}-guide-extract`,
+`g4-math-s2-support-guide`) are likewise clean while their parent teacher guides
+carry the notice — independent evidence that they are separate publications
+rather than excerpts, which matches the page-overlap measurement that led to
+registering them as distinct.
+
+**Images were the larger half of the same question**, and the scan that answered
+it is worth keeping whatever the ruling. `usePolicy` gates text retrieval only:
+`extract_book_photos.py`, `extract_book_figures.py`, `gen_book_figure_assets.mjs`
+and the `bookFigure*` services consult no authority or licence field at all.
+
+**1507 of 2145 committed figures come from Collins books**, read off page 2 of
+each PDF rather than inferred: 28 of the 36 books with a committed figure
+directory carry the notice. Grades 7 and 8 have no manifest rows and were checked
+directly — `g7-science-s1/s2`, `g8-science-s1/s2` and `g8-math-s1/s2` all print
+«© HarperCollins Publishers Limited 2022», 359 figures between them. So maths and
+science carry it at every grade from 6 to 10.
+
+A useful negative: `g7-social-s1` has no Collins notice in its first eight pages.
+It is subject-specific, not a blanket NCCD thing — social studies, vocational,
+financial literacy and PE look clean on the same test. Worth checking the rest
+the same way rather than assuming in either direction.
+
+**Covered by the same ruling.** Nizar's 2026-09-16 answer was the right to use
+the books, not the right to quote their sentences, and the figures were put to
+him as part of it. Nothing is reverted and figure extraction from maths and
+science resumes.
+
+Recorded because the pipeline is still ungated: no licence check exists anywhere
+in `extract_book_photos.py`, `extract_book_figures.py`,
+`gen_book_figure_assets.mjs` or the `bookFigure*` services, and nothing would
+stop a future book whose rights *are* in doubt from having its figures cut out
+and shipped. That is fine while every source is one we hold rights to. It stops
+being fine the first time one isn't, and there is no test that will say so.
+
+**The extraction gate was blind where the damage is worst, 2026-09-16.** Every
+check in `rejectReason` measures a *rate* — what share of the recognisable
+Arabic came out corrupted — and both rate functions return `null` under 100
+samples, which `rejectReason` skips. That is right for an English coursebook.
+It is catastrophic for a file decoded against the wrong font cmap, which yields
+fluent-looking Arabic letters that spell nothing: no «في» survives, no «يف» is
+created either, both denominators collapse to zero, every check is skipped, and
+the document passes **because** none of its Arabic was readable. Absence of
+evidence was being read as evidence of absence.
+
+Two documents in the corpus are in exactly that state, found by writing the
+check and running it over all 231 extracted files: `chem-s1-summary-shawata`
+(7,319 Arabic words, **one** probe hit) and `chem-s2-pack-shawata` (10,531
+words, 31 hits). Both read as «ػذد ١ِّضاد اٌط١ف اٌّشئ» — not transposed Arabic,
+not Arabic at all. Both were extracted, marked `ingested`, and have been served
+since. Both are `authority: teacher` and so reference-only, which bounds it:
+they reach a prompt as context and are never quoted into a worksheet. The rows
+now say so; the remedy is `--force --ocr`, not deletion.
+
+The sixth gate is **not a new readability score, deliberately** — three of those
+have been tried and all three were wrong (see the memory note). It adds no
+measure at all. It says that when the existing probes both answer "I could not
+get a reading" on a document carrying 4,000+ Arabic words, that silence is
+itself the finding, because real prose of that length cannot avoid «في», «على»
+and the definite article. 4,000 sits in an empty stretch: the largest document
+legitimately blind is `math-foundation-lafi` at 1,956 Arabic words (a تأسيس
+pack that is mostly equations, and reads correctly), the smallest blind because
+it is garbage is 7,319, and nothing lies between.
+
+**Validated in both directions, which is the part that has gone wrong before.**
+Reading only the pages a measure *flags* tests precision, and every previous
+attempt here failed on recall. So: the two it rejects were read and are
+genuinely unreadable; the nearest document it passes was read and is genuinely
+fine; and across the other 229 it changes nothing.
+
+**What it does not catch, said plainly.** A second corruption class — real
+letters, tashkeel interleaved, word boundaries shattered — passes this gate
+untouched. `g5-arts-s1-student-book` is the known case at 2.57% probe density,
+and reading `g6-voc-s1-student-book` and `g5-voc-s1-student-book` (1.95%, 2.01%)
+found their body text shattered too while their headings read cleanly. Those
+sit among legitimately low-density books, so no threshold separates them and
+none is proposed. They need OCR and sampled reading, and this gate is not the
+instrument for them.
 
 **Grade 8 gets its first figures, 2026-09-12.** `g8-science-s1` alone: 133
 crops, **65 kept**, covering all 10 of its Semester 1 lessons. What survived is
@@ -1906,6 +2108,208 @@ digital literacy S1/S2 («الدرس» on no contents row at any tolerance), Gra
 maths (16 rows of 18, none carrying a parenthesised lesson number) and Grade 9
 history S2 (10 rows of 13, same). Arabic is untouched — its books are not in
 `BOOKS` at all.
+
+## Grades 6 and 7: 28 books registered, 8 shipped, 2026-09-16
+
+**416 → 498 lessons illustrated, 2106 figures.** Grade 6 and Grade 7 had 3
+books between them in `BOOKS` against 36 catalogs — the gap was never the
+detector, it was that the PDFs had not been registered. Every Grade 6/7 student
+book the NCCD library holds that also has a catalog is now in `BOOKS` (28 new
+entries), except English, which photographs rather than draws and goes through
+`extract_book_photos.py`.
+
+**Registering a book is not a claim that it yields.** Each was probed against
+its catalog both ways — opener detector and contents table across five Y
+tolerances — before anything was extracted.
+
+| Shipped | Route | Kept | Lessons |
+| --- | --- | --- | --- |
+| Grade 7 vocational S1 | contents 4.0 | 88 of 154 | **12 of 12** |
+| Grade 6 vocational S1 | contents 4.0 | 56 of 122 | **12 of 12** |
+| Grade 7 science S1 | opener | 45 of 105 | **12 of 12** |
+| Grade 7 science S2 | opener | 44 of 125 | 9 of 11 |
+| Grade 7 social S1 | contents 12.0 | 39 of 85 | 14 of 20 |
+| Grade 7 social S2 | contents 12.0 | 34 of 99 | 12 of 21 |
+| Grade 7 finlit S1 | opener | 13 of 23 | 6 of 12 |
+| Grade 7 finlit S2 | opener | 9 of 15 | 5 of 11 |
+
+**Grade 7 social S2 carries a +6 UNIT OFFSET, and the shape check is blind to
+it.** Its catalog numbers units u7-u12 because units 1-6 are semester 1, while
+the contents parser infers units from the lesson numbering resetting and counts
+them 1-6. The gate compares unit COUNTS, so a uniform shift passes it
+unnoticed; this was caught by measuring the extracted index against the catalog
+afterwards, not by the probe. Every S2 book in this batch was checked the same
+way — finlit S2 and science S2 print their catalogs' own numbers and need no
+offset.
+
+**Tolerance 12.0 is the loosest in `CONTENTS_PLACEMENT` and is accepted on
+convergence, not on the match alone.** Grade 7 social S1 finds 3 contents rows
+at 2.0, then 14, 18, 19, and all 20 at 12.0 — and the unit split locks onto the
+catalog's [3,3,5,4,2,3] exactly where the row count also becomes exact. A
+coincidence does not approach the answer from below.
+
+**Ten near misses, and one of them is a pattern worth naming.** Four books find
+contents rows in EXACTLY their catalog's lesson count — Grade 6 PE 14/14,
+Grade 7 PE 14/14 and 15/15, Grade 7 arabic 25/25 — and place none of them,
+because those rows do not print a parenthesised lesson number. That is 78
+lessons behind one missing signal. Numbering the rows positionally would impose
+the catalog's shape and then "verify" against it, which is no check at all: one
+out-of-order lesson misfiles everything after it and nothing detects it.
+
+**The honest version — matching row titles to catalog lesson titles — was
+built on 2026-09-16 and DOES NOT WORK. Do not rebuild it.** The idea: number a
+row only if its title matches the catalog lesson it would be assigned, accept
+the book only if every row matches in order, fail closed otherwise. Compare
+normalised Arabic character MULTISETS rather than words, because this corpus
+transposes letters around the definite article («الحركة» → «احلركة») and
+transposition preserves the letters.
+
+It was tested against the seven books whose lesson numbers ARE printed, where
+`contents_outline` already gives the right answer. It failed all seven, and the
+measurement says why:
+
+- **True-pair scores run 0.000 to 1.000; the best WRONG pair reaches 0.897.**
+  The distributions overlap completely, so no threshold separates them.
+- **The title is not always in the row.** Grade 8 vocational S1 row 0 extracts
+  as «8 : ) 1( الدرس» — the geometry grouping caught the lesson marker and the
+  page number and no title at all. Nothing to match.
+- **Truncation biases toward the WRONG sibling, structurally.** Grade 7 social
+  S1 row 12 extracts as «حضارات بلاد الشام القديمة (المظاهر», cut off by the
+  column width. Its true lesson is «…(المظاهرُ الحضاريّةُ والإنجازاتُ)» at
+  0.617; the sibling «…(النشأةُ)» scores 0.897 and wins. Sibling lessons here
+  share a long prefix, so the discriminating text is the tail — exactly what
+  truncation removes — and similarity divided by the longer string pulls a
+  truncated row toward the SHORTER sibling. That is a bias, not noise, and
+  tuning cannot fix it.
+
+Ordering accuracy on books where it should have been perfect was 11 of 12 and
+19 of 20. A mechanism that exists to be trusted where its answer cannot be
+checked has no business being wrong where it can be. These 78 lessons stay
+closed. The others are genuinely short: Grade 6 arabic
+22 rows of 25, Grade 6 maths 16 of 18, Grade 7 maths 18 of 20 and 22 of 23,
+Grade 7 arabic S2 24 of 25, and Grade 7 vocational S2 finds all 10 lessons but
+splits them into 8 units against the catalog's 7.
+
+**Eleven closed, 214 lessons:** Grade 6 and Grade 7 Islamic (both semesters),
+Grade 6 social S1/S2, Grade 6 vocational S2, Grade 6 arabic S2, Grade 7 art and
+Grade 7 digital literacy S1/S2. No contents rows at any tolerance and no
+openers — there is nothing in these books to read.
+
+## Grades 3, 4 and 5 figures are blocked on CATALOGS, 2026-09-16
+
+Asked for and not started, because the blocker is upstream of the figure
+pipeline: **there is no Grade 3/4/5 curriculum catalog.** No
+`iqra_curriculum_g3/g4/g5_*.json`, nothing in `lib/curriculum/src/catalogs/`,
+and no `g3-`/`g4-`/`g5-` rows in `g10_sources.json`.
+
+**A catalog is a hard prerequisite, not a nicety.** Figures are stored with
+`(sourceId, unit, lesson)` exactly as the BOOK prints them, and
+`figure-lesson-map.json` joins that to a `kbl-` lesson id. With no catalog
+there is no id to join to and `figuresForLesson()` has nothing to key on, so
+the images would sit in the repo permanently unreferenced. And the entry rule
+every book passes — *its detected unit/lesson structure must reproduce its
+catalog exactly* — is inert without one. That rule is what caught the +4 unit
+offset in Grade 8 science S2 and the +6 in Grade 7 social S2, each of which
+would otherwise have put a whole book's figures on the wrong semester.
+
+Grade 4 text (41 sources) and Grade 5 extraction were done by another session
+on `worktree-grade-5-books`, unmerged as of this writing. Sources and extracted
+text are not catalogs; units and lessons still have to exist.
+
+**Two things will decide whether these books place once catalogs land, and both
+argue for doing work BEFORE extraction rather than after:**
+
+- **Grade 4/5 contents spreads are the worst-extracting pages in those books** —
+  index pages come out unreadable while the body prose is clean (the Grade 6
+  maths note says the same: «أغلبها صفحات فهرس؛ النثر سليم»). `CONTENTS_PLACEMENT`
+  reads exactly that spread, and all 14 books currently blocked across grades
+  6-10 fail for a contents-page reason. **OCR the contents spread before
+  probing.** For this job a clean contents spread is worth more than clean body
+  text, which is the opposite of what text ingestion optimises for.
+- **Disk headroom.** The automatic OCR fallback rasterizes every page before it
+  can discover it cannot finish, so on a full disk it presents as a hang rather
+  than an error. Free space was 7.9 GB of 475 GB when this was written.
+
+Figure extraction for these grades belongs with the rest of the figure work
+rather than being rebuilt alongside the text track — the placement machinery,
+the per-book probe and the entry rule already exist.
+
+## Grades 8, 9 and 10: the last 19 books registered, 0 shipped, 2026-09-16
+
+Every remaining Grade 8/9/10 subject with a catalog and no `BOOKS` entry was
+registered and probed: Grade 8 arabic S1 and islamic S1/S2, Grade 9 arabic,
+civics, digital literacy, financial literacy and PE (both semesters each), and
+Grade 10 arabic, civics and digital literacy (both semesters each). 19 books,
+304 catalog lessons. **None of them ship**, and the reason is worth recording
+because it is not the reason grades 6/7 failed.
+
+**Six are closed outright, 98 lessons** — Grade 8 islamic S1/S2, Grade 9 arabic
+S1, Grade 9 digital literacy S1/S2, Grade 10 digital literacy S2. No contents
+rows at any tolerance and no openers.
+
+**Ten of the thirteen near misses find contents rows in EXACTLY their catalog's
+lesson count and place none** — Grade 8 arabic S1 25/25, Grade 10 arabic S1 and
+S2 25/25, Grade 9 PE S1/S2 16/16, Grade 9 finlit S1/S2 11/11, Grade 9 civics S1
+and Grade 10 civics S1/S2 10/10. Same wall as Grade 6/7 PE and arabic: the rows
+are all there, the lesson number is not printed in them. With those four that
+is **14 books and roughly 237 lessons behind one missing signal**, which is now
+the single largest blocked category in this work.
+
+**Registration was not the gap here.** In grades 6/7 it was: 28 books had never
+been listed and 8 shipped immediately. These 19 were equally unlisted and
+yielded nothing, so "register the rest" is finished as a strategy.
+
+### The unit-banner partition, and why it was not enough
+
+After title matching failed (above), one independent signal remained. Banners
+are read off the book's own pages, so the partition they induce over the
+contents rows is evidence rather than assumption: if the banners cut N rows
+into groups whose sizes equal the catalog's per-unit lesson counts, the book
+agrees with the catalog about where the units break. Measured across all 14
+exact-count books, the banner set is COMPLETE for only three:
+
+| Book | rows | banners | catalog shape | test |
+| --- | --- | --- | --- | --- |
+| g9 finlit S1 | 11/11 | 2 of 2 | [6,5] asymmetric | strong |
+| g9 finlit S2 | 11/11 | 2 of 2 | [6,5] asymmetric | strong |
+| g8 arabic S1 | 25/25 | 5 of 5 | [5,5,5,5,5] uniform | weak |
+
+The other eleven have 0 to 4 of the banners they need — Grade 9 PE and Grade 10
+civics find none at all — and an incomplete banner set proves nothing about the
+boundaries it did not find.
+
+**Even for those three it is only the UNIT boundaries that are evidenced.**
+Within a unit the numbering is still positional: row *i* is assumed to be
+lesson *i*. That assumption cannot be checked by titles, because siblings
+inside one unit are exactly the pairs that share a long prefix — which is the
+case the title matcher demonstrably gets wrong. Being wrong costs a figure
+landing on an adjacent lesson in the same unit, which is far milder than the
+cross-semester shifts caught in g8-science-s2 (+4) and g7-social-s2 (+6), but
+it is a weaker standard than every book shipped so far.
+
+**Not shipped — and the yield was then MEASURED rather than guessed, 2026-09-16.**
+The trade was put to Nizar, he called ship, so `banner_partition_outline` was
+built and all three books were extracted and culled. The result is why the
+branch was dropped instead:
+
+| Book | kept | of crops | lessons reached |
+| --- | --- | --- | --- |
+| g8 arabic S1 | 6 | 120 | 4 of 25 |
+| g9 finlit S1 | 5 | 26 | 5 of 11 |
+| g9 finlit S2 | 5 | 21 | 5 of 11 |
+
+**16 figures across 14 lessons, not the 47 the partition unlocked.** Grade 8
+arabic is a workbook: 120 crops yielded six real figures — a Jordan
+administrative map, a sun-and-moon illustration, a quill, a story-structure
+concept map, a cartoon, a meeting illustration — and the other 114 are blank
+lined answer boxes, single-phrase grammar bubbles («جملة اسمية», «اسم مفرد»),
+and the same five reflection chips reprinted in every unit. The financial
+literacy books are mostly rounded callout boxes containing one phrase each.
+
+So the cost was a permanently weaker evidentiary route in the codebase and the
+benefit was 16 figures. Dropped on that measurement. **Anyone reconsidering
+this should reconsider the 16, not the 47** — the lessons the partition can
+reach are overwhelmingly in books that have nothing to show.
 
 **What still has no figure at all, and why:**
 
@@ -6134,6 +6538,44 @@ no per-teacher cap, which is right for one teacher and wrong for fifty.
 user_quota_exceeded`. A ledger that cannot be read does not block generation —
 the global cap still applies underneath, and turning a database blip into a
 total outage is the worse failure.
+
+> **Updated 2026-09-15 — the allowance now covers the routes that spend most,
+> and students have their own.**
+>
+> `assertUserQuotaAvailable` reached only `evaluations`, `attempts` and
+> `practice`. The two largest spenders never called it: all six `/generate/*`
+> routes (8000 output tokens each) and `/chat`, which is open to students, sends
+> a history window every turn, and had **no rate limiter of any kind**. Both now
+> call it, and `getUserBudgetLimitUsd(role)` reads `AI_STUDENT_BUDGET_USD` for
+> students — a class is thirty of them and their traffic is chat, which can
+> never be pooled, so every turn is live.
+>
+> **The caps apply to live calls only, and that is the point.** The per-user
+> check sits on the same line as `assertBudgetAvailable()` in
+> `generateContent`, *after* the shared-pool lookup, so a teacher who is out of
+> allowance is still served every pooled artifact without limit. When a cap does
+> refuse and the pool holds something the teacher has already seen, they get
+> that repeat rather than an error, carrying `servedReason` — and the provenance
+> badge that every generator screen already renders says «نسخة محفوظة». A
+> degrade nobody can see is the same failure as mock content nobody can see.
+>
+> Also: `generateWithProvenance` no longer substitutes mock content on a cap
+> refusal (it did, so a spent budget rendered a complete fabricated worksheet —
+> same carve-out the cancel path already had); and the verified-derivative
+> amplifier is down from **100 live calls per request to 10** (`MAX_REGEN` 5 → 2,
+> batch `ai` clamp 20 → 5), with `userId` finally threaded into its handlers and
+> ledger rows — without it that route was the one workload that escaped the
+> per-user cap entirely, which is what the note in `generateContent` used to say
+> and no longer needs to. `CHAT_HISTORY_TURNS` 12 → 6, bounding how many turns
+> are forwarded where `clampPromptText` (#445) bounds how long each may be.
+>
+> The per-user burst limiters and the two `assertUserQuotaAvailable` call sites
+> came from **#445**, which landed first; this builds on them rather than
+> repeating them.
+>
+> **Not yet verified end-to-end**: the pool-stays-free and degrade paths are
+> unit-tested but have not been run against a live key and database. See the
+> plan's verification steps 4–7.
 
 ### Two things tidied on the way, both duplication of a security control
 
@@ -12944,8 +13386,14 @@ Fixed in the same pass:
 Found and not fixed (ranked):
 
 1. `lib/curriculum/src/data/extracted-g9/` is dead data: two files in reversed
-   presentation-form Arabic with a different schema, read by nothing. Grade 9
-   has no manifest rows and no passage grounding at all.
+   presentation-form Arabic with a different schema, read by nothing. ~~Grade 9
+   has no manifest rows and no passage grounding at all.~~ **That second
+   sentence is stale** (checked 2026-09-16): Grade 9 has manifest rows and real
+   grounding — 44 of its units retrieve passages — because the same two books
+   were re-extracted into `extracted/` properly. The dead directory is the
+   leftover of that, and still dead. It was briefly read again by
+   `quotableAuthority.test.ts` on the strength of this entry's first sentence
+   being forgotten; see the 2026-09-16 Collins section.
 2. `scripts/extract_book_figures.py` points 4 of 7 books at absolute paths on
    one machine; chem-s2, finlit and both Grade 9 figure sets cannot be
    regenerated elsewhere.
@@ -13121,3 +13569,31 @@ case.
 
 Verified: curriculum suite 105/105 (was 90), `verify` 0 errors, monorepo
 typecheck clean.
+
+
+## Source PDFs are no longer committed, 2026-09-16
+
+GitHub warned the account had used 9 of its 10 GB monthly Git-LFS bandwidth.
+The repo's only LFS object was the 58 MB math S1 teacher guide; PR #468
+untracked it the same morning. This entry is the rest of the job: the other
+62 PDFs under `attached_assets/` (174 MB of plain git blobs) are untracked
+too, and `attached_assets/**/*.pdf` is gitignored. Only the 33 KB logo PDF
+the icon scripts read stays tracked.
+
+Nothing that runs needed them in git. `actions/checkout` was already
+skipping the LFS one, the Python figure/exercise extractors read from local
+disk, and `extract-text.ts` falls back to R2 (`ensureLocal`) for any
+`LOCAL_FILES` entry missing on disk — that fallback has existed since
+2026-08-30 and is now the only path a fresh clone has. `extraction.test.ts`
+already tolerates an absent source. The 3,400 clones a fortnight CI makes
+stop transferring the corpus; nothing else changes. The bytes remain in git
+history, so this is untracking, not deletion.
+
+**Not done in this PR, and it matters:** the R2 backfill. `upload-r2 --all`
+is the one-command way to put every local PDF into `iqraa-media` as
+`<sourceId>.pdf`, but the local `.env` token answers `401 Unauthorized`
+(checked 2026-09-16 with `audit-r2`) — presumably revoked in the 2026-09-08
+production rotation. Until a fresh token is minted and `audit-r2` reports
+zero sources with "no bytes in R2 or on disk", the only copies of any PDF
+not yet uploaded are the local checkouts and git history. Do that before
+extracting anything on a machine that is not this one.

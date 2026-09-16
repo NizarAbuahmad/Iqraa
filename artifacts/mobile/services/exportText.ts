@@ -63,7 +63,7 @@ export function formatLessonPlanText(
   lines.push(H(isAr ? 'التمايز' : 'Differentiation'));
   lines.push(plan.differentiation);
 
-  lines.push(H(isAr ? 'الواجب المنزلي' : 'Homework'));
+  lines.push(H(isAr ? 'الواجب البيتي' : 'Homework'));
   lines.push(plan.homework);
 
   lines.push('\n' + SEP);

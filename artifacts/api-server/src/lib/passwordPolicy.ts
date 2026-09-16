@@ -3,10 +3,32 @@
 // would just push pilot teachers toward writing passwords down.
 const STRONG_PASSWORD = /(?=.*\p{L})(?=.*\d).{8,}/u;
 
+/**
+ * An upper bound, which bcrypt makes necessary whether or not anyone asks for
+ * one.
+ *
+ * bcrypt hashes the first 72 bytes and silently ignores the rest, so without
+ * a cap a 200-character passphrase and its first 72 characters are the same
+ * password — and the person who chose the long one has no way to know. The
+ * body parser accepts 12MB, so the input is otherwise unbounded, and every
+ * byte of it is UTF-8 encoded before bcryptjs gets to the part it discards.
+ *
+ * 128, not 72: the truncation point is a bcrypt implementation detail and
+ * moving the limit to it would reject passwords that work today. This is a
+ * sanity bound, not a statement about where the entropy stops counting.
+ *
+ * Deliberately enforced only where a password is *set* — register, reset,
+ * admin-set. `/auth/login` compares with bcrypt directly and never calls this,
+ * which is what it must keep doing: a cap applied at sign-in would lock out
+ * anyone who set a longer password before this existed.
+ */
+export const MAX_PASSWORD_LENGTH = 128;
+
 export const PASSWORD_POLICY_MESSAGE =
-  "Password must be at least 8 characters and include both a letter and a number";
+  "Password must be at least 8 characters, at most 128, and include both a letter and a number";
 
 export function isStrongPassword(password: string): boolean {
+  if (password.length > MAX_PASSWORD_LENGTH) return false;
   return STRONG_PASSWORD.test(password);
 }
 

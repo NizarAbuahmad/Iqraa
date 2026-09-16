@@ -27,7 +27,7 @@ import {
   type HomeToolId,
 } from '@/services/homeAiTools';
 import { TopicSelector, type TopicSelectionDetail } from '@/components/ui/TopicSelector';
-import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
+import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade, subjectForGrade } from '@/services/curriculumData';
 import { lessonPickerParams } from '@/services/lessonPrep';
 import {
   loadLessonPick,
@@ -100,7 +100,11 @@ export default function DashboardScreen() {
    * history and civic education, none of which NCCD teaches at Grade 8.
    */
   const visibleSubjects = useMemo(
-    () => pickerSubjects.filter(s => hasCurriculumForSubjectGrade(s.id, draftGradeId)),
+    // Relabelled for the grade as well as filtered by it: Grade 6's
+    // creative-arts book has no music in it. See subjectForGrade.
+    () => pickerSubjects
+      .filter(s => hasCurriculumForSubjectGrade(s.id, draftGradeId))
+      .map(s => subjectForGrade(s, draftGradeId)),
     [draftGradeId],
   );
   // Class Mode media attached to the CURRENT lesson (shown as deck slides).

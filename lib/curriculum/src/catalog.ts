@@ -1017,12 +1017,50 @@ export function getVisibleGrades(): Grade[] {
  * are persisted as bare `subjectIdx` values, so it stays an explicit array,
  * and MVP_SUBJECT_IDS stays the place a subject is switched on.
  */
+/**
+ * Subjects whose one shared label does not describe every grade's book.
+ *
+ * `SUBJECTS` carries a single name per subject, which is right while every
+ * grade's book covers the same ground. 'creative-arts' is the case where that
+ * broke: Grade 7 and Grade 8 are one NCCD book of three domains — التربية
+ * الفنّيّة, التربية الموسيقيّة, التربية المسرحيّة — so the combined label is
+ * exact. Grade 6's book is not that book. Its five units are drawing/colour,
+ * design, forming and construction, theatre arts, and art-with-computers: art
+ * and drama, and **no music at all**. Labelling it «التربية الفنّيّة
+ * والموسيقيّة والمسرحيّة» promises a teacher a domain the book never covers.
+ *
+ * The override is the title the Grade 6 book itself prints, so the tile and
+ * the PDF behind it agree.
+ *
+ * Keyed by subject then grade, and deliberately narrow: a subject/grade pair
+ * missing here just uses the shared label, which is the common case.
+ */
+const SUBJECT_LABEL_BY_GRADE: Record<string, Record<string, { name: string; nameAr: string }>> = {
+  'creative-arts': {
+    'grade-6': { name: 'Art Education', nameAr: 'التربية الفنية' },
+  },
+};
+
+/**
+ * The subject as a given grade should show it — see SUBJECT_LABEL_BY_GRADE.
+ *
+ * Returns the subject untouched when there is no override, so callers can map
+ * every subject through it unconditionally. Only the two label fields are
+ * replaced: `id`, `grades` and the picker-facing icon/colour are identical, so
+ * this can never move a persisted `subjectIdx` or change which pairs resolve.
+ */
+export function subjectForGrade(subject: Subject, gradeId: string | undefined): Subject {
+  const override = gradeId ? SUBJECT_LABEL_BY_GRADE[subject.id]?.[gradeId] : undefined;
+  return override ? { ...subject, ...override } : subject;
+}
+
 export function getSubjectsForGrade(gradeId: string): Subject[] {
   const subjects = SUBJECTS.filter(s => s.grades.includes(gradeId));
-  if (!INVESTOR_MVP_CURRICULUM) return subjects;
+  if (!INVESTOR_MVP_CURRICULUM) return subjects.map(s => subjectForGrade(s, gradeId));
   if (!MVP_GRADE_IDS.includes(gradeId)) return [];
   return inMvpOrder(subjects, MVP_SUBJECT_IDS)
-    .filter(s => hasCurriculumForSubjectGrade(s.id, gradeId));
+    .filter(s => hasCurriculumForSubjectGrade(s.id, gradeId))
+    .map(s => subjectForGrade(s, gradeId));
 }
 
 /** Grades shown in AI tools, chat, and other curriculum pickers. */

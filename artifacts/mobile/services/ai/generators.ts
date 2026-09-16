@@ -20,6 +20,7 @@ import {
   takeConcreteMathBatch,
   type DiffTier,
 } from './mathPractice.ts';
+import { isChemContext, takeConcreteChem, takeConcreteChemBatch } from './chemPractice.ts';
 import { buildActivityBlueprint } from './activityBlueprints.ts';
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
@@ -159,7 +160,28 @@ function questionStemKey(text: string): string {
     .trim();
 }
 
-/** Shared entry: concrete math practice, else null (caller may use non-math templates). */
+/**
+ * Shared entry: a concrete bank item, else null (caller falls back to the
+ * subject-blind templates below).
+ *
+ * Chemistry was added 2026-09-16. Before that this returned null for every
+ * chemistry lesson — correctly, since `isMathContext` is subject-authoritative
+ * — and every chemistry question came from the generic templates, which name
+ * the topic but ask nothing about it («أيّ مما يلي يُعرِّف {الموضوع} بشكل
+ * صحيح؟», distractor «لا شيء مما ذُكر»). That is the whole of "the exams feel
+ * generic" for chemistry.
+ *
+ * Chemistry is asked first, and the order is load-bearing for exactly one
+ * case: a free-text topic with no lesson picked and no subject passed, where
+ * both fall back to matching words. `MATH_TEXT_RE` contains «معادل» and
+ * «أسس», so «المعادلة الكيميائية» matches it; the chemistry pattern is the
+ * narrower of the two and does not match maths topics. Asking it first means
+ * the specific signal wins. Whenever a subject or a resolved lesson IS present
+ * — which is every path through the app's own forms — the two are exclusive by
+ * construction and the order changes nothing.
+ *
+ * The name is unchanged so the ten call sites below read as they did.
+ */
 function tryMathPractice(
   type: QType,
   topic: string,
@@ -169,9 +191,14 @@ function tryMathPractice(
   points: number,
   subject?: string,
 ): WQ | null {
-  if (!isMathContext(topic, kb, subject)) return null;
   const tier: DiffTier = diff === 'easy' || diff === 'hard' ? diff : 'medium';
-  return takeConcreteMath(type, topic, kb, tier, lang, points);
+  if (isChemContext(topic, kb, subject)) {
+    return takeConcreteChem(type, topic, kb, tier, lang, points);
+  }
+  if (isMathContext(topic, kb, subject)) {
+    return takeConcreteMath(type, topic, kb, tier, lang, points);
+  }
+  return null;
 }
 
 // ─── Lesson Plan helpers (Arabic) ────────────────────────────────────────────
@@ -213,18 +240,18 @@ function lpObjectivesAr(topic: string, kb: KBLesson | null, custom?: string): st
 function bookFigureCue(kb: KBLesson | null, lang: Lang): string {
   if (!kb?.id || figuresForLesson(kb.id).length === 0) return '';
   return lang === 'ar'
-    ? ' اعرض شكل الكتاب المدرسي في شريحة «من كتاب الطالب» وناقش ما يراه الطلاب فيه.'
+    ? ' اعرض شكل الكتاب المدرسي في شريحة «من كتاب الطالب» وناقش ما يراه الطلبة فيه.'
     : " Show the student-book figure on the “From the Student Book” slide and discuss what students notice in it.";
 }
 
 function lpIntroAr(topic: string, kb: KBLesson | null): string {
   if (kb) return pick([
-    `ابدأ بطرح السؤال: "أين نلتقي بـ${topic} في حياتنا اليومية؟" سجّل إجابات الطلاب على السبورة.${bookFigureCue(kb, 'ar')} ثم اربط إجاباتهم بأهداف الدرس.`,
-    `لعبة "ما أعرفه / ما أريد تعلّمه": يكتب الطلاب على ورقة ما يعرفونه عن ${kb.titleAr} (دقيقتان). تُشارك بعض الإجابات ثم يُحدد المعلم ما سنكتشفه معًا.`,
-    `"التنبؤ والاستكشاف": اعرض موقفًا حياتيًا مرتبطًا بـ${topic} واطلب من الطلاب التنبؤ بالتفسير. استخدم تنبؤاتهم كنقطة انطلاق لأهداف الدرس.`,
+    `ابدأ بطرح السؤال: "أين نلتقي بـ${topic} في حياتنا اليومية؟" سجّل إجابات الطلبة على السبورة.${bookFigureCue(kb, 'ar')} ثم اربط إجاباتهم بأهداف الدرس.`,
+    `لعبة "ما أعرفه / ما أريد تعلّمه": يكتب الطلبة على ورقة ما يعرفونه عن ${kb.titleAr} (دقيقتان). تُشارك بعض الإجابات ثم يُحدد المعلم ما سنكتشفه معًا.`,
+    `"التنبؤ والاستكشاف": اعرض موقفًا حياتيًا مرتبطًا بـ${topic} واطلب من الطلبة التنبؤ بالتفسير. استخدم تنبؤاتهم كنقطة انطلاق لأهداف الدرس.`,
   ]);
   return pick([
-    `ابدأ بسؤال تحفيزي: "كيف يرتبط ${topic} بحياتنا اليومية؟" استمع لمشاركات 3-4 طلاب وسجّلها على السبورة، ثم ابنِ عليها مدخلًا للدرس.`,
+    `ابدأ بسؤال تحفيزي: "كيف يرتبط ${topic} بحياتنا اليومية؟" استمع لمشاركات 3-4 طلبة وسجّلها على السبورة، ثم ابنِ عليها مدخلًا للدرس.`,
     `"فكّر – زاوج – شارك": يفكر كل طالب 30 ثانية فيما يعرفه عن ${topic}، يشارك زميله، ثم تُطرح بعض الإجابات على الصف.`,
   ]);
 }
@@ -682,13 +709,13 @@ export class MockAIService extends AIService {
           mainActivity:
             `الشرح المبسط لـ«${topic}»:\n`
             + `1) الفكرة بجملة واحدة: ${kb?.summaryAr ?? docs.summary ?? `«${topic}» تعني فهم العلاقة الأساسية خطوة بخطوة.`}\n`
-            + '2) مثال من الحياة: اختر موقفاً مألوفاً للطلاب واربطه بالفكرة.\n'
+            + '2) مثال من الحياة: اختر موقفاً مألوفاً للطلبة واربطه بالفكرة.\n'
             + '3) قاعدة ذهبية قصيرة يحفظها الطالب.\n'
             + '4) خطأ شائع واحد وكيف نتجنّبه.',
           guidedPractice: `معاً: حلّ مثالاً واحداً سهِّلاً على «${topic}» مع تفكير بصوت عالٍ وبكلمات بسيطة فقط.`,
           independentPractice: 'اطلب من كل طالب إعادة الشرح لزميله بجملتين فقط، ثم صحّح أي تعقيد لغوي.',
           closure: `اطلب جملة ختامية: «${topic} يعني …» واكتب أفضل صياغة مبسطة على السبورة.`,
-          assessment: 'تحقق سريع شفهي: اسأل 3 طلاب أن يشرحوا الفكرة دون النظر للدفتر.',
+          assessment: 'تحقق سريع شفهي: اسأل 3 طلبة أن يشرحوا الفكرة دون النظر للدفتر.',
           differentiation: 'للمتعثرين: مثال واحد إضافي بصري. للمتقدمين: اطلب مثالاً حياتياً جديداً من عندهم.',
           homework: 'اكتب في المنزل شرحاً مبسطاً لـ«' + topic + '» في 4–5 أسطر لمبتدئ.',
         };
@@ -1100,7 +1127,12 @@ export class MockAIService extends AIService {
     const math = isMathContext(topic, kb, req.subject);
     // A warm-up poses one item; the main activity needs three (worked
     // example, faded item, unaided item / jigsaw parts / game rounds).
-    const practice = math ? takeConcreteMathBatch(isWarmup ? 1 : 3, topic, kb, lang, 'medium') : [];
+    const wantItems = isWarmup ? 1 : 3;
+    const practice = math
+      ? takeConcreteMathBatch(wantItems, topic, kb, lang, 'medium')
+      : isChemContext(topic, kb, req.subject)
+        ? takeConcreteChemBatch(wantItems, topic, kb, lang, 'medium')
+        : [];
 
     const blueprint = buildActivityBlueprint(actType, {
       topic, lang, math, practice, kb, duration,
@@ -1137,12 +1169,15 @@ export class MockAIService extends AIService {
     const slideDuration = Math.round((dur * 60) / 5);
     const actType = req.activityType ?? 'escape-challenge';
     const math = isMathContext(topic, kb, req.subject);
-    const bingoItems = math && actType === 'bingo'
-      ? takeConcreteMathBatch(8, topic, kb, isAr ? 'ar' : 'en', 'medium')
-      : [];
-    const relayItems = math && actType === 'relay'
-      ? takeConcreteMathBatch(4, topic, kb, isAr ? 'ar' : 'en', 'medium')
-      : [];
+    const chem = !math && isChemContext(topic, kb, req.subject);
+    const batch = (n: number) =>
+      math
+        ? takeConcreteMathBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
+        : chem
+          ? takeConcreteChemBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
+          : [];
+    const bingoItems = actType === 'bingo' ? batch(8) : [];
+    const relayItems = actType === 'relay' ? batch(4) : [];
 
     // ── Quick Check (whole-class ABCD response) ────────────────────────────────
     // Every student answers every question (hands raised / mini-whiteboards) —
@@ -1158,9 +1193,11 @@ export class MockAIService extends AIService {
       // bad caller cannot drain the concrete bank in one call.
       const wanted = Math.max(1, Math.min(8, Math.floor(req.numQuestions ?? 4) || 4));
       const mcqs: { text: string; options: string[]; answer: string }[] = [];
-      if (math) {
+      if (math || chem) {
         for (let i = 0; i < wanted; i++) {
-          const q = takeConcreteMath('multiple_choice', topic, kb, tier, isAr ? 'ar' : 'en', 0);
+          const q = math
+            ? takeConcreteMath('multiple_choice', topic, kb, tier, isAr ? 'ar' : 'en', 0)
+            : takeConcreteChem('multiple_choice', topic, kb, tier, isAr ? 'ar' : 'en', 0);
           if (q?.options?.length) mcqs.push({ text: q.text, options: q.options, answer: q.answer });
         }
       }
@@ -1169,11 +1206,19 @@ export class MockAIService extends AIService {
         // Ask the SymPy verifier to actually prove what it can (derivative
         // slice today). Runs in parallel with a per-item timeout; anything
         // it cannot prove stays labelled as a reviewed bank item.
-        const outcomes = await Promise.all(
-          mcqs.map(q =>
-            verifyIfPossible(q.text, q.answer, q.options.filter(o => o !== q.answer)),
-          ),
-        );
+        // Only maths goes to the symbolic verifier. A chemistry stem can
+        // carry an `=` — «q = m·c·ΔT», «Z = 11» — which is enough for
+        // `classifyVerifiableTopic` to hand it to SymPy as an equation, and a
+        // verdict there renders «تم التحقق من الإجابة رياضيًا»: a claim this
+        // product makes carefully and would be making falsely. A bank item is
+        // labelled as a bank item, which is what it is.
+        const outcomes = math
+          ? await Promise.all(
+              mcqs.map(q =>
+                verifyIfPossible(q.text, q.answer, q.options.filter(o => o !== q.answer)),
+              ),
+            )
+          : mcqs.map(() => BANK_OUTCOME);
 
         const qSlides = mcqs.map((q, i) => {
           const correctIndex = Math.max(0, q.options.indexOf(q.answer));
@@ -1386,14 +1431,14 @@ export class MockAIService extends AIService {
           extensionChallenge: `اطلب من الفائز شرح 3 مصطلحات من بطاقته بكلماته الخاصة`,
           slides: [
             { slideNumber: 1, type: 'intro', title: '🎱 بينجو المصطلحات', content: `مرحبًا بكم في بينجو ${topic}!\nلكل طالب بطاقة 5×5 مليئة بالمصطلحات.\nعندما أستدعي مصطلحًا، غطّ المربع المناسب.\nأول من يكمل صفًا أو عمودًا أو قطرًا يصرخ بينجو!`, durationSeconds: 0 },
-            { slideNumber: 2, type: 'bingo-call', title: 'الاستدعاء 1', content: `تعريف: المفهوم الأساسي الأول في ${topic}`, hint: `فكّر في تعريف ${topic}`, answer: `المصطلح 1`, durationSeconds: 30, teacher: { expectedAnswer: `المصطلح المحدد من وحدة ${topic}`, teachingTips: 'امنح الطلاب 20-30 ثانية للبحث في بطاقاتهم', suggestedQuestions: ['هل تتذكر هذا المصطلح من الدرس؟'] } },
-            { slideNumber: 3, type: 'bingo-call', title: 'الاستدعاء 2', content: `خاصية: ${topic} يُستخدم عندما…`, hint: 'فكّر في حالات التطبيق', answer: 'المصطلح 2', durationSeconds: 30, teacher: { expectedAnswer: `تطبيق مباشر من وحدة ${topic}`, teachingTips: 'ذكّر الطلاب بمثال من الكتاب', suggestedQuestions: ['أين طبّقنا هذا في الدرس؟'] } },
+            { slideNumber: 2, type: 'bingo-call', title: 'الاستدعاء 1', content: `تعريف: المفهوم الأساسي الأول في ${topic}`, hint: `فكّر في تعريف ${topic}`, answer: `المصطلح 1`, durationSeconds: 30, teacher: { expectedAnswer: `المصطلح المحدد من وحدة ${topic}`, teachingTips: 'امنح الطلبة 20-30 ثانية للبحث في بطاقاتهم', suggestedQuestions: ['هل تتذكر هذا المصطلح من الدرس؟'] } },
+            { slideNumber: 3, type: 'bingo-call', title: 'الاستدعاء 2', content: `خاصية: ${topic} يُستخدم عندما…`, hint: 'فكّر في حالات التطبيق', answer: 'المصطلح 2', durationSeconds: 30, teacher: { expectedAnswer: `تطبيق مباشر من وحدة ${topic}`, teachingTips: 'ذكّر الطلبة بمثال من الكتاب', suggestedQuestions: ['أين طبّقنا هذا في الدرس؟'] } },
             { slideNumber: 4, type: 'bingo-call', title: 'الاستدعاء 3', content: `قاعدة: إذا كان … في ${topic}، فإن النتيجة هي…`, hint: 'راجع القواعد الأساسية', answer: 'المصطلح 3', durationSeconds: 30, teacher: { expectedAnswer: `القاعدة المرتبطة بـ${topic}`, teachingTips: 'اربط السؤال بخطوة الحل التي درسناها' } },
             { slideNumber: 5, type: 'bingo-call', title: 'الاستدعاء 4', content: `مثال: أوجد نتيجة تطبيق مفهوم من ${topic} في موقف حياتي`, hint: 'تذكّر التطبيقات الحياتية', answer: 'المصطلح 4', durationSeconds: 30, teacher: { expectedAnswer: `مثال حياتي على ${topic}`, teachingTips: 'يمكن قبول أكثر من مصطلح إذا كانت الإجابة منطقية' } },
             { slideNumber: 6, type: 'bingo-call', title: 'الاستدعاء 5', content: `المعادلة: الصيغة الرياضية المرتبطة بـ${topic} هي…`, hint: 'تذكّر صيغ وحدتنا', answer: 'المصطلح 5', durationSeconds: 30, teacher: { expectedAnswer: `الصيغة المرتبطة بـ${topic}`, teachingTips: 'اعرض الصيغة بعد الاستدعاء للتأكيد' } },
-            { slideNumber: 7, type: 'bingo-call', title: 'الاستدعاء 6', content: `ما الفرق بين المفهومين الرئيسيين في ${topic}؟`, hint: 'قارن المفهومين', answer: 'المصطلح 6', durationSeconds: 30, teacher: { expectedAnswer: `الفرق بين مفهومَي ${topic}`, teachingTips: 'ادفع الطلاب للتفكير النقدي هنا' } },
-            { slideNumber: 8, type: 'bingo-call', title: 'الاستدعاء 7', content: `أي خاصية من خصائص ${topic} تنطبق على هذا الموقف: …؟`, hint: 'راجع قائمة الخصائص', answer: 'المصطلح 7', durationSeconds: 30, teacher: { expectedAnswer: `الخاصية المناسبة من ${topic}`, teachingTips: 'أعطِ مثالًا إضافيًا إذا بدا الطلاب متوقفين' } },
-            { slideNumber: 9, type: 'bingo-call', title: 'الاستدعاء 8', content: `الوحدة المستخدمة لقياس كمية مرتبطة بـ${topic} هي…`, hint: 'فكّر في وحدات القياس', answer: 'المصطلح 8', durationSeconds: 30, teacher: { expectedAnswer: `وحدة القياس المرتبطة بـ${topic}`, teachingTips: 'ذكّر الطلاب بجدول الوحدات' } },
+            { slideNumber: 7, type: 'bingo-call', title: 'الاستدعاء 6', content: `ما الفرق بين المفهومين الرئيسيين في ${topic}؟`, hint: 'قارن المفهومين', answer: 'المصطلح 6', durationSeconds: 30, teacher: { expectedAnswer: `الفرق بين مفهومَي ${topic}`, teachingTips: 'ادفع الطلبة للتفكير النقدي هنا' } },
+            { slideNumber: 8, type: 'bingo-call', title: 'الاستدعاء 7', content: `أي خاصية من خصائص ${topic} تنطبق على هذا الموقف: …؟`, hint: 'راجع قائمة الخصائص', answer: 'المصطلح 7', durationSeconds: 30, teacher: { expectedAnswer: `الخاصية المناسبة من ${topic}`, teachingTips: 'أعطِ مثالًا إضافيًا إذا بدا الطلبة متوقفين' } },
+            { slideNumber: 9, type: 'bingo-call', title: 'الاستدعاء 8', content: `الوحدة المستخدمة لقياس كمية مرتبطة بـ${topic} هي…`, hint: 'فكّر في وحدات القياس', answer: 'المصطلح 8', durationSeconds: 30, teacher: { expectedAnswer: `وحدة القياس المرتبطة بـ${topic}`, teachingTips: 'ذكّر الطلبة بجدول الوحدات' } },
             { slideNumber: 10, type: 'summary', title: '🎉 انتهت الجولة!', content: `أحسنتم جميعًا!\nراجعنا اليوم مفردات ${topic} الأساسية.\n\nناقش مع زميلك:\n• أي مصطلح كان الأصعب؟\n• أي مصطلح تريد مراجعته مجددًا؟`, durationSeconds: 0 },
           ],
         };
@@ -1484,7 +1529,7 @@ export class MockAIService extends AIService {
             groupType: req.groupType,
             learningObjective: `حل أربع مسائل محددة في ${topic} ضمن فرق تنافسية`,
             materials: ['السبورة', 'أوراق التتابع المطبوعة', 'مؤقت', 'أقلام ملونة'],
-            teacherPreparation: 'قسّم الطلاب إلى فرق. كل فرد يحل مسألة واحدة ثم يمرّر للالتالي.',
+            teacherPreparation: 'قسّم الطلبة إلى فرق. كل فرد يحل مسألة واحدة ثم يمرّر للالتالي.',
             teacherNotes: ['تحقق من توازن الفرق', 'شجّع التحقق قبل التمرير'],
             answerKey: relayItems.map((item, i) => `المسألة ${i + 1}: ${item.answer}`),
             printables: ['أوراق التتابع', 'لوحة النتائج'],
@@ -1521,7 +1566,7 @@ export class MockAIService extends AIService {
           groupType: req.groupType,
           learningObjective: `تطبيق مهارات ${topic} في سلسلة من المسائل المتصلة ضمن فرق تنافسية`,
           materials: ['السبورة', 'أوراق التتابع المطبوعة', 'مؤقت', 'أقلام ملونة (لون لكل فريق)'],
-          teacherPreparation: 'قسّم الطلاب إلى فرق من 4-5 أفراد. اطبع ورقة تتابع لكل فريق. اشرح آلية التمرير: كل طالب يحل مسألة ويمرر الإجابة للتالي.',
+          teacherPreparation: 'قسّم الطلبة إلى فرق من 4-5 أفراد. اطبع ورقة تتابع لكل فريق. اشرح آلية التمرير: كل طالب يحل مسألة ويمرر الإجابة للتالي.',
           teacherNotes: ['تحقق أن الفرق متوازنة المستوى', 'شجّع التحقق من الإجابة قبل التمرير'],
           answerKey: [
             'المسألة 1: الإجابة الأولى (تُمرَّر للمسألة 2)',
@@ -1540,7 +1585,7 @@ export class MockAIService extends AIService {
               hint: 'ابدأ بتحديد المعطيات وطبّق الخطوة الأولى',
               answer: 'أ = القيمة الأولى',
               durationSeconds: slideDuration,
-              teacher: { expectedAnswer: `القيمة الأولى (أ) من تطبيق ${topic}`, commonMisconceptions: 'قد يخطئ الطلاب في تحديد المعطيات', teachingTips: 'تأكد أن كل فريق يكتب إجابته بوضوح قبل التمرير', suggestedQuestions: ['ما المعطى الذي تستخدمه في الخطوة الأولى؟'] },
+              teacher: { expectedAnswer: `القيمة الأولى (أ) من تطبيق ${topic}`, commonMisconceptions: 'قد يخطئ الطلبة في تحديد المعطيات', teachingTips: 'تأكد أن كل فريق يكتب إجابته بوضوح قبل التمرير', suggestedQuestions: ['ما المعطى الذي تستخدمه في الخطوة الأولى؟'] },
             },
             {
               slideNumber: 3, type: 'relay-problem', title: 'المسألة 2 من 4',
@@ -1641,12 +1686,12 @@ export class MockAIService extends AIService {
           difficulty: req.difficulty, groupType: req.groupType,
           learningObjective: `تحديد الأخطاء الشائعة في حل مسائل ${topic} وتصحيحها بمنهجية`,
           materials: ['السبورة', 'بطاقات الحلول الخاطئة المطبوعة', 'أقلام تصحيح حمراء'],
-          teacherPreparation: 'اطبع 3 حلول خاطئة مسبقًا. اطلب من الطلاب العمل في ثنائيات.',
+          teacherPreparation: 'اطبع 3 حلول خاطئة مسبقًا. اطلب من الطلبة العمل في ثنائيات.',
           teacherNotes: ['ناقش سبب الخطأ وليس فقط الإجابة الصحيحة', 'استخدم أخطاء حقيقية من اختبارات سابقة'],
           answerKey: ['الخطأ 1: إشارة سالبة مفقودة', 'الخطأ 2: قسمة على المتغير بدلاً من إخراجه', 'الخطأ 3: نسيان الجذر السالب'],
           printables: ['بطاقات الحلول الخاطئة', 'نموذج التقرير التحقيقي'],
-          assessment: 'قيّم قدرة الطلاب على تحديد الخطأ وشرح سببه وتقديم الحل الصحيح.',
-          extensionChallenge: `اطلب من الطلاب تصميم خطأ متعمد في حل ${topic} وتبادله مع مجموعة أخرى.`,
+          assessment: 'قيّم قدرة الطلبة على تحديد الخطأ وشرح سببه وتقديم الحل الصحيح.',
+          extensionChallenge: `اطلب من الطلبة تصميم خطأ متعمد في حل ${topic} وتبادله مع مجموعة أخرى.`,
           slides: [
             { slideNumber: 1, type: 'intro', title: '🔍 المحقق الرياضي', content: `مهمتك: اكشف الخطأ في الحلول التالية!\nكل حل يحتوي على خطأ واحد على الأقل.\nحدّد الخطأ، اشرح سببه، وقدّم الحل الصحيح.\n\nعمل ثنائي – دقيقتان لكل بطاقة`, durationSeconds: 0 },
             {
@@ -1656,7 +1701,7 @@ export class MockAIService extends AIService {
               hint: 'هل هناك حالتان لـ√9 ؟',
               answer: 'الخطأ: نسيان الجذر السالب\nالصحيح: س = 3 أو س = -3',
               durationSeconds: slideDuration,
-              teacher: { expectedAnswer: 'نسيان الجذر السالب ± 3', commonMisconceptions: 'الطلاب يعتقدون أن الجذر التربيعي له قيمة موجبة فقط', teachingTips: 'ذكّر: √9 = ±3 دائمًا عند حل المعادلات', suggestedQuestions: ['ما عدد حلول المعادلة التربيعية؟', 'متى تكون الحلول كلاهما موجبة؟'] },
+              teacher: { expectedAnswer: 'نسيان الجذر السالب ± 3', commonMisconceptions: 'الطلبة يعتقدون أن الجذر التربيعي له قيمة موجبة فقط', teachingTips: 'ذكّر: √9 = ±3 دائمًا عند حل المعادلات', suggestedQuestions: ['ما عدد حلول المعادلة التربيعية؟', 'متى تكون الحلول كلاهما موجبة؟'] },
             },
             { slideNumber: 3, type: 'reveal', title: '✅ الحل الصحيح', content: 'الخطأ: أخذ الجذر الموجب فقط\n\nالحل الكامل:\nس² = 9\nس = ±3\n\nإذن: س = 3 أو س = -3\n\n🏅 نقطة لمن اكتشف الخطأ!', durationSeconds: 0 },
             {
@@ -1666,7 +1711,7 @@ export class MockAIService extends AIService {
               hint: 'ماذا يحدث عند القسمة على المتغير؟',
               answer: 'الخطأ: القسمة على (س) تُفقد الحل س = 0\nالصحيح: س(3س - 6) = 0، إذن س = 0 أو س = 2',
               durationSeconds: slideDuration,
-              teacher: { expectedAnswer: 'قسمة طرفي المعادلة على (س) تُضيّع الحل س = 0', commonMisconceptions: 'الطلاب يقسمون على المتغير ظنًا أنه مبسّط', teachingTips: 'القاعدة الذهبية: لا تقسم على متغير، بل أخرجه عاملاً', suggestedQuestions: ['لماذا لا يجوز القسمة على س؟', 'كيف تتحقق أن س = 0 حل صحيح؟'] },
+              teacher: { expectedAnswer: 'قسمة طرفي المعادلة على (س) تُضيّع الحل س = 0', commonMisconceptions: 'الطلبة يقسمون على المتغير ظنًا أنه مبسّط', teachingTips: 'القاعدة الذهبية: لا تقسم على متغير، بل أخرجه عاملاً', suggestedQuestions: ['لماذا لا يجوز القسمة على س؟', 'كيف تتحقق أن س = 0 حل صحيح؟'] },
             },
             { slideNumber: 5, type: 'reveal', title: '✅ الحل الصحيح', content: 'الخطأ: القسمة على (س) تُفقد الحل الثاني\n\nالطريقة الصحيحة:\n3س² - 6س = 0\nس(3س - 6) = 0\nس = 0  أو  3س - 6 = 0\nس = 0  أو  س = 2\n\n⚠️ لا تقسم أبدًا على متغير!', durationSeconds: 0 },
             {
@@ -1793,7 +1838,7 @@ export class MockAIService extends AIService {
           activityType: 'exit-ticket',
           grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
           difficulty: req.difficulty, groupType: req.groupType,
-          learningObjective: `التحقق من مستوى فهم الطلاب لـ${topic} في نهاية الحصة`,
+          learningObjective: `التحقق من مستوى فهم الطلبة لـ${topic} في نهاية الحصة`,
           materials: ['ورقة بطاقة الخروج المطبوعة (1 لكل طالب)', 'قلم'],
           teacherPreparation: 'اطبع بطاقة الخروج (3-4 أسئلة). خصّص 5-7 دقائق في نهاية الحصة.',
           teacherNotes: ['اجمع البطاقات عند الباب', 'راجعها قبل الحصة القادمة لتعديل خطة التدريس'],
@@ -1894,8 +1939,8 @@ export class MockAIService extends AIService {
         groupType: req.groupType,
         learningObjective: `حل معادلات ${topic} بأساليب متنوعة ضمن فريق`,
         materials: ['السبورة', 'أوراق التحديات المطبوعة', 'مؤقت', 'أقلام ملونة'],
-        teacherPreparation: 'اطبع بطاقات التحديات الخمسة مسبقًا. رتّب الطلاب في مجموعات من 3-4 أفراد. اكتب الأكواد على السبورة عند الانتهاء من كل تحدٍّ.',
-        teacherNotes: ['راقب المجموعات وقدّم تلميحات إضافية عند الحاجة', 'شجّع الطلاب على مناقشة أساليب الحل المختلفة'],
+        teacherPreparation: 'اطبع بطاقات التحديات الخمسة مسبقًا. رتّب الطلبة في مجموعات من 3-4 أفراد. اكتب الأكواد على السبورة عند الانتهاء من كل تحدٍّ.',
+        teacherNotes: ['راقب المجموعات وقدّم تلميحات إضافية عند الحاجة', 'شجّع الطلبة على مناقشة أساليب الحل المختلفة'],
         answerKey: [
           'التحدي 1: س = -3، س = -4',
           'التحدي 2: س = 2، س = 3',
@@ -1929,10 +1974,10 @@ export class MockAIService extends AIService {
             durationSeconds: slideDuration,
             teacher: {
               expectedAnswer: 'س² + 7س + 12 = (س + 3)(س + 4) = 0، إذن س = -3 أو س = -4',
-              commonMisconceptions: 'قد ينسى الطلاب الإشارة السالبة عند كتابة الجذور',
-              teachingTips: 'ذكّر الطلاب بأن حاصل ضرب العاملين = 12 ومجموعهما = 7',
+              commonMisconceptions: 'قد ينسى الطلبة الإشارة السالبة عند كتابة الجذور',
+              teachingTips: 'ذكّر الطلبة بأن حاصل ضرب العاملين = 12 ومجموعهما = 7',
               suggestedQuestions: ['ما العاملان اللذان حاصل ضربهما 12 ومجموعهما 7؟', 'كيف نتحقق من الإجابة؟'],
-              differentiationTips: 'للطلاب المتقدمين: استخدم القانون العام للتحقق',
+              differentiationTips: 'للطلبة المتقدمين: استخدم القانون العام للتحقق',
             },
           },
           {
@@ -1953,9 +1998,9 @@ export class MockAIService extends AIService {
             teacher: {
               expectedAnswer: '(س - 2)(س - 3) = 0، إذن س = 2 أو س = 3',
               commonMisconceptions: 'خلط الإشارات عند التحليل',
-              teachingTips: 'اطلب من الطلاب رسم جدول بسيط للعاملين المحتملة',
+              teachingTips: 'اطلب من الطلبة رسم جدول بسيط للعاملين المحتملة',
               suggestedQuestions: ['ما علامة الجذرين هنا ولماذا؟'],
-              differentiationTips: 'للطلاب الأقل تقدمًا: ارسم الدالة التربيعية وحدد نقاط التقاطع مع المحور السيني',
+              differentiationTips: 'للطلبة الأقل تقدمًا: ارسم الدالة التربيعية وحدد نقاط التقاطع مع المحور السيني',
             },
           },
           {
@@ -1999,7 +2044,7 @@ export class MockAIService extends AIService {
             teacher: {
               expectedAnswer: '2س(س - 4) = 0، إذن س = 0 أو س = 4',
               commonMisconceptions: 'قسمة طرفي المعادلة على س وإهمال الحل س = 0',
-              teachingTips: 'نبّه الطلاب إلى خطأ القسمة على المجهول',
+              teachingTips: 'نبّه الطلبة إلى خطأ القسمة على المجهول',
               suggestedQuestions: ['لماذا لا يمكن القسمة على س مباشرةً؟'],
               differentiationTips: 'للمتقدمين: طبّق القانون العام وقارن النتائج',
             },
@@ -2242,7 +2287,9 @@ export class MockAIService extends AIService {
 
     const challengePractice = math
       ? takeConcreteMath('short_answer', topic, kb, 'hard', lang, 12)
-      : null;
+      : isChemContext(topic, kb, req.subject)
+        ? takeConcreteChem('short_answer', topic, kb, 'hard', lang, 12)
+        : null;
     const challenge: WQ = challengePractice
       ? {
           text: lang === 'ar'
@@ -2277,7 +2324,7 @@ export class MockAIService extends AIService {
 
     return {
       title: lang === 'ar'
-        ? `واجب منزلي – ${topic}`
+        ? `واجب بيتي – ${topic}`
         : `Homework Assignment – ${topic}`,
       instructions: lang === 'ar'
         ? `تعليمات للطالب\n• أنجز هذا الواجب بمفردك في المنزل (بدون ورقة عمل صفية).\n• الوقت التقديري: حوالي ${estMinutes} دقيقة.\n• الموعد: الحصة القادمة.\n• ابدأ بالتمارين المستقلة، ثم حاول سؤال التحدي.\n• أظهر خطواتك — الجودة أهم من السرعة.`

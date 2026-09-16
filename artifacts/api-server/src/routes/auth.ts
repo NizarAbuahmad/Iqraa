@@ -16,13 +16,15 @@ import {
   emailVerificationTokens,
   passwordResetTokens,
 } from "@workspace/db";
-import { eq, and, asc, desc, gt, inArray, isNotNull, isNull } from "drizzle-orm";
+import { eq, and, asc, desc, gt, inArray, isNotNull, isNull, lt } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import { emailKey } from "../lib/rateLimitKeys.js";
 import { deleteObject, deletePublicObject, isPublicR2Configured, newAvatarKey, publicUrl, putPublicObject } from "../lib/r2.js";
 import { googleClientIds } from "../lib/googleClients.js";
+import { decideGoogleLink } from "../lib/googleLink.js";
+import { decideRefresh, refreshTokenTtlMs } from "../lib/refreshPolicy.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import {
   ROSTER_CONSENT_STATEMENT_EN,
@@ -157,13 +159,50 @@ function generateTokens(userId: string, email: string, role: string) {
   return { accessToken, refreshTokenValue };
 }
 
-async function storeRefreshToken(userId: string, tokenValue: string): Promise<void> {
-  const tokenHash = crypto
-    .createHash("sha256")
-    .update(tokenValue)
-    .digest("hex");
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
-  await db.insert(refreshTokens).values({ userId, tokenHash, expiresAt });
+function hashRefreshToken(tokenValue: string): string {
+  return crypto.createHash("sha256").update(tokenValue).digest("hex");
+}
+
+/**
+ * Store a refresh token.
+ *
+ * `origin` is the request's `Origin` header and picks the lifetime — seven days
+ * for a browser, thirty for a native app (see lib/refreshPolicy.ts). `familyId`
+ * is omitted at sign-in, where the column's default starts a new chain, and
+ * passed at rotation so the successor stays in the chain it replaces.
+ */
+async function storeRefreshToken(
+  userId: string,
+  tokenValue: string,
+  origin: string | undefined,
+  familyId?: string,
+): Promise<void> {
+  const expiresAt = new Date(Date.now() + refreshTokenTtlMs(origin));
+  await db.insert(refreshTokens).values({
+    userId,
+    tokenHash: hashRefreshToken(tokenValue),
+    expiresAt,
+    ...(familyId ? { familyId } : {}),
+  });
+}
+
+/**
+ * Drop this user's expired rows, rotated ones included.
+ *
+ * Retiring instead of deleting is what makes replay detectable, and the cost is
+ * that the table now grows by a row per rotation. Bounded here rather than by a
+ * scheduler: once a row is past `expiresAt` it can never produce anything but
+ * `reject`, so it carries no evidence worth keeping. Scoped to one user and run
+ * on their own refresh, which is the moment their rows were already being read.
+ *
+ * Fire-and-forget on purpose — a failed sweep costs disk, not correctness, and
+ * must not turn a valid refresh into a 500.
+ */
+function pruneExpiredRefreshTokens(userId: string): void {
+  void db
+    .delete(refreshTokens)
+    .where(and(eq(refreshTokens.userId, userId), lt(refreshTokens.expiresAt, new Date())))
+    .catch(err => logger.warn({ err, userId }, "refresh token prune failed"));
 }
 
 /**
@@ -377,7 +416,7 @@ router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, asyn
       .returning();
 
     const { accessToken, refreshTokenValue } = generateTokens(verified.id, verified.email, verified.role);
-    await storeRefreshToken(verified.id, refreshTokenValue);
+    await storeRefreshToken(verified.id, refreshTokenValue, req.headers.origin);
 
     res.json({
       accessToken,
@@ -951,7 +990,7 @@ router.post("/login", loginLimiter, async (req, res) => {
       .where(eq(users.id, user.id));
 
     const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
-    await storeRefreshToken(user.id, refreshTokenValue);
+    await storeRefreshToken(user.id, refreshTokenValue, req.headers.origin);
 
     // Only asked of the database for the two roles the app's routing gate
     // cares about — a teacher never has (or needs) a rosterLinks row.
@@ -1025,6 +1064,25 @@ router.post("/google", googleLimiter, async (req, res) => {
       return;
     }
 
+    /*
+     * `verifyIdToken` proved Google minted this token for an audience we
+     * accept. It did NOT prove Google ever verified the address inside it —
+     * that is what `email_verified` says, and it is a separate claim.
+     *
+     * The address is used as an account key three lines down, so trusting an
+     * unverified one hands whoever holds it the matching account. Not
+     * theoretical here: a Workspace admin can mint any address on their own
+     * domain, and the customers are schools on Workspace domains.
+     *
+     * Same 401 as a bad token, since to the caller both are "this credential
+     * won't get you in" and the distinction is only useful to someone probing.
+     */
+    if (payload.email_verified !== true) {
+      logger.warn({ sub: payload.sub }, "google id token rejected — email not verified by google");
+      res.status(401).json({ error: "Invalid Google credential" });
+      return;
+    }
+
     const email = payload.email.toLowerCase().trim();
 
     let [user] = await db.select().from(users).where(eq(users.googleId, payload.sub)).limit(1);
@@ -1041,11 +1099,40 @@ router.post("/google", googleLimiter, async (req, res) => {
       [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
       if (user) {
+        // Why a row that was never verified loses its password here: see
+        // lib/googleLink.ts. Short version — /register lets anyone pre-create
+        // an account on someone else's address, and this is the line that
+        // would otherwise turn that password into a working credential.
+        const decision = decideGoogleLink(user, payload.sub);
+        const linkedId = user.id;
         [user] = await db
           .update(users)
-          .set({ googleId: payload.sub, emailVerified: true })
-          .where(eq(users.id, user.id))
+          .set(decision.update)
+          .where(eq(users.id, linkedId))
           .returning();
+
+        if (decision.revokeExistingCredentials) {
+          // Nothing should hold a session on this row — /register issues none
+          // — but anything that somehow does was minted before the address was
+          // proved, so it is exactly what must not outlive the link.
+          await db.delete(refreshTokens).where(eq(refreshTokens.userId, linkedId));
+          // Codes already in flight were sent on behalf of whoever created the
+          // row. Google has settled verification; leaving them live leaves a
+          // second door into an account that now has a real owner.
+          await db
+            .update(emailVerificationTokens)
+            .set({ used: true })
+            .where(
+              and(
+                eq(emailVerificationTokens.userId, linkedId),
+                eq(emailVerificationTokens.used, false),
+              ),
+            );
+          logger.info(
+            { userId: linkedId },
+            "google linked to an unverified account — password cleared, pending codes burned",
+          );
+        }
       } else {
         // A brand-new account: the register screen's role picker reaches this
         // route too (its "Continue with Google" button), and used to always
@@ -1096,7 +1183,7 @@ router.post("/google", googleLimiter, async (req, res) => {
     await db.update(users).set({ lastLogin: new Date() }).where(eq(users.id, user.id));
 
     const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
-    await storeRefreshToken(user.id, refreshTokenValue);
+    await storeRefreshToken(user.id, refreshTokenValue, req.headers.origin);
 
     const hasRosterLink =
       user.role !== "student" && user.role !== "parent"
@@ -1136,11 +1223,24 @@ router.post("/logout", authMiddleware, async (req: AuthenticatedRequest, res) =>
   try {
     const { refreshToken } = req.body as { refreshToken?: string };
     if (refreshToken) {
-      const tokenHash = crypto
-        .createHash("sha256")
-        .update(refreshToken)
-        .digest("hex");
-      await db.delete(refreshTokens).where(eq(refreshTokens.tokenHash, tokenHash));
+      /*
+       * The whole family, not just the row presented.
+       *
+       * Deleting one row was right when rotation deleted its predecessor: the
+       * presented token was the only live one. It is not right now that
+       * predecessors are kept for replay detection — leaving them behind would
+       * mean signing out, then having a retired token from that same session
+       * turn up later and revoke a family the user had already abandoned.
+       * Ending the chain is also what "log out" means.
+       */
+      const [row] = await db
+        .select({ familyId: refreshTokens.familyId })
+        .from(refreshTokens)
+        .where(eq(refreshTokens.tokenHash, hashRefreshToken(refreshToken)))
+        .limit(1);
+      if (row) {
+        await db.delete(refreshTokens).where(eq(refreshTokens.familyId, row.familyId));
+      }
     }
     res.json({ ok: true });
   } catch (err) {
@@ -1158,34 +1258,51 @@ router.post("/refresh", async (req, res) => {
       return;
     }
 
-    const tokenHash = crypto
-      .createHash("sha256")
-      .update(refreshToken)
-      .digest("hex");
-
+    /*
+     * Fetched by hash alone — no `expiresAt` filter in the query.
+     *
+     * The filter used to be here, and it hid the thing this route now looks
+     * for: an expired row and a replayed row both came back empty, so a token
+     * presented twice was indistinguishable from one presented late. Expiry is
+     * decided in `decideRefresh` instead, after reuse has been ruled out.
+     */
     const [stored] = await db
       .select()
       .from(refreshTokens)
-      .where(
-        and(
-          eq(refreshTokens.tokenHash, tokenHash),
-          gt(refreshTokens.expiresAt, new Date()),
-        ),
-      )
+      .where(eq(refreshTokens.tokenHash, hashRefreshToken(refreshToken)))
       .limit(1);
 
-    if (!stored) {
+    const outcome = decideRefresh(stored, new Date());
+
+    if (outcome.action === "revoke_family") {
+      /*
+       * This token was already exchanged for a successor, and someone has just
+       * presented it again. Nobody legitimate does that — the client that
+       * rotated it holds the replacement — so there are two copies in the
+       * world and no way to tell which caller is the owner.
+       *
+       * So the whole chain goes, the honest client's live token included. That
+       * signs the real user out, which is the point: they sign back in with a
+       * password we still trust, and the thief cannot.
+       */
+      await db.delete(refreshTokens).where(eq(refreshTokens.familyId, outcome.familyId));
+      logger.warn(
+        { userId: stored!.userId, familyId: outcome.familyId },
+        "refresh token reuse detected — session family revoked",
+      );
       res.status(401).json({ error: "Invalid or expired refresh token" });
       return;
     }
 
-    // Rotate: delete old, issue new
-    await db.delete(refreshTokens).where(eq(refreshTokens.id, stored.id));
+    if (outcome.action === "reject") {
+      res.status(401).json({ error: "Invalid or expired refresh token" });
+      return;
+    }
 
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.id, stored.userId))
+      .where(eq(users.id, stored!.userId))
       .limit(1);
 
     if (!user) {
@@ -1193,8 +1310,28 @@ router.post("/refresh", async (req, res) => {
       return;
     }
 
+    // Retired, not deleted: a deleted row cannot report that it was used twice,
+    // which is the entire mechanism above. Conditional on `rotatedAt` still
+    // being null so that two refreshes racing the same token produce one
+    // winner — the loser updates nothing, and its own next attempt reads a
+    // retired row and trips the branch above, which is the correct reading of
+    // two callers holding one token.
+    const [retired] = await db
+      .update(refreshTokens)
+      .set({ rotatedAt: new Date() })
+      .where(and(eq(refreshTokens.id, stored!.id), isNull(refreshTokens.rotatedAt)))
+      .returning({ id: refreshTokens.id });
+
+    if (!retired) {
+      res.status(401).json({ error: "Invalid or expired refresh token" });
+      return;
+    }
+
     const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
-    await storeRefreshToken(user.id, refreshTokenValue);
+    // Same family: this is the same sign-in continuing, and a fresh family
+    // would put the successor beyond the reach of the revocation above.
+    await storeRefreshToken(user.id, refreshTokenValue, req.headers.origin, outcome.familyId);
+    pruneExpiredRefreshTokens(user.id);
 
     res.json({ accessToken, refreshToken: refreshTokenValue });
   } catch (err) {

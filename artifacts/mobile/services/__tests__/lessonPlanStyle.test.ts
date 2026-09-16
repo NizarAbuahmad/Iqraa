@@ -4,7 +4,7 @@
  * `teachingStyle` used to reach exactly ONE of the plan's eleven fields —
  * `mainActivity`. Everything around it stayed direct-instruction shaped, so a
  * `collaborative` plan opened with group task cards and then, two sections
- * later, told students «المناقشة بين الطلاب مؤجّلة». The plan contradicted
+ * later, told students «المناقشة بين الطلبة مؤجّلة». The plan contradicted
  * itself inside one document. With an uploaded file the picker was inert
  * altogether: the document branch hardcoded «شرح مباشر من المواد المرفوعة».
  *
@@ -73,7 +73,7 @@ describe('a plan does not contradict its own style', () => {
   it('collaborative never bans peer discussion', async () => {
     // The exact clause the old plan carried, from lpIndependentAr/En.
     const ar = JSON.stringify(await plan(AR, 'collaborative'));
-    assert.ok(!/المناقشة بين الطلاب مؤجّلة/.test(ar), 'collaborative plan still defers peer discussion');
+    assert.ok(!/المناقشة بين الطلبة مؤجّلة/.test(ar), 'collaborative plan still defers peer discussion');
     const en = JSON.stringify(await plan(EN, 'collaborative'));
     assert.ok(!/peer discussion is not/i.test(en), 'collaborative plan still forbids peer discussion');
   });

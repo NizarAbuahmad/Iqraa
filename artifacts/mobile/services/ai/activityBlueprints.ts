@@ -5,7 +5,7 @@
  * into it, so all five activity types came back byte-identical apart from the
  * title suffix and the group-size label — «لعبة تعليمية» had no rules, no
  * scoring and no win condition, and an `individual` activity still told the
- * teacher to «قسّم الطلاب حسب فردي» and assign roles inside each group.
+ * teacher to «قسّم الطلبة حسب فردي» and assign roles inside each group.
  *
  * Each format now has its own steps, materials, tips, differentiation and
  * assessment, built around what the format is actually for:
@@ -36,9 +36,24 @@ export type ActivityBlueprintId = typeof ACTIVITY_BLUEPRINT_IDS[number];
 export interface ActivityBlueprintContext {
   topic: string;
   lang: Lang;
-  /** Whether the concrete math bank applies — decides problem vs. concept steps. */
+  /**
+   * Whether this is a MATHS lesson specifically.
+   *
+   * Narrowed 2026-09-16. It used to mean both "maths" and "there are concrete
+   * items", which were the same thing while maths was the only bank. Now that
+   * chemistry has one, every step that only needs an item with a known answer
+   * reads `practice` directly, and this flag is left where the instruction is
+   * genuinely geometric — `manipulativeTask` tells students to draw the figure
+   * to scale and measure it with a protractor, which is not something to ask
+   * of a molar-mass problem. Chemistry takes the build-a-model branch there
+   * instead, which is the right one for it anyway.
+   */
   math: boolean;
-  /** Concrete items already drawn for this activity. May be empty (non-math). */
+  /**
+   * Concrete items already drawn for this activity, from whichever bank the
+   * subject has. Empty for a subject with no bank, which is what every step
+   * below branches on.
+   */
   practice: PracticeWQ[];
   /** The grounded lesson, when the topic resolved to one. */
   kb: KBLesson | null;
@@ -133,7 +148,7 @@ function rules(ctx: ActivityBlueprintContext, n: number): string[] {
  */
 function jigsawParts(ctx: ActivityBlueprintContext): string[] {
   const ar = ctx.lang === 'ar';
-  if (ctx.math && ctx.practice.length >= 2) {
+  if (ctx.practice.length >= 2) {
     return ctx.practice.map(p => (ar ? `حلّ: ${p.text}` : `Solve: ${p.text}`));
   }
   const cs = concepts(ctx, 4);
@@ -165,7 +180,7 @@ function jigsawParts(ctx: ActivityBlueprintContext): string[] {
 function contestableClaim(ctx: ActivityBlueprintContext): string {
   const ar = ctx.lang === 'ar';
   const first = item(ctx, 0);
-  if (ctx.math && first?.options?.length) {
+  if (first?.options?.length) {
     const wrong = first.options.find(o => o !== first.answer);
     if (wrong) {
       return ar
@@ -215,7 +230,7 @@ function manipulativeTask(ctx: ActivityBlueprintContext): { task: string; check:
 /** Question deck for the game, with the point value attached to each round. */
 function gameQuestions(ctx: ActivityBlueprintContext): string[] {
   const ar = ctx.lang === 'ar';
-  if (ctx.math && ctx.practice.length) {
+  if (ctx.practice.length) {
     return ctx.practice.map(p => `${p.text}   ← (${ar ? 'الإجابة' : 'answer'}: ${p.answer})`);
   }
   const cs = concepts(ctx, 3);
@@ -246,16 +261,16 @@ function priorRecallPrompt(ctx: ActivityBlueprintContext): string {
 function individualAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
   const [a, b, c] = [item(ctx, 0), item(ctx, 1), item(ctx, 2)];
   const mins = distributeMinutes(ctx.duration, [1.2, 1.8, 3, 1.3]);
-  const workedBody = ctx.math && a
+  const workedBody = a
     ? `اعرض هذا المثال **محلولًا بالكامل** على السبورة. لا يحلّه الطالب — بل يدرسه:\n${a.text}\nالحل خطوة بخطوة، ثم الناتج: ${a.answer}\nيكتب كل طالب بجانب كل خطوة: «لماذا هذه الخطوة؟» بجملة واحدة.`
     : `اعرض شرحًا نموذجيًا مكتملًا لـ«${concepts(ctx, 1)[0] ?? ctx.topic}» (من الكتاب أو من إعدادك). يدرسه الطالب صامتًا ويضع خطًا تحت الجملة التي يعتبرها مفتاح الفكرة، ثم يكتب سبب اختياره.`;
-  const fadingBody = ctx.math && b
+  const fadingBody = b
     ? `يعمل كل طالب بمفرده وبصمت:\n1) أكمل الحل الناقص: ${b.text} — الخطوة الأولى مكتوبة لك على الورقة، أكمل الباقي.\n2) حلّ كاملًا بلا مساعدة: ${c?.text ?? b.text}\n(للمعلم — الإجابات: ${b.answer}${c ? ` ؛ ${c.answer}` : ''})`
     : `يعمل كل طالب بمفرده وبصمت على ورقة العمل: السؤال الأول نصفه محلول (أكمله)، والثاني من دون أي مساعدة. لا نقاش ولا رفع أيدٍ خلال هذه الفترة.`;
   return {
     titleSuffix: 'عمل فردي',
     groupSize: 'فردي — كل طالب بمفرده',
-    objective: ctx.math
+    objective: ctx.practice.length
       ? `أن يحلّ كل طالب مسائل ${ctx.topic} بمفرده وأن يبرّر خطوة واحدة من حله كتابيًا`
       : `أن يستحضر كل طالب مفاهيم ${ctx.topic} من ذاكرته ويشرحها بكلماته كتابيًا`,
     materials: ['دفتر الطالب', 'ورقة الاسترجاع (فارغة)', 'بطاقة المثال المحلول لكل طالب', 'ورقة عمل فردية متدرجة'],
@@ -271,7 +286,7 @@ function individualAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
       'تجوّل بورقة فارغة وسجّل أسماء من توقّف وعند أي خطوة؛ هذه قائمة الدعم للحصة القادمة.',
     ],
     differentiation: 'للمتعثرين: امنحهم نسخة يظهر فيها نصف الحل في السؤال الثاني أيضًا (تلاشٍ أبطأ). للمتقدمين: احذف المثال المحلول واطلب منهم بدلًا منه كتابة مثال محلول من عندهم لزميل.',
-    assessment: ctx.math
+    assessment: ctx.practice.length
       ? `ورقة الاسترجاع + ورقة التدرّج المصحّحة فرديًا. الإجابات المرجعية: ${ctx.practice.map(p => p.answer).join(' ؛ ') || '—'}. ما يهمّ في بطاقة الخروج هو جودة التبرير لا صحة الناتج وحده.`
       : 'ورقة الاسترجاع (كم نقطة استحضرها الطالب دون الدفتر) + جملتا التبرير في بطاقة الخروج.',
   };
@@ -282,7 +297,7 @@ function groupAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
   const mins = distributeMinutes(ctx.duration, [1, 2.5, 2.5, 1.2]);
   return {
     titleSuffix: 'تعلّم تعاوني (جيقسو)',
-    groupSize: 'مجموعات أساسية من 4 طلاب + مجموعات خبراء',
+    groupSize: 'مجموعات أساسية من 4 طلبة + مجموعات خبراء',
     objective: `أن تنتج كل مجموعة إجابة عن ${ctx.topic} لا تكتمل إلا بمساهمة كل فرد فيها`,
     materials: [
       'أربع بطاقات مهمة مختلفة لكل مجموعة (مرقّمة 1–4)',
@@ -292,7 +307,7 @@ function groupAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
     ],
     steps: steps([
       ['توزيع الأدوار والمهام', `قسّم الصف إلى مجموعات أساسية من 4. يأخذ كل فرد رقمًا (1–4) ومعه **مهمة مختلفة عن زملائه**:\n${parts.slice(0, 4).map((p, i) => `${i + 1}. ${p}`).join('\n')}\nأعلن الآن: لوح المجموعة لن يكتمل إن غاب أي جزء.`],
-      ['مجموعات الخبراء', 'يترك الطلاب مجموعاتهم الأساسية ويجتمع كل أصحاب الرقم نفسه معًا (كل أصحاب الرقم 1 في مجموعة، وهكذا). يتقنون مهمتهم المشتركة ويتفقون على أفضل طريقة لشرحها — لا على نسخها.'],
+      ['مجموعات الخبراء', 'يترك الطلبة مجموعاتهم الأساسية ويجتمع كل أصحاب الرقم نفسه معًا (كل أصحاب الرقم 1 في مجموعة، وهكذا). يتقنون مهمتهم المشتركة ويتفقون على أفضل طريقة لشرحها — لا على نسخها.'],
       ['العودة والتركيب', 'يعود كل خبير إلى مجموعته الأساسية ويشرح جزءه لزملائه (90 ثانية لكل فرد، بالترتيب). تكتب المجموعة الإجابة الكاملة على اللوح — ولا تُقبل إجابة ينقصها جزء.'],
       ['مساءلة فردية عشوائية', 'اسحب رقمًا من الكيس ثم اسم مجموعة: الطالب صاحب هذا الرقم — وليس مقرّر المجموعة — هو من يعرض إجابة مجموعته كاملة. كرّرها مع 3 مجموعات.'],
     ], mins),
@@ -302,7 +317,7 @@ function groupAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
       'اضبط مؤقتًا مرئيًا لكل مرحلة؛ أكثر ما يفشل الجيقسو هو تأخّر العودة من مجموعات الخبراء.',
     ],
     differentiation: 'وزّع البطاقات بقصد لا عشوائيًا: البطاقة الأقصر للطالب الذي يحتاج دعمًا (يظل مسؤولًا عن جزء حقيقي)، والبطاقة التي تتطلب ربطًا بين مفهومين للمتقدم. للمجموعات التي تنهي مبكرًا: اطلب منهم صياغة سؤال امتحان واحد يغطي الأجزاء الأربعة معًا.',
-    assessment: `تُقيَّم المجموعة بإجابة الفرد الذي سُحب رقمه، لا بأفضل أفرادها. راجع ألواح المجموعات بحثًا عن جزء ناقص أو ضعيف باستمرار — هذا هو الجزء الذي يحتاج إعادة شرح للصف كله.${ctx.math && ctx.practice.length ? ` الإجابات: ${ctx.practice.map(p => p.answer).join(' ؛ ')}` : ''}`,
+    assessment: `تُقيَّم المجموعة بإجابة الفرد الذي سُحب رقمه، لا بأفضل أفرادها. راجع ألواح المجموعات بحثًا عن جزء ناقص أو ضعيف باستمرار — هذا هو الجزء الذي يحتاج إعادة شرح للصف كله.${ctx.practice.length ? ` الإجابات: ${ctx.practice.map(p => p.answer).join(' ؛ ')}` : ''}`,
   };
 }
 
@@ -328,7 +343,7 @@ function discussionAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
     teacherTips: [
       'الادعاء مصمَّم ليكون معقولًا وخاطئًا جزئيًا — لو اتفق الصف كله من أول تصويت فقد سقط النشاط؛ عدّل الادعاء ليصبح أكثر إغراءً.',
       'لا تصحّح أثناء الخطوة 3 مهما كان الخطأ واضحًا. تصحيحك المبكر ينهي النقاش فورًا ويعيد الصف إلى انتظار إجابتك.',
-      'انتظر 5 ثوانٍ كاملة بعد كل سؤال قبل أن تنادي على أحد؛ هذه الثواني هي ما يُدخل الطلاب الأبطأ إلى النقاش.',
+      'انتظر 5 ثوانٍ كاملة بعد كل سؤال قبل أن تنادي على أحد؛ هذه الثواني هي ما يُدخل الطلبة الأبطأ إلى النقاش.',
     ],
     differentiation: 'للمتردّدين في الكلام: امنحهم صيغة جاهزة على بطاقة («أوافق لأن…» / «لا أوافق لأن…» / «أتفق مع زميلي لكن…»). للمتقدمين: كلّفهم بالدفاع عن الموقف المعاكس لموقفهم الأول.',
     assessment: 'ليست الإجابة الصحيحة هي المقياس بل جودة التبرير: اجمع أوراق التبرير وصنّفها إلى (سبب مبني على قاعدة / سبب مبني على مثال / سبب بلا سند). وتحوّل الأصوات بين التصويتين مؤشّر مباشر على أثر النقاش.',
@@ -371,7 +386,7 @@ function gameAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
   const mins = distributeMinutes(ctx.duration, [1, 2.4, 2.6, 1.2]);
   return {
     titleSuffix: 'لعبة تعليمية تنافسية',
-    groupSize: 'فرق من 4 طلاب — 5 إلى 7 فرق',
+    groupSize: 'فرق من 4 طلبة — 5 إلى 7 فرق',
     objective: `أن يستدعي الطالب ${ctx.topic} تحت ضغط الوقت ضمن فريق، وأن يقرّر الفريق مستوى ثقته في إجابته`,
     materials: [
       'لوحة نتائج على السبورة (اسم كل فريق + عمود النقاط)',
@@ -410,7 +425,7 @@ function warmupAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
       ['تحقّق سريع', first
         ? `سؤال واحد على السبورة، محاولة فردية:\n${first.text}\n(للمعلم — الإجابة: ${first.answer})\nامسح الصف بنظرة: كم طالبًا وصل؟ لا تصحّح فرديًا الآن.`
         : `سؤال واحد على السبورة: «${(ctx.kb?.keyTerms ?? [])[0]?.definitionAr ? `ما المصطلح الذي ينطبق عليه هذا التعريف: ${(ctx.kb!.keyTerms)[0].definitionAr}` : `اذكر مثالًا واحدًا على ${ctx.topic} وسبب اختيارك له`}»\nيكتب الجميع، وامسح الصف بنظرة قبل أن تنتقل.`],
-      ['اربط بدرس اليوم', `اكتب على السبورة جملة واحدة تصل ما استرجعه الطلاب بهدف حصة اليوم: «كنّا نعرف … واليوم سنستخدمه لـ ${ctx.topic}». لا تشرح الجديد الآن — هذه تهيئة لا حصة مصغّرة.`],
+      ['اربط بدرس اليوم', `اكتب على السبورة جملة واحدة تصل ما استرجعه الطلبة بهدف حصة اليوم: «كنّا نعرف … واليوم سنستخدمه لـ ${ctx.topic}». لا تشرح الجديد الآن — هذه تهيئة لا حصة مصغّرة.`],
     ], mins),
     teacherTips: [
       'الدفاتر مغلقة في الخطوة الأولى وإلا تحوّل الاسترجاع إلى نسخ، وأثره التعليمي يسقط بالكامل.',
@@ -427,16 +442,16 @@ function warmupAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
 function individualEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
   const [a, b, c] = [item(ctx, 0), item(ctx, 1), item(ctx, 2)];
   const mins = distributeMinutes(ctx.duration, [1.2, 1.8, 3, 1.3]);
-  const workedBody = ctx.math && a
+  const workedBody = a
     ? `Put this on the board **fully solved**. Students do not solve it — they study it:\n${a.text}\nStep-by-step working, then the result: ${a.answer}\nEach student writes one sentence beside every step: “why this step?”`
     : `Display a complete model explanation of “${concepts(ctx, 1)[0] ?? ctx.topic}” (from the textbook or your own). Students read it silently, underline the sentence they judge to be the key idea, then write why.`;
-  const fadingBody = ctx.math && b
+  const fadingBody = b
     ? `Everyone works alone, in silence:\n1) Complete the partial solution: ${b.text} — the first step is written for you, finish it.\n2) Solve unaided: ${c?.text ?? b.text}\n(Teacher keys: ${b.answer}${c ? ` ; ${c.answer}` : ''})`
     : 'Everyone works alone and in silence on the worksheet: the first item is half-solved (complete it), the second is unaided. No talking, no hands up during this stretch.';
   return {
     titleSuffix: 'Individual Work',
     groupSize: 'Individual — each student alone',
-    objective: ctx.math
+    objective: ctx.practice.length
       ? `Each student solves ${ctx.topic} problems unaided and justifies one step of their own working in writing`
       : `Each student retrieves ${ctx.topic} from memory and explains it in their own written words`,
     materials: ['Student notebook', 'Blank retrieval slip', 'Worked-example card per student', 'Faded individual worksheet'],
@@ -452,7 +467,7 @@ function individualEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
       'Circulate with a blank sheet and note who stalled and at which step; that list is next lesson’s support group.',
     ],
     differentiation: 'Support: give a version where the second item is also half-solved (slower fading). Stretch: remove the worked example and ask them to author one for a classmate instead.',
-    assessment: ctx.math
+    assessment: ctx.practice.length
       ? `Retrieval slip plus the individually marked faded worksheet. Keys: ${ctx.practice.map(p => p.answer).join(' ; ') || '—'}. On the exit ticket, judge the quality of the justification, not just a correct result.`
       : 'The retrieval slip (how much was recalled without the notebook) plus the two justification sentences on the exit ticket.',
   };
@@ -483,7 +498,7 @@ function groupEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
       'Run a visible timer per stage; the usual failure of a jigsaw is experts returning late.',
     ],
     differentiation: 'Hand out the cards deliberately, not at random: the shortest card to a student who needs support (still a real part they own), the card requiring two concepts to be linked to a stronger student. Early finishers: have them write one exam question covering all four parts at once.',
-    assessment: `Grade the group on the answer given by the student whose number was drawn, not on its strongest member. Scan the group boards for a part that is consistently missing or weak — that is the part to re-teach to the whole class.${ctx.math && ctx.practice.length ? ` Keys: ${ctx.practice.map(p => p.answer).join(' ; ')}` : ''}`,
+    assessment: `Grade the group on the answer given by the student whose number was drawn, not on its strongest member. Scan the group boards for a part that is consistently missing or weak — that is the part to re-teach to the whole class.${ctx.practice.length ? ` Keys: ${ctx.practice.map(p => p.answer).join(' ; ')}` : ''}`,
   };
 }
 

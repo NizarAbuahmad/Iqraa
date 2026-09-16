@@ -15,7 +15,11 @@ and `lib/curriculum/src/curriculumIds.ts` for the reasoning behind the ids.
 | D. Figures | PNG crops + index + lesson map | `knowledge-base/<grade>-<subject>/figures/<sourceId>/`, `knowledge-base/figure-lesson-map.json` | PNGs and index yes, PDF no |
 | E. Exercises | real «تمارين ص ٧٢» references | `knowledge-base/grade-10-math/exercises/<sourceId>/index.json` | yes |
 
-Source PDFs are gitignored (`knowledge-base/**/support-pdfs/`, `knowledge-base/**/*.pdf`).
+Source PDFs are gitignored (`knowledge-base/**/support-pdfs/`,
+`knowledge-base/**/*.pdf`, and since 2026-09-16 `attached_assets/**/*.pdf` too —
+the 62 PDFs that used to be committed there stay on the machines that had them
+and are otherwise fetched from R2). A PDF's home is the `iqraa-media` bucket;
+git only ever holds what was extracted from it.
 
 ## The two buckets
 
@@ -30,7 +34,7 @@ Putting a book in one does nothing for the other.
 | Key naming | **must** be `<sourceId>.pdf` — `ensureLocal()` fetches exactly that | any filename; the URL is pasted into the catalog verbatim |
 | Where it is referenced | nowhere in code; the sourceId is the contract | a literal URL string on a `Book` row in `catalog.ts` |
 | Produces | `extracted/<sourceId>.json` → passages → grounding in every generator and chat | a download chip in `app/curriculum/subjects.tsx` |
-| Skip it when | the PDF is committed under `attached_assets/` and never needed elsewhere | NCCD already hosts the book — 12 of the 16 download URLs in `catalog.ts` point at `nccd.gov.jo`, only 4 at `r2.dev` |
+| Skip it when | never — it is the only copy a fresh clone can reach (nothing under `attached_assets/` is committed any more) | NCCD already hosts the book — 12 of the 16 download URLs in `catalog.ts` point at `nccd.gov.jo`, only 4 at `r2.dev` |
 
 **The distinction that matters:** `iqraa-public` is a file-hosting convenience,
 nothing more. A PDF there is a link on a card. The model never opens it, no text
@@ -65,7 +69,7 @@ The two are independent — same PDF, two uploads, two different names.
 ## A. Register the PDF
 
 1. Mint the `sourceId`. NCCD: `{subj}-s{n}-{kind}` (`chem-s1-student-book`). Teacher material: `{subj}-{topic}-{author}` (`math-ws-chords-1-alhindi`). Grade 9 and above: prefix `g9-`.
-2. Put the PDF where extraction can see it: R2 as `<sourceId>.pdf` (set `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` in `.env`), or `attached_assets/knowledge-base-pending/<sourceId>.pdf`.
+2. Put the PDF where extraction can see it: R2 as `<sourceId>.pdf` (set `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` in `.env`). A local copy at `attached_assets/knowledge-base-pending/<sourceId>.pdf` also works for your own machine, but it is gitignored, so `upload-r2 <sourceId>` (step 8) is what makes it reachable anywhere else.
 3. Add the row to `lib/curriculum/src/data/g10_sources.json`: `id`, `driveId`, `title` (verbatim filename), `bytes`, `filename`, `authorAr` (`null` for NCCD), `unitTags` (from `BANK_UNIT_TAGS` in `bank.ts`), `objectiveIds: []`, `keywords`, `subject`, `semester`, `kind`, `authority`, `status: "pending"`.
 4. Add `'<sourceId>': '<repo-relative path>'` to `LOCAL_FILES` in `lib/curriculum/scripts/localSources.ts`. Extraction iterates this map and falls back to R2 for anything missing on disk.
 5. A new **subject** also needs: `CurriculumSource['subject']` in `sources.ts`, `BANK_SUBJECT_IDS` and `SUBJECT_LABEL_AR/EN` in `bank.ts`, `SubjectSlug` and `UNIT_ID_RE` in `curriculumIds.ts`.

@@ -116,6 +116,13 @@ describe('figuresForLesson', () => {
       'g8-social': 'g8-social',
       'g8-math': 'g8-math',
       'g8-voc': 'g8-voc',
+      // Grades 6 and 7, added 2026-09-16. Slug and source-id prefix agree
+      // for all of these.
+      'g6-voc': 'g6-voc',
+      'g7-voc': 'g7-voc',
+      'g7-finlit': 'g7-finlit',
+      'g7-science': 'g7-science',
+      'g7-social': 'g7-social',
     };
 
     for (const id of lessonsWithFigures()) {

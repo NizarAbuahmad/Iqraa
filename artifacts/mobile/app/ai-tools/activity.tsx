@@ -14,7 +14,7 @@ import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams, subjectPickerLabels } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
@@ -29,6 +29,7 @@ import {
 } from '@/constants/activityType';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
+import { aiErrorMessageKey } from '@/services/ai/aiProvenance';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
@@ -51,7 +52,6 @@ export default function ActivityScreen() {
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
   const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
-  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
   const activityTypeLabels = ACTIVITY_TYPE_IDS.map(id => activityTypeLabel(id, t));
 
@@ -68,6 +68,10 @@ export default function ActivityScreen() {
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
   const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  // Labels are per-grade too: Grade 6's creative-arts book has no music
+  // in it, so it must not be offered under the combined name. Same
+  // index alignment as the mask above.
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
   const [activityTypeIdx, setActivityTypeIdx] = useState(params.activityTypeIdx ? parseInt(params.activityTypeIdx, 10) : 1);
@@ -164,8 +168,8 @@ export default function ActivityScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
-    } catch {
-      setError(t('generationFailed'));
+    } catch (e) {
+      setError(t(aiErrorMessageKey(e)));
     } finally {
       setLoading(false);
     }

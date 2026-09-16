@@ -185,7 +185,10 @@ Set `MATH_VERIFIER_URL=http://127.0.0.1:8090` in the repo-root `.env`. API route
 ## Hosting source PDFs on R2
 
 `lib/curriculum/scripts/extract-text.ts` reads source books from
-`attached_assets/…` on disk. Getting a large or newly-found PDF onto that disk
+`attached_assets/…` on disk when they are there, and from R2 when they are
+not. Since 2026-09-16 no PDF under `attached_assets/` is committed (they cost
+every clone 174 MB), so a fresh clone has none of them and R2 is the only
+path. Getting a large or newly-found PDF onto that disk
 used to mean fetching it through Drive's MCP tools, which has two hard
 failure modes on this project's sources: a 10MB single-call ceiling, and two
 distinct corruption bugs on the large-file fallback (reversed lines on some

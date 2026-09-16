@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { Router, type IRouter } from "express";
 import { HealthCheckResponse } from "@workspace/api-zod";
 import { verifyDerivative } from "../lib/mathVerifierClient.ts";
@@ -103,9 +104,13 @@ router.get("/healthz/features", (_req, res) => {
 });
 
 /**
- * The last 50 server errors (message + err name/message, no stack, no
- * request bodies), newest first — a GET request instead of scrolling raw
- * Render logs to see what broke recently.
+ * The last 50 server errors, newest first — a GET request instead of
+ * scrolling raw Render logs to see what broke recently.
+ *
+ * What a record holds is now an allowlist, not "whatever the log call passed"
+ * (see errorLog.ts): the error's name and message, plus a fixed set of
+ * identifier keys. No stack, no request bodies, and no field a future
+ * `logger.error({ ... })` happens to include.
  *
  * Gated by ADMIN_DEBUG_KEY rather than regular auth: any logged-in teacher
  * could otherwise read errors that may reference other users' data. Responds
@@ -115,11 +120,31 @@ router.get("/healthz/features", (_req, res) => {
  */
 router.get("/healthz/errors", (req, res) => {
   const adminKey = process.env.ADMIN_DEBUG_KEY;
-  if (!adminKey || req.headers["x-admin-key"] !== adminKey) {
+  if (!adminKey || !matchesAdminKey(req.headers["x-admin-key"], adminKey)) {
     res.status(404).json({ error: "Not found" });
     return;
   }
   res.json({ errors: getRecentErrors() });
 });
+
+/**
+ * Constant-time compare for the debug key.
+ *
+ * `!==` returns as soon as two bytes differ, so the time it takes to answer
+ * leaks how much of a guess was right. Over the internet that signal is buried
+ * in jitter and this was never the weak point here — but the fix is four
+ * lines, and "too noisy to exploit today" is a property of the network, not of
+ * the code.
+ *
+ * Both sides are hashed to a fixed 32 bytes first, because `timingSafeEqual`
+ * throws on a length mismatch — and a comparison that throws on the wrong
+ * length is a length oracle, which is the thing being closed.
+ */
+function matchesAdminKey(supplied: unknown, expected: string): boolean {
+  if (typeof supplied !== "string") return false;
+  const a = crypto.createHash("sha256").update(supplied).digest();
+  const b = crypto.createHash("sha256").update(expected).digest();
+  return crypto.timingSafeEqual(a, b);
+}
 
 export default router;

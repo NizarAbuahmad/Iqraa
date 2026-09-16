@@ -60,10 +60,10 @@ describe('MockAIService.generateLessonPlan — priorReview', () => {
   it('includes free-text teacher notes even without curriculum concepts', async () => {
     const plan = await service.generateLessonPlan({
       ...BASE_REQ,
-      priorTopicsNotes: 'بعض الطلاب لم يستوعبوا حل المعادلات من الصف التاسع',
+      priorTopicsNotes: 'بعض الطلبة لم يستوعبوا حل المعادلات من الصف التاسع',
     });
     assert.ok(plan.priorReview, 'expected a priorReview section from notes alone');
-    assert.match(plan.priorReview!, /بعض الطلاب لم يستوعبوا حل المعادلات من الصف التاسع/);
+    assert.match(plan.priorReview!, /بعض الطلبة لم يستوعبوا حل المعادلات من الصف التاسع/);
   });
 
   it('combines grounded concepts and teacher notes when both are present', async () => {
