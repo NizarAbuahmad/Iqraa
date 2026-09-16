@@ -115,12 +115,7 @@ describe('passagesForUnit', () => {
   it('carries the use policy on every passage', () => {
     for (const p of passagesForUnit({ unitId: CIRCLE, limit: 5 })) {
       assert.ok(p.usePolicy === 'quotable' || p.usePolicy === 'reference-only');
-      // `authority` no longer settles this on its own: the Collins-prepared
-      // maths and science books are `nccd` and reference-only, restricted by
-      // their licence. A passage may not be quotable *unless* it is NCCD, which
-      // is the direction that protects anything — the converse now has
-      // exceptions and asserting it here would fail on every maths page.
-      if (p.usePolicy === 'quotable') assert.equal(p.authority, 'nccd');
+      assert.equal(p.usePolicy, p.authority === 'nccd' ? 'quotable' : 'reference-only');
     }
   });
 

@@ -201,12 +201,12 @@ describe('bankItems', () => {
 });
 
 describe('use policy', () => {
-  it('makes unlicensed NCCD quotable and everything else reference-only', () => {
+  it('makes NCCD quotable and everything else reference-only', () => {
+    // Still true of every row including the Collins-licensed ones, because
+    // `nccd-collins` maps to `quotable` — the licence records which book it is,
+    // not a different permission. If a licence is ever added to a manifest row
+    // that *does* restrict, this fails, and that is the right moment to notice.
     for (const s of G10_SOURCES) {
-      // A licence, where there is one, is a direct statement from the
-      // rightsholder and outranks the pedigree — see `usePolicy`. The rule below
-      // is what governs every row that has none, which is most of them.
-      if (s.license) continue;
       assert.equal(usePolicy(s), s.authority === 'nccd' ? 'quotable' : 'reference-only', s.id);
     }
   });
@@ -279,20 +279,19 @@ describe('use policy — explicit licences', () => {
     assert.equal(usePolicy(item('CC-BY-9000' as LicenseId)), 'reference-only');
   });
 
-  it('keeps the Collins books NCCD in name and reference-only in permission', () => {
+  it('records the Collins books as ruled on, and quotable', () => {
     // Until 2026-09-16 nothing in G10_SOURCES carried a licence and this test
     // asserted so. Now 39 rows do — the maths and science books the NCCD had
     // HarperCollins prepare, which print «© HarperCollins Publishers Limited»
     // and a full all-rights-reserved notice on page 2.
     //
-    // Both halves matter. They stay `nccd` because the NCCD *is* the publisher
-    // of the Arabic edition and demoting them to `third-party` would file them
-    // beside a teacher's worksheet from شبكة منهاجي. They are reference-only
-    // because the copyright is not the NCCD's to sub-license to us. Deleting the
-    // licence field to "fix" a grounding regression would restore verbatim
-    // reproduction of a British publisher's textbook, silently — so it is
-    // pinned here as well as in `quotableAuthority.test.ts`, which reads the
-    // books themselves.
+    // They are quotable: Iqraa holds the right to use them. The licence is not
+    // restricting anything, and that is the point worth pinning — it would be
+    // easy to read `license` as "restricted" and easier still to delete the
+    // field as redundant now that it changes no behaviour. It is not redundant.
+    // It is what `quotableAuthority.test.ts` keys its allowlist off, so removing
+    // it turns all 39 books back into unexplained copyright notices on quotable
+    // rows, which is the exact state that went unnoticed for months.
     const collins = G10_SOURCES.filter(s => s.license === 'nccd-collins');
     // A floor, not a count. The same series at grades 4 and 5 is still being
     // registered on `worktree-grade-5-books` — 18 more confirmed by scan as of
@@ -304,8 +303,8 @@ describe('use policy — explicit licences', () => {
     assert.ok(collins.length >= 39, `only ${collins.length} Collins rows licensed`);
     for (const s of collins) {
       assert.equal(s.authority, 'nccd', s.id);
-      assert.equal(usePolicy(s), 'reference-only', s.id);
-      assert.throws(() => assertQuotable(s), /nccd-collins/, s.id);
+      assert.equal(usePolicy(s), 'quotable', s.id);
+      assert.doesNotThrow(() => assertQuotable(s), s.id);
     }
   });
 

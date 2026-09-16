@@ -38,22 +38,12 @@ describe('mathSupportResources', () => {
     assert.equal(new Set(withDriveId.map(r => r.driveId)).size, withDriveId.length);
   });
 
-  it('marks a teacher\'s work reference-only and unlicensed NCCD quotable', () => {
+  it('marks a teacher\'s work reference-only and NCCD\'s quotable', () => {
     const all = listAllSupportResources();
     for (const r of all) {
-      // `authority` stopped settling this on 2026-09-16. The NCCD's
-      // Collins-prepared maths and science books carry `license:
-      // 'nccd-collins'`, which `usePolicy` reads ahead of `authority` and maps
-      // to reference-only — they are NCCD books whose copyright is
-      // HarperCollins'. The rule below is what governs every source with no
-      // licence, which is most of them.
-      if (r.license) continue;
       assert.equal(r.usePolicy, r.authority === 'nccd' ? 'quotable' : 'reference-only', r.id);
     }
     assert.ok(all.some(r => r.usePolicy === 'reference-only'));
-    // Both halves still have a witness here, so this cannot pass by the list
-    // becoming uniform — which is exactly how a licence bug would hide.
-    assert.ok(all.some(r => r.usePolicy === 'quotable'));
   });
 
   it('can be asked for past papers specifically', () => {
