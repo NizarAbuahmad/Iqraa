@@ -42,7 +42,10 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
         PORT: String(port),
         // Never contacted: no test below reaches a route that queries them.
         DATABASE_URL: "postgres://u:p@127.0.0.1:5432/none",
-        SESSION_SECRET: "test-secret",
+        // Long enough to clear the boot check in index.ts. A short one here
+        // is not a test failure but a container that never starts, which
+        // presents as every request below timing out.
+        SESSION_SECRET: "test-secret-padded-to-clear-the-32-char-boot-check",
         // chat.ts and generate.ts still construct the OpenAI client at module
         // scope, so the bundle needs a key present to boot even though nothing
         // here calls a model. Production passes a placeholder for the same
@@ -385,6 +388,20 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401);
   });
 
+  it("guards lesson-media upload, which writes to a bucket", async () => {
+    // The rest of /media reads: an Unsplash search, a YouTube lookup, a signed
+    // URL. This one WRITES — an 8MB data URL straight into R2 — and was mounted
+    // under the same `authMiddleware`-only guard as the readers, so any
+    // signed-in account, student or parent included, could use it as file
+    // hosting. It is teacher-only now, and rate limited.
+    const res = await fetch(`${base}/media/lesson`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lessonId: "x", dataUrl: "data:image/png;base64,AA==" }),
+    });
+    assert.equal(res.status, 401, "uploading lesson media must require a token");
+  });
+
   it("guards the Unsplash lookup route", async () => {
     // Shares one server-side access key across every teacher — an
     // unauthenticated caller could otherwise exhaust the app's whole rate limit.
@@ -510,7 +527,10 @@ describe("API register (student accounts enabled)", { skip: built ? false : "run
         PORT: String(port),
         STUDENT_ACCOUNTS: "true",
         DATABASE_URL: "postgres://u:p@127.0.0.1:5432/none",
-        SESSION_SECRET: "test-secret",
+        // Long enough to clear the boot check in index.ts. A short one here
+        // is not a test failure but a container that never starts, which
+        // presents as every request below timing out.
+        SESSION_SECRET: "test-secret-padded-to-clear-the-32-char-boot-check",
         OPENAI_API_KEY: "sk-test-placeholder",
       },
       stdio: "ignore",

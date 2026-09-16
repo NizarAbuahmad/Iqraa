@@ -38,6 +38,11 @@ concurrency:
   group: provider-eval
   cancel-in-progress: false
 
+# See the note in ci.yml. `actions/upload-artifact` authenticates with the
+# runner's own artifact token, not GITHUB_TOKEN, so read is enough here too.
+permissions:
+  contents: read
+
 jobs:
   evaluate:
     name: run + score

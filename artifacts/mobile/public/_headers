@@ -37,10 +37,35 @@
 #
 # Both spellings, because they are not the same coverage: frame-ancestors is
 # the modern one, X-Frame-Options is what older browsers still honour.
+#
+# The four below are the rest of the baseline, and they are here for the same
+# reason frame-ancestors is: none of them can break a React Native Web bundle,
+# so the only thing that kept them out was nobody adding them.
+#
+# nosniff: the app serves its own JSON and fonts, and a browser that
+# second-guesses a declared type is a browser that can be talked into treating
+# one as script.
+#
+# HSTS: app.iqrra.com is HTTPS-only already. This closes the first plaintext
+# request, the one that happens before a redirect can say otherwise. No
+# includeSubDomains — iqrra.com's other names live in a different repo (see
+# the landing site) and this file has no authority over them.
+#
+# Referrer-Policy: URLs here carry class and evaluation ids. strict-origin-
+# when-cross-origin still sends the full path to our own API, and only the
+# bare origin to anyone else.
+#
+# Permissions-Policy: this app asks for a microphone (read-aloud practice) and
+# nothing else. Denying the rest costs nothing and means an embedded third
+# party cannot ask on the app's behalf.
 /*
   X-Robots-Tag: noindex, nofollow
   X-Frame-Options: DENY
   Content-Security-Policy: frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=31536000
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), geolocation=(), payment=(), usb=(), microphone=(self)
 
 # Cache the content-hashed assets forever.
 #

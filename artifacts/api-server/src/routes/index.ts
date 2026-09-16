@@ -106,6 +106,27 @@ router.use(chatRouter);
 router.use(generateRouter);
 router.use(verifiedMathRouter);
 router.use(mediaRouter);
+/*
+ * Lesson attachments: teacher-only, and metered.
+ *
+ * `/media` above is guarded by `authMiddleware` alone, which is right for the
+ * Unsplash and YouTube lookups mediaRouter owns — any signed-in caller may
+ * search for a photo. It was wrong for this router, which *writes*: an 8MB
+ * data URL straight into R2, per call, with no role check and no ceiling. A
+ * student or parent account could use it as free file hosting and run up the
+ * storage bill doing it, on a router whose own header calls it
+ * "teacher-uploaded lesson media".
+ *
+ * The limiter is per user, not per IP, for the reason every other limiter in
+ * this file is (see rateLimit.ts): a school is one NAT address. Twenty an hour
+ * is far above a teacher attaching material to a lesson and far below anything
+ * worth doing with a bucket.
+ */
+router.use(
+  "/media/lesson",
+  requireRole(...TEACHER_ROLES),
+  createRateLimiter({ windowMs: 60 * 60 * 1000, max: 20, name: "lesson-media", key: perUser }),
+);
 router.use("/media", lessonMediaRouter);
 router.use(practiceRouter);
 // feedback.ts and admin.ts declare authMiddleware/requireRole per-route

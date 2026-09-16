@@ -12,6 +12,15 @@ on:
   push:
     branches: [main]
 
+# Without this block a workflow inherits the repository default, which can be
+# write-all — so every job here would run holding a token able to push to main,
+# publish a release or open an issue, to check out a branch and run tests.
+# deploy.yml already declares its own (it needs `id-token: write` for the
+# Google OIDC exchange); this is the same statement for the workflows that need
+# nothing but the source.
+permissions:
+  contents: read
+
 # A new push supersedes the run in flight for the same ref.
 concurrency:
   group: ci-${{ github.ref }}
