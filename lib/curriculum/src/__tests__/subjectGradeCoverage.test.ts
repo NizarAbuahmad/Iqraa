@@ -171,6 +171,42 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // array as well as ingesting the book, so do not read the undeclared range
   // as evidence the subject stops above Grade 6 — for these three it is the
   // declaration that trails the curriculum, not the reverse.
+  //
+  // grade-5 joined MVP_GRADE_IDS 2026-09-16 with only Mathematics S1 built —
+  // a staged rollout like grade-8's and grade-6's, so the seventeen pairs
+  // below split the same two ways.
+  //
+  // PERMANENT — the subject is not declared at grade-5 in SUBJECTS.grades at
+  // all. physics/chemistry/biology/earth-science and financial-literacy only
+  // start at SPECIALISED_FROM (grade-9) or grade-7; geography/history/
+  // civic-education only start at grade-9; physical-education is declared
+  // for grade-6, grade-7, grade-9 but not grade-5; creative-arts and
+  // vocational-education are declared for grade-6..grade-8 only. None of
+  // these will ever get a grade-5 book.
+  'chemistry:grade-5',
+  'physics:grade-5',
+  'biology:grade-5',
+  'earth-science:grade-5',
+  'financial-literacy:grade-5',
+  'geography:grade-5',
+  'history:grade-5',
+  'civic-education:grade-5',
+  'physical-education:grade-5',
+  'creative-arts:grade-5',
+  'vocational-education:grade-5',
+  //
+  // ORDINARY GAPS — the subject is declared at grade-5 (arabic/english/
+  // islamic/digital-literacy span all grades; science and social span
+  // grade-1..grade-9), and Grade 5 text for each already exists on disk
+  // (worktree-grade-5-books, unmerged as of 2026-09-16), but no catalog has
+  // been built from it yet — see docs/g345-blocked. Delete each line once
+  // its catalog and BOOKS row land.
+  'arabic:grade-5',
+  'english:grade-5',
+  'islamic:grade-5',
+  'digital-literacy:grade-5',
+  'science:grade-5',
+  'social:grade-5',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {
