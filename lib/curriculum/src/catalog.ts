@@ -114,6 +114,14 @@ import {
   buildG7ScienceSem2BrowserCatalog,
 } from './catalogs/g7ScienceSem2.ts';
 import {
+  G5_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  buildG5IslamicSem1BrowserCatalog,
+} from './catalogs/g5IslamicSem1.ts';
+import {
+  G5_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  buildG5IslamicSem2BrowserCatalog,
+} from './catalogs/g5IslamicSem2.ts';
+import {
   G5_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG5ScienceSem1BrowserCatalog,
 } from './catalogs/g5ScienceSem1.ts';
@@ -1001,6 +1009,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // MVP_SUBJECT_IDS, so no subject append is needed.
   G5_SCIENCE_S1_CURRICULUM_BOOK_ID,
   G5_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  // Grade 5 Islamic Education, both semesters — 'islamic' is already in
+  // MVP_SUBJECT_IDS, so no subject append is needed.
+  G5_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  G5_ISLAMIC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1930,6 +1942,37 @@ export const BOOKS: Book[] = [
     title: 'Science – Grade 5, Semester 2',
     titleAr: 'العلوم – الصف الخامس – الفصل الثاني',
     subjectId: 'science',
+    gradeId: 'grade-5',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // Grade 5 Islamic Education, both semesters — the third Grade 5 subject.
+  // Unlike g6IslamicSem1 (title-only, pdf-parse dropped the assimilated lam),
+  // this book reads cleanly through PyMuPDF, so main_idea_ar is transcribed
+  // for every lesson that prints one. See g5IslamicSem1.ts / g5IslamicSem2.ts
+  // for what these books do and do not print.
+  {
+    id: G5_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 5, Semester 1',
+    titleAr: 'التربية الإسلامية – الصف الخامس – الفصل الأول',
+    subjectId: 'islamic',
+    gradeId: 'grade-5',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G5_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 5, Semester 2',
+    titleAr: 'التربية الإسلامية – الصف الخامس – الفصل الثاني',
+    subjectId: 'islamic',
     gradeId: 'grade-5',
     academicYear: '2024-2025',
     language: 'Arabic',
@@ -4074,6 +4117,8 @@ const _g7ScienceSem1Browser = buildG7ScienceSem1BrowserCatalog();
 const _g5MathSem1Browser = buildG5MathSem1BrowserCatalog();
 const _g5ScienceSem1Browser = buildG5ScienceSem1BrowserCatalog();
 const _g5ScienceSem2Browser = buildG5ScienceSem2BrowserCatalog();
+const _g5IslamicSem1Browser = buildG5IslamicSem1BrowserCatalog();
+const _g5IslamicSem2Browser = buildG5IslamicSem2BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
 const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
@@ -4324,6 +4369,8 @@ export const UNITS: Unit[] = [
   ..._g5MathSem1Browser.units,
   ..._g5ScienceSem1Browser.units,
   ..._g5ScienceSem2Browser.units,
+  ..._g5IslamicSem1Browser.units,
+  ..._g5IslamicSem2Browser.units,
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
   ..._g6ArabicSem1Browser.units,
@@ -4444,6 +4491,8 @@ export const LESSONS: Lesson[] = [
   ..._g5MathSem1Browser.lessons,
   ..._g5ScienceSem1Browser.lessons,
   ..._g5ScienceSem2Browser.lessons,
+  ..._g5IslamicSem1Browser.lessons,
+  ..._g5IslamicSem2Browser.lessons,
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
   ..._g6ArabicSem1Browser.lessons,
