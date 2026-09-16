@@ -20,7 +20,7 @@ import {
 import { DEMO_MODE } from './demoMode';
 import { MockAIService } from './generators';
 import { applyClassroomSetup } from '@/services/classroomRouting';
-import { apiFetch } from '../apiClient';
+import { ApiError, apiFetch } from '../apiClient';
 import { describeAiError, generateWithProvenance, recordGeneration } from './aiProvenance.ts';
 
 // Routes under /generate/* and /chat require auth (routes/index.ts scopes
@@ -74,7 +74,17 @@ async function postJSON<T>(
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-      throw new Error((err as any).error ?? `HTTP ${res.status}`);
+      // ApiError, not Error: the server sends a `code` with every expected
+      // failure (user_quota_exceeded, budget_exceeded, live_mode_off) precisely
+      // so the client can tell them apart from a real fault. Throwing a plain
+      // Error dropped it on the floor, which left the fallback policy in
+      // generateWithProvenance unable to distinguish "this teacher is out of
+      // allowance" from "the server broke" — and so it answered both with a
+      // fabricated worksheet.
+      throw new ApiError(
+        (err as { error?: string }).error ?? `HTTP ${res.status}`,
+        (err as { code?: string }).code,
+      );
     }
     return res.json() as Promise<T>;
   } catch (e) {

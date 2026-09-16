@@ -40,7 +40,7 @@ import {
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams, subjectPickerLabels } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { Button } from '@/components/ui/Button';
@@ -112,6 +112,10 @@ export default function LessonFlowScreen() {
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
   const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  // Labels are per-grade too: Grade 6's creative-arts book has no music
+  // in it, so it must not be offered under the combined name. Same
+  // index alignment as the mask above.
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [durationIdx, setDurationIdx] = useState(0);
 
@@ -150,7 +154,6 @@ export default function LessonFlowScreen() {
   const [toastVisible, setToastVisible] = useState(false);
 
   const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
-  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };

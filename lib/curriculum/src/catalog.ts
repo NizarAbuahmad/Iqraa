@@ -166,6 +166,24 @@ import {
   isG6ArtSem1TitleOnlyLesson,
 } from './catalogs/g6ArtSem1.ts';
 import {
+  G6_ENGLISH_S1_CURRICULUM_BOOK_ID,
+  buildG6EnglishSem1BrowserCatalog,
+  isG6EnglishSem1TitleOnlyUnit,
+  isG6EnglishSem1TitleOnlyLesson,
+} from './catalogs/g6EnglishSem1.ts';
+import {
+  G6_ENGLISH_S2_CURRICULUM_BOOK_ID,
+  buildG6EnglishSem2BrowserCatalog,
+  isG6EnglishSem2TitleOnlyUnit,
+  isG6EnglishSem2TitleOnlyLesson,
+} from './catalogs/g6EnglishSem2.ts';
+import {
+  G6_DIGITAL_S1_CURRICULUM_BOOK_ID,
+  buildG6DigitalSem1BrowserCatalog,
+  isG6DigitalSem1TitleOnlyUnit,
+  isG6DigitalSem1TitleOnlyLesson,
+} from './catalogs/g6DigitalSem1.ts';
+import {
   G6_ARABIC_S1_CURRICULUM_BOOK_ID,
   buildG6ArabicSem1BrowserCatalog,
   isG6ArabicSem1TitleOnlyUnit,
@@ -911,11 +929,16 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // since 2026-09-05, so no subject append is needed here either.
   G6_ARABIC_S1_CURRICULUM_BOOK_ID,
   G6_ARABIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 6 Digital Skills — 'digital-literacy' is already in MVP_SUBJECT_IDS.
+  G6_DIGITAL_S1_CURRICULUM_BOOK_ID,
   // Grade 6 vocational, PE and art — see the SUBJECTS.grades note above.
   G6_VOCATIONAL_S1_CURRICULUM_BOOK_ID,
   G6_VOCATIONAL_S2_CURRICULUM_BOOK_ID,
   G6_PE_S1_CURRICULUM_BOOK_ID,
   G6_ART_S1_CURRICULUM_BOOK_ID,
+  // Grade 6 English, both semesters. 'english' is already in MVP_SUBJECT_IDS.
+  G6_ENGLISH_S1_CURRICULUM_BOOK_ID,
+  G6_ENGLISH_S2_CURRICULUM_BOOK_ID,
   // Grade 6 Islamic Education and Social Studies, both semesters. Both
   // subjectIds are already in MVP_SUBJECT_IDS, so no subject append is needed.
   G6_ISLAMIC_S1_CURRICULUM_BOOK_ID,
@@ -994,12 +1017,50 @@ export function getVisibleGrades(): Grade[] {
  * are persisted as bare `subjectIdx` values, so it stays an explicit array,
  * and MVP_SUBJECT_IDS stays the place a subject is switched on.
  */
+/**
+ * Subjects whose one shared label does not describe every grade's book.
+ *
+ * `SUBJECTS` carries a single name per subject, which is right while every
+ * grade's book covers the same ground. 'creative-arts' is the case where that
+ * broke: Grade 7 and Grade 8 are one NCCD book of three domains — التربية
+ * الفنّيّة, التربية الموسيقيّة, التربية المسرحيّة — so the combined label is
+ * exact. Grade 6's book is not that book. Its five units are drawing/colour,
+ * design, forming and construction, theatre arts, and art-with-computers: art
+ * and drama, and **no music at all**. Labelling it «التربية الفنّيّة
+ * والموسيقيّة والمسرحيّة» promises a teacher a domain the book never covers.
+ *
+ * The override is the title the Grade 6 book itself prints, so the tile and
+ * the PDF behind it agree.
+ *
+ * Keyed by subject then grade, and deliberately narrow: a subject/grade pair
+ * missing here just uses the shared label, which is the common case.
+ */
+const SUBJECT_LABEL_BY_GRADE: Record<string, Record<string, { name: string; nameAr: string }>> = {
+  'creative-arts': {
+    'grade-6': { name: 'Art Education', nameAr: 'التربية الفنية' },
+  },
+};
+
+/**
+ * The subject as a given grade should show it — see SUBJECT_LABEL_BY_GRADE.
+ *
+ * Returns the subject untouched when there is no override, so callers can map
+ * every subject through it unconditionally. Only the two label fields are
+ * replaced: `id`, `grades` and the picker-facing icon/colour are identical, so
+ * this can never move a persisted `subjectIdx` or change which pairs resolve.
+ */
+export function subjectForGrade(subject: Subject, gradeId: string | undefined): Subject {
+  const override = gradeId ? SUBJECT_LABEL_BY_GRADE[subject.id]?.[gradeId] : undefined;
+  return override ? { ...subject, ...override } : subject;
+}
+
 export function getSubjectsForGrade(gradeId: string): Subject[] {
   const subjects = SUBJECTS.filter(s => s.grades.includes(gradeId));
-  if (!INVESTOR_MVP_CURRICULUM) return subjects;
+  if (!INVESTOR_MVP_CURRICULUM) return subjects.map(s => subjectForGrade(s, gradeId));
   if (!MVP_GRADE_IDS.includes(gradeId)) return [];
   return inMvpOrder(subjects, MVP_SUBJECT_IDS)
-    .filter(s => hasCurriculumForSubjectGrade(s.id, gradeId));
+    .filter(s => hasCurriculumForSubjectGrade(s.id, gradeId))
+    .map(s => subjectForGrade(s, gradeId));
 }
 
 /** Grades shown in AI tools, chat, and other curriculum pickers. */
@@ -1695,6 +1756,54 @@ export const BOOKS: Book[] = [
     title: 'Art Education – Grade 6',
     titleAr: 'التربية الفنية – الصف السادس',
     subjectId: 'creative-arts',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  // ── English, Grade 6 ──────────────────────────────────────────────────────
+  // Jordan Team Together (Pearson / York Press). Every source is third-party,
+  // so these lessons are browsable but NOT groundable — see g6EnglishSem1.ts.
+  // Semester 2 numbers its units 5-8, continuing Semester 1's 1-4.
+  {
+    id: G6_ENGLISH_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 6, Semester 1',
+    titleAr: 'اللغة الإنجليزية – الصف السادس – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-6',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G6_ENGLISH_S2_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 6, Semester 2',
+    titleAr: 'اللغة الإنجليزية – الصف السادس – الفصل الثاني',
+    subjectId: 'english',
+    gradeId: 'grade-6',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Digital Skills, Grade 6 ───────────────────────────────────────────────
+  // A cross-curricular companion, not a subject book: its units are blocks
+  // attached to science and maths units and carry those units' titles
+  // verbatim. See g6DigitalSem1.ts — including why its Semester 1 label does
+  // not match the semesters of the subjects it plugs into.
+  {
+    id: G6_DIGITAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Digital Skills – Grade 6, Semester 1',
+    titleAr: 'المهارات الرقمية – الصف السادس – الفصل الأول',
+    subjectId: 'digital-literacy',
     gradeId: 'grade-6',
     academicYear: '2024-2025',
     language: 'Arabic',
@@ -3742,10 +3851,13 @@ const _g7ScienceSem1Browser = buildG7ScienceSem1BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
 const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
+const _g6DigitalSem1Browser = buildG6DigitalSem1BrowserCatalog();
 const _g6VocationalSem1Browser = buildG6VocationalSem1BrowserCatalog();
 const _g6VocationalSem2Browser = buildG6VocationalSem2BrowserCatalog();
 const _g6PhysicalEducationSem1Browser = buildG6PhysicalEducationSem1BrowserCatalog();
 const _g6ArtSem1Browser = buildG6ArtSem1BrowserCatalog();
+const _g6EnglishSem1Browser = buildG6EnglishSem1BrowserCatalog();
+const _g6EnglishSem2Browser = buildG6EnglishSem2BrowserCatalog();
 const _g6IslamicSem1Browser = buildG6IslamicSem1BrowserCatalog();
 const _g6IslamicSem2Browser = buildG6IslamicSem2BrowserCatalog();
 const _g6SocialSem1Browser = buildG6SocialSem1BrowserCatalog();
@@ -3986,10 +4098,13 @@ export const UNITS: Unit[] = [
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
   ..._g6ArabicSem1Browser.units,
+  ..._g6DigitalSem1Browser.units,
   ..._g6VocationalSem1Browser.units,
   ..._g6VocationalSem2Browser.units,
   ..._g6PhysicalEducationSem1Browser.units,
   ..._g6ArtSem1Browser.units,
+  ..._g6EnglishSem1Browser.units,
+  ..._g6EnglishSem2Browser.units,
   ..._g6IslamicSem1Browser.units,
   ..._g6IslamicSem2Browser.units,
   ..._g6SocialSem1Browser.units,
@@ -4100,10 +4215,13 @@ export const LESSONS: Lesson[] = [
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
   ..._g6ArabicSem1Browser.lessons,
+  ..._g6DigitalSem1Browser.lessons,
   ..._g6VocationalSem1Browser.lessons,
   ..._g6VocationalSem2Browser.lessons,
   ..._g6PhysicalEducationSem1Browser.lessons,
   ..._g6ArtSem1Browser.lessons,
+  ..._g6EnglishSem1Browser.lessons,
+  ..._g6EnglishSem2Browser.lessons,
   ..._g6IslamicSem1Browser.lessons,
   ..._g6IslamicSem2Browser.lessons,
   ..._g6SocialSem1Browser.lessons,
@@ -4146,10 +4264,13 @@ export function isBrowserUnitTitleOnly(unitId: string): boolean {
     || isG9MathSem2TitleOnlyUnit(unitId)
     || isG6ArabicSem1TitleOnlyUnit(unitId)
     || isG6ArabicSem2TitleOnlyUnit(unitId)
+    || isG6DigitalSem1TitleOnlyUnit(unitId)
     || isG6VocationalSem1TitleOnlyUnit(unitId)
     || isG6VocationalSem2TitleOnlyUnit(unitId)
     || isG6PhysicalEducationSem1TitleOnlyUnit(unitId)
     || isG6ArtSem1TitleOnlyUnit(unitId)
+    || isG6EnglishSem1TitleOnlyUnit(unitId)
+    || isG6EnglishSem2TitleOnlyUnit(unitId)
     || isG6IslamicSem1TitleOnlyUnit(unitId)
     || isG6IslamicSem2TitleOnlyUnit(unitId)
     || isG6SocialSem1TitleOnlyUnit(unitId)
@@ -4163,10 +4284,13 @@ export function isBrowserLessonTitleOnly(lessonId: string): boolean {
     || isG9MathSem2TitleOnlyLesson(lessonId)
     || isG6ArabicSem1TitleOnlyLesson(lessonId)
     || isG6ArabicSem2TitleOnlyLesson(lessonId)
+    || isG6DigitalSem1TitleOnlyLesson(lessonId)
     || isG6VocationalSem1TitleOnlyLesson(lessonId)
     || isG6VocationalSem2TitleOnlyLesson(lessonId)
     || isG6PhysicalEducationSem1TitleOnlyLesson(lessonId)
     || isG6ArtSem1TitleOnlyLesson(lessonId)
+    || isG6EnglishSem1TitleOnlyLesson(lessonId)
+    || isG6EnglishSem2TitleOnlyLesson(lessonId)
     || isG6IslamicSem1TitleOnlyLesson(lessonId)
     || isG6IslamicSem2TitleOnlyLesson(lessonId)
     || isG6SocialSem1TitleOnlyLesson(lessonId)

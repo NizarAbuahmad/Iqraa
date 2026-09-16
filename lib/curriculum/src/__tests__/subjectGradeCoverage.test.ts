@@ -158,10 +158,10 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // it exists on disk; it is simply not ingested yet. Delete the line when it
   // is.
   // arabic:grade-6 closed 2026-09-15, both semesters (title-only).
-  'english:grade-6',
+  // english:grade-6 closed 2026-09-15, both semesters (title-only, third-party).
   // islamic:grade-6 closed 2026-09-15, both semesters (title-only).
   // social:grade-6 closed 2026-09-15, both semesters (title-only).
-  'digital-literacy:grade-6',
+  // digital-literacy:grade-6 closed 2026-09-15 (title-only, S1 only).
   // creative-arts / vocational-education / physical-education at grade-6 all
   // closed 2026-09-15: SUBJECTS.grades extended and the books attached.
   //

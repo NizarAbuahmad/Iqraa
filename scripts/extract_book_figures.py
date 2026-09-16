@@ -66,6 +66,11 @@ try:
 except ImportError:  # pragma: no cover - operator-facing
     sys.exit("pymupdf is required: pip install pymupdf")
 
+# Importable whether this is run as `python scripts/extract_book_figures.py`
+# from the repo root or imported as a module from elsewhere.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from contents_outline import contents_outline, unit_banner_pages  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "attached_assets"
 
@@ -372,6 +377,41 @@ BOOKS: dict[str, tuple[str, str]] = {
         "grade-8-vocational",
         MIRROR_G8 + "mhni/كتاب الطالب لمادة التربية المهنية الصف الثامن الفصل الثاني.pdf",
     ),
+
+    # Grades 6 and 7, added 2026-09-15. Every student book the NCCD
+    # library holds for these grades that also has a catalog, EXCEPT
+    # English — that series photographs rather than draws, so it goes
+    # through `extract_book_photos.py` instead. Registering a book is not
+    # a claim that it yields: each one is probed against its catalog
+    # before extraction, and several will not pass.
+    "g6-islamic-s1-student-book": ("grade-6-islamic", "knowledge-base/grade-6-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الأول.pdf"),
+    "g6-islamic-s2-student-book": ("grade-6-islamic", "knowledge-base/grade-6-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السادس الفصل الثاني.pdf"),
+    "g6-pe-s1-student-book": ("grade-6-pe", "knowledge-base/grade-6-pe/support-pdfs/كتاب الطالب لمادة التربية الرياضية الصف السادس الفصل الأول.pdf"),
+    "g6-voc-s1-student-book": ("grade-6-vocational", "knowledge-base/grade-6-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الأول.pdf"),
+    "g6-voc-s2-student-book": ("grade-6-vocational", "knowledge-base/grade-6-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف السادس الفصل الثاني.pdf"),
+    "g6-social-s1-student-book": ("grade-6-social", "knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الأول.pdf"),
+    "g6-social-s2-student-book": ("grade-6-social", "knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الثاني.pdf"),
+    "g6-arabic-s1-student-book": ("grade-6-arabic", "knowledge-base/grade-6-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الأول.pdf"),
+    "g6-arabic-s2-student-book": ("grade-6-arabic", "knowledge-base/grade-6-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف السادس الفصل الثاني.pdf"),
+    "g7-pe-s1-student-book": ("grade-7-pe", "knowledge-base/grade-7-pe/support-pdfs/كتاب الطالب التربية الرياضية الصف السابع الفصل الأول.pdf"),
+    "g7-pe-s2-student-book": ("grade-7-pe", "knowledge-base/grade-7-pe/support-pdfs/كتاب الطالب التربية الرياضية الصف السابع الفصل الثاني.pdf"),
+    "g7-islamic-s1-student-book": ("grade-7-islamic", "knowledge-base/grade-7-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السابع الفصل الأول.pdf"),
+    "g7-islamic-s2-student-book": ("grade-7-islamic", "knowledge-base/grade-7-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف السابع الفصل الثاني.pdf"),
+    "g7-arts-student-book": ("grade-7-art", "knowledge-base/grade-7-art/support-pdfs/كتاب الطالب لمادة التربية الفنية للصف السابع.pdf"),
+    "g7-voc-s1-student-book": ("grade-7-vocational", "knowledge-base/grade-7-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف السابع الفصل الأول.pdf"),
+    "g7-voc-s2-student-book": ("grade-7-vocational", "knowledge-base/grade-7-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف السابع الفصل الثاني.pdf"),
+    "g7-finlit-s1-student-book": ("grade-7-finlit", "knowledge-base/grade-7-finlit/support-pdfs/كتاب الطالب لمادة الثقافة المالية للصف السابع الفصل الأول.pdf"),
+    "g7-finlit-s2-student-book": ("grade-7-finlit", "knowledge-base/grade-7-finlit/support-pdfs/كتاب الطالب لمادة الثقافة المالية للصف السابع الفصل الثاني.pdf"),
+    "g7-social-s1-student-book": ("grade-7-social", "knowledge-base/grade-7-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السابع الفصل الأول.pdf"),
+    "g7-social-s2-student-book": ("grade-7-social", "knowledge-base/grade-7-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السابع الفصل الثاني.pdf"),
+    "g7-math-s1-student-book": ("grade-7-math", "knowledge-base/grade-7-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف السابع الفصل الأول.pdf"),
+    "g7-math-s2-student-book": ("grade-7-math", "knowledge-base/grade-7-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف السابع الفصل الثاني.pdf"),
+    "g7-arabic-s1-student-book": ("grade-7-arabic", "knowledge-base/grade-7-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف السابع الفصل الأول.pdf"),
+    "g7-arabic-s2-student-book": ("grade-7-arabic", "knowledge-base/grade-7-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف السابع الفصل الثاني.pdf"),
+    "g7-science-s1-student-book": ("grade-7-science", "knowledge-base/grade-7-science/support-pdfs/كتاب الطالب لمادة العلوم الصف السابع الفصل الأول.pdf"),
+    "g7-science-s2-student-book": ("grade-7-science", "knowledge-base/grade-7-science/support-pdfs/كتاب الطالب لمادة العلوم الصف السابع الفصل الثاني.pdf"),
+    "g7-digital-s1-student-book": ("grade-7-digital", "knowledge-base/grade-7-digital/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف السابع الفصل الأول.pdf"),
+    "g7-digital-s2-student-book": ("grade-7-digital", "knowledge-base/grade-7-digital/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف السابع الفصل الثاني.pdf"),
     "g8-digital-s1-student-book": (
         "grade-8-digital-literacy",
         MIRROR_G8 + "7asob/كتاب الطالب لمادة المهارات الرقمية الصف الثامن الفصل الأول.pdf",
@@ -597,8 +637,34 @@ UNIT_HEADER = re.compile(r"([0-9\u0660-\u0669]+)\s*[\u064B-\u065F]?\s*\u0627\u06
 ARABIC_DIGITS = str.maketrans("\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669", "0123456789")
 
 
+def _text_dict(page: pymupdf.Page) -> dict:
+    """`page.get_text("dict")`, parsed once per page instead of once per ask.
+
+    Page 45 of Grade 8 vocational S2 takes **35 seconds** to extract — 660
+    blocks of it — and `figures_in` asks three times per seed (`with_labels`,
+    `uncut_labels`, `text_fraction`) across that page's 24 curve seeds. 72
+    identical calls, about 42 minutes, on one page: the extractor did not fail
+    on these books, it hung on them, which is why nothing was ever cut from
+    them. `get_drawings()` has the same shape and gets the same treatment.
+    """
+    cached = getattr(page, "_iqraa_text_dict", None)
+    if cached is None:
+        cached = page.get_text("dict")
+        page._iqraa_text_dict = cached
+    return cached
+
+
+def _drawings(page: pymupdf.Page) -> list:
+    """`_drawings(page)`, parsed once per page. See `_text_dict`."""
+    cached = getattr(page, "_iqraa_drawings", None)
+    if cached is None:
+        cached = page.get_drawings()
+        page._iqraa_drawings = cached
+    return cached
+
+
 def _spans(page: pymupdf.Page):
-    for block in page.get_text("dict")["blocks"]:
+    for block in _text_dict(page)["blocks"]:
         for line in block.get("lines", []):
             for span in line.get("spans", []):
                 yield span
@@ -696,6 +762,14 @@ def lesson_start(page: pymupdf.Page, profile: OpenerProfile = DEFAULT_OPENER) ->
         # lesson numbers.
         digits = t.translate(ARABIC_DIGITS)
         if profile.number_parenthesised:
+            # Require the bracket, do not merely tolerate it. Grade 9 Islamic
+            # unit 1 lesson 5 is «يومُ أُحُد (3 هـ)» — the Hijri year 3 is set at
+            # 22.9pt in the same band as the real «)5(», and since the last
+            # match won, the lesson was recorded as 3. That gave unit 1 four
+            # lessons with «3» spanning two disjoint page ranges, so lesson 5's
+            # figures would have been filed under lesson 3.
+            if "(" not in t and ")" not in t:
+                continue
             digits = digits.strip("() ").strip()
         if (s["size"] >= profile.number_size and s["bbox"][1] < profile.number_top
                 and digits.isdigit()):
@@ -788,6 +862,30 @@ def outline(doc: pymupdf.Document, profile: OpenerProfile = DEFAULT_OPENER) -> d
     # a running header.
     openers = {n + 1: u for n in range(len(doc)) if (u := unit_start(doc[n])) is not None}
 
+    # A second reader, for books `unit_start`'s size/position heuristic cannot
+    # see at all. It finds ZERO openers in all four Islamic books, so their
+    # units came only from the running header — and that leaks, because a
+    # lesson runs up to the NEXT lesson and the last lesson of a unit therefore
+    # contains the next unit's opener, whose header reads one too high. Grade 9
+    # Islamic S1 came out as five units of [4,1,5,5,5] against a catalog of
+    # four fives. `unit_banner_pages` reads the banner as text («الوحدة
+    # الثالثة») rather than by geometry, and finds all four in each book.
+    #
+    # Gated twice, because an unconditional union REGRESSED geography: its
+    # `unit_start` also finds nothing, the banner reader finds exactly one
+    # page, and one bogus opener was enough both to hand every lesson unit 1
+    # and to disable the numbering-reset pass below, which had been assigning
+    # geography's units correctly all along. So this fires only when the
+    # geometry reader found nothing at all AND the banner reader found a real
+    # outline — two units or more. One opener is not an outline, which is the
+    # same reasoning `len(lessons) < 3` above applies to lessons.
+    banners: dict[int, int] = {}
+    if not openers:
+        found = unit_banner_pages(doc)
+        if len(found) >= 2:
+            banners = {page: unit for unit, page in found.items()}
+            openers = dict(banners)
+
     for i, lesson in enumerate(lessons):
         end = lessons[i + 1]["startPage"] if i + 1 < len(lessons) else len(doc) + 1
         for p in range(lesson["startPage"], end):
@@ -838,9 +936,17 @@ def outline(doc: pymupdf.Document, profile: OpenerProfile = DEFAULT_OPENER) -> d
             lesson["unit"] = unit
             prev = lesson["lesson"]
 
+    # A lesson runs up to the next lesson — but never past the banner that
+    # opens the next UNIT. An undetected opener would otherwise hand the new
+    # unit's opening pages to the previous unit's last lesson: Grade 10 Islamic
+    # S2 misses unit 2 lesson 1, so pages 58-66 were filed under unit 1 lesson
+    # 7. Truncating leaves them unplaced, which is the honest answer.
     by_page: dict[int, dict] = {}
     for i, lesson in enumerate(lessons):
         end = lessons[i + 1]["startPage"] if i + 1 < len(lessons) else len(doc) + 1
+        nxt = [p for p in banners if lesson["startPage"] < p < end]
+        if nxt:
+            end = min(nxt)
         for p in range(lesson["startPage"], end):
             by_page[p] = lesson
     return by_page
@@ -858,7 +964,7 @@ def _crosses(h: pymupdf.Rect, v: pymupdf.Rect) -> bool:
 
 def axis_seed(page: pymupdf.Page) -> pymupdf.Rect | None:
     """The largest crossed axis pair on the page, or None if there is none."""
-    drawings = [d["rect"] for d in page.get_drawings()]
+    drawings = [d["rect"] for d in _drawings(page)]
     horizontals = [r for r in drawings if r.width > 60 and r.height < 3]
     verticals = [r for r in drawings if r.height > 60 and r.width < 3]
     best = None
@@ -898,7 +1004,7 @@ def curve_seeds(page: pymupdf.Page, gap: float = 6) -> list[pymupdf.Rect]:
     """
     W, H = page.rect.width, page.rect.height
     rects: list[pymupdf.Rect] = []
-    for d in page.get_drawings():
+    for d in _drawings(page):
         if not any(item[0] == "c" for item in d["items"]):
             continue
         r = pymupdf.Rect(d["rect"])
@@ -946,7 +1052,7 @@ def text_fraction(page: pymupdf.Page, r: pymupdf.Rect) -> float:
     with curves; only one is mostly words.
     """
     covered = 0.0
-    for block in page.get_text("dict")["blocks"]:
+    for block in _text_dict(page)["blocks"]:
         for line in block.get("lines", []):
             for span in line.get("spans", []):
                 overlap = pymupdf.Rect(span["bbox"]) & r
@@ -957,7 +1063,7 @@ def text_fraction(page: pymupdf.Page, r: pymupdf.Rect) -> float:
 
 def drawing_cluster(page: pymupdf.Page, seed: pymupdf.Rect, gap: float = 9) -> pymupdf.Rect:
     """Chain together the drawing rects that touch the seed, and only those."""
-    boxes = [pymupdf.Rect(d["rect"]) for d in page.get_drawings()]
+    boxes = [pymupdf.Rect(d["rect"]) for d in _drawings(page)]
     r = pymupdf.Rect(seed)
     changed = True
     while changed:
@@ -982,7 +1088,7 @@ def with_labels(page: pymupdf.Page, r: pymupdf.Rect, pad: float = 7) -> pymupdf.
     """
     area = pymupdf.Rect(r + (-pad, -pad, pad, pad))
     out = pymupdf.Rect(r)
-    for block in page.get_text("dict")["blocks"]:
+    for block in _text_dict(page)["blocks"]:
         for line in block.get("lines", []):
             for span in line.get("spans", []):
                 sb = pymupdf.Rect(span["bbox"])
@@ -1039,7 +1145,7 @@ def uncut_labels(page: pymupdf.Page, r: pymupdf.Rect) -> pymupdf.Rect:
     is somebody else's paragraph.
     """
     out = pymupdf.Rect(r)
-    for block in page.get_text("dict")["blocks"]:
+    for block in _text_dict(page)["blocks"]:
         for line in block.get("lines", []):
             for span in line.get("spans", []):
                 if not span["text"].strip():
@@ -1106,7 +1212,7 @@ def card_boundary(page: pymupdf.Page, seed: pymupdf.Rect) -> pymupdf.Rect | None
     W = page.rect.width
     page_area = page.rect.get_area()
     best = None
-    for d in page.get_drawings():
+    for d in _drawings(page):
         if d.get("fill") is None:
             continue
         r = pymupdf.Rect(d["rect"])
@@ -1130,11 +1236,31 @@ def card_boundary(page: pymupdf.Page, seed: pymupdf.Rect) -> pymupdf.Rect | None
 #
 # A book earns a place here only when the parsed table reproduces its catalog
 # EXACTLY, unit for unit — vocational S1 gives [2,2,2,2,1,2,1] against the
-# catalog's [2,2,2,2,1,2,1]. Its S2 sibling finds 13 rows of 14 and infers 9
-# units against 10, which would shift every later lesson id, so it is absent:
-# a partial contents table is the same trap as a partial opener sweep.
+# catalog's [2,2,2,2,1,2,1]. A partial contents table is the same trap as a
+# partial opener sweep: it shifts every later lesson id and still looks like a
+# result. The value is the Y tolerance, which is genuinely per-book — the same
+# vocational S2 table reads 13 rows of 14 at 4.0 and all 14 at 6.0, so a book
+# that misses is re-probed across tolerances before it is written off.
+#
+# Probed and still absent: Grade 8 creative arts and digital literacy S1/S2
+# («الدرس» on no contents row at any tolerance), the four Islamic books (their
+# contents rows carry the word only once, as a column header), Grade 6 maths
+# (16 rows of 18, none carrying a parenthesised lesson number) and Grade 9
+# history S2 (10 rows of 13, same).
 CONTENTS_PLACEMENT: dict[str, float] = {
     "g8-voc-s1-student-book": 4.0,
+    "g8-voc-s2-student-book": 6.0,
+    "g8-science-s2-student-book": 6.0,
+    "g6-voc-s1-student-book": 4.0,
+    "g7-voc-s1-student-book": 4.0,
+    # Grade 7 social needs 12.0, and that is the loosest tolerance here by a
+    # wide margin — accepted because the convergence is monotonic rather than
+    # lucky. S1 finds 3 rows at 2.0, then 14, 18, 19 and finally all 20 at
+    # 12.0, and the unit split locks onto the catalog's [3,3,5,4,2,3] only at
+    # the point the row count also becomes exact. A coincidence does not
+    # approach the answer from below.
+    "g7-social-s1-student-book": 12.0,
+    "g7-social-s2-student-book": 12.0,
 }
 
 
@@ -1148,7 +1274,6 @@ def figures_in(pdf: Path, source_id: str | None = None):
     """
     doc = pymupdf.open(pdf)
     if source_id in CONTENTS_PLACEMENT:
-        from contents_outline import contents_outline
         where = contents_outline(doc, CONTENTS_PLACEMENT[source_id])
     else:
         where = outline(doc, OPENER_PROFILES.get(source_id or "", DEFAULT_OPENER))

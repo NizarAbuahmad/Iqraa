@@ -99,7 +99,7 @@ import {
   subscribeSessionDocuments,
   type SessionDocument,
 } from '@/services/documents';
-import { lessonPickerParams } from '@/services/lessonPrep';
+import { lessonPickerParams, subjectPickerLabels } from '@/services/lessonPrep';
 import { resolveDeepLinkSend, type DeepLinkSend } from '@/services/chatDeepLink';
 import { pinnedResourceNote } from '@/services/mathSupportResources';
 import {
@@ -358,6 +358,18 @@ function ContextBanner({
     [draftGradeId],
   );
 
+  /**
+   * Labels, resolved here rather than in CONTEXT_SUBJECTS: that array is built
+   * once at module scope and so cannot know the grade, but a subject's name can
+   * depend on it — Grade 6's creative-arts book has no music in it and must not
+   * be offered under the combined name. Index-aligned with CONTEXT_SUBJECTS,
+   * the same contract as visibleSubjIdxs above.
+   */
+  const subjectNames = useMemo(
+    () => subjectPickerLabels(draftGradeId, lang as 'ar' | 'en'),
+    [draftGradeId, lang],
+  );
+
   // Changing grade can strand the current pick on a subject that grade does
   // not teach. Move to the first subject it does, rather than leaving a
   // selection the teacher can no longer see.
@@ -545,7 +557,7 @@ function ContextBanner({
                     color: draftSubjIdx === i ? colors.primaryForeground : colors.mutedForeground,
                     fontFamily: draftSubjIdx === i ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
                   }]}>
-                    {lang === 'ar' ? s.labelAr : s.labelEn}
+                    {subjectNames[i]}
                   </Text>
                 </Pressable>
                 );
@@ -2416,7 +2428,7 @@ export default function IqraScreen() {
     if (tool.id === 'simplify' && topic) {
       sendMessage(
         lang === 'ar'
-          ? `بسّط شرح هذا الدرس بلغة يفهمها الطلاب: ${topic}`
+          ? `بسّط شرح هذا الدرس بلغة يفهمها الطلبة: ${topic}`
           : `Explain this lesson in simple language students understand: ${topic}`,
         sessionMemory.activeLessonId ?? undefined,
       );
@@ -2704,7 +2716,7 @@ export default function IqraScreen() {
             const grade = CONTEXT_GRADES.find(g => g.id === pick?.gradeId) ?? CONTEXT_GRADES[0];
             sendMessage(
               lang === 'ar'
-                ? `أدرّس "${topic}" ${grade ? `لطلاب ${grade.nameAr}` : 'للصف العاشر'}. أعطني نظرة شاملة عن الموضوع مع أهم مفاهيمه.`
+                ? `أدرّس "${topic}" ${grade ? `لطلبة ${grade.nameAr}` : 'للصف العاشر'}. أعطني نظرة شاملة عن الموضوع مع أهم مفاهيمه.`
                 : `I'm teaching "${topic}" to ${grade?.name ?? 'Grade 10'} students. Give me a comprehensive overview of this topic with key concepts.`,
               picked?.id ?? undefined,
             );

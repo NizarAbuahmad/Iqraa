@@ -146,7 +146,8 @@ describe('subject isolation', () => {
       // 2026-09-09, Grade 7 joined 2026-09-12.
       'financial-literacy': /^(finlit-s[12]|g9-finlit-s[12]|g8-finlit-s[12]|g7-finlit-s[12])$/,
       // Digital Skills spans every grade the same way arabic/islamic do.
-      'digital-literacy': /^(digital-s[12]|g9-digital-s[12]|g8-digital-s[12]|g7-digital-s[12])$/,
+      // Grade 6 joined 2026-09-15, collapsing the per-grade enumeration.
+      'digital-literacy': /^(digital-s[12]|g\d+-digital-s[12])$/,
       // Social Studies only ever has Grade 7/8 books — it splits into
       // geography/history/civic-education from Grade 9 up, so there is no
       // bare or g9- form to allow (see subjectGradeCoverage.test.ts).
@@ -181,7 +182,9 @@ describe('subject isolation', () => {
       // forms are the Grade 10 vocational ESP tracks — separate
       // curriculumIds.ts subject slugs, but the same 'english' app
       // subjectId, so they show up under this key too.
-      english: /^(eng-s[12]|g9-eng-s[12]|g8-eng-s[12]|g7-eng-s[12]|eng-(commerce|agri|hospitality|industry)-s[12])$/,
+      // Grade 6 joined 2026-09-15. Grade half collapsed to g\d+; the four
+      // vocational ESP tracks keep their own alternative.
+      english: /^(eng-s[12]|g\d+-eng-s[12]|eng-(commerce|agri|hospitality|industry)-s[12])$/,
       // Grade 10 Islamic predates this map too and was likewise silently
       // unchecked. Added alongside the Grade 9 Islamic books.
       // Grade 8 joined 2026-09-10, semester 1 then semester 2. Grade 7

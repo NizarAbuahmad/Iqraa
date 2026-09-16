@@ -61,6 +61,7 @@ import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { sendExpoPush } from "../lib/pushNotifications.js";
 import { isR2Configured, newChatMediaKey, presignedGetUrl, putObject } from "../lib/r2.js";
 import { syncClassGroupThread } from "../lib/classThread.js";
+import { resolveReport } from "../lib/reportDecision.js";
 import { EXTENSION_BY_MIME, MAX_DATA_URL_LENGTH, kindForMime, parseDataUrl } from "../lib/lessonMediaUpload.js";
 
 const router = Router();
@@ -975,8 +976,28 @@ router.post("/messaging/reports", async (req: AuthenticatedRequest, res) => {
       res.status(400).json({ error: "threadId and reportedUserId are required" });
       return;
     }
-    if (!(await participantOf(threadId, req.user!.id))) {
-      res.status(404).json({ error: "Thread not found" });
+
+    // Both named ids are checked against the thread, not just the reporter's
+    // own membership — moderation suspends `reportedUserId` and archives
+    // `messageId` off this row without consulting the thread again. Rules and
+    // wording live in reportDecision.ts, where they can be tested.
+    const decision = await resolveReport({
+      threadId,
+      reporterUserId: req.user!.id,
+      reportedUserId,
+      messageId,
+      isParticipant: async (userId) => (await participantOf(threadId, userId)) !== null,
+      threadIdOfMessage: async (id) => {
+        const [row] = await db
+          .select({ threadId: chatMessages.threadId })
+          .from(chatMessages)
+          .where(eq(chatMessages.id, id))
+          .limit(1);
+        return row?.threadId ?? null;
+      },
+    });
+    if (!decision.ok) {
+      res.status(decision.status).json({ error: decision.error, code: decision.code });
       return;
     }
 

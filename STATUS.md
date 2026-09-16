@@ -61,7 +61,10 @@ an announcement by default» below.
   three production faults that had nothing to do with this code — Cloud Run
   traffic pinned to an old revision, a stale Cloud Shell clone deploying
   week-old code, and an R2 token scoped to `iqraa-media` only — each now
-  written up in `docs/deploying.md`.
+  written up in `docs/deploying.md`. The traffic pin then returned two days
+  later and took the whole API back to a revision older than
+  `/healthz/version`, which is why that entry now treats it as a recurring
+  mode rather than an incident.
 - **In-app messaging between teachers, parents and students** (2026-09-04):
   claim-code signup, teacher↔parent and teacher↔student direct threads,
   class-group and teacher-made custom groups, image attachments, block and
@@ -118,11 +121,19 @@ an announcement by default» below.
   boots the built bundle, so run `pnpm build` before `pnpm test` or it skips.
 - **CI runs on every pull request** (`.github/workflows/ci.yml`, added
   2026-08-12): typecheck, then the api-server build *before* its tests, then
-  both suites, plus the SymPy verification regressions. Node and pnpm are
-  pinned to the versions the Render build uses. Before this the repo had no
-  checks at all, which is how a `dist/` bundle built from an older commit was
-  read as two failing tests on `main` for two days — the api-server suite boots
-  `dist/index.mjs` and `pnpm test` does not build it.
+  every package suite that has one — api-server, mobile, curriculum, and
+  math-verify since 2026-09-15 — plus the SymPy verification regressions. Node
+  and pnpm are pinned to the versions the Render build uses. Before this the
+  repo had no checks at all, which is how a `dist/` bundle built from an older
+  commit was read as two failing tests on `main` for two days — the api-server
+  suite boots `dist/index.mjs` and `pnpm test` does not build it.
+  - The package list is **hand-maintained inside the workflow**, and nothing
+    checks it against the packages that declare a `test` script. That is how
+    `@workspace/math-verify` went unrun from the day it was written until
+    2026-09-15: typechecked by the `typecheck` step, never executed. Adding a
+    package's tests is two edits, not one. (`@workspace/math-practice` declares
+    the script too and has no test files; `node --test` over an empty glob
+    exits 0, so adding it would prove nothing until it has some.)
 - Local dev runs end to end: Express API (:8080) + Postgres 17 (`iqraa` db,
   6 tables) + Expo web (:8083). Login/register work against the local DB.
 - Curriculum data loads in-app (math S1: 4 units / 18 lessons). It now lives in
@@ -455,6 +466,129 @@ an announcement by default» below.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## A report could name anyone, and moderation believed it, 2026-09-15
+
+**`POST /messaging/reports` checked the reporter and trusted the rest.** It
+verified that whoever filed the report was a participant of `threadId` — and
+then wrote `reportedUserId` and `messageId` to `chat_reports` exactly as they
+arrived in the body, neither one checked against that thread.
+
+**`PATCH /moderation/reports/:id` acts on both fields directly.** `suspendUser`
+sets `suspendedAt` on `report.reportedUserId`; `hideMessage` archives
+`report.messageId` by id alone. Neither consults the thread. So a participant
+of *any* thread could file a report naming a teacher they had never messaged,
+or a message from a thread they cannot see, and an admin approving it would
+carry it out. The only existing guard is that an admin cannot be suspended
+(`ADMIN_ROLES`, added so moderators could not lock each other out) — every
+other account was nameable.
+
+It needs a person to approve, which is what keeps this below the grading and
+budget bugs in priority. But the approving admin has no signal that anything is
+wrong: the report renders identically whether the target was in the
+conversation or not.
+
+Both ids are now checked against the thread before the row is written. The
+rules live in `lib/reportDecision.ts` rather than in the route, for the reason
+`claimDecision.ts` gives in its own header — `@workspace/db` throws at import
+without `DATABASE_URL`, so a rule tested through the route would need a live
+database and this repo has none. Trust-boundary rules should not be untestable
+forever. `reportDecision.test.ts` covers both vectors, the group-thread case
+(membership of the thread, not a two-party relationship), and that no message
+lookup happens when no message was named.
+
+**Rows written before this are not retroactively safe.** The fix is on the
+write path, so any report already in `chat_reports` still carries whatever it
+was given. If any exist, they are worth a look before they are actioned:
+
+```sql
+select r.id, r.thread_id, r.reported_user_id
+from chat_reports r
+left join chat_participants p
+  on p.thread_id = r.thread_id and p.user_id = r.reported_user_id
+where p.user_id is null;
+```
+
+## One account could spend everyone's AI budget, 2026-09-15
+
+**`/chat` and `/generate` had no per-caller ceiling of any kind.** No rate
+limiter at their mount sites, and neither called `assertUserQuotaAvailable` —
+the per-user allowance that `attempts.ts`, `evaluations.ts` and `practice.ts`
+already use. They were the two largest spenders in the API and the only ones
+with nothing between a caller and the shared monthly cap.
+
+**Nothing capped the size of a request either.** `CHAT_HISTORY_TURNS` bounded
+how *many* turns were forwarded, and nothing bounded how long each one was;
+`context` was interpolated into the system prompt whole. The only ceiling
+underneath was `express.json({ limit: "12mb" })` — on the order of three
+million input tokens in a single call. And `assertBudgetAvailable()` reads the
+ledger *before* the call rather than reserving against it, so one request could
+overshoot `AI_BUDGET_USD` outright rather than being refused at the line.
+
+The cap is shared, so the consequence is not "that account overspends" but
+"AI stops working for every teacher". `/chat` needs only `authMiddleware`, not
+a teacher role — a student or parent account reaches it.
+
+**Three changes, and they are not interchangeable:**
+
+- **Per-user limiters** at the `/chat` and `/generate` mounts (30 and 15 per
+  minute, keyed by user id, not IP — a school is one NAT address). This is the
+  part that protects a deployment *today*.
+- **`assertUserQuotaAvailable`** in `chat.ts` and in `generateContent`, which
+  covers every route in `generate.ts`. Placed after the pooled-artifact lookup,
+  like the global cap, so serving a pooled variant costs nobody their
+  allowance.
+- **`clampPromptText`** on `context` (24,000 chars) and on each history turn
+  (2,000), applied in the route rather than in the prompt builders — the route
+  is where caller-supplied text enters, so capping once there covers both
+  language builders and any future one.
+
+**The quota is still inert in production, and this PR cannot fix that.**
+`getUserBudgetLimitUsd()` returns 0 unless `AI_USER_BUDGET_USD` is set, and it
+is set in neither `render.yaml` nor `deploy.yml` — those AI vars live in the
+Cloud Run service config. Until somebody sets it there, the limiters and the
+clamp are the whole of the protection. The code comment in `aiBudget.ts` had
+already stated the risk exactly: "with fifty teachers sharing a single project
+budget, one enthusiastic user can spend everyone else's month in an afternoon."
+
+**Not covered:** `/generate/verified-derivative/*`. Those reach the model
+through `derivativeVerified.ts`, which does meter against the global cap
+(`assertBudgetAvailable` + `recordUsage`), but their handlers take `_req` and
+so have no user to bill. They sit under the `/generate` prefix, so the limiter
+bounds them; giving them a quota would mean threading a user id through
+`generateBatch`.
+
+## A wrong answer was marked correct if the right one was big enough, 2026-09-15
+
+**`answersMatch` compared numbers with a 1% *relative* tolerance.** One percent
+of 360 is 3.6, so a student who answered 357 to a key of 360 was marked correct.
+So was 1009 against 1000, and 101 against 100 — every whole-number answer from
+99 up silently accepted its neighbours, and the bigger the right answer, the
+wider the band of wrong ones that passed. `fill_blank`'s `defaultGradingMode` is
+`deterministic`, so nothing put a teacher in the loop to notice.
+
+**The tolerance was not wrong to exist, only to scale.** It is there so a key of
+`0.3333` accepts `0.333`: a student who rounds a repeating decimal has not
+answered incorrectly. But rounding is a property of how precisely a number was
+*written*, and has nothing to do with how large it is — which is the one thing a
+relative tolerance ties it to.
+
+Comparison is now precision-based. Two numbers both written whole must be equal;
+otherwise they may differ by up to half a unit in the last decimal place the
+**coarser** side wrote. `0.333` still matches a key of `0.3333`, and `357`
+matches nothing but `357`.
+
+**Why the test suite did not catch it.** `grading.test.ts` asserted
+`!answersMatch("8", "7")` — 12.5% apart, nowhere near the 1% boundary, so it
+passed identically before and after. A tolerance needs its boundary pinned, not
+a case far outside it. The six new cases all fail against the old implementation.
+
+**Judging at the coarser precision is deliberate.** Taking the finer of the two
+would reject `0.333` against a key of `0.3333`, which is the case the tolerance
+exists for. `normalize.ts` is also the only numeric answer comparison in the
+repo — the client-side graders in `quiz.tsx`, `presentation.tsx` and
+`evaluations/new.tsx` all compare option *indices*, so there is no second copy
+of this to fix.
 
 ## The practice slides say where their content went, 2026-09-15
 
@@ -1458,6 +1592,155 @@ anything that was quoting Grade 9/10 English passages will now return nothing
 rather than returning them unlawfully. That is the correct trade and it is worth
 saying out loud rather than discovering it as a regression.
 
+**Grade 6 is complete, 2026-09-15.** Digital skills catalogued and the last five
+maths books registered. **Every Grade 6 book supplied is now in the repo** — 26
+sources across nine subjects: الرياضيات, اللغة العربية, اللغة الإنجليزية,
+التربية الإسلامية, المهارات الرقمية, التربية الرياضية, التربية الفنّيّة,
+التربية المهنية, الدراسات الاجتماعية, العلوم.
+
+**Digital skills is not a subject book, and the catalogue had to bend to that.**
+Its content is «لَبِنات» — blocks attached to units of OTHER subjects — and the
+block titles are those units' titles verbatim: «مِنَ الخَلِيَّةِ إلى الجِسْمِ»,
+«المادَّةُ», «المَخاليطُ وَطَرائِقُ فَصْلِها», «الصَّوْتُ» from science;
+«التَّحْويلاتُ وَالإِنْشاءاتُ الهَنْدَسِيَّةُ», «الهَنْدَسَةُ وَالقِياسُ» from
+maths. Six blocks became six units, four «مشاريع تعلُّم» four more.
+
+Two consequences, both verified against the running catalog rather than reasoned
+about:
+
+- **A unit title now genuinely duplicates across subjects.**
+  `kbu-g6-science-s1-nccd-u1` and `kbu-g6-digital-s1-nccd-u1` are two units with
+  the same `nameAr`. Nothing collides, because the id carries the subject — but
+  a title-based lookup across subjects would conflate them, which is the same
+  trap as "a lesson title does not identify a lesson" in CLAUDE.md, now with a
+  concrete instance in the data.
+- **Its semester label does not match the subjects it plugs into.** The book is
+  Semester 1, but blocks 4 and 6 attach to «المَخاليطُ» and «الصَّوْتُ» — science
+  Semester 2, units 6 and 7. `semester: 1` follows the cover, not the content,
+  and the JSON says so.
+
+There is no digital-skills student book and no Semester 2 book at all; the
+activity book and teacher guide are everything that exists, which makes it the
+narrowest subject in the grade.
+
+**The five maths books are support material — registered and extracted, no
+catalogue**, per docs/adding-a-book.md ("Stop here for support material"). One of
+them closes a sourceless gap rather than adding one: `g6-math-s1-teacher-guide`
+(228 pages, 568k chars, straight through pdf-parse) carries the periods and
+lesson outcomes that are null/empty in `iqra_curriculum_g6_math_sem1.json`. That
+gap now has a source on disk instead of a note saying the guide exists somewhere.
+
+Maths Semester 2 still has no student book — exercise book and teacher guide
+only — so there is still no Semester 2 maths unit list, and that is the supplied
+set's limit rather than a transcription gap.
+**And the test that was written to catch it missed 49 more, 2026-09-16.** All of
+maths and science — grades 4, 6, 9 and 10 — print «© HarperCollins Publishers
+Limited» on page 2, under the same all-rights-reserved notice, prepared
+originally in English *for* the NCCD and then translated, adapted and published
+by it. Every one was `nccd`, and so quotable, and so being reproduced verbatim
+into generated worksheets.
+
+The reason `quotableAuthority.test.ts` stayed green is one character. Its generic
+mark was transcribed off the Pearson page as «All rights reserved**;** no part of
+this publication may be reproduced». Collins prints a **period**. A check
+copied from one example matches one example.
+
+These are not the Pearson case repeated, which is why the outcome is not the
+same. **Nizar's ruling, 2026-09-16: Iqraa holds the right to use these books.**
+He was given the notice verbatim, the reading that the copyright sits with
+HarperCollins, and the measured cost of the alternative, and confirmed the right
+exists. They are quotable and nothing is withdrawn.
+
+The rows still carry `license: 'nccd-collins'`, a new `LicenseId` in `bank.ts`,
+mapping to `quotable`. **That is not a no-op and should not be deleted as one.**
+Page 2 of these books will alarm the next person who reads it exactly as it
+alarmed us; the licence is the answer sitting in the data, so the investigation
+happens once. It is also what `quotableAuthority.test.ts` keys its `RULED_ON`
+allowlist off — strip the field and all 49 books become unexplained copyright
+notices on quotable rows again, which is precisely the state that went unnoticed
+for months. And if the rights position ever changes it is one line in
+`POLICY_BY_LICENSE`, not 49 rows.
+
+What restricting them *would* have cost, measured before the ruling rather than
+argued after it: grounded units across the whole catalog **100 → 65** of 446.
+Lost entirely would have been all of Grade 9 maths, chemistry, physics, biology
+and earth science (26 units), Grade 10 chemistry (5) and Grade 6 maths (4) —
+Grade 10 chemistry has no fallback at all, its only extracted book being the
+student book. Kept here because it is the number that made the decision worth
+escalating, and the number anyone re-opening the question will want.
+
+Two things the fix also had to repair. The test read only `data/extracted/`, so
+the two Grade 9 maths files in `data/extracted-g9/` were invisible to it whatever
+the pattern. And it asked the wrong question. Marks are regexes now,
+`HarperCollins` among them.
+
+**The question it asks now is "has anyone looked at this book?", not "is it
+ours?"** Once the Collins books are quotable, a test phrased as "nothing quotable
+carries a third-party mark" is red about a settled question on 49 rows — and a
+test that is red about a settled question does not get investigated, it gets
+deleted, taking the Pearson case it was written for with it. So a book carrying
+someone else's copyright notice must be *accounted for*: either it is not
+quotable, or it carries a licence listed in `RULED_ON` naming the decision. What
+still fails is the case that matters — a book nobody has read, quotable by
+default, with another publisher's name on page 2. That is exactly the state all
+49 of these were in the day before.
+
+`RULED_ON` is deliberately a list of decisions, not of publishers, and each entry
+points at where its decision is recorded. A second test strips the licence off a
+Collins row in memory and asserts it *would* be caught, so if the exemption ever
+goes blind — the most likely place this breaks — that fails rather than passing
+quietly.
+
+**Only 39 of the 49 are on this branch**, and 49 is already stale. The ten Grade
+4 rows exist solely on `worktree-grade-5-books`, where Grade 5 is being
+registered behind them — 8 more confirmed by scan, with Grade 5 science still
+extracting. That branch merges second and adds the licence in a commit of its
+own; the fixed test is the backstop either way, since a row arriving as `nccd`
+with no licence fails CI on whichever branch carries it.
+
+**Scan each file, never the series.** Confirmed twice now, independently. The
+Grade 10 biology, physics and earth-science teacher guides and both Grade 6
+science teacher guides carry no Collins notice anywhere — the NCCD wrote them
+itself — while the student and activity books beside them do. Grade 4 repeats it
+exactly: `g4-science-s1-teacher-guide` and `g4-science-s2-teacher-guide` are
+clean, their student and activity books are not. Going by series would have
+mislabelled both, in the direction that matters.
+
+The Grade 4 maths guide-extract booklets (`g4-math-u{1,2,3,6,7}-guide-extract`,
+`g4-math-s2-support-guide`) are likewise clean while their parent teacher guides
+carry the notice — independent evidence that they are separate publications
+rather than excerpts, which matches the page-overlap measurement that led to
+registering them as distinct.
+
+**Images were the larger half of the same question**, and the scan that answered
+it is worth keeping whatever the ruling. `usePolicy` gates text retrieval only:
+`extract_book_photos.py`, `extract_book_figures.py`, `gen_book_figure_assets.mjs`
+and the `bookFigure*` services consult no authority or licence field at all.
+
+**1507 of 2145 committed figures come from Collins books**, read off page 2 of
+each PDF rather than inferred: 28 of the 36 books with a committed figure
+directory carry the notice. Grades 7 and 8 have no manifest rows and were checked
+directly — `g7-science-s1/s2`, `g8-science-s1/s2` and `g8-math-s1/s2` all print
+«© HarperCollins Publishers Limited 2022», 359 figures between them. So maths and
+science carry it at every grade from 6 to 10.
+
+A useful negative: `g7-social-s1` has no Collins notice in its first eight pages.
+It is subject-specific, not a blanket NCCD thing — social studies, vocational,
+financial literacy and PE look clean on the same test. Worth checking the rest
+the same way rather than assuming in either direction.
+
+**Covered by the same ruling.** Nizar's 2026-09-16 answer was the right to use
+the books, not the right to quote their sentences, and the figures were put to
+him as part of it. Nothing is reverted and figure extraction from maths and
+science resumes.
+
+Recorded because the pipeline is still ungated: no licence check exists anywhere
+in `extract_book_photos.py`, `extract_book_figures.py`,
+`gen_book_figure_assets.mjs` or the `bookFigure*` services, and nothing would
+stop a future book whose rights *are* in doubt from having its figures cut out
+and shipped. That is fine while every source is one we hold rights to. It stops
+being fine the first time one isn't, and there is no test that will say so.
+
 **Grade 8 gets its first figures, 2026-09-12.** `g8-science-s1` alone: 133
 crops, **65 kept**, covering all 10 of its Semester 1 lessons. What survived is
 strong — DNA and chromosome diagrams, binary-fission stages, Mendel's pea
@@ -1659,9 +1942,137 @@ rows where the catalog has 14, 9 units where it has 10 — and so is every other
 candidate until measured the same way. The rule exists because a parser that
 half-reads a table produces the same silent misfiling the opener detector does.
 
-**Still to widen:** Arabic, Islamic, creative arts, digital literacy, Grade 6
-maths, Grade 8 science S2, Grade 9 history S2, vocational S2. Each is a
-measurement, not a code change.
+**Widened the same day — and "each is a measurement, not a code change" was
+wrong. The extractor could not finish these books at all.**
+
+`page.get_text("dict")` takes **35 seconds** on page 45 of vocational S2 (660
+blocks), and `figures_in` asked for it three times per seed — `with_labels`,
+`uncut_labels`, `text_fraction` — across that page's 24 curve seeds. 72
+identical parses, about **42 minutes on one page**, and the run just stopped
+writing PNGs because `figures_in` is a generator that yields only on pages
+that produce something. Two separate runs stalled at exactly p044 before this
+was read as a hang rather than as slowness. `get_drawings()` had the same
+shape. Both are now parsed once per page and cached on the page object: that
+page went 42 minutes → 34 seconds. Verified behaviour-neutral by re-running
+`figures_in` over two committed books — all 23 bio-S1 and all 5 g8-finlit-S1
+figures still found at identical rects.
+
+So the reason several of these books had no figures was never their layout.
+
+**Two more books ship, +25 lessons.** Grade 8 **vocational S2** (48 kept of
+130, **all 14 lessons** — furniture-making illustrations, mushroom cultivation
+end to end, waste management, Petra) and Grade 8 **science S2** (84 kept of
+169, **all 11 lessons** — neuron and ear and eye anatomy, the three muscle
+types, fetal development, thermometer calibration, heating curves, a complete
+set of electron-shell diagrams for ionic bonding, magnetic domains, satellites).
+Both at a Y tolerance of 6.0, where the 4.0 default reads each one row short.
+
+**Grade 8 science S2 carries a +4 UNIT OFFSET, and it is not cosmetic.** Its
+catalog numbers the units u5-u9 because units 1-4 are semester 1, while the
+contents parser infers units from the lesson numbering resetting and counts
+them 1-5. Joined without the offset every figure in the book lands on a
+semester-1 lesson. The offset lives in the map entries.
+
+**The four Islamic books place correctly and yield nothing.** They were listed
+as closed on measurement since 2026-09-05 and never extracted; re-probed, they
+place through the ORDINARY opener route — three of four reproduce their catalog
+exactly (24, 20 and 22 lessons) once two real bugs are fixed, both recorded
+below. But the crops are **whole pages**: 28 of 36 in Grade 10 S1 and 66 of 70
+in S2 cover more than 70% of the page in both dimensions, because the green
+decorative frame reads as one drawing cluster. Behind that, the content is
+Qur'an, hadith and fiqh — text, not diagrams. What is not a whole page is a
+unit banner. **Not shipped**: putting a page of Arabic prose on a slide is
+worse than leaving the lesson bare. The placement fixes are kept because they
+are correct.
+
+**Two bugs the Islamic probe found in `outline`:**
+
+- **`unit_start` finds ZERO unit openers in all four**, so their units came
+  only from the running header — and a lesson runs up to the NEXT lesson, so a
+  unit's last lesson contains the next unit's opener and reads one too high.
+  Grade 9 S1 came out as five units of [4,1,5,5,5] against a catalog of four
+  fives. `unit_banner_pages` reads the banner as text instead, and finds all
+  four in every one of those books. **Gated twice**, because an unconditional
+  union regressed two shipped books: geography's `unit_start` is also empty,
+  its banner reader found exactly one page, and that single bogus opener both
+  forced every lesson to unit 1 and disabled the numbering-reset pass that had
+  been assigning geography's units correctly — all 19 figures moved. Grade 8
+  social was worse: `unit_banner_pages` read its CONTENTS SPREAD as six banners
+  on two pages, which inverted to page→unit and filed all 49 figures under unit
+  6. So a banner page must name exactly one unit, and the fallback fires only
+  when `unit_start` found nothing AND the banner reader found two units or more.
+- **`number_parenthesised` only tolerated the bracket instead of requiring
+  it.** Grade 9 Islamic unit 1 lesson 5 is «يومُ أُحُد (3 هـ)», and the Hijri
+  year 3 is set at 22.9pt in the same band as the real «)5(». Last match won,
+  so the lesson was recorded as 3 — unit 1 then had two disjoint lesson-3 page
+  ranges and lesson 5's figures would have been filed under lesson 3.
+
+**A lesson also never runs past the banner that opens the next unit.** Grade 10
+Islamic S2 misses one opener (25 of 26), which handed pages 58-66 to unit 1's
+last lesson. Truncating leaves them unplaced, which is the honest answer.
+
+**Still closed, and now for measured reasons:** Grade 8 creative arts and
+digital literacy S1/S2 («الدرس» on no contents row at any tolerance), Grade 6
+maths (16 rows of 18, none carrying a parenthesised lesson number) and Grade 9
+history S2 (10 rows of 13, same). Arabic is untouched — its books are not in
+`BOOKS` at all.
+
+## Grades 6 and 7: 28 books registered, 8 shipped, 2026-09-16
+
+**416 → 498 lessons illustrated, 2106 figures.** Grade 6 and Grade 7 had 3
+books between them in `BOOKS` against 36 catalogs — the gap was never the
+detector, it was that the PDFs had not been registered. Every Grade 6/7 student
+book the NCCD library holds that also has a catalog is now in `BOOKS` (28 new
+entries), except English, which photographs rather than draws and goes through
+`extract_book_photos.py`.
+
+**Registering a book is not a claim that it yields.** Each was probed against
+its catalog both ways — opener detector and contents table across five Y
+tolerances — before anything was extracted.
+
+| Shipped | Route | Kept | Lessons |
+| --- | --- | --- | --- |
+| Grade 7 vocational S1 | contents 4.0 | 88 of 154 | **12 of 12** |
+| Grade 6 vocational S1 | contents 4.0 | 56 of 122 | **12 of 12** |
+| Grade 7 science S1 | opener | 45 of 105 | **12 of 12** |
+| Grade 7 science S2 | opener | 44 of 125 | 9 of 11 |
+| Grade 7 social S1 | contents 12.0 | 39 of 85 | 14 of 20 |
+| Grade 7 social S2 | contents 12.0 | 34 of 99 | 12 of 21 |
+| Grade 7 finlit S1 | opener | 13 of 23 | 6 of 12 |
+| Grade 7 finlit S2 | opener | 9 of 15 | 5 of 11 |
+
+**Grade 7 social S2 carries a +6 UNIT OFFSET, and the shape check is blind to
+it.** Its catalog numbers units u7-u12 because units 1-6 are semester 1, while
+the contents parser infers units from the lesson numbering resetting and counts
+them 1-6. The gate compares unit COUNTS, so a uniform shift passes it
+unnoticed; this was caught by measuring the extracted index against the catalog
+afterwards, not by the probe. Every S2 book in this batch was checked the same
+way — finlit S2 and science S2 print their catalogs' own numbers and need no
+offset.
+
+**Tolerance 12.0 is the loosest in `CONTENTS_PLACEMENT` and is accepted on
+convergence, not on the match alone.** Grade 7 social S1 finds 3 contents rows
+at 2.0, then 14, 18, 19, and all 20 at 12.0 — and the unit split locks onto the
+catalog's [3,3,5,4,2,3] exactly where the row count also becomes exact. A
+coincidence does not approach the answer from below.
+
+**Ten near misses, and one of them is a pattern worth naming.** Four books find
+contents rows in EXACTLY their catalog's lesson count — Grade 6 PE 14/14,
+Grade 7 PE 14/14 and 15/15, Grade 7 arabic 25/25 — and place none of them,
+because those rows do not print a parenthesised lesson number. That is 78
+lessons behind one missing signal. Numbering the rows positionally would impose
+the catalog's shape and then "verify" against it, which is no check at all: one
+out-of-order lesson misfiles everything after it and nothing detects it. The
+honest version is matching row titles to catalog lesson titles, which is
+deferred rather than dismissed. The others are genuinely short: Grade 6 arabic
+22 rows of 25, Grade 6 maths 16 of 18, Grade 7 maths 18 of 20 and 22 of 23,
+Grade 7 arabic S2 24 of 25, and Grade 7 vocational S2 finds all 10 lessons but
+splits them into 8 units against the catalog's 7.
+
+**Eleven closed, 214 lessons:** Grade 6 and Grade 7 Islamic (both semesters),
+Grade 6 social S1/S2, Grade 6 vocational S2, Grade 6 arabic S2, Grade 7 art and
+Grade 7 digital literacy S1/S2. No contents rows at any tolerance and no
+openers — there is nothing in these books to read.
 
 **What still has no figure at all, and why:**
 
@@ -5890,6 +6301,44 @@ no per-teacher cap, which is right for one teacher and wrong for fifty.
 user_quota_exceeded`. A ledger that cannot be read does not block generation —
 the global cap still applies underneath, and turning a database blip into a
 total outage is the worse failure.
+
+> **Updated 2026-09-15 — the allowance now covers the routes that spend most,
+> and students have their own.**
+>
+> `assertUserQuotaAvailable` reached only `evaluations`, `attempts` and
+> `practice`. The two largest spenders never called it: all six `/generate/*`
+> routes (8000 output tokens each) and `/chat`, which is open to students, sends
+> a history window every turn, and had **no rate limiter of any kind**. Both now
+> call it, and `getUserBudgetLimitUsd(role)` reads `AI_STUDENT_BUDGET_USD` for
+> students — a class is thirty of them and their traffic is chat, which can
+> never be pooled, so every turn is live.
+>
+> **The caps apply to live calls only, and that is the point.** The per-user
+> check sits on the same line as `assertBudgetAvailable()` in
+> `generateContent`, *after* the shared-pool lookup, so a teacher who is out of
+> allowance is still served every pooled artifact without limit. When a cap does
+> refuse and the pool holds something the teacher has already seen, they get
+> that repeat rather than an error, carrying `servedReason` — and the provenance
+> badge that every generator screen already renders says «نسخة محفوظة». A
+> degrade nobody can see is the same failure as mock content nobody can see.
+>
+> Also: `generateWithProvenance` no longer substitutes mock content on a cap
+> refusal (it did, so a spent budget rendered a complete fabricated worksheet —
+> same carve-out the cancel path already had); and the verified-derivative
+> amplifier is down from **100 live calls per request to 10** (`MAX_REGEN` 5 → 2,
+> batch `ai` clamp 20 → 5), with `userId` finally threaded into its handlers and
+> ledger rows — without it that route was the one workload that escaped the
+> per-user cap entirely, which is what the note in `generateContent` used to say
+> and no longer needs to. `CHAT_HISTORY_TURNS` 12 → 6, bounding how many turns
+> are forwarded where `clampPromptText` (#445) bounds how long each may be.
+>
+> The per-user burst limiters and the two `assertUserQuotaAvailable` call sites
+> came from **#445**, which landed first; this builds on them rather than
+> repeating them.
+>
+> **Not yet verified end-to-end**: the pool-stays-free and degrade paths are
+> unit-tested but have not been run against a live key and database. See the
+> plan's verification steps 4–7.
 
 ### Two things tidied on the way, both duplication of a security control
 

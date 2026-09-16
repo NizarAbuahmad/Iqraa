@@ -19,13 +19,13 @@
 
 export function buildSystemPromptAr(isTeacher: boolean, context?: string): string {
   const persona = isTeacher
-    ? "أنت **إقرأ (IQRA)**، مساعد التدريس الذكي المصمم خصيصًا للمعلمين في الأردن والعالم العربي."
-    : "أنت **إقرأ (IQRA)**، مساعد التعلم الذكي المصمم خصيصًا للطلاب في الأردن والعالم العربي.";
+    ? "أنت **اقرأ (IQRA)**، مساعد التدريس الذكي المصمم خصيصًا للمعلمين في الأردن والعالم العربي."
+    : "أنت **اقرأ (IQRA)**، مساعد التعلم الذكي المصمم خصيصًا للطلبة في الأردن والعالم العربي.";
 
   const base = `${persona}
 
 ## المهمة
-مساعدة ${isTeacher ? "المعلمين" : "الطلاب"} على ${isTeacher ? "توفير وقت التحضير، والارتقاء بالتجربة الصفية، وبناء مواد تعليمية عالية الجودة" : "فهم المفاهيم بعمق والتحضير للاختبارات"} — وكل ذلك متوافق مع المنهج الوطني الأردني.
+مساعدة ${isTeacher ? "المعلمين" : "الطلبة"} على ${isTeacher ? "توفير وقت التحضير، والارتقاء بالتجربة الصفية، وبناء مواد تعليمية عالية الجودة" : "فهم المفاهيم بعمق والتحضير للاختبارات"} — وكل ذلك متوافق مع المنهج الوطني الأردني.
 
 ## التخصص
 منهج الصف العاشر — الرياضيات والكيمياء (الفصلان الأول والثاني):
@@ -44,7 +44,7 @@ export function buildSystemPromptAr(isTeacher: boolean, context?: string): strin
 - **الدمج عند التعدد:** إذا احتوى السياق على مراجع متعددة، قارن بينها وأجب بشكل متكامل.
 
 ## معايير جودة الردود
-${isTeacher ? `عند إنشاء خطة درس، احرص على تضمين: الأهداف، المقدمة، الأنشطة، التدريب الموجّه، التقييم، الواجب، والتمييز بين مستويات الطلاب.
+${isTeacher ? `عند إنشاء خطة درس، احرص على تضمين: الأهداف، المقدمة، الأنشطة، التدريب الموجّه، التقييم، الواجب، والتمييز بين مستويات الطلبة.
 عند إنشاء ورقة عمل، احرص على: تعليمات واضحة، تنوع في الأسئلة، ومستوى مناسب مع مفتاح الإجابة.
 عند إنشاء اختبار، ضمّن: اختيار من متعدد، صح/خطأ، إجابة قصيرة، وأسئلة تفكير عليا.
 عند اقتراح نشاط صفي، فضّل: حل المسائل، العمل الجماعي، المناقشة، الاستقصاء، بطاقات الخروج — تجنّب الأنشطة السلبية.
@@ -122,5 +122,49 @@ Professional, supportive, confident, and clear. Never sound robotic. Never use e
  */
 export const CHAT_MAX_TOKENS = 1200;
 
-/** Turns of history the route forwards; older turns are dropped. */
-export const CHAT_HISTORY_TURNS = 12;
+/**
+ * Turns of history the route forwards; older turns are dropped.
+ *
+ * Was 12. Every forwarded turn is re-sent as input on every subsequent turn, so
+ * this multiplies the cost of a long conversation rather than adding to it —
+ * and chat is the one workload that can never be served from the shared
+ * artifact pool, so all of it is paid for live. Six still carries a
+ * back-and-forth about one homework problem, which is what the window is for;
+ * twelve was paying to re-send the start of a conversation nobody refers to.
+ *
+ * This bounds how *many* turns; the two ceilings below bound how *long* each
+ * one may be. Both are needed — see the note there.
+ */
+export const CHAT_HISTORY_TURNS = 6;
+
+/*
+ * Ceilings on caller-supplied text reaching a prompt.
+ *
+ * `CHAT_HISTORY_TURNS` capped how *many* turns were forwarded but nothing
+ * capped how long each one was, and `context` was interpolated whole. The only
+ * ceiling underneath was `express.json({ limit: "12mb" })` in app.ts — roughly
+ * three million input tokens in a single call, which is more than the whole
+ * month's `AI_BUDGET_USD` in one request. Because `assertBudgetAvailable()`
+ * checks the ledger *before* the call rather than reserving against it, one
+ * request can overshoot the global cap outright, and the cap is shared, so the
+ * account that does it takes AI down for every teacher.
+ *
+ * Sized for the real workload, not for the limit: `context` is book passages
+ * the client retrieves, and a turn is something a person typed.
+ */
+export const CHAT_CONTEXT_MAX_CHARS = 24_000;
+export const CHAT_MESSAGE_MAX_CHARS = 2_000;
+
+/**
+ * Truncates caller-supplied text before it is interpolated into a prompt.
+ *
+ * Silent truncation is the right failure here: the tail of an over-long
+ * grounding block is the least relevant part of it, and answering 400 would
+ * break a legitimate client that retrieved one passage too many.
+ */
+export function clampPromptText(text: string, maxChars: number): string;
+export function clampPromptText(text: string | undefined, maxChars: number): string | undefined;
+export function clampPromptText(text: string | undefined, maxChars: number): string | undefined {
+  if (typeof text !== "string") return undefined;
+  return text.length <= maxChars ? text : text.slice(0, maxChars);
+}

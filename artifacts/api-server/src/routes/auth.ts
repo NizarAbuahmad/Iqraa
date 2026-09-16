@@ -23,6 +23,7 @@ import { createRateLimiter } from "../lib/rateLimit.js";
 import { emailKey } from "../lib/rateLimitKeys.js";
 import { deleteObject, deletePublicObject, isPublicR2Configured, newAvatarKey, publicUrl, putPublicObject } from "../lib/r2.js";
 import { googleClientIds } from "../lib/googleClients.js";
+import { decideGoogleLink } from "../lib/googleLink.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import {
   ROSTER_CONSENT_STATEMENT_EN,
@@ -42,6 +43,7 @@ import {
   RESET_CODE_TTL_MS,
 } from "../lib/passwordReset.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
+import { decideRoleSwitch } from "../lib/roleSwitch.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 import { extensionForAvatarMime, MAX_AVATAR_DATA_URL_LENGTH } from "../lib/avatarUpload.js";
 import { parseDataUrl } from "../lib/lessonMediaUpload.js";
@@ -736,6 +738,56 @@ router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedReq
 });
 
 /**
+ * Change the role picked at signup, while nothing depends on it yet.
+ *
+ * Its own limiter rather than claimLimiter's: sharing one quota would mean a
+ * parent who burned ten wrong codes could no longer get off the screen those
+ * codes are asked for, which is the opposite of what this route is for.
+ */
+const roleSwitchLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "role-switch" });
+
+/**
+ * `POST /auth/role` — the way back from a role picked wrong at signup. Who may
+ * still use it, and why it closes, is decided in lib/roleSwitch.ts.
+ *
+ * Mints no new tokens: authMiddleware re-reads `users.role` from the row on
+ * every request, so the role inside an access token never decides anything and
+ * the change is live on the caller's next call.
+ */
+router.post("/role", roleSwitchLimiter, authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    const decision = await decideRoleSwitch({
+      currentRole: req.user!.role,
+      requestedRole: (req.body ?? {}).role,
+      studentAccountsEnabled: studentAccountsEnabled(),
+      hasRosterLink: () => hasAnyRosterLink(req.user!.id),
+    });
+
+    if (!decision.ok) {
+      // `code` as well as `error`, for the reason POST /claim gives: the screen
+      // showing this is Arabic and these sentences are not.
+      res.status(decision.status).json({ error: decision.error, code: decision.code });
+      return;
+    }
+
+    if (decision.changed) {
+      await db.update(users).set({ role: decision.role }).where(eq(users.id, req.user!.id));
+      logger.info({ userId: req.user!.id, from: req.user!.role, to: decision.role }, "role switched");
+    }
+
+    // An `ok` decision has already established there is no roster link, so
+    // this is not a guess — it is the same false the gate was reading before.
+    res.json({
+      role: decision.role,
+      ...(decision.role === "teacher" ? {} : { hasRosterLink: false }),
+    });
+  } catch (err) {
+    logger.error({ err }, "role switch failed");
+    res.status(500).json({ error: "Failed to change account type" });
+  }
+});
+
+/**
  * Turns a class join code into the list of names it can be claimed against, so
  * a joiner can pick their own before they have an account. Modelled on
  * GET /take/:code in studentAttempt.ts, the existing public "code → roster of
@@ -974,6 +1026,25 @@ router.post("/google", googleLimiter, async (req, res) => {
       return;
     }
 
+    /*
+     * `verifyIdToken` proved Google minted this token for an audience we
+     * accept. It did NOT prove Google ever verified the address inside it —
+     * that is what `email_verified` says, and it is a separate claim.
+     *
+     * The address is used as an account key three lines down, so trusting an
+     * unverified one hands whoever holds it the matching account. Not
+     * theoretical here: a Workspace admin can mint any address on their own
+     * domain, and the customers are schools on Workspace domains.
+     *
+     * Same 401 as a bad token, since to the caller both are "this credential
+     * won't get you in" and the distinction is only useful to someone probing.
+     */
+    if (payload.email_verified !== true) {
+      logger.warn({ sub: payload.sub }, "google id token rejected — email not verified by google");
+      res.status(401).json({ error: "Invalid Google credential" });
+      return;
+    }
+
     const email = payload.email.toLowerCase().trim();
 
     let [user] = await db.select().from(users).where(eq(users.googleId, payload.sub)).limit(1);
@@ -990,11 +1061,40 @@ router.post("/google", googleLimiter, async (req, res) => {
       [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
       if (user) {
+        // Why a row that was never verified loses its password here: see
+        // lib/googleLink.ts. Short version — /register lets anyone pre-create
+        // an account on someone else's address, and this is the line that
+        // would otherwise turn that password into a working credential.
+        const decision = decideGoogleLink(user, payload.sub);
+        const linkedId = user.id;
         [user] = await db
           .update(users)
-          .set({ googleId: payload.sub, emailVerified: true })
-          .where(eq(users.id, user.id))
+          .set(decision.update)
+          .where(eq(users.id, linkedId))
           .returning();
+
+        if (decision.revokeExistingCredentials) {
+          // Nothing should hold a session on this row — /register issues none
+          // — but anything that somehow does was minted before the address was
+          // proved, so it is exactly what must not outlive the link.
+          await db.delete(refreshTokens).where(eq(refreshTokens.userId, linkedId));
+          // Codes already in flight were sent on behalf of whoever created the
+          // row. Google has settled verification; leaving them live leaves a
+          // second door into an account that now has a real owner.
+          await db
+            .update(emailVerificationTokens)
+            .set({ used: true })
+            .where(
+              and(
+                eq(emailVerificationTokens.userId, linkedId),
+                eq(emailVerificationTokens.used, false),
+              ),
+            );
+          logger.info(
+            { userId: linkedId },
+            "google linked to an unverified account — password cleared, pending codes burned",
+          );
+        }
       } else {
         // A brand-new account: the register screen's role picker reaches this
         // route too (its "Continue with Google" button), and used to always

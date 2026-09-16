@@ -347,4 +347,18 @@ export const LOCAL_FILES: Record<string, string> = {
   // grade-5-vocational
   'g5-voc-s1-student-book': 'knowledge-base/grade-5-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الخامس الفصل الأول.pdf',
   'g5-voc-s2-student-book': 'knowledge-base/grade-5-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الخامس الفصل الثاني.pdf',
+  // grade-6 (registered in #456)
+  'g6-eng-s1-student-book': 'knowledge-base/grade-6-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf',
+  'g6-eng-s2-student-book': 'knowledge-base/grade-6-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf',
+  'g6-eng-s1-activity-book': 'knowledge-base/grade-6-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الأول.pdf',
+  'g6-eng-s2-activity-book': 'knowledge-base/grade-6-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف السادس الفصل الثاني.pdf',
+  'g6-eng-s1-teacher-guide': 'knowledge-base/grade-6-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الأول.pdf',
+  'g6-eng-s2-teacher-guide': 'knowledge-base/grade-6-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الثاني.pdf',
+  'g6-digital-s1-activity-book': 'knowledge-base/grade-6-digital-literacy/support-pdfs/كتاب الأنشطة لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf',
+  'g6-digital-s1-teacher-guide': 'knowledge-base/grade-6-digital-literacy/support-pdfs/دليل المعلم لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf',
+  'g6-math-s1-exercise-book': 'knowledge-base/grade-6-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف السادس الفصل الأول.pdf',
+  'g6-math-s2-exercise-book': 'knowledge-base/grade-6-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف السادس الفصل الثاني.pdf',
+  'g6-math-s1-teacher-guide': 'knowledge-base/grade-6-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف السادس الفصل الأول.pdf',
+  'g6-math-s2-teacher-guide': 'knowledge-base/grade-6-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف السادس الفصل الثاني.pdf',
+  'g6-math-s2-support-guide': 'knowledge-base/grade-6-math/support-pdfs/دليل المعلم إلى المواد المساندة للتعلم الرياضيات سادس الفصل الثاني.pdf',
 };

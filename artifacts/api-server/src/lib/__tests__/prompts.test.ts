@@ -46,7 +46,7 @@ describe("lessonPlanPromptAr — prior-knowledge review", () => {
   });
 
   it("carries free-text teacher notes verbatim, even without curriculum concepts", () => {
-    const notes = "بعض الطلاب لم يستوعبوا حل المعادلات من الصف التاسع";
+    const notes = "بعض الطلبة لم يستوعبوا حل المعادلات من الصف التاسع";
     const prompt = lessonPlanPromptAr({ ...BASE, priorTopicsNotes: notes });
     assert.match(prompt, new RegExp(notes.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.ok(prompt.includes('"priorReview"'));

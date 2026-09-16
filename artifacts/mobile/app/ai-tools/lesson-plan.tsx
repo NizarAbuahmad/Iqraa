@@ -13,7 +13,7 @@ import { LessonPlanOutput } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams, subjectPickerLabels } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
@@ -24,7 +24,7 @@ import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
@@ -54,7 +54,6 @@ export default function LessonPlanScreen() {
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
   const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
-  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
   const styleLabels = [t('teachingStyleDirect'), t('teachingStyleInquiry'), t('teachingStyleCollaborative')];
 
@@ -71,6 +70,10 @@ export default function LessonPlanScreen() {
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
   const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  // Labels are per-grade too: Grade 6's creative-arts book has no music
+  // in it, so it must not be offered under the combined name. Same
+  // index alignment as the mask above.
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
 
@@ -251,7 +254,7 @@ export default function LessonPlanScreen() {
       // Deliberately not the raw error: "HTTP 500" is not a sentence in any
       // language a teacher reads. The technical text is already recorded in
       // aiProvenance, where the badge carries it for support.
-      else setError(t('generationFailed'));
+      else setError(t(aiErrorMessageKey(e)));
     } finally {
       abortRef.current = null;
       setLoading(false);

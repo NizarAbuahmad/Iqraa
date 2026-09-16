@@ -17,7 +17,8 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
 import { isolateForeignRuns } from '@/services/mathRender';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId } from '@/services/kbContext';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels } from '@/services/lessonPrep';
+import { aiErrorMessageKey } from '@/services/ai/aiProvenance';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ACTIVITY_CARDS, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
 
@@ -46,6 +47,10 @@ export default function ClassroomBuilderScreen() {
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
   const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  // Labels are per-grade too: Grade 6's creative-arts book has no music in
+  // it, so it must not be offered under the combined name. Same index
+  // alignment as the mask above.
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
   const [topic, setTopic] = useState('');
   const [durationIdx, setDurationIdx] = useState(1); // 20 min default
@@ -102,8 +107,8 @@ export default function ClassroomBuilderScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
-    } catch {
-      setError(t('generationFailed'));
+    } catch (e) {
+      setError(t(aiErrorMessageKey(e)));
     } finally {
       setLoading(false);
     }
@@ -189,7 +194,7 @@ export default function ClassroomBuilderScreen() {
         {/* Subject */}
         <PillSelector
           label={t('subjects')}
-          options={subjects.map((s, i) => ({ value: i, label: lang === 'ar' ? s.nameAr : s.name })).filter(o => !subjectHidden[o.value])}
+          options={subjects.map((s, i) => ({ value: i, label: subjectNames[i] })).filter(o => !subjectHidden[o.value])}
           value={subjectIdx}
           onChange={setSubjectIdx}
           colors={colors}

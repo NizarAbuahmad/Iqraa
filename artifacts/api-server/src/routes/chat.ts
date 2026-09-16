@@ -4,8 +4,10 @@ import { logger } from "../lib/logger";
 import {
   AiBudgetExceededError,
   AiLiveModeOffError,
+  AiUserQuotaExceededError,
   assertBudgetAvailable,
   assertLiveModeEnabled,
+  assertUserQuotaAvailable,
   getChatModel,
   recordUsage,
 } from "../lib/aiBudget.ts";
@@ -14,8 +16,11 @@ import type { AuthenticatedRequest } from "../middlewares/auth.ts";
 import {
   buildSystemPromptAr,
   buildSystemPromptEn,
+  CHAT_CONTEXT_MAX_CHARS,
   CHAT_HISTORY_TURNS,
   CHAT_MAX_TOKENS,
+  CHAT_MESSAGE_MAX_CHARS,
+  clampPromptText,
 } from "../lib/chatPrompts.ts";
 
 const chatRouter = Router();
@@ -43,19 +48,36 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     const isArabic = language === "ar";
     const isTeacher = mode !== "student";
 
+    // Clamped here, at the boundary, rather than inside the prompt builders:
+    // this is where caller-supplied text enters, and both builders and every
+    // future one are covered by capping it once on the way in.
+    const groundedContext = clampPromptText(context, CHAT_CONTEXT_MAX_CHARS);
     const systemPrompt = isArabic
-      ? buildSystemPromptAr(isTeacher, context)
-      : buildSystemPromptEn(isTeacher, context);
+      ? buildSystemPromptAr(isTeacher, groundedContext)
+      : buildSystemPromptEn(isTeacher, groundedContext);
 
     const chatMessages: { role: "system" | "user" | "assistant"; content: string }[] = [
       { role: "system", content: systemPrompt },
       ...messages.slice(-CHAT_HISTORY_TURNS).map((m) => ({
         role: (m.role === "user" ? "user" : "assistant") as "user" | "assistant",
-        content: m.content,
+        content: clampPromptText(String(m.content ?? ""), CHAT_MESSAGE_MAX_CHARS),
       })),
     ];
 
     assertLiveModeEnabled();
+    // Keyed on the signed-in account, and on its role: students draw on
+    // AI_STUDENT_BUDGET_USD, everyone else on AI_USER_BUDGET_USD. There is no
+    // pooled fallback here as there is for generation — a chat turn is unique
+    // to its conversation and can never be served from the shared pool, so
+    // every turn is a live call and a refusal is the only option a cap has.
+    //
+    // `mode` from the body is NOT the identity used here. It selects the prompt
+    // and a student's client could send either value; the role on the verified
+    // session is the one that decides whose allowance pays.
+    // Per-user allowance on top of the shared monthly cap. /chat is reachable by
+    // any signed-in account — student and parent included — and was the largest
+    // spender with no per-caller ceiling of its own.
+    await assertUserQuotaAvailable(req.user?.id, req.user?.role);
     assertBudgetAvailable();
 
     const completion = await openai.chat.completions.create({
@@ -78,12 +100,19 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     const answer = completion.choices[0]?.message?.content ?? "";
     res.json({ content: answer });
   } catch (err) {
+    // Each carries a `code`, as evaluations.ts and generate.ts do: the API
+    // answers in English, the app is Arabic, and the code is the only thing the
+    // client can translate from without matching on message text.
     if (err instanceof AiLiveModeOffError) {
-      res.status(503).json({ error: err.message });
+      res.status(503).json({ error: err.message, code: "live_mode_off" });
+      return;
+    }
+    if (err instanceof AiUserQuotaExceededError) {
+      res.status(429).json({ error: err.message, code: "user_quota_exceeded" });
       return;
     }
     if (err instanceof AiBudgetExceededError) {
-      res.status(429).json({ error: err.message });
+      res.status(429).json({ error: err.message, code: "budget_exceeded" });
       return;
     }
     logger.error({ err }, "chat error");
