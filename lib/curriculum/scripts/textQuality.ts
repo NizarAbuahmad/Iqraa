@@ -115,12 +115,52 @@ export function wordTranspositionRate(text: string): number | null {
  */
 export const WORD_TRANSPOSITION_LIMIT = 0.5;
 
+/**
+ * Arabic words above which "neither probe found anything to sample" stops
+ * meaning "not evidence" and starts meaning "these letters are not words".
+ *
+ * Both rate functions above return `null` under 100 samples, and `rejectReason`
+ * skips a `null`. That is right for an English coursebook or a worksheet of
+ * equations — and it is how the gate came to be blind exactly where the damage
+ * is worst. A file decoded against the wrong cmap yields fluent-looking Arabic
+ * letters that spell nothing, so no «في» survives and no «يف» is created
+ * either; both denominators collapse, both checks are skipped, and the document
+ * passes on the strength of having no readable Arabic at all.
+ *
+ * `chem-s1-summary-shawata` is the case: 7,319 Arabic words, **one** probe hit,
+ * and text that reads «ػذد ١ِّضاد اٌط١ف اٌّشئ» — extracted, marked `ingested`,
+ * and citable. `chem-s2-pack-shawata` is the same at 10,531 words and 31 hits.
+ *
+ * 4,000 sits in an empty stretch measured over all 231 extracted documents: the
+ * largest document that is legitimately blind is `math-foundation-lafi` at
+ * 1,956 Arabic words (a تأسيس pack that is mostly equations, and reads
+ * correctly), and the smallest that is blind because it is garbage is those
+ * 7,319. Nothing lies between. Margin is roughly 2× on both sides.
+ */
+export const MIN_ARABIC_WORDS_TO_JUDGE = 4_000;
+
+/**
+ * Whitespace tokens carrying base-block Arabic, tashkeel stripped as above.
+ *
+ * Its own un-flagged regex rather than `BASIC_ARABIC_RE`: that one carries `g`
+ * for `match`, and `.test` on a `g` regex advances `lastIndex` between calls,
+ * so it would skip every other token.
+ */
+export function arabicWordCount(text: string): number {
+  const arabic = /[؀-ۿ]/;
+  let n = 0;
+  for (const w of text.replace(/[ً-ْٰـ]/g, '').split(/\s+/)) {
+    if (arabic.test(w)) n++;
+  }
+  return n;
+}
+
 const CONTROL_CHAR_RE = /[\x00-\x08\x0e-\x1f]/g;
 const ARABIC_PRESENTATION_FORMS_RE = /[ﭐ-﷿ﹰ-﻿]/g;
 const BASIC_ARABIC_RE = /[؀-ۿ]/g;
 
 /**
- * Whichever of the five quality gates the text fails, or `null` when it
+ * Whichever of the six quality gates the text fails, or `null` when it
  * passes all of them. Shared between `extract-text.ts`'s pdf-parse attempt
  * and its OCR fallback so both are held to the same bar — OCR output that
  * happens to be garbage gets rejected exactly like a broken font cmap would
@@ -166,6 +206,19 @@ export function rejectReason(allText: string): string | null {
   const wordRate = wordTranspositionRate(allText);
   if (wordRate !== null && wordRate > WORD_TRANSPOSITION_LIMIT) {
     return `Arabic with letters transposed inside common words (في ← يف) in ${(wordRate * 100).toFixed(0)}% of samples — readable by eye, not quotable`;
+  }
+  // Both probes above answered `null`, meaning neither could find 100 samples
+  // to judge. On a short or English document that is honest silence. On a
+  // document this Arabic it is the finding itself: real prose of this length
+  // cannot avoid «في», «على» and the definite article, so their total absence
+  // says the letters are not spelling words. See MIN_ARABIC_WORDS_TO_JUDGE.
+  //
+  // Deliberately last. It is the weakest evidence of the five and must not
+  // pre-empt a check that can name the specific corruption — a file that is
+  // both mis-decoded and transposed should be reported as transposed.
+  const arabicWords = arabicWordCount(allText);
+  if (lamRate === null && wordRate === null && arabicWords >= MIN_ARABIC_WORDS_TO_JUDGE) {
+    return `${arabicWords.toLocaleString('en')} Arabic words and fewer than 100 recognisable «في»/«على»/«الله» or definite-article starts between them — the text decodes to Arabic letters that spell nothing`;
   }
   return null;
 }
