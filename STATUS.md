@@ -1669,10 +1669,24 @@ Grade 10 chemistry has no fallback at all, its only extracted book being the
 student book. Kept here because it is the number that made the decision worth
 escalating, and the number anyone re-opening the question will want.
 
-Two things the fix also had to repair. The test read only `data/extracted/`, so
-the two Grade 9 maths files in `data/extracted-g9/` were invisible to it whatever
-the pattern. And it asked the wrong question. Marks are regexes now,
+The fix also had to repair the question the test asked. Marks are regexes now,
 `HarperCollins` among them.
+
+**A second "repair" in that change was wrong and is reverted, 2026-09-16.** It
+also made the test read `data/extracted-g9/`, on the stated ground that the two
+Grade 9 maths files lived only there and had been invisible whatever the
+pattern. They do not and were not: both sit in `data/extracted/` in the ordinary
+page-array schema and the test had always seen them. `extracted-g9/` holds stale
+duplicates of those same two books in reversed presentation-form Arabic under a
+different schema, and this file already listed it as dead data read by nothing —
+including by `passages.ts` — several thousand lines below, which is where the
+claim should have been checked before it was written.
+
+It never changed an outcome: `extracted/` is checked first and always hits. That
+is the whole reason it survived review and a green suite — a wrong reason
+attached to a right result costs nothing until someone re-derives it, and then
+it costs the re-derivation. Same shape as the three findings above it, and worth
+recording rather than quietly deleting.
 
 **The question it asks now is "has anyone looked at this book?", not "is it
 ours?"** Once the Collins books are quotable, a test phrased as "nothing quotable
@@ -13333,8 +13347,14 @@ Fixed in the same pass:
 Found and not fixed (ranked):
 
 1. `lib/curriculum/src/data/extracted-g9/` is dead data: two files in reversed
-   presentation-form Arabic with a different schema, read by nothing. Grade 9
-   has no manifest rows and no passage grounding at all.
+   presentation-form Arabic with a different schema, read by nothing. ~~Grade 9
+   has no manifest rows and no passage grounding at all.~~ **That second
+   sentence is stale** (checked 2026-09-16): Grade 9 has manifest rows and real
+   grounding — 44 of its units retrieve passages — because the same two books
+   were re-extracted into `extracted/` properly. The dead directory is the
+   leftover of that, and still dead. It was briefly read again by
+   `quotableAuthority.test.ts` on the strength of this entry's first sentence
+   being forgotten; see the 2026-09-16 Collins section.
 2. `scripts/extract_book_figures.py` points 4 of 7 books at absolute paths on
    one machine; chem-s2, finlit and both Grade 9 figure sets cannot be
    regenerated elsewhere.
