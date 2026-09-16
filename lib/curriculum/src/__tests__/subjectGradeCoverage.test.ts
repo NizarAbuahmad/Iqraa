@@ -196,16 +196,16 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'vocational-education:grade-5',
   //
   // ORDINARY GAPS — the subject is declared at grade-5 (arabic/english/
-  // islamic/digital-literacy span all grades; science and social span
-  // grade-1..grade-9), and Grade 5 text for each already exists on disk
-  // (worktree-grade-5-books, unmerged as of 2026-09-16), but no catalog has
-  // been built from it yet — see docs/g345-blocked. Delete each line once
-  // its catalog and BOOKS row land.
+  // islamic/digital-literacy span all grades; social spans grade-1..grade-9),
+  // and Grade 5 text for each already exists on disk (worktree-grade-5-books,
+  // unmerged as of 2026-09-16), but no catalog has been built from it yet —
+  // see docs/g345-blocked. Delete each line once its catalog and BOOKS row
+  // land. science:grade-5 closed 2026-09-16, both semesters — the second
+  // Grade 5 subject, after mathematics.
   'arabic:grade-5',
   'english:grade-5',
   'islamic:grade-5',
   'digital-literacy:grade-5',
-  'science:grade-5',
   'social:grade-5',
 ]);
 
