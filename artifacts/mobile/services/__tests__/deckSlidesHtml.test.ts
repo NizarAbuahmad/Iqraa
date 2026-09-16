@@ -126,9 +126,9 @@ describe('buildDeckSlidesHTML — math rendering', () => {
   it('leaves prose lines as plain escaped text', () => {
     const html = buildDeckSlidesHTML(deck([
       titleSlide,
-      { slideNumber: 2, type: 'intro', title: 'تمهيد', content: 'اسأل الطلاب عن رأيهم', durationSeconds: 0 },
+      { slideNumber: 2, type: 'intro', title: 'تمهيد', content: 'اسأل الطلبة عن رأيهم', durationSeconds: 0 },
     ]), true);
-    assert.match(html, /اسأل الطلاب عن رأيهم/);
+    assert.match(html, /اسأل الطلبة عن رأيهم/);
     assert.doesNotMatch(html, /class="mfrac"/);
   });
 });

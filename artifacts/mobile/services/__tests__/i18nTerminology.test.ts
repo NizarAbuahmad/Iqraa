@@ -48,6 +48,34 @@ const BANNED: Array<{ term: string; use: string; why: string }> = [
     use: 'اقرأ',
     why: 'hamzat wasl — the brand is «اقرأ», spelled that way in 27 other strings',
   },
+  // The 2026-09-16 Jordanian-register pass. Each of these had both spellings
+  // live in this table at once, so the app told a teacher one name and the
+  // next screen told them another.
+  {
+    term: 'رمز الانضمام',
+    use: 'رمز الربط',
+    why: 'the field that accepts the code is labelled «رمز الربط» — see the ban above',
+  },
+  {
+    term: 'طلاب',
+    use: 'طلبة',
+    why: 'ministry register, and it covers both genders; «طالب» and «طالبان» are unaffected',
+  },
+  {
+    term: 'منزلي',
+    use: 'بيتي',
+    why: 'a Jordanian teacher writes «الواجب البيتي» on the board',
+  },
+  {
+    term: 'الفصل التفاعلي',
+    use: 'الحصة التفاعلية',
+    why: '«الفصل» is the semester in this same table (الفصل الأول/الثاني)',
+  },
+  {
+    term: 'النتاجات التعليمية',
+    use: 'نتاجات التعلّم',
+    why: "the NCCD's own term, and it separates outcomes from «الأهداف التعليمية»",
+  },
 ];
 
 /** Strings as themselves; functions as their source, which holds the literal. */

@@ -2428,7 +2428,7 @@ export default function IqraScreen() {
     if (tool.id === 'simplify' && topic) {
       sendMessage(
         lang === 'ar'
-          ? `بسّط شرح هذا الدرس بلغة يفهمها الطلاب: ${topic}`
+          ? `بسّط شرح هذا الدرس بلغة يفهمها الطلبة: ${topic}`
           : `Explain this lesson in simple language students understand: ${topic}`,
         sessionMemory.activeLessonId ?? undefined,
       );
@@ -2716,7 +2716,7 @@ export default function IqraScreen() {
             const grade = CONTEXT_GRADES.find(g => g.id === pick?.gradeId) ?? CONTEXT_GRADES[0];
             sendMessage(
               lang === 'ar'
-                ? `أدرّس "${topic}" ${grade ? `لطلاب ${grade.nameAr}` : 'للصف العاشر'}. أعطني نظرة شاملة عن الموضوع مع أهم مفاهيمه.`
+                ? `أدرّس "${topic}" ${grade ? `لطلبة ${grade.nameAr}` : 'للصف العاشر'}. أعطني نظرة شاملة عن الموضوع مع أهم مفاهيمه.`
                 : `I'm teaching "${topic}" to ${grade?.name ?? 'Grade 10'} students. Give me a comprehensive overview of this topic with key concepts.`,
               picked?.id ?? undefined,
             );

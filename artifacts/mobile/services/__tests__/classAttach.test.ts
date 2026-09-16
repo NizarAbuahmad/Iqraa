@@ -24,7 +24,7 @@ const picks = (...names: string[]) => names.map(name => ({ name }));
 
 describe('describeAttachResult', () => {
   it('names the class when there is exactly one', () => {
-    // A count would be a worse message here: «حُفظت في صف واحد» tells the
+    // A count would be a worse message here: «حُفظت في شعبة واحدة» tells the
     // teacher less than the name they just tapped.
     const out = describeAttachResult({ attached: 1, requested: 1 }, picks('صف أ'), t, 'ar');
     assert.equal(out, 'savedToClass(صف أ)');
@@ -32,12 +32,12 @@ describe('describeAttachResult', () => {
 
   it('counts them when there are several, and says they are copies', () => {
     const out = describeAttachResult({ attached: 3, requested: 3 }, picks('أ', 'ب', 'ج'), t, 'ar');
-    assert.equal(out, 'savedToClasses(3 صفوف)');
+    assert.equal(out, 'savedToClasses(3 شُعَب)');
   });
 
   it('reports a partial attach rather than claiming success', () => {
     const out = describeAttachResult({ attached: 2, requested: 3 }, picks('أ', 'ب', 'ج'), t, 'ar');
-    assert.equal(out, 'savedToClassesPartial(صفّان|3 صفوف)');
+    assert.equal(out, 'savedToClassesPartial(شعبتان|3 شُعَب)');
   });
 
   it('reports total failure as the failure message', () => {
@@ -61,9 +61,9 @@ describe('describeAttachResult', () => {
     // four cases — the same rule arCountStudents exists for.
     const at = (n: number) =>
       describeAttachResult({ attached: n, requested: n }, picks(...Array(n).fill('x')), t, 'ar');
-    assert.equal(at(2), 'savedToClasses(صفّان)');
-    assert.equal(at(10), 'savedToClasses(10 صفوف)');
-    assert.equal(at(11), 'savedToClasses(11 صفًّا)');
+    assert.equal(at(2), 'savedToClasses(شعبتان)');
+    assert.equal(at(10), 'savedToClasses(10 شُعَب)');
+    assert.equal(at(11), 'savedToClasses(11 شعبةً)');
   });
 
   it('does not crash when the picks list is empty but something attached', () => {
@@ -71,7 +71,7 @@ describe('describeAttachResult', () => {
     // is the one that would throw on picks[0] if it ever did.
     assert.equal(
       describeAttachResult({ attached: 1, requested: 1 }, [], t, 'ar'),
-      'savedToClasses(صف واحد)',
+      'savedToClasses(شعبة واحدة)',
     );
   });
 });

@@ -102,7 +102,7 @@ const OFF_TOPIC_PATTERNS: RegExp[] = [
  * patterns above must not claim it.
  */
 const TEACHING_SIGNAL =
-  /منهج|درس|دروس|حصة|الصف|صف\s*عاشر|طلاب|طالب|طالبة|تلاميذ|خطة|ورقة\s*عمل|اختبار|امتحان|واجب|نشاط|تقييم|اشرح|أشرح|شرح|وضّح|وضح|مثال|مسألة|تمرين|سؤال\s*عن|رياضيات|كيمياء|معادلة|اقتران|اقترانات|مشتقة|المشتقات|متجه|متجهات|احتمال|إحصاء|احصاء|مثلثات|دائرة|الأسس|لوغاريتم|ذرة|الذرة|جدول\s*دوري|رابطة|تكافؤ|مول|تفاعل/i;
+  /منهج|درس|دروس|حصة|الصف|صف\s*عاشر|طلاب|طلبة|طالب|طالبة|تلاميذ|خطة|ورقة\s*عمل|اختبار|امتحان|واجب|نشاط|تقييم|اشرح|أشرح|شرح|وضّح|وضح|مثال|مسألة|تمرين|سؤال\s*عن|رياضيات|كيمياء|معادلة|اقتران|اقترانات|مشتقة|المشتقات|متجه|متجهات|احتمال|إحصاء|احصاء|مثلثات|دائرة|الأسس|لوغاريتم|ذرة|الذرة|جدول\s*دوري|رابطة|تكافؤ|مول|تفاعل/i;
 
 const TEACHING_SIGNAL_EN =
   /\blesson\b|\bteach|\bstudent|\bclassroom\b|\bcurriculum\b|\bworksheet\b|\bquiz\b|\bexam\b|\bhomework\b|\bactivity\b|\bexplain\b|\bexample\b|\bexercise\b|\bgrade\s*10\b|\bmath|\bchemistr|\bequation\b|\bfunction\b|\bderivative\b|\bvector\b|\bprobabilit|\bstatistic|\btrigonometr|\batom|\bbond(ing)?\b|\bmole\b/i;
@@ -114,7 +114,7 @@ function isOffTopic(q: string): boolean {
 
 function isRefinement(q: string): boolean {
   return (
-    /اجعله\s*أبسط|أجعله\s*أبسط|ابسطه|أبسطه|بسّ?طه|اختصره|اختصار|أضف\s*مثالاً?|اضف\s*مثال|أضف\s*سؤال|اضف\s*سؤال|اجعله\s*أصعب|أجعله\s*أصعب|أصعب|اسهل|أسهل|للطلاب\s*الضعفاء|للطلاب\s*المتفوقين|للضعفاء|للمتفوقين|أكثر\s*تفصيلاً?|اقل\s*تفصيلاً?|نفس\s*(الخطة|الورقة|الاختبار|الواجب)|عدّل|عدل|حسّن|حسن|simplify|make\s*it\s*simpler|make\s*it\s*easier|make\s*it\s*harder|add\s*an?\s*example|add\s*\d*\s*questions?|shorten\s*it|for\s*struggling|for\s*advanced|too\s*long|too\s*short|another\s*quiz|same\s*lesson\s*plan/i.test(
+    /اجعله\s*أبسط|أجعله\s*أبسط|ابسطه|أبسطه|بسّ?طه|اختصره|اختصار|أضف\s*مثالاً?|اضف\s*مثال|أضف\s*سؤال|اضف\s*سؤال|اجعله\s*أصعب|أجعله\s*أصعب|أصعب|اسهل|أسهل|للطلاب\s*الضعفاء|للطلبة\s*الضعفاء|للطلاب\s*المتفوقين|للطلبة\s*المتفوقين|للضعفاء|للمتفوقين|أكثر\s*تفصيلاً?|اقل\s*تفصيلاً?|نفس\s*(الخطة|الورقة|الاختبار|الواجب)|عدّل|عدل|حسّن|حسن|simplify|make\s*it\s*simpler|make\s*it\s*easier|make\s*it\s*harder|add\s*an?\s*example|add\s*\d*\s*questions?|shorten\s*it|for\s*struggling|for\s*advanced|too\s*long|too\s*short|another\s*quiz|same\s*lesson\s*plan/i.test(
       q,
     )
   );
@@ -156,7 +156,7 @@ function isTeaching(q: string): boolean {
 function capabilityLines(isAr: boolean): string[] {
   return isAr
     ? [
-        '• شرح مفهوم لطلابك',
+        '• شرح مفهوم لطلبتك',
         '• تحضير خطة درس',
         '• إعداد ورقة عمل',
         '• بناء اختبار قصير',

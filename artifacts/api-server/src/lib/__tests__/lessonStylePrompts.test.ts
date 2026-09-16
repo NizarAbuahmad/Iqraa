@@ -62,7 +62,7 @@ describe("each style's clause states what that style requires", () => {
   });
 
   it("collaborative forbids the exact self-contradiction the old plan carried", () => {
-    assert.match(lessonStyleClauseAr({ teachingStyle: "collaborative" }), /المناقشة بين الطلاب مؤجّلة/);
+    assert.match(lessonStyleClauseAr({ teachingStyle: "collaborative" }), /المناقشة بين الطلبة مؤجّلة/);
     assert.match(lessonStyleClauseAr({ teachingStyle: "collaborative" }), /ممنوع تمامًا/);
     assert.match(lessonStyleClauseEn({ teachingStyle: "collaborative" }), /peer discussion is not permitted/);
     assert.match(lessonStyleClauseEn({ teachingStyle: "collaborative" }), /Strictly forbidden/);

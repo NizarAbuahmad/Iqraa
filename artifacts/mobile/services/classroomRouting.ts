@@ -145,15 +145,15 @@ export type ClassroomSetup = 'screen' | 'board';
  */
 const SCREEN_SETUP: Record<string, { ar: string[]; en: string[]; prepAr: string; prepEn: string }> = {
   'error-detective': {
-    ar: ['شاشة عرض أو جهاز عرض (بروجكتر)', 'دفاتر الطلاب', 'أقلام تصحيح حمراء'],
+    ar: ['شاشة عرض أو جهاز عرض (بروجكتر)', 'دفاتر الطلبة', 'أقلام تصحيح حمراء'],
     en: ['Projector or screen', 'Student notebooks', 'Red correction pens'],
-    prepAr: 'اعرض كل حل خاطئ من الشرائح. اطلب من الطلاب العمل في ثنائيات وتدوين التصحيح في دفاترهم.',
+    prepAr: 'اعرض كل حل خاطئ من الشرائح. اطلب من الطلبة العمل في ثنائيات وتدوين التصحيح في دفاترهم.',
     prepEn: 'Show each faulty solution from the slides. Students work in pairs and write the correction in their notebooks.',
   },
   'escape-challenge': {
     ar: ['شاشة عرض أو جهاز عرض (بروجكتر)', 'ورقة وقلم لكل مجموعة'],
     en: ['Projector or screen', 'Paper and pen per group'],
-    prepAr: 'اعرض التحديات من الشرائح بالترتيب. رتّب الطلاب في مجموعات من 3-4 أفراد، ويظهر كل كود على الشاشة عند حلّ التحدي.',
+    prepAr: 'اعرض التحديات من الشرائح بالترتيب. رتّب الطلبة في مجموعات من 3-4 أفراد، ويظهر كل كود على الشاشة عند حلّ التحدي.',
     prepEn: 'Run the challenges from the slides in order. Arrange groups of 3-4; each code appears on screen as its challenge is solved.',
   },
   // The bingo card each student marks stays — a screen does not replace it.
@@ -169,7 +169,7 @@ const SCREEN_SETUP: Record<string, { ar: string[]; en: string[]; prepAr: string;
   relay: {
     ar: ['شاشة عرض أو جهاز عرض (بروجكتر)', 'ورقة تتابع واحدة لكل فريق', 'أقلام ملونة (لون لكل فريق)'],
     en: ['Projector or screen', 'One relay sheet per team', 'Coloured markers (one per team)'],
-    prepAr: 'اعرض مسائل التتابع من الشرائح. وزّع ورقة تتابع واحدة لكل فريق يمرّرها الطلاب بينهم، والمؤقت يعمل على الشاشة.',
+    prepAr: 'اعرض مسائل التتابع من الشرائح. وزّع ورقة تتابع واحدة لكل فريق يمرّرها الطلبة بينهم، والمؤقت يعمل على الشاشة.',
     prepEn: 'Show the relay problems from the slides. Give each team one sheet to pass along; the timer runs on screen.',
   },
   // The questions come off the slide, so nothing needs printing — but the

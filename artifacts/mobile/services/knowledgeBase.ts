@@ -2005,7 +2005,7 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
       { ar: 'المستقيم الأفضل مطابقة', en: 'Line of Best Fit', definitionAr: 'مستقيم يمر بأقرب مسافة ممكنة من جميع نقاط شكل الانتشار', definitionEn: 'A line that passes as close as possible to all points in a scatter plot' },
       { ar: 'الارتباط', en: 'Correlation', definitionAr: 'العلاقة بين المتغيرَين: موجب (تزامن الارتفاع) أو سالب (تعاكس) أو منعدم', definitionEn: 'The relationship between variables: positive (both rise), negative (opposite), or no correlation' },
     ],
-    examplesAr: ['درجات الطلاب في الرياضيات والعلوم: ارتباط موجب → نقاط تتجه للأعلى يمينًا'],
+    examplesAr: ['درجات الطلبة في الرياضيات والعلوم: ارتباط موجب → نقاط تتجه للأعلى يمينًا'],
     examplesEn: ['Student scores in Maths and Science: positive correlation → points trend up to the right'],
   },
   {

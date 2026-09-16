@@ -5,7 +5,7 @@
  * `mainActivity`. Everything around it stayed the direct-instruction
  * I-Do / We-Do / You-Do shape, so a `collaborative` plan opened with group
  * task cards and presentations and then, two sections later, told students
- * «المناقشة بين الطلاب مؤجّلة» / "peer discussion is not [permitted]". The plan
+ * «المناقشة بين الطلبة مؤجّلة» / "peer discussion is not [permitted]". The plan
  * contradicted itself inside one document.
  *
  * Measured before this module existed, generating all three styles for one
@@ -101,7 +101,7 @@ function directAr(ctx: LessonStyleContext): LessonStyleBlueprint {
   return {
     materials: ['الكتاب المدرسي', 'السبورة وأقلام ملوّنة', 'بطاقة المثال المحلول لكل طالب', 'أوراق تدريب فردية'],
     mainActivity: `(${mins(ctx, 0.3)} دقيقة) – شرح مباشر – نموذج «أنا أفعل»${fromDoc(ctx)}:\n\n${body}`,
-    guidedPractice: `(${mins(ctx, 0.22)} دقيقة) – «نحن نفعل»:\n\n• حلّ مثالًا مشتركًا على ${term(ctx)} والطلاب يوجّهون كل خطوة.\n• أسئلة استرشادية: «ماذا نفعل أولًا؟ لماذا هذه الخطوة صحيحة؟»\n• صحّح المفاهيم الخاطئة فور ظهورها.`,
+    guidedPractice: `(${mins(ctx, 0.22)} دقيقة) – «نحن نفعل»:\n\n• حلّ مثالًا مشتركًا على ${term(ctx)} والطلبة يوجّهون كل خطوة.\n• أسئلة استرشادية: «ماذا نفعل أولًا؟ لماذا هذه الخطوة صحيحة؟»\n• صحّح المفاهيم الخاطئة فور ظهورها.`,
     independentPractice: `(${mins(ctx, 0.18)} دقيقة) – «أنت تفعل»:\n\n• يعمل كل طالب بمفرده على التمارين المحددة.\n• يُسمح بمراجعة الملاحظات؛ هذه المرحلة فردية بحكم النموذج.\n• تجوّل وقدّم تلميحات مكتوبة دون إعطاء الحل.\n• من ينهي مبكرًا ينتقل إلى تمرين التحدي.`,
     assessment: `تكويني: راقب مرحلة «نحن نفعل» — من يقود الخطوة ومن ينتظر.\nختامي: صحّح ورقة العمل الفردية؛ نسبة من أنهى بلا مساعدة هي المؤشر.\nبطاقة خروج: خطوة واحدة من حل اليوم مع سبب صحتها.`,
     differentiation: `دعم: مثال محلول إضافي وتلاشٍ أبطأ (نصف الحل مكتوب في السؤال الثاني أيضًا).\nتحدٍّ: احذف المثال المحلول واطلب منهم كتابة واحد لزميل.\nالمبدأ: قلّل الحمل المعرفي بالأمثلة المحلولة أولًا، ثم أزلها تدريجيًا — لا تعطِ الجميع الدرجة نفسها من السقالة.`,

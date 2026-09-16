@@ -184,7 +184,7 @@ export async function generateChatArtifact(opts: {
   const TITLES: Record<SessionArtifact, { ar: string; en: string }> = {
     'lesson-plan': { ar: 'خطة درس', en: 'Lesson plan' },
     worksheet: { ar: 'ورقة عمل', en: 'Worksheet' },
-    homework: { ar: 'واجب منزلي', en: 'Homework' },
+    homework: { ar: 'واجب بيتي', en: 'Homework' },
     quiz: { ar: 'اختبار قصير', en: 'Short quiz' },
     activity: { ar: 'نشاط صفي', en: 'Class activity' },
   };

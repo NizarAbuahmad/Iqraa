@@ -87,7 +87,7 @@ export const HOME_AI_TOOLS: HomeToolDef[] = [
     route: '/ai-tools/quiz', status: 'enabled', enabled: true,
   },
   {
-    id: 'homework', emoji: '🏠', labelAr: 'واجب منزلي', labelEn: 'Homework',
+    id: 'homework', emoji: '🏠', labelAr: 'واجب بيتي', labelEn: 'Homework',
     route: '/ai-tools/worksheet', status: 'enabled', enabled: false, homework: true,
   },
 
@@ -172,7 +172,7 @@ export const HERO_SUGGESTIONS: { id: HomeToolId; emoji: string; labelAr: string;
   { id: 'activity', emoji: '🎯', labelAr: 'نشاط صفي', labelEn: 'Class activity', enabled: true },
   { id: 'worksheet', emoji: '📝', labelAr: 'ورقة عمل', labelEn: 'Worksheet', enabled: true },
   { id: 'quiz', emoji: '✅', labelAr: 'اختبار قصير', labelEn: 'Short quiz', enabled: true },
-  { id: 'homework', emoji: '🏠', labelAr: 'واجب منزلي', labelEn: 'Homework', enabled: true },
+  { id: 'homework', emoji: '🏠', labelAr: 'واجب بيتي', labelEn: 'Homework', enabled: true },
   // Hidden until fully implemented
   { id: 'bloom', emoji: '🧠', labelAr: 'أسئلة بلوم', labelEn: 'Bloom questions', enabled: false },
   { id: 'learning-objectives', emoji: '🎓', labelAr: 'أهداف تعلم', labelEn: 'Learning objectives', enabled: false },
@@ -224,7 +224,7 @@ export const SMART_TEMPLATES: SmartTemplate[] = [
   { id: 'opener', labelAr: 'نشاط افتتاحي', labelEn: 'Opening activity', toolId: 'activity', topicHintAr: 'نشاط افتتاحي', topicHintEn: 'Opening warm-up activity', enabled: true },
   { id: 'remedial', labelAr: 'ورقة عمل صفية', labelEn: 'Class worksheet', toolId: 'worksheet', topicHintAr: 'ورقة عمل صفية', topicHintEn: 'In-class worksheet', enabled: true },
   { id: 'short-quiz', labelAr: 'اختبار قصير', labelEn: 'Short quiz', toolId: 'quiz', topicHintAr: 'اختبار قصير', topicHintEn: 'Short quiz', enabled: true },
-  { id: 'hw-pack', labelAr: 'واجب منزلي', labelEn: 'Homework set', toolId: 'homework', topicHintAr: 'واجب منزلي', topicHintEn: 'Homework assignment', enabled: true },
+  { id: 'hw-pack', labelAr: 'واجب بيتي', labelEn: 'Homework set', toolId: 'homework', topicHintAr: 'واجب بيتي', topicHintEn: 'Homework assignment', enabled: true },
   // Specialized — keep registered, hide from primary “start fast” strip
   { id: 'collab', labelAr: 'تعلم تعاوني', labelEn: 'Collaborative learning', toolId: 'activity', topicHintAr: 'تعلم تعاوني', topicHintEn: 'Collaborative learning activity', enabled: false },
   { id: 'pretest', labelAr: 'مراجعة قبل الاختبار', labelEn: 'Pre-test review', toolId: 'test-review', topicHintAr: 'مراجعة قبل الاختبار', topicHintEn: 'Pre-test review', enabled: false },
