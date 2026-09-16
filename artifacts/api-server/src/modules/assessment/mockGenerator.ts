@@ -40,7 +40,7 @@ import {
   type CompetencyKey,
 } from "./competency.ts";
 import type { AnswerKeyCheck } from "@workspace/math-verify";
-import { takeConcreteMath, type DiffTier } from "@workspace/math-practice";
+import { takeConcreteChem, takeConcreteMath, type DiffTier } from "@workspace/math-practice";
 import { mockableTypes, QUESTION_TYPES } from "./questionTypes.ts";
 
 export interface GeneratedQuestion {
@@ -374,7 +374,7 @@ const BANK_TIER: Record<Difficulty, DiffTier> = {
 };
 
 /**
- * A multiple-choice question drawn from the concrete maths bank.
+ * A multiple-choice question drawn from a concrete bank.
  *
  * This is the only route by which this generator produces a self-marking
  * question, and it works for exactly one reason: the bank's items are built so
@@ -392,9 +392,18 @@ function bankMultipleChoice(
   difficulty: Difficulty,
   marks: number,
   session: Set<string>,
+  // Optional for the same reason it is on the request: an evaluation created
+  // before subjects were recorded has none, and that falls to the maths bank
+  // exactly as it did before chemistry existed.
+  subjectId: string | undefined,
 ): { body: Record<string, unknown>; expectedAnswer: Record<string, unknown> } | null {
   const topic = objective.descriptionAr || objective.description;
-  const item = takeConcreteMath(
+  // Which bank is decided by the evaluation's own subject, never by the
+  // objective text: a chemistry objective mentioning «المعادلة الكيميائية»
+  // would otherwise reach the maths bank's family detection and come back
+  // with a quadratic.
+  const take = subjectId === "chemistry" ? takeConcreteChem : takeConcreteMath;
+  const item = take(
     "multiple_choice",
     topic,
     null,
@@ -441,18 +450,20 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
   const seed = req.seed ?? Math.floor(Math.random() * 0xffffffff);
   const rng = mulberry32(seed);
   /*
-    Maths unlocks multiple choice. `mockable: false` on that type is the right
-    default — distractors cannot be invented from an objective's title — but it
-    stops being true when there is a bank of items whose answers are known by
-    construction, which is exactly what the maths bank is. Bank-backed types
-    are added here rather than by flipping the flag, because the flag describes
-    the general case and this is the exception to it.
+    Maths and chemistry unlock multiple choice. `mockable: false` on that type
+    is the right default — distractors cannot be invented from an objective's
+    title — but it stops being true when there is a bank of items whose answers
+    are known by construction, which is exactly what these banks are.
+    Bank-backed types are added here rather than by flipping the flag, because
+    the flag describes the general case and this is the exception to it.
 
     This is what makes a self-marking evaluation possible with live AI off. For
-    every other subject the bank holds nothing, so nothing changes.
+    every other subject the banks hold nothing, so nothing changes.
   */
   const bankBacked: QuestionType[] =
-    req.subjectId === "mathematics" ? ["multiple_choice"] : [];
+    req.subjectId === "mathematics" || req.subjectId === "chemistry"
+      ? ["multiple_choice"]
+      : [];
   // Per-request, never the bank module's own set — see takeConcreteMath.
   const bankSession = new Set<string>();
 
@@ -550,7 +561,13 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
       // this only falls through to the templates when the bank has nothing
       // left for the objective.
       if (mcqAvailable) {
-        const mcq = bankMultipleChoice(objective, req.difficulty, marks, bankSession);
+        const mcq = bankMultipleChoice(
+          objective,
+          req.difficulty,
+          marks,
+          bankSession,
+          req.subjectId,
+        );
         if (mcq) {
           questions.push({
             type: "multiple_choice",
