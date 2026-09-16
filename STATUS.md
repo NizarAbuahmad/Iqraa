@@ -2234,12 +2234,29 @@ landing on an adjacent lesson in the same unit, which is far milder than the
 cross-semester shifts caught in g8-science-s2 (+4) and g7-social-s2 (+6), but
 it is a weaker standard than every book shipped so far.
 
-**Not shipped on that standard.** 47 lessons, on books whose figure yield is
-likely thin anyway — Arabic is text-heavy and financial literacy produced 13
-and 9 figures at grades 7 and 8. Lowering the evidentiary bar across the
-project for that return is a bad trade, and it is a product decision rather
-than a technical one. The measurement is here so it can be revisited
-deliberately.
+**Not shipped — and the yield was then MEASURED rather than guessed, 2026-09-16.**
+The trade was put to Nizar, he called ship, so `banner_partition_outline` was
+built and all three books were extracted and culled. The result is why the
+branch was dropped instead:
+
+| Book | kept | of crops | lessons reached |
+| --- | --- | --- | --- |
+| g8 arabic S1 | 6 | 120 | 4 of 25 |
+| g9 finlit S1 | 5 | 26 | 5 of 11 |
+| g9 finlit S2 | 5 | 21 | 5 of 11 |
+
+**16 figures across 14 lessons, not the 47 the partition unlocked.** Grade 8
+arabic is a workbook: 120 crops yielded six real figures — a Jordan
+administrative map, a sun-and-moon illustration, a quill, a story-structure
+concept map, a cartoon, a meeting illustration — and the other 114 are blank
+lined answer boxes, single-phrase grammar bubbles («جملة اسمية», «اسم مفرد»),
+and the same five reflection chips reprinted in every unit. The financial
+literacy books are mostly rounded callout boxes containing one phrase each.
+
+So the cost was a permanently weaker evidentiary route in the codebase and the
+benefit was 16 figures. Dropped on that measurement. **Anyone reconsidering
+this should reconsider the 16, not the 47** — the lessons the partition can
+reach are overwhelmingly in books that have nothing to show.
 
 **What still has no figure at all, and why:**
 
