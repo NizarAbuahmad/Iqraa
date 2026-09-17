@@ -223,7 +223,11 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // CMap-corrupted, so it reads cleanly (see g4SocialSem1.ts).
   // arabic:grade-4 closed the same rollout, both semesters, title-only,
   // same convention as g5ArabicSem1.ts (fixed 5-lesson-per-unit pattern,
-  // no prose to summarize — see g4ArabicSem1.ts).
+  // no prose to summarize — see g4ArabicSem1.ts). english:grade-4 closed
+  // the same rollout, both semesters, real content (unit-level, not
+  // title-only) — the last of the seven Grade 4 subjects that mirror
+  // Grade 5's set, same convention as g5EnglishSem1.ts (see
+  // g4EnglishSem1.ts).
   //
   // PERMANENT — the subject is not declared at grade-4 in SUBJECTS.grades at
   // all, same reasoning as grade-5 above (physics/chemistry/biology/
@@ -247,13 +251,11 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'physical-education:grade-4',
   'creative-arts:grade-4',
   'vocational-education:grade-4',
-  //
-  // ORDINARY GAPS — the subject is declared at grade-4 (arabic/english span
-  // all grades), and Grade 4 source text exists on disk
-  // (knowledge-base/grade-4-*), but no catalog has been built from it yet.
-  // Delete each line once its catalog and BOOKS row land, same as the
-  // grade-5 rollout above.
-  'english:grade-4',
+  // No ORDINARY GAPS remain for grade-4 — all seven subjects that mirror
+  // Grade 5's set (mathematics, science, islamic, digital-literacy, social,
+  // arabic, english) now have catalogs. Only Art and Vocational Education
+  // are missing, and both are PERMANENT above until SUBJECTS.grades is
+  // extended for grade-4.
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {
