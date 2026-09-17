@@ -57,6 +57,14 @@ const BEFORE_CLASS_ALL: ToolDef[] = [
     route: '/ai-tools/slides',
   },
   {
+    id: 'prompt-slides',
+    titleKey: 'toolPromptSlidesTitle',
+    descKey: 'toolPromptSlidesDesc',
+    icon: 'sparkles-outline',
+    color: '#7C3AED',
+    route: '/ai-tools/prompt-slides',
+  },
+  {
     id: 'lesson-plan',
     titleKey: 'toolLessonPlanTitle',
     descKey: 'toolLessonPlanDesc',

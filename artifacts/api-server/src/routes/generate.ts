@@ -1,6 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { Router, type Response } from "express";
 import type { AuthenticatedRequest } from "../middlewares/auth.ts";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { openai, generateImageBuffer } from "@workspace/integrations-openai-ai-server";
+import { isPublicR2Configured, publicUrl, putPublicObject } from "../lib/r2.ts";
 import { logger } from "../lib/logger";
 import {
   SYSTEM_AR,
@@ -21,6 +23,12 @@ import {
   classroomSetupClause,
   stripUnearnedVerification,
 } from "../lib/classroomPrompts.ts";
+import {
+  MAX_PROMPT_SLIDES,
+  MAX_PROMPT_SLIDE_IMAGES,
+  promptSlidesPromptAr,
+  promptSlidesPromptEn,
+} from "../lib/promptSlidesPrompt.ts";
 
 import {
   AiBudgetExceededError,
@@ -617,6 +625,100 @@ generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedReq
     );
   } catch (err) {
     respondAiError(err, res, "generate classroom-activity");
+  }
+});
+
+
+/**
+ * Turns `mediaPrompt`s from `/generate/prompt-slides` into real images, and
+ * enforces the slide-count and per-deck image caps stated in the prompt (a
+ * belt-and-suspenders backstop — the model does not always obey slide-count
+ * instructions, and nothing else here would catch it).
+ *
+ * A slide beyond the image cap, one whose `mediaPrompt` is missing, or one
+ * whose image generation fails is downgraded to a plain `'intro'` slide (the
+ * type this JSON contract already uses for plain explanatory text — see
+ * `classroomPrompts.ts`'s own quick-check intro slide; `ActivitySlide.type`
+ * has no separate "content" member, so writing one here would render as
+ * nothing in `presentation.tsx`) rather than failing the whole request — the
+ * deck is still usable without that one picture. Images go to the public
+ * bucket (`putPublicObject`/`publicUrl`), not the signed-URL private one: a
+ * deck reopened weeks after generation needs a link that has not expired.
+ */
+async function finalizePromptSlides(content: unknown): Promise<unknown> {
+  if (content === null || typeof content !== "object" || Array.isArray(content)) return content;
+  const deck = content as Record<string, unknown>;
+  const slides = deck.slides;
+  if (!Array.isArray(slides)) return content;
+
+  const truncated = slides.slice(0, MAX_PROMPT_SLIDES);
+  const canGenerateImages = isPublicR2Configured();
+  let imagesUsed = 0;
+
+  const finished = await Promise.all(truncated.map(async (raw) => {
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return raw;
+    const slide = raw as Record<string, unknown>;
+    if (slide.type !== "media") return slide;
+
+    const { mediaPrompt, ...rest } = slide;
+    const trimmedPrompt = typeof mediaPrompt === "string" ? mediaPrompt.trim() : "";
+    if (!canGenerateImages || !trimmedPrompt || imagesUsed >= MAX_PROMPT_SLIDE_IMAGES) {
+      return { ...rest, type: "intro" };
+    }
+    imagesUsed += 1;
+    try {
+      const buffer = await generateImageBuffer(trimmedPrompt);
+      const key = `deck-images/${randomUUID()}.png`;
+      await putPublicObject(key, buffer, "image/png");
+      const url = publicUrl(key);
+      if (!url) throw new Error("R2 public base URL not configured");
+      return { ...rest, mediaUrl: url, mediaKind: "image" };
+    } catch (err) {
+      logger.warn({ err }, "prompt-slides image generation failed");
+      return { ...rest, type: "intro" };
+    }
+  }));
+
+  return { ...deck, slides: finished };
+}
+
+// ─── Prompt Slides route ───────────────────────────────────────────────────────
+// The teacher's own free-text prompt IS the spec — there is no curriculum
+// lesson to ground this in, unlike every other route here. The prompt is
+// carried as `additionalContext` with `contextSource` forced to `'teacher'`
+// *server-side*, ignoring anything the client sent for that field: this is
+// what makes `generationKeys()` (lib/generationKey.ts) mark the request
+// unshareable so it never touches the `ai_artifacts` pool. Skipping this would
+// serve one teacher's prompt — and the deck built from it — verbatim to
+// another teacher out of the shared pool. See CLAUDE.md: "A shared artifact
+// makes every generator bug everybody's bug" — this route has no business
+// being in that pool at all.
+generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest, res) => {
+  const reqBody = req.body as Record<string, unknown>;
+  const isAr = reqBody.language === 'arabic';
+  const prompt = typeof reqBody.prompt === 'string' ? reqBody.prompt.trim() : '';
+  if (!prompt) {
+    res.status(400).json({ error: 'prompt is required' });
+    return;
+  }
+  const body: Record<string, unknown> = {
+    ...reqBody,
+    additionalContext: prompt,
+    contextSource: 'teacher',
+  };
+  try {
+    const userPrompt = (isAr ? promptSlidesPromptAr(body) : promptSlidesPromptEn(body))
+      + classroomSetupClause(body, isAr);
+    const result = await generateContent({
+      kind: "prompt-slides", systemPrompt: systemPrompt(isAr), userPrompt,
+      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+    });
+    const finalized = await finalizePromptSlides(result.content);
+    res.json(
+      withMeta({ ...result, content: stripUnearnedVerification(finalized) }, null),
+    );
+  } catch (err) {
+    respondAiError(err, res, "generate prompt-slides");
   }
 });
 

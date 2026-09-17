@@ -15,10 +15,11 @@ import {
   ActivityOutput, AIRequest, AIService,
   ClassroomActivity, ClassroomActivityRequest,
   GenerateOptions,
-  LessonPlanOutput, QuizOutput, WorksheetOutput,
+  LessonPlanOutput, PromptSlidesRequest, QuizOutput, WorksheetOutput,
 } from './AIService';
 import { DEMO_MODE } from './demoMode';
 import { MockAIService } from './generators';
+import { buildPromptSlidesTemplate } from '@/services/promptSlidesTemplate';
 import { applyClassroomSetup } from '@/services/classroomRouting';
 import { ApiError, apiFetch } from '../apiClient';
 import { describeAiError, generateWithProvenance, recordGeneration } from './aiProvenance.ts';
@@ -153,6 +154,33 @@ export class RemoteAIService extends AIService {
     // deck and any future source all pass through this method, and a model
     // that ignored the prompt's "there is a projector" line would otherwise
     // still tell the teacher to print the slides.
+    return applyClassroomSetup(
+      activity,
+      req.classroomSetup ?? 'screen',
+      req.language === 'arabic',
+    );
+  }
+
+  /**
+   * A deck built from the teacher's own free-text prompt — see
+   * `PromptSlidesRequest`. 'free' mode never touches the network or the AI
+   * budget: it is a deliberate, always-available option, not a fallback, so it
+   * bypasses `generateWithProvenance` entirely (there is nothing to attribute
+   * a "live"/"mock" badge to — the teacher chose this).
+   */
+  async generatePromptSlides(req: PromptSlidesRequest, opts?: GenerateOptions): Promise<ClassroomActivity> {
+    if (req.mode === 'free') {
+      return applyClassroomSetup(
+        buildPromptSlidesTemplate(req),
+        req.classroomSetup ?? 'screen',
+        req.language === 'arabic',
+      );
+    }
+    const activity = await generateWithProvenance(
+      'prompt-slides',
+      () => postJSON<ClassroomActivity>('/generate/prompt-slides', req, opts),
+      () => this.fallback.generatePromptSlides(req),
+    );
     return applyClassroomSetup(
       activity,
       req.classroomSetup ?? 'screen',
