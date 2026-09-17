@@ -176,6 +176,14 @@ import {
   buildG3MathSem2BrowserCatalog,
 } from './catalogs/g3MathSem2.ts';
 import {
+  G3_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  buildG3ScienceSem1BrowserCatalog,
+} from './catalogs/g3ScienceSem1.ts';
+import {
+  G3_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  buildG3ScienceSem2BrowserCatalog,
+} from './catalogs/g3ScienceSem2.ts';
+import {
   G4_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG4ScienceSem1BrowserCatalog,
 } from './catalogs/g4ScienceSem1.ts';
@@ -1211,6 +1219,13 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // HarperCollins/NCCD series as Grade 4/5/10 Math — see g3MathSem1.ts.
   G3_MATH_S1_CURRICULUM_BOOK_ID,
   G3_MATH_S2_CURRICULUM_BOOK_ID,
+  // Grade 3 Science, both semesters. 'science' is already in MVP_SUBJECT_IDS
+  // and already declared for grade-3 in SUBJECTS.grades (spans grades 1-9
+  // for this subject), so no subject append or SUBJECTS.grades extension is
+  // needed. Same HarperCollins/NCCD series as Grade 4/5 Science — see
+  // g3ScienceSem1.ts.
+  G3_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  G3_SCIENCE_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2563,6 +2578,39 @@ export const BOOKS: Book[] = [
     title: 'Mathematics – Grade 3, Semester 2',
     titleAr: 'الرياضيات – الصف الثالث – الفصل الثاني',
     subjectId: 'mathematics',
+    gradeId: 'grade-3',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // Grade 3 Science, both semesters. Same HarperCollins/NCCD series as Grade
+  // 4/5 Science — real per-lesson content from «الفِكْرَةُ الرَّئيسَةُ» and
+  // «المَفاهيمُ وَالمُصْطَلَحاتُ», objectives left empty (book prints no
+  // outcomes box), same convention as g4ScienceSem1.ts. Semester 2's Unit 4
+  // (المادة) repeats Semester 1's Unit 2 almost verbatim — a publisher
+  // duplication, verified against the PDF directly. See g3ScienceSem1.ts /
+  // g3ScienceSem2.ts.
+  {
+    id: G3_SCIENCE_S1_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 3, Semester 1',
+    titleAr: 'العلوم – الصف الثالث – الفصل الأول',
+    subjectId: 'science',
+    gradeId: 'grade-3',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G3_SCIENCE_S2_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 3, Semester 2',
+    titleAr: 'العلوم – الصف الثالث – الفصل الثاني',
+    subjectId: 'science',
     gradeId: 'grade-3',
     academicYear: '2024-2025',
     language: 'Arabic',
@@ -4698,6 +4746,8 @@ const _g4VocSem1Browser = buildG4VocSem1BrowserCatalog();
 const _g4VocSem2Browser = buildG4VocSem2BrowserCatalog();
 const _g3MathSem1Browser = buildG3MathSem1BrowserCatalog();
 const _g3MathSem2Browser = buildG3MathSem2BrowserCatalog();
+const _g3ScienceSem1Browser = buildG3ScienceSem1BrowserCatalog();
+const _g3ScienceSem2Browser = buildG3ScienceSem2BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -4955,6 +5005,8 @@ export const UNITS: Unit[] = [
   ..._g4VocSem2Browser.units,
   ..._g3MathSem1Browser.units,
   ..._g3MathSem2Browser.units,
+  ..._g3ScienceSem1Browser.units,
+  ..._g3ScienceSem2Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -5102,6 +5154,8 @@ export const LESSONS: Lesson[] = [
   ..._g4VocSem2Browser.lessons,
   ..._g3MathSem1Browser.lessons,
   ..._g3MathSem2Browser.lessons,
+  ..._g3ScienceSem1Browser.lessons,
+  ..._g3ScienceSem2Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
