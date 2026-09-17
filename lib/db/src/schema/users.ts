@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, uuid, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp, uuid, integer, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -56,6 +56,18 @@ export const users = pgTable("users", {
    * changes more often than schemas do.
    */
   rosterConsentVersion: text("roster_consent_version").notNull().default(""),
+  /**
+   * Grade and subject catalog ids (`@workspace/curriculum`'s GRADES/SUBJECTS)
+   * this teacher picked at signup. Empty on every non-teacher account, and on
+   * a teacher who hasn't completed setup yet — that emptiness is the signal
+   * the mobile routing gate reads to send them to `/setup-subjects` (see
+   * `needsTeacherSetup` in routeGating.ts). Editable afterwards from the
+   * profile screen, never enforced server-side beyond validating the ids
+   * exist in the catalog: this narrows what the curriculum browser shows by
+   * default, it does not gate access to any grade/subject's content.
+   */
+  gradeIds: jsonb("grade_ids").$type<string[]>().notNull().default([]),
+  subjectIds: jsonb("subject_ids").$type<string[]>().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   lastLogin: timestamp("last_login", { withTimezone: true }),
 });

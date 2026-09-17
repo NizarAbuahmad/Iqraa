@@ -31,6 +31,8 @@ import {
   ROSTER_CONSENT_VERSION,
 } from "../lib/rosterConsent.js";
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
+import { sanitizeCatalogIds } from "../lib/catalogIds.js";
+import { GRADES, SUBJECTS } from "@workspace/curriculum";
 import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
 import {
   generateVerificationCode,
@@ -429,6 +431,8 @@ router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, asyn
         role: verified.role,
         preferredLanguage: verified.preferredLanguage,
         avatarUrl: avatarUrlFor(verified.avatarKey),
+        gradeIds: verified.gradeIds,
+        subjectIds: verified.subjectIds,
         createdAt: verified.createdAt,
         // This is the call that hands back the session register used to, so
         // it owes the client the same field login does — without it a
@@ -1010,6 +1014,8 @@ router.post("/login", loginLimiter, async (req, res) => {
         role: user.role,
         preferredLanguage: user.preferredLanguage,
         avatarUrl: avatarUrlFor(user.avatarKey),
+        gradeIds: user.gradeIds,
+        subjectIds: user.subjectIds,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
         ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
@@ -1203,6 +1209,8 @@ router.post("/google", googleLimiter, async (req, res) => {
         role: user.role,
         preferredLanguage: user.preferredLanguage,
         avatarUrl: avatarUrlFor(user.avatarKey),
+        gradeIds: user.gradeIds,
+        subjectIds: user.subjectIds,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
         ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
@@ -1385,6 +1393,10 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       // as "not consented", which is the safe direction.
       rosterConsentAt: user.rosterConsentAt,
       rosterConsentVersion: user.rosterConsentVersion,
+      // Grade/subject catalog ids picked at signup — see needsTeacherSetup in
+      // the mobile app's routeGating.ts, the gate these two drive.
+      gradeIds: user.gradeIds,
+      subjectIds: user.subjectIds,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
       ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
@@ -1395,19 +1407,29 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
   }
 });
 
+const VALID_GRADE_IDS = new Set(GRADES.map(g => g.id));
+const VALID_SUBJECT_IDS = new Set(SUBJECTS.map(s => s.id));
+
 // PATCH /users/profile
 router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
-    const { preferredLanguage, firstName, lastName } = req.body as {
+    const { preferredLanguage, firstName, lastName, gradeIds, subjectIds } = req.body as {
       preferredLanguage?: string;
       firstName?: string;
       lastName?: string;
+      /** Catalog ids from GRADES/SUBJECTS — see needsTeacherSetup in the mobile app. */
+      gradeIds?: unknown;
+      subjectIds?: unknown;
     };
 
     const updates: Record<string, unknown> = {};
     if (preferredLanguage) updates.preferredLanguage = preferredLanguage;
     if (firstName?.trim()) updates.firstName = firstName.trim();
     if (lastName?.trim()) updates.lastName = lastName.trim();
+    const sanitizedGradeIds = sanitizeCatalogIds(gradeIds, VALID_GRADE_IDS);
+    if (sanitizedGradeIds) updates.gradeIds = sanitizedGradeIds;
+    const sanitizedSubjectIds = sanitizeCatalogIds(subjectIds, VALID_SUBJECT_IDS);
+    if (sanitizedSubjectIds) updates.subjectIds = sanitizedSubjectIds;
 
     if (Object.keys(updates).length === 0) {
       res.status(400).json({ error: "No valid fields to update" });
@@ -1428,6 +1450,8 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
       role: updated.role,
       preferredLanguage: updated.preferredLanguage,
       avatarUrl: avatarUrlFor(updated.avatarKey),
+      gradeIds: updated.gradeIds,
+      subjectIds: updated.subjectIds,
       createdAt: updated.createdAt,
     });
   } catch (err) {
