@@ -1,0 +1,330 @@
+{
+  "meta": {
+    "grade": "الصف الرابع",
+    "grade_en": "Grade 4",
+    "subject": "اللغة العربية",
+    "subject_en": "Arabic",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة اللغة العربية للصف الرابع الفصل الثاني (g4-arabic-s2-student-book)"
+    ],
+    "provenance_note": "نُقلت البنيةُ من فهرسِ كتابِ الطالبِ (ص 4-5) في 2026-09-17، وقُرِئَ من ملفِّ PDF مباشرةً عبرَ PyMuPDF. الوحداتُ مرقَّمةٌ 6-10 استمرارًا لترقيمِ الفصلِ الأوّلِ، وهذا مطبوعٌ في فهرسِ هذا الكتابِ نفسِهِ (الوحدةُ السادسةُ، السابعةُ، الثامنةُ، التاسعةُ، العاشرةُ) — لا مجرَّدَ اصطلاحٍ داخليٍّ لهذا المشروعِ.",
+    "known_gaps": [
+      "هذا الكتابُ title-only للسببِ نفسِهِ في الفصلِ الأوّلِ (iqra_curriculum_g4_arabic_sem1.json) — انظر known_gaps هناك."
+    ]
+  },
+  "units": [
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "أَصْدِقائي بَهْجَةُ حَياتي",
+      "title_en": "My Friends Are the Joy of My Life",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (صَديقٌ صالِحٌ)",
+          "title_en": "I Listen Attentively and with Focus (A Righteous Friend)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+          "title_en": "I Speak Fluently (Narrating a Story Based on Pictures)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (شَهْبَنْدَرُ التُّجّارِ وَالصَّديقُ الْمِثالِيُّ)",
+          "title_en": "I Read Fluently and with Comprehension (The Merchants' Chief and the Ideal Friend)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ (التّاءُ الْمَرْبوطَةُ وَالْهاءُ | حَرْفا الصّادِ وَالضّادِ | كِتابَةُ بِطاقَةِ الدَّعْوَةِ)",
+          "title_en": "I Write (Ta Marbuta and Ha' | The Letters Sad and Dad | Writing an Invitation Card)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي (الْجُمْلَةُ الاسْمِيَّةُ الْبَسيطَةُ)",
+          "title_en": "I Build My Language (The Simple Nominal Sentence)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "إِرادَتي قُوَّتي",
+      "title_en": "My Will Is My Strength",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (أَرْوَعُ صَديقَيْنِ في الْعالَمِ)",
+          "title_en": "I Listen Attentively and with Focus (The Most Wonderful Pair of Friends in the World)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+          "title_en": "I Speak Fluently (Narrating a Story Based on Pictures)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (هَكَذا تَحَرَّكَتْ سَناءُ)",
+          "title_en": "I Read Fluently and with Comprehension (This Is How Sanaa Moved)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ (النّونُ السّاكِنَةُ وَالتَّنْوينُ | حَرْفُ الْهاءِ | كِتابَةُ بِطاقَةِ الدَّعْوَةِ)",
+          "title_en": "I Write (Sukun Nun and Tanwin | The Letter Ha' | Writing an Invitation Card)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي (الأَسْماءُ الْمَوْصولَةُ)",
+          "title_en": "I Build My Language (Relative Pronouns)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "مِنْ طَرائِفِ أَشْعَبَ وَجُحا",
+      "title_en": "From the Anecdotes of Ash'ab and Juha",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (مِنْ حِكاياتِ أَشْعَبَ)",
+          "title_en": "I Listen Attentively and with Focus (From Ash'ab's Tales)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+          "title_en": "I Speak Fluently (Narrating a Story Based on Pictures)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (جُحا الْعادِلُ)",
+          "title_en": "I Read Fluently and with Comprehension (Juha the Just)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ (كَلِماتٌ يَخْتَلِفُ رَسْمُها عَنْ نُطْقِها | الأَحْرُفُ: الْجيمُ، وَالْحاءُ، وَالْخاءُ | كِتابَةُ الْقِصَّةِ)",
+          "title_en": "I Write (Words Whose Spelling Differs from Their Pronunciation | The Letters Jim, Ha', and Kha' | Writing a Story)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي (مُحاكاةُ نَمَطِ إِسْنادِ الْفِعْلِ الْمُضارِعِ إِلى الضَّمائِرِ)",
+          "title_en": "I Build My Language (Imitating the Pattern of Attaching the Present-Tense Verb to Pronouns)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_ar": "عَلى لِسانِ الْحَيَوانِ",
+      "title_en": "On the Tongue of the Animal",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (الْبَطَّتانِ وَالسُّلَحْفاةُ)",
+          "title_en": "I Listen Attentively and with Focus (The Two Ducks and the Turtle)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+          "title_en": "I Speak Fluently (Narrating a Story Based on Pictures)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (الْحِصانُ وَالذِّئْبُ)",
+          "title_en": "I Read Fluently and with Comprehension (The Horse and the Wolf)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ (الْهَمْزَةُ الْمُتَطَرِّفَةُ | حَرْفا الْعَيْنِ وَالْغَيْنِ | كِتابَةُ الْقِصَّةِ)",
+          "title_en": "I Write (The Final Hamza | The Letters Ayn and Ghayn | Writing a Story)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي (مُحاكاةُ نَمَطِ الْجُمْلَةِ الْفِعْلِيَّةِ الْمَنْفِيَّةِ بِـ «ما» وَ«لا»)",
+          "title_en": "I Build My Language (Imitating the Pattern of a Verbal Sentence Negated with 'ma' and 'la')",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u10",
+      "number": 10,
+      "title_ar": "الْعالَمُ مِنْ حَوْلي",
+      "title_en": "The World Around Me",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u10_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (كيسُ الْقُماشِ)",
+          "title_en": "I Listen Attentively and with Focus (The Cloth Bag)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+          "title_en": "I Speak Fluently (Narrating a Story Based on Pictures)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (تَعَلُّمُ لُغَةٍ جَديدَةٍ)",
+          "title_en": "I Read Fluently and with Comprehension (Learning a New Language)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ (الْواوُ الأَصْلِيَّةُ وَواوُ الْجَماعَةِ | حَرْفا الْفاءِ وَالْقافِ | كِتابَةُ الْقِصَّةِ)",
+          "title_en": "I Write (The Original Waw and the Waw of the Plural | The Letters Fa' and Qaf | Writing a Story)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي (مُحاكاةُ نَمَطِ دُخولِ «كانَ» أَوْ إِحْدى أَخَواتِها عَلى الْجُمْلَةِ الاسْمِيَّةِ)",
+          "title_en": "I Build My Language (Imitating the Pattern of 'kana' or Its Sisters Entering a Nominal Sentence)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
