@@ -19,6 +19,8 @@ export const MATERIAL_COLOR: Record<MaterialType, string> = {
   // Matches the Slides Maker screen's accent, so a saved deck is the same
   // colour in the workspace as the tool that produced it.
   slides: '#0EA5E9',
+  // Matches prompt-slides.tsx's own accent, same reasoning as `slides` above.
+  'prompt-slides': '#7C3AED',
 };
 
 export const MATERIAL_ICON: Record<MaterialType, keyof typeof Ionicons.glyphMap> = {
@@ -28,6 +30,7 @@ export const MATERIAL_ICON: Record<MaterialType, keyof typeof Ionicons.glyphMap>
   flow: 'git-branch-outline',
   activity: 'game-controller-outline',
   slides: 'tv-outline',
+  'prompt-slides': 'sparkles-outline',
 };
 
 export const MATERIAL_LABEL_KEY: Record<MaterialType, TranslationKey> = {
@@ -37,6 +40,7 @@ export const MATERIAL_LABEL_KEY: Record<MaterialType, TranslationKey> = {
   flow: 'flowType',
   activity: 'activityType',
   slides: 'slidesType',
+  'prompt-slides': 'promptSlidesType',
 };
 
 /**
@@ -44,6 +48,9 @@ export const MATERIAL_LABEL_KEY: Record<MaterialType, TranslationKey> = {
  *
  * `slides` has no form-driven editor — the deck is built from a saved lesson —
  * so it is absent rather than pointed at a screen that cannot rebuild it.
+ * `prompt-slides` DOES have one — its whole form (the prompt, mode, slide
+ * count) is exactly what `formState` already carries, unlike `slides`'s
+ * curriculum grounding.
  */
 export const MATERIAL_EDIT_ROUTE: Partial<Record<MaterialType, string>> = {
   lesson: '/ai-tools/lesson-plan',
@@ -51,4 +58,5 @@ export const MATERIAL_EDIT_ROUTE: Partial<Record<MaterialType, string>> = {
   quiz: '/ai-tools/quiz',
   flow: '/ai-tools/lesson-flow',
   activity: '/ai-tools/activity',
+  'prompt-slides': '/ai-tools/prompt-slides',
 };

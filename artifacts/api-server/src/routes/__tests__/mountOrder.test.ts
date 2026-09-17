@@ -194,6 +194,7 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       "/chat",
       "/generate/lesson-plan",
       "/generate/classroom-activity",
+      "/generate/prompt-slides",
       "/practice/read-aloud",
     ]) {
       const res = await fetch(`${base}${route}`, {

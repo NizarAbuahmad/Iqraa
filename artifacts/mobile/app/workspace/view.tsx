@@ -111,7 +111,12 @@ export default function WorkspaceViewScreen() {
         : kind === 'worksheet' ? '/ai-tools/worksheet'
           : kind === 'flow' ? '/ai-tools/lesson-flow'
             : kind === 'slides' ? '/ai-tools/slides'
-              : '/ai-tools/quiz';
+              // Its own screen, not `/ai-tools/slides`: that screen's
+              // `formState` (gradeIdx/subjectIdx/topic) is a curriculum
+              // lookup, not this kind's prompt/mode/slideCount — sending a
+              // prompt-slides item there would silently drop the prompt.
+              : kind === 'prompt-slides' ? '/ai-tools/prompt-slides'
+                : '/ai-tools/quiz';
 
   const isAr = lang === 'ar';
   const getPlainText = () => {
@@ -121,7 +126,7 @@ export default function WorkspaceViewScreen() {
     if (kind === 'activity') return formatActivityText(content as ActivityOutput, item.title, meta, isAr);
     if (kind === 'worksheet') return formatWorksheetText(content as WorksheetOutput, item.title, meta, isAr);
     if (kind === 'flow') return item.title; // flow exports as PDF only
-    if (kind === 'slides') return formatDeckOutline(content as ClassroomActivity, isAr);
+    if (kind === 'slides' || kind === 'prompt-slides') return formatDeckOutline(content as ClassroomActivity, isAr);
     return formatQuizText(content as QuizOutput, item.title, meta, isAr);
   };
   /**
@@ -147,7 +152,7 @@ export default function WorkspaceViewScreen() {
     if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr, figures);
     if (kind === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr, figures);
     if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr, figures);
-    if (kind === 'slides') return buildDeckHTML(content as ClassroomActivity, isAr);
+    if (kind === 'slides' || kind === 'prompt-slides') return buildDeckHTML(content as ClassroomActivity, isAr);
     return buildQuizHTML(content as QuizOutput, item.title, meta, isAr, figures);
   };
 
@@ -232,7 +237,7 @@ export default function WorkspaceViewScreen() {
         </Pressable>
         {/* A saved deck's whole point is being projected again — the workspace
             is where a teacher returns to it the morning of the lesson. */}
-        {kind === 'slides' && content && (
+        {(kind === 'slides' || kind === 'prompt-slides') && content && (
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -287,7 +292,7 @@ export default function WorkspaceViewScreen() {
           <WorksheetView ws={content as WorksheetOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} />
         ) : kind === 'flow' ? (
           <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={isRTL} lang={lang} accent={accent} />
-        ) : kind === 'slides' ? (
+        ) : kind === 'slides' || kind === 'prompt-slides' ? (
           <SlidesDeckView deck={content as ClassroomActivity} colors={colors} isRTL={isRTL} isAr={isAr} accent={accent} />
         ) : (
           <QuizView quiz={content as QuizOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} lang={lang} />

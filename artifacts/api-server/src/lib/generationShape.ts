@@ -33,7 +33,8 @@ export type GenerationKind =
   | "homework"
   | "quiz"
   | "activity"
-  | "classroom-activity";
+  | "classroom-activity"
+  | "prompt-slides";
 
 /**
  * Fields whose absence leaves the screen with nothing to draw.
@@ -55,6 +56,7 @@ export const REQUIRED_FIELDS: Record<GenerationKind, readonly string[]> = {
   quiz: ["title", "questions"],
   activity: ["title", "objective", "materials", "steps"],
   "classroom-activity": ["activityName", "slides"],
+  "prompt-slides": ["activityName", "slides"],
 };
 
 /** Which required fields are missing or empty — [] means usable. */

@@ -2,10 +2,11 @@ import { AIService } from './AIService.ts';
 import type {
   ActivityOutput, ActivityStep, AIRequest,
   ClassroomActivity, ClassroomActivityRequest,
-  LessonPlanOutput,
+  LessonPlanOutput, PromptSlidesRequest,
   QuizOutput, QuizQuestion, WorksheetAnswerKeyItem,
   WorksheetOutput, WorksheetSection,
 } from './AIService.ts';
+import { buildPromptSlidesTemplate } from '../promptSlidesTemplate.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 import { getLessonById, getUnitForLesson, resolveGroundedKbLesson } from '../knowledgeBase.ts';
 import { figuresForLesson } from '../bookFigures.ts';
@@ -2249,6 +2250,17 @@ export class MockAIService extends AIService {
         },
       ],
     };
+  }
+
+  /**
+   * Offline fallback for `/generate/prompt-slides` — a free-text prompt has no
+   * curriculum lesson to ground a mock against, so unlike every other mock
+   * above this delegates to the same generic template Free mode uses on
+   * purpose. See `services/promptSlidesTemplate.ts`'s header for why.
+   */
+  async generatePromptSlides(req: PromptSlidesRequest): Promise<ClassroomActivity> {
+    await this.delay();
+    return buildPromptSlidesTemplate(req);
   }
 
   async generateHomework(req: AIRequest): Promise<WorksheetOutput> {
