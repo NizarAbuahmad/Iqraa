@@ -204,8 +204,9 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // subject); islamic:grade-5 closed the same day, both semesters (third);
   // arabic:grade-5 closed the same day, both semesters, title-only (see
   // g5ArabicSem1.ts — interactive-exercise lessons, no prose to summarize).
+  // digital-literacy:grade-5 closed the same day, Semester 1 only, title-only
+  // (fourth — see g5DigitalSem1.ts, no Semester 2 activity book on file).
   'english:grade-5',
-  'digital-literacy:grade-5',
   'social:grade-5',
 ]);
 

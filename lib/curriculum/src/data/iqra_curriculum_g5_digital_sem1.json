@@ -1,0 +1,402 @@
+{
+ "meta": {
+  "grade": "الصف الخامس",
+  "grade_en": "Grade 5",
+  "subject": "المهارات الرقمية",
+  "subject_en": "Digital Skills",
+  "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+  "semester_covered": 1,
+  "schema_version": "1.0",
+  "source_books": [
+   "كتاب الأنشطة لمادة المهارات الرقمية الصف الخامس الفصل الأول (g5-digital-s1-activity-book)"
+  ],
+  "provenance_note": "نُقِلَتِ البِنْيَةُ مِنْ فِهْرِسِ كِتابِ الأَنْشِطَةِ (ص 4-5) في 2026-09-16، وَقُرِئَ مِنْ مَلَفِّ PDF مُباشَرَةً — عَلى نَفْسِ نَهْجِ g6DigitalSem1. هذا الكِتابُ لَيْسَ كِتابَ مادَّةٍ قائِمَةً بِذاتِها، بَلْ مادَّةٌ عابِرَةٌ لِلْمَناهِجِ: مُحْتَواها «لَبِناتٌ» تَتَّصِلُ بِوَحَداتٍ مِنْ كِتابِ العُلومِ لِهذا الصَّفِّ، وَعَناوينُ اللَّبِناتِ هِيَ عَناوينُ تِلْكَ الوَحَداتِ حَرْفِيًّا — «البيئَةُ» وَ«العَناصِرُ وَالمُرَكَّباتُ الكيميائِيَّةُ» وَ«الغِذاءُ وَالصِّحَّةُ» وَ«أَجْهِزَةُ جِسْمِ الإِنْسانِ» وَ«الحَرَكَةُ وَالطّاقَةُ» مِنْ g5ScienceSem1/Sem2 (اللَّبِنَةُ الثّانِيَةُ «تَنَوُّعُ الكائِناتِ الحَيَّةِ» عُنْوانٌ قَريبٌ لا حَرْفِيٌّ مِنْ وَحْدَةِ العُلومِ «تَصْنيفُ الكائِناتِ الحَيَّةِ»، فَنُقِلَ كَما طُبِعَ في هذا الكِتابِ). سِتُّ لَبِناتٍ نُقِلَتْ إِلى سِتِّ وَحَداتٍ، وَأَرْبَعَةُ «مَشاريعِ تَعَلُّمٍ» إِلى أَرْبَعِ وَحَداتٍ، بِتَرْتيبِ وُرودِها في الفِهْرِسِ (ثَلاثُ لَبِناتٍ، ثُمَّ مَشْروعانِ، ثُمَّ ثَلاثُ لَبِناتٍ، ثُمَّ مَشْروعانِ). كُلُّ وَحْدَةٍ لَبِنَةٍ تَحْمِلُ «مَهامَّ اسْتِكْشافِيَّةً» مُرَقَّمَةً نُقِلَتْ عَناوينُها كَما تَطْبَعُها صَفْحَةُ الفِهْرِسِ؛ كُلُّ وَحْدَةِ مَشْروعٍ تَحْمِلُ دَرْسًا واحِدًا يَحْمِلُ اسْمَ المَشْروعِ نَفْسَهُ.",
+  "known_gaps": [
+   "title-only، عَلى نَفْسِ نَهْجِ g6DigitalSem1: لا main_idea_ar وَلا objectives وَلا vocabulary وَلا general_idea_ar — هذا الكِتابُ سِلْسِلَةُ مَهامَّ وَمَشاريعَ عَمَلِيَّةٍ، لا دُروسًا تَحْمِلُ فِكْرَةً رَئيسَةً أَوْ مُصْطَلَحاتٍ عَلى نَحْوِ كُتُبِ المَوادِّ الأُخْرى.",
+   "periods و total_periods فارِغَةٌ (null): لا كِتابَ طالِبٍ لِهذِهِ المادَّةِ، وَلا دَليلَ مُعَلِّمٍ اسْتُخْرِجَ بَعْدُ في هذا العَمَلِ (مَوْجودٌ في g10_sources.json كَمَصْدَرٍ pending).",
+   "لا كِتابَ فَصْلٍ ثانٍ: كِتابُ الأَنْشِطَةِ لِلْفَصْلِ الأَوَّلِ هُوَ كُلُّ ما وَصَلَ، عَلى نَفْسِ نَمَطِ g6DigitalSem1 (S1 فَقَطْ)."
+  ]
+ },
+ "units": [
+  {
+   "id": "u1",
+   "number": 1,
+   "title_ar": "البيئَةُ",
+   "title_en": "The Environment",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u1_l1",
+     "order": 1,
+     "title_ar": "البَحْثُ عَنِ الأَدَواتِ الَّتي يَسْتَخْدِمُها عُلَماءُ البيئَةِ في دِراسَةِ التَّنَوُّعِ الحَيَوِيِّ وَالبيئاتِ",
+     "title_en": "Researching the Tools Environmental Scientists Use to Study Biodiversity and Habitats",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l2",
+     "order": 2,
+     "title_ar": "تَصْميمُ شِعارٍ لِفَريقِ البيئَةِ",
+     "title_en": "Designing a Logo for the Environment Team",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l3",
+     "order": 3,
+     "title_ar": "البَحْثُ عَنِ الحَيَواناتِ",
+     "title_en": "Researching Animals",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l4",
+     "order": 4,
+     "title_ar": "مَهَمَّةٌ جَماعِيَّةٌ",
+     "title_en": "Group Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l5",
+     "order": 5,
+     "title_ar": "المَهَمَّةُ النِّهائِيَّةُ",
+     "title_en": "Final Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u2",
+   "number": 2,
+   "title_ar": "تَنَوُّعُ الكائِناتِ الحَيَّةِ",
+   "title_en": "Diversity of Living Things",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u2_l1",
+     "order": 1,
+     "title_ar": "إِنْشاءُ بَريدٍ إِلِكْترونِيٍّ لِلْفَريقِ",
+     "title_en": "Creating a Team Email Account",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l2",
+     "order": 2,
+     "title_ar": "إِنْشاءُ بَريدٍ إِلِكْترونِيٍّ شَخْصِيٍّ",
+     "title_en": "Creating a Personal Email Account",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l3",
+     "order": 3,
+     "title_ar": "البَحْثُ عَنْ صُوَرٍ وَمُعالَجَتُها وَحِفْظُها",
+     "title_en": "Finding, Editing and Saving Images",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l4",
+     "order": 4,
+     "title_ar": "تَصْميمُ أَلْبومِ صُوَرٍ وَبِطاقاتٍ تَعْريفِيَّةٍ بِاسْتِخْدامِ بَرْنامَجِ Google Slides",
+     "title_en": "Designing a Photo Album and ID Cards Using Google Slides",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u3",
+   "number": 3,
+   "title_ar": "العَناصِرُ وَالمُرَكَّباتُ الكيميائِيَّةُ",
+   "title_en": "Chemical Elements and Compounds",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u3_l1",
+     "order": 1,
+     "title_ar": "البَحْثُ في الجَدْوَلِ الدَّوْرِيِّ وَعَناصِرِهِ (مَهَمَّةٌ بَيْتِيَّةٌ)",
+     "title_en": "Researching the Periodic Table and Its Elements (Homework Task)",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u3_l2",
+     "order": 2,
+     "title_ar": "البَحْثُ في مَجْموعاتٍ عَنِ العَناصِرِ الأَكْثَرِ اسْتِخْدامًا في الحَياةِ اليَوْمِيَّةِ",
+     "title_en": "Group Research on the Most Commonly Used Elements in Daily Life",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u3_l3",
+     "order": 3,
+     "title_ar": "إِعْدادُ شَرائِحِ العَناصِرِ وَاسْتِخْداماتِها",
+     "title_en": "Preparing Slides on Elements and Their Uses",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u4",
+   "number": 4,
+   "title_ar": "مَشْروعُ التَّعَلُّمِ الأَوَّلُ: خَريطَةٌ بيئِيَّةٌ تَفاعُلِيَّةٌ لِمُواطِنينَ مُتَفاعِلينَ إيجابِيّينَ",
+   "title_en": "Learning Project 1: An Interactive Environmental Map for Positively Engaged Citizens",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u4_l1",
+     "order": 1,
+     "title_ar": "خَريطَةٌ بيئِيَّةٌ تَفاعُلِيَّةٌ لِمُواطِنينَ مُتَفاعِلينَ إيجابِيّينَ",
+     "title_en": "An Interactive Environmental Map for Positively Engaged Citizens",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u5",
+   "number": 5,
+   "title_ar": "مَشْروعُ التَّعَلُّمِ الثّاني: بُيوتٌ أُرْدُنِيَّةٌ لِتَرْشيدِ الطّاقَةِ",
+   "title_en": "Learning Project 2: Jordanian Homes for Energy Conservation",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u5_l1",
+     "order": 1,
+     "title_ar": "بُيوتٌ أُرْدُنِيَّةٌ لِتَرْشيدِ الطّاقَةِ",
+     "title_en": "Jordanian Homes for Energy Conservation",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u6",
+   "number": 6,
+   "title_ar": "الغِذاءُ وَالصِّحَّةُ",
+   "title_en": "Food and Health",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u6_l1",
+     "order": 1,
+     "title_ar": "زِيارَةُ مَقْصَفِ المَدْرَسَةِ، وَرَصْدُ الأَغْذِيَةِ الَّتي تُباعُ فيهِ",
+     "title_en": "Visiting the School Cafeteria and Surveying the Foods Sold There",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u6_l2",
+     "order": 2,
+     "title_ar": "جَمْعُ المَعْلوماتِ عَنِ الأَغْذِيَةِ الإِضافِيَّةِ، وَمُعالَجَتُها",
+     "title_en": "Collecting and Processing Information on Food Additives",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u6_l3",
+     "order": 3,
+     "title_ar": "إِعْدادُ جَدْوَلِ البَياناتِ الخاصِّ بِالأَطْعِمَةِ، وَتَصْنيفُ البَياناتِ فيهِ",
+     "title_en": "Preparing a Spreadsheet of Foods and Classifying the Data",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u6_l4",
+     "order": 4,
+     "title_ar": "عَمَلُ قائِمَةٍ نِهائِيَّةٍ بِالأَطْعِمَةِ الصِّحِّيَّةِ وَغَيْرِ الصِّحِّيَّةِ",
+     "title_en": "Making a Final List of Healthy and Unhealthy Foods",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u7",
+   "number": 7,
+   "title_ar": "أَجْهِزَةُ جِسْمِ الإِنْسانِ",
+   "title_en": "Human Body Systems",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u7_l1",
+     "order": 1,
+     "title_ar": "أَجْهِزَةُ جِسْمِ الإِنْسانِ",
+     "title_en": "Human Body Systems",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u7_l2",
+     "order": 2,
+     "title_ar": "تَحْديدُ المَوادِّ الَّتي تُؤَثِّرُ عَلى صِحَّةِ أَجْهِزَةِ الجِسْمِ",
+     "title_en": "Identifying Substances That Affect the Health of Body Systems",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u7_l3",
+     "order": 3,
+     "title_ar": "عَمَلُ مِلَفٍّ (Google Sheets) شامِلٍ",
+     "title_en": "Creating a Comprehensive Google Sheets File",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u8",
+   "number": 8,
+   "title_ar": "الحَرَكَةُ وَالطّاقَةُ",
+   "title_en": "Motion and Energy",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u8_l1",
+     "order": 1,
+     "title_ar": "مُحاكاةُ لُعْبَةٍ رِياضِيَّةٍ",
+     "title_en": "Simulating a Sports Game",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u8_l2",
+     "order": 2,
+     "title_ar": "رَسْمُ مُحاكاةِ لُعْبَةٍ رِياضِيَّةٍ",
+     "title_en": "Diagramming a Sports Game Simulation",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u8_l3",
+     "order": 3,
+     "title_ar": "تَحْليلُ لُعْبَةِ مُحاكاةٍ",
+     "title_en": "Analyzing a Simulation Game",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u9",
+   "number": 9,
+   "title_ar": "مَشْروعُ التَّعَلُّمِ الثّالِثُ: خَمْسَةٌ × خَمْسَةٌ = حَياةٌ صِحِّيَّةٌ",
+   "title_en": "Learning Project 3: Five × Five = A Healthy Life",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u9_l1",
+     "order": 1,
+     "title_ar": "خَمْسَةٌ × خَمْسَةٌ = حَياةٌ صِحِّيَّةٌ",
+     "title_en": "Five × Five = A Healthy Life",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u10",
+   "number": 10,
+   "title_ar": "مَشْروعُ التَّعَلُّمِ الرّابِعُ: الطَّقْسُ وَأَنْشِطَةُ الحَياةِ",
+   "title_en": "Learning Project 4: Weather and Life Activities",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u10_l1",
+     "order": 1,
+     "title_ar": "الطَّقْسُ وَأَنْشِطَةُ الحَياةِ",
+     "title_en": "Weather and Life Activities",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  }
+ ]
+}
