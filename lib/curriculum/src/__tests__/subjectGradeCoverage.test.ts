@@ -251,6 +251,45 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // 2026-09-17 by extending SUBJECTS.grades (both were previously
   // grade-6..8 only) and building g4CreativeArts.ts / g4VocationalSem1.ts —
   // see those files. Grade 4's MVP rollout is complete.
+  //
+  // grade-3 joined MVP_GRADE_IDS 2026-09-17 with only Mathematics built —
+  // a staged rollout like grade-4/5's. mathematics:grade-3 closed the same
+  // day, both semesters, real content from each lesson's own «أَتَعَلَّمُ
+  // الْيَوْمَ» box (this book's name for the objectives box — see
+  // g3MathSem1.ts).
+  //
+  // PERMANENT — the subject is not declared at grade-3 in SUBJECTS.grades at
+  // all, same reasoning as grade-4/5 above (physics/chemistry/biology/
+  // earth-science/financial-literacy start at grade-7 or SPECIALISED_FROM;
+  // geography/history/civic-education start at grade-9). physical-education
+  // is declared for grade-6/7/9 only and creative-arts for
+  // grade-4/6/7/8 only — both exclude grade-3, but unlike
+  // vocational-education (no Grade 3 vocational book exists at all), Grade 3
+  // Art and PE source PDFs exist on disk, so these two may move to the
+  // ORDINARY list below once SUBJECTS.grades is extended for them, same trap
+  // as grade-4's creative-arts/vocational-education.
+  'chemistry:grade-3',
+  'physics:grade-3',
+  'biology:grade-3',
+  'earth-science:grade-3',
+  'financial-literacy:grade-3',
+  'geography:grade-3',
+  'history:grade-3',
+  'civic-education:grade-3',
+  'physical-education:grade-3',
+  'creative-arts:grade-3',
+  'vocational-education:grade-3',
+  //
+  // ORDINARY GAPS — the subject is declared at grade-3 in SUBJECTS.grades,
+  // and Grade 3 source PDFs exist on disk (knowledge-base/grade-3-*), but no
+  // catalog has been built from them yet. Delete each line once its catalog
+  // and BOOKS row land, same as the grade-4 rollout above.
+  'science:grade-3',
+  'islamic:grade-3',
+  'english:grade-3',
+  'arabic:grade-3',
+  'digital-literacy:grade-3',
+  'social:grade-3',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

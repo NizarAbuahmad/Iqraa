@@ -168,6 +168,14 @@ import {
   buildG4MathSem2BrowserCatalog,
 } from './catalogs/g4MathSem2.ts';
 import {
+  G3_MATH_S1_CURRICULUM_BOOK_ID,
+  buildG3MathSem1BrowserCatalog,
+} from './catalogs/g3MathSem1.ts';
+import {
+  G3_MATH_S2_CURRICULUM_BOOK_ID,
+  buildG3MathSem2BrowserCatalog,
+} from './catalogs/g3MathSem2.ts';
+import {
   G4_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG4ScienceSem1BrowserCatalog,
 } from './catalogs/g4ScienceSem1.ts';
@@ -838,7 +846,7 @@ export const INVESTOR_MVP_CURRICULUM = true;
 // resolved for Grade 5 Math. Grade 4 and the rest of Grade 5 have extracted
 // text (worktree-grade-5-books) but no catalogs yet, and Grade 3 has nothing
 // at all — see KNOWN_BOOKLESS in subjectGradeCoverage.test.ts.
-export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7', 'grade-6', 'grade-5', 'grade-4'];
+export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7', 'grade-6', 'grade-5', 'grade-4', 'grade-3'];
 // Appended, never inserted: these positions are persisted as bare indices in
 // formState and route URLs, so inserting shifts what a saved URL resolves to.
 // 'physics' joined on 2026-09-03 with the Grade 10 S1 curriculum. Without it,
@@ -1195,6 +1203,14 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // declaration above and g4VocationalSem1.ts.
   G4_VOC_S1_CURRICULUM_BOOK_ID,
   G4_VOC_S2_CURRICULUM_BOOK_ID,
+  // Grade 3 Mathematics, both semesters — the first Grade 3 book, and the
+  // book that brings grade-3 into MVP_GRADE_IDS above. 'mathematics' is
+  // already in MVP_SUBJECT_IDS (and already declared for grade-3 in
+  // SUBJECTS.grades, which spans every grade for this subject), so no
+  // subject append or SUBJECTS.grades extension is needed. Same
+  // HarperCollins/NCCD series as Grade 4/5/10 Math — see g3MathSem1.ts.
+  G3_MATH_S1_CURRICULUM_BOOK_ID,
+  G3_MATH_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2519,6 +2535,38 @@ export const BOOKS: Book[] = [
     academicYear: '2024-2025',
     language: 'Arabic',
     edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // The first Grade 3 book in the repo, and the book that brings grade-3
+  // into MVP_GRADE_IDS. HarperCollins/NCCD series, same publisher as
+  // Grade 4/5/10 Math. Real per-lesson content from each lesson's own
+  // «أَتَعَلَّمُ الْيَوْمَ» box (this book's name for the objectives box — same
+  // function as «فِكْرَةُ الدَّرْسِ» in the other grades' Math books) and
+  // «المُصْطَلَحات» vocabulary box. See g3MathSem1.ts.
+  {
+    id: G3_MATH_S1_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 3, Semester 1',
+    titleAr: 'الرياضيات – الصف الثالث – الفصل الأول',
+    subjectId: 'mathematics',
+    gradeId: 'grade-3',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G3_MATH_S2_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 3, Semester 2',
+    titleAr: 'الرياضيات – الصف الثالث – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-3',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
@@ -4648,6 +4696,8 @@ const _g8CreativeArtsBrowser = buildG8CreativeArtsBrowserCatalog();
 const _g4CreativeArtsBrowser = buildG4CreativeArtsBrowserCatalog();
 const _g4VocSem1Browser = buildG4VocSem1BrowserCatalog();
 const _g4VocSem2Browser = buildG4VocSem2BrowserCatalog();
+const _g3MathSem1Browser = buildG3MathSem1BrowserCatalog();
+const _g3MathSem2Browser = buildG3MathSem2BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -4903,6 +4953,8 @@ export const UNITS: Unit[] = [
   ..._g4CreativeArtsBrowser.units,
   ..._g4VocSem1Browser.units,
   ..._g4VocSem2Browser.units,
+  ..._g3MathSem1Browser.units,
+  ..._g3MathSem2Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -5048,6 +5100,8 @@ export const LESSONS: Lesson[] = [
   ..._g4CreativeArtsBrowser.lessons,
   ..._g4VocSem1Browser.lessons,
   ..._g4VocSem2Browser.lessons,
+  ..._g3MathSem1Browser.lessons,
+  ..._g3MathSem2Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
