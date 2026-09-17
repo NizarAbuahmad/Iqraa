@@ -213,8 +213,9 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   //
   // grade-4 joined MVP_GRADE_IDS 2026-09-17 with only Mathematics built — a
   // staged rollout like grade-5's, so the pairs below split the same two
-  // ways. science:grade-4 closed the same rollout, both semesters, real
-  // content (see g4ScienceSem1.ts — matches g5ScienceSem1.ts's convention).
+  // ways. science:grade-4 and islamic:grade-4 closed the same rollout, both
+  // semesters each, real content (see g4ScienceSem1.ts / g4IslamicSem1.ts —
+  // matching g5ScienceSem1.ts's and g5IslamicSem1.ts's conventions).
   // digital-literacy:grade-4 closed the same rollout, title-only,
   // cross-curricular (see g4DigitalSem1.ts — matches g5DigitalSem1.ts's
   // convention).
@@ -242,15 +243,13 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'creative-arts:grade-4',
   'vocational-education:grade-4',
   //
-  // ORDINARY GAPS — the subject is declared at grade-4 (arabic/english/
-  // islamic/digital-literacy span all grades; social spans grade-1..
-  // grade-9), and Grade 4 source text exists on disk
-  // (knowledge-base/grade-4-*), but no catalog has been built from it yet.
-  // Delete each line once its catalog and BOOKS row land, same as the
-  // grade-5 rollout above.
+  // ORDINARY GAPS — the subject is declared at grade-4 (arabic/english span
+  // all grades; social spans grade-1..grade-9), and Grade 4 source text
+  // exists on disk (knowledge-base/grade-4-*), but no catalog has been built
+  // from it yet. Delete each line once its catalog
+  // and BOOKS row land, same as the grade-5 rollout above.
   'arabic:grade-4',
   'english:grade-4',
-  'islamic:grade-4',
   'social:grade-4',
 ]);
 
