@@ -978,7 +978,7 @@ const translations = {
     slidesSaved: 'حُفظت الشرائح في مساحتك',
     slidesUnsaved: 'أزلت الشرائح من مساحتك',
     // Prompt Slides
-    promptSlidesTitle: 'شرائح من وصف حر',
+    promptSlidesTitle: 'اكتب فكرتك، وجهّز شرائحك',
     promptSlidesSubtitle: 'اكتب وصفًا لما تريده، واختر بين قالب مجاني فوري أو عرض يبنيه الذكاء الاصطناعي.',
     promptSlidesPlaceholder: 'مثال: ٦ شرائح عن التمثيل الضوئي للصف السادس، بأسلوب ممتع، مع سؤالي تحقق',
     promptRequired: 'اكتب وصفًا للعرض أولًا.',
@@ -988,7 +988,7 @@ const translations = {
     promptSlidesModeFree: 'قالب مجاني',
     promptSlidesModeAi: 'ذكاء اصطناعي',
     promptSlidesModeFreeHint: 'فوري ومجاني دائمًا. عرض عام يحتاج إلى تعديلك — لا يتبع تفاصيل وصفك بدقة.',
-    promptSlidesModeAiHint: 'يستخدم رصيد الذكاء الاصطناعي المشترك للمدرسة. يتبع وصفك بدقة، ويمكن أن يضيف صورًا مولّدة.',
+    promptSlidesModeAiHint: 'يستخدم رصيدك من الذكاء الاصطناعي. يتبع وصفك بدقة، ويمكن أن يضيف صورًا مولّدة.',
     promptSlidesSlideCountLabel: 'عدد الشرائح (اختياري، حتى 20)',
     // Class Challenge (phone-free team game)
     gameTitle: 'تحدي الصف',
@@ -2342,7 +2342,7 @@ const translations = {
     slidesSaved: 'Slides saved to your workspace',
     slidesUnsaved: 'Slides removed from your workspace',
     // Prompt Slides
-    promptSlidesTitle: 'Slides from a prompt',
+    promptSlidesTitle: 'Write your idea, build your slides',
     promptSlidesSubtitle: 'Describe what you want, then choose an instant free template or an AI-generated deck.',
     promptSlidesPlaceholder: 'e.g. 6 slides on photosynthesis for grade 6, fun tone, 2 quiz questions',
     promptRequired: 'Please describe the deck you want first.',
@@ -2352,7 +2352,7 @@ const translations = {
     promptSlidesModeFree: 'Free template',
     promptSlidesModeAi: 'AI-generated',
     promptSlidesModeFreeHint: 'Instant and always free. A generic deck you’ll need to edit — it does not follow your prompt’s specific details.',
-    promptSlidesModeAiHint: 'Uses the school’s shared AI budget. Follows your prompt closely, and can add a few generated images.',
+    promptSlidesModeAiHint: 'Uses your AI credit. Follows your prompt closely, and can add a few generated images.',
     promptSlidesSlideCountLabel: 'Slide count (optional, up to 20)',
     // Class Challenge (phone-free team game)
     gameTitle: 'Class Challenge',
