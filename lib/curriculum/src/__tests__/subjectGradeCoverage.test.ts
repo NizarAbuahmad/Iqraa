@@ -284,7 +284,7 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // and Grade 3 source PDFs exist on disk (knowledge-base/grade-3-*), but no
   // catalog has been built from them yet. Delete each line once its catalog
   // and BOOKS row land, same as the grade-4 rollout above.
-  'science:grade-3',
+  // science:grade-3 closed 2026-09-17 — see g3ScienceSem1.ts/g3ScienceSem2.ts.
   'islamic:grade-3',
   'english:grade-3',
   'arabic:grade-3',
