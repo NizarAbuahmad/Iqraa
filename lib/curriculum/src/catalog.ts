@@ -134,6 +134,12 @@ import {
   isG5SocialSem2TitleOnlyLesson,
 } from './catalogs/g5SocialSem2.ts';
 import {
+  G5_DIGITAL_S1_CURRICULUM_BOOK_ID,
+  buildG5DigitalSem1BrowserCatalog,
+  isG5DigitalSem1TitleOnlyUnit,
+  isG5DigitalSem1TitleOnlyLesson,
+} from './catalogs/g5DigitalSem1.ts';
+import {
   G5_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG5ScienceSem1BrowserCatalog,
 } from './catalogs/g5ScienceSem1.ts';
@@ -1030,6 +1036,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // no subject append is needed.
   G5_SOCIAL_S1_CURRICULUM_BOOK_ID,
   G5_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  // Grade 5 Digital Skills S1 — title-only, cross-curricular companion (see
+  // g5DigitalSem1.ts). 'digital-literacy' is already in MVP_SUBJECT_IDS, so
+  // no subject append is needed.
+  G5_DIGITAL_S1_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2027,6 +2037,23 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+  },
+  // Grade 5 Digital Skills, Semester 1 — a cross-curricular companion, not a
+  // subject book: its units are blocks attached to Science units and carry
+  // those units' titles verbatim. Title-only, same treatment as
+  // g6DigitalSem1. See g5DigitalSem1.ts for the full rationale.
+  {
+    id: G5_DIGITAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Digital Skills – Grade 5, Semester 1',
+    titleAr: 'المهارات الرقمية – الصف الخامس – الفصل الأول',
+    subjectId: 'digital-literacy',
+    gradeId: 'grade-5',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
   },
   // The first Grade 6 books in the repo. Maths carries four units and eighteen
   // lessons from the student book alone (no S2 student book was supplied);
@@ -4168,6 +4195,7 @@ const _g5IslamicSem1Browser = buildG5IslamicSem1BrowserCatalog();
 const _g5IslamicSem2Browser = buildG5IslamicSem2BrowserCatalog();
 const _g5SocialSem1Browser = buildG5SocialSem1BrowserCatalog();
 const _g5SocialSem2Browser = buildG5SocialSem2BrowserCatalog();
+const _g5DigitalSem1Browser = buildG5DigitalSem1BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
 const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
@@ -4422,6 +4450,7 @@ export const UNITS: Unit[] = [
   ..._g5IslamicSem2Browser.units,
   ..._g5SocialSem1Browser.units,
   ..._g5SocialSem2Browser.units,
+  ..._g5DigitalSem1Browser.units,
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
   ..._g6ArabicSem1Browser.units,
@@ -4546,6 +4575,7 @@ export const LESSONS: Lesson[] = [
   ..._g5IslamicSem2Browser.lessons,
   ..._g5SocialSem1Browser.lessons,
   ..._g5SocialSem2Browser.lessons,
+  ..._g5DigitalSem1Browser.lessons,
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
   ..._g6ArabicSem1Browser.lessons,
@@ -4599,6 +4629,7 @@ export function isBrowserUnitTitleOnly(unitId: string): boolean {
     || isG6ArabicSem1TitleOnlyUnit(unitId)
     || isG6ArabicSem2TitleOnlyUnit(unitId)
     || isG6DigitalSem1TitleOnlyUnit(unitId)
+    || isG5DigitalSem1TitleOnlyUnit(unitId)
     || isG6VocationalSem1TitleOnlyUnit(unitId)
     || isG6VocationalSem2TitleOnlyUnit(unitId)
     || isG6PhysicalEducationSem1TitleOnlyUnit(unitId)
@@ -4621,6 +4652,7 @@ export function isBrowserLessonTitleOnly(lessonId: string): boolean {
     || isG6ArabicSem1TitleOnlyLesson(lessonId)
     || isG6ArabicSem2TitleOnlyLesson(lessonId)
     || isG6DigitalSem1TitleOnlyLesson(lessonId)
+    || isG5DigitalSem1TitleOnlyLesson(lessonId)
     || isG6VocationalSem1TitleOnlyLesson(lessonId)
     || isG6VocationalSem2TitleOnlyLesson(lessonId)
     || isG6PhysicalEducationSem1TitleOnlyLesson(lessonId)
