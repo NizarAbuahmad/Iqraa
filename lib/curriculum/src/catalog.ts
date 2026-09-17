@@ -122,6 +122,18 @@ import {
   buildG5IslamicSem2BrowserCatalog,
 } from './catalogs/g5IslamicSem2.ts';
 import {
+  G5_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  buildG5SocialSem1BrowserCatalog,
+  isG5SocialSem1TitleOnlyUnit,
+  isG5SocialSem1TitleOnlyLesson,
+} from './catalogs/g5SocialSem1.ts';
+import {
+  G5_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  buildG5SocialSem2BrowserCatalog,
+  isG5SocialSem2TitleOnlyUnit,
+  isG5SocialSem2TitleOnlyLesson,
+} from './catalogs/g5SocialSem2.ts';
+import {
   G5_DIGITAL_S1_CURRICULUM_BOOK_ID,
   buildG5DigitalSem1BrowserCatalog,
   isG5DigitalSem1TitleOnlyUnit,
@@ -1019,6 +1031,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // MVP_SUBJECT_IDS, so no subject append is needed.
   G5_ISLAMIC_S1_CURRICULUM_BOOK_ID,
   G5_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 5 Social Studies, both semesters — title-only (corrupted PDF text
+  // layer, see g5SocialSem1.ts). 'social' is already in MVP_SUBJECT_IDS, so
+  // no subject append is needed.
+  G5_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  G5_SOCIAL_S2_CURRICULUM_BOOK_ID,
   // Grade 5 Digital Skills S1 — title-only, cross-curricular companion (see
   // g5DigitalSem1.ts). 'digital-literacy' is already in MVP_SUBJECT_IDS, so
   // no subject append is needed.
@@ -1983,6 +2000,36 @@ export const BOOKS: Book[] = [
     title: 'Islamic Education – Grade 5, Semester 2',
     titleAr: 'التربية الإسلامية – الصف الخامس – الفصل الثاني',
     subjectId: 'islamic',
+    gradeId: 'grade-5',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // Grade 5 Social Studies, both semesters — title-only, but not for the
+  // usual reason: this student book's PDF has a corrupted embedded text
+  // layer (a wrong ToUnicode CMap), so unit/lesson titles were recovered by
+  // OCR instead of PyMuPDF text extraction. See g5SocialSem1.ts.
+  {
+    id: G5_SOCIAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 5, Semester 1',
+    titleAr: 'الدراسات الاجتماعية – الصف الخامس – الفصل الأول',
+    subjectId: 'social',
+    gradeId: 'grade-5',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G5_SOCIAL_S2_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 5, Semester 2',
+    titleAr: 'الدراسات الاجتماعية – الصف الخامس – الفصل الثاني',
+    subjectId: 'social',
     gradeId: 'grade-5',
     academicYear: '2024-2025',
     language: 'Arabic',
@@ -4146,6 +4193,8 @@ const _g5ScienceSem1Browser = buildG5ScienceSem1BrowserCatalog();
 const _g5ScienceSem2Browser = buildG5ScienceSem2BrowserCatalog();
 const _g5IslamicSem1Browser = buildG5IslamicSem1BrowserCatalog();
 const _g5IslamicSem2Browser = buildG5IslamicSem2BrowserCatalog();
+const _g5SocialSem1Browser = buildG5SocialSem1BrowserCatalog();
+const _g5SocialSem2Browser = buildG5SocialSem2BrowserCatalog();
 const _g5DigitalSem1Browser = buildG5DigitalSem1BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
@@ -4399,6 +4448,8 @@ export const UNITS: Unit[] = [
   ..._g5ScienceSem2Browser.units,
   ..._g5IslamicSem1Browser.units,
   ..._g5IslamicSem2Browser.units,
+  ..._g5SocialSem1Browser.units,
+  ..._g5SocialSem2Browser.units,
   ..._g5DigitalSem1Browser.units,
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
@@ -4522,6 +4573,8 @@ export const LESSONS: Lesson[] = [
   ..._g5ScienceSem2Browser.lessons,
   ..._g5IslamicSem1Browser.lessons,
   ..._g5IslamicSem2Browser.lessons,
+  ..._g5SocialSem1Browser.lessons,
+  ..._g5SocialSem2Browser.lessons,
   ..._g5DigitalSem1Browser.lessons,
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
@@ -4586,7 +4639,9 @@ export function isBrowserUnitTitleOnly(unitId: string): boolean {
     || isG6IslamicSem1TitleOnlyUnit(unitId)
     || isG6IslamicSem2TitleOnlyUnit(unitId)
     || isG6SocialSem1TitleOnlyUnit(unitId)
-    || isG6SocialSem2TitleOnlyUnit(unitId);
+    || isG6SocialSem2TitleOnlyUnit(unitId)
+    || isG5SocialSem1TitleOnlyUnit(unitId)
+    || isG5SocialSem2TitleOnlyUnit(unitId);
 }
 
 /** UI: Sem1 units 2–4 lessons — title confirmed, no per-lesson objectives yet. */
@@ -4607,7 +4662,9 @@ export function isBrowserLessonTitleOnly(lessonId: string): boolean {
     || isG6IslamicSem1TitleOnlyLesson(lessonId)
     || isG6IslamicSem2TitleOnlyLesson(lessonId)
     || isG6SocialSem1TitleOnlyLesson(lessonId)
-    || isG6SocialSem2TitleOnlyLesson(lessonId);
+    || isG6SocialSem2TitleOnlyLesson(lessonId)
+    || isG5SocialSem1TitleOnlyLesson(lessonId)
+    || isG5SocialSem2TitleOnlyLesson(lessonId);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

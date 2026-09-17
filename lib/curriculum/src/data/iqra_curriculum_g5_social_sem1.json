@@ -1,0 +1,201 @@
+{
+  "meta": {
+    "grade": "الصف الخامس",
+    "grade_en": "Grade 5",
+    "subject": "الدراسات الاجتماعية",
+    "subject_en": "Social Studies",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الأول (g5-social-s1-student-book)"
+    ],
+    "provenance_note": "قُرِئَت هذه البِنيةُ من فِهرسِ كتابِ الطالبِ (ص 3-4) وصفحاتِ افتتاحِ الوحداتِ في 2026-09-16، عبرَ PyMuPDF. لكنَّ استخراجَ هذا الكتابِ بعَينِهِ — على خلافِ سائرِ كتبِ الصفِّ الخامسِ (الرياضيّاتِ والعلومِ والتربيةِ الإسلاميةِ) — عادَ نصًّا عربيًّا مُشَوَّشًا حتّى بواسطةِ PyMuPDF: يبدو أنَّ خريطةَ الرموزِ (ToUnicode CMap) المُضَمَّنةَ في ملفِّ PDF نفسِهِ معطوبةٌ لهذا الكتابِ بعَينِهِ، لا عيبًا في أداةِ الاستخراجِ. فلم تُقرَأ عناوينُ الوحداتِ والدروسِ من طبقةِ النَّصِّ، بل بالتصويرِ الضوئيِّ (OCR، Tesseract بحزمةِ اللغةِ العربيةِ ara.traineddata) لصفحاتِ الفهرسِ وصفحاتِ افتتاحِ الوحداتِ، وقوبِلَ الناتجُ بنصِّ الاستخراجِ الخامِ (رغم تشوُّشِهِ) للتحقُّقِ من ترقيمِ الصفحاتِ وعددِ الدروسِ.",
+    "known_gaps": [
+      "الكتابُ محميٌّ من نسخِ النَّصِّ بعُطلٍ في خريطةِ الرموزِ، فلا main_idea_ar ولا objectives ولا vocabulary — هذا الكتابُ title-only فرضًا لا اختيارًا، خلافًا لسائرِ كتبِ الصفِّ الخامسِ الأخرى.",
+      "عنوانُ الدرسِ الأوَّلِ من الوحدةِ الأولى (أشكال التواصل ومظاهره) أُعيدَ بناؤُهُ من فقرةِ «الفكرة العامة» وقائمةِ «ماذا سأتعلَّم؟» لا من عنوانِ الفهرسِ نفسِهِ، الذي ضاعَ في تشويشِ النَّصِّ/التصويرِ الضوئيِّ حتّى بعدَ محاولاتٍ متعدِّدةٍ. ثِقةٌ متوسِّطةٌ لا عاليةٌ.",
+      "عنوانُ الدرسِ الأوَّلِ من الوحدةِ الرابعةِ (المساحات الجغرافية في وطني) مُستخلَصٌ جزئيًّا من الفهرسِ المشوَّشِ وصفحةِ افتتاحِ الوحدةِ؛ الصياغةُ الدقيقةُ غيرُ مؤكَّدةٍ.",
+      "الفصلُ الدراسيُّ الثاني من هذا الكتابِ (iqra_curriculum_g5_social_sem2.json) يحمِلُ نفسَ العُطلِ، ونُقِلَت إليهِ نفسُ المعالجةِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "التَّواصُلُ المُجْتَمَعِيُّ",
+      "title_en": "Social Communication",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (OCR of a corrupted-text-layer student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "أَشْكالُ التَّواصُلِ وَمَظاهِرُهُ",
+          "title_en": "Forms and Manifestations of Communication",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "المُشارَكَةُ في خِدْمَةِ مُجْتَمَعي",
+          "title_en": "Participating in Serving My Community",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "التَّكافُلُ المُجْتَمَعِيُّ",
+          "title_en": "Social Solidarity",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "النِّظامُ السِّياسِيُّ في الأُرْدُنِّ",
+      "title_en": "The Political System in Jordan",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (OCR of a corrupted-text-layer student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "المَلِكُ وَصَلاحِيّاتُهُ الدُّسْتوريَّةُ",
+          "title_en": "The King and His Constitutional Powers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "السُّلْطَةُ التَّشْريعِيَّةُ (مَجْلِسُ الأُمَّةِ)",
+          "title_en": "Legislative Authority (National Assembly)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "السُّلْطَةُ التَّنْفيذِيَّةُ (مَجْلِسُ الوُزَراءِ)",
+          "title_en": "Executive Authority (Council of Ministers)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "السُّلْطَةُ القَضائِيَّةُ",
+          "title_en": "Judicial Authority",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "رِحْلَةٌ في وَطَني",
+      "title_en": "A Journey in My Homeland",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (OCR of a corrupted-text-layer student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "رِحْلَتي في مُحافَظَةِ العاصِمَةِ",
+          "title_en": "My Journey in the Capital Governorate",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "رِحْلَتي في مُحافَظَةِ مَعانَ",
+          "title_en": "My Journey in Ma'an Governorate",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "رِحْلَتي في مُحافَظَةِ إِرْبِدَ",
+          "title_en": "My Journey in Irbid Governorate",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "وَطَني الأُرْدُنُّ",
+      "title_en": "My Homeland, Jordan",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (OCR of a corrupted-text-layer student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "المَساحاتُ الجُغْرافِيَّةُ في وَطَني",
+          "title_en": "Geographic Features of My Homeland",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "خَصائِصُ السُّكّانِ في وَطَني",
+          "title_en": "Population Characteristics in My Homeland",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "التَّنَوُّعُ السُّكّانِيُّ في وَطَني الأُرْدُنِّ",
+          "title_en": "Population Diversity in My Homeland, Jordan",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
