@@ -506,6 +506,10 @@ import {
   buildG8CreativeArtsBrowserCatalog,
 } from './catalogs/g8CreativeArts.ts';
 import {
+  G4_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  buildG4CreativeArtsBrowserCatalog,
+} from './catalogs/g4CreativeArts.ts';
+import {
   G8_VOC_S1_CURRICULUM_BOOK_ID,
   buildG8VocSem1BrowserCatalog,
 } from './catalogs/g8VocationalSem1.ts';
@@ -757,8 +761,10 @@ export const SUBJECTS: Subject[] = [
   // Sixth brand-new subject, added 2026-09-09 as part of the Grade 8 batch.
   // Combines three domains (Art, Music, Drama) NCCD prints as one book —
   // see g8CreativeArts.ts. Extended to grade-7 on 2026-09-12 once its book
-  // arrived (also one book, no semester split, same as grade-8's).
-  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-6', 'grade-7', 'grade-8'] },
+  // arrived (also one book, no semester split, same as grade-8's). Extended
+  // to grade-4 on 2026-09-17 once its book arrived — not contiguous with
+  // grade-6..8 (no grade-5 book); see g4CreativeArts.ts.
+  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-4', 'grade-6', 'grade-7', 'grade-8'] },
   // Seventh brand-new subject, added 2026-09-09 as part of the Grade 8
   // batch. Seven vocational tracks packed into one book per semester
   // (life skills, home economics, agriculture, health/safety, industry,
@@ -1165,6 +1171,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // in MVP_SUBJECT_IDS, so no subject append is needed.
   G4_ENGLISH_S1_CURRICULUM_BOOK_ID,
   G4_ENGLISH_S2_CURRICULUM_BOOK_ID,
+  // Grade 4 Art, Music and Drama Education — one book, no semester, same
+  // shape as g8CreativeArts.ts. 'creative-arts' is already in
+  // MVP_SUBJECT_IDS, but SUBJECTS.grades needed extending for grade-4 — see
+  // the SUBJECTS declaration above and g4CreativeArts.ts.
+  G4_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2440,6 +2451,25 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+  },
+  // ── Art, Music and Drama Education Grade 4 ─────────────────────────────
+  // Seventh Grade 4 subject, required extending SUBJECTS.grades for
+  // creative-arts (previously grade-6..8 only). One book for the whole
+  // year — no semester field, unlike every other Grade 4 row in this
+  // table. Unlike g8CreativeArts.ts, this book prints a main-idea box on
+  // every lesson's own opener page, so all 30 lessons got real
+  // main_idea_ar. See g4CreativeArts.ts.
+  {
+    id: G4_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+    title: 'Art, Music and Drama Education – Grade 4',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف الرابع',
+    subjectId: 'creative-arts',
+    gradeId: 'grade-4',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
   },
   // The first Grade 6 books in the repo. Maths carries four units and eighteen
   // lessons from the student book alone (no S2 student book was supplied);
@@ -4563,6 +4593,7 @@ const _g8FinlitSem1Browser = buildG8FinlitSem1BrowserCatalog();
 const _g8DigitalSem1Browser = buildG8DigitalSem1BrowserCatalog();
 const _g8DigitalSem2Browser = buildG8DigitalSem2BrowserCatalog();
 const _g8CreativeArtsBrowser = buildG8CreativeArtsBrowserCatalog();
+const _g4CreativeArtsBrowser = buildG4CreativeArtsBrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -4815,6 +4846,7 @@ export const UNITS: Unit[] = [
   ..._g8DigitalSem1Browser.units,
   ..._g8DigitalSem2Browser.units,
   ..._g8CreativeArtsBrowser.units,
+  ..._g4CreativeArtsBrowser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -4957,6 +4989,7 @@ export const LESSONS: Lesson[] = [
   ..._g8DigitalSem1Browser.lessons,
   ..._g8DigitalSem2Browser.lessons,
   ..._g8CreativeArtsBrowser.lessons,
+  ..._g4CreativeArtsBrowser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,

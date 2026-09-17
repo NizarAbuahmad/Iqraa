@@ -233,12 +233,11 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // all, same reasoning as grade-5 above (physics/chemistry/biology/
   // earth-science/financial-literacy start at grade-7 or SPECIALISED_FROM;
   // geography/history/civic-education start at grade-9; physical-education
-  // is declared for grade-6/7/9 only; creative-arts and vocational-education
-  // for grade-6..grade-8 only). Grade 4 Art and Vocational Education source
-  // PDFs exist on disk (knowledge-base/grade-4-art,
-  // knowledge-base/grade-4-vocational), so these two may move to the
-  // ORDINARY list below once SUBJECTS.grades is extended for them — until
-  // then the declared range, not the missing book, is what makes them
+  // is declared for grade-6/7/9 only; vocational-education for
+  // grade-6..grade-8 only). Grade 4 Vocational Education's source PDFs
+  // exist on disk (knowledge-base/grade-4-vocational), so it may move to
+  // the ORDINARY list below once SUBJECTS.grades is extended for it — until
+  // then the declared range, not the missing book, is what makes it
   // permanent here.
   'chemistry:grade-4',
   'physics:grade-4',
@@ -249,13 +248,14 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'history:grade-4',
   'civic-education:grade-4',
   'physical-education:grade-4',
-  'creative-arts:grade-4',
   'vocational-education:grade-4',
   // No ORDINARY GAPS remain for grade-4 — all seven subjects that mirror
   // Grade 5's set (mathematics, science, islamic, digital-literacy, social,
-  // arabic, english) now have catalogs. Only Art and Vocational Education
-  // are missing, and both are PERMANENT above until SUBJECTS.grades is
-  // extended for grade-4.
+  // arabic, english) now have catalogs, and creative-arts:grade-4 closed
+  // 2026-09-17 by extending SUBJECTS.grades and building g4CreativeArts.ts
+  // (one book, no semester split, real per-lesson main_idea_ar — see that
+  // file). Only Vocational Education is missing, and it is PERMANENT above
+  // until SUBJECTS.grades is extended for grade-4.
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {
