@@ -1,0 +1,292 @@
+{
+  "meta": {
+    "grade": "الصف الرابع",
+    "grade_en": "Grade 4",
+    "subject": "اللغة الإنجليزية",
+    "subject_en": "English",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني (g4-english-s2-pupils-book, Jordan Team Together series, Pearson/York Press)"
+    ],
+    "provenance_note": "Read directly from the PDF via PyMuPDF on 2026-09-17 — same source and treatment as iqra_curriculum_g4_english_sem1.json. Units are numbered 6-10, continuing Semester 1's 1-5, matching the book's own contents page (Welcome 'Hello from Hamed!' plus units printed '5 Hobbies' through '8 Let's celebrate!').",
+    "known_gaps": [
+      "This is real content (vocabulary lists, grammar points with the book's own example sentences, skill descriptors), not title-only — but it is unit-level, not lesson-level; see iqra_curriculum_g4_english_sem1.json's known_gaps for the full rationale.",
+      "'Hello from Hamed!' (the review unit opening this semester) is a revision unit: the scope-and-sequence table gives no itemized vocabulary list for it (just 'Revision of vocabulary from Grade 4 Semester 1'), so its Vocabulary & Grammar lesson's vocabulary array is empty.",
+      "Excluded as supplementary, non-core material (no dedicated row in the scope-and-sequence table): the 'Bo's Learning Club: Language booster 2' spread, the 'Social Studies: What was transport like 100 years ago?' page, the 'Festivals' pages (World Wildlife Day, Eid al-Adha, International Literacy Day), 'Solve it', and the 'Grammar reference' appendix."
+    ]
+  },
+  "units": [
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "مرحبًا من حامد!",
+      "title_en": "Hello from Hamed!",
+      "general_idea_ar": "Revising vocabulary and grammar from Grade 4 Semester 1.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Revision of vocabulary from Grade 4 Semester 1. Revision of grammar from Grade 4 Semester 1.",
+          "periods": null,
+          "objectives": [
+            "Revision of vocabulary from Grade 4 Semester 1.",
+            "Revision of grammar from Grade 4 Semester 1."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Understanding main information when people talk about their school day; understanding simple expressions about likes and dislikes in short stories or dialogues.",
+          "periods": null,
+          "objectives": [
+            "Understanding main information when people talk about their school day.",
+            "Understanding simple expressions about likes and dislikes in short stories or dialogues."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "الهوايات",
+      "title_en": "Hobbies",
+      "general_idea_ar": "Talking about freetime activities, and adverbs of manner.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "can/can't. Example: I can go sailing. / I can't play board games. / Can you sew? Yes, I can. / No, I can't. Adverbs of manner. Example: She can sew well.",
+          "periods": null,
+          "objectives": [
+            "can/can't — e.g. I can go sailing. / I can't play board games. / Can you sew? Yes, I can. / No, I can't.",
+            "Adverbs of manner — e.g. She can sew well."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "build a robot" },
+            { "ar": "", "en": "dress up" },
+            { "ar": "", "en": "go fishing" },
+            { "ar": "", "en": "go sailing" },
+            { "ar": "", "en": "go windsurfing" },
+            { "ar": "", "en": "kick" },
+            { "ar": "", "en": "knit" },
+            { "ar": "", "en": "play board games" },
+            { "ar": "", "en": "play chess" },
+            { "ar": "", "en": "play computer games" },
+            { "ar": "", "en": "sew" },
+            { "ar": "", "en": "skip" },
+            { "ar": "", "en": "badly" },
+            { "ar": "", "en": "carefully" },
+            { "ar": "", "en": "easily" },
+            { "ar": "", "en": "loudly" },
+            { "ar": "", "en": "quickly" },
+            { "ar": "", "en": "quietly" },
+            { "ar": "", "en": "slowly" },
+            { "ar": "", "en": "well" }
+          ]
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Identifying specific information about where people are from their surroundings, or from pictures with a short, simple description of where they are and what they are doing; recognising familiar words and phrases in short, simple songs or chants.",
+          "periods": null,
+          "objectives": [
+            "Identifying specific information about where people are from their surroundings, or from pictures with a short, simple description of where they are and what they are doing.",
+            "Recognising familiar words and phrases in short, simple songs or chants."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "مدينتنا",
+      "title_en": "Our Town",
+      "general_idea_ar": "Talking about places in a local area.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Past simple of to be. Example: She was at the zoo last week. Where were you yesterday morning? There was/There were. Example: There was an expensive shop. Was there a restaurant? Yes, there was. / No, there wasn't.",
+          "periods": null,
+          "objectives": [
+            "Past simple of to be — e.g. She was at the zoo last week. Where were you yesterday morning?",
+            "There was/There were — e.g. There was an expensive shop. Was there a restaurant? Yes, there was. / No, there wasn't."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "bridge" },
+            { "ar": "", "en": "bus stop" },
+            { "ar": "", "en": "car park" },
+            { "ar": "", "en": "clothes shop" },
+            { "ar": "", "en": "hotel" },
+            { "ar": "", "en": "market" },
+            { "ar": "", "en": "museum" },
+            { "ar": "", "en": "restaurant" },
+            { "ar": "", "en": "shopping centre" },
+            { "ar": "", "en": "square" },
+            { "ar": "", "en": "train station" },
+            { "ar": "", "en": "zoo" },
+            { "ar": "", "en": "ancient" },
+            { "ar": "", "en": "busy" },
+            { "ar": "", "en": "cheap" },
+            { "ar": "", "en": "expensive" },
+            { "ar": "", "en": "modern" },
+            { "ar": "", "en": "noisy" },
+            { "ar": "", "en": "quiet" },
+            { "ar": "", "en": "safe" }
+          ]
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Understanding short, simple dialogues or stories about past events; recognising familiar words and phrases in short, simple songs or chants; understanding simple phrases related to familiar topics.",
+          "periods": null,
+          "objectives": [
+            "Understanding short, simple dialogues or stories about past events.",
+            "Recognising familiar words and phrases in short, simple songs or chants.",
+            "Understanding simple phrases related to familiar topics."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_ar": "تاريخنا",
+      "title_en": "Our History",
+      "general_idea_ar": "Talking about historical finds.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Past simple regular verbs. Example: People in the past used clay to build things. / They didn't use plastic. Did you visit the museum? Yes, I did. / No, I didn't.",
+          "periods": null,
+          "objectives": [
+            "Past simple regular verbs — e.g. People in the past used clay to build things. / They didn't use plastic. Did you visit the museum? Yes, I did. / No, I didn't."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "clay" },
+            { "ar": "", "en": "coins" },
+            { "ar": "", "en": "helmet" },
+            { "ar": "", "en": "iron" },
+            { "ar": "", "en": "jewellery" },
+            { "ar": "", "en": "jug" },
+            { "ar": "", "en": "mosaic" },
+            { "ar": "", "en": "necklace" },
+            { "ar": "", "en": "ring" },
+            { "ar": "", "en": "shield" },
+            { "ar": "", "en": "stone" },
+            { "ar": "", "en": "wall" },
+            { "ar": "", "en": "arrive" },
+            { "ar": "", "en": "live" },
+            { "ar": "", "en": "need" },
+            { "ar": "", "en": "start" },
+            { "ar": "", "en": "stop" },
+            { "ar": "", "en": "use" },
+            { "ar": "", "en": "visit" },
+            { "ar": "", "en": "work" }
+          ]
+        },
+        {
+          "id": "u9_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Asking a range of questions in guessing games; following short, simple dialogues or stories about past events; extracting factual information from short, simple dialogues or stories about past events.",
+          "periods": null,
+          "objectives": [
+            "Asking a range of questions in guessing games.",
+            "Following short, simple dialogues or stories about past events.",
+            "Extracting factual information from short, simple dialogues or stories about past events."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u10",
+      "number": 10,
+      "title_ar": "لنحتفل!",
+      "title_en": "Let's Celebrate!",
+      "general_idea_ar": "Talking about celebrations.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u10_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Past simple irregular verbs. Example: I wore this dress at our wedding. We didn't see the ring again. Did you get any presents? Yes, I did. / No, I didn't.",
+          "periods": null,
+          "objectives": [
+            "Past simple irregular verbs — e.g. I wore this dress at our wedding. We didn't see the ring again. Did you get any presents? Yes, I did. / No, I didn't.",
+            "Ordinal numbers: first–thirty-first."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "big wheel" },
+            { "ar": "", "en": "bride" },
+            { "ar": "", "en": "candle" },
+            { "ar": "", "en": "costume" },
+            { "ar": "", "en": "family gathering" },
+            { "ar": "", "en": "funfair" },
+            { "ar": "", "en": "groom" },
+            { "ar": "", "en": "invitation" },
+            { "ar": "", "en": "present" },
+            { "ar": "", "en": "games" },
+            { "ar": "", "en": "rollercoaster" },
+            { "ar": "", "en": "wedding" },
+            { "ar": "", "en": "ordinal numbers: first-thirty-first" }
+          ]
+        },
+        {
+          "id": "u10_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising ordinal numbers up to 50; recognising familiar words and phrases in short, simple songs; understanding most of the concrete details in informal conversations; understanding short, simple dialogues or stories about past events.",
+          "periods": null,
+          "objectives": [
+            "Recognising ordinal numbers up to 50.",
+            "Recognising familiar words and phrases in short, simple songs.",
+            "Understanding most of the concrete details in informal conversations.",
+            "Understanding short, simple dialogues or stories about past events."
+          ],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

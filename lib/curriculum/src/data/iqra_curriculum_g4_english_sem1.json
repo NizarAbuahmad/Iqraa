@@ -1,0 +1,328 @@
+{
+  "meta": {
+    "grade": "الصف الرابع",
+    "grade_en": "Grade 4",
+    "subject": "اللغة الإنجليزية",
+    "subject_en": "English",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة اللغة الإنجليزية للصف الرابع الفصل الأول (g4-english-s1-pupils-book, Jordan Team Together series, Pearson/York Press)"
+    ],
+    "provenance_note": "Read directly from the PDF via PyMuPDF on 2026-09-17 — extraction is clean (this book is in English). Unit titles, page numbers, vocabulary, grammar structures (with the book's own example sentences), and skill descriptors were taken from the book's own two-page 'Scope and sequence' table (pp. 4-5), the same source and treatment as g5EnglishSem1.ts. Individual page-by-page lesson numbering inside each unit was not reconstructed; each unit here is split into exactly two lessons — Vocabulary & Grammar, and Listening & Speaking — reflecting the two content halves the scope-and-sequence table itself separates.",
+    "known_gaps": [
+      "This is real content (vocabulary lists, grammar points with the book's own example sentences, skill descriptors), not title-only — but it is unit-level, not lesson-level: each unit's actual internal lesson count and exact per-lesson titles were not verified page by page.",
+      "Following the g5EnglishSem1.ts precedent for English-subject books, `main_idea_ar` and `objectives` hold literal English text (this book's own language), not Arabic; `title_ar` carries a plain Arabic gloss of the English title for search/display.",
+      "'Hello from Hamed!' style Welcome unit for this semester is 'New neighbours', included as Unit 1 because it carries its own vocabulary and grammar row in the scope-and-sequence table like every other unit.",
+      "Excluded as supplementary, non-core material (no dedicated row in the scope-and-sequence table): the 'Bo's Learning Club: Language booster 1' spread, the 'Science: Can plants grow in water?' page, the 'Festivals' pages (World Environment Day, World Friendship Day, Flag Day), 'Solve it', and the 'Grammar reference' appendix."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "الجيران الجدد",
+      "title_en": "New Neighbours",
+      "general_idea_ar": "Talking about hobbies, where people are from and their nationality, and learning the numbers 1-100.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Revision of to be and like. Example: I like/He likes swimming. Where are you from? I'm from (Jordan). I'm (Jordanian).",
+          "periods": null,
+          "objectives": [
+            "Revision of to be and like — e.g. I like/He likes swimming. Where are you from? I'm from (Jordan). I'm (Jordanian)."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "Egypt" },
+            { "ar": "", "en": "Jordan" },
+            { "ar": "", "en": "Qatar" },
+            { "ar": "", "en": "Spain" },
+            { "ar": "", "en": "the United Kingdom" },
+            { "ar": "", "en": "the United Arab Emirates" },
+            { "ar": "", "en": "British" },
+            { "ar": "", "en": "Egyptian" },
+            { "ar": "", "en": "Emirati" },
+            { "ar": "", "en": "Jordanian" },
+            { "ar": "", "en": "Qatari" },
+            { "ar": "", "en": "Spanish" },
+            { "ar": "", "en": "canoeing" },
+            { "ar": "", "en": "going shopping" },
+            { "ar": "", "en": "playing basketball" },
+            { "ar": "", "en": "playing football" },
+            { "ar": "", "en": "playing table tennis" },
+            { "ar": "", "en": "playing tennis" },
+            { "ar": "", "en": "reading" },
+            { "ar": "", "en": "swimming" },
+            { "ar": "", "en": "numbers 1-100" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Understanding key information when people introduce themselves (e.g. name, age and origin).",
+          "periods": null,
+          "objectives": [
+            "Understanding key information when people introduce themselves (e.g. name, age and origin)."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "المدرسة الجديدة",
+      "title_en": "New School",
+      "general_idea_ar": "Talking about school subjects, people and places in a school.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Present simple with dates and times. Example: We have Maths on Tuesdays at 11 o'clock. Present simple with adverbs of frequency. Example: He plays tennis twice a week.",
+          "periods": null,
+          "objectives": [
+            "Present simple with dates and times — e.g. We have Maths on Tuesdays at 11 o'clock.",
+            "Present simple with adverbs of frequency — e.g. He plays tennis twice a week."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "Arabic" },
+            { "ar": "", "en": "Art" },
+            { "ar": "", "en": "Digital Skills" },
+            { "ar": "", "en": "English" },
+            { "ar": "", "en": "Islamic Studies" },
+            { "ar": "", "en": "Maths" },
+            { "ar": "", "en": "PE" },
+            { "ar": "", "en": "Science" },
+            { "ar": "", "en": "Social Studies" },
+            { "ar": "", "en": "headteacher" },
+            { "ar": "", "en": "school nurse" },
+            { "ar": "", "en": "science lab" },
+            { "ar": "", "en": "always" },
+            { "ar": "", "en": "never" },
+            { "ar": "", "en": "often" },
+            { "ar": "", "en": "sometimes" },
+            { "ar": "", "en": "at the weekend" },
+            { "ar": "", "en": "every day" },
+            { "ar": "", "en": "once a week" },
+            { "ar": "", "en": "twice a week" },
+            { "ar": "", "en": "three times a week" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising basic time words (e.g. days, months) in simple phrases or sentences; recognising familiar words and phrases in short, simple songs or chants; identifying specific information in short, simple dialogues.",
+          "periods": null,
+          "objectives": [
+            "Recognising basic time words (e.g. days, months) in simple phrases or sentences.",
+            "Recognising familiar words and phrases in short, simple songs or chants.",
+            "Identifying specific information in short, simple dialogues."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "وقت النزهة!",
+      "title_en": "Picnic Time!",
+      "general_idea_ar": "Talking about food.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "There is/There are with countable and uncountable nouns. Example: There's a lot of salad and a little lemonade. There aren't any cupcakes. Are there any apples? Yes, there are. / No, there aren't.",
+          "periods": null,
+          "objectives": [
+            "There is/There are with countable and uncountable nouns — e.g. There's a lot of salad and a little lemonade. There aren't any cupcakes. Are there any apples? Yes, there are. / No, there aren't."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "cereal" },
+            { "ar": "", "en": "cupcakes" },
+            { "ar": "", "en": "fruit" },
+            { "ar": "", "en": "noodles" },
+            { "ar": "", "en": "olives" },
+            { "ar": "", "en": "salad" },
+            { "ar": "", "en": "sandwiches" },
+            { "ar": "", "en": "vegetables" },
+            { "ar": "", "en": "coffee" },
+            { "ar": "", "en": "lemonade" },
+            { "ar": "", "en": "milkshake" },
+            { "ar": "", "en": "tea" },
+            { "ar": "", "en": "a bag of" },
+            { "ar": "", "en": "a bottle of" },
+            { "ar": "", "en": "a bowl of" },
+            { "ar": "", "en": "a box of" },
+            { "ar": "", "en": "a can of" },
+            { "ar": "", "en": "a cup of" },
+            { "ar": "", "en": "a glass of" },
+            { "ar": "", "en": "a plate of" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising and understanding topic words and phrases; identifying objects from spoken descriptions; understanding details in conversations; understanding simple expressions about likes and dislikes.",
+          "periods": null,
+          "objectives": [
+            "Recognising and understanding topic words and phrases.",
+            "Identifying objects from spoken descriptions.",
+            "Understanding details in conversations.",
+            "Understanding simple expressions about likes and dislikes."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "على ضفة النهر",
+      "title_en": "Along the River",
+      "general_idea_ar": "Talking about landscapes.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Comparatives and superlatives: short adjectives. Example: A mountain is higher than a hill. This is the deepest lake in Jordan. Comparatives and superlatives: long adjectives. Example: Swimming is more exciting than walking. Amman is the most exciting city in the world.",
+          "periods": null,
+          "objectives": [
+            "Comparatives and superlatives: short adjectives — e.g. A mountain is higher than a hill. This is the deepest lake in Jordan.",
+            "Comparatives and superlatives: long adjectives — e.g. Swimming is more exciting than walking. Amman is the most exciting city in the world."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "city" },
+            { "ar": "", "en": "forest" },
+            { "ar": "", "en": "hill" },
+            { "ar": "", "en": "island" },
+            { "ar": "", "en": "lake" },
+            { "ar": "", "en": "mountain" },
+            { "ar": "", "en": "river" },
+            { "ar": "", "en": "town" },
+            { "ar": "", "en": "waterfall" },
+            { "ar": "", "en": "beautiful" },
+            { "ar": "", "en": "boring" },
+            { "ar": "", "en": "colourful" },
+            { "ar": "", "en": "dangerous" },
+            { "ar": "", "en": "deep" },
+            { "ar": "", "en": "delicious" },
+            { "ar": "", "en": "difficult" },
+            { "ar": "", "en": "exciting" },
+            { "ar": "", "en": "high" },
+            { "ar": "", "en": "interesting" },
+            { "ar": "", "en": "wide" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Understanding descriptions; following the sequence of events; understanding comparisons; recognising nouns and adjectives, words and phrases; understanding simple directions; following the sequence of events in a simple story.",
+          "periods": null,
+          "objectives": [
+            "Understanding descriptions.",
+            "Following the sequence of events.",
+            "Understanding comparisons.",
+            "Recognising nouns and adjectives, words and phrases.",
+            "Understanding simple directions.",
+            "Following the sequence of events in a simple story."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "كل شيء عن الوظائف",
+      "title_en": "All About Jobs",
+      "general_idea_ar": "Talking about jobs and rules.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Present continuous. Example: I'm watching (Hamed's house). / They aren't playing a game. Are you wearing a green jacket? must/mustn't. Example: You mustn't break the rules at school. You must be quiet in class.",
+          "periods": null,
+          "objectives": [
+            "Present continuous — e.g. I'm watching (Hamed's house). / They aren't playing a game. Are you wearing a green jacket?",
+            "must/mustn't — e.g. You mustn't break the rules at school. You must be quiet in class."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "bus driver" },
+            { "ar": "", "en": "carpenter" },
+            { "ar": "", "en": "chef" },
+            { "ar": "", "en": "doctor" },
+            { "ar": "", "en": "farmer" },
+            { "ar": "", "en": "firefighter" },
+            { "ar": "", "en": "mechanic" },
+            { "ar": "", "en": "police officer" },
+            { "ar": "", "en": "scientist" },
+            { "ar": "", "en": "teacher" },
+            { "ar": "", "en": "vet" },
+            { "ar": "", "en": "waiter/waitress" },
+            { "ar": "", "en": "arrive on time" },
+            { "ar": "", "en": "be late" },
+            { "ar": "", "en": "be quiet in class" },
+            { "ar": "", "en": "break the rules" },
+            { "ar": "", "en": "drop litter" },
+            { "ar": "", "en": "follow the rules" },
+            { "ar": "", "en": "put litter in the bin" },
+            { "ar": "", "en": "shout in class" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising words; identifying people; recognising words and phrases in songs or chants; identifying a caller's name and phone number; understanding information about jobs; identifying key information in dialogues.",
+          "periods": null,
+          "objectives": [
+            "Recognising words.",
+            "Identifying people.",
+            "Recognising words and phrases in songs or chants.",
+            "Identifying a caller's name and phone number.",
+            "Understanding information about jobs.",
+            "Identifying key information in dialogues."
+          ],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

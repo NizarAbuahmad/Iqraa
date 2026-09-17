@@ -210,6 +210,14 @@ import {
   isG4ArabicSem2TitleOnlyLesson,
 } from './catalogs/g4ArabicSem2.ts';
 import {
+  G4_ENGLISH_S1_CURRICULUM_BOOK_ID,
+  buildG4EnglishSem1BrowserCatalog,
+} from './catalogs/g4EnglishSem1.ts';
+import {
+  G4_ENGLISH_S2_CURRICULUM_BOOK_ID,
+  buildG4EnglishSem2BrowserCatalog,
+} from './catalogs/g4EnglishSem2.ts';
+import {
   G5_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG5ScienceSem1BrowserCatalog,
 } from './catalogs/g5ScienceSem1.ts';
@@ -1151,6 +1159,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // append is needed.
   G4_ARABIC_S1_CURRICULUM_BOOK_ID,
   G4_ARABIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 4 English, both semesters — the last planned Grade 4 MVP subject
+  // among the seven that mirror Grade 5's set, real content (unit-level, not
+  // title-only), same convention as g5EnglishSem1.ts. 'english' is already
+  // in MVP_SUBJECT_IDS, so no subject append is needed.
+  G4_ENGLISH_S1_CURRICULUM_BOOK_ID,
+  G4_ENGLISH_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2391,6 +2405,37 @@ export const BOOKS: Book[] = [
     gradeId: 'grade-4',
     academicYear: '2024-2025',
     language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // Grade 4 English, both semesters — the last planned Grade 4 MVP subject.
+  // "Jordan Team Together" series (Pearson/York Press), same publisher as
+  // Grade 5. Not title-only: real vocabulary, grammar points (with the
+  // book's own example sentences) and skill descriptors, taken from the
+  // student book's own "Scope and sequence" table. See g4EnglishSem1.ts.
+  {
+    id: G4_ENGLISH_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 4, Semester 1',
+    titleAr: 'اللغة الإنجليزية – الصف الرابع – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-4',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G4_ENGLISH_S2_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 4, Semester 2',
+    titleAr: 'اللغة الإنجليزية – الصف الرابع – الفصل الثاني',
+    subjectId: 'english',
+    gradeId: 'grade-4',
+    academicYear: '2025-2026',
+    language: 'English',
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
@@ -4552,6 +4597,8 @@ const _g4SocialSem1Browser = buildG4SocialSem1BrowserCatalog();
 const _g4SocialSem2Browser = buildG4SocialSem2BrowserCatalog();
 const _g4ArabicSem1Browser = buildG4ArabicSem1BrowserCatalog();
 const _g4ArabicSem2Browser = buildG4ArabicSem2BrowserCatalog();
+const _g4EnglishSem1Browser = buildG4EnglishSem1BrowserCatalog();
+const _g4EnglishSem2Browser = buildG4EnglishSem2BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
 const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
@@ -4822,6 +4869,8 @@ export const UNITS: Unit[] = [
   ..._g4SocialSem2Browser.units,
   ..._g4ArabicSem1Browser.units,
   ..._g4ArabicSem2Browser.units,
+  ..._g4EnglishSem1Browser.units,
+  ..._g4EnglishSem2Browser.units,
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
   ..._g6ArabicSem1Browser.units,
@@ -4962,6 +5011,8 @@ export const LESSONS: Lesson[] = [
   ..._g4SocialSem2Browser.lessons,
   ..._g4ArabicSem1Browser.lessons,
   ..._g4ArabicSem2Browser.lessons,
+  ..._g4EnglishSem1Browser.lessons,
+  ..._g4EnglishSem2Browser.lessons,
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
   ..._g6ArabicSem1Browser.lessons,
