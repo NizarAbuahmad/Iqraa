@@ -307,6 +307,14 @@ import {
   buildG4CreativeArtsCatalog,
 } from './curriculumG4CreativeArts.ts';
 import {
+  G4_VOC_S1_BOOK_ID,
+  buildG4VocSem1Catalog,
+} from './curriculumG4VocationalSem1.ts';
+import {
+  G4_VOC_S2_BOOK_ID,
+  buildG4VocSem2Catalog,
+} from './curriculumG4VocationalSem2.ts';
+import {
   G6_MATH_S1_BOOK_ID,
   buildG6MathSem1Catalog,
 } from './curriculumG6MathSem1.ts';
@@ -1421,6 +1429,24 @@ export const KB_BOOKS: KBBook[] = [
     // placeholder the id-namespacing scope uses (see g4CreativeArts.ts).
     semester: 1,
     source: 'iqra_curriculum_g4_creative_arts.json (NCCD)',
+  },
+  {
+    id: G4_VOC_S1_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف الرابع – الفصل الأول',
+    titleEn: 'Vocational Education – Grade 4 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g4_vocational_sem1.json (NCCD)',
+  },
+  {
+    id: G4_VOC_S2_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف الرابع – الفصل الثاني',
+    titleEn: 'Vocational Education – Grade 4 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g4_vocational_sem2.json (NCCD)',
   },
   {
     id: G6_MATH_S1_BOOK_ID,
@@ -2837,6 +2863,8 @@ const _g8DigitalSem1 = buildG8DigitalSem1Catalog();
 const _g8DigitalSem2 = buildG8DigitalSem2Catalog();
 const _g8CreativeArts = buildG8CreativeArtsCatalog();
 const _g4CreativeArts = buildG4CreativeArtsCatalog();
+const _g4VocSem1 = buildG4VocSem1Catalog();
+const _g4VocSem2 = buildG4VocSem2Catalog();
 const _g8VocSem1 = buildG8VocSem1Catalog();
 const _g8VocSem2 = buildG8VocSem2Catalog();
 const _g8SocialSem1 = buildG8SocialSem1Catalog();
@@ -3097,6 +3125,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g8DigitalSem2.units,
   ..._g8CreativeArts.units,
   ..._g4CreativeArts.units,
+  ..._g4VocSem1.units,
+  ..._g4VocSem2.units,
   ..._g8VocSem1.units,
   ..._g8VocSem2.units,
   ..._g8SocialSem1.units,
@@ -3246,6 +3276,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g8DigitalSem2.lessons,
   ..._g8CreativeArts.lessons,
   ..._g4CreativeArts.lessons,
+  ..._g4VocSem1.lessons,
+  ..._g4VocSem2.lessons,
   ..._g8VocSem1.lessons,
   ..._g8VocSem2.lessons,
   ..._g8SocialSem1.lessons,

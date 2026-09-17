@@ -518,6 +518,14 @@ import {
   buildG8VocSem2BrowserCatalog,
 } from './catalogs/g8VocationalSem2.ts';
 import {
+  G4_VOC_S1_CURRICULUM_BOOK_ID,
+  buildG4VocSem1BrowserCatalog,
+} from './catalogs/g4VocationalSem1.ts';
+import {
+  G4_VOC_S2_CURRICULUM_BOOK_ID,
+  buildG4VocSem2BrowserCatalog,
+} from './catalogs/g4VocationalSem2.ts';
+import {
   G8_SOCIAL_S1_CURRICULUM_BOOK_ID,
   buildG8SocialSem1BrowserCatalog,
 } from './catalogs/g8SocialSem1.ts';
@@ -770,7 +778,10 @@ export const SUBJECTS: Subject[] = [
   // (life skills, home economics, agriculture, health/safety, industry,
   // entrepreneurship, tourism) — see g8VocationalSem1.ts. Extended to
   // grade-7 on 2026-09-12 once its book arrived (a different seven tracks).
-  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-6', 'grade-7', 'grade-8'] },
+  // Extended to grade-4 on 2026-09-17 once its book arrived — not
+  // contiguous with grade-6..8 (no grade-5 book), same as creative-arts;
+  // see g4VocationalSem1.ts.
+  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-4', 'grade-6', 'grade-7', 'grade-8'] },
 ];
 
 /**
@@ -1176,6 +1187,14 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // MVP_SUBJECT_IDS, but SUBJECTS.grades needed extending for grade-4 — see
   // the SUBJECTS declaration above and g4CreativeArts.ts.
   G4_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  // Grade 4 Vocational Education, both semesters — the ninth and last Grade
+  // 4 subject. Same shape as g8VocationalSem1.ts/g8VocationalSem2.ts:
+  // units restart at 1 each semester, not a continuous count.
+  // 'vocational-education' is already in MVP_SUBJECT_IDS, but
+  // SUBJECTS.grades needed extending for grade-4 — see the SUBJECTS
+  // declaration above and g4VocationalSem1.ts.
+  G4_VOC_S1_CURRICULUM_BOOK_ID,
+  G4_VOC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2470,6 +2489,39 @@ export const BOOKS: Book[] = [
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
+  },
+  // ── Vocational Education Grade 4 – Semesters 1 and 2 ─────────────────────
+  // Ninth and last Grade 4 subject, required extending SUBJECTS.grades for
+  // vocational-education (previously grade-6..8 only). Units restart at 1
+  // each semester (not a continuous count), same convention as
+  // g8VocationalSem1.ts/g8VocationalSem2.ts. Semester 1's PDF reads cleanly
+  // through PyMuPDF; Semester 2's does not (character-scrambled, not
+  // CMap-corrupted — see g4VocationalSem2.ts).
+  {
+    id: G4_VOC_S1_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 4, Semester 1',
+    titleAr: 'التربية المهنية – الصف الرابع – الفصل الأول',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-4',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G4_VOC_S2_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 4, Semester 2',
+    titleAr: 'التربية المهنية – الصف الرابع – الفصل الثاني',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-4',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // The first Grade 6 books in the repo. Maths carries four units and eighteen
   // lessons from the student book alone (no S2 student book was supplied);
@@ -4594,6 +4646,8 @@ const _g8DigitalSem1Browser = buildG8DigitalSem1BrowserCatalog();
 const _g8DigitalSem2Browser = buildG8DigitalSem2BrowserCatalog();
 const _g8CreativeArtsBrowser = buildG8CreativeArtsBrowserCatalog();
 const _g4CreativeArtsBrowser = buildG4CreativeArtsBrowserCatalog();
+const _g4VocSem1Browser = buildG4VocSem1BrowserCatalog();
+const _g4VocSem2Browser = buildG4VocSem2BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -4847,6 +4901,8 @@ export const UNITS: Unit[] = [
   ..._g8DigitalSem2Browser.units,
   ..._g8CreativeArtsBrowser.units,
   ..._g4CreativeArtsBrowser.units,
+  ..._g4VocSem1Browser.units,
+  ..._g4VocSem2Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -4990,6 +5046,8 @@ export const LESSONS: Lesson[] = [
   ..._g8DigitalSem2Browser.lessons,
   ..._g8CreativeArtsBrowser.lessons,
   ..._g4CreativeArtsBrowser.lessons,
+  ..._g4VocSem1Browser.lessons,
+  ..._g4VocSem2Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,

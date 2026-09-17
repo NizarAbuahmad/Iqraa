@@ -1,0 +1,256 @@
+{
+  "meta": {
+    "grade": "الصف الرابع",
+    "grade_en": "Grade 4",
+    "subject": "التربية المهنية",
+    "subject_en": "Vocational Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الأول (g4-vocational-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ السبعُ ودروسُها الخمسةَ عشرَ من كتاب الطالب (الطبعةُ الثانيةُ، مزيدةٌ ومنقحةٌ، 1445هـ/2025م، رقمُ الإيداعِ 2025/2/1183، ISBN 978-9923-41-896-3) في 2026-09-17، بقراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ (صندوقُ «الفِكْرَةُ العامَّةُ») وصفحةِ افتتاحِ كلِّ درسٍ (صندوقُ «الفِكْرَةُ الرَّئيسَةُ») مباشرةً منَ الـ PDF عبرَ PyMuPDF — الاستخراجُ نظيفٌ تمامًا لهذا الكتابِ (خِلافَ الفصلِ الدراسيِّ الثاني لنفسِ المادّةِ، انظر iqra_curriculum_g4_vocational_sem2.json).",
+    "known_gaps": [
+      "main_idea_ar لكلِّ درسٍ منقولٌ حرفيًّا من صندوقِ «الفِكْرَةُ الرَّئيسَةُ» المطبوعِ في افتتاحيّةِ كلِّ درسٍ، وهو هنا جملةٌ قصيرةٌ على هيئةِ نتاجٍ تعليميٍّ («أُوَضِّحُ...»/«أَذْكُرُ...») لا فقرةً وصفيّةً كما في كتبِ الرياضيّاتِ والعلومِ. أمّا objectives فتُرِكَتْ فارغةً عمدًا: يطبَعُ كلُّ درسٍ أيضًا صندوقَ «ماذا سَأَتَعَلَّمُ؟» بنتاجاتٍ إضافيّةٍ وصندوقَ «المَفاهيمُ والمُصْطَلَحاتُ» ثنائيَّ اللغةِ، لكنَّ نقلَهما الكاملَ لخمسةَ عشرَ درسًا لم يُنجَزْ في هذا المرورِ؛ main_idea_ar وحدَه كافٍ لتحديدِ موضوعِ كلِّ درسٍ.",
+      "لا عددَ حصصٍ مطبوعًا لأيِّ درسٍ (periods وtotal_periods = null).",
+      "الوحداتُ السبعُ لا تتّصِلُ ترقيمُها مع الفصلِ الدراسيِّ الثاني: كلا الفصلينِ يطبَعُ وحداتِهِ 1-7 (الفصلُ الأولُ) و1-8 (الفصلُ الثاني) بترقيمٍ مستقلٍّ يُعيدُ البدءَ من جديدٍ، لا استمرارًا كما في التربيةِ الإسلاميّةِ أو الدراساتِ الاجتماعيّةِ — نفسُ اصطلاحِ g8VocationalSem1.ts/g8VocationalSem2.ts لهذه المادّةِ تحديدًا."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "المَهاراتُ الحَياتِيَّةُ",
+      "title_en": "Life Skills",
+      "general_idea_ar": "تُساعِدُ المَهاراتُ الحَياتِيَّةُ الفَرْدَ عَلى النَّجاحِ في حَياتِهِ اليَوْمِيَّةِ وَفي عَمَلِهِ، وَمِنْ هذِهِ المَهاراتِ: العَمَلُ الجَماعِيُّ، وَإيجادُ حُلولٍ لِلْمُشْكِلاتِ، وَالاهْتِمامُ بِالآخَرينَ وَمُراعاتُهُمْ، وَتَنْظيمُ الوَقْتِ بِشَكْلٍ جَيِّدٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box; objectives and vocabulary not transcribed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "العَمَلُ الجَماعِيُّ",
+          "title_en": "Teamwork",
+          "main_idea_ar": "مُعْظَمُ الأَعْمالِ تَحْتاجُ إِلى التَّعاوُنِ مَعَ الآخَرينَ حَتّى تَنْجَحَ، سَواءٌ في المَجالاتِ الاقْتِصادِيَّةِ أَوِ الاجْتِماعِيَّةِ وَغَيْرِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "مُراعاةُ الآخَرينَ",
+          "title_en": "Considering Others",
+          "main_idea_ar": "أُوَضِّحُ المَقْصودَ بِـ: مُراعاةِ الآخَرينَ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "رِيادَةُ الأَعْمالِ",
+      "title_en": "Entrepreneurship",
+      "general_idea_ar": "تَتَمَثَّلُ رِيادَةُ الأَعْمالِ بِإِنْشاءِ عَمَلٍ حُرٍّ يَتَّسِمُ بِالإِبْداعِ وَالقُدْرَةِ عَلى مُواجَهَةِ التَّحَدِّياتِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box; objectives and vocabulary not transcribed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "مَهاراتُ رِيادَةِ الأَعْمالِ",
+          "title_en": "Entrepreneurship Skills",
+          "main_idea_ar": "أُوَضِّحُ المَقْصودَ بِـ «رِيادَةِ الأَعْمالِ».",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "خُطُواتُ رِيادَةِ الأَعْمالِ",
+          "title_en": "Steps of Entrepreneurship",
+          "main_idea_ar": "أُوَضِّحُ خُطُواتِ رِيادَةِ الأَعْمالِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "الزِّراعَةُ",
+      "title_en": "Agriculture",
+      "general_idea_ar": "يُعَدُّ القِطاعُ الزِّراعِيُّ مِنَ القِطاعاتِ المُهِمَّةِ في الأُرْدُنِّ، وَيَعْتَمِدُ عَلَيْهِ الاقْتِصادُ وَالحَياةُ الاجْتِماعِيَّةُ الرّيفِيَّةُ، وَلَهُ دَوْرٌ رَئيسٌ في المُحافَظَةِ عَلى البيئَةِ الطَّبيعِيَّةِ وَاسْتِمْرارِيَّتِها.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box; objectives and vocabulary not transcribed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "أَنْواعُ الزِّراعَةِ وَأَهَمِّيَّتُها في الأُرْدُنِّ",
+          "title_en": "Types of Agriculture and Their Importance in Jordan",
+          "main_idea_ar": "أَذْكُرُ أَنْواعَ الزِّراعَةِ في الأُرْدُنِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "النَّباتاتُ المَزْروعَةُ في البيئَةِ المُحيطَةِ",
+          "title_en": "Plants Grown in the Surrounding Environment",
+          "main_idea_ar": "أَذْكُرُ أَنْواعَ النَّباتاتِ المَزْروعَةِ في الأُرْدُنِّ حَسَبَ دَوْرَةِ حَياتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "الاقْتِصادُ المَنْزِلِيُّ",
+      "title_en": "Home Economics",
+      "general_idea_ar": "لِكُلِّ فَرْدٍ في الأُسْرَةِ دَوْرٌ في إِدارَةِ شُؤونِ المَنْزِلِ؛ ما يَتَطَلَّبُ اكْتِسابَ بَعْضِ المَهاراتِ لِتَلْبِيَةِ الاحْتِياجاتِ المَنْزِلِيَّةِ وَالبيئَةِ المُجْتَمَعِيَّةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box; objectives and vocabulary not transcribed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "الخَضْراواتُ وَالفَواكِهُ المَوْسِمِيَّةُ",
+          "title_en": "Seasonal Vegetables and Fruits",
+          "main_idea_ar": "أُوَضِّحُ المَقْصودَ بِكُلٍّ مِمّا يَأْتي: الخَضْراواتُ، وَالفَواكِهُ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "إِدارَةُ شُؤونِ المَنْزِلِ",
+          "title_en": "Managing Household Affairs",
+          "main_idea_ar": "أُوَضِّحُ المَقْصودَ بِـ «المَنْزِلِ».",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "العِنايَةُ بِالمَلابِسِ",
+          "title_en": "Clothing Care",
+          "main_idea_ar": "أُوَضِّحُ أَهَمِّيَّةَ المَلابِسِ لِلْإِنْسانِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "السَّلامَةُ وَالصِّحَّةُ وَالبيئَةُ",
+      "title_en": "Safety, Health and Environment",
+      "general_idea_ar": "يُؤَثِّرُ تَفاعُلُ الفَرْدِ مَعَ البيئَةِ المُحيطَةِ بِهِ في صِحَّتِهِ وَسَلامَتِهِ، وَيُمْكِنُ تَعْزيزُ جَوْدَةِ الحَياةِ بِالْتِزامِ قَواعِدِ السَّلامَةِ وَالصِّحَّةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box; objectives and vocabulary not transcribed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "العِنايَةُ بِنَظافَةِ المَنْزِلِ",
+          "title_en": "Caring for Household Cleanliness",
+          "main_idea_ar": "أَذْكُرُ فائِدَتَيْنِ لِتَنْظيفِ المَنْزِلِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "التَّعامُلُ مَعَ مَوادِّ التَّنْظيفِ",
+          "title_en": "Handling Cleaning Materials",
+          "main_idea_ar": "أَذْكُرُ ثَلاثًا مِنْ مَوادِّ التَّنْظيفِ الَّتي تُسْتَخْدَمُ في المَنازِلِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "التَّوْعِيَةُ المُرورِيَّةُ",
+          "title_en": "Traffic Awareness",
+          "main_idea_ar": "أُوَضِّحُ أَهَمِّيَّةَ التَّعامُلِ مَعَ الطَّريقِ وَالشّارِعِ بِطَريقَةٍ سَليمَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l4",
+          "order": 4,
+          "title_ar": "إِشارَةُ المُرورِ",
+          "title_en": "Traffic Signals",
+          "main_idea_ar": "أُوَضِّحُ المَقْصودَ بِـ: «إِشارَةِ المُرورِ».",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "الصِّناعاتُ الخَشَبِيَّةُ وَالأَثاثُ",
+      "title_en": "Woodworking and Furniture Industries",
+      "general_idea_ar": "صِناعَةُ الأَثاثِ وَالأَخْشابِ واحِدَةٌ مِنْ أَكْبَرِ الصِّناعاتِ؛ لِأَنَّها تَعْتَمِدُ عَلى العُمّالِ المَهَرَةِ، وَتُوَفِّرُ العَديدَ مِنْ فُرَصِ العَمَلِ. وَيَتَمَيَّزُ العامِلونَ في هذا المَجالِ بِمَهاراتٍ عالِيَةٍ وَدِقَّةٍ وَإِبْداعٍ فَنِّيٍّ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box; objectives and vocabulary not transcribed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "أَعْمالُ النِّجارَةِ",
+          "title_en": "Carpentry Work",
+          "main_idea_ar": "أَذْكُرُ أَرْبَعَ أَدَواتٍ وَعُدَدٍ تُسْتَخْدَمُ في تَنْعيمِ قِطْعَةٍ خَشَبِيَّةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "الفَنْدَقَةُ وَالسِّياحَةُ",
+      "title_en": "Hospitality and Tourism",
+      "general_idea_ar": "تُعَدُّ السِّياحَةُ مِنَ القِطاعاتِ الاقْتِصادِيَّةِ المُهِمَّةِ في الأُرْدُنِّ، وَتَرْتَبِطُ مَعَ قِطاعاتٍ أُخْرى في مَجالاتٍ مُتَعَدِّدَةٍ، مِنْ خَدَماتٍ، وَنَقْلٍ، وَصِناعَةٍ، وَتِجارَةٍ، وَاتِّصالاتٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box; objectives and vocabulary not transcribed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "الأَنْماطُ السِّياحِيَّةُ في الأُرْدُنِّ",
+          "title_en": "Tourism Patterns in Jordan",
+          "main_idea_ar": "أَذْكُرُ الأَنْماطَ السِّياحِيَّةَ في الأُرْدُنِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
