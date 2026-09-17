@@ -1,0 +1,694 @@
+{
+  "meta": {
+    "grade": "الصف الخامس",
+    "grade_en": "Grade 5",
+    "subject": "اللغة الإنجليزية",
+    "subject_en": "English",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الأول (g5-english-s1-pupils-book, Jordan Team Together series, Pearson/York Press)"
+    ],
+    "provenance_note": "Read directly from the PDF via PyMuPDF on 2026-09-16 — extraction is clean (this book is in English, so none of the Arabic-extraction issues that hit other Grade 5 books apply). Unit titles, page numbers, vocabulary, grammar structures (with the book's own example sentences), and skill descriptors were taken from the book's own two-page 'Scope and sequence' table (pp. 4-5), which is unambiguous and easy to verify against the Contents page. Individual page-by-page lesson numbering inside each unit ('Lesson 1', 'Lesson 2'...) follows an inconsistent odd/even pattern across units in the raw extraction and was not reliably reconstructable without much deeper page-by-page reading, so each unit here is split into exactly two lessons — Vocabulary & Grammar, and Listening & Speaking — reflecting the two content halves the scope-and-sequence table itself separates, not the book's own internal lesson count.",
+    "known_gaps": [
+      "This is real content (vocabulary lists, grammar points with the book's own example sentences, skill descriptors), not title-only — but it is unit-level, not lesson-level: each unit's actual internal lesson count and exact per-lesson titles (as printed inside the unit, e.g. 'Lesson 1: Vocabulary') were not verified page by page.",
+      "Following the g7EngSem1.ts precedent for English-subject books, `main_idea_ar` and `objectives` hold literal English text (this book's own language), not Arabic; `title_ar` carries a plain Arabic gloss of the English title for search/display.",
+      "'Welcome back' (the review unit opening the book) is included as Unit 1 here because it carries its own new vocabulary and grammar point in the scope-and-sequence table, not just a recap of Grade 4 — same treatment as every other unit.",
+      "Excluded as supplementary, non-core material (no dedicated row in the scope-and-sequence table): the two 'Bo's Learning Club: Language booster' spreads, the 'Festivals' pages (Harvest Festival, World Water Day), 'Solve it', and the 'Grammar reference' appendix."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "مُرَحَّبًا بِعَوْدَتِكُمْ",
+      "title_en": "Welcome Back",
+      "general_idea_ar": "Describing free-time activities; talking about appearance.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Present simple with before/after/when. Example: When Jameela gets home, she plays with her cat.",
+          "periods": null,
+          "objectives": [
+            "Present simple with before/after/when — e.g. When Jameela gets home, she plays with her cat."
+          ],
+          "vocabulary": [
+            {
+              "ar": "",
+              "en": "play football"
+            },
+            {
+              "ar": "",
+              "en": "play basketball"
+            },
+            {
+              "ar": "",
+              "en": "go swimming"
+            },
+            {
+              "ar": "",
+              "en": "Science Club"
+            },
+            {
+              "ar": "",
+              "en": "visit Granny"
+            },
+            {
+              "ar": "",
+              "en": "tennis lesson"
+            },
+            {
+              "ar": "",
+              "en": "curly hair"
+            },
+            {
+              "ar": "",
+              "en": "long hair"
+            },
+            {
+              "ar": "",
+              "en": "straight hair"
+            },
+            {
+              "ar": "",
+              "en": "short hair"
+            },
+            {
+              "ar": "",
+              "en": "dark hair"
+            },
+            {
+              "ar": "",
+              "en": "a beard"
+            },
+            {
+              "ar": "",
+              "en": "fair hair"
+            },
+            {
+              "ar": "",
+              "en": "a moustache"
+            }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Following the sequence of events in a simple story or narrative; identifying people in their immediate surroundings or in pictures from a short, simple description of their physical appearance and clothes.",
+          "periods": null,
+          "objectives": [
+            "Following the sequence of events in a simple story or narrative.",
+            "Identifying people in their immediate surroundings or in pictures from a short, simple description of their physical appearance and clothes.",
+            "Describing someone's physical appearance in a basic way."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "عَرْضُ الْمَواهِبِ",
+      "title_en": "Talent Show",
+      "general_idea_ar": "Describing personality; talking about hobbies.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Comparative and superlative adjectives; be good at. Examples: My mum is shorter than me. She's the shortest person in our family! I'm good at baking a cake.",
+          "periods": null,
+          "objectives": [
+            "Comparative and superlative adjectives — e.g. My mum is shorter than me. She's the shortest person in our family!",
+            "be good at — e.g. I'm good at baking a cake."
+          ],
+          "vocabulary": [
+            {
+              "ar": "",
+              "en": "shy"
+            },
+            {
+              "ar": "",
+              "en": "confident"
+            },
+            {
+              "ar": "",
+              "en": "lazy"
+            },
+            {
+              "ar": "",
+              "en": "hard-working"
+            },
+            {
+              "ar": "",
+              "en": "friendly"
+            },
+            {
+              "ar": "",
+              "en": "cheerful"
+            },
+            {
+              "ar": "",
+              "en": "kind"
+            },
+            {
+              "ar": "",
+              "en": "quiet"
+            },
+            {
+              "ar": "",
+              "en": "polite"
+            },
+            {
+              "ar": "",
+              "en": "rude"
+            },
+            {
+              "ar": "",
+              "en": "tidy"
+            },
+            {
+              "ar": "",
+              "en": "untidy"
+            },
+            {
+              "ar": "",
+              "en": "count"
+            },
+            {
+              "ar": "",
+              "en": "spell"
+            },
+            {
+              "ar": "",
+              "en": "do experiments"
+            },
+            {
+              "ar": "",
+              "en": "bake a cake"
+            },
+            {
+              "ar": "",
+              "en": "throw a ball"
+            },
+            {
+              "ar": "",
+              "en": "fix toys"
+            },
+            {
+              "ar": "",
+              "en": "juggle"
+            },
+            {
+              "ar": "",
+              "en": "make a pizza"
+            },
+            {
+              "ar": "",
+              "en": "untidy"
+            },
+            {
+              "ar": "",
+              "en": "unfriendly"
+            },
+            {
+              "ar": "",
+              "en": "unhappy"
+            },
+            {
+              "ar": "",
+              "en": "unlucky"
+            },
+            {
+              "ar": "",
+              "en": "unwell"
+            },
+            {
+              "ar": "",
+              "en": "unsafe"
+            }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Following the sequence of events in a simple story or narrative; recognising familiar key words and phrases in short, basic descriptions. Function: Describing people — e.g. She's very friendly.",
+          "periods": null,
+          "objectives": [
+            "Following the sequence of events in a simple story or narrative.",
+            "Recognising familiar key words and phrases in short, basic descriptions.",
+            "Describing people — e.g. She's very friendly."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "بِالْأَمْسِ وَالْيَوْمَ",
+      "title_en": "Then and Now",
+      "general_idea_ar": "Talking about technology; using verbs.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Past simple; could/couldn't. Examples: Did you have a phone ten years ago? That computer was really big! When I was one, I could walk but I couldn't talk.",
+          "periods": null,
+          "objectives": [
+            "Past simple — e.g. Did you have a phone ten years ago? That computer was really big!",
+            "could/couldn't — e.g. When I was one, I could walk but I couldn't talk."
+          ],
+          "vocabulary": [
+            {
+              "ar": "",
+              "en": "computer"
+            },
+            {
+              "ar": "",
+              "en": "email"
+            },
+            {
+              "ar": "",
+              "en": "smartwatch"
+            },
+            {
+              "ar": "",
+              "en": "keyboard"
+            },
+            {
+              "ar": "",
+              "en": "letter"
+            },
+            {
+              "ar": "",
+              "en": "carry"
+            },
+            {
+              "ar": "",
+              "en": "mouse"
+            },
+            {
+              "ar": "",
+              "en": "telephone"
+            },
+            {
+              "ar": "",
+              "en": "call"
+            },
+            {
+              "ar": "",
+              "en": "tablet"
+            },
+            {
+              "ar": "",
+              "en": "mobile phone"
+            },
+            {
+              "ar": "",
+              "en": "study"
+            },
+            {
+              "ar": "",
+              "en": "post a letter"
+            },
+            {
+              "ar": "",
+              "en": "hold a pen"
+            },
+            {
+              "ar": "",
+              "en": "send an email"
+            },
+            {
+              "ar": "",
+              "en": "win a race"
+            },
+            {
+              "ar": "",
+              "en": "make a face"
+            },
+            {
+              "ar": "",
+              "en": "make a sandwich"
+            },
+            {
+              "ar": "",
+              "en": "tell a story"
+            },
+            {
+              "ar": "",
+              "en": "tie a shoelace"
+            },
+            {
+              "ar": "",
+              "en": "inform"
+            },
+            {
+              "ar": "",
+              "en": "information"
+            },
+            {
+              "ar": "",
+              "en": "describe"
+            },
+            {
+              "ar": "",
+              "en": "description"
+            }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Following the sequence of events in a simple story or narrative; extracting factual information from short, simple dialogues or stories about past events; identifying the context of short, simple dialogues related to familiar everyday situations.",
+          "periods": null,
+          "objectives": [
+            "Following the sequence of events in a simple story or narrative.",
+            "Extracting factual information from short, simple dialogues or stories about past events.",
+            "Identifying the context of short, simple dialogues related to familiar everyday situations.",
+            "Talking about past events or experiences, using simple language.",
+            "Expressing ability or lack of ability in relation to basic everyday actions.",
+            "Function: Asking for information — e.g. I'd like some information about the Science Museum, please."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "هَيَّا نَسْتَكْشِفُ!",
+      "title_en": "Let's Explore!",
+      "general_idea_ar": "Talking about space; using big numbers.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "will/won't; How...? Examples: I'll get him a present. I won't get him a book. How deep is the Grand Canyon?",
+          "periods": null,
+          "objectives": [
+            "will/won't — e.g. I'll get him a present. I won't get him a book.",
+            "How...? — e.g. How deep is the Grand Canyon?"
+          ],
+          "vocabulary": [
+            {
+              "ar": "",
+              "en": "Sun"
+            },
+            {
+              "ar": "",
+              "en": "star"
+            },
+            {
+              "ar": "",
+              "en": "rocket"
+            },
+            {
+              "ar": "",
+              "en": "Moon"
+            },
+            {
+              "ar": "",
+              "en": "solar system"
+            },
+            {
+              "ar": "",
+              "en": "space station"
+            },
+            {
+              "ar": "",
+              "en": "Earth"
+            },
+            {
+              "ar": "",
+              "en": "telescope"
+            },
+            {
+              "ar": "",
+              "en": "spacesuit"
+            },
+            {
+              "ar": "",
+              "en": "planet"
+            },
+            {
+              "ar": "",
+              "en": "comet"
+            },
+            {
+              "ar": "",
+              "en": "satellite"
+            },
+            {
+              "ar": "",
+              "en": "a hundred"
+            },
+            {
+              "ar": "",
+              "en": "five hundred"
+            },
+            {
+              "ar": "",
+              "en": "a thousand"
+            },
+            {
+              "ar": "",
+              "en": "five thousand"
+            },
+            {
+              "ar": "",
+              "en": "ten thousand"
+            },
+            {
+              "ar": "",
+              "en": "fifty thousand"
+            },
+            {
+              "ar": "",
+              "en": "a hundred thousand"
+            },
+            {
+              "ar": "",
+              "en": "a million"
+            },
+            {
+              "ar": "",
+              "en": "planet"
+            },
+            {
+              "ar": "",
+              "en": "spacesuit"
+            },
+            {
+              "ar": "",
+              "en": "rocket"
+            },
+            {
+              "ar": "",
+              "en": "satellite"
+            },
+            {
+              "ar": "",
+              "en": "astronaut"
+            },
+            {
+              "ar": "",
+              "en": "telescope"
+            },
+            {
+              "ar": "",
+              "en": "scientist"
+            },
+            {
+              "ar": "",
+              "en": "explorer"
+            }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Following the sequence of events in a simple story or narrative; identifying specific information in short, simple dialogues in which speakers make arrangements to do something; identifying key information about future plans in short, simple dialogues.",
+          "periods": null,
+          "objectives": [
+            "Following the sequence of events in a simple story or narrative.",
+            "Identifying specific information in short, simple dialogues in which speakers make arrangements to do something.",
+            "Identifying key information about future plans in short, simple dialogues.",
+            "Talking about plans for the near future in a simple way; giving an opinion in a structured discussion; telling a simple story."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "إِلَى السُّوقِ",
+      "title_en": "Off to the Shops",
+      "general_idea_ar": "Talking about shops, money and prices.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Relative clauses; have to/don't have to. Examples: It's the man who we saw earlier. We're in the shop where my brother works. I have to save some money.",
+          "periods": null,
+          "objectives": [
+            "Relative clauses — e.g. It's the man who we saw earlier. We're in the shop where my brother works.",
+            "have to/don't have to — e.g. I have to save some money."
+          ],
+          "vocabulary": [
+            {
+              "ar": "",
+              "en": "butcher's"
+            },
+            {
+              "ar": "",
+              "en": "newsagent's"
+            },
+            {
+              "ar": "",
+              "en": "phone shop"
+            },
+            {
+              "ar": "",
+              "en": "greengrocer's"
+            },
+            {
+              "ar": "",
+              "en": "jeweller's"
+            },
+            {
+              "ar": "",
+              "en": "corner shop"
+            },
+            {
+              "ar": "",
+              "en": "fishmonger's"
+            },
+            {
+              "ar": "",
+              "en": "sports shop"
+            },
+            {
+              "ar": "",
+              "en": "shoe shop"
+            },
+            {
+              "ar": "",
+              "en": "pharmacy"
+            },
+            {
+              "ar": "",
+              "en": "gift shop"
+            },
+            {
+              "ar": "",
+              "en": "toy shop"
+            },
+            {
+              "ar": "",
+              "en": "money"
+            },
+            {
+              "ar": "",
+              "en": "box"
+            },
+            {
+              "ar": "",
+              "en": "save"
+            },
+            {
+              "ar": "",
+              "en": "purse"
+            },
+            {
+              "ar": "",
+              "en": "spend"
+            },
+            {
+              "ar": "",
+              "en": "wallet"
+            },
+            {
+              "ar": "",
+              "en": "buy"
+            },
+            {
+              "ar": "",
+              "en": "birthday money"
+            },
+            {
+              "ar": "",
+              "en": "sell"
+            },
+            {
+              "ar": "",
+              "en": "pay"
+            },
+            {
+              "ar": "",
+              "en": "payment"
+            },
+            {
+              "ar": "",
+              "en": "encourage"
+            },
+            {
+              "ar": "",
+              "en": "encouragement"
+            }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Following the sequence of events in a simple story or narrative; identifying key information such as prices, times and dates in a short description.",
+          "periods": null,
+          "objectives": [
+            "Following the sequence of events in a simple story or narrative.",
+            "Identifying key information such as prices, times and dates in a short description.",
+            "Describing basic differences between two pictures."
+          ],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

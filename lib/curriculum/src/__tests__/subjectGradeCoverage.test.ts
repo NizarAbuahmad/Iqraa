@@ -208,7 +208,8 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // g5SocialSem1.ts — a corrupted PDF text layer, not a missing source).
   // digital-literacy:grade-5 closed the same day, Semester 1 only, title-only
   // (fourth — see g5DigitalSem1.ts, no Semester 2 activity book on file).
-  'english:grade-5',
+  // english:grade-5 closed the same day, both semesters — the last planned
+  // Grade 5 MVP subject (see g5EnglishSem1.ts).
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

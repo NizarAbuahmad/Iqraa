@@ -223,6 +223,14 @@ import {
   buildG5IslamicSem2Catalog,
 } from './curriculumG5IslamicSem2.ts';
 import {
+  G5_ENGLISH_S1_BOOK_ID,
+  buildG5EnglishSem1Catalog,
+} from './curriculumG5EnglishSem1.ts';
+import {
+  G5_ENGLISH_S2_BOOK_ID,
+  buildG5EnglishSem2Catalog,
+} from './curriculumG5EnglishSem2.ts';
+import {
   G5_ARABIC_S1_BOOK_ID,
   buildG5ArabicSem1Catalog,
 } from './curriculumG5ArabicSem1.ts';
@@ -1165,6 +1173,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Islamic Education – Grade 5 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g5_islamic_sem2.json (NCCD)',
+  },
+  {
+    id: G5_ENGLISH_S1_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف الخامس – الفصل الأول',
+    titleEn: 'English – Grade 5 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g5_english_sem1.json (NCCD)',
+  },
+  {
+    id: G5_ENGLISH_S2_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف الخامس – الفصل الثاني',
+    titleEn: 'English – Grade 5 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g5_english_sem2.json (NCCD)',
   },
   {
     id: G5_ARABIC_S1_BOOK_ID,
@@ -2641,6 +2667,8 @@ const _g5ScienceSem1 = buildG5ScienceSem1Catalog();
 const _g5ScienceSem2 = buildG5ScienceSem2Catalog();
 const _g5IslamicSem1 = buildG5IslamicSem1Catalog();
 const _g5IslamicSem2 = buildG5IslamicSem2Catalog();
+const _g5EnglishSem1 = buildG5EnglishSem1Catalog();
+const _g5EnglishSem2 = buildG5EnglishSem2Catalog();
 const _g5ArabicSem1 = buildG5ArabicSem1Catalog();
 const _g5ArabicSem2 = buildG5ArabicSem2Catalog();
 const _g5SocialSem1 = buildG5SocialSem1Catalog();
@@ -2905,6 +2933,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g5ScienceSem2.units,
   ..._g5IslamicSem1.units,
   ..._g5IslamicSem2.units,
+  ..._g5EnglishSem1.units,
+  ..._g5EnglishSem2.units,
   ..._g5ArabicSem1.units,
   ..._g5ArabicSem2.units,
   ..._g5SocialSem1.units,
@@ -3040,6 +3070,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g5ScienceSem2.lessons,
   ..._g5IslamicSem1.lessons,
   ..._g5IslamicSem2.lessons,
+  ..._g5EnglishSem1.lessons,
+  ..._g5EnglishSem2.lessons,
   ..._g5ArabicSem1.lessons,
   ..._g5ArabicSem2.lessons,
   ..._g5SocialSem1.lessons,

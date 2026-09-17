@@ -1,0 +1,737 @@
+{
+  "meta": {
+    "grade": "الصف الخامس",
+    "grade_en": "Grade 5",
+    "subject": "اللغة الإنجليزية",
+    "subject_en": "English",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني (g5-english-s2-pupils-book, Jordan Team Together series, Pearson/York Press)"
+    ],
+    "provenance_note": "Read directly from the PDF via PyMuPDF on 2026-09-16 — clean extraction, same as Semester 1 (iqra_curriculum_g5_english_sem1.json). Unit titles, page numbers, vocabulary, grammar structures and skill descriptors were taken from the book's own 'Scope and sequence' table (pp. 4-5).",
+    "known_gaps": [
+      "Same shape as Semester 1: unit-level real content (not title-only), but each unit's internal page-by-page lesson count was not verified, so every unit here is split into exactly two lessons — Vocabulary & Grammar, and Listening & Speaking.",
+      "Units are numbered 6-10, continuing Semester 1's 1-5, matching the book's own cover and contents page.",
+      "Excluded as supplementary, non-core material: the 'Bo's Learning Club' boosters, 'Festivals' pages (Youth Service Day, World Heritage Day), 'Solve it', and the 'Grammar reference' appendix."
+    ]
+  },
+  "units": [
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "مُرَحَّبًا بِعَوْدَتِكُمْ",
+      "title_en": "Welcome Back",
+      "general_idea_ar": "Talking about hobbies and technology.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Past simple. Example: I learnt how to cook. What did you do, Katy?",
+          "periods": null,
+          "objectives": [
+            "Past simple — e.g. I learnt how to cook. What did you do, Katy?"
+          ],
+          "vocabulary": [
+            {
+              "ar": "",
+              "en": "bake a cake"
+            },
+            {
+              "ar": "",
+              "en": "do experiments"
+            },
+            {
+              "ar": "",
+              "en": "fix toys"
+            },
+            {
+              "ar": "",
+              "en": "juggle"
+            },
+            {
+              "ar": "",
+              "en": "make a pizza"
+            },
+            {
+              "ar": "",
+              "en": "throw a ball"
+            },
+            {
+              "ar": "",
+              "en": "call"
+            },
+            {
+              "ar": "",
+              "en": "computer"
+            },
+            {
+              "ar": "",
+              "en": "email"
+            },
+            {
+              "ar": "",
+              "en": "keyboard"
+            },
+            {
+              "ar": "",
+              "en": "letter"
+            },
+            {
+              "ar": "",
+              "en": "mobile phone"
+            },
+            {
+              "ar": "",
+              "en": "smartwatch"
+            },
+            {
+              "ar": "",
+              "en": "study"
+            },
+            {
+              "ar": "",
+              "en": "tablet"
+            },
+            {
+              "ar": "",
+              "en": "telephone"
+            }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Following the sequence of events in a simple story or narrative; extracting factual information from short, simple dialogues or stories about past events; identifying the context of short, simple dialogues related to familiar everyday situations.",
+          "periods": null,
+          "objectives": [
+            "Following the sequence of events in a simple story or narrative.",
+            "Extracting factual information from short, simple dialogues or stories about past events.",
+            "Identifying the context of short, simple dialogues related to familiar everyday situations."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "حَيَواناتٌ مُهَدَّدَةٌ بِالْخَطَرِ",
+      "title_en": "Animals in Danger",
+      "general_idea_ar": "Talking about sea animals and land animals.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Past continuous; past continuous vs past simple. Examples: The shark was looking for small sea animals. I was watching the koalas when the lion escaped.",
+          "periods": null,
+          "objectives": [
+            "Past continuous — e.g. The shark was looking for small sea animals.",
+            "Past continuous vs past simple — e.g. I was watching the koalas when the lion escaped."
+          ],
+          "vocabulary": [
+            {
+              "ar": "",
+              "en": "dolphin"
+            },
+            {
+              "ar": "",
+              "en": "jellyfish"
+            },
+            {
+              "ar": "",
+              "en": "lobster"
+            },
+            {
+              "ar": "",
+              "en": "octopus"
+            },
+            {
+              "ar": "",
+              "en": "oyster"
+            },
+            {
+              "ar": "",
+              "en": "ray"
+            },
+            {
+              "ar": "",
+              "en": "seahorse"
+            },
+            {
+              "ar": "",
+              "en": "seal"
+            },
+            {
+              "ar": "",
+              "en": "shark"
+            },
+            {
+              "ar": "",
+              "en": "squid"
+            },
+            {
+              "ar": "",
+              "en": "turtle"
+            },
+            {
+              "ar": "",
+              "en": "whale"
+            },
+            {
+              "ar": "",
+              "en": "camel"
+            },
+            {
+              "ar": "",
+              "en": "gorilla"
+            },
+            {
+              "ar": "",
+              "en": "koala"
+            },
+            {
+              "ar": "",
+              "en": "lion"
+            },
+            {
+              "ar": "",
+              "en": "panda"
+            },
+            {
+              "ar": "",
+              "en": "parrot"
+            },
+            {
+              "ar": "",
+              "en": "polar bear"
+            },
+            {
+              "ar": "",
+              "en": "rhino"
+            },
+            {
+              "ar": "",
+              "en": "appear"
+            },
+            {
+              "ar": "",
+              "en": "disappear"
+            },
+            {
+              "ar": "",
+              "en": "like"
+            },
+            {
+              "ar": "",
+              "en": "dislike"
+            },
+            {
+              "ar": "",
+              "en": "agree"
+            },
+            {
+              "ar": "",
+              "en": "disagree"
+            },
+            {
+              "ar": "",
+              "en": "connect"
+            },
+            {
+              "ar": "",
+              "en": "disconnect"
+            }
+          ]
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Following the sequence of events in a simple story or narrative, if told slowly and clearly; identifying basic factual information in short, simple dialogues or stories on familiar everyday topics, if spoken slowly and clearly; identifying specific information in short, simple dialogues, if there is some repetition and rephrasing; understanding some details in longer dialogues on familiar everyday topics, if guided by questions or prompts.",
+          "periods": null,
+          "objectives": [
+            "Following the sequence of events in a simple story or narrative, if told slowly and clearly.",
+            "Identifying basic factual information in short, simple dialogues or stories on familiar everyday topics.",
+            "Identifying specific information in short, simple dialogues, if there is some repetition and rephrasing.",
+            "Understanding some details in longer dialogues on familiar everyday topics, if guided by questions or prompts."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "الْمُحافَظَةُ عَلَى الصِّحَّةِ",
+      "title_en": "Staying Healthy",
+      "general_idea_ar": "Talking about illnesses and healthy lifestyles.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "should/shouldn't; infinitive of purpose. Examples: You should go to the doctor's! You shouldn't go to school. He went to the supermarket to buy fruit.",
+          "periods": null,
+          "objectives": [
+            "should/shouldn't — e.g. You should go to the doctor's! You shouldn't go to school.",
+            "Infinitive of purpose — e.g. He went to the supermarket to buy fruit."
+          ],
+          "vocabulary": [
+            {
+              "ar": "",
+              "en": "a cold"
+            },
+            {
+              "ar": "",
+              "en": "a cough"
+            },
+            {
+              "ar": "",
+              "en": "a headache"
+            },
+            {
+              "ar": "",
+              "en": "a high temperature"
+            },
+            {
+              "ar": "",
+              "en": "a rash"
+            },
+            {
+              "ar": "",
+              "en": "a runny nose"
+            },
+            {
+              "ar": "",
+              "en": "a sore throat"
+            },
+            {
+              "ar": "",
+              "en": "a stomach ache"
+            },
+            {
+              "ar": "",
+              "en": "a toothache"
+            },
+            {
+              "ar": "",
+              "en": "an earache"
+            },
+            {
+              "ar": "",
+              "en": "dizzy"
+            },
+            {
+              "ar": "",
+              "en": "sick"
+            },
+            {
+              "ar": "",
+              "en": "do exercise"
+            },
+            {
+              "ar": "",
+              "en": "eat a balanced diet"
+            },
+            {
+              "ar": "",
+              "en": "eat junk food"
+            },
+            {
+              "ar": "",
+              "en": "fit"
+            },
+            {
+              "ar": "",
+              "en": "healthy"
+            },
+            {
+              "ar": "",
+              "en": "relax"
+            },
+            {
+              "ar": "",
+              "en": "unfit"
+            },
+            {
+              "ar": "",
+              "en": "unhealthy"
+            },
+            {
+              "ar": "",
+              "en": "balanced"
+            },
+            {
+              "ar": "",
+              "en": "unbalanced"
+            },
+            {
+              "ar": "",
+              "en": "fit"
+            },
+            {
+              "ar": "",
+              "en": "unfit"
+            },
+            {
+              "ar": "",
+              "en": "regular"
+            },
+            {
+              "ar": "",
+              "en": "irregular"
+            },
+            {
+              "ar": "",
+              "en": "resistible"
+            },
+            {
+              "ar": "",
+              "en": "irresistible"
+            },
+            {
+              "ar": "",
+              "en": "responsible"
+            },
+            {
+              "ar": "",
+              "en": "irresponsible"
+            }
+          ]
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Following the sequence of events in a simple story or narrative, if told slowly and clearly; identifying basic factual information in short, simple dialogues or stories on familiar everyday topics; identifying specific information in short, simple dialogues, if there is some repetition and rephrasing.",
+          "periods": null,
+          "objectives": [
+            "Following the sequence of events in a simple story or narrative, if told slowly and clearly.",
+            "Identifying basic factual information in short, simple dialogues or stories on familiar everyday topics.",
+            "Identifying specific information in short, simple dialogues, if there is some repetition and rephrasing."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_ar": "السِّتارُ يَرْتَفِعُ!",
+      "title_en": "Curtain Up!",
+      "general_idea_ar": "Talking about the theatre and entertainment.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Present perfect. Examples: I've read Alice's Adventures in Wonderland. I haven't seen the film. He's seen Alice's costume somewhere, but he hasn't found it.",
+          "periods": null,
+          "objectives": [
+            "Present perfect — e.g. I've read Alice's Adventures in Wonderland. I haven't seen the film."
+          ],
+          "vocabulary": [
+            {
+              "ar": "",
+              "en": "act"
+            },
+            {
+              "ar": "",
+              "en": "audience"
+            },
+            {
+              "ar": "",
+              "en": "backstage"
+            },
+            {
+              "ar": "",
+              "en": "cast"
+            },
+            {
+              "ar": "",
+              "en": "cheer"
+            },
+            {
+              "ar": "",
+              "en": "costumes"
+            },
+            {
+              "ar": "",
+              "en": "curtain"
+            },
+            {
+              "ar": "",
+              "en": "director"
+            },
+            {
+              "ar": "",
+              "en": "lighting"
+            },
+            {
+              "ar": "",
+              "en": "props"
+            },
+            {
+              "ar": "",
+              "en": "scenery"
+            },
+            {
+              "ar": "",
+              "en": "stage"
+            },
+            {
+              "ar": "",
+              "en": "classical music"
+            },
+            {
+              "ar": "",
+              "en": "comic"
+            },
+            {
+              "ar": "",
+              "en": "concert"
+            },
+            {
+              "ar": "",
+              "en": "country music"
+            },
+            {
+              "ar": "",
+              "en": "festival"
+            },
+            {
+              "ar": "",
+              "en": "musical"
+            },
+            {
+              "ar": "",
+              "en": "poem"
+            },
+            {
+              "ar": "",
+              "en": "puppet show"
+            },
+            {
+              "ar": "",
+              "en": "cheerful"
+            },
+            {
+              "ar": "",
+              "en": "thankful"
+            },
+            {
+              "ar": "",
+              "en": "playful"
+            },
+            {
+              "ar": "",
+              "en": "fearful"
+            },
+            {
+              "ar": "",
+              "en": "peaceful"
+            },
+            {
+              "ar": "",
+              "en": "forgetful"
+            },
+            {
+              "ar": "",
+              "en": "careful"
+            },
+            {
+              "ar": "",
+              "en": "hopeful"
+            }
+          ]
+        },
+        {
+          "id": "u9_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Following the sequence of events in a simple story or narrative, if told slowly and clearly; identifying basic factual information in short, simple dialogues or stories on familiar everyday topics; identifying specific information in short, simple dialogues, if there is some repetition and rephrasing.",
+          "periods": null,
+          "objectives": [
+            "Following the sequence of events in a simple story or narrative, if told slowly and clearly.",
+            "Identifying basic factual information in short, simple dialogues or stories on familiar everyday topics.",
+            "Identifying specific information in short, simple dialogues, if there is some repetition and rephrasing."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u10",
+      "number": 10,
+      "title_ar": "هَيَّا نُبْدِعُ!",
+      "title_en": "Let's Get Creative!",
+      "general_idea_ar": "Talking about machines and materials.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u10_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Present perfect with ever/never; is/are made of. Examples: Have you ever made chocolates? Yes, I have./No, I haven't. She's never used the oven before. What is it made of? It's made of plastic.",
+          "periods": null,
+          "objectives": [
+            "Present perfect with ever/never — e.g. Have you ever made chocolates? Yes, I have./No, I haven't.",
+            "is/are made of — e.g. What is it made of? It's made of plastic. What are they made of? They're made of gold!"
+          ],
+          "vocabulary": [
+            {
+              "ar": "",
+              "en": "coffee machine"
+            },
+            {
+              "ar": "",
+              "en": "cooker"
+            },
+            {
+              "ar": "",
+              "en": "dishwasher"
+            },
+            {
+              "ar": "",
+              "en": "freezer"
+            },
+            {
+              "ar": "",
+              "en": "fridge"
+            },
+            {
+              "ar": "",
+              "en": "kettle"
+            },
+            {
+              "ar": "",
+              "en": "microwave"
+            },
+            {
+              "ar": "",
+              "en": "oven"
+            },
+            {
+              "ar": "",
+              "en": "sewing machine"
+            },
+            {
+              "ar": "",
+              "en": "toaster"
+            },
+            {
+              "ar": "",
+              "en": "vacuum cleaner"
+            },
+            {
+              "ar": "",
+              "en": "washing machine"
+            },
+            {
+              "ar": "",
+              "en": "cotton"
+            },
+            {
+              "ar": "",
+              "en": "gold"
+            },
+            {
+              "ar": "",
+              "en": "leather"
+            },
+            {
+              "ar": "",
+              "en": "metal"
+            },
+            {
+              "ar": "",
+              "en": "paper"
+            },
+            {
+              "ar": "",
+              "en": "plastic"
+            },
+            {
+              "ar": "",
+              "en": "rubber"
+            },
+            {
+              "ar": "",
+              "en": "silver"
+            },
+            {
+              "ar": "",
+              "en": "begin"
+            },
+            {
+              "ar": "",
+              "en": "contain"
+            },
+            {
+              "ar": "",
+              "en": "decide"
+            },
+            {
+              "ar": "",
+              "en": "enjoy"
+            },
+            {
+              "ar": "",
+              "en": "recommend"
+            },
+            {
+              "ar": "",
+              "en": "understand"
+            },
+            {
+              "ar": "",
+              "en": "entertain"
+            }
+          ]
+        },
+        {
+          "id": "u10_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Following the sequence of events in a simple story or narrative, if told slowly and clearly; identifying basic factual information in short, simple dialogues or stories on familiar everyday topics; identifying people in their immediate surroundings or in pictures from a short, simple description of where they are and what they are doing.",
+          "periods": null,
+          "objectives": [
+            "Following the sequence of events in a simple story or narrative, if told slowly and clearly.",
+            "Identifying basic factual information in short, simple dialogues or stories on familiar everyday topics.",
+            "Identifying people in their immediate surroundings or in pictures from a short, simple description of where they are and what they are doing."
+          ],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
