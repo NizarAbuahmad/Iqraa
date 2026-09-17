@@ -184,6 +184,14 @@ import {
   buildG3ScienceSem2BrowserCatalog,
 } from './catalogs/g3ScienceSem2.ts';
 import {
+  G3_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  buildG3IslamicSem1BrowserCatalog,
+} from './catalogs/g3IslamicSem1.ts';
+import {
+  G3_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  buildG3IslamicSem2BrowserCatalog,
+} from './catalogs/g3IslamicSem2.ts';
+import {
   G4_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG4ScienceSem1BrowserCatalog,
 } from './catalogs/g4ScienceSem1.ts';
@@ -1226,6 +1234,13 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // g3ScienceSem1.ts.
   G3_SCIENCE_S1_CURRICULUM_BOOK_ID,
   G3_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  // Grade 3 Islamic Education, both semesters. 'islamic' is already in
+  // MVP_SUBJECT_IDS and already declared for grade-3 in SUBJECTS.grades, so
+  // no subject append or SUBJECTS.grades extension is needed. NCCD's own
+  // Arabic-native Islamic-studies text, not a HarperCollins translation —
+  // see g3IslamicSem1.ts.
+  G3_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  G3_ISLAMIC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2615,6 +2630,38 @@ export const BOOKS: Book[] = [
     academicYear: '2024-2025',
     language: 'Arabic',
     edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // Grade 3 Islamic Education, both semesters. NCCD's own Arabic-native
+  // Islamic-studies text, not a HarperCollins translation — real per-lesson
+  // content from each lesson's own «الفِكْرَةُ الرَّئيسَةُ» box, printed for all
+  // twelve lessons per semester (unlike g4IslamicSem1, which excludes seven
+  // tilawah lessons). No general-idea, prior-knowledge, or vocabulary boxes
+  // in this book — see g3IslamicSem1.ts / g3IslamicSem2.ts.
+  {
+    id: G3_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 3, Semester 1',
+    titleAr: 'التربية الإسلامية – الصف الثالث – الفصل الأول',
+    subjectId: 'islamic',
+    gradeId: 'grade-3',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G3_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 3, Semester 2',
+    titleAr: 'التربية الإسلامية – الصف الثالث – الفصل الثاني',
+    subjectId: 'islamic',
+    gradeId: 'grade-3',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '2nd',
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
@@ -4748,6 +4795,8 @@ const _g3MathSem1Browser = buildG3MathSem1BrowserCatalog();
 const _g3MathSem2Browser = buildG3MathSem2BrowserCatalog();
 const _g3ScienceSem1Browser = buildG3ScienceSem1BrowserCatalog();
 const _g3ScienceSem2Browser = buildG3ScienceSem2BrowserCatalog();
+const _g3IslamicSem1Browser = buildG3IslamicSem1BrowserCatalog();
+const _g3IslamicSem2Browser = buildG3IslamicSem2BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -5007,6 +5056,8 @@ export const UNITS: Unit[] = [
   ..._g3MathSem2Browser.units,
   ..._g3ScienceSem1Browser.units,
   ..._g3ScienceSem2Browser.units,
+  ..._g3IslamicSem1Browser.units,
+  ..._g3IslamicSem2Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -5156,6 +5207,8 @@ export const LESSONS: Lesson[] = [
   ..._g3MathSem2Browser.lessons,
   ..._g3ScienceSem1Browser.lessons,
   ..._g3ScienceSem2Browser.lessons,
+  ..._g3IslamicSem1Browser.lessons,
+  ..._g3IslamicSem2Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
