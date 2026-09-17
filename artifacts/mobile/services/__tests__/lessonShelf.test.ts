@@ -205,12 +205,12 @@ describe('subject isolation', () => {
       // Grade 9 predates Grade 7 here (no Grade 8 PE book exists at all).
       // Grade 7 joined 2026-09-12.
       'physical-education': /^g\d+-pe-s[12]$/,
-      // The combined «العلوم» books at Grades 5, 6, 7 and 8, the only ones this
-      // subject has. No grade-10 alternative here: Grade 10 splits science into
-      // the four subjects above, so there is no bare `science-s[12]` form to
-      // allow. Grade 7 joined 2026-09-12, Grade 6 on 2026-09-13, Grade 5 on
-      // 2026-09-16.
-      science: /^(g8-science-s[12]|g7-science-s[12]|g6-science-s[12]|g5-science-s[12])$/,
+      // The combined «العلوم» books at Grades 4, 5, 6, 7 and 8, the only ones
+      // this subject has. No grade-10 alternative here: Grade 10 splits
+      // science into the four subjects above, so there is no bare
+      // `science-s[12]` form to allow. Grade 7 joined 2026-09-12, Grade 6 on
+      // 2026-09-13, Grade 5 on 2026-09-16, Grade 4 on 2026-09-17.
+      science: /^(g8-science-s[12]|g7-science-s[12]|g6-science-s[12]|g5-science-s[12]|g4-science-s[12])$/,
     };
     for (const lesson of KB_LESSONS) {
       const subjectId = getBookForLesson(lesson)?.subjectId;

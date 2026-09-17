@@ -168,6 +168,14 @@ import {
   buildG4MathSem2BrowserCatalog,
 } from './catalogs/g4MathSem2.ts';
 import {
+  G4_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  buildG4ScienceSem1BrowserCatalog,
+} from './catalogs/g4ScienceSem1.ts';
+import {
+  G4_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  buildG4ScienceSem2BrowserCatalog,
+} from './catalogs/g4ScienceSem2.ts';
+import {
   G5_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG5ScienceSem1BrowserCatalog,
 } from './catalogs/g5ScienceSem1.ts';
@@ -1083,6 +1091,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // already in MVP_SUBJECT_IDS, so no subject append is needed.
   G4_MATH_S1_CURRICULUM_BOOK_ID,
   G4_MATH_S2_CURRICULUM_BOOK_ID,
+  // Grade 4 Science, both semesters — real content, same convention as
+  // g5ScienceSem1.ts. 'science' is already in MVP_SUBJECT_IDS, so no subject
+  // append is needed.
+  G4_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  G4_SCIENCE_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2181,6 +2194,37 @@ export const BOOKS: Book[] = [
     title: 'Mathematics – Grade 4, Semester 2',
     titleAr: 'الرياضيات – الصف الرابع – الفصل الثاني',
     subjectId: 'mathematics',
+    gradeId: 'grade-4',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // Grade 4 Science, both semesters — the second Grade 4 subject. Units are
+  // numbered 1-4 then 6-10 continuously across the two semesters (unit 5
+  // does not exist in the printed table of contents), the same convention as
+  // g5ScienceSem1.ts. See g4ScienceSem1.ts / g4ScienceSem2.ts for what the
+  // books do and do not print.
+  {
+    id: G4_SCIENCE_S1_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 4, Semester 1',
+    titleAr: 'العلوم – الصف الرابع – الفصل الأول',
+    subjectId: 'science',
+    gradeId: 'grade-4',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G4_SCIENCE_S2_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 4, Semester 2',
+    titleAr: 'العلوم – الصف الرابع – الفصل الثاني',
+    subjectId: 'science',
     gradeId: 'grade-4',
     academicYear: '2024-2025',
     language: 'Arabic',
@@ -4336,6 +4380,8 @@ const _g5SocialSem2Browser = buildG5SocialSem2BrowserCatalog();
 const _g5DigitalSem1Browser = buildG5DigitalSem1BrowserCatalog();
 const _g4MathSem1Browser = buildG4MathSem1BrowserCatalog();
 const _g4MathSem2Browser = buildG4MathSem2BrowserCatalog();
+const _g4ScienceSem1Browser = buildG4ScienceSem1BrowserCatalog();
+const _g4ScienceSem2Browser = buildG4ScienceSem2BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
 const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
@@ -4597,6 +4643,8 @@ export const UNITS: Unit[] = [
   ..._g5DigitalSem1Browser.units,
   ..._g4MathSem1Browser.units,
   ..._g4MathSem2Browser.units,
+  ..._g4ScienceSem1Browser.units,
+  ..._g4ScienceSem2Browser.units,
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
   ..._g6ArabicSem1Browser.units,
@@ -4728,6 +4776,8 @@ export const LESSONS: Lesson[] = [
   ..._g5DigitalSem1Browser.lessons,
   ..._g4MathSem1Browser.lessons,
   ..._g4MathSem2Browser.lessons,
+  ..._g4ScienceSem1Browser.lessons,
+  ..._g4ScienceSem2Browser.lessons,
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
   ..._g6ArabicSem1Browser.lessons,
