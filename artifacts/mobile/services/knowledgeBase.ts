@@ -267,6 +267,14 @@ import {
   buildG4ScienceSem2Catalog,
 } from './curriculumG4ScienceSem2.ts';
 import {
+  G4_ISLAMIC_S1_BOOK_ID,
+  buildG4IslamicSem1Catalog,
+} from './curriculumG4IslamicSem1.ts';
+import {
+  G4_ISLAMIC_S2_BOOK_ID,
+  buildG4IslamicSem2Catalog,
+} from './curriculumG4IslamicSem2.ts';
+import {
   G6_MATH_S1_BOOK_ID,
   buildG6MathSem1Catalog,
 } from './curriculumG6MathSem1.ts';
@@ -1288,6 +1296,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Science – Grade 4 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g4_science_sem2.json (NCCD)',
+  },
+  {
+    id: G4_ISLAMIC_S1_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف الرابع – الفصل الأول',
+    titleEn: 'Islamic Education – Grade 4 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g4_islamic_sem1.json (NCCD)',
+  },
+  {
+    id: G4_ISLAMIC_S2_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف الرابع – الفصل الثاني',
+    titleEn: 'Islamic Education – Grade 4 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g4_islamic_sem2.json (NCCD)',
   },
   {
     id: G6_MATH_S1_BOOK_ID,
@@ -2730,6 +2756,8 @@ const _g4MathSem1 = buildG4MathSem1Catalog();
 const _g4MathSem2 = buildG4MathSem2Catalog();
 const _g4ScienceSem1 = buildG4ScienceSem1Catalog();
 const _g4ScienceSem2 = buildG4ScienceSem2Catalog();
+const _g4IslamicSem1 = buildG4IslamicSem1Catalog();
+const _g4IslamicSem2 = buildG4IslamicSem2Catalog();
 const _g6MathSem1 = buildG6MathSem1Catalog();
 const _g6ScienceSem1 = buildG6ScienceSem1Catalog();
 const _g6ArabicSem1 = buildG6ArabicSem1Catalog();
@@ -2989,6 +3017,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g4MathSem2.units,
   ..._g4ScienceSem1.units,
   ..._g4ScienceSem2.units,
+  ..._g4IslamicSem1.units,
+  ..._g4IslamicSem2.units,
   ..._g5ScienceSem1.units,
   ..._g5ScienceSem2.units,
   ..._g5IslamicSem1.units,
@@ -3130,6 +3160,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g4MathSem2.lessons,
   ..._g4ScienceSem1.lessons,
   ..._g4ScienceSem2.lessons,
+  ..._g4IslamicSem1.lessons,
+  ..._g4IslamicSem2.lessons,
   ..._g5ScienceSem1.lessons,
   ..._g5ScienceSem2.lessons,
   ..._g5IslamicSem1.lessons,
