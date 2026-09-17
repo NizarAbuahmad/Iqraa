@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
@@ -16,6 +16,7 @@ interface ButtonProps {
 
 export function Button({ label, onPress, variant = 'primary', size = 'md', disabled, loading, style, fullWidth }: ButtonProps) {
   const colors = useColors();
+  const [hovered, setHovered] = useState(false);
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -50,6 +51,8 @@ export function Button({ label, onPress, variant = 'primary', size = 'md', disab
   return (
     <Pressable
       onPress={handlePress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
       disabled={disabled || loading}
       style={({ pressed }) => [
         styles.base,
@@ -60,7 +63,7 @@ export function Button({ label, onPress, variant = 'primary', size = 'md', disab
           paddingHorizontal: paddingH,
           paddingVertical: paddingV,
           borderRadius: colors.radius,
-          opacity: pressed ? 0.75 : disabled || loading ? 0.5 : 1,
+          opacity: pressed ? 0.75 : disabled || loading ? 0.5 : hovered ? 0.9 : 1,
           ...(fullWidth ? { width: '100%' } : {}),
         },
         style,
