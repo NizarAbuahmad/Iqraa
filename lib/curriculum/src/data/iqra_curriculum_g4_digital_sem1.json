@@ -1,0 +1,413 @@
+{
+ "meta": {
+  "grade": "الصف الرابع",
+  "grade_en": "Grade 4",
+  "subject": "المهارات الرقمية",
+  "subject_en": "Digital Skills",
+  "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+  "semester_covered": 1,
+  "schema_version": "1.0",
+  "source_books": [
+   "كتاب الأنشطة لمادة المهارات الرقمية الصف الرابع الفصل الأول (g4-digital-s1-activity-book)"
+  ],
+  "provenance_note": "نُقِلَتِ البِنْيَةُ مِنْ فِهْرِسِ كِتابِ الأَنْشِطَةِ (ص 4-6) في 2026-09-17، وَقُرِئَ مِنْ مَلَفِّ PDF مُباشَرَةً — عَلى نَفْسِ نَهْجِ g5DigitalSem1. هذا الكِتابُ لَيْسَ كِتابَ مادَّةٍ قائِمَةً بِذاتِها، بَلْ مادَّةٌ عابِرَةٌ لِلْمَناهِجِ: مُحْتَواهُ «لَبِناتٌ» تَتَّصِلُ بِوَحَداتٍ مِنْ كُتُبِ العُلومِ وَالرِّياضِيّاتِ لِهذا الصَّفِّ (تَصْنيفُ الكائِناتِ الحَيَّةِ، الضَّرْبُ وَالقِسْمَةُ، المادَّةُ، الضَّوْءُ، الأَنْماطُ وَالمُعادَلاتُ، الكَهْرَباءُ)، وَعَناوينُ اللَّبِناتِ نُقِلَتْ كَما طُبِعَتْ. سِتُّ لَبِناتٍ نُقِلَتْ إِلى سِتِّ وَحَداتٍ، وَأَرْبَعَةُ «مَشاريعِ تَعَلُّمٍ» إِلى أَرْبَعِ وَحَداتٍ، بِتَرْتيبِ وُرودِها في الفِهْرِسِ (ثَلاثُ لَبِناتٍ، ثُمَّ مَشْروعانِ، ثُمَّ ثَلاثُ لَبِناتٍ، ثُمَّ مَشْروعانِ) — نَفْسُ شَكْلِ g5DigitalSem1 (سِتَّةٌ + أَرْبَعَةٌ). كُلُّ وَحْدَةِ لَبِنَةٍ تَحْمِلُ «مَهامَّ اسْتِكْشافِيَّةً» مُرَقَّمَةً نُقِلَتْ عَناوينُها كَما تَطْبَعُها صَفْحَةُ الفِهْرِسِ؛ كُلُّ وَحْدَةِ مَشْروعٍ تَحْمِلُ دَرْسًا واحِدًا يَحْمِلُ اسْمَ المَشْروعِ نَفْسَهُ.",
+  "known_gaps": [
+   "title-only، عَلى نَفْسِ نَهْجِ g5DigitalSem1: لا main_idea_ar وَلا objectives وَلا vocabulary وَلا general_idea_ar — هذا الكِتابُ سِلْسِلَةُ مَهامَّ وَمَشاريعَ عَمَلِيَّةٍ، لا دُروسًا تَحْمِلُ فِكْرَةً رَئيسَةً أَوْ مُصْطَلَحاتٍ عَلى نَحْوِ كُتُبِ المَوادِّ الأُخْرى.",
+   "periods و total_periods فارِغَةٌ (null): لا كِتابَ طالِبٍ لِهذِهِ المادَّةِ.",
+   "لا كِتابَ فَصْلٍ ثانٍ: كِتابُ الأَنْشِطَةِ لِلْفَصْلِ الأَوَّلِ هُوَ كُلُّ ما وَصَلَ، عَلى نَفْسِ نَمَطِ g5DigitalSem1 (S1 فَقَطْ).",
+   "تَرْقيمُ «مَشْروعِ التَّعَلُّمِ» يُعيدُ نَفْسَهُ داخِلَ هذا الكِتابِ: يوجَدُ «مَشْروعُ التَّعَلُّمِ الأَوَّلُ» مَرَّتَيْنِ (u4 وَ u9) وَ«مَشْروعُ التَّعَلُّمِ الثّاني» مَرَّتَيْنِ (u5 وَ u10)، لا تَرْقيمٌ مُتَسَلْسِلٌ عَبْرَ الكِتابِ كَما في g5DigitalSem1 — الوَحَداتُ الأَرْبَعُ مُتَمايِزَةٌ بِعَناوينِ مَحْتَواها لا بِرَقْمِ المَشْروعِ."
+  ]
+ },
+ "units": [
+  {
+   "id": "u1",
+   "number": 1,
+   "title_ar": "تَصْنيفُ الكائِناتِ الحَيَّةِ",
+   "title_en": "Classification of Living Things",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u1_l1",
+     "order": 1,
+     "title_ar": "هُوِيَّةُ كائِنٍ",
+     "title_en": "Identity of an Organism",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l2",
+     "order": 2,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الأولى: مَهَمَّةٌ جَماعِيَّةٌ",
+     "title_en": "First Exploration Task: Group Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l3",
+     "order": 3,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثّانِيَةُ: مَهَمَّةٌ جَماعِيَّةٌ",
+     "title_en": "Second Exploration Task: Group Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l4",
+     "order": 4,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثّالِثَةُ: مَهَمَّةٌ فَرْدِيَّةٌ",
+     "title_en": "Third Exploration Task: Individual Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u2",
+   "number": 2,
+   "title_ar": "الضَّرْبُ وَالقِسْمَةُ",
+   "title_en": "Multiplication and Division",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u2_l1",
+     "order": 1,
+     "title_ar": "بَرْمِجْها بِنَفْسِكَ: آلَةٌ حاسِبَةٌ ذَكِيَّةٌ",
+     "title_en": "Program It Yourself: A Smart Calculator",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l2",
+     "order": 2,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الأولى: مَهَمَّةٌ جَماعِيَّةٌ",
+     "title_en": "First Exploration Task: Group Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l3",
+     "order": 3,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثّانِيَةُ: مَهَمَّةٌ جَماعِيَّةٌ",
+     "title_en": "Second Exploration Task: Group Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l4",
+     "order": 4,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثّالِثَةُ: مَهَمَّةٌ جَماعِيَّةٌ",
+     "title_en": "Third Exploration Task: Group Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u3",
+   "number": 3,
+   "title_ar": "المادَّةُ",
+   "title_en": "Matter",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u3_l1",
+     "order": 1,
+     "title_ar": "مُنْتَجاتُ بالَدي: حِكايَةٌ عِلْمِيَّةٌ",
+     "title_en": "My Homeland's Products: A Scientific Story",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u3_l2",
+     "order": 2,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الأولى: مَهَمَّةٌ جَماعِيَّةٌ (العَمَلُ التَّعاوُنِيُّ)",
+     "title_en": "First Exploration Task: Group Task (Cooperative Work)",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u3_l3",
+     "order": 3,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثّانِيَةُ: مَهَمَّةٌ جَماعِيَّةٌ",
+     "title_en": "Second Exploration Task: Group Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u3_l4",
+     "order": 4,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثّالِثَةُ: تَصْميمُ المُلْصَقِ الخاصِّ بِالمُنْتَجِ",
+     "title_en": "Third Exploration Task: Designing the Product Label",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u4",
+   "number": 4,
+   "title_ar": "مَشْروعُ التَّعَلُّمِ الأَوَّلُ: عالَمُ النَّباتِ وَالحَيَوانِ: مُغامَرَةُ تَصْنيفٍ رَقْمِيٍّ",
+   "title_en": "Learning Project 1: The World of Plants and Animals: A Digital Classification Adventure",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u4_l1",
+     "order": 1,
+     "title_ar": "عالَمُ النَّباتِ وَالحَيَوانِ: مُغامَرَةُ تَصْنيفٍ رَقْمِيٍّ",
+     "title_en": "The World of Plants and Animals: A Digital Classification Adventure",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u5",
+   "number": 5,
+   "title_ar": "مَشْروعُ التَّعَلُّمِ الثّاني: أَماكِنُ وَمَشاعِرُ",
+   "title_en": "Learning Project 2: Places and Feelings",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u5_l1",
+     "order": 1,
+     "title_ar": "أَماكِنُ وَمَشاعِرُ",
+     "title_en": "Places and Feelings",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u6",
+   "number": 6,
+   "title_ar": "الضَّوْءُ",
+   "title_en": "Light",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u6_l1",
+     "order": 1,
+     "title_ar": "أَضْواءٌ وَظِلالٌ تَرْوي الحِكايا",
+     "title_en": "Lights and Shadows That Tell Stories",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u6_l2",
+     "order": 2,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الأولى: مَهَمَّةٌ جَماعِيَّةٌ",
+     "title_en": "First Exploration Task: Group Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u6_l3",
+     "order": 3,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثّانِيَةُ: مَهَمَّةٌ جَماعِيَّةٌ",
+     "title_en": "Second Exploration Task: Group Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u6_l4",
+     "order": 4,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثّالِثَةُ: مَهَمَّةٌ جَماعِيَّةٌ",
+     "title_en": "Third Exploration Task: Group Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u7",
+   "number": 7,
+   "title_ar": "الأَنْماطُ وَالمُعادَلاتُ",
+   "title_en": "Patterns and Equations",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u7_l1",
+     "order": 1,
+     "title_ar": "أَلْغازٌ وَأَنْماطٌ",
+     "title_en": "Puzzles and Patterns",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u7_l2",
+     "order": 2,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الأولى: مَهَمَّةٌ جَماعِيَّةٌ",
+     "title_en": "First Exploration Task: Group Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u7_l3",
+     "order": 3,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثّانِيَةُ: مَهَمَّةٌ جَماعِيَّةٌ",
+     "title_en": "Second Exploration Task: Group Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u8",
+   "number": 8,
+   "title_ar": "الكَهْرَباءُ",
+   "title_en": "Electricity",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u8_l1",
+     "order": 1,
+     "title_ar": "الكَهْرَباءُ بِعُيونٍ رَقْمِيَّةٍ: أَسْتَكْشِفُ وَأُصَوِّرُ وَأُشارِكُ",
+     "title_en": "Electricity Through Digital Eyes: I Explore, Photograph and Share",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u8_l2",
+     "order": 2,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الأولى: مَهَمَّةٌ جَماعِيَّةٌ (العَمَلُ التَّعاوُنِيُّ)",
+     "title_en": "First Exploration Task: Group Task (Cooperative Work)",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u8_l3",
+     "order": 3,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثّانِيَةُ: مَهَمَّةٌ جَماعِيَّةٌ",
+     "title_en": "Second Exploration Task: Group Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u8_l4",
+     "order": 4,
+     "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثّالِثَةُ: مَهَمَّةٌ جَماعِيَّةٌ",
+     "title_en": "Third Exploration Task: Group Task",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u9",
+   "number": 9,
+   "title_ar": "مَشْروعُ التَّعَلُّمِ الأَوَّلُ: الفُصولُ في تَقْويمٍ",
+   "title_en": "Learning Project 1: The Seasons in a Calendar",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u9_l1",
+     "order": 1,
+     "title_ar": "الفُصولُ في تَقْويمٍ",
+     "title_en": "The Seasons in a Calendar",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u10",
+   "number": 10,
+   "title_ar": "مَشْروعُ التَّعَلُّمِ الثّاني: التَّرْشيدُ الذَّكِيُّ لِلْكَهْرَباءِ",
+   "title_en": "Learning Project 2: Smart Electricity Conservation",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "title-only (activity book table of contents)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u10_l1",
+     "order": 1,
+     "title_ar": "التَّرْشيدُ الذَّكِيُّ لِلْكَهْرَباءِ",
+     "title_en": "Smart Electricity Conservation",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  }
+ ]
+}

@@ -215,6 +215,9 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // staged rollout like grade-5's, so the pairs below split the same two
   // ways. science:grade-4 closed the same rollout, both semesters, real
   // content (see g4ScienceSem1.ts — matches g5ScienceSem1.ts's convention).
+  // digital-literacy:grade-4 closed the same rollout, title-only,
+  // cross-curricular (see g4DigitalSem1.ts — matches g5DigitalSem1.ts's
+  // convention).
   //
   // PERMANENT — the subject is not declared at grade-4 in SUBJECTS.grades at
   // all, same reasoning as grade-5 above (physics/chemistry/biology/
@@ -248,7 +251,6 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'arabic:grade-4',
   'english:grade-4',
   'islamic:grade-4',
-  'digital-literacy:grade-4',
   'social:grade-4',
 ]);
 
