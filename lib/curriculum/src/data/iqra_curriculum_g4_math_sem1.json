@@ -1,0 +1,419 @@
+{
+  "meta": {
+    "grade": "الصف الرابع",
+    "grade_en": "Grade 4",
+    "subject": "الرياضيات",
+    "subject_en": "Mathematics",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الأول (g4-math-s1-student-book, HarperCollins/NCCD)"
+    ],
+    "provenance_note": "قُرِئَت هذه البِنيةُ من فِهرسِ كتابِ الطالبِ (ص 4-5) وصفحاتِ افتتاحِ كلِّ درسٍ في 2026-09-17، عبرَ PyMuPDF — الاستخراجُ نظيفٌ تمامًا لهذا الكتابِ، كما لسائرِ كتبِ الصفِّ الرابعِ المفحوصةِ. main_idea_ar تُرِكَت فارغةً و objectives تحمِلُ نصَّ «فِكْرَةُ الدَّرْسِ» كما يطبعُهُ الكتابُ حرفيًّا لكلِّ درسٍ، بنفسِ اصطلاحِ g5MathSem1.ts. vocabulary مأخوذةٌ من عنوانِ «المصطلحات» حيثُ وُجِدَ، بترجمةٍ إنجليزيةٍ قياسيةٍ لكلِّ مصطلحٍ رياضيٍّ.",
+    "known_gaps": [
+      "general_idea_ar و prior_knowledge مَلْؤُهُما من صفحةِ افتتاحِ الوحدةِ («ما أهمية هذه الوحدة؟» و«تعلمت سابقًا:») للوحدةِ الأولى فقط؛ لم تُقْرَأْ صفحاتُ افتتاحِ الوحداتِ 2-5 بنفسِ التفصيلِ، فبقِيَت هذِهِ الحقولُ فارغةً لها — الدروسُ نفسُها مكتملةٌ لكلِّ الوحداتِ.",
+      "بعضُ الدروسِ لا تطبعُ قسمَ «المصطلحات» صراحةً (مثل الدرس 2 من الوحدة 1، ودروسِ الوحدةِ 2 كلِّها تقريبًا)؛ فيها vocabulary فارغةٌ، وهذا مطابقٌ لما يطبعُهُ الكتابُ لا نقصًا في القراءةِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "الأَعْدادُ: جَمْعُها وَطَرْحُها",
+      "title_en": "Numbers: Addition and Subtraction",
+      "general_idea_ar": "تُسْتَعْمَلُ الأَعْدادُ الكَبيرَةُ في مَجالاتٍ حَياتِيَّةٍ كَثيرَةٍ؛ فَالشَّرِكاتُ مَثَلًا تَكْتُبُ أَرْباحَها بِاسْتِعْمالِ أَعْدادٍ كَبيرَةٍ، وَتُقارِنُ هذِهِ الأَعْدادَ بِالأَرْباحِ في أَعْوامٍ سابِقَةٍ. سَأَتَعَلَّمُ الكَثيرَ عَنْ قِراءَةِ الأَعْدادِ الكَبيرَةِ وَتَرْتيبِها في هذِهِ الوَحْدَةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book)",
+      "prior_knowledge": [
+        "قِراءَةَ الأَعْدادِ ضِمْنَ 4 مَنازِلَ، وَكِتابَتَها.",
+        "تَحْديدَ القِيمَةِ المَنْزِلِيَّةِ لِرَقْمٍ في عَدَدٍ.",
+        "المُقارَنَةَ بَيْنَ أَعْدادٍ ضِمْنَ 4 مَنازِلَ، وَتَرْتيبَها.",
+        "تَقْريبَ الأَعْدادِ الكُلِّيَّةِ إِلى مَنْزِلَةٍ مُحَدَّدَةٍ.",
+        "جَمْعَ الأَعْدادِ وَطَرْحَها ضِمْنَ 4 مَنازِلَ."
+      ],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "القِيمَةُ المَنْزِلِيَّةُ ضِمْنَ مِئاتِ الأُلوفِ",
+          "title_en": "Place Value within Hundred Thousands",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَقْرَأُ أَعْدادًا ضِمْنَ مِئاتِ الأُلوفِ، وَأَكْتُبُها بِصِيَغٍ مُخْتَلِفَةٍ."
+          ],
+          "vocabulary": [
+            { "ar": "القِيمَةُ المَنْزِلِيَّةُ", "en": "place value" },
+            { "ar": "الدَّوْرَةُ", "en": "period" },
+            { "ar": "الصِّيغَةُ القِياسِيَّةُ", "en": "standard form" },
+            { "ar": "الصِّيغَةُ اللَّفْظِيَّةُ", "en": "word form" },
+            { "ar": "الصِّيغَةُ التَّحْليلِيَّةُ", "en": "expanded form" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "مُقارَنَةُ الأَعْدادِ وَتَرْتيبُها",
+          "title_en": "Comparing and Ordering Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُقارِنُ بَيْنَ الأَعْدادِ ضِمْنَ مِئاتِ الأُلوفِ، وَأُرَتِّبُها."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "تَقْريبُ الأَعْدادِ",
+          "title_en": "Rounding Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُقَرِّبُ عَدَدًا إِلى أَقْرَبِ 10, 100, 1000, 10000."
+          ],
+          "vocabulary": [
+            { "ar": "التَّقْريبُ", "en": "rounding" }
+          ]
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "تَقْديرُ المَجْموعِ وَالفَرْقِ",
+          "title_en": "Estimating Sums and Differences",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُقَدِّرُ المَجْموعَ وَالفَرْقَ."
+          ],
+          "vocabulary": [
+            { "ar": "التَّقْديرُ", "en": "estimation" }
+          ]
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "جَمْعُ الأَعْدادِ",
+          "title_en": "Adding Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَجِدُ ناتِجَ جَمْعِ عَدَدَيْنِ ضِمْنَ 6 مَنازِلَ."
+          ],
+          "vocabulary": [
+            { "ar": "إِعادَةُ التَّجْميعِ", "en": "regrouping" }
+          ]
+        },
+        {
+          "id": "u1_l6",
+          "order": 6,
+          "title_ar": "طَرْحُ الأَعْدادِ",
+          "title_en": "Subtracting Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَجِدُ ناتِجَ طَرْحِ عَدَدَيْنِ ضِمْنَ 6 مَنازِلَ."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "الضَّرْبُ",
+      "title_en": "Multiplication",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "الضَّرْبُ في مُضاعَفاتِ 10, 100, 1000",
+          "title_en": "Multiplying by Multiples of 10, 100, 1000",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَضْرِبُ في مُضاعَفاتِ 10, 100, 1000."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "تَقْديرُ نَواتِجِ الضَّرْبِ",
+          "title_en": "Estimating Products",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُقَدِّرُ ناتِجَ ضَرْبِ عَدَدَيْنِ بِالتَّقْريبِ."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "ضَرْبُ الأَعْدادِ",
+          "title_en": "Multiplying Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَضْرِبُ عَدَدًا مِنْ 3 مَنازِلَ عَلى الأَكْثَرِ، في عَدَدٍ مِنْ مَنْزِلَةٍ واحِدَةٍ.",
+            "أَضْرِبُ عَدَدًا مِنْ مَنْزِلَتَيْنِ في عَدَدٍ مِنْ مَنْزِلَتَيْنِ."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "خُطَّةُ حَلِّ المَسْأَلَةِ: الحَلُّ بِأَكْثَرَ مِنْ خُطْوَةٍ",
+          "title_en": "Problem-Solving Plan: Multi-Step Solutions",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَحُلُّ مَسائِلَ حَياتِيَّةً باسْتِعْمالِ خُطَّةِ الحَلِّ بِأَكْثَرَ مِنْ خُطْوَةٍ."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "القِسْمَةُ",
+      "title_en": "Division",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "قِسْمَةُ مُضاعَفاتِ 10, 100, 1000",
+          "title_en": "Dividing Multiples of 10, 100, 1000",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَقْسِمُ عَدَدًا مِنْ مُضاعَفاتِ 10, 100, 1000، عَلى عَدَدٍ مِنْ مَنْزِلَةٍ واحِدَةٍ."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "تَقْديرُ ناتِجِ القِسْمَةِ",
+          "title_en": "Estimating Quotients",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُقَدِّرُ ناتِجَ القِسْمَةِ عَلى عَدَدٍ مِنْ مَنْزِلَةٍ واحِدَةٍ."
+          ],
+          "vocabulary": [
+            { "ar": "الأَعْدادُ المُتَناغِمَةُ", "en": "compatible numbers" }
+          ]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "قِسْمَةُ الأَعْدادِ",
+          "title_en": "Dividing Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَقْسِمُ عَدَدًا كُلِّيًّا مِنْ 3 مَنازِلَ، عَلى عَدَدٍ مِنْ مَنْزِلَةٍ واحِدَةٍ مِنْ دونِ باقٍ.",
+            "أَقْسِمُ عَدَدًا كُلِّيًّا مِنْ 3 مَنازِلَ عَلى الأَكْثَرِ، عَلى عَدَدٍ مِنْ مَنْزِلَةٍ واحِدَةٍ مَعَ باقٍ."
+          ],
+          "vocabulary": [
+            { "ar": "باقي القِسْمَةِ", "en": "remainder" }
+          ]
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "القِسْمَةُ مَعَ وُجودِ أَصْفارٍ في النّاتِجِ",
+          "title_en": "Division with Zeros in the Quotient",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَقْسِمُ عَدَدًا مِنْ 3 مَنازِلَ، عَلى عَدَدٍ مِنْ مَنْزِلَةٍ واحِدَةٍ مَعَ وُجودِ أَصْفارٍ في النّاتِجِ."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "أَوْلَوِيّاتُ العَمَلِيّاتِ الحِسابِيَّةِ",
+          "title_en": "Order of Operations",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَتَعَرَّفُ أَوْلَوِيّاتِ العَمَلِيّاتِ الحِسابِيَّةِ، وَأَسْتَعْمِلُها."
+          ],
+          "vocabulary": [
+            { "ar": "العِبارَةُ العَدَدِيَّةُ", "en": "numerical expression" },
+            { "ar": "أَوْلَوِيّاتُ العَمَلِيّاتِ الحِسابِيَّةِ", "en": "order of operations" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "خَصائِصُ الأَعْدادِ",
+      "title_en": "Properties of Numbers",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "قابِلِيَّةُ القِسْمَةِ عَلى 2, 3, 5, 10",
+          "title_en": "Divisibility by 2, 3, 5, 10",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَخْتَبِرُ قابِلِيَّةَ القِسْمَةِ عَلى الأَعْدادِ 2, 3, 5, 10."
+          ],
+          "vocabulary": [
+            { "ar": "قابِلِيَّةُ القِسْمَةِ", "en": "divisibility" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "العَوامِلُ",
+          "title_en": "Factors",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَجِدُ عَوامِلَ عَدَدٍ كُلِّيٍّ."
+          ],
+          "vocabulary": [
+            { "ar": "عامِلٌ", "en": "factor" },
+            { "ar": "زَوْجُ عَوامِلِ العَدَدِ", "en": "factor pair" }
+          ]
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "الأَعْدادُ الأَوَّلِيَّةُ، وَالأَعْدادُ غَيْرُ الأَوَّلِيَّةِ",
+          "title_en": "Prime and Non-Prime Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُمَيِّزُ العَدَدَ الأَوَّلِيَّ مِنَ العَدَدِ غَيْرِ الأَوَّلِيِّ."
+          ],
+          "vocabulary": [
+            { "ar": "العَدَدُ الأَوَّلِيُّ", "en": "prime number" },
+            { "ar": "العَدَدُ غَيْرُ الأَوَّلِيِّ", "en": "non-prime (composite) number" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "الهَنْدَسَةُ",
+      "title_en": "Geometry",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "الخُطوطُ، وَالأَشِعَّةُ، وَالزَّوايا",
+          "title_en": "Lines, Rays, and Angles",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُمَيِّزُ النُّقْطَةَ، وَالخَطَّ، وَالقِطْعَةَ المُسْتَقيمَةَ، وَالشُّعاعَ، وَأَنْواعَ الزَّوايا."
+          ],
+          "vocabulary": [
+            { "ar": "النُّقْطَةُ", "en": "point" },
+            { "ar": "المُسْتَقيمُ", "en": "line" },
+            { "ar": "الشُّعاعُ", "en": "ray" },
+            { "ar": "القِطْعَةُ المُسْتَقيمَةُ", "en": "line segment" },
+            { "ar": "الزّاوِيَةُ", "en": "angle" },
+            { "ar": "الدَّرَجَةُ", "en": "degree" },
+            { "ar": "رَأْسُ الزّاوِيَةِ", "en": "vertex of an angle" },
+            { "ar": "ضِلْعا الزّاوِيَةِ", "en": "sides of an angle" },
+            { "ar": "الزّاوِيَةُ القائِمَةُ", "en": "right angle" },
+            { "ar": "الزّاوِيَةُ المُسْتَقيمَةُ", "en": "straight angle" },
+            { "ar": "الزّاوِيَةُ الحادَةُ", "en": "acute angle" },
+            { "ar": "الزّاوِيَةُ المُنْفَرِجَةُ", "en": "obtuse angle" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "قِياسُ الزَّوايا وَرَسْمُها",
+          "title_en": "Measuring and Drawing Angles",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَسْتَعْمِلُ المِنْقَلَةَ لِرَسْمِ الزّاوِيَةِ وَقِياسِها بِالدَرَجاتِ."
+          ],
+          "vocabulary": [
+            { "ar": "مِنْقَلَةٌ", "en": "protractor" }
+          ]
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "المُسْتَقيماتُ المُتَوازِيَةُ وَالمُتَقاطِعَةُ",
+          "title_en": "Parallel and Intersecting Lines",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُمَيِّزُ المُسْتَقيمَيْنِ المُتَوازِيَيْنِ وَالمُتَقاطِعَيْنِ وَالمُتَعامِدَيْنِ.",
+            "أُحَدِّدُ أَنْواعَ الزَّوايا النّاتِجَةِ عَنْ تَقاطُعِ مُسْتَقيمَيْنِ."
+          ],
+          "vocabulary": [
+            { "ar": "مُسْتَقيمانِ مُتَوازِيانِ", "en": "parallel lines" },
+            { "ar": "مُسْتَقيمانِ مُتَقاطِعانِ", "en": "intersecting lines" },
+            { "ar": "مُسْتَقيمانِ مُتَعامِدانِ", "en": "perpendicular lines" }
+          ]
+        },
+        {
+          "id": "u5_l4",
+          "order": 4,
+          "title_ar": "التَّماثُلُ",
+          "title_en": "Symmetry",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَتَعَرَّفُ مِحْوَرَ التَّماثُلِ وَأَرْسُمُهُ لِشَكْلٍ مُعْطًى."
+          ],
+          "vocabulary": [
+            { "ar": "التَّماثُلُ", "en": "symmetry" },
+            { "ar": "مِحْوَرُ التَّماثُلِ", "en": "axis of symmetry" }
+          ]
+        },
+        {
+          "id": "u5_l5",
+          "order": 5,
+          "title_ar": "الانْعِكاسُ",
+          "title_en": "Reflection",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَرْسُمُ صورَةَ شَكْلٍ بِالانْعِكاسِ حَوْلَ مِحَوْرٍ، وَأَصِفُهُ."
+          ],
+          "vocabulary": [
+            { "ar": "الانْعِكاسُ", "en": "reflection" },
+            { "ar": "مِحْوَرُ الانْعِكاسِ", "en": "axis of reflection" },
+            { "ar": "صورَةٌ", "en": "image" }
+          ]
+        }
+      ]
+    }
+  ]
+}
