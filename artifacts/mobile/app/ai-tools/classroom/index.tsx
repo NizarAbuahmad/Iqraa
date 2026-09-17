@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { ACTIVITY_CARDS, ActivityCard, buildBuilderRoute } from '@/services/classroomRouting';
 import { arCountPhrase } from '@/services/arCount';
@@ -65,7 +66,7 @@ export default function ClassroomHubScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }} showsVerticalScrollIndicator={false}>
 
         {/* ── Header ── */}
         <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>

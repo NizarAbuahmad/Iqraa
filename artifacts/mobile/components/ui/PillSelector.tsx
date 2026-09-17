@@ -8,7 +8,7 @@
  * builder.tsx and slides.tsx use a narrower default. `pillStyle` carries that
  * one difference; everything else is shared.
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -63,35 +63,20 @@ export function PillSelector<T extends string | number>({
         {label}
       </Text>
       <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {options.map(o => {
-          const active = o.value === value;
-          return (
-            <Pressable
-              key={o.value}
-              accessibilityState={{ selected: active }}
-              onPress={() => {
-                if (haptics) Haptics.selectionAsync();
-                onChange(o.value);
-              }}
-              style={[
-                styles.pill,
-                pillStyle,
-                {
-                  backgroundColor: active ? accent : colors.card,
-                  borderColor: active ? accent : colors.border,
-                  borderRadius: colors.radius,
-                },
-              ]}
-            >
-              <Text style={[styles.pillText, {
-                color: active ? '#fff' : colors.mutedForeground,
-                fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-              }]}>
-                {o.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+        {options.map(o => (
+          <Pill
+            key={o.value}
+            option={o}
+            active={o.value === value}
+            colors={colors}
+            accent={accent}
+            pillStyle={pillStyle}
+            onPress={() => {
+              if (haptics) Haptics.selectionAsync();
+              onChange(o.value);
+            }}
+          />
+        ))}
       </View>
       {hint ? (
         <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -99,6 +84,43 @@ export function PillSelector<T extends string | number>({
         </Text>
       ) : null}
     </View>
+  );
+}
+
+function Pill<T extends string | number>({
+  option, active, colors, accent, pillStyle, onPress,
+}: {
+  option: PillOption<T>;
+  active: boolean;
+  colors: Colors;
+  accent: string;
+  pillStyle?: StyleProp<ViewStyle>;
+  onPress: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <Pressable
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      style={[
+        styles.pill,
+        pillStyle,
+        {
+          backgroundColor: active ? accent : hovered ? colors.border : colors.card,
+          borderColor: active ? accent : colors.border,
+          borderRadius: colors.radius,
+        },
+      ]}
+    >
+      <Text style={[styles.pillText, {
+        color: active ? '#fff' : colors.mutedForeground,
+        fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+      }]}>
+        {option.label}
+      </Text>
+    </Pressable>
   );
 }
 

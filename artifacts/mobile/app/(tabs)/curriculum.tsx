@@ -14,6 +14,8 @@ import {
   getVisibleGrades, getSubjectsForGrade,
 } from '@/services/curriculumData';
 import { qrResourceCountForGrade } from '@/services/bookQrLinks';
+import { useViewportWidth } from '@/hooks/useViewportWidth';
+import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 
 const SUBJECT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   arabic:      'text',
@@ -33,13 +35,16 @@ function SubjectCard({ subject, onPress, isRTL }: { subject: Subject; onPress: (
   const colors = useColors();
   const { lang } = useLanguage();
   const name = lang === 'ar' ? subject.nameAr : subject.name;
+  const [hovered, setHovered] = useState(false);
   return (
     <Pressable
       onPress={onPress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
       style={({ pressed }) => [
         styles.subjectCard,
         {
-          backgroundColor: colors.card,
+          backgroundColor: hovered ? colors.muted : colors.card,
           borderColor: colors.border,
           borderRadius: colors.radius,
           opacity: pressed ? 0.75 : 1,
@@ -76,6 +81,12 @@ export default function CurriculumScreen() {
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
   const showGradePicker = visibleGrades.length > 1;
 
+  const viewportW = useViewportWidth();
+  const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
+  const numColumns = isDesktop ? 4 : 2;
+  /** Centred column on desktop web; full-bleed on phones. */
+  const centered = { width: '100%' as const, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' as const };
+
   // Hidden rather than shown-and-empty: grades 6, 7 and 8 have no printed codes
   // at all, so on those an entry row would be a promise with nothing behind it.
   const qrCount = qrResourceCountForGrade(selectedGrade.id);
@@ -84,6 +95,7 @@ export default function CurriculumScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* ─── Header ────────────────────────────────────────────── */}
       <View style={[styles.header, { backgroundColor: colors.card, paddingTop: topPad + 12, borderBottomColor: colors.border }]}>
+        <View style={centered}>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('curriculumTitle')}
         </Text>
@@ -107,6 +119,7 @@ export default function CurriculumScreen() {
               <Ionicons name="close-circle" size={16} color={colors.mutedForeground} />
             </Pressable>
           )}
+        </View>
         </View>
       </View>
 
@@ -162,10 +175,11 @@ export default function CurriculumScreen() {
 
       {/* ─── Subjects grid ─────────────────────────────────────── */}
       <FlatList
+        key={numColumns}
         data={subjects}
         keyExtractor={s => s.id}
-        numColumns={2}
-        contentContainerStyle={styles.grid}
+        numColumns={numColumns}
+        contentContainerStyle={[styles.grid, centered]}
         columnWrapperStyle={{ gap: 12 }}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={

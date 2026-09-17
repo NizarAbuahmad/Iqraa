@@ -7,3 +7,9 @@
  * width on wide viewports and fills the screen on phones.
  */
 export const CHAT_MAX_WIDTH = 820;
+
+/** Viewport width above which web gets desktop chrome (sidebar, grids) instead of phone layout. */
+export const DESKTOP_BREAKPOINT = 900;
+
+/** Wider content cap for grid/list screens (vs. CHAT_MAX_WIDTH's narrower reading width). */
+export const CONTENT_MAX_WIDTH = 1120;

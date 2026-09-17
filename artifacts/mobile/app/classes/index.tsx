@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -27,6 +28,8 @@ import { confirm } from '@/services/confirm';
 import { countStudents, type TranslationKey } from '@/services/i18n';
 import { getPickerGrades } from '@/services/curriculumData';
 import { RosterConsentGate } from '@/components/RosterConsentGate';
+import { useViewportWidth } from '@/hooks/useViewportWidth';
+import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 
 const ACCENT = '#1B6B62';
 
@@ -141,6 +144,10 @@ function ClassesList() {
   };
 
   const align = isRTL ? 'right' : 'left';
+  const viewportW = useViewportWidth();
+  const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
+  const numColumns = isDesktop ? 3 : 1;
+  const centered = { width: '100%' as const, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' as const };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -165,9 +172,12 @@ function ClassesList() {
         </View>
       ) : (
         <FlatList
+          key={numColumns}
           data={classes}
           keyExtractor={c => c.id}
-          contentContainerStyle={{ padding: 20, paddingBottom: 100, gap: 12 }}
+          numColumns={numColumns}
+          columnWrapperStyle={numColumns > 1 ? { gap: 12 } : undefined}
+          contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 12 }, centered]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             error ? (
@@ -216,7 +226,7 @@ function ClassesList() {
           renderItem={({ item }) => (
             <Pressable
               onPress={() => router.push({ pathname: '/classes/[id]', params: { id: item.id } })}
-              style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, numColumns > 1 && { flex: 1 }]}
             >
               <View style={{ flex: 1 }}>
                 <Text
