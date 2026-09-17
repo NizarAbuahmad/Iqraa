@@ -1,0 +1,192 @@
+{
+ "meta": {
+  "grade": "الصف الثالث",
+  "grade_en": "Grade 3",
+  "subject": "التربية الإسلامية",
+  "subject_en": "Islamic Education",
+  "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+  "semester_covered": 1,
+  "schema_version": "1.0",
+  "source_books": [
+   "كتاب الطالب لمادة التربية الإسلامية الصف الثالث الفصل الأول (g3-islamic-s1-student-book)"
+  ],
+  "provenance_note": "نُقِلَتِ الوَحَداتُ الأَرْبَعُ وَدُروسُها الاثْنا عَشَرَ مِنْ كِتابِ الطّالِبِ في 2026-09-17، بِقِراءَةِ نَصِّ الكِتابِ كامِلًا مِنْ مَلَفِّ PDF مُباشَرَةً (PyMuPDF)، مِثْلَ g4IslamicSem1/g5IslamicSem1. لِكُلِّ وَحْدَةٍ: title_ar مِنْ صَفْحَةِ افْتِتاحِ الوَحْدَةِ الَّتي تَسْرُدُ «دُروسَ الوَحْدَةِ» فَقَطْ، بِلا صُنْدوقِ فِكْرَةٍ عامَّةٍ. وَلِكُلِّ دَرْسٍ: title_ar مِنْ تَرْويسَةِ الدَّرْسِ، وَ main_idea_ar مِنْ صُنْدوقِ «الفِكْرَةُ الرَّئيسَةُ» — يَطْبَعُهُ هذا الكِتابُ لِكُلِّ الدُّروسِ الاثْنَيْ عَشَرَ، بِخِلافِ g4IslamicSem1 الَّذي يَسْتَثْني سَبْعَةَ دُروسِ تِلاوَةٍ.",
+  "known_gaps": [
+   "objectives فارِغَةٌ لِكُلِّ الدُّروسِ: كِتابُ الطّالِبِ لا يَطْبَعُ صُنْدوقَ «نَتاجاتُ التَّعَلُّمِ».",
+   "periods و total_periods فارِغَةٌ (null) لِكُلِّ الدُّروسِ وَالوَحَداتِ.",
+   "prior_knowledge و general_idea_ar فارِغَةٌ لِكُلِّ الوَحَداتِ: صَفْحَةُ افْتِتاحِ الوَحْدَةِ تَطْبَعُ «دُروسَ الوَحْدَةِ» فَقَطْ، بِلا صُنْدوقِ «الفِكْرَةُ العامَّةُ» وَلا «تَعَلَّمْتُ سابِقًا».",
+   "vocabulary فارِغَةٌ لِكُلِّ الدُّروسِ: هذا الكِتابُ لا يَطْبَعُ صُنْدوقَ مُصْطَلَحاتٍ ثُنائِيَّ اللُّغَةِ كَكُتُبِ الرِّياضِيّاتِ وَالعُلومِ لِهذا الصَّفِّ.",
+   "title_en لِكُلِّ وَحْدَةٍ وَدَرْسٍ تَرْجَمَةٌ، لا نَصٌّ مَطْبوعٌ."
+  ]
+ },
+ "units": [
+  {
+   "id": "u1",
+   "number": 1,
+   "title_ar": "نورُ الإيمانِ",
+   "title_en": "The Light of Faith",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u1_l1",
+     "order": 1,
+     "title_ar": "بَدْءُ نُزولِ الْوَحْيِ",
+     "title_en": "The Beginning of Revelation",
+     "main_idea_ar": "بَدَأَ نُزولُ الْوَحْيِ عَلى سَيِّدِنا مُحَمَّدٍ صَلّى اللهُ عَلَيْهِ وَسَلَّمَ في غارِ حِراءٍ بِمَكَّةَ الْمُكَرَّمَةِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l2",
+     "order": 2,
+     "title_ar": "سورَةُ الْعَلَقِ، الآياتُ الْكَريمَةُ (1-8)",
+     "title_en": "Surat Al-'Alaq: Verses 1-8",
+     "main_idea_ar": "تَحُثُّنا الآياتُ الْكَريمَةُ (1-8) مِنْ سورَةِ الْعَلَقِ عَلى الْقِراءَةِ وَالتَّعَلُّمِ، وَتَنْهانا عَنِ التَّكَبُّرِ وَالظُّلْمِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l3",
+     "order": 3,
+     "title_ar": "سورَةُ الْعَلَقِ، الآياتُ الْكَريمَةُ (9-19)",
+     "title_en": "Surat Al-'Alaq: Verses 9-19",
+     "main_idea_ar": "تَوَعَّدَ اللهُ تَعالى في الآياتِ الْكَريمَةِ (9-19) مِنْ سورَةِ الْعَلَقِ مَنْ كانوا يُؤْذونَ رَسولَ اللهِ صَلّى اللهُ عَلَيْهِ وَسَلَّمَ وَيَمْنَعونَهُ مِنْ دَعْوَةِ النّاسِ إِلى الإسْلامِ بِالْعَذابِ الشَّديدِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u2",
+   "number": 2,
+   "title_ar": "عِلْمٌ وَعَمَلٌ",
+   "title_en": "Knowledge and Deed",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u2_l1",
+     "order": 1,
+     "title_ar": "أَهَمِّيَّةُ تَعَلُّمِ الْقُرْآنِ الْكَريمِ",
+     "title_en": "The Importance of Learning the Noble Qur'an",
+     "main_idea_ar": "نَحْرِصُ عَلى تَعَلُّمِ الْقُرْآنِ الْكَريمِ وَتَعْليمِهِ؛ لأَنَّهُ يُعَلِّمُنا أُمورَ الدّينِ، وَنَحْصُلُ عَلى الأَجْرِ الْعَظيمِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l2",
+     "order": 2,
+     "title_ar": "أَعْمالُ الصَّلاةِ",
+     "title_en": "The Actions of Prayer",
+     "main_idea_ar": "نَحْرِصُ عَلى أَداءِ الصَّلاةِ بِإِتْقانٍ؛ لِكَيْ نَنالَ الأَجْرَ مِنَ اللهِ تَعالى.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l3",
+     "order": 3,
+     "title_ar": "الْحَديثُ الشَّريفُ: حُبُّ الْخَيْرِ",
+     "title_en": "Hadith: Loving Good",
+     "main_idea_ar": "حُبُّ الْخَيْرِ لِلنّاسِ يَزيدُ الْمَحَبَّةَ بَيْنَهُمْ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u3",
+   "number": 3,
+   "title_ar": "رِسالَةُ الإسْلامِ",
+   "title_en": "The Message of Islam",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u3_l1",
+     "order": 1,
+     "title_ar": "سورَةُ الْقَدْرِ",
+     "title_en": "Surat Al-Qadr",
+     "main_idea_ar": "بَدَأَ نُزولُ الْقُرْآنِ الْكَريمِ في شَهْرِ رَمَضانَ الْمُبارَكِ في لَيْلَةِ الْقَدْرِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u3_l2",
+     "order": 2,
+     "title_ar": "دَعْوَةُ سَيِّدِنا مُحَمَّدٍ ﷺ النّاسَ إِلى الإسْلامِ",
+     "title_en": "Our Master Muhammad's ﷺ Call for People to Embrace Islam",
+     "main_idea_ar": "أَمَرَ اللهُ تَعالى سَيِّدَنا مُحَمَّدًا صَلّى اللهُ عَلَيْهِ وَسَلَّمَ بِدَعْوَةِ النّاسِ إِلى الإسْلامِ، فَبَدَأَ بِدَعْوَةِ الأَقارِبِ وَالأَصْدِقاءِ ثُمَّ دَعْوَةِ النّاسِ كافَّةً.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u3_l3",
+     "order": 3,
+     "title_ar": "الإيمانُ بِالرُّسُلِ عَلَيْهِمُ السَّلامُ",
+     "title_en": "Belief in the Messengers, Peace Be Upon Them",
+     "main_idea_ar": "الإيمانُ بِالأَنْبِياءِ وَالرُّسُلِ عَلَيْهِمُ السَّلامُ رُكْنٌ مِنْ أَرْكانِ الإيمانِ، وَلا يَصِحُّ إيمانُ الْمُسْلِمِ مِنْ دونِهِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u4",
+   "number": 4,
+   "title_ar": "مَكارِمُ الأَخْلاقِ",
+   "title_en": "Noble Morals",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u4_l1",
+     "order": 1,
+     "title_ar": "الْحَديثُ الشَّريفُ: إِماطَةُ الأَذى عَنِ الطَّريقِ",
+     "title_en": "Hadith: Removing Harm from the Road",
+     "main_idea_ar": "حَثَّنا النَّبِيُّ صَلّى اللهُ عَلَيْهِ وَسَلَّمَ عَلى إِزالَةِ الأَذى عَنْ طَريقِ النّاسِ؛ لِنَنالَ رِضا اللهِ تَعالى.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u4_l2",
+     "order": 2,
+     "title_ar": "آدابُ الْحَديثِ",
+     "title_en": "The Etiquette of Speech",
+     "main_idea_ar": "حَثَّنا الإسْلامُ عَلى الْتِزامِ آدابِ الْحَديثِ، وَأَرْشَدَنا إِلى حِفْظِ اللِّسانِ وَالتَّحَدُّثِ بِأَطْيَبِ الْكَلامِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u4_l3",
+     "order": 3,
+     "title_ar": "السَّيِّدَةُ هاجَرُ رَضِيَ اللهُ عَنْها",
+     "title_en": "Lady Hajar, May God Be Pleased with Her",
+     "main_idea_ar": "السَّيِّدَةُ هاجَرُ رَضِيَ اللهُ عَنْها هِيَ زَوْجَةُ سَيِّدِنا إِبْراهيمَ عَلَيْهِ السَّلامُ، وَأُمُّ سَيِّدِنا إِسْماعيلَ عَلَيْهِ السَّلامُ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  }
+ ]
+}
