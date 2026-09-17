@@ -62,11 +62,18 @@ export interface User {
    * services/routeGating.ts, the gate this field exists for.
    */
   hasRosterLink?: boolean;
+  /**
+   * Grade/subject catalog ids (`@workspace/curriculum`'s GRADES/SUBJECTS)
+   * this teacher picked at signup, editable later from the profile screen.
+   * Both empty is what `needsTeacherSetup` (routeGating.ts) reads to send a
+   * brand-new teacher to `/setup-subjects`; absent/empty for every other
+   * role, where the field does not apply.
+   */
+  gradeIds?: string[];
+  subjectIds?: string[];
   // Legacy optional fields kept for profile screen compatibility
   phone?: string;
   school?: string;
-  subjects?: string[];
-  grades?: string[];
   language?: 'en' | 'ar';
 }
 
@@ -117,7 +124,13 @@ interface AuthContextType {
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (email: string, code: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
+  updateProfile: (data: {
+    preferredLanguage?: string;
+    firstName?: string;
+    lastName?: string;
+    gradeIds?: string[];
+    subjectIds?: string[];
+  }) => Promise<void>;
   /** Throws with the server's own message (e.g. "too large", "not set up yet") on failure. */
   uploadAvatar: (dataUrl: string) => Promise<void>;
   removeAvatar: () => Promise<void>;
@@ -155,6 +168,8 @@ type ApiUser = {
   createdAt: string;
   lastLogin?: string;
   hasRosterLink?: boolean;
+  gradeIds?: string[];
+  subjectIds?: string[];
 };
 
 function toUser(apiUser: ApiUser): User {
@@ -170,8 +185,8 @@ function toUser(apiUser: ApiUser): User {
     avatarUrl: apiUser.avatarUrl ?? null,
     createdAt: apiUser.createdAt,
     hasRosterLink: apiUser.hasRosterLink,
-    subjects: [],
-    grades: [],
+    gradeIds: apiUser.gradeIds ?? [],
+    subjectIds: apiUser.subjectIds ?? [],
   };
 }
 
@@ -428,6 +443,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     preferredLanguage?: string;
     firstName?: string;
     lastName?: string;
+    gradeIds?: string[];
+    subjectIds?: string[];
   }) => {
     const updated = await apiJson<ApiUser>('/auth/users/profile', {
       method: 'PATCH',
