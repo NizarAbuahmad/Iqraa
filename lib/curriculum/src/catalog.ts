@@ -192,6 +192,18 @@ import {
   buildG3IslamicSem2BrowserCatalog,
 } from './catalogs/g3IslamicSem2.ts';
 import {
+  G3_ARABIC_S1_CURRICULUM_BOOK_ID,
+  buildG3ArabicSem1BrowserCatalog,
+  isG3ArabicSem1TitleOnlyUnit,
+  isG3ArabicSem1TitleOnlyLesson,
+} from './catalogs/g3ArabicSem1.ts';
+import {
+  G3_ARABIC_S2_CURRICULUM_BOOK_ID,
+  buildG3ArabicSem2BrowserCatalog,
+  isG3ArabicSem2TitleOnlyUnit,
+  isG3ArabicSem2TitleOnlyLesson,
+} from './catalogs/g3ArabicSem2.ts';
+import {
   G4_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG4ScienceSem1BrowserCatalog,
 } from './catalogs/g4ScienceSem1.ts';
@@ -1241,6 +1253,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // see g3IslamicSem1.ts.
   G3_ISLAMIC_S1_CURRICULUM_BOOK_ID,
   G3_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 3 Arabic, both semesters. 'arabic' is already in MVP_SUBJECT_IDS
+  // and already declared for grade-3 in SUBJECTS.grades (spans every
+  // grade), so no subject append or SUBJECTS.grades extension is needed.
+  // title-only, same reason as g4ArabicSem1/g5ArabicSem1 — see g3ArabicSem1.ts.
+  G3_ARABIC_S1_CURRICULUM_BOOK_ID,
+  G3_ARABIC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2662,6 +2680,36 @@ export const BOOKS: Book[] = [
     academicYear: '2024-2025',
     language: 'Arabic',
     edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // Grade 3 Arabic, both semesters. Title-only, same reason as
+  // g4ArabicSem1/g5ArabicSem1 — five units per semester, five fixed-pattern
+  // lessons per unit (أستمع، أتحدث، أقرأ، أكتب، أبني لغتي). See
+  // g3ArabicSem1.ts / g3ArabicSem2.ts.
+  {
+    id: G3_ARABIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 3, Semester 1',
+    titleAr: 'اللغة العربية – الصف الثالث – الفصل الأول',
+    subjectId: 'arabic',
+    gradeId: 'grade-3',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G3_ARABIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 3, Semester 2',
+    titleAr: 'اللغة العربية – الصف الثالث – الفصل الثاني',
+    subjectId: 'arabic',
+    gradeId: 'grade-3',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
@@ -4797,6 +4845,8 @@ const _g3ScienceSem1Browser = buildG3ScienceSem1BrowserCatalog();
 const _g3ScienceSem2Browser = buildG3ScienceSem2BrowserCatalog();
 const _g3IslamicSem1Browser = buildG3IslamicSem1BrowserCatalog();
 const _g3IslamicSem2Browser = buildG3IslamicSem2BrowserCatalog();
+const _g3ArabicSem1Browser = buildG3ArabicSem1BrowserCatalog();
+const _g3ArabicSem2Browser = buildG3ArabicSem2BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -5058,6 +5108,8 @@ export const UNITS: Unit[] = [
   ..._g3ScienceSem2Browser.units,
   ..._g3IslamicSem1Browser.units,
   ..._g3IslamicSem2Browser.units,
+  ..._g3ArabicSem1Browser.units,
+  ..._g3ArabicSem2Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -5209,6 +5261,8 @@ export const LESSONS: Lesson[] = [
   ..._g3ScienceSem2Browser.lessons,
   ..._g3IslamicSem1Browser.lessons,
   ..._g3IslamicSem2Browser.lessons,
+  ..._g3ArabicSem1Browser.lessons,
+  ..._g3ArabicSem2Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
@@ -5321,6 +5375,8 @@ export function isBrowserUnitTitleOnly(unitId: string): boolean {
     || isG5ArabicSem2TitleOnlyUnit(unitId)
     || isG4ArabicSem1TitleOnlyUnit(unitId)
     || isG4ArabicSem2TitleOnlyUnit(unitId)
+    || isG3ArabicSem1TitleOnlyUnit(unitId)
+    || isG3ArabicSem2TitleOnlyUnit(unitId)
     || isG6DigitalSem1TitleOnlyUnit(unitId)
     || isG5DigitalSem1TitleOnlyUnit(unitId)
     || isG4DigitalSem1TitleOnlyUnit(unitId)
@@ -5349,6 +5405,8 @@ export function isBrowserLessonTitleOnly(lessonId: string): boolean {
     || isG5ArabicSem2TitleOnlyLesson(lessonId)
     || isG4ArabicSem1TitleOnlyLesson(lessonId)
     || isG4ArabicSem2TitleOnlyLesson(lessonId)
+    || isG3ArabicSem1TitleOnlyLesson(lessonId)
+    || isG3ArabicSem2TitleOnlyLesson(lessonId)
     || isG6DigitalSem1TitleOnlyLesson(lessonId)
     || isG5DigitalSem1TitleOnlyLesson(lessonId)
     || isG4DigitalSem1TitleOnlyLesson(lessonId)

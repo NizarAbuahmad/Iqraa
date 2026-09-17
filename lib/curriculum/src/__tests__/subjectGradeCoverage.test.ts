@@ -286,8 +286,8 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // and BOOKS row land, same as the grade-4 rollout above.
   // science:grade-3 closed 2026-09-17 — see g3ScienceSem1.ts/g3ScienceSem2.ts.
   // islamic:grade-3 closed 2026-09-17 — see g3IslamicSem1.ts/g3IslamicSem2.ts.
+  // arabic:grade-3 closed 2026-09-17 — see g3ArabicSem1.ts/g3ArabicSem2.ts.
   'english:grade-3',
-  'arabic:grade-3',
   'digital-literacy:grade-3',
   'social:grade-3',
 ]);
