@@ -160,6 +160,14 @@ import {
   isG5DigitalSem1TitleOnlyLesson,
 } from './catalogs/g5DigitalSem1.ts';
 import {
+  G4_MATH_S1_CURRICULUM_BOOK_ID,
+  buildG4MathSem1BrowserCatalog,
+} from './catalogs/g4MathSem1.ts';
+import {
+  G4_MATH_S2_CURRICULUM_BOOK_ID,
+  buildG4MathSem2BrowserCatalog,
+} from './catalogs/g4MathSem2.ts';
+import {
   G5_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG5ScienceSem1BrowserCatalog,
 } from './catalogs/g5ScienceSem1.ts';
@@ -763,7 +771,7 @@ export const INVESTOR_MVP_CURRICULUM = true;
 // resolved for Grade 5 Math. Grade 4 and the rest of Grade 5 have extracted
 // text (worktree-grade-5-books) but no catalogs yet, and Grade 3 has nothing
 // at all — see KNOWN_BOOKLESS in subjectGradeCoverage.test.ts.
-export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7', 'grade-6', 'grade-5'];
+export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7', 'grade-6', 'grade-5', 'grade-4'];
 // Appended, never inserted: these positions are persisted as bare indices in
 // formState and route URLs, so inserting shifts what a saved URL resolves to.
 // 'physics' joined on 2026-09-03 with the Grade 10 S1 curriculum. Without it,
@@ -1070,6 +1078,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // g5DigitalSem1.ts). 'digital-literacy' is already in MVP_SUBJECT_IDS, so
   // no subject append is needed.
   G5_DIGITAL_S1_CURRICULUM_BOOK_ID,
+  // Grade 4 Mathematics, both semesters — the first Grade 4 book, and the
+  // book that brings grade-4 into MVP_GRADE_IDS above. 'mathematics' is
+  // already in MVP_SUBJECT_IDS, so no subject append is needed.
+  G4_MATH_S1_CURRICULUM_BOOK_ID,
+  G4_MATH_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2145,6 +2158,36 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // The first Grade 4 book in the repo, and the book that brings grade-4
+  // into MVP_GRADE_IDS. HarperCollins/NCCD series, same publisher as
+  // Grade 5/10 Math. Real per-lesson content («فِكْرَةُ الدَّرْسِ» +
+  // «المُصْطَلَحاتُ»), same treatment as g5MathSem1. See g4MathSem1.ts.
+  {
+    id: G4_MATH_S1_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 4, Semester 1',
+    titleAr: 'الرياضيات – الصف الرابع – الفصل الأول',
+    subjectId: 'mathematics',
+    gradeId: 'grade-4',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G4_MATH_S2_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 4, Semester 2',
+    titleAr: 'الرياضيات – الصف الرابع – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-4',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // The first Grade 6 books in the repo. Maths carries four units and eighteen
   // lessons from the student book alone (no S2 student book was supplied);
@@ -4291,6 +4334,8 @@ const _g5ArabicSem2Browser = buildG5ArabicSem2BrowserCatalog();
 const _g5SocialSem1Browser = buildG5SocialSem1BrowserCatalog();
 const _g5SocialSem2Browser = buildG5SocialSem2BrowserCatalog();
 const _g5DigitalSem1Browser = buildG5DigitalSem1BrowserCatalog();
+const _g4MathSem1Browser = buildG4MathSem1BrowserCatalog();
+const _g4MathSem2Browser = buildG4MathSem2BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
 const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
@@ -4550,6 +4595,8 @@ export const UNITS: Unit[] = [
   ..._g5SocialSem1Browser.units,
   ..._g5SocialSem2Browser.units,
   ..._g5DigitalSem1Browser.units,
+  ..._g4MathSem1Browser.units,
+  ..._g4MathSem2Browser.units,
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
   ..._g6ArabicSem1Browser.units,
@@ -4679,6 +4726,8 @@ export const LESSONS: Lesson[] = [
   ..._g5SocialSem1Browser.lessons,
   ..._g5SocialSem2Browser.lessons,
   ..._g5DigitalSem1Browser.lessons,
+  ..._g4MathSem1Browser.lessons,
+  ..._g4MathSem2Browser.lessons,
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
   ..._g6ArabicSem1Browser.lessons,

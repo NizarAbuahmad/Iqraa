@@ -210,6 +210,46 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // (fourth — see g5DigitalSem1.ts, no Semester 2 activity book on file).
   // english:grade-5 closed the same day, both semesters — the last planned
   // Grade 5 MVP subject (see g5EnglishSem1.ts).
+  //
+  // grade-4 joined MVP_GRADE_IDS 2026-09-17 with only Mathematics built — a
+  // staged rollout like grade-5's, so the seventeen pairs below split the
+  // same two ways.
+  //
+  // PERMANENT — the subject is not declared at grade-4 in SUBJECTS.grades at
+  // all, same reasoning as grade-5 above (physics/chemistry/biology/
+  // earth-science/financial-literacy start at grade-7 or SPECIALISED_FROM;
+  // geography/history/civic-education start at grade-9; physical-education
+  // is declared for grade-6/7/9 only; creative-arts and vocational-education
+  // for grade-6..grade-8 only). Grade 4 Art and Vocational Education source
+  // PDFs exist on disk (knowledge-base/grade-4-art,
+  // knowledge-base/grade-4-vocational), so these two may move to the
+  // ORDINARY list below once SUBJECTS.grades is extended for them — until
+  // then the declared range, not the missing book, is what makes them
+  // permanent here.
+  'chemistry:grade-4',
+  'physics:grade-4',
+  'biology:grade-4',
+  'earth-science:grade-4',
+  'financial-literacy:grade-4',
+  'geography:grade-4',
+  'history:grade-4',
+  'civic-education:grade-4',
+  'physical-education:grade-4',
+  'creative-arts:grade-4',
+  'vocational-education:grade-4',
+  //
+  // ORDINARY GAPS — the subject is declared at grade-4 (arabic/english/
+  // islamic/digital-literacy span all grades; science and social span
+  // grade-1..grade-9), and Grade 4 source text exists on disk
+  // (knowledge-base/grade-4-*), but no catalog has been built from it yet.
+  // Delete each line once its catalog and BOOKS row land, same as the
+  // grade-5 rollout above.
+  'science:grade-4',
+  'arabic:grade-4',
+  'english:grade-4',
+  'islamic:grade-4',
+  'digital-literacy:grade-4',
+  'social:grade-4',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

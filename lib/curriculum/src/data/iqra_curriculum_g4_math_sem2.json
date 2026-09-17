@@ -1,0 +1,486 @@
+{
+  "meta": {
+    "grade": "الصف الرابع",
+    "grade_en": "Grade 4",
+    "subject": "الرياضيات",
+    "subject_en": "Mathematics",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الثاني (g4-math-s2-student-book, HarperCollins/NCCD)"
+    ],
+    "provenance_note": "قُرِئَت هذه البِنيةُ من فِهرسِ كتابِ الطالبِ (ص 4-5) وصفحاتِ افتتاحِ كلِّ درسٍ في 2026-09-17، عبرَ PyMuPDF — استخراجٌ نظيفٌ، كسابِقِهِ الفصلِ الأوَّلِ (iqra_curriculum_g4_math_sem1.json). الوحداتُ مرقَّمةٌ 6-10 استمرارًا لترقيمِ الفصلِ الأوَّلِ (1-5).",
+    "known_gaps": [
+      "general_idea_ar و prior_knowledge فارغةٌ لجميعِ الوحداتِ هنا؛ لم تُقْرَأْ صفحاتُ افتتاحِ الوحداتِ بنفسِ التفصيلِ المُطَبَّقِ على الفصلِ الأوَّلِ — الدروسُ نفسُها مكتملةٌ لكلِّ الوحداتِ.",
+      "الوحدةُ التاسعةُ (القياس) تضمُّ في كتابِ الطالبِ «توسعةَ درسٍ» لكلٍّ من الدرسِ 5 (تقدير المحيط) والدرسِ 6 (تقدير المساحة)؛ دُمِجَت هاتانِ التوسعتانِ في الدرسِ الأصليِّ نفسِهِ بدلًا من عدِّهِما درسَينِ مُسْتَقِلَّينِ، فالوحدةُ 6 دروسٍ لا 8.",
+      "بعضُ الدروسِ لا تطبعُ قسمَ «المصطلحات» صراحةً؛ فيها vocabulary فارغةٌ، وهذا مطابقٌ لما يطبعُهُ الكتابُ لا نقصًا في القراءةِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "الكُسورُ",
+      "title_en": "Fractions",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "الكُسورُ المُتَكافِئَةُ",
+          "title_en": "Equivalent Fractions",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَجِدُ كُسورًا مُكافِئَةً لِكَسْرٍ مُعْطًى.",
+            "أَكْتُبُ كَسْرًا في أَبْسَطِ صورَةٍ."
+          ],
+          "vocabulary": [
+            { "ar": "كُسورٌ مُتَكافِئَةٌ", "en": "equivalent fractions" },
+            { "ar": "أَبْسَطُ صورَةٍ", "en": "simplest form" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "جَمْعُ الكُسورِ المُتَشابِهَةِ وَطَرْحُها",
+          "title_en": "Adding and Subtracting Like Fractions",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَجِدُ مَجْموعَ كَسْرَيْنِ مُتَشابِهَيْنِ، وَالفَرْقَ بَيْنَهُما."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "الأَعْدادُ الكَسْرِيَّةُ وَالكُسورُ غَيْرُ الفِعْلِيَّةِ",
+          "title_en": "Mixed Numbers and Improper Fractions",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَكْتُبُ العَدَدَ الكَسْرِيَّ عَلى صورَةِ كَسْرٍ غَيْرِ فِعْلِيٍّ وَبِالعَكْسِ."
+          ],
+          "vocabulary": [
+            { "ar": "عَدَدٌ كَسْرِيٌّ", "en": "mixed number" },
+            { "ar": "كَسْرٌ غَيْرُ فِعْلِيٍّ", "en": "improper fraction" }
+          ]
+        },
+        {
+          "id": "u6_l4",
+          "order": 4,
+          "title_ar": "مُقارَنَةُ الكُسورِ وَالأَعْدادِ الكَسْرِيَّةِ وَتَرْتيبُها",
+          "title_en": "Comparing and Ordering Fractions and Mixed Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُقارِنُ بَيْنَ الكُسورِ وَالأَعْدادِ الكَسْرِيَّةِ، وَأُرَتِّبُها."
+          ],
+          "vocabulary": [
+            { "ar": "مُقارَنَةٌ", "en": "comparison" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "الأَعْدادُ العَشْرِيَّةُ",
+      "title_en": "Decimal Numbers",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "أَجْزاءُ العَشَرَةِ",
+          "title_en": "Tenths",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَكْتُبُ الكَسْرَ العَشْرِيَّ بِالصِّيَغَتَيْنِ: القِياسِيَّةِ، وَاللَّفْظِيَّةِ، ضِمْنَ الأَجْزاءِ مِنْ عَشَرَةٍ.",
+            "أُمَثِّلُ الكَسْرَ العَشْرِيَّ عَلى خَطِّ الأَعْدادِ ضِمْنَ الأَجْزاءِ مِنْ عَشَرَةٍ."
+          ],
+          "vocabulary": [
+            { "ar": "الصِّيغَةُ القِياسِيَّةُ", "en": "standard form" },
+            { "ar": "الصِّيغَةُ اللَّفْظِيَّةُ", "en": "word form" }
+          ]
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "أَجْزاءُ المِئَةِ",
+          "title_en": "Hundredths",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُحَدِّدُ القِيمَةَ المَنْزِلِيَّةَ لِرَقْمٍ في كَسْرٍ عَشْرِيٍّ ضِمْنَ الأَجْزاءِ مِنْ مِئَةٍ.",
+            "أَكْتُبُ الكَسْرَ العَشْرِيَّ بِالصِّيَغِ: القِياسِيَّةِ، وَاللَّفْظِيَّةِ، وَالتَّحْليلِيَّةِ، ضِمْنَ الأَجْزاءِ مِنْ مِئَةٍ."
+          ],
+          "vocabulary": [
+            { "ar": "الصِّيغَةُ التَّحْليلِيَّةُ", "en": "expanded form" }
+          ]
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "الأَعْدادُ العَشْرِيَّةُ",
+          "title_en": "Decimal Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَقْرَأُ الأَعْدادَ العَشْرِيَّةَ وَأَكْتُبُها."
+          ],
+          "vocabulary": [
+            { "ar": "عَدَدٌ عَشْرِيٌّ", "en": "decimal number" }
+          ]
+        },
+        {
+          "id": "u7_l4",
+          "order": 4,
+          "title_ar": "التَّحْويلُ بَيْنَ الكُسورِ وَالأَعْدادِ العَشْرِيَّةِ",
+          "title_en": "Converting between Fractions and Decimals",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُحَوِّلُ الأَعْدادَ العَشْرِيَّةَ إِلى كُسورٍ وَبِالعَكْسِ."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l5",
+          "order": 5,
+          "title_ar": "الأَعْدادُ العَشْرِيَّةُ وَالنُّقودُ",
+          "title_en": "Decimals and Money",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُعَبِّرُ عَنْ قِيَمِ النُّقودِ بِاسْتِعْمالِ الكُسورِ العادِيَّةِ وَالأَعْدادِ العَشْرِيَّةِ."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l6",
+          "order": 6,
+          "title_ar": "مُقارَنَةُ الأَعْدادِ العَشْرِيَّةِ وَتَرْتيبُها",
+          "title_en": "Comparing and Ordering Decimals",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُقارِنُ الأَعْدادَ العَشْرِيَّةَ وَأُرَتِّبُها."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l7",
+          "order": 7,
+          "title_ar": "تَقْريبُ الأَعْدادِ العَشْرِيَّةِ",
+          "title_en": "Rounding Decimals",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُقَرِّبُ الأَعْدادَ العَشْرِيَّةَ إِلى أَقْرَبِ عَدَدٍ كُلِّيٍّ، أَوْ إِلى أَقْرَبِ جُزْءٍ مِنْ عَشَرَةٍ."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "الأَنْماطُ وَالمُعادَلاتُ",
+      "title_en": "Patterns and Equations",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "الأَنْماطُ",
+          "title_en": "Patterns",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُكْمِلُ نَمَطًا عَلِمْتُ قاعِدَتَهُ.",
+            "أُكْمِلُ نَمَطًا وَأَصِفُ قاعِدَتَهُ."
+          ],
+          "vocabulary": [
+            { "ar": "النَّمَطُ", "en": "pattern" },
+            { "ar": "قاعِدَةُ النَّمَطِ", "en": "pattern rule" }
+          ]
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "جَداوِلُ المُدْخَلاتِ وَالمُخْرَجاتِ",
+          "title_en": "Input/Output Tables",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُكْمِلُ جَدْوَلَ المُدْخَلاتِ وَالمُخْرَجاتِ، وَأَجِدُ قاعِدَتَهُ."
+          ],
+          "vocabulary": [
+            { "ar": "مُدْخَلَةٌ", "en": "input" },
+            { "ar": "مُخْرَجَةٌ", "en": "output" }
+          ]
+        },
+        {
+          "id": "u8_l3",
+          "order": 3,
+          "title_ar": "الأَنْماطُ الهَنْدَسِيَّةُ",
+          "title_en": "Geometric Patterns",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَحُلُّ مَسائِلَ عَلى الأَنْماطِ الهَنْدَسِيَّةِ بِاسْتِعْمالِ جَداوِلِ المُدْخَلاتِ وَالمُخْرَجاتِ."
+          ],
+          "vocabulary": [
+            { "ar": "النَّمَطُ الهَنْدَسِيُّ", "en": "geometric pattern" }
+          ]
+        },
+        {
+          "id": "u8_l4",
+          "order": 4,
+          "title_ar": "المَقاديرُ وَالمُتَغَيِّراتُ",
+          "title_en": "Expressions and Variables",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُعَبِّرُ عَنْ جُمَلٍ رِياضِيَّةٍ بِمَقاديرَ عَدَدِيَّةٍ وَجَبْرِيَّةٍ.",
+            "أَجِدُ قيمَةَ مِقْدارٍ جَبْرِيٍّ."
+          ],
+          "vocabulary": [
+            { "ar": "المِقْدارُ العَدَدِيُّ", "en": "numerical expression" },
+            { "ar": "المُتَغَيِّرُ", "en": "variable" },
+            { "ar": "المِقْدارُ الجَبْرِيُّ", "en": "algebraic expression" },
+            { "ar": "التَّعْويضُ", "en": "substitution" }
+          ]
+        },
+        {
+          "id": "u8_l5",
+          "order": 5,
+          "title_ar": "المُعادَلاتُ",
+          "title_en": "Equations",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَتَعَرَّفُ المُعادَلاتِ، وَأَكْتُبُها."
+          ],
+          "vocabulary": [
+            { "ar": "المُعادَلَةُ", "en": "equation" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_ar": "القِياسُ",
+      "title_en": "Measurement",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_ar": "وَحَداتُ قِياسِ الطّولِ",
+          "title_en": "Units of Length",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُحَوِّلُ بَينَ وَحَداتِ قِياسِ الطّولِ."
+          ],
+          "vocabulary": [
+            { "ar": "الطّولُ", "en": "length" },
+            { "ar": "الكيلومِتْرُ", "en": "kilometer" },
+            { "ar": "المِتْرُ", "en": "meter" },
+            { "ar": "الديسيمِتْرُ", "en": "decimeter" },
+            { "ar": "السَّنْتيمِتْرُ", "en": "centimeter" },
+            { "ar": "المِلّيمِتْرُ", "en": "millimeter" }
+          ]
+        },
+        {
+          "id": "u9_l2",
+          "order": 2,
+          "title_ar": "وَحَداتُ قِياسِ الكُتْلَةِ",
+          "title_en": "Units of Mass",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُحَوِّلُ بَينَ وَحَداتِ قِياسِ الكُتْلَةِ."
+          ],
+          "vocabulary": [
+            { "ar": "الكُتْلَةُ", "en": "mass" },
+            { "ar": "الطُّنُّ", "en": "ton" },
+            { "ar": "الكيلوغِرامُ", "en": "kilogram" },
+            { "ar": "الغِرامُ", "en": "gram" }
+          ]
+        },
+        {
+          "id": "u9_l3",
+          "order": 3,
+          "title_ar": "وَحَداتُ قِياسِ السَّعَةِ",
+          "title_en": "Units of Capacity",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُحَوِّلُ بَيْنَ وَحَداتِ قِياسِ السَّعَةِ."
+          ],
+          "vocabulary": [
+            { "ar": "السَّعَةُ", "en": "capacity" },
+            { "ar": "اللِّتْرُ", "en": "liter" },
+            { "ar": "المِلّيلِتْرُ", "en": "milliliter" }
+          ]
+        },
+        {
+          "id": "u9_l4",
+          "order": 4,
+          "title_ar": "الزَّمَنُ",
+          "title_en": "Time",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُحَوِّلُ بَينَ وَحَداتِ قِياسِ الزَّمَنِ."
+          ],
+          "vocabulary": [
+            { "ar": "الثّانِيَةُ", "en": "second" },
+            { "ar": "الدَّقيقَةُ", "en": "minute" },
+            { "ar": "السّاعَةُ", "en": "hour" },
+            { "ar": "اليَوْمُ", "en": "day" },
+            { "ar": "الأُسْبوعُ", "en": "week" },
+            { "ar": "الشَّهْرُ", "en": "month" },
+            { "ar": "السَّنَةُ", "en": "year" }
+          ]
+        },
+        {
+          "id": "u9_l5",
+          "order": 5,
+          "title_ar": "المُحيطُ",
+          "title_en": "Perimeter",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَحْسُبُ مُحيطَ المُرَبَّعِ أَوِ المُسْتَطيلِ."
+          ],
+          "vocabulary": [
+            { "ar": "المُحيطُ", "en": "perimeter" },
+            { "ar": "الطّولُ", "en": "length" },
+            { "ar": "العَرْضُ", "en": "width" }
+          ]
+        },
+        {
+          "id": "u9_l6",
+          "order": 6,
+          "title_ar": "المِساحَةُ",
+          "title_en": "Area",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَحْسُبُ مِساحَةَ المُرَبَّعِ وَالمُسْتَطيلِ."
+          ],
+          "vocabulary": [
+            { "ar": "المِساحَةُ", "en": "area" },
+            { "ar": "السَّنْتيمِتْرُ المُرَبَّعُ", "en": "square centimeter" },
+            { "ar": "المِتْرُ المُرَبَّعُ", "en": "square meter" },
+            { "ar": "الكيلومِتْرُ المُرَبَّعُ", "en": "square kilometer" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u10",
+      "number": 10,
+      "title_ar": "الإِحْصاءُ وَالاحْتِمالُ",
+      "title_en": "Statistics and Probability",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u10_l1",
+          "order": 1,
+          "title_ar": "تَمْثيلُ البَياناتِ بِالنِّقاطِ",
+          "title_en": "Dot Plots",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُمَثِّلُ البَياناتِ بِاسْتِعْمالِ النِّقاطِ، وَأُفَسِّرُها."
+          ],
+          "vocabulary": [
+            { "ar": "التَّمْثيلُ بِالنِّقاطِ", "en": "dot plot" }
+          ]
+        },
+        {
+          "id": "u10_l2",
+          "order": 2,
+          "title_ar": "تَمْثيلُ البَياناتِ بِالأَعْمِدَةِ",
+          "title_en": "Bar Graphs",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أُمَثِّلُ بَياناتٍ بِاسْتِعْمالِ الأَعْمِدَةِ، وَأُفَسِّرُها."
+          ],
+          "vocabulary": [
+            { "ar": "التَّمْثيلُ بِالأَعْمِدَةِ", "en": "bar graph" }
+          ]
+        },
+        {
+          "id": "u10_l3",
+          "order": 3,
+          "title_ar": "تَمْثيلُ البَياناتِ بِأَشْكالِ ڤِن",
+          "title_en": "Venn Diagrams",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَقْرَأُ بَياناتٍ مُمَثَّلَةً بِأَشْكالِ ڤِن، وَأُمَثِّلُ بَياناتٍ بِأَشْكالِ ڤِن."
+          ],
+          "vocabulary": [
+            { "ar": "أَشْكالُ ڤِن", "en": "Venn diagrams" }
+          ]
+        },
+        {
+          "id": "u10_l4",
+          "order": 4,
+          "title_ar": "التَّجْرِبَةُ العَشْوائِيَّةُ وَأَنْواعُ الحَوادِثِ",
+          "title_en": "Random Experiments and Event Types",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَتَعَرَّفُ التَّجْرِبَةَ العَشْوائِيَّةَ وَأَنْواعَ الحَوادِثِ."
+          ],
+          "vocabulary": [
+            { "ar": "تَجْرِبَةٌ عَشْوائِيَّةٌ", "en": "random experiment" },
+            { "ar": "حادِثٌ", "en": "event" },
+            { "ar": "حادِثٌ مُمْكِنٌ", "en": "possible event" },
+            { "ar": "حادِثٌ مُسْتَحيلٌ", "en": "impossible event" },
+            { "ar": "حادِثٌ مُؤَكَّدٌ", "en": "certain event" }
+          ]
+        },
+        {
+          "id": "u10_l5",
+          "order": 5,
+          "title_ar": "خُطَّةُ حَلِّ المَسْأَلَةِ: اسْتِعْمالُ شَكْلِ ڤِن",
+          "title_en": "Problem-Solving: Using a Venn Diagram",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "أَحُلُّ مَسائِلَ بِاسْتِعْمالِ شَكْلِ ڤِن."
+          ],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

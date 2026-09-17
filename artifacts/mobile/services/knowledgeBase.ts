@@ -251,6 +251,14 @@ import {
   buildG5DigitalSem1Catalog,
 } from './curriculumG5DigitalSem1.ts';
 import {
+  G4_MATH_S1_BOOK_ID,
+  buildG4MathSem1Catalog,
+} from './curriculumG4MathSem1.ts';
+import {
+  G4_MATH_S2_BOOK_ID,
+  buildG4MathSem2Catalog,
+} from './curriculumG4MathSem2.ts';
+import {
   G6_MATH_S1_BOOK_ID,
   buildG6MathSem1Catalog,
 } from './curriculumG6MathSem1.ts';
@@ -1236,6 +1244,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Digital Skills – Grade 5 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g5_digital_sem1.json (NCCD)',
+  },
+  {
+    id: G4_MATH_S1_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف الرابع – الفصل الأول',
+    titleEn: 'Mathematics – Grade 4 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g4_math_sem1.json (NCCD)',
+  },
+  {
+    id: G4_MATH_S2_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف الرابع – الفصل الثاني',
+    titleEn: 'Mathematics – Grade 4 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g4_math_sem2.json (NCCD)',
   },
   {
     id: G6_MATH_S1_BOOK_ID,
@@ -2674,6 +2700,8 @@ const _g5ArabicSem2 = buildG5ArabicSem2Catalog();
 const _g5SocialSem1 = buildG5SocialSem1Catalog();
 const _g5SocialSem2 = buildG5SocialSem2Catalog();
 const _g5DigitalSem1 = buildG5DigitalSem1Catalog();
+const _g4MathSem1 = buildG4MathSem1Catalog();
+const _g4MathSem2 = buildG4MathSem2Catalog();
 const _g6MathSem1 = buildG6MathSem1Catalog();
 const _g6ScienceSem1 = buildG6ScienceSem1Catalog();
 const _g6ArabicSem1 = buildG6ArabicSem1Catalog();
@@ -2929,6 +2957,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g7ScienceSem1.units,
   ..._g5MathSem1.units,
   ..._g5DigitalSem1.units,
+  ..._g4MathSem1.units,
+  ..._g4MathSem2.units,
   ..._g5ScienceSem1.units,
   ..._g5ScienceSem2.units,
   ..._g5IslamicSem1.units,
@@ -3066,6 +3096,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g7ScienceSem1.lessons,
   ..._g5MathSem1.lessons,
   ..._g5DigitalSem1.lessons,
+  ..._g4MathSem1.lessons,
+  ..._g4MathSem2.lessons,
   ..._g5ScienceSem1.lessons,
   ..._g5ScienceSem2.lessons,
   ..._g5IslamicSem1.lessons,
