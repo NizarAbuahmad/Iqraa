@@ -167,6 +167,16 @@ export class RemoteAIService extends AIService {
    * budget: it is a deliberate, always-available option, not a fallback, so it
    * bypasses `generateWithProvenance` entirely (there is nothing to attribute
    * a "live"/"mock" badge to — the teacher chose this).
+   *
+   * 'ai' mode passes `demoMode: false` explicitly, overriding the app-wide
+   * `DEMO_MODE` default. Every other generator on the web build ships mocked
+   * (see `.github/workflows/deploy.yml`'s comment: `EXPO_PUBLIC_DEMO_MODE` is
+   * deliberately unset there, "as it always has" been) — flipping that global
+   * default would turn on live spend for every AI button on web, not just this
+   * one. This tool is different: the teacher explicitly opts into "AI-generated"
+   * knowing it spends the shared AI budget, so honoring that choice on every
+   * platform — not silently substituting mock content just because this
+   * happens to be the web build — is the one already-informed exception.
    */
   async generatePromptSlides(req: PromptSlidesRequest, opts?: GenerateOptions): Promise<ClassroomActivity> {
     if (req.mode === 'free') {
@@ -180,6 +190,7 @@ export class RemoteAIService extends AIService {
       'prompt-slides',
       () => postJSON<ClassroomActivity>('/generate/prompt-slides', req, opts),
       () => this.fallback.generatePromptSlides(req),
+      { demoMode: false },
     );
     return applyClassroomSetup(
       activity,
