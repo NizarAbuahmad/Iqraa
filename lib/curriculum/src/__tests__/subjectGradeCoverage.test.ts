@@ -221,6 +221,9 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // convention). social:grade-4 closed the same rollout, both semesters,
   // real content — unlike g5SocialSem1.ts, this book's PDF is not
   // CMap-corrupted, so it reads cleanly (see g4SocialSem1.ts).
+  // arabic:grade-4 closed the same rollout, both semesters, title-only,
+  // same convention as g5ArabicSem1.ts (fixed 5-lesson-per-unit pattern,
+  // no prose to summarize — see g4ArabicSem1.ts).
   //
   // PERMANENT — the subject is not declared at grade-4 in SUBJECTS.grades at
   // all, same reasoning as grade-5 above (physics/chemistry/biology/
@@ -250,7 +253,6 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // (knowledge-base/grade-4-*), but no catalog has been built from it yet.
   // Delete each line once its catalog and BOOKS row land, same as the
   // grade-5 rollout above.
-  'arabic:grade-4',
   'english:grade-4',
 ]);
 

@@ -287,6 +287,14 @@ import {
   buildG4SocialSem2Catalog,
 } from './curriculumG4SocialSem2.ts';
 import {
+  G4_ARABIC_S1_BOOK_ID,
+  buildG4ArabicSem1Catalog,
+} from './curriculumG4ArabicSem1.ts';
+import {
+  G4_ARABIC_S2_BOOK_ID,
+  buildG4ArabicSem2Catalog,
+} from './curriculumG4ArabicSem2.ts';
+import {
   G6_MATH_S1_BOOK_ID,
   buildG6MathSem1Catalog,
 } from './curriculumG6MathSem1.ts';
@@ -1353,6 +1361,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Social Studies – Grade 4 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g4_social_sem2.json (NCCD)',
+  },
+  {
+    id: G4_ARABIC_S1_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف الرابع – الفصل الأول',
+    titleEn: 'Arabic – Grade 4 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g4_arabic_sem1.json (NCCD)',
+  },
+  {
+    id: G4_ARABIC_S2_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف الرابع – الفصل الثاني',
+    titleEn: 'Arabic – Grade 4 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g4_arabic_sem2.json (NCCD)',
   },
   {
     id: G6_MATH_S1_BOOK_ID,
@@ -2800,6 +2826,8 @@ const _g4IslamicSem1 = buildG4IslamicSem1Catalog();
 const _g4IslamicSem2 = buildG4IslamicSem2Catalog();
 const _g4SocialSem1 = buildG4SocialSem1Catalog();
 const _g4SocialSem2 = buildG4SocialSem2Catalog();
+const _g4ArabicSem1 = buildG4ArabicSem1Catalog();
+const _g4ArabicSem2 = buildG4ArabicSem2Catalog();
 const _g6MathSem1 = buildG6MathSem1Catalog();
 const _g6ScienceSem1 = buildG6ScienceSem1Catalog();
 const _g6ArabicSem1 = buildG6ArabicSem1Catalog();
@@ -3064,6 +3092,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g4IslamicSem2.units,
   ..._g4SocialSem1.units,
   ..._g4SocialSem2.units,
+  ..._g4ArabicSem1.units,
+  ..._g4ArabicSem2.units,
   ..._g5ScienceSem1.units,
   ..._g5ScienceSem2.units,
   ..._g5IslamicSem1.units,
@@ -3210,6 +3240,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g4IslamicSem2.lessons,
   ..._g4SocialSem1.lessons,
   ..._g4SocialSem2.lessons,
+  ..._g4ArabicSem1.lessons,
+  ..._g4ArabicSem2.lessons,
   ..._g5ScienceSem1.lessons,
   ..._g5ScienceSem2.lessons,
   ..._g5IslamicSem1.lessons,
