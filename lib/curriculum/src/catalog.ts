@@ -176,6 +176,14 @@ import {
   buildG4ScienceSem2BrowserCatalog,
 } from './catalogs/g4ScienceSem2.ts';
 import {
+  G4_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  buildG4IslamicSem1BrowserCatalog,
+} from './catalogs/g4IslamicSem1.ts';
+import {
+  G4_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  buildG4IslamicSem2BrowserCatalog,
+} from './catalogs/g4IslamicSem2.ts';
+import {
   G5_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG5ScienceSem1BrowserCatalog,
 } from './catalogs/g5ScienceSem1.ts';
@@ -1096,6 +1104,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // append is needed.
   G4_SCIENCE_S1_CURRICULUM_BOOK_ID,
   G4_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  // Grade 4 Islamic Education, both semesters — real content, same
+  // convention as g5IslamicSem1.ts. 'islamic' is already in MVP_SUBJECT_IDS,
+  // so no subject append is needed.
+  G4_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  G4_ISLAMIC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2225,6 +2238,36 @@ export const BOOKS: Book[] = [
     title: 'Science – Grade 4, Semester 2',
     titleAr: 'العلوم – الصف الرابع – الفصل الثاني',
     subjectId: 'science',
+    gradeId: 'grade-4',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // Grade 4 Islamic Education, both semesters — the third Grade 4 subject.
+  // Reads cleanly through PyMuPDF, same convention as g5IslamicSem1.ts. See
+  // g4IslamicSem1.ts / g4IslamicSem2.ts for what these books do and do not
+  // print.
+  {
+    id: G4_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 4, Semester 1',
+    titleAr: 'التربية الإسلامية – الصف الرابع – الفصل الأول',
+    subjectId: 'islamic',
+    gradeId: 'grade-4',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G4_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 4, Semester 2',
+    titleAr: 'التربية الإسلامية – الصف الرابع – الفصل الثاني',
+    subjectId: 'islamic',
     gradeId: 'grade-4',
     academicYear: '2024-2025',
     language: 'Arabic',
@@ -4382,6 +4425,8 @@ const _g4MathSem1Browser = buildG4MathSem1BrowserCatalog();
 const _g4MathSem2Browser = buildG4MathSem2BrowserCatalog();
 const _g4ScienceSem1Browser = buildG4ScienceSem1BrowserCatalog();
 const _g4ScienceSem2Browser = buildG4ScienceSem2BrowserCatalog();
+const _g4IslamicSem1Browser = buildG4IslamicSem1BrowserCatalog();
+const _g4IslamicSem2Browser = buildG4IslamicSem2BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
 const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
@@ -4645,6 +4690,8 @@ export const UNITS: Unit[] = [
   ..._g4MathSem2Browser.units,
   ..._g4ScienceSem1Browser.units,
   ..._g4ScienceSem2Browser.units,
+  ..._g4IslamicSem1Browser.units,
+  ..._g4IslamicSem2Browser.units,
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
   ..._g6ArabicSem1Browser.units,
@@ -4778,6 +4825,8 @@ export const LESSONS: Lesson[] = [
   ..._g4MathSem2Browser.lessons,
   ..._g4ScienceSem1Browser.lessons,
   ..._g4ScienceSem2Browser.lessons,
+  ..._g4IslamicSem1Browser.lessons,
+  ..._g4IslamicSem2Browser.lessons,
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
   ..._g6ArabicSem1Browser.lessons,

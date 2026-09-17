@@ -1,0 +1,292 @@
+{
+ "meta": {
+  "grade": "الصف الرابع",
+  "grade_en": "Grade 4",
+  "subject": "التربية الإسلامية",
+  "subject_en": "Islamic Education",
+  "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+  "semester_covered": 1,
+  "schema_version": "1.0",
+  "source_books": [
+   "كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الأول (g4-islamic-s1-student-book)"
+  ],
+  "provenance_note": "نُقِلَتِ الوَحَداتُ الأَرْبَعُ وَدُروسُها الاثْنانِ وَالعِشْرونَ مِنْ كِتابِ الطّالِبِ في 2026-09-17، بِقِراءَةِ نَصِّ الكِتابِ كامِلًا مِنْ مَلَفِّ PDF مُباشَرَةً (PyMuPDF)، مِثْلَ g5IslamicSem1. لِكُلِّ وَحْدَةٍ: title_ar مِنْ صَفْحَةِ افْتِتاحِ الوَحْدَةِ الَّتي تَسْرُدُ «دُروسَ الوَحْدَةِ» فَقَطْ، بِلا صُنْدوقِ فِكْرَةٍ عامَّةٍ؛ وَتَرْتيبُ الوَحَداتِ وَالدُّروسِ تَحَقَّقَ مِنْهُ بِقِراءَةِ صَفْحَةِ افْتِتاحِ كُلِّ وَحْدَةٍ مُباشَرَةً، لا مِنَ الجَدْوَلِ المُجَمَّعِ في ص 4 وَحْدَهُ (يَطْبَعُ الجَدْوَلُ المُجَمَّعُ كُتَلَ الوَحَداتِ بِتَرْتيبٍ مُبَعْثَرٍ لا يُطابِقُ تَرْقيمَ الوَحَداتِ نَفْسَهُ). وَلِكُلِّ دَرْسٍ: title_ar مِنْ تَرْويسَةِ الدَّرْسِ، وَ main_idea_ar مِنْ صُنْدوقِ «الفِكْرَةُ الرَّئيسَةُ» حَيْثُ يُطْبَعُ (غائِبٌ عَنْ سَبْعَةِ دُروسِ تِلاوَةٍ/تَطْبيقٍ قُرْآنِيٍّ لا تَحْمِلُ هذا الصُّنْدوقَ في الكِتابِ).",
+  "known_gaps": [
+   "objectives فارِغَةٌ لِكُلِّ الدُّروسِ: كِتابُ الطّالِبِ لا يَطْبَعُ صُنْدوقَ «نَتاجاتُ التَّعَلُّمِ».",
+   "periods و total_periods فارِغَةٌ (null) لِكُلِّ الدُّروسِ وَالوَحَداتِ.",
+   "prior_knowledge و general_idea_ar فارِغَةٌ لِكُلِّ الوَحَداتِ: صَفْحَةُ افْتِتاحِ الوَحْدَةِ تَطْبَعُ «دُروسَ الوَحْدَةِ» فَقَطْ، بِلا صُنْدوقِ «الفِكْرَةُ العامَّةُ» وَلا «تَعَلَّمْتُ سابِقًا».",
+   "vocabulary فارِغَةٌ لِكُلِّ الدُّروسِ: هذا الكِتابُ لا يَطْبَعُ صُنْدوقَ مُصْطَلَحاتٍ ثُنائِيَّ اللُّغَةِ كَكُتُبِ الرِّياضِيّاتِ وَالعُلومِ لِهذا الصَّفِّ (وَهِيَ كُتُبٌ مُتَرْجَمَةٌ عَنْ HarperCollins)؛ دُروسُ التِّلاوَةِ تَطْبَعُ صُنْدوقَ «المُفْرَداتُ وَالتَّراكيبُ» وَهُوَ غَريبُ القُرْآنِ (تَفْسيرُ كَلِماتٍ قُرْآنِيَّةٍ عَرَبِيًّا لا مُصْطَلَحاتِ المادَّةِ)، فَلَمْ يُنْقَلْ إِلى vocabulary لِأَنَّهُ لَيْسَ مِنْ جِنْسِها.",
+   "main_idea_ar فارِغَةٌ لِسَبْعَةِ دُروسِ تِلاوَةٍ/تَطْبيقٍ قُرْآنِيٍّ (u1_l3, u1_l6, u2_l3, u2_l6, u3_l2, u3_l5, u4_l3)، وَهِيَ دُروسٌ لا تَطْبَعُ صُنْدوقَ «الفِكْرَةُ الرَّئيسَةُ» في الكِتابِ."
+  ]
+ },
+ "units": [
+  {
+   "id": "u1",
+   "number": 1,
+   "title_ar": "خالِقي العَظيمُ",
+   "title_en": "My Great Creator",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u1_l1",
+     "order": 1,
+     "title_ar": "القُرْآنُ الكَريمُ",
+     "title_en": "The Noble Qur'an",
+     "main_idea_ar": "القُرْآنُ الكَريمُ كَلامُ اللهِ تَعالى، وَلَهُ أَسْماءٌ عِدَّةٌ، وَعَدَدُ سُوَرِهِ (114) سورَةً، وَقَدْ تَكَفَّلَ اللهُ تَعالى بِحِفْظِهِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l2",
+     "order": 2,
+     "title_ar": "سورَةُ الطّارِقِ: الآياتُ الكَريمَةُ (1-10)",
+     "title_en": "Surat At-Tariq: Verses 1-10",
+     "main_idea_ar": "تُبَيِّنُ الآياتُ الكَريمَةُ (1-10) مِنْ سورَةِ الطّارِقِ بَعْضَ مَظاهِرِ قُدْرَةِ اللهِ تَعالى، وَمِنْها: خَلْقُ السَّماءِ وَما فيها مِنْ نُجومٍ، وَخَلْقُ الإنْسانِ في أَحْسَنِ صورَةٍ، وَإِحْياءُ الإنْسانِ بَعْدَ مَوْتِهِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l3",
+     "order": 3,
+     "title_ar": "سورَةُ القَلَمِ: الآياتُ الكَريمَةُ (1-16)",
+     "title_en": "Surat Al-Qalam: Verses 1-16",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l4",
+     "order": 4,
+     "title_ar": "مِنْ أَسْماءِ اللهِ الحُسْنى: البَصيرُ",
+     "title_en": "One of God's Beautiful Names: Al-Baseer (The All-Seeing)",
+     "main_idea_ar": "لِلّهِ تَعالى أَسْماءٌ حُسْنى عَديدَةٌ، مِنْها الْبَصيرُ الَّذي يَدُلُّ عَلى أَنَّ اللهَ تَعالى يَرى جَميعَ الْمَخْلوقاتِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l5",
+     "order": 5,
+     "title_ar": "قِصَّةُ نَبِيِّ اللهِ سَيِّدِنا آدَمَ",
+     "title_en": "The Story of the Prophet of God, Our Master Adam",
+     "main_idea_ar": "سَيِّدُنا آدَمُ هُوَ أَوَّلُ إِنْسانٍ خَلَقَهُ اللهُ تَعالى، وَأَوَّلُ نَبِيٍّ دَعا إِلى عِبادَةِ اللهِ تَعالى وَحْدَهُ، وَهُوَ أَبو الْبَشَرِ جَميعًا.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l6",
+     "order": 6,
+     "title_ar": "سورَةُ القَلَمِ: الآياتُ الكَريمَةُ (17-33)",
+     "title_en": "Surat Al-Qalam: Verses 17-33",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u2",
+   "number": 2,
+   "title_ar": "قُدْوَتي نَبِيُّنا مُحَمَّدٌ ﷺ",
+   "title_en": "My Role Model, Our Prophet Muhammad ۖ",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u2_l1",
+     "order": 1,
+     "title_ar": "سورَةُ الطّارِقِ: الآياتُ الكَريمَةُ (11-17)",
+     "title_en": "Surat At-Tariq: Verses 11-17",
+     "main_idea_ar": "تُبَيِّنُ الآياتُ الكَريمَةُ (11-17) مِنْ سورَةِ الطّارِقِ أَنَّ القُرْآنَ الكَريمَ كِتابُ حَقٍّ وَهِدايَةٍ، وَتَتَوَعَّدُ الْكافِرينَ بِالْعَذابِ الشَّديدِ في الدُّنْيا وَالآخِرَةِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l2",
+     "order": 2,
+     "title_ar": "مَوْقِفُ المُشْرِكينَ مِنْ سَيِّدِنا مُحَمَّدٍ ﷺ وَأَصْحابِهِ",
+     "title_en": "The Polytheists' Stance Toward Our Master Muhammad ۖ and His Companions",
+     "main_idea_ar": "بَدَأَ سَيِّدُنا مُحَمَّدٌ ﷺ بِدَعْوَةِ قَوْمِهِ في مَكَّةَ الْمُكَرَّمَةِ إِلى عِبادَةِ اللهِ تَعالى وَحْدَهُ، وَتَرْكِ عِبادَةِ الأَصْنامِ، لكِنَّ قَوْمَهُ حارَبوا دَعْوَتَهُ، وَعَذَّبوا أَصْحابَهُ الَّذينَ آمَنوا بِالإسْلامِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l3",
+     "order": 3,
+     "title_ar": "سورَةُ القَلَمِ: الآياتُ الكَريمَةُ (34-43)",
+     "title_en": "Surat Al-Qalam: Verses 34-43",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l4",
+     "order": 4,
+     "title_ar": "الحَديثُ الشَّريفُ: الكَلِمَةُ الطَّيِّبَةُ صَدَقَةٌ",
+     "title_en": "Hadith: A Good Word Is Charity",
+     "main_idea_ar": "الْكَلِمَةُ الطَّيِّبَةُ صَدَقَةٌ؛ لِأَنَّها تُكْسِبُ الإنْسانَ رِضا اللهِ تَعالى وَمَحَبَّةَ النّاسِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l5",
+     "order": 5,
+     "title_ar": "أُمُّ المُؤْمِنينَ السَّيِّدَةُ خَديجَةُ بِنْتُ خُوَيْلِدٍ",
+     "title_en": "Mother of the Believers, Lady Khadijah bint Khuwaylid",
+     "main_idea_ar": "أُمُّ الْمُؤْمِنينَ السَّيِّدَةُ خَديجَةُ أُولى زَوْجاتِ الرَّسولِ ﷺ، وَهِيَ أَوَّلُ مَنْ دَخَلَ في الإسْلامِ، وَقَدْ أَعانَتْ زَوْجَها رَسولَ اللهِ ﷺ في الدَّعْوَةِ إِلى الإسْلامِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l6",
+     "order": 6,
+     "title_ar": "سورَةُ القَلَمِ: الآياتُ الكَريمَةُ (44-52)",
+     "title_en": "Surat Al-Qalam: Verses 44-52",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u3",
+   "number": 3,
+   "title_ar": "صَلاتي حَياتي",
+   "title_en": "My Prayer Is My Life",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u3_l1",
+     "order": 1,
+     "title_ar": "مَكانَةُ الصَّلاةِ وَفَضْلُها في الإسْلامِ",
+     "title_en": "The Status and Virtue of Prayer in Islam",
+     "main_idea_ar": "الصَّلاةُ عَمودُ الدّينِ، وَيَجِبُ عَلى الْمُسْلِمِ أَنْ يُحافِظَ عَلَيْها، وَأَنْ يَحْرِصَ عَلى أَدائِها في أَوْقاتِها.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u3_l2",
+     "order": 2,
+     "title_ar": "سورَةُ الجُمُعَةِ: الآياتُ الكَريمَةُ (1-4)",
+     "title_en": "Surat Al-Jumu'ah: Verses 1-4",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u3_l3",
+     "order": 3,
+     "title_ar": "شُروطُ صِحَّةِ الصَّلاةِ",
+     "title_en": "The Conditions for the Validity of Prayer",
+     "main_idea_ar": "يَجِبُ عَلى الْمُسْلِمِ أَنْ يَلْتَزِمَ بِأُمورٍ قَبْلَ الدُّخولِ في الصَّلاةِ؛ لِكَيْ تَكونَ صَلاتُهُ صَحيحَةً.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u3_l4",
+     "order": 4,
+     "title_ar": "مُبْطِلاتُ الصَّلاةِ",
+     "title_en": "Actions That Invalidate Prayer",
+     "main_idea_ar": "توجَدُ أَفْعالٌ تُبْطِلُ الصَّلاةَ إِذا قامَ بِها الْمُصَلّي، وَتُسَمّى هذِهِ الأَفْعالُ مُبْطِلاتِ الصَّلاةِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u3_l5",
+     "order": 5,
+     "title_ar": "سورَةُ الجُمُعَةِ: الآياتُ الكَريمَةُ (5-8)",
+     "title_en": "Surat Al-Jumu'ah: Verses 5-8",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u4",
+   "number": 4,
+   "title_ar": "أَرْتَقي بِأَخْلاقي",
+   "title_en": "I Rise Through My Manners",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u4_l1",
+     "order": 1,
+     "title_ar": "الحَديثُ الشَّريفُ: الفَوْزُ بِالجَنَّةِ",
+     "title_en": "Hadith: Triumph With Paradise",
+     "main_idea_ar": "أَرْشَدَنا سَيِّدُنا مُحَمَّدٌ ﷺ إِلى إِفْشاءِ السَّلامِ؛ لِنَشْرِ الْمَحَبَّةِ بَيْنَ النّاسِ، وَالْفَوْزِ بِالْجَنَّةِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u4_l2",
+     "order": 2,
+     "title_ar": "قِصَّةُ أُمِّ سَيِّدِنا موسى",
+     "title_en": "The Story of the Mother of Our Master Moses",
+     "main_idea_ar": "خافَتْ أُمُّ سَيِّدِنا موسى عَلى وَلَدِها مِنْ فِرْعَوْنَ، فَوَضَعَتْهُ في صُنْدوقٍ، ثُمَّ أَلْقَتْهُ في النَّهْرِ بِإِلْهامٍ مِنَ اللهِ تَعالى الَّذي نَجّاهُ مِنْ فِرْعَوْنَ، وَأَعادَهُ إِلَيْها سالِمًا.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u4_l3",
+     "order": 3,
+     "title_ar": "سورَةُ الجُمُعَةِ: الآياتُ الكَريمَةُ (9-11)",
+     "title_en": "Surat Al-Jumu'ah: Verses 9-11",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u4_l4",
+     "order": 4,
+     "title_ar": "آدابُ النَّوْمِ وَالاسْتيقاظِ",
+     "title_en": "Etiquette of Sleeping and Waking Up",
+     "main_idea_ar": "يَلْتَزِمُ الْمُسْلِمُ آدابَ النَّوْمِ وَالاسْتيقاظِ الَّتي أَرْشَدَنا إِلَيْها سَيِّدُنا رَسولُ اللهِ مُحَمَّدٌ ﷺ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u4_l5",
+     "order": 5,
+     "title_ar": "نَظافَةُ بَلَدي",
+     "title_en": "Cleanliness of My Country",
+     "main_idea_ar": "الْحِرْصُ عَلى نَظافَةِ بَلَدي يَزيدُهُ جَمالًا، وَيَحْمي النّاسَ مِنَ الأَمْراضِ، وَيُكْسِبُ فاعِلَها الأَجْرَ الْعَظيمَ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  }
+ ]
+}
