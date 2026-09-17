@@ -122,6 +122,14 @@ import {
   buildG5IslamicSem2BrowserCatalog,
 } from './catalogs/g5IslamicSem2.ts';
 import {
+  G5_ENGLISH_S1_CURRICULUM_BOOK_ID,
+  buildG5EnglishSem1BrowserCatalog,
+} from './catalogs/g5EnglishSem1.ts';
+import {
+  G5_ENGLISH_S2_CURRICULUM_BOOK_ID,
+  buildG5EnglishSem2BrowserCatalog,
+} from './catalogs/g5EnglishSem2.ts';
+import {
   G5_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG5ScienceSem1BrowserCatalog,
 } from './catalogs/g5ScienceSem1.ts';
@@ -1013,6 +1021,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // MVP_SUBJECT_IDS, so no subject append is needed.
   G5_ISLAMIC_S1_CURRICULUM_BOOK_ID,
   G5_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 5 English, both semesters — 'english' is already in
+  // MVP_SUBJECT_IDS, so no subject append is needed. The last of the
+  // planned Grade 5 MVP subjects (see g5EnglishSem1.ts).
+  G5_ENGLISH_S1_CURRICULUM_BOOK_ID,
+  G5_ENGLISH_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1976,6 +1989,37 @@ export const BOOKS: Book[] = [
     gradeId: 'grade-5',
     academicYear: '2024-2025',
     language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // Grade 5 English, both semesters — the last planned Grade 5 MVP subject.
+  // "Jordan Team Together" series (Pearson/York Press), same publisher as
+  // Grade 6/7. Not title-only: real vocabulary, grammar points (with the
+  // book's own example sentences) and skill descriptors, taken from the
+  // student book's own "Scope and sequence" table. See g5EnglishSem1.ts.
+  {
+    id: G5_ENGLISH_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 5, Semester 1',
+    titleAr: 'اللغة الإنجليزية – الصف الخامس – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-5',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G5_ENGLISH_S2_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 5, Semester 2',
+    titleAr: 'اللغة الإنجليزية – الصف الخامس – الفصل الثاني',
+    subjectId: 'english',
+    gradeId: 'grade-5',
+    academicYear: '2025-2026',
+    language: 'English',
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
@@ -4119,6 +4163,8 @@ const _g5ScienceSem1Browser = buildG5ScienceSem1BrowserCatalog();
 const _g5ScienceSem2Browser = buildG5ScienceSem2BrowserCatalog();
 const _g5IslamicSem1Browser = buildG5IslamicSem1BrowserCatalog();
 const _g5IslamicSem2Browser = buildG5IslamicSem2BrowserCatalog();
+const _g5EnglishSem1Browser = buildG5EnglishSem1BrowserCatalog();
+const _g5EnglishSem2Browser = buildG5EnglishSem2BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
 const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
@@ -4371,6 +4417,8 @@ export const UNITS: Unit[] = [
   ..._g5ScienceSem2Browser.units,
   ..._g5IslamicSem1Browser.units,
   ..._g5IslamicSem2Browser.units,
+  ..._g5EnglishSem1Browser.units,
+  ..._g5EnglishSem2Browser.units,
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
   ..._g6ArabicSem1Browser.units,
@@ -4493,6 +4541,8 @@ export const LESSONS: Lesson[] = [
   ..._g5ScienceSem2Browser.lessons,
   ..._g5IslamicSem1Browser.lessons,
   ..._g5IslamicSem2Browser.lessons,
+  ..._g5EnglishSem1Browser.lessons,
+  ..._g5EnglishSem2Browser.lessons,
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
   ..._g6ArabicSem1Browser.lessons,
