@@ -1,0 +1,262 @@
+{
+ "meta": {
+  "grade": "الصف الرابع",
+  "grade_en": "Grade 4",
+  "subject": "الدراسات الاجتماعية",
+  "subject_en": "Social Studies",
+  "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+  "semester_covered": 1,
+  "schema_version": "1.0",
+  "source_books": [
+   "كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الأول (g4-social-s1-student-book)"
+  ],
+  "provenance_note": "نُقِلَتِ الوَحَداتُ الأَرْبَعُ وَدُروسُها الخَمْسَةَ عَشَرَ مِنْ كِتابِ الطّالِبِ في 2026-09-17، بِقِراءَةِ نَصِّ الكِتابِ كامِلًا مِنْ مَلَفِّ PDF مُباشَرَةً (PyMuPDF) — خِلافًا لِـ g5SocialSem1 (الَّذي بَقِيَ عُنْوانًا فَقَطْ بِسَبَبِ CMap تالِفٍ في مَلَفِّهِ)، هذا الكِتابُ يُقْرَأُ نَظيفًا فَنُقِلَ مَضْمونُهُ فِعْلًا. لِكُلِّ وَحْدَةٍ: title_ar مِنْ صَفْحَةِ افْتِتاحِ الوَحْدَةِ، وَ general_idea_ar مِنْ صُنْدوقِ «الفِكْرَةُ العامَّةُ» عَلى الصَّفْحَةِ نَفْسِها. وَلِكُلِّ دَرْسٍ: title_ar مِنْ تَرْويسَةِ الدَّرْسِ، وَ main_idea_ar مِنْ صُنْدوقِ «الفِكْرَةُ الرَّئيسَةُ»، وَ vocabulary مِنْ صُنْدوقِ «المُصْطَلَحاتُ» الَّذي يَطْبَعُ المُصْطَلَحَ عَرَبِيًّا وَإِنْجليزِيًّا جَنْبًا إِلى جَنْبٍ لِكُلِّ مُصْطَلَحٍ تَقْريبًا (نَفْسُ نَمَطِ كُتُبِ العُلومِ لِهذا الصَّفِّ).",
+  "known_gaps": [
+   "objectives فارِغَةٌ لِكُلِّ الدُّروسِ الخَمْسَةَ عَشَرَ: كِتابُ الطّالِبِ لا يَطْبَعُ صُنْدوقَ «نَتاجاتُ التَّعَلُّمِ» بِصيغَةٍ يُمْكِنُ نَقْلُها كَأَهْدافٍ (يَطْبَعُ بَدَلًا مِنْها سُؤالَ «ماذا سَأَتَعَلَّمُ؟» عامًّا لِكُلِّ الوَحْدَةِ، لا لِكُلِّ دَرْسٍ عَلى حِدَةٍ).",
+   "periods و total_periods فارِغَةٌ (null) لِكُلِّ الدُّروسِ وَالوَحَداتِ: عَدَدُ الحِصَصِ لا يُطْبَعُ في كِتابِ الطّالِبِ.",
+   "prior_knowledge فارِغَةٌ لِكُلِّ الوَحَداتِ: هذا الكِتابُ لا يَطْبَعُ صُنْدوقَ «تَعَلَّمْتُ سابِقًا» في مُفْتَتَحِ الوَحْدَةِ.",
+   "title_en لِكُلِّ وَحْدَةٍ وَدَرْسٍ تَرْجَمَةٌ، لا نَصٌّ مَطْبوعٌ."
+  ]
+ },
+ "units": [
+  {
+   "id": "u1",
+   "number": 1,
+   "title_ar": "الفَرْدُ وَالمُجْتَمَعُ",
+   "title_en": "The Individual and Society",
+   "general_idea_ar": "التَّعَرُّفُ إِلى فِئاتِ الْمُجْتَمَعِ الأُرْدُنِيِّ، بِالإِضافَةِ إِلى الأَخْلاقِ وَالعاداتِ وَالتَقاليدِ وَالأَزْياءِ الشَعْبِيَةِ.",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u1_l1",
+     "order": 1,
+     "title_ar": "المُجْتَمَعُ الأُرْدُنِيُّ",
+     "title_en": "Jordanian Society",
+     "main_idea_ar": "تَتَنَوَّعُ فِئاتُ الْمُجْتَمَعِ مِنْ حَيْثُ مَكانُ السَّكَنِ وَالأَعْمالُ الَّتي يُمارِسونَها.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "المُجْتَمَعُ", "en": "Society" },
+      { "ar": "الهُوِيَّةُ الوَطَنِيَّةُ", "en": "National Identity" }
+     ]
+    },
+    {
+     "id": "u1_l2",
+     "order": 2,
+     "title_ar": "الأَخْلاقُ",
+     "title_en": "Ethics",
+     "main_idea_ar": "التَعَرُّفُ إِلى مَفْهومِ الأَخْلاقِ، وَأَهَمِّيَتِها في بِناءِ الفَرْدِ وَالمُجْتَمَعِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "الأَخْلاقُ", "en": "Ethics" }
+     ]
+    },
+    {
+     "id": "u1_l3",
+     "order": 3,
+     "title_ar": "العاداتُ وَالتَقاليدُ",
+     "title_en": "Customs and Traditions",
+     "main_idea_ar": "يُحافِظُ الأَشْخاصُ عَلى العاداتِ وَالتَقاليدِ الَّتي تَوارَثوها عَبْرَ الزَمَنِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "العاداتُ وَالتَقاليدُ", "en": "Customs and Traditions" }
+     ]
+    },
+    {
+     "id": "u1_l4",
+     "order": 4,
+     "title_ar": "الأَزْياءُ الشَعْبِيَّةُ",
+     "title_en": "Traditional Dresses",
+     "main_idea_ar": "تُعَبِّرُ الأَزْياءُ الشَعْبِيَّةُ عَنْ جُزْءٍ مِنْ هُوِيَّةِ الْمُجْتَمَعِ وَتُراثِهِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "الأَزْياءُ الشَعْبِيَّةُ", "en": "Traditional Dresses" }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "u2",
+   "number": 2,
+   "title_ar": "الأُرْدُنُّ: تاريخٌ وَحَضارَةٌ",
+   "title_en": "Jordan: History and Civilization",
+   "general_idea_ar": "تَتَناوَلُ هذِهِ الوَحْدَةُ إِضاءاتٍ مُخْتَلِفَةً عَنِ الأُرْدُنِّ، مِنْها التَعَرُّفُ إِلى جُزْءٍ مِنْ تاريخِ الأُرْدُنِّ القَديمِ، بِالإِضافَةِ إِلى أَهَمِّ إِنْجازاتِ مُلوكِ الأُرْدُنِّ، وَبُطولاتِ القُوّاتِ الْمُسَلَّحَةِ الأُرْدُنِيَّةِ - الجَيْشِ العَرَبِيِّ.",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u2_l1",
+     "order": 1,
+     "title_ar": "الحَضاراتُ القَديمَةُ في الأُرْدُنِّ",
+     "title_en": "Ancient Civilizations in Jordan",
+     "main_idea_ar": "نَشَأَتْ عَلى أَرْضِ الأُرْدُنِّ العَديدُ مِنَ الحَضاراتِ وَالمَمالِكِ القَديمَةِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "مَسَلَّةُ ميشَعَ", "en": "Mesha Stele" }
+     ]
+    },
+    {
+     "id": "u2_l2",
+     "order": 2,
+     "title_ar": "مُلوكُ الأُرْدُنِّ",
+     "title_en": "Kings of Jordan",
+     "main_idea_ar": "أَسْهَمَ الهاشِمِيّونَ في بِناءِ الأُرْدُنِ الحَديثِ، وَتَحْديثِ الدَوْلَةِ وَالمُجْتَمَعِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "الثَوْرَةُ العَرَبِيَّةُ الكُبْرى", "en": "Arab Revolution" },
+      { "ar": "يَوْمُ الاسْتِقْلالِ", "en": "Independence Day" }
+     ]
+    },
+    {
+     "id": "u2_l3",
+     "order": 3,
+     "title_ar": "بُطولاتُ الجَيْشِ العَرَبِيِّ",
+     "title_en": "Heroics of the Arab Army",
+     "main_idea_ar": "دافَعَتِ القُوّاتُ الْمُسَلَّحَةُ الأُرْدُنِيَّةُ عَنِ الأَراضي الأُرْدُنِيَّةِ وَعَنْ فِلَسْطينَ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "النُصْبُ التَذْكارِيُّ", "en": "Memorial" },
+      { "ar": "المَتْحَفُ", "en": "Museum" }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "u3",
+   "number": 3,
+   "title_ar": "السُلْطَةُ وَالحُكْمُ في الأُرْدُنِّ",
+   "title_en": "Authority and Governance in Jordan",
+   "general_idea_ar": "تَتَناوَلُ الوَحْدَةُ التَعْريفَ بِنِظامِ الحُكْمِ في الأُرْدُنِّ، وَالتَعَرُّفَ إِلى مَفاهيمِ الدُسْتورِ وَالقانونِ وَالنِظامِ.",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u3_l1",
+     "order": 1,
+     "title_ar": "الدُسْتورُ",
+     "title_en": "The Constitution",
+     "main_idea_ar": "التَعَرُّفُ إِلى مَفْهومِ الدُسْتورِ وَأَهَمِّيَتِهِ وَمَراحِلِ تَطَوُّرِهِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "الدُسْتورُ", "en": "Constitution" },
+      { "ar": "الدَوْلَةُ", "en": "State" }
+     ]
+    },
+    {
+     "id": "u3_l2",
+     "order": 2,
+     "title_ar": "نِظامُ الحُكْمِ في الأُرْدُنِّ",
+     "title_en": "System of Governance in Jordan",
+     "main_idea_ar": "التَعَرُّفُ إِلى نِظامِ الحُكْمِ في الأُرْدُنِ، وَالسُلُطاتِ الدُسْتورِيَّةِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "السُلْطَةُ التَشْريعِيَّةُ", "en": "Legislative power" },
+      { "ar": "السُلْطَةُ التَنْفيذِيَّةُ", "en": "Executive Authority" },
+      { "ar": "السُلْطَةُ القَضائِيَّةُ", "en": "Judiciary" }
+     ]
+    },
+    {
+     "id": "u3_l3",
+     "order": 3,
+     "title_ar": "القَوانينُ وَالأَنْظِمَةُ",
+     "title_en": "Laws and Systems",
+     "main_idea_ar": "مَعْنى القانونِ وَالنِظامِ وَأَهَمِّيَتُهُما في حَياةِ الإِنْسانِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "القانونُ", "en": "Law" },
+      { "ar": "النِظامُ السِياسِيُّ", "en": "Political System" }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "u4",
+   "number": 4,
+   "title_ar": "البيئَةُ وَالمَوارِدُ وَالسُّكّانُ",
+   "title_en": "Environment, Resources and Population",
+   "general_idea_ar": "تَتَناوَلُ الوَحْدَةُ بَعْضَ أَنْشِطَةِ السُّكّانِ، وَتَطَوُّرَ عَلاقَةِ الإِنْسانِ مَعَ البيئَةِ.",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u4_l1",
+     "order": 1,
+     "title_ar": "الزِراعَةُ",
+     "title_en": "Agriculture",
+     "main_idea_ar": "التَعَرُّفُ إِلى مَفْهومِ الزِراعَةِ وَتَطَوُّرِها وَأَهَمِّيَتِها.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "الزِراعَةُ", "en": "Agriculture" },
+      { "ar": "الزِراعَةُ المَرْوِيَّةُ", "en": "Irrigated Agriculture" },
+      { "ar": "الزِراعَةُ البَعْلِيَّةُ", "en": "Rain-fed Agriculture" }
+     ]
+    },
+    {
+     "id": "u4_l2",
+     "order": 2,
+     "title_ar": "الصِناعَةُ",
+     "title_en": "Industry",
+     "main_idea_ar": "التَعَرُّفُ إِلى أَنْواعِ الصِناعَةِ وَأَهَمِّيَتِها.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "الصِناعَةُ", "en": "Industry" }
+     ]
+    },
+    {
+     "id": "u4_l3",
+     "order": 3,
+     "title_ar": "الطاقَةُ",
+     "title_en": "Energy",
+     "main_idea_ar": "التَعَرُّفُ إِلى مَصادِرِ الطاقَةِ وَأَشْكالِها.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "الموارِدُ الطَبيعِيَّةُ", "en": "Natural Resources" },
+      { "ar": "الطاقَةُ الْمُتَجَدِّدَةُ", "en": "Renewable Energy Sources" },
+      { "ar": "الطاقَةُ غَيْرُ الْمُتَجَدِّدَةِ", "en": "Non-Renewable Energy Sources" }
+     ]
+    },
+    {
+     "id": "u4_l4",
+     "order": 4,
+     "title_ar": "الأَنْشِطَةُ البَشَرِيَّةُ وَأَثَرُها في البيئَةِ",
+     "title_en": "Human Activities and Their Effect on the Environment",
+     "main_idea_ar": "مَعْرِفَةُ الأَنْشِطَةِ البَشَرِيَّةِ الَّتي تُؤَثِّرُ في النِظامِ البيئِيِّ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "النِظامُ البيئِيُّ", "en": "Environmental System" }
+     ]
+    },
+    {
+     "id": "u4_l5",
+     "order": 5,
+     "title_ar": "الحَياةُ البَرِّيَّةُ في الأُرْدُنِّ",
+     "title_en": "Wildlife in Jordan",
+     "main_idea_ar": "التَعَرُّفُ إِلى الحَياةِ البَرِّيَّةِ في الأُرْدُنِّ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "الْمَحْمِيَّةُ الطَبيعِيَّةُ", "en": "Natural Reserves" }
+     ]
+    }
+   ]
+  }
+ ]
+}
