@@ -190,6 +190,14 @@ import {
   buildG4IslamicSem2BrowserCatalog,
 } from './catalogs/g4IslamicSem2.ts';
 import {
+  G4_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  buildG4SocialSem1BrowserCatalog,
+} from './catalogs/g4SocialSem1.ts';
+import {
+  G4_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  buildG4SocialSem2BrowserCatalog,
+} from './catalogs/g4SocialSem2.ts';
+import {
   G5_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG5ScienceSem1BrowserCatalog,
 } from './catalogs/g5ScienceSem1.ts';
@@ -1119,6 +1127,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // so no subject append is needed.
   G4_ISLAMIC_S1_CURRICULUM_BOOK_ID,
   G4_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 4 Social Studies, both semesters — real content, same convention
+  // as g5SocialSem1.ts would have been if its PDF weren't CMap-corrupted;
+  // this book reads cleanly through PyMuPDF. 'social' is already in
+  // MVP_SUBJECT_IDS, so no subject append is needed.
+  G4_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  G4_SOCIAL_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2295,6 +2309,37 @@ export const BOOKS: Book[] = [
     title: 'Islamic Education – Grade 4, Semester 2',
     titleAr: 'التربية الإسلامية – الصف الرابع – الفصل الثاني',
     subjectId: 'islamic',
+    gradeId: 'grade-4',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // Grade 4 Social Studies, both semesters — the fourth Grade 4 subject.
+  // Reads cleanly through PyMuPDF (unlike g5SocialSem1's corrupted CMap), so
+  // real content is transcribed. See g4SocialSem1.ts / g4SocialSem2.ts for
+  // the full rationale, including the unit-7/8 ordering trap in the combined
+  // table of contents.
+  {
+    id: G4_SOCIAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 4, Semester 1',
+    titleAr: 'الدراسات الاجتماعية – الصف الرابع – الفصل الأول',
+    subjectId: 'social',
+    gradeId: 'grade-4',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G4_SOCIAL_S2_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 4, Semester 2',
+    titleAr: 'الدراسات الاجتماعية – الصف الرابع – الفصل الثاني',
+    subjectId: 'social',
     gradeId: 'grade-4',
     academicYear: '2024-2025',
     language: 'Arabic',
@@ -4455,6 +4500,8 @@ const _g4ScienceSem2Browser = buildG4ScienceSem2BrowserCatalog();
 const _g4DigitalSem1Browser = buildG4DigitalSem1BrowserCatalog();
 const _g4IslamicSem1Browser = buildG4IslamicSem1BrowserCatalog();
 const _g4IslamicSem2Browser = buildG4IslamicSem2BrowserCatalog();
+const _g4SocialSem1Browser = buildG4SocialSem1BrowserCatalog();
+const _g4SocialSem2Browser = buildG4SocialSem2BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
 const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
@@ -4721,6 +4768,8 @@ export const UNITS: Unit[] = [
   ..._g4DigitalSem1Browser.units,
   ..._g4IslamicSem1Browser.units,
   ..._g4IslamicSem2Browser.units,
+  ..._g4SocialSem1Browser.units,
+  ..._g4SocialSem2Browser.units,
   ..._g6MathSem1Browser.units,
   ..._g6ScienceSem1Browser.units,
   ..._g6ArabicSem1Browser.units,
@@ -4857,6 +4906,8 @@ export const LESSONS: Lesson[] = [
   ..._g4DigitalSem1Browser.lessons,
   ..._g4IslamicSem1Browser.lessons,
   ..._g4IslamicSem2Browser.lessons,
+  ..._g4SocialSem1Browser.lessons,
+  ..._g4SocialSem2Browser.lessons,
   ..._g6MathSem1Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
   ..._g6ArabicSem1Browser.lessons,

@@ -218,7 +218,9 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // matching g5ScienceSem1.ts's and g5IslamicSem1.ts's conventions).
   // digital-literacy:grade-4 closed the same rollout, title-only,
   // cross-curricular (see g4DigitalSem1.ts — matches g5DigitalSem1.ts's
-  // convention).
+  // convention). social:grade-4 closed the same rollout, both semesters,
+  // real content — unlike g5SocialSem1.ts, this book's PDF is not
+  // CMap-corrupted, so it reads cleanly (see g4SocialSem1.ts).
   //
   // PERMANENT — the subject is not declared at grade-4 in SUBJECTS.grades at
   // all, same reasoning as grade-5 above (physics/chemistry/biology/
@@ -244,13 +246,12 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'vocational-education:grade-4',
   //
   // ORDINARY GAPS — the subject is declared at grade-4 (arabic/english span
-  // all grades; social spans grade-1..grade-9), and Grade 4 source text
-  // exists on disk (knowledge-base/grade-4-*), but no catalog has been built
-  // from it yet. Delete each line once its catalog
-  // and BOOKS row land, same as the grade-5 rollout above.
+  // all grades), and Grade 4 source text exists on disk
+  // (knowledge-base/grade-4-*), but no catalog has been built from it yet.
+  // Delete each line once its catalog and BOOKS row land, same as the
+  // grade-5 rollout above.
   'arabic:grade-4',
   'english:grade-4',
-  'social:grade-4',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {
