@@ -62,8 +62,11 @@ import {
 import { countMaterials, countStudents } from '@/services/i18n';
 import { confirm } from '@/services/confirm';
 import { useStudentAccountsEnabled } from '@/services/features';
+import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 
 const ACCENT = '#1B6B62';
+/** Centred column on desktop web; full-bleed on phones. */
+const CENTERED = { width: '100%' as const, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' as const };
 
 type Tab = 'students' | 'materials' | 'exams';
 
@@ -497,7 +500,7 @@ export default function ClassDetailScreen() {
         <FlatList
           data={students}
           keyExtractor={s => s.id}
-          contentContainerStyle={{ padding: 20, paddingBottom: 100, gap: 10 }}
+          contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={errorBanner}
           ListEmptyComponent={
@@ -600,7 +603,7 @@ export default function ClassDetailScreen() {
         <FlatList
           data={materials}
           keyExtractor={m => m.id}
-          contentContainerStyle={{ padding: 20, paddingBottom: 100, gap: 10 }}
+          contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={empty('folder-open-outline', 'noMaterialsYet', 'noMaterialsDesc')}
           renderItem={({ item }) => (
@@ -653,7 +656,7 @@ export default function ClassDetailScreen() {
         <FlatList
           data={exams}
           keyExtractor={e => e.id}
-          contentContainerStyle={{ padding: 20, paddingBottom: 100, gap: 10 }}
+          contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={{ gap: 10, marginBottom: 10 }}>
