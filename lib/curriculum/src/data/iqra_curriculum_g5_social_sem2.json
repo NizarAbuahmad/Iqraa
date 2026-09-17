@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "grade": "الصف الخامس",
+    "grade_en": "Grade 5",
+    "subject": "الدراسات الاجتماعية",
+    "subject_en": "Social Studies",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الثاني (g5-social-s2-student-book)"
+    ],
+    "provenance_note": "قُرِئَت هذه البِنيةُ من فِهرسِ كتابِ الطالبِ (ص 3-4) وصفحاتِ افتتاحِ الوحداتِ في 2026-09-16، عبرَ PyMuPDF. لكنَّ استخراجَ هذا الكتابِ بعَينِهِ — كسابِقِهِ الفصلِ الأوَّلِ (iqra_curriculum_g5_social_sem1.json)، وعلى خلافِ سائرِ كتبِ الصفِّ الخامسِ — عادَ نصًّا عربيًّا مُشَوَّشًا حتّى بواسطةِ PyMuPDF، بسببِ خريطةِ رموزٍ (ToUnicode CMap) معطوبةٍ داخلَ ملفِّ PDF نفسِهِ. فلم تُقرَأ عناوينُ الوحداتِ والدروسِ من طبقةِ النَّصِّ، بل بالتصويرِ الضوئيِّ (OCR، Tesseract بحزمةِ اللغةِ العربيةِ ara.traineddata) لصفحاتِ الفهرسِ وصفحاتِ افتتاحِ الوحداتِ. تُرقَّمُ الوحداتُ هنا 5-8 استمرارًا لِترقيمِ الفصلِ الأوَّلِ (1-4)، كما يطبعُها غلافُ الكتابِ وفِهرسُهُ.",
+    "known_gaps": [
+      "الكتابُ محميٌّ من نسخِ النَّصِّ بعُطلٍ في خريطةِ الرموزِ، فلا main_idea_ar ولا objectives ولا vocabulary — هذا الكتابُ title-only فرضًا لا اختيارًا.",
+      "عنوانُ الدرسِ الأوَّلِ من الوحدةِ السابعةِ (الموقع) رُصِدَ في الفهرسِ بكلمةٍ واحدةٍ («المَوْقِعُ»)؛ قد يكونُ العنوانُ الكاملُ أطولَ (مثلًا «مَوْقِعي الجُغْرافِيُّ») ولم يتَّضِح من التصويرِ الضوئيِّ.",
+      "الدرسُ الثالثُ من الوحدةِ السابعةِ («دُوَلُ وادي النِّيلِ وَالقَرْنِ الأَفْريقِيِّ») يُغَطّي في صفحاتِهِ الفعليَّةِ (63-88 تقريبًا) موضوعاتٍ عن دولِ المَغربِ العربيِّ أيضًا (رُصِدَ صراحةً: «التَعَرُّفُ إلى جُغْرافِيَّةِ دُوَلِ المَغْرِبِ العَرَبِيِّ» في صفحةٍ منفصِلةٍ)، ولم يذكُرْهُ الفهرسُ درسًا قائمًا بذاتِهِ. يُحتَمَلُ أنَّ الفهرسَ يُدمِجُ درسَينِ فعليَّينِ في عنوانٍ واحدٍ؛ لم يُتَحَقَّقْ من ذلك.",
+      "الوحدةُ الثامِنَةُ («الثَّقافَةُ وَالتُّراثُ») هي أقلُّ الوحداتِ ثِقَةً في هذا الملفِّ: رصَدَ الفهرسُ المصوَّرُ ضوئيًّا عنوانَ الوحدةِ ودرسًا واحدًا مؤكَّدًا («التُّراثُ الثَّقافِيُّ الأُرْدُنِيُّ»)، وأُضيفَ درسٌ أوَّلُ («مَفْهومُ الثَّقافَةِ وَمُكَوِّناتِها») استنادًا إلى صفحةِ افتتاحِ الوحدةِ (ص 80-82 تقريبًا) لا إلى سَطرٍ صريحٍ في الفهرسِ. عددُ دروسِ هذهِ الوحدةِ الحقيقيُّ غيرُ مؤكَّدٍ تمامًا؛ قد يكونُ أكثرَ من درسَينِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "مَسيرَةُ وَطَنٍ",
+      "title_en": "A Homeland's Journey",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (OCR of a corrupted-text-layer student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "الثَّوْرَةُ العَرَبِيَّةُ الكُبْرى",
+          "title_en": "The Great Arab Revolt",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "الدَّوْلَةُ الأُرْدُنِيَّةُ",
+          "title_en": "The Jordanian State",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "الإِنْجازاتُ الحَضارِيَّةُ لِلدَّوْلَةِ الأُرْدُنِيَّةِ",
+          "title_en": "Civilizational Achievements of the Jordanian State",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "الأَنْشِطَةُ الاقْتِصادِيَّةُ",
+      "title_en": "Economic Activities",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (OCR of a corrupted-text-layer student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "مَفاهيمُ اقْتِصادِيَّةٌ",
+          "title_en": "Economic Concepts",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "قِطاعُ التِّجارَةِ",
+          "title_en": "The Trade Sector",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "قِطاعُ الخِدْماتِ",
+          "title_en": "The Services Sector",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "العالَمُ مِنْ حَوْلِنا",
+      "title_en": "The World Around Us",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (OCR of a corrupted-text-layer student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "المَوْقِعُ",
+          "title_en": "Location",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "نِظامُ تَحْديدِ المَوْقِعِ العالَمِيِّ",
+          "title_en": "The Global Positioning System",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "دُوَلُ وادي النِّيلِ وَالقَرْنِ الأَفْريقِيِّ",
+          "title_en": "Nile Valley and Horn of Africa Countries",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "الثَّقافَةُ وَالتُّراثُ",
+      "title_en": "Culture and Heritage",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (OCR of a corrupted-text-layer student book)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "مَفْهومُ الثَّقافَةِ وَمُكَوِّناتُها",
+          "title_en": "The Concept of Culture and Its Components",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "التُّراثُ الثَّقافِيُّ الأُرْدُنِيُّ",
+          "title_en": "Jordanian Cultural Heritage",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
