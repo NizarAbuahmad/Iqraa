@@ -322,12 +322,12 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // has no student book (only teacher guide + exercise book) and Digital
   // Skills has no student book at all — same class of gap hit at every
   // other grade in this project.
+  // science:grade-1 closed 2026-09-18 — see g1ScienceSem1.ts/g1ScienceSem2.ts.
   'english:grade-1',
   'arabic:grade-1',
   'islamic:grade-1',
   'digital-literacy:grade-1',
   'social:grade-1',
-  'science:grade-1',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

@@ -1,0 +1,176 @@
+{
+  "meta": {
+    "grade": "الصف الأول",
+    "grade_en": "Grade 1",
+    "subject": "العلوم",
+    "subject_en": "Science",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة العلوم الصف الأول الفصل الثاني (g1-science-s2-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ (4-6، يواصِلُ الكتابُ ترقيمَ الفصلِ الأولِ) ودروسُها التِّسعةُ من كتاب الطالب في 2026-09-18، بنفسِ طريقةِ g1ScienceSem1.ts: «الفِكْرَةُ العامَّةُ» على افتتاحيّةِ كلِّ وحدةٍ، و«الفِكْرَةُ الرَّئيسَةُ» و«المَفاهيمُ وَالمُصْطَلَحاتُ» الثنائيَّةُ اللغةِ على افتتاحيّةِ كلِّ درسٍ. تُنقَلُ الدروسُ المرقَّمةُ في «قائِمَةِ الدُّروسِ» فقط.",
+    "known_gaps": [
+      "objectives وprior_knowledge فارغتانِ لكلِّ الدروسِ التِّسعةِ — نفسُ ما وُثِّقَ في g1ScienceSem1.ts.",
+      "vocabulary لكلِّ درسٍ منقولةٌ من صندوقِ «المَفاهيمُ وَالمُصْطَلَحاتُ» الظاهرِ في نهايةِ كلِّ درسٍ، لا من صفحةِ «مُراجَعَةُ الوَحْدَةِ» التراكميّةِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "الْحَرَكَةُ وَالْقُوَّةُ",
+      "title_en": "Motion and Force",
+      "general_idea_ar": "الْأَشْياءُ حَوْلَنا قَدْ تَكونُ ساكِنَةً، وَقَدْ تَكونُ مُتَحَرِّكَةً؛ بِسَبَبِ تَأْثيرِ قُوَّةٍ فيها.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "الْمَوْقِعُ وَالْحَرَكَةُ",
+          "title_en": "Position and Motion",
+          "main_idea_ar": "أُمَيِّزُ بَيْنَ الْأَشْياءِ الْمُتَحَرِّكَةِ وَالْأَشْياءِ السّاكِنَةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "سُكون", "en": "Static" },
+            { "ar": "حَرَكَة", "en": "Motion" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "تَأْثيرُ الْقُوَّةِ",
+          "title_en": "The Effect of Force",
+          "main_idea_ar": "كَيْفَ نُحَرِّكُ الْأَشْياءَ السّاكِنَةَ؟",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "قُوَّةُ سَحْب", "en": "Pull Force" },
+            { "ar": "قُوَّةُ دَفْع", "en": "Push Force" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "عُلومُ الْأَرْضِ وَالْفَضاءِ",
+      "title_en": "Earth and Space Science",
+      "general_idea_ar": "خَلَقَ اللهُ تَعالى الْأَرْضَ، وَأَوْجَدَ الصُّخورَ وَالْمِياهَ وَالْهَواءَ وَالشَّمْسَ وَالْقَمَرَ؛ لِنَتَمَكَّنَ مِنَ الْعَيْشِ عَلَيْها.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "الْأَرْضُ وَالسَّماءُ",
+          "title_en": "Earth and Sky",
+          "main_idea_ar": "ما شَكْلُ كُلٍّ مِنَ: الشَّمْسِ وَالْأَرْضِ وَالْقَمَرِ؟",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الشَّمْس", "en": "Sun" },
+            { "ar": "الْأَرْض", "en": "Earth" },
+            { "ar": "الْقَمَر", "en": "Moon" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "الْفُصولُ الْأَرْبَعَةُ",
+          "title_en": "The Four Seasons",
+          "main_idea_ar": "أُعَدِّدُ الْفُصولَ الْأَرْبَعَةَ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "فَصْلُ الْخَريف", "en": "Autumn" },
+            { "ar": "فَصْلُ الرَّبيع", "en": "Spring" },
+            { "ar": "فَصْلُ الصَّيْف", "en": "Summer" },
+            { "ar": "فَصْلُ الشِّتاء", "en": "Winter" }
+          ]
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "الصُّخورُ في حَياتِنا",
+          "title_en": "Rocks in Our Life",
+          "main_idea_ar": "أُعَدِّدُ أَشْياءَ حَوْلي مَصْنوعَةً مِنَ الصُّخورِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الصُّخور", "en": "Rocks" },
+            { "ar": "الْكُثْبانُ الرَّمْلِيَّة", "en": "Sand Dunes" }
+          ]
+        },
+        {
+          "id": "u5_l4",
+          "order": 4,
+          "title_ar": "الْمُحافَظَةُ عَلى الْمِياهِ",
+          "title_en": "Conserving Water",
+          "main_idea_ar": "أُناقِشُ زُمَلائي/زَميلاتي في أَسْبابِ مُشْكِلَةِ شُحِّ الْمِياهِ، وَكَيْفَ نُساعِدُ في حَلِّها؟",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "شُحُّ الْمِياه", "en": "Water Shortage" }]
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "الْمادَّةُ في عالَمِنا",
+      "title_en": "Matter in Our World",
+      "general_idea_ar": "تُحيطُ بِنا أَشْياءُ كَثيرَةٌ وَمُتَنَوِّعَةٌ، فَمِمَّ تَتَكَوَّنُ هذِهِ الْأَشْياءُ؟",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "الْمَوادُّ وَاسْتِخْداماتُها",
+          "title_en": "Materials and Their Uses",
+          "main_idea_ar": "لِماذا تُصْنَعُ الْمَلابِسُ مِنَ الصّوفِ؟",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الزُّجاج", "en": "Glass" },
+            { "ar": "مُقاوِمٌ لِلْماء", "en": "Waterproof" },
+            { "ar": "الْمَواد", "en": "Materials" },
+            { "ar": "ماصٌّ لِلْماء", "en": "Water Absorbent" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "تَصْنيفُ الْمَوادِّ",
+          "title_en": "Classifying Materials",
+          "main_idea_ar": "أُصَنِّفُ الْمَوادَّ الآتِيَةَ إِلى: طَبيعِيَّةٍ أَوْ صِناعِيَّةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْمادَّةُ الطَّبيعِيَّة", "en": "Natural Material" },
+            { "ar": "الْمادَّةُ الصِّناعِيَّة", "en": "Synthetic Material" }
+          ]
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "حالاتُ الْمادَّةِ",
+          "title_en": "States of Matter",
+          "main_idea_ar": "ما الْفَرْقُ بَيْنَ كُلٍّ مِنَ: الْمَوادِّ الصُّلْبَةِ، وَالسّائِلَةِ، وَالْغازِيَّةِ؟",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْغازات", "en": "Gases" },
+            { "ar": "الْمادَّةُ السّائِلَة", "en": "Liquid" },
+            { "ar": "الْمادَّةُ الصُّلْبَة", "en": "Solid" }
+          ]
+        }
+      ]
+    }
+  ]
+}

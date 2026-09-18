@@ -1,0 +1,176 @@
+{
+  "meta": {
+    "grade": "الصف الأول",
+    "grade_en": "Grade 1",
+    "subject": "العلوم",
+    "subject_en": "Science",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة العلوم الصف الأول الفصل الأول (g1-science-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ ودروسُها العَشَرَةُ من كتاب الطالب في 2026-09-18، بقراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ وصفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF عبرَ PyMuPDF، مع الرجوعِ إلى الصورةِ المباشِرةِ للصفحةِ عندما فشِلَ الاستخراجُ النَّصِّيُّ (صفحةُ افتتاحِ الوحدةِ الثانيةِ كانَتْ رسومًا فقط). نفسُ نمطِ g3ScienceSem1.ts: «الفِكْرَةُ العامَّةُ» على افتتاحيّةِ كلِّ وحدةٍ، و«الفِكْرَةُ الرَّئيسَةُ» و«المَفاهيمُ وَالمُصْطَلَحاتُ» الثنائيَّةُ اللغةِ على افتتاحيّةِ كلِّ درسٍ. تُنقَلُ الدروسُ المرقَّمةُ في «قائِمَةِ الدُّروسِ» فقط؛ «الإِثْراءُ وَالتَّوَسُّعُ» و«مُراجَعَةُ الوَحْدَةِ» بلا رقمِ درسٍ، فاستُثْنِيا.",
+    "known_gaps": [
+      "objectives وprior_knowledge فارغتانِ لكلِّ الدروسِ العَشَرَةِ: لا يطبَعُ الكتابُ صندوقَ «نَتاجاتُ التَّعَلُّمِ» ولا صندوقَ «تَعَلَّمْتُ سابِقًا» — نفسُ ما وُثِّقَ في g3ScienceSem1.ts.",
+      "vocabulary لكلِّ درسٍ منقولةٌ من صندوقِ «المَفاهيمُ وَالمُصْطَلَحاتُ» الظاهرِ مباشرةً بعدَ «مُراجَعَةُ الدَّرْسِ» في نهايةِ كلِّ درسٍ. صفحاتُ «مُراجَعَةُ الوَحْدَةِ» في نهايةِ كلِّ وحدةٍ تُجَمِّعُ قائمةً تراكميّةً أوسعَ (تضُمُّ أحيانًا مصطلحاتٍ ذُكِرَتْ في متنِ الدرسِ لكنَّها لم تُدرَجْ في صندوقِهِ الخاصِّ، مثلَ Space وCarnivores في الدرسِ الرابعِ من الوحدةِ الثانيةِ)؛ اعتُمِدَ صندوقُ الدرسِ نفسِهِ مصدرًا لا صفحةَ المراجعةِ التراكميّةِ، اتِّساقًا مع بقيّةِ هذا المشروعِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "الْإِنْسانُ وَالصِّحَّةُ",
+      "title_en": "Human and Health",
+      "general_idea_ar": "يُحافِظُ الْإِنْسانُ عَلى صِحَّتِهِ بِتَناوُلِ الْغِذاءِ الصِّحِّيِّ، وَمُمارَسَةِ عاداتٍ سَليمَةٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "نَحْنُ مُتَشابِهونَ",
+          "title_en": "We Are Alike",
+          "main_idea_ar": "أُناقِشُ زُمَلائي/زَميلاتي في الْأَشْياءِ الَّتي نَتَشابَهُ فيها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "الْمَلامِح", "en": "Facial Features" }]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "حاجاتُ الْإِنْسانِ الْأَساسِيَّةُ",
+          "title_en": "Human Basic Needs",
+          "main_idea_ar": "ما حاجاتي الْأَساسِيَّةُ لِكَيْ أَعيشَ؟",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْهَواء", "en": "Air" },
+            { "ar": "الْمَسْكَن", "en": "Home" },
+            { "ar": "الْماء", "en": "Water" }
+          ]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "صِحَّةُ جِسْمِ الْإِنْسانِ",
+          "title_en": "Human Body Health",
+          "main_idea_ar": "أُصَنِّفُ الْعاداتِ الَّتي يُمارِسُها بَعْضُ الطَّلَبَةِ في الْمَدْرَسَةِ إِلى عاداتٍ صِحِّيَّةٍ، وَعاداتٍ غَيْرِ صِحِّيَّةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "الْمَرَض", "en": "Disease" }]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "النَّباتاتُ وَالْحَيَواناتُ",
+      "title_en": "Plants and Animals",
+      "general_idea_ar": "النَّباتاتُ وَالْحَيَواناتُ كائِناتٌ حَيَّةٌ تَخْتَلِفُ عَنْ بَعْضِها.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "النَّباتاتُ وَأَجْزاؤُها",
+          "title_en": "Plants and Their Parts",
+          "main_idea_ar": "أُسَمّي كُلَّ جُزْءٍ مِنْ أَجْزاءِ النَّباتِ، وَأَذْكُرُ وَظيفَتَهُ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْجُذور", "en": "Roots" },
+            { "ar": "الْأَوْراق", "en": "Leaves" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "حاجاتُ النَّباتاتِ",
+          "title_en": "Needs of Plants",
+          "main_idea_ar": "ماذا يَحْدُثُ لِلنَّباتاتِ في حالَةِ عَدَمِ تَوافُرِ الْماءِ؟",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الضَّوْء", "en": "Light" },
+            { "ar": "التُّرْبَة", "en": "Soil" }
+          ]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "الْحَيَواناتُ وَأَجْزاؤُها",
+          "title_en": "Animals and Their Parts",
+          "main_idea_ar": "ما الْأَجْزاءُ الرَّئيسَةُ لِأَجْسامِ الْحَيَواناتِ؟",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الرَّأْس", "en": "Head" },
+            { "ar": "الْأَطْراف", "en": "Limbs" }
+          ]
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "حاجاتُ الْحَيَواناتِ",
+          "title_en": "Needs of Animals",
+          "main_idea_ar": "ما الَّذي تَحْتاجُ إِلَيْهِ الْحَيَواناتُ لِكَيْ تَعيشَ، وَتَنْمُوَ؟",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "آكِلاتُ الْعُشْبِ", "en": "Herbivores" },
+            { "ar": "الْمَأْوى", "en": "Shelter" },
+            { "ar": "الْحَيَوانُ الْأَليف", "en": "Pet" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "أَماكِنُ عَيْشِ الْكائِناتِ الْحَيَّةِ",
+      "title_en": "Where Living Things Live",
+      "general_idea_ar": "تَعيشُ الْكائِناتُ الْحَيَّةُ في بيئاتٍ مُخْتَلِفَةٍ تُلَبّي حاجاتِها.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الْبيئَةُ",
+          "title_en": "The Environment",
+          "main_idea_ar": "لِماذا تَعيشُ أَعْدادٌ قَليلَةٌ مِنَ الْكائِناتِ الْحَيَّةِ في الْمِنْطَقَةِ الْقُطْبِيَّةِ؟",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الصَّحْراء", "en": "Desert" },
+            { "ar": "الْغابَة", "en": "Forest" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "السِّلْسِلَةُ الْغِذائِيَّةُ",
+          "title_en": "Food Chain",
+          "main_idea_ar": "مِمَّ تَتَكَوَّنُ السِّلْسِلَةُ الْغِذائِيَّةُ؟",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "السِّلْسِلَةُ الْغِذائِيَّة", "en": "Food Chain" }]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "الْمَحْمِيّاتُ الطَّبيعِيَّةُ",
+          "title_en": "Natural Reserves",
+          "main_idea_ar": "لِماذا يَجِبُ الِاهْتِمامُ بِحِمايَةِ بيئاتِ الْكائِناتِ الْحَيَّةِ؟",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "الْمَحْمِيَّةُ الطَّبيعِيَّة", "en": "Natural Reserve" }]
+        }
+      ]
+    }
+  ]
+}
