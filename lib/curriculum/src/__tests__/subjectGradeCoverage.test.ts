@@ -323,9 +323,11 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // Skills has no student book at all — same class of gap hit at every
   // other grade in this project.
   // science:grade-1 closed 2026-09-18 — see g1ScienceSem1.ts/g1ScienceSem2.ts.
+  // islamic:grade-1 closed 2026-09-18, both semesters — see
+  // g1IslamicSem1.ts/g1IslamicSem2.ts. This book prints no «الفِكْرَةُ
+  // الرَّئيسَةُ» box, unlike g3IslamicSem1.ts.
   'english:grade-1',
   'arabic:grade-1',
-  'islamic:grade-1',
   'digital-literacy:grade-1',
   'social:grade-1',
 ]);
