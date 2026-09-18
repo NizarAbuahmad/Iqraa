@@ -262,12 +262,12 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // all, same reasoning as grade-4/5 above (physics/chemistry/biology/
   // earth-science/financial-literacy start at grade-7 or SPECIALISED_FROM;
   // geography/history/civic-education start at grade-9). physical-education
-  // is declared for grade-6/7/9 only and creative-arts for
-  // grade-4/6/7/8 only — both exclude grade-3, but unlike
+  // is declared for grade-6/7/9 only — excludes grade-3, but unlike
   // vocational-education (no Grade 3 vocational book exists at all), Grade 3
-  // Art and PE source PDFs exist on disk, so these two may move to the
-  // ORDINARY list below once SUBJECTS.grades is extended for them, same trap
-  // as grade-4's creative-arts/vocational-education.
+  // PE source PDFs exist on disk, so it may move to the ORDINARY list below
+  // once SUBJECTS.grades is extended for it, same trap as grade-4's
+  // creative-arts/vocational-education. creative-arts:grade-3 closed
+  // 2026-09-18 — see g3CreativeArts.ts.
   'chemistry:grade-3',
   'physics:grade-3',
   'biology:grade-3',
@@ -277,7 +277,6 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'history:grade-3',
   'civic-education:grade-3',
   'physical-education:grade-3',
-  'creative-arts:grade-3',
   'vocational-education:grade-3',
   //
   // ORDINARY GAPS — the subject is declared at grade-3 in SUBJECTS.grades,
