@@ -69,13 +69,6 @@ import { dirname, join } from 'node:path';
 import { G10_SOURCES } from '../sources.ts';
 import { usePolicy } from '../bank.ts';
 
-const DATA = join(dirname(fileURLToPath(import.meta.url)), '..', 'data');
-/**
- * Both corpus directories. `extracted-g9` holds the two Grade 9 maths files and
- * nothing else; reading only `extracted` made them invisible here, which is two
- * of the 49 that this test could not have caught even with the right pattern.
- */
-const EXTRACTED = [join(DATA, 'extracted'), join(DATA, 'extracted-g9')];
 /**
  * The corpus. One directory, deliberately.
  *
@@ -143,8 +136,6 @@ describe('quotable authority', () => {
 
       // Not every manifest row is extracted — an un-ingested row has nothing to
       // read, and that is a legitimate state, not a failure.
-      const file = EXTRACTED.map(d => join(d, `${s.id}.json`)).find(existsSync);
-      if (!file) continue;
       const file = join(EXTRACTED, `${s.id}.json`);
       if (!existsSync(file)) continue;
 
@@ -175,8 +166,6 @@ describe('quotable authority', () => {
     const collins = G10_SOURCES.find(s => s.license === 'nccd-collins' && s.authority === 'nccd');
     assert.ok(collins, 'no Collins-licensed source to test with');
 
-    const file = EXTRACTED.map(d => join(d, `${collins.id}.json`)).find(existsSync);
-    assert.ok(file, `${collins.id} has no extracted text`);
     const file = join(EXTRACTED, `${collins.id}.json`);
     assert.ok(existsSync(file), `${collins.id} has no extracted text`);
     const head = readFileSync(file, 'utf8').slice(0, HEAD_CHARS);
