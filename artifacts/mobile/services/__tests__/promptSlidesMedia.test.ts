@@ -85,6 +85,35 @@ describe('attachSearchedMedia — photos and video', () => {
     assert.equal(out.slides.filter(s => s.sideImageUrl).length, 3);
   });
 
+  it('searches the english queries it was given, not the arabic deck fields', async () => {
+    // Unsplash is an english index: querying it with «الكسور» returns nothing,
+    // which is what production logged as a 204 for every cover lookup.
+    const seen: string[] = [];
+    await attachSearchedMedia(deck([slide(), slide({ type: 'divider' }), slide({ type: 'summary' })]), {
+      ...opts,
+      photoQueries: ['mathematics education', 'mathematics classroom students'],
+      searchPhoto: async (q: string) => { seen.push(q); return photo(q); },
+    });
+    assert.ok(seen.includes('mathematics education'));
+    assert.ok(seen.includes('mathematics classroom students'));
+    assert.ok(!seen.some(q => /[؀-ۿ]/.test(q)), `arabic query sent to unsplash: ${seen}`);
+  });
+
+  it('skips slides drawn in their own layout — the photo would never be shown', async () => {
+    // A layout slide renders through its own branch in all three renderers and
+    // never reaches the side-image column, so a photo assigned there is
+    // fetched, stored, and invisible.
+    const out = await attachSearchedMedia(deck([
+      slide(),
+      slide({ layout: 'statement', content: 'جملة', mediaPrompt: 'a photo' }),
+      slide({ mediaPrompt: 'another photo' }),
+      slide({ type: 'summary' }),
+    ]), opts);
+    const onLayout = out.slides.find(s => s.layout === 'statement');
+    assert.equal(onLayout?.sideImageUrl, undefined);
+    assert.ok(out.slides.find(s => s.mediaPrompt === 'another photo')?.sideImageUrl);
+  });
+
   it('puts a hero photo on the first slide and one on the divider', async () => {
     const out = await attachSearchedMedia(deck([
       slide(), slide({ type: 'divider', title: 'القسم الثاني' }), slide({ type: 'summary' }),

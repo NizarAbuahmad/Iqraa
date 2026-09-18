@@ -201,9 +201,14 @@ export default function PromptSlidesScreen() {
         try {
           const { searchDeckPhoto } = await import('@/services/unsplashImage');
           const { searchDeckVideos } = await import('@/services/youtubeVideo');
+          const { deckPhotoQueries } = await import('@/services/classMedia');
           const enriched = await attachSearchedMedia(built, {
             isAr,
             topic: trimmed,
+            // English, always: Unsplash is an English index and an Arabic
+            // query returns nothing. `name` is deliberately the English
+            // subject name even in an Arabic deck.
+            photoQueries: deckPhotoQueries(teacherSubject?.id ?? '', teacherSubject?.name ?? 'school'),
             searchPhoto: searchDeckPhoto,
             searchVideos: searchDeckVideos,
           });
