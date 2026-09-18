@@ -156,35 +156,6 @@ export default function AIToolsScreen() {
         </View>
       ))}
 
-      <Pressable
-        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/workspace'); }}
-        style={({ pressed }) => [
-          styles.workspaceCard,
-          {
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            borderRadius: colors.radius,
-            marginHorizontal: 20,
-            marginBottom: 12,
-            opacity: pressed ? 0.8 : 1,
-            flexDirection: isRTL ? 'row-reverse' : 'row',
-          },
-        ]}
-      >
-        <View style={[styles.workspaceIcon, { backgroundColor: '#10B981' + '18', borderRadius: 12 }]}>
-          <Ionicons name="folder-outline" size={22} color="#10B981" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('myWorkspace')}
-          </Text>
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('workspaceSubtitle')}
-          </Text>
-        </View>
-        <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
-      </Pressable>
-
       {DEMO_MODE && (
         <View style={[styles.note, { backgroundColor: colors.muted, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
@@ -221,8 +192,6 @@ const styles = StyleSheet.create({
   badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
   badgeText: { fontSize: 10 },
   cardDesc: { fontSize: 12, lineHeight: 17 },
-  workspaceCard: { alignItems: 'center', padding: 16, borderWidth: 1, gap: 14, marginTop: 8 },
-  workspaceIcon: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   note: { alignItems: 'flex-start', gap: 8, padding: 14, marginBottom: 20 },
   noteText: { flex: 1, fontSize: 12, lineHeight: 17 },
 });
