@@ -55,6 +55,7 @@ type DifficultyLevel = 'normal' | 'high' | 'difficult';
 
 const DURATION_OPTIONS = [10, 15, 20, 25, 30, 45];
 const MARKS_OPTIONS = [10, 20, 25, 30, 40, 50, 100];
+const NUM_Q_OPTIONS = [5, 8, 10, 12, 15, 20];
 const ALL_Q_TYPES: QType[] = ['multiple_choice', 'true_false', 'short_answer'];
 const DIFFICULTY_IDS: DifficultyLevel[] = ['normal', 'high', 'difficult'];
 const DIFFICULTY_MAP: Record<DifficultyLevel, Difficulty> = {
@@ -69,7 +70,7 @@ export default function QuizScreen() {
   const { t, isRTL, lang } = useLanguage();
   const params = useLocalSearchParams<{
     savedId?: string; gradeIdx?: string; subjectIdx?: string;
-    topic?: string; durationIdx?: string; marksIdx?: string; selectedTypes?: string;
+    topic?: string; durationIdx?: string; marksIdx?: string; numQIdx?: string; selectedTypes?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -78,6 +79,7 @@ export default function QuizScreen() {
   const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
   const durationLabels = DURATION_OPTIONS.map(d => `${d} ${t('min')}`);
   const marksLabels = MARKS_OPTIONS.map(m => String(m));
+  const numQLabels = NUM_Q_OPTIONS.map(n => String(n));
   const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult')];
 
   const parseTypes = (raw?: string): Set<QType> => {
@@ -119,6 +121,7 @@ export default function QuizScreen() {
 
   const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 2);
   const [marksIdx, setMarksIdx] = useState(params.marksIdx ? parseInt(params.marksIdx, 10) : 1);
+  const [numQIdx, setNumQIdx] = useState(params.numQIdx ? parseInt(params.numQIdx, 10) : 2);
   const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
   const [loading, setLoading] = useState(false);
   /**
@@ -291,10 +294,7 @@ export default function QuizScreen() {
         duration: DURATION_OPTIONS[durationIdx],
         totalMarks: MARKS_OPTIONS[marksIdx],
         questionTypes: Array.from(selectedTypes),
-        // Two questions per selected type — the same rule MockAIService uses,
-        // so live and mock papers agree on size. Without this the server
-        // prompt fell back to a flat 10, whatever was picked here.
-        numQuestions: selectedTypes.size * 2,
+        numQuestions: NUM_Q_OPTIONS[numQIdx],
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         additionalContext,
         unitId,
@@ -351,7 +351,7 @@ export default function QuizScreen() {
       : `Quiz: ${topic.trim()}`;
     const formState = {
       gradeIdx, subjectIdx, topic: topic.trim(),
-      durationIdx, marksIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
+      durationIdx, marksIdx, numQIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
     };
     // `updateItem` answers false when the material is no longer there — the
     // teacher deleted it from موادي while this screen still held its id. The
@@ -463,6 +463,7 @@ export default function QuizScreen() {
         <PickerField label={t('levelLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={setDiffIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('quizDurationLabel')} value={durationLabels[durationIdx]} options={durationLabels} onChange={setDurationIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('totalMarksLabel')} value={marksLabels[marksIdx]} options={marksLabels} onChange={setMarksIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PickerField label={t('numQuestionsLabel')} value={numQLabels[numQIdx]} options={numQLabels} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
