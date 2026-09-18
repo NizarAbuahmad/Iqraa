@@ -288,7 +288,7 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // islamic:grade-3 closed 2026-09-17 — see g3IslamicSem1.ts/g3IslamicSem2.ts.
   // arabic:grade-3 closed 2026-09-17 — see g3ArabicSem1.ts/g3ArabicSem2.ts.
   // social:grade-3 closed 2026-09-18 — see g3SocialSem1.ts/g3SocialSem2.ts.
-  'english:grade-3',
+  // english:grade-3 closed 2026-09-18 — see g3EnglishSem1.ts/g3EnglishSem2.ts.
   'digital-literacy:grade-3',
 ]);
 

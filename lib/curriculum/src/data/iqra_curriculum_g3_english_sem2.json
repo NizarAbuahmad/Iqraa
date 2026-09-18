@@ -1,0 +1,306 @@
+{
+  "meta": {
+    "grade": "الصف الثالث",
+    "grade_en": "Grade 3",
+    "subject": "اللغة الإنجليزية",
+    "subject_en": "English",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة اللغة الإنجليزية للصف الثالث الفصل الثاني (g3-english-s2-pupils-book, Jordan Team Together series, Pearson/York Press)"
+    ],
+    "provenance_note": "Unlike Semester 1, this semester has a real pupil's book. Read directly from the PDF via PyMuPDF on 2026-09-18, extraction is clean (English text). Same approach as g3EnglishSem1/g5EnglishSem1: unit titles, vocabulary, grammar structures (with the book's own example sentences), and skill descriptors taken from the book's own two-page 'Scope and sequence' table (pp. 4-5), cross-checked row-by-row against the Contents page and each unit's own opener. Units are numbered 6-10, continuing Semester 1's 1-5 — this project's own linking convention (the book itself prints only 'Welcome' plus 4 numbered units, 5-8, with the Welcome unit unnumbered), same treatment as g3IslamicSem2/g4IslamicSem2. 'My favourite day!' (the Welcome unit) is included as u6, same as g5EnglishSem1's precedent of including a Welcome unit when it carries its own scope-and-sequence row — this one does, though its Vocabulary cell lists only category names (Activities/Clothes/Jobs) with no new items, since it reviews Semester 1's vocabulary rather than introducing new words.",
+    "known_gaps": [
+      "Real content (vocabulary lists, grammar points with the book's own example sentences, skill descriptors), not title-only — but unit-level, not lesson-level: each unit's actual internal lesson count and exact per-lesson titles were not verified page by page, same scope as g3EnglishSem1/g5EnglishSem1.",
+      "`main_idea_ar` and `objectives` hold literal English text (this book's own language), not Arabic; `title_ar` carries a plain Arabic gloss of the English title for search/display, same convention as g3EnglishSem1.",
+      "u6_l1 (Vocabulary & Grammar, 'My favourite day!') has an empty `vocabulary` array: the scope-and-sequence table's Vocabulary cell for this unit lists only category names (Activities, Clothes, Jobs) with no actual word list — a review unit recapping Semester 1's vocabulary, not introducing new terms.",
+      "Phonics word lists printed inside the Vocabulary table cell are excluded from `vocabulary` (sound-pattern examples, not topical vocabulary), same exclusion as g3EnglishSem1.",
+      "Excluded as supplementary, non-core material (no dedicated row in the scope-and-sequence table): 'Atomic's Learning Club: Language booster 2', the Social Science spread ('What can we see on a map?'), the Festivals section (National Olive Festival, Eid al-Fitr, Aqaba Arts Festival), and the Reading/Writing/Phonics/Project/Viewing-and-presenting/Functions columns of the scope-and-sequence table (present in the source but not carried into this schema, same scope as g3EnglishSem1)."
+    ]
+  },
+  "units": [
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "يَوْمي المُفَضَّلُ!",
+      "title_en": "My favourite day!",
+      "general_idea_ar": "Talking about your day, activities, clothes and jobs.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "المُفْرَداتُ وَالقَواعِدُ",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Present simple — statements and yes/no questions about habits. Examples: I/we play … He/She plays … Do you play … on Friday? Yes, I do./No, I don't. Does he/she play … at the weekend? Yes, he/she does./No, he/she doesn't.",
+          "periods": null,
+          "objectives": [
+            "Present simple, statements and yes/no questions about habits/routines — e.g. I/we play … He/She plays … Do you play … on Friday? Yes, I do./No, I don't. Does he/she play … at the weekend? Yes, he/she does./No, he/she doesn't."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "الاسْتِماعُ وَالتَّحَدُّثُ",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Identifying everyday objects and people from short basic descriptions; recognising familiar key words and phrases in short, basic descriptions; getting the gist of a simple song, if supported by gestures. Answering simple questions about habits and daily routines; acting out a short dialogue or role play; reciting a short, simple rhyme or chant.",
+          "periods": null,
+          "objectives": [
+            "Identifying everyday objects and people from short basic descriptions.",
+            "Recognising familiar key words and phrases in short, basic descriptions.",
+            "Getting the gist of a simple song, if supported by gestures.",
+            "Answering simple questions about habits and daily routines.",
+            "Acting out a short dialogue or role play; reciting a short, simple rhyme or chant."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "مَرَحٌ في المَزْرَعَةِ",
+      "title_en": "Fun on the farm",
+      "general_idea_ar": "Talking about farm animals and activities.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "المُفْرَداتُ وَالقَواعِدُ",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Present continuous — yes/no questions. Examples: Is he/she/it flying? Yes, he/she/it is./No, he/she/it isn't. Are they brushing the horses? Yes, they are./No, they aren't.",
+          "periods": null,
+          "objectives": [
+            "Present continuous, yes/no questions — e.g. Is he/she/it flying? Yes, he/she/it is./No, he/she/it isn't. Are they brushing the horses? Yes, they are./No, they aren't."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "chicken" },
+            { "ar": "", "en": "cow" },
+            { "ar": "", "en": "donkey" },
+            { "ar": "", "en": "duck" },
+            { "ar": "", "en": "goat" },
+            { "ar": "", "en": "horse" },
+            { "ar": "", "en": "sheep" },
+            { "ar": "", "en": "bird" },
+            { "ar": "", "en": "bee" },
+            { "ar": "", "en": "turkey" },
+            { "ar": "", "en": "brush the horses" },
+            { "ar": "", "en": "clean the cage" },
+            { "ar": "", "en": "collect the eggs" },
+            { "ar": "", "en": "fix the gate" },
+            { "ar": "", "en": "milk the cows" },
+            { "ar": "", "en": "sweep the barn" }
+          ]
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "الاسْتِماعُ وَالتَّحَدُّثُ",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising familiar words and phrases in short, simple songs; identifying people in their immediate surroundings or in pictures from a short, simple description; identifying the context of an everyday conversation; recognising letters of the alphabet. Reciting a short, simple rhyme; saying what people are doing, if supported by pictures or gestures; acting out parts of a story; answering simple questions about habits and routines; asking for repetition and clarification using simple fixed expressions; saying simple tongue twisters; asking about the identity of an object using a basic phrase (e.g. What is it?).",
+          "periods": null,
+          "objectives": [
+            "Recognising familiar words and phrases in short, simple songs.",
+            "Identifying people in their immediate surroundings or in pictures from a short, simple description.",
+            "Identifying the context of an everyday conversation; recognising letters of the alphabet.",
+            "Reciting a short, simple rhyme; saying what people are doing, if supported by pictures or gestures.",
+            "Acting out parts of a story; answering simple questions about habits and routines.",
+            "Asking for repetition and clarification using simple fixed expressions.",
+            "Saying simple tongue twisters; asking about the identity of an object using a basic phrase (e.g. What is it?)."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "في الغابَةِ",
+      "title_en": "Out in the forest",
+      "general_idea_ar": "Talking about adjectives and camping objects.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "المُفْرَداتُ وَالقَواعِدُ",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "have got — negative and yes/no questions. Examples: I haven't got a new book. He/She hasn't got a soft ball. Have you got a tent? Yes, I have./No, I haven't. Has he/she got a tent? Yes, he/she has./No, he/she hasn't.",
+          "periods": null,
+          "objectives": [
+            "have got, negative and yes/no questions — e.g. I haven't got a new book. He/She hasn't got a soft ball. Have you got a tent? Yes, I have./No, I haven't. Has he/she got a tent? Yes, he/she has./No, he/she hasn't."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "dirty" },
+            { "ar": "", "en": "clean" },
+            { "ar": "", "en": "old" },
+            { "ar": "", "en": "new" },
+            { "ar": "", "en": "plain" },
+            { "ar": "", "en": "fancy" },
+            { "ar": "", "en": "hard" },
+            { "ar": "", "en": "soft" },
+            { "ar": "", "en": "wet" },
+            { "ar": "", "en": "dry" },
+            { "ar": "", "en": "tent" },
+            { "ar": "", "en": "sleeping bag" },
+            { "ar": "", "en": "shampoo" },
+            { "ar": "", "en": "toothpaste" },
+            { "ar": "", "en": "sunscreen" },
+            { "ar": "", "en": "torch" }
+          ]
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "الاسْتِماعُ وَالتَّحَدُّثُ",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising familiar words and phrases in short, simple songs; identifying specific information in simple dialogues; understanding basic phrases or sentences about things people have; identifying the context in which an everyday conversation is taking place; recognising letters of the alphabet. Describing objects in a basic way; reciting a short rhyme; answering simple questions about things people have got; acting out parts of a picture story; asking basic questions to find out what possessions others have got; expressing basic likes and dislikes; asking basic questions to find out who things belong to; saying simple tongue twisters and other types of playful language; talking about common everyday objects using single words, if supported by pictures.",
+          "periods": null,
+          "objectives": [
+            "Recognising familiar words and phrases in short, simple songs.",
+            "Identifying specific information in simple dialogues.",
+            "Understanding basic phrases or sentences about things people have.",
+            "Identifying the context in which an everyday conversation is taking place; recognising letters of the alphabet.",
+            "Describing objects in a basic way; reciting a short rhyme.",
+            "Answering simple questions about things people have got; acting out parts of a picture story.",
+            "Asking basic questions to find out what possessions others have got.",
+            "Expressing basic likes and dislikes; asking basic questions to find out who things belong to.",
+            "Saying simple tongue twisters and other types of playful language.",
+            "Talking about common everyday objects using single words, if supported by pictures."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_ar": "اُنْظُرْ إِلى النُّجومِ",
+      "title_en": "Look at the stars",
+      "general_idea_ar": "Talking about furniture and prepositions of place.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_ar": "المُفْرَداتُ وَالقَواعِدُ",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "there is/are — affirmative and negative. Examples: There's a bookcase./There are bookcases. There isn't a chair./There aren't any beds.",
+          "periods": null,
+          "objectives": [
+            "there is/are, affirmative and negative — e.g. There's a bookcase./There are bookcases. There isn't a chair./There aren't any beds."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "door" },
+            { "ar": "", "en": "window" },
+            { "ar": "", "en": "sofa" },
+            { "ar": "", "en": "armchair" },
+            { "ar": "", "en": "television" },
+            { "ar": "", "en": "bed" },
+            { "ar": "", "en": "wardrobe" },
+            { "ar": "", "en": "mirror" },
+            { "ar": "", "en": "clock" },
+            { "ar": "", "en": "bookcase" },
+            { "ar": "", "en": "in front of" },
+            { "ar": "", "en": "between" },
+            { "ar": "", "en": "opposite" },
+            { "ar": "", "en": "behind" },
+            { "ar": "", "en": "next to" }
+          ]
+        },
+        {
+          "id": "u9_l2",
+          "order": 2,
+          "title_ar": "الاسْتِماعُ وَالتَّحَدُّثُ",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising familiar words and phrases in short, simple songs; recognising words related to familiar topics; understanding basic statements about where things or people are; recognising the letters of the alphabet by their sounds. Reciting a simple rhyme; talking about furniture and rooms using simple language; answering simple questions about where people or things are, using basic phrases; acting out parts of a story; describing the position of objects or people in a basic way; saying simple tongue twisters.",
+          "periods": null,
+          "objectives": [
+            "Recognising familiar words and phrases in short, simple songs.",
+            "Recognising words related to familiar topics.",
+            "Understanding basic statements about where things or people are.",
+            "Recognising the letters of the alphabet by their sounds.",
+            "Reciting a simple rhyme; talking about furniture and rooms using simple language.",
+            "Answering simple questions about where people or things are, using basic phrases.",
+            "Acting out parts of a story; describing the position of objects or people in a basic way.",
+            "Saying simple tongue twisters."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u10",
+      "number": 10,
+      "title_ar": "الحَيَواناتُ مُمْتِعَةٌ!",
+      "title_en": "Animals are fun!",
+      "general_idea_ar": "Talking about wild animals and food.",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u10_l1",
+          "order": 1,
+          "title_ar": "المُفْرَداتُ وَالقَواعِدُ",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "can — ability. Examples: Can penguins swim? Yes, they can. Can hippos jump? No, they can't. there is/are — yes/no questions. Examples: Is there a coconut? Yes, there is./No, there isn't. Are there any burgers? Yes, there are./No, there aren't.",
+          "periods": null,
+          "objectives": [
+            "can (ability), yes/no questions — e.g. Can penguins swim? Yes, they can. Can hippos jump? No, they can't.",
+            "there is/are, yes/no questions — e.g. Is there a coconut? Yes, there is./No, there isn't. Are there any burgers? Yes, there are./No, there aren't."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "monkey" },
+            { "ar": "", "en": "tiger" },
+            { "ar": "", "en": "hippo" },
+            { "ar": "", "en": "giraffe" },
+            { "ar": "", "en": "zebra" },
+            { "ar": "", "en": "elephant" },
+            { "ar": "", "en": "crocodile" },
+            { "ar": "", "en": "penguin" },
+            { "ar": "", "en": "eagle" },
+            { "ar": "", "en": "kangaroo" },
+            { "ar": "", "en": "coconut" },
+            { "ar": "", "en": "burger" },
+            { "ar": "", "en": "kiwi" },
+            { "ar": "", "en": "grapes" },
+            { "ar": "", "en": "mango" },
+            { "ar": "", "en": "ice lolly" }
+          ]
+        },
+        {
+          "id": "u10_l2",
+          "order": 2,
+          "title_ar": "الاسْتِماعُ وَالتَّحَدُّثُ",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising familiar words and phrases in short, simple songs; understanding basic action words; following basic instructions to colour, draw or make something; extracting specific information in short texts on familiar topics; understanding how people are feeling if they use simple language; recognising letters of the alphabet; recognising words and simple phrases related to familiar topics. Reciting a short, simple rhyme; expressing ability or lack of ability in relation to basic everyday actions; acting out parts of a picture story; answering simple questions about very familiar topics; saying how they feel, using a limited range of common adjectives; saying food or drink they would like using simple words; saying simple tongue twisters.",
+          "periods": null,
+          "objectives": [
+            "Recognising familiar words and phrases in short, simple songs.",
+            "Understanding basic action words; following basic instructions to colour, draw or make something.",
+            "Extracting specific information in short texts on familiar topics.",
+            "Understanding how people are feeling if they use simple language.",
+            "Recognising letters of the alphabet; recognising words and simple phrases related to familiar topics.",
+            "Reciting a short, simple rhyme; expressing ability or lack of ability in relation to basic everyday actions.",
+            "Acting out parts of a picture story; answering simple questions about very familiar topics.",
+            "Saying how they feel, using a limited range of common adjectives.",
+            "Saying food or drink they would like using simple words; saying simple tongue twisters."
+          ],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
