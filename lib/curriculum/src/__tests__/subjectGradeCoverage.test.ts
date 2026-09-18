@@ -326,7 +326,8 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // islamic:grade-1 closed 2026-09-18, both semesters — see
   // g1IslamicSem1.ts/g1IslamicSem2.ts. This book prints no «الفِكْرَةُ
   // الرَّئيسَةُ» box, unlike g3IslamicSem1.ts.
-  'english:grade-1',
+  // english:grade-1 closed 2026-09-18, both semesters — see
+  // g1EnglishSem1.ts/g1EnglishSem2.ts.
   'arabic:grade-1',
   'digital-literacy:grade-1',
   'social:grade-1',
