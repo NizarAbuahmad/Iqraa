@@ -158,6 +158,15 @@ ${slideCountLine(b, true)}
   "extensionChallenge": "امتداد للطلبة المتقدّمين"
 }
 
+أشكال الشرائح — استخدمها لتكسر رتابة العرض:
+أضف الحقل "layout" إلى شريحة الشرح حين ينطبق شكلها، وإلا اتركه.
+- "statement": فكرة واحدة تستحقّ أن تملأ الشاشة. "content" جملة واحدة قصيرة فقط (لا قوائم، لا أسطر متعدّدة).
+- "stat": رقم يستحقّ العرض. أضف "stat": {"value":"الرقم","label":"ماذا يعني","source":"المصدر إن وُجد"}. الرقم قصير (٣ خانات أو نحوها).
+  لا تخترع إحصاءات. استخدم فقط أرقامًا من صميم الموضوع (عدد القوانين، قيمة ثابت، سنة، نسبة واردة في الوصف). إن لم يكن لديك رقم حقيقي فلا تستخدم هذا الشكل.
+- "compare": مقارنة حقيقية بين طرفين (قبل/بعد، صواب/خطأ، طريقتان). أضف "compare": {"leftTitle":"","left":["",""],"rightTitle":"","right":["",""]}. الطرفان ممتلئان دائمًا.
+- "steps": خطوات مرتّبة لعملية. "content" أسطر تبدأ بـ "• " بالترتيب، سطران على الأقل.
+لا تُلبس أكثر من نصف شرائح الشرح شكلًا خاصًا — التنويع هو المقصود، لا الفوضى.
+
 قواعد إلزامية:
 - كل شريحة بلا استثناء تحمل كائن "teacher" غير فارغ. الشريحة بلا teacher تظهر للمعلّم بزرّ ملاحظات لا يفتح شيئًا.
 - "content" متعدّد الأسطر: افصل بـ \\n وابدأ أسطر القوائم بـ "• ". لا تكتب فقرة واحدة متّصلة، ولا تقلّ أي شريحة عن سطرين.
@@ -257,6 +266,15 @@ Return JSON in this exact shape (all text in English; mediaPrompt is English too
   "assessment": "How the teacher knows the objective was met",
   "extensionChallenge": "An extension for advanced students"
 }
+
+Slide shapes — use them so the deck does not read as one card repeated:
+Add a "layout" field to a concept slide when its shape fits; otherwise leave it out.
+- "statement": one idea worth filling the screen. "content" is a single short sentence — no lists, no multiple lines.
+- "stat": a figure worth projecting. Add "stat": {"value":"the figure","label":"what it means","source":"where it is from, if any"}. Keep the figure short (about three characters).
+  Never invent statistics. Use only numbers intrinsic to the subject (how many laws, the value of a constant, a year, a percentage the teacher's description supplied). With no real number, do not use this shape.
+- "compare": a genuine two-sided contrast (before/after, right/wrong, two methods). Add "compare": {"leftTitle":"","left":["",""],"rightTitle":"","right":["",""]}. Both sides always filled.
+- "steps": the ordered stages of a process. "content" is "• " lines in order, at least two.
+Give a special shape to no more than half the concept slides — the point is variety, not chaos.
 
 Mandatory rules:
 - Every slide without exception carries a non-empty "teacher" object. A slide without one shows the teacher a notes button that opens nothing.

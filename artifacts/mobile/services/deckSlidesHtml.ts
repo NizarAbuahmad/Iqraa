@@ -18,6 +18,7 @@
  */
 import { visualForSlide, visualToSvg } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet } from './deckText.ts';
+import { resolveSlideLayout } from './slideLayout.ts';
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { hasRenderableMath, isolateForeignRuns, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
 
@@ -345,6 +346,68 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       ${footer(num)}</div>`;
   };
 
+  /**
+   * A slide drawn in one of the shapes from `services/slideLayout.ts`.
+   *
+   * Returns null when the slide asked for no shape, or asked for one whose
+   * data was too thin to draw — both of which mean "render it the ordinary
+   * way", which is what the caller does. That fallback is the whole reason a
+   * layout can be added to one renderer at a time.
+   */
+  const layoutSlide = (slide: ActivitySlide, num: number): string | null => {
+    const layout = resolveSlideLayout(slide);
+    if (!layout) return null;
+    const accent = deckSlideAccent(slide.type);
+    const head = esc(splitEmoji(slide.title)[1]);
+
+    if (layout.kind === 'statement') {
+      return `<div class="deck-slide">
+      <div class="deck-body deck-statement">
+        <p class="deck-statement-text" style="color:${accent}">${esc(layout.text)}</p>
+        <div class="deck-title-rule" style="background:${accent}"></div>
+        ${head ? `<p class="deck-statement-sub">${head}</p>` : ''}
+      </div>
+      ${footer(num)}</div>`;
+    }
+
+    if (layout.kind === 'stat') {
+      return `<div class="deck-slide">
+      <div class="deck-body deck-stat">
+        <p class="deck-stat-value" style="color:${accent}">${esc(layout.value)}</p>
+        <div class="deck-title-rule" style="background:${accent}"></div>
+        <p class="deck-stat-label">${esc(layout.label)}</p>
+        ${layout.source ? `<p class="deck-stat-source">${esc(layout.source)}</p>` : ''}
+      </div>
+      ${footer(num)}</div>`;
+    }
+
+    if (layout.kind === 'compare') {
+      const column = (title: string, items: string[], primary: boolean) => `
+        <div class="deck-compare-col"${primary ? ` style="border-color:${accent}"` : ''}>
+          <p class="deck-compare-head"${primary ? ` style="color:${accent}"` : ''}>${esc(title)}</p>
+          ${items.map(i => `<p class="deck-compare-item">${esc(i)}</p>`).join('')}
+        </div>`;
+      return `<div class="deck-slide">
+      ${deckHeader(slide.title, accent, deckSlideEmoji(slide.type))}
+      <div class="deck-body deck-compare">
+        ${column(layout.leftTitle, layout.left, true)}
+        ${column(layout.rightTitle, layout.right, false)}
+      </div>
+      ${footer(num)}</div>`;
+    }
+
+    return `<div class="deck-slide">
+      ${deckHeader(slide.title, accent, deckSlideEmoji(slide.type))}
+      <div class="deck-body deck-steps">
+        ${layout.steps.map((step, i) => `
+        <div class="deck-step">
+          <span class="deck-step-num" style="background:${accent}">${i + 1}</span>
+          <p class="deck-step-text">${esc(step)}</p>
+        </div>`).join('')}
+      </div>
+      ${footer(num)}</div>`;
+  };
+
   const contentSlide = (slide: ActivitySlide, num: number) => {
     const accent = deckSlideAccent(slide.type);
     const lines = slide.content.split('\n').filter(Boolean);
@@ -380,6 +443,11 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   const slidesHtml = deck.slides.map((slide, i) => {
     const num = i + 1;
     if (i === 0) return titleSlide(slide, num);
+    // Above the type branches, because a layout is a request about drawing and
+    // the types below are about content. It returns null for every slide that
+    // did not ask, so the chain behaves exactly as it did.
+    const shaped = layoutSlide(slide, num);
+    if (shaped) return shaped;
     if (slide.type === 'graph') return graphSlide(slide, num);
     if (slide.type === 'challenge') return challengeSlide(slide, num);
     if (slide.type === 'question') return questionSlide(slide, num);
@@ -422,7 +490,28 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
 body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BORDER}; }
 .deck-title-badge, .deck-title-main, .deck-divider-title, .deck-eyebrow,
 .deck-eq, .deck-answer-label, .deck-chip, .deck-video-link,
-.deck-option-letter, .deck-title-meta { font-family: 'Cairo','Arial','Tahoma',sans-serif; }
+.deck-option-letter, .deck-title-meta,
+.deck-statement-text, .deck-stat-value, .deck-stat-label, .deck-compare-head,
+.deck-step-num { font-family: 'Cairo','Arial','Tahoma',sans-serif; }
+/* ─── Layout shapes (services/slideLayout.ts) ───────────────────────────────
+   Sizes mirror the presenter's: a statement at cover-title size, a stat above
+   it, both centred in the body so the slide reads as one object rather than a
+   heading with something under it. text-align:start keeps these
+   direction-agnostic — never row-reverse, per this file's own rule. */
+.deck-statement, .deck-stat { justify-content:center; gap:4px; }
+.deck-statement-text { font-size:40px; line-height:1.5; font-weight:700; text-align:start; }
+.deck-statement-sub { font-size:20px; line-height:1.6; color:${DECK_MUTED}; margin-top:12px; text-align:start; }
+.deck-stat-value { font-size:96px; line-height:1.1; font-weight:700; text-align:start; }
+.deck-stat-label { font-size:26px; line-height:1.5; font-weight:600; text-align:start; }
+.deck-stat-source { font-size:14px; line-height:1.6; color:${DECK_MUTED}; margin-top:10px; text-align:start; }
+.deck-compare { display:flex; flex-direction:row; gap:18px; align-items:stretch; }
+.deck-compare-col { flex:1; border:2px solid ${DECK_BORDER}; border-radius:18px; padding:20px; background:${DECK_CARD_BG}; }
+.deck-compare-head { font-size:22px; line-height:1.4; font-weight:700; color:${DECK_MUTED}; margin-bottom:12px; text-align:start; }
+.deck-compare-item { font-size:19px; line-height:1.7; margin-bottom:8px; text-align:start; }
+.deck-steps { gap:14px; }
+.deck-step { display:flex; flex-direction:row; align-items:center; gap:16px; }
+.deck-step-num { flex-shrink:0; width:44px; height:44px; border-radius:50%; color:#fff; font-size:22px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.deck-step-text { font-size:22px; line-height:1.6; text-align:start; }
 .deck-slide { width:297mm; height:210mm; background:${DECK_BG}; color:${DECK_TEXT}; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
 .deck-title-slide { background:radial-gradient(circle at 30% 20%, ${DECK_BLOB}, transparent 60%), ${DECK_BG}; }
 .deck-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
