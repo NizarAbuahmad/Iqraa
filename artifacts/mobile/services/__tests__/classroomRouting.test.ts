@@ -173,7 +173,7 @@ describe('applyClassroomSetup', () => {
   const boardActivity = {
     activityType: 'error-detective',
     materials: ['السبورة', 'بطاقات الحلول الخاطئة المطبوعة', 'أقلام تصحيح حمراء'],
-    teacherPreparation: 'اطبع 3 حلول خاطئة مسبقًا. اطلب من الطلاب العمل في ثنائيات.',
+    teacherPreparation: 'اطبع 3 حلول خاطئة مسبقًا. اطلب من الطلبة العمل في ثنائيات.',
   };
 
   it('survives a generation that omitted materials entirely', () => {
@@ -184,7 +184,7 @@ describe('applyClassroomSetup', () => {
     // its way to the projector over a field nobody was going to read.
     const noMaterials = {
       activityType: 'escape-challenge',
-      teacherPreparation: 'رتّب الطلاب في مجموعات.',
+      teacherPreparation: 'رتّب الطلبة في مجموعات.',
     } as unknown as typeof boardActivity;
 
     const out = applyClassroomSetup(noMaterials, 'screen', true);

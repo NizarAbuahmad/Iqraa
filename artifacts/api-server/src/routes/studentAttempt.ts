@@ -88,6 +88,22 @@ async function evaluationByCode(rawCode: unknown) {
   // as a wrong code does — a public endpoint should not confirm which codes
   // exist.
   if (!row || row.status !== "published") return undefined;
+  /*
+   * And an expired link, on the same reasoning and in the same silence.
+   *
+   * A distinct "this link has expired" would be friendlier to a student who
+   * mistyped nothing — and would also tell anyone walking the code space which
+   * of their guesses had once been real. The teacher is the one who can fix
+   * this, by re-publishing, and they are not learning it from this endpoint.
+   *
+   * Null means no expiry, which is every exam published before the column
+   * existed. Those are closed by a backfill, not by this line — see the PR
+   * that added it. Reading null as "expired" here would have shut every live
+   * exam in the country the moment this deployed.
+   */
+  if (row.shareCodeExpiresAt && row.shareCodeExpiresAt.getTime() <= Date.now()) {
+    return undefined;
+  }
   return row;
 }
 

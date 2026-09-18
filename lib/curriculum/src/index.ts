@@ -27,3 +27,6 @@ export * from './external.ts';
 // disk with node:fs; the mobile app imports this package, so exporting it here
 // would eventually put the whole corpus in a phone bundle. Server-side callers
 // import '@workspace/curriculum/passages'.
+// `premade.ts` is NOT re-exported either, for the same reason: it holds whole
+// worksheets, not metadata about them, and grows a sheet at a time with the
+// curriculum. The resources tab imports '@workspace/curriculum/premade'.

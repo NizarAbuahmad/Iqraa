@@ -1,0 +1,331 @@
+{
+  "meta": {
+    "grade": "الصف الثالث",
+    "grade_en": "Grade 3",
+    "subject": "اللغة العربية",
+    "subject_en": "Arabic",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة العربية لغتي للصف الثالث الفصل الثاني (g3-arabic-s2-student-book)"
+    ],
+    "provenance_note": "نُقلت البنيةُ من فهرسِ كتابِ الطالبِ (ص 3-4) في 2026-09-17، وقُرِئَ من ملفِّ PDF مباشرةً عبرَ PyMuPDF، مثل g3ArabicSem1. نفسُ بنيةِ الفصلِ الأوّلِ: خمسُ وحداتٍ مرقَّمةٌ 6-10 استمرارًا لترقيمِ الفصلِ الأولِ (1-5) — هذا ترقيمُ هذا المشروعِ الرّابطُ بين الفصلين، إذِ الكتابُ نفسُه يُرقِّمُ وحداتِه 6-10 أيضًا (وليس 1-5) كما يطبعُ الفهرسُ («الوحدةُ السّادسةُ»، «السّابعةُ»...).",
+    "known_gaps": [
+      "هذا الكتابُ title-only باختيارٍ لا بعُطلٍ في الاستخراجِ، لنفسِ السّببِ الموصوفِ في g3ArabicSem1: main_idea_ar و objectives و vocabulary فارغةٌ لكلِّ الدروسِ. دَرْسا الاستماعِ والتحدُّثِ (الأولُ والثاني) لا يحملانِ موضوعًا بين قوسينِ في هذا الكتابِ أيضًا.",
+      "title_en لكلِّ وحدةٍ ودرسٍ ترجمةٌ، لا نصٌّ مطبوعٌ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "كَنْزُ الْأَمانَةِ",
+      "title_en": "The Treasure of Trust",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+          "title_en": "I Listen Attentively and with Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ",
+          "title_en": "I Speak Fluently",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (مُحَمَّدٌ الْأَمينُ ﷺ)",
+          "title_en": "I Read Fluently and with Comprehension (Muhammad the Trustworthy ﷺ)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ (عَلامَتا التَّرْقيمِ (:) وَ(؛))",
+          "title_en": "I Write (The Punctuation Marks : and ;)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي",
+          "title_en": "I Build My Language",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "أَحْرُسُ بَلَدي",
+      "title_en": "I Guard My Country",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+          "title_en": "I Listen Attentively and with Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ",
+          "title_en": "I Speak Fluently",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (يَوْمٌ مِنْ حَياةِ شُرْطِيَّةِ الْمُرورِ)",
+          "title_en": "I Read Fluently and with Comprehension (A Day in the Life of a Traffic Policewoman)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ (هَمْزَتا الْوَصْلِ وَالْقَطْعِ)",
+          "title_en": "I Write (The Hamzat al-Wasl and al-Qat')",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي",
+          "title_en": "I Build My Language",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "قِصَصٌ عالَمِيَّةٌ",
+      "title_en": "World Stories",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+          "title_en": "I Listen Attentively and with Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ",
+          "title_en": "I Speak Fluently",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (فَلّونَةُ وَالْجَزيرَةُ الْمَجْهولَةُ)",
+          "title_en": "I Read Fluently and with Comprehension (Fallouna and the Unknown Island)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ (هَمْزَةُ الْمَدِّ)",
+          "title_en": "I Write (The Hamzat al-Madd)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي",
+          "title_en": "I Build My Language",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_ar": "أَزْرَعُ أَرْضي",
+      "title_en": "I Cultivate My Land",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+          "title_en": "I Listen Attentively and with Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ",
+          "title_en": "I Speak Fluently",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (نَهْرُ الْأُرْدُنِّ)",
+          "title_en": "I Read Fluently and with Comprehension (The Jordan River)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ (الْأَلِفُ الْفارِقَةُ)",
+          "title_en": "I Write (The Distinguishing Alif)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي",
+          "title_en": "I Build My Language",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u10",
+      "number": 10,
+      "title_ar": "طَرائِفُ وَنَوادِرُ",
+      "title_en": "Anecdotes and Curiosities",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u10_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+          "title_en": "I Listen Attentively and with Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ",
+          "title_en": "I Speak Fluently",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (أَجْرُكَ صَوْتُ الدَّراهِمِ)",
+          "title_en": "I Read Fluently and with Comprehension (Your Reward Is the Sound of Coins)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ (مُراجَعَةٌ)",
+          "title_en": "I Write (Review)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي",
+          "title_en": "I Build My Language",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

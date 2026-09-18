@@ -19,13 +19,13 @@
 
 export function buildSystemPromptAr(isTeacher: boolean, context?: string): string {
   const persona = isTeacher
-    ? "أنت **إقرأ (IQRA)**، مساعد التدريس الذكي المصمم خصيصًا للمعلمين في الأردن والعالم العربي."
-    : "أنت **إقرأ (IQRA)**، مساعد التعلم الذكي المصمم خصيصًا للطلاب في الأردن والعالم العربي.";
+    ? "أنت **اقرأ (IQRA)**، مساعد التدريس الذكي المصمم خصيصًا للمعلمين في الأردن والعالم العربي."
+    : "أنت **اقرأ (IQRA)**، مساعد التعلم الذكي المصمم خصيصًا للطلبة في الأردن والعالم العربي.";
 
   const base = `${persona}
 
 ## المهمة
-مساعدة ${isTeacher ? "المعلمين" : "الطلاب"} على ${isTeacher ? "توفير وقت التحضير، والارتقاء بالتجربة الصفية، وبناء مواد تعليمية عالية الجودة" : "فهم المفاهيم بعمق والتحضير للاختبارات"} — وكل ذلك متوافق مع المنهج الوطني الأردني.
+مساعدة ${isTeacher ? "المعلمين" : "الطلبة"} على ${isTeacher ? "توفير وقت التحضير، والارتقاء بالتجربة الصفية، وبناء مواد تعليمية عالية الجودة" : "فهم المفاهيم بعمق والتحضير للاختبارات"} — وكل ذلك متوافق مع المنهج الوطني الأردني.
 
 ## التخصص
 منهج الصف العاشر — الرياضيات والكيمياء (الفصلان الأول والثاني):
@@ -44,7 +44,7 @@ export function buildSystemPromptAr(isTeacher: boolean, context?: string): strin
 - **الدمج عند التعدد:** إذا احتوى السياق على مراجع متعددة، قارن بينها وأجب بشكل متكامل.
 
 ## معايير جودة الردود
-${isTeacher ? `عند إنشاء خطة درس، احرص على تضمين: الأهداف، المقدمة، الأنشطة، التدريب الموجّه، التقييم، الواجب، والتمييز بين مستويات الطلاب.
+${isTeacher ? `عند إنشاء خطة درس، احرص على تضمين: الأهداف، المقدمة، الأنشطة، التدريب الموجّه، التقييم، الواجب، والتمييز بين مستويات الطلبة.
 عند إنشاء ورقة عمل، احرص على: تعليمات واضحة، تنوع في الأسئلة، ومستوى مناسب مع مفتاح الإجابة.
 عند إنشاء اختبار، ضمّن: اختيار من متعدد، صح/خطأ، إجابة قصيرة، وأسئلة تفكير عليا.
 عند اقتراح نشاط صفي، فضّل: حل المسائل، العمل الجماعي، المناقشة، الاستقصاء، بطاقات الخروج — تجنّب الأنشطة السلبية.
@@ -122,8 +122,20 @@ Professional, supportive, confident, and clear. Never sound robotic. Never use e
  */
 export const CHAT_MAX_TOKENS = 1200;
 
-/** Turns of history the route forwards; older turns are dropped. */
-export const CHAT_HISTORY_TURNS = 12;
+/**
+ * Turns of history the route forwards; older turns are dropped.
+ *
+ * Was 12. Every forwarded turn is re-sent as input on every subsequent turn, so
+ * this multiplies the cost of a long conversation rather than adding to it —
+ * and chat is the one workload that can never be served from the shared
+ * artifact pool, so all of it is paid for live. Six still carries a
+ * back-and-forth about one homework problem, which is what the window is for;
+ * twelve was paying to re-send the start of a conversation nobody refers to.
+ *
+ * This bounds how *many* turns; the two ceilings below bound how *long* each
+ * one may be. Both are needed — see the note there.
+ */
+export const CHAT_HISTORY_TURNS = 6;
 
 /*
  * Ceilings on caller-supplied text reaching a prompt.

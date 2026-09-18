@@ -7,11 +7,23 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { canAdminSetPassword, isStrongPassword } from "../passwordPolicy.ts";
+import { canAdminSetPassword, isStrongPassword, MAX_PASSWORD_LENGTH } from "../passwordPolicy.ts";
 
 describe("isStrongPassword", () => {
   it("accepts a password with a letter and a digit", () => {
     assert.equal(isStrongPassword("teacher123"), true);
+  });
+
+  it("rejects a password past the upper bound", () => {
+    // bcrypt hashes the first 72 bytes and ignores the rest, so without a cap
+    // a 200-character passphrase and its first 72 characters are the same
+    // password — and whoever chose the long one has no way to find out.
+    const atLimit = "a1".padEnd(MAX_PASSWORD_LENGTH, "x");
+    const overLimit = "a1".padEnd(MAX_PASSWORD_LENGTH + 1, "x");
+
+    assert.equal(atLimit.length, MAX_PASSWORD_LENGTH);
+    assert.equal(isStrongPassword(atLimit), true, "the boundary itself is allowed");
+    assert.equal(isStrongPassword(overLimit), false);
   });
 
   it("rejects a password shorter than 8 characters", () => {

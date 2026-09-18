@@ -134,7 +134,8 @@ describe('subject isolation', () => {
       // Grade 6 joined 2026-09-13 and takes the unit form too — maths is
       // `unitLevel: true`, and only Grade 10 gets the bare `s1-u1` vocabulary,
       // so Grade 6 units tag `g6-math-s1-u1` with no risk of colliding with it.
-      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?|g8-math-s[12](-u\d+)?|g7-math-s[12](-u\d+)?|g6-math-s[12](-u\d+)?)$/,
+      // Grade 5 joined 2026-09-16, same shape as Grade 6.
+      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?|g8-math-s[12](-u\d+)?|g7-math-s[12](-u\d+)?|g6-math-s[12](-u\d+)?|g5-math-s[12](-u\d+)?|g4-math-s[12](-u\d+)?|g3-math-s[12](-u\d+)?)$/,
       // Chemistry is `unitLevel: true` in curriculumIds.ts, so a lesson emits
       // BOTH the semester scope and the narrower unit scope — `g9-chem-s1` and
       // `g9-chem-s1-u1`. The `(-u\d+)?` is doing real work here; a Grade 9
@@ -146,7 +147,8 @@ describe('subject isolation', () => {
       // 2026-09-09, Grade 7 joined 2026-09-12.
       'financial-literacy': /^(finlit-s[12]|g9-finlit-s[12]|g8-finlit-s[12]|g7-finlit-s[12])$/,
       // Digital Skills spans every grade the same way arabic/islamic do.
-      'digital-literacy': /^(digital-s[12]|g9-digital-s[12]|g8-digital-s[12]|g7-digital-s[12])$/,
+      // Grade 6 joined 2026-09-15, collapsing the per-grade enumeration.
+      'digital-literacy': /^(digital-s[12]|g\d+-digital-s[12])$/,
       // Social Studies only ever has Grade 7/8 books — it splits into
       // geography/history/civic-education from Grade 9 up, so there is no
       // bare or g9- form to allow (see subjectGradeCoverage.test.ts).
@@ -203,11 +205,13 @@ describe('subject isolation', () => {
       // Grade 9 predates Grade 7 here (no Grade 8 PE book exists at all).
       // Grade 7 joined 2026-09-12.
       'physical-education': /^g\d+-pe-s[12]$/,
-      // The combined «العلوم» books at Grades 6, 7 and 8, the only ones this
-      // subject has. No grade-10 alternative here: Grade 10 splits science into
-      // the four subjects above, so there is no bare `science-s[12]` form to
-      // allow. Grade 7 joined 2026-09-12, Grade 6 on 2026-09-13.
-      science: /^(g8-science-s[12]|g7-science-s[12]|g6-science-s[12])$/,
+      // The combined «العلوم» books at Grades 3, 4, 5, 6, 7 and 8, the only
+      // ones this subject has. No grade-10 alternative here: Grade 10 splits
+      // science into the four subjects above, so there is no bare
+      // `science-s[12]` form to allow. Grade 7 joined 2026-09-12, Grade 6 on
+      // 2026-09-13, Grade 5 on 2026-09-16, Grade 4 and Grade 3 both on
+      // 2026-09-17.
+      science: /^(g8-science-s[12]|g7-science-s[12]|g6-science-s[12]|g5-science-s[12]|g4-science-s[12]|g3-science-s[12])$/,
     };
     for (const lesson of KB_LESSONS) {
       const subjectId = getBookForLesson(lesson)?.subjectId;

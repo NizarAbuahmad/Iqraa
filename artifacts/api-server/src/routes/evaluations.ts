@@ -97,6 +97,20 @@ const GENERATABLE_TYPES = ALL_TYPES.filter(t => !NOT_AI_GENERATABLE.includes(t))
 const DIFFICULTIES: Difficulty[] = ["basic", "standard", "advanced"];
 const MAX_QUESTIONS = 50;
 
+/**
+ * How long a published exam's link stays open, from the most recent publish.
+ *
+ * A week: long enough that publishing on Sunday for a Thursday sitting needs no
+ * thought, and that a teacher re-opening the paper to check a mark afterwards
+ * still finds it live. Short enough that a photographed whiteboard stops being
+ * a roster of minors within the same school week.
+ *
+ * `studentAttempt.ts` enforces it. Attempts already in progress are unaffected:
+ * a student who has claimed a name holds a six-hour attempt token and never
+ * touches the code again.
+ */
+const SHARE_CODE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
 const trimmed = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
 
 /** Owned-or-404. Never distinguish "not yours" from "not there". */
@@ -1093,6 +1107,13 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
             updatedAt: new Date(),
             totalMarks: total.toFixed(2),
             shareCode: evaluation.shareCode ?? generateShareCode(),
+            // Refreshed on every publish, unlike the code itself, which is
+            // kept. A teacher who edits a paper the day before a sitting must
+            // not find the link they already wrote on the board has a week
+            // less life than they think. See the column's own note for why an
+            // expiry exists at all: the link hands a class list of minors to
+            // anyone holding it, and that used to be true forever.
+            shareCodeExpiresAt: new Date(Date.now() + SHARE_CODE_TTL_MS),
           })
           .where(eq(evaluations.id, evaluation.id))
           .returning();

@@ -32,6 +32,11 @@ concurrency:
   group: schema-check
   cancel-in-progress: false
 
+# See the note in ci.yml. This one reads production through DATABASE_URL and
+# reports; it writes nothing, to the database or to the repository.
+permissions:
+  contents: read
+
 jobs:
   verify:
     name: production tables present

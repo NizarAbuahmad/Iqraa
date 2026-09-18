@@ -91,7 +91,9 @@ describe('manifest shape', () => {
       // Grade 6 joined 2026-09-15. Slug is `eng`, not this record's `english` key.
       english: /^(eng-s[12]|g\d+-eng-s[12])$/,
       geography: /^geo-s[12]$/,
-      'digital-literacy': /^(digital-s[12]|g9-digital-s[12])$/,
+      // Grade 6 joined 2026-09-15. Slug is `digital`, not this record's
+      // `digital-literacy` key.
+      'digital-literacy': /^(digital-s[12]|g\d+-digital-s[12])$/,
       civic: /^civic-s[12]$/,
       // Grade 6 joined 2026-09-15. The id slug is `arts`, not this record's
       // `art` key — one of the spellings the comment above warns about.
@@ -301,6 +303,7 @@ describe('use policy — explicit licences', () => {
     // what `quotableAuthority.test.ts` catches from the other direction, by
     // reading the copyright page rather than the manifest.
     assert.ok(collins.length >= 39, `only ${collins.length} Collins rows licensed`);
+    assert.ok(collins.length >= 47, `only ${collins.length} Collins rows licensed`);
     for (const s of collins) {
       assert.equal(s.authority, 'nccd', s.id);
       assert.equal(usePolicy(s), 'quotable', s.id);

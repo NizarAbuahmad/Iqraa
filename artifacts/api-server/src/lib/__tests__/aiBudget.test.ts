@@ -19,6 +19,7 @@ import {
   getChatModel,
   getGenerationModel,
   getPricing,
+  getUserBudgetLimitUsd,
   pricedModels,
   recordAudioUsage,
 } from "../aiBudget.ts";
@@ -54,6 +55,69 @@ describe("getPricing", () => {
       const { input, output } = getPricing(model);
       assert.ok(output > input, `${model} prices output at or below input`);
     }
+  });
+});
+
+describe("per-user budget, by role", () => {
+  const KEYS = ["AI_USER_BUDGET_USD", "AI_STUDENT_BUDGET_USD"] as const;
+  const withEnv = (env: Partial<Record<(typeof KEYS)[number], string>>, fn: () => void) => {
+    const saved = Object.fromEntries(KEYS.map((k) => [k, process.env[k]]));
+    try {
+      for (const k of KEYS) delete process.env[k];
+      for (const [k, v] of Object.entries(env)) process.env[k] = v;
+      fn();
+    } finally {
+      for (const k of KEYS) {
+        if (saved[k] === undefined) delete process.env[k];
+        else process.env[k] = saved[k]!;
+      }
+    }
+  };
+
+  it("is off unless configured, so a deploy that forgets fails open", () => {
+    // Zero means no cap. The alternative — defaulting to some number — would
+    // turn a missing env var into a silent outage for every teacher.
+    withEnv({}, () => {
+      assert.equal(getUserBudgetLimitUsd(), 0);
+      assert.equal(getUserBudgetLimitUsd("student"), 0);
+    });
+  });
+
+  it("bills a student against the student var, everyone else against the teacher one", () => {
+    withEnv({ AI_USER_BUDGET_USD: "1.00", AI_STUDENT_BUDGET_USD: "0.20" }, () => {
+      assert.equal(getUserBudgetLimitUsd("student"), 0.2);
+      assert.equal(getUserBudgetLimitUsd("teacher"), 1);
+      assert.equal(getUserBudgetLimitUsd("school_admin"), 1);
+      // The reason the two are separate at all: a class is thirty students and
+      // their traffic is chat, which can never be served from the shared pool.
+      assert.ok(getUserBudgetLimitUsd("student") < getUserBudgetLimitUsd("teacher"));
+    });
+  });
+
+  it("reads an unknown or missing role as a teacher, not as a student", () => {
+    // A new role must not silently land on the tighter cap.
+    withEnv({ AI_USER_BUDGET_USD: "1.00", AI_STUDENT_BUDGET_USD: "0.20" }, () => {
+      assert.equal(getUserBudgetLimitUsd(), 1);
+      assert.equal(getUserBudgetLimitUsd(null), 1);
+      assert.equal(getUserBudgetLimitUsd("parent"), 1);
+      assert.equal(getUserBudgetLimitUsd("some_future_role"), 1);
+    });
+  });
+
+  it("ignores junk and negatives rather than capping at them", () => {
+    withEnv({ AI_USER_BUDGET_USD: "not-a-number", AI_STUDENT_BUDGET_USD: "-5" }, () => {
+      assert.equal(getUserBudgetLimitUsd("teacher"), 0);
+      assert.equal(getUserBudgetLimitUsd("student"), 0);
+    });
+  });
+
+  it("a student cap set alone does not cap teachers", () => {
+    // The two are independent on purpose: capping students during a pilot must
+    // not require capping the teachers you are piloting with.
+    withEnv({ AI_STUDENT_BUDGET_USD: "0.20" }, () => {
+      assert.equal(getUserBudgetLimitUsd("student"), 0.2);
+      assert.equal(getUserBudgetLimitUsd("teacher"), 0);
+    });
   });
 });
 

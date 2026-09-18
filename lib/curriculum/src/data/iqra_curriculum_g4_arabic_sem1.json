@@ -1,0 +1,332 @@
+{
+  "meta": {
+    "grade": "الصف الرابع",
+    "grade_en": "Grade 4",
+    "subject": "اللغة العربية",
+    "subject_en": "Arabic",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة اللغة العربية للصف الرابع الفصل الأول (g4-arabic-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت البنيةُ من فهرسِ كتابِ الطالبِ (ص 4-5) في 2026-09-17، وقُرِئَ من ملفِّ PDF مباشرةً عبرَ PyMuPDF — الاستخراجُ نظيفٌ تمامًا لهذا الكتابِ، كما في كتابِ الصفِّ الخامسِ المُماثِلِ (g5ArabicSem1.ts).",
+    "known_gaps": [
+      "هذا الكتابُ title-only باختيارٍ لا بعُطلٍ في الاستخراجِ: كلُّ وحدةٍ من وحداتِ هذا الكتابِ خمسةُ دروسٍ بأنماطٍ ثابتةٍ (أستمعُ، أتحدّثُ، أقرأُ، أكتبُ، أبني لغتي)، ومحتوى كلِّ درسٍ تمارينُ تفاعليَّةٌ (اختيارٌ من متعدِّدٍ، مطابقةٌ، إكمالُ فراغٍ) لا فقرةَ ملخَّصةً بأسلوبِ «الفكرةِ الرئيسةِ» كما في كتبِ الرياضيّاتِ والعلومِ والدراساتِ الاجتماعيّةِ. أمّا «كفاياتُ الوحدةِ» المطبوعةُ في افتتاحيّةِ كلِّ وحدةٍ فقائمةُ مهاراتٍ عامّةٍ تتكرَّرُ شِبهَ حرفيًّا بين الوحداتِ، فليست خاصَّةً بمحتوى الدرسِ الواحدِ بما يكفي لتُعَدَّ objectives مفيدةً.",
+      "عنوانُ كلِّ درسٍ هنا يجمعُ نمطَ الدرسِ الثابتَ مع موضوعِهِ الأدبيِّ أو النَّحويِّ الخاصِّ بين قوسينِ، كما يطبعُهما الفهرسُ معًا (بعضُ دروسِ «أستمعُ» لا يحملُ موضوعًا خاصًّا في الفهرسِ)؛ main_idea_ar و objectives و vocabulary فارغةٌ.",
+      "الفصلُ الدراسيُّ الثاني من هذا الكتابِ (iqra_curriculum_g4_arabic_sem2.json) يحمِلُ نفسَ البنيةَ، والوحداتُ فيه مرقَّمةٌ 6-10 استمرارًا لترقيمِ هذا الفصلِ — وهذا مطبوعٌ في فهرسِ كتابِ الفصلِ الثاني نفسِهِ (الوحدةُ السادسةُ ... العاشرةُ)، لا مجرَّدَ اصطلاحٍ داخليٍّ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "مِنْ قَصَصِ الْقُرْآنِ الْكَريمِ",
+      "title_en": "From the Stories of the Noble Quran",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+          "title_en": "I Listen Attentively and with Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (أَسْرُدُ قِصَّةً بِالاسْتِعانَةِ بِالأَسْئِلَةِ وَإِجاباتِها)",
+          "title_en": "I Speak Fluently (I Narrate a Story with the Help of Questions and Answers)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (نَمْلَةُ سُلَيْمانَ عَلَيْهِ السَّلامُ)",
+          "title_en": "I Read Fluently and with Comprehension (Solomon's Ant)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ (الْهَمَزاتُ في بِداياتِ الْكَلِماتِ)",
+          "title_en": "I Write (Hamzas at the Start of Words)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
+          "title_en": "I Build My Language (Imitating Language Patterns)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "هِوايَتي",
+      "title_en": "My Hobby",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+          "title_en": "I Listen Attentively and with Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (أَتَحَدَّثُ عَنْ هِوايَتي)",
+          "title_en": "I Speak Fluently (I Talk About My Hobby)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (لَوْحَةُ طارِقٍ)",
+          "title_en": "I Read Fluently and with Comprehension (Tariq's Painting)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ (التّاءُ وَالْهاءُ في نِهاياتِ الْكَلِماتِ)",
+          "title_en": "I Write (Ta' and Ha' at the End of Words)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
+          "title_en": "I Build My Language (Imitating Language Patterns)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "أُحِبُّ وَطَني",
+      "title_en": "I Love My Homeland",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+          "title_en": "I Listen Attentively and with Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (أَتَحَدَّثُ عَنْ مُحافَظَةٍ مِنْ مُحافَظاتِ الأُرْدُنِّ)",
+          "title_en": "I Speak Fluently (I Talk About One of Jordan's Governorates)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (السَّلامُ الْمَلَكِيُّ)",
+          "title_en": "I Read Fluently and with Comprehension (The Royal Anthem)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ مُحْتَوًى (الْهَمْزَةُ الْمُتَوَسِّطَةُ)",
+          "title_en": "I Write Content (The Medial Hamza)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
+          "title_en": "I Build My Language (Imitating Language Patterns)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "الْغِذاءُ الْمُتَوازِنُ",
+      "title_en": "Balanced Nutrition",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+          "title_en": "I Listen Attentively and with Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (أَتَحَدَّثُ عَنِ الْمَجْموعاتِ الْغِذائِيَّةِ في الْهَرَمِ الْغِذائِيِّ)",
+          "title_en": "I Speak Fluently (I Talk About the Food Groups in the Food Pyramid)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (صِحَّتُنا في غِذائِنا)",
+          "title_en": "I Read Fluently and with Comprehension (Our Health Is in Our Food)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ (عَلاماتُ التَّرْقيمِ (،) وَ(:) وَ(؟))",
+          "title_en": "I Write (Punctuation Marks: Comma, Colon, Question Mark)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
+          "title_en": "I Build My Language (Imitating Language Patterns)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "الْبيئَةُ مِنْ حَوْلِنا",
+      "title_en": "The Environment Around Us",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+          "title_en": "I Listen Attentively and with Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلاقَةٍ (أَتَحَدَّثُ عَنْ دَوْرَةِ الْماءِ في الطَّبيعَةِ)",
+          "title_en": "I Speak Fluently (I Talk About the Water Cycle in Nature)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (النَّحْلُ)",
+          "title_en": "I Read Fluently and with Comprehension (The Bee)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l4",
+          "order": 4,
+          "title_ar": "أَكْتُبُ (كَلِماتٌ فيها حُروفٌ تُنْطَقُ وَلا تُكْتَبُ)",
+          "title_en": "I Write (Words with Letters that Are Pronounced but Not Written)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l5",
+          "order": 5,
+          "title_ar": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
+          "title_en": "I Build My Language (Imitating Language Patterns)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

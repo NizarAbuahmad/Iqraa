@@ -1483,6 +1483,7 @@
       "semester": 1,
       "kind": "student-book",
       "authority": "nccd",
+      "license": "nccd-collins",
       "status": "duplicate",
       "filename": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الأول.pdf",
       "authorAr": null,
@@ -1541,6 +1542,7 @@
       "semester": 2,
       "kind": "student-book",
       "authority": "nccd",
+      "license": "nccd-collins",
       "status": "duplicate",
       "filename": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الثاني.pdf",
       "authorAr": null,
@@ -1566,6 +1568,7 @@
       "semester": 1,
       "kind": "teacher-guide",
       "authority": "nccd",
+      "license": "nccd-collins",
       "status": "ingested",
       "filename": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الأول.pdf",
       "authorAr": null,
@@ -1590,6 +1593,7 @@
       "semester": 2,
       "kind": "teacher-guide",
       "authority": "nccd",
+      "license": "nccd-collins",
       "status": "ingested",
       "filename": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الثاني.pdf",
       "authorAr": null,
@@ -1890,7 +1894,8 @@
         "chars": 46557,
         "localPath": "attached_assets/knowledge-base-pending/chem-s1-summary-shawata.pdf",
         "sha256": "ec3ca27a2c474c36d8acc4871029e8c677f531362a788e6dceb3ad0fe3623f3a"
-      }
+      },
+      "notes": "نص الاستخراج غير قابل للقراءة — decoded against the wrong font cmap, so the text is Arabic letters that spell nothing («ػذد ١ِّضاد اٌط١ف»). Found 2026-09-16 by the new blindness gate in textQuality.ts, which rejects it; the file on disk predates that gate and is still served. Reference-only (teacher-authored), so it reaches prompts as context and is never quoted into a worksheet. Remedy is re-extraction with --force --ocr, not deletion."
     },
     {
       "id": "chem-s2-pack-sartawi",
@@ -1945,7 +1950,8 @@
         "chars": 78249,
         "localPath": "attached_assets/knowledge-base-pending/chem-s2-pack-shawata.pdf",
         "sha256": "4d4249ce3e3efa693c23b5add1be17557b792cc6c7e0bec139ea463e01b186af"
-      }
+      },
+      "notes": "نص الاستخراج غير قابل للقراءة — decoded against the wrong font cmap, so the text is Arabic letters that spell nothing («ػذد ١ِّضاد اٌط١ف»). Found 2026-09-16 by the new blindness gate in textQuality.ts, which rejects it; the file on disk predates that gate and is still served. Reference-only (teacher-authored), so it reaches prompts as context and is never quoted into a worksheet. Remedy is re-extraction with --force --ocr, not deletion."
     },
     {
       "id": "chem-s2-pack-almasri",
@@ -5349,6 +5355,2779 @@
         "chars": 514686,
         "localPath": "knowledge-base/grade-6-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية الصف السادس الفصل الثاني.pdf",
         "sha256": "ddb61cb49f2724887217c1a2a927226b40a31e841bccb0e5a3fbfcccbcfd5389"
+      }
+    },
+    {
+      "id": "g6-digital-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+      "bytes": 14549800,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "digital-literacy",
+        "سادس",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "لا كتابَ طالبٍ لهذهِ المادَّةِ في الملفّاتِ المرسَلةِ، ولا كتابَ فصلٍ ثانٍ. هذا الكتابُ ودليلُ المعلِّمِ هما المصدرانِ الوحيدانِ، وعنهُما أُخِذَتْ بِنيةُ الوحداتِ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 175,
+        "chars": 244166,
+        "localPath": "knowledge-base/grade-6-digital-literacy/support-pdfs/كتاب الأنشطة لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+        "sha256": "e5276f6b434487424218a6ac91730e845d8e5720d50a39c98987cbae19b67677"
+      }
+    },
+    {
+      "id": "g6-digital-s1-teacher-guide",
+      "title": "دليل المعلم لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+      "bytes": 6082571,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "digital-literacy",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 64% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-15",
+        "pages": 99,
+        "chars": 93581,
+        "localPath": "knowledge-base/grade-6-digital-literacy/support-pdfs/دليل المعلم لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+        "sha256": "3d8338817c057b9bb293d189d4c34d8650915475b610f4c0b23c45dbf6b3362f"
+      },
+      "notes": "رفضَ pdf-parse هذا الملفَّ فاستُخرِجَ بـ OCR؛ صالحٌ للبحثِ لا للاقتباسِ الحرفيِّ."
+    },
+    {
+      "id": "g6-math-s1-exercise-book",
+      "title": "كتاب التمارين لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+      "bytes": 6566172,
+      "subject": "math",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "كتاب التمارين",
+        "الفصل الأول"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 62,
+        "chars": 67625,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+        "sha256": "96641139ed4450d9b88d43fa57f0745c85212124770679d7e4a0ae6ad30f966c"
+      }
+    },
+    {
+      "id": "g6-math-s2-exercise-book",
+      "title": "كتاب التمارين لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+      "bytes": 12160677,
+      "subject": "math",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "كتاب التمارين",
+        "الفصل الثاني"
+      ],
+      "notes": "الفصلُ الثاني من الرياضيّاتِ لا كتابَ طالبٍ لهُ في الملفّاتِ المرسَلةِ — كتابُ التمارينِ ودليلُ المعلِّمِ فقط — ولذلكَ لا فهرسَ لوحداتِ الفصلِ الثاني.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 56,
+        "chars": 58117,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+        "sha256": "e30049f340fd890f8413ff1ac9c0942701fbf67290a79a68cd160655ac556945"
+      }
+    },
+    {
+      "id": "g6-math-s1-teacher-guide",
+      "title": "دليل المعلم لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+      "bytes": 44418494,
+      "subject": "math",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "يحملُ عددَ الحصصِ ونتاجاتِ الدروسِ للفصلِ الأوَّلِ — وهيَ الحقولُ الفارغةُ في iqra_curriculum_g6_math_sem1.json. سُجِّلَ واستُخرِجَ هنا حتّى يصيرَ مصدرًا متاحًا لملئِها لاحقًا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 228,
+        "chars": 567603,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+        "sha256": "1127391a1be32c2f881df5350d9acf51ae12e6a1f25457b6515f62102287c2a0"
+      }
+    },
+    {
+      "id": "g6-math-s2-teacher-guide",
+      "title": "دليل المعلم لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+      "bytes": 58182541,
+      "subject": "math",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 247,
+        "chars": 609598,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف السادس الفصل الثاني.pdf",
+        "sha256": "0654470f4eab65ae26da0d3e04180e332e37bb645bd529db11a2842593085ba8"
+      }
+    },
+    {
+      "id": "g6-math-s2-support-guide",
+      "title": "دليل المعلم إلى المواد المساندة للتعلم الرياضيات سادس الفصل الثاني.pdf",
+      "bytes": 1789501,
+      "subject": "math",
+      "semester": 2,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم إلى المواد المساندة للتعلم الرياضيات سادس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g6-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-6",
+        "math",
+        "سادس",
+        "دليل المواد المساندة",
+        "الفصل الثاني"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 32,
+        "chars": 42220,
+        "localPath": "knowledge-base/grade-6-math/support-pdfs/دليل المعلم إلى المواد المساندة للتعلم الرياضيات سادس الفصل الثاني.pdf",
+        "sha256": "c47ee61f62a0c64dd6cfcfe20cd90e014ee1aa55837112eabbba9f0e37541053"
+      }
+    },
+    {
+      "id": "g4-math-s1-student-book",
+      "title": "كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الأول.pdf",
+      "bytes": 12436432,
+      "subject": "math",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رياضيات",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 12.1% مقيسةً بشواهدِ الكلماتِ، و6 صفحةً من 105 مقلوبةٌ في مُعظَمِها (38، 39، 40، 41، 56، 86).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 105,
+        "chars": 138591,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الأول.pdf",
+        "sha256": "93fe8d2335a99675cd9b4f562cf9045e9cbee15bdaad65fa8a52f869b66c1808"
+      }
+    },
+    {
+      "id": "g4-math-s2-student-book",
+      "title": "كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+      "bytes": 24173373,
+      "subject": "math",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رياضيات",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.1% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 129 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 129,
+        "chars": 158876,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+        "sha256": "91f97f5cf0705faa4cab94e3866e6b8dd4d168aa45aad8befb8980470f0773b6"
+      }
+    },
+    {
+      "id": "g4-math-s1-exercise-book",
+      "title": "كتاب التمارين لمادة الرياضيات الصف الرابع الفصل الأول.pdf",
+      "bytes": 3540741,
+      "subject": "math",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الرياضيات الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رياضيات",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 10.7% مقيسةً بشواهدِ الكلماتِ، و1 صفحةً من 60 مقلوبةٌ في مُعظَمِها (37).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 60,
+        "chars": 50475,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف الرابع الفصل الأول.pdf",
+        "sha256": "f487ffbda3382c75a9ef95487f47d71dc05388cc35c6ab74c218d0ee6ec55619"
+      }
+    },
+    {
+      "id": "g4-math-s2-exercise-book",
+      "title": "كتاب التمارين لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+      "bytes": 2657393,
+      "subject": "math",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رياضيات",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.5% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 58 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 58,
+        "chars": 49600,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+        "sha256": "c03d94681440e4a6261dc739f419c9e11f209117f78279d54f3a81f39d4edd21"
+      }
+    },
+    {
+      "id": "g4-math-s1-teacher-guide",
+      "title": "دليل المعلم لمادة الرياضيات الصف الرابع الفصل الأول 2023.pdf",
+      "bytes": 39075881,
+      "subject": "math",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الرياضيات الصف الرابع الفصل الأول 2023.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رياضيات",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.1% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 208 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 208,
+        "chars": 502688,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف الرابع الفصل الأول 2023.pdf",
+        "sha256": "5defd62e1f9441b8047fdd16e2bffd3b48f8e5177dfaec05b23dcd3cb4b02f5a"
+      }
+    },
+    {
+      "id": "g4-math-s2-teacher-guide",
+      "title": "دليل المعلم لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+      "bytes": 48768398,
+      "subject": "math",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رياضيات",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.3% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 223 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 223,
+        "chars": 529507,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف الرابع الفصل الثاني.pdf",
+        "sha256": "928f53b766f0191f6fec3a044ec53df905bdaefb4d51b4153a99e2222e1a8320"
+      }
+    },
+    {
+      "id": "g4-math-s2-support-guide",
+      "title": "دليل المعلم إلى المواد المساندة للتعلم الرياضيات رابع الفصل الثاني.pdf",
+      "bytes": 1620449,
+      "subject": "math",
+      "semester": 2,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم إلى المواد المساندة للتعلم الرياضيات رابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رياضيات",
+        "رابع",
+        "مواد مساندة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.0% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 32 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 32,
+        "chars": 31438,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/دليل المعلم إلى المواد المساندة للتعلم الرياضيات رابع الفصل الثاني.pdf",
+        "sha256": "6f048da2ede9a348a728441e8241f5cf387699906d2ca8a61d8478f08e6b3d00"
+      }
+    },
+    {
+      "id": "g4-science-s1-student-book",
+      "title": "كتاب الطالب لمادة العلوم الصف الرابع الفصل الأول.pdf",
+      "bytes": 24724101,
+      "subject": "science",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "science",
+        "علوم",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.5% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 88 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 88,
+        "chars": 83201,
+        "localPath": "knowledge-base/grade-4-science/support-pdfs/كتاب الطالب لمادة العلوم الصف الرابع الفصل الأول.pdf",
+        "sha256": "8f6a4d17726ce00233c137f690a792d6cdd870b440ca71cb4c7e335683967f0b"
+      }
+    },
+    {
+      "id": "g4-science-s2-student-book",
+      "title": "كتاب الطالب لمادة العلوم الصف الرابع الفصل الثاني.pdf",
+      "bytes": 51216775,
+      "subject": "science",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "science",
+        "علوم",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.7% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 102 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 102,
+        "chars": 98976,
+        "localPath": "knowledge-base/grade-4-science/support-pdfs/كتاب الطالب لمادة العلوم الصف الرابع الفصل الثاني.pdf",
+        "sha256": "1ae48d69a57250f1f663f1ba129b3c34183c65eadcf2359ed56e1e7a8f4e097d"
+      }
+    },
+    {
+      "id": "g4-science-s1-activity-book",
+      "title": "كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الأول.pdf",
+      "bytes": 4829883,
+      "subject": "science",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "science",
+        "علوم",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 2.3% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 36 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 36,
+        "chars": 49735,
+        "localPath": "knowledge-base/grade-4-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الأول.pdf",
+        "sha256": "cd365b408f6257a10eb9905b994e8643887dee84c57a1c524991f0e655de449b"
+      }
+    },
+    {
+      "id": "g4-science-s2-activity-book",
+      "title": "كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الثاني.pdf",
+      "bytes": 8697243,
+      "subject": "science",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "science",
+        "علوم",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.9% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 42 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 42,
+        "chars": 48989,
+        "localPath": "knowledge-base/grade-4-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف الرابع الفصل الثاني.pdf",
+        "sha256": "26e80ea5e47214d124ffb54eb561fd4b18dc51c5fce9811aa2855b64b62c91a0"
+      }
+    },
+    {
+      "id": "g4-science-s1-teacher-guide",
+      "title": "دليل المعلم لمادة العلوم الصف الرابع الفصل الأول.pdf",
+      "bytes": 53874620,
+      "subject": "science",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العلوم الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "science",
+        "علوم",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 95% of samples — readable by eye, not quotable). نسبةُ انعكاسِ الحروفِ 0.4% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 178 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 95% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-15",
+        "pages": 178,
+        "chars": 262299,
+        "localPath": "knowledge-base/grade-4-science/support-pdfs/دليل المعلم لمادة العلوم الصف الرابع الفصل الأول.pdf",
+        "sha256": "534cf146ee0e8cea23db2f95279eb0dca7e07d5a9be9560984cc311e6584715a"
+      }
+    },
+    {
+      "id": "g4-science-s2-teacher-guide",
+      "title": "دليل المعلم العلوم الصف الرابع الفصل الثاني.pdf",
+      "bytes": 43009628,
+      "subject": "science",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم العلوم الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "science",
+        "علوم",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 91% of samples — readable by eye, not quotable). نسبةُ انعكاسِ الحروفِ 0.2% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 164 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 91% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-15",
+        "pages": 164,
+        "chars": 217379,
+        "localPath": "knowledge-base/grade-4-science/support-pdfs/دليل المعلم العلوم الصف الرابع الفصل الثاني.pdf",
+        "sha256": "459124a90447bd7a0ab167eb19c3e2632414aa7512c83f6eeb62e39507d6f31e"
+      }
+    },
+    {
+      "id": "g4-arabic-s1-student-book",
+      "title": "كتاب الطالب لمادة اللغة العربية للصف الرابع الفصل الأول.pdf",
+      "bytes": 39855413,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة العربية للصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "arabic",
+        "لغة عربية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping). نسبةُ انعكاسِ الحروفِ 1.4% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 136 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-15",
+        "pages": 136,
+        "chars": 63592,
+        "localPath": "knowledge-base/grade-4-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف الرابع الفصل الأول.pdf",
+        "sha256": "d42661fe4f86d1f08f37ef36eaa58b40ada3e3e4d9402fa8c9016d185c5bd9f8"
+      }
+    },
+    {
+      "id": "g4-arabic-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة العربية للصف الرابع الفصل الثاني.pdf",
+      "bytes": 38006232,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة العربية للصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "arabic",
+        "لغة عربية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "أُعيدَ الاستخراجُ في 2026-09-16 بأداةِ tesseract-ocr (--ocr requested). من أصلِ 84 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ. تقلَّصَ عددُ المحارفِ من 136856 إلى 60968 (55%-)، وهو مُتوقَّعٌ: الرقمُ السابقُ كانَ يَعُدُّ الحروفَ المشوَّهةَ أيضًا، والنصُّ الحاليُّ مقروءٌ بكاملِهِ.  المقياسُ هنا هو تعذُّرُ قراءةِ الصفحةِ، وقد حلَّ محلَّ نسبةِ الانعكاسِ التي سُجِّلَتْ في أوّلِ إدراجٍ لهذا المصدرِ: تلكَ النسبةُ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً، فإذا اختلَّتِ المسافاتُ أو تبعثرَتِ الحروفُ داخلَ الكلمةِ سقطَتْ من الحسابِ صورتاها، فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ — سجَّلَتْ 0.4% لكتابٍ 47% من صفحاتِهِ النثريّةِ غيرُ مقروءةٍ. ونصُّ التعرّفِ الضوئيِّ درجةٌ أدنى من استخراجٍ رقميٍّ نظيفٍ: صالحٌ للتأسيسِ مع ذكرِ رقمِ الصفحةِ، ويُراجَعُ بالعينِ قبلَ أيِّ اقتباسٍ يراهُ معلّمٌ.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-16",
+        "pages": 140,
+        "chars": 60968,
+        "localPath": "knowledge-base/grade-4-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف الرابع الفصل الثاني.pdf",
+        "sha256": "c52ea96bb1df268c1bf36310ff8f3588855b163ee793bde09cd042331477db2b"
+      }
+    },
+    {
+      "id": "g4-arabic-s1-exercise-book",
+      "title": "كتاب التمارين لمادة العربية لغتي للصف الرابع الفصل الأول.pdf",
+      "bytes": 7129144,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة العربية لغتي للصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "arabic",
+        "لغة عربية",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping). نسبةُ انعكاسِ الحروفِ 1.3% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 56 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-15",
+        "pages": 56,
+        "chars": 25984,
+        "localPath": "knowledge-base/grade-4-arabic/support-pdfs/كتاب التمارين لمادة العربية لغتي للصف الرابع الفصل الأول.pdf",
+        "sha256": "615e1be617e5aca8ca9bfd2a5c9f47ed8f3e9c1b4b6d413f33baab29d912507b"
+      }
+    },
+    {
+      "id": "g4-arabic-s2-exercise-book",
+      "title": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف الرابع الفصل الثاني.pdf",
+      "bytes": 10354321,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "arabic",
+        "لغة عربية",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 8.9% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 56 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 56,
+        "chars": 56984,
+        "localPath": "knowledge-base/grade-4-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف الرابع الفصل الثاني.pdf",
+        "sha256": "5b9f7e35012d8bd96166ec4feb13bb57a08d9a534776bf98f44c8649c324fd94"
+      }
+    },
+    {
+      "id": "g4-arabic-s1-teacher-guide",
+      "title": "دليل المعلم لمادة العربية لغتي الصف الرابع الفصل الأول.pdf",
+      "bytes": 46890592,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العربية لغتي الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "arabic",
+        "لغة عربية",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 8.3% مقيسةً بشواهدِ الكلماتِ، و1 صفحةً من 212 مقلوبةٌ في مُعظَمِها (3).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 212,
+        "chars": 463034,
+        "localPath": "knowledge-base/grade-4-arabic/support-pdfs/دليل المعلم لمادة العربية لغتي الصف الرابع الفصل الأول.pdf",
+        "sha256": "61603e9ca493fc74595ef8b3501f77bd64cfa397e20c233ccd7bc37674d18acd"
+      }
+    },
+    {
+      "id": "g4-english-s1-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+      "bytes": 41345920,
+      "subject": "english",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "english",
+        "لغة إنجليزية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ، فقياسُ انعكاسِ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 60,
+        "chars": 67893,
+        "localPath": "knowledge-base/grade-4-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+        "sha256": "311fd299fb1e6b682e9cea9aa0bc743a54103e2d0832c93ca4984f9ec38c1119"
+      }
+    },
+    {
+      "id": "g4-english-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+      "bytes": 43735218,
+      "subject": "english",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "english",
+        "لغة إنجليزية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "تعذَّرَ استخراجُ النصِّ المضمَّنِ لعطبٍ في خريطةِ محارفِ الخطِّ — كانتِ الحروفُ اللاتينيّةُ تُقرَأُ رموزًا عربيّةً، فبلغَتْ نسبةُ المحارفِ اللاتينيّةِ صِفرًا في كتابٍ إنجليزيٍّ. أُعيدَ الاستخراجُ بالتعرّفِ الضوئيِّ (tesseract) في 2026-09-16 فعادَ النصُّ سليمًا: 70.5% من محارفِهِ لاتينيّةٌ، ونثرُهُ إنجليزيٌّ مقروءٌ. الرَّسْتَرَةُ تتجاوزُ عطبَ الخطِّ لأنّها تقرأُ ما طُبِعَ على الصفحةِ لا ما رُمِّزَ فيها. يُعامَلُ كدرجةٍ أدنى من استخراجٍ رقميٍّ نظيفٍ. ومُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-15",
+        "pages": 60,
+        "chars": 62690,
+        "localPath": "knowledge-base/grade-4-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+        "sha256": "e9fbc8c345bf3c461f6d4f54b7fd829334a64612a2dcac4d5242e5426775ab83"
+      }
+    },
+    {
+      "id": "g4-english-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+      "bytes": 4729119,
+      "subject": "english",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "english",
+        "لغة إنجليزية",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ، فقياسُ انعكاسِ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 56,
+        "chars": 43513,
+        "localPath": "knowledge-base/grade-4-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+        "sha256": "6d467e4699c2caefa94ed911503d8b072e74179e084fbf04bd00b4bed7a4bb02"
+      }
+    },
+    {
+      "id": "g4-english-s2-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+      "bytes": 19215373,
+      "subject": "english",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "english",
+        "لغة إنجليزية",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "تعذَّرَ استخراجُ النصِّ المضمَّنِ لعطبٍ في خريطةِ محارفِ الخطِّ — كانتِ الحروفُ اللاتينيّةُ تُقرَأُ رموزًا عربيّةً، فبلغَتْ نسبةُ المحارفِ اللاتينيّةِ صِفرًا في كتابٍ إنجليزيٍّ. أُعيدَ الاستخراجُ بالتعرّفِ الضوئيِّ (tesseract) في 2026-09-16 فعادَ النصُّ سليمًا: 70.0% من محارفِهِ لاتينيّةٌ، ونثرُهُ إنجليزيٌّ مقروءٌ. الرَّسْتَرَةُ تتجاوزُ عطبَ الخطِّ لأنّها تقرأُ ما طُبِعَ على الصفحةِ لا ما رُمِّزَ فيها. يُعامَلُ كدرجةٍ أدنى من استخراجٍ رقميٍّ نظيفٍ. ومُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-15",
+        "pages": 56,
+        "chars": 42151,
+        "localPath": "knowledge-base/grade-4-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+        "sha256": "564a130116dc0ceab9913dea2abb5d47de0ec00af52cec65715d2e225b987203"
+      }
+    },
+    {
+      "id": "g4-english-s1-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+      "bytes": 37525259,
+      "subject": "english",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "english",
+        "لغة إنجليزية",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ، فقياسُ انعكاسِ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 134,
+        "chars": 411280,
+        "localPath": "knowledge-base/grade-4-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف الرابع الفصل الأول.pdf",
+        "sha256": "f01e4ae8acd35c4d6f8089a39c503271578fbab443f24a93dec22446280e632b"
+      }
+    },
+    {
+      "id": "g4-english-s2-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+      "bytes": 40801568,
+      "subject": "english",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "english",
+        "لغة إنجليزية",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "تعذَّرَ استخراجُ النصِّ المضمَّنِ لعطبٍ في خريطةِ محارفِ الخطِّ — كانتِ الحروفُ اللاتينيّةُ تُقرَأُ رموزًا عربيّةً، فبلغَتْ نسبةُ المحارفِ اللاتينيّةِ صِفرًا في كتابٍ إنجليزيٍّ. أُعيدَ الاستخراجُ بالتعرّفِ الضوئيِّ (tesseract) في 2026-09-16 فعادَ النصُّ سليمًا: 75.1% من محارفِهِ لاتينيّةٌ، ونثرُهُ إنجليزيٌّ مقروءٌ. الرَّسْتَرَةُ تتجاوزُ عطبَ الخطِّ لأنّها تقرأُ ما طُبِعَ على الصفحةِ لا ما رُمِّزَ فيها. يُعامَلُ كدرجةٍ أدنى من استخراجٍ رقميٍّ نظيفٍ. ومُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-15",
+        "pages": 132,
+        "chars": 397794,
+        "localPath": "knowledge-base/grade-4-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف الرابع الفصل الثاني.pdf",
+        "sha256": "670fde4b4c4dfc27b51e736199eade51ecca8b1173813ff552b70accca287c81"
+      }
+    },
+    {
+      "id": "g4-islamic-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf",
+      "bytes": 44834969,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "islamic",
+        "تربية إسلامية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 1.1% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 90 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 90,
+        "chars": 93350,
+        "localPath": "knowledge-base/grade-4-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf",
+        "sha256": "f3407c5d45f8e707bbb10ec7e4a5a35ebd8a704b819370e4cb67df61839c6c48"
+      }
+    },
+    {
+      "id": "g4-islamic-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf",
+      "bytes": 55724745,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "islamic",
+        "تربية إسلامية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 0.7% مقيسةً بشواهدِ الكلماتِ، و1 صفحةً من 114 مقلوبةٌ في مُعظَمِها (92).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 114,
+        "chars": 113578,
+        "localPath": "knowledge-base/grade-4-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf",
+        "sha256": "06900efc202f7759047f066a8a1d2fd954a184e7442a8ed8853773ae46d8d008"
+      }
+    },
+    {
+      "id": "g4-islamic-s1-teacher-guide",
+      "title": "دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf",
+      "bytes": 57001801,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "islamic",
+        "تربية إسلامية",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 1.1% مقيسةً بشواهدِ الكلماتِ، و0 صفحةً من 224 مقلوبةٌ في مُعظَمِها.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 224,
+        "chars": 369318,
+        "localPath": "knowledge-base/grade-4-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf",
+        "sha256": "698b4be1c8563dd51ee954f8c788d0e55fba1acd4a1d909d0f2efe0bd681a159"
+      }
+    },
+    {
+      "id": "g4-islamic-s2-teacher-guide",
+      "title": "دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf",
+      "bytes": 64253561,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "islamic",
+        "تربية إسلامية",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 2.7% مقيسةً بشواهدِ الكلماتِ، و1 صفحةً من 256 مقلوبةٌ في مُعظَمِها (46).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 256,
+        "chars": 437049,
+        "localPath": "knowledge-base/grade-4-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf",
+        "sha256": "f4974a38ed1c321138469fe741c92d432389e55718038b2b31ca6e71be238c77"
+      }
+    },
+    {
+      "id": "g4-social-s1-student-book",
+      "title": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الأول.pdf",
+      "bytes": 22639631,
+      "subject": "social",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-social-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "social",
+        "دراسات اجتماعية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 17.2% مقيسةً بشواهدِ الكلماتِ، و3 صفحةً من 80 مقلوبةٌ في مُعظَمِها (9، 12، 18).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 80,
+        "chars": 89017,
+        "localPath": "knowledge-base/grade-4-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الأول.pdf",
+        "sha256": "fe0a504643e8c6cd9c96e8345443423040bc7132a0944adefe5f3a0b6708f91b"
+      }
+    },
+    {
+      "id": "g4-social-s2-student-book",
+      "title": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الثاني.pdf",
+      "bytes": 18311632,
+      "subject": "social",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-social-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "social",
+        "دراسات اجتماعية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 33.7% مقيسةً بشواهدِ الكلماتِ، و15 صفحةً من 92 مقلوبةٌ في مُعظَمِها (11، 24، 40، 48، 49، 52، 54، 64، 78، 81، 84، 86).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 92,
+        "chars": 90034,
+        "localPath": "knowledge-base/grade-4-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الثاني.pdf",
+        "sha256": "4586f8c9bc30899ca171b55e55c327ee1e5317ece2860b3482dc66763bd2fa1c"
+      }
+    },
+    {
+      "id": "g4-voc-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الأول.pdf",
+      "bytes": 36736212,
+      "subject": "vocational",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-voc-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "vocational",
+        "تربية مهنية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 32.8% مقيسةً بشواهدِ الكلماتِ، و8 صفحةً من 108 مقلوبةٌ في مُعظَمِها (17، 26، 31، 33، 39، 41، 46، 80).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 108,
+        "chars": 121937,
+        "localPath": "knowledge-base/grade-4-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الأول.pdf",
+        "sha256": "5d76aedf44b3d6c0b2fe4a5ae9cd6e0b483ad6de09aa9545cd0925d5fdaadac3"
+      }
+    },
+    {
+      "id": "g4-voc-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الثاني.pdf",
+      "bytes": 24092073,
+      "subject": "vocational",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-voc-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "vocational",
+        "تربية مهنية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-15 بأداةِ pdf-parse@2. نسبةُ انعكاسِ الحروفِ 33.1% مقيسةً بشواهدِ الكلماتِ، و9 صفحةً من 112 مقلوبةٌ في مُعظَمِها (24، 38، 40، 41، 50، 55، 61، 65، 109).",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 112,
+        "chars": 121766,
+        "localPath": "knowledge-base/grade-4-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الثاني.pdf",
+        "sha256": "37adfdf3b10f87ce08d7abbb7830ce21573c0db2257507779a05fe3852814ae8"
+      }
+    },
+    {
+      "id": "g4-digital-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf",
+      "bytes": 13084714,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "digital-literacy",
+        "مهارات رقمية",
+        "رابع",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "أُعيدَ الاستخراجُ في 2026-09-16 بأداةِ tesseract-ocr (--ocr requested). من أصلِ 142 صفحةٍ نثريّةٍ، 1 صفحةً (1%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ. تقلَّصَ عددُ المحارفِ من 222901 إلى 143011 (36%-)، وهو مُتوقَّعٌ: الرقمُ السابقُ كانَ يَعُدُّ الحروفَ المشوَّهةَ أيضًا، والنصُّ الحاليُّ مقروءٌ بكاملِهِ.  المقياسُ هنا هو تعذُّرُ قراءةِ الصفحةِ، وقد حلَّ محلَّ نسبةِ الانعكاسِ التي سُجِّلَتْ في أوّلِ إدراجٍ لهذا المصدرِ: تلكَ النسبةُ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً، فإذا اختلَّتِ المسافاتُ أو تبعثرَتِ الحروفُ داخلَ الكلمةِ سقطَتْ من الحسابِ صورتاها، فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ — سجَّلَتْ 0.4% لكتابٍ 47% من صفحاتِهِ النثريّةِ غيرُ مقروءةٍ. ونصُّ التعرّفِ الضوئيِّ درجةٌ أدنى من استخراجٍ رقميٍّ نظيفٍ: صالحٌ للتأسيسِ مع ذكرِ رقمِ الصفحةِ، ويُراجَعُ بالعينِ قبلَ أيِّ اقتباسٍ يراهُ معلّمٌ.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-16",
+        "pages": 149,
+        "chars": 143011,
+        "localPath": "knowledge-base/grade-4-digital-literacy/support-pdfs/كتاب الأنشطة لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf",
+        "sha256": "3264c49219facb69273376a444bce5c7ef167c6340d9b1f562d076bd9e8be053"
+      }
+    },
+    {
+      "id": "g4-digital-s1-teacher-guide",
+      "title": "دليل المعلم لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf",
+      "bytes": 5058858,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "digital-literacy",
+        "مهارات رقمية",
+        "رابع",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ بالتعرّفِ الضوئيِّ (tesseract) في 2026-09-15 بعدَ أن رفضَتْ بوّابةُ pdf-parse النصَّ المضمَّنَ: أداةُ القياسِ وجدَتْ أداةَ التعريفِ مقلوبةً (الحركة ← احلركة) في 62% من العيّنةِ. النصُّ الناتجُ عربيٌّ سليمٌ يُقرَأُ، أمّا أسماءُ المنتجاتِ اللاتينيّةُ فمشوّشةٌ (Google تُقرَأُ «8ا6009»)، وهو سلوكٌ معروفٌ لـ OCR حولَ العناصرِ الصغيرةِ. يُعامَلُ كدرجةٍ أدنى من استخراجٍ رقميٍّ نظيفٍ: صالحٌ للتأسيسِ مع ذكرِ رقمِ الصفحةِ، ويُراجَعُ بالعينِ قبلَ أيِّ اقتباسٍ يراهُ معلّمٌ.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 62% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-15",
+        "pages": 91,
+        "chars": 83160,
+        "localPath": "knowledge-base/grade-4-digital-literacy/support-pdfs/دليل المعلم لمادة المهارات الرقمية الصف الرابع الفصل الأول.pdf",
+        "sha256": "0ce09ce153f3afce89cee496b9675bf4afc45d3861923d1e8f826255aa07ffec"
+      }
+    },
+    {
+      "id": "g4-arts-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الفنية للصف الرابع.pdf",
+      "bytes": 32409551,
+      "subject": "art",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الفنية للصف الرابع.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-arts-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "art",
+        "تربية فنية",
+        "رابع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "أُعيدَ الاستخراجُ في 2026-09-16 بأداةِ tesseract-ocr (--ocr requested). من أصلِ 67 صفحةٍ نثريّةٍ، 3 صفحةً (4%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ. تقلَّصَ عددُ المحارفِ من 70937 إلى 40773 (43%-)، وهو مُتوقَّعٌ: الرقمُ السابقُ كانَ يَعُدُّ الحروفَ المشوَّهةَ أيضًا، والنصُّ الحاليُّ مقروءٌ بكاملِهِ.  المقياسُ هنا هو تعذُّرُ قراءةِ الصفحةِ، وقد حلَّ محلَّ نسبةِ الانعكاسِ التي سُجِّلَتْ في أوّلِ إدراجٍ لهذا المصدرِ: تلكَ النسبةُ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً، فإذا اختلَّتِ المسافاتُ أو تبعثرَتِ الحروفُ داخلَ الكلمةِ سقطَتْ من الحسابِ صورتاها، فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ — سجَّلَتْ 0.4% لكتابٍ 47% من صفحاتِهِ النثريّةِ غيرُ مقروءةٍ. ونصُّ التعرّفِ الضوئيِّ درجةٌ أدنى من استخراجٍ رقميٍّ نظيفٍ: صالحٌ للتأسيسِ مع ذكرِ رقمِ الصفحةِ، ويُراجَعُ بالعينِ قبلَ أيِّ اقتباسٍ يراهُ معلّمٌ.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-16",
+        "pages": 96,
+        "chars": 40773,
+        "localPath": "knowledge-base/grade-4-art/support-pdfs/كتاب الطالب لمادة التربية الفنية للصف الرابع.pdf",
+        "sha256": "2ea82896e3115926bbdf7185a66d2428cc4f160f7f06837b512efd471e150bd4"
+      }
+    },
+    {
+      "id": "g4-math-u1-guide-extract",
+      "title": "الوحدة الأولى من دليل المعلم لمادة الرياضيات للصف الرابع.pdf",
+      "bytes": 9044195,
+      "subject": "math",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "الوحدة الأولى من دليل المعلم لمادة الرياضيات للصف الرابع.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رابع",
+        "دليل المعلم",
+        "الوحدة الأولى"
+      ],
+      "notes": "كُرّاسةٌ مستقلّةٌ تحملُ الوحدة الأولى من دليلِ المعلّمِ. ليسَتْ نسخةً مكرّرةً من g4-math-s1-teacher-guide: تطابقُ مفرداتِ الصفحاتِ 59% وسيطًا و9/52 فوقَ 80% فقط، مقابلَ 96% و37/50 في الكُرّاسةِ العلميّةِ التي ثبتَ أنّها شريحةٌ — وحجمُها نحوُ ضِعفَيْ ونصفِ قسمِ الوحدةِ في الدليلِ الكاملِ، إذ تضمُّ المقدّمةَ كاملةً وموادَّ زائدةً. تُسجَّلُ ingested لذلك، مع الإقرارِ بأنّ الجزءَ المشتركَ قد يَرِدُ مرّتينِ في التأسيسِ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 66,
+        "chars": 180307,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/الوحدة الأولى من دليل المعلم لمادة الرياضيات للصف الرابع.pdf",
+        "sha256": "391e2d3a916f34d320c06f95ee31b3fa60d46f977a559781df9b080c8c8bd5df"
+      }
+    },
+    {
+      "id": "g4-math-u2-guide-extract",
+      "title": "الوحدة الثانية من دليل المعلم لمادة الرياضيات للصف الرابع.pdf",
+      "bytes": 8229992,
+      "subject": "math",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "الوحدة الثانية من دليل المعلم لمادة الرياضيات للصف الرابع.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رابع",
+        "دليل المعلم",
+        "الوحدة الثانية"
+      ],
+      "notes": "كُرّاسةٌ مستقلّةٌ تحملُ الوحدة الثانية من دليلِ المعلّمِ. ليسَتْ نسخةً مكرّرةً من g4-math-s1-teacher-guide: تطابقُ مفرداتِ الصفحاتِ 60% وسيطًا و2/31 فوقَ 80% فقط، مقابلَ 96% و37/50 في الكُرّاسةِ العلميّةِ التي ثبتَ أنّها شريحةٌ — وحجمُها نحوُ ضِعفَيْ ونصفِ قسمِ الوحدةِ في الدليلِ الكاملِ، إذ تضمُّ المقدّمةَ كاملةً وموادَّ زائدةً. تُسجَّلُ ingested لذلك، مع الإقرارِ بأنّ الجزءَ المشتركَ قد يَرِدُ مرّتينِ في التأسيسِ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 33,
+        "chars": 77118,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/الوحدة الثانية من دليل المعلم لمادة الرياضيات للصف الرابع.pdf",
+        "sha256": "aacf59fd7d8b73f85b0729b2312e0d902b745f5d9125735beba4ff74984994f4"
+      }
+    },
+    {
+      "id": "g4-math-u3-guide-extract",
+      "title": "الوحدة الثالثة من دليل المعلم لمادة الرياضيات للصف الرابع.pdf",
+      "bytes": 4586895,
+      "subject": "math",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "الوحدة الثالثة من دليل المعلم لمادة الرياضيات للصف الرابع.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رابع",
+        "دليل المعلم",
+        "الوحدة الثالثة"
+      ],
+      "notes": "كُرّاسةٌ مستقلّةٌ تحملُ الوحدة الثالثة من دليلِ المعلّمِ. ليسَتْ نسخةً مكرّرةً من g4-math-s1-teacher-guide: تطابقُ مفرداتِ الصفحاتِ 59% وسيطًا و4/34 فوقَ 80% فقط، مقابلَ 96% و37/50 في الكُرّاسةِ العلميّةِ التي ثبتَ أنّها شريحةٌ — وحجمُها نحوُ ضِعفَيْ ونصفِ قسمِ الوحدةِ في الدليلِ الكاملِ، إذ تضمُّ المقدّمةَ كاملةً وموادَّ زائدةً. تُسجَّلُ ingested لذلك، مع الإقرارِ بأنّ الجزءَ المشتركَ قد يَرِدُ مرّتينِ في التأسيسِ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 48,
+        "chars": 91166,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/الوحدة الثالثة من دليل المعلم لمادة الرياضيات للصف الرابع.pdf",
+        "sha256": "edea20ed9c0d4b751f653bb6a337efd2dc2c3f4393f2d4dc89891118f2bcbe6d"
+      }
+    },
+    {
+      "id": "g4-math-u6-guide-extract",
+      "title": "الوحدة السادسة من دليل المعلم لمادة الرياضيات الصف الرابع.pdf",
+      "bytes": 3067747,
+      "subject": "math",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "الوحدة السادسة من دليل المعلم لمادة الرياضيات الصف الرابع.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رابع",
+        "دليل المعلم",
+        "الوحدة السادسة"
+      ],
+      "notes": "كُرّاسةٌ مستقلّةٌ تحملُ الوحدة السادسة من دليلِ المعلّمِ. ليسَتْ نسخةً مكرّرةً من g4-math-s2-teacher-guide: تطابقُ مفرداتِ الصفحاتِ 42% وسيطًا و2/35 فوقَ 80% فقط، مقابلَ 96% و37/50 في الكُرّاسةِ العلميّةِ التي ثبتَ أنّها شريحةٌ — وحجمُها نحوُ ضِعفَيْ ونصفِ قسمِ الوحدةِ في الدليلِ الكاملِ، إذ تضمُّ المقدّمةَ كاملةً وموادَّ زائدةً. تُسجَّلُ ingested لذلك، مع الإقرارِ بأنّ الجزءَ المشتركَ قد يَرِدُ مرّتينِ في التأسيسِ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 42,
+        "chars": 85023,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/الوحدة السادسة من دليل المعلم لمادة الرياضيات الصف الرابع.pdf",
+        "sha256": "21d6ffa332e78d2ba1ec811557c7611777943ecaec4e8efd05bb330934fe9f4e"
+      }
+    },
+    {
+      "id": "g4-math-u7-guide-extract",
+      "title": "الوحدة السابعة من دليل المعلم لمادة الرياضيات الصف الرابع.pdf",
+      "bytes": 7080069,
+      "subject": "math",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "الوحدة السابعة من دليل المعلم لمادة الرياضيات الصف الرابع.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "math",
+        "رابع",
+        "دليل المعلم",
+        "الوحدة السابعة"
+      ],
+      "notes": "كُرّاسةٌ مستقلّةٌ تحملُ الوحدة السابعة من دليلِ المعلّمِ. ليسَتْ نسخةً مكرّرةً من g4-math-s2-teacher-guide: تطابقُ مفرداتِ الصفحاتِ 49% وسيطًا و3/38 فوقَ 80% فقط، مقابلَ 96% و37/50 في الكُرّاسةِ العلميّةِ التي ثبتَ أنّها شريحةٌ — وحجمُها نحوُ ضِعفَيْ ونصفِ قسمِ الوحدةِ في الدليلِ الكاملِ، إذ تضمُّ المقدّمةَ كاملةً وموادَّ زائدةً. تُسجَّلُ ingested لذلك، مع الإقرارِ بأنّ الجزءَ المشتركَ قد يَرِدُ مرّتينِ في التأسيسِ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-15",
+        "pages": 48,
+        "chars": 109802,
+        "localPath": "knowledge-base/grade-4-math/support-pdfs/الوحدة السابعة من دليل المعلم لمادة الرياضيات الصف الرابع.pdf",
+        "sha256": "b4f321736d865e8a77d5edc0bb5e574991a1481bfaa25740d51e888c9cdcc433"
+      }
+    },
+    {
+      "id": "g4-science-u6-u7-guide-extract",
+      "title": "الوحدتان السادسة والسابعة من دليل المعلم لمادة العلوم الصف الرابع.pdf",
+      "bytes": 17986335,
+      "subject": "science",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "duplicate",
+      "filename": "الوحدتان السادسة والسابعة من دليل المعلم لمادة العلوم الصف الرابع.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g4-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-4",
+        "science",
+        "رابع",
+        "دليل المعلم",
+        "الوحدتان السادسة والسابعة"
+      ],
+      "duplicateOf": "g4-science-s2-teacher-guide",
+      "notes": "كُرّاسةٌ مستقلّةٌ تحملُ الوحدتان السادسة والسابعة من دليلِ المعلّمِ، وهي شريحةٌ من g4-science-s2-teacher-guide: بلغَ تطابقُ مفرداتِ الصفحاتِ 96% وسيطًا، و37/50 من صفحاتِها فوقَ 80%. حُذِفَ نصُّها المستخرَجُ عمدًا كي لا تدخلَ الفقرةُ ذاتُها في التأسيسِ مرّتينِ فترجحَ على بقيّةِ وحداتِ الكتابِ."
+    },
+    {
+      "id": "g5-math-s1-exercise-book",
+      "title": "كتاب التمارين لمادة الرياضيات الصف الخامس الفصل الأول.pdf",
+      "bytes": 3367842,
+      "subject": "math",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الرياضيات الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "math",
+        "رياضيات",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 71 صفحةٍ نثريّةٍ، 3 صفحةً (4%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. يحملُ الكتابُ إشعارَ «© HarperCollins Publishers Limited» مع «All rights reserved»، مفحوصًا في ملفِّهِ كاملًا لا في مقدّمتِهِ وحدَها. يستحقُّ license: nccd-collins، ويُضافُ الحقلُ في دفعةٍ واحدةٍ بعدَ دمجِ الفرعِ الذي يُعرّفُهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 78,
+        "chars": 77728,
+        "localPath": "knowledge-base/grade-5-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف الخامس الفصل الأول.pdf",
+        "sha256": "194b3b65baac8d84371e3b3130ed23c3bfb281945933d046e778b44d5af3aae2"
+      }
+    },
+    {
+      "id": "g5-math-s1-student-book",
+      "title": "كتاب الطالب لمادة الرياضيات للصف الخامس الفصل الأول.pdf",
+      "bytes": 27851289,
+      "subject": "math",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الرياضيات للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "math",
+        "رياضيات",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 124 صفحةٍ نثريّةٍ، 18 صفحةً (15%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. يحملُ الكتابُ إشعارَ «© HarperCollins Publishers Limited» مع «All rights reserved»، مفحوصًا في ملفِّهِ كاملًا لا في مقدّمتِهِ وحدَها. يستحقُّ license: nccd-collins، ويُضافُ الحقلُ في دفعةٍ واحدةٍ بعدَ دمجِ الفرعِ الذي يُعرّفُهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 124,
+        "chars": 182017,
+        "localPath": "knowledge-base/grade-5-math/support-pdfs/كتاب الطالب لمادة الرياضيات للصف الخامس الفصل الأول.pdf",
+        "sha256": "ac18c229573606cd7e69a7a0819a8fcef26fc330a399f7bdff0c6f74889b1337"
+      }
+    },
+    {
+      "id": "g5-math-s1-teacher-guide",
+      "title": "دليل المعلم لمادة الرياضيات الصف الخامس الفصل الأول 2023.pdf",
+      "bytes": 47097138,
+      "subject": "math",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الرياضيات الصف الخامس الفصل الأول 2023.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "math",
+        "رياضيات",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 210 صفحةٍ نثريّةٍ، 17 صفحةً (8%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. يحملُ الكتابُ إشعارَ «© HarperCollins Publishers Limited» مع «All rights reserved»، مفحوصًا في ملفِّهِ كاملًا لا في مقدّمتِهِ وحدَها. يستحقُّ license: nccd-collins، ويُضافُ الحقلُ في دفعةٍ واحدةٍ بعدَ دمجِ الفرعِ الذي يُعرّفُهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 237,
+        "chars": 552973,
+        "localPath": "knowledge-base/grade-5-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف الخامس الفصل الأول 2023.pdf",
+        "sha256": "456effabd5702c812c053df632ed97c7c52a1b2e715934c2a9d205edcca92e30"
+      }
+    },
+    {
+      "id": "g5-math-s2-exercise-book",
+      "title": "كتاب التمارين لمادة الرياضيات الصف الخامس الفصل الثاني.pdf",
+      "bytes": 5169876,
+      "subject": "math",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الرياضيات الصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "math",
+        "رياضيات",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 62 صفحةٍ نثريّةٍ، 1 صفحةً (2%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. يحملُ الكتابُ إشعارَ «© HarperCollins Publishers Limited» مع «All rights reserved»، مفحوصًا في ملفِّهِ كاملًا لا في مقدّمتِهِ وحدَها. يستحقُّ license: nccd-collins، ويُضافُ الحقلُ في دفعةٍ واحدةٍ بعدَ دمجِ الفرعِ الذي يُعرّفُهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 69,
+        "chars": 61933,
+        "localPath": "knowledge-base/grade-5-math/support-pdfs/كتاب التمارين لمادة الرياضيات الصف الخامس الفصل الثاني.pdf",
+        "sha256": "979e9ffcab8310f80dcab6b959dbbb51724dab27c35df50bbb9b6230b3405a99"
+      }
+    },
+    {
+      "id": "g5-math-s2-student-book",
+      "title": "كتاب الطالب لمادة الرياضيات للصف الخامس الفصل الثاني.pdf",
+      "bytes": 47455587,
+      "subject": "math",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الرياضيات للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "math",
+        "رياضيات",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 137 صفحةٍ نثريّةٍ، 1 صفحةً (1%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. يحملُ الكتابُ إشعارَ «© HarperCollins Publishers Limited» مع «All rights reserved»، مفحوصًا في ملفِّهِ كاملًا لا في مقدّمتِهِ وحدَها. يستحقُّ license: nccd-collins، ويُضافُ الحقلُ في دفعةٍ واحدةٍ بعدَ دمجِ الفرعِ الذي يُعرّفُهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 142,
+        "chars": 175528,
+        "localPath": "knowledge-base/grade-5-math/support-pdfs/كتاب الطالب لمادة الرياضيات للصف الخامس الفصل الثاني.pdf",
+        "sha256": "79acc551e840f5f4efd3b088adaaadff1353a3335144986c0f427ca17411e5fc"
+      }
+    },
+    {
+      "id": "g5-math-s2-support-guide",
+      "title": "دليل المعلم إلى المواد المساندة للتعلم الرياضيات خامس الفصل الثاني.pdf",
+      "bytes": 1880052,
+      "subject": "math",
+      "semester": 2,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم إلى المواد المساندة للتعلم الرياضيات خامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "math",
+        "رياضيات",
+        "خامس",
+        "مواد مساندة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 25 صفحةٍ نثريّةٍ، 1 صفحةً (4%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 28,
+        "chars": 29289,
+        "localPath": "knowledge-base/grade-5-math/support-pdfs/دليل المعلم إلى المواد المساندة للتعلم الرياضيات خامس الفصل الثاني.pdf",
+        "sha256": "2c606c0e0665ba09757fbdc90a8978b6eca1901534eef3f1dba279d7019e806b"
+      }
+    },
+    {
+      "id": "g5-math-s2-teacher-guide",
+      "title": "دليل المعلم لمادة الرياضيات الصف الخامس الفصل الثاني.pdf",
+      "bytes": 69532728,
+      "subject": "math",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الرياضيات الصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "math",
+        "رياضيات",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 214 صفحةٍ نثريّةٍ، 21 صفحةً (10%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. يحملُ الكتابُ إشعارَ «© HarperCollins Publishers Limited» مع «All rights reserved»، مفحوصًا في ملفِّهِ كاملًا لا في مقدّمتِهِ وحدَها. يستحقُّ license: nccd-collins، ويُضافُ الحقلُ في دفعةٍ واحدةٍ بعدَ دمجِ الفرعِ الذي يُعرّفُهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 241,
+        "chars": 578186,
+        "localPath": "knowledge-base/grade-5-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف الخامس الفصل الثاني.pdf",
+        "sha256": "fd4dbd72a15a2f76fd835cd84be72732a3f26a0485e381bbf316efe9cd482377"
+      }
+    },
+    {
+      "id": "g5-islamic-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الأول.pdf",
+      "bytes": 54190596,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "islamic",
+        "تربية إسلامية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 89 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 97,
+        "chars": 107794,
+        "localPath": "knowledge-base/grade-5-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الأول.pdf",
+        "sha256": "55869f12f70fdd76d3cbf417f220364ed8bdaa6d58d2371e8315e53a1b397ff2"
+      }
+    },
+    {
+      "id": "g5-islamic-s1-teacher-guide",
+      "title": "دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الأول.pdf",
+      "bytes": 66181367,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "islamic",
+        "تربية إسلامية",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 229 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 235,
+        "chars": 443348,
+        "localPath": "knowledge-base/grade-5-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الأول.pdf",
+        "sha256": "5a81c71a4a53edc3a200687d7a98ffb4803aa6f54c05d886b12e62cbda1c637b"
+      }
+    },
+    {
+      "id": "g5-islamic-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الثاني.pdf",
+      "bytes": 72520681,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "islamic",
+        "تربية إسلامية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 113 صفحةٍ نثريّةٍ، 3 صفحةً (3%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 126,
+        "chars": 147814,
+        "localPath": "knowledge-base/grade-5-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الثاني.pdf",
+        "sha256": "803407d504316bcf871d8f3bcc41fdce0dd292c317ea717df46dc3b9165854f9"
+      }
+    },
+    {
+      "id": "g5-islamic-s2-teacher-guide",
+      "title": "دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الثاني.pdf",
+      "bytes": 105857639,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "islamic",
+        "تربية إسلامية",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 215 صفحةٍ نثريّةٍ، 1 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 224,
+        "chars": 467691,
+        "localPath": "knowledge-base/grade-5-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف الخامس الفصل الثاني.pdf",
+        "sha256": "ba7c817a1b27fb6425400ff925548fe571c5c1d07864880f9c1709c1efc3c06f"
+      }
+    },
+    {
+      "id": "g5-eng-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+      "bytes": 3800859,
+      "subject": "english",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "english",
+        "لغة إنجليزية",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ (70% من المحارفِ)، فمقياسُ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 56,
+        "chars": 49327,
+        "localPath": "knowledge-base/grade-5-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+        "sha256": "db19555086761e834aa4d518676dfe555adbc022339afbfdbe10fe8aecc65542"
+      }
+    },
+    {
+      "id": "g5-eng-s1-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+      "bytes": 84757760,
+      "subject": "english",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "english",
+        "لغة إنجليزية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ (73% من المحارفِ)، فمقياسُ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 64,
+        "chars": 73318,
+        "localPath": "knowledge-base/grade-5-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+        "sha256": "576fe8032ffca7ed6dee5af9de8c91dd8bd7a2f36e4505ae49cbd514039c7987"
+      }
+    },
+    {
+      "id": "g5-eng-s1-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+      "bytes": 55035435,
+      "subject": "english",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "english",
+        "لغة إنجليزية",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ (76% من المحارفِ)، فمقياسُ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 144,
+        "chars": 468247,
+        "localPath": "knowledge-base/grade-5-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الأول.pdf",
+        "sha256": "71292398b3f5414b50f6917bfbf3981e0be9e346d502743f378d1719e597d35d"
+      }
+    },
+    {
+      "id": "g5-eng-s2-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+      "bytes": 17312480,
+      "subject": "english",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "english",
+        "لغة إنجليزية",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ (71% من المحارفِ)، فمقياسُ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 60,
+        "chars": 52377,
+        "localPath": "knowledge-base/grade-5-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+        "sha256": "d467c38392e32f319f87e98c214e1c55f88a4884b8441a6939cf215c9319cb67"
+      }
+    },
+    {
+      "id": "g5-eng-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+      "bytes": 58919234,
+      "subject": "english",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "english",
+        "لغة إنجليزية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ (74% من المحارفِ)، فمقياسُ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 64,
+        "chars": 81062,
+        "localPath": "knowledge-base/grade-5-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+        "sha256": "04def1a39a90c671ff4631dd969f00f2fc341ca14f0fb65247f636713d7f31db"
+      }
+    },
+    {
+      "id": "g5-eng-s2-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+      "bytes": 48826071,
+      "subject": "english",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "english",
+        "لغة إنجليزية",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. النصُّ لاتينيٌّ في مُعظَمِهِ (76% من المحارفِ)، فمقياسُ العربيّةِ لا ينطبقُ عليهِ. مُصنَّفٌ third-party لا nccd: السلسلةُ من نشرِ Pearson وتحملُ إشعارَ حقوقٍ محفوظةً، فهي مرجعيّةٌ لا تُقتبَسُ حرفيًّا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 144,
+        "chars": 487467,
+        "localPath": "knowledge-base/grade-5-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني.pdf",
+        "sha256": "369b75972d6e1492244479be84b856ef682bb2a995b990823d17a0beacbfcb80"
+      }
+    },
+    {
+      "id": "g5-pe-s1-student-book",
+      "title": "كتاب الطالب التربية الرياضية الصف الخامس الفصل الأول.pdf",
+      "bytes": 2950214,
+      "subject": "physical-education",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب التربية الرياضية الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-pe-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "physical-education",
+        "تربية رياضية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 54 صفحةٍ نثريّةٍ، 2 صفحةً (4%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 59,
+        "chars": 48986,
+        "localPath": "knowledge-base/grade-5-pe/support-pdfs/كتاب الطالب التربية الرياضية الصف الخامس الفصل الأول.pdf",
+        "sha256": "031a6c89f4abc526c58bccd41f8d4b5bda7f2b1cb02f22a7bec1694799dc350b"
+      }
+    },
+    {
+      "id": "g5-pe-s2-student-book",
+      "title": "كتاب الطالب التربية الرياضية الصف الخامس الفصل الثاني.pdf",
+      "bytes": 5087864,
+      "subject": "physical-education",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب التربية الرياضية الصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-pe-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "physical-education",
+        "تربية رياضية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 50 صفحةٍ نثريّةٍ، 1 صفحةً (2%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 54,
+        "chars": 49430,
+        "localPath": "knowledge-base/grade-5-pe/support-pdfs/كتاب الطالب التربية الرياضية الصف الخامس الفصل الثاني.pdf",
+        "sha256": "02cc062e3fdb84a6b761ee31deb9650e97711bbe3444e06edda200ee9cab434a"
+      }
+    },
+    {
+      "id": "g5-digital-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf",
+      "bytes": 12848687,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "digital-literacy",
+        "مهارات رقمية",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 133 صفحةٍ نثريّةٍ، 9 صفحةً (7%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 147,
+        "chars": 182663,
+        "localPath": "knowledge-base/grade-5-digital-literacy/support-pdfs/كتاب الأنشطة لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf",
+        "sha256": "0346e00d87a75e6a065c3201255967baa304bdf6a4f638398bae802c5ccdd357"
+      }
+    },
+    {
+      "id": "g5-digital-s1-teacher-guide",
+      "title": "دليل المعلم لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf",
+      "bytes": 5081795,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "digital-literacy",
+        "مهارات رقمية",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 62% of samples — readable by eye, not quotable). من أصلِ 85 صفحةٍ نثريّةٍ، 2 صفحةً (2%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 62% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-16",
+        "pages": 91,
+        "chars": 83272,
+        "localPath": "knowledge-base/grade-5-digital-literacy/support-pdfs/دليل المعلم لمادة المهارات الرقمية الصف الخامس الفصل الأول.pdf",
+        "sha256": "2b52c644ef4b4943e408bc9356422bcca1eff18a5542235b7af1fd1a3da64e4b"
+      }
+    },
+    {
+      "id": "g5-arts-s1-student-book",
+      "title": "كتاب الطالب التربية الفنية الصف الخامس.pdf",
+      "bytes": 23412814,
+      "subject": "art",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب التربية الفنية الصف الخامس.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-arts-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "art",
+        "تربية فنية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 89 صفحةٍ نثريّةٍ، 15 صفحةً (17%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. الكتابُ غيرُ مقسَّمٍ إلى فصلينِ، ويحملُ semester = 1 اصطلاحًا، على غرارِ نظائرِهِ في الصفوفِ الرابعِ والسادسِ والثامنِ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 94,
+        "chars": 72452,
+        "localPath": "knowledge-base/grade-5-art/support-pdfs/كتاب الطالب التربية الفنية الصف الخامس.pdf",
+        "sha256": "a213f0a6c70c189f9a921084b7a775133b49384e190a42de32f807758d68b23a"
+      }
+    },
+    {
+      "id": "g5-science-s1-activity-book",
+      "title": "كتاب الأنشطة والتمارين لمادة العلوم الصف الخامس الفصل الأول.pdf",
+      "bytes": 3350048,
+      "subject": "science",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتمارين لمادة العلوم الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "science",
+        "علوم",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 39 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. يحملُ الكتابُ إشعارَ «© HarperCollins Publishers Limited» مع «All rights reserved»، مفحوصًا في ملفِّهِ كاملًا لا في مقدّمتِهِ وحدَها. يستحقُّ license: nccd-collins، ويُضافُ الحقلُ في دفعةٍ واحدةٍ بعدَ دمجِ الفرعِ الذي يُعرّفُهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 48,
+        "chars": 71172,
+        "localPath": "knowledge-base/grade-5-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف الخامس الفصل الأول.pdf",
+        "sha256": "a9470fd4f78df52015405a483caed6bd1040c14a3a1fc7fa2f7d7aaa8afd147e"
+      }
+    },
+    {
+      "id": "g5-science-s1-student-book",
+      "title": "كتاب الطالب لمادة  العلوم الصف الخامس الفصل الأول.pdf",
+      "bytes": 37358064,
+      "subject": "science",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة  العلوم الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "science",
+        "علوم",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 91 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. يحملُ الكتابُ إشعارَ «© HarperCollins Publishers Limited» مع «All rights reserved»، مفحوصًا في ملفِّهِ كاملًا لا في مقدّمتِهِ وحدَها. يستحقُّ license: nccd-collins، ويُضافُ الحقلُ في دفعةٍ واحدةٍ بعدَ دمجِ الفرعِ الذي يُعرّفُهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 104,
+        "chars": 107779,
+        "localPath": "knowledge-base/grade-5-science/support-pdfs/كتاب الطالب لمادة  العلوم الصف الخامس الفصل الأول.pdf",
+        "sha256": "70a77191a24c9c229fa87aa80de43f5ad958dd3ff3ad079c3a87ef92e7238348"
+      }
+    },
+    {
+      "id": "g5-science-s1-teacher-guide",
+      "title": "دليل المعلم لمادة العلوم الصف الخامس الفصل الأول.pdf",
+      "bytes": 68562407,
+      "subject": "science",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العلوم الصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "science",
+        "علوم",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 92% of samples — readable by eye, not quotable). من أصلِ 159 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 92% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-16",
+        "pages": 189,
+        "chars": 277706,
+        "localPath": "knowledge-base/grade-5-science/support-pdfs/دليل المعلم لمادة العلوم الصف الخامس الفصل الأول.pdf",
+        "sha256": "cff5163c77f6ef28a3cd5de1e467c23921949550cbea9aca69d736f83b637649"
+      }
+    },
+    {
+      "id": "g5-science-s2-activity-book",
+      "title": "كتاب الأنشطة والتمارين لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+      "bytes": 2752038,
+      "subject": "science",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتمارين لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "science",
+        "علوم",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 44 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. يحملُ الكتابُ إشعارَ «© HarperCollins Publishers Limited» مع «All rights reserved»، مفحوصًا في ملفِّهِ كاملًا لا في مقدّمتِهِ وحدَها. يستحقُّ license: nccd-collins، ويُضافُ الحقلُ في دفعةٍ واحدةٍ بعدَ دمجِ الفرعِ الذي يُعرّفُهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 46,
+        "chars": 55047,
+        "localPath": "knowledge-base/grade-5-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+        "sha256": "1945537b16d36dfe2c500bf11af59ca5b2c502042f27ee5a4d1ef5481e529c00"
+      }
+    },
+    {
+      "id": "g5-science-s2-student-book",
+      "title": "كتاب الطالب لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+      "bytes": 95904273,
+      "subject": "science",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "license": "nccd-collins",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "science",
+        "علوم",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 96 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ. يحملُ الكتابُ إشعارَ «© HarperCollins Publishers Limited» مع «All rights reserved»، مفحوصًا في ملفِّهِ كاملًا لا في مقدّمتِهِ وحدَها. يستحقُّ license: nccd-collins، ويُضافُ الحقلُ في دفعةٍ واحدةٍ بعدَ دمجِ الفرعِ الذي يُعرّفُهُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 108,
+        "chars": 117772,
+        "localPath": "knowledge-base/grade-5-science/support-pdfs/كتاب الطالب لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+        "sha256": "1a09795ae4f025f96dd3a7ce27d1184eed33157583318c1ee22a31847d9d440d"
+      }
+    },
+    {
+      "id": "g5-science-s2-teacher-guide",
+      "title": "دليل المعلم لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+      "bytes": 88884137,
+      "subject": "science",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "science",
+        "علوم",
+        "خامس",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 92% of samples — readable by eye, not quotable). من أصلِ 136 صفحةٍ نثريّةٍ، 3 صفحةً (2%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 92% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-16",
+        "pages": 156,
+        "chars": 255767,
+        "localPath": "knowledge-base/grade-5-science/support-pdfs/دليل المعلم لمادة العلوم الصف الخامس الفصل الثاني.pdf",
+        "sha256": "104418d78943646f968c6b7dda439a2fea3ce0557dee6f06a20d1e143b295c5d"
+      }
+    },
+    {
+      "id": "g5-social-s1-student-book",
+      "title": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الأول.pdf",
+      "bytes": 18811233,
+      "subject": "social",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-social-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "social",
+        "دراسات اجتماعية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 84 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 92,
+        "chars": 104834,
+        "localPath": "knowledge-base/grade-5-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الأول.pdf",
+        "sha256": "acf6e649f89634e29c4d66bf26f24e2fa7ddefa08a32ffcf16babed0f8153c7f"
+      }
+    },
+    {
+      "id": "g5-social-s2-student-book",
+      "title": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الثاني.pdf",
+      "bytes": 21825614,
+      "subject": "social",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-social-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "social",
+        "دراسات اجتماعية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 94 صفحةٍ نثريّةٍ، 13 صفحةً (14%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 100,
+        "chars": 107862,
+        "localPath": "knowledge-base/grade-5-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الثاني.pdf",
+        "sha256": "8eac37f7842f9096b09fe153bf62ba4216555951a328a4c1e79463242ebe5935"
+      }
+    },
+    {
+      "id": "g5-voc-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية للصف الخامس الفصل الأول.pdf",
+      "bytes": 18434046,
+      "subject": "vocational",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-voc-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "vocational",
+        "تربية مهنية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 106 صفحةٍ نثريّةٍ، 16 صفحةً (15%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 116,
+        "chars": 122614,
+        "localPath": "knowledge-base/grade-5-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الخامس الفصل الأول.pdf",
+        "sha256": "f14c56b6438aba3cf3454bc6eae27450b7a53fab07ae4714351183f3a5796864"
+      }
+    },
+    {
+      "id": "g5-voc-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية للصف الخامس الفصل الثاني.pdf",
+      "bytes": 23552891,
+      "subject": "vocational",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-voc-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "vocational",
+        "تربية مهنية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 103 صفحةٍ نثريّةٍ، 10 صفحةً (10%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 112,
+        "chars": 122033,
+        "localPath": "knowledge-base/grade-5-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الخامس الفصل الثاني.pdf",
+        "sha256": "2b419c67df289a15e02897b103cc592a4a3f898431f6348b7783f81452f60076"
+      }
+    },
+    {
+      "id": "g5-arabic-s1-exercise-book",
+      "title": "كتاب التمارين لمادة العربية لغتي للصف الخامس الفصل الأول.pdf",
+      "bytes": 8690931,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة العربية لغتي للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "arabic",
+        "لغة عربية",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 51 صفحةٍ نثريّةٍ، 0 صفحةً (0%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 56,
+        "chars": 71097,
+        "localPath": "knowledge-base/grade-5-arabic/support-pdfs/كتاب التمارين لمادة العربية لغتي للصف الخامس الفصل الأول.pdf",
+        "sha256": "191bad25742b0a4508771326f29c29218e6cbda9c106680819dfbedc5ad3276f"
+      }
+    },
+    {
+      "id": "g5-arabic-s1-student-book",
+      "title": "كتاب الطالب لمادة العربية لغتي للصف الخامس الفصل الأول.pdf",
+      "bytes": 20333413,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العربية لغتي للصف الخامس الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "arabic",
+        "لغة عربية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 128 صفحةٍ نثريّةٍ، 2 صفحةً (2%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 143,
+        "chars": 155407,
+        "localPath": "knowledge-base/grade-5-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف الخامس الفصل الأول.pdf",
+        "sha256": "94273bf2597f6eb7004f4db96fbab4e0d331ede5921a11e498f8565fd95e5e48"
+      }
+    },
+    {
+      "id": "g5-arabic-s2-exercise-book",
+      "title": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف الخامس الفصل الثاني.pdf",
+      "bytes": 4854056,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "arabic",
+        "لغة عربية",
+        "خامس",
+        "كتاب الأنشطة",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ tesseract-ocr (--ocr requested). من أصلِ 44 صفحةٍ نثريّةٍ، 1 صفحةً (2%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-16",
+        "pages": 52,
+        "chars": 35416,
+        "localPath": "knowledge-base/grade-5-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف الخامس الفصل الثاني.pdf",
+        "sha256": "5219a499e1682d5afa3b06c0d2926016eda7025cb7b25115ea89a1eb019b0466"
+      }
+    },
+    {
+      "id": "g5-arabic-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة العربية للصف الخامس الفصل الثاني.pdf",
+      "bytes": 19983319,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة العربية للصف الخامس الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g5-arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-5",
+        "arabic",
+        "لغة عربية",
+        "خامس",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "استُخرِجَ النصُّ من نسخةٍ محلّيّةٍ في 2026-09-16 بأداةِ pdf-parse@2. من أصلِ 122 صفحةٍ نثريّةٍ، 18 صفحةً (15%) لا تحوي أيًّا من أدواتِ الربطِ الشائعةِ — وهو مقياسُ تعذُّرِ القراءةِ المعتمَدُ هنا، حلَّ محلَّ نسبةِ الانعكاسِ لأنّ تلكَ لا ترصدُ إلّا انقلابَ الكلمةِ كاملةً فتُظهِرُ رقمًا ضئيلًا حينَ يشتدُّ العطبُ.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-16",
+        "pages": 136,
+        "chars": 179244,
+        "localPath": "knowledge-base/grade-5-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف الخامس الفصل الثاني.pdf",
+        "sha256": "bf152b122de3819dd338a0b38249c0d9d8ed6a39f5e745642a5c78f2062b0108"
       }
     }
   ],

@@ -23,6 +23,11 @@
  * either side importing the other, and nothing here can quietly start
  * depending on a field the API server has no way to supply.
  */
+import { CHEM_BANK, detectChemFamily, type ChemFamily } from './chemistry.ts';
+
+export { isChemContext, detectChemFamily, CHEM_BANK } from './chemistry.ts';
+export type { ChemFamily } from './chemistry.ts';
+
 export interface PracticeLesson {
   id: string;
   titleAr: string;
@@ -46,6 +51,14 @@ export interface PracticeWQ {
   points: number;
 }
 
+/**
+ * Chemistry sits alongside maths rather than in its own package: the take,
+ * dedupe and format machinery below is subject-agnostic, and a second copy of
+ * it would be 150 lines duplicated to hold a different array. The package name
+ * is now narrower than its contents — `takeConcreteMath` and the maths bank
+ * behave exactly as before, and `takeConcreteChem` is the same code over
+ * `CHEM_BANK`.
+ */
 type MathFamily =
   | 'exp_eq'
   | 'system_graph'
@@ -61,9 +74,12 @@ type MathFamily =
   | 'stats'
   | 'algebra';
 
-interface ConcreteItem {
+/** A bank family: maths (below) or chemistry (`./chemistry.ts`). */
+export type Family = MathFamily | ChemFamily;
+
+export interface ConcreteItem {
   id: string;
-  family: MathFamily;
+  family: Family;
   diff: DiffTier;
   /** Canonical problem (short-answer / solve stem). */
   eq: string;
@@ -434,6 +450,76 @@ function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string
 }
 
 /**
+ * Pick one unused item from a bank.
+ *
+ * This is the body `takeConcreteMath` used to hold inline, with the bank and
+ * the generic-fallback family as parameters so the chemistry bank gets the
+ * same dedupe, the same difficulty preference, and the same "repeat within the
+ * family before leaving it" rule. Behaviour is unchanged for maths.
+ */
+function takeFromBank(
+  bank: ConcreteItem[],
+  family: Family,
+  genericFamily: Family,
+  type: QType,
+  diff: DiffTier,
+  lang: Lang,
+  points: number,
+  used: Set<string>,
+): PracticeWQ | null {
+  const preferWord = type === 'word_problem';
+
+  const matches = (item: ConcreteItem, fam: Family) => {
+    if (used.has(item.id)) return false;
+    if (item.family !== fam) return false;
+    if (preferWord && item.kind !== 'word' && !item.wordAr) {
+      // still allow non-word items — formatItem wraps them
+      return true;
+    }
+    return true;
+  };
+
+  const pickFrom = (fam: Family): ConcreteItem | null => {
+    const pool = bank.filter(i => matches(i, fam));
+    if (pool.length === 0) return null;
+    // Random within the difficulty-preferred slice, not `ranked[0]`: taking
+    // the first unused item in bank order meant every fresh session served
+    // the identical quiz for a topic — "regenerate" only looked alive until
+    // the page reloaded. The used set still guarantees no repeats in a pass.
+    const sameDiff = pool.filter(i => i.diff === diff);
+    const candidates = sameDiff.length > 0 ? sameDiff : pool;
+    return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
+  };
+
+  /**
+   * A worksheet/quiz asking for more items than a lesson's family has used to
+   * fall straight through to the unrelated generic family here — a teacher who
+   * picked one exact lesson would get an item with no connection to it. A
+   * repeat from the *same* family, reformatted under a different question
+   * type, stays on-topic; only the generic family (or true exhaustion of the
+   * whole bank) should ever leave the detected family.
+   */
+  const pickFromRepeating = (fam: Family): ConcreteItem | null => {
+    const pool = bank.filter(i => i.family === fam);
+    if (pool.length === 0) return null;
+    const sameDiff = pool.filter(i => i.diff === diff);
+    const ranked = sameDiff.length > 0 ? sameDiff : pool;
+    return ranked[Math.floor(Math.random() * ranked.length)] ?? null;
+  };
+
+  let item = pickFrom(family) ?? pickFromRepeating(family) ?? pickFrom(genericFamily);
+  if (!item) {
+    // Exhausted — allow any unused item from this bank
+    item = bank.find(i => !used.has(i.id)) ?? null;
+  }
+  if (!item) return null;
+
+  used.add(item.id);
+  const formatted = formatItem(item, lang, type);
+  return { ...formatted, points };
+}
+
+/**
  * Take one unused concrete math item for this session.
  * Prefers matching family + difficulty; falls back within family then to algebra.
  */
@@ -456,59 +542,60 @@ export function takeConcreteMath(
    */
   session?: Set<string>,
 ): PracticeWQ | null {
-  const used = session ?? usedIds;
-  const family = detectMathFamily(topic, kb);
-  const preferWord = type === 'word_problem';
+  return takeFromBank(
+    BANK,
+    detectMathFamily(topic, kb),
+    'algebra',
+    type,
+    diff,
+    lang,
+    points,
+    session ?? usedIds,
+  );
+}
 
-  const matches = (item: ConcreteItem, fam: MathFamily) => {
-    if (used.has(item.id)) return false;
-    if (item.family !== fam) return false;
-    if (preferWord && item.kind !== 'word' && !item.wordAr) {
-      // still allow non-word items — formatItem wraps them
-      return true;
-    }
-    return true;
-  };
+/**
+ * Take one unused concrete chemistry item for this session.
+ *
+ * Same contract as `takeConcreteMath`, including the session set the API
+ * server must pass — see the note on that parameter.
+ */
+export function takeConcreteChem(
+  type: QType,
+  topic: string,
+  kb: KBLesson | null,
+  diff: DiffTier,
+  lang: Lang,
+  points: number,
+  session?: Set<string>,
+): PracticeWQ | null {
+  return takeFromBank(
+    CHEM_BANK,
+    detectChemFamily(lessonTextBlob(topic, kb)),
+    'general_chem',
+    type,
+    diff,
+    lang,
+    points,
+    session ?? usedIds,
+  );
+}
 
-  const pickFrom = (fam: MathFamily): ConcreteItem | null => {
-    const pool = BANK.filter(i => matches(i, fam));
-    if (pool.length === 0) return null;
-    // Random within the difficulty-preferred slice, not `ranked[0]`: taking
-    // the first unused item in bank order meant every fresh session served
-    // the identical quiz for a topic — "regenerate" only looked alive until
-    // the page reloaded. `usedIds` still guarantees no repeats within a pass.
-    const sameDiff = pool.filter(i => i.diff === diff);
-    const candidates = sameDiff.length > 0 ? sameDiff : pool;
-    return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
-  };
-
-  /**
-   * A worksheet/quiz asking for more items than a lesson's family has (e.g.
-   * `functions` has 5) used to fall straight through to the unrelated
-   * `algebra` family here — a teacher who picked one exact lesson would get
-   * a quadratic-formula or linear-system item with no connection to it. A
-   * repeat from the *same* family, reformatted under a different question
-   * type, stays on-topic; only the generic algebra family (or true
-   * exhaustion of the whole bank) should ever leave the detected family.
-   */
-  const pickFromRepeating = (fam: MathFamily): ConcreteItem | null => {
-    const pool = BANK.filter(i => i.family === fam);
-    if (pool.length === 0) return null;
-    const sameDiff = pool.filter(i => i.diff === diff);
-    const ranked = sameDiff.length > 0 ? sameDiff : pool;
-    return ranked[Math.floor(Math.random() * ranked.length)] ?? null;
-  };
-
-  let item = pickFrom(family) ?? pickFromRepeating(family) ?? pickFrom('algebra');
-  if (!item) {
-    // Exhausted — allow any unused item
-    item = BANK.find(i => !used.has(i.id)) ?? null;
+/** Peek several concrete chemistry stems for activity slides (marks them used). */
+export function takeConcreteChemBatch(
+  count: number,
+  topic: string,
+  kb: KBLesson | null,
+  lang: Lang,
+  diff: DiffTier = 'medium',
+): PracticeWQ[] {
+  const out: PracticeWQ[] = [];
+  for (let i = 0; i < count; i++) {
+    const tier: DiffTier = i === 0 ? 'easy' : i === count - 1 ? 'hard' : diff;
+    const q = takeConcreteChem('short_answer', topic, kb, tier, lang, 4);
+    if (q) out.push(q);
   }
-  if (!item) return null;
-
-  used.add(item.id);
-  const formatted = formatItem(item, lang, type);
-  return { ...formatted, points };
+  return out;
 }
 
 /** Peek several concrete stems for activity slides (marks them used). */

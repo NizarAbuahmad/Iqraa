@@ -86,8 +86,8 @@ describe('each format carries the structure that defines it', () => {
   it('individual: no group work anywhere in it', async () => {
     const a = await aiService.generateActivity({ ...req, activityType: 'individual' } as AIRequest);
     const text = blob(a);
-    // The exact wording the old template produced: «قسّم الطلاب حسب فردي».
-    assert.ok(!/قسّم الطلاب/.test(text), 'an individual activity must not tell the teacher to split the class into groups');
+    // The exact wording the old template produced: «قسّم الطلبة حسب فردي».
+    assert.ok(!/قسّم الطلبة/.test(text), 'an individual activity must not tell the teacher to split the class into groups');
     assert.ok(!/كل مجموعة/.test(text), 'an individual activity must not address groups');
     assert.ok(/استرجاع|الذاكرة/.test(text), 'expected a retrieval step');
     assert.ok(/محلول/.test(text), 'expected a worked example');

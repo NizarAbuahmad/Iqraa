@@ -278,7 +278,7 @@ describe('scopePickerParams', () => {
   });
 
   it('returns null rather than a fabricated index for an unknown scope', () => {
-    assert.equal(scopePickerParams('grade-3', 'mathematics'), null);
+    assert.equal(scopePickerParams('grade-2', 'mathematics'), null);
     assert.equal(scopePickerParams('grade-10', 'no-such-subject'), null);
     assert.equal(scopePickerParams(null, 'mathematics'), null);
     assert.equal(scopePickerParams('grade-10', undefined), null);

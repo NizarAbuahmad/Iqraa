@@ -28,7 +28,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { hasSeenAppIntro } from '@/services/appIntro';
-import { CLAIM_REQUIRED_ROUTE, isEntryRoute, isNonTeacherRoute, isPublicRoute, needsRosterClaim } from '@/services/routeGating';
+import { CLAIM_REQUIRED_ROUTE, isEntryRoute, isNonTeacherRoute, isPublicRoute, needsRosterClaim, needsTeacherSetup, TEACHER_SETUP_ROUTE } from '@/services/routeGating';
 import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackScreen } from '@/services/analytics';
 
 SplashScreen.preventAutoHideAsync();
@@ -79,6 +79,16 @@ function RootLayoutNav() {
     // leaves them alone.
     if (signedIn && user && needsRosterClaim(user) && pathname !== CLAIM_REQUIRED_ROUTE) {
       router.replace(CLAIM_REQUIRED_ROUTE as any);
+      wasLoading.current = false;
+      wasSignedIn.current = signedIn;
+      return;
+    }
+
+    // A brand-new teacher has picked nothing to teach yet — same mandatory
+    // shape as the roster-claim gate above, for the same reason: the
+    // curriculum browser needs something to default to (see needsTeacherSetup).
+    if (signedIn && user && needsTeacherSetup(user) && pathname !== TEACHER_SETUP_ROUTE) {
+      router.replace(TEACHER_SETUP_ROUTE as any);
       wasLoading.current = false;
       wasSignedIn.current = signedIn;
       return;
@@ -181,6 +191,7 @@ function RootLayoutNav() {
       <Stack.Screen name="faq" options={{ headerShown: false }} />
       <Stack.Screen name="join-class" options={{ headerShown: false }} />
       <Stack.Screen name="claim-required" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="setup-subjects" options={{ headerShown: false, gestureEnabled: false }} />
     </Stack>
   );
 }

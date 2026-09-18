@@ -67,7 +67,7 @@ describe("each format's clause names what that format requires", () => {
   it("individual forbids group work outright", () => {
     const ar = activityPromptAr({ ...baseBody, activityType: "individual" });
     const en = activityPromptEn({ ...baseBody, activityType: "individual" });
-    assert.match(ar, /قسّم الطلاب/, "must name the phrase it is forbidding");
+    assert.match(ar, /قسّم الطلبة/, "must name the phrase it is forbidding");
     assert.match(ar, /ممنوع/);
     assert.match(en, /forbidden/i);
     assert.match(en, /divide students into/i);

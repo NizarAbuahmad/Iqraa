@@ -1,0 +1,262 @@
+{
+ "meta": {
+  "grade": "الصف الخامس",
+  "grade_en": "Grade 5",
+  "subject": "التربية الإسلامية",
+  "subject_en": "Islamic Education",
+  "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+  "semester_covered": 2,
+  "schema_version": "1.0",
+  "source_books": [
+   "كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الثاني (g5-islamic-s2-student-book)"
+  ],
+  "provenance_note": "نُقِلَتِ الوَحَداتُ الأَرْبَعُ وَدُروسُها التِّسْعَةَ عَشَرَ مِنْ كِتابِ الطّالِبِ في 2026-09-16، بِقِراءَةِ نَصِّ الكِتابِ كامِلًا مِنْ مَلَفِّ PDF مُباشَرَةً (PyMuPDF)، عَلى نَحْوِ ما فَعَلَ g5IslamicSem1. الوَحَداتُ مُرَقَّمَةٌ 5-8، اسْتِمْرارًا لِتَرْقيمِ الفَصْلِ الأَوَّلِ (1-4)، وَإِنْ كانَ الكِتابُ نَفْسُهُ يُسَمّيها «الوَحْدَةُ الأولى» إِلى «الوَحْدَةُ الرّابِعَةُ» مِنْ جَديدٍ لِكُلِّ فَصْلٍ — التَّرْقيمُ المُتَسَلْسِلُ هُنا اصْطِلاحُ هذا المَشْروعِ لِلرَّبْطِ بَيْنَ فَصْلَيِ الصَّفِّ نَفْسِهِ، لا نَصٌّ مَطْبوعٌ. لِكُلِّ وَحْدَةٍ: title_ar مِنْ صَفْحَةِ افْتِتاحِ الوَحْدَةِ (جَدْوَلُ المُحْتَوَياتِ في ص 4، وَصَفَحاتُ الافْتِتاحِ 5، 37، 69، 100). وَلِكُلِّ دَرْسٍ: title_ar مِنْ تَرْويسَةِ الدَّرْسِ، وَ main_idea_ar مِنْ صُنْدوقِ «الفِكْرَةُ الرَّئيسَةُ» حَيْثُ يُطْبَعُ. تَرْتيبُ الوَحَداتِ وَدُروسِها تَحَقَّقَ بِقِراءَةِ صَفْحَةِ افْتِتاحِ كُلِّ وَحْدَةٍ مُباشَرَةً (كَما في g5IslamicSem1)، لا مِنَ الفِهْرِسِ المُبَعْثَرِ العَرْضِ وَحْدَهُ.",
+  "known_gaps": [
+   "objectives فارِغَةٌ لِكُلِّ الدُّروسِ: عَلى نَحْوِ g5IslamicSem1.",
+   "periods و total_periods فارِغَةٌ (null) لِكُلِّ الدُّروسِ وَالوَحَداتِ.",
+   "prior_knowledge و general_idea_ar فارِغَةٌ لِكُلِّ الوَحَداتِ: عَلى نَحْوِ g5IslamicSem1.",
+   "vocabulary فارِغَةٌ لِكُلِّ الدُّروسِ: عَلى نَحْوِ g5IslamicSem1 — بَعْضُ دُروسِ التِّلاوَةِ تَطْبَعُ «المُفْرَداتُ وَالتَّراكيبُ» (غَريبُ القُرْآنِ)، وَلَمْ يُنْقَلْ لِنَفْسِ السَّبَبِ.",
+   "main_idea_ar فارِغَةٌ لِثَلاثَةِ دُروسٍ: u5_l3 وَ u8_l3 (دَرْسا تِلاوَةٍ تَطْبيقِيّانِ لا يَطْبَعانِ صُنْدوقَ الفِكْرَةِ)، وَ u8_l4 (السَّيِّدَةُ فاطِمَةُ الأَزْدِيَّةُ — الصُّنْدوقُ مَطْبوعٌ بِعُنْوانِهِ لَكِنْ بِلا جُمْلَةٍ تَحْتَهُ في الصَّفْحَةِ المَقْروءَةِ)."
+  ]
+ },
+ "units": [
+  {
+   "id": "u5",
+   "number": 5,
+   "title_ar": "أَحْمَدُكَ رَبّي",
+   "title_en": "I Praise You, My Lord",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u5_l1",
+     "order": 1,
+     "title_ar": "سورَةُ النَّبَأِ: الآياتُ الكَريمَةُ (1-16)",
+     "title_en": "Surat An-Naba, Verses 1-16",
+     "main_idea_ar": "تُبَيِّنُ الآياتُ الكَريمَةُ إِنْكارَ المُشْرِكينَ لِيَوْمِ القِيامَةِ، وَتَذْكُرُ بَعْضَ مَظاهِرِ قُدْرَةِ اللهِ تَعالى وَعَظَمَتِهِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u5_l2",
+     "order": 2,
+     "title_ar": "تَكْريمُ اللهِ تَعالى لِلْإِنْسانِ",
+     "title_en": "God's Honoring of Humankind",
+     "main_idea_ar": "كَرَّمَ اللهُ تَعالى الإِنْسانَ، وَخَلَقَهُ في أَفْضَلِ صورَةٍ، وَمَيَّزَهُ بِالعَقْلِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u5_l3",
+     "order": 3,
+     "title_ar": "التِّلاوَةُ وَالتَّجْويدُ: تَطْبيقاتٌ عَلى الإِظْهارِ وَالإِدْغامِ",
+     "title_en": "Recitation and Tajweed: Applications on Al-Izhar and Al-Idgham",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u5_l4",
+     "order": 4,
+     "title_ar": "دَعْوَةُ سَيِّدِنا إِبْراهيمَ قَوْمَهُ",
+     "title_en": "Prophet Abraham's Call to His People",
+     "main_idea_ar": "سَيِّدُنا إِبْراهيمُ أَحَدُ أَنْبِياءِ اللهِ تَعالى، وَهُوَ مِنْ أُولي العَزْمِ مِنَ الرُّسُلِ، وَقَدْ لُقِّبَ بِأَبي الأَنْبِياءِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u5_l5",
+     "order": 5,
+     "title_ar": "الدُّعاءُ في حَياةِ المُسْلِمِ",
+     "title_en": "Supplication in a Muslim's Life",
+     "main_idea_ar": "الدُّعاءُ مِنَ العِباداتِ الَّتي نَتَقَرَّبُ بِها إِلى اللهِ تَعالى، وَهُوَ يَدُلُّ عَلى صِدْقِ إيمانِ العَبْدِ بِرَبِّهِ، فَالمُسْلِمُ يَلْجَأُ إِلى اللهِ تَعالى بِالدُّعاءِ في أَحْوالِهِ جَميعِها.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u6",
+   "number": 6,
+   "title_ar": "أَقْتَدي لِأَرْتَقِي",
+   "title_en": "I Follow a Role Model to Rise",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u6_l1",
+     "order": 1,
+     "title_ar": "سورَةُ النَّبَأِ: الآياتُ الكَريمَةُ (17-30)",
+     "title_en": "Surat An-Naba, Verses 17-30",
+     "main_idea_ar": "تُبَيِّنُ الآياتُ الكَريمَةُ مَشاهِدَ مِنْ أَحْداثِ يَوْمِ القِيامَةِ، وَتَصِفُ حالَ مُنْكِري البَعْثِ يَوْمَ القِيامَةِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u6_l2",
+     "order": 2,
+     "title_ar": "الحَديثُ الشَّريفُ: الصَّلاةُ عَلى سَيِّدِنا مُحَمَّدٍ ﷺ",
+     "title_en": "Hadith: Sending Blessings upon the Prophet Muhammad",
+     "main_idea_ar": "حَثَّنا سَيِّدُنا مُحَمَّدٌ ﷺ عَلى الصَّلاةِ عَلَيْهِ، وَوَصَفَ مَنْ لَمْ يُصَلِّ عَلَيْهِ بِأَنَّهُ بَخيلٌ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u6_l3",
+     "order": 3,
+     "title_ar": "التِّلاوَةُ وَالتَّجْويدُ: الإِقْلابُ",
+     "title_en": "Recitation and Tajweed: Al-Iqlab",
+     "main_idea_ar": "الإِقْلابُ هُوَ أَحَدُ أَحْكامِ النّونِ السّاكِنَةِ وَالتَّنْوينِ، وَلَهُ حَرْفٌ واحِدٌ هُوَ الباءُ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u6_l4",
+     "order": 4,
+     "title_ar": "عامُ الحُزْنِ (10 لِلْبِعْثَةِ)",
+     "title_en": "The Year of Sorrow (Year 10 of the Prophetic Mission)",
+     "main_idea_ar": "كانَ سَيِّدُنا رَسولُ اللهِ ﷺ يُحِبُّ عَمَّهُ أَبا طالِبٍ، وَيُحِبُّ زَوْجَتَهُ السَّيِّدَةَ خَديجَةَ، وَعِنْدَ وَفاتِهِما حَزِنَ عَلَيْهِما كَثيرًا، حَتّى سُمِّيَ العامُ الَّذي تُوُفِّيا فيهِ عامَ الحُزْنِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u6_l5",
+     "order": 5,
+     "title_ar": "سَيِّدُنا عُمَرُ بْنُ الخَطّابِ",
+     "title_en": "Our Master Umar ibn Al-Khattab",
+     "main_idea_ar": "سَيِّدُنا عُمَرُ بْنُ الخَطّابِ صَحابِيٌّ جَليلٌ، وَهُوَ أَحَدُ العَشَرَةِ المُبَشَّرينَ بِالجَنَّةِ، وَثاني الخُلَفاءِ الرّاشِدينَ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u7",
+   "number": 7,
+   "title_ar": "أَسْمو بِعِبادَتي",
+   "title_en": "I Rise Through My Worship",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u7_l1",
+     "order": 1,
+     "title_ar": "سورَةُ النَّبَأِ: الآياتُ الكَريمَةُ (31-40)",
+     "title_en": "Surat An-Naba, Verses 31-40",
+     "main_idea_ar": "تُبَيِّنُ الآياتُ الكَريمَةُ جَزاءَ الإِنْسانِ يَوْمَ القِيامَةِ؛ فَالمُؤْمِنُ يَفوزُ بِالجَنَّةِ، أَمّا الكافِرُ فَمَصيرُهُ النّارُ، وَهُوَ يَتَمَنّى لَوْ كانَ تُرابًا.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u7_l2",
+     "order": 2,
+     "title_ar": "قِصَّةُ أَصْحابِ الجَنَّةِ",
+     "title_en": "The Story of the People of the Garden",
+     "main_idea_ar": "ذَكَرَ القُرْآنُ الكَريمُ قِصَّةَ أَصْحابِ الجَنَّةِ الَّتي تُبَيِّنُ جَزاءَ مَنْ لَمْ يَشْكُرِ اللهَ تَعالى عَلى نِعَمِهِ، وَيَمْنَعُ الصَّدَقَةَ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u7_l3",
+     "order": 3,
+     "title_ar": "التِّلاوَةُ وَالتَّجْويدُ: الإِخْفاءُ",
+     "title_en": "Recitation and Tajweed: Al-Ikhfa",
+     "main_idea_ar": "الإِخْفاءُ هُوَ أَحَدُ أَحْكامِ النّونِ السّاكِنَةِ وَالتَّنْوينِ، وَعَدَدُ حُروفِهِ خَمْسَةَ عَشَرَ حَرْفًا، هِيَ: ص، ذ، ث، ك، ج، ش، ق، س، د، ط، ز، ف، ت، ض، ظ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u7_l4",
+     "order": 4,
+     "title_ar": "صَدَقَةُ الفِطْرِ",
+     "title_en": "Zakat al-Fitr",
+     "main_idea_ar": "صَدَقَةُ الفِطْرِ مِنَ العِباداتِ الَّتي تُؤَدّى في شَهْرِ رَمَضانَ المُبارَكِ، وَلَها أَحْكامٌ خاصَّةٌ يَنْبَغي الْتِزامُها.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u7_l5",
+     "order": 5,
+     "title_ar": "صَلاةُ العيدِ",
+     "title_en": "Eid Prayer",
+     "main_idea_ar": "شَرَعَ اللهُ تَعالى لِعيدِ الفِطْرِ وَعيدِ الأَضْحى صَلاةً خاصَّةً تُؤَدّى بِصورَةٍ تَخْتَلِفُ عَنْ بَقِيَّةِ الصَّلَواتِ، وَتُسَمّى صَلاةَ العيدِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u8",
+   "number": 8,
+   "title_ar": "أَرْتَقي بِأَخْلاقي",
+   "title_en": "I Rise Through My Morals",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u8_l1",
+     "order": 1,
+     "title_ar": "الحَديثُ الشَّريفُ: احْتِرامُ خُصوصِيَّةِ الآخَرينَ",
+     "title_en": "Hadith: Respecting Others' Privacy",
+     "main_idea_ar": "دَعانا سَيِّدُنا مُحَمَّدٌ ﷺ إِلى احْتِرامِ الآخَرينَ وَعَدَمِ التَّدَخُّلِ في شُؤونِهِمُ الخاصَّةِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u8_l2",
+     "order": 2,
+     "title_ar": "آدابُ الزِّيارَةِ وَالضِّيافَةِ في الإِسْلامِ",
+     "title_en": "Etiquette of Visiting and Hospitality in Islam",
+     "main_idea_ar": "لِلزِّيارَةِ وَالضِّيافَةِ آدابٌ يَنْبَغي لَنا أَنْ نَتَحَلّى بِها؛ لِتَكونَ سَبَبًا في زِيادَةِ المَحَبَّةِ وَالأُلْفَةِ بَيْنَ النّاسِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u8_l3",
+     "order": 3,
+     "title_ar": "التِّلاوَةُ وَالتَّجْويدُ: تَطْبيقاتٌ عَلى أَحْكامِ النّونِ السّاكِنَةِ وَالتَّنْوينِ",
+     "title_en": "Recitation and Tajweed: Applications on the Rules of Silent Noon and Tanween",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u8_l4",
+     "order": 4,
+     "title_ar": "السَّيِّدَةُ فاطِمَةُ الأَزْدِيَّةُ",
+     "title_en": "Fatima Al-Azdiyyah",
+     "main_idea_ar": "",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  }
+ ]
+}

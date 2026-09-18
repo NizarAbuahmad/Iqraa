@@ -6,10 +6,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAuth } from '@/context/AuthContext';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { confirm } from '@/services/confirm';
 import { pickAvatarPhoto } from '@/services/avatarPick';
 import { Toast } from '@/components/ui/Toast';
+import { GRADES, SUBJECTS } from '@/services/curriculumData';
 
 function InfoRow({ icon, label, value, color, isRTL }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; color: string; isRTL: boolean }) {
   const colors = useColors();
@@ -236,38 +237,59 @@ export default function ProfileScreen() {
           ) : null}
         </View>
 
-        {/* Subjects & Grades — only show if populated */}
-        {((user?.subjects?.length ?? 0) > 0 || (user?.grades?.length ?? 0) > 0) ? (
+        {/* Subjects & Grades — the ids picked on /setup-subjects, resolved
+            against the same catalog the curriculum browser reads. Teacher-only:
+            no other role is ever asked to pick these (see needsTeacherSetup). */}
+        {isTeacherRole(user?.role) ? (
           <>
             <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
               {t('teaching')}
             </Text>
-            <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-              {(user?.subjects?.length ?? 0) > 0 ? (
+            <Pressable
+              onPress={() => router.push({ pathname: '/setup-subjects', params: { mode: 'edit' } } as any)}
+              style={({ pressed }) => [styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 }]}
+            >
+              {(user?.subjectIds?.length ?? 0) > 0 ? (
                 <View style={styles.tagSection}>
                   <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('mySubjects')}</Text>
                   <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    {user?.subjects?.map(s => (
-                      <View key={s} style={[styles.tag, { backgroundColor: colors.secondary }]}>
-                        <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>{s}</Text>
-                      </View>
-                    ))}
+                    {user?.subjectIds?.map(id => {
+                      const subject = SUBJECTS.find(s => s.id === id);
+                      return (
+                        <View key={id} style={[styles.tag, { backgroundColor: colors.secondary }]}>
+                          <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
+                            {subject ? (isRTL ? subject.nameAr : subject.name) : id}
+                          </Text>
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
               ) : null}
-              {(user?.grades?.length ?? 0) > 0 ? (
+              {(user?.gradeIds?.length ?? 0) > 0 ? (
                 <View style={styles.tagSection}>
                   <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('myGrades')}</Text>
                   <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    {user?.grades?.map(g => (
-                      <View key={g} style={[styles.tag, { backgroundColor: colors.muted }]}>
-                        <Text style={[styles.tagText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>{g}</Text>
-                      </View>
-                    ))}
+                    {user?.gradeIds?.map(id => {
+                      const grade = GRADES.find(g => g.id === id);
+                      return (
+                        <View key={id} style={[styles.tag, { backgroundColor: colors.muted }]}>
+                          <Text style={[styles.tagText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+                            {grade ? (isRTL ? grade.nameAr : grade.name) : id}
+                          </Text>
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
               ) : null}
-            </View>
+              <View style={[styles.tagSection, { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 0 }]}>
+                <Ionicons name="create-outline" size={14} color={colors.primary} />
+                <Text style={[styles.tagLabel, { color: colors.primary, fontFamily: 'Cairo_500Medium', marginBottom: 0 }]}>
+                  {t('editTeachingTitle')}
+                </Text>
+              </View>
+            </Pressable>
           </>
         ) : null}
 

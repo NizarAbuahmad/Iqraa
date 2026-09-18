@@ -2,38 +2,6 @@
  "sourceId": "math-s2-student-book",
  "figures": [
   {
-   "file": "p001.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 1,
-   "rect": [
-    71.5,
-    471.7,
-    248.9,
-    603.6
-   ],
-   "unit": null,
-   "lesson": null,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": null
-  },
-  {
-   "file": "p001b.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 1,
-   "rect": [
-    346.5,
-    471.7,
-    523.8,
-    603.6
-   ],
-   "unit": null,
-   "lesson": null,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": null
-  },
-  {
    "file": "p010.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 10,
@@ -1138,22 +1106,6 @@
    "lessonStartPage": 80
   },
   {
-   "file": "p088.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 88,
-   "rect": [
-    442.5,
-    0.0,
-    565.2,
-    145.8
-   ],
-   "unit": 7,
-   "lesson": 2,
-   "lessonTitleEn": "Adding and Subtracting Vectors",
-   "lessonTitleAr": null,
-   "lessonStartPage": 88
-  },
-  {
    "file": "p090.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 90,
@@ -1328,22 +1280,6 @@
    "lessonTitleEn": "Scatter Graphs",
    "lessonTitleAr": null,
    "lessonStartPage": 106
-  },
-  {
-   "file": "p117.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 117,
-   "rect": [
-    442.5,
-    0.0,
-    565.2,
-    145.8
-   ],
-   "unit": 8,
-   "lesson": 2,
-   "lessonTitleEn": "Cumulative Frequency Graph",
-   "lessonTitleAr": null,
-   "lessonStartPage": 117
   },
   {
    "file": "p118.png",
@@ -1584,22 +1520,6 @@
    "lessonTitleEn": "Probability of Mutually Exclusive Events",
    "lessonTitleAr": null,
    "lessonStartPage": 131
-  },
-  {
-   "file": "p139.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 139,
-   "rect": [
-    442.5,
-    0.0,
-    565.2,
-    145.8
-   ],
-   "unit": 8,
-   "lesson": 5,
-   "lessonTitleEn": "Probability of Independent and Dependent Events",
-   "lessonTitleAr": null,
-   "lessonStartPage": 139
   },
   {
    "file": "p146.png",

@@ -6,6 +6,7 @@ import {
 } from "../lib/derivativeVerified";
 import { verifyDerivative } from "../lib/mathVerifierClient";
 import { logger } from "../lib/logger";
+import type { AuthenticatedRequest } from "../middlewares/auth.ts";
 
 const verifiedMathRouter = Router();
 
@@ -20,9 +21,9 @@ verifiedMathRouter.post("/generate/verified-derivative/template", async (_req, r
 });
 
 /** Single AI item — only returned if SymPy verifies answer + distractors. */
-verifiedMathRouter.post("/generate/verified-derivative/ai", async (_req, res) => {
+verifiedMathRouter.post("/generate/verified-derivative/ai", async (req: AuthenticatedRequest, res) => {
   try {
-    const { item, attempts } = await generateAiVerifiedItem();
+    const { item, attempts } = await generateAiVerifiedItem(undefined, req.user?.id);
     res.json({ ...item, attempts: attempts.length, attempt_log: attempts });
   } catch (err) {
     logger.error({ err }, "ai verified derivative error");
@@ -35,14 +36,18 @@ verifiedMathRouter.post("/generate/verified-derivative/ai", async (_req, res) =>
 
 /**
  * Done-criterion helper: generate template + AI items.
- * Query: ?template=10&ai=10
+ * Query: ?template=20&ai=5
+ *
+ * `ai` is capped at 5, not 20. Every AI item costs up to MAX_REGEN live
+ * completions, so the old ceiling meant one request could be worth 100 of them.
+ * Template items are free — SymPy, no model — so that half keeps its 20.
  */
-verifiedMathRouter.post("/generate/verified-derivative/batch", async (req, res) => {
+verifiedMathRouter.post("/generate/verified-derivative/batch", async (req: AuthenticatedRequest, res) => {
   try {
     const template = Math.min(20, Math.max(0, Number(req.query.template ?? 10)));
-    const ai = Math.min(20, Math.max(0, Number(req.query.ai ?? 10)));
+    const ai = Math.min(5, Math.max(0, Number(req.query.ai ?? 10)));
     const { items, wrong, unverified, attempts_per_ai_item, avg_ai_attempts } =
-      await generateBatch({ template, ai });
+      await generateBatch({ template, ai, userId: req.user?.id });
     res.json({
       total: items.length,
       wrong,

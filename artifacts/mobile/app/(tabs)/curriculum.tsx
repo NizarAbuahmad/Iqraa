@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   Grade, Subject,
   getVisibleGrades, getSubjectsForGrade,
@@ -16,6 +17,7 @@ import {
 import { qrResourceCountForGrade } from '@/services/bookQrLinks';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
+import { narrowToSelection } from '@/services/teacherCatalogFilter';
 
 const SUBJECT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   arabic:      'text',
@@ -66,11 +68,18 @@ export default function CurriculumScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, lang, isRTL } = useLanguage();
-  const visibleGrades = getVisibleGrades();
+  const { user } = useAuth();
+  // A teacher who has picked grades/subjects on /setup-subjects sees only
+  // those by default here — the whole point of asking at signup. Anyone else
+  // (no selection yet, or not a teacher) sees the full catalog, unchanged.
+  const visibleGrades = narrowToSelection(getVisibleGrades(), isTeacherRole(user?.role) ? user?.gradeIds : undefined);
   const [selectedGrade, setSelectedGrade] = useState<Grade>(visibleGrades[0]);
   const [search, setSearch] = useState('');
 
-  const subjects = getSubjectsForGrade(selectedGrade.id).filter(s => {
+  const subjects = narrowToSelection(
+    getSubjectsForGrade(selectedGrade.id),
+    isTeacherRole(user?.role) ? user?.subjectIds : undefined,
+  ).filter(s => {
     const q = search.toLowerCase();
     return (
       s.name.toLowerCase().includes(q) ||
@@ -222,9 +231,24 @@ export default function CurriculumScreen() {
                 <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
               </Pressable>
             ) : null}
-            <Text style={[styles.gradeLabel, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-              {t('subjects_count', subjects.length)} · {lang === 'ar' ? selectedGrade.nameAr : selectedGrade.name}
-            </Text>
+            <View style={[styles.gradeLabelRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Text style={[styles.gradeLabel, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', flex: 1 }]}>
+                {t('subjects_count', subjects.length)} · {lang === 'ar' ? selectedGrade.nameAr : selectedGrade.name}
+              </Text>
+              {isTeacherRole(user?.role) ? (
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push({ pathname: '/setup-subjects', params: { mode: 'edit' } } as any);
+                  }}
+                  hitSlop={8}
+                >
+                  <Text style={[styles.gradeLabel, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
+                    {t('editTeachingTitle')}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
           </>
         }
         ListEmptyComponent={
@@ -271,7 +295,8 @@ const styles = StyleSheet.create({
   gradeChip: { paddingHorizontal: 14, paddingVertical: 7 },
   gradeChipText: { fontSize: 13 },
   grid: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 120 },
-  gradeLabel: { fontSize: 12, marginBottom: 12 },
+  gradeLabelRow: { alignItems: 'center', gap: 10, marginBottom: 12 },
+  gradeLabel: { fontSize: 12 },
   libraryRow: { alignItems: 'center', gap: 12, borderWidth: 1, padding: 14, marginBottom: 14 },
   libraryTitle: { fontSize: 14 },
   libraryMeta: { fontSize: 11.5, marginTop: 2 },

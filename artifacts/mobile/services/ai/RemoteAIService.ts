@@ -15,12 +15,13 @@ import {
   ActivityOutput, AIRequest, AIService,
   ClassroomActivity, ClassroomActivityRequest,
   GenerateOptions,
-  LessonPlanOutput, QuizOutput, WorksheetOutput,
+  LessonPlanOutput, PromptSlidesRequest, QuizOutput, WorksheetOutput,
 } from './AIService';
 import { DEMO_MODE } from './demoMode';
 import { MockAIService } from './generators';
+import { buildPromptSlidesTemplate } from '@/services/promptSlidesTemplate';
 import { applyClassroomSetup } from '@/services/classroomRouting';
-import { apiFetch } from '../apiClient';
+import { ApiError, apiFetch } from '../apiClient';
 import { describeAiError, generateWithProvenance, recordGeneration } from './aiProvenance.ts';
 
 // Routes under /generate/* and /chat require auth (routes/index.ts scopes
@@ -74,7 +75,17 @@ async function postJSON<T>(
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-      throw new Error((err as any).error ?? `HTTP ${res.status}`);
+      // ApiError, not Error: the server sends a `code` with every expected
+      // failure (user_quota_exceeded, budget_exceeded, live_mode_off) precisely
+      // so the client can tell them apart from a real fault. Throwing a plain
+      // Error dropped it on the floor, which left the fallback policy in
+      // generateWithProvenance unable to distinguish "this teacher is out of
+      // allowance" from "the server broke" — and so it answered both with a
+      // fabricated worksheet.
+      throw new ApiError(
+        (err as { error?: string }).error ?? `HTTP ${res.status}`,
+        (err as { code?: string }).code,
+      );
     }
     return res.json() as Promise<T>;
   } catch (e) {
@@ -143,6 +154,44 @@ export class RemoteAIService extends AIService {
     // deck and any future source all pass through this method, and a model
     // that ignored the prompt's "there is a projector" line would otherwise
     // still tell the teacher to print the slides.
+    return applyClassroomSetup(
+      activity,
+      req.classroomSetup ?? 'screen',
+      req.language === 'arabic',
+    );
+  }
+
+  /**
+   * A deck built from the teacher's own free-text prompt — see
+   * `PromptSlidesRequest`. 'free' mode never touches the network or the AI
+   * budget: it is a deliberate, always-available option, not a fallback, so it
+   * bypasses `generateWithProvenance` entirely (there is nothing to attribute
+   * a "live"/"mock" badge to — the teacher chose this).
+   *
+   * 'ai' mode passes `demoMode: false` explicitly, overriding the app-wide
+   * `DEMO_MODE` default. Every other generator on the web build ships mocked
+   * (see `.github/workflows/deploy.yml`'s comment: `EXPO_PUBLIC_DEMO_MODE` is
+   * deliberately unset there, "as it always has" been) — flipping that global
+   * default would turn on live spend for every AI button on web, not just this
+   * one. This tool is different: the teacher explicitly opts into "AI-generated"
+   * knowing it spends the shared AI budget, so honoring that choice on every
+   * platform — not silently substituting mock content just because this
+   * happens to be the web build — is the one already-informed exception.
+   */
+  async generatePromptSlides(req: PromptSlidesRequest, opts?: GenerateOptions): Promise<ClassroomActivity> {
+    if (req.mode === 'free') {
+      return applyClassroomSetup(
+        buildPromptSlidesTemplate(req),
+        req.classroomSetup ?? 'screen',
+        req.language === 'arabic',
+      );
+    }
+    const activity = await generateWithProvenance(
+      'prompt-slides',
+      () => postJSON<ClassroomActivity>('/generate/prompt-slides', req, opts),
+      () => this.fallback.generatePromptSlides(req),
+      { demoMode: false },
+    );
     return applyClassroomSetup(
       activity,
       req.classroomSetup ?? 'screen',

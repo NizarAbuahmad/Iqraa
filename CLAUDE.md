@@ -242,6 +242,10 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   production daily at 06:00 UTC, on demand, and whenever a schema change
   reaches `main`. The `DATABASE_URL` repository secret it needs is set.
   The gap in the *process* is narrowed, not closed — nothing runs the push for
-  you. Re-check with `pnpm --filter @workspace/db run verify-schema` rather
-  than trusting this line, and note it only asks whether each table *name*
-  exists, so a table with a stale column set still reports `ok`.
+  you. And "checked" caught the table but not the column: on 2026-09-16 a PR
+  added two columns to `refresh_tokens`, the PR body claimed `schema-push:
+  done`, and they were not actually in production — every sign-in path 500'd
+  for 36 minutes, because `verify-schema` at the time only asked whether each
+  table *name* existed. It now checks columns too. Re-check with `pnpm
+  --filter @workspace/db run verify-schema` rather than trusting this line;
+  it still does not check a column's type, nullability, or default.

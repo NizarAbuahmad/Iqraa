@@ -1,0 +1,520 @@
+{
+  "meta": {
+    "grade": "الصف الثالث",
+    "grade_en": "Grade 3",
+    "subject": "الرياضيات",
+    "subject_en": "Mathematics",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة الرياضيات الصف الثالث الفصل الثاني (g3-math-s2-student-book, HarperCollins/NCCD)"
+    ],
+    "provenance_note": "نُقلت هذه البِنيةُ من فِهرسِ كتابِ الطالبِ (ص 4-5) وصفحاتِ افتتاحِ كلِّ درسٍ في 2026-09-17، بنفسِ طريقةِ iqra_curriculum_g3_math_sem1.json — انظر known_gaps هناك. الوحداتُ مرقَّمةٌ 7-12 استمرارًا لترقيمِ الفصلِ الأوّلِ (1-6)، كما هو مطبوعٌ في فهرسِ هذا الكتابِ نفسِهِ.",
+    "known_gaps": [
+      "لا general_idea_ar ولا prior_knowledge لأيِّ وحدةٍ، لنفسِ السببِ الوارِدِ في iqra_curriculum_g3_math_sem1.json (صفحةُ افتتاحِ الوحدةِ رسالةٌ لأسرةِ الطالبِ ووصفُ مشروعٍ، لا صندوقَيْ «أهمية الوحدة»/«تعلمت سابقًا»).",
+      "بعضُ الدروسِ لا تطبعُ صندوقَ «المُصْطَلَحات» صراحةً؛ فيها vocabulary فارغةٌ، وهذا مطابقٌ لما يطبعُهُ الكتابُ لا نقصًا في القراءةِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "الضَّرْبُ في عَدَدٍ مِنْ مَنْزِلَةٍ واحِدَةٍ",
+      "title_en": "Multiplying by a One-Digit Number",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's own «أَتَعَلَّمُ الْيَوْمَ» box; general_idea_ar/prior_knowledge not printed this way in this book — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "الضَّرْبُ في مُضاعَفاتِ العَدَدِ 10",
+          "title_en": "Multiplying Multiples of 10",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["إيجادَ ناتِجِ ضَرْبِ عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَةٍ واحِدَةٍ في عَدَدٍ مِنْ مُضاعَفاتِ 10."],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "تَقْديرُ ناتِجِ الضَّرْبِ",
+          "title_en": "Estimating Products",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَقْديرَ ناتِجِ ضَرْبِ عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَتَيْنِ في عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَةٍ واحِدَةٍ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "الضَّرْبُ بِاسْتِعْمالِ خاصِّيَّةِ التَّوْزيعِ",
+          "title_en": "Multiplying Using the Distributive Property",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["إيجادَ ناتِجِ ضَرْبِ عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَتَيْنِ في عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَةٍ واحِدَةٍ بِاسْتِعْمالِ خاصِّيَّةِ التَّوْزيعِ."],
+          "vocabulary": [
+            { "ar": "خاصِّيَّةُ التَّوْزيعِ", "en": "distributive property" }
+          ]
+        },
+        {
+          "id": "u7_l4",
+          "order": 4,
+          "title_ar": "الضَّرْبُ مِنْ دونِ إِعادَةِ التَّجْميعِ",
+          "title_en": "Multiplying without Regrouping",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["ضَرْبَ عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَتَيْنِ في عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَةٍ واحِدَةٍ مِنْ دونِ إِعادَةِ التَّجْميعِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l5",
+          "order": 5,
+          "title_ar": "الضَّرْبُ مَعَ إِعادَةِ التَّجْميعِ",
+          "title_en": "Multiplying with Regrouping",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["ضَرْبَ عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَتَيْنِ في عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَةٍ واحِدَةٍ مَعَ إِعادَةِ التَّجْميعِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l6",
+          "order": 6,
+          "title_ar": "خُطَّةُ حَلِّ المَسْأَلَةِ: التَّخْمينُ وَالتَّحَقُّقُ",
+          "title_en": "Problem-Solving Strategy: Guess and Check",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["حَلَّ مَسائِلَ عَلى الضَّرْبِ بِاسْتِعْمالِ التَّخْمينِ وَالتَّحَقُّقِ."],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "القِسْمَةُ عَلى عَدَدٍ مِنْ مَنْزِلَةٍ واحِدَةٍ",
+      "title_en": "Division by a One-Digit Number",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's own «أَتَعَلَّمُ الْيَوْمَ» box; general_idea_ar/prior_knowledge not printed this way in this book — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "قِسْمَةُ مُضاعَفاتِ العَدَدِ 10",
+          "title_en": "Dividing Multiples of 10",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["إيجادَ ناتِجِ قِسْمَةِ عَدَدٍ مِنْ مُضاعَفاتِ 10 عَلى عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَةٍ واحِدَةٍ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "تَقْديرُ ناتِجِ القِسْمَةِ",
+          "title_en": "Estimating Quotients",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَقْديرَ ناتِجِ قِسْمَةِ عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَتَيْنِ عَلى عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَةٍ واحِدَةٍ."],
+          "vocabulary": [
+            { "ar": "عَدَدانِ مُتَناغِمانِ", "en": "compatible numbers" }
+          ]
+        },
+        {
+          "id": "u8_l3",
+          "order": 3,
+          "title_ar": "القِسْمَةُ مِنْ دونِ باقٍ (النّاتِجُ مِنْ رَقْمَيْنِ)",
+          "title_en": "Division without Remainder (Two-Digit Quotient)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِسْمَةَ عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَتَيْنِ عَلى عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَةٍ واحِدَةٍ مِنْ دونِ باقٍ، بِحَيْثُ يَكونُ النّاتِجُ مِنْ رَقْمَيْنِ."],
+          "vocabulary": [
+            { "ar": "القِسْمَةُ الطَّويلَةُ", "en": "long division" }
+          ]
+        },
+        {
+          "id": "u8_l4",
+          "order": 4,
+          "title_ar": "القِسْمَةُ مَعَ باقٍ (النّاتِجُ مِنْ رَقْمَيْنِ)",
+          "title_en": "Division with Remainder (Two-Digit Quotient)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِسْمَةَ عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَتَيْنِ عَلى عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَةٍ واحِدَةٍ مَعَ باقٍ، بِحَيْثُ يَكونُ النّاتِجُ مِنْ رَقْمَيْنِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l5",
+          "order": 5,
+          "title_ar": "القِسْمَةُ مَعَ باقٍ (النّاتِجُ مِنْ رَقْمٍ واحِدٍ)",
+          "title_en": "Division with Remainder (One-Digit Quotient)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِسْمَةَ عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَتَيْنِ عَلى عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَةٍ واحِدَةٍ مَعَ باقٍ، بِحَيْثُ يَكونُ النّاتِجُ مُكَوَّنًا مِنْ رَقْمٍ واحِدٍ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l6",
+          "order": 6,
+          "title_ar": "مَهارَةُ حَلِّ المَسْأَلَةِ: اسْتِعْمالُ الخُطُواتِ الأَرْبَعِ",
+          "title_en": "Problem-Solving Skill: Using the Four Steps",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["اسْتِعْمالَ مَهارَةِ الخُطُواتِ الأَرْبَعِ لِتَفْسيرِ مَعْنى الباقي في مَسائِلَ حَياتِيَّةٍ."],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_ar": "الكُسورُ",
+      "title_en": "Fractions",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's own «أَتَعَلَّمُ الْيَوْمَ» box; general_idea_ar/prior_knowledge not printed this way in this book — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_ar": "الكَسْرُ كَجُزْءٍ مِنْ كُلٍّ",
+          "title_en": "Fraction as Part of a Whole",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِراءَةَ الكُسورِ كَجُزْءٍ مِنْ كُلٍّ، وَكِتابَتَها."],
+          "vocabulary": [
+            { "ar": "الكَسْرُ", "en": "fraction" },
+            { "ar": "المَقامُ", "en": "denominator" },
+            { "ar": "البَسْطُ", "en": "numerator" }
+          ]
+        },
+        {
+          "id": "u9_l2",
+          "order": 2,
+          "title_ar": "الكَسْرُ كَجُزْءٍ مِنْ مَجْموعَةٍ",
+          "title_en": "Fraction as Part of a Set",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِراءَةَ الكُسورِ كَجُزْءٍ مِنْ مَجْموعَةٍ، وَكِتابَتَها."],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l3",
+          "order": 3,
+          "title_ar": "الكُسورُ المُساوِيَةُ لِلْواحِدِ",
+          "title_en": "Fractions Equal to One",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["الكُسورَ الَّتي تُمَثِّلُ الواحِدَ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l4",
+          "order": 4,
+          "title_ar": "الكُسورُ عَلى خَطِّ الأَعْدادِ",
+          "title_en": "Fractions on a Number Line",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَمْثيلَ الكُسورِ عَلى خَطِّ الأَعْدادِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l5",
+          "order": 5,
+          "title_ar": "الكُسورُ المُتَكافِئَةُ",
+          "title_en": "Equivalent Fractions",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["إيجادَ الكُسورِ المُتَكافِئَةِ بِاسْتِعْمالِ النَّماذِجِ وَخَطِّ الأَعْدادِ."],
+          "vocabulary": [
+            { "ar": "الكُسورُ المُتَكافِئَةُ", "en": "equivalent fractions" }
+          ]
+        },
+        {
+          "id": "u9_l6",
+          "order": 6,
+          "title_ar": "مُقارَنَةُ الكُسورِ",
+          "title_en": "Comparing Fractions",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["المُقارَنَةَ بَيْنَ الكُسورِ بِاسْتِعْمالِ النَّماذِجِ وَخَطِّ الأَعْدادِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l7",
+          "order": 7,
+          "title_ar": "تَرْتيبُ الكُسورِ",
+          "title_en": "Ordering Fractions",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَرْتيبَ الكُسورِ تَصاعُدِيًّا أَوْ تَنازُلِيًّا بِاسْتِعْمالِ النَّماذِجِ وَخَطِّ الأَعْدادِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l8",
+          "order": 8,
+          "title_ar": "الكُسورُ وَالقِسْمَةُ",
+          "title_en": "Fractions and Division",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["إيجادَ قيمَةِ كَسْرِ وَحْدَةٍ مِنْ عَدَدٍ مُكَوَّنٍ مِنْ مَنْزِلَتَيْنِ بِاسْتِعْمالِ القِسْمَةِ (مِنْ دونِ باقٍ)."],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u10",
+      "number": 10,
+      "title_ar": "الزَّمَنُ",
+      "title_en": "Time",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's own «أَتَعَلَّمُ الْيَوْمَ» box; general_idea_ar/prior_knowledge not printed this way in this book — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u10_l1",
+          "order": 1,
+          "title_ar": "الوَقْتُ بِالدَّقائِقِ",
+          "title_en": "Time in Minutes",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِراءَةَ الوَقْتِ بِالسّاعاتِ وَالدَّقائِقِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l2",
+          "order": 2,
+          "title_ar": "قِراءَةُ الوَقْتِ بِاسْتِعْمالِ (وَ، إِلّا)",
+          "title_en": "Reading Time Using \"Past\" and \"To\"",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِراءَةَ الوَقْتِ بِاسْتِعْمالِ كَلِمَتَيْ (وَ) وَ(إِلّا)."],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l3",
+          "order": 3,
+          "title_ar": "قَبْلَ الظُّهْرِ، بَعْدَ الظُّهْرِ",
+          "title_en": "A.M. and P.M.",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["التَّمْييزَ بَيْنَ وَقْتَيْ (قَبْلَ الظُّهْرِ) وَ(بَعْدَ الظُّهْرِ)."],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l4",
+          "order": 4,
+          "title_ar": "الفَتَراتُ الزَّمَنِيَّةُ (1)",
+          "title_en": "Elapsed Time (1)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["حِسابَ طولِ الفَتَراتِ الزَّمَنِيَّةِ بِالدَّقائِقِ خِلالَ السّاعَةِ نَفْسِها."],
+          "vocabulary": [
+            { "ar": "الفَتْرَةُ الزَّمَنِيَّةُ", "en": "elapsed time" }
+          ]
+        },
+        {
+          "id": "u10_l5",
+          "order": 5,
+          "title_ar": "الفَتَراتُ الزَّمَنِيَّةُ (2)",
+          "title_en": "Elapsed Time (2)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["حِسابَ طولِ الفَتَراتِ الزَّمَنِيَّةِ خِلالَ اليَوْمِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l6",
+          "order": 6,
+          "title_ar": "التَّقْويمُ",
+          "title_en": "The Calendar",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["حِسابَ الفَتَراتِ الزَّمَنِيَّةِ بِالأَيّامِ وَالأَسابيعِ."],
+          "vocabulary": [
+            { "ar": "التَّقْويمُ", "en": "calendar" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u11",
+      "number": 11,
+      "title_ar": "الهَنْدَسَةُ وَالقِياسُ",
+      "title_en": "Geometry and Measurement",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's own «أَتَعَلَّمُ الْيَوْمَ» box; general_idea_ar/prior_knowledge not printed this way in this book — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u11_l1",
+          "order": 1,
+          "title_ar": "المِتْرُ وَالسَّنْتيمِتْرُ",
+          "title_en": "Meter and Centimeter",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["التَّحْويلَ مِنْ وَحْدَةِ المِتْرِ إِلى وَحْدَةِ السَّنْتيمِتْرِ."],
+          "vocabulary": [
+            { "ar": "السَّنْتيمِتْرُ", "en": "centimeter" },
+            { "ar": "المِتْرُ", "en": "meter" }
+          ]
+        },
+        {
+          "id": "u11_l2",
+          "order": 2,
+          "title_ar": "الكيلومِتْرُ",
+          "title_en": "Kilometer",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "وَحْدَةَ الكيلومِتْرِ.",
+            "التَّحْويلَ مِنْ وَحْدَةِ الكيلومِتْرِ إِلى وَحْدَةِ المِتْرِ."
+          ],
+          "vocabulary": [
+            { "ar": "الكيلومِتْرُ", "en": "kilometer" }
+          ]
+        },
+        {
+          "id": "u11_l3",
+          "order": 3,
+          "title_ar": "الغِرامُ وَالكيلوغِرامُ",
+          "title_en": "Gram and Kilogram",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["التَّحْويلَ مِنْ وَحْدَةِ الكيلوغِرامِ إِلى وَحْدَةِ الغِرامِ."],
+          "vocabulary": [
+            { "ar": "الغِرامُ", "en": "gram" },
+            { "ar": "الكيلوغِرامُ", "en": "kilogram" }
+          ]
+        },
+        {
+          "id": "u11_l4",
+          "order": 4,
+          "title_ar": "اللِّتْرُ وَالمِلّيلِتْرُ",
+          "title_en": "Liter and Milliliter",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["التَّحْويلَ مِنْ وَحْدَةِ اللِّتْرِ إِلى وَحْدَةِ المِلّيلِتْرِ."],
+          "vocabulary": [
+            { "ar": "اللِّتْرُ", "en": "liter" },
+            { "ar": "المِلّيلِتْرُ", "en": "milliliter" }
+          ]
+        },
+        {
+          "id": "u11_l5",
+          "order": 5,
+          "title_ar": "المُحيطُ",
+          "title_en": "Perimeter",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["إيجادَ مُحيطِ شَكْلٍ."],
+          "vocabulary": [
+            { "ar": "المُحيطُ", "en": "perimeter" }
+          ]
+        },
+        {
+          "id": "u11_l6",
+          "order": 6,
+          "title_ar": "المِساحَةُ",
+          "title_en": "Area",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["إيجادَ مِساحَةِ شَكْلٍ."],
+          "vocabulary": [
+            { "ar": "المِساحَةُ", "en": "area" }
+          ]
+        },
+        {
+          "id": "u11_l7",
+          "order": 7,
+          "title_ar": "مِساحَةُ المُسْتَطيلِ",
+          "title_en": "Area of a Rectangle",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["إيجادَ مِساحَةِ المُسْتَطيلِ."],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u12",
+      "number": 12,
+      "title_ar": "الإِحْصاءُ وَالاِحْتِمالاتُ",
+      "title_en": "Statistics and Probability",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's own «أَتَعَلَّمُ الْيَوْمَ» box; general_idea_ar/prior_knowledge not printed this way in this book — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u12_l1",
+          "order": 1,
+          "title_ar": "أَشْكالُ ڤِن",
+          "title_en": "Venn Diagrams",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تَمْثيلَ بَياناتٍ بِأَشْكالِ ڤِنْ.",
+            "تَفْسيرَ بَياناتٍ مُمَثَّلَةٍ بِأَشْكالِ ڤِنْ."
+          ],
+          "vocabulary": [
+            { "ar": "أَشْكالُ ڤِنْ", "en": "Venn diagrams" }
+          ]
+        },
+        {
+          "id": "u12_l2",
+          "order": 2,
+          "title_ar": "الجَدْوَلُ ذو الاتِّجاهَيْنِ",
+          "title_en": "Two-Way Table",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِراءَةَ الجَدْوَلِ ذي الاتِّجاهَيْنِ وَتَفْسيرَهُ."],
+          "vocabulary": [
+            { "ar": "الجَدْوَلُ ذو الاتِّجاهَيْنِ", "en": "two-way table" }
+          ]
+        },
+        {
+          "id": "u12_l3",
+          "order": 3,
+          "title_ar": "تَمْثيلُ البَياناتِ بِالأَعْمِدَةِ",
+          "title_en": "Representing Data with Bar Graphs",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَمْثيلَ البَياناتِ بِالأَعْمِدَةِ الأُفُقِيَّةِ وَالرَّأْسِيَّةِ."],
+          "vocabulary": [
+            { "ar": "التَّمْثيلُ بِالأَعْمِدَةِ", "en": "bar graph" }
+          ]
+        },
+        {
+          "id": "u12_l4",
+          "order": 4,
+          "title_ar": "تَفْسيرُ البَياناتِ المُمَثَّلَةِ بِالأَعْمِدَةِ",
+          "title_en": "Interpreting Bar Graph Data",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَفْسيرَ بَياناتٍ مُمَثَّلَةٍ بِالأَعْمِدَةِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u12_l5",
+          "order": 5,
+          "title_ar": "أَكيدٌ، مُمْكِنٌ، مُسْتَحيلٌ",
+          "title_en": "Certain, Possible, Impossible",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَحْديدَ الحَدَثِ الأَكيدِ وَالمُمْكِنِ وَالمُسْتَحيلِ."],
+          "vocabulary": [
+            { "ar": "أَكيدٌ", "en": "certain" },
+            { "ar": "مُمْكِنٌ", "en": "possible" },
+            { "ar": "مُسْتَحيلٌ", "en": "impossible" }
+          ]
+        }
+      ]
+    }
+  ]
+}

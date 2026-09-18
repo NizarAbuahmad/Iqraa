@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, uuid, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp, uuid, integer, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -56,6 +56,18 @@ export const users = pgTable("users", {
    * changes more often than schemas do.
    */
   rosterConsentVersion: text("roster_consent_version").notNull().default(""),
+  /**
+   * Grade and subject catalog ids (`@workspace/curriculum`'s GRADES/SUBJECTS)
+   * this teacher picked at signup. Empty on every non-teacher account, and on
+   * a teacher who hasn't completed setup yet — that emptiness is the signal
+   * the mobile routing gate reads to send them to `/setup-subjects` (see
+   * `needsTeacherSetup` in routeGating.ts). Editable afterwards from the
+   * profile screen, never enforced server-side beyond validating the ids
+   * exist in the catalog: this narrows what the curriculum browser shows by
+   * default, it does not gate access to any grade/subject's content.
+   */
+  gradeIds: jsonb("grade_ids").$type<string[]>().notNull().default([]),
+  subjectIds: jsonb("subject_ids").$type<string[]>().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   lastLogin: timestamp("last_login", { withTimezone: true }),
 });
@@ -65,6 +77,34 @@ export const refreshTokens = pgTable("refresh_tokens", {
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   tokenHash: text("token_hash").unique().notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  /**
+   * One sign-in's whole chain of rotated tokens.
+   *
+   * `/auth/refresh` rotates: the token presented is retired and a new one
+   * issued. Before this column that retirement was a DELETE, so a stolen token
+   * replayed after the victim's client had already rotated simply found no row
+   * and answered 401 — identical to an expired or made-up token. The theft was
+   * invisible, and the thief's own token, minted at the rotation they won, kept
+   * working for its full term.
+   *
+   * With a family id, a replay is recognisable: the row is still there and
+   * carries a `rotatedAt`. That is a fact about a token that cannot happen
+   * innocently, and the answer is to end every token descended from the same
+   * sign-in — the legitimate client's included, because there is no way to tell
+   * which of the two holders is the real one. Both get signed out; only one of
+   * them can sign back in.
+   */
+  familyId: uuid("family_id").notNull().defaultRandom(),
+  /**
+   * When this token was exchanged for its successor. Null means live.
+   *
+   * Rows are kept past rotation rather than deleted, which is the whole
+   * mechanism — a deleted row cannot tell you it was used twice. They are
+   * pruned once expired (see `pruneExpiredRefreshTokens`), so the table's
+   * steady-state size is one row per rotation within the token's lifetime, not
+   * one per rotation ever.
+   */
+  rotatedAt: timestamp("rotated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

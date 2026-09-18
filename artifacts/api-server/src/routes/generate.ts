@@ -1,6 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { Router, type Response } from "express";
 import type { AuthenticatedRequest } from "../middlewares/auth.ts";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { openai, generateImageBuffer } from "@workspace/integrations-openai-ai-server";
+import { isPublicR2Configured, publicUrl, putPublicObject } from "../lib/r2.ts";
 import { logger } from "../lib/logger";
 import {
   SYSTEM_AR,
@@ -21,6 +23,12 @@ import {
   classroomSetupClause,
   stripUnearnedVerification,
 } from "../lib/classroomPrompts.ts";
+import {
+  MAX_PROMPT_SLIDES,
+  MAX_PROMPT_SLIDE_IMAGES,
+  promptSlidesPromptAr,
+  promptSlidesPromptEn,
+} from "../lib/promptSlidesPrompt.ts";
 
 import {
   AiBudgetExceededError,
@@ -108,6 +116,16 @@ type GenerateResult = {
    * nothing to say yet.
    */
   variantId?: string;
+  /**
+   * Set only when a cap turned a fresh generation into a pooled repeat.
+   *
+   * The teacher asked for something new and got something they may well have
+   * seen before. Saying so is the whole difference between a graceful
+   * degradation and a silent one: without this the screen would present a
+   * month-old variant as newly generated, which is the same substitution the
+   * provenance badge exists to prevent on the client side.
+   */
+  servedReason?: "quota" | "budget";
 };
 
 type Completion = {
@@ -154,6 +172,35 @@ async function completeOnce(args: {
     recordUsage(completion.usage, args.model, { ...args.detail, artifactId: null });
     throw err;
   }
+}
+
+/**
+ * Ask both caps whether a live call is allowed, and hand back the refusal
+ * rather than throwing it.
+ *
+ * Returning the error instead of raising it is what lets the caller choose to
+ * serve a pooled repeat instead — a decision that needs to know a cap said no,
+ * *and* still hold the original error in case there is nothing to fall back to.
+ * Only the two cap errors are caught; anything else (a broken ledger query, say)
+ * propagates, because "the guard itself failed" must not read as "the guard
+ * said no".
+ */
+async function refusalFromCaps(
+  userId: string | null | undefined,
+): Promise<{ reason: "quota" | "budget"; error: Error } | null> {
+  try {
+    await assertUserQuotaAvailable(userId);
+  } catch (err) {
+    if (err instanceof AiUserQuotaExceededError) return { reason: "quota", error: err };
+    throw err;
+  }
+  try {
+    assertBudgetAvailable();
+  } catch (err) {
+    if (err instanceof AiBudgetExceededError) return { reason: "budget", error: err };
+    throw err;
+  }
+  return null;
 }
 
 /**
@@ -223,16 +270,49 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
     return { content: decision.artifact.content, variantId: decision.artifact.id };
   }
 
-  assertBudgetAvailable();
-  // Same placement as the global cap, and for the same reason: a pooled hit
-  // above costs nothing to serve, so it must not spend a teacher's allowance.
+  // Both caps, and what to do when one of them says no.
   //
-  // This covers every route in this file. It does NOT cover
-  // /generate/verified-derivative/* — those live in verifiedMath.ts and reach
-  // the model through derivativeVerified.ts, which meters against the global
-  // cap but has no user to bill (the handlers take `_req`). The per-user
-  // limiter at the mount site is what bounds them.
-  await assertUserQuotaAvailable(userId);
+  // Placement is the point. This sits *after* the serve branch above, so a
+  // teacher who is out of allowance still gets every pooled artifact, without
+  // limit — the caps exist to bound what we pay OpenAI, and serving an artifact
+  // another teacher already paid for costs nothing. `assertBudgetAvailable()`
+  // was moved here for that reason already (see the note above); the per-user
+  // check inherits it by standing on the same line.
+  //
+  // When a cap does refuse, prefer a repeat over a refusal. Reaching here means
+  // the pool had nothing unseen — but "nothing unseen" is not "nothing at all",
+  // and handing back a variant this teacher has seen before beats handing back
+  // an error. `servedReason` is what keeps that honest; it must reach the
+  // screen, or a degraded serve is indistinguishable from a fresh one.
+  // No role is threaded here: /generate is teacher-only (requireRole in
+  // routes/index.ts), so the teacher allowance is always the right one.
+  //
+  // This covers every route in this file. /generate/verified-derivative/* lives
+  // in verifiedMath.ts and reaches the model through derivativeVerified.ts,
+  // which checks the same allowance itself — its handlers now take the request
+  // and pass `req.user.id` down, so those completions are both billed to a user
+  // and bounded by one.
+  const capRefusal = await refusalFromCaps(userId);
+  if (capRefusal) {
+    const fallback = pool.variants[0];
+    if (fallback) {
+      noteServed(fallback.id);
+      recordCacheHit(model, { ...detail, artifactId: fallback.id });
+      logger.info(
+        { kind, strictKey: keys.strictKey, reason: capRefusal.reason },
+        "cap reached — serving a pooled variant instead of generating",
+      );
+      return {
+        content: fallback.content,
+        variantId: fallback.id,
+        servedReason: capRefusal.reason,
+      };
+    }
+    // Nothing pooled to fall back to, so the refusal is the honest answer. The
+    // original error is rethrown rather than a fresh one: it carries the real
+    // spend and limit, and an error reconstructed here would report $0 of $0.
+    throw capRefusal.error;
+  }
 
   // What this teacher has already been shown for this key: the pooled variants
   // they were served, plus whatever the screen says it is holding. Only the
@@ -364,23 +444,48 @@ function lessonRefOf(body: Record<string, unknown>): string {
  * the printed book; stopping them at the prompt would waste the only part of
  * retrieval a human can check. `variantId` is the handle the screen sends back
  * when the teacher presses regenerate, so the server knows which of the pool's
- * variants not to hand them again. Additive — every existing field is
- * untouched, and an ungrounded generation is returned exactly as it was.
+ * variants not to hand them again. `servedReason` says a cap turned this into a
+ * pooled repeat. Additive — every existing field is untouched, and an ungrounded
+ * generation is returned exactly as it was.
+ *
+ * Takes the whole `GenerateResult` rather than its fields one at a time: the
+ * meta it attaches grows (this is the second field), and a positional parameter
+ * per field means every one of the seven routes below has to be edited to pass
+ * something it does not otherwise care about.
  */
-function withMeta(parsed: unknown, grounding: Grounding | null, variantId?: string): unknown {
-  if (typeof parsed !== "object" || parsed === null) return parsed;
-  if (!grounding && !variantId) return parsed;
+function withMeta(result: GenerateResult, grounding: Grounding | null): unknown {
+  const { content, variantId, servedReason } = result;
+  if (typeof content !== "object" || content === null) return content;
+  if (!grounding && !variantId && !servedReason) return content;
   return {
-    ...parsed,
+    ...content,
     ...(grounding ? { sources: grounding.sources } : {}),
     ...(variantId ? { variantId } : {}),
+    ...(servedReason ? { servedReason } : {}),
   };
 }
 
-/** AI live-mode-off and budget-exceeded are expected, user-facing states — not server errors. */
+/**
+ * AI live-mode-off and cap-exceeded are expected, user-facing states — not
+ * server errors.
+ *
+ * Every one of them carries a `code`, matching evaluations.ts. The API answers
+ * in English and the app is Arabic, so the code is the only thing the client can
+ * translate from without matching on message text — and these three mean three
+ * different things to a teacher ("wait a month", "we're switched off", "try
+ * again"), which a single generic failure message flattens into one.
+ *
+ * Reaching the two cap branches here means the pool had nothing to fall back on
+ * — generateContent serves a repeat when it can (see refusalFromCaps). So this
+ * really is "there is nothing for you", not merely "you are capped".
+ */
 function respondAiError(err: unknown, res: Response, label: string): void {
   if (err instanceof AiLiveModeOffError) {
-    res.status(503).json({ error: err.message });
+    res.status(503).json({ error: err.message, code: "live_mode_off" });
+    return;
+  }
+  if (err instanceof AiUserQuotaExceededError) {
+    res.status(429).json({ error: err.message, code: "user_quota_exceeded" });
     return;
   }
   if (err instanceof AiUserQuotaExceededError) {
@@ -388,7 +493,7 @@ function respondAiError(err: unknown, res: Response, label: string): void {
     return;
   }
   if (err instanceof AiBudgetExceededError) {
-    res.status(429).json({ error: err.message });
+    res.status(429).json({ error: err.message, code: "budget_exceeded" });
     return;
   }
   if (err instanceof UnusableGenerationError) {
@@ -409,11 +514,11 @@ generateRouter.post("/generate/lesson-plan", async (req: AuthenticatedRequest, r
     const isAr = req.body.language !== "english";
     const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? lessonPlanPromptAr(body) : lessonPlanPromptEn(body);
-    const { content, variantId } = await generateContent({
+    const result = await generateContent({
       kind: "lesson-plan", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
     });
-    res.json(withMeta(content, grounding, variantId));
+    res.json(withMeta(result, grounding));
   } catch (err) {
     respondAiError(err, res, "generate lesson-plan");
   }
@@ -425,11 +530,11 @@ generateRouter.post("/generate/worksheet", async (req: AuthenticatedRequest, res
     const isAr = req.body.language !== "english";
     const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? worksheetPromptAr(body) : worksheetPromptEn(body);
-    const { content, variantId } = await generateContent({
+    const result = await generateContent({
       kind: "worksheet", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
     });
-    res.json(withMeta(content, grounding, variantId));
+    res.json(withMeta(result, grounding));
   } catch (err) {
     respondAiError(err, res, "generate worksheet");
   }
@@ -441,11 +546,11 @@ generateRouter.post("/generate/quiz", async (req: AuthenticatedRequest, res) => 
     const isAr = req.body.language !== "english";
     const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? quizPromptAr(body) : quizPromptEn(body);
-    const { content, variantId } = await generateContent({
+    const result = await generateContent({
       kind: "quiz", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
     });
-    res.json(withMeta(content, grounding, variantId));
+    res.json(withMeta(result, grounding));
   } catch (err) {
     respondAiError(err, res, "generate quiz");
   }
@@ -460,12 +565,12 @@ generateRouter.post("/generate/homework", async (req: AuthenticatedRequest, res)
     // `homework: true` rides on the key body as well as the prompt — a homework
     // and a worksheet for one lesson are different artifacts, and the pool must
     // not hand one out for the other.
-    const { content, variantId } = await generateContent({
+    const result = await generateContent({
       kind: "homework", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body: { ...body, homework: true }, isAr,
       userId: req.user?.id,
     });
-    res.json(withMeta(content, grounding, variantId));
+    res.json(withMeta(result, grounding));
   } catch (err) {
     respondAiError(err, res, "generate homework");
   }
@@ -477,11 +582,11 @@ generateRouter.post("/generate/activity", async (req: AuthenticatedRequest, res)
     const isAr = req.body.language !== "english";
     const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? activityPromptAr(body) : activityPromptEn(body);
-    const { content, variantId } = await generateContent({
+    const result = await generateContent({
       kind: "activity", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
     });
-    res.json(withMeta(content, grounding, variantId));
+    res.json(withMeta(result, grounding));
   } catch (err) {
     respondAiError(err, res, "generate activity");
   }
@@ -500,7 +605,7 @@ generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedReq
   try {
     const prompt = (isAr ? classroomPromptAr(body) : classroomPromptEn(body))
       + classroomSetupClause(body, isAr);
-    const { content, variantId } = await generateContent({
+    const result = await generateContent({
       kind: "classroom-activity", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
     });
@@ -512,12 +617,108 @@ generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedReq
     // The escape deck's unlock codes are the activity's only mechanic and the
     // app never validates them, so an unreadable or repeated digit ships as-is.
     // A no-op for every other activity type. See lib/escapeCodes.ts.
-    const withCodes = normalizeEscapeCodes(content, isAr);
+    const withCodes = normalizeEscapeCodes(result.content, isAr);
     // No live call runs a verifier over its own output, so any "verified"
     // fields a model invented are unearned. See stripUnearnedVerification.
-    res.json(withMeta(stripUnearnedVerification(withCodes), grounding, variantId));
+    res.json(
+      withMeta({ ...result, content: stripUnearnedVerification(withCodes) }, grounding),
+    );
   } catch (err) {
     respondAiError(err, res, "generate classroom-activity");
+  }
+});
+
+
+/**
+ * Turns `mediaPrompt`s from `/generate/prompt-slides` into real images, and
+ * enforces the slide-count and per-deck image caps stated in the prompt (a
+ * belt-and-suspenders backstop — the model does not always obey slide-count
+ * instructions, and nothing else here would catch it).
+ *
+ * A slide beyond the image cap, one whose `mediaPrompt` is missing, or one
+ * whose image generation fails is downgraded to a plain `'intro'` slide (the
+ * type this JSON contract already uses for plain explanatory text — see
+ * `classroomPrompts.ts`'s own quick-check intro slide; `ActivitySlide.type`
+ * has no separate "content" member, so writing one here would render as
+ * nothing in `presentation.tsx`) rather than failing the whole request — the
+ * deck is still usable without that one picture. Images go to the public
+ * bucket (`putPublicObject`/`publicUrl`), not the signed-URL private one: a
+ * deck reopened weeks after generation needs a link that has not expired.
+ */
+async function finalizePromptSlides(content: unknown): Promise<unknown> {
+  if (content === null || typeof content !== "object" || Array.isArray(content)) return content;
+  const deck = content as Record<string, unknown>;
+  const slides = deck.slides;
+  if (!Array.isArray(slides)) return content;
+
+  const truncated = slides.slice(0, MAX_PROMPT_SLIDES);
+  const canGenerateImages = isPublicR2Configured();
+  let imagesUsed = 0;
+
+  const finished = await Promise.all(truncated.map(async (raw) => {
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return raw;
+    const slide = raw as Record<string, unknown>;
+    if (slide.type !== "media") return slide;
+
+    const { mediaPrompt, ...rest } = slide;
+    const trimmedPrompt = typeof mediaPrompt === "string" ? mediaPrompt.trim() : "";
+    if (!canGenerateImages || !trimmedPrompt || imagesUsed >= MAX_PROMPT_SLIDE_IMAGES) {
+      return { ...rest, type: "intro" };
+    }
+    imagesUsed += 1;
+    try {
+      const buffer = await generateImageBuffer(trimmedPrompt);
+      const key = `deck-images/${randomUUID()}.png`;
+      await putPublicObject(key, buffer, "image/png");
+      const url = publicUrl(key);
+      if (!url) throw new Error("R2 public base URL not configured");
+      return { ...rest, mediaUrl: url, mediaKind: "image" };
+    } catch (err) {
+      logger.warn({ err }, "prompt-slides image generation failed");
+      return { ...rest, type: "intro" };
+    }
+  }));
+
+  return { ...deck, slides: finished };
+}
+
+// ─── Prompt Slides route ───────────────────────────────────────────────────────
+// The teacher's own free-text prompt IS the spec — there is no curriculum
+// lesson to ground this in, unlike every other route here. The prompt is
+// carried as `additionalContext` with `contextSource` forced to `'teacher'`
+// *server-side*, ignoring anything the client sent for that field: this is
+// what makes `generationKeys()` (lib/generationKey.ts) mark the request
+// unshareable so it never touches the `ai_artifacts` pool. Skipping this would
+// serve one teacher's prompt — and the deck built from it — verbatim to
+// another teacher out of the shared pool. See CLAUDE.md: "A shared artifact
+// makes every generator bug everybody's bug" — this route has no business
+// being in that pool at all.
+generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest, res) => {
+  const reqBody = req.body as Record<string, unknown>;
+  const isAr = reqBody.language === 'arabic';
+  const prompt = typeof reqBody.prompt === 'string' ? reqBody.prompt.trim() : '';
+  if (!prompt) {
+    res.status(400).json({ error: 'prompt is required' });
+    return;
+  }
+  const body: Record<string, unknown> = {
+    ...reqBody,
+    additionalContext: prompt,
+    contextSource: 'teacher',
+  };
+  try {
+    const userPrompt = (isAr ? promptSlidesPromptAr(body) : promptSlidesPromptEn(body))
+      + classroomSetupClause(body, isAr);
+    const result = await generateContent({
+      kind: "prompt-slides", systemPrompt: systemPrompt(isAr), userPrompt,
+      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+    });
+    const finalized = await finalizePromptSlides(result.content);
+    res.json(
+      withMeta({ ...result, content: stripUnearnedVerification(finalized) }, null),
+    );
+  } catch (err) {
+    respondAiError(err, res, "generate prompt-slides");
   }
 });
 

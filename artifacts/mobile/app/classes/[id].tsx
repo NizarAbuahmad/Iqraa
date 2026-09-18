@@ -1,7 +1,7 @@
 /**
  * Class detail — who is in this class, and what was made for it.
  *
- * Three tabs over one class. The roster (الطلاب) is the register; materials
+ * Three tabs over one class. The roster (الطلبة) is the register; materials
  * (الموارد) is what the teacher attached from their workspace; exams
  * (الامتحانات) is what they set and are marking. Together they turn a class
  * from an address book into "what did I give صف أ, and how did they do".

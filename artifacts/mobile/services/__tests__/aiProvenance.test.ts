@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  aiErrorMessageKey,
   aiSourceBadgeState,
   describeAiError,
   generateWithProvenance,
   isAbortError,
+  isCapError,
   getGenerationHistory,
   getLastGeneration,
   recordGeneration,
@@ -166,6 +168,99 @@ test('a cancelled call never substitutes mock content', async () => {
     /aborted/,
   );
   assert.equal(mockRan, false, 'the mock generator must not run on a cancel');
+});
+
+test('isCapError recognises a cap by code, not by class', () => {
+  // Duck-typed on purpose: ApiError lives in apiClient, which reaches
+  // react-native and cannot be imported by this runner at all. The code is the
+  // contract, the class is not.
+  assert.equal(isCapError({ code: 'user_quota_exceeded' }), true);
+  assert.equal(isCapError({ code: 'budget_exceeded' }), true);
+  assert.equal(isCapError({ code: 'live_mode_off' }), true);
+  // A failure that is genuinely a failure must still fall back.
+  assert.equal(isCapError({ code: 'email_not_verified' }), false);
+  assert.equal(isCapError(new Error('HTTP 500')), false);
+  assert.equal(isCapError(null), false);
+  assert.equal(isCapError('user_quota_exceeded'), false);
+});
+
+test('a pooled repeat is labelled a saved copy, not a live generation', async () => {
+  fresh();
+  // The server serves an already-generated variant when a cap refuses a fresh
+  // one. It is real content — so `source` stays 'live' — but presenting it as
+  // newly generated is the claim that would be false, especially to a teacher
+  // who just pressed regenerate to get away from this exact worksheet.
+  type Served = { title: string; servedReason?: string };
+  const servedFromPool = async (): Promise<Served> =>
+    ({ title: 'ورقة عمل', servedReason: 'quota' });
+  const objectMock = async (): Promise<Served> => ({ title: 'mock' });
+
+  const out = await generateWithProvenance('worksheet', servedFromPool, objectMock, {
+    demoMode: false, strict: false, now: clock,
+  });
+
+  assert.equal((out as { title: string }).title, 'ورقة عمل', 'the artifact is still returned');
+  assert.equal(getLastGeneration()?.reason, 'saved-copy');
+  assert.equal(getLastGeneration()?.source, 'live', 'real content, really generated');
+  assert.equal(
+    aiSourceBadgeState(false, getLastGeneration())?.labelKey,
+    'aiSavedCopyBadge',
+    'the badge on every generator screen is what discloses it',
+  );
+});
+
+test('an ordinary live answer is still labelled live', async () => {
+  fresh();
+  // Guards the other direction: servedReasonOf must not see a reason where
+  // there is none, or every generation would claim to be a saved copy.
+  await generateWithProvenance(
+    'worksheet',
+    async () => ({ title: 'ورقة عمل' }),
+    async () => ({ title: 'mock' }),
+    { demoMode: false, strict: false, now: clock },
+  );
+  assert.equal(getLastGeneration()?.reason, 'live');
+  assert.equal(aiSourceBadgeState(false, getLastGeneration())?.labelKey, 'aiLiveBadge');
+});
+
+test('aiErrorMessageKey tells the three actionable states apart', () => {
+  // A quota, a switched-off service and a genuine fault need three different
+  // sentences: "reuse what you have", "come back later", "try again". Showing
+  // generationFailed for all three is what made a spend cap read as an outage.
+  assert.equal(aiErrorMessageKey({ code: 'user_quota_exceeded' }), 'aiQuotaSpent');
+  assert.equal(aiErrorMessageKey({ code: 'budget_exceeded' }), 'aiQuotaSpent');
+  assert.equal(aiErrorMessageKey({ code: 'live_mode_off' }), 'aiUnavailable');
+  assert.equal(aiErrorMessageKey(new Error('HTTP 500')), 'generationFailed');
+  assert.equal(aiErrorMessageKey({ code: 'something_new' }), 'generationFailed');
+  assert.equal(aiErrorMessageKey(null), 'generationFailed');
+  assert.equal(aiErrorMessageKey(undefined), 'generationFailed');
+});
+
+test('a capped call never substitutes mock content', async () => {
+  fresh();
+  let mockRan = false;
+  const watchedMock = async () => { mockRan = true; return 'mock-content'; };
+  const capped = async (): Promise<string> => {
+    const e: Error & { code?: string } = new Error(
+      'This teacher has used $1.0400 of their $1.00 monthly allowance.',
+    );
+    e.code = 'user_quota_exceeded';
+    throw e;
+  };
+
+  // The reason this matters more than the cancel case: the teacher did not ask
+  // for anything to stop, so a fabricated worksheet here looks exactly like the
+  // one they asked for. The server has already tried the shared pool before
+  // refusing, so there is genuinely nothing real to hand over.
+  await assert.rejects(
+    () => generateWithProvenance('worksheet', capped, watchedMock, {
+      demoMode: false, strict: false, now: clock,
+    }),
+    /monthly allowance/,
+  );
+  assert.equal(mockRan, false, 'the mock generator must not run on a spending cap');
+  assert.equal(getLastGeneration()?.reason, 'failed');
+  assert.equal(getLastGeneration()?.source, 'none');
 });
 
 test('a timeout falls back rather than being read as a cancel', async () => {

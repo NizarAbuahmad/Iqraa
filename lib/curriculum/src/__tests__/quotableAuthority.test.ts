@@ -76,6 +76,23 @@ const DATA = join(dirname(fileURLToPath(import.meta.url)), '..', 'data');
  * of the 49 that this test could not have caught even with the right pattern.
  */
 const EXTRACTED = [join(DATA, 'extracted'), join(DATA, 'extracted-g9')];
+/**
+ * The corpus. One directory, deliberately.
+ *
+ * This briefly also read `../data/extracted-g9/` on the belief that the two
+ * Grade 9 maths files lived only there and were invisible here. **That was
+ * wrong**: both are in `extracted/` in the ordinary page-array schema, and this
+ * test has always seen them. `extracted-g9/` holds stale duplicates of the same
+ * two books in reversed presentation-form Arabic under a different schema,
+ * which STATUS.md has listed as dead data read by nothing since before this
+ * test existed — `passages.ts` does not read it either.
+ *
+ * Reading it here would have meant scanning a copy nobody ships for a licence
+ * decision about a book we do. It never changed an outcome, because
+ * `extracted/` is checked first and always hits, which is exactly why a wrong
+ * reason can sit in a green test until someone re-derives it.
+ */
+const EXTRACTED = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'extracted');
 
 /**
  * Publisher marks that mean "not ours to quote". Deliberately narrow: these are
@@ -128,6 +145,8 @@ describe('quotable authority', () => {
       // read, and that is a legitimate state, not a failure.
       const file = EXTRACTED.map(d => join(d, `${s.id}.json`)).find(existsSync);
       if (!file) continue;
+      const file = join(EXTRACTED, `${s.id}.json`);
+      if (!existsSync(file)) continue;
 
       const head = readFileSync(file, 'utf8').slice(0, HEAD_CHARS);
       const hit = THIRD_PARTY_MARKS.find(m => m.test(head));
@@ -158,6 +177,8 @@ describe('quotable authority', () => {
 
     const file = EXTRACTED.map(d => join(d, `${collins.id}.json`)).find(existsSync);
     assert.ok(file, `${collins.id} has no extracted text`);
+    const file = join(EXTRACTED, `${collins.id}.json`);
+    assert.ok(existsSync(file), `${collins.id} has no extracted text`);
     const head = readFileSync(file, 'utf8').slice(0, HEAD_CHARS);
 
     const { license: _dropped, ...unlicensed } = collins;

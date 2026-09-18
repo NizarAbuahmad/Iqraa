@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isEntryRoute, isNonTeacherRoute, isPublicRoute, needsRosterClaim } from '../routeGating.ts';
+import { isEntryRoute, isNonTeacherRoute, isPublicRoute, needsRosterClaim, needsTeacherSetup } from '../routeGating.ts';
 
 describe('isEntryRoute', () => {
   it('treats the auth and onboarding routes as entries', () => {
@@ -174,5 +174,38 @@ describe('needsRosterClaim', () => {
   it('fails open on no user', () => {
     assert.equal(needsRosterClaim(null), false);
     assert.equal(needsRosterClaim(undefined), false);
+  });
+});
+
+describe('needsTeacherSetup', () => {
+  it('gates a teacher with neither grades nor subjects picked', () => {
+    assert.equal(needsTeacherSetup({ role: 'teacher' }), true);
+    assert.equal(needsTeacherSetup({ role: 'teacher', gradeIds: [], subjectIds: [] }), true);
+  });
+
+  it('clears once both are picked', () => {
+    assert.equal(needsTeacherSetup({ role: 'teacher', gradeIds: ['grade-9'], subjectIds: ['mathematics'] }), false);
+  });
+
+  it('also clears on a partial pick — only "neither" is the un-set-up signal', () => {
+    // The setup screen itself won't let Continue fire with just one of the
+    // two, but this predicate only guards re-entry into the mandatory gate —
+    // see needsTeacherSetup's own comment for why that's an acceptable
+    // fail-open, same trade-off needsRosterClaim makes.
+    assert.equal(needsTeacherSetup({ role: 'teacher', gradeIds: ['grade-9'], subjectIds: [] }), false);
+    assert.equal(needsTeacherSetup({ role: 'teacher', gradeIds: [], subjectIds: ['mathematics'] }), false);
+  });
+
+  it('never gates a non-teacher role, even with nothing picked', () => {
+    // school_admin/system_admin are TEACHER_ROLES for access purposes, but
+    // neither teaches a specific grade, so there is nothing to pick.
+    for (const role of ['parent', 'student', 'school_admin', 'system_admin']) {
+      assert.equal(needsTeacherSetup({ role }), false, role);
+    }
+  });
+
+  it('fails open on no user', () => {
+    assert.equal(needsTeacherSetup(null), false);
+    assert.equal(needsTeacherSetup(undefined), false);
   });
 });

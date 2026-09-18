@@ -1,6 +1,9 @@
 """
 B1.4 — Build investor-ready IQRA brand assets from the official lockup.
 
+The master's Arabic tagline is misspelled («لنعليم» for «لتعليم»); see
+`restore_taa_dots`, which repairs it on the way through.
+
 Outputs (under assets/images/):
   - logo-lockup.png / logo-mark.png           light glyphs (for dark backgrounds)
   - logo-lockup-dark.png / logo-mark-dark.png dark glyphs (for light backgrounds)
@@ -78,6 +81,56 @@ def fit_on_canvas(
     return canvas
 
 
+# The lone dot of the mis-drawn «ت», in the 425x575 crop `cutout` returns from
+# the official master: (left, top, right, bottom), right/bottom exclusive.
+TAA_DOT_BOX = (184, 541, 190, 546)
+# Centre-to-centre spacing of the restored pair, in px. The dot is 6px wide
+# with a 3px solid core, so 7px is the tightest spacing that still reads as two
+# dots once the lockup is downscaled to splash size.
+TAA_DOT_SPACING = 7
+
+
+def restore_taa_dots(im: Image.Image) -> Image.Image:
+    """
+    The official lockup misspells its own Arabic tagline. The «ت» of «لتعليم»
+    is drawn with a single dot, so the line reads «لنعليم» — not a word — and
+    every asset built from the master inherits it, splash screen included.
+
+    The glyph is otherwise right, so restore the second dot rather than
+    re-typesetting the line: clone the dot that is there and seat the pair,
+    centred, over the same tooth.
+
+    The box is pinned to the official master. If what sits there is not the
+    lone dot we expect, raise instead of stamping pixels somewhere arbitrary —
+    a wrong dot is harder to notice than a crash.
+    """
+    if im.size != (425, 575):
+        raise ValueError(
+            f"tagline fix is pinned to the 425x575 master crop, got {im.size}"
+        )
+
+    x0, y0, x1, y1 = TAA_DOT_BOX
+    dot = im.crop(TAA_DOT_BOX)
+    ink = np.array(dot)[:, :, 3] > 8
+    if ink.sum() < 12 or ink.any(axis=0).sum() < 4:
+        raise ValueError("no dot found at the pinned «ت» position")
+
+    # A second dot already present means someone fixed the master; don't
+    # stamp a third.
+    margin = np.array(im.crop((x1, y0, x1 + TAA_DOT_SPACING, y1)))[:, :, 3]
+    if (margin > 8).any():
+        raise ValueError("pinned «ت» position already carries a second dot")
+
+    arr = np.array(im).copy()
+    arr[y0:y1, x0:x1] = 0  # lift the single dot
+    out = Image.fromarray(arr, "RGBA")
+
+    half = TAA_DOT_SPACING / 2
+    for dx in (-half, half):
+        out.alpha_composite(dot, (x0 + round(dx), y0))
+    return out
+
+
 def brighten_tagline(im: Image.Image) -> Image.Image:
     """
     The official lockup's Arabic tagline ("ذكاء يساعدك لتعليم أفضل") ships in a
@@ -143,7 +196,7 @@ def to_dark_variant(im: Image.Image) -> Image.Image:
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    full = brighten_tagline(cutout(load_official()))
+    full = brighten_tagline(restore_taa_dots(cutout(load_official())))
     mark = mark_only(full)
 
     # Light glyphs (for dark backgrounds) — login, splash, teal icon chip

@@ -100,3 +100,27 @@ export function needsRosterClaim(
   // gate. Only an explicit false, from a server that has actually checked, does.
   return (user.role === 'parent' || user.role === 'student') && user.hasRosterLink === false;
 }
+
+/** The mandatory screen a brand-new teacher picks their grades/subjects on. */
+export const TEACHER_SETUP_ROUTE = '/setup-subjects';
+
+/**
+ * A teacher account with no grades or subjects picked yet has never chosen
+ * what the curriculum browser should default to — see `getVisibleGrades`/
+ * `getSubjectsForGrade` callers in `app/(tabs)/curriculum.tsx`, which fall
+ * back to the full catalog until this is set. Scoped to `role === 'teacher'`
+ * only: a school/system admin is not teaching a grade, so there is nothing
+ * for them to pick.
+ *
+ * Both arrays empty is the "never set up" signal, same shape as a fresh
+ * account straight out of `/auth/register` or `/auth/verify-email` — a
+ * teacher who deliberately clears every selection from the edit screen would
+ * re-trigger this gate, which is the same trade-off `needsRosterClaim` makes
+ * with an unlinked account.
+ */
+export function needsTeacherSetup(
+  user: { role: string; gradeIds?: string[]; subjectIds?: string[] } | null | undefined,
+): boolean {
+  if (!user || user.role !== 'teacher') return false;
+  return (user.gradeIds?.length ?? 0) === 0 && (user.subjectIds?.length ?? 0) === 0;
+}

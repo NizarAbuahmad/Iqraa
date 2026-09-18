@@ -28,7 +28,7 @@ export async function sendVerificationEmail(to: string, code: string): Promise<b
       body: JSON.stringify({
         from: process.env.RESEND_FROM_EMAIL ?? "Iqraa <onboarding@resend.dev>",
         to,
-        subject: "رمز تأكيد بريدك الإلكتروني في إقرأ / Your Iqraa verification code",
+        subject: "رمز تأكيد بريدك الإلكتروني في اقرأ / Your Iqraa verification code",
         html: renderVerificationEmailHtml(code),
       }),
     });
@@ -47,9 +47,9 @@ function renderVerificationEmailHtml(code: string): string {
   return `
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">
       <p>مرحبًا،</p>
-      <p>رمز تأكيد بريدك الإلكتروني في إقرأ هو:</p>
+      <p>رمز تأكيد بريدك الإلكتروني في اقرأ هو:</p>
       <p style="font-size:28px;font-weight:bold;letter-spacing:4px;">${code}</p>
-      <p>يصلح هذا الرمز لمدة 15 دقيقة. إذا لم تطلب إنشاء حساب في إقرأ، يمكنك تجاهل هذه الرسالة.</p>
+      <p>يصلح هذا الرمز لمدة 15 دقيقة. إذا لم تطلب إنشاء حساب في اقرأ، يمكنك تجاهل هذه الرسالة.</p>
     </div>
     <hr style="border:none;border-top:1px solid #E2E8F0;" />
     <div dir="ltr" style="font-family:Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-top:24px;">
@@ -88,7 +88,7 @@ export async function sendPasswordResetEmail(to: string, code: string): Promise<
       body: JSON.stringify({
         from: process.env.RESEND_FROM_EMAIL ?? "Iqraa <onboarding@resend.dev>",
         to,
-        subject: "رمز إعادة تعيين كلمة المرور في إقرأ / Your Iqraa password reset code",
+        subject: "رمز إعادة تعيين كلمة المرور في اقرأ / Your Iqraa password reset code",
         html: renderPasswordResetEmailHtml(code),
       }),
     });
@@ -107,7 +107,7 @@ function renderPasswordResetEmailHtml(code: string): string {
   return `
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">
       <p>مرحبًا،</p>
-      <p>رمز إعادة تعيين كلمة المرور في إقرأ هو:</p>
+      <p>رمز إعادة تعيين كلمة المرور في اقرأ هو:</p>
       <p style="font-size:28px;font-weight:bold;letter-spacing:4px;">${code}</p>
       <p>يصلح هذا الرمز لمدة 15 دقيقة. إذا لم تطلب إعادة تعيين كلمة المرور فلا حاجة إلى فعل شيء، وكلمة مرورك الحالية تبقى كما هي.</p>
     </div>

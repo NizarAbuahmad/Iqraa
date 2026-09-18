@@ -203,6 +203,150 @@ import {
   buildG7ScienceSem1Catalog,
 } from './curriculumG7ScienceSem1.ts';
 import {
+  G5_MATH_S1_BOOK_ID,
+  buildG5MathSem1Catalog,
+} from './curriculumG5MathSem1.ts';
+import {
+  G5_SCIENCE_S1_BOOK_ID,
+  buildG5ScienceSem1Catalog,
+} from './curriculumG5ScienceSem1.ts';
+import {
+  G5_SCIENCE_S2_BOOK_ID,
+  buildG5ScienceSem2Catalog,
+} from './curriculumG5ScienceSem2.ts';
+import {
+  G5_ISLAMIC_S1_BOOK_ID,
+  buildG5IslamicSem1Catalog,
+} from './curriculumG5IslamicSem1.ts';
+import {
+  G5_ISLAMIC_S2_BOOK_ID,
+  buildG5IslamicSem2Catalog,
+} from './curriculumG5IslamicSem2.ts';
+import {
+  G5_ENGLISH_S1_BOOK_ID,
+  buildG5EnglishSem1Catalog,
+} from './curriculumG5EnglishSem1.ts';
+import {
+  G5_ENGLISH_S2_BOOK_ID,
+  buildG5EnglishSem2Catalog,
+} from './curriculumG5EnglishSem2.ts';
+import {
+  G5_ARABIC_S1_BOOK_ID,
+  buildG5ArabicSem1Catalog,
+} from './curriculumG5ArabicSem1.ts';
+import {
+  G5_ARABIC_S2_BOOK_ID,
+  buildG5ArabicSem2Catalog,
+} from './curriculumG5ArabicSem2.ts';
+import {
+  G5_SOCIAL_S1_BOOK_ID,
+  buildG5SocialSem1Catalog,
+} from './curriculumG5SocialSem1.ts';
+import {
+  G5_SOCIAL_S2_BOOK_ID,
+  buildG5SocialSem2Catalog,
+} from './curriculumG5SocialSem2.ts';
+import {
+  G5_DIGITAL_S1_BOOK_ID,
+  buildG5DigitalSem1Catalog,
+} from './curriculumG5DigitalSem1.ts';
+import {
+  G4_MATH_S1_BOOK_ID,
+  buildG4MathSem1Catalog,
+} from './curriculumG4MathSem1.ts';
+import {
+  G4_MATH_S2_BOOK_ID,
+  buildG4MathSem2Catalog,
+} from './curriculumG4MathSem2.ts';
+import {
+  G4_SCIENCE_S1_BOOK_ID,
+  buildG4ScienceSem1Catalog,
+} from './curriculumG4ScienceSem1.ts';
+import {
+  G4_SCIENCE_S2_BOOK_ID,
+  buildG4ScienceSem2Catalog,
+} from './curriculumG4ScienceSem2.ts';
+import {
+  G4_DIGITAL_S1_BOOK_ID,
+  buildG4DigitalSem1Catalog,
+} from './curriculumG4DigitalSem1.ts';
+import {
+  G4_ISLAMIC_S1_BOOK_ID,
+  buildG4IslamicSem1Catalog,
+} from './curriculumG4IslamicSem1.ts';
+import {
+  G4_ISLAMIC_S2_BOOK_ID,
+  buildG4IslamicSem2Catalog,
+} from './curriculumG4IslamicSem2.ts';
+import {
+  G4_SOCIAL_S1_BOOK_ID,
+  buildG4SocialSem1Catalog,
+} from './curriculumG4SocialSem1.ts';
+import {
+  G4_SOCIAL_S2_BOOK_ID,
+  buildG4SocialSem2Catalog,
+} from './curriculumG4SocialSem2.ts';
+import {
+  G4_ARABIC_S1_BOOK_ID,
+  buildG4ArabicSem1Catalog,
+} from './curriculumG4ArabicSem1.ts';
+import {
+  G4_ARABIC_S2_BOOK_ID,
+  buildG4ArabicSem2Catalog,
+} from './curriculumG4ArabicSem2.ts';
+import {
+  G4_ENGLISH_S1_BOOK_ID,
+  buildG4EnglishSem1Catalog,
+} from './curriculumG4EnglishSem1.ts';
+import {
+  G4_ENGLISH_S2_BOOK_ID,
+  buildG4EnglishSem2Catalog,
+} from './curriculumG4EnglishSem2.ts';
+import {
+  G4_CREATIVE_ARTS_BOOK_ID,
+  buildG4CreativeArtsCatalog,
+} from './curriculumG4CreativeArts.ts';
+import {
+  G4_VOC_S1_BOOK_ID,
+  buildG4VocSem1Catalog,
+} from './curriculumG4VocationalSem1.ts';
+import {
+  G4_VOC_S2_BOOK_ID,
+  buildG4VocSem2Catalog,
+} from './curriculumG4VocationalSem2.ts';
+import {
+  G3_MATH_S1_BOOK_ID,
+  buildG3MathSem1Catalog,
+} from './curriculumG3MathSem1.ts';
+import {
+  G3_MATH_S2_BOOK_ID,
+  buildG3MathSem2Catalog,
+} from './curriculumG3MathSem2.ts';
+import {
+  G3_SCIENCE_S1_BOOK_ID,
+  buildG3ScienceSem1Catalog,
+} from './curriculumG3ScienceSem1.ts';
+import {
+  G3_SCIENCE_S2_BOOK_ID,
+  buildG3ScienceSem2Catalog,
+} from './curriculumG3ScienceSem2.ts';
+import {
+  G3_ISLAMIC_S1_BOOK_ID,
+  buildG3IslamicSem1Catalog,
+} from './curriculumG3IslamicSem1.ts';
+import {
+  G3_ISLAMIC_S2_BOOK_ID,
+  buildG3IslamicSem2Catalog,
+} from './curriculumG3IslamicSem2.ts';
+import {
+  G3_ARABIC_S1_BOOK_ID,
+  buildG3ArabicSem1Catalog,
+} from './curriculumG3ArabicSem1.ts';
+import {
+  G3_ARABIC_S2_BOOK_ID,
+  buildG3ArabicSem2Catalog,
+} from './curriculumG3ArabicSem2.ts';
+import {
   G6_MATH_S1_BOOK_ID,
   buildG6MathSem1Catalog,
 } from './curriculumG6MathSem1.ts';
@@ -246,6 +390,10 @@ import {
   G6_ENGLISH_S2_BOOK_ID,
   buildG6EnglishSem2Catalog,
 } from './curriculumG6EnglishSem2.ts';
+import {
+  G6_DIGITAL_S1_BOOK_ID,
+  buildG6DigitalSem1Catalog,
+} from './curriculumG6DigitalSem1.ts';
 import {
   G6_ARABIC_S1_BOOK_ID,
   buildG6ArabicSem1Catalog,
@@ -1078,6 +1226,333 @@ export const KB_BOOKS: KBBook[] = [
     source: 'iqra_curriculum_g7_islamic_sem2.json (NCCD)',
   },
   {
+    id: G5_MATH_S1_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف الخامس – الفصل الأول',
+    titleEn: 'Mathematics – Grade 5 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g5_math_sem1.json (NCCD)',
+  },
+  {
+    id: G5_SCIENCE_S1_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف الخامس – الفصل الأول',
+    titleEn: 'Science – Grade 5 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g5_science_sem1.json (NCCD)',
+  },
+  {
+    id: G5_SCIENCE_S2_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف الخامس – الفصل الثاني',
+    titleEn: 'Science – Grade 5 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g5_science_sem2.json (NCCD)',
+  },
+  {
+    id: G5_ISLAMIC_S1_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف الخامس – الفصل الأول',
+    titleEn: 'Islamic Education – Grade 5 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g5_islamic_sem1.json (NCCD)',
+  },
+  {
+    id: G5_ISLAMIC_S2_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف الخامس – الفصل الثاني',
+    titleEn: 'Islamic Education – Grade 5 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g5_islamic_sem2.json (NCCD)',
+  },
+  {
+    id: G5_ENGLISH_S1_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف الخامس – الفصل الأول',
+    titleEn: 'English – Grade 5 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g5_english_sem1.json (NCCD)',
+  },
+  {
+    id: G5_ENGLISH_S2_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف الخامس – الفصل الثاني',
+    titleEn: 'English – Grade 5 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g5_english_sem2.json (NCCD)',
+  },
+  {
+    id: G5_ARABIC_S1_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف الخامس – الفصل الأول',
+    titleEn: 'Arabic – Grade 5 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g5_arabic_sem1.json (NCCD)',
+  },
+  {
+    id: G5_ARABIC_S2_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف الخامس – الفصل الثاني',
+    titleEn: 'Arabic – Grade 5 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g5_arabic_sem2.json (NCCD)',
+  },
+  {
+    id: G5_SOCIAL_S1_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'social',
+    titleAr: 'الدراسات الاجتماعية – الصف الخامس – الفصل الأول',
+    titleEn: 'Social Studies – Grade 5 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g5_social_sem1.json (NCCD)',
+  },
+  {
+    id: G5_SOCIAL_S2_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'social',
+    titleAr: 'الدراسات الاجتماعية – الصف الخامس – الفصل الثاني',
+    titleEn: 'Social Studies – Grade 5 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g5_social_sem2.json (NCCD)',
+  },
+  {
+    id: G5_DIGITAL_S1_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'digital-literacy',
+    titleAr: 'المهارات الرقمية – الصف الخامس – الفصل الأول',
+    titleEn: 'Digital Skills – Grade 5 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g5_digital_sem1.json (NCCD)',
+  },
+  {
+    id: G4_MATH_S1_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف الرابع – الفصل الأول',
+    titleEn: 'Mathematics – Grade 4 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g4_math_sem1.json (NCCD)',
+  },
+  {
+    id: G4_MATH_S2_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف الرابع – الفصل الثاني',
+    titleEn: 'Mathematics – Grade 4 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g4_math_sem2.json (NCCD)',
+  },
+  {
+    id: G4_SCIENCE_S1_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف الرابع – الفصل الأول',
+    titleEn: 'Science – Grade 4 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g4_science_sem1.json (NCCD)',
+  },
+  {
+    id: G4_SCIENCE_S2_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف الرابع – الفصل الثاني',
+    titleEn: 'Science – Grade 4 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g4_science_sem2.json (NCCD)',
+  },
+  {
+    id: G4_DIGITAL_S1_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'digital-literacy',
+    titleAr: 'المهارات الرقمية – الصف الرابع – الفصل الأول',
+    titleEn: 'Digital Skills – Grade 4 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g4_digital_sem1.json (NCCD)',
+  },
+  {
+    id: G4_ISLAMIC_S1_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف الرابع – الفصل الأول',
+    titleEn: 'Islamic Education – Grade 4 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g4_islamic_sem1.json (NCCD)',
+  },
+  {
+    id: G4_ISLAMIC_S2_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف الرابع – الفصل الثاني',
+    titleEn: 'Islamic Education – Grade 4 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g4_islamic_sem2.json (NCCD)',
+  },
+  {
+    id: G4_SOCIAL_S1_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'social',
+    titleAr: 'الدراسات الاجتماعية – الصف الرابع – الفصل الأول',
+    titleEn: 'Social Studies – Grade 4 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g4_social_sem1.json (NCCD)',
+  },
+  {
+    id: G4_SOCIAL_S2_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'social',
+    titleAr: 'الدراسات الاجتماعية – الصف الرابع – الفصل الثاني',
+    titleEn: 'Social Studies – Grade 4 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g4_social_sem2.json (NCCD)',
+  },
+  {
+    id: G4_ARABIC_S1_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف الرابع – الفصل الأول',
+    titleEn: 'Arabic – Grade 4 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g4_arabic_sem1.json (NCCD)',
+  },
+  {
+    id: G4_ARABIC_S2_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف الرابع – الفصل الثاني',
+    titleEn: 'Arabic – Grade 4 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g4_arabic_sem2.json (NCCD)',
+  },
+  {
+    id: G4_ENGLISH_S1_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف الرابع – الفصل الأول',
+    titleEn: 'English – Grade 4 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g4_english_sem1.json (NCCD)',
+  },
+  {
+    id: G4_ENGLISH_S2_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف الرابع – الفصل الثاني',
+    titleEn: 'English – Grade 4 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g4_english_sem2.json (NCCD)',
+  },
+  {
+    id: G4_CREATIVE_ARTS_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'creative-arts',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف الرابع',
+    titleEn: 'Art, Music and Drama Education – Grade 4',
+    // Not actually Semester 1 — this book has no semester split at all.
+    // `semester` is required on KBBook, so 1 is used as the same technical
+    // placeholder the id-namespacing scope uses (see g4CreativeArts.ts).
+    semester: 1,
+    source: 'iqra_curriculum_g4_creative_arts.json (NCCD)',
+  },
+  {
+    id: G4_VOC_S1_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف الرابع – الفصل الأول',
+    titleEn: 'Vocational Education – Grade 4 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g4_vocational_sem1.json (NCCD)',
+  },
+  {
+    id: G4_VOC_S2_BOOK_ID,
+    gradeId: 'grade-4',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف الرابع – الفصل الثاني',
+    titleEn: 'Vocational Education – Grade 4 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g4_vocational_sem2.json (NCCD)',
+  },
+  {
+    id: G3_MATH_S1_BOOK_ID,
+    gradeId: 'grade-3',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف الثالث – الفصل الأول',
+    titleEn: 'Mathematics – Grade 3 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g3_math_sem1.json (NCCD)',
+  },
+  {
+    id: G3_MATH_S2_BOOK_ID,
+    gradeId: 'grade-3',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف الثالث – الفصل الثاني',
+    titleEn: 'Mathematics – Grade 3 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g3_math_sem2.json (NCCD)',
+  },
+  {
+    id: G3_SCIENCE_S1_BOOK_ID,
+    gradeId: 'grade-3',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف الثالث – الفصل الأول',
+    titleEn: 'Science – Grade 3 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g3_science_sem1.json (NCCD)',
+  },
+  {
+    id: G3_SCIENCE_S2_BOOK_ID,
+    gradeId: 'grade-3',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف الثالث – الفصل الثاني',
+    titleEn: 'Science – Grade 3 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g3_science_sem2.json (NCCD)',
+  },
+  {
+    id: G3_ISLAMIC_S1_BOOK_ID,
+    gradeId: 'grade-3',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف الثالث – الفصل الأول',
+    titleEn: 'Islamic Education – Grade 3 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g3_islamic_sem1.json (NCCD)',
+  },
+  {
+    id: G3_ISLAMIC_S2_BOOK_ID,
+    gradeId: 'grade-3',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف الثالث – الفصل الثاني',
+    titleEn: 'Islamic Education – Grade 3 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g3_islamic_sem2.json (NCCD)',
+  },
+  {
+    id: G3_ARABIC_S1_BOOK_ID,
+    gradeId: 'grade-3',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف الثالث – الفصل الأول',
+    titleEn: 'Arabic – Grade 3 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g3_arabic_sem1.json (NCCD)',
+  },
+  {
+    id: G3_ARABIC_S2_BOOK_ID,
+    gradeId: 'grade-3',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف الثالث – الفصل الثاني',
+    titleEn: 'Arabic – Grade 3 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g3_arabic_sem2.json (NCCD)',
+  },
+  {
     id: G6_MATH_S1_BOOK_ID,
     gradeId: 'grade-6',
     subjectId: 'mathematics',
@@ -1175,6 +1650,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'English – Grade 6 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g6_english_sem2.json (Pearson / York Press, third-party)',
+  },
+  {
+    id: G6_DIGITAL_S1_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'digital-literacy',
+    titleAr: 'المهارات الرقمية – الصف السادس – الفصل الأول',
+    titleEn: 'Digital Skills – Grade 6 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g6_digital_sem1.json (NCCD)',
   },
   {
     id: G6_ARABIC_S1_BOOK_ID,
@@ -1992,7 +2476,7 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
       { ar: 'المستقيم الأفضل مطابقة', en: 'Line of Best Fit', definitionAr: 'مستقيم يمر بأقرب مسافة ممكنة من جميع نقاط شكل الانتشار', definitionEn: 'A line that passes as close as possible to all points in a scatter plot' },
       { ar: 'الارتباط', en: 'Correlation', definitionAr: 'العلاقة بين المتغيرَين: موجب (تزامن الارتفاع) أو سالب (تعاكس) أو منعدم', definitionEn: 'The relationship between variables: positive (both rise), negative (opposite), or no correlation' },
     ],
-    examplesAr: ['درجات الطلاب في الرياضيات والعلوم: ارتباط موجب → نقاط تتجه للأعلى يمينًا'],
+    examplesAr: ['درجات الطلبة في الرياضيات والعلوم: ارتباط موجب → نقاط تتجه للأعلى يمينًا'],
     examplesEn: ['Student scores in Maths and Science: positive correlation → points trend up to the right'],
   },
   {
@@ -2482,6 +2966,17 @@ const _g8FinlitSem1 = buildG8FinlitSem1Catalog();
 const _g8DigitalSem1 = buildG8DigitalSem1Catalog();
 const _g8DigitalSem2 = buildG8DigitalSem2Catalog();
 const _g8CreativeArts = buildG8CreativeArtsCatalog();
+const _g4CreativeArts = buildG4CreativeArtsCatalog();
+const _g4VocSem1 = buildG4VocSem1Catalog();
+const _g4VocSem2 = buildG4VocSem2Catalog();
+const _g3MathSem1 = buildG3MathSem1Catalog();
+const _g3MathSem2 = buildG3MathSem2Catalog();
+const _g3ScienceSem1 = buildG3ScienceSem1Catalog();
+const _g3ScienceSem2 = buildG3ScienceSem2Catalog();
+const _g3IslamicSem1 = buildG3IslamicSem1Catalog();
+const _g3IslamicSem2 = buildG3IslamicSem2Catalog();
+const _g3ArabicSem1 = buildG3ArabicSem1Catalog();
+const _g3ArabicSem2 = buildG3ArabicSem2Catalog();
 const _g8VocSem1 = buildG8VocSem1Catalog();
 const _g8VocSem2 = buildG8VocSem2Catalog();
 const _g8SocialSem1 = buildG8SocialSem1Catalog();
@@ -2493,9 +2988,35 @@ const _g7MathSem1 = buildG7MathSem1Catalog();
 const _g7IslamicSem1 = buildG7IslamicSem1Catalog();
 const _g7IslamicSem2 = buildG7IslamicSem2Catalog();
 const _g7ScienceSem1 = buildG7ScienceSem1Catalog();
+const _g5MathSem1 = buildG5MathSem1Catalog();
+const _g5ScienceSem1 = buildG5ScienceSem1Catalog();
+const _g5ScienceSem2 = buildG5ScienceSem2Catalog();
+const _g5IslamicSem1 = buildG5IslamicSem1Catalog();
+const _g5IslamicSem2 = buildG5IslamicSem2Catalog();
+const _g5EnglishSem1 = buildG5EnglishSem1Catalog();
+const _g5EnglishSem2 = buildG5EnglishSem2Catalog();
+const _g5ArabicSem1 = buildG5ArabicSem1Catalog();
+const _g5ArabicSem2 = buildG5ArabicSem2Catalog();
+const _g5SocialSem1 = buildG5SocialSem1Catalog();
+const _g5SocialSem2 = buildG5SocialSem2Catalog();
+const _g5DigitalSem1 = buildG5DigitalSem1Catalog();
+const _g4MathSem1 = buildG4MathSem1Catalog();
+const _g4MathSem2 = buildG4MathSem2Catalog();
+const _g4ScienceSem1 = buildG4ScienceSem1Catalog();
+const _g4ScienceSem2 = buildG4ScienceSem2Catalog();
+const _g4DigitalSem1 = buildG4DigitalSem1Catalog();
+const _g4IslamicSem1 = buildG4IslamicSem1Catalog();
+const _g4IslamicSem2 = buildG4IslamicSem2Catalog();
+const _g4SocialSem1 = buildG4SocialSem1Catalog();
+const _g4SocialSem2 = buildG4SocialSem2Catalog();
+const _g4ArabicSem1 = buildG4ArabicSem1Catalog();
+const _g4ArabicSem2 = buildG4ArabicSem2Catalog();
+const _g4EnglishSem1 = buildG4EnglishSem1Catalog();
+const _g4EnglishSem2 = buildG4EnglishSem2Catalog();
 const _g6MathSem1 = buildG6MathSem1Catalog();
 const _g6ScienceSem1 = buildG6ScienceSem1Catalog();
 const _g6ArabicSem1 = buildG6ArabicSem1Catalog();
+const _g6DigitalSem1 = buildG6DigitalSem1Catalog();
 const _g6VocationalSem1 = buildG6VocationalSem1Catalog();
 const _g6VocationalSem2 = buildG6VocationalSem2Catalog();
 const _g6PhysicalEducationSem1 = buildG6PhysicalEducationSem1Catalog();
@@ -2715,6 +3236,17 @@ export const KB_UNITS: KBUnit[] = [
   ..._g8DigitalSem1.units,
   ..._g8DigitalSem2.units,
   ..._g8CreativeArts.units,
+  ..._g4CreativeArts.units,
+  ..._g4VocSem1.units,
+  ..._g4VocSem2.units,
+  ..._g3MathSem1.units,
+  ..._g3MathSem2.units,
+  ..._g3ScienceSem1.units,
+  ..._g3ScienceSem2.units,
+  ..._g3IslamicSem1.units,
+  ..._g3IslamicSem2.units,
+  ..._g3ArabicSem1.units,
+  ..._g3ArabicSem2.units,
   ..._g8VocSem1.units,
   ..._g8VocSem2.units,
   ..._g8SocialSem1.units,
@@ -2745,9 +3277,35 @@ export const KB_UNITS: KBUnit[] = [
   ..._g7IslamicSem1.units,
   ..._g7IslamicSem2.units,
   ..._g7ScienceSem1.units,
+  ..._g5MathSem1.units,
+  ..._g5DigitalSem1.units,
+  ..._g4MathSem1.units,
+  ..._g4MathSem2.units,
+  ..._g4ScienceSem1.units,
+  ..._g4ScienceSem2.units,
+  ..._g4DigitalSem1.units,
+  ..._g4IslamicSem1.units,
+  ..._g4IslamicSem2.units,
+  ..._g4SocialSem1.units,
+  ..._g4SocialSem2.units,
+  ..._g4ArabicSem1.units,
+  ..._g4ArabicSem2.units,
+  ..._g4EnglishSem1.units,
+  ..._g4EnglishSem2.units,
+  ..._g5ScienceSem1.units,
+  ..._g5ScienceSem2.units,
+  ..._g5IslamicSem1.units,
+  ..._g5IslamicSem2.units,
+  ..._g5EnglishSem1.units,
+  ..._g5EnglishSem2.units,
+  ..._g5ArabicSem1.units,
+  ..._g5ArabicSem2.units,
+  ..._g5SocialSem1.units,
+  ..._g5SocialSem2.units,
   ..._g6MathSem1.units,
   ..._g6ScienceSem1.units,
   ..._g6ArabicSem1.units,
+  ..._g6DigitalSem1.units,
   ..._g6VocationalSem1.units,
   ..._g6VocationalSem2.units,
   ..._g6PhysicalEducationSem1.units,
@@ -2837,6 +3395,17 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g8DigitalSem1.lessons,
   ..._g8DigitalSem2.lessons,
   ..._g8CreativeArts.lessons,
+  ..._g4CreativeArts.lessons,
+  ..._g4VocSem1.lessons,
+  ..._g4VocSem2.lessons,
+  ..._g3MathSem1.lessons,
+  ..._g3MathSem2.lessons,
+  ..._g3ScienceSem1.lessons,
+  ..._g3ScienceSem2.lessons,
+  ..._g3IslamicSem1.lessons,
+  ..._g3IslamicSem2.lessons,
+  ..._g3ArabicSem1.lessons,
+  ..._g3ArabicSem2.lessons,
   ..._g8VocSem1.lessons,
   ..._g8VocSem2.lessons,
   ..._g8SocialSem1.lessons,
@@ -2869,9 +3438,35 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g7IslamicSem1.lessons,
   ..._g7IslamicSem2.lessons,
   ..._g7ScienceSem1.lessons,
+  ..._g5MathSem1.lessons,
+  ..._g5DigitalSem1.lessons,
+  ..._g4MathSem1.lessons,
+  ..._g4MathSem2.lessons,
+  ..._g4ScienceSem1.lessons,
+  ..._g4ScienceSem2.lessons,
+  ..._g4DigitalSem1.lessons,
+  ..._g4IslamicSem1.lessons,
+  ..._g4IslamicSem2.lessons,
+  ..._g4SocialSem1.lessons,
+  ..._g4SocialSem2.lessons,
+  ..._g4ArabicSem1.lessons,
+  ..._g4ArabicSem2.lessons,
+  ..._g4EnglishSem1.lessons,
+  ..._g4EnglishSem2.lessons,
+  ..._g5ScienceSem1.lessons,
+  ..._g5ScienceSem2.lessons,
+  ..._g5IslamicSem1.lessons,
+  ..._g5IslamicSem2.lessons,
+  ..._g5EnglishSem1.lessons,
+  ..._g5EnglishSem2.lessons,
+  ..._g5ArabicSem1.lessons,
+  ..._g5ArabicSem2.lessons,
+  ..._g5SocialSem1.lessons,
+  ..._g5SocialSem2.lessons,
   ..._g6MathSem1.lessons,
   ..._g6ScienceSem1.lessons,
   ..._g6ArabicSem1.lessons,
+  ..._g6DigitalSem1.lessons,
   ..._g6VocationalSem1.lessons,
   ..._g6VocationalSem2.lessons,
   ..._g6PhysicalEducationSem1.lessons,

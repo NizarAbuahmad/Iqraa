@@ -1125,6 +1125,43 @@ MAX_TEXT_SHARE = 0.30
 # It cannot catch everything, and is not meant to. Dense Arabic prose has a
 # high edge count too, so text blocks that slip past MAX_TEXT_SHARE still need
 # the human pass — see this file's docstring.
+#
+# THE «zero false positives» ABOVE HOLDS FOR PHYSICS ONLY. That sample was 57
+# phys-s1 crops; maths and chemistry draw sparse line art on white, which is
+# mostly background and therefore scores like a flat fill. Re-measured
+# 2026-09-16 over 858 hand-labelled maths/chemistry crops: real figures run
+# 8.8-54.3 (median 18.8, 5th percentile 11.6) and the junk this is meant to
+# remove runs 4.1-11.0. The two overlap across the whole 8.8-11.0 band.
+#
+# So DO NOT try to fix this with a per-subject number — that was the obvious
+# move and it does not work. The trade measured on those crops:
+#
+#     threshold   real kept        junk re-admitted
+#       11.0        2 of 8            1 of 111
+#       10.6        5 of 8           16 of 111
+#       10.0        6 of 8           67 of 111
+#        8.7        8 of 8           81 of 111
+#
+# Keeping every real figure means re-admitting three quarters of the junk,
+# because edge density is not measuring the thing that separates them. The junk
+# is «الدرسُ N» divider badges, page-corner ornaments, page-number banners and
+# footers — junk by WHAT IT DEPICTS, not by how few edges it carries. Neither a
+# saturation nor a whitespace feature separates them either: junk sits at 0.52
+# median saturated-pixel share, but real figures reach 0.40 at the 90th
+# percentile. A feature that actually separates these classes is unfound.
+#
+# What changed instead: a crop rejected here is no longer deleted. It moves to
+# `_dropped/` beside the book's figures, with its record and its own contact
+# sheet, so what this is wrong about can be seen and put back. The value stays
+# at 11.0 because every lower value measured is worse; what was fixed is that
+# being wrong used to be invisible. Six real figures were recovered this way —
+# see `main()`.
+#
+# How often it is wrong depends entirely on the book, so do not carry a single
+# number around: 7 of 119 set-aside crops were real across g8-math-s1/s2 and
+# g9-chemistry-s1/s2, but 3 of 9 on g7-math-s1, whose geometry is drawn as a
+# few thin rays on white — the cleanest possible case for this to misjudge.
+# Read every `_dropped/_review.png`; do not sample it.
 MIN_EDGE_DENSITY = 11.0
 
 
@@ -1417,11 +1454,82 @@ def check_semester(source_id: str, subject: str, index: list[dict]) -> None:
 def main() -> None:
     # Optional source-id arguments run only those books.
     #
-    # Re-running everything rewrites the seven already-committed books too, and
-    # their output moves — the current script finds more in chem-s2, finlit and
-    # both Grade 9 maths books than the committed index holds, because those
-    # were extracted before later detector work. That is a real improvement and
-    # a separate change; sweeping it into an unrelated commit would bury it.
+    # DO NOT re-run an already-committed book hoping to refresh it. Measured
+    # 2026-09-16 across all 47 committed indexes: `figures_in` returns the
+    # identical rect and the identical (unit, lesson) for every figure that
+    # survived review, in every book. There is no detector drift to recover.
+    #
+    # This comment used to say the opposite — that the script "finds more in
+    # chem-s2, finlit and both Grade 9 maths books than the committed index
+    # holds, because those were extracted before later detector work". It was
+    # comparing the fresh total against the CULLED index and reading the cull
+    # as drift. The commits say so outright: chem-s2 was cut 59 -> 18 and
+    # finlit 18 -> 6 (2363e03c), Grade 9 maths 285 -> 242 (7aef1bc6), and
+    # those are exactly the totals this script still produces.
+    #
+    # Re-running is not neutral, it LOSES figures. `MIN_EDGE_DENSITY` was
+    # calibrated on physics crops (28462845) and reads sparse maths and
+    # chemistry line art as flat: 15 real figures currently committed score
+    # under it — a labelled coastline, a central-angle circle, an archery
+    # target, two burning-magnesium photos, a Planck portrait. A re-run
+    # deletes all 15 silently. Any future re-extraction of a maths or
+    # chemistry book needs that threshold made per-subject FIRST.
+    #
+    # Do NOT read that as "remove the threshold". Audited 2026-09-16 on the
+    # four maths/chemistry books extracted AFTER it landed — g8-math-s1/s2,
+    # g9-chemistry-s1/s2 — by re-rendering every candidate and keeping what
+    # the threshold threw away: 119 crops dropped out of 646, and only about
+    # 7 of the 119 were real. The rest was g8-math's blue-and-gold page
+    # footer (~50 of them), chemistry's magenta page-corner ornaments, page
+    # -number banners and author credits. It is ~94% precise on these books
+    # and it is carrying real weight; the fix is recalibration, not removal.
+    #
+    # Those it cost were RESTORED on 2026-09-16, carrying the extractor's own
+    # rects rather than hand-drawn ones, since that is what they are — a rect
+    # `figures_in` still returns, rendered and then unlinked before the
+    # contact sheet was built. Restored: the Thomson plum-pudding model
+    # (g9-chem-s1 p014b, u1 l1), a circle with an inscribed square
+    # (g8-math-s1 p054, u2 l1), a vehicle-type pie chart (g8-math-s2 p160d,
+    # u9 l2), a sweets bag for a probability question (g8-math-s2 p167b,
+    # u9 l4), and 3-D coordinate axes (g8-math-s2 p076, u7 l1 — index only,
+    # that lesson has no figure-lesson-map row so nothing can reach it).
+    # No lesson had been left with zero figures by the threshold; the
+    # thinnest was g8-math-s1 u2 l1, down to one until p054 came back.
+    #
+    # Two NOT restored, each for its own reason:
+    #   g8-math-s2 p138 c6, a sphere labelled 14 ft — real, but the crop
+    #   swallowed the page footer under it. Re-cropping is a separate job.
+    #
+    #   g8-math-s2 p160 c2, the 2008 medals pie. Page 160 prints 2008 and
+    #   2012 as ONE figure sharing ONE legend, and the detector split it
+    #   down the middle: committed `p160b` held the pies' legend TEXT with
+    #   no colour swatches, the dropped crop held the swatches with no text.
+    #   Restoring it would have shipped a second broken half. `p160b` is now
+    #   the union of the two rects — both pies, whole legend, edge 13.8 —
+    #   which is the figure the book actually prints.
+    #
+    # And lowering it is not enough on its own. The 42 junk crops cut below
+    # and those 15 real figures are the SAME measurement — a threshold low
+    # enough to keep the coastline re-admits every «الدرسُ N» badge and page
+    # ornament with it. Those are junk by what they depict, not by how few
+    # edges they carry, so separating them needs something edge density
+    # cannot express. The 2026-09-16 cull holds only because it was done by
+    # hand, figure by figure.
+    #
+    # Re-running chem-s1 additionally destroys three figures no detector can
+    # rebuild. `p009/p010/p011.png` were HAND-cropped in 2363e03c — the
+    # spectroscopy apparatus, «الشكلُ (1)» the electromagnetic spectrum and
+    # «الشكلُ (2/أ)» the continuous spectrum — because neither shape is a
+    # crossing-axis pair or a Bezier cluster. They are real unit 1 lesson 1
+    # content and correctly placed; `p009`'s `pdfPage` sitting one before
+    # `lessonStartPage` is the book's layout, not a misfiling. A re-run
+    # rewrites index.json without them and they are gone for good. Their
+    # integer rects and different key order are the tell that they are
+    # hand-authored, if this comment is ever lost.
+    #
+    # What a committed book can still want is a fresh REVIEW pass, which
+    # needs no re-extraction — see the 2026-09-16 cull of 42 divider badges
+    # and page ornaments out of chem-s1, math-s1/s2 and g9-math-s2.
     only = set(sys.argv[1:])
     unknown = only - BOOKS.keys()
     if unknown:
@@ -1437,61 +1545,97 @@ def main() -> None:
         outdir = ROOT / "knowledge-base" / subject / "figures" / source_id
         outdir.mkdir(parents=True, exist_ok=True)
         index, written = [], []
-        flat = 0
+        # Crops the flat-panel test rejected. Kept, not deleted — see
+        # `_dropped/` below and MIN_EDGE_DENSITY's own comment.
+        dropped, dropped_files = [], []
+        dropdir = outdir / "_dropped"
         # A page can now yield several figures, so the page number alone is no
         # longer a unique name. The first keeps the bare `p035.png` it has
         # always had; the rest get a letter. Filenames are referenced from the
         # generated asset map, not from the lesson map, so this churns only
         # what `gen_book_figure_assets.mjs` regenerates.
         seen_on_page: dict[int, int] = {}
+        # Every candidate on the page, including the ones set aside. Separate
+        # from `seen_on_page` precisely BECAUSE that one rewinds on a drop: two
+        # drops on one page would otherwise be handed the same name and the
+        # second would overwrite the first.
+        cand_on_page: dict[int, int] = {}
         for n, page, r, lesson in figures_in(pdf, source_id):
             k = seen_on_page.get(n, 0)
             seen_on_page[n] = k + 1
+            c = cand_on_page.get(n, 0)
+            cand_on_page[n] = c + 1
             suffix = "" if k == 0 else chr(ord("b") + k - 1)
             name = f"p{n + 1:03d}{suffix}.png"
             path = outdir / name
             page.get_pixmap(clip=r, dpi=DPI_OVERRIDES.get(source_id, DPI)).save(path)
-            # Rendered, measured, and dropped again if it turned out to be a
-            # flat decorative panel. Judged after rendering because that is
-            # what the measure needs; the file is unlinked and the page's
-            # suffix counter rewound so the next real figure keeps the
-            # unbroken `p035`, `p035b`, `p035c` naming.
-            if edge_density(path) < MIN_EDGE_DENSITY:
-                path.unlink()
+            record = {
+                "file": name,
+                "sourceId": source_id,
+                # 1-based, matching how a teacher cites a page.
+                "pdfPage": n + 1,
+                "rect": [round(v, 1) for v in r],
+                # As PRINTED in the book, so «الوحدة 5» finds unit 5.
+                "unit": lesson["unit"] if lesson else None,
+                "lesson": lesson["lesson"] if lesson else None,
+                "lessonTitleEn": lesson["titleEn"] if lesson else None,
+                # Chemistry states no English lesson title the opener band
+                # can reach, so the Arabic one is its only identifier — and
+                # it is what the curriculum's titles are written in anyway.
+                "lessonTitleAr": lesson.get("titleAr") if lesson else None,
+                "lessonStartPage": lesson["startPage"] if lesson else None,
+            }
+            # Rendered, measured, and set aside if it looks like a flat
+            # decorative panel. Judged after rendering because that is what the
+            # measure needs; the page's suffix counter is rewound so the next
+            # real figure keeps the unbroken `p035`, `p035b`, `p035c` naming.
+            #
+            # Set aside, NOT deleted. This test is wrong often enough to matter
+            # — 7 of 119 on the Grade 8/9 books, 3 of 9 on g7-math-s1 — and it
+            # used to be wrong invisibly. See MIN_EDGE_DENSITY.
+            # The crop moves to `_dropped/` with its record, so the review pass
+            # can see what was taken and put a real figure back without having
+            # to re-derive its rect.
+            edge = edge_density(path)
+            if edge < MIN_EDGE_DENSITY:
                 seen_on_page[n] = k
-                flat += 1
+                dropdir.mkdir(parents=True, exist_ok=True)
+                # `pNNN.png` may yet be taken by the next crop on this page,
+                # which is the whole point of rewinding the counter — so the
+                # set-aside copy carries the candidate's position instead.
+                record["file"] = f"p{n + 1:03d}_c{c}.png"
+                record["edgeDensity"] = round(edge, 1)
+                path.replace(dropdir / record["file"])
+                dropped.append(record)
+                dropped_files.append(dropdir / record["file"])
                 continue
             written.append(path)
-            index.append(
-                {
-                    "file": name,
-                    "sourceId": source_id,
-                    # 1-based, matching how a teacher cites a page.
-                    "pdfPage": n + 1,
-                    "rect": [round(v, 1) for v in r],
-                    # As PRINTED in the book, so «الوحدة 5» finds unit 5.
-                    "unit": lesson["unit"] if lesson else None,
-                    "lesson": lesson["lesson"] if lesson else None,
-                    "lessonTitleEn": lesson["titleEn"] if lesson else None,
-                    # Chemistry states no English lesson title the opener band
-                    # can reach, so the Arabic one is its only identifier — and
-                    # it is what the curriculum's titles are written in anyway.
-                    "lessonTitleAr": lesson.get("titleAr") if lesson else None,
-                    "lessonStartPage": lesson["startPage"] if lesson else None,
-                }
-            )
+            index.append(record)
         check_semester(source_id, subject, index)
         (outdir / "index.json").write_text(
             json.dumps({"sourceId": source_id, "figures": index}, ensure_ascii=False, indent=1),
             encoding="utf-8",
         )
         review_sheet(written, outdir / "_review.png")
+        if dropped:
+            # Its own index and its own contact sheet, both gitignored with the
+            # crops. Putting a figure back means moving the PNG up one level
+            # and pasting its record into index.json — the rect is already
+            # right, because it is the rect this run computed.
+            (dropdir / "index.json").write_text(
+                json.dumps({"sourceId": source_id, "figures": dropped},
+                           ensure_ascii=False, indent=1),
+                encoding="utf-8",
+            )
+            review_sheet(dropped_files, dropdir / "_review.png")
         placed = sum(1 for f in index if f["unit"] is not None)
-        flat_note = f", {flat} flat panels dropped" if flat else ""
+        flat_note = f", {len(dropped)} set aside as flat" if dropped else ""
         print(f"{source_id}: {len(index)} figures ({placed} placed in a lesson"
               f"{flat_note}) → {outdir.relative_to(ROOT)}")
     print("\nReview each _review.png and delete any crop that grabbed the wrong")
     print("thing before wiring these into the app.")
+    print("Then check each _dropped/_review.png in full: the flat-panel test")
+    print("misjudges sparse line art, and what it took are real figures.")
 
 
 if __name__ == "__main__":

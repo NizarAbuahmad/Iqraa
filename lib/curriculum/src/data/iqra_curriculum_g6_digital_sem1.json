@@ -1,0 +1,435 @@
+{
+  "meta": {
+    "grade": "الصف السادس",
+    "grade_en": "Grade 6",
+    "subject": "المهارات الرقمية",
+    "subject_en": "Digital Skills",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الأنشطة لمادة المهارات الرقمية الصف السادس الفصل الأول (g6-digital-s1-activity-book)",
+      "دليل المعلم لمادة المهارات الرقمية الصف السادس الفصل الأول (g6-digital-s1-teacher-guide)"
+    ],
+    "provenance_note": "نُقلت البِنيةُ من فهرسِ كتابِ الأنشطةِ (ص 4-5) في 2026-09-15، وقُرِئَ من ملفِّ PDF مباشرةً.\n\nهذا الكتابُ ليسَ كتابَ مادَّةٍ قائمةً بذاتِها، بل مادَّةٌ عابِرَةٌ للمَناهجِ: محتواهُ «لَبِناتٌ» تتَّصِلُ بوحداتٍ من كتبٍ أخرى، وعناوينُ اللَّبِناتِ هيَ عناوينُ تلكَ الوحداتِ حرفيًّا — «مِنَ الخَلِيَّةِ إلى الجِسْمِ» و«المادَّةُ» و«المَخاليطُ وَطَرائِقُ فَصْلِها» و«الصَّوْتُ» من كتابَي العلومِ، و«التَّحْويلاتُ وَالإِنْشاءاتُ الهَنْدَسِيَّةُ» و«الهَنْدَسَةُ وَالقِياسُ» من الرياضيّاتِ. تُرْجِمَتْ ستُّ لَبِناتٍ إلى ستِّ وحداتٍ، وأربعةُ «مشاريعِ تعلُّمٍ» إلى أربعِ وحداتٍ، بترتيبِ ورودِها في الفهرسِ.",
+    "known_gaps": [
+      "لا كتابَ طالبٍ لهذهِ المادَّةِ في الملفّاتِ المرسَلةِ، ولا كتابَ فصلٍ ثانٍ: كتابُ الأنشطةِ ودليلُ المعلِّمِ للفصلِ الأوَّلِ هما كلُّ ما وصلَ. فهذا الفهرسُ أضيقُ تغطيةً من سائرِ موادِّ الصفِّ السادسِ.",
+      "الكتابُ موسومٌ «الفصل الأول»، لكنَّ لَبِناتِهِ الرابعةَ والسادسةَ تتَّصِلُ بوحدتَي «المَخاليطُ» و«الصَّوْتُ» وهُما من علومِ الفصلِ الثاني (الوحدتانِ 6 و7). أي أنَّ تقسيمَ هذا الكتابِ إلى فصلينِ لا يُطابِقُ تقسيمَ المَوادِّ التي يتَّصِلُ بها. سُجِّلَ semester = 1 كما يقولُ غلافُهُ، لا كما يقتضي محتواهُ.",
+      "«المَهَمَّةُ الاسْتِكْشافِيَّةُ الأولى/الثانيةُ/الثالثةُ» عناوينُ كما يطبعُها الفهرسُ، وليست ترقيمًا من عندِنا؛ الفهرسُ لا يذكرُ لها موضوعًا.",
+      "مشاريعُ التعلُّمِ الأربعةُ لا يذكرُ لها الفهرسُ بنودًا فرعيَّةً، فحُمِلَ كلُّ مشروعٍ وحدةً ذاتَ درسٍ واحدٍ يحملُ اسمَهُ.",
+      "objectives و vocabulary و periods فارغةٌ، شأنَ سائرِ كتبِ الصفِّ السادسِ ذاتِ العناوينِ فقط. دليلُ المعلِّمِ مُسجَّلٌ ومُستخرَجٌ، فهوَ مصدرٌ متاحٌ لملئِها لاحقًا."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "مِنَ الخَلِيَّةِ إلى الجِسْمِ",
+      "title_en": "From the Cell to the Body",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (activity book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "الخَلِيَّةُ في أَلْبوم",
+          "title_en": "The Cell in an Album",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الأولى",
+          "title_en": "First Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثانِيَةُ",
+          "title_en": "Second Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثالِثَةُ",
+          "title_en": "Third Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "التَّحْويلاتُ وَالإِنْشاءاتُ الهَنْدَسِيَّةُ",
+      "title_en": "Transformations and Geometric Constructions",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (activity book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "الرَّسْمُ بِالإِحْداثِيّاتِ",
+          "title_en": "Drawing with Coordinates",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الأولى",
+          "title_en": "First Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثانِيَةُ",
+          "title_en": "Second Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثالِثَةُ",
+          "title_en": "Third Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الرابِعَةُ",
+          "title_en": "Fourth Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "المادَّةُ",
+      "title_en": "Matter",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (activity book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الذَّرّاتُ وَالجُزَيْئاتُ، مُغامَرَةٌ في اسْتِكْشافِ المَوادِّ",
+          "title_en": "Atoms and Molecules: An Adventure in Exploring Materials",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الأولى",
+          "title_en": "First Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثانِيَةُ",
+          "title_en": "Second Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثالِثَةُ",
+          "title_en": "Third Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "مَشْروعُ التَّعَلُّمِ الأَوَّلُ: مُدَوَّنَةٌ إِلِكْتْرونِيَّةٌ تَفاعُلِيَّةٌ «الخَلِيَّةُ وَالحَياةُ»",
+      "title_en": "Learning Project 1: An Interactive Blog, “The Cell and Life”",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (learning project, no sub-items printed)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "مَشْروعُ التَّعَلُّمِ الأَوَّلُ: مُدَوَّنَةٌ إِلِكْتْرونِيَّةٌ تَفاعُلِيَّةٌ «الخَلِيَّةُ وَالحَياةُ»",
+          "title_en": "Learning Project 1: An Interactive Blog, “The Cell and Life”",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "مَشْروعُ التَّعَلُّمِ الثاني: لَوْحاتٌ مِنَ الفُسَيْفِساءِ: اسْتِكْشافُ الكُسورِ في الفَنِّ الرَّقْمِيِّ",
+      "title_en": "Learning Project 2: Mosaic Panels — Exploring Fractions in Digital Art",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (learning project, no sub-items printed)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "مَشْروعُ التَّعَلُّمِ الثاني: لَوْحاتٌ مِنَ الفُسَيْفِساءِ: اسْتِكْشافُ الكُسورِ في الفَنِّ الرَّقْمِيِّ",
+          "title_en": "Learning Project 2: Mosaic Panels — Exploring Fractions in Digital Art",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "المَخاليطُ وَطَرائِقُ فَصْلِها",
+      "title_en": "Mixtures and Methods of Separating Them",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (activity book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمْتِعُ وَأَتَعَلَّمُ: رِحْلَةٌ تَفاعُلِيَّةٌ مَعَ المَخاليطِ وَطَرائِقِ فَصْلِها",
+          "title_en": "Enjoy and Learn: An Interactive Journey through Mixtures and Their Separation",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الأولى",
+          "title_en": "First Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثانِيَةُ",
+          "title_en": "Second Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l4",
+          "order": 4,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثالِثَةُ",
+          "title_en": "Third Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "الهَنْدَسَةُ وَالقِياسُ",
+      "title_en": "Geometry and Measurement",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (activity book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "مُجَسَّماتٌ وَمِساحاتٌ: رِحْلَةٌ تَفاعُلِيَّةٌ بِاسْتِخْدامِ بَرْنامَجِ جيوجيبرا (GeoGebra)",
+          "title_en": "Solids and Areas: An Interactive Journey using GeoGebra",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الأولى",
+          "title_en": "First Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثانِيَةُ",
+          "title_en": "Second Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l4",
+          "order": 4,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثالِثَةُ",
+          "title_en": "Third Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "الصَّوْتُ",
+      "title_en": "Sound",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (activity book table of contents)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "اسْتِكْشافُ الأَصْواتِ: دَليلٌ لِلتَّعَرُّفِ عَلى الأَصْواتِ",
+          "title_en": "Exploring Sounds: A Guide to Identifying Sounds",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الأولى",
+          "title_en": "First Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l3",
+          "order": 3,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثانِيَةُ",
+          "title_en": "Second Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l4",
+          "order": 4,
+          "title_ar": "المَهَمَّةُ الاسْتِكْشافِيَّةُ الثالِثَةُ",
+          "title_en": "Third Exploratory Task",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_ar": "مَشْروعُ التَّعَلُّمِ الثالِثُ: مَنْزِلي ثُلاثِيُّ الأَبْعادِ",
+      "title_en": "Learning Project 3: My Three-Dimensional Home",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (learning project, no sub-items printed)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_ar": "مَشْروعُ التَّعَلُّمِ الثالِثُ: مَنْزِلي ثُلاثِيُّ الأَبْعادِ",
+          "title_en": "Learning Project 3: My Three-Dimensional Home",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u10",
+      "number": 10,
+      "title_ar": "مَشْروعُ التَّعَلُّمِ الرابِعُ: تَيّاراتُ الهَواءِ: تَجْرِبَةٌ مَرْئِيَّةٌ تَفاعُلِيَّةٌ",
+      "title_en": "Learning Project 4: Air Currents — An Interactive Visual Experiment",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (learning project, no sub-items printed)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u10_l1",
+          "order": 1,
+          "title_ar": "مَشْروعُ التَّعَلُّمِ الرابِعُ: تَيّاراتُ الهَواءِ: تَجْرِبَةٌ مَرْئِيَّةٌ تَفاعُلِيَّةٌ",
+          "title_en": "Learning Project 4: Air Currents — An Interactive Visual Experiment",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

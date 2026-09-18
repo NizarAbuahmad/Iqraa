@@ -21,7 +21,7 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
@@ -56,7 +56,7 @@ import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels, topicPickerParams } from '@/services/lessonPrep';
 
 const ACCENT = '#0EA5E9';
 
@@ -90,6 +90,10 @@ export default function SlidesScreen() {
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
   const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  // Labels are per-grade too: Grade 6's creative-arts book has no music in
+  // it, so it must not be offered under the combined name. Same index
+  // alignment as the mask above.
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, isAr ? 'ar' : 'en');
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
   // Live as the teacher types, not gated behind pressing Generate — same
@@ -221,7 +225,7 @@ export default function SlidesScreen() {
       try {
         const { searchDeckVideos } = await import('@/services/youtubeVideo');
         const query = isAr
-          ? `شرح ${deck.lesson} ${subjects[subjectIdx].nameAr} لطلاب ${grades[gradeIdx].nameAr}`
+          ? `شرح ${deck.lesson} ${subjects[subjectIdx].nameAr} لطلبة ${grades[gradeIdx].nameAr}`
           : `${deck.lesson} ${subjects[subjectIdx].name} ${grades[gradeIdx].name} explained`;
         options = await searchDeckVideos(query, isAr ? 'ar' : 'en');
         setVideoOptions(options);
@@ -365,6 +369,11 @@ export default function SlidesScreen() {
         .catch((): ActivitySlide[] => []);
 
       let lessonPlan: LessonPlanOutput | null = null;
+      // Kept so the failure can still be named if the deck turns out to be
+      // unbuildable. The plan error is deliberately swallowed below — the book
+      // alone makes a deck — but when there is no book either, "why" is the
+      // only useful thing left to say, and a quota reads nothing like a fault.
+      let planError: unknown = null;
       try {
         lessonPlan = await aiService.generateLessonPlan({
           // Localised: this string is carried into generated content verbatim —
@@ -388,11 +397,12 @@ export default function SlidesScreen() {
         // that must not be absorbed here: continuing would answer "stop" with
         // a finished deck the teacher asked not to have.
         if (isAbortError(e)) throw e;
+        planError = e;
         lessonPlan = null;
       }
 
       if (!lessonPlan && !grounding.lesson) {
-        setError(t('generationFailed'));
+        setError(t(aiErrorMessageKey(planError)));
         return;
       }
 
@@ -503,7 +513,7 @@ export default function SlidesScreen() {
           // "mathematics" video is no use mid-lesson, where the point is to
           // explain THIS concept.
           const videoQuery = isAr
-            ? `شرح ${trimmed} ${subjects[subjectIdx].nameAr} لطلاب ${grades[gradeIdx].nameAr}`
+            ? `شرح ${trimmed} ${subjects[subjectIdx].nameAr} لطلبة ${grades[gradeIdx].nameAr}`
             : `${trimmed} ${subjects[subjectIdx].name} ${grades[gradeIdx].name} explained`;
 
           // The search fills a gap, it does not compete with the teacher. A
@@ -562,7 +572,7 @@ export default function SlidesScreen() {
       // Reached only by a cancel today: every other failure inside is handled
       // where it happens, because a partial deck still has value.
       if (isAbortError(e)) setCancelled(true);
-      else setError(t('generationFailed'));
+      else setError(t(aiErrorMessageKey(e)));
     } finally {
       abortRef.current = null;
       setLoading(false);
@@ -778,7 +788,7 @@ export default function SlidesScreen() {
           <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
           <PillSelector
             label={t('subjects')}
-            options={subjects.map((s, i) => ({ value: i, label: isAr ? s.nameAr : s.name })).filter(o => !subjectHidden[o.value])}
+            options={subjects.map((s, i) => ({ value: i, label: subjectNames[i] })).filter(o => !subjectHidden[o.value])}
             value={subjectIdx}
             onChange={setSubjectIdx}
             colors={colors}

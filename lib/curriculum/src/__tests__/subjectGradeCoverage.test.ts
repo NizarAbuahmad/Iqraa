@@ -161,7 +161,7 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // english:grade-6 closed 2026-09-15, both semesters (title-only, third-party).
   // islamic:grade-6 closed 2026-09-15, both semesters (title-only).
   // social:grade-6 closed 2026-09-15, both semesters (title-only).
-  'digital-literacy:grade-6',
+  // digital-literacy:grade-6 closed 2026-09-15 (title-only, S1 only).
   // creative-arts / vocational-education / physical-education at grade-6 all
   // closed 2026-09-15: SUBJECTS.grades extended and the books attached.
   //
@@ -171,6 +171,125 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // array as well as ingesting the book, so do not read the undeclared range
   // as evidence the subject stops above Grade 6 — for these three it is the
   // declaration that trails the curriculum, not the reverse.
+  //
+  // grade-5 joined MVP_GRADE_IDS 2026-09-16 with only Mathematics S1 built —
+  // a staged rollout like grade-8's and grade-6's, so the seventeen pairs
+  // below split the same two ways.
+  //
+  // PERMANENT — the subject is not declared at grade-5 in SUBJECTS.grades at
+  // all. physics/chemistry/biology/earth-science and financial-literacy only
+  // start at SPECIALISED_FROM (grade-9) or grade-7; geography/history/
+  // civic-education only start at grade-9; physical-education is declared
+  // for grade-6, grade-7, grade-9 but not grade-5; creative-arts and
+  // vocational-education are declared for grade-6..grade-8 only. None of
+  // these will ever get a grade-5 book.
+  'chemistry:grade-5',
+  'physics:grade-5',
+  'biology:grade-5',
+  'earth-science:grade-5',
+  'financial-literacy:grade-5',
+  'geography:grade-5',
+  'history:grade-5',
+  'civic-education:grade-5',
+  'physical-education:grade-5',
+  'creative-arts:grade-5',
+  'vocational-education:grade-5',
+  //
+  // ORDINARY GAPS — the subject is declared at grade-5 (arabic/english/
+  // digital-literacy span all grades; social spans grade-1..grade-9), and
+  // Grade 5 text for each already exists on disk (worktree-grade-5-books,
+  // unmerged as of 2026-09-16), but no catalog has been built from it yet —
+  // see docs/g345-blocked. Delete each line once its catalog and BOOKS row
+  // land. science:grade-5 closed 2026-09-16, both semesters (second Grade 5
+  // subject); islamic:grade-5 closed the same day, both semesters (third);
+  // arabic:grade-5 closed the same day, both semesters, title-only (see
+  // g5ArabicSem1.ts — interactive-exercise lessons, no prose to summarize).
+  // social:grade-5 closed the same day, both semesters, title-only (see
+  // g5SocialSem1.ts — a corrupted PDF text layer, not a missing source).
+  // digital-literacy:grade-5 closed the same day, Semester 1 only, title-only
+  // (fourth — see g5DigitalSem1.ts, no Semester 2 activity book on file).
+  // english:grade-5 closed the same day, both semesters — the last planned
+  // Grade 5 MVP subject (see g5EnglishSem1.ts).
+  //
+  // grade-4 joined MVP_GRADE_IDS 2026-09-17 with only Mathematics built — a
+  // staged rollout like grade-5's, so the pairs below split the same two
+  // ways. science:grade-4 and islamic:grade-4 closed the same rollout, both
+  // semesters each, real content (see g4ScienceSem1.ts / g4IslamicSem1.ts —
+  // matching g5ScienceSem1.ts's and g5IslamicSem1.ts's conventions).
+  // digital-literacy:grade-4 closed the same rollout, title-only,
+  // cross-curricular (see g4DigitalSem1.ts — matches g5DigitalSem1.ts's
+  // convention). social:grade-4 closed the same rollout, both semesters,
+  // real content — unlike g5SocialSem1.ts, this book's PDF is not
+  // CMap-corrupted, so it reads cleanly (see g4SocialSem1.ts).
+  // arabic:grade-4 closed the same rollout, both semesters, title-only,
+  // same convention as g5ArabicSem1.ts (fixed 5-lesson-per-unit pattern,
+  // no prose to summarize — see g4ArabicSem1.ts). english:grade-4 closed
+  // the same rollout, both semesters, real content (unit-level, not
+  // title-only) — the last of the seven Grade 4 subjects that mirror
+  // Grade 5's set, same convention as g5EnglishSem1.ts (see
+  // g4EnglishSem1.ts).
+  //
+  // PERMANENT — the subject is not declared at grade-4 in SUBJECTS.grades at
+  // all, same reasoning as grade-5 above (physics/chemistry/biology/
+  // earth-science/financial-literacy start at grade-7 or SPECIALISED_FROM;
+  // geography/history/civic-education start at grade-9; physical-education
+  // is declared for grade-6/7/9 only — no Grade 4 PE book exists, unlike Art
+  // and Vocational Education).
+  'chemistry:grade-4',
+  'physics:grade-4',
+  'biology:grade-4',
+  'earth-science:grade-4',
+  'financial-literacy:grade-4',
+  'geography:grade-4',
+  'history:grade-4',
+  'civic-education:grade-4',
+  'physical-education:grade-4',
+  // No ORDINARY GAPS remain for grade-4 — all nine subjects now have
+  // catalogs. The seven that mirror Grade 5's set (mathematics, science,
+  // islamic, digital-literacy, social, arabic, english) closed first;
+  // creative-arts:grade-4 and vocational-education:grade-4 closed
+  // 2026-09-17 by extending SUBJECTS.grades (both were previously
+  // grade-6..8 only) and building g4CreativeArts.ts / g4VocationalSem1.ts —
+  // see those files. Grade 4's MVP rollout is complete.
+  //
+  // grade-3 joined MVP_GRADE_IDS 2026-09-17 with only Mathematics built —
+  // a staged rollout like grade-4/5's. mathematics:grade-3 closed the same
+  // day, both semesters, real content from each lesson's own «أَتَعَلَّمُ
+  // الْيَوْمَ» box (this book's name for the objectives box — see
+  // g3MathSem1.ts).
+  //
+  // PERMANENT — the subject is not declared at grade-3 in SUBJECTS.grades at
+  // all, same reasoning as grade-4/5 above (physics/chemistry/biology/
+  // earth-science/financial-literacy start at grade-7 or SPECIALISED_FROM;
+  // geography/history/civic-education start at grade-9). physical-education
+  // is declared for grade-6/7/9 only and creative-arts for
+  // grade-4/6/7/8 only — both exclude grade-3, but unlike
+  // vocational-education (no Grade 3 vocational book exists at all), Grade 3
+  // Art and PE source PDFs exist on disk, so these two may move to the
+  // ORDINARY list below once SUBJECTS.grades is extended for them, same trap
+  // as grade-4's creative-arts/vocational-education.
+  'chemistry:grade-3',
+  'physics:grade-3',
+  'biology:grade-3',
+  'earth-science:grade-3',
+  'financial-literacy:grade-3',
+  'geography:grade-3',
+  'history:grade-3',
+  'civic-education:grade-3',
+  'physical-education:grade-3',
+  'creative-arts:grade-3',
+  'vocational-education:grade-3',
+  //
+  // ORDINARY GAPS — the subject is declared at grade-3 in SUBJECTS.grades,
+  // and Grade 3 source PDFs exist on disk (knowledge-base/grade-3-*), but no
+  // catalog has been built from them yet. Delete each line once its catalog
+  // and BOOKS row land, same as the grade-4 rollout above.
+  // science:grade-3 closed 2026-09-17 — see g3ScienceSem1.ts/g3ScienceSem2.ts.
+  // islamic:grade-3 closed 2026-09-17 — see g3IslamicSem1.ts/g3IslamicSem2.ts.
+  // arabic:grade-3 closed 2026-09-17 — see g3ArabicSem1.ts/g3ArabicSem2.ts.
+  'english:grade-3',
+  'digital-literacy:grade-3',
+  'social:grade-3',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

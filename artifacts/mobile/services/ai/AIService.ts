@@ -153,6 +153,10 @@ export interface LessonPlanOutput {
   homework: string;
   sources?: GroundedSource[];
   variantId?: string;
+  /** Present when a spending cap turned this into a saved copy — see
+   *  `servedReason` in api-server's routes/generate.ts. The screen must say so
+   *  rather than present a repeat as newly generated. */
+  servedReason?: 'quota' | 'budget';
 }
 
 export interface WorksheetOutput {
@@ -162,6 +166,10 @@ export interface WorksheetOutput {
   answerKey: WorksheetAnswerKeyItem[];
   sources?: GroundedSource[];
   variantId?: string;
+  /** Present when a spending cap turned this into a saved copy — see
+   *  `servedReason` in api-server's routes/generate.ts. The screen must say so
+   *  rather than present a repeat as newly generated. */
+  servedReason?: 'quota' | 'budget';
 }
 
 export interface WorksheetSection {
@@ -204,6 +212,10 @@ export interface QuizOutput {
   questions: QuizQuestion[];
   sources?: GroundedSource[];
   variantId?: string;
+  /** Present when a spending cap turned this into a saved copy — see
+   *  `servedReason` in api-server's routes/generate.ts. The screen must say so
+   *  rather than present a repeat as newly generated. */
+  servedReason?: 'quota' | 'budget';
 }
 
 export interface QuizQuestion {
@@ -236,6 +248,10 @@ export interface ActivityOutput {
   assessment: string;
   sources?: GroundedSource[];
   variantId?: string;
+  /** Present when a spending cap turned this into a saved copy — see
+   *  `servedReason` in api-server's routes/generate.ts. The screen must say so
+   *  rather than present a repeat as newly generated. */
+  servedReason?: 'quota' | 'budget';
 }
 
 // ─── Interactive Classroom Engine ────────────────────────────────────────────
@@ -431,6 +447,36 @@ export interface ClassroomActivityRequest {
   numQuestions?: number;
 }
 
+/**
+ * A deck built directly from the teacher's own free-text description, not a
+ * curriculum topic — see `app/ai-tools/prompt-slides.tsx`. Deliberately not
+ * an extension of `ClassroomActivityRequest`: there is no lesson to ground,
+ * no book to prefer over the model, and no `unitId`/`lessonId`/`excludeVariantIds`
+ * because this request is never pooled (see `routes/generate.ts` on the server —
+ * the prompt is carried as `additionalContext` with `contextSource: 'teacher'`
+ * forced server-side specifically so it is never shared between teachers).
+ */
+export interface PromptSlidesRequest {
+  /** The teacher's own words — the entire spec for the deck. */
+  prompt: string;
+  grade: string;
+  subject: string;
+  language: 'arabic' | 'english';
+  /** Capped at 20 both here and server-side; left unset lets the model pick 6–10. */
+  slideCount?: number;
+  /** Same meaning as `ClassroomActivityRequest.classroomSetup`. */
+  classroomSetup?: 'screen' | 'board';
+  /**
+   * 'free' builds a deterministic, non-AI template deck locally — instant,
+   * always available, no images, cannot follow the prompt's specific content.
+   * 'ai' calls the live model (spends the shared AI budget) and can include a
+   * few AI-generated images. See `RemoteAIService.generatePromptSlides`.
+   */
+  mode: 'free' | 'ai';
+  regenerate?: boolean;
+  avoid?: string[];
+}
+
 // ─── Lesson Flow Engine ──────────────────────────────────────────────────────
 
 /**
@@ -477,4 +523,5 @@ export abstract class AIService {
   abstract generateHomework(req: AIRequest, opts?: GenerateOptions): Promise<WorksheetOutput>;
   abstract generateActivity(req: AIRequest, opts?: GenerateOptions): Promise<ActivityOutput>;
   abstract generateClassroomActivity(req: ClassroomActivityRequest, opts?: GenerateOptions): Promise<ClassroomActivity>;
+  abstract generatePromptSlides(req: PromptSlidesRequest, opts?: GenerateOptions): Promise<ClassroomActivity>;
 }

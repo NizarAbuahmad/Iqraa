@@ -59,8 +59,8 @@ describe('classifyBlooms — masdar forms, as the curriculum is actually written
   }
 
   it('matches conjugated verbs too, for hand-authored objectives', () => {
-    assert.equal(classifyBlooms('يحسب الطلاب الطاقة المنبعثة'), 'Apply');
-    assert.equal(classifyBlooms('يشرح الطلاب انتقالات الإلكترون'), 'Understand');
+    assert.equal(classifyBlooms('يحسب الطلبة الطاقة المنبعثة'), 'Apply');
+    assert.equal(classifyBlooms('يشرح الطلبة انتقالات الإلكترون'), 'Understand');
   });
 
   it('classifies the English objective text as well', () => {

@@ -42,7 +42,10 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
         PORT: String(port),
         // Never contacted: no test below reaches a route that queries them.
         DATABASE_URL: "postgres://u:p@127.0.0.1:5432/none",
-        SESSION_SECRET: "test-secret",
+        // Long enough to clear the boot check in index.ts. A short one here
+        // is not a test failure but a container that never starts, which
+        // presents as every request below timing out.
+        SESSION_SECRET: "test-secret-padded-to-clear-the-32-char-boot-check",
         // chat.ts and generate.ts still construct the OpenAI client at module
         // scope, so the bundle needs a key present to boot even though nothing
         // here calls a model. Production passes a placeholder for the same
@@ -191,6 +194,7 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       "/chat",
       "/generate/lesson-plan",
       "/generate/classroom-activity",
+      "/generate/prompt-slides",
       "/practice/read-aloud",
     ]) {
       const res = await fetch(`${base}${route}`, {
@@ -385,6 +389,20 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401);
   });
 
+  it("guards lesson-media upload, which writes to a bucket", async () => {
+    // The rest of /media reads: an Unsplash search, a YouTube lookup, a signed
+    // URL. This one WRITES — an 8MB data URL straight into R2 — and was mounted
+    // under the same `authMiddleware`-only guard as the readers, so any
+    // signed-in account, student or parent included, could use it as file
+    // hosting. It is teacher-only now, and rate limited.
+    const res = await fetch(`${base}/media/lesson`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lessonId: "x", dataUrl: "data:image/png;base64,AA==" }),
+    });
+    assert.equal(res.status, 401, "uploading lesson media must require a token");
+  });
+
   it("guards the Unsplash lookup route", async () => {
     // Shares one server-side access key across every teacher — an
     // unauthenticated caller could otherwise exhaust the app's whole rate limit.
@@ -445,6 +463,52 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     });
     assert.equal(res.status, 404);
   });
+
+  /*
+   * Response headers, asserted here rather than in a file of their own so
+   * they share this suite's already-booted bundle — a second `describe` means
+   * a second process and another twenty seconds of waiting for a health check,
+   * to test middleware that is installed three lines away from the mounts
+   * above.
+   *
+   * NODE_ENV is not "production" under `node --test`, so the localhost origins
+   * are in the allowlist here; that is why the refused case below uses an
+   * outside origin rather than a localhost port.
+   */
+  it("answers a first-party browser origin with permission to read the response", async () => {
+    const res = await fetch(`${base}/healthz`, {
+      headers: { Origin: "https://app.iqrra.com" },
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("access-control-allow-origin"), "https://app.iqrra.com");
+  });
+
+  it("withholds that permission from every other origin", async () => {
+    // Not a 4xx: the server answers normally and simply omits the header, and
+    // it is the browser that then refuses to hand the body to the page. A
+    // status assertion here would be asserting the wrong mechanism.
+    const res = await fetch(`${base}/healthz`, {
+      headers: { Origin: "https://not-ours.example" },
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("access-control-allow-origin"), null);
+  });
+
+  it("still answers a request with no Origin at all", async () => {
+    // Every native app request, curl, and Cloud Run's own health check. An
+    // allowlist that refused these would take the whole mobile app down, which
+    // is the expensive way to find out `Origin` is a browser-only header.
+    const res = await fetch(`${base}/healthz`);
+    assert.equal(res.status, 200);
+  });
+
+  it("sends the baseline security headers, and never caches a response", async () => {
+    const res = await fetch(`${base}/healthz`);
+    assert.equal(res.headers.get("x-content-type-options"), "nosniff");
+    assert.match(res.headers.get("strict-transport-security") ?? "", /max-age=\d+/);
+    // Everything this API returns is a roster, a paper or a child's marks.
+    assert.equal(res.headers.get("cache-control"), "no-store");
+  });
 });
 
 describe("API register (student accounts enabled)", { skip: built ? false : "run `pnpm build` first" }, () => {
@@ -464,7 +528,10 @@ describe("API register (student accounts enabled)", { skip: built ? false : "run
         PORT: String(port),
         STUDENT_ACCOUNTS: "true",
         DATABASE_URL: "postgres://u:p@127.0.0.1:5432/none",
-        SESSION_SECRET: "test-secret",
+        // Long enough to clear the boot check in index.ts. A short one here
+        // is not a test failure but a container that never starts, which
+        // presents as every request below timing out.
+        SESSION_SECRET: "test-secret-padded-to-clear-the-32-char-boot-check",
         OPENAI_API_KEY: "sk-test-placeholder",
       },
       stdio: "ignore",
