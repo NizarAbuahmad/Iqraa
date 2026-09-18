@@ -14,7 +14,6 @@ import { WebSidebar } from '@/components/ui/WebSidebar';
 import { GlobalLessonBar } from '@/components/ui/GlobalLessonBar';
 import { TranslationKey } from '@/services/i18n';
 import { HomeLessonPick, loadLessonPick, subscribeLessonPick } from '@/services/lessonContext';
-import { TranslationKey } from '@/services/i18n';
 
 /** Hides a tab without unregistering its route, so a deep link to it still resolves. */
 const HIDDEN = { tabBarButton: () => null, tabBarItemStyle: { display: 'none' as const } };
@@ -111,7 +110,6 @@ function ClassicTabLayout() {
   const isWeb = Platform.OS === 'web';
   const insets = useSafeAreaInsets();
   const { t, lang, isRTL } = useLanguage();
-  const { t, isRTL } = useLanguage();
   const { user } = useAuth();
   const viewportW = useViewportWidth();
   const isDesktop = isWeb && viewportW >= DESKTOP_BREAKPOINT;
@@ -136,8 +134,6 @@ function ClassicTabLayout() {
     loadLessonPick().then(setLessonPick);
     return subscribeLessonPick(setLessonPick);
   }, [isTeacher]);
-
-  const tabEntries = buildTabEntries(isTeacher);
 
   const tabEntries = buildTabEntries(isTeacher);
 
@@ -226,9 +222,6 @@ function ClassicTabLayout() {
         <View style={{ flex: 1 }}>{tabs}</View>
       </View>
     );
-
-  if (!isDesktop) {
-    return tabs;
   }
 
   return (
@@ -238,7 +231,6 @@ function ClassicTabLayout() {
         {bar}
         <View style={{ flex: 1 }}>{tabs}</View>
       </View>
-      <View style={{ flex: 1 }}>{tabs}</View>
     </View>
   );
 }
