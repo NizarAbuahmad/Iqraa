@@ -21,13 +21,20 @@ import {
   buildResponse,
   buildLessonBlock,
   buildAdaptationsDirective,
+  isConfidentSingleSubjectHit,
   resolveGeneratorGrounding,
   sourceCitationLine,
   TRIM_TIERS,
   CONTEXT_CHAR_BUDGET,
   deduplicateByUnit,
 } from '../kbContext.ts';
-import { getBookForLesson, getLessonById, KB_LESSONS } from '../knowledgeBase.ts';
+import {
+  getBookForLesson,
+  getLessonById,
+  KB_CONFIDENT_SCORE,
+  KB_LESSONS,
+  KB_SUGGEST_SCORE,
+} from '../knowledgeBase.ts';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -409,6 +416,62 @@ describe('buildResponse — a document the teacher opened', () => {
     assert.equal(
       buildResponse('اشرح الدرس', [lesson], 'ar', 'teacher', undefined),
       buildResponse('اشرح الدرس', [lesson], 'ar', 'teacher'),
+    );
+  });
+});
+
+// ─── isConfidentSingleSubjectHit — cross-subject false-confidence regression ──
+
+describe('isConfidentSingleSubjectHit', () => {
+  const mathLesson = fixture('kbl-math-s2-nccd-u6_l2')!;
+  const chemLesson = fixture('kbl-chem-s1-nccd-u1_l2')!;
+
+  it('fixtures really are different subjects', () => {
+    assert.notEqual(
+      getBookForLesson(mathLesson)?.subjectId,
+      getBookForLesson(chemLesson)?.subjectId,
+    );
+  });
+
+  it('accepts an ordinary same-subject confident hit', () => {
+    const otherMath = fixture('kbl-math-s2-nccd-u5_l3')!;
+    assert.equal(
+      isConfidentSingleSubjectHit([
+        { lesson: mathLesson, score: KB_CONFIDENT_SCORE + 5 },
+        { lesson: otherMath, score: KB_SUGGEST_SCORE },
+      ]),
+      true,
+    );
+  });
+
+  it('rejects a top hit contested by a different-subject candidate', () => {
+    // The bug this guards: scoreField sums partial matches across ~10 fields,
+    // so an off-subject lesson can clear KB_SUGGEST_SCORE on generic
+    // vocabulary alone. isConfidentKbHit alone would say "confident" here
+    // because there's no same-subject rival close enough to trip its margin.
+    assert.equal(
+      isConfidentSingleSubjectHit([
+        { lesson: mathLesson, score: KB_CONFIDENT_SCORE + 5 },
+        { lesson: chemLesson, score: KB_SUGGEST_SCORE },
+      ]),
+      false,
+    );
+  });
+
+  it('ignores a different-subject candidate too weak to be worth asking about', () => {
+    assert.equal(
+      isConfidentSingleSubjectHit([
+        { lesson: mathLesson, score: KB_CONFIDENT_SCORE + 5 },
+        { lesson: chemLesson, score: KB_SUGGEST_SCORE - 1 },
+      ]),
+      true,
+    );
+  });
+
+  it('stays false when the top hit was never confident to begin with', () => {
+    assert.equal(
+      isConfidentSingleSubjectHit([{ lesson: mathLesson, score: KB_CONFIDENT_SCORE - 1 }]),
+      false,
     );
   });
 });

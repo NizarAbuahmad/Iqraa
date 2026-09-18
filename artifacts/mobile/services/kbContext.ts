@@ -5,10 +5,12 @@
  * exact same trimming logic without mocking any RN imports.
  */
 
-import type { KBLesson } from './knowledgeBase.ts';
+import type { KBLesson, KBScoredLesson } from './knowledgeBase.ts';
 import {
   getBookForLesson,
   getUnitForLesson,
+  isConfidentKbHit,
+  KB_SUGGEST_SCORE,
   resolveGroundedKbLesson,
   searchKBRanked,
   searchKBSemantic,
@@ -355,6 +357,30 @@ export function detectSubjectAmbiguity(results: KBLesson[]): string[] | null {
     if (book) subjectIds.add(book.subjectId);
   }
   return subjectIds.size > 1 ? Array.from(subjectIds) : null;
+}
+
+/**
+ * `isConfidentKbHit` only compares the top score against the runner-up
+ * score — it has no notion of subject, because it lives in `kbSuggestion.ts`
+ * to stay pure and fast to test. That is fine when the runner-up is a
+ * near-miss in the *same* subject; it is a silent wrong-subject pin when the
+ * runner-up doesn't exist (or is weak) but a lesson from a *different*
+ * subject also clears the ask threshold elsewhere in the ranked list —
+ * `scoreField` sums partial matches across ~10 fields per lesson, so an
+ * off-topic lesson can rack up a passable score on generic vocabulary alone.
+ *
+ * A hit only counts as confident when no other-subject candidate is even
+ * worth asking about (`KB_SUGGEST_SCORE`). Otherwise this is exactly the
+ * "results span multiple subjects" case `detectSubjectAmbiguity` exists to
+ * catch — the caller should treat it as ambiguous, not confident.
+ */
+export function isConfidentSingleSubjectHit(ranked: KBScoredLesson[]): boolean {
+  if (!isConfidentKbHit(ranked)) return false;
+  const topSubject = getBookForLesson(ranked[0]!.lesson)?.subjectId;
+  return !ranked.slice(1).some(r =>
+    r.score >= KB_SUGGEST_SCORE
+    && getBookForLesson(r.lesson)?.subjectId !== topSubject,
+  );
 }
 
 /**

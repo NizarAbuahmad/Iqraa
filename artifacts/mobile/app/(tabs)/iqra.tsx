@@ -45,6 +45,7 @@ import {
   deduplicateByUnit,
   detectSubjectAmbiguity,
   filterResultsBySubject,
+  isConfidentSingleSubjectHit,
 } from '@/services/kbContext';
 import { shouldAskWhichLesson } from '@/services/kbSuggestion';
 import { Toast } from '@/components/ui/Toast';
@@ -106,7 +107,6 @@ import {
   buildCurrentLessonView,
   buildLessonSuggestions,
   isBareArtifactShortcut,
-  isConfidentKbHit,
   pinLesson,
   resolvePickedLesson,
   resourceRoute,
@@ -1674,7 +1674,7 @@ export default function IqraScreen() {
       const ranked = pinnedLessonId
         ? []
         : searchKBRanked(q, lang as 'ar' | 'en');
-      const confidentHit = isConfidentKbHit(ranked);
+      const confidentHit = isConfidentSingleSubjectHit(ranked);
 
       // The lesson this send was explicitly pinned to, when there is one. It
       // is also the honest teaching context: `teachingCtx` and
@@ -1944,7 +1944,7 @@ export default function IqraScreen() {
           preferDocuments: hasDocs && sessionMemory.lessonPin !== 'hard',
         });
         const topicRanked = searchKBRanked(topicForArt, lang as 'ar' | 'en');
-        const topicConfident = isConfidentKbHit(topicRanked);
+        const topicConfident = isConfidentSingleSubjectHit(topicRanked);
         // Unit-level asks (الدائرة) often tie several lessons — still prefer that unit
         const topicStrong =
           topicConfident
