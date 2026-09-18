@@ -224,6 +224,10 @@ import {
   buildG3CreativeArtsBrowserCatalog,
 } from './catalogs/g3CreativeArts.ts';
 import {
+  G3_PE_S1_CURRICULUM_BOOK_ID,
+  buildG3PhysicalEducationSem1BrowserCatalog,
+} from './catalogs/g3PhysicalEducationSem1.ts';
+import {
   G4_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG4ScienceSem1BrowserCatalog,
 } from './catalogs/g4ScienceSem1.ts';
@@ -821,7 +825,12 @@ export const SUBJECTS: Subject[] = [
   // rather than knowledge-based one — see g9PeSem1.ts for what that changes
   // about the data shape. Extended to grade-7 on 2026-09-12 once its book
   // arrived — the two are not contiguous (no Grade 8 PE book exists).
-  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-6', 'grade-7', 'grade-9'] },
+  // Extended to grade-3 on 2026-09-18 once its book arrived — also not
+  // contiguous with grade-6/7/9 (no grades 4/5 PE books). Unlike
+  // g6PhysicalEducationSem1.ts (title-only), Grade 3's book prints a real
+  // main-idea box and bilingual glossary per lesson; see
+  // g3PhysicalEducationSem1.ts.
+  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-3', 'grade-6', 'grade-7', 'grade-9'] },
   // Sixth brand-new subject, added 2026-09-09 as part of the Grade 8 batch.
   // Combines three domains (Art, Music, Drama) NCCD prints as one book —
   // see g8CreativeArts.ts. Extended to grade-7 on 2026-09-12 once its book
@@ -1299,6 +1308,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // in MVP_SUBJECT_IDS, but SUBJECTS.grades needed extending for grade-3 —
   // see the SUBJECTS declaration above and g3CreativeArts.ts.
   G3_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  // Grade 3 Physical Education, Semester 1 only — no Semester 2 book exists
+  // in the supplied set, same gap as g6PhysicalEducationSem1.ts.
+  // 'physical-education' is already in MVP_SUBJECT_IDS, but SUBJECTS.grades
+  // needed extending for grade-3 — see the SUBJECTS declaration above and
+  // g3PhysicalEducationSem1.ts.
+  G3_PE_S1_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2836,6 +2851,26 @@ export const BOOKS: Book[] = [
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
+  },
+  // ── Physical Education Grade 3 – Semester 1 ─────────────────────────────
+  // Ninth and last Grade 3 MVP subject, required extending SUBJECTS.grades
+  // for physical-education (previously grade-6/7/9 only). Semester 1 only —
+  // no Semester 2 book exists in the supplied set, same gap as
+  // g6PhysicalEducationSem1.ts. Unlike that book (title-only), this one
+  // prints a real main-idea box and bilingual glossary per lesson. See
+  // g3PhysicalEducationSem1.ts.
+  {
+    id: G3_PE_S1_CURRICULUM_BOOK_ID,
+    title: 'Physical Education – Grade 3, Semester 1',
+    titleAr: 'التربية الرياضية – الصف الثالث – الفصل الأول',
+    subjectId: 'physical-education',
+    gradeId: 'grade-3',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
   },
   // The first Grade 6 books in the repo. Maths carries four units and eighteen
   // lessons from the student book alone (no S2 student book was supplied);
@@ -4975,6 +5010,7 @@ const _g3SocialSem2Browser = buildG3SocialSem2BrowserCatalog();
 const _g3EnglishSem1Browser = buildG3EnglishSem1BrowserCatalog();
 const _g3EnglishSem2Browser = buildG3EnglishSem2BrowserCatalog();
 const _g3CreativeArtsBrowser = buildG3CreativeArtsBrowserCatalog();
+const _g3PhysicalEducationSem1Browser = buildG3PhysicalEducationSem1BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -5243,6 +5279,7 @@ export const UNITS: Unit[] = [
   ..._g3EnglishSem1Browser.units,
   ..._g3EnglishSem2Browser.units,
   ..._g3CreativeArtsBrowser.units,
+  ..._g3PhysicalEducationSem1Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -5401,6 +5438,7 @@ export const LESSONS: Lesson[] = [
   ..._g3EnglishSem1Browser.lessons,
   ..._g3EnglishSem2Browser.lessons,
   ..._g3CreativeArtsBrowser.lessons,
+  ..._g3PhysicalEducationSem1Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,

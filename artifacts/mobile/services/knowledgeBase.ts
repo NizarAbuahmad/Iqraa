@@ -367,6 +367,10 @@ import {
   buildG3CreativeArtsCatalog,
 } from './curriculumG3CreativeArts.ts';
 import {
+  G3_PE_S1_BOOK_ID,
+  buildG3PhysicalEducationSem1Catalog,
+} from './curriculumG3PhysicalEducationSem1.ts';
+import {
   G6_MATH_S1_BOOK_ID,
   buildG6MathSem1Catalog,
 } from './curriculumG6MathSem1.ts';
@@ -1619,6 +1623,15 @@ export const KB_BOOKS: KBBook[] = [
     // placeholder the id-namespacing scope uses (see g3CreativeArts.ts).
     semester: 1,
     source: 'iqra_curriculum_g3_creative_arts.json (NCCD)',
+  },
+  {
+    id: G3_PE_S1_BOOK_ID,
+    gradeId: 'grade-3',
+    subjectId: 'physical-education',
+    titleAr: 'التربية الرياضية – الصف الثالث – الفصل الأول',
+    titleEn: 'Physical Education – Grade 3 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g3_physical_education_sem1.json (NCCD)',
   },
   {
     id: G6_MATH_S1_BOOK_ID,
@@ -3050,6 +3063,7 @@ const _g3SocialSem2 = buildG3SocialSem2Catalog();
 const _g3EnglishSem1 = buildG3EnglishSem1Catalog();
 const _g3EnglishSem2 = buildG3EnglishSem2Catalog();
 const _g3CreativeArts = buildG3CreativeArtsCatalog();
+const _g3PhysicalEducationSem1 = buildG3PhysicalEducationSem1Catalog();
 const _g8VocSem1 = buildG8VocSem1Catalog();
 const _g8VocSem2 = buildG8VocSem2Catalog();
 const _g8SocialSem1 = buildG8SocialSem1Catalog();
@@ -3325,6 +3339,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g3EnglishSem1.units,
   ..._g3EnglishSem2.units,
   ..._g3CreativeArts.units,
+  ..._g3PhysicalEducationSem1.units,
   ..._g8VocSem1.units,
   ..._g8VocSem2.units,
   ..._g8SocialSem1.units,
@@ -3489,6 +3504,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g3EnglishSem1.lessons,
   ..._g3EnglishSem2.lessons,
   ..._g3CreativeArts.lessons,
+  ..._g3PhysicalEducationSem1.lessons,
   ..._g8VocSem1.lessons,
   ..._g8VocSem2.lessons,
   ..._g8SocialSem1.lessons,

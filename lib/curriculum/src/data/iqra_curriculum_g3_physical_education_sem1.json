@@ -1,0 +1,244 @@
+{
+  "meta": {
+    "grade": "الصف الثالث",
+    "grade_en": "Grade 3",
+    "subject": "التربية الرياضية",
+    "subject_en": "Physical Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب التربية الرياضية الصف الثالث الفصل الأول (g3-pe-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ ودروسُها الأربعةَ عشرَ من كتاب الطالب في 2026-09-18، بقراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ وصفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF عبرَ PyMuPDF. بخلافِ g6PhysicalEducationSem1.ts (عناوينُ فقط)، يطبَعُ هذا الكتابُ صندوقَ «الفِكْرَةُ الرَّئيسَةُ» وصندوقَ «المَفاهيمُ وَالمُصْطَلَحاتُ الأَساسِيَّةُ» الثنائيَّ اللغةِ في افتتاحيّةِ كلِّ درسٍ، فنُقِلا حرفيًّا.",
+    "known_gaps": [
+      "objectives فارغةٌ لكلِّ الدروسِ الأربعةَ عشرَ: لا يطبَعُ هذا الكتابُ صندوقَ «نَتاجاتُ التَّعَلُّمِ» مستقلًّا؛ نصوصُ «الإحماء/الأنشطة/التهدئة» تَصِفُ أنشطةَ الحصَّةِ لا نتاجاتِ تعلُّمٍ رسميَّةً.",
+      "periods و total_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ في الكتابِ.",
+      "general_idea_ar لكلِّ وحدةٍ منقولٌ من فقرةِ «الفِكْرَةُ العامَّةُ» المطبوعةِ في افتتاحيّةِ كلِّ وحدةٍ.",
+      "لا كتابَ للفصلِ الثاني في الملفّاتِ المرسَلةِ؛ هذهِ المادَّةُ نصفُ سنةٍ في المنهاجِ المتوفِّرِ، نفسُ نمطِ g6PhysicalEducationSem1.ts."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "الْمَهاراتُ الْحَرَكِيَّةُ الْأَساسِيَّةُ",
+      "title_en": "Fundamental Movement Skills",
+      "general_idea_ar": "تَعْتَمِدُ الْأَلْعابُ وَالْأَنْشِطَةُ الرِّياضِيَّةُ، عَلى مَجْموعَةٍ مِنَ الْمَهاراتِ الْحَرَكِيَّةِ الْأَساسِيَّةِ. وَعَبْرَ تَعَلُّمِها، يُمْكِنُنا الْمُشارَكَةُ بِنَجاحٍ في مُخْتَلَفِ الْأَلْعابِ الرِّياضِيَّةِ وَالْأَنْشِطَةِ الْبَدَنِيَّةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea and bilingual terms from each lesson's opener box; objectives not transcribed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "مَهارَةُ الْجَرْي",
+          "title_en": "Running Skill",
+          "main_idea_ar": "تَحْريكُ الذِّراعَيْنِ وَالْقَدَمَيْنِ بِطَريقَةٍ صَحيحَةٍ في أَثْناءِ الْجَرْيِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْجَرْي", "en": "Running" },
+            { "ar": "تَبادُلُ رَفْعِ الرُّكْبَةِ", "en": "Knee Raises" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "مَهارَةُ الْوَثْبِ",
+          "title_en": "Leaping Skill",
+          "main_idea_ar": "الْوَثْبُ إِلى الْأَمامِ عَنْ طَريقِ دَفْعِ الْأَرْضِ بِإِحْدى الْقَدَمَيْنِ، وَالْهُبوطِ عَلى الْقَدَمِ الْأُخْرى.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْوَثْبُ", "en": "Leaping" },
+            { "ar": "قَدَمُ الْوَثْبِ", "en": "Leap Foot" },
+            { "ar": "الْحَواجِزُ الصَّغيرَةُ", "en": "Mini-Hurdles" }
+          ]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "مَهارَةُ الْهُبوطِ",
+          "title_en": "Landing Skill",
+          "main_idea_ar": "الْهُبوطُ عَلى الْقَدَمَيْنِ مَعًا، مَعَ ثَنْيِ الرُّكْبَتَيْنِ وَمَدِّ الذِّراعَيْنِ إِلى الْأَمامِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْهُبوطُ", "en": "Landing" },
+            { "ar": "الْهُبوطُ الْآمِنُ", "en": "Safe Landing" },
+            { "ar": "الْقَفْزُ", "en": "Jump" }
+          ]
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "مَهارَةُ الرَّمْيِ وَالْمَسْكِ",
+          "title_en": "Throwing and Catching Skill",
+          "main_idea_ar": "رَمْيُ الْكُرَةِ وَمَسْكُها بِطَريقَةٍ صَحيحَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الرَّمْيُ", "en": "Throwing" },
+            { "ar": "الْمَسْكُ", "en": "Catching" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "أَلْعابُ الرَّشاقَةِ",
+      "title_en": "Agility Games",
+      "general_idea_ar": "الرَّشاقَةُ عُنْصُرٌ مِنْ عَناصِرِ اللَّياقَةِ الْبَدَنِيَّةِ؛ إِذْ تُؤَدّي إِلى التَّحَرُّكِ بِدِقَّةٍ وَسُرْعَةٍ وَسُهولَةٍ في اتِّجاهاتٍ مُخْتَلِفَةٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea and bilingual terms from each lesson's opener box; objectives not transcribed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "الرَّشاقَةُ",
+          "title_en": "Agility",
+          "main_idea_ar": "الْجَرْيُ بَيْنَ الْأَقْماعِ بِرَشاقَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الرَّشاقَةُ", "en": "Agility" },
+            { "ar": "الْجَرْيُ الْمُتَعَرِّجُ", "en": "Zigzag Running" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "سُلَّمُ الرَّشاقَةِ",
+          "title_en": "The Agility Ladder",
+          "main_idea_ar": "اسْتِخْدامُ سُلَّمِ الرَّشاقَةِ بِطَرائِقَ مُخْتَلِفَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "سُلَّمُ الرَّشاقَةِ", "en": "Agility Ladder" },
+            { "ar": "الْمَحَطّاتُ", "en": "Stations" }
+          ]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "الْجَرْيُ مَعَ تَغْييرِ الِاتِّجاهِ",
+          "title_en": "Running with Change of Direction",
+          "main_idea_ar": "تَغْييرُ اتِّجاهِ الْحَرَكَةِ في أَثْناءِ الْجَرْيِ بِسُهولَةٍ وَسُرْعَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "تَغْييرُ الِاتِّجاهِ", "en": "Direction Change" }
+          ]
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "تَمْريرُ الْكُرَةِ بِالْيَدِ",
+          "title_en": "Hand Passing the Ball",
+          "main_idea_ar": "تَمْريرُ الْكُرَةِ بِالْيَدِ إِلى زَميلي/زَميلَتي في أَثْناءِ الْحَرَكَةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "تَمْريرُ الْكُرَةِ بِالْيَدِ", "en": "Hand Pass" }
+          ]
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "الْقَفْزُ مَعَ تَغْييرِ الِاتِّجاهِ",
+          "title_en": "Jumping with Change of Direction",
+          "main_idea_ar": "تَغْييرُ اتِّجاهِ الْحَرَكَةِ في أَثْناءِ أَداءِ مَهارَةِ الْقَفْزِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْقَفْزُ", "en": "Jumping" },
+            { "ar": "الْحِذاءُ الرِّياضِيُّ", "en": "Sneakers" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "أَلْعابُ السُّرْعَةِ",
+      "title_en": "Speed Games",
+      "general_idea_ar": "تَرْتَبِطُ السُّرْعَةُ بِإِتْقانِ الْعَديدِ مِنَ الْأَلْعابِ الرِّياضِيَّةِ، وَتُسْهِمُ في إِنْجازِها بِأَقَلِّ زَمَنٍ مُمْكِنٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea and bilingual terms from each lesson's opener box; objectives not transcribed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "السُّرْعَةُ",
+          "title_en": "Speed",
+          "main_idea_ar": "تَمْييزُ مَفْهومَي الْمَسافَةِ وَالزَّمَنِ وَالْعَلاقَةِ بَيْنَهُما.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "السُّرْعَةُ", "en": "Speed" },
+            { "ar": "الْمَسافَةُ", "en": "Distance" },
+            { "ar": "الزَّمَنُ", "en": "Time" },
+            { "ar": "ساعَةُ الْإيقافِ", "en": "Stopwatch" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "سُرْعَةُ رَدِّ الْفِعْلِ",
+          "title_en": "Reaction Speed",
+          "main_idea_ar": "التَّغْييرُ في اتِّجاهِ أَوْ شَكْلِ الْحَرَكَةِ؛ نَتيجَةَ مُؤَثِّرٍ خارِجِيٍّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "سُرْعَةُ رَدِّ الْفِعْلِ", "en": "Reaction Speed" },
+            { "ar": "مُؤَثِّرٌ خارِجِيٌّ", "en": "External Factor" }
+          ]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "تَغَيُّرُ مُسْتَوى السُّرْعَةِ",
+          "title_en": "Change in Speed Level",
+          "main_idea_ar": "تَغْييرُ السُّرْعَةِ (زِيادَةٌ أَوْ تَباطُؤٌ) بِصورَةٍ تَدْريجِيَّةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "مُسْتَوى السُّرْعَةِ", "en": "Speed Level" },
+            { "ar": "تَزايُدُ السُّرْعَةِ", "en": "Acceleration" },
+            { "ar": "تَباطُؤُ السُّرْعَةِ", "en": "Deceleration" }
+          ]
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "السُّرْعَةُ الْقُصْوى",
+          "title_en": "Maximum Speed",
+          "main_idea_ar": "الْجَرْيُ بِسُرْعَةٍ لِمَسافَةٍ مُحَدَّدَةٍ وَبِزَمَنٍ مَقْبولٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "السُّرْعَةُ الْقُصْوى", "en": "Maximum Speed" },
+            { "ar": "الْعَدْوُ", "en": "Sprint" }
+          ]
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "السُّرْعَةُ مَعَ اسْتِخْدامِ الْأَدَواتِ الرِّياضِيَّةِ",
+          "title_en": "Speed Using Sports Equipment",
+          "main_idea_ar": "التَّحَرُّكُ بِأَقْصى سُرْعَةٍ بِوُجودِ أَدَواتٍ رِياضِيَّةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "أَداةٌ رِياضِيَّةٌ", "en": "Sport Tool" },
+            { "ar": "مِضْرَبُ الرِّيشَةِ", "en": "Badminton Racket" }
+          ]
+        }
+      ]
+    }
+  ]
+}
