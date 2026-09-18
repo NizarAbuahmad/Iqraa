@@ -1,0 +1,518 @@
+{
+  "meta": {
+    "grade": "الصف الأول",
+    "grade_en": "Grade 1",
+    "subject": "الرياضيات",
+    "subject_en": "Mathematics",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة الرياضيات الصف الأول الفصل الأول (g1-math-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحدةُ التمهيديّةُ والوحداتُ الخمسُ ودروسُها السبعةُ والثلاثونَ من كتاب الطالب في 2026-09-18، بقراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ وصفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF عبرَ PyMuPDF. سلسلةُ HarperCollins/NCCD نفسُها المستخدَمةُ في الصفوفِ 3/4/5/10؛ صندوقُ النتاجاتِ هنا مطبوعٌ تحتَ عنوانِ «أَتَعَلَّمُ الْيَوْمَ» تمامًا كَـ g3MathSem1.ts، لا «فِكْرَةُ الدَّرْسِ». الكتابُ يبدأُ بوحدةٍ «تمهيديّةٍ» غيرِ مرقَّمةٍ (الوحدةُ التمهيديّةُ: الأعدادُ حتّى 10) قبلَ الوحدةِ الأولى المرقَّمةِ فعليًّا، فمُنِحَتْ الرقمَ 0 في هذا المخطَّطِ لتمييزِها دونَ كسرِ ترقيمِ الوحداتِ اللاحقةِ (1-5) كما تطبَعُها الوحداتُ نفسُها.",
+    "known_gaps": [
+      "main_idea_ar فارغةٌ لكلِّ الدروسِ السبعةِ والثلاثينَ: هذا الكتابُ لا يطبَعُ صندوقَ «الفِكْرَةُ الرَّئيسَةُ» إطلاقًا، تمامًا كَـ g3MathSem1.ts.",
+      "general_idea_ar وprior_knowledge فارغتانِ لكلِّ الوحداتِ: صفحةُ افتتاحِ كلِّ وحدةٍ تحملُ «أُسْرَتي الْكَريمَةُ» (رسالةٌ لِولِيِّ الأمرِ) و«مَشْروعُ الْوَحْدَةِ» فقط، لا صندوقَ «ما أهمية هذه الوحدة؟» ولا «تعلمت سابقًا»، نفسُ ما وُثِّقَ في g3MathSem1.ts.",
+      "vocabulary فارغةٌ لِتِسْعَةَ عَشَرَ درسًا لا تطبَعُ صندوقَ «الْمُصْطَلَحاتِ» المستقلَّ؛ حيثُ وُجِدَ الصندوقُ نُقِلَتْ الأزواجُ العربيّةُ-الإنجليزيّةُ حرفيًّا (الغلوسُ الإنجليزيُّ يظهَرُ أحيانًا بجانبِ نقطةِ المصطلحِ مباشرةً، وأحيانًا داخلَ جملةِ «أتعلّم» التفسيريّةِ نفسِها — رُوجِعَ كلُّ مصطلحٍ يدويًّا لتأكيدِ مصدرِهِ).",
+      "لا عددَ حصصٍ مطبوعًا لأيِّ درسٍ (periods وtotal_periods = null)."
+    ]
+  },
+  "units": [
+    {
+      "id": "u0",
+      "number": 0,
+      "title_ar": "الْوَحْدَةُ التَّمْهيدِيَّةُ: الْأَعْدادُ حَتّى 10",
+      "title_en": "Preparatory Unit: Numbers up to 10",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's «أَتَعَلَّمُ الْيَوْمَ» box, bilingual terms from «الْمُصْطَلَحات» where printed; main idea and general idea not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u0_l1",
+          "order": 1,
+          "title_ar": "الْمَوْقِعُ وَالِاتِّجاهُ",
+          "title_en": "Position and Direction",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تَحْديدَ مَواقِعِ الْأَشْياءِ بِالنِّسْبَةِ إِلى بَعْضِها.",
+            "تَمْييزَ اتِّجاهِ الْيَمينِ مِنَ الْيَسارِ."
+          ],
+          "vocabulary": [
+            { "ar": "تَحْت", "en": "under" },
+            { "ar": "فَوْق", "en": "above" },
+            { "ar": "خَلْف", "en": "behind" },
+            { "ar": "أَمام", "en": "in front" },
+            { "ar": "يَسار", "en": "left" },
+            { "ar": "يَمين", "en": "right" }
+          ]
+        },
+        {
+          "id": "u0_l2",
+          "order": 2,
+          "title_ar": "الْأَعْدادُ: 1 ,2 ,3",
+          "title_en": "Numbers: 1, 2, 3",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِراءَةَ الْأَعْدادِ: 1 ,2 ,3، ثُمَّ كِتابَتَها."],
+          "vocabulary": [
+            { "ar": "واحِد", "en": "one" },
+            { "ar": "اثْنان", "en": "two" },
+            { "ar": "ثَلاثَة", "en": "three" }
+          ]
+        },
+        {
+          "id": "u0_l3",
+          "order": 3,
+          "title_ar": "الْعَدَدانِ: 4 ,5",
+          "title_en": "Numbers: 4, 5",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِراءَةَ الْعَدَدَيْنِ: 4 ,5، ثُمَّ كِتابَتَهُما."],
+          "vocabulary": [
+            { "ar": "أَرْبَعَة", "en": "four" },
+            { "ar": "خَمْسَة", "en": "five" }
+          ]
+        },
+        {
+          "id": "u0_l4",
+          "order": 4,
+          "title_ar": "الْعَدَدُ صِفْرٌ",
+          "title_en": "The Number Zero",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِراءَةَ الْعَدَدِ صِفْرٍ، ثُمَّ كِتابَتَهُ."],
+          "vocabulary": [{ "ar": "صِفْر", "en": "zero" }]
+        },
+        {
+          "id": "u0_l5",
+          "order": 5,
+          "title_ar": "الْأَعْدادُ: 6 ,7 ,8",
+          "title_en": "Numbers: 6, 7, 8",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِراءَةَ الْأَعْدادِ: 6 ,7 ,8، ثُمَّ كِتابَتَها."],
+          "vocabulary": [
+            { "ar": "سِتَّة", "en": "six" },
+            { "ar": "سَبْعَة", "en": "seven" },
+            { "ar": "ثَمانِيَة", "en": "eight" }
+          ]
+        },
+        {
+          "id": "u0_l6",
+          "order": 6,
+          "title_ar": "الْعَدَدانِ: 9 ,10",
+          "title_en": "Numbers: 9, 10",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِراءَةَ الْعَدَدَيْنِ: 9 ,10، ثُمَّ كِتابَتَهُما."],
+          "vocabulary": [
+            { "ar": "تِسْعَة", "en": "nine" },
+            { "ar": "عَشَرَة", "en": "ten" }
+          ]
+        },
+        {
+          "id": "u0_l7",
+          "order": 7,
+          "title_ar": "الْعَدُّ التَّرْتيبِيُّ",
+          "title_en": "Ordinal Counting",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["اسْتِعْمالَ الْعَدِّ التَّرْتيبِيِّ لِتَحْديدِ مَواقِعِ الْأَشْياءِ في صَفٍّ."],
+          "vocabulary": [{ "ar": "الْعَدُّ التَّرْتيبِيُّ", "en": "ordinal" }]
+        }
+      ]
+    },
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "الْأَعْدادُ ضِمْنَ مَنْزِلَتَيْنِ",
+      "title_en": "Two-Digit Numbers",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's «أَتَعَلَّمُ الْيَوْمَ» box, bilingual terms from «الْمُصْطَلَحات» where printed; main idea and general idea not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "الْعَشَراتُ",
+          "title_en": "Tens",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["الْعَشَراتِ، وَقِراءَتَها."],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "الْآحادُ وَالْعَشَراتُ",
+          "title_en": "Ones and Tens",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["الْآحادَ وَالْعَشَراتِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "تَمْثيلُ الْأَعْدادِ ضِمْنَ مَنْزِلَتَيْنِ",
+          "title_en": "Representing Two-Digit Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَمْثيلَ عَدَدٍ ضِمْنَ مَنْزِلَتَيْنِ بِالنَّماذِجِ وَالرُّسوماتِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "الْقيمَةُ الْمَنْزِلِيَّةُ",
+          "title_en": "Place Value",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَحْديدَ الْقيمَةِ الْمَنْزِلِيَّةِ لِأَرْقامِ عَدَدٍ ضِمْنَ مَنْزِلَتَيْنِ، ثُمَّ كِتابَتِهِ بِالصّورَةِ التَّحْليلِيَّةِ."],
+          "vocabulary": [
+            { "ar": "الْقيمَةُ الْمَنْزِلِيَّةُ", "en": "place value" },
+            { "ar": "الرَّقْم", "en": "digit" },
+            { "ar": "الصّورَةُ التَّحْليلِيَّة", "en": "expanded form" }
+          ]
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "قِراءَةُ الْأَعْدادِ وَكِتابَتُها",
+          "title_en": "Reading and Writing Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِراءَةَ الْأَعْدادِ ضِمْنَ مَنْزِلَتَيْنِ، ثُمَّ كِتابَتَها بِالْأَرْقامِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l6",
+          "order": 6,
+          "title_ar": "الْأَعْدادُ الزَّوْجِيَّةُ وَالْأَعْدادُ الْفَرْدِيَّةُ",
+          "title_en": "Even and Odd Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["مَفْهومَ الْأَعْدادِ الزَّوْجِيَّةِ وَالْأَعْدادِ الْفَرْدِيَّةِ."],
+          "vocabulary": [
+            { "ar": "عَدَدٌ زَوْجِيٌّ", "en": "even number" },
+            { "ar": "عَدَدٌ فَرْدِيٌّ", "en": "odd number" }
+          ]
+        },
+        {
+          "id": "u1_l7",
+          "order": 7,
+          "title_ar": "لَوْحَةُ الْأَعْدادِ",
+          "title_en": "Hundred Chart",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "اسْتِعْمالَ لَوْحَةِ الْأَعْدادِ لِأَجِدَ عَدَدًا يَقِلُّ بِـ1 عَنْ عَدَدٍ آخَرَ، أَوْ يَزيدُ عَلَيْهِ بِـ1.",
+            "اسْتِعْمالَ لَوْحَةِ الْأَعْدادِ لِأَجِدَ عَدَدًا يَقِلُّ بِـ10 عَنْ عَدَدٍ آخَرَ، أَوْ يَزيدُ عَلَيْهِ بِـ10."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "مُقارَنَةُ الْأَعْدادِ وَتَرْتيبُها",
+      "title_en": "Comparing and Ordering Numbers",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's «أَتَعَلَّمُ الْيَوْمَ» box, bilingual terms from «الْمُصْطَلَحات» where printed; main idea and general idea not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "الْعَدُّ تَصاعُدِيًّا وَتَنازُلِيًّا",
+          "title_en": "Counting Up and Down",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["الْعَدَّ تَصاعُدِيًّا وَتَنازُلِيًّا."],
+          "vocabulary": [
+            { "ar": "تَصاعُدِيًّا", "en": "count on" },
+            { "ar": "تَنازُلِيًّا", "en": "count back" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "الْعَدُّ الْقَفْزِيُّ",
+          "title_en": "Skip Counting",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["الْعَدَّ قَفْزِيًّا: اثْنيناتٍ، وَخَمْساتٍ، وَعَشَراتٍ، مُسْتَعْمِلًا خَطَّ الْأَعْدادِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "الْعَدَدُ السّابِقُ وَالْعَدَدُ التّالي",
+          "title_en": "Before and After Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تَحْديدَ الْعَدَدِ السّابِقِ وَالْعَدَدِ التّالي لِعَدَدٍ ما.",
+            "تَحْديدَ الْعَدَدَ الْواقِعَ بَيْنَ عَدَدَيْنِ."
+          ],
+          "vocabulary": [
+            { "ar": "الْعَدَدُ السّابِقُ", "en": "just before" },
+            { "ar": "الْعَدَدُ التّالي", "en": "just after" },
+            { "ar": "بَيْنَ عَدَدَيْنِ", "en": "between" }
+          ]
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "مُقارَنَةُ الْأَعْدادِ",
+          "title_en": "Comparing Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["الْمُقارَنَةَ بَيْنَ عَدَدَيْنِ ضِمْنَ مَنْزِلَتَيْنِ، مُسْتَعْمِلًا الرُّموزَ: < ، = ، >"],
+          "vocabulary": [
+            { "ar": "أَصْغَرُ مِن", "en": "less than" },
+            { "ar": "أَكْبَرُ مِن", "en": "greater than" },
+            { "ar": "يُساوي", "en": "equal to" }
+          ]
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "تَرْتيبُ الْأَعْدادِ",
+          "title_en": "Ordering Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَرْتيبَ الْأَعْدادِ ضِمْنَ مَنْزِلَتَيْنِ تَنازُلِيًّا وَتَصاعُدِيًّا."],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l6",
+          "order": 6,
+          "title_ar": "التَّقْديرُ",
+          "title_en": "Estimation",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَقْديرَ الْأَعْدادِ."],
+          "vocabulary": [{ "ar": "التَّقْديرُ", "en": "estimate" }]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "الْجَمْعُ",
+      "title_en": "Addition",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's «أَتَعَلَّمُ الْيَوْمَ» box, bilingual terms from «الْمُصْطَلَحات» where printed; main idea and general idea not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الْجَمْعُ بِاسْتِعْمالِ خَطِّ الْأَعْدادِ",
+          "title_en": "Addition Using a Number Line",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["الْجَمْعَ بِاسْتِعْمالِ خَطِّ الْأَعْدادِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الضِّعْفُ",
+          "title_en": "Doubles",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["إيجادَ ضِعْفَ الْأَعْدادِ حَتّى الْعَدَدِ 10."],
+          "vocabulary": [{ "ar": "الضِّعْف", "en": "double" }]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "الضِّعْفُ مُضافًا إِلَيْهِ 1",
+          "title_en": "Doubles Plus 1",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["جَمْعَ عَدَدَيْنِ، مُسْتَعْمِلًا الضِّعْفَ مُضافًا إِلَيْهِ 1."],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "مُكَوِّناتُ الْعَدَدِ 10",
+          "title_en": "Number Bonds to 10",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["إيجادَ أَزْواجَ الْأَعْدادِ الَّتي تُكَوِّنُ الْعَدَدَ 10."],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "الْجَمْعُ بِالْإِكْمالِ إِلى الْعَشَرَةِ",
+          "title_en": "Addition by Making Ten",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["جَمْعَ عَدَدَيْنِ بِالْإِكْمالِ إِلى الْعَدَدِ 10."],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l6",
+          "order": 6,
+          "title_ar": "خَصائِصُ عَمَلِيَّةِ الْجَمْعِ",
+          "title_en": "Properties of Addition",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "حَقيقَةَ أَنَّ الْجَمْعَ بِأَيِّ تَرْتيبٍ لا يُغَيِّرُ النّاتِجَ.",
+            "حَقيقَةَ أَنَّ ناتِجَ جَمْعِ الصِّفْرِ مَعَ أَيِّ عَدَدٍ هُوَ الْعَدَدُ نَفْسُهُ."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l7",
+          "order": 7,
+          "title_ar": "جَمْعُ ثَلاثَةِ أَعْدادٍ",
+          "title_en": "Adding Three Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["أَجِدُ ناتِجَ جَمْعِ ثَلاثَةِ أَعْدادٍ بِإيجادِ مُكَوِّناتِ الْعَدَدِ 10 أَوَّلًا."],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "الطَّرْحُ",
+      "title_en": "Subtraction",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's «أَتَعَلَّمُ الْيَوْمَ» box, bilingual terms from «الْمُصْطَلَحات» where printed; main idea and general idea not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "الطَّرْحُ بِاسْتِعْمالِ خَطِّ الْأَعْدادِ",
+          "title_en": "Subtraction Using a Number Line",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["الطَّرْحَ بِاسْتِعْمالِ خَطِّ الْأَعْدادِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "الطَّرْحُ بِاسْتِعْمالِ الضِّعْفِ",
+          "title_en": "Subtraction Using Doubles",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["طَرْحَ عَدَدَيْنِ مُسْتَعْمِلًا الضِّعْفَ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "الطَّرْحُ بِإيجادِ عَشَرَةٍ",
+          "title_en": "Subtraction by Making Ten",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["طَرْحَ عَدَدَيْنِ ضِمْنَ الْعَدَدِ 20 بِإيجادِ عَشَرَةٍ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "الْحَقائِقُ الْمُتَرابِطَةُ",
+          "title_en": "Related Facts",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَكْوينَ حَقائِقِ الْجَمْعِ وَالطَّرْحِ الْمُتَرابِطَةِ."],
+          "vocabulary": [{ "ar": "الْحَقائِقُ الْمُتَرابِطَةُ", "en": "related facts" }]
+        },
+        {
+          "id": "u4_l5",
+          "order": 5,
+          "title_ar": "الْعَدَدُ الْمَفْقودُ",
+          "title_en": "Missing Number",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["إيجادَ الْعَدَدِ الْمَفْقودِ في جُمْلَةِ جَمْعٍ، أَوْ جُمْلَةِ طَرْحٍ."],
+          "vocabulary": [{ "ar": "الْعَدَدُ الْمَفْقودُ", "en": "missing number" }]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "مُعالَجَةُ الْبَياناتِ",
+      "title_en": "Data Handling",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's «أَتَعَلَّمُ الْيَوْمَ» box, bilingual terms from «الْمُصْطَلَحات» where printed; main idea and general idea not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "التَّصْنيفُ وَفْقَ خاصِّيَّةٍ واحِدَةٍ",
+          "title_en": "Sorting by One Attribute",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَصْنيفَ الْأَشْياءِ وَفْقَ خاصِّيَّةٍ واحِدَةٍ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "التَّصْنيفُ وَفْقَ أَكْثَرَ مِنْ خاصِّيَّةٍ",
+          "title_en": "Sorting by More Than One Attribute",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَصْنيفَ الْأَشْياءِ وَفْقَ أَكْثَرَ مِنْ خاصِّيَّةٍ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "جَداوِلُ الْبَياناتِ",
+          "title_en": "Data Tables",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تَنْظيمَ الْبَياناتِ في جَداوِلَ.",
+            "قِراءَةَ بَياناتٍ مُنَظَّمَةٍ في جَداوِلَ."
+          ],
+          "vocabulary": [{ "ar": "جَدْوَلُ الْبَياناتِ", "en": "data table" }]
+        },
+        {
+          "id": "u5_l4",
+          "order": 4,
+          "title_ar": "تَمْثيلُ الْبَياناتِ بِالصُّوَرِ",
+          "title_en": "Pictographs",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["جَمْعَ بَياناتٍ، ثُمَّ تَمْثيلَها بِالصُّوَرِ."],
+          "vocabulary": [{ "ar": "تَمْثيلُ الْبَياناتِ بِالصُّوَرِ", "en": "pictographs" }]
+        },
+        {
+          "id": "u5_l5",
+          "order": 5,
+          "title_ar": "تَفْسيرُ بَياناتٍ مُمَثَّلَةٍ بِالصُّوَرِ",
+          "title_en": "Interpreting Pictographs",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَفْسيرَ بَياناتٍ مُمَثَّلَةٍ بِالصُّوَرِ."],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

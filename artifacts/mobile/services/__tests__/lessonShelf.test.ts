@@ -135,7 +135,9 @@ describe('subject isolation', () => {
       // `unitLevel: true`, and only Grade 10 gets the bare `s1-u1` vocabulary,
       // so Grade 6 units tag `g6-math-s1-u1` with no risk of colliding with it.
       // Grade 5 joined 2026-09-16, same shape as Grade 6.
-      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?|g8-math-s[12](-u\d+)?|g7-math-s[12](-u\d+)?|g6-math-s[12](-u\d+)?|g5-math-s[12](-u\d+)?|g4-math-s[12](-u\d+)?|g3-math-s[12](-u\d+)?)$/,
+      // Grade 1 joined 2026-09-18 — its Semester 1 book's unnumbered
+      // preparatory unit is u0, so the tag can be `g1-math-s1-u0`.
+      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?|g8-math-s[12](-u\d+)?|g7-math-s[12](-u\d+)?|g6-math-s[12](-u\d+)?|g5-math-s[12](-u\d+)?|g4-math-s[12](-u\d+)?|g3-math-s[12](-u\d+)?|g1-math-s[12](-u\d+)?)$/,
       // Chemistry is `unitLevel: true` in curriculumIds.ts, so a lesson emits
       // BOTH the semester scope and the narrower unit scope — `g9-chem-s1` and
       // `g9-chem-s1-u1`. The `(-u\d+)?` is doing real work here; a Grade 9

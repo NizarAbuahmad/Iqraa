@@ -228,6 +228,14 @@ import {
   buildG3PhysicalEducationSem1BrowserCatalog,
 } from './catalogs/g3PhysicalEducationSem1.ts';
 import {
+  G1_MATH_S1_CURRICULUM_BOOK_ID,
+  buildG1MathSem1BrowserCatalog,
+} from './catalogs/g1MathSem1.ts';
+import {
+  G1_MATH_S2_CURRICULUM_BOOK_ID,
+  buildG1MathSem2BrowserCatalog,
+} from './catalogs/g1MathSem2.ts';
+import {
   G4_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG4ScienceSem1BrowserCatalog,
 } from './catalogs/g4ScienceSem1.ts';
@@ -905,7 +913,12 @@ export const INVESTOR_MVP_CURRICULUM = true;
 // resolved for Grade 5 Math. Grade 4 and the rest of Grade 5 have extracted
 // text (worktree-grade-5-books) but no catalogs yet, and Grade 3 has nothing
 // at all — see KNOWN_BOOKLESS in subjectGradeCoverage.test.ts.
-export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7', 'grade-6', 'grade-5', 'grade-4', 'grade-3'];
+// 'grade-1' joined 2026-09-18 with only Mathematics (both semesters) behind
+// it — same staged-rollout shape as grade-3/4/5's arrivals. APPENDED at the
+// tail, after grade-3 — grade-2 has no catalog at all yet, so the sequence
+// is deliberately non-contiguous. See g1MathSem1.ts / g1MathSem2.ts and
+// KNOWN_BOOKLESS in subjectGradeCoverage.test.ts.
+export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7', 'grade-6', 'grade-5', 'grade-4', 'grade-3', 'grade-1'];
 // Appended, never inserted: these positions are persisted as bare indices in
 // formState and route URLs, so inserting shifts what a saved URL resolves to.
 // 'physics' joined on 2026-09-03 with the Grade 10 S1 curriculum. Without it,
@@ -1314,6 +1327,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // needed extending for grade-3 — see the SUBJECTS declaration above and
   // g3PhysicalEducationSem1.ts.
   G3_PE_S1_CURRICULUM_BOOK_ID,
+  // Grade 1 Math, both semesters — the first Grade 1 book in this repo, a
+  // staged rollout like grade-3/4/5's. 'mathematics' is already declared for
+  // every grade in SUBJECTS.grades, so no subject append or SUBJECTS.grades
+  // extension is needed. See g1MathSem1.ts / g1MathSem2.ts.
+  G1_MATH_S1_CURRICULUM_BOOK_ID,
+  G1_MATH_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2871,6 +2890,39 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // ── Mathematics Grade 1 – Semesters 1 and 2 ─────────────────────────────
+  // The first Grade 1 book in this repo, a staged rollout like
+  // grade-3/4/5's own Math-first arrivals. Same HarperCollins/NCCD series;
+  // «الفِكْرَةُ الرَّئيسَةُ» is never printed, and the objectives box is under
+  // «أَتَعَلَّمُ الْيَوْمَ» like g3MathSem1.ts. S1 opens with an unnumbered
+  // preparatory unit (numbered 0 here) before its own numbered units 1-5;
+  // S2 continues 6-11. See g1MathSem1.ts / g1MathSem2.ts.
+  {
+    id: G1_MATH_S1_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 1, Semester 1',
+    titleAr: 'الرياضيات – الصف الأول – الفصل الأول',
+    subjectId: 'mathematics',
+    gradeId: 'grade-1',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G1_MATH_S2_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 1, Semester 2',
+    titleAr: 'الرياضيات – الصف الأول – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-1',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // The first Grade 6 books in the repo. Maths carries four units and eighteen
   // lessons from the student book alone (no S2 student book was supplied);
@@ -5011,6 +5063,8 @@ const _g3EnglishSem1Browser = buildG3EnglishSem1BrowserCatalog();
 const _g3EnglishSem2Browser = buildG3EnglishSem2BrowserCatalog();
 const _g3CreativeArtsBrowser = buildG3CreativeArtsBrowserCatalog();
 const _g3PhysicalEducationSem1Browser = buildG3PhysicalEducationSem1BrowserCatalog();
+const _g1MathSem1Browser = buildG1MathSem1BrowserCatalog();
+const _g1MathSem2Browser = buildG1MathSem2BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -5280,6 +5334,8 @@ export const UNITS: Unit[] = [
   ..._g3EnglishSem2Browser.units,
   ..._g3CreativeArtsBrowser.units,
   ..._g3PhysicalEducationSem1Browser.units,
+  ..._g1MathSem1Browser.units,
+  ..._g1MathSem2Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -5439,6 +5495,8 @@ export const LESSONS: Lesson[] = [
   ..._g3EnglishSem2Browser.lessons,
   ..._g3CreativeArtsBrowser.lessons,
   ..._g3PhysicalEducationSem1Browser.lessons,
+  ..._g1MathSem1Browser.lessons,
+  ..._g1MathSem2Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
