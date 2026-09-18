@@ -1185,6 +1185,8 @@ export default function IqraScreen() {
      * looked exactly like the icon doing nothing.
      */
     askId?: string;
+    /** Nonce from the tab bar's GlobalLessonBar — see askId above for why. */
+    openLessonPicker?: string;
   }>();
 
   const mode: Mode = 'teacher';
@@ -1581,6 +1583,12 @@ export default function IqraScreen() {
     setAutoSendPending(send);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.initialMessage, params.lessonId, params.subjectColor, params.resourceId, params.askId]);
+
+  // The tab bar's GlobalLessonBar lives outside this screen and has no direct
+  // handle on changeLessonOpen — it navigates here with a nonce instead.
+  useEffect(() => {
+    if (params.openLessonPicker) setChangeLessonOpen(true);
+  }, [params.openLessonPicker]);
 
   const sendMessage = useCallback(
     async (

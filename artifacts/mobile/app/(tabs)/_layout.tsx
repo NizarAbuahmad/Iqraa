@@ -1,17 +1,19 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Platform, StyleSheet, useColorScheme, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { Tabs } from 'expo-router';
+import { router, Tabs, usePathname } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { WebSidebar } from '@/components/ui/WebSidebar';
+import { GlobalLessonBar } from '@/components/ui/GlobalLessonBar';
 import { TranslationKey } from '@/services/i18n';
+import { HomeLessonPick, loadLessonPick, subscribeLessonPick } from '@/services/lessonContext';
 
 /** Hides a tab without unregistering its route, so a deep link to it still resolves. */
 const HIDDEN = { tabBarButton: () => null, tabBarItemStyle: { display: 'none' as const } };
@@ -107,7 +109,7 @@ function ClassicTabLayout() {
   const isIOS = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
   const insets = useSafeAreaInsets();
-  const { t, isRTL } = useLanguage();
+  const { t, lang, isRTL } = useLanguage();
   const { user } = useAuth();
   const viewportW = useViewportWidth();
   const isDesktop = isWeb && viewportW >= DESKTOP_BREAKPOINT;
@@ -121,6 +123,18 @@ function ClassicTabLayout() {
    * narrows a non-teacher to student-facing books.
    */
   const isTeacher = isTeacherRole(user?.role);
+  const pathname = usePathname();
+
+  // Mirrors the same storage the iQra tab's change-lesson sheet writes to —
+  // kept in sync via subscribeLessonPick rather than reloaded per-tab, since
+  // this bar is a sibling of the tab navigator, not a screen inside it.
+  const [lessonPick, setLessonPick] = useState<HomeLessonPick | null>(null);
+  useEffect(() => {
+    if (!isTeacher) return;
+    loadLessonPick().then(setLessonPick);
+    return subscribeLessonPick(setLessonPick);
+  }, [isTeacher]);
+
   const tabEntries = buildTabEntries(isTeacher);
 
   const tabs = (
@@ -184,14 +198,39 @@ function ClassicTabLayout() {
     </Tabs>
   );
 
+  // Not shown to a parent/student: they have no lesson context to switch, and
+  // the two tabs it would drive them toward (iQra, AI Tools) are hidden for
+  // them anyway. Not shown on iQra itself either — CurrentLessonCard already
+  // does this job there, full-width and with the Start Class action; a second
+  // copy stacked above it would just be the same line twice.
+  const bar = isTeacher && !pathname.startsWith('/iqra') ? (
+    <GlobalLessonBar
+      pick={lessonPick}
+      lang={lang as 'ar' | 'en'}
+      isRTL={isRTL}
+      colors={colors}
+      topInset={isDesktop ? 0 : insets.top}
+      t={t}
+      onPress={() => router.push({ pathname: '/iqra', params: { openLessonPicker: String(Date.now()) } })}
+    />
+  ) : null;
+
   if (!isDesktop) {
-    return tabs;
+    return (
+      <View style={{ flex: 1 }}>
+        {bar}
+        <View style={{ flex: 1 }}>{tabs}</View>
+      </View>
+    );
   }
 
   return (
     <View style={{ flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
       <WebSidebar entries={tabEntries} isIOS={isIOS} />
-      <View style={{ flex: 1 }}>{tabs}</View>
+      <View style={{ flex: 1 }}>
+        {bar}
+        <View style={{ flex: 1 }}>{tabs}</View>
+      </View>
     </View>
   );
 }
