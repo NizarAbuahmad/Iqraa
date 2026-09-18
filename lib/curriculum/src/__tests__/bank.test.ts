@@ -302,7 +302,6 @@ describe('use policy — explicit licences', () => {
     // for doing the right thing. Removal is what this guards, and removal is
     // what `quotableAuthority.test.ts` catches from the other direction, by
     // reading the copyright page rather than the manifest.
-    assert.ok(collins.length >= 39, `only ${collins.length} Collins rows licensed`);
     assert.ok(collins.length >= 47, `only ${collins.length} Collins rows licensed`);
     for (const s of collins) {
       assert.equal(s.authority, 'nccd', s.id);
