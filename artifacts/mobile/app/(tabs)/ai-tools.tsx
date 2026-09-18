@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { DEMO_MODE } from '@/services/ai/demoMode';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { openGeogebraGraphing } from '@/services/geogebra';
@@ -120,7 +121,7 @@ export default function AIToolsScreen() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingBottom: 120 }}
+      contentContainerStyle={{ paddingBottom: 120, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.header, { paddingTop: topPad + 16, backgroundColor: colors.card, borderBottomColor: colors.border }]}>

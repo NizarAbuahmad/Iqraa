@@ -10,7 +10,7 @@
  * GET /feedback both 403 for anything but school_admin/system_admin.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +19,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { apiJson } from '@/services/apiClient';
 import { openExternal } from '@/services/externalLinks';
+import { useViewportWidth } from '@/hooks/useViewportWidth';
+import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -62,6 +64,9 @@ export default function AdminDashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
+  const viewportW = useViewportWidth();
+  const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
+  const centered = { width: '100%' as const, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' as const };
 
   const load = useCallback(async (nextFilter: RatingFilter, offset: number) => {
     const ratingParam = nextFilter === 'all' ? '' : `&rating=${nextFilter}`;
@@ -125,7 +130,7 @@ export default function AdminDashboardScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[{ paddingBottom: 60 }, centered]} showsVerticalScrollIndicator={false}>
         <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
           <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
@@ -255,9 +260,11 @@ export default function AdminDashboardScreen() {
                   {lang === 'ar' ? 'لا توجد ملاحظات بعد' : 'No feedback yet'}
                 </Text>
               ) : (
-                <View style={{ gap: 8, marginTop: 4 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
                   {items.map(item => (
-                    <FeedbackRow key={item.id} item={item} isRTL={isRTL} colors={colors} />
+                    <View key={item.id} style={{ width: isDesktop ? '32%' : '100%' }}>
+                      <FeedbackRow item={item} isRTL={isRTL} colors={colors} />
+                    </View>
                   ))}
                 </View>
               )}
