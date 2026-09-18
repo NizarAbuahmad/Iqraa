@@ -49,6 +49,20 @@ export type HomeLessonPick = {
   lessonId?: string | null;
 };
 
+type LessonPickListener = (pick: HomeLessonPick | null) => void;
+const lessonPickListeners = new Set<LessonPickListener>();
+
+/**
+ * Notified on every `saveLessonPick`, so chrome that displays the pick outside
+ * the screen that set it (the tab bar's context strip) updates immediately
+ * instead of only on its own next mount — AsyncStorage itself has no such
+ * event.
+ */
+export function subscribeLessonPick(fn: LessonPickListener): () => void {
+  lessonPickListeners.add(fn);
+  return () => lessonPickListeners.delete(fn);
+}
+
 export async function loadLessonPick(): Promise<HomeLessonPick | null> {
   try {
     const raw = await AsyncStorage.getItem(scopedKey(HOME_LESSON_KEY));
@@ -63,6 +77,8 @@ export async function saveLessonPick(pick: HomeLessonPick): Promise<void> {
     await AsyncStorage.setItem(scopedKey(HOME_LESSON_KEY), JSON.stringify(pick));
   } catch {
     // Non-fatal: the pick still applies for the current session.
+  } finally {
+    lessonPickListeners.forEach(fn => fn(pick));
   }
 }
 

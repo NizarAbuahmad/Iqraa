@@ -19,6 +19,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -105,12 +106,6 @@ export default function PromptSlidesScreen() {
   const [editAnswer, setEditAnswer] = useState('');
 
   const forgetSaved = () => { setSavedId(null); savedContentRef.current = ''; };
-
-  const modeOpts: { value: Mode; label: string }[] = [
-    { value: 'ai', label: t('promptSlidesModeAi') },
-    { value: 'free', label: t('promptSlidesModeFree') },
-  ];
-  const modeHint = mode === 'ai' ? t('promptSlidesModeAiHint') : t('promptSlidesModeFreeHint');
 
   const generate = async () => {
     const trimmed = prompt.trim();
@@ -302,22 +297,49 @@ export default function PromptSlidesScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
+        <LinearGradient
+          colors={['#8B5CF6', '#6D28D9', '#3B1D8F']}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={[styles.header, { paddingTop: topPad + 12 }]}
+        >
           <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
-          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <Text style={{ fontSize: 22 }}>✨</Text>
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
-              {t('promptSlidesTitle')}
-            </Text>
+          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}>
+            <View style={styles.heroIcon}>
+              <Ionicons name="sparkles" size={22} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
+                {t('promptSlidesTitle')}
+              </Text>
+              <Text style={{ color: 'rgba(255,255,255,0.78)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }}>
+                {t('promptSlidesSubtitle')}
+              </Text>
+            </View>
           </View>
-          <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
-            {t('promptSlidesSubtitle')}
-          </Text>
-        </View>
+          {/* What the tool can actually do, stated up front — the reference
+              design puts counters here, but a deck count is not something this
+              screen knows without a workspace query it does not otherwise need. */}
+          <View style={[styles.heroPills, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            {([
+              ['albums-outline', t('promptSlidesPillSlides')],
+              ['image-outline', t('promptSlidesPillImages')],
+              ['download-outline', t('promptSlidesPillExport')],
+            ] as const).map(([icon, label]) => (
+              <View key={label} style={[styles.heroPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Ionicons name={icon} size={12} color="rgba(255,255,255,0.85)" />
+                <Text style={styles.heroPillText}>{label}</Text>
+              </View>
+            ))}
+          </View>
+        </LinearGradient>
 
         <View style={styles.form}>
+          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: 0 }]}>
+            {t('promptSlidesFieldLabel')}
+          </Text>
           <TextInput
             value={prompt}
             onChangeText={v => { setPrompt(v); setError(''); }}
@@ -340,16 +362,67 @@ export default function PromptSlidesScreen() {
             </Text>
           ) : null}
 
-          <PillSelector
-            label={t('promptSlidesModeLabel')}
-            options={modeOpts}
-            value={mode}
-            onChange={setMode}
-            hint={modeHint}
-            colors={colors}
-            isRTL={isRTL}
-            accent={ACCENT}
-          />
+          {/* Two cards rather than a pill row: this is the one choice on the
+              screen that changes what the teacher gets (and whether it costs
+              anything), so it carries its own explanation instead of a single
+              hint line under a pill pair. */}
+          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('promptSlidesModeLabel')}
+          </Text>
+          <View style={{ gap: 10, marginBottom: 18 }}>
+            {([
+              ['ai', 'sparkles', t('promptSlidesModeAi'), t('promptSlidesModeAiHint')],
+              ['free', 'document-text-outline', t('promptSlidesModeFree'), t('promptSlidesModeFreeHint')],
+            ] as const).map(([value, icon, label, hint]) => {
+              const on = mode === value;
+              return (
+                <Pressable
+                  key={value}
+                  onPress={() => { setMode(value); Haptics.selectionAsync(); }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on }}
+                  style={({ pressed }) => [
+                    styles.modeCard,
+                    {
+                      borderColor: on ? ACCENT : colors.border,
+                      backgroundColor: on ? ACCENT + '0F' : colors.card,
+                      borderRadius: colors.radius,
+                      flexDirection: isRTL ? 'row-reverse' : 'row',
+                      opacity: pressed ? 0.85 : 1,
+                    },
+                  ]}
+                >
+                  <View style={[styles.modeIcon, { backgroundColor: on ? ACCENT : colors.muted }]}>
+                    <Ionicons name={icon} size={18} color={on ? '#fff' : colors.mutedForeground} />
+                  </View>
+                  <View style={{ flex: 1, gap: 3 }}>
+                    <Text style={{
+                      color: on ? ACCENT : colors.foreground,
+                      fontFamily: 'Cairo_600SemiBold',
+                      fontSize: 14,
+                      textAlign: isRTL ? 'right' : 'left',
+                    }}>
+                      {label}
+                    </Text>
+                    <Text style={{
+                      color: colors.mutedForeground,
+                      fontFamily: 'Almarai_400Regular',
+                      fontSize: 11,
+                      lineHeight: 17,
+                      textAlign: isRTL ? 'right' : 'left',
+                    }}>
+                      {hint}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={on ? 'radio-button-on' : 'radio-button-off'}
+                    size={18}
+                    color={on ? ACCENT : colors.border}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
 
           <PillSelector
             label={t('grade')}
@@ -417,6 +490,22 @@ export default function PromptSlidesScreen() {
           accent={ACCENT}
           t={t}
         />
+
+        {/* Nothing built yet. A labelled placeholder rather than blank space
+            below the form, so the screen says what the next step produces. */}
+        {!deck && !loading && !cancelled && !error && (
+          <View style={[styles.emptyCard, { borderColor: colors.border, borderRadius: colors.radius }]}>
+            <View style={[styles.emptyIcon, { backgroundColor: ACCENT }]}>
+              <Ionicons name="sparkles" size={26} color="#fff" />
+            </View>
+            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
+              {t('promptSlidesEmptyTitle')}
+            </Text>
+            <Text style={[styles.emptyHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+              {t('promptSlidesEmptyHint')}
+            </Text>
+          </View>
+        )}
 
         {deck && !loading && (
           <View style={{ marginHorizontal: 20 }}>
@@ -608,8 +697,30 @@ export default function PromptSlidesScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 24 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
+  header: { paddingHorizontal: 20, paddingBottom: 22 },
+  backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 4 },
+  heroIcon: {
+    width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  heroPills: { flexWrap: 'wrap', gap: 8, marginTop: 16 },
+  heroPill: {
+    alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.14)',
+  },
+  heroPillText: { color: 'rgba(255,255,255,0.9)', fontFamily: 'Cairo_500Medium', fontSize: 11 },
+  modeCard: { alignItems: 'center', gap: 12, padding: 14, borderWidth: 1.5 },
+  modeIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  emptyCard: {
+    marginHorizontal: 20, marginBottom: 12, paddingVertical: 34, paddingHorizontal: 20,
+    borderWidth: 1.5, borderStyle: 'dashed', alignItems: 'center', gap: 6,
+  },
+  emptyIcon: {
+    width: 60, height: 60, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
+    marginBottom: 8,
+  },
+  emptyTitle: { fontSize: 16, textAlign: 'center' },
+  emptyHint: { fontSize: 12, lineHeight: 19, textAlign: 'center' },
   form: { padding: 20 },
   promptInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 96, textAlignVertical: 'top', marginBottom: 8 },
   fieldLabel: { fontSize: 13, marginBottom: 6, marginTop: 4 },

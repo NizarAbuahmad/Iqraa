@@ -45,11 +45,13 @@ import {
   getClassMastery,
   parseStudentNames,
   removeStudentFromClass,
+  updateClass,
   updateStudent,
   type ClassGroup,
   type ClassMastery,
   type RosterStudent,
 } from '@/services/roster';
+import { getPickerGrades } from '@/services/curriculumData';
 import { copyToClipboard, shareAsText } from '@/services/share';
 import { Toast } from '@/components/ui/Toast';
 import { getItems, updateItem, type SavedMaterial } from '@/services/workspace';
@@ -62,8 +64,11 @@ import {
 import { countMaterials, countStudents } from '@/services/i18n';
 import { confirm } from '@/services/confirm';
 import { useStudentAccountsEnabled } from '@/services/features';
+import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 
 const ACCENT = '#1B6B62';
+/** Centred column on desktop web; full-bleed on phones. */
+const CENTERED = { width: '100%' as const, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' as const };
 
 type Tab = 'students' | 'materials' | 'exams';
 
@@ -103,6 +108,11 @@ export default function ClassDetailScreen() {
   const [showJoinCode, setShowJoinCode] = useState(false);
   const [mintingCode, setMintingCode] = useState(false);
   const [toast, setToast] = useState('');
+  const [showEdit, setShowEdit] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editGradeId, setEditGradeId] = useState('grade-10');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const pickerGrades = getPickerGrades();
 
   /** Server errors arrive in English; this screen is Arabic-first. */
   const describe = useCallback(
@@ -207,6 +217,31 @@ export default function ClassDetailScreen() {
       setShowJoinCode(false);
     } finally {
       setMintingCode(false);
+    }
+  };
+
+  const onOpenEdit = () => {
+    if (!group) return;
+    setEditName(group.name);
+    setEditGradeId(group.gradeId || 'grade-10');
+    setError('');
+    setShowEdit(true);
+  };
+
+  const onSaveEdit = async () => {
+    const name = editName.trim();
+    if (!id || !name || savingEdit) return;
+    setSavingEdit(true);
+    setError('');
+    try {
+      const updated = await updateClass(id, { name, gradeId: editGradeId });
+      setGroup(prev => (prev ? { ...prev, ...updated } : updated));
+      setShowEdit(false);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err) {
+      setError(describe(err));
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -427,9 +462,22 @@ export default function ClassDetailScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
-        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center' }}>
+        <View
+          style={{
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <Pressable onPress={() => router.back()} hitSlop={12}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
+          </Pressable>
+          {/* The name and grade set at creation and never editable again —
+              a typo or a class that moved up a grade had no way back. Icon-
+              only opposite the back arrow: unlike the chat pill below, its
+              target needs no label — it edits the screen it sits on. */}
+          <Pressable onPress={onOpenEdit} hitSlop={12} accessibilityLabel={t('editClass')}>
+            <Ionicons name="create-outline" size={20} color="#fff" />
           </Pressable>
         </View>
         {/*
@@ -497,7 +545,7 @@ export default function ClassDetailScreen() {
         <FlatList
           data={students}
           keyExtractor={s => s.id}
-          contentContainerStyle={{ padding: 20, paddingBottom: 100, gap: 10 }}
+          contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={errorBanner}
           ListEmptyComponent={
@@ -600,7 +648,7 @@ export default function ClassDetailScreen() {
         <FlatList
           data={materials}
           keyExtractor={m => m.id}
-          contentContainerStyle={{ padding: 20, paddingBottom: 100, gap: 10 }}
+          contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={empty('folder-open-outline', 'noMaterialsYet', 'noMaterialsDesc')}
           renderItem={({ item }) => (
@@ -653,7 +701,7 @@ export default function ClassDetailScreen() {
         <FlatList
           data={exams}
           keyExtractor={e => e.id}
-          contentContainerStyle={{ padding: 20, paddingBottom: 100, gap: 10 }}
+          contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={{ gap: 10, marginBottom: 10 }}>
@@ -807,6 +855,87 @@ export default function ClassDetailScreen() {
                 {t('cancel')}
               </Text>
             </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showEdit} transparent animationType="fade" onRequestClose={() => setShowEdit(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+              {t('editClass')}
+            </Text>
+            <TextInput
+              value={editName}
+              onChangeText={setEditName}
+              placeholder={t('classNamePlaceholder')}
+              placeholderTextColor={colors.mutedForeground}
+              autoFocus
+              style={[
+                styles.input,
+                { color: colors.foreground, borderColor: colors.border, fontFamily: 'Almarai_400Regular', textAlign: align },
+              ]}
+            />
+            {/* Same grade pills as class creation (classes/index.tsx) — only
+                worth showing once there is a real choice. */}
+            {pickerGrades.length > 1 ? (
+              <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+                {pickerGrades.map(g => {
+                  const active = editGradeId === g.id;
+                  return (
+                    <Pressable
+                      key={g.id}
+                      onPress={() => setEditGradeId(g.id)}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 7,
+                        borderRadius: 18,
+                        borderWidth: 1.5,
+                        borderColor: active ? ACCENT : colors.border,
+                        backgroundColor: active ? ACCENT + '16' : colors.card,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: active ? ACCENT : colors.mutedForeground,
+                          fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                          fontSize: 13,
+                        }}
+                      >
+                        {lang === 'ar' ? g.nameAr : g.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+            {error ? (
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12.5, textAlign: align }}>
+                {error}
+              </Text>
+            ) : null}
+            <View style={styles.modalActions}>
+              <Pressable onPress={() => setShowEdit(false)} style={styles.modalBtn}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+                  {t('cancel')}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={onSaveEdit}
+                disabled={!editName.trim() || savingEdit}
+                style={[
+                  styles.modalBtn,
+                  styles.modalPrimary,
+                  { backgroundColor: ACCENT, opacity: !editName.trim() || savingEdit ? 0.5 : 1 },
+                ]}
+              >
+                {savingEdit ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>{t('save')}</Text>
+                )}
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1378,6 +1507,7 @@ const styles = StyleSheet.create({
     minHeight: 140,
     textAlignVertical: 'top',
   },
+  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   count: { fontSize: 13 },
   codeText: { fontSize: 28, letterSpacing: 4, textAlign: 'center', marginTop: 4 },
   codeActions: { gap: 8 },

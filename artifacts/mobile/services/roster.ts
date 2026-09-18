@@ -106,6 +106,18 @@ export async function createClass(input: {
   return data.class;
 }
 
+export async function updateClass(
+  classId: string,
+  patch: { name?: string; nameAr?: string; gradeId?: string; subjectId?: string; academicYear?: string },
+): Promise<ClassGroup> {
+  const res = await apiFetch(`/classes/${classId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  });
+  const data = await readJson<{ class: ClassGroup }>(res, 'Updating class');
+  return data.class;
+}
+
 export async function getClass(
   classId: string,
 ): Promise<{ group: ClassGroup; students: RosterStudent[] }> {

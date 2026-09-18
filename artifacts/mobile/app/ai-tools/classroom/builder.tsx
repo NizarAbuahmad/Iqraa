@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
@@ -157,7 +158,7 @@ export default function ClassroomBuilderScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
     <ScrollView
       ref={scrollRef}
-      contentContainerStyle={{ paddingBottom: 60 }}
+      contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
