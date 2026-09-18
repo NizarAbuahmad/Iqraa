@@ -2099,5 +2099,4 @@ export const BOOK_FIGURE_ASSETS: Record<string, BookFigureAsset> = {
 };
 
 /** How many figures ship with the app. Asserted by the drift test. */
-export const BOOK_FIGURE_COUNT = 2106;
 export const BOOK_FIGURE_COUNT = 2078;
