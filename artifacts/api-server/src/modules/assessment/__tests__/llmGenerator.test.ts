@@ -15,6 +15,7 @@ import {
   buildGenerationPrompt,
   paperIsMathematics,
   parseGeneratedQuestions,
+  questionStem,
   type LlmGenerationRequest,
 } from "../llmGenerator.ts";
 import { validateGenerated } from "../validator.ts";
@@ -116,6 +117,46 @@ describe("buildGenerationPrompt", () => {
     // prompt does not say so, every question comes back as its objective's level.
     const { user } = buildGenerationPrompt(REQ);
     assert.ok(user.includes("not the same as its objective"));
+  });
+
+  const EN_REQ: LlmGenerationRequest = { ...REQ, language: "en" };
+
+  it("sends the prompt unchanged when there is nothing to avoid — the common path", () => {
+    // The whole point of `avoid` being optional: a first generation for an
+    // evaluation must not carry an empty exclusion section.
+    const { user } = buildGenerationPrompt(EN_REQ);
+    assert.equal(user.includes("Do not reuse"), false);
+  });
+
+  it("tells a regeneration what not to repeat", () => {
+    // This is the fix for "regenerate re-sent an identical request and got the
+    // same paper reworded" — same failure mode routes/generate.ts already had,
+    // now closed here too.
+    const { user } = buildGenerationPrompt({ ...EN_REQ, avoid: ["Find the area of a circle of radius 5 cm"] });
+    assert.ok(user.includes("Do not reuse"));
+    assert.ok(user.includes("Find the area of a circle"));
+  });
+
+  it("says the previous attempt was rejected only when insistent", () => {
+    const first = buildGenerationPrompt({ ...EN_REQ, avoid: ["some stem here"] }).user;
+    const retry = buildGenerationPrompt({ ...EN_REQ, avoid: ["some stem here"], insistent: true }).user;
+    assert.equal(first.includes("rejected"), false);
+    assert.ok(retry.includes("rejected"));
+  });
+});
+
+describe("questionStem", () => {
+  it("reads the stem field each type contract actually uses", () => {
+    assert.equal(questionStem({ stem: "a" }), "a");
+    assert.equal(questionStem({ statement: "b" }), "b");
+    assert.equal(questionStem({ prompt: "c" }), "c");
+    assert.equal(questionStem({ template: "d" }), "d");
+  });
+
+  it("has nothing to say about a matching question or an empty body", () => {
+    assert.equal(questionStem({ left: [], right: [] }), undefined);
+    assert.equal(questionStem(null), undefined);
+    assert.equal(questionStem(undefined), undefined);
   });
 });
 
