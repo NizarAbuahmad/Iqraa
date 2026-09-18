@@ -10,6 +10,7 @@ import verifiedMathRouter from "./verifiedMath";
 import curriculumRouter from "./curriculum";
 import bankRouter from "./bank";
 import rosterRouter from "./roster";
+import teachingPlansRouter from "./teachingPlans";
 import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
 import studentAttemptRouter from "./studentAttempt";
@@ -77,6 +78,7 @@ router.use(curriculumRouter);
 // not serve the documents; there is nothing here to serve.
 router.use(bankRouter);
 router.use(rosterRouter);
+router.use(teachingPlansRouter);
 router.use(evaluationsRouter);
 router.use(attemptsRouter);
 // The student exam link — deliberately public, and the only unauthenticated

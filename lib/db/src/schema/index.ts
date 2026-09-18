@@ -21,6 +21,7 @@ export * from "./savedMaterials";
 
 // Student level evaluation — see docs/student-evaluation-module-plan.md
 export * from "./students";
+export * from "./teachingPlans";
 export * from "./assessmentConfig";
 export * from "./evaluations";
 export * from "./attempts";
