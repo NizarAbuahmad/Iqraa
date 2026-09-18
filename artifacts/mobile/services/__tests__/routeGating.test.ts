@@ -72,6 +72,12 @@ describe('isPublicRoute', () => {
     }
   });
 
+  it('lets anyone open the free games hub with no account', () => {
+    for (const p of ['/play', '/play/flags', '/play/capitals', '/play/memory', '/play/colors']) {
+      assert.equal(isPublicRoute(p), true, p);
+    }
+  });
+
   it('does not open a route that merely starts with the same letters', () => {
     // '/takeover' is not '/take'. A prefix check without the boundary would
     // make any future route beginning "take" public.

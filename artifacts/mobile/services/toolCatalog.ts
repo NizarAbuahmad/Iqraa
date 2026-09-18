@@ -135,6 +135,14 @@ const DURING_CLASS_ALL: ToolDef[] = [
     route: '/ai-tools/activity',
   },
   {
+    id: 'whiteboard',
+    titleKey: 'toolWhiteboardTitle',
+    descKey: 'toolWhiteboardDesc',
+    icon: 'easel-outline',
+    color: '#2563EB',
+    route: '/ai-tools/whiteboard',
+  },
+  {
     id: 'geogebra',
     hidden: true,
     titleKey: 'toolGeogebraTitle',

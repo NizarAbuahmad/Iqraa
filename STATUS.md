@@ -43,6 +43,28 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **A free, no-login games hub and a Smart Whiteboard tool shipped** (2026-09-18),
+  a competitive response to hasaadx.com/teacher. `/play` (added to
+  `routeGating.ts`'s `PUBLIC_ROUTES`, same no-account pattern as
+  `app/take/[code].tsx`) offers four client-only games — flags and capitals
+  trivia (`components/publicGames/TriviaGame.tsx`, flag images from
+  flagcdn.com, no key/bundle needed), memory-match, and spot-the-odd-square —
+  each ending in a "create a free teacher account" CTA
+  (`components/publicGames/GameShell.tsx`); no backend, no persisted scores,
+  by design. `/ai-tools/whiteboard.tsx` is a new during-class tool (added to
+  `DURING_CLASS_ALL` and the `toolCatalog.test.ts` offered-tools list — a
+  deliberate, tracked un-parking, not an accidental one): type a prompt,
+  display it full-screen in large type. Not a drawing canvas — confirmed with
+  the user against Hasaad's actual description before building. The
+  projector fullscreen helper moved out of `presentation.tsx` into the
+  already-shared `presentationUtils.ts` so both screens use one copy.
+  Verified: full mobile suite 1494/1494 (10 pre-existing skips), monorepo
+  typecheck clean, and all four games plus the routing gate exercised live in
+  a browser (flags scoring/next, memory flip/match, colour round-advance,
+  `/ai-tools/whiteboard` correctly bounces a signed-out visitor to
+  onboarding — `/play` does not). Not yet verified: the whiteboard's
+  authenticated UI (no test teacher account in this session) and capitals
+  trivia specifically (same component as flags, lower risk).
 - **A teacher can set, replace and remove their own profile picture**
   (2026-09-09): `app/(tabs)/profile.tsx`, `POST`/`DELETE /auth/users/avatar`.
   Uploads into the `iqraa-public` R2 bucket (anonymous-read, non-expiring
