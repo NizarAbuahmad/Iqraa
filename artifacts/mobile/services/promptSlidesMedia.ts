@@ -48,6 +48,17 @@ export type EnrichOptions = {
   isAr: boolean;
   /** Free text the photo/video queries fall back to — the deck's own topic. */
   topic: string;
+  /**
+   * ENGLISH photo-search queries for the cover and the section break.
+   *
+   * Unsplash is an English-language index: searching it for «الكسور» returns
+   * nothing at all, which is exactly what the first version of this file did
+   * and why production logged a 204 for every cover lookup while the
+   * English per-slide queries beside them came back 200. The caller builds
+   * these from `deckPhotoQueries(subjectId, englishSubjectName)` — the same
+   * hardcoded English map the older Slides Maker has always used.
+   */
+  photoQueries?: [cover: string, section: string];
   searchPhoto: PhotoSearch;
   searchVideos: VideoSearch;
   /** Off when the teacher pinned their own media, matching Slides Maker. */
@@ -117,14 +128,23 @@ export async function attachSearchedMedia(
   let slides: ActivitySlide[] = [...deck.slides];
 
   // Slides the model itself flagged as wanting a picture, capped.
+  //
+  // Slides carrying a `layout` are excluded: those are drawn by their own
+  // branch in each renderer, which fills the slide and never reaches the
+  // side-image column — a photo assigned there would be fetched, stored and
+  // silently never shown.
   const wantPhotos = slides
     .map((slide, index) => ({ slide, index }))
-    .filter(({ slide }) => typeof slide.mediaPrompt === 'string' && slide.mediaPrompt.trim() && !slide.sideImageUrl)
+    .filter(({ slide }) => (
+      typeof slide.mediaPrompt === 'string' && slide.mediaPrompt.trim()
+      && !slide.sideImageUrl && !slide.layout
+    ))
     .slice(0, MAX_SIDE_PHOTOS);
 
+  const [coverQuery, sectionQuery] = opts.photoQueries ?? [deck.lesson || topic, `${deck.subject || topic} classroom`];
   const [hero, section, sidePhotos, videos] = await Promise.all([
-    safePhoto(searchPhoto, deck.lesson || topic),
-    safePhoto(searchPhoto, `${deck.subject || topic} classroom`),
+    safePhoto(searchPhoto, coverQuery),
+    safePhoto(searchPhoto, sectionQuery),
     Promise.all(wantPhotos.map(({ slide }) => safePhoto(searchPhoto, slide.mediaPrompt!.trim()))),
     opts.wantVideo === false ? Promise.resolve([]) : safeVideos(searchVideos, videoQuery(deck, topic, isAr), lang),
   ]);
