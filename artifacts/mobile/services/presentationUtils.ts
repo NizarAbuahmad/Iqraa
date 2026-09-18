@@ -72,3 +72,23 @@ export function timerSecondsForSlide(slide: { type: string; durationSeconds: num
   if ((UNTIMED_SLIDE_TYPES as readonly string[]).includes(slide.type)) return 0;
   return Math.max(0, slide.durationSeconds || 0);
 }
+
+// ─── Projector fullscreen (web only) ───────────────────────────────────────
+// Shared by presentation.tsx and whiteboard.tsx — both project onto a screen
+// and both need the browser chrome out of the way. `document` alone (rather
+// than also checking `Platform.OS`) keeps this file free of a react-native
+// import, since node --test cannot load that module — a native app is
+// already fullscreen, and `document` is simply undefined there.
+export const canFullscreen = typeof document !== 'undefined';
+
+export function toggleFullscreen(): void {
+  if (!canFullscreen) return;
+  const el = document.documentElement;
+  // Older Safari only has the webkit-prefixed pair; if neither exists there is
+  // nothing to do but stay windowed.
+  const req = el.requestFullscreen ?? (el as any).webkitRequestFullscreen;
+  const exit = document.exitFullscreen ?? (document as any).webkitExitFullscreen;
+  const isFull = document.fullscreenElement ?? (document as any).webkitFullscreenElement;
+  const run = isFull ? exit?.call(document) : req?.call(el);
+  if (run && typeof run.catch === 'function') run.catch(() => {});
+}

@@ -25,7 +25,7 @@ import {
 import { useLanguage } from '@/context/LanguageContext';
 import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/classroomStore';
-import { timerColor, timerSecondsForSlide } from '@/services/presentationUtils';
+import { canFullscreen, timerColor, timerSecondsForSlide, toggleFullscreen } from '@/services/presentationUtils';
 import { openExternal } from '@/services/externalLinks';
 import Svg, { Line, Polyline, Rect } from 'react-native-svg';
 import { plotGeometry, visualForSlide } from '@/services/deckVisuals';
@@ -59,24 +59,8 @@ async function openExternalMedia(url: string): Promise<void> {
 // The deck palette and slideTypeAccent live in services/deckTheme.ts — the PDF
 // and the PPTX import the same values, so the three renderings cannot drift.
 
-/**
- * Projector fullscreen (web only — a native app is already fullscreen).
- * Without this the browser chrome stays on the projector until the teacher
- * finds F11, which is the first thing every classroom test noticed.
- */
-const canFullscreen = Platform.OS === 'web' && typeof document !== 'undefined';
-
-function toggleFullscreen(): void {
-  if (!canFullscreen) return;
-  const el = document.documentElement;
-  // Older Safari only has the webkit-prefixed pair; if neither exists there is
-  // nothing to do but stay windowed.
-  const req = el.requestFullscreen ?? (el as any).webkitRequestFullscreen;
-  const exit = document.exitFullscreen ?? (document as any).webkitExitFullscreen;
-  const isFull = document.fullscreenElement ?? (document as any).webkitFullscreenElement;
-  const run = isFull ? exit?.call(document) : req?.call(el);
-  if (run && typeof run.catch === 'function') run.catch(() => {});
-}
+// Projector fullscreen (web only — a native app is already fullscreen) now
+// lives in services/presentationUtils.ts, shared with whiteboard.tsx.
 
 // ─── Visual block (plot / chart) ──────────────────────────────────────────────
 // Draws the same spec the PDF and PPTX draw, via react-native-svg, so the three

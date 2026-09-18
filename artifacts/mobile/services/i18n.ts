@@ -370,6 +370,8 @@ const translations = {
     toolPromptSlidesDesc: 'اكتب وصفًا بكلماتك، واحصل على عرض شرائح كامل — مجانًا بقالب جاهز أو بالذكاء الاصطناعي.',
     toolGameTitle: 'تحدي الصف',
     toolGameDesc: 'لعبة أسئلة بين فرق الصف — بلا هواتف وبلا تحضير: الطلبة يرفعون أيديهم للإجابة وأنت تسجّل النقاط.',
+    toolWhiteboardTitle: 'السبورة الذكية',
+    toolWhiteboardDesc: 'اكتب سؤالاً أو فكرة واعرضها بخط كبير على الشاشة أمام الطلبة.',
     toolLessonMediaTitle: 'وسائط الدرس والقوالب',
     toolLessonMediaDesc: 'أرفق صورة أو فيديو للدرس الحالي ليظهر ضمن شرائح الحصة، واستخدم القوالب السريعة.',
     parentMsgTitle: 'رسالة لولي الأمر',
@@ -1520,6 +1522,45 @@ const translations = {
     messagingLeaveGroup: 'مغادرة المجموعة',
     messagingAllowStudentPosting: 'السماح للطلبة بالكتابة',
     messagingReadOnlyGroup: 'المعلّم وحده يمكنه الكتابة في هذه المجموعة',
+
+    // Smart Whiteboard — type a prompt, display it big. No AI, no drawing.
+    whiteboardPlaceholder: 'اكتب سؤالاً أو فكرة لعرضها على الطلبة…',
+    whiteboardDisplayButton: 'اعرض على الشاشة',
+    whiteboardEditButton: 'تعديل',
+    whiteboardHint: 'سيظهر هذا النص بخط كبير على كامل الشاشة.',
+
+    // Public games hub (/play) — free, no login. Acquisition funnel: every
+    // game ends with a CTA to create a teacher account.
+    playHubTitle: 'ألعاب اقرأ',
+    playHubSubtitle: 'العب وتعلّم — مجاناً وبدون تسجيل',
+    playBackToMenu: 'كل الألعاب',
+    playCtaHeading: 'هل أنت معلم؟',
+    playCtaBody: 'أنشئ حسابك المجاني وجرّب أدوات اقرأ لتحضير دروسك ومتابعة طلبتك.',
+    playCtaButton: 'إنشاء حساب معلم مجاني',
+    playPlayAgain: 'العب مرة أخرى',
+    playGameOverTitle: 'أحسنت!',
+    playScoreLabel: (score: number, total: number) => `${score} من ${total}`,
+
+    playFlagsTitle: 'أعلام الدول',
+    playFlagsDesc: 'اختبر معلوماتك في أعلام دول العالم',
+    playFlagsPrompt: 'ما اسم هذه الدولة؟',
+    playCapitalsTitle: 'عواصم العالم',
+    playCapitalsDesc: 'اختبر معلوماتك في عواصم دول العالم',
+    playCapitalsPrompt: (country: string) => `ما هي عاصمة ${country}؟`,
+    playQuestionProgress: (i: number, total: number) => `سؤال ${i} من ${total}`,
+    playNext: 'التالي',
+
+    playMemoryTitle: 'لعبة الذاكرة',
+    playMemoryDesc: 'اقلب البطاقات وابحث عن الأزواج المتطابقة',
+    playMemoryMoves: (n: number) => `المحاولات: ${n}`,
+    playMemoryWin: 'أحسنت! أنهيت اللعبة',
+
+    playColorsTitle: 'لعبة الألوان',
+    playColorsDesc: 'هل عينك حادة؟ ابحث عن المربع المختلف',
+    playColorsInstructions: 'اضغط على المربع ذي اللون المختلف',
+    playColorsRound: (n: number) => `الجولة ${n}`,
+    playColorsLives: (n: number) => `المحاولات المتبقية: ${n}`,
+    playColorsGameOver: (round: number) => `وصلت إلى الجولة ${round}`,
   },
 
   en: {
@@ -1774,6 +1815,8 @@ const translations = {
     toolPromptSlidesDesc: 'Describe what you want in your own words and get a full deck — free with an instant template, or AI-generated.',
     toolGameTitle: 'Class challenge',
     toolGameDesc: 'A team quiz game with no phones and no prep — students raise their hands to answer and you score it on screen.',
+    toolWhiteboardTitle: 'Smart whiteboard',
+    toolWhiteboardDesc: 'Type a question or idea and display it in large text on the screen for your students.',
     toolLessonMediaTitle: 'Lesson media & templates',
     toolLessonMediaDesc: 'Attach an image or video to the current lesson so it appears in the class deck, and use quick templates.',
     parentMsgTitle: 'Message to parent',
@@ -2872,6 +2915,45 @@ const translations = {
     messagingLeaveGroup: 'Leave group',
     messagingAllowStudentPosting: 'Allow students to post',
     messagingReadOnlyGroup: 'Only the teacher can post in this group',
+
+    // Smart Whiteboard — type a prompt, display it big. No AI, no drawing.
+    whiteboardPlaceholder: 'Type a question or idea to show your students…',
+    whiteboardDisplayButton: 'Display on screen',
+    whiteboardEditButton: 'Edit',
+    whiteboardHint: 'This text will fill the screen in large type.',
+
+    // Public games hub (/play) — free, no login. Acquisition funnel: every
+    // game ends with a CTA to create a teacher account.
+    playHubTitle: 'Iqraa Games',
+    playHubSubtitle: 'Play and learn — free, no account needed',
+    playBackToMenu: 'All games',
+    playCtaHeading: 'Are you a teacher?',
+    playCtaBody: 'Create your free account and try Iqraa\'s tools for lesson prep and tracking your students.',
+    playCtaButton: 'Create a free teacher account',
+    playPlayAgain: 'Play again',
+    playGameOverTitle: 'Well done!',
+    playScoreLabel: (score: number, total: number) => `${score} of ${total}`,
+
+    playFlagsTitle: 'Flags of the World',
+    playFlagsDesc: 'Test your knowledge of world flags',
+    playFlagsPrompt: 'What country is this?',
+    playCapitalsTitle: 'World Capitals',
+    playCapitalsDesc: 'Test your knowledge of world capitals',
+    playCapitalsPrompt: (country: string) => `What is the capital of ${country}?`,
+    playQuestionProgress: (i: number, total: number) => `Question ${i} of ${total}`,
+    playNext: 'Next',
+
+    playMemoryTitle: 'Memory Game',
+    playMemoryDesc: 'Flip the cards and find the matching pairs',
+    playMemoryMoves: (n: number) => `Moves: ${n}`,
+    playMemoryWin: 'Well done! You finished the game',
+
+    playColorsTitle: 'Colour Game',
+    playColorsDesc: 'Sharp eyes? Find the odd square out',
+    playColorsInstructions: 'Tap the square with the different colour',
+    playColorsRound: (n: number) => `Round ${n}`,
+    playColorsLives: (n: number) => `Lives left: ${n}`,
+    playColorsGameOver: (round: number) => `You reached round ${round}`,
   },
 } as const;
 

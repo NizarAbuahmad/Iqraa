@@ -28,8 +28,11 @@
  * visitor has no account, but because a store reviewer opens the privacy
  * policy URL cold, in a browser with no session, and both listings require
  * that to work. Bouncing them to a login screen fails the review.
+ *
+ * `/play` is the free, no-account mini-games hub — a top-of-funnel link
+ * meant to be shared and opened cold, same reasoning as `/take`.
  */
-const PUBLIC_ROUTES = ['/take', '/legal'];
+const PUBLIC_ROUTES = ['/take', '/legal', '/play'];
 
 export function isPublicRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
