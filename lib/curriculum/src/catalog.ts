@@ -220,6 +220,10 @@ import {
   buildG3EnglishSem2BrowserCatalog,
 } from './catalogs/g3EnglishSem2.ts';
 import {
+  G3_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  buildG3CreativeArtsBrowserCatalog,
+} from './catalogs/g3CreativeArts.ts';
+import {
   G4_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG4ScienceSem1BrowserCatalog,
 } from './catalogs/g4ScienceSem1.ts';
@@ -823,8 +827,10 @@ export const SUBJECTS: Subject[] = [
   // see g8CreativeArts.ts. Extended to grade-7 on 2026-09-12 once its book
   // arrived (also one book, no semester split, same as grade-8's). Extended
   // to grade-4 on 2026-09-17 once its book arrived — not contiguous with
-  // grade-6..8 (no grade-5 book); see g4CreativeArts.ts.
-  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-4', 'grade-6', 'grade-7', 'grade-8'] },
+  // grade-6..8 (no grade-5 book); see g4CreativeArts.ts. Extended to grade-3
+  // on 2026-09-18 once its book arrived, same one-book shape; see
+  // g3CreativeArts.ts.
+  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-3', 'grade-4', 'grade-6', 'grade-7', 'grade-8'] },
   // Seventh brand-new subject, added 2026-09-09 as part of the Grade 8
   // batch. Seven vocational tracks packed into one book per semester
   // (life skills, home economics, agriculture, health/safety, industry,
@@ -1288,6 +1294,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // table instead, same technique g5EnglishSem1 uses. See g3EnglishSem1.ts.
   G3_ENGLISH_S1_CURRICULUM_BOOK_ID,
   G3_ENGLISH_S2_CURRICULUM_BOOK_ID,
+  // Grade 3 Art, Music and Drama Education — one book, no semester, same
+  // shape as g4CreativeArts.ts/g8CreativeArts.ts. 'creative-arts' is already
+  // in MVP_SUBJECT_IDS, but SUBJECTS.grades needed extending for grade-3 —
+  // see the SUBJECTS declaration above and g3CreativeArts.ts.
+  G3_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2805,6 +2816,26 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+  },
+  // ── Art, Music and Drama Education Grade 3 ──────────────────────────────
+  // Sixth Grade 3 MVP subject, required extending SUBJECTS.grades for
+  // creative-arts (previously grade-4/6/7/8 only). One book for the whole
+  // year — no semester field, same shape as g4CreativeArts.ts. Unlike
+  // g4CreativeArts.ts, this book's "الفِكْرَةُ الرَّئيسَة" box position on the
+  // page is not consistent, so its main_idea_ar was chosen by content match
+  // rather than fixed position — see g3CreativeArts.ts and the JSON's
+  // known_gaps.
+  {
+    id: G3_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+    title: 'Art, Music and Drama Education – Grade 3',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف الثالث',
+    subjectId: 'creative-arts',
+    gradeId: 'grade-3',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
   },
   // The first Grade 6 books in the repo. Maths carries four units and eighteen
   // lessons from the student book alone (no S2 student book was supplied);
@@ -4943,6 +4974,7 @@ const _g3SocialSem1Browser = buildG3SocialSem1BrowserCatalog();
 const _g3SocialSem2Browser = buildG3SocialSem2BrowserCatalog();
 const _g3EnglishSem1Browser = buildG3EnglishSem1BrowserCatalog();
 const _g3EnglishSem2Browser = buildG3EnglishSem2BrowserCatalog();
+const _g3CreativeArtsBrowser = buildG3CreativeArtsBrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -5210,6 +5242,7 @@ export const UNITS: Unit[] = [
   ..._g3SocialSem2Browser.units,
   ..._g3EnglishSem1Browser.units,
   ..._g3EnglishSem2Browser.units,
+  ..._g3CreativeArtsBrowser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -5367,6 +5400,7 @@ export const LESSONS: Lesson[] = [
   ..._g3SocialSem2Browser.lessons,
   ..._g3EnglishSem1Browser.lessons,
   ..._g3EnglishSem2Browser.lessons,
+  ..._g3CreativeArtsBrowser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
