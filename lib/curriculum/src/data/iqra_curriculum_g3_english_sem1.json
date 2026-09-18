@@ -1,0 +1,309 @@
+{
+  "meta": {
+    "grade": "الصف الثالث",
+    "grade_en": "Grade 3",
+    "subject": "اللغة الإنجليزية",
+    "subject_en": "English",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "دليل المعلم لمادة اللغة الإنجليزية للصف الثالث الفصل الأول (g3-english-s1-teachers-book, Jordan Team Together series, Pearson/York Press)"
+    ],
+    "provenance_note": "No Grade 3 Semester 1 pupil's book was supplied — only the Teacher's Book and Activity Book. Read directly from the Teacher's Book PDF via PyMuPDF on 2026-09-18. Following g5EnglishSem1's precedent for a missing/unreliable per-lesson breakdown, unit titles, vocabulary, grammar structures (with the book's own example sentences), and skill descriptors were taken from the book's own two-page 'Scope and sequence' table (pp. 2-3 of the Teacher's Book), cross-checked row-by-row against each unit's own Unit walkthrough spread (pp. 8-12) for thematic consistency — the table's two half-pages (Vocabulary/Grammar/Listening/Speaking on one page, Reading/Writing/Phonics/Project/Functions on the facing page) extract in two separate blocks via PyMuPDF's column order, not interleaved by row, so each unit's identity across the two blocks was verified by topic match (e.g. 'Let's dress up!' pairs with the clothes/price row on both pages), not position alone. The Teacher's Book itself states each main unit has 12 lessons (component/focus table, p.3), but the per-lesson breakdown (Lesson 1, Lesson 2...) was not reconstructed — same two-lessons-per-unit shape as g5EnglishSem1: Vocabulary & Grammar, and Listening & Speaking.",
+    "known_gaps": [
+      "This is real content (vocabulary lists, grammar points with the book's own example sentences, skill descriptors), not title-only — but it is unit-level, not lesson-level, same as g5EnglishSem1: each unit's actual 12 internal lessons and their exact titles were not verified page by page.",
+      "Following the g5EnglishSem1/g7EngSem1 precedent for English-subject books, `main_idea_ar` and `objectives` hold literal English text (this book's own language), not Arabic; `title_ar` carries a plain Arabic gloss of the English title for search/display.",
+      "Phonics word lists (e.g. 'pl, bl: play, plane, plum, plug...') are printed inside the same table cell as Vocabulary but are sound-pattern examples, not topical vocabulary — excluded from `vocabulary` here, same exclusion category as g5EnglishSem1's supplementary sections.",
+      "Excluded as supplementary, non-core material (no dedicated row in the scope-and-sequence table): the Welcome unit (alphabet/greetings, precedes Unit 1's own row), 'Atomic's Learning Club: Language booster', the Festivals section (Months and seasons, Calgary Stampede, Independence Day), and the Reading/Writing/Phonics/Project/Viewing-and-presenting/Functions columns of the scope-and-sequence table (present in the source but not carried into this schema, same scope as g5EnglishSem1)."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "العَوْدَةُ إِلى المَدْرَسَةِ",
+      "title_en": "Back to school",
+      "general_idea_ar": "Using the alphabet and numbers 11-20.",
+      "total_periods": null,
+      "data_tier": "unit-level (teacher's book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "المُفْرَداتُ وَالقَواعِدُ",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Demonstrative pronouns — singular/plural. Examples: This is a pen./These are pens. That is a pen./Those are pens.",
+          "periods": null,
+          "objectives": [
+            "Demonstrative pronouns (singular/plural) — e.g. This is a pen./These are pens. That is a pen./Those are pens."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "Alphabet" },
+            { "ar": "", "en": "Numbers 11-20" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "الاسْتِماعُ وَالتَّحَدُّثُ",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Understanding the letters of the alphabet by their names; understanding the main information when people introduce themselves; identifying everyday objects, people or animals; recognising familiar key words and descriptions, getting the gist of a simple song. Acting out parts of a picture story; saying the letters of the alphabet; introducing themselves; using cardinal numbers up to twenty; reciting a short, simple chant; naming everyday objects; asking simple questions about numbers of objects.",
+          "periods": null,
+          "objectives": [
+            "Understanding the letters of the alphabet by their names.",
+            "Understanding the main information when people introduce themselves.",
+            "Identifying everyday objects, people or animals.",
+            "Recognising familiar key words and descriptions, getting the gist of a simple song.",
+            "Acting out parts of a picture story; saying the letters of the alphabet; introducing themselves.",
+            "Using cardinal numbers up to twenty; reciting a short, simple chant.",
+            "Naming everyday objects; asking simple questions about numbers of objects."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "يَوْمٌ سَعيدٌ!",
+      "title_en": "It's a happy day!",
+      "general_idea_ar": "Talking about daily routines and times of the day.",
+      "total_periods": null,
+      "data_tier": "unit-level (teacher's book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "المُفْرَداتُ وَالقَواعِدُ",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Present simple with daily routines — affirmative/negative statements and Wh-questions. Examples: I play/don't play. We have/don't have lunch. When do you go home? We go home in the afternoon.",
+          "periods": null,
+          "objectives": [
+            "Present simple, affirmative/negative statements and Wh-questions about daily routines — e.g. I play/don't play. We have/don't have lunch. When do you go home? We go home in the afternoon."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "get up" },
+            { "ar": "", "en": "have breakfast" },
+            { "ar": "", "en": "go to school" },
+            { "ar": "", "en": "have art lessons" },
+            { "ar": "", "en": "play with my friends" },
+            { "ar": "", "en": "go home" },
+            { "ar": "", "en": "have lunch" },
+            { "ar": "", "en": "do homework" },
+            { "ar": "", "en": "have dinner" },
+            { "ar": "", "en": "go to bed" },
+            { "ar": "", "en": "morning" },
+            { "ar": "", "en": "afternoon" },
+            { "ar": "", "en": "evening" },
+            { "ar": "", "en": "night" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "الاسْتِماعُ وَالتَّحَدُّثُ",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising familiar words and phrases in short, simple songs; identifying simple information; recognising simple phrases; identifying key information in short conversations; recognising letters of the alphabet by sounds. Reciting a short, simple rhyme; answering simple questions about daily routines; describing objects in a basic way; acting out parts of a story; talking about habits in a simple way; saying simple tongue twisters; acting out a short dialogue.",
+          "periods": null,
+          "objectives": [
+            "Recognising familiar words and phrases in short, simple songs.",
+            "Identifying simple information; recognising simple phrases.",
+            "Identifying key information in short conversations.",
+            "Recognising letters of the alphabet by sounds.",
+            "Reciting a short, simple rhyme; answering simple questions about daily routines.",
+            "Describing objects in a basic way; acting out parts of a story.",
+            "Talking about habits in a simple way; saying simple tongue twisters; acting out a short dialogue."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "لِنَرْتَدِ مَلابِسَنا!",
+      "title_en": "Let's dress up!",
+      "general_idea_ar": "Describing clothes and personal possessions.",
+      "total_periods": null,
+      "data_tier": "unit-level (teacher's book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "المُفْرَداتُ وَالقَواعِدُ",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Present continuous with clothes. Example: You're/They're wearing jeans and trainers. Possessive adjectives. Examples: Our glasses are blue. Your keys are grey. Their phones are green.",
+          "periods": null,
+          "objectives": [
+            "Present continuous with clothes — e.g. You're/They're wearing jeans and trainers.",
+            "Possessive adjectives (our/your/their) — e.g. Our glasses are blue. Your keys are grey. Their phones are green."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "dress" },
+            { "ar": "", "en": "sandals" },
+            { "ar": "", "en": "socks" },
+            { "ar": "", "en": "hat" },
+            { "ar": "", "en": "scarf" },
+            { "ar": "", "en": "jeans" },
+            { "ar": "", "en": "pyjamas" },
+            { "ar": "", "en": "trainers" },
+            { "ar": "", "en": "baseball cap" },
+            { "ar": "", "en": "shirt" },
+            { "ar": "", "en": "glasses" },
+            { "ar": "", "en": "keys" },
+            { "ar": "", "en": "handbag" },
+            { "ar": "", "en": "backpack" },
+            { "ar": "", "en": "phone" },
+            { "ar": "", "en": "computer" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الاسْتِماعُ وَالتَّحَدُّثُ",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising familiar words and phrases in short, simple songs; identifying everyday objects, people or animals; saying simple tongue twisters; recognising simple phrases; identifying how much something costs; recognising letters of the alphabet by sounds. Describing what someone is wearing; reciting a short, simple rhyme; describing objects in a basic way; answering simple questions about daily routines; describing someone's clothes; asking about the price of something.",
+          "periods": null,
+          "objectives": [
+            "Recognising familiar words and phrases in short, simple songs.",
+            "Identifying everyday objects, people or animals; saying simple tongue twisters.",
+            "Recognising simple phrases; identifying how much something costs.",
+            "Recognising letters of the alphabet by sounds.",
+            "Describing what someone is wearing; reciting a short, simple rhyme.",
+            "Describing objects in a basic way; answering simple questions about daily routines.",
+            "Describing someone's clothes; asking about the price of something."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "مَرْكَزُ الأَنْشِطَةِ",
+      "title_en": "The activity centre",
+      "general_idea_ar": "Describing activities and days of the week.",
+      "total_periods": null,
+      "data_tier": "unit-level (teacher's book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "المُفْرَداتُ وَالقَواعِدُ",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Present simple, third person singular — affirmative/negative statements and yes/no questions. Examples: He/She plays video games. He/She doesn't watch TV. Does he do karate on Saturday? Yes, he does./No, he doesn't.",
+          "periods": null,
+          "objectives": [
+            "Present simple, third person singular (affirmative/negative/questions) — e.g. He/She plays video games. He/She doesn't watch TV. Does he do karate on Saturday? Yes, he does./No, he doesn't."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "watch TV" },
+            { "ar": "", "en": "table tennis" },
+            { "ar": "", "en": "read books" },
+            { "ar": "", "en": "play badminton" },
+            { "ar": "", "en": "play video games" },
+            { "ar": "", "en": "play tennis" },
+            { "ar": "", "en": "play basketball" },
+            { "ar": "", "en": "roller skate" },
+            { "ar": "", "en": "skateboard" },
+            { "ar": "", "en": "do karate" },
+            { "ar": "", "en": "Sunday" },
+            { "ar": "", "en": "Monday" },
+            { "ar": "", "en": "Tuesday" },
+            { "ar": "", "en": "Wednesday" },
+            { "ar": "", "en": "Thursday" },
+            { "ar": "", "en": "Friday" },
+            { "ar": "", "en": "Saturday" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "الاسْتِماعُ وَالتَّحَدُّثُ",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising familiar words and phrases in short, simple songs; identifying everyday objects, people or animals; recognising basic time words; identifying key information in short conversations; understanding simple expressions about likes and dislikes in short stories or dialogues; recognising letters of the alphabet by sounds; understanding spoken commands. Reciting a short, simple rhyme; describing daily routines; naming a few everyday objects; answering questions about daily activities; acting out parts of a story; talking about everyday activities in a simple way; answering simple questions about times and events; expressing likes and dislikes; making simple arrangements; saying simple tongue twisters.",
+          "periods": null,
+          "objectives": [
+            "Recognising familiar words and phrases in short, simple songs.",
+            "Identifying everyday objects, people or animals; recognising basic time words.",
+            "Identifying key information in short conversations.",
+            "Understanding simple expressions about likes and dislikes in short stories or dialogues.",
+            "Recognising letters of the alphabet by sounds; understanding spoken commands.",
+            "Reciting a short, simple rhyme; describing daily routines.",
+            "Naming a few everyday objects; answering questions about daily activities.",
+            "Acting out parts of a story; talking about everyday activities in a simple way.",
+            "Answering simple questions about times and events; expressing likes and dislikes.",
+            "Making simple arrangements; saying simple tongue twisters."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "أُريدُ أَنْ أَكونَ مُعَلِّمًا!",
+      "title_en": "I want to be a teacher!",
+      "general_idea_ar": "Describing jobs and means of transport.",
+      "total_periods": null,
+      "data_tier": "unit-level (teacher's book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "المُفْرَداتُ وَالقَواعِدُ",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "want to be. Example: I want to be a pilot. goes to work by. Example: He/She goes to work by bus.",
+          "periods": null,
+          "objectives": [
+            "want to be — e.g. I want to be a pilot.",
+            "goes to work by (means of transport) — e.g. He/She goes to work by bus."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "teacher" },
+            { "ar": "", "en": "doctor" },
+            { "ar": "", "en": "nurse" },
+            { "ar": "", "en": "firefighter" },
+            { "ar": "", "en": "astronaut" },
+            { "ar": "", "en": "pilot" },
+            { "ar": "", "en": "police officer" },
+            { "ar": "", "en": "builder" },
+            { "ar": "", "en": "chef" },
+            { "ar": "", "en": "artist" },
+            { "ar": "", "en": "bus" },
+            { "ar": "", "en": "boat" },
+            { "ar": "", "en": "underground" },
+            { "ar": "", "en": "train" },
+            { "ar": "", "en": "motorbike" },
+            { "ar": "", "en": "car" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "الاسْتِماعُ وَالتَّحَدُّثُ",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising familiar words and phrases in short, simple songs; identifying people from simple descriptions; recognising simple phrases; understanding basic information about common jobs, prices, times and dates; recognising letters of the alphabet by sounds. Reciting a short, simple rhyme; expressing likes and dislikes; describing daily routines in a basic way; acting out parts of a story; saying what someone's job is; answering simple questions about objects, times and events; saying simple tongue twisters.",
+          "periods": null,
+          "objectives": [
+            "Recognising familiar words and phrases in short, simple songs.",
+            "Identifying people from simple descriptions; recognising simple phrases.",
+            "Understanding basic information about common jobs, prices, times and dates.",
+            "Recognising letters of the alphabet by sounds.",
+            "Reciting a short, simple rhyme; expressing likes and dislikes.",
+            "Describing daily routines in a basic way; acting out parts of a story.",
+            "Saying what someone's job is; answering simple questions about objects, times and events.",
+            "Saying simple tongue twisters."
+          ],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

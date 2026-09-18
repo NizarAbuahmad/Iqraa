@@ -212,6 +212,14 @@ import {
   buildG3SocialSem2BrowserCatalog,
 } from './catalogs/g3SocialSem2.ts';
 import {
+  G3_ENGLISH_S1_CURRICULUM_BOOK_ID,
+  buildG3EnglishSem1BrowserCatalog,
+} from './catalogs/g3EnglishSem1.ts';
+import {
+  G3_ENGLISH_S2_CURRICULUM_BOOK_ID,
+  buildG3EnglishSem2BrowserCatalog,
+} from './catalogs/g3EnglishSem2.ts';
+import {
   G4_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG4ScienceSem1BrowserCatalog,
 } from './catalogs/g4ScienceSem1.ts';
@@ -1273,6 +1281,13 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // needed. NCCD's own Arabic-native text — see g3SocialSem1.ts.
   G3_SOCIAL_S1_CURRICULUM_BOOK_ID,
   G3_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  // Grade 3 English, both semesters. 'eng' is already in MVP_SUBJECT_IDS and
+  // already declared for grade-3 in SUBJECTS.grades (spans every grade), so
+  // no subject append or SUBJECTS.grades extension is needed. Semester 1 has
+  // no pupil's book — built from the teacher's book's own scope-and-sequence
+  // table instead, same technique g5EnglishSem1 uses. See g3EnglishSem1.ts.
+  G3_ENGLISH_S1_CURRICULUM_BOOK_ID,
+  G3_ENGLISH_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2754,6 +2769,38 @@ export const BOOKS: Book[] = [
     gradeId: 'grade-3',
     academicYear: '2024-2025',
     language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // Grade 3 English, both semesters ("Jordan Team Together" series,
+  // Pearson/York Press). Real unit-level content from the book's own "Scope
+  // and sequence" table — `main_idea_ar`/`objectives` hold literal English
+  // text, `title_ar` a plain gloss, same convention as g5EnglishSem1.
+  // Semester 1 has no pupil's book; built from the teacher's book instead —
+  // see g3EnglishSem1.ts / g3EnglishSem2.ts.
+  {
+    id: G3_ENGLISH_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 3, Semester 1',
+    titleAr: 'اللغة الإنجليزية – الصف الثالث – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-3',
+    academicYear: '2024-2025',
+    language: 'English',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G3_ENGLISH_S2_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 3, Semester 2',
+    titleAr: 'اللغة الإنجليزية – الصف الثالث – الفصل الثاني',
+    subjectId: 'english',
+    gradeId: 'grade-3',
+    academicYear: '2024-2025',
+    language: 'English',
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
@@ -4894,6 +4941,8 @@ const _g3ArabicSem1Browser = buildG3ArabicSem1BrowserCatalog();
 const _g3ArabicSem2Browser = buildG3ArabicSem2BrowserCatalog();
 const _g3SocialSem1Browser = buildG3SocialSem1BrowserCatalog();
 const _g3SocialSem2Browser = buildG3SocialSem2BrowserCatalog();
+const _g3EnglishSem1Browser = buildG3EnglishSem1BrowserCatalog();
+const _g3EnglishSem2Browser = buildG3EnglishSem2BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -5159,6 +5208,8 @@ export const UNITS: Unit[] = [
   ..._g3ArabicSem2Browser.units,
   ..._g3SocialSem1Browser.units,
   ..._g3SocialSem2Browser.units,
+  ..._g3EnglishSem1Browser.units,
+  ..._g3EnglishSem2Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -5314,6 +5365,8 @@ export const LESSONS: Lesson[] = [
   ..._g3ArabicSem2Browser.lessons,
   ..._g3SocialSem1Browser.lessons,
   ..._g3SocialSem2Browser.lessons,
+  ..._g3EnglishSem1Browser.lessons,
+  ..._g3EnglishSem2Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
