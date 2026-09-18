@@ -354,6 +354,15 @@ export interface ActivitySlide {
   sideImageUrl?: string;
   /** Book and page for `sideImageUrl`, same provenance rule as `mediaCaption`. */
   sideImageCaption?: string;
+  /**
+   * A short English photo-search phrase the generator asked for on this slide.
+   *
+   * Only `/generate/prompt-slides` emits it, and it is a REQUEST, not content:
+   * `services/promptSlidesMedia.ts` turns it into a real `sideImageUrl` and the
+   * renderers ignore it. It survives on the slide so a deck reopened from the
+   * workspace can be re-illustrated without regenerating the text.
+   */
+  mediaPrompt?: string;
   mediaKind?: 'image' | 'video' | 'audio' | 'document';
   /**
    * Image URL / data URI, or a YouTube watch/share link.
@@ -466,16 +475,24 @@ export interface PromptSlidesRequest {
   slideCount?: number;
   /** Same meaning as `ClassroomActivityRequest.classroomSetup`. */
   classroomSetup?: 'screen' | 'board';
-  /**
-   * 'free' builds a deterministic, non-AI template deck locally — instant,
-   * always available, no images, cannot follow the prompt's specific content.
-   * 'ai' calls the live model (spends the shared AI budget) and can include a
-   * few AI-generated images. See `RemoteAIService.generatePromptSlides`.
-   */
-  mode: 'free' | 'ai';
   regenerate?: boolean;
   avoid?: string[];
 }
+
+/**
+ * One clarifying question the teacher answers by tapping, before the deck is
+ * generated. Shaped to match `ClarificationOption` in `teachingAssistant.ts` —
+ * same idea, except the labels arrive already in the teacher's language
+ * because the server wrote them, so there is no ar/en pair to carry.
+ */
+export interface PromptSlidesQuestion {
+  id: string;
+  question: string;
+  options: { id: string; label: string }[];
+}
+
+/** What the teacher tapped: question id → option label, in their language. */
+export type PromptSlidesAnswers = Record<string, string>;
 
 // ─── Lesson Flow Engine ──────────────────────────────────────────────────────
 
@@ -523,5 +540,9 @@ export abstract class AIService {
   abstract generateHomework(req: AIRequest, opts?: GenerateOptions): Promise<WorksheetOutput>;
   abstract generateActivity(req: AIRequest, opts?: GenerateOptions): Promise<ActivityOutput>;
   abstract generateClassroomActivity(req: ClassroomActivityRequest, opts?: GenerateOptions): Promise<ClassroomActivity>;
-  abstract generatePromptSlides(req: PromptSlidesRequest, opts?: GenerateOptions): Promise<ClassroomActivity>;
+  // `generatePromptSlides` is deliberately NOT here. Every generator above has
+  // an offline twin in MockAIService; prompt-slides does not, because the only
+  // honest offline deck it could produce was a page of "edit this text"
+  // placeholders that teachers read as a broken feature. It lives on
+  // RemoteAIService alone and fails loudly when the model cannot be reached.
 }

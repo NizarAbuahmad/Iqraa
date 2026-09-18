@@ -15,11 +15,10 @@ import {
   ActivityOutput, AIRequest, AIService,
   ClassroomActivity, ClassroomActivityRequest,
   GenerateOptions,
-  LessonPlanOutput, PromptSlidesRequest, QuizOutput, WorksheetOutput,
+  LessonPlanOutput, PromptSlidesQuestion, PromptSlidesRequest, QuizOutput, WorksheetOutput,
 } from './AIService';
 import { DEMO_MODE } from './demoMode';
 import { MockAIService } from './generators';
-import { buildPromptSlidesTemplate } from '@/services/promptSlidesTemplate';
 import { applyClassroomSetup } from '@/services/classroomRouting';
 import { ApiError, apiFetch } from '../apiClient';
 import { describeAiError, generateWithProvenance, recordGeneration } from './aiProvenance.ts';
@@ -163,40 +162,56 @@ export class RemoteAIService extends AIService {
 
   /**
    * A deck built from the teacher's own free-text prompt — see
-   * `PromptSlidesRequest`. 'free' mode never touches the network or the AI
-   * budget: it is a deliberate, always-available option, not a fallback, so it
-   * bypasses `generateWithProvenance` entirely (there is nothing to attribute
-   * a "live"/"mock" badge to — the teacher chose this).
+   * `PromptSlidesRequest`.
    *
-   * 'ai' mode passes `demoMode: false` explicitly, overriding the app-wide
-   * `DEMO_MODE` default. Every other generator on the web build ships mocked
-   * (see `.github/workflows/deploy.yml`'s comment: `EXPO_PUBLIC_DEMO_MODE` is
-   * deliberately unset there, "as it always has" been) — flipping that global
-   * default would turn on live spend for every AI button on web, not just this
-   * one. This tool is different: the teacher explicitly opts into "AI-generated"
-   * knowing it spends the shared AI budget, so honoring that choice on every
-   * platform — not silently substituting mock content just because this
-   * happens to be the web build — is the one already-informed exception.
+   * Two deliberate overrides to `generateWithProvenance`'s defaults:
+   *
+   * `demoMode: false`, because the web build ships with `DEMO_MODE` on for
+   * every AI button (`.github/workflows/deploy.yml` leaves
+   * `EXPO_PUBLIC_DEMO_MODE` unset "as it always has"), and flipping that global
+   * would turn on live spend across the whole app rather than this one tool.
+   *
+   * `strict: true`, because there is nothing left to fall back TO. The offline
+   * template this used to substitute was a page of "edit this text" lines that
+   * teachers reasonably read as a broken feature, so it was deleted. Refusing
+   * loudly is the honest alternative — see CLAUDE.md on mock content being
+   * indistinguishable from real content.
    */
   async generatePromptSlides(req: PromptSlidesRequest, opts?: GenerateOptions): Promise<ClassroomActivity> {
-    if (req.mode === 'free') {
-      return applyClassroomSetup(
-        buildPromptSlidesTemplate(req),
-        req.classroomSetup ?? 'screen',
-        req.language === 'arabic',
-      );
-    }
     const activity = await generateWithProvenance(
       'prompt-slides',
       () => postJSON<ClassroomActivity>('/generate/prompt-slides', req, opts),
-      () => this.fallback.generatePromptSlides(req),
-      { demoMode: false },
+      () => { throw new Error('prompt-slides has no offline fallback'); },
+      { demoMode: false, strict: true },
     );
     return applyClassroomSetup(
       activity,
       req.classroomSetup ?? 'screen',
       req.language === 'arabic',
     );
+  }
+
+  /**
+   * The clarifying questions to ask before building, or `[]` when the
+   * description is already specific enough.
+   *
+   * Never throws and never records provenance: these questions are an
+   * enhancement on the way to a deck, so a failure here has to look exactly
+   * like "no questions" to the caller. A teacher waiting on slides must not be
+   * shown an error about a question they never asked for.
+   */
+  async fetchPromptSlidesQuestions(
+    req: { prompt: string; grade?: string; subject?: string; language: 'arabic' | 'english' },
+    opts?: GenerateOptions,
+  ): Promise<PromptSlidesQuestion[]> {
+    try {
+      const out = await postJSON<{ questions?: PromptSlidesQuestion[] }>(
+        '/generate/prompt-slides/questions', req, opts, 15_000,
+      );
+      return Array.isArray(out?.questions) ? out.questions : [];
+    } catch {
+      return [];
+    }
   }
 
   /**

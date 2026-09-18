@@ -9,12 +9,20 @@
  * over the model; the prompt itself is the entire spec. See the plan this
  * shipped from for the full reasoning.
  *
- * Two generation modes, both producing the same `ClassroomActivity` shape
- * `presentation.tsx`/`exportPptx.ts`/`services/share.ts` already render:
- *  - Free: a deterministic, non-AI template (`buildPromptSlidesTemplate`) —
- *    instant, always available, cannot follow the prompt's specific content.
- *  - AI: one live model call (`POST /generate/prompt-slides`), which can also
- *    add a few AI-generated images.
+ * The flow is: ask, build, illustrate.
+ *  1. One round of tap-to-answer questions, when the server judges the
+ *     description left something worth asking. Always skippable.
+ *  2. One live model call (`POST /generate/prompt-slides`) for the deck text.
+ *  3. The media passes the older Slides Maker has always run — Unsplash photos,
+ *     a YouTube explainer, and graphs/charts drawn from the deck's own content
+ *     (`services/promptSlidesMedia.ts`). Never blocking, always optional.
+ *
+ * Grade and subject are NOT asked for: they come from the teacher's profile and
+ * reach the model as a hint the description can override.
+ *
+ * There is no offline mode. The template that used to stand in produced a page
+ * of "edit this text" placeholders, which teachers read as a broken feature, so
+ * a failed generation now shows an error instead of fabricating a deck.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -25,7 +33,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { PillSelector } from '@/components/ui/PillSelector';
+import { useAuth } from '@/context/AuthContext';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
@@ -33,11 +41,15 @@ import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
-import type { ActivitySlide, ClassroomActivity, PromptSlidesRequest } from '@/services/ai/AIService';
+import type {
+  ActivitySlide, ClassroomActivity, PromptSlidesQuestion, PromptSlidesRequest,
+} from '@/services/ai/AIService';
 import { isolateForeignRuns } from '@/services/mathRender';
 import { rebuildAnswerKey, withoutSlide } from '@/services/lessonSlides';
-import { getPickerGrades, getPickerSubjects, resolvePickerIndex } from '@/services/curriculumData';
-import type { ClassroomSetup } from '@/services/classroomRouting';
+import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { narrowToSelection } from '@/services/teacherCatalogFilter';
+import { foldAnswersIntoPrompt } from '@/services/promptSlidesAnswers';
+import { attachDrawnVisuals, attachSearchedMedia } from '@/services/promptSlidesMedia';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import { deleteItem, getAllItems, saveItem, updateItem } from '@/services/workspace';
@@ -48,8 +60,6 @@ import { timerSecondsForSlide } from '@/services/presentationUtils';
 const ACCENT = '#7C3AED';
 const MAX_SLIDE_COUNT = 20;
 
-type Mode = 'free' | 'ai';
-
 export default function PromptSlidesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -58,39 +68,41 @@ export default function PromptSlidesScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
-  const grades = getPickerGrades();
-  const subjects = getPickerSubjects();
+  const { user } = useAuth();
+
+  // Grade and subject used to be two pill rows on this screen, which is exactly
+  // the tapping-through a "just describe it" tool exists to avoid. They come
+  // from the teacher's own profile now — the same `narrowToSelection` the
+  // curriculum browser uses, with its fall-back-to-everything behaviour — and
+  // they reach the model as a HINT. A description naming another grade wins.
+  const teacherGrade = narrowToSelection(getPickerGrades(), user?.gradeIds)[0];
+  const teacherSubject = narrowToSelection(getPickerSubjects(), user?.subjectIds)[0];
+  const gradeLabel = teacherGrade ? (isAr ? teacherGrade.nameAr : teacherGrade.name) : '';
+  const subjectLabel = teacherSubject ? (isAr ? teacherSubject.nameAr : teacherSubject.name) : '';
 
   // Reopening a saved item from موادي pushes here with its `formState`
   // spread as params (see workspace/view.tsx's `editRoute`) — the same keys
-  // `toggleSave` below writes, so the form comes back exactly as it was left,
-  // not reset to defaults the way a curriculum-grounded screen's topic would.
-  const params = useLocalSearchParams<{
-    prompt?: string; mode?: string; slideCountText?: string;
-    classroomSetup?: string; gradeIdx?: string; subjectIdx?: string;
-  }>();
+  // `toggleSave` below writes, so the form comes back exactly as it was left.
+  const params = useLocalSearchParams<{ prompt?: string; slideCountText?: string }>();
 
   const [prompt, setPrompt] = useState(params.prompt ?? '');
-  const [mode, setMode] = useState<Mode>(params.mode === 'free' ? 'free' : 'ai');
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
   const [slideCountText, setSlideCountText] = useState(params.slideCountText ?? '');
-  const [classroomSetup, setClassroomSetup] = useState<ClassroomSetup>(
-    params.classroomSetup === 'board' ? 'board' : 'screen',
-  );
 
   const [loading, setLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const [cancelled, setCancelled] = useState(false);
   const [error, setError] = useState('');
   const [deck, setDeck] = useState<ClassroomActivity | null>(null);
-  /** Which mode actually produced the deck on screen — not the form's current
-   *  selection, which the teacher may change before regenerating. Shown next
-   *  to the deck rather than via the shared `AiSourceBadge`: that badge reads
-   *  a single global "last generation" record, and Free mode deliberately
-   *  never writes one (see `RemoteAIService.generatePromptSlides`), so it
-   *  would keep showing whatever an unrelated screen left behind. */
-  const [deckMode, setDeckMode] = useState<Mode | null>(null);
+
+  /**
+   * The one clarifying round. `asking` holds the questions the server sent
+   * back; `answers` is question id → the option label the teacher tapped.
+   * Both clear the moment generation starts, so a second Build never shows a
+   * stale question from the previous prompt.
+   */
+  const [asking, setAsking] = useState<PromptSlidesQuestion[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [askingBusy, setAskingBusy] = useState(false);
 
   const [savedId, setSavedId] = useState<string | null>(null);
   const [savingBusy, setSavingBusy] = useState(false);
@@ -107,10 +119,56 @@ export default function PromptSlidesScreen() {
 
   const forgetSaved = () => { setSavedId(null); savedContentRef.current = ''; };
 
+  /**
+   * Build pressed. Ask first, unless there is nothing worth asking.
+   *
+   * The questions call is allowed to fail, time out or come back empty — every
+   * one of those goes straight to generating. A teacher waiting on slides must
+   * never be blocked by an optional question.
+   */
+  const onBuild = async () => {
+    const trimmed = prompt.trim();
+    if (!trimmed) { setError(t('promptRequired')); return; }
+    if (asking.length > 0) { void generate(); return; }
+
+    setError(''); setCancelled(false);
+    setAskingBusy(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      const questions = await aiService.fetchPromptSlidesQuestions({
+        prompt: trimmed,
+        grade: gradeLabel || undefined,
+        subject: subjectLabel || undefined,
+        language: isAr ? 'arabic' : 'english',
+      });
+      if (questions.length > 0) {
+        setAsking(questions);
+        setAnswers({});
+        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
+        return;
+      }
+    } catch {
+      // Questions are an enhancement; a failure here is not the teacher's
+      // problem and must not surface as an error on the way to a deck.
+    } finally {
+      setAskingBusy(false);
+    }
+    void generate();
+  };
+
   const generate = async () => {
     const trimmed = prompt.trim();
     if (!trimmed) { setError(t('promptRequired')); return; }
+
+    // Whatever the teacher tapped rides along inside the description itself,
+    // so the server contract and the pooling exclusion stay untouched.
+    const answered = asking
+      .map(q => ({ question: q.question, answer: answers[q.id] ?? '' }))
+      .filter(a => a.answer);
+    const fullPrompt = foldAnswersIntoPrompt(trimmed, answered, isAr);
+
     setError(''); setCancelled(false);
+    setAsking([]); setAnswers({});
     const controller = new AbortController();
     abortRef.current = controller;
     setLoading(true); setDeck(null);
@@ -119,20 +177,41 @@ export default function PromptSlidesScreen() {
 
     const slideCount = Math.max(0, Math.min(MAX_SLIDE_COUNT, Math.floor(Number(slideCountText) || 0)));
     const req: PromptSlidesRequest = {
-      prompt: trimmed,
-      grade: isAr ? grades[gradeIdx]!.nameAr : grades[gradeIdx]!.name,
-      subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
+      prompt: fullPrompt,
+      grade: gradeLabel,
+      subject: subjectLabel,
       language: isAr ? 'arabic' : 'english',
       slideCount: slideCount > 0 ? slideCount : undefined,
-      classroomSetup,
-      mode,
+      classroomSetup: 'screen',
     };
     try {
       const out = await aiService.generatePromptSlides(req, { signal: controller.signal });
-      setDeck(out);
-      setDeckMode(mode);
+      // Drawn visuals cost nothing and need no network, so they land with the
+      // deck rather than after it.
+      const built = attachDrawnVisuals(out, isAr);
+      setDeck(built);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+
+      // Photos and video arrive afterwards, exactly as the older Slides Maker
+      // does it: never blocking the deck, and dropped entirely if the teacher
+      // has regenerated in the meantime — the identity check is on the first
+      // slide object, which a regeneration replaces.
+      void (async () => {
+        try {
+          const { searchDeckPhoto } = await import('@/services/unsplashImage');
+          const { searchDeckVideos } = await import('@/services/youtubeVideo');
+          const enriched = await attachSearchedMedia(built, {
+            isAr,
+            topic: trimmed,
+            searchPhoto: searchDeckPhoto,
+            searchVideos: searchDeckVideos,
+          });
+          setDeck(cur => (cur && cur.slides[0] === built.slides[0] ? enriched : cur));
+        } catch {
+          // A deck without photos is still a deck.
+        }
+      })();
     } catch (e) {
       if (isAbortError(e)) setCancelled(true);
       else setError(t(aiErrorMessageKey(e)));
@@ -154,8 +233,8 @@ export default function PromptSlidesScreen() {
   const deckIdentity = (built: ClassroomActivity) => ({
     type: 'prompt-slides' as const,
     title: built.activityName,
-    subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
-    grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
+    subject: subjectLabel,
+    grade: gradeLabel,
     // The model's own title, not the raw prompt — nothing downstream (e.g. a
     // curriculum lookup keyed on `topic`) should mistake this for a lesson name.
     topic: built.activityName,
@@ -177,7 +256,7 @@ export default function PromptSlidesScreen() {
       const item = await saveItem({
         ...deckIdentity(deck),
         content,
-        formState: { prompt: prompt.trim(), mode, slideCountText, classroomSetup, gradeIdx, subjectIdx },
+        formState: { prompt: prompt.trim(), slideCountText },
       });
       savedContentRef.current = content;
       setSavedId(item.id);
@@ -362,99 +441,6 @@ export default function PromptSlidesScreen() {
             </Text>
           ) : null}
 
-          {/* Two cards rather than a pill row: this is the one choice on the
-              screen that changes what the teacher gets (and whether it costs
-              anything), so it carries its own explanation instead of a single
-              hint line under a pill pair. */}
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('promptSlidesModeLabel')}
-          </Text>
-          <View style={{ gap: 10, marginBottom: 18 }}>
-            {([
-              ['ai', 'sparkles', t('promptSlidesModeAi'), t('promptSlidesModeAiHint')],
-              ['free', 'document-text-outline', t('promptSlidesModeFree'), t('promptSlidesModeFreeHint')],
-            ] as const).map(([value, icon, label, hint]) => {
-              const on = mode === value;
-              return (
-                <Pressable
-                  key={value}
-                  onPress={() => { setMode(value); Haptics.selectionAsync(); }}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: on }}
-                  style={({ pressed }) => [
-                    styles.modeCard,
-                    {
-                      borderColor: on ? ACCENT : colors.border,
-                      backgroundColor: on ? ACCENT + '0F' : colors.card,
-                      borderRadius: colors.radius,
-                      flexDirection: isRTL ? 'row-reverse' : 'row',
-                      opacity: pressed ? 0.85 : 1,
-                    },
-                  ]}
-                >
-                  <View style={[styles.modeIcon, { backgroundColor: on ? ACCENT : colors.muted }]}>
-                    <Ionicons name={icon} size={18} color={on ? '#fff' : colors.mutedForeground} />
-                  </View>
-                  <View style={{ flex: 1, gap: 3 }}>
-                    <Text style={{
-                      color: on ? ACCENT : colors.foreground,
-                      fontFamily: 'Cairo_600SemiBold',
-                      fontSize: 14,
-                      textAlign: isRTL ? 'right' : 'left',
-                    }}>
-                      {label}
-                    </Text>
-                    <Text style={{
-                      color: colors.mutedForeground,
-                      fontFamily: 'Almarai_400Regular',
-                      fontSize: 11,
-                      lineHeight: 17,
-                      textAlign: isRTL ? 'right' : 'left',
-                    }}>
-                      {hint}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name={on ? 'radio-button-on' : 'radio-button-off'}
-                    size={18}
-                    color={on ? ACCENT : colors.border}
-                  />
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <PillSelector
-            label={t('grade')}
-            options={grades.map((g, i) => ({ value: i, label: isAr ? g.nameAr : g.name }))}
-            value={gradeIdx}
-            onChange={setGradeIdx}
-            colors={colors}
-            isRTL={isRTL}
-            accent={ACCENT}
-          />
-          <PillSelector
-            label={t('subjects')}
-            options={subjects.map((s, i) => ({ value: i, label: isAr ? s.nameAr : s.name }))}
-            value={subjectIdx}
-            onChange={setSubjectIdx}
-            colors={colors}
-            isRTL={isRTL}
-            accent={ACCENT}
-          />
-          <PillSelector
-            label={isAr ? 'تجهيزات الصف' : 'Classroom setup'}
-            options={[
-              { value: 'screen' as ClassroomSetup, label: isAr ? 'شاشة عرض' : 'Projector' },
-              { value: 'board' as ClassroomSetup, label: isAr ? 'سبورة فقط' : 'Board only' },
-            ]}
-            value={classroomSetup}
-            onChange={setClassroomSetup}
-            colors={colors}
-            isRTL={isRTL}
-            accent={ACCENT}
-          />
-
           <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('promptSlidesSlideCountLabel')}
           </Text>
@@ -470,12 +456,74 @@ export default function PromptSlidesScreen() {
             }]}
           />
 
+          {/* The one clarifying round. Shown only when the server decided the
+              description left something worth asking — and always skippable,
+              because the teacher came here for slides, not a form. */}
+          {asking.length > 0 && (
+            <View style={{ gap: 12, marginBottom: 18 }}>
+              {asking.map(q => (
+                <View
+                  key={q.id}
+                  style={[styles.questionCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}
+                >
+                  <Text style={{
+                    color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13,
+                    textAlign: isRTL ? 'right' : 'left', marginBottom: 10,
+                  }}>
+                    {q.question}
+                  </Text>
+                  <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
+                    {q.options.map(opt => {
+                      const on = answers[q.id] === opt.label;
+                      return (
+                        <Pressable
+                          key={opt.id}
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            setAnswers(cur => ({ ...cur, [q.id]: opt.label }));
+                          }}
+                          accessibilityRole="radio"
+                          accessibilityState={{ selected: on }}
+                          style={[styles.answerChip, {
+                            borderColor: on ? ACCENT : colors.border,
+                            backgroundColor: on ? ACCENT : 'transparent',
+                            borderRadius: 999,
+                          }]}
+                        >
+                          <Text style={{
+                            color: on ? '#fff' : colors.mutedForeground,
+                            fontFamily: 'Cairo_500Medium', fontSize: 12,
+                          }}>
+                            {opt.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
           <Button
-            label={loading ? t('promptSlidesBuilding') : t('promptSlidesBuild')}
-            onPress={generate}
-            loading={loading}
+            label={
+              askingBusy ? t('promptSlidesAsking')
+                : loading ? t('promptSlidesBuilding')
+                  : asking.length > 0 ? t('promptSlidesBuildWithAnswers')
+                    : t('promptSlidesBuild')
+            }
+            onPress={onBuild}
+            loading={loading || askingBusy}
             fullWidth
           />
+
+          {asking.length > 0 && !loading && (
+            <Pressable onPress={() => { setAnswers({}); void generate(); }} style={styles.skipBtn}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+                {t('promptSlidesSkipQuestions')}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         <GenerationStatus
@@ -483,7 +531,7 @@ export default function PromptSlidesScreen() {
           loadingLabel={t('promptSlidesBuilding')}
           errorDetail={error}
           onCancel={cancelGenerate}
-          onRetry={generate}
+          onRetry={onBuild}
           colors={colors}
           isRTL={isRTL}
           lang={lang as 'ar' | 'en'}
@@ -514,11 +562,6 @@ export default function PromptSlidesScreen() {
                 <Text style={[styles.previewTitle, { flex: 1, color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
                   {deck.activityName}
                 </Text>
-                <View style={[styles.modeBadge, { backgroundColor: ACCENT + '15' }]}>
-                  <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 11 }}>
-                    {deckMode === 'free' ? t('promptSlidesModeFree') : t('promptSlidesModeAi')}
-                  </Text>
-                </View>
               </View>
               <Text style={[styles.previewMeta, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('slideCount', deck.slides.length)}
@@ -709,8 +752,9 @@ const styles = StyleSheet.create({
     borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.14)',
   },
   heroPillText: { color: 'rgba(255,255,255,0.9)', fontFamily: 'Cairo_500Medium', fontSize: 11 },
-  modeCard: { alignItems: 'center', gap: 12, padding: 14, borderWidth: 1.5 },
-  modeIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  questionCard: { padding: 14, borderWidth: 1 },
+  answerChip: { paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1.5 },
+  skipBtn: { alignItems: 'center', paddingVertical: 12 },
   emptyCard: {
     marginHorizontal: 20, marginBottom: 12, paddingVertical: 34, paddingHorizontal: 20,
     borderWidth: 1.5, borderStyle: 'dashed', alignItems: 'center', gap: 6,
@@ -728,7 +772,6 @@ const styles = StyleSheet.create({
   previewCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
   previewTitle: { fontSize: 17 },
   previewMeta: { fontSize: 12 },
-  modeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
   slideNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   ctaBtn: { alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16, marginBottom: 10 },
   secondaryBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 13, borderWidth: 1.5 },

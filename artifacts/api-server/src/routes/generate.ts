@@ -29,6 +29,12 @@ import {
   promptSlidesPromptAr,
   promptSlidesPromptEn,
 } from "../lib/promptSlidesPrompt.ts";
+import {
+  QUESTIONS_TOKENS,
+  parseQuestions,
+  questionsPromptAr,
+  questionsPromptEn,
+} from "../lib/promptSlidesQuestions.ts";
 
 import {
   AiBudgetExceededError,
@@ -37,7 +43,9 @@ import {
   assertBudgetAvailable,
   assertLiveModeEnabled,
   assertUserQuotaAvailable,
+  getChatModel,
   getGenerationModel,
+  getPromptSlidesModel,
   recordCacheHit,
   recordUsage,
   type GenerationDetail,
@@ -64,6 +72,7 @@ import {
 import { VARIANT_POOL_MAX } from "@workspace/db/schema";
 import {
   assertUsableGeneration,
+  deckShortfalls,
   extractJSON,
   UnusableGenerationError,
   type GenerationKind,
@@ -80,6 +89,16 @@ const generateRouter = Router();
  * limits spend.
  */
 const GENERATION_TOKENS = 8000;
+
+/**
+ * The prompt-slides ceiling, which is deliberately higher than the shared one.
+ *
+ * A deck is the longest artifact this app asks for: 10-20 slides, each with a
+ * `teacher` companion of its own, in Arabic, which tokenizes far worse than
+ * English. At 8000 the model was quietly choosing between finishing the deck
+ * and filling in the teacher notes, and teachers got the thin version of both.
+ */
+const PROMPT_SLIDES_TOKENS = 16000;
 
 /**
  * Collapses concurrent identical misses into one model call.
@@ -102,6 +121,9 @@ type GenerateArgs = {
   /** Which language the variation directives should be written in. */
   isAr: boolean;
   userId?: string | null;
+  /** Overrides the shared generation model for one workload — see
+   *  `getPromptSlidesModel`. Unset keeps every existing route as it was. */
+  model?: string;
 };
 
 type GenerateResult = {
@@ -227,7 +249,7 @@ async function refusalFromCaps(
 async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
   assertLiveModeEnabled();
   const { kind, body, userId } = args;
-  const model = getGenerationModel();
+  const model = args.model ?? getGenerationModel();
   const keys = generationKeys(kind, model, body);
   const regenerate = body.regenerate === true;
   const detail = { kind, promptVersion: PROMPT_VERSION, userId, ...keys };
@@ -630,21 +652,26 @@ generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedReq
 
 
 /**
- * Turns `mediaPrompt`s from `/generate/prompt-slides` into real images, and
- * enforces the slide-count and per-deck image caps stated in the prompt (a
- * belt-and-suspenders backstop — the model does not always obey slide-count
- * instructions, and nothing else here would catch it).
+ * Enforces the slide-count cap and decides what happens to `mediaPrompt`.
  *
- * A slide beyond the image cap, one whose `mediaPrompt` is missing, or one
- * whose image generation fails is downgraded to a plain `'intro'` slide (the
- * type this JSON contract already uses for plain explanatory text — see
- * `classroomPrompts.ts`'s own quick-check intro slide; `ActivitySlide.type`
- * has no separate "content" member, so writing one here would render as
- * nothing in `presentation.tsx`) rather than failing the whole request — the
- * deck is still usable without that one picture. Images go to the public
- * bucket (`putPublicObject`/`publicUrl`), not the signed-URL private one: a
- * deck reopened weeks after generation needs a link that has not expired.
+ * `mediaPrompt` used to be an illustration brief for `gpt-image-1`, and this
+ * function used to spend it here. It never once worked: production logged
+ * `403 ... does not have access to model 'gpt-image-1'` on every attempt, the
+ * blanket catch downgraded the slide to plain text, and the teacher got a deck
+ * with no pictures and no explanation. `generateImageBuffer` also returns a
+ * 0-byte Buffer on an empty `b64_json`, which would have uploaded cleanly and
+ * handed back a live URL to a broken image.
+ *
+ * So the field now survives to the client, which feeds it to the Unsplash
+ * lookup the older Slides Maker has used in production all along. Generating
+ * images stays behind `AI_IMAGE_GENERATION=true` and is off until the OpenAI
+ * organisation is verified; when it is enabled, the same `mediaPrompt` drives
+ * it and the client's search is skipped because the slide already has a URL.
  */
+function imageGenerationEnabled(): boolean {
+  return process.env.AI_IMAGE_GENERATION === "true";
+}
+
 async function finalizePromptSlides(content: unknown): Promise<unknown> {
   if (content === null || typeof content !== "object" || Array.isArray(content)) return content;
   const deck = content as Record<string, unknown>;
@@ -652,30 +679,42 @@ async function finalizePromptSlides(content: unknown): Promise<unknown> {
   if (!Array.isArray(slides)) return content;
 
   const truncated = slides.slice(0, MAX_PROMPT_SLIDES);
-  const canGenerateImages = isPublicR2Configured();
-  let imagesUsed = 0;
+  if (!imageGenerationEnabled()) {
+    // The common path today. `mediaPrompt` rides along untouched — stripping it
+    // is what left the client with nothing to search for.
+    return { ...deck, slides: truncated };
+  }
+  if (!isPublicR2Configured()) {
+    // Previously silent: every media slide degraded with no log line at all,
+    // which is indistinguishable from the model simply not asking for images.
+    logger.error("prompt-slides image generation is on but R2_PUBLIC_BASE_URL is unset — skipping images");
+    return { ...deck, slides: truncated };
+  }
 
+  let imagesUsed = 0;
   const finished = await Promise.all(truncated.map(async (raw) => {
     if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return raw;
     const slide = raw as Record<string, unknown>;
-    if (slide.type !== "media") return slide;
+    const mediaPrompt = typeof slide.mediaPrompt === "string" ? slide.mediaPrompt.trim() : "";
+    if (!mediaPrompt || imagesUsed >= MAX_PROMPT_SLIDE_IMAGES) return slide;
 
-    const { mediaPrompt, ...rest } = slide;
-    const trimmedPrompt = typeof mediaPrompt === "string" ? mediaPrompt.trim() : "";
-    if (!canGenerateImages || !trimmedPrompt || imagesUsed >= MAX_PROMPT_SLIDE_IMAGES) {
-      return { ...rest, type: "intro" };
-    }
     imagesUsed += 1;
     try {
-      const buffer = await generateImageBuffer(trimmedPrompt);
+      const buffer = await generateImageBuffer(mediaPrompt);
+      // An empty `b64_json` yields a 0-byte Buffer that uploads happily and
+      // serves a broken image forever. Refuse it here.
+      if (!buffer?.length) throw new Error("image model returned an empty buffer");
       const key = `deck-images/${randomUUID()}.png`;
       await putPublicObject(key, buffer, "image/png");
       const url = publicUrl(key);
       if (!url) throw new Error("R2 public base URL not configured");
-      return { ...rest, mediaUrl: url, mediaKind: "image" };
+      return { ...slide, mediaUrl: url, mediaKind: "image" };
     } catch (err) {
-      logger.warn({ err }, "prompt-slides image generation failed");
-      return { ...rest, type: "intro" };
+      // `error`, not `warn`: a paid generation just lost a picture the model
+      // asked for, and the teacher cannot tell. The slide keeps `mediaPrompt`
+      // so the client's photo search can still cover it.
+      logger.error({ err }, "prompt-slides image generation failed");
+      return slide;
     }
   }));
 
@@ -711,14 +750,81 @@ generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest,
       + classroomSetupClause(body, isAr);
     const result = await generateContent({
       kind: "prompt-slides", systemPrompt: systemPrompt(isAr), userPrompt,
-      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+      // A 10-20 slide Arabic deck carrying a teacher block per slide does not
+      // fit the 8k every other route shares — and reasoning tokens bill against
+      // the same ceiling, so the model was spending its budget thinking and
+      // returning a short deck.
+      maxCompletionTokens: PROMPT_SLIDES_TOKENS,
+      model: getPromptSlidesModel(),
+      body, isAr, userId: req.user?.id,
     });
     const finalized = await finalizePromptSlides(result.content);
+    // Quality bars we will not refuse a paid deck over, but do want to see —
+    // a run of these in the logs means the prompt needs another pass.
+    const shortfalls = deckShortfalls(finalized);
+    if (shortfalls.length > 0) {
+      logger.warn({ shortfalls, model: getPromptSlidesModel() }, "prompt-slides deck below quality bars");
+    }
     res.json(
       withMeta({ ...result, content: stripUnearnedVerification(finalized) }, null),
     );
   } catch (err) {
     respondAiError(err, res, "generate prompt-slides");
+  }
+});
+
+
+/**
+ * The clarifying round that runs before a deck is generated.
+ *
+ * Deliberately NOT routed through `generateContent`: there is no artifact here
+ * to pool, version or retire — just two or three throwaway questions. It runs
+ * on the nano chat model with an 800-token ceiling, so it is noise against the
+ * budget, but it still sits inside the same live-mode/budget/quota guards and
+ * still records its spend.
+ *
+ * Answers "no questions" as an empty list rather than an error, and the client
+ * treats every failure the same way, because a teacher waiting on a deck should
+ * never be blocked by an optional question.
+ */
+generateRouter.post('/generate/prompt-slides/questions', async (req: AuthenticatedRequest, res) => {
+  const reqBody = req.body as Record<string, unknown>;
+  const isAr = reqBody.language === 'arabic';
+  const prompt = typeof reqBody.prompt === 'string' ? reqBody.prompt.trim() : '';
+  if (!prompt) {
+    res.status(400).json({ error: 'prompt is required' });
+    return;
+  }
+  try {
+    assertLiveModeEnabled();
+    await assertUserQuotaAvailable(req.user?.id);
+    assertBudgetAvailable();
+
+    const model = getChatModel();
+    const body = { ...reqBody, prompt };
+    const completion = await openai.chat.completions.create({
+      model,
+      max_completion_tokens: QUESTIONS_TOKENS,
+      messages: [
+        { role: "system", content: systemPrompt(isAr) },
+        { role: "user", content: isAr ? questionsPromptAr(body) : questionsPromptEn(body) },
+      ],
+    });
+    recordUsage(completion.usage, model, {
+      kind: "prompt-slides-questions", promptVersion: PROMPT_VERSION,
+      userId: req.user?.id, artifactId: null,
+    });
+
+    let questions: ReturnType<typeof parseQuestions> = [];
+    try {
+      questions = parseQuestions(extractJSON(completion.choices[0]?.message?.content ?? "{}"));
+    } catch {
+      // Unparseable means no questions, not an error — see this route's header.
+      questions = [];
+    }
+    res.json({ questions });
+  } catch (err) {
+    respondAiError(err, res, "generate prompt-slides questions");
   }
 });
 

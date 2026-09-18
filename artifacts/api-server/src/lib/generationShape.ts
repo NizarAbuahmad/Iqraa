@@ -101,6 +101,66 @@ export class UnusableGenerationError extends Error {
 export function assertUsableGeneration(kind: GenerationKind, parsed: unknown): void {
   const missing = missingFields(kind, parsed);
   if (missing.length > 0) throw new UnusableGenerationError(kind, missing);
+  if (kind === "prompt-slides") assertUsableDeck(parsed);
+}
+
+/** A deck shorter than this is not a lesson, whatever the teacher asked for. */
+const MIN_USABLE_DECK_SLIDES = 5;
+
+/**
+ * The structural floor for a slide deck, on top of the field list above.
+ *
+ * `REQUIRED_FIELDS` can only ask whether `slides` is a non-empty array, so a
+ * deck of one slide reading `{title:"x"}` passed — and a teacher got six blank
+ * cards behind a badge saying live AI had produced them. These are the two
+ * things a deck cannot be usable without, and both are cheap for a working
+ * generation to clear.
+ *
+ * Deliberately only these two. The softer bars — a `teacher` block on every
+ * slide, at least one question, at least one divider — are prompt quality, and
+ * failing a paid generation over them would spend the teacher's money and hand
+ * back nothing. `logDeckShortfalls` reports those instead.
+ */
+export function assertUsableDeck(parsed: unknown): void {
+  const slides = (parsed as { slides?: unknown })?.slides;
+  if (!Array.isArray(slides) || slides.length < MIN_USABLE_DECK_SLIDES) {
+    throw new UnusableGenerationError("prompt-slides", [
+      `slides (need at least ${MIN_USABLE_DECK_SLIDES}, got ${Array.isArray(slides) ? slides.length : 0})`,
+    ]);
+  }
+  const blank = slides.filter(s => {
+    if (s === null || typeof s !== "object" || Array.isArray(s)) return true;
+    const slide = s as Record<string, unknown>;
+    const title = typeof slide.title === "string" ? slide.title.trim() : "";
+    const content = typeof slide.content === "string" ? slide.content.trim() : "";
+    return !title || !content;
+  });
+  if (blank.length > 0) {
+    throw new UnusableGenerationError("prompt-slides", [
+      `${blank.length} of ${slides.length} slides have an empty title or body`,
+    ]);
+  }
+}
+
+/** What a generated deck is missing that is worth knowing but not worth refusing. */
+export function deckShortfalls(parsed: unknown): string[] {
+  const slides = (parsed as { slides?: unknown })?.slides;
+  if (!Array.isArray(slides)) return [];
+  const out: string[] = [];
+  const objects = slides.filter(
+    (s): s is Record<string, unknown> => s !== null && typeof s === "object" && !Array.isArray(s),
+  );
+  const withTeacher = objects.filter(s => !!s.teacher).length;
+  if (withTeacher < objects.length) {
+    out.push(`${objects.length - withTeacher}/${objects.length} slides carry no teacher notes`);
+  }
+  if (!objects.some(s => s.type === "question" || s.type === "challenge")) {
+    out.push("no question or worked-example slide");
+  }
+  if (!objects.some(s => s.type === "divider")) out.push("no divider slide");
+  const thin = objects.filter(s => typeof s.content === "string" && !s.content.includes("\n")).length;
+  if (thin > 0) out.push(`${thin}/${objects.length} slides are a single unbroken line`);
+  return out;
 }
 
 /**
