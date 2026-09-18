@@ -1,0 +1,454 @@
+{
+  "meta": {
+    "grade": "الصف الأول",
+    "grade_en": "Grade 1",
+    "subject": "الرياضيات",
+    "subject_en": "Mathematics",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة الرياضيات الصف الأول الفصل الثاني (g1-math-s2-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ السِّتُّ (6-11، يواصِلُ الكتابُ ترقيمَ الفصلِ الأولِ) ودروسُها التِّسعةُ والعشرونَ من كتاب الطالب في 2026-09-18، بقراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ وصفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF عبرَ PyMuPDF، مع الرجوعِ إِلى الصورةِ المباشِرةِ للصفحةِ عندما فشِلَ الاستخراجُ النَّصِّيُّ (وحدةُ الصَّفحةِ 8 كانَتْ رسومًا فقط، فقُرِئَتْ صورةً). نفسُ سلسلةِ HarperCollins/NCCD المستخدَمةِ في g1MathSem1.ts، وصندوقُ النتاجاتِ لا يزالُ تحتَ عنوانِ «أَتَعَلَّمُ الْيَوْمَ».",
+    "known_gaps": [
+      "main_idea_ar فارغةٌ لكلِّ الدروسِ التِّسعةِ والعشرينَ: هذا الكتابُ لا يطبَعُ صندوقَ «الفِكْرَةُ الرَّئيسَةُ» إطلاقًا، تمامًا كَـ g1MathSem1.ts.",
+      "general_idea_ar وprior_knowledge فارغتانِ لكلِّ الوحداتِ: صفحةُ افتتاحِ كلِّ وحدةٍ تحملُ «أُسْرَتي الْكَريمَةُ» و«مَشْروعُ الْوَحْدَةِ» فقط.",
+      "vocabulary فارغةٌ للدروسِ الَّتي ال تطبَعُ صندوقَ «الْمُصْطَلَحاتِ» المستقلَّ؛ حيثُ وُجِدَ الصندوقُ نُقِلَتْ الأزواجُ العربيّةُ-الإنجليزيّةُ حرفيًّا.",
+      "لا عددَ حصصٍ مطبوعًا لأيِّ درسٍ (periods وtotal_periods = null)."
+    ]
+  },
+  "units": [
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "الْجَمْعُ ضِمْنَ مَنْزِلَتَيْنِ",
+      "title_en": "Addition within Two Digits",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's «أَتَعَلَّمُ الْيَوْمَ» box, bilingual terms from «الْمُصْطَلَحات» where printed; main idea and general idea not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "جَمْعُ الْعَشَراتِ",
+          "title_en": "Adding Tens",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["اسْتِعْمالَ حَقائِقِ الْجَمْعِ لِجَمْعِ الْعَشَراتِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "الْجَمْعُ الذِّهْنِيُّ",
+          "title_en": "Mental Addition",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "جَمْعَ عَدَدٍ مِنْ مَنْزِلَتَيْنِ مَعَ عَدَدٍ مِنْ مَنْزِلَةٍ واحِدَةٍ ذِهْنِيًّا.",
+            "جَمْعَ عَدَدٍ مِنْ مَنْزِلَتَيْنِ مَعَ الْعَشَراتِ ذِهْنِيًّا."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "جَمْعُ عَدَدَيْنِ مِنْ مَنْزِلَتَيْنِ",
+          "title_en": "Adding Two 2-Digit Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["جَمْعَ عَدَدَيْنِ يَتَكَوَّنُ كُلٌّ مِنْهُما مِنْ مَنْزِلَتَيْنِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l4",
+          "order": 4,
+          "title_ar": "خُطَّةُ حَلِّ الْمَسْأَلَةِ: التَّخْمينُ وَالتَّحَقُّقُ",
+          "title_en": "Problem-Solving Plan: Guess and Check",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["حَلَّ مَسائِلَ بِاسْتِعْمالِ خُطَّةِ التَّخْمينِ وَالتَّحَقُّقِ."],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "الطَّرْحُ ضِمْنَ مَنْزِلَتَيْنِ",
+      "title_en": "Subtraction within Two Digits",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's «أَتَعَلَّمُ الْيَوْمَ» box, bilingual terms from «الْمُصْطَلَحات» where printed; main idea and general idea not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "طَرْحُ الْعَشَراتِ",
+          "title_en": "Subtracting Tens",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["اسْتِعْمالَ حَقائِقِ الطَّرْحِ لِطَرْحِ الْعَشَراتِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "الطَّرْحُ الذِّهْنِيُّ",
+          "title_en": "Mental Subtraction",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "طَرْحَ عَدَدٍ مِنْ مَنْزِلَةٍ واحِدَةٍ مِنْ عَدَدٍ مِنْ مَنْزِلَتَيْنِ ذِهْنِيًّا.",
+            "طَرْحَ الْعَشَراتِ مِنْ عَدَدٍ مِنْ مَنْزِلَتَيْنِ ذِهْنِيًّا."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "طَرْحُ عَدَدَيْنِ مِنْ مَنْزِلَتَيْنِ",
+          "title_en": "Subtracting Two 2-Digit Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["طَرْحَ عَدَدَيْنِ يَتَكَوَّنُ كُلٌّ مِنْهُما مِنْ مَنْزِلَتَيْنِ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l4",
+          "order": 4,
+          "title_ar": "مَهارَةُ حَلِّ الْمَسْأَلَةِ: اخْتِيارُ الْعَمَلِيَّةِ",
+          "title_en": "Problem-Solving Skill: Choosing the Operation",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["اخْتِيارَ الْعَمَلِيَّةِ الْمُناسِبَةِ لِحَلِّ مَسْأَلَةٍ حَياتِيَّةٍ."],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "الْأَشْكالُ الْهَنْدَسِيَّةُ",
+      "title_en": "Geometric Shapes",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's «أَتَعَلَّمُ الْيَوْمَ» box, bilingual terms from «الْمُصْطَلَحات» where printed; main idea and general idea not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "الْمُجَسَّماتُ",
+          "title_en": "Solid Figures",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["الْمُجَسَّماتِ."],
+          "vocabulary": [
+            { "ar": "مُجَسَّمات", "en": "solid figures" },
+            { "ar": "هَرَم", "en": "pyramid" },
+            { "ar": "أُسْطُوانَة", "en": "cylinder" },
+            { "ar": "مُتَوازي مُسْتَطيلات", "en": "rectangular prism" },
+            { "ar": "مَخْروط", "en": "cone" },
+            { "ar": "مُكَعَّب", "en": "cube" },
+            { "ar": "كُرَة", "en": "sphere" }
+          ]
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "الْأَشْكالُ الْمُسْتَوِيَةُ",
+          "title_en": "Plane Figures",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["الْأَشْكالَ الْمُسْتَوِيَةَ."],
+          "vocabulary": [
+            { "ar": "شَكْلٌ مُسْتَوٍ", "en": "plane figures" },
+            { "ar": "مُثَلَّث", "en": "triangle" },
+            { "ar": "مُرَبَّع", "en": "square" },
+            { "ar": "مُسْتَطيل", "en": "rectangle" },
+            { "ar": "دائِرَة", "en": "circle" }
+          ]
+        },
+        {
+          "id": "u8_l3",
+          "order": 3,
+          "title_ar": "أَضْلاعُ الْأَشْكالِ الْمُسْتَوِيَةِ وَرُؤوسُها",
+          "title_en": "Sides and Vertices of Plane Figures",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["أَضْلاعَ وَرُؤوسَ الْأَشْكالِ الْمُسْتَوِيَةِ، وَتَحْديدَ عَدَدِها."],
+          "vocabulary": [
+            { "ar": "ضِلْع", "en": "side" },
+            { "ar": "رَأْس", "en": "vertex" }
+          ]
+        },
+        {
+          "id": "u8_l4",
+          "order": 4,
+          "title_ar": "الْأَنْماطُ الْهَنْدَسِيَّةُ",
+          "title_en": "Geometric Patterns",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَمْييزَ النَّمَطِ الْهَنْدَسِيِّ، وَتَحْديدَ وَحْدَتِهِ."],
+          "vocabulary": [
+            { "ar": "النَّمَط", "en": "pattern" },
+            { "ar": "وَحْدَةُ النَّمَطِ", "en": "pattern unit" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_ar": "الْكُسورُ",
+      "title_en": "Fractions",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's «أَتَعَلَّمُ الْيَوْمَ» box, bilingual terms from «الْمُصْطَلَحات» where printed; main idea and general idea not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_ar": "الْأَجْزاءُ الْمُتَطابِقَةُ",
+          "title_en": "Equal Parts",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["مَفْهومَ (الْأَجْزاءُ الْمُتَطابِقَةُ)."],
+          "vocabulary": [
+            { "ar": "الْكُلّ", "en": "whole" },
+            { "ar": "الْأَجْزاءُ الْمُتَطابِقَةُ", "en": "equal part" }
+          ]
+        },
+        {
+          "id": "u9_l2",
+          "order": 2,
+          "title_ar": "النِّصْفُ",
+          "title_en": "Half",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["مَفْهومَ النِّصْفِ."],
+          "vocabulary": [
+            { "ar": "الْكَسْر", "en": "fraction" },
+            { "ar": "النِّصْف", "en": "one half" }
+          ]
+        },
+        {
+          "id": "u9_l3",
+          "order": 3,
+          "title_ar": "الرُّبْعُ",
+          "title_en": "Quarter",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["مَفْهومَ الرُّبْعِ."],
+          "vocabulary": [{ "ar": "الرُّبْع", "en": "one fourth" }]
+        },
+        {
+          "id": "u9_l4",
+          "order": 4,
+          "title_ar": "الْكَسْرُ كَجُزْءٍ مِنْ مَجْموعَةٍ",
+          "title_en": "Fraction as Part of a Set",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["مَفْهومَ الْكَسْرِ كَجُزْءٍ مِنْ مَجْموعَةٍ."],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u10",
+      "number": 10,
+      "title_ar": "الزَّمَنُ وَالنُّقودُ",
+      "title_en": "Time and Money",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's «أَتَعَلَّمُ الْيَوْمَ» box, bilingual terms from «الْمُصْطَلَحات» where printed; main idea and general idea not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u10_l1",
+          "order": 1,
+          "title_ar": "أَيّامُ الْأُسْبوعِ",
+          "title_en": "Days of the Week",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["كِتابَةَ أَيّامِ الْأُسْبوعِ، وَتَرْتيبَها بَدْءًا بِأَحَدِها."],
+          "vocabulary": [
+            { "ar": "أَمْس", "en": "yesterday" },
+            { "ar": "غَدًا", "en": "tomorrow" },
+            { "ar": "أُسْبوع", "en": "week" }
+          ]
+        },
+        {
+          "id": "u10_l2",
+          "order": 2,
+          "title_ar": "تَرْتيبُ الْأَعْمالِ الْيَوْمِيَّةِ",
+          "title_en": "Sequencing Daily Activities",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَرْتيبَ أَعْمالِيَ الْيَوْمِيَّةِ وَفْقًا لِأَوْقاتِ حُدوثِها."],
+          "vocabulary": [
+            { "ar": "صَباحًا", "en": "morning" },
+            { "ar": "ظُهْرًا", "en": "afternoon" },
+            { "ar": "مَساءً", "en": "evening" }
+          ]
+        },
+        {
+          "id": "u10_l3",
+          "order": 3,
+          "title_ar": "الْوَقْتُ بِالسّاعاتِ الْكامِلَةِ",
+          "title_en": "Time to the Hour",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِراءَةَ الْوَقْتِ بِالسّاعَةِ الْكامِلَةِ في السّاعَةِ ذاتِ الْعَقارِبِ، وَالسّاعَةِ الرَّقْمِيَّةِ."],
+          "vocabulary": [
+            { "ar": "السّاعَةُ ذاتُ الْعَقارِبِ", "en": "analog clock" },
+            { "ar": "السّاعَةُ الرَّقْمِيَّة", "en": "digital clock" },
+            { "ar": "عَقْرَبُ السّاعاتِ", "en": "hour hand" },
+            { "ar": "عَقْرَبُ الدَّقائِقِ", "en": "minute hand" },
+            { "ar": "السّاعَة", "en": "hour" }
+          ]
+        },
+        {
+          "id": "u10_l4",
+          "order": 4,
+          "title_ar": "الْوَقْتُ بِنِصْفِ السّاعَةِ",
+          "title_en": "Time to the Half Hour",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِراءَةَ الْوَقْتِ بِنِصْفِ السّاعَةِ في السّاعَةِ ذاتِ الْعَقارِبِ، وَالسّاعَةِ الرَّقْمِيَّةِ."],
+          "vocabulary": [{ "ar": "نِصْفُ ساعَةٍ", "en": "half hour" }]
+        },
+        {
+          "id": "u10_l5",
+          "order": 5,
+          "title_ar": "الْقِطَعُ النَّقْدِيَّةُ",
+          "title_en": "Coins",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تَمْييزَ الْقِطَعِ النَّقْدِيَّةِ الْأُرْدُنِيَّةِ (قِرْش، 5 قُروشٍ، 10 قُروشٍ، 25 قِرْشًا، 50 قِرْشًا).",
+            "إيجادَ الْمَبْلَغِ الَّذي يَتَكَوَّنُ مِنْ عَدَدٍ مِنَ الْقِطَعِ النَّقْدِيَّةِ."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l6",
+          "order": 6,
+          "title_ar": "الْقِطَعُ النَّقْدِيَّةُ الْمُتَساوِيَةُ",
+          "title_en": "Equivalent Amounts of Money",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["تَمْثيلَ مَبْلَغٍ مِنَ النُّقودِ بِطَرائِقَ مُخْتَلِفَةٍ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l7",
+          "order": 7,
+          "title_ar": "اسْتِعْمالُ الْقِطَعِ النَّقْدِيَّةِ",
+          "title_en": "Using Coins",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["إيجادَ قيمَةِ مَجْموعَةٍ مِنَ الْقِطَعِ النَّقْدِيَّةِ لِتَحْديدِ إِمْكانِيَّةِ شِراءِ شَيْءٍ ما."],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u11",
+      "number": 11,
+      "title_ar": "الْقِياسُ",
+      "title_en": "Measurement",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: objectives from each lesson's «أَتَعَلَّمُ الْيَوْمَ» box, bilingual terms from «الْمُصْطَلَحات» where printed; main idea and general idea not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u11_l1",
+          "order": 1,
+          "title_ar": "مُقارَنَةُ الْأَطْوالِ وَتَرْتيبُها",
+          "title_en": "Comparing and Ordering Lengths",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "الْمُقارَنَةَ بَيْنَ أَطْوالِ الْأَشْياءِ.",
+            "تَرْتيبَ ثَلاثَةِ أَشْياءَ تَصاعُدِيًّا أَوْ تَنازُلِيًّا بِحَسَبِ أَطْوالِها."
+          ],
+          "vocabulary": [
+            { "ar": "الْأَطْوَل", "en": "the longest" },
+            { "ar": "الْأَقْصَر", "en": "the shortest" }
+          ]
+        },
+        {
+          "id": "u11_l2",
+          "order": 2,
+          "title_ar": "وَحَداتُ الطّولِ غَيْرُ الْقِياسِيَّةِ",
+          "title_en": "Non-Standard Units of Length",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِياسَ أَطْوالِ الْأَشْياءِ بِاسْتِعْمالِ وَحَداتٍ غَيْرِ قِياسِيَّةٍ."],
+          "vocabulary": [
+            { "ar": "قِياس", "en": "measure" },
+            { "ar": "وَحْدَةُ قِياسٍ", "en": "unit" }
+          ]
+        },
+        {
+          "id": "u11_l3",
+          "order": 3,
+          "title_ar": "مُقارَنَةُ الْكُتَلِ وَتَرْتيبُها",
+          "title_en": "Comparing and Ordering Mass",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "الْمُقارَنَةَ بَيْنَ كُتَلِ الْأَشْياءِ.",
+            "تَرْتيبَ ثَلاثَةِ أَشْياءَ تَصاعُدِيًّا أَوْ تَنازُلِيًّا بِحَسَبِ كُتَلِها."
+          ],
+          "vocabulary": [
+            { "ar": "الْأَثْقَل", "en": "the heaviest" },
+            { "ar": "الْأَخَفّ", "en": "the lightest" }
+          ]
+        },
+        {
+          "id": "u11_l4",
+          "order": 4,
+          "title_ar": "وَحَداتُ الْكُتْلَةِ غَيْرُ الْقِياسِيَّةِ",
+          "title_en": "Non-Standard Units of Mass",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِياسَ كُتَلِ الْأَشْياءِ بِاسْتِعْمالِ وَحَداتٍ غَيْرِ قِياسِيَّةٍ."],
+          "vocabulary": []
+        },
+        {
+          "id": "u11_l5",
+          "order": 5,
+          "title_ar": "مُقارَنَةُ السَّعاتِ وَتَرْتيبُها",
+          "title_en": "Comparing and Ordering Capacity",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "الْمُقارَنَةَ بَيْنَ الْأَشْياءِ مِنْ حَيْثُ السَّعَةُ.",
+            "تَرْتيبَ ثَلاثَةِ أَوْعِيَةٍ تَصاعُدِيًّا أَوْ تَنازُلِيًّا بِحَسَبِ سَعَةِ كُلٍّ مِنْها."
+          ],
+          "vocabulary": [
+            { "ar": "الْأَكْثَرُ سَعَةً", "en": "holds the most" },
+            { "ar": "الْأَقَلُّ سَعَةً", "en": "holds the least" }
+          ]
+        },
+        {
+          "id": "u11_l6",
+          "order": 6,
+          "title_ar": "وَحَداتُ السَّعَةِ غَيْرُ الْقِياسِيَّةِ",
+          "title_en": "Non-Standard Units of Capacity",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": ["قِياسَ سَعَةِ الْأَشْياءِ بِاسْتِعْمالِ وَحَداتٍ غَيْرِ قِياسِيَّةٍ."],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
