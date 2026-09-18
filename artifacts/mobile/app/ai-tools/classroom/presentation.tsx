@@ -32,6 +32,7 @@ import { plotGeometry, visualForSlide } from '@/services/deckVisuals';
 // Shared with both exports so the projected slide and the exported one cannot
 // disagree about what a bullet, an equation or a section glyph is.
 import { isBulletLine, isEnglishSlideContent, looksLikeEquation, splitEmoji, stripBullet } from '@/services/deckText';
+import { resolveSlideLayout } from '@/services/slideLayout';
 import { openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
 import {
@@ -580,6 +581,101 @@ function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: bo
   const edge = isRTL ? ('flex-end' as const) : ('flex-start' as const);
   const lines = slide.content.split('\n').map(l => l.trim()).filter(Boolean);
   const [glyph, heading] = splitEmoji(slide.title);
+
+  // A slide that asked to be drawn in a particular shape. Sits above the cover
+  // check because a deck's first slide can legitimately be a statement, and
+  // below the dispatch's hero/divider branch, which still wins. `null` means
+  // either no layout was asked for or its data was too thin to draw, and both
+  // fall through to the ordinary heading-plus-body grid below.
+  const layout = resolveSlideLayout(slide);
+  if (layout) {
+    return (
+      <View style={slideStyles.cover}>
+        {layout.kind === 'statement' && (
+          <>
+            <Text style={[slideStyles.coverTitle, { color: accent, textAlign: align, writingDirection: dir }]}>
+              {isolateForeignRuns(layout.text)}
+            </Text>
+            <View style={[slideStyles.rule, { alignSelf: edge, backgroundColor: accent }]} />
+            {heading ? (
+              <Text style={[slideStyles.coverSub, { textAlign: align, writingDirection: dir }]}>
+                {isolateForeignRuns(heading)}
+              </Text>
+            ) : null}
+          </>
+        )}
+
+        {layout.kind === 'stat' && (
+          <>
+            <Text style={[slideStyles.statValue, { color: accent, textAlign: align }]}>
+              {isolateForeignRuns(layout.value)}
+            </Text>
+            <View style={[slideStyles.rule, { alignSelf: edge, backgroundColor: accent }]} />
+            <Text style={[slideStyles.statLabel, { textAlign: align, writingDirection: dir }]}>
+              {isolateForeignRuns(layout.label)}
+            </Text>
+            {layout.source ? (
+              <Text style={[slideStyles.statSource, { textAlign: align, writingDirection: dir }]}>
+                {isolateForeignRuns(layout.source)}
+              </Text>
+            ) : null}
+          </>
+        )}
+
+        {layout.kind === 'compare' && (
+          <>
+            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 18 }]}>
+              {isolateForeignRuns(heading)}
+            </Text>
+            <View style={[slideStyles.compareRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              {([[layout.leftTitle, layout.left], [layout.rightTitle, layout.right]] as const).map(
+                ([colTitle, items], col) => (
+                  <View key={col} style={[slideStyles.compareCol, { borderColor: col === 0 ? accent : BORDER }]}>
+                    <Text style={[slideStyles.compareHead, {
+                      color: col === 0 ? accent : TEXT_MUTED, textAlign: align, writingDirection: dir,
+                    }]}>
+                      {isolateForeignRuns(colTitle)}
+                    </Text>
+                    {items.map((item, i) => (
+                      <Text
+                        key={i}
+                        style={[slideStyles.compareItem, { textAlign: align, writingDirection: dir }]}
+                      >
+                        {isolateForeignRuns(item)}
+                      </Text>
+                    ))}
+                  </View>
+                ),
+              )}
+            </View>
+          </>
+        )}
+
+        {layout.kind === 'steps' && (
+          <>
+            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 18 }]}>
+              {isolateForeignRuns(heading)}
+            </Text>
+            <View style={{ gap: 14, alignSelf: 'stretch' }}>
+              {layout.steps.map((step, i) => (
+                <View
+                  key={i}
+                  style={[slideStyles.stepRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                >
+                  <View style={[slideStyles.stepNum, { backgroundColor: accent }]}>
+                    <Text style={slideStyles.stepNumText}>{i + 1}</Text>
+                  </View>
+                  <Text style={[slideStyles.stepText, { textAlign: align, writingDirection: dir }]}>
+                    {isolateForeignRuns(step)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+      </View>
+    );
+  }
 
   // Slide 1 is the deck's cover: the title *is* the slide, so it gets a display
   // treatment instead of the heading-plus-body grid every other slide uses.
@@ -1436,6 +1532,24 @@ const slideStyles = StyleSheet.create({
   coverTitle: { fontSize: 40, lineHeight: 62, color: ACCENT },
   coverSub: { fontSize: 20, lineHeight: 34, color: TEXT_MUTED, marginBottom: 6 },
   rule: { width: 64, height: 5, borderRadius: 3, backgroundColor: PINK, marginTop: 14, marginBottom: 24 },
+  // ─── Layout shapes (services/slideLayout.ts) ────────────────────────────────
+  // Sized against the existing display type: `codeValue` is 48pt and is the
+  // deck's precedent for a number meant to be read from the back of a room,
+  // so a stat goes larger still and its caption sits at cover-subtitle size.
+  statValue: { fontSize: 96, lineHeight: 120, fontFamily: 'Cairo_700Bold' },
+  statLabel: { fontSize: 26, lineHeight: 42, color: TEXT_PRIMARY, fontFamily: 'Cairo_600SemiBold' },
+  statSource: { fontSize: 15, lineHeight: 26, color: TEXT_MUTED, fontFamily: 'Almarai_400Regular', marginTop: 10 },
+  compareRow: { gap: 18, alignSelf: 'stretch' },
+  compareCol: {
+    flex: 1, borderWidth: 2, borderRadius: 18, padding: 20, gap: 12,
+    backgroundColor: CARD_BG,
+  },
+  compareHead: { fontSize: 22, lineHeight: 34, fontFamily: 'Cairo_700Bold' },
+  compareItem: { fontSize: 19, lineHeight: 32, color: TEXT_PRIMARY, fontFamily: 'Almarai_400Regular' },
+  stepRow: { alignItems: 'center', gap: 16 },
+  stepNum: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  stepNumText: { fontSize: 22, color: '#fff', fontFamily: 'Cairo_700Bold' },
+  stepText: { flex: 1, fontSize: 22, lineHeight: 36, color: TEXT_PRIMARY, fontFamily: 'Almarai_400Regular' },
   headRow: { alignItems: 'center', gap: 12 },
   glyphChip: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   glyph: { fontSize: 21 },

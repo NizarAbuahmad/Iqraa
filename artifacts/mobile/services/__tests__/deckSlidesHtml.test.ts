@@ -447,3 +447,75 @@ describe('buildDeckSlidesHTML — whole-class MCQ slides', () => {
     assert.doesNotMatch(unverified, /deck-verified/);
   });
 });
+
+describe('buildDeckSlidesHTML — slide layouts', () => {
+  const base: ActivitySlide = {
+    slideNumber: 2, type: 'intro', title: 'الفكرة', content: '', durationSeconds: 0,
+  };
+  const render = (slide: ActivitySlide) =>
+    markup(buildDeckSlidesHTML(deck([titleSlide, slide]), true));
+
+  it('draws a statement as one display line, not a bullet card', () => {
+    const html = render({ ...base, layout: 'statement', content: 'الكسر جزء من كلّ' });
+    assert.match(html, /deck-statement-text/);
+    assert.match(stripIsolates(html), /الكسر جزء من كلّ/);
+    assert.doesNotMatch(html, /deck-card/);
+  });
+
+  it('draws a stat as a figure over its label', () => {
+    const html = render({
+      ...base, layout: 'stat', stat: { value: '٩٫٨', label: 'تسارع الجاذبية', source: 'الكتاب' },
+    });
+    assert.match(html, /deck-stat-value/);
+    assert.match(stripIsolates(html), /٩٫٨/);
+    assert.match(stripIsolates(html), /تسارع الجاذبية/);
+    assert.match(stripIsolates(html), /الكتاب/);
+  });
+
+  it('omits the source line when there is none', () => {
+    const html = render({ ...base, layout: 'stat', stat: { value: '3', label: 'قوانين نيوتن' } });
+    assert.doesNotMatch(html, /deck-stat-source/);
+  });
+
+  it('draws a comparison as two titled columns', () => {
+    const html = render({
+      ...base, layout: 'compare',
+      compare: { leftTitle: 'قبل', left: ['بطيء'], rightTitle: 'بعد', right: ['أسرع', 'أوضح'] },
+    });
+    assert.equal((html.match(/deck-compare-col/g) ?? []).length, 2);
+    assert.equal((html.match(/deck-compare-item/g) ?? []).length, 3);
+    assert.match(stripIsolates(html), /قبل/);
+    assert.match(stripIsolates(html), /أوضح/);
+  });
+
+  it('numbers the steps rather than bulleting them', () => {
+    const html = render({ ...base, layout: 'steps', content: '• اقرأ\n• احسب\n• تحقّق' });
+    assert.equal((html.match(/deck-step-num/g) ?? []).length, 3);
+    assert.match(html, />1</);
+    assert.match(html, />3</);
+    assert.doesNotMatch(html, /deck-card/);
+  });
+
+  it('falls back to the ordinary slide when a layout has no data to draw', () => {
+    // Half a comparison on a wall in front of a class is worse than a plain
+    // slide, so `resolveSlideLayout` refuses and the chain carries on.
+    const html = render({
+      ...base, layout: 'compare', content: '• سطر\n• سطر',
+      compare: { leftTitle: 'قبل', left: [], rightTitle: 'بعد', right: ['أسرع'] },
+    });
+    assert.doesNotMatch(html, /deck-compare-col/);
+    assert.match(html, /deck-card/);
+  });
+
+  it('renders a layout it has never heard of as an ordinary slide', () => {
+    const html = render({ ...base, layout: 'hologram' as never, content: '• سطر\n• سطر آخر' });
+    assert.match(html, /deck-card/);
+  });
+
+  it('leaves every slide without a layout exactly as it was', () => {
+    const plain: ActivitySlide = { ...base, content: '• سطر\n• سطر آخر' };
+    const before = markup(buildDeckSlidesHTML(deck([titleSlide, plain]), true));
+    assert.match(before, /deck-card/);
+    assert.doesNotMatch(before, /deck-statement|deck-stat-value|deck-compare-col|deck-step-num/);
+  });
+});

@@ -21,6 +21,7 @@ import { File, Paths } from 'expo-file-system';
 
 import { visualForSlide } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, stripBullet } from './deckText.ts';
+import { resolveSlideLayout } from './slideLayout.ts';
 import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { mathLineToUnicode, prettifySymPy } from '@/services/mathRender';
 import { trackEvent } from '@/services/analytics';
@@ -275,6 +276,94 @@ export async function exportDeckAsPptx(
     s.addShape('rect', {
       x: isAr ? 8.55 : 0.55, y: 0.78, w: 0.9, h: 0.05, fill: { color: accent },
     });
+
+    // A slide that asked to be drawn in one of the shapes from
+    // `services/slideLayout.ts`. Sits above the type branches for the same
+    // reason it does in the other two renderers: a layout is about drawing,
+    // the types below are about content. `null` — no layout, or one whose data
+    // was too thin — falls through untouched.
+    const layout = resolveSlideLayout(slide);
+    if (layout) {
+      if (layout.kind === 'statement') {
+        s.addText(layout.text, {
+          x: 0.55, y: 1.6, w: 8.9, h: 2.2, align: rtlAlign, valign: 'middle',
+          fontSize: 40, color: accent, bold: true, fontFace: HEAD_FONT,
+        });
+        s.addShape('rect', {
+          x: isAr ? 8.55 : 0.55, y: 3.9, w: 0.9, h: 0.05, fill: { color: accent },
+        });
+        continue;
+      }
+
+      if (layout.kind === 'stat') {
+        s.addText(layout.value, {
+          x: 0.55, y: 1.3, w: 8.9, h: 1.6, align: rtlAlign, valign: 'bottom',
+          fontSize: 88, color: accent, bold: true, fontFace: HEAD_FONT,
+        });
+        s.addShape('rect', {
+          x: isAr ? 8.55 : 0.55, y: 3.05, w: 0.9, h: 0.05, fill: { color: accent },
+        });
+        s.addText(layout.label, {
+          x: 0.55, y: 3.25, w: 8.9, h: 0.9, align: rtlAlign, valign: 'top',
+          fontSize: 22, color: DECK_TEXT, bold: true, fontFace: HEAD_FONT,
+        });
+        if (layout.source) {
+          s.addText(layout.source, {
+            x: 0.55, y: 4.2, w: 8.9, h: 0.5, align: rtlAlign, valign: 'top',
+            fontSize: 12, color: DECK_MUTED, fontFace: BODY_FONT,
+          });
+        }
+        continue;
+      }
+
+      if (layout.kind === 'compare') {
+        // Columns follow the reading order: in an Arabic deck the first column
+        // belongs on the right, and pptx positions absolutely, so the swap is
+        // done here rather than by any direction flag.
+        const cols: [string, string[], boolean][] = [
+          [layout.leftTitle, layout.left, true],
+          [layout.rightTitle, layout.right, false],
+        ];
+        cols.forEach(([colTitle, items, primary], idx) => {
+          const order = isAr ? cols.length - 1 - idx : idx;
+          const x = 0.55 + order * 4.55;
+          s.addShape('roundRect', {
+            x, y: 1.05, w: 4.35, h: 4.05,
+            fill: { color: DECK_CARD }, line: { color: primary ? accent : DECK_BORDER, width: 1.5 },
+            rectRadius: 0.12,
+          });
+          s.addText(colTitle, {
+            x: x + 0.25, y: 1.25, w: 3.85, h: 0.5, align: rtlAlign, valign: 'middle',
+            fontSize: 18, color: primary ? accent : DECK_MUTED, bold: true, fontFace: HEAD_FONT,
+          });
+          s.addText(items.map(i => `• ${i}`).join('\n'), {
+            x: x + 0.25, y: 1.85, w: 3.85, h: 3.05, align: rtlAlign, valign: 'top',
+            fontSize: 14, color: DECK_TEXT, fontFace: BODY_FONT, lineSpacingMultiple: 1.4,
+          });
+        });
+        continue;
+      }
+
+      // steps
+      const STEP_TOP = 1.15;
+      const STEP_H = Math.min(0.72, 3.9 / Math.max(layout.steps.length, 1));
+      layout.steps.forEach((step, i) => {
+        const y = STEP_TOP + i * (STEP_H + 0.12);
+        const numX = isAr ? 8.85 : 0.55;
+        s.addShape('ellipse', {
+          x: numX, y, w: 0.5, h: 0.5, fill: { color: accent },
+        });
+        s.addText(String(i + 1), {
+          x: numX, y, w: 0.5, h: 0.5, align: 'center', valign: 'middle',
+          fontSize: 16, color: 'FFFFFF', bold: true, fontFace: HEAD_FONT,
+        });
+        s.addText(step, {
+          x: isAr ? 0.55 : 1.2, y, w: 8.2, h: STEP_H, align: rtlAlign, valign: 'middle',
+          fontSize: 16, color: DECK_TEXT, fontFace: BODY_FONT,
+        });
+      });
+      continue;
+    }
 
     if (slide.type === 'graph') {
       const [context] = slide.content.split('\n\n');

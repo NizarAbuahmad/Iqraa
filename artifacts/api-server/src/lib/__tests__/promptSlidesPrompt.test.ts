@@ -136,6 +136,28 @@ describe("promptSlidesPrompt — the rules that stop empty decks", () => {
     });
   }
 
+  for (const [label, build] of BOTH) {
+    const prompt = build(baseBody);
+
+    it(`${label}: offers every layout the renderers can draw`, () => {
+      // A layout the prompt asks for but no renderer knows would fall back to
+      // an ordinary slide forever, invisibly. These four are the set in
+      // services/slideLayout.ts.
+      for (const layout of ["statement", "stat", "compare", "steps"]) {
+        assert.match(prompt, new RegExp(`"${layout}"`), `${layout} is never offered`);
+      }
+    });
+
+    it(`${label}: gives the stat layout an honesty bar`, () => {
+      // Left alone, a model will happily invent «73% من الطلبة» and project it.
+      assert.match(prompt, /لا تخترع إحصاءات|Never invent statistics/);
+    });
+
+    it(`${label}: caps how much of the deck wears a special shape`, () => {
+      assert.match(prompt, /أكثر من نصف|no more than half/);
+    });
+  }
+
   it("no longer tells the model to withhold content the teacher did not ask for", () => {
     // This single line capped every deck's richness at the teacher's own
     // terseness — a two-line description bought a two-line deck.

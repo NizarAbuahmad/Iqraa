@@ -355,6 +355,25 @@ export interface ActivitySlide {
   /** Book and page for `sideImageUrl`, same provenance rule as `mediaCaption`. */
   sideImageCaption?: string;
   /**
+   * How to DRAW this slide — deliberately separate from `type`, which says
+   * what the slide IS.
+   *
+   * Every teaching slide in every deck used to render as a title above a
+   * column of bullets, so two tools producing genuinely different content
+   * still produced decks that looked identical. A layout changes only the
+   * drawing, so `type` keeps driving timers, answer keys, video placement and
+   * accent colour exactly as before, and a renderer that has not learned a
+   * layout yet falls back to the ordinary one instead of drawing nothing.
+   *
+   * `services/slideLayout.ts` decides whether a layout's data is complete
+   * enough to draw; all three renderers ask it rather than checking fields.
+   */
+  layout?: 'statement' | 'stat' | 'compare' | 'steps';
+  /** The figure and its caption, for `layout: 'stat'`. */
+  stat?: { value: string; label: string; source?: string };
+  /** The two sides, for `layout: 'compare'`. */
+  compare?: { leftTitle: string; left: string[]; rightTitle: string; right: string[] };
+  /**
    * A short English photo-search phrase the generator asked for on this slide.
    *
    * Only `/generate/prompt-slides` emits it, and it is a REQUEST, not content:
