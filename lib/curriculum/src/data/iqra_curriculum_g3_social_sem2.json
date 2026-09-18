@@ -1,0 +1,187 @@
+{
+ "meta": {
+  "grade": "الصف الثالث",
+  "grade_en": "Grade 3",
+  "subject": "الدراسات الاجتماعية",
+  "subject_en": "Social Studies",
+  "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+  "semester_covered": 2,
+  "schema_version": "1.0",
+  "source_books": [
+   "كتاب الطالب لمادة الدراسات الاجتماعية الصف الثالث الفصل الثاني (g3-social-s2-student-book)"
+  ],
+  "provenance_note": "نُقِلَتِ الوَحَداتُ الثَّلاثُ وَدُروسُها التِّسْعَةُ مِنْ كِتابِ الطّالِبِ في 2026-09-18، بِقِراءَةِ نَصِّ الكِتابِ كامِلًا مِنْ مَلَفِّ PDF مُباشَرَةً (PyMuPDF) — اسْتِخْراجٌ نَظيفٌ لِهذا الكِتابِ، بِخِلافِ الفَصْلِ الأَوَّلِ الَّذي طُبِعَ بِخَطٍّ يُنْتِجُ أَشْكالَ عَرْضٍ حَرْفِيَّةً مَقْلوبَةً. أَرْقامُ الوَحَداتِ (4، 5، 6) مَطْبوعَةٌ في الكِتابِ نَفْسِهِ، مُتابِعَةً تَرْقيمَ الفَصْلِ الأَوَّلِ (1-3). لِكُلِّ وَحْدَةٍ: title_ar مِنْ صَفْحَةِ افْتِتاحِ الوَحْدَةِ، وَ general_idea_ar مِنْ صُنْدوقِ «الفِكْرَةُ العامَّةُ». وَلِكُلِّ دَرْسٍ: title_ar مِنْ تَرْويسَةِ الدَّرْسِ، وَ main_idea_ar مِنْ صُنْدوقِ «الفِكْرَةُ الرَّئيسَةُ»، وَ vocabulary مِنْ صُنْدوقِ «المَفاهيمُ وَالمُصْطَلَحاتُ» بِنَفْسِ اتِّفاقِيَّةِ الفَصْلِ الأَوَّلِ.",
+  "known_gaps": [
+   "مُصْطَلَحُ «Buying» في الدَّرْسِ u4_l2 طُبِعَ بِحُروفٍ مَبْعَثَرَةٍ («الرِّشِّاءُ» بَدَلًا مِنْ «الشِّراءُ») — نَفْسُ فَخِّ تَبَعْثُرِ الحُروفِ الموَثَّقِ في g4VocationalSem2 (رُموزٌ صَحيحَةٌ بِتَرْتيبٍ مُخْتَلٍّ، مَقْروءَةٌ يَدَوِيًّا)؛ صُحِّحَتْ يَدَوِيًّا إِلى «الشِّراءُ» هُنا.",
+   "objectives و periods و total_periods فارِغَةٌ (null) لِكُلِّ الدُّروسِ وَالوَحَداتِ: لا يَطْبَعُ الكِتابُ صُنْدوقَ «نَتاجاتُ التَّعَلُّمِ» وَلا عَدَدَ الحِصَصِ.",
+   "prior_knowledge فارِغَةٌ لِكُلِّ الوَحَداتِ: لا يَطْبَعُ الكِتابُ صُنْدوقَ «تَعَلَّمْتُ سابِقًا» في مُفْتَتَحِ الوَحْدَةِ.",
+   "title_en لِكُلِّ وَحْدَةٍ وَدَرْسٍ تَرْجَمَةٌ، لا نَصٌّ مَطْبوعٌ."
+  ]
+ },
+ "units": [
+  {
+   "id": "u4",
+   "number": 4,
+   "title_ar": "حَياتُنا بَيْنَ الْماضي وَالْحاضِرِ",
+   "title_en": "Our Life Between Past and Present",
+   "general_idea_ar": "يَسْعى الإنْسانُ دائِمًا إلى تَطْويرِ الأَدَواتِ وَالوَسائِلِ الَّتي تُسَهِّلُ حَياتَهُ.",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u4_l1",
+     "order": 1,
+     "title_ar": "التَّطَوُّرُ في وَطَني",
+     "title_en": "Development in My Homeland",
+     "main_idea_ar": "مَظاهِرُ التَّطَوُّرِ في وَطَني.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "التَّطَوُّرُ", "en": "Development" },
+      { "ar": "الماضي", "en": "Past" },
+      { "ar": "الحاضِرُ", "en": "Present" },
+      { "ar": "التَّحَوُّلُ الرَّقْمِيُّ", "en": "Digital Transformation" }
+     ]
+    },
+    {
+     "id": "u4_l2",
+     "order": 2,
+     "title_ar": "تَطَوُّرُ التِّجارَةِ في وَطَني",
+     "title_en": "Development of Trade in My Homeland",
+     "main_idea_ar": "تَطَوُّرُ التِّجارَةِ وَتَنَوُّعُها في وَطَني.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "التِّجارَةُ", "en": "Commerce" },
+      { "ar": "الْبَيْعُ", "en": "Selling" },
+      { "ar": "الشِّراءُ", "en": "Buying" }
+     ]
+    },
+    {
+     "id": "u4_l3",
+     "order": 3,
+     "title_ar": "الإنْتاجُ وَالاسْتِهْلاكُ",
+     "title_en": "Production and Consumption",
+     "main_idea_ar": "الإنْتاجُ هُوَ نَشاطٌ يَسْتَخْدِمُ الْمَوادَّ الْمُتاحَةَ؛ لِتَحْويلِها إِلى سِلَعٍ أَوْ خِدْماتٍ تُلَبّي حاجاتِ النّاسِ وَرَغَباتِهِمْ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "الإنْتاجُ", "en": "Production" },
+      { "ar": "الاسْتِهْلاكُ", "en": "Consumption" }
+     ]
+    },
+    {
+     "id": "u4_l4",
+     "order": 4,
+     "title_ar": "الْمُسْتَهْلِكُ الذَّكِيُّ",
+     "title_en": "The Smart Consumer",
+     "main_idea_ar": "الاسْتِهْلاكُ هُوَ اسْتِخْدامُ السِّلَعِ أَوِ الخِدْماتِ لِإشْباعِ حاجاتِ الإنْسانِ وَرَغَباتِهِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "السِّلَعُ", "en": "Goods" },
+      { "ar": "الدَّخْلُ", "en": "Income" }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "u5",
+   "number": 5,
+   "title_ar": "الْمَعالِمُ الطَّبيعِيَّةُ لِسَطْحِ الأَرْضِ",
+   "title_en": "Natural Landmarks of the Earth's Surface",
+   "general_idea_ar": "تَتَنَوَّعُ الْمَعالِمُ الطَّبيعِيَّةُ لِسَطْحِ الأَرْضِ.",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u5_l1",
+     "order": 1,
+     "title_ar": "سَطْحُ الأَرْضِ وَمَعالِمُهُ الطَّبيعِيَّةُ",
+     "title_en": "The Earth's Surface and Its Natural Landmarks",
+     "main_idea_ar": "يَتَكَوَّنُ سَطْحُ الأَرْضِ مِنْ مَعالِمَ طَبيعِيَّةٍ مُتَنَوِّعَةٍ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "بُحَيْرَةٌ", "en": "Lake" },
+      { "ar": "نَهْرٌ", "en": "River" },
+      { "ar": "جَبَلٌ", "en": "Mountain" },
+      { "ar": "مُحيطٌ", "en": "Ocean" }
+     ]
+    },
+    {
+     "id": "u5_l2",
+     "order": 2,
+     "title_ar": "الْمَعالِمُ الطَّبيعِيَّةُ في وَطَني",
+     "title_en": "Natural Landmarks in My Homeland",
+     "main_idea_ar": "تَتَعَدَّدُ الْمَعالِمُ الطَّبيعِيَّةُ في وَطَني.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "وادي الأُرْدُنِّ", "en": "Jordan Valley" },
+      { "ar": "الْبَحْرُ الْمَيِّتُ", "en": "The Dead Sea" },
+      { "ar": "الْبادِيَةُ الأُرْدُنِيَّةُ", "en": "The Jordanian Badia" },
+      { "ar": "خَليجُ الْعَقَبَةِ", "en": "Aqaba Gulf" }
+     ]
+    },
+    {
+     "id": "u5_l3",
+     "order": 3,
+     "title_ar": "الْمُحافَظَةُ عَلى الْبيئَةِ",
+     "title_en": "Environmental Conservation",
+     "main_idea_ar": "الاهْتِمامُ بِالْبيئَةِ وَحِمايَتُها مِنَ التَّلَوُّثِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "التَّلَوُّثُ", "en": "Pollution" },
+      { "ar": "الرَّعْيُ الْجائِرُ", "en": "Overgrazing" },
+      { "ar": "قَطْعُ الأَشْجارِ", "en": "Deforestation" },
+      { "ar": "الصَّيْدُ الْجائِرُ", "en": "Overhunting" }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "u6",
+   "number": 6,
+   "title_ar": "وَطَني الأُرْدُنُّ",
+   "title_en": "My Homeland Jordan",
+   "general_idea_ar": "آثارُ وَطَني تُمَثِّلُ تُراثَهُ وَتاريخَهُ.",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u6_l1",
+     "order": 1,
+     "title_ar": "خَريطَةُ وَطَني",
+     "title_en": "My Homeland's Map",
+     "main_idea_ar": "لِلْخَرائِطِ اسْتِخْداماتٌ كَثيرَةٌ وَمُتَنَوِّعَةٌ تَطَوَّرَتْ عَبْرَ الزَّمَنِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "الْخَريطَةُ", "en": "Map" },
+      { "ar": "الشَّمالُ الشَّرْقِيُّ", "en": "Northeast" },
+      { "ar": "الشَّمالُ الْغَرْبِيُّ", "en": "Northwest" },
+      { "ar": "الْجَنوبُ الشَّرْقِيُّ", "en": "Southeast" },
+      { "ar": "الْجَنوبُ الْغَرْبِيُّ", "en": "Southwest" }
+     ]
+    },
+    {
+     "id": "u6_l2",
+     "order": 2,
+     "title_ar": "آثارُنا الْجَميلَةُ",
+     "title_en": "Our Beautiful Heritage Sites",
+     "main_idea_ar": "يَمْتازُ وَطَني الأُرْدُنُّ بِآثارِهِ الْجَميلَةِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": [
+      { "ar": "الآثارُ", "en": "Antiquities" }
+     ]
+    }
+   ]
+  }
+ ]
+}

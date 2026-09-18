@@ -204,6 +204,14 @@ import {
   isG3ArabicSem2TitleOnlyLesson,
 } from './catalogs/g3ArabicSem2.ts';
 import {
+  G3_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  buildG3SocialSem1BrowserCatalog,
+} from './catalogs/g3SocialSem1.ts';
+import {
+  G3_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  buildG3SocialSem2BrowserCatalog,
+} from './catalogs/g3SocialSem2.ts';
+import {
   G4_SCIENCE_S1_CURRICULUM_BOOK_ID,
   buildG4ScienceSem1BrowserCatalog,
 } from './catalogs/g4ScienceSem1.ts';
@@ -1259,6 +1267,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // title-only, same reason as g4ArabicSem1/g5ArabicSem1 — see g3ArabicSem1.ts.
   G3_ARABIC_S1_CURRICULUM_BOOK_ID,
   G3_ARABIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 3 Social Studies, both semesters. 'social' is already in
+  // MVP_SUBJECT_IDS and already declared for grade-3 in SUBJECTS.grades
+  // (spans grades 1-9), so no subject append or SUBJECTS.grades extension is
+  // needed. NCCD's own Arabic-native text — see g3SocialSem1.ts.
+  G3_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  G3_SOCIAL_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2706,6 +2720,37 @@ export const BOOKS: Book[] = [
     title: 'Arabic – Grade 3, Semester 2',
     titleAr: 'اللغة العربية – الصف الثالث – الفصل الثاني',
     subjectId: 'arabic',
+    gradeId: 'grade-3',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // Grade 3 Social Studies, both semesters. NCCD's own Arabic-native text —
+  // real per-lesson content from each lesson's own «الفِكْرَةُ الرَّئيسَةُ» and
+  // «المَفاهيمُ وَالمُصْطَلَحاتُ» boxes, same convention as g4SocialSem1. S1's
+  // PDF uses reversed/presentation-form Arabic glyphs (still fully readable
+  // by hand); S2's PDF extracts cleanly. See g3SocialSem1.ts / g3SocialSem2.ts.
+  {
+    id: G3_SOCIAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 3, Semester 1',
+    titleAr: 'الدراسات الاجتماعية – الصف الثالث – الفصل الأول',
+    subjectId: 'social',
+    gradeId: 'grade-3',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G3_SOCIAL_S2_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 3, Semester 2',
+    titleAr: 'الدراسات الاجتماعية – الصف الثالث – الفصل الثاني',
+    subjectId: 'social',
     gradeId: 'grade-3',
     academicYear: '2024-2025',
     language: 'Arabic',
@@ -4847,6 +4892,8 @@ const _g3IslamicSem1Browser = buildG3IslamicSem1BrowserCatalog();
 const _g3IslamicSem2Browser = buildG3IslamicSem2BrowserCatalog();
 const _g3ArabicSem1Browser = buildG3ArabicSem1BrowserCatalog();
 const _g3ArabicSem2Browser = buildG3ArabicSem2BrowserCatalog();
+const _g3SocialSem1Browser = buildG3SocialSem1BrowserCatalog();
+const _g3SocialSem2Browser = buildG3SocialSem2BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -5110,6 +5157,8 @@ export const UNITS: Unit[] = [
   ..._g3IslamicSem2Browser.units,
   ..._g3ArabicSem1Browser.units,
   ..._g3ArabicSem2Browser.units,
+  ..._g3SocialSem1Browser.units,
+  ..._g3SocialSem2Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -5263,6 +5312,8 @@ export const LESSONS: Lesson[] = [
   ..._g3IslamicSem2Browser.lessons,
   ..._g3ArabicSem1Browser.lessons,
   ..._g3ArabicSem2Browser.lessons,
+  ..._g3SocialSem1Browser.lessons,
+  ..._g3SocialSem2Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
