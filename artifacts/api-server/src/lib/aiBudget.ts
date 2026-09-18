@@ -253,6 +253,22 @@ export function getChatModel(): string {
   return process.env.AI_MODEL_CHAT || process.env.AI_MODEL || DEFAULT_MODEL;
 }
 
+/**
+ * The model behind `/generate/prompt-slides`, which is allowed to be stronger
+ * than the one every other generator uses.
+ *
+ * A slide deck is the longest structured artifact this app produces — 10-20
+ * slides, each with its own teacher companion — and on the cheap model it came
+ * back thin enough that teachers called the decks empty. Raising
+ * `AI_MODEL_GENERATE` instead would have lifted the cost of every worksheet and
+ * quiz in the app as a side effect, so the increase is scoped to the one
+ * workload that needs it. Falls through to the ordinary generation model, so
+ * leaving this unset changes nothing.
+ */
+export function getPromptSlidesModel(): string {
+  return process.env.AI_MODEL_PROMPT_SLIDES || getGenerationModel();
+}
+
 export function isAiLiveModeOn(): boolean {
   return process.env.AI_LIVE_MODE === "true";
 }

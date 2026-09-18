@@ -195,6 +195,10 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       "/generate/lesson-plan",
       "/generate/classroom-activity",
       "/generate/prompt-slides",
+      // The clarifying round spends money too, on a model of its own. It is a
+      // second route under the same prefix, so it is a second chance to get
+      // the mount wrong.
+      "/generate/prompt-slides/questions",
       "/practice/read-aloud",
     ]) {
       const res = await fetch(`${base}${route}`, {

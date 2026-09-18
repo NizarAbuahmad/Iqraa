@@ -12,10 +12,19 @@ import assert from "node:assert/strict";
 
 import {
   assertUsableGeneration,
+  deckShortfalls,
   missingFields,
   REQUIRED_FIELDS,
   UnusableGenerationError,
 } from "../generationShape.ts";
+
+/** A deck that clears the structural floor, for mutating in the cases below. */
+const deck = (slides: unknown[]) => ({ activityName: "عرض", slides });
+const slide = (over: Record<string, unknown> = {}) => ({
+  slideNumber: 1, type: "intro", title: "عنوان", content: "• سطر\n• سطر آخر",
+  teacher: { teachingTips: "نصيحة" }, ...over,
+});
+const fiveSlides = () => [slide(), slide(), slide(), slide(), slide()];
 
 const lessonPlan = () => ({
   title: "خطة درس",
@@ -111,5 +120,89 @@ describe("assertUsableGeneration", () => {
       assert.ok(REQUIRED_FIELDS[kind].length > 0, `${kind} has no required fields`);
       assert.throws(() => assertUsableGeneration(kind, {}), UnusableGenerationError);
     }
+  });
+});
+
+describe("prompt-slides — the structural floor", () => {
+  it("accepts a deck that clears it", () => {
+    assert.doesNotThrow(() => assertUsableGeneration("prompt-slides", deck(fiveSlides())));
+  });
+
+  it("refuses the deck that shipped as six blank cards", () => {
+    // The exact artifact a teacher saw: valid JSON, required fields present,
+    // rendering as near-empty slides behind a "live AI" badge.
+    assert.throws(
+      () => assertUsableGeneration("prompt-slides", deck([{ title: "x" }])),
+      UnusableGenerationError,
+    );
+  });
+
+  it("refuses a deck shorter than five slides", () => {
+    assert.throws(
+      () => assertUsableGeneration("prompt-slides", deck([slide(), slide()])),
+      UnusableGenerationError,
+    );
+  });
+
+  it("refuses a deck where any slide has an empty title or body", () => {
+    for (const bad of [{ title: "" }, { content: "" }, { content: "   " }]) {
+      const slides = fiveSlides();
+      slides[2] = slide(bad);
+      assert.throws(
+        () => assertUsableGeneration("prompt-slides", deck(slides)),
+        UnusableGenerationError,
+        `${JSON.stringify(bad)} should be refused`,
+      );
+    }
+  });
+
+  it("names how many slides were blank, so the log says what was wrong", () => {
+    try {
+      assertUsableGeneration("prompt-slides", deck([...fiveSlides(), slide({ content: "" })]));
+      assert.fail("should have thrown");
+    } catch (err) {
+      assert.ok(err instanceof UnusableGenerationError);
+      assert.match(err.message, /1 of 6 slides/);
+    }
+  });
+
+  it("leaves every other kind alone", () => {
+    // Only prompt-slides gets the per-slide pass; a quiz of one question is
+    // still a quiz.
+    assert.doesNotThrow(() =>
+      assertUsableGeneration("quiz", { title: "اختبار", questions: [{ id: "q1", text: "س" }] }));
+  });
+});
+
+describe("deckShortfalls — reported, never refused", () => {
+  it("says nothing about a deck that meets the bars", () => {
+    const slides = [
+      slide({ type: "divider" }), slide(), slide(),
+      slide({ type: "question" }), slide({ type: "summary" }),
+    ];
+    assert.deepEqual(deckShortfalls(deck(slides)), []);
+  });
+
+  it("counts slides with no teacher notes", () => {
+    const slides = fiveSlides();
+    slides[0] = slide({ teacher: undefined });
+    assert.ok(deckShortfalls(deck(slides)).some(s => /teacher notes/.test(s)));
+  });
+
+  it("flags a deck with nothing to answer and no section break", () => {
+    const out = deckShortfalls(deck(fiveSlides()));
+    assert.ok(out.some(s => /no question or worked-example/.test(s)));
+    assert.ok(out.some(s => /no divider/.test(s)));
+  });
+
+  it("flags single-line slides, which render as near-empty", () => {
+    const slides = fiveSlides();
+    slides[1] = slide({ content: "one flat sentence" });
+    assert.ok(deckShortfalls(deck(slides)).some(s => /single unbroken line/.test(s)));
+  });
+
+  it("is silent on anything that is not a deck", () => {
+    assert.deepEqual(deckShortfalls(null), []);
+    assert.deepEqual(deckShortfalls({}), []);
   });
 });
