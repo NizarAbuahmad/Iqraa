@@ -1,0 +1,463 @@
+{
+  "meta": {
+    "grade": "الصف الأول",
+    "grade_en": "Grade 1",
+    "subject": "اللغة العربية",
+    "subject_en": "Arabic",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة العربية لغتي للصف الأول الفصل الأول (g1-arabic-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت البنيةُ من فهرسِ كتابِ الطالبِ (ص 3-4) في 2026-09-18، بقراءةِ صفحتَي الفهرسِ كصورةٍ (الاستخراجُ النَّصِّيُّ عبرَ PyMuPDF جاءَ مُشَوَّشَ التَّرتيبِ بسببِ تداخُلِ الأعمدةِ في تخطيطِ الصَّفحةِ العربيَّةِ) — الاستخراجُ النَّصِّيُّ لِمحتوى الدُّروسِ نفسِها نظيفٌ، المشكلةُ اقتصرَت على صفحتَي الفهرسِ ذواتَي التَّصميمِ الرَّسوميِّ.",
+    "known_gaps": [
+      "title-only باختيارٍ لا بعُطلٍ في الاستخراجِ، نفسُ سببِ g3ArabicSem1.ts/g5ArabicSem1.ts: محتوى كلِّ درسٍ تمارينُ تفاعليَّةٌ (اختيارٌ من متعدِّدٍ، تلوينٌ، وصلٌ) لا فقرةَ ملخَّصةً؛ main_idea_ar وobjectives وvocabulary فارغةٌ لكلِّ الدُّروسِ.",
+      "بِخلافِ الصُّفوفِ 3/4/5 (كلُّ وحدةٍ خمسةُ دروسٍ بنمطٍ ثابتٍ: أستمعُ، أتحدَّثُ، أقرأُ، أكتبُ، أبني لغتي)، كتابُ الصَّفِّ الأوَّلِ كتابُ تهجٍّ (primer) يُدرِّسُ الحروفَ الهجائيَّةَ حرفًا حرفًا: كلُّ وحدةٍ تبدأُ بدرسَي مهارةٍ ثابتَينِ (أستمعُ بانتباهٍ وتركيزٍ، أتحدَّثُ بطلاقةٍ)، يليهما عددٌ متغيِّرٌ من دروسِ الحروفِ (درسٌ واحدٌ لكلِّ حرفٍ جديدٍ، وأحيانًا درسٌ للتَّنوينِ) — 7 إلى 8 دروسٍ لكلِّ وحدةٍ في هذا الفصلِ، لا 5. لا وجودَ لدرسَي «أقرأُ» و«أكتبُ» و«أبني لغتي» بصيغتِهما المعتادةِ في هذا الفصلِ إطلاقًا — يَحِلُّ محلَّهما تعليمُ الحروفِ مباشرةً.",
+      "صفحاتٌ غيرُ مُرقَّمةٍ كدروسٍ («الدَّرْسُ...») استُبعِدَت من قائمةِ الدُّروسِ: صفحةُ إنشادٍ (أُنْشِدُ) في نهايةِ كلِّ وحدةٍ تقريبًا، وصفحةُ «الحَرَكَاتُ وَالسُّكُونُ» في الوحدةِ الأولى — كلتاهما صفحتا تعزيزٍ لا دروسٌ مستقلَّةٌ برقمٍ خاصٍّ بهما، نفسُ مبدأِ استبعادِ «الإثراءُ وَالتَّوَسُّعُ» في كتبِ العلومِ.",
+      "الفصلُ الدراسيُّ الثاني من هذا الكتابِ (iqra_curriculum_g1_arabic_sem2.json) يحمِلُ نفسَ نمطِ التَّهجِّي في وحدتِهِ الأولى (السَّادِسَةُ استمرارًا لترقيمِ هذا الفصلِ) فقط، ثُمَّ يتحوَّلُ تدريجيًّا إلى نمطِ الصُّفوفِ الأعلى الثَّابتِ (أستمعُ، أتحدَّثُ، أقرأُ، أكتبُ، أبني لغتي) بدءًا من الوحدةِ السَّابعةِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "أُسْرَتِي",
+      "title_en": "My Family",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِبَاهٍ وَتَرْكِيزٍ",
+          "title_en": "I Listen with Attention and Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلَاقَةٍ",
+          "title_en": "I Speak Fluently",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "حَرْفُ الْمَدِّ الْأَلِفُ (ا، ى)",
+          "title_en": "The Elongation Letter Alif (ا, ى)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "حَرْفُ الْمَدِّ الْوَاوُ (و)",
+          "title_en": "The Elongation Letter Waw (و)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "حَرْفُ الْمَدِّ الْيَاءُ (ي)",
+          "title_en": "The Elongation Letter Yaa (ي)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l6",
+          "order": 6,
+          "title_ar": "حَرْفُ الْبَاءِ (ب)",
+          "title_en": "The Letter Baa (ب)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l7",
+          "order": 7,
+          "title_ar": "حَرْفُ الْمِيمِ (م)",
+          "title_en": "The Letter Miim (م)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "أَنَا أُحِبُّ وَطَنِي",
+      "title_en": "I Love My Homeland",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِبَاهٍ وَتَرْكِيزٍ",
+          "title_en": "I Listen with Attention and Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلَاقَةٍ",
+          "title_en": "I Speak Fluently",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "حَرْفُ اللَّامِ (ل)",
+          "title_en": "The Letter Laam (ل)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "حَرْفُ الدَّالِ (د)",
+          "title_en": "The Letter Daal (د)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "حَرْفُ النُّونِ (ن)",
+          "title_en": "The Letter Nuun (ن)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l6",
+          "order": 6,
+          "title_ar": "تَنْوِينُ الضَّمَّةِ",
+          "title_en": "Tanwin al-Damma (Nunation with Damma)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l7",
+          "order": 7,
+          "title_ar": "حَرْفُ الرَّاءِ (ر)",
+          "title_en": "The Letter Raa (ر)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l8",
+          "order": 8,
+          "title_ar": "حَرْفُ السِّينِ (س)",
+          "title_en": "The Letter Siin (س)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "أُحِبُّ النَّظَافَةَ",
+      "title_en": "I Love Cleanliness",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِبَاهٍ وَتَرْكِيزٍ",
+          "title_en": "I Listen with Attention and Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلَاقَةٍ",
+          "title_en": "I Speak Fluently",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "حَرْفُ الْفَاءِ (ف)",
+          "title_en": "The Letter Faa (ف)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "حَرْفُ الصَّادِ (ص)",
+          "title_en": "The Letter Saad (ص)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "حَرْفُ الْقَافِ (ق)",
+          "title_en": "The Letter Qaaf (ق)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l6",
+          "order": 6,
+          "title_ar": "تَنْوِينُ الْكَسْرِ",
+          "title_en": "Tanwin al-Kasr (Nunation with Kasra)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l7",
+          "order": 7,
+          "title_ar": "حَرْفُ الْحَاءِ (ح)",
+          "title_en": "The Letter Haa (ح)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l8",
+          "order": 8,
+          "title_ar": "حَرْفُ الزَّايِ (ز)",
+          "title_en": "The Letter Zaay (ز)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "رُسُومِي الْمُتَحَرِّكَةُ",
+      "title_en": "My Cartoons",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِبَاهٍ وَتَرْكِيزٍ",
+          "title_en": "I Listen with Attention and Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلَاقَةٍ",
+          "title_en": "I Speak Fluently",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "حَرْفُ التَّاءِ (ت)",
+          "title_en": "The Letter Taa (ت)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "حَرْفُ التَّاءِ الْمَرْبُوطَةِ (ة)",
+          "title_en": "The Letter Taa Marbuta (ة)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l5",
+          "order": 5,
+          "title_ar": "حَرْفُ الشِّينِ (ش)",
+          "title_en": "The Letter Shiin (ش)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l6",
+          "order": 6,
+          "title_ar": "تَنْوِينُ الْفَتْحِ",
+          "title_en": "Tanwin al-Fath (Nunation with Fatha)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l7",
+          "order": 7,
+          "title_ar": "حَرْفُ الطَّاءِ (ط)",
+          "title_en": "The Letter Taa' (ط)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l8",
+          "order": 8,
+          "title_ar": "حَرْفُ الْجِيمِ (ج)",
+          "title_en": "The Letter Jiim (ج)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "لُعْبَتِي الْمُفَضَّلَةُ",
+      "title_en": "My Favorite Toy",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "title-only (interactive-exercise lessons, no prose summary to extract)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "أَسْتَمِعُ بِانْتِبَاهٍ وَتَرْكِيزٍ",
+          "title_en": "I Listen with Attention and Focus",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "أَتَحَدَّثُ بِطَلَاقَةٍ",
+          "title_en": "I Speak Fluently",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "حَرْفُ الضَّادِ (ض)",
+          "title_en": "The Letter Daad (ض)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l4",
+          "order": 4,
+          "title_ar": "حَرْفُ الْعَيْنِ (ع)",
+          "title_en": "The Letter Ayn (ع)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l5",
+          "order": 5,
+          "title_ar": "حَرْفُ الْكَافِ (ك)",
+          "title_en": "The Letter Kaaf (ك)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l6",
+          "order": 6,
+          "title_ar": "حَرْفُ الْوَاوِ (و)",
+          "title_en": "The Letter Waw (و)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l7",
+          "order": 7,
+          "title_ar": "حَرْفُ الْيَاءِ (ي)",
+          "title_en": "The Letter Yaa (ي)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
