@@ -379,6 +379,14 @@ import {
   buildG1MathSem2Catalog,
 } from './curriculumG1MathSem2.ts';
 import {
+  G1_SCIENCE_S1_BOOK_ID,
+  buildG1ScienceSem1Catalog,
+} from './curriculumG1ScienceSem1.ts';
+import {
+  G1_SCIENCE_S2_BOOK_ID,
+  buildG1ScienceSem2Catalog,
+} from './curriculumG1ScienceSem2.ts';
+import {
   G6_MATH_S1_BOOK_ID,
   buildG6MathSem1Catalog,
 } from './curriculumG6MathSem1.ts';
@@ -1658,6 +1666,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Mathematics – Grade 1 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g1_math_sem2.json (NCCD)',
+  },
+  {
+    id: G1_SCIENCE_S1_BOOK_ID,
+    gradeId: 'grade-1',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف الأول – الفصل الأول',
+    titleEn: 'Science – Grade 1 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g1_science_sem1.json (NCCD)',
+  },
+  {
+    id: G1_SCIENCE_S2_BOOK_ID,
+    gradeId: 'grade-1',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف الأول – الفصل الثاني',
+    titleEn: 'Science – Grade 1 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g1_science_sem2.json (NCCD)',
   },
   {
     id: G6_MATH_S1_BOOK_ID,
@@ -3092,6 +3118,8 @@ const _g3CreativeArts = buildG3CreativeArtsCatalog();
 const _g3PhysicalEducationSem1 = buildG3PhysicalEducationSem1Catalog();
 const _g1MathSem1 = buildG1MathSem1Catalog();
 const _g1MathSem2 = buildG1MathSem2Catalog();
+const _g1ScienceSem1 = buildG1ScienceSem1Catalog();
+const _g1ScienceSem2 = buildG1ScienceSem2Catalog();
 const _g8VocSem1 = buildG8VocSem1Catalog();
 const _g8VocSem2 = buildG8VocSem2Catalog();
 const _g8SocialSem1 = buildG8SocialSem1Catalog();
@@ -3370,6 +3398,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g3PhysicalEducationSem1.units,
   ..._g1MathSem1.units,
   ..._g1MathSem2.units,
+  ..._g1ScienceSem1.units,
+  ..._g1ScienceSem2.units,
   ..._g8VocSem1.units,
   ..._g8VocSem2.units,
   ..._g8SocialSem1.units,
@@ -3537,6 +3567,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g3PhysicalEducationSem1.lessons,
   ..._g1MathSem1.lessons,
   ..._g1MathSem2.lessons,
+  ..._g1ScienceSem1.lessons,
+  ..._g1ScienceSem2.lessons,
   ..._g8VocSem1.lessons,
   ..._g8VocSem2.lessons,
   ..._g8SocialSem1.lessons,
