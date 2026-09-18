@@ -1036,8 +1036,10 @@ export class MockAIService extends AIService {
       return req.difficulty === 'easy' || req.difficulty === 'hard' ? req.difficulty : 'medium';
     };
 
-    // 2 questions per selected type, marks distributed evenly
-    const numQuestions = types.length * 2;
+    // Teacher-picked count, cycled evenly across the selected types; marks
+    // distributed evenly. Falls back to 2-per-type for callers (e.g. the
+    // classroom mini-quiz) that don't send numQuestions.
+    const numQuestions = Math.max(types.length, req.numQuestions ?? types.length * 2);
     const basePts = Math.max(1, Math.floor(totalMarks / numQuestions));
 
     const questions: QuizQuestion[] = [];
@@ -1059,29 +1061,28 @@ export class MockAIService extends AIService {
       return q;
     };
 
-    for (const type of types) {
-      for (let rep = 0; rep < 2; rep++) {
-        const id = `q${qIdx++}`;
-        // Last question absorbs any rounding difference
-        const isLast = qIdx > numQuestions;
-        const pts = isLast ? Math.max(1, totalMarks - usedPts) : basePts;
-        usedPts += pts;
+    for (let i = 0; i < numQuestions; i++) {
+      const type = types[i % types.length];
+      const id = `q${qIdx++}`;
+      // Last question absorbs any rounding difference
+      const isLast = qIdx > numQuestions;
+      const pts = isLast ? Math.max(1, totalMarks - usedPts) : basePts;
+      usedPts += pts;
 
-        const tier = quizTier(qIdx - 2);
-        // NOTE: `fill_blank` and `word_problem` fall into the short-answer
-        // branch. The quiz picker (`app/ai-tools/quiz.tsx`) offers only the
-        // three types handled here, so no teacher can reach it today; a caller
-        // that sent one would get an honest short-answer question, correctly
-        // labelled as such. Add real branches here before offering them.
-        if (lang === 'ar') {
-          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id, req.subject, tier)));
-          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id, req.subject, tier)));
-          else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id, req.subject, tier)));
-        } else {
-          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id, req.subject, tier)));
-          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id, req.subject, tier)));
-          else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id, req.subject, tier)));
-        }
+      const tier = quizTier(qIdx - 2);
+      // NOTE: `fill_blank` and `word_problem` fall into the short-answer
+      // branch. The quiz picker (`app/ai-tools/quiz.tsx`) offers only the
+      // three types handled here, so no teacher can reach it today; a caller
+      // that sent one would get an honest short-answer question, correctly
+      // labelled as such. Add real branches here before offering them.
+      if (lang === 'ar') {
+        if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id, req.subject, tier)));
+        else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id, req.subject, tier)));
+        else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id, req.subject, tier)));
+      } else {
+        if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id, req.subject, tier)));
+        else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id, req.subject, tier)));
+        else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id, req.subject, tier)));
       }
     }
 
