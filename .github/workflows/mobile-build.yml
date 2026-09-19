@@ -1,0 +1,132 @@
+# What this is for
+#
+# Every Android build so far was run by hand, from whichever machine happened
+# to have eas-cli logged in — and the sandboxes that do most of the work on
+# this repo have no Expo credentials at all, so "give me a new APK" used to
+# mean "wait for a person with the right laptop". The repository already holds
+# EXPO_TOKEN (mobile-update.yml publishes OTA updates with it on every merge),
+# and a build needs nothing more. This workflow makes a build one click, or
+# one API call, from any branch.
+#
+# Manual only. A build costs ~20 minutes of EAS build time and produces a new
+# binary that people have to install, so it must never run on push — that is
+# what the OTA workflow is for. Native changes (a new expo-* package, anything
+# with a config plugin, anything under android/) need this, and need
+# app.json's `version` bumped first; see CLAUDE.md, «app.json's version is the
+# OTA compatibility key».
+#
+# `preview` produces a sideloadable APK on the `preview` update channel — the
+# same channel mobile-update.yml publishes to, so a binary from here keeps
+# receiving JS updates on every merge. `production` produces the Play Store
+# app-bundle and is here for the day the listing exists.
+#
+# The archive EAS uploads is governed by the repo-root `.easignore`, which
+# REPLACES .gitignore rather than extending it — read its header before
+# touching either file.
+name: Mobile Android build
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: eas.json build profile
+        required: true
+        default: preview
+        type: choice
+        options: [preview, production]
+
+# Two builds queued at once would each take a versionCode from EAS and race
+# for the same build queue; one at a time is what a person would do.
+concurrency:
+  group: mobile-build
+  cancel-in-progress: false
+
+# Same reasoning as mobile-update.yml: the job authenticates to Expo with
+# EXPO_TOKEN and needs nothing from GitHub but the checkout.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: eas build (${{ inputs.profile }})
+    runs-on: ubuntu-latest
+    # ~22 minutes of build on top of whatever the EAS queue adds. The free
+    # tier has queued builds for over half an hour before; the limit is set so
+    # a slow queue is not reported as a failed build.
+    timeout-minutes: 120
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # eas-cli archives the project through git, so the checkout must be
+          # a real repository. Depth 1 is enough — it clones the working tree,
+          # not the history.
+          fetch-depth: 1
+
+      # Same Node and pnpm as ci.yml and mobile-update.yml, so a config that
+      # evaluates here evaluates the same way on the EAS builder.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      # eas-cli resolves app.json's config plugins through the project's own
+      # node_modules before it uploads anything, so the install is not
+      # optional even though the compile happens on Expo's servers.
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        if: ${{ env.EXPO_TOKEN != '' }}
+        working-directory: artifacts/mobile
+        # --json replaces the progress log with one JSON document describing
+        # the finished build, which is what the next step reads the artifact
+        # URL out of. The command still waits for the build to finish.
+        # --platform android because eas.json declares no iOS profile.
+        run: |
+          npx eas-cli@latest build \
+            --platform android \
+            --profile "${{ inputs.profile }}" \
+            --non-interactive \
+            --json > build.json
+          cat build.json
+
+      # The whole point of the run is the download link, so put it where a
+      # person looks first: the job summary at the top of the run page.
+      - name: Report the artifact
+        if: ${{ env.EXPO_TOKEN != '' }}
+        working-directory: artifacts/mobile
+        run: |
+          status=$(jq -r '.[0].status' build.json)
+          id=$(jq -r '.[0].id' build.json)
+          url=$(jq -r '.[0].artifacts.buildUrl // empty' build.json)
+          version=$(jq -r '.[0].appVersion' build.json)
+          code=$(jq -r '.[0].appBuildVersion' build.json)
+          {
+            echo "## Android \`${{ inputs.profile }}\` build"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| status | \`$status\` |"
+            echo "| build id | \`$id\` |"
+            echo "| version / versionCode | \`$version\` / \`$code\` |"
+            echo "| commit | \`${{ github.sha }}\` on \`${{ github.ref_name }}\` |"
+            echo "| download | $url |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "status=$status id=$id version=$version code=$code"
+          echo "APK: $url"
+          if [ "$status" != "FINISHED" ] || [ -z "$url" ]; then
+            echo "Build did not finish with an artifact — see the EAS dashboard for build $id." >&2
+            exit 1
+          fi
+
+      - name: Explain a skipped build
+        if: ${{ env.EXPO_TOKEN == '' }}
+        run: |
+          echo "EXPO_TOKEN is not set — no build started."
+          echo "Add it under Settings → Secrets and variables → Actions."
