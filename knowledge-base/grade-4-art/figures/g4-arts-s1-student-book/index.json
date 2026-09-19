@@ -1,0 +1,1157 @@
+{
+  "sourceId": "g4-arts-s1-student-book",
+  "figures": [
+    {
+      "file": "p006b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 6,
+      "rect": [
+        0.0,
+        576.9,
+        287.6,
+        822.0
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p008c.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 8,
+      "rect": [
+        375.8,
+        434.2,
+        549.0,
+        511.1
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p009.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 9,
+      "rect": [
+        0.0,
+        576.9,
+        623.6,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p010.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 10,
+      "rect": [
+        0.0,
+        0.0,
+        251.9,
+        158.5
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p011.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 11,
+      "rect": [
+        371.6,
+        152.5,
+        562.8,
+        539.5
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 11
+    },
+    {
+      "file": "p012b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 12,
+      "rect": [
+        307.7,
+        603.4,
+        623.6,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 11
+    },
+    {
+      "file": "p014b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 14,
+      "rect": [
+        375.8,
+        434.2,
+        549.0,
+        512.9
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 14
+    },
+    {
+      "file": "p014c.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 14,
+      "rect": [
+        307.9,
+        603.6,
+        623.6,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 14
+    },
+    {
+      "file": "p015.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 15,
+      "rect": [
+        0.0,
+        576.9,
+        273.4,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 14
+    },
+    {
+      "file": "p015b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 15,
+      "rect": [
+        293.7,
+        576.9,
+        623.6,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 14
+    },
+    {
+      "file": "p016.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 16,
+      "rect": [
+        0.0,
+        576.7,
+        287.4,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 14
+    },
+    {
+      "file": "p016b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 16,
+      "rect": [
+        307.7,
+        603.4,
+        623.6,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 14
+    },
+    {
+      "file": "p018b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 18,
+      "rect": [
+        0.0,
+        576.9,
+        287.6,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p019.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 19,
+      "rect": [
+        0.0,
+        576.9,
+        273.4,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p019b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 19,
+      "rect": [
+        293.7,
+        576.9,
+        623.6,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p020.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 20,
+      "rect": [
+        0.0,
+        576.7,
+        287.4,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p023.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 23,
+      "rect": [
+        0.0,
+        576.9,
+        273.4,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 22
+    },
+    {
+      "file": "p023b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 23,
+      "rect": [
+        293.7,
+        576.9,
+        623.6,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 22
+    },
+    {
+      "file": "p024.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 24,
+      "rect": [
+        373.8,
+        154.4,
+        548.5,
+        229.5
+      ],
+      "unit": 1,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 22
+    },
+    {
+      "file": "p025c.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 25,
+      "rect": [
+        375.8,
+        409.3,
+        549.0,
+        496.2
+      ],
+      "unit": 1,
+      "lesson": 6,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 25
+    },
+    {
+      "file": "p026b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 26,
+      "rect": [
+        0.0,
+        576.7,
+        287.4,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 6,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 25
+    },
+    {
+      "file": "p026c.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 26,
+      "rect": [
+        307.7,
+        603.4,
+        623.6,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 6,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 25
+    },
+    {
+      "file": "p028e.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 28,
+      "rect": [
+        0.0,
+        576.9,
+        287.6,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p029.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 29,
+      "rect": [
+        0.0,
+        576.9,
+        273.4,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p029b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 29,
+      "rect": [
+        293.7,
+        576.9,
+        623.6,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p032b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 32,
+      "rect": [
+        307.7,
+        603.4,
+        623.6,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 8,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 31
+    },
+    {
+      "file": "p034.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 34,
+      "rect": [
+        0.0,
+        576.9,
+        287.6,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 9,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 34
+    },
+    {
+      "file": "p038.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 38,
+      "rect": [
+        375.8,
+        413.0,
+        549.0,
+        496.2
+      ],
+      "unit": 1,
+      "lesson": 10,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 38
+    },
+    {
+      "file": "p039.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 39,
+      "rect": [
+        293.7,
+        576.9,
+        623.6,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 10,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 38
+    },
+    {
+      "file": "p039b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 39,
+      "rect": [
+        0.0,
+        576.9,
+        273.4,
+        822.0
+      ],
+      "unit": 1,
+      "lesson": 10,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 38
+    },
+    {
+      "file": "p044b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 44,
+      "rect": [
+        375.8,
+        328.9,
+        562.7,
+        422.8
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 44
+    },
+    {
+      "file": "p044c.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 44,
+      "rect": [
+        0.0,
+        576.9,
+        287.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 44
+    },
+    {
+      "file": "p044d.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 44,
+      "rect": [
+        300.9,
+        603.6,
+        623.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 44
+    },
+    {
+      "file": "p045.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 45,
+      "rect": [
+        0.0,
+        576.9,
+        287.8,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 44
+    },
+    {
+      "file": "p045b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 45,
+      "rect": [
+        293.7,
+        576.9,
+        623.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 44
+    },
+    {
+      "file": "p047b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 47,
+      "rect": [
+        0.0,
+        576.7,
+        287.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 47
+    },
+    {
+      "file": "p047c.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 47,
+      "rect": [
+        293.5,
+        576.7,
+        623.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 47
+    },
+    {
+      "file": "p048.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 48,
+      "rect": [
+        0.0,
+        571.0,
+        287.4,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 47
+    },
+    {
+      "file": "p050.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 50,
+      "rect": [
+        0.0,
+        576.9,
+        287.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 50
+    },
+    {
+      "file": "p051.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 51,
+      "rect": [
+        293.7,
+        576.9,
+        623.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 50
+    },
+    {
+      "file": "p054.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 54,
+      "rect": [
+        0.0,
+        576.7,
+        287.4,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 53
+    },
+    {
+      "file": "p056.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 56,
+      "rect": [
+        0.0,
+        576.9,
+        287.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 56
+    },
+    {
+      "file": "p057.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 57,
+      "rect": [
+        0.0,
+        576.9,
+        273.4,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 56
+    },
+    {
+      "file": "p057b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 57,
+      "rect": [
+        293.7,
+        576.9,
+        623.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 56
+    },
+    {
+      "file": "p059.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 59,
+      "rect": [
+        293.5,
+        541.3,
+        623.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 6,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 59
+    },
+    {
+      "file": "p060.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 60,
+      "rect": [
+        0.0,
+        576.7,
+        287.4,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 6,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 59
+    },
+    {
+      "file": "p062b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 62,
+      "rect": [
+        0.0,
+        576.9,
+        287.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 62
+    },
+    {
+      "file": "p063.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 63,
+      "rect": [
+        374.7,
+        411.4,
+        549.4,
+        486.5
+      ],
+      "unit": 2,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 62
+    },
+    {
+      "file": "p063b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 63,
+      "rect": [
+        0.0,
+        576.9,
+        277.4,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 62
+    },
+    {
+      "file": "p063c.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 63,
+      "rect": [
+        293.7,
+        552.3,
+        623.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 62
+    },
+    {
+      "file": "p065c.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 65,
+      "rect": [
+        0.0,
+        576.7,
+        287.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 8,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 65
+    },
+    {
+      "file": "p065d.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 65,
+      "rect": [
+        293.5,
+        576.7,
+        623.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 8,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 65
+    },
+    {
+      "file": "p067b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 67,
+      "rect": [
+        293.5,
+        576.7,
+        623.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 9,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 67
+    },
+    {
+      "file": "p068c.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 68,
+      "rect": [
+        0.0,
+        576.7,
+        287.4,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 9,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 67
+    },
+    {
+      "file": "p071.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 71,
+      "rect": [
+        293.7,
+        557.2,
+        623.6,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 10,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 70
+    },
+    {
+      "file": "p071b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 71,
+      "rect": [
+        0.0,
+        576.9,
+        273.4,
+        822.0
+      ],
+      "unit": 2,
+      "lesson": 10,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 70
+    },
+    {
+      "file": "p074b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 74,
+      "rect": [
+        0.0,
+        576.9,
+        623.6,
+        822.0
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 74
+    },
+    {
+      "file": "p075b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 75,
+      "rect": [
+        0.0,
+        576.9,
+        273.4,
+        822.0
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 74
+    },
+    {
+      "file": "p075c.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 75,
+      "rect": [
+        293.7,
+        576.9,
+        623.6,
+        822.0
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 74
+    },
+    {
+      "file": "p078.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 78,
+      "rect": [
+        0.0,
+        576.7,
+        290.6,
+        822.0
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p078b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 78,
+      "rect": [
+        307.7,
+        597.4,
+        623.6,
+        822.0
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p080b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 80,
+      "rect": [
+        0.0,
+        576.9,
+        301.5,
+        822.0
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 80
+    },
+    {
+      "file": "p080c.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 80,
+      "rect": [
+        307.9,
+        603.6,
+        623.6,
+        822.0
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 80
+    },
+    {
+      "file": "p085b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 85,
+      "rect": [
+        0.0,
+        576.7,
+        287.6,
+        822.0
+      ],
+      "unit": 3,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 85
+    },
+    {
+      "file": "p085c.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 85,
+      "rect": [
+        293.5,
+        576.7,
+        623.6,
+        822.0
+      ],
+      "unit": 3,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 85
+    },
+    {
+      "file": "p087.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 87,
+      "rect": [
+        0.0,
+        576.7,
+        287.6,
+        822.0
+      ],
+      "unit": 3,
+      "lesson": 6,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 87
+    },
+    {
+      "file": "p089b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 89,
+      "rect": [
+        0.0,
+        576.7,
+        287.6,
+        822.0
+      ],
+      "unit": 3,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 89
+    },
+    {
+      "file": "p089c.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 89,
+      "rect": [
+        293.5,
+        576.7,
+        623.6,
+        822.0
+      ],
+      "unit": 3,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 89
+    },
+    {
+      "file": "p091b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 91,
+      "rect": [
+        0.0,
+        576.7,
+        287.6,
+        822.0
+      ],
+      "unit": 3,
+      "lesson": 8,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 91
+    },
+    {
+      "file": "p091c.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 91,
+      "rect": [
+        293.5,
+        576.7,
+        623.6,
+        822.0
+      ],
+      "unit": 3,
+      "lesson": 8,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 91
+    },
+    {
+      "file": "p093b.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 93,
+      "rect": [
+        373.0,
+        421.5,
+        546.2,
+        496.2
+      ],
+      "unit": 3,
+      "lesson": 9,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 93
+    },
+    {
+      "file": "p095.png",
+      "sourceId": "g4-arts-s1-student-book",
+      "pdfPage": 95,
+      "rect": [
+        373.0,
+        363.9,
+        550.9,
+        442.7
+      ],
+      "unit": 3,
+      "lesson": 10,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 95
+    }
+  ]
+}

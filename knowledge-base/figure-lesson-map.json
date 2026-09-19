@@ -4826,6 +4826,1237 @@
       "kbLessonId": "kbl-g7-social-s2-nccd-u12_l3",
       "score": 1,
       "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-science-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "تَكاثُرُ الْكائِناتِ الْحَيَّةِ وَدَوْراتُ حَياتِها",
+      "kbLessonId": "kbl-g3-science-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "contents-table",
+      "why": "Grades 3, 4 and 5, 2026-09-19. The catalogs landed between 2026-09-16 and 2026-09-18 (#481-#521), which is what had blocked these grades — figures carry (sourceId, unit, lesson) as the BOOK prints them and need a catalog to join to. 34 books were registered and probed; 11 reproduce a catalog exactly and ship. EVERY one places by the contents route: not one of the 34 places by its opener, so for these grades the contents parser is the only way in rather than a fallback."
+    },
+    {
+      "sourceId": "g3-science-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "سُلوكُ الْكائِناتِ الْحَيَّةِ",
+      "kbLessonId": "kbl-g3-science-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-science-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الْكائِناتُ الْحَيَّةُ في بيئاتِها",
+      "kbLessonId": "kbl-g3-science-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-science-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الْمادَّةُ وَحالاتُها",
+      "kbLessonId": "kbl-g3-science-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-science-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الْمادَّةُ النَّقِيَّةُ وَالْمَخْلوطُ",
+      "kbLessonId": "kbl-g3-science-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-science-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "قُوَّةُ الْجاذِبِيَّةِ الْأَرْضِيَّةِ",
+      "kbLessonId": "kbl-g3-science-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-science-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الْآلاتُ الْبَسيطَةُ",
+      "kbLessonId": "kbl-g3-science-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-science-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الْمادَّةُ وَحالاتُها",
+      "kbLessonId": "kbl-g3-science-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "contents-table",
+      "why": "UNIT OFFSET +3. The catalog numbers this book's units [4, 5, 6] because the earlier units are semester 1, while the contents parser infers units from the lesson numbering resetting and counts them from 1. The entry gate compares unit COUNTS and is blind to a uniform shift, so this was measured against the extracted index afterwards. Without it every figure in the book lands on a semester-1 lesson."
+    },
+    {
+      "sourceId": "g3-science-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "الْمادَّةُ النَّقِيَّةُ وَالْمَخْلوطُ",
+      "kbLessonId": "kbl-g3-science-s2-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-science-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الْأَرْضُ",
+      "kbLessonId": "kbl-g3-science-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-science-s2-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الْأَحافيرُ",
+      "kbLessonId": "kbl-g3-science-s2-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-science-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الْأَخْطارُ مِنْ حَوْلِنا",
+      "kbLessonId": "kbl-g3-science-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-science-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "كَيْفَ أَتَجَنَّبُ الْأَخْطارَ؟",
+      "kbLessonId": "kbl-g3-science-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-social-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "التَّطَوُّرُ في وَطَني",
+      "kbLessonId": "kbl-g3-social-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "contents-table",
+      "why": "UNIT OFFSET +3. The catalog numbers this book's units [4, 5, 6] because the earlier units are semester 1, while the contents parser infers units from the lesson numbering resetting and counts them from 1. The entry gate compares unit COUNTS and is blind to a uniform shift, so this was measured against the extracted index afterwards. Without it every figure in the book lands on a semester-1 lesson."
+    },
+    {
+      "sourceId": "g3-social-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "تَطَوُّرُ التِّجارَةِ في وَطَني",
+      "kbLessonId": "kbl-g3-social-s2-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-social-s2-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الإنْتاجُ وَالاسْتِهْلاكُ",
+      "kbLessonId": "kbl-g3-social-s2-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-social-s2-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "الْمُسْتَهْلِكُ الذَّكِيُّ",
+      "kbLessonId": "kbl-g3-social-s2-nccd-u4_l4",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-social-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "سَطْحُ الأَرْضِ وَمَعالِمُهُ الطَّبيعِيَّةُ",
+      "kbLessonId": "kbl-g3-social-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-social-s2-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الْمَعالِمُ الطَّبيعِيَّةُ في وَطَني",
+      "kbLessonId": "kbl-g3-social-s2-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-social-s2-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "الْمُحافَظَةُ عَلى الْبيئَةِ",
+      "kbLessonId": "kbl-g3-social-s2-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-social-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "خَريطَةُ وَطَني",
+      "kbLessonId": "kbl-g3-social-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g3-social-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "آثارُنا الْجَميلَةُ",
+      "kbLessonId": "kbl-g3-social-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "دَلالاتُ الْخُطوطِ في الرَّسْمِ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "contents-table",
+      "why": "60 of this batch's 522 figures were recovered from `_dropped/` — crops the flat-panel test rejected and #469 stopped deleting. They cluster where edge density is weakest as a signal: 16 in Grade 4 art (colour-value studies, gradient strips, musical notation), 13 in Grade 4 vocational (small objects photographed on white), 6 each in Grade 4 science S2 and social S2 (orbit and solstice diagrams). Grade 4 social S1, which is photo-heavy, needed none. Read every `_dropped/_review.png` in full."
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "التَّماثُلُ الدّائِرِيُّ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "فَنُّ الْمَنْظورِ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "الأَلْوانُ الأُحادِيَّةُ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "الظِّلُّ وَالنّورُ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u1_l5",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 1,
+      "lesson": 6,
+      "bookTitleAr": "السِّيادَةُ في الْعَمَلِ الْفَنِّيِّ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u1_l6",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 1,
+      "lesson": 7,
+      "bookTitleAr": "الرَّسْمُ بِالْوَحْدَةِ الرَّقْمِيَّةِ (Pixel Art)",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u1_l7",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 1,
+      "lesson": 8,
+      "bookTitleAr": "عَمَلُ بِطاقَةِ تَهْنِئَةٍ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u1_l8",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 1,
+      "lesson": 9,
+      "bookTitleAr": "الْمَلامِسُ الْمُخْتَلِفَةُ في أَعْماقِ الْبِحارِ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u1_l9",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 1,
+      "lesson": 10,
+      "bookTitleAr": "التَّعْبيرُ الْفَنِّيُّ بِالرَّسْمِ (الْفَضاءُ الْجَميلُ)",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u1_l10",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الأَشْكالُ الإيقاعِيَّةُ: شَكْلُ السَّوْداءِ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الأَشْكالُ الإيقاعِيَّةُ: شَكْلُ الْبَيْضاءِ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "الأَشْكالُ الإيقاعِيَّةُ: شَكْلُ ذاتِ السِّنِّ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "الأَشْكالُ الإيقاعِيَّةُ: شَكْلُ ذاتِ السِّنَّيْنِ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 2,
+      "lesson": 5,
+      "bookTitleAr": "الْمُدَرَّجُ الْمُوسيقِيُّ وَمِفْتاحُ (صول)",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u2_l5",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 2,
+      "lesson": 6,
+      "bookTitleAr": "الْحُقولُ وَالْمَقاييسُ الْمُوسيقِيَّةُ: الثُّنائِيُّ وَالثُّلاثِيُّ وَالرُّباعِيُّ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u2_l6",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 2,
+      "lesson": 7,
+      "bookTitleAr": "الْعَزْفُ عَلى آلاتِ الإيقاعِ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u2_l7",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 2,
+      "lesson": 8,
+      "bookTitleAr": "الأُغْنِيَةُ التُّراثِيَّةُ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u2_l8",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 2,
+      "lesson": 9,
+      "bookTitleAr": "الآلاتُ الْمُوسيقِيَّةُ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u2_l9",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 2,
+      "lesson": 10,
+      "bookTitleAr": "الأُغْنِيَةُ الْوَطَنِيَّةُ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u2_l10",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الأَقْنِعَةُ الْمَسْرَحِيَّةُ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "عَمَلُ الأَقْنِعَةِ الْمَسْرَحِيَّةِ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "الدُّمى الْمَسْرَحِيَّةُ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 3,
+      "lesson": 4,
+      "bookTitleAr": "مُحَرِّكُ الدُّمى الْمَسْرَحِيَّةِ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u3_l4",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 3,
+      "lesson": 5,
+      "bookTitleAr": "التَّمْثيلُ بِالدُّمى",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u3_l5",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 3,
+      "lesson": 6,
+      "bookTitleAr": "التَّمْثيلُ بِالأَقْنِعَةِ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u3_l6",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 3,
+      "lesson": 7,
+      "bookTitleAr": "أَشْكالُ الْمَسارِحِ وَأَنْواعُها",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u3_l7",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 3,
+      "lesson": 8,
+      "bookTitleAr": "الْكوميديا",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u3_l8",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 3,
+      "lesson": 9,
+      "bookTitleAr": "التَّراجيديا",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u3_l9",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-arts-s1-student-book",
+      "unit": 3,
+      "lesson": 10,
+      "bookTitleAr": "مُشاهَدَةُ مَسْرَحِيَّةٍ",
+      "kbLessonId": "kbl-g4-arts-s1-nccd-u3_l10",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "التَّصْنيفُ",
+      "kbLessonId": "kbl-g4-science-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "مَمالِكُ الكائِناتِ الحَيَّةِ",
+      "kbLessonId": "kbl-g4-science-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "تَكاثُرُ النَّباتاتِ وَدَوْراتُ حَياتِها",
+      "kbLessonId": "kbl-g4-science-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "تَكاثُرُ الحَيَواناتِ وَدَوْراتُ حَياتِها",
+      "kbLessonId": "kbl-g4-science-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "العَلاقاتُ بَيْنَ الكائِناتِ الحَيَّةِ",
+      "kbLessonId": "kbl-g4-science-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الحَواسُّ الخَمْسُ",
+      "kbLessonId": "kbl-g4-science-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الصِّحَّةُ الجِسْمِيَّةُ وَالصِّحَّةُ النَّفْسِيَّةُ وَالعاطِفِيَّةُ",
+      "kbLessonId": "kbl-g4-science-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "خَصائِصُ المادَّةِ",
+      "kbLessonId": "kbl-g4-science-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "تَغَيُّراتُ المادَّةِ",
+      "kbLessonId": "kbl-g4-science-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "خَصائِصُ الضَّوْءِ",
+      "kbLessonId": "kbl-g4-science-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "contents-table",
+      "why": "UNIT OFFSET +5. The catalog numbers this book's units [6, 7, 8, 9, 10] because the earlier units are semester 1, while the contents parser infers units from the lesson numbering resetting and counts them from 1. The entry gate compares unit COUNTS and is blind to a uniform shift, so this was measured against the extracted index afterwards. Without it every figure in the book lands on a semester-1 lesson."
+    },
+    {
+      "sourceId": "g4-science-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "تَكَوُّنُ الظِّلالِ",
+      "kbLessonId": "kbl-g4-science-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "اللَّيْلُ وَالنَّهارُ",
+      "kbLessonId": "kbl-g4-science-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s2-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الفُصولُ الأَرْبَعَةُ",
+      "kbLessonId": "kbl-g4-science-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "القُوَّةُ",
+      "kbLessonId": "kbl-g4-science-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الطّاقَةُ",
+      "kbLessonId": "kbl-g4-science-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "الدّاراتُ الكَهْرَبائِيَّةُ البَسيطَةُ",
+      "kbLessonId": "kbl-g4-science-s2-nccd-u9_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "المَوادُّ المُوصِلَةُ وَالمَوادُّ العازِلَةُ",
+      "kbLessonId": "kbl-g4-science-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "المَوارِدُ الحَيَوِيَّةُ",
+      "kbLessonId": "kbl-g4-science-s2-nccd-u10_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-science-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "المَوارِدُ غَيْرُ الحَيَوِيَّةِ",
+      "kbLessonId": "kbl-g4-science-s2-nccd-u10_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "المُجْتَمَعُ الأُرْدُنِيُّ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "الأَخْلاقُ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "العاداتُ وَالتَقاليدُ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "الأَزْياءُ الشَعْبِيَّةُ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الحَضاراتُ القَديمَةُ في الأُرْدُنِّ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "مُلوكُ الأُرْدُنِّ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "بُطولاتُ الجَيْشِ العَرَبِيِّ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الدُسْتورُ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "نِظامُ الحُكْمِ في الأُرْدُنِّ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "القَوانينُ وَالأَنْظِمَةُ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "الزِراعَةُ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "الصِناعَةُ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "الطاقَةُ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "الأَنْشِطَةُ البَشَرِيَّةُ وَأَثَرُها في البيئَةِ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u4_l4",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s1-student-book",
+      "unit": 4,
+      "lesson": 5,
+      "bookTitleAr": "الحَياةُ البَرِّيَّةُ في الأُرْدُنِّ",
+      "kbLessonId": "kbl-g4-social-s1-nccd-u4_l5",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "بِناءُ الشَخْصِيَّةِ",
+      "kbLessonId": "kbl-g4-social-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "contents-table",
+      "why": "UNIT OFFSET +4. The catalog numbers this book's units [5, 6, 7, 8] because the earlier units are semester 1, while the contents parser infers units from the lesson numbering resetting and counts them from 1. The entry gate compares unit COUNTS and is blind to a uniform shift, so this was measured against the extracted index afterwards. Without it every figure in the book lands on a semester-1 lesson."
+    },
+    {
+      "sourceId": "g4-social-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "الحِوارُ",
+      "kbLessonId": "kbl-g4-social-s2-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s2-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الاحْتِرامُ",
+      "kbLessonId": "kbl-g4-social-s2-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s2-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "الحَقيقَةُ وَالرَأْيُ",
+      "kbLessonId": "kbl-g4-social-s2-nccd-u5_l4",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الحُقوقُ وَالواجِباتُ وَالمَسْؤولِيّاتُ",
+      "kbLessonId": "kbl-g4-social-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s2-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الْمُشارَكَةُ الْمُجْتَمَعِيَّةُ وَالعَمَلُ التَطَوُّعِيُّ",
+      "kbLessonId": "kbl-g4-social-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الْمَجْموعَةُ الشَمْسِيَّةُ",
+      "kbLessonId": "kbl-g4-social-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "حَرَكَةُ الأَرْضِ",
+      "kbLessonId": "kbl-g4-social-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s2-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "الْمَناطِقُ الحَرارِيَّةُ في العالَمِ",
+      "kbLessonId": "kbl-g4-social-s2-nccd-u7_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "الخَريطَةُ وَعَناصِرُها",
+      "kbLessonId": "kbl-g4-social-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "أَنْواعُ الخَرائِطِ",
+      "kbLessonId": "kbl-g4-social-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s2-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "بِلادُ الشامِ وَالعِراقُ",
+      "kbLessonId": "kbl-g4-social-s2-nccd-u8_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-social-s2-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "شِبْهُ الجَزيرَةِ العَرَبِيَّةُ",
+      "kbLessonId": "kbl-g4-social-s2-nccd-u8_l4",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "العَمَلُ الجَماعِيُّ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "مُراعاةُ الآخَرينَ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "مَهاراتُ رِيادَةِ الأَعْمالِ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "خُطُواتُ رِيادَةِ الأَعْمالِ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "أَنْواعُ الزِّراعَةِ وَأَهَمِّيَّتُها في الأُرْدُنِّ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "النَّباتاتُ المَزْروعَةُ في البيئَةِ المُحيطَةِ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "الخَضْراواتُ وَالفَواكِهُ المَوْسِمِيَّةُ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "إِدارَةُ شُؤونِ المَنْزِلِ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "العِنايَةُ بِالمَلابِسِ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "العِنايَةُ بِنَظافَةِ المَنْزِلِ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "التَّعامُلُ مَعَ مَوادِّ التَّنْظيفِ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "التَّوْعِيَةُ المُرورِيَّةُ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 5,
+      "lesson": 4,
+      "bookTitleAr": "إِشارَةُ المُرورِ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u5_l4",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "أَعْمالُ النِّجارَةِ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g4-voc-s1-student-book",
+      "unit": 7,
+      "lesson": 1,
+      "bookTitleAr": "الأَنْماطُ السِّياحِيَّةُ في الأُرْدُنِّ",
+      "kbLessonId": "kbl-g4-voc-s1-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "مَفاهيمُ النِّظامِ البيئِيِّ",
+      "kbLessonId": "kbl-g5-science-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "أَثَرُ تَغَيُّراتِ البيئَةِ في الأَنْظِمَةِ البيئِيَّةِ",
+      "kbLessonId": "kbl-g5-science-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "مَمْلَكَةُ النَّباتاتِ",
+      "kbLessonId": "kbl-g5-science-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "مَمْلَكَةُ الحَيَواناتِ",
+      "kbLessonId": "kbl-g5-science-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "مَمْلَكَةُ الفِطْرِيّاتِ",
+      "kbLessonId": "kbl-g5-science-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "المَوارِدُ الطَّبيعِيَّةُ",
+      "kbLessonId": "kbl-g5-science-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "مَصادِرُ الطّاقَةِ",
+      "kbLessonId": "kbl-g5-science-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "العَناصِرُ الكيميائِيَّةُ",
+      "kbLessonId": "kbl-g5-science-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "المُرَكَّباتُ الكيميائِيَّةُ",
+      "kbLessonId": "kbl-g5-science-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s1-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "الضَّوْءُ وَخَصائِصُهُ",
+      "kbLessonId": "kbl-g5-science-s1-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s1-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "الصَّوْتُ وَخَصائِصُهُ",
+      "kbLessonId": "kbl-g5-science-s1-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "مَجْموعاتُ الغِذاءِ",
+      "kbLessonId": "kbl-g5-science-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "contents-table",
+      "why": "UNIT OFFSET +5. The catalog numbers this book's units [6, 7, 8, 9, 10] because the earlier units are semester 1, while the contents parser infers units from the lesson numbering resetting and counts them from 1. The entry gate compares unit COUNTS and is blind to a uniform shift, so this was measured against the extracted index afterwards. Without it every figure in the book lands on a semester-1 lesson."
+    },
+    {
+      "sourceId": "g5-science-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "الغِذاءُ المُتَوازِنُ",
+      "kbLessonId": "kbl-g5-science-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الجِهازُ الهَضْمِيُّ، وَالجِهازُ البَوْلِيُّ",
+      "kbLessonId": "kbl-g5-science-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s2-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الجِهازُ التَّنَفُّسِيُّ، وَجِهازُ الدَّوَرانِ",
+      "kbLessonId": "kbl-g5-science-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s2-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "الجِهازُ الهَيْكَلِيُّ، وَالجِهازُ العَضَلِيُّ",
+      "kbLessonId": "kbl-g5-science-s2-nccd-u7_l3",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الخَصائِصُ الفيزيائِيَّةُ لِلْمَوادِّ",
+      "kbLessonId": "kbl-g5-science-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "تَحَوُّلاتُ المادَّةِ",
+      "kbLessonId": "kbl-g5-science-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "السُّرْعَةُ",
+      "kbLessonId": "kbl-g5-science-s2-nccd-u9_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "الطّاقَةُ الميكانيكِيَّةُ",
+      "kbLessonId": "kbl-g5-science-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "مُكَوِّناتُ الأَرْضِ",
+      "kbLessonId": "kbl-g5-science-s2-nccd-u10_l1",
+      "score": 1,
+      "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g5-science-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "الأَرْصادُ الجَوِّيَّةُ",
+      "kbLessonId": "kbl-g5-science-s2-nccd-u10_l2",
+      "score": 1,
+      "matchedBy": "contents-table"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."
