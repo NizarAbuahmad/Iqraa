@@ -2,11 +2,17 @@
  * Teaching plans — a teacher's own record of what they intend to teach.
  *
  * Distinct from `classGroups` (students.ts): a class is a roster a teacher
- * assigns evaluations to, keyed to one grade/subject. A teaching plan is a
- * free-text note about the bigger picture — which school, which grades,
- * which topics, on what schedule — and a teacher may have several (one per
- * school, term, or class). Nothing else in the schema references it yet, so
- * every field is plain text with no curriculum-id wiring.
+ * assigns evaluations to, keyed to one grade/subject. A plan is what that
+ * class is going to be taught, and a teacher may have several (one per
+ * school, term, or class).
+ *
+ * A plan is anchored to a class, and takes its grade and subject from it —
+ * the app stopped asking for `grades` as free text, because a typed
+ * "العاشر الف" is a string nothing can act on. `topics` and `date` are still
+ * free text and are the next thing to go: with a known grade and subject,
+ * they can become curriculum lesson ids against week numbers, which is what
+ * would let a plan answer «اختر الدرس الحالي» instead of a teacher picking
+ * it each session.
  */
 import { pgTable, text, timestamp, uuid, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -24,10 +30,13 @@ export const teachingPlans = pgTable(
     title: text("title").notNull(),
     schoolName: text("school_name").notNull().default(""),
     /**
-     * The class this plan is for, if the teacher linked one. Nullable and
-     * `set null` on delete for the same reason as `savedMaterials.classGroupId`
-     * (savedMaterials.ts) — a plan can exist before any class does, and
-     * archiving a class must not take the plan down with it.
+     * The class this plan is for. The app now requires one when a plan is
+     * created or edited, but the column stays nullable on purpose: it is
+     * `set null` on delete for the same reason as
+     * `savedMaterials.classGroupId` (savedMaterials.ts) — archiving a class
+     * must not take the plan down with it — and plans written before the
+     * anchor existed still have none. Those keep showing their old `grades`
+     * text until someone edits them; see services/planScope.ts.
      */
     classGroupId: uuid("class_group_id").references(() => classGroups.id, {
       onDelete: "set null",

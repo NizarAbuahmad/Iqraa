@@ -1,6 +1,7 @@
 /**
- * Teaching plans — a teacher's own free-text notes on what they intend to
- * teach: school, grades, topics, and schedule. See services/teachingPlans.ts.
+ * Teaching plans — what a teacher intends to teach a class. The plan is
+ * anchored to a شعبة and inherits its grade and subject (services/planScope.ts);
+ * topics and schedule are still free text. See services/teachingPlans.ts.
  *
  * Deliberately simpler than /classes: no sub-resources (students, join
  * codes), so create and edit share one modal instead of a separate detail
@@ -34,6 +35,8 @@ import {
   type TeachingPlan,
 } from '@/services/teachingPlans';
 import { listClasses, type ClassGroup } from '@/services/roster';
+import { planScopeParts } from '@/services/planScope';
+import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { confirm } from '@/services/confirm';
 import type { TranslationKey } from '@/services/i18n';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
@@ -129,6 +132,32 @@ export default function TeachingPlansScreen() {
     const found = classes.find(c => c.id === id);
     return found ? (lang === 'ar' && found.nameAr ? found.nameAr : found.name) : '';
   };
+
+  /**
+   * A plan's grade and subject are the class's, not a typed string — see
+   * services/planScope.ts. The naming lookups are passed in so that module
+   * stays loadable by the bare `node --test` runner.
+   */
+  const naming = {
+    grade: (id: string) => {
+      const g = GRADES.find(x => x.id === id);
+      return g ? (lang === 'ar' ? g.nameAr : g.name) : '';
+    },
+    subject: (id: string) => {
+      const s = SUBJECTS.find(x => x.id === id);
+      return s ? (lang === 'ar' ? s.nameAr : s.name) : '';
+    },
+  };
+  const scopeOf = (plan: { classGroupId: string | null; grades: string }) =>
+    planScopeParts(plan, classes, naming);
+
+  /**
+   * A plan without a class has no grade and no subject, which is the state
+   * this change exists to end. The roster fetch is best-effort, though, so an
+   * offline teacher editing an existing plan must not be locked out of saving
+   * a plan that already has one.
+   */
+  const canSave = Boolean(form.title.trim() && form.classGroupId);
 
   const onSave = async () => {
     const title = form.title.trim();
@@ -250,11 +279,19 @@ export default function TeachingPlansScreen() {
                 <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
                   {item.title}
                 </Text>
-                {item.schoolName || item.grades || item.classGroupId ? (
-                  <Text style={[styles.cardMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-                    {[item.schoolName, classNameFor(item.classGroupId), item.grades].filter(Boolean).join(' · ')}
-                  </Text>
-                ) : null}
+                {(() => {
+                  // Grade and subject now come from the class; a plan made
+                  // before the anchor existed still shows the text it was
+                  // given. planScopeParts decides which, never both.
+                  const meta = [item.schoolName, classNameFor(item.classGroupId), ...scopeOf(item)]
+                    .filter(Boolean)
+                    .join(' · ');
+                  return meta ? (
+                    <Text style={[styles.cardMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                      {meta}
+                    </Text>
+                  ) : null;
+                })()}
               </View>
               <Pressable onPress={() => { void onDelete(item); }} disabled={deletingId === item.id} hitSlop={10}>
                 {deletingId === item.id ? (
@@ -295,20 +332,37 @@ export default function TeachingPlansScreen() {
                 placeholderTextColor={colors.mutedForeground}
                 style={inputStyle}
               />
-              {/* Only worth a picker once there is a class to pick — same
-                  reasoning as the grade picker on /classes. */}
-              {classes.length > 0 ? (
+              {/* The class is the anchor, not a convenience: it is where the
+                  plan's grade and subject come from, so there is no longer a
+                  «بدون شعبة» option and no free-text grades box. A teacher
+                  with no classes is sent to make one rather than being given
+                  a plan that can hold nothing the app can read. */}
+              {classes.length === 0 ? (
+                <View style={{ gap: 8 }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, textAlign: align, lineHeight: 20 }}>
+                    {t('planNeedsClass')}
+                  </Text>
+                  <Pressable
+                    onPress={() => { setShowForm(false); router.push('/classes'); }}
+                    style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, borderWidth: 1.5, borderColor: ACCENT }}
+                  >
+                    <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                      {t('createClass')}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : (
                 <View style={{ gap: 6 }}>
                   <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, textAlign: align }}>
                     {t('planClass')}
                   </Text>
                   <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
-                    {[{ id: null as string | null, name: t('planNoClass'), nameAr: t('planNoClass') }, ...classes].map(c => {
+                    {classes.map(c => {
                       const active = form.classGroupId === c.id;
                       const label = lang === 'ar' && c.nameAr ? c.nameAr : c.name;
                       return (
                         <Pressable
-                          key={c.id ?? '__none'}
+                          key={c.id}
                           onPress={() => setForm(f => ({ ...f, classGroupId: c.id }))}
                           style={{
                             paddingHorizontal: 14,
@@ -326,15 +380,28 @@ export default function TeachingPlansScreen() {
                       );
                     })}
                   </View>
+                  {/* Read-only, because it is not this screen's to edit — it
+                      is whatever the chosen class says. Shown rather than
+                      hidden so a teacher can see the plan picked up the
+                      scope, and catch a wrong class here instead of later. */}
+                  {form.classGroupId && scopeOf(form).length > 0 ? (
+                    <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 12.5, textAlign: align, marginTop: 2 }}>
+                      {`${t('planScope')}: ${scopeOf(form).join(' · ')}`}
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }}>
+                        {`  (${t('planScopeFromClass')})`}
+                      </Text>
+                    </Text>
+                  ) : null}
+                  {/* A plan from before the anchor: show what its author
+                      typed, so they can pick the class that matches it. The
+                      stored text is left alone either way. */}
+                  {!form.classGroupId && form.grades ? (
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+                      {t('planLegacyGrades', form.grades)}
+                    </Text>
+                  ) : null}
                 </View>
-              ) : null}
-              <TextInput
-                value={form.grades}
-                onChangeText={v => setForm(f => ({ ...f, grades: v }))}
-                placeholder={t('planGradesPlaceholder')}
-                placeholderTextColor={colors.mutedForeground}
-                style={inputStyle}
-              />
+              )}
               <TextInput
                 value={form.topics}
                 onChangeText={v => setForm(f => ({ ...f, topics: v }))}
@@ -380,8 +447,8 @@ export default function TeachingPlansScreen() {
               </Pressable>
               <Pressable
                 onPress={onSave}
-                disabled={!form.title.trim() || saving}
-                style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT, opacity: !form.title.trim() || saving ? 0.5 : 1 }]}
+                disabled={!canSave || saving}
+                style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT, opacity: !canSave || saving ? 0.5 : 1 }]}
               >
                 {saving ? (
                   <ActivityIndicator color="#fff" size="small" />
