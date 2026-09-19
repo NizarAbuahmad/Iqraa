@@ -12,6 +12,7 @@ import { pgTable, text, timestamp, uuid, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { users } from "./users";
+import { classGroups } from "./students";
 
 export const teachingPlans = pgTable(
   "teaching_plans",
@@ -22,9 +23,20 @@ export const teachingPlans = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     schoolName: text("school_name").notNull().default(""),
+    /**
+     * The class this plan is for, if the teacher linked one. Nullable and
+     * `set null` on delete for the same reason as `savedMaterials.classGroupId`
+     * (savedMaterials.ts) — a plan can exist before any class does, and
+     * archiving a class must not take the plan down with it.
+     */
+    classGroupId: uuid("class_group_id").references(() => classGroups.id, {
+      onDelete: "set null",
+    }),
     grades: text("grades").notNull().default(""),
     topics: text("topics").notNull().default(""),
+    date: text("date").notNull().default(""),
     time: text("time").notNull().default(""),
+    notes: text("notes").notNull().default(""),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
