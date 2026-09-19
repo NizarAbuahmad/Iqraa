@@ -2433,16 +2433,6 @@ export default function IqraScreen() {
       return;
     }
 
-    if (tool.id === 'simplify' && topic) {
-      sendMessage(
-        lang === 'ar'
-          ? `بسّط شرح هذا الدرس بلغة يفهمها الطلبة: ${topic}`
-          : `Explain this lesson in simple language students understand: ${topic}`,
-        sessionMemory.activeLessonId ?? undefined,
-      );
-      return;
-    }
-
     if (tool.route) {
       router.push({
         pathname: tool.route as any,
@@ -2456,7 +2446,7 @@ export default function IqraScreen() {
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [handleResourcePress, lang, sendMessage, sessionMemory]);
+  }, [handleResourcePress, lang, sessionMemory]);
 
   const currentLessonView = buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en');
 

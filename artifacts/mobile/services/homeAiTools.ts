@@ -17,7 +17,6 @@ export type HomeToolId =
   | 'quiz'
   | 'homework'
   | 'activity'
-  | 'simplify'
   | 'bloom'
   | 'formative'
   | 'rubric'
@@ -46,13 +45,11 @@ export type HomeToolDef = {
   topicHintAr?: string;
   topicHintEn?: string;
   homework?: boolean;
-  simplify?: boolean;
 };
 
 /** Primary tools in teaching-workflow order (before → during → after). */
 export const PRIMARY_TOOL_ORDER: HomeToolId[] = [
   'lesson-plan',
-  'simplify',
   'activity',
   'worksheet',
   'quiz',
@@ -64,13 +61,6 @@ export const HOME_AI_TOOLS: HomeToolDef[] = [
   {
     id: 'lesson-plan', emoji: '📘', labelAr: 'خطة درس', labelEn: 'Lesson plan',
     route: '/ai-tools/lesson-plan', status: 'enabled', enabled: true,
-  },
-  {
-    id: 'simplify', emoji: '💡', labelAr: 'تبسيط الشرح', labelEn: 'Simplify explanation',
-    route: '/ai-tools/lesson-plan', status: 'enabled', enabled: true,
-    simplify: true,
-    topicHintAr: 'تبسيط الشرح',
-    topicHintEn: 'Simplify explanation',
   },
   // ── During class ────────────────────────────────────────────────────────
   {
@@ -168,7 +158,6 @@ export function getVisibleHomeTools(): HomeToolDef[] {
 /** Compact suggestion chips under the hero prompt — workflow order. */
 export const HERO_SUGGESTIONS: { id: HomeToolId; emoji: string; labelAr: string; labelEn: string; enabled: boolean }[] = [
   { id: 'lesson-plan', emoji: '📘', labelAr: 'خطة درس', labelEn: 'Lesson plan', enabled: true },
-  { id: 'simplify', emoji: '💡', labelAr: 'تبسيط الشرح', labelEn: 'Simplify explanation', enabled: true },
   { id: 'activity', emoji: '🎯', labelAr: 'نشاط صفي', labelEn: 'Class activity', enabled: true },
   { id: 'worksheet', emoji: '📝', labelAr: 'ورقة عمل', labelEn: 'Worksheet', enabled: true },
   { id: 'quiz', emoji: '✅', labelAr: 'اختبار قصير', labelEn: 'Short quiz', enabled: true },
@@ -194,7 +183,6 @@ export type PromptChip = {
 export const PROMPT_CHIPS: PromptChip[] = [
   { id: 'act', labelAr: 'أنشئ نشاطاً', labelEn: 'Create an activity', promptAr: 'أنشئ نشاطاً صفياً عن', promptEn: 'Create a class activity about', enabled: true },
   { id: 'quiz', labelAr: 'أنشئ اختباراً', labelEn: 'Create a quiz', promptAr: 'أنشئ اختباراً قصيراً عن', promptEn: 'Create a short quiz about', enabled: true },
-  { id: 'simplify', labelAr: 'بسّط الشرح', labelEn: 'Simplify', promptAr: 'بسّط شرح', promptEn: 'Simplify the explanation of', enabled: true },
   { id: 'real', labelAr: 'اربطه بالواقع', labelEn: 'Real-life example', promptAr: 'أعطني مثالاً من الواقع عن', promptEn: 'Give me a real-life example of', enabled: true },
   { id: 'hw', labelAr: 'أنشئ واجباً', labelEn: 'Create homework', promptAr: 'أنشئ واجباً منزلياً عن', promptEn: 'Create homework about', enabled: true },
   { id: 'hook', labelAr: 'افتتح الحصة', labelEn: 'Opening activity', promptAr: 'اقترح نشاطاً افتتاحياً عن', promptEn: 'Suggest an opening activity for', enabled: true },
@@ -220,7 +208,6 @@ export type SmartTemplate = {
 export const SMART_TEMPLATES: SmartTemplate[] = [
   // Core workflow starters
   { id: 'lp45', labelAr: 'خطة درس 45 دقيقة', labelEn: '45-min lesson plan', toolId: 'lesson-plan', topicHintAr: 'خطة درس 45 دقيقة', topicHintEn: '45-minute lesson plan', enabled: true },
-  { id: 'simplify', labelAr: 'تبسيط الشرح', labelEn: 'Simplify explanation', toolId: 'simplify', topicHintAr: 'تبسيط الشرح', topicHintEn: 'Simplify explanation', enabled: true },
   { id: 'opener', labelAr: 'نشاط افتتاحي', labelEn: 'Opening activity', toolId: 'activity', topicHintAr: 'نشاط افتتاحي', topicHintEn: 'Opening warm-up activity', enabled: true },
   { id: 'remedial', labelAr: 'ورقة عمل صفية', labelEn: 'Class worksheet', toolId: 'worksheet', topicHintAr: 'ورقة عمل صفية', topicHintEn: 'In-class worksheet', enabled: true },
   { id: 'short-quiz', labelAr: 'اختبار قصير', labelEn: 'Short quiz', toolId: 'quiz', topicHintAr: 'اختبار قصير', topicHintEn: 'Short quiz', enabled: true },
@@ -237,13 +224,12 @@ export function getVisibleSmartTemplates() {
 
 /** Related resources shown after a successful generation (enabled tools only). */
 export const RELATED_BY_TOOL: Record<string, HomeToolId[]> = {
-  'lesson-plan': ['simplify', 'activity', 'worksheet', 'quiz', 'homework'],
-  simplify: ['lesson-plan', 'activity', 'worksheet'],
+  'lesson-plan': ['activity', 'worksheet', 'quiz', 'homework'],
   activity: ['worksheet', 'quiz', 'homework'],
   worksheet: ['activity', 'quiz', 'homework'],
   quiz: ['homework', 'worksheet', 'activity'],
   homework: ['quiz', 'worksheet'],
-  default: ['lesson-plan', 'simplify', 'activity', 'worksheet', 'quiz', 'homework'],
+  default: ['lesson-plan', 'activity', 'worksheet', 'quiz', 'homework'],
 };
 
 export function getRelatedToolIds(toolId: string): HomeToolId[] {
@@ -265,13 +251,6 @@ export function buildTopicForTool(
   if (!hint) return base;
   if (!base) return hint;
   if (base.includes(hint)) return base;
-  // Avoid nesting "تبسيط الشرح: تبسيط الشرح: …"
-  if (tool.simplify) {
-    const stripped = base
-      .replace(/^(تبسيط\s*الشرح|بسّط\s*الشرح|بسط\s*الشرح|simplify(\s+explanation)?)\s*[:：\-]?\s*/i, '')
-      .trim();
-    return lang === 'ar' ? `تبسيط الشرح: ${stripped || base}` : `Simplify explanation: ${stripped || base}`;
-  }
   return `${hint}: ${base}`;
 }
 
@@ -280,7 +259,6 @@ export function inferToolFromPrompt(prompt: string): HomeToolId {
   if (/واجب|homework|hw/.test(p)) return 'homework';
   if (/ورقة|worksheet/.test(p)) return 'worksheet';
   if (/اختبار|quiz|test|exam/.test(p)) return 'quiz';
-  if (/بسّط|بسط|simplify|تبسيط/.test(p)) return 'simplify';
   if (/نشاط|activity|افتتاح/.test(p)) return 'activity';
   // Coming-soon intents fall back to closest enabled tool
   if (/بلوم|bloom/.test(p)) return 'quiz';
@@ -295,7 +273,7 @@ export function inferToolFromPrompt(prompt: string): HomeToolId {
 export function extractLessonTopic(prompt: string, fallback: string): string {
   const cleaned = prompt
     .replace(/^(أنشئ|انشئ|اصنع|اعمل|create|make|generate|build)\s+/i, '')
-    .replace(/^(خطة\s*درس|ورقة\s*عمل|اختبار(?:اً|ا)?\s*قصيرا?|واجبا?(?:\s*منزليا?)?|نشاطا?(?:\s*صفيا?)?|تبسيط\s*الشرح|بسّط\s*الشرح|lesson\s*plan|worksheet|quiz|homework|activity|simplify(\s+explanation)?)\s*(عن|حول|on|about|for)?\s*/i, '')
+    .replace(/^(خطة\s*درس|ورقة\s*عمل|اختبار(?:اً|ا)?\s*قصيرا?|واجبا?(?:\s*منزليا?)?|نشاطا?(?:\s*صفيا?)?|lesson\s*plan|worksheet|quiz|homework|activity)\s*(عن|حول|on|about|for)?\s*/i, '')
     .trim();
   return cleaned || fallback;
 }
@@ -317,6 +295,5 @@ export function buildGeneratorNav(
   const params: Record<string, string> = {};
   if (topic) params.topic = topic;
   if (resolved.homework) params.isHomework = '1';
-  if (resolved.simplify) params.simplify = '1';
   return { pathname: resolved.route, params };
 }

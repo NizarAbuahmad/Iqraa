@@ -21,7 +21,7 @@ type Rating = 'up' | 'down';
 type Props = {
   /** Matches workspace.ts's MaterialType — 'lesson' | 'worksheet' | 'quiz' | 'flow' | 'activity' | 'slides'. */
   materialType: string;
-  /** toolCatalog id, e.g. 'lesson-plan', 'simplify', 'homework'. */
+  /** toolCatalog id, e.g. 'lesson-plan', 'worksheet', 'quiz'. */
   toolId: string;
 };
 

@@ -47,9 +47,7 @@ export default function LessonPlanScreen() {
     gradeIdx?: string; subjectIdx?: string; durationIdx?: string; styleIdx?: string; objectives?: string;
     adaptations?: string;
     priorTopicsNotes?: string;
-    simplify?: string;
   }>();
-  const isSimplify = params.simplify === '1';
   const scrollRef = useRef<ScrollView>(null);
 
   const grades = getPickerGrades();
@@ -202,7 +200,6 @@ export default function LessonPlanScreen() {
         teacherObjectives: objectives.trim() || undefined,
       });
       const additionalContext = [
-        isSimplify ? 'mode:simplify' : '',
         grounding.grounded ? grounding.context : grounding.ungroundedNote,
         buildAdaptationsDirective(adaptations, lang as 'ar' | 'en'),
       ].filter(Boolean).join('\n') || undefined;
@@ -216,15 +213,11 @@ export default function LessonPlanScreen() {
         // isMathContext and ~30 other call sites.
         grade: gradeNames[gradeIdx]!,
         subject: subjects[subjectIdx].name,
-        topic: isSimplify && !/تبسيط|simplify/i.test(topic)
-          ? (lang === 'ar' ? `تبسيط الشرح: ${topic.trim()}` : `Simplify explanation: ${topic.trim()}`)
-          : topic.trim(),
+        topic: topic.trim(),
         duration: DURATION_VALUES[durationIdx],
         language: lang === 'ar' ? 'arabic' : 'english',
         teachingStyle: STYLE_IDS[styleIdx],
-        objectives: isSimplify
-          ? (objectives.trim() || (lang === 'ar' ? 'تبسيط الشرح' : 'Simplify explanation'))
-          : (objectives.trim() || undefined),
+        objectives: objectives.trim() || undefined,
         additionalContext,
         unitId: generatorUnitId(topic.trim(), lang as 'ar' | 'en'),
         lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
@@ -387,13 +380,8 @@ export default function LessonPlanScreen() {
         </View>
         <AiSourceBadge onDark isRTL={isRTL} />
         <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-          {isSimplify ? t('simplifyExplanationTitle') : t('generateLessonPlanTitle')}
+          {t('generateLessonPlanTitle')}
         </Text>
-        {isSimplify ? (
-          <Text style={[{ color: 'rgba(255,255,255,0.75)', fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('simplifyExplanationSubtitle')}
-          </Text>
-        ) : null}
       </View>
 
       {/* Form */}
@@ -448,6 +436,25 @@ export default function LessonPlanScreen() {
             onChangeText={setAdaptations}
             multiline
           />
+        </View>
+        {/* «تبسيط الشرح» used to be its own card routing back to this screen
+            with a `simplify=1` flag no prompt ever read. It is an adaptation —
+            it belongs in the field whose text the prompt applies across every
+            section of the plan. */}
+        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', marginTop: -8, marginBottom: 16 }}>
+          <Pressable
+            onPress={() => {
+              const preset = t('adaptationSimplifyPreset');
+              if (adaptations.includes(preset)) return;
+              setAdaptations(a => (a.trim() ? `${a.trim()}\n${preset}` : preset));
+            }}
+            style={[styles.presetChip, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="bulb-outline" size={14} color={ACCENT} />
+            <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+              {t('adaptationSimplifyChip')}
+            </Text>
+          </Pressable>
         </View>
 
         {/* Prior topics to re-explain (optional).
@@ -577,7 +584,7 @@ export default function LessonPlanScreen() {
           onRegenerate={() => generate({ regenerate: true })}
           variantId={pooledVariantId(result)}
           materialType="lesson"
-          toolId={isSimplify ? 'simplify' : 'lesson-plan'}
+          toolId="lesson-plan"
           topic={topic.trim()}
         />
       )}
@@ -662,6 +669,7 @@ const styles = StyleSheet.create({
   form: { padding: 20, paddingBottom: 8 },
   fieldLabel: { fontSize: 13, marginBottom: 6 },
   inputBox: { borderWidth: 1.5, padding: 14, marginBottom: 16 },
+  presetChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1.5 },
   textInput: { fontSize: 15, padding: 0, minHeight: 44 },
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },

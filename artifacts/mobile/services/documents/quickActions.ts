@@ -61,7 +61,6 @@ export const DOCUMENT_QUICK_ACTIONS: DocQuickAction[] = [
     id: 'simplify', emoji: '💡', labelAr: 'تبسيط الشرح', labelEn: 'Simplify',
     promptAr: 'بسّط الشرح للطلبة المتعثرين بناءً على الملفات',
     promptEn: 'Simplify the explanation for struggling students using the files',
-    toolId: 'simplify',
   },
   {
     id: 'summary', emoji: '📄', labelAr: 'ملخص الدرس', labelEn: 'Summary',
