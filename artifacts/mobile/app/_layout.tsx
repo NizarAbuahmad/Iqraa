@@ -29,7 +29,8 @@ import { AuthProvider, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { hasSeenAppIntro } from '@/services/appIntro';
 import { CLAIM_REQUIRED_ROUTE, isEntryRoute, isNonTeacherRoute, isPublicRoute, needsRosterClaim, needsTeacherSetup, TEACHER_SETUP_ROUTE } from '@/services/routeGating';
-import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackScreen } from '@/services/analytics';
+import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackEvent, trackScreen } from '@/services/analytics';
+import { subscribeToGenerations } from '@/services/ai/aiProvenance';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -209,6 +210,16 @@ export default function RootLayout() {
 
   useEffect(() => {
     initAnalytics();
+    // Every generator already reports through aiProvenance, so one subscription
+    // covers all of them — live and mock, every tool — instead of a trackEvent
+    // call per screen that the next generator would forget to add.
+    //
+    // `source`/`reason` is the part worth having: it separates "the model
+    // answered" from "a live call failed and mock content stood in", which are
+    // indistinguishable on screen and would otherwise both count as usage.
+    return subscribeToGenerations(({ kind, source, reason }) => {
+      trackEvent('ai_generation', { kind, source, reason });
+    });
   }, []);
 
   // The splash is hidden in RootLayoutNav, once auth has resolved — not here.
