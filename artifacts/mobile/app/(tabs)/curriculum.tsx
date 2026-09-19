@@ -106,6 +106,9 @@ export default function CurriculumScreen() {
         <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('jordanCurriculum')}
         </Text>
+        <Text style={[styles.intro, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          {t('curriculumIntro')}
+        </Text>
 
         {/* Search */}
         <View style={[styles.searchRow, { backgroundColor: colors.muted, borderRadius: colors.radius }, isRTL && { flexDirection: 'row-reverse' }]}>
@@ -243,7 +246,8 @@ export default function CurriculumScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1 },
   title: { fontSize: 28, marginBottom: 4 },
-  subtitle: { fontSize: 13, marginBottom: 14 },
+  subtitle: { fontSize: 13, marginBottom: 6 },
+  intro: { fontSize: 12.5, lineHeight: 19, marginBottom: 14 },
   searchRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
   searchInput: { flex: 1, fontSize: 14, paddingVertical: 0 },
   gradeBar: { borderBottomWidth: 1 },
