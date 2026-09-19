@@ -41,3 +41,19 @@ export function narrowSubjectsForGrade<T extends { id: string }>(
   const assignment = teachingAssignments?.find(a => a.gradeId === gradeId);
   return narrowToSelection(all, assignment ? assignment.subjectIds : legacySubjectIds);
 }
+
+/**
+ * Keeps a single-select picker's id valid as its list changes underneath it.
+ *
+ * The new-class sheet's subject row is rebuilt by `narrowSubjectsForGrade`
+ * every time the grade changes, so the subject picked for the previous grade
+ * can be absent from the new list — and that stale id is what `createClass`
+ * would otherwise persist. Derived on render rather than reconciled in an
+ * effect, so there is no frame where the two disagree.
+ */
+export function resolveSelectedId<T extends { id: string }>(
+  options: readonly T[],
+  selectedId: string,
+): string {
+  return options.some(o => o.id === selectedId) ? selectedId : (options[0]?.id ?? '');
+}

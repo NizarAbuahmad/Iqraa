@@ -7,7 +7,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { narrowSubjectsForGrade, narrowToSelection } from '../teacherCatalogFilter.ts';
+import { narrowSubjectsForGrade, narrowToSelection, resolveSelectedId } from '../teacherCatalogFilter.ts';
 
 const CATALOG = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
 
@@ -46,5 +46,21 @@ describe('narrowSubjectsForGrade', () => {
 
   it('falls back to the full catalog when neither is set', () => {
     assert.deepEqual(narrowSubjectsForGrade(CATALOG, 'grade-9', undefined, undefined), CATALOG);
+  });
+});
+
+describe('resolveSelectedId', () => {
+  it('keeps a selection that is still on offer', () => {
+    assert.equal(resolveSelectedId(CATALOG, 'b'), 'b');
+  });
+
+  it('drops a selection the new list no longer holds', () => {
+    // The new-class sheet after the teacher switches grade: 'b' belonged to
+    // the previous grade, and must not be what createClass persists.
+    assert.equal(resolveSelectedId([{ id: 'c' }], 'b'), 'c');
+  });
+
+  it('is empty rather than stale when there is nothing to pick', () => {
+    assert.equal(resolveSelectedId([], 'b'), '');
   });
 });

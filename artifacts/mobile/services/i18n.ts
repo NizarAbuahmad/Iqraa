@@ -241,6 +241,7 @@ const translations = {
     jordanCurriculum: 'المنهاج الأردني',
     searchSubjects: 'ابحث في المواد...',
     grade: 'الصف',
+    subject: 'المادة',
     subjects_count: (n: number) => arCountPhrase(n, 'مادة', 'مادتان', 'مواد'),
     noSubjectsFound: 'لا توجد مواد مطابقة',
     // The library of what the books' own QR codes point at.
@@ -1741,6 +1742,7 @@ const translations = {
     jordanCurriculum: 'Jordanian Curriculum',
     searchSubjects: 'Search subjects...',
     grade: 'Grade',
+    subject: 'Subject',
     subjects_count: (n: number) => `${n} subject${n !== 1 ? 's' : ''}`,
     noSubjectsFound: 'No subjects found',
     qrLibraryEntry: 'Book resources',
