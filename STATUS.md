@@ -1691,11 +1691,6 @@ Grade 10 chemistry has no fallback at all, its only extracted book being the
 student book. Kept here because it is the number that made the decision worth
 escalating, and the number anyone re-opening the question will want.
 
-Two things the fix also had to repair. The test read only `data/extracted/`, so
-the two Grade 9 maths files in `data/extracted-g9/` were invisible to it whatever
-the pattern. And it asked the wrong question. Marks are regexes now,
-`HarperCollins` among them.
-
 The fix also had to repair the question the test asked. Marks are regexes now,
 `HarperCollins` among them.
 
@@ -1732,11 +1727,11 @@ Collins row in memory and asserts it *would* be caught, so if the exemption ever
 goes blind — the most likely place this breaks — that fails rather than passing
 quietly.
 
-**Only 39 of the 49 are on this branch**, and 49 is already stale. The ten Grade
-4 rows exist solely on `worktree-grade-5-books`, where Grade 5 is being
-registered behind them — 8 more confirmed by scan, with Grade 5 science still
-extracting. That branch merges second and adds the licence in a commit of its
-own; the fixed test is the backstop either way, since a row arriving as `nccd`
+**47 rows are licensed, and the count is a moving target** — which is the point.
+The original scan found 49. Ten are Grade 4 rows living only on
+`worktree-grade-5-books`, where Grade 5 is being registered behind them (8 more
+confirmed by scan, science still extracting); that branch adds the licence in a
+commit of its own, and the test is the backstop, since a row arriving as `nccd`
 with no licence fails CI on whichever branch carries it.
 
 **Scan each file, never the series.** Confirmed twice now, independently. The
@@ -1746,12 +1741,6 @@ itself — while the student and activity books beside them do. Grade 4 repeats 
 exactly: `g4-science-s1-teacher-guide` and `g4-science-s2-teacher-guide` are
 clean, their student and activity books are not. Going by series would have
 mislabelled both, in the direction that matters.
-**47 rows are licensed, and the count is a moving target** — which is the point.
-The original scan found 49. Ten are Grade 4 rows living only on
-`worktree-grade-5-books`, where Grade 5 is being registered behind them (8 more
-confirmed by scan, science still extracting); that branch adds the licence in a
-commit of its own, and the test is the backstop, since a row arriving as `nccd`
-with no licence fails CI on whichever branch carries it.
 
 The other four are the reason this paragraph is worth reading.
 `g6-math-s1-exercise-book`, `g6-math-s2-exercise-book`, `g6-math-s1-teacher-guide`

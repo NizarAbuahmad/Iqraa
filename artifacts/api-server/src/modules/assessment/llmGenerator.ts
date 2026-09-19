@@ -34,6 +34,7 @@ import {
 } from "@workspace/math-verify";
 import { competencyForBlooms, type CompetencyKey } from "./competency.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
+import { variationBlock } from "../../lib/variation.ts";
 
 /** Bumped when the prompt changes shape, so usage rows stay comparable. */
 export const GENERATION_PROMPT_VERSION = "exam-gen-4";
@@ -54,6 +55,26 @@ export interface LlmGenerationRequest {
    * asked to prefer the book's own numbers and phrasing when there is a book.
    */
   bookExcerpts?: string;
+  /**
+   * Stems from the paper this generation is replacing, so a teacher pressing
+   * "regenerate" gets a real replacement rather than the same questions
+   * reworded — see `lib/variation.ts`, which this reuses. Empty on a first
+   * generation, so the prompt is unchanged on the common path.
+   */
+  avoid?: readonly string[];
+  /** Set on the one retry after the first attempt repeated most of `avoid`. */
+  insistent?: boolean;
+}
+
+/**
+ * The stem text of a generated (or stored) question body, across the type
+ * contracts above. `undefined` for a type with no single stem field
+ * (`matching`) — that type is simply not tracked for repetition.
+ */
+export function questionStem(body: Record<string, unknown> | null | undefined): string | undefined {
+  if (!body) return undefined;
+  const v = body["stem"] ?? body["statement"] ?? body["prompt"] ?? body["template"];
+  return typeof v === "string" ? v : undefined;
 }
 
 /**
@@ -262,6 +283,7 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
           + '"check":{"topic":"derivative_polynomial","question":"x^3 - 4x","answer":"3x^2 - 4"}}',
       ]
       : []),
+    variationBlock({ variantIndex: 0, isArabic: arabic, avoid: req.avoid ?? [], insistent: req.insistent }),
   ].join("\n");
 
   return { system, user };

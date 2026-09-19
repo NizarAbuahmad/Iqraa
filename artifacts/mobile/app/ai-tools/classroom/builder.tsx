@@ -17,6 +17,7 @@ import {
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
 import { isolateForeignRuns } from '@/services/mathRender';
+import { regenerationFields } from '@/services/ai/regeneration';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId } from '@/services/kbContext';
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels } from '@/services/lessonPrep';
 import { aiErrorMessageKey } from '@/services/ai/aiProvenance';
@@ -75,7 +76,12 @@ export default function ClassroomBuilderScreen() {
     }
   }, [gradeIdx, subjectIdx]);
 
-  const generate = async () => {
+  /** `regenerate` is the teacher asking for a replacement, not another copy —
+   *  see the matching comment in quiz.tsx. */
+  const generate = async (opts?: { regenerate?: boolean }) => {
+    // Read before any setState clears it — this is what the teacher is
+    // looking at, and what a regeneration must not hand back.
+    const previous = result;
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // activity — the KB serves that lesson's own content while the header
@@ -104,6 +110,7 @@ export default function ClassroomBuilderScreen() {
         lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
         bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
         contextSource: 'curriculum',
+        ...regenerationFields(opts?.regenerate === true, previous),
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
@@ -346,7 +353,7 @@ export default function ClassroomBuilderScreen() {
           </Pressable>
 
           <Pressable
-            onPress={generate}
+            onPress={() => generate({ regenerate: true })}
             style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="refresh-outline" size={16} color={ACCENT} />

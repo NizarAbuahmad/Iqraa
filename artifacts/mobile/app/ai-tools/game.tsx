@@ -31,8 +31,9 @@ import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import { isolateForeignRuns } from '@/services/mathRender';
-import type { ClassroomActivity } from '@/services/ai/AIService';
+import type { ClassroomActivity, QuizOutput } from '@/services/ai/AIService';
 import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { regenerationFields } from '@/services/ai/regeneration';
 import { buildGameDeckFromQuiz } from '@/services/classDeck';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { createGame, MAX_TEAMS, MIN_TEAMS } from '@/services/classGame';
@@ -89,6 +90,10 @@ export default function ClassGameScreen() {
   const [groundedLesson, setGroundedLesson] = useState('');
   const [error, setError] = useState('');
   const abortRef = useRef<AbortController | null>(null);
+  // The raw quiz behind the current deck — `deck` is a projector-ready
+  // transform (slide `content`, no `variantId`) and can't tell a regeneration
+  // what to avoid, so the source quiz is kept separately for that.
+  const previousQuizRef = useRef<QuizOutput | null>(null);
 
   // Preview teams with the same factory the game uses, so the names, emojis and
   // colours a teacher sees here are exactly the ones that appear on the board.
@@ -100,12 +105,17 @@ export default function ClassGameScreen() {
     if (prevGradeRef.current !== gradeIdx || prevSubjectRef.current !== subjectIdx) {
       setTopic('');
       setDeck(null);
+      previousQuizRef.current = null;
       prevGradeRef.current = gradeIdx;
       prevSubjectRef.current = subjectIdx;
     }
   }, [gradeIdx, subjectIdx]);
 
-  const generate = async () => {
+  /** `regenerate` is the teacher asking for a replacement, not another copy —
+   *  see the matching comment in quiz.tsx. */
+  const generate = async (opts?: { regenerate?: boolean }) => {
+    // Read before this run's result can replace it.
+    const previous = previousQuizRef.current;
     const trimmed = topic.trim();
     if (!trimmed) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
@@ -142,7 +152,9 @@ export default function ClassGameScreen() {
         // Nothing here but the lesson the teacher picked, so the quiz behind
         // the deck can be shared with every other teacher who picks it.
         contextSource: 'curriculum',
+        ...regenerationFields(opts?.regenerate === true, previous),
       }, { signal: controller.signal });
+      previousQuizRef.current = quiz;
 
       const built = buildGameDeckFromQuiz(quiz, trimmed, isAr, {
         teamCount,
@@ -396,7 +408,7 @@ export default function ClassGameScreen() {
             </Pressable>
 
             <Pressable
-              onPress={generate}
+              onPress={() => generate({ regenerate: true })}
               style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name="refresh-outline" size={16} color={ACCENT} />

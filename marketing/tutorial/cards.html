@@ -1,0 +1,108 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Iqraa — tutorial cards 1920×1080</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Almarai:wght@300;400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#081B3A; --teal:#00A99D; --aqua:#34D6C6; --muted:#8BA0B8; --r:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--navy)}
+body{font-family:"Almarai",sans-serif;direction:rtl}
+
+.card{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.bg{position:absolute;inset:0;background:
+  radial-gradient(1200px 820px at 50% 22%, rgba(52,214,198,.18), transparent 62%),
+  radial-gradient(900px 700px at 10% 88%, rgba(0,169,157,.13), transparent 65%),
+  var(--navy)}
+.grain{position:absolute;inset:0;opacity:.32;background-image:
+  linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px);background-size:100% 4px}
+.inner{position:relative;padding:0 160px}
+
+.num{font-family:"Cairo";font-weight:700;font-size:30px;letter-spacing:.22em;
+  color:var(--aqua);margin-bottom:30px}
+h1{font-family:"Cairo";font-weight:900;font-size:96px;line-height:1.22;color:#fff}
+h1 .hl{color:var(--aqua)}
+.sub{font-size:38px;line-height:1.55;color:var(--muted);margin-top:28px}
+.rule{width:150px;height:6px;background:var(--teal);border-radius:99px;margin:44px auto 0}
+
+.logo{display:block;margin:0 auto 46px;position:relative}
+.cta{display:inline-flex;align-items:center;gap:14px;background:var(--aqua);color:#06243F;
+  font-family:"Cairo";font-weight:900;font-size:40px;padding:26px 56px;border-radius:999px;
+  margin-top:46px;box-shadow:0 20px 50px rgba(52,214,198,.32)}
+.foot{font-size:30px;color:var(--muted);margin-top:34px}
+</style>
+
+<div class="card"><div class="bg"></div><div class="grain"></div>
+  <div class="inner" id="slot"></div>
+</div>
+
+<script>
+// One template, one list. Adding a chapter is one line here plus one line in build.py.
+var LOGO = '../../artifacts/mobile/assets/images/logo-mark.png';
+var CARDS = {
+  intro: {
+    logo: 280,
+    h1: 'كيف تستخدم <span class="hl">اقرأ</span>',
+    sub: 'دليل المعلّم — من إنشاء الحساب إلى تصحيح الامتحان',
+    rule: true
+  },
+  // Part 1 cut — matches the 2026-09-15 recording (biology, grade 9).
+  intro1: {
+    logo: 280,
+    h1: 'كيف تُحضّر درسك في <span class="hl">اقرأ</span>',
+    sub: 'الجزء الأول — من اختيار الدرس إلى خطة الحصة',
+    rule: true
+  },
+  c1: { num: 'الخطوة ١', h1: 'اختر <span class="hl">درسك</span>',       sub: 'المادة، والصف، والوحدة، والدرس' },
+  c2: { num: 'الخطوة ٢', h1: 'أدوات التدريس',                            sub: 'قبل الحصة، وأثناءها، وبعدها' },
+  c3: { num: 'الخطوة ٣', h1: '<span class="hl">شرائح الدرس</span>',      sub: 'عرض الحصة، جاهزًا للشاشة' },
+  c4: { num: 'الخطوة ٤', h1: 'اعرض على الشاشة',                          sub: 'قدّم الدرس أمام صفّك' },
+  c5: { num: 'الخطوة ٥', h1: '<span class="hl">خطة الدرس</span>',        sub: 'اختر الأسلوب والمدة — وتُبنى الخطة' },
+  outro1: {
+    logo: 240,
+    h1: 'جرّبها بنفسك',
+    sub: 'رفيقك في تحضير الحصص',
+    cta: 'app.iqrra.com',
+    foot: 'في الجزء القادم: الصفوف، والتقييمات، وتصحيح الامتحان'
+  },
+  '01': { num: 'الفصل ١', h1: 'ما هو <span class="hl">اقرأ</span>؟',           sub: 'جولة سريعة قبل أن تبدأ' },
+  '02': { num: 'الفصل ٢', h1: 'إنشاء الحساب',                                  sub: 'وتأكيد البريد الإلكتروني' },
+  '03': { num: 'الفصل ٣', h1: 'من أين <span class="hl">أبدأ</span>؟',          sub: 'اكتب ما تحتاجه بلغتك' },
+  '04': { num: 'الفصل ٤', h1: 'تحديد الدرس الحالي',                            sub: 'كل ما تطلبه بعدها يُبنى على هذا الدرس' },
+  '05': { num: 'الفصل ٥', h1: 'التحضير من <span class="hl">صفحة الدرس</span>', sub: 'خطة درس مرتبطة بنتاجات المنهاج' },
+  '06': { num: 'الفصل ٦', h1: 'ما معنى «وضع العرض»؟',                          sub: 'المحتوى التجريبي، وما هو حقيقي' },
+  '07': { num: 'الفصل ٧', h1: 'الأدوات',                                       sub: 'ورقة عمل، اختبار قصير، وشرائح' },
+  '08': { num: 'الفصل ٨', h1: 'الحفظ والتصدير',                                sub: 'PDF أو Word — جاهز للطباعة' },
+  '09': { num: 'الفصل ٩', h1: '<span class="hl">ابدأ الحصة</span>',            sub: 'اعرض الدرس على شاشة الصف' },
+  '10': { num: 'الفصل ١٠', h1: 'الصفوف والطلاب',                               sub: 'أنشئ صفّك، وألصق قائمة الأسماء' },
+  '11': { num: 'الفصل ١١', h1: 'التقييمات',                                    sub: 'من توليد الأسئلة إلى لوحة النتائج' },
+  '12': { num: 'الفصل ١٢', h1: 'الامتحان الورقي',                              sub: 'صوّر الورقة — وتُملأ الخانات' },
+  outro: {
+    logo: 240,
+    h1: 'ابدأ الآن',
+    sub: 'رفيقك في تحضير الحصص',
+    cta: 'app.iqrra.com',
+    foot: 'منصة عربية وفق المنهاج الأردني'
+  }
+};
+
+(function(){
+  var id = new URLSearchParams(location.search).get('c') || 'intro';
+  var c = CARDS[id];
+  if (!c) { document.getElementById('slot').textContent = 'no card: ' + id; return; }
+  var html = '';
+  if (c.logo) html += '<img class="logo" src="' + LOGO + '" width="' + c.logo + '" height="' + c.logo + '">';
+  if (c.num)  html += '<div class="num">' + c.num + '</div>';
+  html += '<h1>' + c.h1 + '</h1>';
+  if (c.sub)  html += '<div class="sub">' + c.sub + '</div>';
+  if (c.rule) html += '<div class="rule"></div>';
+  if (c.cta)  html += '<div><span class="cta">' + c.cta + '</span></div>';
+  if (c.foot) html += '<div class="foot">' + c.foot + '</div>';
+  document.getElementById('slot').innerHTML = html;
+  document.title = 'card-' + id;
+})();
+</script>

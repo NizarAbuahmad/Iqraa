@@ -1,0 +1,55 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Iqraa — tutorial captions (transparent)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Almarai:wght@300;400;700;800&display=swap" rel="stylesheet">
+<style>
+/* Rendered by Chrome with --default-background-color=00000000 so the PNG keeps an
+   alpha channel and ffmpeg can overlay it straight onto the screen recording.
+   Arabic must be rasterised here: ffmpeg drawtext does no bidi reordering or glyph
+   shaping, so anything it renders comes out disconnected and backwards. */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden;background:transparent}
+body{font-family:"Almarai",sans-serif;direction:rtl}
+
+.wrap{position:absolute;left:0;right:0;display:flex;justify-content:center;padding:0 90px}
+.wrap.bottom{bottom:82px}
+.wrap.top{top:78px}
+.wrap.center{top:50%;transform:translateY(-50%)}
+
+.cap{display:inline-flex;align-items:center;gap:26px;max-width:1500px;
+  background:rgba(8,27,58,.93);
+  border:1px solid rgba(52,214,198,.28);
+  border-radius:18px;padding:30px 40px;
+  box-shadow:0 26px 60px rgba(0,0,0,.5)}
+.cap::before{content:"";width:8px;align-self:stretch;background:#34D6C6;
+  border-radius:99px;flex:none}
+.tx{font-family:"Cairo";font-weight:700;font-size:46px;line-height:1.45;color:#fff}
+.tx .k{color:#34D6C6}          /* a UI label being pointed at */
+.tx .warn{color:#FBBF24}       /* a caution */
+
+/* step counter, sits above the caption */
+.step{position:absolute;bottom:0;right:0;font-family:"Cairo";font-weight:700;
+  font-size:28px;color:#34D6C6;letter-spacing:.12em}
+
+/* full-width banner for the one-line warnings */
+.wrap.banner{top:0;bottom:auto;padding:0}
+.wrap.banner .cap{border-radius:0;width:100%;max-width:none;justify-content:center;
+  background:rgba(180,83,9,.95);border:0;padding:26px 40px}
+.wrap.banner .cap::before{display:none}
+</style>
+
+<div id="slot"></div>
+<script src="captions.gen.js"></script>
+<script>
+(function(){
+  var i = parseInt(new URLSearchParams(location.search).get('i') || '0', 10);
+  var c = (window.CAPTIONS || [])[i];
+  if (!c) { document.title = 'caption-missing-' + i; return; }
+  var pos = c.pos || 'bottom';
+  var html = '<div class="wrap ' + pos + '"><div class="cap"><div class="tx">' + c.text + '</div></div></div>';
+  document.getElementById('slot').innerHTML = html;
+  document.title = 'caption-' + i;
+})();
+</script>

@@ -52,7 +52,9 @@ import {
   GENERATION_PROMPT_VERSION,
   generateWithModel,
   paperIsMathematics,
+  questionStem,
 } from "../modules/assessment/llmGenerator";
+import { OVERLAP_REJECT_ABOVE, overlapRatio, signatureLines } from "../lib/variation.ts";
 import {
   AiBudgetExceededError,
   AiLiveModeOffError,
@@ -454,7 +456,17 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
         );
       }
 
-      const llm = await generateWithModel(
+      // What this teacher was already shown, if this is a regeneration — the
+      // request is otherwise identical every time (same objectives, same
+      // count, same difficulty), which is exactly what produced "regenerate
+      // returns the same questions reworded" elsewhere in this codebase. Only
+      // the stems are sent; see `lib/variation.ts`.
+      const previousQuestions = await liveQuestions(evaluation.id);
+      const avoid = signatureLines(
+        previousQuestions.map(q => ({ text: questionStem(q.body as Record<string, unknown>) })),
+      );
+
+      const runLlm = (avoidList: readonly string[], insistent: boolean) => generateWithModel(
         {
           objectives,
           assessmentTypes: evaluation.assessmentTypes,
@@ -462,6 +474,8 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
           difficulty: evaluation.difficulty,
           language: evaluation.language,
           bookExcerpts: grounding?.block,
+          avoid: avoidList,
+          insistent,
         },
         async prompt => {
           const model = getGenerationModel();
@@ -487,6 +501,24 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
           };
         },
       );
+
+      let llm = await runLlm(avoid, false);
+      if (avoid.length > 0) {
+        const repeated = overlapRatio(
+          signatureLines(llm.questions.map(q => ({ text: questionStem(q.body) }))),
+          avoid,
+        );
+        if (repeated > OVERLAP_REJECT_ABOVE) {
+          // The directive was read as a suggestion — see the identical check
+          // in routes/generate.ts and CLAUDE.md on flags that describe an
+          // intention rather than a result. One retry, not a loop.
+          logger.warn(
+            { evaluationId: evaluation.id, repeated: Number(repeated.toFixed(2)) },
+            "evaluation regeneration repeated most of the previous paper — retrying once",
+          );
+          llm = await runLlm(avoid, true);
+        }
+      }
 
       generator = "llm";
       modelId = llm.model;
