@@ -270,6 +270,10 @@ import {
   buildG1SocialSem2BrowserCatalog,
 } from './catalogs/g1SocialSem2.ts';
 import {
+  G1_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  buildG1CreativeArtsBrowserCatalog,
+} from './catalogs/g1CreativeArts.ts';
+import {
   G1_ARABIC_S2_CURRICULUM_BOOK_ID,
   buildG1ArabicSem2BrowserCatalog,
   isG1ArabicSem2TitleOnlyUnit,
@@ -890,8 +894,9 @@ export const SUBJECTS: Subject[] = [
   // to grade-4 on 2026-09-17 once its book arrived — not contiguous with
   // grade-6..8 (no grade-5 book); see g4CreativeArts.ts. Extended to grade-3
   // on 2026-09-18 once its book arrived, same one-book shape; see
-  // g3CreativeArts.ts.
-  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-3', 'grade-4', 'grade-6', 'grade-7', 'grade-8'] },
+  // g3CreativeArts.ts. Extended to grade-1 on 2026-09-19 once its book
+  // arrived, same one-book shape; see g1CreativeArts.ts.
+  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-1', 'grade-3', 'grade-4', 'grade-6', 'grade-7', 'grade-8'] },
   // Seventh brand-new subject, added 2026-09-09 as part of the Grade 8
   // batch. Seven vocational tracks packed into one book per semester
   // (life skills, home economics, agriculture, health/safety, industry,
@@ -1411,6 +1416,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // g3SocialSem1.ts. See g1SocialSem1.ts / g1SocialSem2.ts.
   G1_SOCIAL_S1_CURRICULUM_BOOK_ID,
   G1_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  // Grade 1 Art, Music and Drama Education — one book, no semester, same
+  // shape as g3CreativeArts.ts/g4CreativeArts.ts. 'creative-arts' is
+  // already in MVP_SUBJECT_IDS, but SUBJECTS.grades needed extending for
+  // grade-1 — see the SUBJECTS declaration above and g1CreativeArts.ts.
+  G1_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -3160,6 +3170,22 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+  },
+  // ── Art, Music and Drama Education Grade 1 ──────────────────────────────
+  // Eleventh Grade 1 book in this repo, required extending SUBJECTS.grades
+  // for creative-arts (previously grade-3/4/6/7/8 only). One book for the
+  // whole year — no semester field, same shape as g3CreativeArts.ts.
+  {
+    id: G1_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+    title: 'Art, Music and Drama Education – Grade 1',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف الأول',
+    subjectId: 'creative-arts',
+    gradeId: 'grade-1',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
   },
   // The first Grade 6 books in the repo. Maths carries four units and eighteen
   // lessons from the student book alone (no S2 student book was supplied);
@@ -5312,6 +5338,7 @@ const _g1ArabicSem1Browser = buildG1ArabicSem1BrowserCatalog();
 const _g1ArabicSem2Browser = buildG1ArabicSem2BrowserCatalog();
 const _g1SocialSem1Browser = buildG1SocialSem1BrowserCatalog();
 const _g1SocialSem2Browser = buildG1SocialSem2BrowserCatalog();
+const _g1CreativeArtsBrowser = buildG1CreativeArtsBrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -5593,6 +5620,7 @@ export const UNITS: Unit[] = [
   ..._g1ArabicSem2Browser.units,
   ..._g1SocialSem1Browser.units,
   ..._g1SocialSem2Browser.units,
+  ..._g1CreativeArtsBrowser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -5764,6 +5792,7 @@ export const LESSONS: Lesson[] = [
   ..._g1ArabicSem2Browser.lessons,
   ..._g1SocialSem1Browser.lessons,
   ..._g1SocialSem2Browser.lessons,
+  ..._g1CreativeArtsBrowser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,

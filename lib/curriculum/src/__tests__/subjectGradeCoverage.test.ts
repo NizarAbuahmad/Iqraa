@@ -298,11 +298,11 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // grade-7 or SPECIALISED_FROM; geography/history/civic-education start at
   // grade-9). vocational-education stays genuinely PERMANENT for grade-1 —
   // no Grade 1 vocational book exists at all. physical-education is declared
-  // for grade-3/6/7/9 only and creative-arts for grade-3/4/6/7/8 only — both
-  // exclude grade-1, but Grade 1 Art and PE source PDFs exist on disk (PE is
-  // Semester 2 only, the opposite semester from every other grade's PE gap),
-  // so these two may move to the ORDINARY list below once SUBJECTS.grades is
-  // extended for them, same trap as grade-3's creative-arts/physical-education.
+  // for grade-3/6/7/9 only, excluding grade-1, but Grade 1 PE source PDFs
+  // exist on disk (Semester 2 only, the opposite semester from every other
+  // grade's PE gap), so it may move to the ORDINARY list below once
+  // SUBJECTS.grades is extended for it, same trap as grade-3's
+  // creative-arts/physical-education.
   'chemistry:grade-1',
   'physics:grade-1',
   'biology:grade-1',
@@ -312,7 +312,6 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'history:grade-1',
   'civic-education:grade-1',
   'physical-education:grade-1',
-  'creative-arts:grade-1',
   'vocational-education:grade-1',
   //
   // ORDINARY GAPS — the subject is declared at grade-1 in SUBJECTS.grades,
@@ -335,6 +334,9 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // g1SocialSem1.ts/g1SocialSem2.ts. Semester 2's source file is misnamed on
   // disk (says "الصف الرابع" / Grade 4) — verified as genuine Grade 1 S2
   // content via the PDF's own bibliographic page.
+  // creative-arts:grade-1 closed 2026-09-19 — SUBJECTS.grades extended for
+  // grade-1 (one book, no semester, same shape as g3CreativeArts.ts) — see
+  // g1CreativeArts.ts.
   'digital-literacy:grade-1',
 ]);
 
