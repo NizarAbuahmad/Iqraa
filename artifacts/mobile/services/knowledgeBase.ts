@@ -683,6 +683,14 @@ import {
   G2_SCIENCE_S2_BOOK_ID,
   buildG2ScienceSem2Catalog,
 } from './curriculumG2ScienceSem2.ts';
+import {
+  G2_ISLAMIC_S1_BOOK_ID,
+  buildG2IslamicSem1Catalog,
+} from './curriculumG2IslamicSem1.ts';
+import {
+  G2_ISLAMIC_S2_BOOK_ID,
+  buildG2IslamicSem2Catalog,
+} from './curriculumG2IslamicSem2.ts';
 
 export interface KBBook {
   id: string;
@@ -1869,6 +1877,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Science – Grade 2 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g2_science_sem2.json (NCCD)',
+  },
+  {
+    id: G2_ISLAMIC_S1_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف الثاني – الفصل الأول',
+    titleEn: 'Islamic Education – Grade 2 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g2_islamic_sem1.json (NCCD)',
+  },
+  {
+    id: G2_ISLAMIC_S2_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف الثاني – الفصل الثاني',
+    titleEn: 'Islamic Education – Grade 2 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g2_islamic_sem2.json (NCCD)',
   },
   {
     id: G6_MATH_S1_BOOK_ID,
@@ -3319,6 +3345,8 @@ const _g2MathSem1 = buildG2MathSem1Catalog();
 const _g2MathSem2 = buildG2MathSem2Catalog();
 const _g2ScienceSem1 = buildG2ScienceSem1Catalog();
 const _g2ScienceSem2 = buildG2ScienceSem2Catalog();
+const _g2IslamicSem1 = buildG2IslamicSem1Catalog();
+const _g2IslamicSem2 = buildG2IslamicSem2Catalog();
 const _g8VocSem1 = buildG8VocSem1Catalog();
 const _g8VocSem2 = buildG8VocSem2Catalog();
 const _g8SocialSem1 = buildG8SocialSem1Catalog();
@@ -3613,6 +3641,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g2MathSem2.units,
   ..._g2ScienceSem1.units,
   ..._g2ScienceSem2.units,
+  ..._g2IslamicSem1.units,
+  ..._g2IslamicSem2.units,
   ..._g8VocSem1.units,
   ..._g8VocSem2.units,
   ..._g8SocialSem1.units,
@@ -3796,6 +3826,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g2MathSem2.lessons,
   ..._g2ScienceSem1.lessons,
   ..._g2ScienceSem2.lessons,
+  ..._g2IslamicSem1.lessons,
+  ..._g2IslamicSem2.lessons,
   ..._g8VocSem1.lessons,
   ..._g8VocSem2.lessons,
   ..._g8SocialSem1.lessons,
