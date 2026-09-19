@@ -735,6 +735,14 @@ import {
   G2_MATH_S2_CURRICULUM_BOOK_ID,
   buildG2MathSem2BrowserCatalog,
 } from './catalogs/g2MathSem2.ts';
+import {
+  G2_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  buildG2ScienceSem1BrowserCatalog,
+} from './catalogs/g2ScienceSem1.ts';
+import {
+  G2_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  buildG2ScienceSem2BrowserCatalog,
+} from './catalogs/g2ScienceSem2.ts';
 
 export interface Grade {
   id: string;
@@ -1450,6 +1458,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // MVP_GRADE_IDS below.
   G2_MATH_S1_CURRICULUM_BOOK_ID,
   G2_MATH_S2_CURRICULUM_BOOK_ID,
+  // Grade 2 Science, both semesters. 'science' is already declared for
+  // grade-2 in SUBJECTS.grades (GRADES.slice(0, 9)), so no subject append or
+  // SUBJECTS.grades extension is needed. Same NCCD box conventions as
+  // g1ScienceSem1.ts. See g2ScienceSem1.ts / g2ScienceSem2.ts.
+  G2_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  G2_SCIENCE_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -3065,6 +3079,37 @@ export const BOOKS: Book[] = [
     title: 'Mathematics – Grade 2, Semester 2',
     titleAr: 'الرياضيات – الصف الثاني – الفصل الثاني',
     subjectId: 'mathematics',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Science Grade 2 – Semesters 1 and 2 ─────────────────────────────────
+  // Second Grade 2 book in this repo. 'science' is already declared for
+  // grade-2 in SUBJECTS.grades (GRADES.slice(0, 9)), so no subject append or
+  // SUBJECTS.grades extension is needed. Same NCCD box conventions as
+  // g1ScienceSem1.ts. See g2ScienceSem1.ts / g2ScienceSem2.ts.
+  {
+    id: G2_SCIENCE_S1_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 2, Semester 1',
+    titleAr: 'العلوم – الصف الثاني – الفصل الأول',
+    subjectId: 'science',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G2_SCIENCE_S2_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 2, Semester 2',
+    titleAr: 'العلوم – الصف الثاني – الفصل الثاني',
+    subjectId: 'science',
     gradeId: 'grade-2',
     academicYear: '2024-2025',
     language: 'Arabic',
@@ -5421,6 +5466,8 @@ const _g1CreativeArtsBrowser = buildG1CreativeArtsBrowserCatalog();
 const _g1PhysicalEducationSem2Browser = buildG1PhysicalEducationSem2BrowserCatalog();
 const _g2MathSem1Browser = buildG2MathSem1BrowserCatalog();
 const _g2MathSem2Browser = buildG2MathSem2BrowserCatalog();
+const _g2ScienceSem1Browser = buildG2ScienceSem1BrowserCatalog();
+const _g2ScienceSem2Browser = buildG2ScienceSem2BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -5706,6 +5753,8 @@ export const UNITS: Unit[] = [
   ..._g1PhysicalEducationSem2Browser.units,
   ..._g2MathSem1Browser.units,
   ..._g2MathSem2Browser.units,
+  ..._g2ScienceSem1Browser.units,
+  ..._g2ScienceSem2Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -5881,6 +5930,8 @@ export const LESSONS: Lesson[] = [
   ..._g1PhysicalEducationSem2Browser.lessons,
   ..._g2MathSem1Browser.lessons,
   ..._g2MathSem2Browser.lessons,
+  ..._g2ScienceSem1Browser.lessons,
+  ..._g2ScienceSem2Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
