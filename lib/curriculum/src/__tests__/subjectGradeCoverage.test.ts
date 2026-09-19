@@ -340,6 +340,48 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // 2026-09-19 via AskUserQuestion; user chose "Keep waiting", same as
   // Grade 3 Digital Skills. Paused, not built.
   'digital-literacy:grade-1',
+  //
+  // grade-2 joined MVP_GRADE_IDS 2026-09-19 with only Mathematics built —
+  // same staged rollout as grade-1/3/4/5's. mathematics:grade-2 closed the
+  // same day, both semesters, real content from each lesson's own «أَتَعَلَّمُ
+  // الْيَوْمَ» box (same HarperCollins/NCCD series and convention as
+  // g1MathSem1.ts; no unnumbered preparatory unit this time).
+  //
+  // PERMANENT — the subject is not declared at grade-2 in SUBJECTS.grades at
+  // all (physics/chemistry/biology/earth-science/financial-literacy start at
+  // grade-7 or SPECIALISED_FROM; geography/history/civic-education start at
+  // grade-9). vocational-education stays genuinely PERMANENT for grade-2 —
+  // no Grade 2 vocational book exists at all. creative-arts and
+  // physical-education are PERMANENT-pending-SUBJECTS.grades-extension: a
+  // Grade 2 source book exists for each, but SUBJECTS.grades excludes
+  // grade-2 until the catalog is actually built (same trap hit at every
+  // prior grade's Art/PE rollout).
+  'chemistry:grade-2',
+  'physics:grade-2',
+  'biology:grade-2',
+  'earth-science:grade-2',
+  'financial-literacy:grade-2',
+  'geography:grade-2',
+  'history:grade-2',
+  'civic-education:grade-2',
+  'vocational-education:grade-2',
+  'creative-arts:grade-2',
+  'physical-education:grade-2',
+  //
+  // ORDINARY GAPS — the subject is declared at grade-2 in SUBJECTS.grades,
+  // and Grade 2 source PDFs exist on disk (knowledge-base/grade-2-*), but no
+  // catalog has been built from them yet. Delete each line once its catalog
+  // and BOOKS row land, same as the grade-1 rollout above. This is an
+  // unusually complete source batch — real student books exist for both
+  // semesters of science/social/english/arabic/islamic. Digital Skills has
+  // no student book at all — same class of gap hit at every other grade in
+  // this project.
+  'science:grade-2',
+  'social:grade-2',
+  'english:grade-2',
+  'arabic:grade-2',
+  'islamic:grade-2',
+  'digital-literacy:grade-2',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {
