@@ -1,52 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   KeyboardAvoidingView, Platform, Pressable,
-  ScrollView, StyleSheet, Text, useWindowDimensions, View,
+  ScrollView, StyleSheet, Text, View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { AuthBrandPanel, useAuthLayout } from '@/components/ui/AuthBrandPanel';
 import { AuthModeSwitch } from '@/components/ui/AuthModeSwitch';
-import { BrandLogo } from '@/components/ui/BrandLogo';
 import { Button } from '@/components/ui/Button';
 import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
 import { Input } from '@/components/ui/Input';
 
-const NAVY = '#081B3A';
-const TEAL = '#00A99D';
-const AQUA = '#34D6C6';
-
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const { login, loginWithGoogle } = useAuth();
-  const { t, lang, isRTL, toggleLang } = useLanguage();
+  const { t, lang, isRTL } = useLanguage();
+  const { isWide } = useAuthLayout();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  // Prefer real browser viewport on web (RN dimensions can lag behind device emulation)
-  const [viewportW, setViewportW] = useState(width);
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') {
-      setViewportW(width);
-      return;
-    }
-    const sync = () => setViewportW(window.innerWidth);
-    sync();
-    window.addEventListener('resize', sync);
-    return () => window.removeEventListener('resize', sync);
-  }, [width]);
-
-  const isWide = viewportW >= 900;
 
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -79,70 +59,6 @@ export default function LoginScreen() {
       setGoogleLoading(false);
     }
   };
-
-  const brandPanel = (
-    <LinearGradient
-      colors={[NAVY, '#0B274F', '#0A3A4A']}
-      start={{ x: 0.1, y: 0 }}
-      end={{ x: 0.9, y: 1 }}
-      style={[
-        styles.brandPanel,
-        isWide ? styles.brandPanelWide : styles.brandPanelNarrow,
-        { paddingTop: isWide ? 48 : insets.top + 16 },
-      ]}
-    >
-      {/* Soft atmospheric accents — not busy */}
-      <View style={[styles.glow, styles.glowTeal]} />
-      <View style={[styles.glow, styles.glowAqua]} />
-
-      <Pressable
-        onPress={() => { Haptics.selectionAsync(); toggleLang(); }}
-        style={[
-          styles.langBtn,
-          {
-            alignSelf: isRTL ? 'flex-start' : 'flex-end',
-            backgroundColor: 'rgba(255,255,255,0.10)',
-            borderColor: 'rgba(255,255,255,0.16)',
-          },
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel={lang === 'ar' ? 'التبديل إلى الإنجليزية' : 'Switch to Arabic'}
-      >
-        <Ionicons name="language-outline" size={15} color="rgba(255,255,255,0.9)" />
-        <Text style={[styles.langBtnText, { fontFamily: 'Cairo_500Medium' }]}>
-          {lang === 'ar' ? 'English' : 'عربي'}
-        </Text>
-      </Pressable>
-
-      <View style={[styles.brandContent, isWide && styles.brandContentWide]}>
-        <Text style={[styles.eyebrow, { fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
-          {t('loginBrandEyebrow')}
-        </Text>
-
-        <BrandLogo
-          variant="mark"
-          onDark
-          style={[styles.logo, isWide ? styles.logoWide : styles.logoNarrow]}
-          accessibilityLabel="IQRA"
-        />
-
-        <Text
-          style={[
-            styles.valueProp,
-            {
-              fontFamily: lang === 'ar' ? 'Cairo_500Medium' : 'Almarai_400Regular',
-              textAlign: 'center',
-              writingDirection: isRTL ? 'rtl' : 'ltr',
-            },
-          ]}
-        >
-          {t('loginValueProp')}
-        </Text>
-
-        <View style={styles.brandRule} />
-      </View>
-    </LinearGradient>
-  );
 
   const formPanel = (
     <KeyboardAvoidingView
@@ -273,6 +189,7 @@ export default function LoginScreen() {
         <Pressable
           onPress={() => router.push('/(auth)/forgot-password' as any)}
           style={{ alignSelf: isRTL ? 'flex-start' : 'flex-end', paddingVertical: 4 }}
+          accessibilityRole="link"
         >
           <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
             {t('forgotPasswordLink')}
@@ -295,7 +212,7 @@ export default function LoginScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }, isWide && { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-      {brandPanel}
+      <AuthBrandPanel isWide={isWide} />
       {formPanel}
     </View>
   );
@@ -303,92 +220,6 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-
-  brandPanel: {
-    overflow: 'hidden',
-    paddingHorizontal: 28,
-    paddingBottom: 28,
-  },
-  brandPanelNarrow: {
-    minHeight: 320,
-  },
-  brandPanelWide: {
-    flex: 1.05,
-    minWidth: 380,
-    justifyContent: 'center',
-    paddingHorizontal: 48,
-    paddingBottom: 48,
-  },
-  brandContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 14,
-    paddingVertical: 12,
-  },
-  brandContentWide: {
-    maxWidth: 420,
-    alignSelf: 'center',
-    gap: 18,
-  },
-
-  glow: {
-    position: 'absolute',
-    borderRadius: 999,
-    opacity: 0.22,
-  },
-  glowTeal: {
-    width: 220,
-    height: 220,
-    backgroundColor: TEAL,
-    top: -60,
-    right: -40,
-  },
-  glowAqua: {
-    width: 180,
-    height: 180,
-    backgroundColor: AQUA,
-    bottom: -50,
-    left: -30,
-    opacity: 0.14,
-  },
-
-  langBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
-    borderWidth: 1,
-    zIndex: 2,
-  },
-  langBtnText: { fontSize: 13, color: 'rgba(255,255,255,0.92)' },
-
-  eyebrow: {
-    fontSize: 12,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    color: AQUA,
-    marginBottom: 2,
-  },
-  logo: { alignSelf: 'center' },
-  logoNarrow: { width: 168, height: 168 },
-  logoWide: { width: 260, height: 260 },
-  valueProp: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: 'rgba(255,255,255,0.82)',
-    maxWidth: 320,
-    marginTop: 2,
-  },
-  brandRule: {
-    width: 48,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: TEAL,
-    marginTop: 6,
-  },
 
   formPanel: { flex: 1, backgroundColor: '#F5F7FA' },
   formPanelWide: { flex: 1, justifyContent: 'center' },
