@@ -2228,6 +2228,38 @@ Grade 6 social S1/S2, Grade 6 vocational S2, Grade 6 arabic S2, Grade 7 art and
 Grade 7 digital literacy S1/S2. No contents rows at any tolerance and no
 openers — there is nothing in these books to read.
 
+## An Android build is now a workflow, not a laptop, 2026-09-19
+
+Every APK so far (`5c38a5fb`, `68522384`, `d32f5c0c`, `e9388ee1`) was built by
+hand from a machine with `eas-cli` logged in as `nizar.62`. The sandboxes that
+do most of the work on this repo have no Expo credentials at all — no
+`EXPO_TOKEN`, no `~/.expo` — so «give me a new APK» from one of them meant
+«wait for the laptop». The repository already holds `EXPO_TOKEN` for
+`mobile-update.yml` (its «Publish update» step ran and «Explain a skipped
+publish» skipped on run 159, 2026-09-19, so the secret is set and works), and
+a build needs nothing more.
+
+`.github/workflows/mobile-build.yml` is `workflow_dispatch` only: Actions →
+*Mobile Android build* → *Run workflow*, pick the branch and the `eas.json`
+profile (`preview` → sideloadable APK on the `preview` update channel, so it
+keeps taking OTA updates; `production` → the Play app-bundle). It runs
+`eas build --platform android --json`, waits, and writes the build id,
+version / versionCode and the download URL into the job summary at the top of
+the run page.
+
+**It has not run yet, and could not have.** GitHub does not register a new
+`workflow_dispatch` workflow until the file exists on the default branch —
+dispatching it from the feature branch answers 404 — so the first run happens
+after this merges. What that first run has to prove, since nothing here has
+exercised it: that `eas-cli` on an Actions runner archives through the
+repo-root `.easignore` the same way the hand-run builds did (311 MB, not 424),
+that the `preview` profile's `env` block loads (the build log says
+`Environment variables loaded from the "preview" build profile`), and that the
+`--json` output carries `artifacts.buildUrl` for the summary step to read. No
+`app.json` `version` bump: the last hand-run builds already carry
+`expo-updates`, and nothing native has been added since #420 — see «app.json's
+`version` is the OTA compatibility key» in CLAUDE.md before the next one.
+
 ## Grades 3, 4 and 5: 11 books, +123 lessons, 2026-09-19
 
 **498 → 621 lessons illustrated, 2572 figures.** The catalogs landed between
