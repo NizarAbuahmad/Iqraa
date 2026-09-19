@@ -270,8 +270,11 @@ const CONTEXT_SUBJECTS = getPickerSubjects().map(s => ({
 }));
 
 // All MVP grades with KB content — same picker `home.tsx`'s change-lesson
-// sheet uses, so this sheet offers the same choice.
-const CONTEXT_GRADES = getPickerGrades();
+// sheet uses, so this sheet offers the same choice. Sorted by level for
+// display only: MVP_GRADE_IDS' own order is persisted as bare indices
+// elsewhere (see catalog.ts), so it can't be reordered just to fix this
+// row's visual order.
+const CONTEXT_GRADES = [...getPickerGrades()].sort((a, b) => a.level - b.level);
 
 // ─── Suggested questions per mode/language ───────────────────────────────────
 interface Suggestion {
