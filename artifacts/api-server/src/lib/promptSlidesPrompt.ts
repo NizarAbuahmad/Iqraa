@@ -59,8 +59,14 @@ function slideCountLine(b: any, isAr: boolean): string {
     : `Generate exactly ${capped} slides.`;
 }
 
-/** The teacher's grade/subject, offered as a hint the description can override. */
-function scopeLine(b: any, isAr: boolean): string {
+/**
+ * The teacher's grade/subject, offered as a hint the description can override.
+ *
+ * Exported for the clarifying-questions prompt, which used to ignore the
+ * grade the screen sent it and so asked the teacher for it — with a list of
+ * grades it made up.
+ */
+export function scopeLine(b: any, isAr: boolean): string {
   const grade = typeof b.grade === 'string' ? b.grade.trim() : '';
   const subject = typeof b.subject === 'string' ? b.subject.trim() : '';
   if (!grade && !subject) return '';
