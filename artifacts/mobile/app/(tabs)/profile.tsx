@@ -321,6 +321,14 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             </Pressable>
+            {/* A roster of real children belongs beside what the teacher
+                teaches, not filed under الإعدادات next to FAQ and sign-out.
+                Non-teachers keep their copy of this row in the settings list
+                below — they join classes, they just do not have a TEACHING
+                section to put it in. */}
+            <View style={{ marginTop: 8 }}>
+              <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
+            </View>
           </>
         ) : null}
 
@@ -330,7 +338,9 @@ export default function ProfileScreen() {
         </Text>
         <View style={{ gap: 8 }}>
           <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
-          <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
+          {isTeacherRole(user?.role) ? null : (
+            <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
+          )}
           <SettingRow icon="calendar-outline" label={t('myTeachingPlans')} onPress={() => router.push('/teaching-plans' as any)} isRTL={isRTL} colors={colors} />
           {(user?.role === 'parent' || user?.role === 'student') && (
             <SettingRow
