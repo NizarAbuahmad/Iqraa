@@ -381,7 +381,8 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'social:grade-2',
   // english:grade-2 closed 2026-09-19, both semesters — see
   // g2EnglishSem1.ts/g2EnglishSem2.ts.
-  'arabic:grade-2',
+  // arabic:grade-2 closed 2026-09-19, both semesters — see
+  // g2ArabicSem1.ts/g2ArabicSem2.ts.
   // islamic:grade-2 closed 2026-09-19, both semesters — see
   // g2IslamicSem1.ts/g2IslamicSem2.ts.
   'digital-literacy:grade-2',

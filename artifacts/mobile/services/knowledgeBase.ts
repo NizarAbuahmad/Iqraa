@@ -699,6 +699,14 @@ import {
   G2_ENGLISH_S2_BOOK_ID,
   buildG2EnglishSem2Catalog,
 } from './curriculumG2EnglishSem2.ts';
+import {
+  G2_ARABIC_S1_BOOK_ID,
+  buildG2ArabicSem1Catalog,
+} from './curriculumG2ArabicSem1.ts';
+import {
+  G2_ARABIC_S2_BOOK_ID,
+  buildG2ArabicSem2Catalog,
+} from './curriculumG2ArabicSem2.ts';
 
 export interface KBBook {
   id: string;
@@ -1921,6 +1929,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'English – Grade 2 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g2_english_sem2.json (NCCD)',
+  },
+  {
+    id: G2_ARABIC_S1_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف الثاني – الفصل الأول',
+    titleEn: 'Arabic – Grade 2 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g2_arabic_sem1.json (NCCD)',
+  },
+  {
+    id: G2_ARABIC_S2_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف الثاني – الفصل الثاني',
+    titleEn: 'Arabic – Grade 2 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g2_arabic_sem2.json (NCCD)',
   },
   {
     id: G6_MATH_S1_BOOK_ID,
@@ -3375,6 +3401,8 @@ const _g2IslamicSem1 = buildG2IslamicSem1Catalog();
 const _g2IslamicSem2 = buildG2IslamicSem2Catalog();
 const _g2EnglishSem1 = buildG2EnglishSem1Catalog();
 const _g2EnglishSem2 = buildG2EnglishSem2Catalog();
+const _g2ArabicSem1 = buildG2ArabicSem1Catalog();
+const _g2ArabicSem2 = buildG2ArabicSem2Catalog();
 const _g8VocSem1 = buildG8VocSem1Catalog();
 const _g8VocSem2 = buildG8VocSem2Catalog();
 const _g8SocialSem1 = buildG8SocialSem1Catalog();
@@ -3673,6 +3701,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g2IslamicSem2.units,
   ..._g2EnglishSem1.units,
   ..._g2EnglishSem2.units,
+  ..._g2ArabicSem1.units,
+  ..._g2ArabicSem2.units,
   ..._g8VocSem1.units,
   ..._g8VocSem2.units,
   ..._g8SocialSem1.units,
@@ -3860,6 +3890,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g2IslamicSem2.lessons,
   ..._g2EnglishSem1.lessons,
   ..._g2EnglishSem2.lessons,
+  ..._g2ArabicSem1.lessons,
+  ..._g2ArabicSem2.lessons,
   ..._g8VocSem1.lessons,
   ..._g8VocSem2.lessons,
   ..._g8SocialSem1.lessons,
