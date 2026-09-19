@@ -1,0 +1,246 @@
+{
+  "meta": {
+    "grade": "الصف الثاني",
+    "grade_en": "Grade 2",
+    "subject": "الدراسات الاجتماعية",
+    "subject_en": "Social Studies",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب الدراسات الاجتماعية الصف الثاني الفصل الثاني (g2-social-s2-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ ودروسُها الثَّلاثَ عشرَة من كتاب الطالب في 2026-09-19، بقراءةِ صفحةِ الفهرسِ وصفحةِ افتتاحِ كلِّ وحدةٍ وصفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF عبرَ PyMuPDF. تُتابِعُ الوحداتُ تَرقيمَ الفَصلِ الأوَّلِ (4-6)، نفسُ ما فَعَلَهُ g2MathSem2.ts وg2ScienceSem2.ts. تحقَّقتُ من صحَّةِ ترتيبِ صفحةِ الفهرسِ بفَحصِ صفحةِ الدَّرسِ الخامِسِ مِنَ الوَحدَةِ الرّابِعَةِ مُباشَرَةً؛ طابَقَت.",
+    "known_gaps": [
+      "objectives وprior_knowledge فارغتانِ لكلِّ الدروسِ الثَّلاثَ عشرَة: لا يطبَعُ الكتابُ صندوقَ «نَتاجاتُ التَّعَلُّمِ» ولا صندوقَ «تَعَلَّمْتُ سابِقًا» — نفسُ ما وُثِّقَ في iqra_curriculum_g2_social_sem1.json."
+    ]
+  },
+  "units": [
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "رِحْلَةٌ عَبْرَ الزَّمَنِ",
+      "title_en": "A Journey Through Time",
+      "general_idea_ar": "مَعْرِفَةُ التَّغَيُّراتِ وَالتَّطَوُّراتِ في حَياةِ الإنْسانِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "كانَ يا ما كانَ",
+          "title_en": "Once Upon a Time",
+          "main_idea_ar": "التَّعَرُّفُ إلى الوَسائِلِ وَالأَدَواتِ الَّتي اسْتَعمَلَها الإنْسانُ عَبرَ الزَّمَنِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التَّطَوُّر", "en": "Evolution" },
+            { "ar": "القَديم", "en": "Ancient" },
+            { "ar": "الحَديث", "en": "Modern" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "تَطَوُّرُ وَسائِلِ النَّقْلِ",
+          "title_en": "Evolution of Transportation",
+          "main_idea_ar": "التَّعَرُّفُ إلى تَطَوُّرِ وَسائِلِ النَّقْلِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "النَّقْل", "en": "Transportation" },
+            { "ar": "الشّاحِنَة", "en": "Truck" },
+            { "ar": "الطّائِرَة", "en": "Plane" },
+            { "ar": "السَّفينَة", "en": "Ship" },
+            { "ar": "الحافِلَة", "en": "Bus" },
+            { "ar": "السَّيّارَة", "en": "Car" },
+            { "ar": "القِطار", "en": "Train" }
+          ]
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "تَطَوُّرُ السَّكَنِ في وَطَني",
+          "title_en": "Evolution of Housing in My Homeland",
+          "main_idea_ar": "التَّعَرُّفُ إلى تَطَوُّرِ سَكَنِ الإنْسانِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "البَيْت", "en": "House" },
+            { "ar": "الحِجارَة", "en": "Stones" },
+            { "ar": "الطّين", "en": "Mud" }
+          ]
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "الْكِتابَةُ وَوَسائِلُ الِاتِّصالِ وَالتَّواصُلِ",
+          "title_en": "Writing and Means of Communication",
+          "main_idea_ar": "التَّعَرُّفُ إلى تَطَوُّرِ الكِتابَةِ وَوَسائِلِ الِاتِّصالِ وَالتَّواصُلِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الكِتابَة", "en": "Writing" },
+            { "ar": "وَسائِل الِاتِّصال", "en": "Means of Communication" },
+            { "ar": "وَسائِل التَّواصُل الِاجْتِماعيّ", "en": "Social Media" }
+          ]
+        },
+        {
+          "id": "u4_l5",
+          "order": 5,
+          "title_ar": "مِنْ إِنْجازاتِ وَطَني",
+          "title_en": "Achievements of My Homeland",
+          "main_idea_ar": "التَّعَرُّفُ إلى إِنْجازاتِ وَطَني الْمُتَنَوِّعَةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التَّعليم", "en": "Education" },
+            { "ar": "الرِّعايَة الصِّحِّيَّة", "en": "Health Care" },
+            { "ar": "البِنْيَة التَّحْتِيَّة", "en": "Infrastructure" },
+            { "ar": "الخَدَمات الإلِكترونِيَّة", "en": "Electronic Services" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "حاجاتي وَرَغَباتي",
+      "title_en": "My Needs and Wants",
+      "general_idea_ar": "الِاسْتِهلاكُ قَدْرَ الحاجَةِ، وَادِّخارُ الفائِضِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "الْإِنْتاجُ وَالِاسْتِهلاكُ",
+          "title_en": "Production and Consumption",
+          "main_idea_ar": "التَّعَرُّفُ إلى عَمَلِيّاتِ البَيعِ وَالشِّراءِ في حَياتِنا اليَوْمِيَّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الشِّراء", "en": "Buying" },
+            { "ar": "البَيْع", "en": "Selling" },
+            { "ar": "النُّقود", "en": "Money" },
+            { "ar": "الإنْتاج", "en": "Production" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "حَصّالَتي",
+          "title_en": "My Money Box",
+          "main_idea_ar": "التَّعَرُّفُ إلى كَيفِيَّةِ التَّعامُلِ مَعَ النُّقودِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الِاسْتِهلاك", "en": "Consumption" },
+            { "ar": "الِادِّخار", "en": "Savings" },
+            { "ar": "حَصّالَة", "en": "Money Box" }
+          ]
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "تَرْشيدُ الِاسْتِهلاكِ",
+          "title_en": "Rationalizing Consumption",
+          "main_idea_ar": "التَّعَرُّفُ إلى طَرائِقِ تَرْشيدِ الِاسْتِهلاكِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "تَرْشيد", "en": "Rationalization" },
+            { "ar": "الْكَهْرَباء", "en": "Electricity" },
+            { "ar": "الْماء", "en": "Water" },
+            { "ar": "الْغِذاء", "en": "Food" }
+          ]
+        },
+        {
+          "id": "u5_l4",
+          "order": 4,
+          "title_ar": "إِعادَةُ اسْتِعمالِ الْمَوادِّ وَالتَّدْويرِ",
+          "title_en": "Reuse and Recycling",
+          "main_idea_ar": "التَّعَرُّفُ إلى مَفهومَيْ إِعادَةِ الِاسْتِعمالِ وَالتَّدْويرِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "إِعادَة الِاسْتِعمال", "en": "Reuse" },
+            { "ar": "إِعادَة التَّدْوير", "en": "Recycling" },
+            { "ar": "الْوَرَق", "en": "Paper" }
+          ]
+        },
+        {
+          "id": "u5_l5",
+          "order": 5,
+          "title_ar": "صُنِعَ في وَطَني",
+          "title_en": "Made in My Homeland",
+          "main_idea_ar": "التَّعَرُّفُ إلى مُنْتَجاتٍ صُنِعَتْ في وَطَني.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "صُنِعَ", "en": "Made" },
+            { "ar": "الْأَدْوِيَة", "en": "Medications" },
+            { "ar": "الْمَنْسوجات", "en": "Textiles" },
+            { "ar": "الْمُنْتَجات الْغِذائِيَّة", "en": "Food Products" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "أَنا وَالْعالَمُ",
+      "title_en": "Me and the World",
+      "general_idea_ar": "مِنْ مُكَوِّناتِ الكُرَةِ الأَرْضِيَّةِ، اليابِسَةُ وَالماءُ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "كَوْكَبُنا الْأَزْرَقُ",
+          "title_en": "Our Blue Planet",
+          "main_idea_ar": "التَّعَرُّفُ إلى مُكَوِّناتِ كَوْكَبِ الْأَرْضِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْأَرْض", "en": "Earth" },
+            { "ar": "الْقارَّة", "en": "Continent" },
+            { "ar": "الْمُحيط", "en": "Ocean" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "أَشْكالُ سَطْحِ الْأَرْضِ",
+          "title_en": "Landforms",
+          "main_idea_ar": "التَّعَرُّفُ إلى أَشْكالِ سَطْحِ الْأَرْضِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "السَّهْل", "en": "Plain" },
+            { "ar": "الْوادي", "en": "Valley" },
+            { "ar": "الْجَبَل", "en": "Mountain" },
+            { "ar": "الْبَحْر", "en": "Sea" },
+            { "ar": "الْبَحْر الْمَيِّت", "en": "Dead Sea" },
+            { "ar": "الْواحَة", "en": "Oasis" },
+            { "ar": "الْهَضَبَة", "en": "Hill" },
+            { "ar": "خَليج الْعَقَبَة", "en": "Gulf of Aqaba" }
+          ]
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "خَريطَةُ وَطَني",
+          "title_en": "Map of My Homeland",
+          "main_idea_ar": "التَّعَرُّفُ إلى بَعضِ عَناصِرِ الْخَريطَةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "خَريطَة", "en": "Map" }]
+        }
+      ]
+    }
+  ]
+}

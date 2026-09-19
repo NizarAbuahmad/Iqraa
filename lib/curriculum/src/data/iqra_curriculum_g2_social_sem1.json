@@ -1,0 +1,195 @@
+{
+  "meta": {
+    "grade": "الصف الثاني",
+    "grade_en": "Grade 2",
+    "subject": "الدراسات الاجتماعية",
+    "subject_en": "Social Studies",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب الدراسات الاجتماعية الصف الثاني الفصل الأول (g2-social-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ ودروسُها الأحدَ عشرَ من كتاب الطالب في 2026-09-19، بقراءةِ صفحةِ الفهرسِ وصفحةِ افتتاحِ كلِّ وحدةٍ وصفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF عبرَ PyMuPDF. نفسُ نمطِ g2ScienceSem1.ts: «الفِكْرَةُ العامَّةُ» على افتتاحيّةِ كلِّ وحدةٍ، و«الفِكْرَةُ الرَّئيسَةُ» و«المَفاهيمُ وَالمُصْطَلَحاتُ» الثنائيَّةُ اللغةِ على افتتاحيّةِ كلِّ درسٍ. تحقَّقتُ من صحَّةِ ترتيبِ صفحةِ الفهرسِ بمقارنتِها بصفحاتِ المحتوى مباشرةً، فوجدتُها موثوقةً (بعكسِ بعضِ كتبِ «لغتي»).",
+    "known_gaps": [
+      "objectives وprior_knowledge فارغتانِ لكلِّ الدروسِ الأحدَ عشرَ: لا يطبَعُ الكتابُ صندوقَ «نَتاجاتُ التَّعَلُّمِ» ولا صندوقَ «تَعَلَّمْتُ سابِقًا» — نفسُ ما وُثِّقَ في g2ScienceSem1.ts."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "الْأُسْرَةُ في وَطَني",
+      "title_en": "Family in My Homeland",
+      "general_idea_ar": "لِلْأُسْرَةِ دَوْرٌ كَبيرٌ في تَرْبِيَةِ الأَبْناءِ، وَيَجْعَلُهُمْ قادِرينَ عَلى بِناءِ الْمُجْتَمَعِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "الْأُسْرَةُ",
+          "title_en": "The Family",
+          "main_idea_ar": "يُوجَدُ في وَطَني عِناوينُ مِنَ الأُسْرَةِ، مِثلَ: الأُسْرَةِ النَّواةِ، وَالأُسْرَةِ الْمُمْتَدَّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْأُسْرَة", "en": "Family" },
+            { "ar": "الْأُسْرَة النَّواة", "en": "Nuclear Family" },
+            { "ar": "الْأُسْرَة الْمُمْتَدَّة", "en": "Extended Family" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "الْحِوارُ في الْأُسْرَةِ",
+          "title_en": "Dialogue in the Family",
+          "main_idea_ar": "الْحِوارُ وَسيلَةٌ لِلتَّفاهُمِ وَتَبادُلِ الآراءِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "الْحِوار", "en": "Dialogue" }]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "آدابُ الْمُعامَلَةِ",
+          "title_en": "Manners of Interaction",
+          "main_idea_ar": "لِلْمُعامَلَةِ آدابٌ تُراعى بَينَ أَفرادِ الْمُجْتَمَعِ، وَتَمْنَحُ السَّعادَةَ وَالشُّعورَ بِالرّاحَةِ وَالطُّمَأنينَةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "الِاسْتِئْذان", "en": "Permission" }]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "حُقوقُ الطِّفْلِ",
+      "title_en": "Child Rights",
+      "general_idea_ar": "لِكُلِّ طِفْلٍ الحَقُّ في الرِّعايَةِ الصِّحِّيَّةِ، وَالتَّعليمِ، وَاللَّعِبِ، مِنْ بَينِ الآخَرينَ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "حَقّي في الْأَمْنِ وَالسَّلامَةِ",
+          "title_en": "My Right to Security and Safety",
+          "main_idea_ar": "الأَمْنُ وَالسَّلامَةُ حَقٌّ أَساسيٌّ مِنْ حُقوقِ الطِّفْلِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "حَقّ", "en": "Right" },
+            { "ar": "طَريق", "en": "Road" },
+            { "ar": "أَمْن", "en": "Security" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "حَقّي في الرِّعايَةِ الصِّحِّيَّةِ",
+          "title_en": "My Right to Health Care",
+          "main_idea_ar": "الرِّعايَةُ الصِّحِّيَّةُ حَقٌّ أَساسيٌّ لِلْأَطفالِ؛ فَهيَ تُساعِدُهُم عَلى النُّمُوِّ الَسَّليمِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "الرِّعايَة الصِّحِّيَّة", "en": "Health Care" }]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "حَقّي في التَّعليمِ",
+          "title_en": "My Right to Education",
+          "main_idea_ar": "التَّعليمُ حَقٌّ أَساسيٌّ لِلْأَطفالِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "التَّعليم", "en": "Education" }]
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "حَقّي في اللَّعِبِ",
+          "title_en": "My Right to Play",
+          "main_idea_ar": "اللَّعِبُ حَقٌّ أَساسيٌّ مِنْ حُقوقِ الأَطفالِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "اللَّعِب", "en": "Play" },
+            { "ar": "الآمِن", "en": "Safe" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "أَنا وَمُجْتَمَعي",
+      "title_en": "Me and My Community",
+      "general_idea_ar": "يَتَكَوَّنُ الْمُجْتَمَعُ في وَطَني مِنْ سُكّانِ الْمَدينَةِ وَالْقَريَةِ وَالبادِيَةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الْمُجْتَمَعُ في وَطَني",
+          "title_en": "Community in My Homeland",
+          "main_idea_ar": "يَتَكَوَّنُ الْمُجْتَمَعُ في وَطَني مِنْ سُكّانِ الْمَدينَةِ وَالْقَريَةِ وَالبادِيَةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْمَدينَة", "en": "City" },
+            { "ar": "الْقَريَة", "en": "Village" },
+            { "ar": "الْبادِيَة", "en": "Badia" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "مِنْ عاداتِنا وَتَقاليدِنا",
+          "title_en": "From Our Customs and Traditions",
+          "main_idea_ar": "يَتَمَيَّزُ الْمُجْتَمَعُ الأُردُنّيُّ بِعاداتِهِ وَتَقاليدِهِ الأُردُنِّيَّةِ الَّتي تُوارَثُ عَنِ الآباءِ وَالأَجدادِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "العادات", "en": "Customs" },
+            { "ar": "التَّقاليد", "en": "Traditions" },
+            { "ar": "الْقِيَم", "en": "Values" }
+          ]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "مُناسَباتُنا الْوَطَنِيَّةُ",
+          "title_en": "Our National Occasions",
+          "main_idea_ar": "يَحتَفِلُ الْأُردُنِّيّونَ في مُناسَباتٍ وَطَنِيَّةٍ عَديدَةٍ، مِنها: عيدُ الِاسْتِقلالِ، وَعيدُ الجُلوسِ الْمَلَكيِّ، وَيَومُ العَلَمِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْوَطَن", "en": "Motherland" },
+            { "ar": "الْمَلِك", "en": "The King" },
+            { "ar": "العَلَم", "en": "Flag" }
+          ]
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "الْمِهَنُ في وَطَني",
+          "title_en": "Occupations in My Homeland",
+          "main_idea_ar": "يَعمَلُ أَفرادُ الْمُجْتَمَعِ في مِهَنٍ مُختَلِفَةٍ، فَمِنهُمُ الأَطِبّاءُ وَالْمُهَنْدِسونَ وَالْمُعَلِّمونَ وَالتُّجّارُ وَالْخَبّازونَ وَالبائِعونَ وَغَيرُهُم.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "مِهْنَة", "en": "Occupation" },
+            { "ar": "مُعَلِّم/مُعَلِّمَة", "en": "Teacher" },
+            { "ar": "مُهَنْدِس/مُهَنْدِسَة", "en": "Engineer" },
+            { "ar": "بائِع/بائِعَة", "en": "Seller" },
+            { "ar": "طَبيب/طَبيبَة", "en": "Medical Doctor" },
+            { "ar": "مُبَرمِج/مُبَرمِجَة", "en": "Programmer" }
+          ]
+        }
+      ]
+    }
+  ]
+}
