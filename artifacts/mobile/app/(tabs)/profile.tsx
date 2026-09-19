@@ -300,6 +300,7 @@ export default function ProfileScreen() {
         <View style={{ gap: 8 }}>
           <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
           <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
+          <SettingRow icon="calendar-outline" label={t('myTeachingPlans')} onPress={() => router.push('/teaching-plans' as any)} isRTL={isRTL} colors={colors} />
           {(user?.role === 'parent' || user?.role === 'student') && (
             <SettingRow
               icon="key-outline"
