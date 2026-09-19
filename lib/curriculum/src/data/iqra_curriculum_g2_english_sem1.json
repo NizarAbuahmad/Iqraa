@@ -1,0 +1,303 @@
+{
+  "meta": {
+    "grade": "الصف الثاني",
+    "grade_en": "Grade 2",
+    "subject": "اللغة الإنجليزية",
+    "subject_en": "English",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة اللغة الإنجليزية الصف الثاني الفصل الأول (g2-english-s1-pupils-book, Jordan Team Together series, Pearson/York Press)"
+    ],
+    "provenance_note": "Read directly from the PDF via PyMuPDF on 2026-09-19 — extraction is clean (this book is in English). Same treatment as iqra_curriculum_g1_english_sem1.json: unit titles, page numbers, vocabulary, grammar phrases, and listening skill descriptors taken from the book's own two-page 'Scope and sequence' table (pp. 4-5); the Speaking/Reading/Writing/Project/Viewing columns on page 5 were not used. Each numbered unit is split into two lessons — Vocabulary & Grammar, and Listening & Speaking. Unlike g1EnglishSem1.json's Welcome unit, this Grade's Welcome unit DOES carry a full Grammar and Listening entry in the table, so it uses the same two-lesson shape as every numbered unit.",
+    "known_gaps": [
+      "This is real content (vocabulary lists, grammar phrases, listening skill descriptors), not title-only — but it is unit-level, not lesson-level: each unit's actual internal lesson count and exact per-page lesson titles were not verified page by page.",
+      "Following the established English-subject precedent, `main_idea_ar` and `objectives` hold literal English text (this book's own language), not Arabic; `title_ar` carries a plain Arabic gloss of the English title for search/display.",
+      "Phonics letter/word-family lists printed inside the table's Vocabulary column are excluded from `vocabulary` — they are letter-sound drill items, not thematic vocabulary, and this schema has no separate field for them.",
+      "Unit 1's 'Unit objectives' table cell did not extract (the table jumps directly from the page number to the Vocabulary column for this one row only, unlike every other unit) — `general_idea_ar` is left empty for u1 rather than invented; every other unit's objectives cell extracted cleanly."
+    ]
+  },
+  "units": [
+    {
+      "id": "u0",
+      "number": 0,
+      "title_ar": "أهلاً وسهلاً (Hello!)",
+      "title_en": "Welcome: Hello!",
+      "general_idea_ar": "Introducing the characters; using polite interactions; counting and recognising numbers to 10; identifying colours",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u0_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "What's your name? My name's …, I'm … How old are you? I'm … How many …? What colour is it?",
+          "periods": null,
+          "objectives": [
+            "What's your name? My name's …, I'm …",
+            "How old are you? I'm …",
+            "How many …?",
+            "What colour is it?"
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "one" },
+            { "ar": "", "en": "two" },
+            { "ar": "", "en": "three" },
+            { "ar": "", "en": "four" },
+            { "ar": "", "en": "five" },
+            { "ar": "", "en": "six" },
+            { "ar": "", "en": "seven" },
+            { "ar": "", "en": "eight" },
+            { "ar": "", "en": "nine" },
+            { "ar": "", "en": "ten" },
+            { "ar": "", "en": "black" },
+            { "ar": "", "en": "blue" },
+            { "ar": "", "en": "brown" },
+            { "ar": "", "en": "green" },
+            { "ar": "", "en": "orange" },
+            { "ar": "", "en": "pink" },
+            { "ar": "", "en": "purple" },
+            { "ar": "", "en": "red" },
+            { "ar": "", "en": "white" },
+            { "ar": "", "en": "yellow" }
+          ]
+        },
+        {
+          "id": "u0_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising familiar words and basic phrases; understanding the main information when people introduce themselves; recognising cardinal numbers up to ten; recognising a few familiar everyday nouns and adjectives; recognising familiar words and phrases in short, simple songs or chants.",
+          "periods": null,
+          "objectives": [
+            "Recognising familiar words and basic phrases; understanding the main information when people introduce themselves; recognising cardinal numbers up to ten; recognising a few familiar everyday nouns and adjectives; recognising familiar words and phrases in short, simple songs or chants."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "انظر إلى ألعابي!",
+      "title_en": "Look at My Toys!",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "What's this? It's a (car). It's an (action figure). Is it a (swing)? Yes, it is. No, it isn't. Can I play with (it), please?",
+          "periods": null,
+          "objectives": [
+            "What's this? It's a (car). It's an (action figure).",
+            "Is it a (swing)? Yes, it is. No, it isn't.",
+            "Can I play with (it), please?"
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "action figure" },
+            { "ar": "", "en": "building set" },
+            { "ar": "", "en": "car" },
+            { "ar": "", "en": "dinosaur" },
+            { "ar": "", "en": "doll" },
+            { "ar": "", "en": "plane" },
+            { "ar": "", "en": "puzzle" },
+            { "ar": "", "en": "robot" },
+            { "ar": "", "en": "teddy" },
+            { "ar": "", "en": "yoyo" },
+            { "ar": "", "en": "ball" },
+            { "ar": "", "en": "bike" },
+            { "ar": "", "en": "kite" },
+            { "ar": "", "en": "scooter" },
+            { "ar": "", "en": "slide" },
+            { "ar": "", "en": "swing" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising a few familiar everyday nouns and adjectives; recognising familiar words and basic phrases; understanding simple questions; recognising familiar words and phrases; recognising isolated words related to familiar topics; understanding basic phrases; recognising the letters of the alphabet by their sounds.",
+          "periods": null,
+          "objectives": [
+            "Recognising a few familiar everyday nouns and adjectives; recognising familiar words and basic phrases; understanding simple questions; recognising familiar words and phrases; recognising isolated words related to familiar topics; understanding basic phrases; recognising the letters of the alphabet by their sounds."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "أين قلمي؟",
+      "title_en": "Where's My Pen?",
+      "general_idea_ar": "Naming classroom objects; talking about classroom objects and saying where they are",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "This is (my pencil case). These are (my books). Where's (the pencil)? It's in/on/under (the desk). Can I borrow (it), please? Yes. Here you are.",
+          "periods": null,
+          "objectives": [
+            "This is (my pencil case). These are (my books).",
+            "Where's (the pencil)? It's in/on/under (the desk).",
+            "Can I borrow (it), please? Yes. Here you are."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "bag" },
+            { "ar": "", "en": "book" },
+            { "ar": "", "en": "chair" },
+            { "ar": "", "en": "computer" },
+            { "ar": "", "en": "crayon" },
+            { "ar": "", "en": "cupboard" },
+            { "ar": "", "en": "desk" },
+            { "ar": "", "en": "eraser" },
+            { "ar": "", "en": "pen" },
+            { "ar": "", "en": "pencil" },
+            { "ar": "", "en": "pencil case" },
+            { "ar": "", "en": "pencil sharpener" },
+            { "ar": "", "en": "ruler" },
+            { "ar": "", "en": "scissors" },
+            { "ar": "", "en": "shelf" },
+            { "ar": "", "en": "table" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising a few familiar everyday nouns and adjectives; recognising familiar words and phrases; recognising familiar words and basic phrases; understanding basic statements; understanding some basic words and phrases to show politeness; recognising the letters of the alphabet by their sounds.",
+          "periods": null,
+          "objectives": [
+            "Recognising a few familiar everyday nouns and adjectives; recognising familiar words and phrases; recognising familiar words and basic phrases; understanding basic statements; understanding some basic words and phrases to show politeness; recognising the letters of the alphabet by their sounds."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "حرِّك جسمك!",
+      "title_en": "Move Your Body!",
+      "general_idea_ar": "Naming body parts; talking about movement",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "I've got (one face). I've got (ten toes). Move (your body)! Touch (your head)! What a cool (dinosaur)!",
+          "periods": null,
+          "objectives": [
+            "I've got (one face).",
+            "I've got (ten toes).",
+            "Move (your body)! Touch (your head)!",
+            "What a cool (dinosaur)!"
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "arms" },
+            { "ar": "", "en": "face" },
+            { "ar": "", "en": "feet" },
+            { "ar": "", "en": "fingers" },
+            { "ar": "", "en": "hands" },
+            { "ar": "", "en": "head" },
+            { "ar": "", "en": "knees" },
+            { "ar": "", "en": "legs" },
+            { "ar": "", "en": "toes" },
+            { "ar": "", "en": "tummy" },
+            { "ar": "", "en": "bend" },
+            { "ar": "", "en": "clap" },
+            { "ar": "", "en": "move" },
+            { "ar": "", "en": "stamp" },
+            { "ar": "", "en": "stretch" },
+            { "ar": "", "en": "touch" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising familiar words and phrases in short, simple songs or chants; recognising a few familiar everyday nouns and adjectives; recognising familiar words and basic phrases; understanding basic action words; following basic instructions to colour, draw or make something; understanding basic phrases in short, simple texts; recognising the letters of the alphabet by their sounds.",
+          "periods": null,
+          "objectives": [
+            "Recognising familiar words and phrases in short, simple songs or chants; recognising a few familiar everyday nouns and adjectives; recognising familiar words and basic phrases; understanding basic action words; following basic instructions to colour, draw or make something; understanding basic phrases in short, simple texts; recognising the letters of the alphabet by their sounds."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "تعرَّف على عائلتي",
+      "title_en": "Meet My Family",
+      "general_idea_ar": "Naming family members; describing family members using parts of the face",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Who's this? It's (my uncle). He's got (blue eyes). She's got (green eyes). His name's … Her name's …",
+          "periods": null,
+          "objectives": [
+            "Who's this? It's (my uncle).",
+            "He's got (blue eyes). She's got (green eyes).",
+            "His name's … Her name's …"
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "aunt" },
+            { "ar": "", "en": "brother" },
+            { "ar": "", "en": "cousin" },
+            { "ar": "", "en": "dad" },
+            { "ar": "", "en": "grandad" },
+            { "ar": "", "en": "granny" },
+            { "ar": "", "en": "me" },
+            { "ar": "", "en": "mum" },
+            { "ar": "", "en": "sister" },
+            { "ar": "", "en": "uncle" },
+            { "ar": "", "en": "ears" },
+            { "ar": "", "en": "eyes" },
+            { "ar": "", "en": "fair/brown/red/black hair" },
+            { "ar": "", "en": "mouth" },
+            { "ar": "", "en": "nose" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising isolated words related to familiar topics; recognising familiar words and phrases in short, simple songs or chants; recognising familiar words and basic phrases; identifying people in their immediate surroundings or in pictures from a short, simple description; understanding basic phrases in short, simple texts; understanding the main information when people introduce themselves; recognising the letters of the alphabet by their sounds.",
+          "periods": null,
+          "objectives": [
+            "Recognising isolated words related to familiar topics; recognising familiar words and phrases in short, simple songs or chants; recognising familiar words and basic phrases; identifying people in their immediate surroundings or in pictures from a short, simple description; understanding basic phrases in short, simple texts; understanding the main information when people introduce themselves; recognising the letters of the alphabet by their sounds."
+          ],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
