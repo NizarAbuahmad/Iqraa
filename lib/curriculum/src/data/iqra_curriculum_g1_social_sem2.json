@@ -1,0 +1,213 @@
+{
+  "meta": {
+    "grade": "الصف الأول",
+    "grade_en": "Grade 1",
+    "subject": "الدراسات الاجتماعية",
+    "subject_en": "Social Studies",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة الدراسات الاجتماعية للصف الأول الفصل الثاني (g1-social-s2-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ ودروسُها الأحدَ عشرَ من كتاب الطالب في 2026-09-19، نفسُ اصطلاحِ صناديقِ NCCD كالفصلِ الأوَّلِ. الملفُّ المصدَرُ مُسَمًّى خطأً على القرصِ «كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الثاني.pdf» (يذكُرُ «الصف الرابع» / الصف الرابع)، لكنَّ صفحةَ بياناتِ الفهرسةِ الأوَّليَّةِ الخاصَّةَ بالكتابِ نفسِهِ (ص 2) تُؤَكِّدُ بلا لبسٍ أنَّ عنوانَهُ الفعليَّ «الدراسات الاجتماعية/ كتاب الطالب: الصف الأول الفصل الدراسي الثاني» — تحقَّقَ من ذلك مباشرةً من محتوى الملفِّ قبلَ استخدامِهِ، لا بالاعتمادِ على اسمِ الملفِّ. صفحاتُ فهرسِ المحتوياتِ (ص 3) استُخرِجَت مُشَوَّشَةَ التَّرتيبِ (نفسُ مشكلةِ فهارسِ g1ArabicSem1/2 الناتجةِ عن تخطيطِ الأعمدةِ)؛ اعتُمِدَ ترتيبُ الوحداتِ الفعليُّ (لِنَعْمَلْ مَعًا ثُمَّ مَوْقِعي وَمَكاني ثُمَّ كَوْكَبُنا الْجَميلُ) من قراءةِ صفحاتِ المحتوى بترتيبِها الحقيقيِّ في الملفِّ، لا من الفهرسِ.",
+    "known_gaps": [
+      "objectives فارغةٌ لكلِّ الدروسِ: لا يطبَعُ هذا الكتابُ صندوقَ «نَتاجاتُ التَّعَلُّمِ» إطلاقًا، نفسُ حالِ الفصلِ الأوَّلِ.",
+      "prior_knowledge فارغةٌ لكلِّ الوحداتِ: لا صندوقَ معرفةٍ سابقةٍ مطبوعًا."
+    ]
+  },
+  "units": [
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "لِنَعْمَلْ مَعًا",
+      "title_en": "Let's Work Together",
+      "general_idea_ar": "لَنَتَمَيَّزْ مَعًا بِقِيَمِنا الْجَميلَةِ؛ لِنَكْسَبَ احْتِرامَ الآخَرينَ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (NCCD student book: main idea from «الفِكْرَةُ الرَّئيسَةُ», vocabulary from «المَفاهيمُ وَالمُصْطَلَحاتُ»; no objectives/outcomes box printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "أُنَظِّمُ وَقْتي",
+          "title_en": "I Organize My Time",
+          "main_idea_ar": "تَنْظيمُ الوَقْتِ يُساعِدُنا عَلى تَرْتيبِ أَعْمالِنا الْيَوْمِيَّةِ، وَإِنْجازِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الوَقْتُ", "en": "Time" },
+            { "ar": "الصَّباحُ", "en": "Morning" },
+            { "ar": "بَعْدَ الظُّهْرِ", "en": "Afternoon" },
+            { "ar": "الْمَساءُ", "en": "Evening" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "آدابُ الْحَديثِ",
+          "title_en": "Etiquette of Speech",
+          "main_idea_ar": "أُصْغي إِلى حَديثِ الآخَرينَ، وَأَتَحَدَّثُ إِلَيْهِمْ بِأَدَبٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التَّحَدُّثُ", "en": "Speaking" },
+            { "ar": "الاسْتِماعُ", "en": "Listening" }
+          ]
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "مَلابِسي النَّظيفَةُ وَالْمُرَتَّبَةُ",
+          "title_en": "My Clean and Tidy Clothes",
+          "main_idea_ar": "أَرْتَدي مَلابِسَ نَظيفَةً وَمُرَتَّبَةً، وَأُحافِظُ عَلى مَظْهَري الْخارِجِيِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "مَلابِسُ", "en": "Clothes" },
+            { "ar": "نَظيفَةٌ", "en": "Clean" },
+            { "ar": "مُرَتَّبَةٌ", "en": "Tidy" }
+          ]
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "كَيْ أَنْجَحَ",
+          "title_en": "So That I Succeed",
+          "main_idea_ar": "كَيْ نَنْجَحَ في حَياتِنا؛ عَلَيْنا أَنْ نَضَعَ أَهْدافًا وَنَعْمَلَ بِجِدٍّ لِتَحْقيقِ هَذِهِ الأَهْدافِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الهَدَفُ", "en": "Aim" },
+            { "ar": "النَّجاحُ", "en": "Success" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "مَوْقِعي وَمَكاني",
+      "title_en": "My Location and Place",
+      "general_idea_ar": "لِلْمَوْقِعِ وَالْمَكانِ أَهَمِّيَّةٌ كَبيرَةٌ في حَياتِنا.",
+      "total_periods": null,
+      "data_tier": "lesson-level (NCCD student book: main idea from «الفِكْرَةُ الرَّئيسَةُ», vocabulary from «المَفاهيمُ وَالمُصْطَلَحاتُ»; no objectives/outcomes box printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "الجِهاتُ الأَرْبَعُ الرَّئيسَةُ",
+          "title_en": "The Four Main Directions",
+          "main_idea_ar": "تُساعِدُنا الجِهاتُ الأَرْبَعُ عَلى تَحْديدِ مَواقِعِ الأَماكِنِ، وَتُسَهِّلُ تَنَقُّلَنا مِنْ مَكانٍ إِلى آخَرَ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الجِهاتُ", "en": "Directions" },
+            { "ar": "شَمالٌ", "en": "North" },
+            { "ar": "جَنوبٌ", "en": "South" },
+            { "ar": "شَرْقٌ", "en": "East" },
+            { "ar": "غَرْبٌ", "en": "West" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "وَسائِلُ النَّقْلِ",
+          "title_en": "Means of Transportation",
+          "main_idea_ar": "اسْتَعْمَلَ الإِنْسانُ وَسائِلَ النَّقْلِ مُنْذُ الْقِدَمِ؛ لِلانْتِقالِ مِنْ مَكانٍ إِلى آخَرَ، وَتَطَوَّرَتْ هَذِهِ الْوَسائِلُ عَبْرَ الزَّمَنِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "النَّقْلُ", "en": "Transportation" }
+          ]
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "السِّلَعُ وَالْخِدْماتُ",
+          "title_en": "Goods and Services",
+          "main_idea_ar": "يَحْتاجُ الإِنْسانُ إِلى كَثيرٍ مِنَ الأَشْياءِ في حَياتِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "السِّلَعُ", "en": "Goods" },
+            { "ar": "الخِدْماتُ", "en": "Services" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "كَوْكَبُنا الْجَميلُ",
+      "title_en": "Our Beautiful Planet",
+      "general_idea_ar": "نَعيشُ عَلى كَوْكَبٍ جَميلٍ يُسَمّى الأَرْضَ، فَلْنُحافِظْ عَلَيْهِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (NCCD student book: main idea from «الفِكْرَةُ الرَّئيسَةُ», vocabulary from «المَفاهيمُ وَالمُصْطَلَحاتُ»; no objectives/outcomes box printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "كُرَتي الأَرْضِيَّةُ",
+          "title_en": "My Earth Globe",
+          "main_idea_ar": "لِلْكُرَةِ الأَرْضِيَّةِ شَكْلٌ كُرَوِيٌّ، وَهِيَ كَوْكَبٌ تَعيشُ فيهِ كائِناتٌ حَيَّةٌ وَمِنْها الإِنْسانُ، وَيَتَكَوَّنُ مِنْ يابِسَةٍ وَماءٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الكُرَةُ الأَرْضِيَّةُ", "en": "The Earth" },
+            { "ar": "يابِسَةٌ", "en": "Land" },
+            { "ar": "ماءٌ", "en": "Water" },
+            { "ar": "هَواءٌ", "en": "Air" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "أَشْكالُ سَطْحِ الكُرَةِ الأَرْضِيَّةِ",
+          "title_en": "Shapes of Earth's Surface",
+          "main_idea_ar": "تَتَمَيَّزُ الكُرَةُ الأَرْضِيَّةُ بِأَشْكالٍ مُتَنَوِّعَةٍ عَلى سَطْحِها، وَمِنْها: الجَبَلُ وَالسَّهْلُ وَالبَحْرُ وَالنَّهْرُ وَالوادي.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "جَبَلٌ", "en": "Mountain" },
+            { "ar": "سَهْلٌ", "en": "Plain" },
+            { "ar": "وادٍ", "en": "Valley" },
+            { "ar": "نَهْرٌ", "en": "River" },
+            { "ar": "بَحْرٌ", "en": "Sea" }
+          ]
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "بيئَتي الْجَميلَةُ",
+          "title_en": "My Beautiful Environment",
+          "main_idea_ar": "يَعيشُ الإِنْسانُ في بيئَةٍ جَميلَةٍ يَجِبُ الْمُحافَظَةُ عَلَيْها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "بيئَةٌ", "en": "Environment" }
+          ]
+        },
+        {
+          "id": "u6_l4",
+          "order": 4,
+          "title_ar": "الطَّقْسُ مِنْ حَوْلِنا",
+          "title_en": "Weather Around Us",
+          "main_idea_ar": "الطَّقْسُ هُوَ حالَةُ الْجَوِّ خِلالَ مُدَّةٍ زَمَنِيَّةٍ قَصيرَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الطَّقْسُ", "en": "Weather" },
+            { "ar": "حارٌّ", "en": "Hot" },
+            { "ar": "بارِدٌ", "en": "Cold" },
+            { "ar": "غائِمٌ", "en": "Cloudy" },
+            { "ar": "ماطِرٌ", "en": "Rainy" },
+            { "ar": "صافٍ", "en": "Clear" }
+          ]
+        }
+      ]
+    }
+  ]
+}
