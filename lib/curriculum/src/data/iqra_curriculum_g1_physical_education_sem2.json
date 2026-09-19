@@ -1,0 +1,233 @@
+{
+  "meta": {
+    "grade": "الصف الأول",
+    "grade_en": "Grade 1",
+    "subject": "التربية الرياضية",
+    "subject_en": "Physical Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة التربية الرياضية للصف الأول الفصل الدراسي الثاني (g1-pe-s2-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ ودروسُها الأربعةَ عشرَ من كتاب الطالب في 2026-09-19، بقراءةِ الكتابِ مباشرةً عبرَ PyMuPDF — الاستخراجُ نظيفٌ تمامًا. مثلُ g3PhysicalEducationSem1.ts (وبخلافِ g6PhysicalEducationSem1.ts الَّذي هو title-only)، يطبَعُ هذا الكتابُ صندوقَ «الفِكْرَةُ الرَّئيسَةُ» وصندوقَ «المَفاهيمُ وَالمُصْطَلَحاتُ الأَساسِيَّةُ» الثنائيَّ اللغةِ في افتتاحيّةِ كلِّ درسٍ، فنُقِلَ main_idea_ar وvocabulary لكلِّ الدروسِ الأربعةَ عشرَ. الوحداتُ مُرَقَّمةٌ 4-6 استمرارًا لترقيمِ الكتابِ الكاملِ (الفصلُ الأوَّلُ يُفتَرَضُ أنَّهُ يحمِلُ الوحداتِ 1-3، لكنَّهُ غيرُ موجودٍ في الملفّاتِ المُزَوَّدَةِ).",
+    "known_gaps": [
+      "لا يوجَدُ كتابُ طالبٍ لِلفصلِ الدراسيِّ الأوَّلِ إطلاقًا في الملفّاتِ المُزَوَّدَةِ — عكسُ نمطِ الفجوةِ المُعتادِ عندَ صفوفٍ أخرى (مثلًا الصفّانِ 3 و6 حيثُ الفصلُ الأوَّلُ موجودٌ والثاني مفقودٌ)؛ هنا الفصلُ الثاني موجودٌ فقط.",
+      "objectives فارغةٌ لكلِّ الدروسِ: لا يطبَعُ هذا الكتابُ صندوقَ «نَتاجاتُ التَّعَلُّمِ» الخاصَّ بكلِّ درسٍ.",
+      "لا عددَ حصصٍ مطبوعًا لأيِّ درسٍ (periods وtotal_periods = null)."
+    ]
+  },
+  "units": [
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "حَرَكَةٌ وَصِحَّةٌ",
+      "title_en": "Movement and Health",
+      "general_idea_ar": "أَلْعَبُ وَأَتَحَرَّكُ، وَأُحافِظُ عَلى اعْتِدالِ قَوامي وَسَلامَةِ جِسْمي.",
+      "total_periods": null,
+      "data_tier": "lesson-level (NCCD student book: main idea from «الفِكْرَةُ الرَّئيسَةُ», vocabulary from «المَفاهيمُ وَالمُصْطَلَحاتُ الأَساسِيَّةُ»; no objectives/outcomes box printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "الْوُقوفُ الصَّحيحُ",
+          "title_en": "Correct Standing",
+          "main_idea_ar": "الوُقوفُ المُعْتَدِلُ وَالصَّحيحُ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الوُقوفُ الصَّحيحُ", "en": "Correct standing" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "حَمْلُ الْحَقيبَةِ الْمَدْرَسِيَّةِ",
+          "title_en": "Carrying the School Bag",
+          "main_idea_ar": "حَمْلُ الحَقيبَةِ المَدْرَسِيَّةِ بِصورَةٍ صَحيحَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الحَقيبَةُ المَدْرَسِيَّةُ", "en": "Back pack" }
+          ]
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "الْعاداتُ الصِّحِّيَّةُ",
+          "title_en": "Healthy Habits",
+          "main_idea_ar": "اتِّباعُ العاداتِ الصِّحِّيَّةِ اليَوْمِيَّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الطَّعامُ الصِّحِّيُّ", "en": "Healthy food" }
+          ]
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "الْقَوامُ الْمُعْتَدِلُ",
+          "title_en": "Correct Posture",
+          "main_idea_ar": "المُحافَظَةُ عَلى القَوامِ مُعْتَدِلًا، في أَثْناءِ الأَداءِ الحَرَكِيِّ، وَفي الحَياةِ اليَوْمِيَّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "القَوامُ المُعْتَدِلُ", "en": "Good posture" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "أَلْعابُ التَّتابُعِ",
+      "title_en": "Relay Games",
+      "general_idea_ar": "أَضْبُطُ خُطُواتي في أَثْناءِ اللَّعِبِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (NCCD student book: main idea from «الفِكْرَةُ الرَّئيسَةُ», vocabulary from «المَفاهيمُ وَالمُصْطَلَحاتُ الأَساسِيَّةُ»; no objectives/outcomes box printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "الْمَشْيُ التَّتابُعِيُّ",
+          "title_en": "Relay Walking",
+          "main_idea_ar": "تَتابُعُ المَشْيِ في خَطٍّ مُسْتَقيمٍ (مَسارٍ مُحَدَّدٍ).",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "مَسارٌ", "en": "Path" },
+            { "ar": "مِضْمارٌ", "en": "Track" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "الْجَرْيُ التَّتابُعِيُّ",
+          "title_en": "Relay Running",
+          "main_idea_ar": "تَسَلُّمُ وَتَسْليمُ الأَداةِ المُسْتَخْدَمَةِ في اللُّعْبَةِ في أَثْناءِ الجَرْي.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "سِباقٌ", "en": "Race" },
+            { "ar": "تَتابُعٌ", "en": "Relay" }
+          ]
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "الْحَجْلُ التَّتابُعِيُّ",
+          "title_en": "Relay Hopping",
+          "main_idea_ar": "تَأْدِيَةُ أَكْثَرَ مِنْ حَرَكَةٍ في اللُّعْبَةِ الواحِدَةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "قَريبٌ", "en": "Near" },
+            { "ar": "بَعيدٌ", "en": "Far away" }
+          ]
+        },
+        {
+          "id": "u5_l4",
+          "order": 4,
+          "title_ar": "الْوَثْبُ التَّتابُعِيُّ",
+          "title_en": "Relay Jumping",
+          "main_idea_ar": "التَّرْكيزُ عَلى الأَداءِ الصَّحيحِ في أَثْناءِ اللَّعِبِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "تَرْكيزٌ", "en": "Concentration" },
+            { "ar": "تَدْريبٌ", "en": "Training" }
+          ]
+        },
+        {
+          "id": "u5_l5",
+          "order": 5,
+          "title_ar": "حَمْلُ الشُّعْلَةِ الأُولُمْبِيَّةِ",
+          "title_en": "Carrying the Olympic Torch",
+          "main_idea_ar": "الرِّياضَةُ تَفَوُّقٌ وَاحْتِرامٌ وَصَداقَةٌ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الأَلْعابُ الأُولُمْبِيَّةُ", "en": "Olympic games" },
+            { "ar": "الشُّعْلَةُ الأُولُمْبِيَّةُ", "en": "Olympic torch" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "قِصَصٌ حَرَكِيَّةٌ",
+      "title_en": "Movement Stories",
+      "general_idea_ar": "تَمْثيلُ قِصَصٍ حَرَكِيَّةٍ مُتَنَوِّعَةٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (NCCD student book: main idea from «الفِكْرَةُ الرَّئيسَةُ», vocabulary from «المَفاهيمُ وَالمُصْطَلَحاتُ الأَساسِيَّةُ»; no objectives/outcomes box printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "الْبَطَلُ الصَّغيرُ",
+          "title_en": "The Little Hero",
+          "main_idea_ar": "تِأْدِيَةُ مَهاراتٍ حَرَكِيَّةٍ أَساسِيَّةٍ، عَنْ طَريقِ تَمْثيلِ قِصَّةٍ حَرَكِيَّةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "كُرْسِيٌّ مُتَحَرِّكٌ", "en": "Wheel chair" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "رائِدُ الْفَضاءِ الصَّغيرُ",
+          "title_en": "The Little Astronaut",
+          "main_idea_ar": "تَحْسينُ القُدْرَةِ عَلى التَّحَرُّكِ في الفَراغِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "فَضاءٌ", "en": "Space" }
+          ]
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "رِحْلَةٌ إِلى الْمَزْرَعَةِ",
+          "title_en": "A Trip to the Farm",
+          "main_idea_ar": "تَأْدِيَةُ مَهَمّاتٍ حَرَكِيَّةٍ تَتَطَلَّبُ قُوَّةً وَجَهْدًا.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "قُوَّةٌ", "en": "Force" },
+            { "ar": "عَضَلَةٌ", "en": "Muscle" }
+          ]
+        },
+        {
+          "id": "u6_l4",
+          "order": 4,
+          "title_ar": "سِباقٌ في الْغابَةِ",
+          "title_en": "A Race in the Forest",
+          "main_idea_ar": "تَأْدِيَةُ مَهَمّاتٍ حَرَكِيَّةٍ تَتَطَلَّبُ سُرْعاتٍ مُتَنَوِّعَةً.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "سَريعٌ", "en": "Fast" },
+            { "ar": "بَطيءٌ", "en": "Slow" }
+          ]
+        },
+        {
+          "id": "u6_l5",
+          "order": 5,
+          "title_ar": "عالَمُ الْمِهَنِ",
+          "title_en": "World of Professions",
+          "main_idea_ar": "تِأْدِيَةُ مَهَمّاتٍ حَرَكِيَّةٍ تُحَسِّنُ اللِّياقَةَ البَدَنِيَّةَ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "اللِّياقَةُ البَدَنِيَّةُ", "en": "Physical fitness" }
+          ]
+        }
+      ]
+    }
+  ]
+}
