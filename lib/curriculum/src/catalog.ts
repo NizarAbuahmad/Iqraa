@@ -759,6 +759,18 @@ import {
   G2_ENGLISH_S2_CURRICULUM_BOOK_ID,
   buildG2EnglishSem2BrowserCatalog,
 } from './catalogs/g2EnglishSem2.ts';
+import {
+  G2_ARABIC_S1_CURRICULUM_BOOK_ID,
+  buildG2ArabicSem1BrowserCatalog,
+  isG2ArabicSem1TitleOnlyUnit,
+  isG2ArabicSem1TitleOnlyLesson,
+} from './catalogs/g2ArabicSem1.ts';
+import {
+  G2_ARABIC_S2_CURRICULUM_BOOK_ID,
+  buildG2ArabicSem2BrowserCatalog,
+  isG2ArabicSem2TitleOnlyUnit,
+  isG2ArabicSem2TitleOnlyLesson,
+} from './catalogs/g2ArabicSem2.ts';
 
 export interface Grade {
   id: string;
@@ -1492,6 +1504,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // extension is needed. See g2EnglishSem1.ts / g2EnglishSem2.ts.
   G2_ENGLISH_S1_CURRICULUM_BOOK_ID,
   G2_ENGLISH_S2_CURRICULUM_BOOK_ID,
+  // Grade 2 Arabic, both semesters. 'arabic' is already declared for every
+  // grade in SUBJECTS.grades, so no subject append or SUBJECTS.grades
+  // extension is needed. See g2ArabicSem1.ts / g2ArabicSem2.ts.
+  G2_ARABIC_S1_CURRICULUM_BOOK_ID,
+  G2_ARABIC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -3209,6 +3226,41 @@ export const BOOKS: Book[] = [
     gradeId: 'grade-2',
     academicYear: '2024-2025',
     language: 'English',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Arabic Grade 2 – Semesters 1 and 2 ───────────────────────────────────
+  // Sixth Grade 2 book in this repo. 'arabic' is already declared for every
+  // grade in SUBJECTS.grades, so no subject append or SUBJECTS.grades
+  // extension is needed. Title-only, same as g3ArabicSem1.ts — fixed
+  // five-lesson-per-unit «لغتي» reader structure, not Grade 1's
+  // letter-teaching primer. S2's own table of contents proved unreliable
+  // for mapping lesson groups to units (column-jumbling); the JSON was
+  // built by reading each lesson opener page directly instead. See
+  // g2ArabicSem1.ts / g2ArabicSem2.ts.
+  {
+    id: G2_ARABIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 2, Semester 1',
+    titleAr: 'اللغة العربية – الصف الثاني – الفصل الأول',
+    subjectId: 'arabic',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G2_ARABIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 2, Semester 2',
+    titleAr: 'اللغة العربية – الصف الثاني – الفصل الثاني',
+    subjectId: 'arabic',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
@@ -5568,6 +5620,8 @@ const _g2IslamicSem1Browser = buildG2IslamicSem1BrowserCatalog();
 const _g2IslamicSem2Browser = buildG2IslamicSem2BrowserCatalog();
 const _g2EnglishSem1Browser = buildG2EnglishSem1BrowserCatalog();
 const _g2EnglishSem2Browser = buildG2EnglishSem2BrowserCatalog();
+const _g2ArabicSem1Browser = buildG2ArabicSem1BrowserCatalog();
+const _g2ArabicSem2Browser = buildG2ArabicSem2BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -5859,6 +5913,8 @@ export const UNITS: Unit[] = [
   ..._g2IslamicSem2Browser.units,
   ..._g2EnglishSem1Browser.units,
   ..._g2EnglishSem2Browser.units,
+  ..._g2ArabicSem1Browser.units,
+  ..._g2ArabicSem2Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -6040,6 +6096,8 @@ export const LESSONS: Lesson[] = [
   ..._g2IslamicSem2Browser.lessons,
   ..._g2EnglishSem1Browser.lessons,
   ..._g2EnglishSem2Browser.lessons,
+  ..._g2ArabicSem1Browser.lessons,
+  ..._g2ArabicSem2Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
@@ -6170,7 +6228,9 @@ export function isBrowserUnitTitleOnly(unitId: string): boolean {
     || isG5SocialSem1TitleOnlyUnit(unitId)
     || isG5SocialSem2TitleOnlyUnit(unitId)
     || isG1ArabicSem1TitleOnlyUnit(unitId)
-    || isG1ArabicSem2TitleOnlyUnit(unitId);
+    || isG1ArabicSem2TitleOnlyUnit(unitId)
+    || isG2ArabicSem1TitleOnlyUnit(unitId)
+    || isG2ArabicSem2TitleOnlyUnit(unitId);
 }
 
 /** UI: Sem1 units 2–4 lessons — title confirmed, no per-lesson objectives yet. */
@@ -6202,7 +6262,9 @@ export function isBrowserLessonTitleOnly(lessonId: string): boolean {
     || isG5SocialSem1TitleOnlyLesson(lessonId)
     || isG5SocialSem2TitleOnlyLesson(lessonId)
     || isG1ArabicSem1TitleOnlyLesson(lessonId)
-    || isG1ArabicSem2TitleOnlyLesson(lessonId);
+    || isG1ArabicSem2TitleOnlyLesson(lessonId)
+    || isG2ArabicSem1TitleOnlyLesson(lessonId)
+    || isG2ArabicSem2TitleOnlyLesson(lessonId);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
