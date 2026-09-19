@@ -106,7 +106,7 @@ export default function ClassroomHubScreen() {
         </View>
 
         {/* ── Filter chips ── */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.filterRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.filterRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }, isRTL && { minWidth: '100%' }]}>
           {FILTERS.map(f => {
             const active = filter === f.key;
             return (
