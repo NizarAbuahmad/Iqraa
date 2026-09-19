@@ -351,11 +351,10 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // all (physics/chemistry/biology/earth-science/financial-literacy start at
   // grade-7 or SPECIALISED_FROM; geography/history/civic-education start at
   // grade-9). vocational-education stays genuinely PERMANENT for grade-2 —
-  // no Grade 2 vocational book exists at all. creative-arts and
-  // physical-education are PERMANENT-pending-SUBJECTS.grades-extension: a
-  // Grade 2 source book exists for each, but SUBJECTS.grades excludes
-  // grade-2 until the catalog is actually built (same trap hit at every
-  // prior grade's Art/PE rollout).
+  // no Grade 2 vocational book exists at all. physical-education is
+  // PERMANENT-pending-SUBJECTS.grades-extension: a Grade 2 source book
+  // exists, but SUBJECTS.grades excludes grade-2 until the catalog is
+  // actually built (same trap hit at every prior grade's PE rollout).
   'chemistry:grade-2',
   'physics:grade-2',
   'biology:grade-2',
@@ -365,7 +364,6 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'history:grade-2',
   'civic-education:grade-2',
   'vocational-education:grade-2',
-  'creative-arts:grade-2',
   'physical-education:grade-2',
   //
   // ORDINARY GAPS — the subject is declared at grade-2 in SUBJECTS.grades,
@@ -386,6 +384,8 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // g2ArabicSem1.ts/g2ArabicSem2.ts.
   // islamic:grade-2 closed 2026-09-19, both semesters — see
   // g2IslamicSem1.ts/g2IslamicSem2.ts.
+  // creative-arts:grade-2 closed 2026-09-19, one book (no semester split) —
+  // see g2CreativeArts.ts.
   'digital-literacy:grade-2',
 ]);
 
