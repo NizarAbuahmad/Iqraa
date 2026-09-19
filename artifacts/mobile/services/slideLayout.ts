@@ -37,7 +37,7 @@ export type ResolvedLayout =
  * reading as a wall of text set in display type, which is worse than the
  * ordinary layout it replaced.
  */
-const MAX_STATEMENT_CHARS = 140;
+export const MAX_STATEMENT_CHARS = 140;
 
 /** A figure has to stay legible at display size. */
 const MAX_STAT_VALUE_CHARS = 12;
