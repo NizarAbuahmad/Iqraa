@@ -318,17 +318,19 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // ORDINARY GAPS — the subject is declared at grade-1 in SUBJECTS.grades,
   // and Grade 1 source PDFs exist on disk (knowledge-base/grade-1-*), but no
   // catalog has been built from them yet. Delete each line once its catalog
-  // and BOOKS row land, same as the grade-3 rollout above. Arabic Semester 1
-  // has no student book (only teacher guide + exercise book) and Digital
-  // Skills has no student book at all — same class of gap hit at every
-  // other grade in this project.
+  // and BOOKS row land, same as the grade-3 rollout above. Digital Skills has
+  // no student book at all — same class of gap hit at every other grade in
+  // this project.
   // science:grade-1 closed 2026-09-18 — see g1ScienceSem1.ts/g1ScienceSem2.ts.
   // islamic:grade-1 closed 2026-09-18, both semesters — see
   // g1IslamicSem1.ts/g1IslamicSem2.ts. This book prints no «الفِكْرَةُ
   // الرَّئيسَةُ» box, unlike g3IslamicSem1.ts.
   // english:grade-1 closed 2026-09-18, both semesters — see
   // g1EnglishSem1.ts/g1EnglishSem2.ts.
-  'arabic:grade-1',
+  // arabic:grade-1 closed 2026-09-18, both semesters — see
+  // g1ArabicSem1.ts/g1ArabicSem2.ts. Title-only, letter-teaching primer
+  // structure (not the fixed 5-lesson pattern); Semester 1's student book
+  // was missing at first and supplied by the user mid-session.
   'digital-literacy:grade-1',
   'social:grade-1',
 ]);
