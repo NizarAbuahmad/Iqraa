@@ -48,8 +48,8 @@ import { isolateForeignRuns } from '@/services/mathRender';
 import { rebuildAnswerKey, withoutSlide } from '@/services/lessonSlides';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { narrowToSelection } from '@/services/teacherCatalogFilter';
-import { foldAnswersIntoPrompt } from '@/services/promptSlidesAnswers';
-import { attachDrawnVisuals, attachSearchedMedia } from '@/services/promptSlidesMedia';
+import { MAX_SOURCE_CHARS, foldAnswersIntoPrompt, foldSourceIntoPrompt } from '@/services/promptSlidesAnswers';
+import { attachDrawnVisuals, attachSearchedMedia, deckSearchQueries } from '@/services/promptSlidesMedia';
 import { polishDeck } from '@/services/promptSlidesPolish';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
@@ -84,10 +84,15 @@ export default function PromptSlidesScreen() {
   // Reopening a saved item from موادي pushes here with its `formState`
   // spread as params (see workspace/view.tsx's `editRoute`) — the same keys
   // `toggleSave` below writes, so the form comes back exactly as it was left.
-  const params = useLocalSearchParams<{ prompt?: string; slideCountText?: string }>();
+  const params = useLocalSearchParams<{ prompt?: string; slideCountText?: string; source?: string }>();
 
   const [prompt, setPrompt] = useState(params.prompt ?? '');
   const [slideCountText, setSlideCountText] = useState(params.slideCountText ?? '');
+  // The passage the teacher pasted for the deck to be built out of. Kept out
+  // of the way until asked for — most decks are built from a description
+  // alone, and this screen's whole pitch is that it asks for almost nothing.
+  const [source, setSource] = useState(params.source ?? '');
+  const [sourceOpen, setSourceOpen] = useState(!!params.source);
 
   const [loading, setLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -137,7 +142,13 @@ export default function PromptSlidesScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       const questions = await aiService.fetchPromptSlidesQuestions({
-        prompt: trimmed,
+        // The source itself is deliberately not sent — this is the cheap nano
+        // call, and 6000 characters of it would cost more than the answers are
+        // worth. Its existence is, so the model stops asking what the deck
+        // should be based on when the teacher has already said.
+        prompt: source.trim()
+          ? `${trimmed}\n\n${isAr ? '(ألصق المعلّم نصًا مصدريًا سيُبنى العرض منه.)' : '(The teacher has pasted a source text for the deck to be built from.)'}`
+          : trimmed,
         grade: gradeLabel || undefined,
         subject: subjectLabel || undefined,
         language: isAr ? 'arabic' : 'english',
@@ -166,7 +177,12 @@ export default function PromptSlidesScreen() {
     const answered = asking
       .map(q => ({ question: q.question, answer: answers[q.id] ?? '' }))
       .filter(a => a.answer);
-    const fullPrompt = foldAnswersIntoPrompt(trimmed, answered, isAr);
+    // The pasted source rides along the same way, and last: the description
+    // and the teacher's answers say what to build, and the source is the
+    // material to build it out of.
+    const fullPrompt = foldSourceIntoPrompt(
+      foldAnswersIntoPrompt(trimmed, answered, isAr), source, isAr,
+    );
 
     setError(''); setCancelled(false);
     setAsking([]); setAnswers({});
@@ -208,10 +224,19 @@ export default function PromptSlidesScreen() {
           const enriched = await attachSearchedMedia(built, {
             isAr,
             topic: trimmed,
-            // English, always: Unsplash is an English index and an Arabic
-            // query returns nothing. `name` is deliberately the English
-            // subject name even in an Arabic deck.
-            photoQueries: deckPhotoQueries(teacherSubject?.id ?? '', teacherSubject?.name ?? 'school'),
+            // The deck's own topic first, and the teacher's subject only as a
+            // fallback. `deckPhotoQueries()` keys off the curriculum subject,
+            // which in the older Slides Maker IS the deck's topic and here is
+            // merely the teacher's profile — so a Mother's Day deck built by a
+            // maths teacher searched for "mathematics equations chalkboard"
+            // and got a picture with nothing to do with it.
+            //
+            // English either way: Unsplash is an English index and an Arabic
+            // query returns nothing at all.
+            photoQueries: deckSearchQueries(
+              built,
+              deckPhotoQueries(teacherSubject?.id ?? '', teacherSubject?.name ?? 'school'),
+            ),
             searchPhoto: searchDeckPhoto,
             searchVideos: searchDeckVideos,
           });
@@ -264,7 +289,7 @@ export default function PromptSlidesScreen() {
       const item = await saveItem({
         ...deckIdentity(deck),
         content,
-        formState: { prompt: prompt.trim(), slideCountText },
+        formState: { prompt: prompt.trim(), slideCountText, source: source.trim() },
       });
       savedContentRef.current = content;
       setSavedId(item.id);
@@ -306,7 +331,12 @@ export default function PromptSlidesScreen() {
     if (!deck) return;
     try {
       await exportAsPDF(buildDeckSlidesHTML(deck, isAr), `${deck.activityName || 'slides'}.pdf`);
-    } catch {
+    } catch (e) {
+      // Logged, not just toasted. A bare `catch {}` here meant a teacher
+      // reporting "the export doesn't work" gave us nothing to act on and
+      // nothing to reproduce from — the failure was thrown away at the one
+      // point where it was still legible.
+      console.error('[prompt-slides] PDF export failed', e);
       showToast(t('generationFailed'));
     }
   };
@@ -318,7 +348,8 @@ export default function PromptSlidesScreen() {
     try {
       const { exportDeckAsPptx } = await import('@/services/exportPptx');
       await exportDeckAsPptx(deck, isAr, deck.activityName || 'slides');
-    } catch {
+    } catch (e) {
+      console.error('[prompt-slides] PPTX export failed', e);
       showToast(t('generationFailed'));
     } finally {
       setExportingPptx(false);
@@ -448,6 +479,54 @@ export default function PromptSlidesScreen() {
               {error}
             </Text>
           ) : null}
+
+          {/* The source passage — the one lever that improves what a slide
+              SAYS without a bigger model, since summarising text in front of
+              it is what a small model is actually good at. Collapsed by
+              default: a teacher who has nothing to paste should not see a
+              6000-character box asking them to. */}
+          <Pressable
+            onPress={() => { setSourceOpen(o => !o); Haptics.selectionAsync(); }}
+            style={[styles.sourceToggle, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons
+              name={sourceOpen ? 'chevron-down' : (isRTL ? 'chevron-back' : 'chevron-forward')}
+              size={16}
+              color={colors.primary}
+            />
+            <Text style={{ color: colors.primary, fontFamily: 'Cairo_500Medium', fontSize: 14 }}>
+              {t('promptSlidesSourceToggle')}
+            </Text>
+            {!sourceOpen && source.trim() ? (
+              <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+            ) : null}
+          </Pressable>
+
+          {sourceOpen && (
+            <>
+              <TextInput
+                value={source}
+                onChangeText={v => setSource(v.slice(0, MAX_SOURCE_CHARS))}
+                placeholder={t('promptSlidesSourcePlaceholder')}
+                placeholderTextColor={colors.mutedForeground}
+                multiline
+                style={[styles.sourceInput, {
+                  color: colors.foreground,
+                  borderColor: colors.border,
+                  borderRadius: colors.radius,
+                  backgroundColor: colors.card,
+                  fontFamily: 'Almarai_400Regular',
+                  textAlign: isRTL ? 'right' : 'left',
+                  writingDirection: isRTL ? 'rtl' : 'ltr',
+                }]}
+              />
+              <Text style={[styles.sourceHint, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>
+                {source.trim()
+                  ? t('promptSlidesSourceCount', source.length, MAX_SOURCE_CHARS)
+                  : t('promptSlidesSourceHint')}
+              </Text>
+            </>
+          )}
 
           <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('promptSlidesSlideCountLabel')}
@@ -776,6 +855,9 @@ const styles = StyleSheet.create({
   form: { padding: 20 },
   promptInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 96, textAlignVertical: 'top', marginBottom: 8 },
   fieldLabel: { fontSize: 13, marginBottom: 6, marginTop: 4 },
+  sourceToggle: { alignItems: 'center', gap: 6, paddingVertical: 8, marginBottom: 2 },
+  sourceInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 120, textAlignVertical: 'top', marginBottom: 6 },
+  sourceHint: { fontSize: 12, marginBottom: 12, lineHeight: 18, fontFamily: 'Almarai_400Regular' },
   slideCountInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, marginBottom: 16, width: 100 },
   previewCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
   previewTitle: { fontSize: 17 },
