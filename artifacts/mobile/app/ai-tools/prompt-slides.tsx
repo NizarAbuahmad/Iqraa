@@ -49,7 +49,7 @@ import { rebuildAnswerKey, withoutSlide } from '@/services/lessonSlides';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { narrowToSelection } from '@/services/teacherCatalogFilter';
 import { MAX_SOURCE_CHARS, foldAnswersIntoPrompt, foldSourceIntoPrompt } from '@/services/promptSlidesAnswers';
-import { attachDrawnVisuals, attachSearchedMedia } from '@/services/promptSlidesMedia';
+import { attachDrawnVisuals, attachSearchedMedia, deckSearchQueries } from '@/services/promptSlidesMedia';
 import { polishDeck } from '@/services/promptSlidesPolish';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
@@ -224,10 +224,19 @@ export default function PromptSlidesScreen() {
           const enriched = await attachSearchedMedia(built, {
             isAr,
             topic: trimmed,
-            // English, always: Unsplash is an English index and an Arabic
-            // query returns nothing. `name` is deliberately the English
-            // subject name even in an Arabic deck.
-            photoQueries: deckPhotoQueries(teacherSubject?.id ?? '', teacherSubject?.name ?? 'school'),
+            // The deck's own topic first, and the teacher's subject only as a
+            // fallback. `deckPhotoQueries()` keys off the curriculum subject,
+            // which in the older Slides Maker IS the deck's topic and here is
+            // merely the teacher's profile — so a Mother's Day deck built by a
+            // maths teacher searched for "mathematics equations chalkboard"
+            // and got a picture with nothing to do with it.
+            //
+            // English either way: Unsplash is an English index and an Arabic
+            // query returns nothing at all.
+            photoQueries: deckSearchQueries(
+              built,
+              deckPhotoQueries(teacherSubject?.id ?? '', teacherSubject?.name ?? 'school'),
+            ),
             searchPhoto: searchDeckPhoto,
             searchVideos: searchDeckVideos,
           });
@@ -322,7 +331,12 @@ export default function PromptSlidesScreen() {
     if (!deck) return;
     try {
       await exportAsPDF(buildDeckSlidesHTML(deck, isAr), `${deck.activityName || 'slides'}.pdf`);
-    } catch {
+    } catch (e) {
+      // Logged, not just toasted. A bare `catch {}` here meant a teacher
+      // reporting "the export doesn't work" gave us nothing to act on and
+      // nothing to reproduce from — the failure was thrown away at the one
+      // point where it was still legible.
+      console.error('[prompt-slides] PDF export failed', e);
       showToast(t('generationFailed'));
     }
   };
@@ -334,7 +348,8 @@ export default function PromptSlidesScreen() {
     try {
       const { exportDeckAsPptx } = await import('@/services/exportPptx');
       await exportDeckAsPptx(deck, isAr, deck.activityName || 'slides');
-    } catch {
+    } catch (e) {
+      console.error('[prompt-slides] PPTX export failed', e);
       showToast(t('generationFailed'));
     } finally {
       setExportingPptx(false);

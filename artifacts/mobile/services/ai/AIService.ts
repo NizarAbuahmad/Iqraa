@@ -415,6 +415,22 @@ export interface ClassroomActivity {
   learningObjective: string;
   materials: string[];
   teacherPreparation: string;
+  /**
+   * English photo-search phrases for the cover background and the section
+   * break, describing the DECK'S OWN topic.
+   *
+   * Only `/generate/prompt-slides` emits it, and it exists because the older
+   * Slides Maker's `deckPhotoQueries()` cannot serve this tool: that map keys
+   * off the curriculum subject, which there IS the deck's topic and here is
+   * only the teacher's profile. A deck about Mother's Day, built by a maths
+   * teacher, searched Unsplash for "mathematics equations chalkboard" and got
+   * a photo that had nothing to do with it — which reads, correctly, as the
+   * pictures not working.
+   *
+   * English regardless of the deck's language: Unsplash is an English index
+   * and an Arabic query returns nothing at all.
+   */
+  deckPhotoQueries?: string[];
   slides: ActivitySlide[];
   teacherNotes: string[];
   answerKey: string[];

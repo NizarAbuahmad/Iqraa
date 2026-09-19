@@ -11,7 +11,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { attachDrawnVisuals, attachSearchedMedia } from '../promptSlidesMedia.ts';
+import { attachDrawnVisuals, attachSearchedMedia, deckSearchQueries } from '../promptSlidesMedia.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
 
 const slide = (over: Partial<ActivitySlide> = {}): ActivitySlide => ({
@@ -60,6 +60,35 @@ describe('attachDrawnVisuals — free, no network', () => {
       slide({ type: 'summary', title: 'الخلاصة' }),
     ]), true);
     out.slides.forEach((s, i) => assert.equal(s.slideNumber, i + 1));
+  });
+});
+
+describe('deckSearchQueries — the deck’s topic, not the teacher’s subject', () => {
+  const subjectFallback: [string, string] = ['mathematics equations chalkboard', 'geometry classroom students'];
+
+  it('prefers the queries the model wrote about this deck', () => {
+    const d = deck([slide()]);
+    d.deckPhotoQueries = ['mother and child hands', 'family celebration table'];
+    assert.deepEqual(deckSearchQueries(d, subjectFallback), ['mother and child hands', 'family celebration table']);
+  });
+
+  it('falls back to the subject when the model wrote none', () => {
+    assert.deepEqual(deckSearchQueries(deck([slide()]), subjectFallback), subjectFallback);
+  });
+
+  it('rejects an arabic query — unsplash answers those with a 204', () => {
+    // The whole reason this field is specified as English. A deck that asked
+    // Unsplash for «يوم الأم» would lose both photos silently; a subject photo
+    // is worse-but-working, which beats none.
+    const d = deck([slide()]);
+    d.deckPhotoQueries = ['يوم الأم', 'احتفال العائلة'];
+    assert.deepEqual(deckSearchQueries(d, subjectFallback), subjectFallback);
+  });
+
+  it('borrows the subject’s section query when the model gave only one', () => {
+    const d = deck([slide()]);
+    d.deckPhotoQueries = ['mother and child hands'];
+    assert.deepEqual(deckSearchQueries(d, subjectFallback), ['mother and child hands', subjectFallback[1]]);
   });
 });
 

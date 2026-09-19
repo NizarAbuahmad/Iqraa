@@ -184,3 +184,70 @@ describe("stripUnearnedPromptSlideVerification", () => {
     assert.equal(stripUnearnedPromptSlideVerification("x"), "x");
   });
 });
+
+describe("deck kind — a general deck is not a lesson", () => {
+  /**
+   * The defect these pin: the arc was written as a lesson and only a lesson.
+   * A teacher asked for a Mother's Day deck and got «أهداف الحصة», «مثال
+   * محلول» and «تحقّق سريع» — classroom furniture nailed onto a celebration,
+   * which is what "the structure is too close to the lessons tool" meant.
+   */
+  const body = { additionalContext: "عرض عن يوم الأم", slideCount: 10 };
+
+  it("makes the model choose the deck kind before it writes an arc", () => {
+    const ar = promptSlidesPromptAr(body);
+    assert.match(ar, /عرض تعليمي/);
+    assert.match(ar, /عرض عام/);
+    assert.match(ar, /بنية \(أ\)/);
+    assert.match(ar, /بنية \(ب\)/);
+    const en = promptSlidesPromptEn(body);
+    assert.match(en, /A teaching deck/);
+    assert.match(en, /A general deck/);
+    assert.match(en, /Structure for \(A\)/);
+    assert.match(en, /Structure for \(B\)/);
+  });
+
+  it("names the failure it is correcting, so the model does not default to a lesson", () => {
+    assert.match(promptSlidesPromptAr(body), /لا تفترض \(أ\)/);
+    assert.match(promptSlidesPromptEn(body), /Do not assume \(A\)/);
+  });
+
+  it("makes the quiz optional on a general deck and keeps it on a teaching one", () => {
+    // Both halves matter. Dropping the check everywhere would hollow out real
+    // lessons, which is the opposite mistake and just as wrong.
+    assert.match(promptSlidesPromptEn(body), /A question slide is OPTIONAL here/);
+    assert.match(promptSlidesPromptEn(body), /A check slide \(question\) with four options/);
+  });
+
+  it("stops the skeleton teaching the model to say «الحصة» on every deck", () => {
+    const ar = promptSlidesPromptAr(body);
+    assert.ok(!ar.includes("هدف الحصة بجملة واحدة"), "learningObjective example still says الحصة");
+    assert.ok(!ar.includes("ما يحتاجه المعلّم قبل الحصة"), "teacherPreparation example still says الحصة");
+    assert.ok(!promptSlidesPromptEn(body).includes("The lesson goal in one sentence"));
+  });
+});
+
+describe("deckPhotoQueries — the deck's topic, not the school subject", () => {
+  /**
+   * `deckPhotoQueries()` on the client keys off the curriculum subject, which
+   * in the older Slides Maker IS the deck's topic. Here it is only the
+   * teacher's profile, so a Mother's Day deck searched Unsplash for
+   * "mathematics equations chalkboard" and got a real, wrong photo.
+   */
+  const body = { additionalContext: "عرض عن يوم الأم" };
+
+  it("asks for two cover/section queries in both languages", () => {
+    assert.match(promptSlidesPromptAr(body), /"deckPhotoQueries"/);
+    assert.match(promptSlidesPromptEn(body), /"deckPhotoQueries"/);
+  });
+
+  it("requires english, because an arabic query returns nothing at all", () => {
+    assert.match(promptSlidesPromptAr(body), /بالإنجليزية دائمًا/);
+    assert.match(promptSlidesPromptEn(body), /Always English/);
+  });
+
+  it("tells it to describe the topic rather than the subject, with the real example", () => {
+    assert.match(promptSlidesPromptAr(body), /mother and child hands/);
+    assert.match(promptSlidesPromptEn(body), /never "mathematics classroom"/);
+  });
+});

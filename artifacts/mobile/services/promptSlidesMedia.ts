@@ -68,6 +68,34 @@ export type EnrichOptions = {
 /** Ceiling on per-slide photo lookups — one Unsplash call each. */
 const MAX_SIDE_PHOTOS = 3;
 
+/**
+ * The cover and section-break queries for THIS deck, preferring the ones the
+ * model wrote about the deck's own topic.
+ *
+ * The fallback is `deckPhotoQueries(subjectId, subjectName)`, which keys off
+ * the curriculum subject. In the older Slides Maker that subject IS the deck's
+ * topic, so it is the right answer there. Here it is only the teacher's
+ * profile, and a deck about Mother's Day built by a maths teacher searched
+ * Unsplash for "mathematics equations chalkboard" — a real photo, fetched and
+ * shown, with nothing to do with the deck. A wrong picture reads as a broken
+ * feature just as much as a missing one does.
+ *
+ * The latin-script gate is the part that matters. Unsplash is an English
+ * index: «يوم الأم» returns a 204, so a model that answers in the deck's
+ * language instead of English would silently cost the deck both photos. When
+ * that happens the subject fallback is worse-but-working, which beats nothing.
+ */
+export function deckSearchQueries(
+  deck: ClassroomActivity,
+  fallback: [cover: string, section: string],
+): [cover: string, section: string] {
+  const usable = (deck.deckPhotoQueries ?? [])
+    .map(q => (typeof q === 'string' ? q.trim() : ''))
+    .filter(q => q.length > 0 && !/[؀-ۿ]/.test(q));
+  if (usable.length === 0) return fallback;
+  return [usable[0]!, usable[1] ?? fallback[1]];
+}
+
 function photoCredit(photographer: string, isAr: boolean): string {
   return isAr ? `📷 ${photographer} · Unsplash` : `📷 Photo by ${photographer} on Unsplash`;
 }
