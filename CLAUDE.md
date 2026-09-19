@@ -226,6 +226,13 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   feature's data is mysteriously absent, check the key is set *and* that the
   build which inlined it has actually deployed — these are baked in at build
   time, so an env change without a rebuild changes nothing.
+  **It recurred, per-surface (found 2026-09-19).** The key was added to
+  `deploy.yml`'s web build only, so the web app reported and every Android
+  binary and OTA update reported nothing — a half-blind funnel that looks
+  exactly like a working one in the PostHog dashboard. An `EXPO_PUBLIC_*` has
+  **three** places to be declared, not one: `deploy.yml` (web), `eas.json`'s
+  per-profile `env` (builds), and `mobile-update.yml` (OTA — `eas update` does
+  not read `eas.json`). Add a new one to all three or state why not.
 - **The production schema is not deployed by anything.** `pnpm --filter
   @workspace/db run push` is manual, so a release that adds a table and skips
   that push leaves endpoints answering 503. On 2026-08-19, 14 of 24 expected
