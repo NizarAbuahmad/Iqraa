@@ -376,7 +376,8 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // semesters of science/social/english/arabic/islamic. Digital Skills has
   // no student book at all — same class of gap hit at every other grade in
   // this project.
-  'science:grade-2',
+  // science:grade-2 closed 2026-09-19, both semesters — see
+  // g2ScienceSem1.ts/g2ScienceSem2.ts.
   'social:grade-2',
   'english:grade-2',
   'arabic:grade-2',

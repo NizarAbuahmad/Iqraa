@@ -213,7 +213,7 @@ describe('subject isolation', () => {
       // `science-s[12]` form to allow. Grade 7 joined 2026-09-12, Grade 6 on
       // 2026-09-13, Grade 5 on 2026-09-16, Grade 4 and Grade 3 both on
       // 2026-09-17, Grade 1 on 2026-09-18.
-      science: /^(g8-science-s[12]|g7-science-s[12]|g6-science-s[12]|g5-science-s[12]|g4-science-s[12]|g3-science-s[12]|g1-science-s[12])$/,
+      science: /^(g8-science-s[12]|g7-science-s[12]|g6-science-s[12]|g5-science-s[12]|g4-science-s[12]|g3-science-s[12]|g2-science-s[12]|g1-science-s[12])$/,
     };
     for (const lesson of KB_LESSONS) {
       const subjectId = getBookForLesson(lesson)?.subjectId;
