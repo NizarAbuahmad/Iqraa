@@ -727,6 +727,14 @@ import {
   ENG_S2_CURRICULUM_BOOK_ID,
   buildEngSem2BrowserCatalog,
 } from './catalogs/g10EnglishSem2.ts';
+import {
+  G2_MATH_S1_CURRICULUM_BOOK_ID,
+  buildG2MathSem1BrowserCatalog,
+} from './catalogs/g2MathSem1.ts';
+import {
+  G2_MATH_S2_CURRICULUM_BOOK_ID,
+  buildG2MathSem2BrowserCatalog,
+} from './catalogs/g2MathSem2.ts';
 
 export interface Grade {
   id: string;
@@ -973,7 +981,7 @@ export const INVESTOR_MVP_CURRICULUM = true;
 // tail, after grade-3 — grade-2 has no catalog at all yet, so the sequence
 // is deliberately non-contiguous. See g1MathSem1.ts / g1MathSem2.ts and
 // KNOWN_BOOKLESS in subjectGradeCoverage.test.ts.
-export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7', 'grade-6', 'grade-5', 'grade-4', 'grade-3', 'grade-1'];
+export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7', 'grade-6', 'grade-5', 'grade-4', 'grade-3', 'grade-1', 'grade-2'];
 // Appended, never inserted: these positions are persisted as bare indices in
 // formState and route URLs, so inserting shifts what a saved URL resolves to.
 // 'physics' joined on 2026-09-03 with the Grade 10 S1 curriculum. Without it,
@@ -1433,6 +1441,15 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // g1PhysicalEducationSem2.ts. Same real-content box shape as
   // g3PhysicalEducationSem1.ts, opposite semester gap.
   G1_PE_S2_CURRICULUM_BOOK_ID,
+  // Grade 2 Mathematics, both semesters — the first Grade 2 book in this
+  // repo. 'mathematics' is already declared for every grade in
+  // SUBJECTS.grades, so no subject append or SUBJECTS.grades extension is
+  // needed. Same HarperCollins/NCCD series and box conventions as
+  // g1MathSem1.ts; no unnumbered preparatory unit. See g2MathSem1.ts /
+  // g2MathSem2.ts. This is also the book that brings grade-2 into
+  // MVP_GRADE_IDS below.
+  G2_MATH_S1_CURRICULUM_BOOK_ID,
+  G2_MATH_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -3017,6 +3034,38 @@ export const BOOKS: Book[] = [
     titleAr: 'الرياضيات – الصف الأول – الفصل الثاني',
     subjectId: 'mathematics',
     gradeId: 'grade-1',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Mathematics Grade 2 – Semesters 1 and 2 ─────────────────────────────
+  // The first Grade 2 book in this repo. Same HarperCollins/NCCD series;
+  // «الفِكْرَةُ الرَّئيسَةُ» is never printed, and the objectives box is under
+  // «أَتَعَلَّمُ الْيَوْمَ» like g1MathSem1.ts. No unnumbered preparatory unit —
+  // S1 opens directly with its own numbered units 1-5; S2 continues 6-10.
+  // See g2MathSem1.ts / g2MathSem2.ts.
+  {
+    id: G2_MATH_S1_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 2, Semester 1',
+    titleAr: 'الرياضيات – الصف الثاني – الفصل الأول',
+    subjectId: 'mathematics',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G2_MATH_S2_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 2, Semester 2',
+    titleAr: 'الرياضيات – الصف الثاني – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-2',
     academicYear: '2024-2025',
     language: 'Arabic',
     edition: '1st',
@@ -5370,6 +5419,8 @@ const _g1SocialSem1Browser = buildG1SocialSem1BrowserCatalog();
 const _g1SocialSem2Browser = buildG1SocialSem2BrowserCatalog();
 const _g1CreativeArtsBrowser = buildG1CreativeArtsBrowserCatalog();
 const _g1PhysicalEducationSem2Browser = buildG1PhysicalEducationSem2BrowserCatalog();
+const _g2MathSem1Browser = buildG2MathSem1BrowserCatalog();
+const _g2MathSem2Browser = buildG2MathSem2BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -5653,6 +5704,8 @@ export const UNITS: Unit[] = [
   ..._g1SocialSem2Browser.units,
   ..._g1CreativeArtsBrowser.units,
   ..._g1PhysicalEducationSem2Browser.units,
+  ..._g2MathSem1Browser.units,
+  ..._g2MathSem2Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -5826,6 +5879,8 @@ export const LESSONS: Lesson[] = [
   ..._g1SocialSem2Browser.lessons,
   ..._g1CreativeArtsBrowser.lessons,
   ..._g1PhysicalEducationSem2Browser.lessons,
+  ..._g2MathSem1Browser.lessons,
+  ..._g2MathSem2Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
