@@ -3,7 +3,7 @@
  * Collapses after the teacher scrolls the conversation.
  */
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { JordanFlag } from '@/components/ui/JordanFlag';
 import type { CurrentLessonView } from '@/services/lessonCopilot';
@@ -50,6 +50,22 @@ type Props = {
   uploadedLabel: (n: number) => string;
   onChangeLesson: () => void;
   onToggleCollapse: () => void;
+  /**
+   * Chrome for the card's outer box, applied collapsed and expanded alike.
+   * Desktop web passes a rounded border so the card sits over the thread;
+   * on a phone it is a full-bleed band and this stays undefined.
+   */
+  containerStyle?: ViewStyle;
+  /**
+   * Drop the «٣/٥» pill.
+   *
+   * It counts what *this chat session* has generated, which resets with the
+   * app. The empty state below it now shows the readiness board, which counts
+   * saved materials and so survives — two counters, both labelled out of five,
+   * disagreeing by design. The card keeps the lesson and Start Class; the
+   * board keeps the count.
+   */
+  hideCount?: boolean;
 };
 
 export function CurrentLessonCard({
@@ -66,12 +82,14 @@ export function CurrentLessonCard({
   uploadedLabel,
   onChangeLesson,
   onToggleCollapse,
+  containerStyle,
+  hideCount = false,
 }: Props) {
   const align = isRTL ? 'right' : 'left' as const;
   const rowDir = isRTL ? 'row-reverse' : 'row' as const;
 
   const doneCount = lesson.resources.filter(r => r.done).length;
-  const totalCount = lesson.resources.length;
+  const totalCount = hideCount ? 0 : lesson.resources.length;
 
   /*
     A failed Start Class used to render nothing at all, on the reasoning that a
@@ -157,6 +175,7 @@ export function CurrentLessonCard({
         style={[
           styles.collapsed,
           { backgroundColor: colors.card, borderBottomColor: colors.border },
+          containerStyle,
         ]}
       >
         <View style={[styles.inner, styles.collapsedInner, { flexDirection: rowDir }]}>
@@ -204,7 +223,7 @@ export function CurrentLessonCard({
   }
 
   return (
-    <View style={[styles.wrap, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+    <View style={[styles.wrap, { backgroundColor: colors.card, borderBottomColor: colors.border }, containerStyle]}>
      <View style={styles.inner}>
       <View style={[styles.headerText, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
         <Pressable onPress={onToggleCollapse} style={[styles.headerRow, { flexDirection: rowDir, width: '100%' }]}>
