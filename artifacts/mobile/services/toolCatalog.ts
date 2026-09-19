@@ -142,6 +142,17 @@ const DURING_CLASS_ALL: ToolDef[] = [
     color: '#2563EB',
     route: '/ai-tools/whiteboard',
   },
+  // The public, no-login games hub (app/play) — a share-with-students link,
+  // not a generator. Linked here so a signed-in teacher can find it without
+  // already knowing the URL; the page itself still works for anyone.
+  {
+    id: 'games',
+    titleKey: 'toolGamesTitle',
+    descKey: 'toolGamesDesc',
+    icon: 'game-controller-outline',
+    color: '#16A34A',
+    route: '/play',
+  },
   {
     id: 'geogebra',
     hidden: true,

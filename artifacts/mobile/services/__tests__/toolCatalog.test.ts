@@ -22,9 +22,9 @@ import assert from 'node:assert/strict';
 import { AFTER_CLASS, ALL_TOOLS, BEFORE_CLASS, DURING_CLASS, WORKFLOW } from '../toolCatalog.ts';
 
 const OFFERED_TOOLS = [
-  'slides', 'prompt-slides', 'lesson-plan', 'simplify',           // before
-  'worksheet', 'classroom', 'game', 'activity', 'whiteboard',     // during
-  'quiz', 'evaluations', 'parent-msg',                            // after
+  'slides', 'prompt-slides', 'lesson-plan', 'simplify',                    // before
+  'worksheet', 'classroom', 'game', 'activity', 'whiteboard', 'games',     // during
+  'quiz', 'evaluations', 'parent-msg',                                    // after
 ];
 
 /** Parked on 2026-08-18 and still parked — none of these may reach a menu. */
