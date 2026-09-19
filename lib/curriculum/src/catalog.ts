@@ -779,6 +779,10 @@ import {
   G2_SOCIAL_S2_CURRICULUM_BOOK_ID,
   buildG2SocialSem2BrowserCatalog,
 } from './catalogs/g2SocialSem2.ts';
+import {
+  G2_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  buildG2CreativeArtsBrowserCatalog,
+} from './catalogs/g2CreativeArts.ts';
 
 export interface Grade {
   id: string;
@@ -953,8 +957,10 @@ export const SUBJECTS: Subject[] = [
   // grade-6..8 (no grade-5 book); see g4CreativeArts.ts. Extended to grade-3
   // on 2026-09-18 once its book arrived, same one-book shape; see
   // g3CreativeArts.ts. Extended to grade-1 on 2026-09-19 once its book
-  // arrived, same one-book shape; see g1CreativeArts.ts.
-  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-1', 'grade-3', 'grade-4', 'grade-6', 'grade-7', 'grade-8'] },
+  // arrived, same one-book shape; see g1CreativeArts.ts. Extended to grade-2
+  // on 2026-09-19 once its book arrived, same one-book shape; see
+  // g2CreativeArts.ts.
+  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-1', 'grade-2', 'grade-3', 'grade-4', 'grade-6', 'grade-7', 'grade-8'] },
   // Seventh brand-new subject, added 2026-09-09 as part of the Grade 8
   // batch. Seven vocational tracks packed into one book per semester
   // (life skills, home economics, agriculture, health/safety, industry,
@@ -1522,6 +1528,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // needed. See g2SocialSem1.ts / g2SocialSem2.ts.
   G2_SOCIAL_S1_CURRICULUM_BOOK_ID,
   G2_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  // Grade 2 Art, Music and Drama Education, one book for the whole year
+  // (no semester split). 'creative-arts' extended to grade-2 in
+  // SUBJECTS.grades above. See g2CreativeArts.ts.
+  G2_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -3309,6 +3319,22 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+  },
+  // ── Art, Music and Drama Education Grade 2 ──────────────────────────────
+  // Eighth Grade 2 book in this repo, required extending SUBJECTS.grades
+  // for creative-arts (previously grade-1/3/4/6/7/8 only). One book for the
+  // whole year — no semester field, same shape as g1CreativeArts.ts.
+  {
+    id: G2_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+    title: 'Art, Music and Drama Education – Grade 2',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف الثاني',
+    subjectId: 'creative-arts',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
   },
   // ── Science Grade 1 – Semesters 1 and 2 ─────────────────────────────────
   // Second Grade 1 book in this repo. 'science' is already declared for
@@ -5668,6 +5694,7 @@ const _g2ArabicSem1Browser = buildG2ArabicSem1BrowserCatalog();
 const _g2ArabicSem2Browser = buildG2ArabicSem2BrowserCatalog();
 const _g2SocialSem1Browser = buildG2SocialSem1BrowserCatalog();
 const _g2SocialSem2Browser = buildG2SocialSem2BrowserCatalog();
+const _g2CreativeArtsBrowser = buildG2CreativeArtsBrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -5963,6 +5990,7 @@ export const UNITS: Unit[] = [
   ..._g2ArabicSem2Browser.units,
   ..._g2SocialSem1Browser.units,
   ..._g2SocialSem2Browser.units,
+  ..._g2CreativeArtsBrowser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -6148,6 +6176,7 @@ export const LESSONS: Lesson[] = [
   ..._g2ArabicSem2Browser.lessons,
   ..._g2SocialSem1Browser.lessons,
   ..._g2SocialSem2Browser.lessons,
+  ..._g2CreativeArtsBrowser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
