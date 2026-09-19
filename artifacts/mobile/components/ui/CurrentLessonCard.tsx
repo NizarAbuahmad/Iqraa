@@ -8,8 +8,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { JordanFlag } from '@/components/ui/JordanFlag';
 import type { CurrentLessonView } from '@/services/lessonCopilot';
 
-/** Carried over from the home screen's Start Class button. */
-const START_CLASS_COLOR = '#B45309';
+// Start Class itself now uses colors.primary, matching the rest of the app's
+// brand teal instead of standing out as an unrelated amber. This stays amber
+// for the *failed*-start message below, which needs to read as a warning
+// regardless of what color the button next to it uses.
+const ERROR_ACCENT = '#B45309';
 
 type Colors = {
   card: string;
@@ -81,12 +84,12 @@ export function CurrentLessonCard({
   */
   const errorStrip = startClassError ? (
     <View
-      style={[styles.errorRow, { flexDirection: rowDir, backgroundColor: START_CLASS_COLOR + '14' }]}
+      style={[styles.errorRow, { flexDirection: rowDir, backgroundColor: ERROR_ACCENT + '14' }]}
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
     >
-      <Ionicons name="alert-circle-outline" size={14} color={START_CLASS_COLOR} />
-      <Text style={[styles.errorText, { color: START_CLASS_COLOR, textAlign: align, flex: 1 }]}>
+      <Ionicons name="alert-circle-outline" size={14} color={ERROR_ACCENT} />
+      <Text style={[styles.errorText, { color: ERROR_ACCENT, textAlign: align, flex: 1 }]}>
         {startClassError}
       </Text>
     </View>
@@ -113,7 +116,7 @@ export function CurrentLessonCard({
         style={({ pressed }) => [
           styles.startCompact,
           {
-            backgroundColor: START_CLASS_COLOR,
+            backgroundColor: colors.primary,
             opacity: startClassBusy ? 0.6 : pressed ? 0.88 : 1,
             flexDirection: rowDir,
           },
@@ -232,10 +235,7 @@ export function CurrentLessonCard({
               style={({ pressed }) => [
                 styles.changeBtn,
                 {
-                  // Same amber the home screen used, so the action a teacher
-                  // already knows by colour does not change identity on the way
-                  // over from that screen.
-                  backgroundColor: START_CLASS_COLOR,
+                  backgroundColor: colors.primary,
                   opacity: startClassBusy ? 0.6 : pressed ? 0.88 : 1,
                   flexDirection: rowDir,
                   flex: 1,
@@ -264,7 +264,10 @@ export function CurrentLessonCard({
             style={({ pressed }) => [
               styles.changeBtn,
               {
-                backgroundColor: colors.primary,
+                // Secondary only when it shares the row with Start Class —
+                // both solid teal would erase the lead that button needs.
+                // Sole action (no Start Class), it carries full primary weight.
+                backgroundColor: onStartClass && startClassLabel ? colors.secondary : colors.primary,
                 opacity: pressed ? 0.88 : 1,
                 flexDirection: rowDir,
                 // Sized to its label, not stretched: sharing the row equally
@@ -275,9 +278,16 @@ export function CurrentLessonCard({
             accessibilityRole="button"
             accessibilityLabel={changeLabel}
           >
-            <Ionicons name="swap-horizontal" size={14} color={colors.primaryForeground || '#fff'} />
+            <Ionicons
+              name="swap-horizontal"
+              size={14}
+              color={onStartClass && startClassLabel ? colors.primary : (colors.primaryForeground || '#fff')}
+            />
             <Text
-              style={[styles.changeBtnText, { color: colors.primaryForeground || '#fff' }]}
+              style={[
+                styles.changeBtnText,
+                { color: onStartClass && startClassLabel ? colors.primary : (colors.primaryForeground || '#fff') },
+              ]}
               numberOfLines={1}
             >
               {changeLabel}
