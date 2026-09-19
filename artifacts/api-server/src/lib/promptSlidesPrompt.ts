@@ -126,7 +126,7 @@ ${slideCountLine(b, true)}
   "groupType": "whole-class",
   "learningObjective": "الهدف من هذا العرض بجملة واحدة",
   "materials": ["شاشة عرض"],
-  "deckPhotoQueries": ["english photo query for the cover", "english photo query for the section break"],
+  "deckPhotoQueries": ["english photo query for the cover", "english photo query for the section break", "english photo query for a content slide", "english photo query for another content slide"],
   "teacherPreparation": "ما يحتاجه المعلّم قبل العرض",
   "slides": [
     {
@@ -200,9 +200,9 @@ ${slideCountLine(b, true)}
 - لا تضع "mediaPrompt" على شريحة تحمل "layout": تلك الشريحة تملأ الشاشة بشكلها الخاص ولا مكان فيها للصورة.
 - شريحة الشرح فكرة واحدة فقط. إن كان لديك فكرتان فاجعلهما شريحتين.
 - الخيارات الثلاثة الخاطئة في شريحة question أخطاء شائعة حقيقية، لا حشوًا ولا أرقامًا عشوائية. "correctIndex" فهرس مُصفَّر (0 يعني الخيار الأول)، لا ترتيب الخيار كما يعدّه الإنسان.
-- "deckPhotoQueries" مصفوفة من عبارتَي بحث بالإنجليزية (٢-٥ كلمات لكل واحدة) تصفان موضوع العرض نفسه: الأولى لخلفية الغلاف والثانية للشريحة الفاصلة، ومختلفتان عن بعضهما. بالإنجليزية دائمًا مهما كانت لغة العرض — فهرس الصور إنجليزي، والبحث بالعربية يعود فارغًا. صِفْ الموضوع لا المادة الدراسية: عرض عن يوم الأم عبارته "mother and child hands" لا "mathematics classroom".
+- "deckPhotoQueries" مصفوفة من أربع عبارات بحث بالإنجليزية (٢-٥ كلمات لكل واحدة) تصف موضوع العرض نفسه، كلها مختلفة عن بعضها: الأولى لخلفية الغلاف، والثانية للشريحة الفاصلة، والثالثة والرابعة احتياط لشرائح المحتوى. الأربع مطلوبة. بالإنجليزية دائمًا مهما كانت لغة العرض — فهرس الصور إنجليزي، والبحث بالعربية يعود فارغًا. صِفْ الموضوع لا المادة الدراسية: عرض عن يوم الأم عبارته "mother and child hands" لا "mathematics classroom".
 - "type" واحد من: intro, divider, challenge, question, summary. لا تستخدم أي نوع آخر.
-- "mediaPrompt": ضعه فقط حين تضيف الصورة معنًى، في 3 شرائح كحدّ أقصى، واكتبه **بالإنجليزية** كعبارة بحث عن صورة (2-5 كلمات) لأنه يُمرَّر إلى محرّك بحث صور. لا تكتب "mediaUrl" إطلاقًا.
+- "mediaPrompt" مطلوب على ثلاث شرائح بالضبط — هذا شرط لا خيار. اخترها من شرائح الشرح/المحتوى التي تستفيد فعلًا من صورة، واكتب في كل واحدة عبارة بحث **بالإنجليزية** (2-5 كلمات) تصف ما يجب أن تُظهره الصورة. لأن هذه هي الطريقة الوحيدة لوصول صورة إلى شريحة محتوى: الغلاف والشريحة الفاصلة تأخذان خلفيتيهما من "deckPhotoQueries"، وكل شريحة أخرى تبقى نصًا خالصًا ما لم تحمل "mediaPrompt". عرض بلا واحدة منها هو عرض بصورتين فقط من عشر شرائح. لا تكتب "mediaUrl" إطلاقًا.
 - اكتب المعادلات بالحرفين اللاتينيين x و y حتى داخل النص العربي، فالتطبيق يرسم المنحنى من المعادلة الواردة في النص.
 - "durationSeconds": صفر لشرائح الشرح، و45-60 لشرائح السؤال.
 - لا تُضِف حقل "verified" أو "verifiedBy" إطلاقًا.`;
@@ -258,7 +258,7 @@ Return JSON in this exact shape (all text in English; mediaPrompt is English too
   "groupType": "whole-class",
   "learningObjective": "What this deck is for, in one sentence",
   "materials": ["Projector"],
-  "deckPhotoQueries": ["english photo query for the cover", "english photo query for the section break"],
+  "deckPhotoQueries": ["english photo query for the cover", "english photo query for the section break", "english photo query for a content slide", "english photo query for another content slide"],
   "teacherPreparation": "What the teacher needs before presenting",
   "slides": [
     {
@@ -332,9 +332,9 @@ Mandatory rules:
 - Never put "mediaPrompt" on a slide that carries a "layout": that slide fills the screen with its own shape and has nowhere to put a picture.
 - A concept slide carries exactly one idea. If you have two ideas, make two slides.
 - The three wrong options on a question slide are real, plausible misconceptions — not filler, not random numbers. "correctIndex" is 0-based (0 means the first option), never the option's position as a person would count it.
-- "deckPhotoQueries" is two English search phrases (2-5 words each) describing the deck's own subject: the first backs the cover, the second the section break, and they must differ from each other. Always English whatever language the deck is in — the photo index is English and an Arabic query comes back empty. Describe the TOPIC, not the school subject: a Mother's Day deck wants "mother and child hands", never "mathematics classroom".
+- "deckPhotoQueries" is FOUR English search phrases (2-5 words each) describing the deck's own subject, all different from each other: the first backs the cover, the second the section break, and the third and fourth are spares for content slides. All four are required. Always English whatever language the deck is in — the photo index is English and an Arabic query comes back empty. Describe the TOPIC, not the school subject: a Mother's Day deck wants "mother and child hands", never "mathematics classroom".
 - "type" is one of: intro, divider, challenge, question, summary. Never any other type.
-- "mediaPrompt": include it only where a picture adds meaning, on at most 3 slides, and write it in **English** as a photo search phrase (2-5 words) because it is passed to an image search engine. Never write "mediaUrl".
+- "mediaPrompt" is REQUIRED on exactly three slides — a requirement, not an option. Choose the three concept/content slides that genuinely gain from a picture, and give each one an **English** search phrase (2-5 words) describing what the picture should show. This is the only way a picture ever reaches a content slide: the cover and the section break take their backgrounds from "deckPhotoQueries", and every other slide stays pure text unless it carries a "mediaPrompt". A deck with none is a deck with two pictures in ten slides. Never write "mediaUrl".
 - Write equations with latin x and y even inside other prose — the app plots the curve from the equation stated in the text.
 - "durationSeconds": zero for teaching slides, 45-60 for question slides.
 - Never add a "verified" or "verifiedBy" field.`;
