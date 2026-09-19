@@ -249,40 +249,71 @@ export default function ProfileScreen() {
               onPress={() => router.push({ pathname: '/setup-subjects', params: { mode: 'edit' } } as any)}
               style={({ pressed }) => [styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 }]}
             >
-              {(user?.subjectIds?.length ?? 0) > 0 ? (
-                <View style={styles.tagSection}>
-                  <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('mySubjects')}</Text>
-                  <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    {user?.subjectIds?.map(id => {
-                      const subject = SUBJECTS.find(s => s.id === id);
-                      return (
-                        <View key={id} style={[styles.tag, { backgroundColor: colors.secondary }]}>
-                          <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
-                            {subject ? (isRTL ? subject.nameAr : subject.name) : id}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </View>
-              ) : null}
-              {(user?.gradeIds?.length ?? 0) > 0 ? (
-                <View style={styles.tagSection}>
-                  <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('myGrades')}</Text>
-                  <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    {user?.gradeIds?.map(id => {
-                      const grade = GRADES.find(g => g.id === id);
-                      return (
-                        <View key={id} style={[styles.tag, { backgroundColor: colors.muted }]}>
-                          <Text style={[styles.tagText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
-                            {grade ? (isRTL ? grade.nameAr : grade.name) : id}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </View>
-              ) : null}
+              {/* One row per grade, each with only the subjects taught in it —
+                  `teachingAssignments` is the pairing; the old flat
+                  gradeIds/subjectIds tags below only ever show for an account
+                  that hasn't opened /setup-subjects since that field shipped. */}
+              {(user?.teachingAssignments?.length ?? 0) > 0 ? (
+                user?.teachingAssignments?.map(a => {
+                  const grade = GRADES.find(g => g.id === a.gradeId);
+                  return (
+                    <View key={a.gradeId} style={styles.tagSection}>
+                      <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                        {grade ? (isRTL ? grade.nameAr : grade.name) : a.gradeId}
+                      </Text>
+                      <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                        {a.subjectIds.map(id => {
+                          const subject = SUBJECTS.find(s => s.id === id);
+                          return (
+                            <View key={id} style={[styles.tag, { backgroundColor: colors.secondary }]}>
+                              <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
+                                {subject ? (isRTL ? subject.nameAr : subject.name) : id}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  );
+                })
+              ) : (
+                <>
+                  {(user?.subjectIds?.length ?? 0) > 0 ? (
+                    <View style={styles.tagSection}>
+                      <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('mySubjects')}</Text>
+                      <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                        {user?.subjectIds?.map(id => {
+                          const subject = SUBJECTS.find(s => s.id === id);
+                          return (
+                            <View key={id} style={[styles.tag, { backgroundColor: colors.secondary }]}>
+                              <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
+                                {subject ? (isRTL ? subject.nameAr : subject.name) : id}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  ) : null}
+                  {(user?.gradeIds?.length ?? 0) > 0 ? (
+                    <View style={styles.tagSection}>
+                      <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('myGrades')}</Text>
+                      <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                        {user?.gradeIds?.map(id => {
+                          const grade = GRADES.find(g => g.id === id);
+                          return (
+                            <View key={id} style={[styles.tag, { backgroundColor: colors.muted }]}>
+                              <Text style={[styles.tagText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+                                {grade ? (isRTL ? grade.nameAr : grade.name) : id}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  ) : null}
+                </>
+              )}
               <View style={[styles.tagSection, { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 0 }]}>
                 <Ionicons name="create-outline" size={14} color={colors.primary} />
                 <Text style={[styles.tagLabel, { color: colors.primary, fontFamily: 'Cairo_500Medium', marginBottom: 0 }]}>

@@ -44,6 +44,12 @@ export function isStudentRole(role: UserRole | null | undefined): boolean {
   return role === 'student';
 }
 
+/** A grade this teacher teaches, paired with which subjects they teach in it. */
+export interface TeachingAssignment {
+  gradeId: string;
+  subjectIds: string[];
+}
+
 export interface User {
   id: string;
   firstName: string;
@@ -67,10 +73,20 @@ export interface User {
    * this teacher picked at signup, editable later from the profile screen.
    * Both empty is what `needsTeacherSetup` (routeGating.ts) reads to send a
    * brand-new teacher to `/setup-subjects`; absent/empty for every other
-   * role, where the field does not apply.
+   * role, where the field does not apply. Kept as the union across
+   * `teachingAssignments` — narrowing to a specific grade's own subjects
+   * needs that field instead, not these two.
    */
   gradeIds?: string[];
   subjectIds?: string[];
+  /**
+   * Which subjects this teacher teaches in each grade — the pairing
+   * `gradeIds`/`subjectIds` can't express on their own. Possibly empty even
+   * when those two are not, for an account set up before this field existed;
+   * treat that the same as "one assignment per grade, covering every picked
+   * subject" (see `setup-subjects.tsx`'s initial state).
+   */
+  teachingAssignments?: TeachingAssignment[];
   // Legacy optional fields kept for profile screen compatibility
   phone?: string;
   school?: string;
@@ -130,6 +146,7 @@ interface AuthContextType {
     lastName?: string;
     gradeIds?: string[];
     subjectIds?: string[];
+    teachingAssignments?: TeachingAssignment[];
   }) => Promise<void>;
   /** Throws with the server's own message (e.g. "too large", "not set up yet") on failure. */
   uploadAvatar: (dataUrl: string) => Promise<void>;
@@ -170,6 +187,7 @@ type ApiUser = {
   hasRosterLink?: boolean;
   gradeIds?: string[];
   subjectIds?: string[];
+  teachingAssignments?: TeachingAssignment[];
 };
 
 function toUser(apiUser: ApiUser): User {
@@ -187,6 +205,7 @@ function toUser(apiUser: ApiUser): User {
     hasRosterLink: apiUser.hasRosterLink,
     gradeIds: apiUser.gradeIds ?? [],
     subjectIds: apiUser.subjectIds ?? [],
+    teachingAssignments: apiUser.teachingAssignments ?? [],
   };
 }
 
@@ -445,6 +464,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     lastName?: string;
     gradeIds?: string[];
     subjectIds?: string[];
+    teachingAssignments?: TeachingAssignment[];
   }) => {
     const updated = await apiJson<ApiUser>('/auth/users/profile', {
       method: 'PATCH',

@@ -68,6 +68,16 @@ export const users = pgTable("users", {
    */
   gradeIds: jsonb("grade_ids").$type<string[]>().notNull().default([]),
   subjectIds: jsonb("subject_ids").$type<string[]>().notNull().default([]),
+  /**
+   * What `gradeIds`/`subjectIds` can't say: which subjects go with which
+   * grade. Those two stay in sync as the union across this array (every
+   * gradeId that appears, every subjectId that appears anywhere) so
+   * `needsTeacherSetup` and every screen reading the flat fields keep working
+   * unchanged — this is the one place the actual pairing lives, read by
+   * `app/(tabs)/curriculum.tsx` to narrow a selected grade to *its* subjects
+   * instead of every subject the teacher has ever picked for any grade.
+   */
+  teachingAssignments: jsonb("teaching_assignments").$type<{ gradeId: string; subjectIds: string[] }[]>().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   lastLogin: timestamp("last_login", { withTimezone: true }),
 });
