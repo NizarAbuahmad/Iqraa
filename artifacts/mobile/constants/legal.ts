@@ -38,10 +38,8 @@
 /**
  * Must be a real, monitored mailbox before either store listing goes in — a
  * reviewer may write to it, and a data-subject request has a statutory clock.
- * Nothing in the repo establishes an existing address, so this is a
- * placeholder and is deliberately obvious.
  */
-export const LEGAL_CONTACT_EMAIL = 'privacy@iqraa.app';
+export const LEGAL_CONTACT_EMAIL = 'info@iqrra.com';
 
 /** Shown on both documents. Bump when the text below changes materially. */
 export const LEGAL_LAST_UPDATED = { ar: '٦ أيلول ٢٠٢٦', en: '6 September 2026' };
