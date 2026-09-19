@@ -1203,6 +1203,13 @@ router.post("/google", googleLimiter, async (req, res) => {
     res.json({
       accessToken,
       refreshToken: refreshTokenValue,
+      // Whether this credential just minted an account or signed an existing
+      // one in. Only the server can tell them apart — the client gets an
+      // identical token pair either way — so without this the app would have to
+      // count the button someone pressed instead of the account that was
+      // created, and every existing teacher who tapped "sign up" would inflate
+      // the signup number.
+      isNewAccount,
       user: {
         id: user.id,
         firstName: user.firstName,
