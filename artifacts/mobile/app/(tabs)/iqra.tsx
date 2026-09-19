@@ -113,6 +113,7 @@ import {
   seedDefaultLessonMemory,
   softPinIfUnpinned,
   shouldReuseActiveLesson,
+  topicSwitchTarget,
   type LessonSuggestion,
 } from '@/services/lessonCopilot';
 import {
@@ -1673,10 +1674,22 @@ export default function IqraScreen() {
       const hasDocsEarly =
         docBundleEarly.readyCount > 0 && !!docBundleEarly.promptBlock.trim();
 
+      // The teacher said they are leaving the current lesson («خلينا نتكلم عن
+      // الأحياء»). Search the topic they named, not the sentence around it, and
+      // let neither the hard pin nor `teachingCtx` drag the old lesson back —
+      // a match below re-pins to the new one, a miss answers out-of-scope.
+      const switchTopic = pinnedLessonId ? null : topicSwitchTarget(q);
+      const searchText = switchTopic ?? q;
+      if (switchTopic !== null) {
+        setSessionMemory(prev => ({ ...prev, lessonPin: 'none' }));
+        setTeachingCtx('');
+        setTeachingCtxLessonId(null);
+      }
+
       // 1. Local KB retrieval — confidence-gated; soft default lesson must not steal topics.
       const ranked = pinnedLessonId
         ? []
-        : searchKBRanked(q, lang as 'ar' | 'en');
+        : searchKBRanked(searchText, lang as 'ar' | 'en');
       const confidentHit = isConfidentSingleSubjectHit(ranked);
 
       // The lesson this send was explicitly pinned to, when there is one. It
@@ -1694,13 +1707,13 @@ export default function IqraScreen() {
           : deduplicateByUnit(searchKBSemantic(q, lang as 'ar' | 'en'), 3);
       } else {
         results = deduplicateByUnit(
-          ranked.length ? ranked.map(r => r.lesson) : searchKBSemantic(q, lang as 'ar' | 'en'),
+          ranked.length ? ranked.map(r => r.lesson) : searchKBSemantic(searchText, lang as 'ar' | 'en'),
           3,
         );
       }
 
       // Prefer explicit teaching-context lesson when available
-      if (!pinnedLessonId && teachingCtx.trim()) {
+      if (!pinnedLessonId && switchTopic === null && teachingCtx.trim()) {
         const ctxLesson = resolvePickedLesson(
           teachingCtx.trim(),
           { lessonId: teachingCtxLessonId },
@@ -1817,7 +1830,7 @@ export default function IqraScreen() {
       // prefers `pinnedLesson`); this is the remote path catching up.
       const teachingTopic = pinnedLesson
         ? (lang === 'ar' ? pinnedLesson.titleAr : pinnedLesson.titleEn)
-        : teachingCtx;
+        : (switchTopic === null ? teachingCtx : '');
       const teachingPrefix = teachingTopic
         ? (lang === 'ar'
           ? `[سياق التدريس: المعلم يدرّس حاليًا "${teachingTopic}"]\n\n`
@@ -1854,7 +1867,9 @@ export default function IqraScreen() {
           mode,
           teachingContext: pinnedLesson
             ? (lang === 'ar' ? pinnedLesson.titleAr : pinnedLesson.titleEn)
-            : (teachingCtx || sessionMemory.activeTopicAr || sessionMemory.activeTopicEn),
+            : switchTopic !== null
+              ? null
+              : (teachingCtx || sessionMemory.activeTopicAr || sessionMemory.activeTopicEn),
           // DEMO_MODE is on by default, and in that path this — not
           // `buildResponse` — writes the reply the teacher reads. Threading the
           // pin only through the remote path would have left the fix invisible

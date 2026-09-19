@@ -137,9 +137,49 @@ export function isBareArtifactShortcut(query: string): boolean {
 }
 
 /**
+ * The topic a teacher names when they say they are leaving the current lesson
+ * («خلينا نتكلم عن الأحياء», "can we now talk about biology"), or `null` when
+ * the message is not a switch. An empty string is a switch with no named
+ * target ("something else") — still a switch, so the caller searches nothing
+ * rather than snapping back to the pinned lesson.
+ *
+ * Without this, a hard-pinned lesson plus a sentence the keyword search cannot
+ * score («biology» against Arabic titles) forced the old lesson back into the
+ * reply, opened with «لنربط الإجابة بدرسك الحالي», and the teacher could not
+ * change subject by typing.
+ */
+export function topicSwitchTarget(query: string): string | null {
+  const q = query.trim().replace(/[!?؟.،,]+$/g, '').trim();
+  const patterns: RegExp[] = [
+    /^(?:(?:can|could|shall|may) we |let'?s |now |please )*(?:now )?(?:talk|speak|chat|move on|move|switch|go|jump)(?: on)? (?:about|to|over to|on to) (.+)$/i,
+    /^(?:please |now |let'?s )*(?:change|switch) (?:the )?(?:lesson|topic|subject)(?: to (.+))?$/i,
+    /^(?:another|a different|new) (?:lesson|topic|subject)(?:[:،]? *(.+))?$/i,
+    /^(?:هل |طيب |طب |ممكن |يمكن |بدي |بدنا |أريد |اريد |نقدر |خلينا |خلّينا |دعنا |هيا |تعال |الآن |الان )*(?:أن |ان )?(?:نتكلم|نتحدث|نحكي|نحكى|نتناقش|أتكلم|اتكلم|نتحول|ننتقل|انتقل|نروح|نرجع)(?: الآن| الان| هلأ| هلق)? (?:عن|إلى|الى|على|ل) ?(.+)$/,
+    /^(?:هل |طيب |طب |ممكن |يمكن |بدي |بدنا |أريد |اريد |خلينا |خلّينا |دعنا |الآن |الان )*(?:غيّر|غير|بدّل|بدل|نغيّر|نغير|نبدّل|نبدل)(?: لي| لنا)? (?:الدرس|الموضوع|المادة|الحصة)(?: (?:إلى|الى|ل) ?(.+))?$/,
+    /^(?:درس|موضوع|مادة|حصة) (?:آخر|أخرى|اخرى|ثاني|ثانية|جديد|جديدة|مختلف|مختلفة)(?:[:،]? *(.+))?$/,
+  ];
+  for (const p of patterns) {
+    const m = q.match(p);
+    if (!m) continue;
+    const target = (m[1] ?? '')
+      .replace(/\b(?:now|instead|please|again)\b/gi, '')
+      .replace(/(?:^|\s)(?:الآن|الان|هلأ|هلق|لو سمحت|من فضلك|بدل ذلك)(?=\s|$)/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    // «نتكلم عن هذا الدرس» / "talk about the same lesson" is staying, not leaving.
+    // No `\b` — it is ASCII-only in JS and never matches next to Arabic letters.
+    if (/^(?:هذا|هذه|نفس|ذات|this|that|the same|same|our|the current|it)(?:\s|$)/i.test(target)) return null;
+    if (/^(?:something|anything|شيء|شي|أمر|موضوع) (?:else|آخر|اخر|ثاني)$/i.test(target)) return '';
+    return target;
+  }
+  return null;
+}
+
+/**
  * Decide whether chat should force the session's active lesson into results.
  * Soft pins must not override a confident KB hit for a different topic.
  * Teacher-uploaded documents beat a soft-pinned default lesson.
+ * A message that names a new topic never reuses the old lesson, however pinned.
  */
 export function shouldReuseActiveLesson(opts: {
   memory: ChatSessionMemory;
@@ -151,6 +191,7 @@ export function shouldReuseActiveLesson(opts: {
 }): boolean {
   const { memory, intent, query, hasConfidentKbHit, hasDocuments = false } = opts;
   if (!memory.activeLessonId || memory.lessonPin === 'none') return false;
+  if (topicSwitchTarget(query) !== null) return false;
 
   // Uploads are primary context until the teacher hard-pins a curriculum lesson
   if (hasDocuments && memory.lessonPin !== 'hard' && intent !== 'refinement') {
