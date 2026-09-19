@@ -1,0 +1,209 @@
+{
+  "meta": {
+    "grade": "الصف الأول",
+    "grade_en": "Grade 1",
+    "subject": "الدراسات الاجتماعية",
+    "subject_en": "Social Studies",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة الدراسات الاجتماعية للصف الأول الفصل الأول (g1-social-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ ودروسُها الاثنا عشرَ من كتاب الطالب في 2026-09-19، بقراءةِ الكتابِ مباشرةً عبرَ PyMuPDF — الاستخراجُ نظيفٌ تمامًا. نفسُ اصطلاحِ صناديقِ NCCD المعتادِ لهذه المادةِ (g3SocialSem1.ts/g4SocialSem1.ts): «الفِكْرَةُ الرَّئيسَةُ» لكلِّ درسٍ، «المَفاهيمُ وَالمُصْطَلَحاتُ» ثنائيَّةُ اللغةِ (عربيٌّ مع مقابلٍ إنجليزيٍّ مطبوعٍ)، «الفِكْرَةُ العامَّةُ» لكلِّ وحدةٍ.",
+    "known_gaps": [
+      "objectives فارغةٌ لكلِّ الدروسِ: لا يطبَعُ هذا الكتابُ صندوقَ «نَتاجاتُ التَّعَلُّمِ» إطلاقًا، نفسُ الحالِ في g3SocialSem1.ts.",
+      "prior_knowledge فارغةٌ لكلِّ الوحداتِ: لا صندوقَ معرفةٍ سابقةٍ مطبوعًا."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "أَنا وَأُسْرَتي وَمُجْتَمَعي",
+      "title_en": "Me, My Family, and My Community",
+      "general_idea_ar": "لِكُلٍّ مِنّا شَخْصِيَّةٌ تُمَيِّزُهُ عَنْ غَيْرِهِ، وَأُسْرَةٌ يَنْتَمي إِلَيْها، وَمُجْتَمَعٌ يَتَفاعَلُ مَعَهُ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (NCCD student book: main idea from «الفِكْرَةُ الرَّئيسَةُ», vocabulary from «المَفاهيمُ وَالمُصْطَلَحاتُ»; no objectives/outcomes box printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "مَنْ أَكونُ",
+          "title_en": "Who Am I",
+          "main_idea_ar": "لِكُلٍّ مِنّا شَخْصِيَّتُهُ الَّتي تُمَيِّزُهُ عَنْ غَيْرِهِ، وَعَلَيْنا أَنْ نَحْتَرِمَ الآخَرينَ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الاسْمُ", "en": "Name" },
+            { "ar": "العُمُرُ", "en": "Age" },
+            { "ar": "الجِنْسُ", "en": "Sex" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "أُسْرَتي",
+          "title_en": "My Family",
+          "main_idea_ar": "لِكُلٍّ مِنّا أُسْرَةٌ نَنْتَمي إِلَيْها، تَقومُ عَلى الْمَوَدَّةِ والتَّعاوُنِ وَالاحْتِرامِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الأُسْرَةُ", "en": "Family" }
+          ]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "نَتَشابَهُ وَنَخْتَلِفُ",
+          "title_en": "We Are Similar and Different",
+          "main_idea_ar": "نَحْنُ نَتَشابَهُ في حاجاتِنا الأَساسِيَّةِ، وَنَخْتَلِفُ في الشَّكْلِ وَاللَّوْنِ وَاللِّباسِ وَالجِنْسِ، وَنَحْتَرِمُ بَعْضَنا بَعْضًا.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "تَشابُهٌ", "en": "Similarity" },
+            { "ar": "اخْتِلافٌ", "en": "Difference" }
+          ]
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "أَحْتَرِمُ جيراني",
+          "title_en": "I Respect My Neighbors",
+          "main_idea_ar": "الْجارُ هُوَ الشَّخْصُ الَّذي يَسْكُنُ بِجِوارِ مَنْزِلِنا.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "جارٌ", "en": "Neighbor" }
+          ]
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "الْحَيُّ",
+          "title_en": "The Neighborhood",
+          "main_idea_ar": "الْحَيُّ مَكانٌ تَسْكُنُهُ مَجْموعَةٌ مِنَ النّاسِ، وَفيهِ مَرافِقُ مُخْتَلِفَةٌ نَسْتَفيدُ مِنْها جَميعًا.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "حَيٌّ", "en": "Neighborhood" }
+          ]
+        },
+        {
+          "id": "u1_l6",
+          "order": 6,
+          "title_ar": "إِشارَةُ الْمُرورِ",
+          "title_en": "Traffic Signal",
+          "main_idea_ar": "إِشارَةُ الْمُرورِ تُنَظِّمُ حَرَكَةَ السَّيّاراتِ وَالْمُشاةِ، وَتُساعِدُ عَلى مَنْعِ الْحَوادِثِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "إِشارَةُ الْمُرورِ", "en": "Traffic light" },
+            { "ar": "مَمَرُّ الْمُشاةِ", "en": "Crosswalk" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "وَطَني الْجَميلُ",
+      "title_en": "My Beautiful Homeland",
+      "general_idea_ar": "نُحِبُّ وَطَنَنا وَعَلَمَنا وَمَلِكَنا.",
+      "total_periods": null,
+      "data_tier": "lesson-level (NCCD student book: main idea from «الفِكْرَةُ الرَّئيسَةُ», vocabulary from «المَفاهيمُ وَالمُصْطَلَحاتُ»; no objectives/outcomes box printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "الأُرْدُنُّ وَطَني",
+          "title_en": "Jordan Is My Homeland",
+          "main_idea_ar": "الْمَمْلَكَةُ الأُرْدُنِيَّةُ الْهاشِمِيَّةُ وَطَنُنا الَّذي نَعْتَزُّ وَنَفْتَخِرُ بِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "وَطَنٌ", "en": "Homeland" },
+            { "ar": "عاصِمَةٌ", "en": "Capital" },
+            { "ar": "مُحافَظَةٌ", "en": "Governorate" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "عَلَمُ وَطَني",
+          "title_en": "My Homeland's Flag",
+          "main_idea_ar": "الاعْتِزازُ بِالْعَلَمِ الأُرْدُنِيِّ، وَالتَّعَرُّفُ إِلى مَواصَفاتِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "عَلَمٌ", "en": "Flag" }
+          ]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "مَلِكُ وَطَني",
+          "title_en": "My Homeland's King",
+          "main_idea_ar": "جَلالَةُ الْمَلِكِ عَبْدِ اللهِ الثّاني ابْنِ الْحُسَيْنِ، هُوَ مَلِكُ الْمَمْلَكَةِ الأُرْدُنِيَّةِ الْهاشِمِيَّةِ، قائِدُنا الَّذي نُحِبُّهُ وَنَفْتَخِرُ بِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْمَلِكُ", "en": "The King" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "حُقوقي وَواجِباتي",
+      "title_en": "My Rights and Duties",
+      "general_idea_ar": "لِكُلِّ طِفْلٍ الْحَقُّ في اللَّعِبِ وَالرِّعايَةِ الصِّحِّيَّةِ وَالتَّعْليمِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (NCCD student book: main idea from «الفِكْرَةُ الرَّئيسَةُ», vocabulary from «المَفاهيمُ وَالمُصْطَلَحاتُ»; no objectives/outcomes box printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "أُحِبُّ أَنْ أَلْعَبَ",
+          "title_en": "I Love to Play",
+          "main_idea_ar": "اللَّعِبُ حَقٌّ أَساسِيٌّ لِلأَطْفالِ، يُساعِدُ عَلى نُمُوِّهِمْ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "لَعِبٌ", "en": "Playing" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "أَهْتَمُّ بِصِحَّتي",
+          "title_en": "I Care About My Health",
+          "main_idea_ar": "الرِّعايَةُ الصِّحِّيَّةُ حَقٌّ أَساسِيٌّ لِكُلِّ طِفْلٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "صِحَّةٌ", "en": "Health" },
+            { "ar": "مُسْتَشْفًى", "en": "Hospital" }
+          ]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "أُحِبُّ أَنْ أَتَعَلَّمَ",
+          "title_en": "I Love to Learn",
+          "main_idea_ar": "التَّعْليمُ حَقٌّ أَساسِيٌّ لِكُلِّ طِفْلٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "تَعْليمٌ", "en": "Education" },
+            { "ar": "مَدْرَسَةٌ", "en": "School" }
+          ]
+        }
+      ]
+    }
+  ]
+}

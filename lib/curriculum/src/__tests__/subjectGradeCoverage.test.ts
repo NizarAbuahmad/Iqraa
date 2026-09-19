@@ -331,8 +331,11 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // g1ArabicSem1.ts/g1ArabicSem2.ts. Title-only, letter-teaching primer
   // structure (not the fixed 5-lesson pattern); Semester 1's student book
   // was missing at first and supplied by the user mid-session.
+  // social:grade-1 closed 2026-09-19, both semesters — see
+  // g1SocialSem1.ts/g1SocialSem2.ts. Semester 2's source file is misnamed on
+  // disk (says "الصف الرابع" / Grade 4) — verified as genuine Grade 1 S2
+  // content via the PDF's own bibliographic page.
   'digital-literacy:grade-1',
-  'social:grade-1',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

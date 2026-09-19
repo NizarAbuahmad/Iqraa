@@ -262,6 +262,14 @@ import {
   isG1ArabicSem1TitleOnlyLesson,
 } from './catalogs/g1ArabicSem1.ts';
 import {
+  G1_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  buildG1SocialSem1BrowserCatalog,
+} from './catalogs/g1SocialSem1.ts';
+import {
+  G1_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  buildG1SocialSem2BrowserCatalog,
+} from './catalogs/g1SocialSem2.ts';
+import {
   G1_ARABIC_S2_CURRICULUM_BOOK_ID,
   buildG1ArabicSem2BrowserCatalog,
   isG1ArabicSem2TitleOnlyUnit,
@@ -1397,6 +1405,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // transition to the standard pattern.
   G1_ARABIC_S1_CURRICULUM_BOOK_ID,
   G1_ARABIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 1 Social Studies, both semesters. 'social' is already declared for
+  // grade-1 in SUBJECTS.grades (GRADES.slice(0, 9)), so no subject append or
+  // SUBJECTS.grades extension is needed. Same NCCD box conventions as
+  // g3SocialSem1.ts. See g1SocialSem1.ts / g1SocialSem2.ts.
+  G1_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  G1_SOCIAL_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -3108,6 +3122,37 @@ export const BOOKS: Book[] = [
     title: 'Arabic – Grade 1, Semester 2',
     titleAr: 'اللغة العربية – الصف الأول – الفصل الثاني',
     subjectId: 'arabic',
+    gradeId: 'grade-1',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Social Studies Grade 1 – Semesters 1 and 2 ──────────────────────────
+  // Ninth and tenth Grade 1 books in this repo. 'social' is already declared
+  // for grade-1 in SUBJECTS.grades (GRADES.slice(0, 9)), so no subject
+  // append or SUBJECTS.grades extension is needed. Same NCCD box
+  // conventions as g3SocialSem1.ts — see g1SocialSem1.ts/g1SocialSem2.ts.
+  {
+    id: G1_SOCIAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 1, Semester 1',
+    titleAr: 'الدراسات الاجتماعية – الصف الأول – الفصل الأول',
+    subjectId: 'social',
+    gradeId: 'grade-1',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G1_SOCIAL_S2_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 1, Semester 2',
+    titleAr: 'الدراسات الاجتماعية – الصف الأول – الفصل الثاني',
+    subjectId: 'social',
     gradeId: 'grade-1',
     academicYear: '2024-2025',
     language: 'Arabic',
@@ -5265,6 +5310,8 @@ const _g1EnglishSem1Browser = buildG1EnglishSem1BrowserCatalog();
 const _g1EnglishSem2Browser = buildG1EnglishSem2BrowserCatalog();
 const _g1ArabicSem1Browser = buildG1ArabicSem1BrowserCatalog();
 const _g1ArabicSem2Browser = buildG1ArabicSem2BrowserCatalog();
+const _g1SocialSem1Browser = buildG1SocialSem1BrowserCatalog();
+const _g1SocialSem2Browser = buildG1SocialSem2BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -5544,6 +5591,8 @@ export const UNITS: Unit[] = [
   ..._g1EnglishSem2Browser.units,
   ..._g1ArabicSem1Browser.units,
   ..._g1ArabicSem2Browser.units,
+  ..._g1SocialSem1Browser.units,
+  ..._g1SocialSem2Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -5713,6 +5762,8 @@ export const LESSONS: Lesson[] = [
   ..._g1EnglishSem2Browser.lessons,
   ..._g1ArabicSem1Browser.lessons,
   ..._g1ArabicSem2Browser.lessons,
+  ..._g1SocialSem1Browser.lessons,
+  ..._g1SocialSem2Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
