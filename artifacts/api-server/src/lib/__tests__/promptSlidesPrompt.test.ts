@@ -124,8 +124,13 @@ describe("promptSlidesPrompt — the rules that stop empty decks", () => {
     });
 
     it(`${label}: describes mediaPrompt as an english photo search phrase`, () => {
-      assert.match(prompt, /عبارة بحث عن صورة|photo search phrase/);
-      assert.match(prompt, new RegExp(String(MAX_PROMPT_SLIDE_IMAGES)));
+      // Two separate claims, because the second is the one that breaks in
+      // production: an Arabic query returns nothing from an English index.
+      assert.match(prompt, /عبارة بحث|search phrase/);
+      assert.match(prompt, /بالإنجليزية|English/);
+      // The count the client caps at must be the count the prompt asks for.
+      assert.equal(MAX_PROMPT_SLIDE_IMAGES, 3);
+      assert.match(prompt, /ثلاث شرائح|three slides/);
       assert.match(prompt, /لا تكتب "mediaUrl"|Never write "mediaUrl"/);
     });
 
@@ -249,5 +254,45 @@ describe("deckPhotoQueries — the deck's topic, not the school subject", () => 
   it("tells it to describe the topic rather than the subject, with the real example", () => {
     assert.match(promptSlidesPromptAr(body), /mother and child hands/);
     assert.match(promptSlidesPromptEn(body), /never "mathematics classroom"/);
+  });
+
+  it("asks for four queries, not two — the spares are the client's fallback", () => {
+    // A production deck made exactly two Unsplash calls because no slide
+    // carried a `mediaPrompt`, while filling `deckPhotoQueries` perfectly.
+    // Required array fields get filled; optional per-slide ones do not, so the
+    // floor now rides on the array.
+    assert.match(promptSlidesPromptEn(body), /FOUR English search phrases/);
+    assert.match(promptSlidesPromptEn(body), /spares for content slides/);
+    assert.match(promptSlidesPromptAr(body), /أربع عبارات بحث/);
+    assert.match(promptSlidesPromptAr(body), /الأربع مطلوبة/);
+    for (const p of [promptSlidesPromptAr(body), promptSlidesPromptEn(body)]) {
+      const skeleton = p.match(/"deckPhotoQueries":\s*\[[^\]]*\]/)?.[0] ?? "";
+      assert.equal((skeleton.match(/"/g) ?? []).length, 10, `skeleton should show 4 queries: ${skeleton}`);
+    }
+  });
+});
+
+describe("mediaPrompt is a requirement, not a permission", () => {
+  /**
+   * The measured defect. The rule said "include it only where a picture adds
+   * meaning, on at most 3 slides" — and the model read that permission as
+   * licence to emit none at all, so every content slide in a real deck was
+   * pure text and only the cover and divider had pictures.
+   */
+  const body = { additionalContext: "يوم الأم" };
+
+  it("demands it on exactly three slides", () => {
+    assert.match(promptSlidesPromptEn(body), /REQUIRED on exactly three slides/);
+    assert.match(promptSlidesPromptAr(body), /مطلوب على ثلاث شرائح بالضبط/);
+  });
+
+  it("no longer phrases it as optional", () => {
+    assert.ok(!promptSlidesPromptEn(body).includes("include it only where a picture adds meaning"));
+    assert.ok(!promptSlidesPromptAr(body).includes("ضعه فقط حين تضيف الصورة معنًى"));
+  });
+
+  it("says why it matters — that it is the only route to a content-slide picture", () => {
+    assert.match(promptSlidesPromptEn(body), /only way a picture ever reaches a content slide/);
+    assert.match(promptSlidesPromptAr(body), /الطريقة الوحيدة لوصول صورة إلى شريحة محتوى/);
   });
 });
