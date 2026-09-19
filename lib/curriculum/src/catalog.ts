@@ -274,6 +274,10 @@ import {
   buildG1CreativeArtsBrowserCatalog,
 } from './catalogs/g1CreativeArts.ts';
 import {
+  G1_PE_S2_CURRICULUM_BOOK_ID,
+  buildG1PhysicalEducationSem2BrowserCatalog,
+} from './catalogs/g1PhysicalEducationSem2.ts';
+import {
   G1_ARABIC_S2_CURRICULUM_BOOK_ID,
   buildG1ArabicSem2BrowserCatalog,
   isG1ArabicSem2TitleOnlyUnit,
@@ -885,8 +889,10 @@ export const SUBJECTS: Subject[] = [
   // contiguous with grade-6/7/9 (no grades 4/5 PE books). Unlike
   // g6PhysicalEducationSem1.ts (title-only), Grade 3's book prints a real
   // main-idea box and bilingual glossary per lesson; see
-  // g3PhysicalEducationSem1.ts.
-  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-3', 'grade-6', 'grade-7', 'grade-9'] },
+  // g3PhysicalEducationSem1.ts. Extended to grade-1 on 2026-09-19 once its
+  // book arrived — Semester 2 only (opposite gap from grade-3/6), same real
+  // box shape; see g1PhysicalEducationSem2.ts.
+  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-1', 'grade-3', 'grade-6', 'grade-7', 'grade-9'] },
   // Sixth brand-new subject, added 2026-09-09 as part of the Grade 8 batch.
   // Combines three domains (Art, Music, Drama) NCCD prints as one book —
   // see g8CreativeArts.ts. Extended to grade-7 on 2026-09-12 once its book
@@ -1421,6 +1427,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // already in MVP_SUBJECT_IDS, but SUBJECTS.grades needed extending for
   // grade-1 — see the SUBJECTS declaration above and g1CreativeArts.ts.
   G1_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  // Grade 1 Physical Education, Semester 2 only. 'physical-education' is
+  // already in MVP_SUBJECT_IDS, but SUBJECTS.grades needed extending for
+  // grade-1 — see the SUBJECTS declaration above and
+  // g1PhysicalEducationSem2.ts. Same real-content box shape as
+  // g3PhysicalEducationSem1.ts, opposite semester gap.
+  G1_PE_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -3186,6 +3198,24 @@ export const BOOKS: Book[] = [
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
+  },
+  // ── Physical Education Grade 1 – Semester 2 ─────────────────────────────
+  // Twelfth and last Grade 1 book in this repo, required extending
+  // SUBJECTS.grades for physical-education (previously grade-3/6/7/9 only).
+  // Semester 2 only — no Semester 1 book exists in the supplied set, the
+  // opposite gap from g3PhysicalEducationSem1.ts/g6PhysicalEducationSem1.ts.
+  {
+    id: G1_PE_S2_CURRICULUM_BOOK_ID,
+    title: 'Physical Education – Grade 1, Semester 2',
+    titleAr: 'التربية الرياضية – الصف الأول – الفصل الثاني',
+    subjectId: 'physical-education',
+    gradeId: 'grade-1',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // The first Grade 6 books in the repo. Maths carries four units and eighteen
   // lessons from the student book alone (no S2 student book was supplied);
@@ -5339,6 +5369,7 @@ const _g1ArabicSem2Browser = buildG1ArabicSem2BrowserCatalog();
 const _g1SocialSem1Browser = buildG1SocialSem1BrowserCatalog();
 const _g1SocialSem2Browser = buildG1SocialSem2BrowserCatalog();
 const _g1CreativeArtsBrowser = buildG1CreativeArtsBrowserCatalog();
+const _g1PhysicalEducationSem2Browser = buildG1PhysicalEducationSem2BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
@@ -5621,6 +5652,7 @@ export const UNITS: Unit[] = [
   ..._g1SocialSem1Browser.units,
   ..._g1SocialSem2Browser.units,
   ..._g1CreativeArtsBrowser.units,
+  ..._g1PhysicalEducationSem2Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
@@ -5793,6 +5825,7 @@ export const LESSONS: Lesson[] = [
   ..._g1SocialSem1Browser.lessons,
   ..._g1SocialSem2Browser.lessons,
   ..._g1CreativeArtsBrowser.lessons,
+  ..._g1PhysicalEducationSem2Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
