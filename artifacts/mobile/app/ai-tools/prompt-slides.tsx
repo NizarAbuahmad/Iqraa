@@ -50,6 +50,7 @@ import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { narrowToSelection } from '@/services/teacherCatalogFilter';
 import { foldAnswersIntoPrompt } from '@/services/promptSlidesAnswers';
 import { attachDrawnVisuals, attachSearchedMedia } from '@/services/promptSlidesMedia';
+import { polishDeck } from '@/services/promptSlidesPolish';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import { deleteItem, getAllItems, saveItem, updateItem } from '@/services/workspace';
@@ -186,9 +187,11 @@ export default function PromptSlidesScreen() {
     };
     try {
       const out = await aiService.generatePromptSlides(req, { signal: controller.signal });
-      // Drawn visuals cost nothing and need no network, so they land with the
-      // deck rather than after it.
-      const built = attachDrawnVisuals(out, isAr);
+      // Both of these cost nothing and need no network, so they land with the
+      // deck rather than after it. Polish runs first: it drops the slides that
+      // say nothing, and a dropped slide should not have had a graph inserted
+      // after it.
+      const built = attachDrawnVisuals(polishDeck(out), isAr);
       setDeck(built);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
