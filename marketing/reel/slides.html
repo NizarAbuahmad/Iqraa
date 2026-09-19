@@ -1,0 +1,603 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Iqraa — teacher reel slides</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Almarai:wght@300;400;700;800&display=swap" rel="stylesheet">
+<style>
+/* Everything numeric on screen uses Arabic-Indic digits and <sup> exponents.
+   Mixing Latin digits with Arabic letters inside one expression makes the bidi
+   algorithm reorder the operands — "(س^6)^(1/2)" came out as "(1/2)^(س^6)".
+   Keeping each expression in a single script removes the ambiguity entirely. */
+:root{
+  --navy:#081B3A; --teal:#00A99D; --aqua:#34D6C6; --lightgray:#F5F7FA;
+  --darkgray:#1D2939; --muted:#6B7A8D; --border:#DDE6E8; --success:#10B981;
+  --r:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;overflow:hidden;background:var(--navy)}
+body{font-family:"Almarai",sans-serif;direction:rtl}
+
+section{display:none;position:absolute;inset:0;width:1080px;height:1920px;overflow:hidden}
+section.on{display:block}
+
+.bg{position:absolute;inset:0;background:
+  radial-gradient(900px 700px at 50% 18%, rgba(52,214,198,.18), transparent 62%),
+  radial-gradient(700px 600px at 12% 88%, rgba(0,169,157,.14), transparent 65%),
+  var(--navy)}
+.grain{position:absolute;inset:0;opacity:.35;background-image:
+  linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px);background-size:100% 4px}
+
+.head{position:absolute;top:262px;right:80px;left:80px;text-align:center}
+h1{font-family:"Cairo";font-weight:900;font-size:80px;line-height:1.26;color:#fff;
+  letter-spacing:-.01em}
+h1 .hl{color:var(--aqua)}
+.sub{font-family:"Almarai";font-weight:400;font-size:37px;line-height:1.5;
+  color:#8BA0B8;margin-top:24px}
+
+/* device hugs its own content — a fixed height left a dead grey slab below the UI */
+.phone{position:absolute;top:548px;right:190px;width:700px;
+  background:var(--lightgray);border:14px solid #0A1E42;border-radius:58px;
+  box-shadow:0 0 0 3px rgba(52,214,198,.22), 0 60px 120px rgba(0,0,0,.55);
+  overflow:hidden;padding-bottom:30px}
+.notch{height:46px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 34px;background:#fff;font-family:"Cairo";font-weight:600;font-size:22px;color:var(--navy)}
+.appbar{background:#fff;padding:18px 30px 20px;border-bottom:1px solid var(--border)}
+.appbar .t{font-family:"Cairo";font-weight:700;font-size:38px;color:var(--navy)}
+.appbar .s{font-size:25px;color:var(--muted);margin-top:8px}
+.screen{padding:24px 28px 0;display:flex;flex-direction:column;gap:18px}
+
+.chip{display:inline-flex;align-items:center;gap:10px;background:#E6F7F6;color:#00786F;
+  font-family:"Cairo";font-weight:700;font-size:24px;padding:10px 20px;border-radius:999px}
+.btn{background:var(--teal);color:#fff;font-family:"Cairo";font-weight:700;font-size:30px;
+  padding:22px;border-radius:var(--r);text-align:center;
+  box-shadow:0 10px 24px rgba(0,169,157,.28)}
+
+.unit{background:linear-gradient(135deg,#00A99D,#0E8F86);color:#fff;border-radius:var(--r);
+  padding:24px 26px}
+.unit .u1{font-family:"Cairo";font-weight:900;font-size:35px}
+.unit .u2{font-size:25px;opacity:.92;margin-top:9px}
+.row{background:#fff;border:1px solid var(--border);border-radius:var(--r);
+  padding:20px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.row .n{font-family:"Cairo";font-weight:700;font-size:28px;color:var(--navy);line-height:1.35}
+.row .p{font-size:23px;color:var(--muted);white-space:nowrap}
+.row.sel{border:3px solid var(--teal);background:#F2FBFA;
+  box-shadow:0 0 0 6px rgba(0,169,157,.12)}
+
+.secl{font-family:"Cairo";font-weight:700;font-size:26px;color:var(--muted);margin:2px 4px -2px}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.tool{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:22px 20px;
+  min-height:176px;display:flex;flex-direction:column;gap:12px}
+.tool .ic{width:60px;height:60px;border-radius:16px;display:grid;place-items:center;
+  font-size:30px;color:#fff;font-family:"Cairo"}
+.tool .tt{font-family:"Cairo";font-weight:700;font-size:29px;color:var(--navy)}
+.tool .td{font-size:22px;color:var(--muted);line-height:1.4}
+.off{opacity:0}
+
+.doc{background:#fff;border-radius:14px;padding:28px 28px 24px;border:1px solid var(--border)}
+.doc h3{font-family:"Cairo";font-weight:900;font-size:33px;color:var(--navy);line-height:1.3}
+.doc .meta{display:flex;gap:12px;margin:15px 0 20px;flex-wrap:wrap}
+.doc .lab{font-family:"Cairo";font-weight:700;font-size:26px;color:var(--teal);
+  margin:18px 0 10px;display:flex;align-items:center;gap:10px}
+.doc .lab::before{content:"";width:8px;height:22px;background:var(--teal);border-radius:4px}
+.doc li,.doc p{font-size:24px;line-height:1.6;color:var(--darkgray)}
+.doc ul{padding-inline-start:28px;display:flex;flex-direction:column;gap:7px}
+.q{display:flex;gap:14px;font-size:25px;color:var(--darkgray);line-height:1.7;
+  padding:13px 0;border-bottom:1px dashed var(--border)}
+.q b{font-family:"Cairo";color:var(--navy);flex:none}
+.math{font-family:"Cairo";font-weight:700;white-space:nowrap}
+sup{font-size:.6em;vertical-align:super;line-height:0}
+
+.vbadge{display:inline-flex;align-items:center;gap:12px;background:#E9FBF3;
+  border:2px solid var(--success);color:#067A55;font-family:"Cairo";font-weight:700;
+  font-size:26px;padding:14px 22px;border-radius:999px}
+.vdot{width:30px;height:30px;border-radius:50%;background:var(--success);color:#fff;
+  display:grid;place-items:center;font-size:19px}
+
+.deck{position:absolute;top:640px;right:70px;width:940px;height:568px;background:#fff;
+  border-radius:20px;overflow:hidden;
+  box-shadow:0 50px 110px rgba(0,0,0,.6), 0 0 0 14px rgba(255,255,255,.06)}
+.deck .dh{background:var(--navy);color:#fff;padding:26px 34px;display:flex;
+  align-items:center;justify-content:space-between}
+.deck .dh .dt{font-family:"Cairo";font-weight:900;font-size:36px}
+.deck .db{padding:30px 38px;display:flex;gap:32px;align-items:center}
+.stand{position:absolute;top:1208px;right:50%;transform:translateX(50%);
+  width:300px;height:26px;background:linear-gradient(180deg,rgba(52,214,198,.35),transparent);
+  border-radius:50%}
+
+/* .bg/.grain are absolutely positioned, so they paint above a static
+   in-flow image — the logo was rendering underneath the background */
+.logo{display:block;margin:0 auto;position:relative}
+.foot{position:absolute;bottom:470px;right:90px;left:90px;text-align:center}
+.cta{display:inline-flex;align-items:center;gap:14px;background:var(--aqua);color:#06243F;
+  font-family:"Cairo";font-weight:900;font-size:38px;padding:24px 48px;border-radius:999px;
+  box-shadow:0 20px 50px rgba(52,214,198,.35)}
+.clock{position:absolute;top:300px;right:0;left:0;text-align:center;font-family:"Cairo";
+  font-weight:600;font-size:32px;color:#8BA0B8;letter-spacing:.06em}
+/* evaluations arc */
+.opt{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:17px 20px;
+  display:flex;align-items:center;gap:14px;font-size:26px;color:var(--darkgray)}
+.opt .box{width:34px;height:34px;border-radius:8px;border:2px solid var(--border);flex:none;
+  display:grid;place-items:center;color:#fff;font-size:20px;font-family:"Cairo"}
+.opt.on{border-color:var(--teal);background:#F2FBFA}
+.opt.on .box{background:var(--teal);border-color:var(--teal)}
+.mini{flex:1;background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.mini .ml{font-size:22px;color:var(--muted)}
+.mini .mv{font-family:"Cairo";font-weight:700;font-size:30px;color:var(--navy);margin-top:6px}
+.codebox{background:linear-gradient(135deg,#00A99D,#0E8F86);color:#fff;border-radius:var(--r);
+  padding:30px 26px;text-align:center}
+.codebox .cl{font-size:24px;opacity:.92}
+.codebox .cv{font-family:"Cairo";font-weight:900;font-size:78px;letter-spacing:.12em;margin-top:10px}
+.hint{font-size:23px;color:var(--muted);line-height:1.55;text-align:center;padding:0 6px}
+.cam{background:#0A1E42;border-radius:var(--r);padding:24px}
+.paper{background:#fff;border-radius:8px;padding:18px 22px}
+.mk{display:flex;justify-content:space-between;align-items:center;font-size:25px;
+  color:var(--darkgray);padding:11px 0;border-bottom:1px dashed var(--border)}
+.mk b{font-family:"Cairo";color:var(--teal);font-size:28px}
+.camlab{display:flex;align-items:center;justify-content:center;gap:10px;color:#34D6C6;
+  font-family:"Cairo";font-weight:700;font-size:24px;margin-bottom:16px}
+.stat{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:22px 26px;
+  display:flex;align-items:baseline;justify-content:space-between}
+.stat .sl{font-size:26px;color:var(--muted)}
+.stat .sv{font-family:"Cairo";font-weight:900;font-size:58px;color:var(--teal)}
+.bar{display:flex;align-items:center;gap:14px;font-size:24px;color:var(--darkgray)}
+.bar .bn{width:104px;flex:none}
+.bar .bt{flex:1;height:24px;background:#EEF4F4;border-radius:999px;overflow:hidden}
+.bar .bf{display:block;height:100%;background:var(--teal);border-radius:999px}
+.bar .bc{width:42px;flex:none;text-align:left;font-family:"Cairo";font-weight:700;color:var(--navy)}
+.tag{font-family:"Cairo";font-weight:700;font-size:21px;padding:7px 14px;border-radius:999px;
+  white-space:nowrap;flex:none}
+/* custom plan / messaging / cross-platform */
+.opt .box.rad{border-radius:50%}
+.chip.sel{background:var(--teal);color:#fff}
+.thr{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;
+  display:flex;align-items:center;gap:16px}
+.thr .av{width:64px;height:64px;border-radius:50%;flex:none;display:grid;place-items:center;
+  color:#fff;font-family:"Cairo";font-weight:700;font-size:27px}
+.thr .tx{flex:1;min-width:0;display:block}
+.thr .tn{display:block;font-family:"Cairo";font-weight:700;font-size:27px;color:var(--navy)}
+.thr .tp{display:block;font-size:23px;color:var(--muted);margin-top:6px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.thr .tb{flex:none;min-width:36px;height:36px;border-radius:999px;background:var(--teal);
+  color:#fff;font-family:"Cairo";font-weight:700;font-size:21px;display:grid;place-items:center;
+  padding:0 10px}
+.thr .role{font-size:20px;color:var(--muted);font-family:"Almarai"}
+.inputbar{background:#fff;border:1px solid var(--border);border-radius:999px;padding:18px 24px;
+  display:flex;align-items:center;justify-content:space-between;font-size:24px;color:#9AA8B8}
+.inputbar .snd{width:44px;height:44px;border-radius:50%;background:var(--teal);color:#fff;
+  display:grid;place-items:center;font-size:22px}
+.win{position:absolute;top:660px;right:60px;width:960px;background:var(--lightgray);
+  border-radius:18px;overflow:hidden;box-shadow:0 50px 110px rgba(0,0,0,.6)}
+.wbar{height:62px;background:#DCE6EA;display:flex;align-items:center;gap:16px;padding:0 22px}
+.wdots{display:flex;gap:9px}
+.wdots i{width:14px;height:14px;border-radius:50%;display:block}
+.wpill{flex:1;background:#fff;border-radius:999px;height:38px;display:flex;align-items:center;
+  justify-content:center;gap:10px;font-size:21px;color:var(--muted)}
+.wbody{padding:24px 26px;display:flex;gap:20px}
+.wside{width:216px;flex:none;display:flex;flex-direction:column;gap:10px}
+.wnav{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;
+  font-family:"Cairo";font-weight:700;font-size:23px;color:var(--navy)}
+.wnav.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.wgrid{flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.wcard{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 14px;
+  display:flex;flex-direction:column;gap:9px;min-height:132px}
+.wcard .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
+  color:#fff;font-size:22px;font-family:"Cairo"}
+.wcard .tt{font-family:"Cairo";font-weight:700;font-size:22px;color:var(--navy)}
+.wcard .td{font-size:18px;color:var(--muted);line-height:1.35}
+.shrink{position:absolute;top:920px;right:620px;transform:scale(.62);transform-origin:top right}
+.phone.static{position:static}
+</style>
+
+<!-- 01 HOOK -->
+<section id="s01">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="clock">٩:٤٠ مساءً</div>
+  <div class="head" style="top:640px">
+    <h1>تحضير حصة واحدة<br><span class="hl">يأخذ مساءك كله.</span></h1>
+    <div class="sub">خطة، وشرائح، وورقة عمل، واختبار…<br>وغدًا حصة أخرى.</div>
+  </div>
+</section>
+
+<!-- 02 TURN -->
+<section id="s02">
+  <div class="bg"></div><div class="grain"></div>
+  <img class="logo" src="../../artifacts/mobile/assets/images/logo-mark.png" width="420" height="420" style="margin-top:560px">
+  <div class="head" style="top:1030px">
+    <h1>مع <span class="hl">اقرأ</span>… دقائق.</h1>
+    <div class="sub">رفيقك في تحضير الحصص</div>
+  </div>
+</section>
+
+<!-- 03 CURRICULUM -->
+<section id="s03">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="head"><h1>ابدأ من <span class="hl">المنهاج الأردني</span></h1>
+    <div class="sub">اختر الصف، الوحدة، الدرس</div></div>
+  <div class="phone">
+    <div class="notch"><span>٩:٤١</span><span>▮▮▮</span></div>
+    <div class="appbar"><div class="t">المنهاج</div>
+      <div class="s"><bdi>الرياضيات</bdi> · <bdi>الصف العاشر</bdi> · <bdi>الفصل الأول</bdi></div></div>
+    <div class="screen">
+      <div class="unit"><div class="u1">الوحدة ١ — الأسس والمعادلات</div>
+        <div class="u2"><bdi>٥ دروس</bdi> — <bdi>١٧ حصة</bdi></div></div>
+      <div class="row"><div class="n">حل نظام مكوَّن من معادلة خطية ومعادلة تربيعية</div><div class="p">٤ حصص</div></div>
+      <div class="row"><div class="n">حل نظام مكوَّن من معادلتين تربيعيتين</div><div class="p">٣ حصص</div></div>
+      <div class="row"><div class="n">تبسيط المقادير الأسية</div><div class="p">٣ حصص</div></div>
+      <div class="row sel"><div class="n">حل المعادلة الأسية</div><div class="p">٣ حصص</div></div>
+      <div class="btn">حضّر خطة درس</div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 TOOLS (3 states) -->
+<section id="s04a"></section>
+<section id="s04b"></section>
+<section id="s04c"></section>
+<template id="toolsTpl">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="head"><h1>وبضغطة <span class="hl">واحدة</span></h1>
+    <div class="sub">كل ما تحتاجه للحصة — مبنيًّا على الدرس نفسه</div></div>
+  <div class="phone">
+    <div class="notch"><span>٩:٤١</span><span>▮▮▮</span></div>
+    <div class="appbar"><div class="t">الأدوات</div><div class="s">نحضّر الآن · حل المعادلة الأسية</div></div>
+    <div class="screen">
+      <div class="secl">قبل الحصة</div>
+      <div class="tools">
+        <div class="tool" data-i="1"><div class="ic" style="background:#1B6B62">✎</div>
+          <div class="tt">خطة درس</div><div class="td">الأهداف، مسار الدرس، التوقيت، والمواد</div></div>
+        <div class="tool" data-i="2"><div class="ic" style="background:#0EA5E9">▤</div>
+          <div class="tt">شرائح الدرس</div><div class="td">عرض للشاشة: نتاجات، مفردات، أمثلة محلولة</div></div>
+        <div class="tool" data-i="3"><div class="ic" style="background:#0E8F86">☰</div>
+          <div class="tt">ورقة عمل</div><div class="td">ورقة قابلة للطباعة لتمرين الطلاب</div></div>
+        <div class="tool" data-i="4"><div class="ic" style="background:#F59E0B">✓</div>
+          <div class="tt">اختبار قصير</div><div class="td">أسئلة قصيرة مع مفتاح إجابات</div></div>
+      </div>
+      <div class="secl" data-i="5">أثناء الحصة</div>
+      <div class="tools">
+        <div class="tool" data-i="5"><div class="ic" style="background:#4F46E5">▶</div>
+          <div class="tt">الفصل التفاعلي</div><div class="td">تجارب مباشرة على الشاشة مع مؤقت</div></div>
+        <div class="tool" data-i="6"><div class="ic" style="background:#E67E22">★</div>
+          <div class="tt">تحدي الصف</div><div class="td">لعبة أسئلة بين الفرق — بلا هواتف</div></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- 05 LESSON PLAN -->
+<section id="s05">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="head"><h1><span class="hl">خطة درس</span> كاملة</h1>
+    <div class="sub">النتاجات، مسار الحصة، التوقيت، والمواد</div></div>
+  <div class="phone">
+    <div class="notch"><span>٩:٤٢</span><span>▮▮▮</span></div>
+    <div class="appbar"><div class="t">خطة الدرس جاهزة</div><div class="s">الصف العاشر · الرياضيات</div></div>
+    <div class="screen">
+      <div class="doc">
+        <h3>حل المعادلة الأسية</h3>
+        <div class="meta"><span class="chip">٤٥ دقيقة</span><span class="chip">التعلم التعاوني</span></div>
+        <div class="lab">النتاجات التعليمية</div>
+        <ul><li>حل معادلات أسية.</li><li>حل أنظمة معادلات أسية.</li></ul>
+        <div class="lab">النشاط الرئيسي <span style="color:#6B7A8D;font-weight:400">(١٥ دقيقة)</span></div>
+        <p>مجموعات من ٣–٤: لكل فرد بطاقة مهمة مختلفة، يتقنها ثم يشرحها لمجموعته، وتكتب المجموعة إجابة واحدة كاملة على اللوح.</p>
+        <div class="lab">التقويم</div>
+        <p>تكويني: راجع ألواح المجموعات بحثًا عن بطاقة ضعيفة باستمرار — تلك التي تحتاج إعادة شرح للصف كله.</p>
+        <div class="lab">المواد</div>
+        <p>الكتاب المدرسي · السبورة وأقلام ملوّنة · <bdi>بطاقات مهمة مرقّمة ١–٤</bdi></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 WORKSHEET -->
+<section id="s06">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="head"><h1>وورقة عمل<br><span class="hl">جاهزة للطباعة</span></h1>
+    <div class="sub">تدريب موجّه ومستقل — ومفتاح إجابات معها</div></div>
+  <div class="phone">
+    <div class="notch"><span>٩:٤٣</span><span>▮▮▮</span></div>
+    <div class="appbar"><div class="t">ورقة العمل جاهزة</div>
+      <div class="s"><bdi>حل المعادلة الأسية</bdi> — <bdi>٦ أسئلة</bdi></div></div>
+    <div class="screen">
+      <div class="doc">
+        <h3 style="text-align:center">ورقة عمل — حل المعادلة الأسية</h3>
+        <p style="text-align:center;color:#6B7A8D;font-size:22px;margin-top:10px">الاسم: ....................... الشعبة: ..........</p>
+        <div class="lab" style="margin-top:22px">التدريب الموجّه</div>
+        <div class="q"><b>١.</b><span>حل المعادلة: <span class="math">٢<sup>س+١</sup> = ٣٢</span></span></div>
+        <div class="q"><b>٢.</b><span>حل المعادلة: <span class="math">٣<sup>٢س</sup> = ٨١</span></span></div>
+        <div class="q"><b>٣.</b><span>بسّط المقدار: <span class="math">(س<sup>٣</sup>)<sup>٢</sup> × س<sup>٤</sup></span></span></div>
+        <div class="lab">التدريب المستقل</div>
+        <div class="q"><b>٤.</b><span>حل المعادلة: <span class="math">٥<sup>س−١</sup> = ١٢٥</span></span></div>
+        <div class="q"><b>٥.</b><span>حل المعادلة: <span class="math">٩<sup>س</sup> = ٢٧</span></span></div>
+        <div class="q" style="border:0"><b>٦.</b><span>حل النظام: <span class="math">٢<sup>س</sup> × ٢<sup>ص</sup> = ٦٤</span> و <span class="math">س − ص = ٢</span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 CLASS MODE -->
+<section id="s07">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="head"><h1><span class="hl">ابدأ الحصة</span></h1>
+    <div class="sub">واعرض الدرس على شاشة الصف</div></div>
+  <div class="deck">
+    <div class="dh"><div class="dt">حل المعادلة الأسية</div><div style="font-size:28px;opacity:.75">٣ / ٨</div></div>
+    <div class="db">
+      <div style="flex:1">
+        <div style="font-family:Cairo;font-weight:700;font-size:34px;color:#081B3A;line-height:1.45">
+          ما قيمة <span class="math">س</span> التي تحقق المعادلة؟</div>
+        <div class="math" style="font-size:64px;color:#00A99D;margin-top:24px">٢<sup>س+١</sup> = ٣٢</div>
+        <div style="display:flex;gap:14px;margin-top:28px">
+          <span class="chip" style="font-size:28px">٣</span><span class="chip" style="font-size:28px">٤</span>
+          <span class="chip" style="font-size:28px">٥</span><span class="chip" style="font-size:28px">٦</span>
+        </div>
+      </div>
+      <div style="width:250px;text-align:center">
+        <div style="font-family:Cairo;font-weight:900;font-size:92px;color:#081B3A">٠:٣٠</div>
+        <div style="font-size:24px;color:#6B7A8D;margin-top:6px">الوقت المتبقي</div>
+      </div>
+    </div>
+  </div>
+  <div class="stand"></div>
+  <div style="position:absolute;top:1300px;right:0;left:0;text-align:center">
+    <span class="chip" style="background:rgba(52,214,198,.14);color:#34D6C6;font-size:32px;padding:18px 34px">اعرض على الشاشة</span>
+  </div>
+</section>
+
+<!-- 10 NEW EVALUATION -->
+<section id="s10">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="head"><h1>وبعد الحصة؟ <span class="hl">قيّم صفّك</span></h1>
+    <div class="sub">امتحان تُولَّد أسئلته من نتاجات المنهاج</div></div>
+  <div class="phone">
+    <div class="notch"><span>٩:٤٥</span><span>▮▮▮</span></div>
+    <div class="appbar"><div class="t">تقييم جديد</div><div class="s">الصف العاشر · الرياضيات</div></div>
+    <div class="screen">
+      <div class="secl">نتاجات التعلّم</div>
+      <div class="opt on"><span class="box">✓</span><span>حل معادلات أسية</span></div>
+      <div class="opt on"><span class="box">✓</span><span>حل أنظمة معادلات أسية</span></div>
+      <div class="opt"><span class="box"></span><span>تعرُّف الأسس النسبية وخصائصها</span></div>
+      <div class="secl">أنواع الأسئلة</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <span class="chip">اختيار من متعدد</span><span class="chip">إجابة قصيرة</span></div>
+      <div style="display:flex;gap:14px">
+        <div class="mini"><div class="ml">المستوى</div><div class="mv">متوسط</div></div>
+        <div class="mini"><div class="ml">عدد الأسئلة</div><div class="mv">١٠</div></div>
+      </div>
+      <div class="btn">أنشئ وولّد الأسئلة</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 SHARE CODE -->
+<section id="s11">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="head"><h1>شاركه <span class="hl">برمز واحد</span></h1>
+    <div class="sub">يفتحه الطالب ويختار اسمه — بلا حساب ولا تطبيق</div></div>
+  <div class="phone">
+    <div class="notch"><span>٩:٤٦</span><span>▮▮▮</span></div>
+    <div class="appbar"><div class="t">رابط الطلاب</div><div class="s">حل المعادلة الأسية</div></div>
+    <div class="screen">
+      <div class="codebox"><div class="cl">رمز الدخول</div><div class="cv">٤٧٢٩١٨</div></div>
+      <p class="hint">اكتب الرمز على اللوح، أو أرسل الرابط.<br>يفتحه الطالب ويختار اسمه.</p>
+      <div class="btn">انسخ الرابط</div>
+      <div class="row"><div class="n">حالة التقييم</div>
+        <div class="p" style="color:#10B981;font-family:Cairo;font-weight:700">منشور</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 SCAN PAPER MARKS -->
+<section id="s12">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="head"><h1>امتحانك ورقي؟ <span class="hl">صوّره</span></h1>
+    <div class="sub">صوّر الورقة بعد تصحيحها — وتُملأ الخانات</div></div>
+  <div class="phone">
+    <div class="notch"><span>٩:٤٧</span><span>▮▮▮</span></div>
+    <div class="appbar"><div class="t">امسح العلامات من الورقة</div><div class="s">العاشر رياضيات أ</div></div>
+    <div class="screen">
+      <div class="cam">
+        <div class="camlab"><span>◉</span>جارٍ قراءة العلامات…</div>
+        <div class="paper">
+          <div class="mk"><span>أحمد خالد</span><b>١٨ / ٢٠</b></div>
+          <div class="mk"><span>ليان محمود</span><b>١٦ / ٢٠</b></div>
+          <div class="mk"><span>عمر الزعبي</span><b>١١ / ٢٠</b></div>
+          <div class="mk" style="border:0"><span>سارة العموش</span><b>١٩ / ٢٠</b></div>
+        </div>
+      </div>
+      <p class="hint">تُملأ الخانات ولا يُحفظ شيء حتى تراجعها.</p>
+      <div class="btn">سلّم وصحّح</div>
+    </div>
+  </div>
+</section>
+
+<!-- 13 RESULTS DASHBOARD -->
+<section id="s13">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="head"><h1>والنتائج <span class="hl">جاهزة</span></h1>
+    <div class="sub">المتوسط العام، وتوزيع المستويات، والكفايات</div></div>
+  <div class="phone">
+    <div class="notch"><span>٩:٤٨</span><span>▮▮▮</span></div>
+    <div class="appbar"><div class="t">لوحة النتائج</div><div class="s">٢٦ طالبًا</div></div>
+    <div class="screen">
+      <div class="stat"><span class="sl">المتوسط العام</span><span class="sv">٧٤٪</span></div>
+      <div class="secl">توزيع المستويات</div>
+      <div class="bar"><span class="bn">متقدّم</span><span class="bt"><span class="bf" style="width:19%"></span></span><span class="bc">٥</span></div>
+      <div class="bar"><span class="bn">متمكّن</span><span class="bt"><span class="bf" style="width:42%"></span></span><span class="bc">١١</span></div>
+      <div class="bar"><span class="bn">نامٍ</span><span class="bt"><span class="bf" style="width:27%"></span></span><span class="bc">٧</span></div>
+      <div class="bar"><span class="bn">مبتدئ</span><span class="bt"><span class="bf" style="width:12%"></span></span><span class="bc">٣</span></div>
+      <div class="secl">الكفايات</div>
+      <div class="bar"><span class="bn">المعرفة</span><span class="bt"><span class="bf" style="width:82%"></span></span><span class="bc">٨٢٪</span></div>
+      <div class="bar"><span class="bn">الفهم</span><span class="bt"><span class="bf" style="width:76%"></span></span><span class="bc">٧٦٪</span></div>
+      <div class="bar"><span class="bn">التطبيق</span><span class="bt"><span class="bf" style="width:61%"></span></span><span class="bc">٦١٪</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 14 GAPS / WHAT NEXT -->
+<section id="s14">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="head"><h1>وما الذي <span class="hl">فات الصف</span></h1>
+    <div class="sub">مرتّبًا حسب ما خسره الطالب فعليًا</div></div>
+  <div class="phone">
+    <div class="notch"><span>٩:٤٩</span><span>▮▮▮</span></div>
+    <div class="appbar"><div class="t">ما التالي</div><div class="s">العاشر رياضيات أ</div></div>
+    <div class="screen">
+      <div class="row"><div class="n">حل أنظمة المعادلات الأسية</div>
+        <span class="tag" style="background:#FEF0E2;color:#B45309">أعد تدريسه</span></div>
+      <div class="row"><div class="n">تبسيط المقادير ذات الأسس النسبية</div>
+        <span class="tag" style="background:#E6F7F6;color:#00786F">تدريب إضافي</span></div>
+      <div class="row"><div class="n">نمذجة مسألة حياتية بمعادلة أسية</div>
+        <span class="tag" style="background:#EEF2FF;color:#4338CA">توسّع</span></div>
+      <div class="row"><div class="n">حل المعادلة الأسية</div>
+        <span class="tag" style="background:#F1F5F9;color:#475569">أعد التقييم بعد التدريس</span></div>
+      <div class="btn">جهّز ورقة عمل للصف</div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 CUSTOM PLAN -->
+<section id="s15">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="head"><h1>خطة <span class="hl">على مقاس صفّك</span></h1>
+    <div class="sub">اختر أسلوب التدريس ومدة الحصة — وتتغيّر الخطة كلها</div></div>
+  <div class="phone">
+    <div class="notch"><span>٩:٤١</span><span>▮▮▮</span></div>
+    <div class="appbar"><div class="t">خطة درس</div><div class="s">حل المعادلة الأسية</div></div>
+    <div class="screen">
+      <div class="secl">أسلوب التدريس</div>
+      <div class="opt"><span class="box rad"></span><span>التعليم المباشر</span></div>
+      <div class="opt"><span class="box rad"></span><span>التعلم الاستقصائي</span></div>
+      <div class="opt on"><span class="box rad">✓</span><span>التعلم التعاوني</span></div>
+      <div class="secl">مدة الحصة</div>
+      <div style="display:flex;gap:12px">
+        <span class="chip">٤٠ دقيقة</span><span class="chip sel">٤٥ دقيقة</span><span class="chip">٥٠ دقيقة</span>
+      </div>
+      <div class="btn">حضّر خطة الدرس</div>
+    </div>
+  </div>
+</section>
+
+<!-- 16 MESSAGING -->
+<section id="s16">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="head"><h1>وتواصل معهم <span class="hl">من داخل اقرأ</span></h1>
+    <div class="sub">الطالب، أو وليّ الأمر، أو الصف كله</div></div>
+  <div class="phone">
+    <div class="notch"><span>٩:٥٠</span><span>▮▮▮</span></div>
+    <div class="appbar"><div class="t">الرسائل</div><div class="s">العاشر رياضيات أ</div></div>
+    <div class="screen">
+      <div class="thr"><span class="av" style="background:#00A99D">ص</span>
+        <span class="tx"><span class="tn">محادثة الصف</span>
+          <span class="tp">ورقة عمل اليوم مرفوعة في موارد الصف.</span></span>
+        <span class="tb">٣</span></div>
+      <div class="thr"><span class="av" style="background:#8B5CF6">و</span>
+        <span class="tx"><span class="tn">والد عمر الزعبي <span class="role">· وليّ أمر</span></span>
+          <span class="tp">شكرًا أستاذ، سنراجع معه المسائل.</span></span></div>
+      <div class="thr"><span class="av" style="background:#0EA5E9">ل</span>
+        <span class="tx"><span class="tn">ليان محمود <span class="role">· طالبة</span></span>
+          <span class="tp">أستاذ، لم أفهم السؤال الرابع.</span></span>
+        <span class="tb">١</span></div>
+      <div class="thr"><span class="av" style="background:#F59E0B">أ</span>
+        <span class="tx"><span class="tn">أحمد خالد <span class="role">· طالب</span></span>
+          <span class="tp">سلّمت الواجب، شكرًا لك.</span></span></div>
+      <div class="inputbar"><span>اكتب رسالة…</span><span class="snd">↩</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 MOBILE + WEB -->
+<section id="s17">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="head"><h1>على هاتفك… <span class="hl">وعلى حاسوبك</span></h1>
+    <div class="sub">التطبيق نفسه في المتصفح — بلا تثبيت</div></div>
+  <div class="win">
+    <div class="wbar"><span class="wdots"><i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i></span>
+      <span class="wpill">🔒 اقرأ — مساعد التدريس</span></div>
+    <div class="wbody">
+      <div class="wside">
+        <div class="wnav">الرئيسية</div>
+        <div class="wnav">المنهاج</div>
+        <div class="wnav on">الأدوات</div>
+        <div class="wnav">الرسائل</div>
+      </div>
+      <div class="wgrid">
+        <div class="wcard"><div class="ic" style="background:#1B6B62">✎</div>
+          <div class="tt">خطة درس</div><div class="td">الأهداف والتوقيت والمواد</div></div>
+        <div class="wcard"><div class="ic" style="background:#0EA5E9">▤</div>
+          <div class="tt">شرائح الدرس</div><div class="td">عرض جاهز للشاشة</div></div>
+        <div class="wcard"><div class="ic" style="background:#0E8F86">☰</div>
+          <div class="tt">ورقة عمل</div><div class="td">قابلة للطباعة</div></div>
+        <div class="wcard"><div class="ic" style="background:#F59E0B">✓</div>
+          <div class="tt">اختبار قصير</div><div class="td">مع مفتاح إجابات</div></div>
+        <div class="wcard"><div class="ic" style="background:#4F46E5">▶</div>
+          <div class="tt">الفصل التفاعلي</div><div class="td">تجارب على الشاشة</div></div>
+        <div class="wcard"><div class="ic" style="background:#64748B">◆</div>
+          <div class="tt">التقييمات</div><div class="td">امتحان يُصحَّح ويُحلَّل</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="shrink">
+    <div class="phone static">
+      <div class="notch"><span>٩:٥١</span><span>▮▮▮</span></div>
+      <div class="appbar"><div class="t">الأدوات</div><div class="s">حل المعادلة الأسية</div></div>
+      <div class="screen">
+        <div class="tools">
+          <div class="tool"><div class="ic" style="background:#1B6B62">✎</div>
+            <div class="tt">خطة درس</div><div class="td">الأهداف والتوقيت</div></div>
+          <div class="tool"><div class="ic" style="background:#0EA5E9">▤</div>
+            <div class="tt">شرائح الدرس</div><div class="td">عرض للشاشة</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 VERIFIED -->
+<section id="s08">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="head"><h1>تم التحقق من الإجابة<br><span class="hl">رياضيًا</span></h1>
+    <div class="sub">مفاتيح إجابات الرياضيات يفحصها البرنامج رمزيًا<br>قبل أن تصل إلى طلابك</div></div>
+  <div style="position:absolute;top:820px;right:110px;width:860px;background:#fff;border-radius:22px;
+       padding:44px 46px;box-shadow:0 50px 110px rgba(0,0,0,.55)">
+    <div style="font-size:26px;color:#6B7A8D"><bdi>السؤال ١</bdi> — <bdi>حل المعادلة الأسية</bdi></div>
+    <div class="math" style="font-size:56px;color:#081B3A;margin-top:18px">٢<sup>س+١</sup> = ٣٢</div>
+    <div style="height:1px;background:#DDE6E8;margin:32px 0"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px">
+      <div><div style="font-size:26px;color:#6B7A8D">مفتاح الإجابة</div>
+        <div class="math" style="font-size:52px;color:#00A99D;margin-top:8px">س = ٤</div></div>
+      <div class="vbadge"><span class="vdot">✓</span>مفتاح مُتحقَّق منه</div>
+    </div>
+    <div style="font-size:24px;color:#6B7A8D;margin-top:26px;line-height:1.5">
+      حسبها المُحقِّق مستقلًّا: <span class="math" style="color:#1D2939">٤</span></div>
+  </div>
+</section>
+
+<!-- 09 CLOSE -->
+<section id="s09">
+  <div class="bg"></div><div class="grain"></div>
+  <img class="logo" src="../../artifacts/mobile/assets/images/logo-mark.png" width="360" height="360" style="margin-top:500px">
+  <div class="head" style="top:950px">
+    <div class="sub" style="color:#fff;font-family:Cairo;font-weight:900;font-size:58px;margin-top:0">رفيقك في تحضير الحصص</div>
+    <div class="sub" style="margin-top:20px">منصة عربية وفق المنهاج الأردني</div>
+  </div>
+  <div class="foot"><span class="cta">جرّبها مجانًا · الرابط في البايو</span></div>
+</section>
+
+<script>
+(function(){
+  var tpl = document.getElementById('toolsTpl').innerHTML;
+  var shown = { s04a:1, s04b:3, s04c:6 };
+  Object.keys(shown).forEach(function(id){
+    var sec = document.getElementById(id);
+    sec.innerHTML = tpl;
+    Array.prototype.forEach.call(sec.querySelectorAll('[data-i]'), function(t){
+      if (+t.dataset.i > shown[id]) t.classList.add('off');
+    });
+  });
+  var s = new URLSearchParams(location.search).get('s') || '01';
+  var el = document.getElementById('s' + s);
+  if (el) el.classList.add('on');
+  document.title = 'slide-' + s;
+})();
+</script>

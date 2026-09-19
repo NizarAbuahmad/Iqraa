@@ -113,3 +113,13 @@ eval-out/
 # is missing on disk. Untracked 2026-09-16: 174 MB that every clone paid for.
 attached_assets/**/*.pdf
 !attached_assets/Iqra_logo_1785192418025.pdf
+
+# Rendered video/image output from the marketing build scripts (source
+# scripts stay tracked). Untracked 2026-09-19: 136 MB that every clone
+# would have paid for.
+marketing/reel/frames/
+marketing/reel/out/
+marketing/tutorial/captions/
+marketing/tutorial/cards/
+marketing/tutorial/out/
+marketing/tutorial/segments/
