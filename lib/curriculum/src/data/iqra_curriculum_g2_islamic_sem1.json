@@ -1,0 +1,192 @@
+{
+ "meta": {
+  "grade": "الصف الثاني",
+  "grade_en": "Grade 2",
+  "subject": "التربية الإسلامية",
+  "subject_en": "Islamic Education",
+  "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+  "semester_covered": 1,
+  "schema_version": "1.0",
+  "source_books": [
+   "كتاب الطالب لمادة التربية الإسلامية الصف الثاني الفصل الأول (g2-islamic-s1-student-book)"
+  ],
+  "provenance_note": "نُقِلَتِ الوَحَداتُ الأَرْبَعُ وَدُروسُها الاثْنا عَشَرَ مِنْ كِتابِ الطّالِبِ في 2026-09-19، بِقِراءَةِ نَصِّ الكِتابِ كامِلًا مِنْ مَلَفِّ PDF مُباشَرَةً (PyMuPDF)، مِثْلَ g3IslamicSem1. لِكُلِّ وَحْدَةٍ: title_ar مِنْ صَفْحَةِ افْتِتاحِ الوَحْدَةِ الَّتي تَسْرُدُ «دُروسَ الوَحْدَةِ» فَقَطْ، بِلا صُنْدوقِ فِكْرَةٍ عامَّةٍ. وَلِكُلِّ دَرْسٍ: title_ar مِنْ تَرْويسَةِ الدَّرْسِ، وَ main_idea_ar مِنْ صُنْدوقِ «الفِكْرَةُ الرَّئيسَةُ» — يَطْبَعُهُ هذا الكِتابُ لِكُلِّ الدُّروسِ الاثْنَيْ عَشَرَ، بِخِلافِ g1IslamicSem1 الَّذي لا يَطْبَعُ هذا الصُّنْدوقَ إِطْلاقًا.",
+  "known_gaps": [
+   "objectives فارِغَةٌ لِكُلِّ الدُّروسِ: كِتابُ الطّالِبِ لا يَطْبَعُ صُنْدوقَ «نَتاجاتُ التَّعَلُّمِ».",
+   "periods و total_periods فارِغَةٌ (null) لِكُلِّ الدُّروسِ وَالوَحَداتِ.",
+   "prior_knowledge و general_idea_ar فارِغَةٌ لِكُلِّ الوَحَداتِ: صَفْحَةُ افْتِتاحِ الوَحْدَةِ تَطْبَعُ «دُروسَ الوَحْدَةِ» فَقَطْ، بِلا صُنْدوقِ «الفِكْرَةُ العامَّةُ» وَلا «تَعَلَّمْتُ سابِقًا».",
+   "vocabulary فارِغَةٌ لِكُلِّ الدُّروسِ: هذا الكِتابُ لا يَطْبَعُ صُنْدوقَ مُصْطَلَحاتٍ ثُنائِيَّ اللُّغَةِ كَكُتُبِ الرِّياضِيّاتِ وَالعُلومِ لِهذا الصَّفِّ.",
+   "title_en لِكُلِّ وَحْدَةٍ وَدَرْسٍ تَرْجَمَةٌ، لا نَصٌّ مَطْبوعٌ."
+  ]
+ },
+ "units": [
+  {
+   "id": "u1",
+   "number": 1,
+   "title_ar": "اللهُ رَبّي",
+   "title_en": "Allah is My Lord",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u1_l1",
+     "order": 1,
+     "title_ar": "أَرْكانُ الإِيمان",
+     "title_en": "The Pillars of Faith",
+     "main_idea_ar": "يَقومُ الإيمانُ عَلى عِدَّةِ أَرْكانٍ يُصَدِّقُ بِها الْمُسْلِمُ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l2",
+     "order": 2,
+     "title_ar": "فَضْلُ تِلاوَةِ الْقُرْآنِ الْكَريم",
+     "title_en": "The Merit of Reciting the Holy Quran",
+     "main_idea_ar": "أَعَدَّ اللهُ تَعالى لِمَنْ يَحْرِصُ عَلى تِلاوَةِ الْقُرْآنِ الْكَريمِ مَنْزِلَةً عالِيَةً في الدُّنْيا وَالآخِرَةِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u1_l3",
+     "order": 3,
+     "title_ar": "سورَةُ الْفيل",
+     "title_en": "Surat Al-Fil",
+     "main_idea_ar": "تَتَحَدَّثُ سورَةُ الْفيلِ عَنْ مُحاوَلَةِ أَبْرَهَةَ الْحَبَشِيِّ هَدْمَ الْكَعْبَةِ الْمُشَرَّفَةِ، إِلّا أَنَّ اللهَ تَعالى حَماها بِقُدْرَتِهِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u2",
+   "number": 2,
+   "title_ar": "مُحَمَّدٌ ﷺ رَسولي",
+   "title_en": "Muhammad ﷺ is My Messenger",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u2_l1",
+     "order": 1,
+     "title_ar": "سورَةُ الشَّرْح",
+     "title_en": "Surat Ash-Sharh",
+     "main_idea_ar": "أَنْعَمَ اللهُ تَعالى عَلى سَيِّدِنا مُحَمَّدٍ صَلّى اللهُ عَلَيْهِ وَسَلَّمَ بِأَنْ جَعَلَهُ رَسولًا، وَأَزالَ عَنْهُ الْهَمَّ وَالْحُزْنَ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l2",
+     "order": 2,
+     "title_ar": "الصّادِقُ الأَمين",
+     "title_en": "The Truthful, The Trustworthy",
+     "main_idea_ar": "اتَّصَفَ سَيِّدُنا مُحَمَّدٌ صَلّى اللهُ عَلَيْهِ وَسَلَّمَ بِكَثيرٍ مِنَ الأَخْلاقِ الْحَميدَةِ، مِثْلِ: الصِّدْقِ، وَالأَمانَةِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u2_l3",
+     "order": 3,
+     "title_ar": "الْحَديثُ الشَّريفُ: مَحَبَّةُ الْوالِدَيْن",
+     "title_en": "The Hadith: Love for Parents",
+     "main_idea_ar": "أَمَرَنا اللهُ تَعالى بِبِرِّ الْوالِدَيْنِ وَحُبِّهِما وَاحْتِرامِهِما.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u3",
+   "number": 3,
+   "title_ar": "ديني يَهْديني",
+   "title_en": "My Religion Guides Me",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u3_l1",
+     "order": 1,
+     "title_ar": "سورَةُ التّين",
+     "title_en": "Surat At-Tin",
+     "main_idea_ar": "خَلَقَ اللهُ تَعالى الإِنْسانَ في أَحْسَنِ صورَةٍ، وَأَمَرَهُ بِعَمَلِ الصّالِحاتِ؛ لِيَنالَ الأَجْرَ الْكَبيرَ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u3_l2",
+     "order": 2,
+     "title_ar": "اللهُ الرَّزّاق",
+     "title_en": "Allah, The Provider",
+     "main_idea_ar": "اللهُ تَعالى هُوَ الرَّزّاقُ الَّذي يُعْطي جَميعَ الْمَخْلوقاتِ أَرْزاقَهُمْ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u3_l3",
+     "order": 3,
+     "title_ar": "أَعْمالُ الْوُضوء",
+     "title_en": "The Acts of Ablution",
+     "main_idea_ar": "لِلْوُضوءِ أَعْمالٌ يَحْرِصُ الْمُسْلِمُ عَلى أَدائِها.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  },
+  {
+   "id": "u4",
+   "number": 4,
+   "title_ar": "أَخْلاقي حَياتي",
+   "title_en": "My Ethics is My Life",
+   "general_idea_ar": "",
+   "total_periods": null,
+   "data_tier": "lesson-level (student book)",
+   "prior_knowledge": [],
+   "lessons": [
+    {
+     "id": "u4_l1",
+     "order": 1,
+     "title_ar": "أُخْتي",
+     "title_en": "My Sister",
+     "main_idea_ar": "حَثَّنا الإِسْلامُ عَلى حُسْنِ مُعامَلَةِ الأُخْتِ وَمَحَبَّتِها.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u4_l2",
+     "order": 2,
+     "title_ar": "الْحَديثُ الشَّريفُ: الصِّدْق",
+     "title_en": "The Hadith: Truthfulness",
+     "main_idea_ar": "دَعانا سَيِّدُنا مُحَمَّدٌ صَلّى اللهُ عَلَيْهِ وَسَلَّمَ إِلى التَّحَلّي بِالصِّدْقِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    },
+    {
+     "id": "u4_l3",
+     "order": 3,
+     "title_ar": "نَظافَةُ مَنْزِلي",
+     "title_en": "Cleanliness of My Home",
+     "main_idea_ar": "أَمَرَنا دينُنا بِتَنْظيفِ الْمَكانِ الَّذي نَعيشُ فيهِ.",
+     "periods": null,
+     "objectives": [],
+     "vocabulary": []
+    }
+   ]
+  }
+ ]
+}
