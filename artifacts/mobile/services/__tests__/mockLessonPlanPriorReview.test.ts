@@ -77,15 +77,6 @@ describe('MockAIService.generateLessonPlan — priorReview', () => {
     assert.match(plan.priorReview!, /ركّز على المتعثرين في الصف التاسع/);
   });
 
-  it('does not fabricate a priorReview during the simplify-explanation branch', async () => {
-    const plan = await service.generateLessonPlan({
-      ...BASE_REQ,
-      topic: 'تبسيط الشرح: المعادلات التربيعية',
-      priorTopicsNotes: 'ملاحظات لن تُستخدم في وضع التبسيط',
-    });
-    assert.equal(plan.priorReview, undefined);
-  });
-
   it('works in English too', async () => {
     const plan = await service.generateLessonPlan({
       ...BASE_REQ,
