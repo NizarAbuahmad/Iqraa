@@ -580,8 +580,6 @@ export default function TeachingPlansScreen() {
                   {`${t('planTopics')}: ${form.topics}`}
                 </Text>
               ) : null}
-                </View>
-              )}
               <TextInput
                 value={form.topics}
                 onChangeText={v => setForm(f => ({ ...f, topics: v }))}
