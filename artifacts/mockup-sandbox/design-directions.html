@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>اقرأ — اتجاهات تصميم الويب</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#081B3A; --teal:#00A99D; --aqua:#34D6C6; --bg:#F5F7FA; --card:#fff;
+    --border:#DDE6E8; --muted:#6B7A8D; --soft:#E6F7F6; --amber:#B45309;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Cairo',Tahoma,'Segoe UI',sans-serif;background:#0E1626;color:var(--navy)}
+  .label{font-size:19px;font-weight:700;color:#fff;padding:22px 28px 12px;letter-spacing:.2px}
+  .label span{color:var(--aqua);font-weight:600;font-size:15px;margin-inline-start:10px}
+  .frame{width:1440px;height:900px;margin:0 28px 34px;background:var(--bg);overflow:hidden;
+         border:1px solid #24324a;display:flex;flex-direction:row-reverse}
+  /* ── shared rail ─────────────────────────────── */
+  .rail{width:232px;background:var(--card);border-inline-start:1px solid var(--border);
+        padding:18px 12px;display:flex;flex-direction:column;gap:4px;flex:0 0 232px}
+  .brand{display:flex;align-items:center;gap:9px;padding:6px 14px 20px;font-weight:700;font-size:19px}
+  .mark{width:30px;height:30px;border-radius:9px;background:var(--teal);display:grid;place-items:center;color:#fff;font-size:15px}
+  .nav{display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:12px;color:var(--navy);font-size:15px;font-weight:500}
+  .nav.on{background:rgba(0,169,157,.10);color:var(--teal);font-weight:600}
+  .nav i{width:18px;text-align:center;font-style:normal;opacity:.75;font-size:15px}
+  .railfoot{margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--border)}
+  .ava{width:32px;height:32px;border-radius:50%;background:var(--soft);color:var(--teal);display:grid;place-items:center;font-weight:700;font-size:13px}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px}
+  .btn{background:var(--teal);color:#fff;border-radius:12px;padding:10px 16px;font-size:13px;font-weight:600;display:inline-flex;gap:7px;align-items:center}
+  .btn.amber{background:var(--amber)}
+  .btn.ghost{background:#fff;color:var(--teal);border:1px solid rgba(0,169,157,.35)}
+  .chip{background:var(--soft);color:var(--teal);border:1px solid rgba(0,169,157,.22);border-radius:11px;
+        padding:9px 14px;font-size:13px;font-weight:500}
+  .muted{color:var(--muted)}
+  .h1{font-size:23px;font-weight:700}
+  .h2{font-size:15px;font-weight:600}
+  .xs{font-size:12px}
+  .sm{font-size:13px}
+
+  /* ── A: lesson workspace ─────────────────────── */
+  .topbar{height:60px;display:flex;align-items:center;justify-content:space-between;
+          padding:0 26px;background:var(--card);border-bottom:1px solid var(--border)}
+  .aWrap{flex:1;display:flex;gap:20px;padding:22px 26px;min-height:0}
+  .aMain{flex:1;display:flex;flex-direction:column;gap:18px;min-width:0}
+  .hero{padding:22px 24px;display:flex;flex-direction:column;gap:16px}
+  .prep{display:flex;flex-direction:column;gap:9px}
+  .prow{display:flex;align-items:center;gap:11px;font-size:13.5px;padding:9px 12px;border:1px solid var(--border);border-radius:11px}
+  .tick{width:19px;height:19px;border-radius:50%;display:grid;place-items:center;font-size:11px;color:#fff;background:var(--teal)}
+  .tick.off{background:#fff;border:1.5px solid var(--border);color:var(--muted)}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .tool{padding:16px 14px;text-align:center;font-size:13px;font-weight:600;display:flex;flex-direction:column;gap:8px;align-items:center}
+  .tool em{font-size:21px;font-style:normal}
+  .aSide{width:352px;flex:0 0 352px;display:flex;flex-direction:column;gap:12px;padding:16px;background:var(--card);
+         border:1px solid var(--border);border-radius:16px}
+  .bub{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:11px 13px;font-size:13px;line-height:1.7}
+  .bub.me{background:var(--teal);color:#fff;border-color:var(--teal);align-self:flex-start;max-width:85%}
+  .composer{margin-top:auto;display:flex;align-items:center;gap:9px;border:1px solid var(--border);
+            border-radius:14px;padding:10px 12px;font-size:13px;color:var(--muted);background:var(--bg)}
+  .rowb{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .brd{display:flex;gap:7px;align-items:center;font-size:12px;color:var(--muted)}
+
+  /* ── B: command canvas ───────────────────────── */
+  .bWrap{flex:1;display:flex;flex-direction:column;align-items:center;padding-top:104px;gap:0}
+  .cmd{width:760px;background:#fff;border:1px solid var(--border);border-radius:18px;padding:18px 20px;
+       box-shadow:0 14px 40px rgba(8,27,58,.09);display:flex;align-items:center;gap:12px}
+  .ctx{background:var(--soft);color:var(--teal);border-radius:9px;padding:6px 11px;font-size:12px;font-weight:600;white-space:nowrap}
+  .keys{display:flex;gap:9px;margin-top:14px;font-size:11.5px;color:var(--muted)}
+  .kbd{border:1px solid var(--border);background:#fff;border-radius:6px;padding:3px 7px;font-size:11px}
+  .bGrid{width:760px;margin-top:44px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .rec{padding:16px;display:flex;flex-direction:column;gap:9px;font-size:13px}
+  .rec em{font-style:normal;font-size:19px}
+  .secTitle{width:760px;margin-top:38px;font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.4px}
+
+  /* ── C: chat + canvas ────────────────────────── */
+  .cChat{width:392px;flex:0 0 392px;background:var(--card);border-inline-start:1px solid var(--border);
+         display:flex;flex-direction:column;padding:18px 16px;gap:11px}
+  .cDoc{flex:1;display:flex;flex-direction:column;min-width:0}
+  .docbar{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;
+          background:var(--card);border-bottom:1px solid var(--border)}
+  .paper{margin:22px auto;width:720px;background:#fff;border:1px solid var(--border);border-radius:14px;
+         padding:30px 34px;box-shadow:0 8px 28px rgba(8,27,58,.06)}
+  .paper h3{font-size:19px;margin-bottom:5px}
+  .sec{margin-top:20px}
+  .sec .t{font-size:13.5px;font-weight:700;color:var(--teal);margin-bottom:8px;display:flex;gap:7px;align-items:center}
+  .sec li{font-size:13px;line-height:2.05;list-style:none;color:#26364f}
+  .sec li::before{content:"•";color:var(--aqua);margin-inline-end:9px}
+  .tabs{display:flex;gap:7px}
+  .tab{font-size:12px;padding:6px 12px;border-radius:9px;color:var(--muted)}
+  .tab.on{background:var(--soft);color:var(--teal);font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- ══ A ═══════════════════════════════════════════════════════════ -->
+<div class="label">الاتجاه الأول — مساحة عمل الدرس <span>الدرس هو الشاشة، والمساعد لوح جانبي</span></div>
+<div class="frame" id="dirA">
+  <aside class="rail">
+    <div class="brand"><span class="mark">◗</span> اقرأ</div>
+    <div class="nav on"><i>▤</i> اليوم</div>
+    <div class="nav"><i>▥</i> المنهاج</div>
+    <div class="nav"><i>✧</i> الأدوات</div>
+    <div class="nav"><i>▣</i> صفوفي</div>
+    <div class="nav"><i>◇</i> الرسائل</div>
+    <div class="railfoot"><span class="ava">أ خ</span><div><div class="sm" style="font-weight:600">أحمد الخطيب</div><div class="xs muted">معلّم رياضيات</div></div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="brd">الأحد ١٩ أيلول · الحصة الثالثة ١٠:٤٠</div>
+      <div style="display:flex;gap:9px"><span class="btn amber">▷ ابدأ الحصة</span><span class="btn ghost">⇄ تغيير الدرس</span></div>
+    </div>
+    <div class="aWrap">
+      <div class="aMain">
+        <div class="card hero">
+          <div class="rowb">
+            <div>
+              <div class="brd" style="margin-bottom:6px">🇯🇴 الرياضيات · الصف العاشر · الوحدة ٢</div>
+              <div class="h1">الأسس والمعادلات — حل أنظمة المعادلات بيانياً</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:26px;font-weight:700;color:var(--teal)">٣/٥</div>
+              <div class="xs muted">جاهزية الدرس</div>
+            </div>
+          </div>
+          <div class="prep">
+            <div class="prow"><span class="tick">✓</span> خطة الدرس — جاهزة ومحفوظة <span class="xs muted" style="margin-inline-start:auto">عُدّلت قبل ساعة</span></div>
+            <div class="prow"><span class="tick">✓</span> ورقة عمل (١٢ سؤالاً) <span class="xs muted" style="margin-inline-start:auto">مُرفقة للشعبة ب</span></div>
+            <div class="prow"><span class="tick">✓</span> عرض الحصة (١٤ شريحة) <span class="xs muted" style="margin-inline-start:auto">جاهز للعرض</span></div>
+            <div class="prow"><span class="tick off">٤</span> اختبار قصير <span class="sm" style="margin-inline-start:auto;color:var(--teal);font-weight:600">أنشئه الآن ←</span></div>
+            <div class="prow"><span class="tick off">٥</span> نشاط صفّي تفاعلي <span class="sm" style="margin-inline-start:auto;color:var(--teal);font-weight:600">أنشئه الآن ←</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="h2" style="margin-bottom:11px">أدوات سريعة لهذا الدرس</div>
+          <div class="grid4">
+            <div class="card tool"><em>📝</em> ورقة عمل</div>
+            <div class="card tool"><em>📊</em> اختبار</div>
+            <div class="card tool"><em>🎬</em> عرض تقديمي</div>
+            <div class="card tool"><em>🎲</em> لعبة صفّية</div>
+          </div>
+        </div>
+        <div class="card" style="padding:16px 18px">
+          <div class="rowb"><div class="h2">حصص اليوم</div><span class="xs muted">٤ حصص</span></div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <div class="chip" style="flex:1;text-align:center">٠٨:٣٠ · عاشر أ</div>
+            <div class="chip" style="flex:1;text-align:center;background:var(--teal);color:#fff;border-color:var(--teal)">١٠:٤٠ · عاشر ب</div>
+            <div class="chip" style="flex:1;text-align:center">١٢:٠٠ · تاسع ج</div>
+            <div class="chip" style="flex:1;text-align:center">٠١:١٠ · عاشر د</div>
+          </div>
+        </div>
+      </div>
+      <aside class="aSide">
+        <div class="rowb"><div class="h2">مساعد اقرأ</div><span class="xs muted">مرتبط بالدرس الحالي</span></div>
+        <div class="bub">أرى أن الاختبار القصير والنشاط الصفّي ما زالا ناقصين. أجهّزهما لك الآن؟</div>
+        <div class="bub me">جهّز الاختبار، ٨ أسئلة، متوسط الصعوبة</div>
+        <div class="bub">تمام — ٨ أسئلة على حل الأنظمة بيانياً، مع مفتاح إجابات. جاهز خلال ثوانٍ…</div>
+        <div class="composer"><span style="color:var(--teal);font-size:17px">＋</span> اكتب ما تحتاجه… <span style="margin-inline-start:auto;color:var(--teal)">←</span></div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- ══ B ═══════════════════════════════════════════════════════════ -->
+<div class="label">الاتجاه الثاني — شريط الأوامر <span>سطر واحد يفتح كل شيء، وأحدث المواد تحته</span></div>
+<div class="frame" id="dirB">
+  <aside class="rail">
+    <div class="brand"><span class="mark">◗</span> اقرأ</div>
+    <div class="nav on"><i>⌘</i> ابدأ</div>
+    <div class="nav"><i>▥</i> المنهاج</div>
+    <div class="nav"><i>✧</i> الأدوات</div>
+    <div class="nav"><i>▣</i> موادي</div>
+    <div class="nav"><i>◇</i> الرسائل</div>
+    <div class="railfoot"><span class="ava">أ خ</span><div><div class="sm" style="font-weight:600">أحمد الخطيب</div><div class="xs muted">معلّم رياضيات</div></div></div>
+  </aside>
+  <div class="main bWrap">
+    <div style="width:760px;margin-bottom:26px">
+      <div class="h1" style="font-size:27px">مساء الخير، أستاذ أحمد</div>
+      <div class="sm muted" style="margin-top:7px">اكتب ما تريده، أو اختر من الاقتراحات — كل شيء مرتبط بدرسك الحالي.</div>
+    </div>
+    <div class="cmd">
+      <span class="ctx">🇯🇴 عاشر · رياضيات · حل الأنظمة بيانياً ⌄</span>
+      <span class="muted" style="font-size:14.5px">حضّر اختباراً قصيراً على…</span>
+      <span style="margin-inline-start:auto;color:var(--teal);font-size:18px">⏎</span>
+    </div>
+    <div class="keys">
+      <span class="kbd">⌘K</span><span>الأوامر</span>
+      <span class="kbd">⌘L</span><span>تغيير الدرس</span>
+      <span class="kbd">⌘↑</span><span>آخر مادة</span>
+    </div>
+    <div style="width:760px;display:flex;gap:9px;margin-top:26px;justify-content:center">
+      <span class="chip">📄 خطة درس</span><span class="chip">📝 ورقة عمل</span><span class="chip">📊 اختبار</span>
+      <span class="chip">🎬 عرض</span><span class="chip">🎲 نشاط صفّي</span>
+    </div>
+    <div class="secTitle">أكملْ ما بدأته</div>
+    <div class="bGrid">
+      <div class="card rec"><em>📄</em><div style="font-weight:600">خطة درس — الأنظمة بيانياً</div><div class="xs muted">عُدّلت قبل ساعة · جاهزة</div></div>
+      <div class="card rec"><em>📝</em><div style="font-weight:600">ورقة عمل — ١٢ سؤالاً</div><div class="xs muted">أمس · مُرفقة للشعبة ب</div></div>
+      <div class="card rec"><em>📊</em><div style="font-weight:600">اختبار الوحدة الثانية</div><div class="xs muted">مسودة · ٤ أسئلة</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ C ═══════════════════════════════════════════════════════════ -->
+<div class="label">الاتجاه الثالث — محادثة + لوح المادة <span>المحادثة نحيفة على الجانب، والمادة نفسها هي الشاشة</span></div>
+<div class="frame" id="dirC">
+  <aside class="rail">
+    <div class="brand"><span class="mark">◗</span> اقرأ</div>
+    <div class="nav on"><i>▤</i> اقرأ</div>
+    <div class="nav"><i>▥</i> المنهاج</div>
+    <div class="nav"><i>✧</i> الأدوات</div>
+    <div class="nav"><i>◇</i> الرسائل</div>
+    <div class="nav"><i>◎</i> حسابي</div>
+    <div class="railfoot"><span class="ava">أ خ</span><div><div class="sm" style="font-weight:600">أحمد الخطيب</div><div class="xs muted">معلّم رياضيات</div></div></div>
+  </aside>
+  <aside class="cChat">
+    <div class="rowb"><div class="h2">المحادثة</div><span class="xs muted">عاشر · رياضيات</span></div>
+    <div class="bub me">حضّر خطة درس كاملة عن حل الأنظمة بيانياً</div>
+    <div class="bub">جاهزة على اللوح ← راجع الأهداف والمواد، وعدّل أي بند مباشرة.</div>
+    <div class="bub me">أضف نشاطاً جماعياً في التمهيد</div>
+    <div class="bub">أُضيف نشاط «مطابقة الرسم بالمعادلة» (٧ دقائق) — مُعلَّم على اللوح.</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap"><span class="chip xs">أضف تقويماً ختامياً</span><span class="chip xs">صعّب الأمثلة</span></div>
+    <div class="composer"><span style="color:var(--teal);font-size:17px">＋</span> اكتب ما تحتاجه… <span style="margin-inline-start:auto;color:var(--teal)">←</span></div>
+  </aside>
+  <div class="cDoc">
+    <div class="docbar">
+      <div class="tabs"><span class="tab on">خطة الدرس</span><span class="tab">ورقة العمل</span><span class="tab">العرض</span><span class="tab">الاختبار</span></div>
+      <div style="display:flex;gap:8px"><span class="btn amber">▷ ابدأ الحصة</span><span class="btn ghost">⤓ تصدير</span><span class="btn ghost">💾 حفظ</span></div>
+    </div>
+    <div class="paper">
+      <div class="brd" style="margin-bottom:9px">🇯🇴 الرياضيات · الصف العاشر · الوحدة ٢ · الحصة ٣</div>
+      <h3>الأسس والمعادلات — حل أنظمة المعادلات بيانياً</h3>
+      <div class="xs muted">٤٥ دقيقة · تعلّم تعاوني · مرتبطة بكتاب المنهاج ص ٧٨–٨٢</div>
+      <div class="sec"><div class="t">◈ الأهداف</div>
+        <ul>
+          <li>يمثّل الطالب معادلتين خطيتين بيانياً على المستوى الإحداثي.</li>
+          <li>يستنتج حل النظام من نقطة التقاطع.</li>
+          <li>يميّز بين نظام له حل واحد، ولا حل له، وله حلول غير منتهية.</li>
+        </ul>
+      </div>
+      <div class="sec"><div class="t">◈ التمهيد <span class="xs" style="color:var(--amber);font-weight:600">· مُحدَّث للتو</span></div>
+        <ul><li>نشاط «مطابقة الرسم بالمعادلة» — مجموعات ثنائية، ٧ دقائق.</li></ul>
+      </div>
+      <div class="sec"><div class="t">◈ المواد اللازمة</div>
+        <ul><li>الكتاب المدرسي · ورق رسم بياني · أقلام ملوّنة · بطاقات المطابقة</li></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
