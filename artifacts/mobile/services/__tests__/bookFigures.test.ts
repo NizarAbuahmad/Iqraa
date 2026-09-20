@@ -116,6 +116,17 @@ describe('figuresForLesson', () => {
       'g8-social': 'g8-social',
       'g8-math': 'g8-math',
       'g8-voc': 'g8-voc',
+      // Grades 3, 4 and 5, added 2026-09-19. Slug and source-id prefix
+      // agree throughout — including g4-arts, whose source id carries the
+      // `-s1` segment precisely because its catalog scope does. A source
+      // id without it would fail this check, which is the check's job.
+      'g3-science': 'g3-science',
+      'g3-social': 'g3-social',
+      'g4-arts': 'g4-arts',
+      'g4-science': 'g4-science',
+      'g4-social': 'g4-social',
+      'g4-voc': 'g4-voc',
+      'g5-science': 'g5-science',
       // Grades 6 and 7, added 2026-09-16. Slug and source-id prefix agree
       // for all of these.
       'g6-voc': 'g6-voc',

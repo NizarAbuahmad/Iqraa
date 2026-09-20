@@ -12,9 +12,13 @@ export interface TeachingPlan {
   id: string;
   title: string;
   schoolName: string;
+  /** The linked class's id, null if the teacher hasn't attached one. */
+  classGroupId: string | null;
   grades: string;
   topics: string;
+  date: string;
   time: string;
+  notes: string;
   createdAt: string;
 }
 
@@ -63,9 +67,12 @@ export async function listTeachingPlans(): Promise<TeachingPlan[]> {
 export async function createTeachingPlan(input: {
   title: string;
   schoolName?: string;
+  classGroupId?: string | null;
   grades?: string;
   topics?: string;
+  date?: string;
   time?: string;
+  notes?: string;
 }): Promise<TeachingPlan> {
   const res = await apiFetch('/teaching-plans', {
     method: 'POST',
@@ -77,7 +84,16 @@ export async function createTeachingPlan(input: {
 
 export async function updateTeachingPlan(
   planId: string,
-  patch: { title?: string; schoolName?: string; grades?: string; topics?: string; time?: string },
+  patch: {
+    title?: string;
+    schoolName?: string;
+    classGroupId?: string | null;
+    grades?: string;
+    topics?: string;
+    date?: string;
+    time?: string;
+    notes?: string;
+  },
 ): Promise<TeachingPlan> {
   const res = await apiFetch(`/teaching-plans/${planId}`, {
     method: 'PATCH',

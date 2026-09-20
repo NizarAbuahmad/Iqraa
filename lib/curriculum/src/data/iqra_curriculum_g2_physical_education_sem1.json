@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "grade": "الصف الثاني",
+    "grade_en": "Grade 2",
+    "subject": "التربية الرياضية",
+    "subject_en": "Physical Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة التربية الرياضية الصف الثاني الفصل الأول (g2-pe-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ ودروسُها الأربعةَ عشرَ من كتاب الطالب في 2026-09-19، بقراءةِ صفحةِ الفهرسِ وصفحةِ افتتاحِ كلِّ وحدةٍ وصفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF عبرَ PyMuPDF. نفسُ بنيةِ g3PhysicalEducationSem1.ts: يطبَعُ هذا الكتابُ صندوقَ «الفِكْرَةُ الرَّئيسَةُ» وصندوقَ «المَفاهيمُ وَالمُصْطَلَحاتُ الأَساسِيَّةُ» الثنائيَّ اللغةِ في افتتاحيّةِ كلِّ درسٍ، فنُقِلا حرفيًّا.",
+    "known_gaps": [
+      "objectives فارغةٌ لكلِّ الدروسِ الأربعةَ عشرَ: لا يطبَعُ هذا الكتابُ صندوقَ «نَتاجاتُ التَّعَلُّمِ» مستقلًّا؛ نصوصُ «الإحماء/الأنشطة/التهدئة» تَصِفُ أنشطةَ الحصَّةِ لا نتاجاتِ تعلُّمٍ رسميَّةً.",
+      "periods و total_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ في الكتابِ.",
+      "general_idea_ar لكلِّ وحدةٍ منقولٌ من فقرةِ «الفِكْرَةُ العامَّةُ» المطبوعةِ في افتتاحيّةِ كلِّ وحدةٍ.",
+      "لا كتابَ للفصلِ الثاني في الملفّاتِ المرسَلةِ؛ هذهِ المادَّةُ نصفُ سنةٍ في المنهاجِ المتوفِّرِ، نفسُ نمطِ g3PhysicalEducationSem1.ts/g6PhysicalEducationSem1.ts."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "مَهاراتٌ حَرَكِيَّةٌ وَأَلْعابٌ",
+      "title_en": "Motor Skills and Games",
+      "general_idea_ar": "تَطْويرُ مَجْموعَةٍ مِنَ المَهاراتِ الحَرَكِيَّةِ عَنْ طَريقِ أَنْشِطَةٍ وَأَلْعابٍ رِياضِيَّةٍ مُنَظَّمَةٍ وَمُتَنَوِّعَةٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea and bilingual terms from each lesson's opener box; objectives not transcribed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "دَحْرَجَةُ أَداةٍ رِياضِيَّةٍ",
+          "title_en": "Rolling a Sports Item",
+          "main_idea_ar": "دَحْرَجَةُ أَداةٍ رِياضِيَّةٍ بِيَدٍ واحِدَةٍ أَوْ بِكِلْتا اليَدَيْنِ، وَالسَّيْطَرَةُ عَلَيْها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "دَحْرَجَة", "en": "Rolling" },
+            { "ar": "السَيْطَرَة", "en": "Control" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "رَمْيُ أَداةٍ رِياضِيَّةٍ",
+          "title_en": "Throwing a Sports Item",
+          "main_idea_ar": "رَمْيُ أَدَواتٍ رِياضِيَّةٍ مُتَنَوِّعَةٍ لِمَسافاتٍ مُخْتَلِفَةٍ بِيَدٍ واحِدَةٍ أَوْ بِكِلْتا اليَدَيْنِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "أَداةٌ بَديلَةٌ", "en": "Alternative tool" },
+            { "ar": "كيسُ رَمْلٍ", "en": "Sand bag" }
+          ]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "رَكْلُ كُرَةٍ",
+          "title_en": "Kicking a Ball",
+          "main_idea_ar": "رَكْلُ الكُرَةِ بِالقَدَمِ لِمَسافاتٍ مُخْتَلِفَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "الرَكْل", "en": "Kicking" }]
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "سَحْبُ أَدَواتٍ مُخْتَلِفَةٍ وَدَفْعُها",
+          "title_en": "Pulling and Pushing Different Items",
+          "main_idea_ar": "تَقْديرُ القُوَّةِ الَّلازِمَةِ عِنْدَ سَحْبِ ثِقَلٍ، أَوْ دَفْعِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "السَحْب", "en": "Pull" },
+            { "ar": "الدَفْع", "en": "Push" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "أَلْعابُ الوَثْبِ",
+      "title_en": "Jumping Games",
+      "general_idea_ar": "التَّحَكُّمُ في الجِسْمِ، وَخِفَّةُ الحَرَكَةِ، وَتَقْوِيَةُ العَضَلاتِ الكَبيرَةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea and bilingual terms from each lesson's opener box; objectives not transcribed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "الوَثْبُ مِنْ أَعْلى",
+          "title_en": "Jumping from Above",
+          "main_idea_ar": "الوَثْبُ مِنْ فَوْقِ ارْتِفاعٍ بَسيطٍ (مِنْ أَعْلى إِلى أَسْفَلَ).",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الهُبوط", "en": "Landing" },
+            { "ar": "مَقْعَدٌ سُوَيْدِيٌّ", "en": "Swedish seat" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "الوَثْبُ الأُفُقِيُّ",
+          "title_en": "Horizontal Jump",
+          "main_idea_ar": "الوَثْبُ لِلْأَمامِ لِأَبْعَدِ مَسافَةٍ مُمْكِنَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "الوَثْبُ الأُفُقِيُّ", "en": "Horizontal jump" }]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "الوَثْبُ العَمودِيُّ",
+          "title_en": "Vertical Jump",
+          "main_idea_ar": "الوَثْبُ لِأَعْلى مَسافَةٍ مُمْكِنَةٍ، وَالهُبوطُ في المَكانِ نَفْسِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "الوَثْبُ العَمودِيُّ", "en": "Vertical jump" }]
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "الوَثْبُ مِنْ فَوْقِ حاجِزٍ",
+          "title_en": "Jumping Over a Hurdle",
+          "main_idea_ar": "تَخَطّي الحَواجِزِ بِالوَثْبِ مِنْ فَوْقِها (لِأَعْلى وَلِلْأَمامِ).",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "حاجِز", "en": "Hurdle" }]
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "أَلْعابُ وَثْبٍ",
+          "title_en": "Jumping Games",
+          "main_idea_ar": "تَقْديرُ السُّرْعَةِ وَالقُوَّةِ وَالتَّوْقيتِ المُناسِبِ لِلْحَرَكَةِ في أَثْناءِ اللَّعِبِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "التَوْقيت", "en": "Timing" }]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "أَلْعابُ الحَجْلِ",
+      "title_en": "Hopping Games",
+      "general_idea_ar": "تَعْزيزُ بَعْضِ المَهاراتِ الحَرَكِيَّةِ وَالتَّحَمُّلِ وَالتَّوازُنِ وَالتَّرْكيزِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea and bilingual terms from each lesson's opener box; objectives not transcribed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الحَجْلُ بِاتِّجاهاتٍ مُخْتَلِفَةٍ",
+          "title_en": "Hopping in Different Directions",
+          "main_idea_ar": "انْتِقالُ ثِقَلِ الجِسْمِ لِأَعْلى وَلِلْأَمامِ عَلى إِحْدى القَدَمَيْنِ، وَالهُبوطُ عَلى القَدَمِ نَفْسِها مَعَ فَرْدِ الجِذْعِ وَمَدِّ الذِّراعَيْنِ جانِبًا، وَرَفْعِ الساقِ العَكْسِيَّةِ خَلَفًا.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "قُوَةُ الساق", "en": "Leg strength" },
+            { "ar": "خُطْوَة", "en": "Step" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الحَجْلُ فَوْقَ حاجِزٍ",
+          "title_en": "Hopping Over a Hurdle",
+          "main_idea_ar": "الحَجْلُ مِنْ فَوْقِ حاجِزٍ، وَالهُبوطُ مَعَ ثَنْيِ مِفْصَلِ الرُّكْبَةِ الِامْتِصاصِ صَدْمَةِ الهُبوطِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "مِفْصَل", "en": "Joint" },
+            { "ar": "الرُكْبَة", "en": "Knee" }
+          ]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "الحَجْلُ بِالتَّبادُلِ",
+          "title_en": "Alternating Hop",
+          "main_idea_ar": "الحَجْلُ بِالقَدَمَيْنِ بِاسْتِمْرارٍ في المَكانِ وَفي اتِّجاهاتٍ مُخْتَلِفَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "المَشْيُ عَلى أَرْبَعٍ", "en": "Walk on four" }]
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "خُطْوَةٌ وَحَجْلَةٌ",
+          "title_en": "Step and Hop",
+          "main_idea_ar": "رَبْطُ مَهارَتَيِ الخَطْوِ وَالحَجْلِ مَعًا.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "إِيقاع", "en": "Rhythm" }]
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "أَلْعابُ حَجْلٍ شَعْبِيَّةٍ",
+          "title_en": "Folk Hopping Games",
+          "main_idea_ar": "تَطْبيقُ مَهارَةِ الحَجْلِ عَنْ طَريقِ الأَلْعابِ الشَّعْبِيَّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "لُعْبَةٌ شَعْبِيَةٌ", "en": "Folk game" }]
+        }
+      ]
+    }
+  ]
+}

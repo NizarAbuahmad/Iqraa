@@ -16,7 +16,7 @@ import {
 } from '@/services/curriculumData';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
-import { narrowToSelection } from '@/services/teacherCatalogFilter';
+import { narrowSubjectsForGrade, narrowToSelection } from '@/services/teacherCatalogFilter';
 
 const SUBJECT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   arabic:      'text',
@@ -75,9 +75,9 @@ export default function CurriculumScreen() {
   const [selectedGrade, setSelectedGrade] = useState<Grade>(visibleGrades[0]);
   const [search, setSearch] = useState('');
 
-  const subjects = narrowToSelection(
-    getSubjectsForGrade(selectedGrade.id),
-    isTeacherRole(user?.role) ? user?.subjectIds : undefined,
+  const subjects = (isTeacherRole(user?.role)
+    ? narrowSubjectsForGrade(getSubjectsForGrade(selectedGrade.id), selectedGrade.id, user?.teachingAssignments, user?.subjectIds)
+    : getSubjectsForGrade(selectedGrade.id)
   ).filter(s => {
     const q = search.toLowerCase();
     return (
@@ -136,7 +136,9 @@ export default function CurriculumScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.gradeScroll, isRTL && { flexDirection: 'row-reverse' }]}
+          // minWidth fills the track so row-reverse packs the chips against the
+          // right edge; without it a short list hugs the left in an RTL page.
+          contentContainerStyle={[styles.gradeScroll, isRTL && { flexDirection: 'row-reverse', minWidth: '100%' }]}
         >
           {visibleGrades.map(g => {
             const isActive = g.id === selectedGrade.id;

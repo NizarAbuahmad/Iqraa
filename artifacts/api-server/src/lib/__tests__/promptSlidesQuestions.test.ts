@@ -49,6 +49,48 @@ describe("questionsPrompt", () => {
     assert.match(questionsPromptAr({ prompt: "x" }), cap);
     assert.match(questionsPromptEn({ prompt: "x" }), cap);
   });
+
+  /**
+   * The defect these pin. The answers tapped here are folded into the deck
+   * prompt's description, so a lesson question answered on a general deck
+   * («ما هدف الحصة؟ → التعريف بالتقاليد») tells the deck model it IS a lesson —
+   * and «أهداف الحصة» lands on a Mother's Day deck however carefully the deck
+   * prompt was told otherwise.
+   */
+  it("decides the deck kind first, the same way the deck prompt does", () => {
+    const ar = questionsPromptAr({ prompt: "يوم الأم" });
+    assert.match(ar, /عرض تعليمي/);
+    assert.match(ar, /عرض عام/);
+    assert.match(ar, /لا تفترض أنه درس/);
+    const en = questionsPromptEn({ prompt: "mother day" });
+    assert.match(en, /a teaching deck/);
+    assert.match(en, /a general deck/);
+    assert.match(en, /Do not assume a lesson/);
+  });
+
+  it("offers general-deck questions, not just lesson ones", () => {
+    assert.match(questionsPromptAr({ prompt: "x" }), /لمن العرض/);
+    assert.match(questionsPromptEn({ prompt: "x" }), /who it is for/);
+  });
+
+  it("never asks the grade — and stops the model inventing a list of them", () => {
+    // A teacher was offered السادس/السابع/الثامن/التاسع for a Mother's Day
+    // deck: the model did not know the grade and answered by making up a set.
+    assert.match(questionsPromptAr({ prompt: "x" }), /لا تخترع قائمة صفوف/);
+    assert.match(questionsPromptEn({ prompt: "x" }), /do not invent a list of grades/);
+  });
+
+  it("carries the teacher's grade and subject so there is nothing left to ask", () => {
+    const ar = questionsPromptAr({ prompt: "x", grade: "الصف التاسع", subject: "الرياضيات" });
+    assert.match(ar, /الرياضيات — الصف التاسع/);
+    const en = questionsPromptEn({ prompt: "x", grade: "Grade 9", subject: "Mathematics" });
+    assert.match(en, /Mathematics — Grade 9/);
+  });
+
+  it("no longer teaches the model to ask «ما هدف الحصة؟» by example", () => {
+    assert.ok(!questionsPromptAr({ prompt: "x" }).includes('"question":"ما هدف الحصة؟"'));
+    assert.ok(!questionsPromptEn({ prompt: "x" }).includes('"question":"What is this lesson for?"'));
+  });
 });
 
 describe("parseQuestions", () => {

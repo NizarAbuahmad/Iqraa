@@ -137,7 +137,7 @@ describe('subject isolation', () => {
       // Grade 5 joined 2026-09-16, same shape as Grade 6.
       // Grade 1 joined 2026-09-18 — its Semester 1 book's unnumbered
       // preparatory unit is u0, so the tag can be `g1-math-s1-u0`.
-      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?|g8-math-s[12](-u\d+)?|g7-math-s[12](-u\d+)?|g6-math-s[12](-u\d+)?|g5-math-s[12](-u\d+)?|g4-math-s[12](-u\d+)?|g3-math-s[12](-u\d+)?|g1-math-s[12](-u\d+)?)$/,
+      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?|g8-math-s[12](-u\d+)?|g7-math-s[12](-u\d+)?|g6-math-s[12](-u\d+)?|g5-math-s[12](-u\d+)?|g4-math-s[12](-u\d+)?|g3-math-s[12](-u\d+)?|g2-math-s[12](-u\d+)?|g1-math-s[12](-u\d+)?)$/,
       // Chemistry is `unitLevel: true` in curriculumIds.ts, so a lesson emits
       // BOTH the semester scope and the narrower unit scope — `g9-chem-s1` and
       // `g9-chem-s1-u1`. The `(-u\d+)?` is doing real work here; a Grade 9
@@ -213,7 +213,7 @@ describe('subject isolation', () => {
       // `science-s[12]` form to allow. Grade 7 joined 2026-09-12, Grade 6 on
       // 2026-09-13, Grade 5 on 2026-09-16, Grade 4 and Grade 3 both on
       // 2026-09-17, Grade 1 on 2026-09-18.
-      science: /^(g8-science-s[12]|g7-science-s[12]|g6-science-s[12]|g5-science-s[12]|g4-science-s[12]|g3-science-s[12]|g1-science-s[12])$/,
+      science: /^(g8-science-s[12]|g7-science-s[12]|g6-science-s[12]|g5-science-s[12]|g4-science-s[12]|g3-science-s[12]|g2-science-s[12]|g1-science-s[12])$/,
     };
     for (const lesson of KB_LESSONS) {
       const subjectId = getBookForLesson(lesson)?.subjectId;

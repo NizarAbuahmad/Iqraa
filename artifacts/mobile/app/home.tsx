@@ -87,7 +87,9 @@ export default function DashboardScreen() {
     unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null,
   });
   const pickerSubjects = getPickerSubjects();
-  const pickerGrades = getPickerGrades();
+  // Sorted by level for display only — MVP_GRADE_IDS' own order is persisted
+  // as bare indices elsewhere (see catalog.ts), so it can't be reordered.
+  const pickerGrades = [...getPickerGrades()].sort((a, b) => a.level - b.level);
   /**
    * Subjects to actually render for the grade drafted in the picker. The full
    * `pickerSubjects` list stays for lookups — the banner resolves the *picked*
@@ -491,6 +493,7 @@ export default function DashboardScreen() {
                 style={({ pressed }) => [
                   styles.startClassBtn,
                   {
+                    backgroundColor: colors.primary,
                     opacity: pressed ? 0.88 : 1,
                     flexDirection: isRTL ? 'row-reverse' : 'row',
                   },
@@ -1230,7 +1233,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#B45309',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 9,

@@ -6,10 +6,17 @@
  * parking `classroom` left the escape / bingo / relay / gallery-walk formats
  * reachable only by typing the URL — which meant, in practice, not reachable.
  * `game` and `activity` returned with it rather than leaving one door of the
- * three open. `simplify` and `parent-msg` came back on 2026-09-03: the parent
- * message is an offline composer with no audit objection, and `simplify` ships
- * with a subtitle that describes what it actually produces (a simpler lesson
- * plan). Everything else stays parked.
+ * three open. `parent-msg` came back on 2026-09-03 — an offline composer with
+ * no audit objection. Everything else stays parked.
+ *
+ * `simplify` was removed outright on 2026-09-19. It was never a tool: it was
+ * `route: '/ai-tools/lesson-plan'` plus `routeParams: { simplify: '1' }`, and
+ * the three signals that flag sent (a topic prefix, an objectives default, a
+ * `mode:simplify` line) were read by no prompt clause on the server — so the
+ * live path returned an ordinary lesson plan under a different title. The
+ * capability now lives as a preset chip on that screen's adaptations field,
+ * whose text the prompt does apply. The last guard below is what would have
+ * caught the shape.
  *
  * Parked tools stay in the catalog (their routes still resolve for saved
  * materials and deep links) but must not reappear on a menu — which is easy to
@@ -22,7 +29,7 @@ import assert from 'node:assert/strict';
 import { AFTER_CLASS, ALL_TOOLS, BEFORE_CLASS, DURING_CLASS, WORKFLOW } from '../toolCatalog.ts';
 
 const OFFERED_TOOLS = [
-  'slides', 'prompt-slides', 'lesson-plan', 'simplify',                    // before
+  'slides', 'prompt-slides', 'lesson-plan',                               // before
   'worksheet', 'classroom', 'game', 'activity', 'whiteboard', 'games',     // during
   'quiz', 'evaluations', 'parent-msg',                                    // after
 ];
@@ -68,6 +75,19 @@ describe('toolCatalog — the offered surface', () => {
   it('keeps every offered tool reachable', () => {
     for (const tool of ALL_TOOLS) {
       assert.ok(tool.route || tool.externalAction, `${tool.id} has no way to open it`);
+    }
+  });
+
+  it('never offers two tools that share one screen and differ only by params', () => {
+    // How «تبسيط الشرح» shipped for three weeks: a mode flag on the lesson
+    // plan's screen, presented as a tool of its own. A second card pointing at
+    // a route another card already owns is not a tool, it is a preset.
+    const byRoute = new Map<string, string>();
+    for (const tool of ALL_TOOLS) {
+      if (!tool.route) continue;
+      const owner = byRoute.get(tool.route);
+      assert.equal(owner, undefined, `${tool.id} shares ${tool.route} with ${owner}`);
+      byRoute.set(tool.route, tool.id);
     }
   });
 });

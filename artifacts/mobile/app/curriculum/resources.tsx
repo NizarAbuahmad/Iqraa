@@ -273,7 +273,9 @@ export default function ResourcesScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[styles.chipRow, isRTL && { flexDirection: 'row-reverse' }]}
+            // minWidth fills the track so row-reverse packs the chips against
+            // the right edge; without it a short list hugs the left in RTL.
+            contentContainerStyle={[styles.chipRow, isRTL && { flexDirection: 'row-reverse', minWidth: '100%' }]}
           >
             {[null, ...KIND_ORDER.filter(k => kindCounts.has(k))].map(k => {
               const active = k === kind;
@@ -308,7 +310,9 @@ export default function ResourcesScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[styles.chipRow, isRTL && { flexDirection: 'row-reverse' }]}
+            // minWidth fills the track so row-reverse packs the chips against
+            // the right edge; without it a short list hugs the left in RTL.
+            contentContainerStyle={[styles.chipRow, isRTL && { flexDirection: 'row-reverse', minWidth: '100%' }]}
           >
             {/* The KB id is what is held in state; the title is only shown. */}
             {[null, ...lessons.map(([id]) => id)].map(id => {

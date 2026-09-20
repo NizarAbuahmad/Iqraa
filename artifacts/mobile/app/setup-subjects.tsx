@@ -1,7 +1,17 @@
 /**
- * Where a teacher says what they teach — grades and subjects, picked from the
- * same catalog the curriculum browser and AI-tools pickers already use (see
+ * Where a teacher says what they teach — one entry per grade, each paired
+ * with the subjects taught in that grade — picked from the same catalog the
+ * curriculum browser and AI-tools pickers already use (see
  * `@workspace/curriculum`'s GRADES/SUBJECTS).
+ *
+ * The flow is grade-first on purpose: add a grade, pick its subjects, add
+ * another grade, pick its subjects. A flat "pick every grade, then pick
+ * every subject" (the shape this screen used before) can't say that a
+ * teacher who teaches Math in grade 7 doesn't also teach Science there just
+ * because they teach Science in grade 8 — every subject picked applied to
+ * every grade picked. `teachingAssignments` is what fixes that; see
+ * `narrowSubjectsForGrade` in `services/teacherCatalogFilter.ts`, the reader
+ * this exists for.
  *
  * Two ways in:
  *  - Mandatory, via the routing gate in `app/_layout.tsx` (`needsTeacherSetup`
@@ -30,12 +40,24 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAuth } from '@/context/AuthContext';
+import { TeachingAssignment, useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
-import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { getPickerGrades, getSubjectsForGrade } from '@/services/curriculumData';
 
 function toggle(list: string[], id: string): string[] {
   return list.includes(id) ? list.filter(x => x !== id) : [...list, id];
+}
+
+/**
+ * An account set up before per-grade pairing existed only has the flat
+ * `gradeIds`/`subjectIds` — seed one assignment per picked grade, each
+ * carrying every picked subject, so opening this screen shows exactly what
+ * the old flat fields implied instead of an unexplained empty state.
+ */
+function initialAssignments(user: { teachingAssignments?: TeachingAssignment[]; gradeIds?: string[]; subjectIds?: string[] } | null): TeachingAssignment[] {
+  if (user?.teachingAssignments?.length) return user.teachingAssignments;
+  if (user?.gradeIds?.length) return user.gradeIds.map(gradeId => ({ gradeId, subjectIds: user?.subjectIds ?? [] }));
+  return [];
 }
 
 function Chip({ label, selected, onPress, colors, accent }: {
@@ -73,20 +95,37 @@ export default function SetupSubjectsScreen() {
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const editMode = mode === 'edit';
 
-  const [gradeIds, setGradeIds] = useState<string[]>(user?.gradeIds ?? []);
-  const [subjectIds, setSubjectIds] = useState<string[]>(user?.subjectIds ?? []);
+  const [assignments, setAssignments] = useState<TeachingAssignment[]>(() => initialAssignments(user));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const canSubmit = gradeIds.length > 0 && subjectIds.length > 0 && !saving;
   const align = isRTL ? 'right' : 'left';
+  const grades = getPickerGrades();
+  const addedGradeIds = new Set(assignments.map(a => a.gradeId));
+  const remainingGrades = grades.filter(g => !addedGradeIds.has(g.id));
+  const hasEmptyAssignment = assignments.some(a => a.subjectIds.length === 0);
+  const canSubmit = assignments.length > 0 && !hasEmptyAssignment && !saving;
+
+  const addGrade = (gradeId: string) => {
+    Haptics.selectionAsync();
+    setAssignments(prev => [...prev, { gradeId, subjectIds: [] }]);
+  };
+
+  const removeGrade = (gradeId: string) => {
+    Haptics.selectionAsync();
+    setAssignments(prev => prev.filter(a => a.gradeId !== gradeId));
+  };
+
+  const toggleSubject = (gradeId: string, subjectId: string) => {
+    setAssignments(prev => prev.map(a => (a.gradeId === gradeId ? { ...a, subjectIds: toggle(a.subjectIds, subjectId) } : a)));
+  };
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setSaving(true);
     setError('');
     try {
-      await updateProfile({ gradeIds, subjectIds });
+      await updateProfile({ teachingAssignments: assignments });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (editMode) router.back();
       else router.replace('/(tabs)');
@@ -129,37 +168,62 @@ export default function SetupSubjectsScreen() {
           {t('teacherSetupDesc')}
         </Text>
 
-        <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
-          {t('teacherSetupGradesLabel')}
-        </Text>
-        <View style={[styles.chips, isRTL && { flexDirection: 'row-reverse' }]}>
-          {getPickerGrades().map(g => (
-            <Chip
-              key={g.id}
-              label={lang === 'ar' ? g.nameAr : g.name}
-              selected={gradeIds.includes(g.id)}
-              onPress={() => setGradeIds(prev => toggle(prev, g.id))}
-              colors={colors}
-              accent={colors.primary}
-            />
-          ))}
-        </View>
+        {assignments.map(a => {
+          const grade = grades.find(g => g.id === a.gradeId);
+          if (!grade) return null;
+          const gradeName = lang === 'ar' ? grade.nameAr : grade.name;
+          return (
+            <View
+              key={a.gradeId}
+              style={[styles.gradeCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}
+            >
+              <View style={[styles.gradeCardHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Text style={[styles.gradeCardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align, flex: 1 }]}>
+                  {gradeName}
+                </Text>
+                <Pressable
+                  onPress={() => removeGrade(a.gradeId)}
+                  hitSlop={8}
+                  accessibilityLabel={t('teacherSetupRemoveGrade', gradeName)}
+                >
+                  <Ionicons name="trash-outline" size={18} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
+              <View style={[styles.chips, isRTL && { flexDirection: 'row-reverse' }]}>
+                {getSubjectsForGrade(a.gradeId).map(s => (
+                  <Chip
+                    key={s.id}
+                    label={lang === 'ar' ? s.nameAr : s.name}
+                    selected={a.subjectIds.includes(s.id)}
+                    onPress={() => toggleSubject(a.gradeId, s.id)}
+                    colors={colors}
+                    accent={s.color}
+                  />
+                ))}
+              </View>
+            </View>
+          );
+        })}
 
-        <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align, marginTop: 20 }]}>
-          {t('teacherSetupSubjectsLabel')}
-        </Text>
-        <View style={[styles.chips, isRTL && { flexDirection: 'row-reverse' }]}>
-          {getPickerSubjects().map(s => (
-            <Chip
-              key={s.id}
-              label={lang === 'ar' ? s.nameAr : s.name}
-              selected={subjectIds.includes(s.id)}
-              onPress={() => setSubjectIds(prev => toggle(prev, s.id))}
-              colors={colors}
-              accent={s.color}
-            />
-          ))}
-        </View>
+        {remainingGrades.length > 0 ? (
+          <>
+            <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align, marginTop: assignments.length > 0 ? 8 : 20 }]}>
+              {t('teacherSetupAddGrade')}
+            </Text>
+            <View style={[styles.chips, isRTL && { flexDirection: 'row-reverse' }]}>
+              {remainingGrades.map(g => (
+                <Chip
+                  key={g.id}
+                  label={lang === 'ar' ? g.nameAr : g.name}
+                  selected={false}
+                  onPress={() => addGrade(g.id)}
+                  colors={colors}
+                  accent={colors.primary}
+                />
+              ))}
+            </View>
+          </>
+        ) : null}
 
         {error ? (
           <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -170,7 +234,12 @@ export default function SetupSubjectsScreen() {
           </View>
         ) : null}
 
-        {!canSubmit && !saving && (gradeIds.length > 0 || subjectIds.length > 0) ? (
+        {!saving && assignments.length === 0 ? (
+          <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+            {t('teacherSetupNoGradesYet')}
+          </Text>
+        ) : null}
+        {!saving && assignments.length > 0 && hasEmptyAssignment ? (
           <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
             {t('teacherSetupPickAtLeastOne')}
           </Text>
@@ -196,6 +265,9 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, marginBottom: 8, lineHeight: 30 },
   desc: { fontSize: 14, lineHeight: 22, marginBottom: 20 },
   sectionLabel: { fontSize: 14, marginBottom: 10 },
+  gradeCard: { borderWidth: 1, padding: 14, marginBottom: 12 },
+  gradeCardHeader: { alignItems: 'center', marginBottom: 12, gap: 8 },
+  gradeCardTitle: { fontSize: 15 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 13 },

@@ -33,6 +33,7 @@ import {
   updateTeachingPlan,
   type TeachingPlan,
 } from '@/services/teachingPlans';
+import { listClasses, type ClassGroup } from '@/services/roster';
 import { confirm } from '@/services/confirm';
 import type { TranslationKey } from '@/services/i18n';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
@@ -40,14 +41,24 @@ import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 
 const ACCENT = '#1B6B62';
 
-const EMPTY_FORM = { title: '', schoolName: '', grades: '', topics: '', time: '' };
+const EMPTY_FORM = {
+  title: '',
+  schoolName: '',
+  classGroupId: null as string | null,
+  grades: '',
+  topics: '',
+  date: '',
+  time: '',
+  notes: '',
+};
 
 export default function TeachingPlansScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
 
   const [plans, setPlans] = useState<TeachingPlan[]>([]);
+  const [classes, setClasses] = useState<ClassGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -77,6 +88,13 @@ export default function TeachingPlansScreen() {
     } finally {
       setLoading(false);
     }
+    // Best-effort: the class picker is a convenience, not the point of this
+    // screen, so a roster failure here should not block the plans list.
+    try {
+      setClasses(await listClasses());
+    } catch {
+      /* the picker just falls back to "no class" options */
+    }
   }, [describe]);
 
   useFocusEffect(
@@ -96,11 +114,20 @@ export default function TeachingPlansScreen() {
     setForm({
       title: plan.title,
       schoolName: plan.schoolName,
+      classGroupId: plan.classGroupId,
       grades: plan.grades,
       topics: plan.topics,
+      date: plan.date,
       time: plan.time,
+      notes: plan.notes,
     });
     setShowForm(true);
+  };
+
+  const classNameFor = (id: string | null): string => {
+    if (!id) return '';
+    const found = classes.find(c => c.id === id);
+    return found ? (lang === 'ar' && found.nameAr ? found.nameAr : found.name) : '';
   };
 
   const onSave = async () => {
@@ -223,9 +250,9 @@ export default function TeachingPlansScreen() {
                 <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
                   {item.title}
                 </Text>
-                {item.schoolName || item.grades ? (
+                {item.schoolName || item.grades || item.classGroupId ? (
                   <Text style={[styles.cardMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-                    {[item.schoolName, item.grades].filter(Boolean).join(' · ')}
+                    {[item.schoolName, classNameFor(item.classGroupId), item.grades].filter(Boolean).join(' · ')}
                   </Text>
                 ) : null}
               </View>
@@ -268,6 +295,39 @@ export default function TeachingPlansScreen() {
                 placeholderTextColor={colors.mutedForeground}
                 style={inputStyle}
               />
+              {/* Only worth a picker once there is a class to pick — same
+                  reasoning as the grade picker on /classes. */}
+              {classes.length > 0 ? (
+                <View style={{ gap: 6 }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, textAlign: align }}>
+                    {t('planClass')}
+                  </Text>
+                  <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+                    {[{ id: null as string | null, name: t('planNoClass'), nameAr: t('planNoClass') }, ...classes].map(c => {
+                      const active = form.classGroupId === c.id;
+                      const label = lang === 'ar' && c.nameAr ? c.nameAr : c.name;
+                      return (
+                        <Pressable
+                          key={c.id ?? '__none'}
+                          onPress={() => setForm(f => ({ ...f, classGroupId: c.id }))}
+                          style={{
+                            paddingHorizontal: 14,
+                            paddingVertical: 7,
+                            borderRadius: 18,
+                            borderWidth: 1.5,
+                            borderColor: active ? ACCENT : colors.border,
+                            backgroundColor: active ? ACCENT + '16' : colors.card,
+                          }}
+                        >
+                          <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular', fontSize: 13 }}>
+                            {label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              ) : null}
               <TextInput
                 value={form.grades}
                 onChangeText={v => setForm(f => ({ ...f, grades: v }))}
@@ -284,11 +344,26 @@ export default function TeachingPlansScreen() {
                 style={[inputStyle, { minHeight: 70, textAlignVertical: 'top' }]}
               />
               <TextInput
+                value={form.date}
+                onChangeText={v => setForm(f => ({ ...f, date: v }))}
+                placeholder={t('planDatePlaceholder')}
+                placeholderTextColor={colors.mutedForeground}
+                style={inputStyle}
+              />
+              <TextInput
                 value={form.time}
                 onChangeText={v => setForm(f => ({ ...f, time: v }))}
                 placeholder={t('planTimePlaceholder')}
                 placeholderTextColor={colors.mutedForeground}
                 style={inputStyle}
+              />
+              <TextInput
+                value={form.notes}
+                onChangeText={v => setForm(f => ({ ...f, notes: v }))}
+                placeholder={t('planNotesPlaceholder')}
+                placeholderTextColor={colors.mutedForeground}
+                multiline
+                style={[inputStyle, { minHeight: 70, textAlignVertical: 'top' }]}
               />
             </ScrollView>
             {error ? (

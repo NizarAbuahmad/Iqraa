@@ -3,13 +3,16 @@
  * Collapses after the teacher scrolls the conversation.
  */
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { JordanFlag } from '@/components/ui/JordanFlag';
 import type { CurrentLessonView } from '@/services/lessonCopilot';
 
-/** Carried over from the home screen's Start Class button. */
-const START_CLASS_COLOR = '#B45309';
+// Start Class itself now uses colors.primary, matching the rest of the app's
+// brand teal instead of standing out as an unrelated amber. This stays amber
+// for the *failed*-start message below, which needs to read as a warning
+// regardless of what color the button next to it uses.
+const ERROR_ACCENT = '#B45309';
 
 type Colors = {
   card: string;
@@ -47,6 +50,22 @@ type Props = {
   uploadedLabel: (n: number) => string;
   onChangeLesson: () => void;
   onToggleCollapse: () => void;
+  /**
+   * Chrome for the card's outer box, applied collapsed and expanded alike.
+   * Desktop web passes a rounded border so the card sits over the thread;
+   * on a phone it is a full-bleed band and this stays undefined.
+   */
+  containerStyle?: ViewStyle;
+  /**
+   * Drop the «٣/٥» pill.
+   *
+   * It counts what *this chat session* has generated, which resets with the
+   * app. The empty state below it now shows the readiness board, which counts
+   * saved materials and so survives — two counters, both labelled out of five,
+   * disagreeing by design. The card keeps the lesson and Start Class; the
+   * board keeps the count.
+   */
+  hideCount?: boolean;
 };
 
 export function CurrentLessonCard({
@@ -63,12 +82,14 @@ export function CurrentLessonCard({
   uploadedLabel,
   onChangeLesson,
   onToggleCollapse,
+  containerStyle,
+  hideCount = false,
 }: Props) {
   const align = isRTL ? 'right' : 'left' as const;
   const rowDir = isRTL ? 'row-reverse' : 'row' as const;
 
   const doneCount = lesson.resources.filter(r => r.done).length;
-  const totalCount = lesson.resources.length;
+  const totalCount = hideCount ? 0 : lesson.resources.length;
 
   /*
     A failed Start Class used to render nothing at all, on the reasoning that a
@@ -81,12 +102,12 @@ export function CurrentLessonCard({
   */
   const errorStrip = startClassError ? (
     <View
-      style={[styles.errorRow, { flexDirection: rowDir, backgroundColor: START_CLASS_COLOR + '14' }]}
+      style={[styles.errorRow, { flexDirection: rowDir, backgroundColor: ERROR_ACCENT + '14' }]}
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
     >
-      <Ionicons name="alert-circle-outline" size={14} color={START_CLASS_COLOR} />
-      <Text style={[styles.errorText, { color: START_CLASS_COLOR, textAlign: align, flex: 1 }]}>
+      <Ionicons name="alert-circle-outline" size={14} color={ERROR_ACCENT} />
+      <Text style={[styles.errorText, { color: ERROR_ACCENT, textAlign: align, flex: 1 }]}>
         {startClassError}
       </Text>
     </View>
@@ -113,7 +134,7 @@ export function CurrentLessonCard({
         style={({ pressed }) => [
           styles.startCompact,
           {
-            backgroundColor: START_CLASS_COLOR,
+            backgroundColor: colors.primary,
             opacity: startClassBusy ? 0.6 : pressed ? 0.88 : 1,
             flexDirection: rowDir,
           },
@@ -154,6 +175,7 @@ export function CurrentLessonCard({
         style={[
           styles.collapsed,
           { backgroundColor: colors.card, borderBottomColor: colors.border },
+          containerStyle,
         ]}
       >
         <View style={[styles.inner, styles.collapsedInner, { flexDirection: rowDir }]}>
@@ -201,7 +223,7 @@ export function CurrentLessonCard({
   }
 
   return (
-    <View style={[styles.wrap, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+    <View style={[styles.wrap, { backgroundColor: colors.card, borderBottomColor: colors.border }, containerStyle]}>
      <View style={styles.inner}>
       <View style={[styles.headerText, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
         <Pressable onPress={onToggleCollapse} style={[styles.headerRow, { flexDirection: rowDir, width: '100%' }]}>
@@ -232,10 +254,7 @@ export function CurrentLessonCard({
               style={({ pressed }) => [
                 styles.changeBtn,
                 {
-                  // Same amber the home screen used, so the action a teacher
-                  // already knows by colour does not change identity on the way
-                  // over from that screen.
-                  backgroundColor: START_CLASS_COLOR,
+                  backgroundColor: colors.primary,
                   opacity: startClassBusy ? 0.6 : pressed ? 0.88 : 1,
                   flexDirection: rowDir,
                   flex: 1,
@@ -264,7 +283,10 @@ export function CurrentLessonCard({
             style={({ pressed }) => [
               styles.changeBtn,
               {
-                backgroundColor: colors.primary,
+                // Secondary only when it shares the row with Start Class —
+                // both solid teal would erase the lead that button needs.
+                // Sole action (no Start Class), it carries full primary weight.
+                backgroundColor: onStartClass && startClassLabel ? colors.secondary : colors.primary,
                 opacity: pressed ? 0.88 : 1,
                 flexDirection: rowDir,
                 // Sized to its label, not stretched: sharing the row equally
@@ -275,9 +297,16 @@ export function CurrentLessonCard({
             accessibilityRole="button"
             accessibilityLabel={changeLabel}
           >
-            <Ionicons name="swap-horizontal" size={14} color={colors.primaryForeground || '#fff'} />
+            <Ionicons
+              name="swap-horizontal"
+              size={14}
+              color={onStartClass && startClassLabel ? colors.primary : (colors.primaryForeground || '#fff')}
+            />
             <Text
-              style={[styles.changeBtnText, { color: colors.primaryForeground || '#fff' }]}
+              style={[
+                styles.changeBtnText,
+                { color: onStartClass && startClassLabel ? colors.primary : (colors.primaryForeground || '#fff') },
+              ]}
               numberOfLines={1}
             >
               {changeLabel}

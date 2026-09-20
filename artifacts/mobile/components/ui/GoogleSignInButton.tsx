@@ -33,19 +33,32 @@ declare global {
 
 const SCRIPT_ID = 'google-identity-services';
 
-function loadGoogleScript(onLoad: () => void) {
+// The `locale` option `renderButton()` takes is documented, but does nothing
+// on an already-parsed client library — the button text is decided once, from
+// the `hl` query param the *script itself* was loaded with, and later
+// renderButton() calls keep whatever that first load resolved. So switching
+// the app to English left the Google button announcing itself in Arabic no
+// matter how many times it was redrawn. The fix is to reload the script
+// (dropping the old tag and `window.google`) whenever the requested locale
+// no longer matches the one it was fetched with.
+let loadedLocale: string | null = null;
+
+function loadGoogleScript(locale: string, onLoad: () => void) {
   const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
-  if (existing) {
+  if (existing && loadedLocale === locale) {
     if (window.google?.accounts?.id) onLoad();
     else existing.addEventListener('load', onLoad, { once: true });
     return;
   }
+  existing?.remove();
+  delete window.google;
+
   const script = document.createElement('script');
   script.id = SCRIPT_ID;
-  script.src = 'https://accounts.google.com/gsi/client';
+  script.src = `https://accounts.google.com/gsi/client?hl=${locale}`;
   script.async = true;
   script.defer = true;
-  script.addEventListener('load', onLoad, { once: true });
+  script.addEventListener('load', () => { loadedLocale = locale; onLoad(); }, { once: true });
   document.head.appendChild(script);
 }
 
@@ -150,33 +163,39 @@ export function GoogleSignInButton({ onCredential, locale }: GoogleSignInButtonP
   const [width, setWidth] = useState(300);
   const onCredentialRef = useRef(onCredential);
   onCredentialRef.current = onCredential;
+  // Which locale initialize() last ran for. A locale change forces
+  // loadGoogleScript to fetch a freshly-`hl`'d script (and drop
+  // `window.google`), so initialize() must run again on the new instance —
+  // but not on every width-only redraw, which would just log a GIS warning
+  // for no reason. One effect below decides which of the two it needs.
+  const initializedLocaleRef = useRef<string | null>(null);
 
-  // Load + initialize exactly once — re-running initialize() on every
-  // locale/width change (this used to be one effect) logs a GIS warning and
-  // risks losing in-flight state in the account chooser it's driving.
+  // Load, (re)initialize when the locale changed, and redraw the button —
+  // one effect, so there is a single loadGoogleScript call per change rather
+  // than two racing to reload the same script tag.
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
     const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
     if (!clientId) return; // Unset means no button — matches the API's own 503 when unconfigured.
 
-    loadGoogleScript(() => {
-      window.google?.accounts.id.initialize({
-        client_id: clientId,
-        callback: (response) => onCredentialRef.current(response.credential),
-      });
-    });
-  }, []);
-
-  // Redraw the button itself whenever locale or measured width changes.
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    if (!process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID) return;
-
-    loadGoogleScript(() => {
+    loadGoogleScript(locale, () => {
       const google = window.google;
       const node = containerRef.current as unknown as HTMLElement | null;
       if (!google || !node) return;
+
+      if (initializedLocaleRef.current !== locale) {
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (response) => onCredentialRef.current(response.credential),
+        });
+        initializedLocaleRef.current = locale;
+      }
+
+      // renderButton() appends rather than replaces — without this, a
+      // width-only redraw left the previous button's iframe behind it,
+      // stacked and still in the DOM.
+      node.innerHTML = '';
 
       google.accounts.id.renderButton(node, {
         type: 'standard',

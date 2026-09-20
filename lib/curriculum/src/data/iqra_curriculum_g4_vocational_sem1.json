@@ -12,7 +12,7 @@
     ],
     "provenance_note": "نُقلت الوحداتُ السبعُ ودروسُها الخمسةَ عشرَ من كتاب الطالب (الطبعةُ الثانيةُ، مزيدةٌ ومنقحةٌ، 1445هـ/2025م، رقمُ الإيداعِ 2025/2/1183، ISBN 978-9923-41-896-3) في 2026-09-17، بقراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ (صندوقُ «الفِكْرَةُ العامَّةُ») وصفحةِ افتتاحِ كلِّ درسٍ (صندوقُ «الفِكْرَةُ الرَّئيسَةُ») مباشرةً منَ الـ PDF عبرَ PyMuPDF — الاستخراجُ نظيفٌ تمامًا لهذا الكتابِ (خِلافَ الفصلِ الدراسيِّ الثاني لنفسِ المادّةِ، انظر iqra_curriculum_g4_vocational_sem2.json).",
     "known_gaps": [
-      "main_idea_ar لكلِّ درسٍ منقولٌ حرفيًّا من صندوقِ «الفِكْرَةُ الرَّئيسَةُ» المطبوعِ في افتتاحيّةِ كلِّ درسٍ، وهو هنا جملةٌ قصيرةٌ على هيئةِ نتاجٍ تعليميٍّ («أُوَضِّحُ...»/«أَذْكُرُ...») لا فقرةً وصفيّةً كما في كتبِ الرياضيّاتِ والعلومِ. أمّا objectives فتُرِكَتْ فارغةً عمدًا: يطبَعُ كلُّ درسٍ أيضًا صندوقَ «ماذا سَأَتَعَلَّمُ؟» بنتاجاتٍ إضافيّةٍ وصندوقَ «المَفاهيمُ والمُصْطَلَحاتُ» ثنائيَّ اللغةِ، لكنَّ نقلَهما الكاملَ لخمسةَ عشرَ درسًا لم يُنجَزْ في هذا المرورِ؛ main_idea_ar وحدَه كافٍ لتحديدِ موضوعِ كلِّ درسٍ.",
+      "main_idea_ar لكلِّ درسٍ منقولٌ حرفيًّا من صندوقِ «الفِكْرَةُ الرَّئيسَةُ» المطبوعِ في افتتاحيّةِ كلِّ درسٍ، وهو هنا جملةٌ قصيرةٌ على هيئةِ نتاجٍ تعليميٍّ («أُوَضِّحُ...»/«أَذْكُرُ...») لا فقرةً وصفيّةً كما في كتبِ الرياضيّاتِ والعلومِ. objectives وvocabulary مُكتَمِلانِ الآنَ (2026-09-19) لخمسةَ عشرَ درسًا: نُقِلا من صندوقَيِ «ماذا سَأَتَعَلَّمُ؟» (نتاجاتُ التَّعَلُّمِ) و«المَفاهيمُ والمُصْطَلَحاتُ» (ثنائيُّ اللغةِ) المطبوعَيْنِ في افتتاحيّةِ كلِّ درسٍ، بقراءةِ نفسِ صفحاتِ الافتتاحِ عبرَ PyMuPDF.",
       "لا عددَ حصصٍ مطبوعًا لأيِّ درسٍ (periods وtotal_periods = null).",
       "الوحداتُ السبعُ لا تتّصِلُ ترقيمُها مع الفصلِ الدراسيِّ الثاني: كلا الفصلينِ يطبَعُ وحداتِهِ 1-7 (الفصلُ الأولُ) و1-8 (الفصلُ الثاني) بترقيمٍ مستقلٍّ يُعيدُ البدءَ من جديدٍ، لا استمرارًا كما في التربيةِ الإسلاميّةِ أو الدراساتِ الاجتماعيّةِ — نفسُ اصطلاحِ g8VocationalSem1.ts/g8VocationalSem2.ts لهذه المادّةِ تحديدًا."
     ]
@@ -25,7 +25,7 @@
       "title_en": "Life Skills",
       "general_idea_ar": "تُساعِدُ المَهاراتُ الحَياتِيَّةُ الفَرْدَ عَلى النَّجاحِ في حَياتِهِ اليَوْمِيَّةِ وَفي عَمَلِهِ، وَمِنْ هذِهِ المَهاراتِ: العَمَلُ الجَماعِيُّ، وَإيجادُ حُلولٍ لِلْمُشْكِلاتِ، وَالاهْتِمامُ بِالآخَرينَ وَمُراعاتُهُمْ، وَتَنْظيمُ الوَقْتِ بِشَكْلٍ جَيِّدٍ.",
       "total_periods": null,
-      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box; objectives and vocabulary not transcribed — see known_gaps)",
+      "data_tier": "lesson-level (student book only: main idea, objectives and vocabulary all from each lesson's opener box)",
       "prior_knowledge": [],
       "lessons": [
         {
@@ -35,8 +35,15 @@
           "title_en": "Teamwork",
           "main_idea_ar": "مُعْظَمُ الأَعْمالِ تَحْتاجُ إِلى التَّعاوُنِ مَعَ الآخَرينَ حَتّى تَنْجَحَ، سَواءٌ في المَجالاتِ الاقْتِصادِيَّةِ أَوِ الاجْتِماعِيَّةِ وَغَيْرِها.",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "تَعَرُّفُ مَفهومِ العَمَلِ الجَماعِيِّ وَأَهَمِّيَّتِهِ.",
+            "بَيانُ أَهَمِّيَّةِ العَمَلِ الجَماعِيِّ."
+          ],
+          "vocabulary": [
+            { "ar": "التَّعاوُنُ", "en": "Cooperation" },
+            { "ar": "العَمَلُ الجَماعِيُّ", "en": "Teamwork" },
+            { "ar": "الفَريقُ", "en": "Team" }
+          ]
         },
         {
           "id": "u1_l2",
@@ -45,8 +52,16 @@
           "title_en": "Considering Others",
           "main_idea_ar": "أُوَضِّحُ المَقْصودَ بِـ: مُراعاةِ الآخَرينَ.",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "تَعَرُّفُ مَفهومِ «مُراعاةِ الآخَرينَ».",
+            "توضيحُ أَهَمِّيَّةِ مُراعاةِ الآخَرينَ.",
+            "مُراعاةُ الآخَرينَ في أَثْناءِ تَنْفيذِ الأَنْشِطَةِ الصَّفِّيَّةِ."
+          ],
+          "vocabulary": [
+            { "ar": "مُراعاةُ الآخَرينَ", "en": "Others Consideration" },
+            { "ar": "الاحْتِرامُ", "en": "Respect" },
+            { "ar": "الاهْتِمامُ", "en": "Interest" }
+          ]
         }
       ]
     },
@@ -57,7 +72,7 @@
       "title_en": "Entrepreneurship",
       "general_idea_ar": "تَتَمَثَّلُ رِيادَةُ الأَعْمالِ بِإِنْشاءِ عَمَلٍ حُرٍّ يَتَّسِمُ بِالإِبْداعِ وَالقُدْرَةِ عَلى مُواجَهَةِ التَّحَدِّياتِ.",
       "total_periods": null,
-      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box; objectives and vocabulary not transcribed — see known_gaps)",
+      "data_tier": "lesson-level (student book only: main idea, objectives and vocabulary all from each lesson's opener box)",
       "prior_knowledge": [],
       "lessons": [
         {
@@ -67,8 +82,14 @@
           "title_en": "Entrepreneurship Skills",
           "main_idea_ar": "أُوَضِّحُ المَقْصودَ بِـ «رِيادَةِ الأَعْمالِ».",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "تَعَرُّفُ مَفهومِ «رِيادَةِ الأَعْمالِ».",
+            "توضيحُ مَهاراتِ رِيادَةِ الأَعْمالِ."
+          ],
+          "vocabulary": [
+            { "ar": "رِيادَةُ الأَعْمالِ", "en": "Entrepreneurship" },
+            { "ar": "المَشْروعُ الخاصُّ", "en": "Special Project" }
+          ]
         },
         {
           "id": "u2_l2",
@@ -77,8 +98,13 @@
           "title_en": "Steps of Entrepreneurship",
           "main_idea_ar": "أُوَضِّحُ خُطُواتِ رِيادَةِ الأَعْمالِ.",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "تَعَرُّفُ خُطُواتِ رِيادَةِ الأَعْمالِ."
+          ],
+          "vocabulary": [
+            { "ar": "خُطُواتُ رِيادَةِ الأَعْمالِ", "en": "Entrepreneurship Steps" },
+            { "ar": "حَلُّ المُشْكِلَةِ", "en": "Problem Solving" }
+          ]
         }
       ]
     },
@@ -89,7 +115,7 @@
       "title_en": "Agriculture",
       "general_idea_ar": "يُعَدُّ القِطاعُ الزِّراعِيُّ مِنَ القِطاعاتِ المُهِمَّةِ في الأُرْدُنِّ، وَيَعْتَمِدُ عَلَيْهِ الاقْتِصادُ وَالحَياةُ الاجْتِماعِيَّةُ الرّيفِيَّةُ، وَلَهُ دَوْرٌ رَئيسٌ في المُحافَظَةِ عَلى البيئَةِ الطَّبيعِيَّةِ وَاسْتِمْرارِيَّتِها.",
       "total_periods": null,
-      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box; objectives and vocabulary not transcribed — see known_gaps)",
+      "data_tier": "lesson-level (student book only: main idea, objectives and vocabulary all from each lesson's opener box)",
       "prior_knowledge": [],
       "lessons": [
         {
@@ -99,8 +125,15 @@
           "title_en": "Types of Agriculture and Their Importance in Jordan",
           "main_idea_ar": "أَذْكُرُ أَنْواعَ الزِّراعَةِ في الأُرْدُنِّ.",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "تَعَرُّفُ أَنْواعِ الزِّراعَةِ في الأُرْدُنِّ.",
+            "تَقديرُ أَهَمِّيَّةِ الزِّراعَةِ لِلْفَرْدِ، وَالمُجْتَمَعِ، وَالاقْتِصادِ الوَطَنِيِّ."
+          ],
+          "vocabulary": [
+            { "ar": "الزِّراعَةُ", "en": "Agriculture" },
+            { "ar": "الزِّراعَةُ البَعْلِيَّةُ", "en": "Rain-Fed Agriculture" },
+            { "ar": "الزِّراعَةُ المَرْوِيَّةُ", "en": "Irrigated Agriculture" }
+          ]
         },
         {
           "id": "u3_l2",
@@ -109,8 +142,16 @@
           "title_en": "Plants Grown in the Surrounding Environment",
           "main_idea_ar": "أَذْكُرُ أَنْواعَ النَّباتاتِ المَزْروعَةِ في الأُرْدُنِّ حَسَبَ دَوْرَةِ حَياتِها.",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "تَعَرُّفُ النَّباتاتِ المَزْروعَةِ في البيئَةِ المُحيطَةِ.",
+            "العِنايَةُ بِالنَّباتاتِ المَزْروعَةِ في المَنْزِلِ وَالمَدْرَسَةِ."
+          ],
+          "vocabulary": [
+            { "ar": "النَّباتاتُ المُعَمَّرَةُ", "en": "Perennial Plants" },
+            { "ar": "النَّباتاتُ الحَوْلِيَّةُ", "en": "Annual Plants" },
+            { "ar": "النَّباتاتُ دائِمَةُ الخُضْرَةِ", "en": "Evergreen Plants" },
+            { "ar": "النَّباتاتُ مُتَساقِطَةُ الأَوْراقِ", "en": "Deciduous Plants" }
+          ]
         }
       ]
     },
@@ -121,7 +162,7 @@
       "title_en": "Home Economics",
       "general_idea_ar": "لِكُلِّ فَرْدٍ في الأُسْرَةِ دَوْرٌ في إِدارَةِ شُؤونِ المَنْزِلِ؛ ما يَتَطَلَّبُ اكْتِسابَ بَعْضِ المَهاراتِ لِتَلْبِيَةِ الاحْتِياجاتِ المَنْزِلِيَّةِ وَالبيئَةِ المُجْتَمَعِيَّةِ.",
       "total_periods": null,
-      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box; objectives and vocabulary not transcribed — see known_gaps)",
+      "data_tier": "lesson-level (student book only: main idea, objectives and vocabulary all from each lesson's opener box)",
       "prior_knowledge": [],
       "lessons": [
         {
@@ -131,8 +172,16 @@
           "title_en": "Seasonal Vegetables and Fruits",
           "main_idea_ar": "أُوَضِّحُ المَقْصودَ بِكُلٍّ مِمّا يَأْتي: الخَضْراواتُ، وَالفَواكِهُ.",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "تَعَرُّفُ أَنْواعِ الخَضْراواتِ المَوْسِمِيَّةِ وَالفَواكِهِ المَوْسِمِيَّةِ وَأَشْكالِها.",
+            "تَعَرُّفُ الأَجْزاءِ الَّتي تُؤْكَلُ مِنَ الخَضْراواتِ المَوْسِمِيَّةِ وَالفَواكِهِ المَوْسِمِيَّةِ."
+          ],
+          "vocabulary": [
+            { "ar": "الخَضْراواتُ المَوْسِمِيَّةُ", "en": "Seasonal Vegetables" },
+            { "ar": "الفَواكِهُ المَوْسِمِيَّةُ", "en": "Seasonal Fruits" },
+            { "ar": "الخَضْراواتُ الوَرَقِيَّةُ", "en": "Leafy Vegetables" },
+            { "ar": "الخَضْراواتُ الجَذْرِيَّةُ", "en": "Root Vegetables" }
+          ]
         },
         {
           "id": "u4_l2",
@@ -141,8 +190,17 @@
           "title_en": "Managing Household Affairs",
           "main_idea_ar": "أُوَضِّحُ المَقْصودَ بِـ «المَنْزِلِ».",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "تَعَرُّفُ غُرَفِ المَنْزِلِ وَمُكَوِّناتِهِ.",
+            "تَرْتيبُ أَجْزاءِ المَنْزِلِ، وَالعِنايَةُ بِأَجْهِزَتِهِ الكَهْرَبائِيَّةِ وَالتِّكْنولوجِيَّةِ."
+          ],
+          "vocabulary": [
+            { "ar": "غُرْفَةُ المَعيشَةِ", "en": "Living Room" },
+            { "ar": "غُرْفَةُ الطَّعامِ", "en": "Dining Room" },
+            { "ar": "غُرْفَةُ النَّوْمِ", "en": "Bedroom" },
+            { "ar": "المَطْبَخُ", "en": "Kitchen" },
+            { "ar": "الحَمّامُ", "en": "Bathroom" }
+          ]
         },
         {
           "id": "u4_l3",
@@ -151,8 +209,17 @@
           "title_en": "Clothing Care",
           "main_idea_ar": "أُوَضِّحُ أَهَمِّيَّةَ المَلابِسِ لِلْإِنْسانِ.",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "توضيحُ أَهَمِّيَّةِ المَلابِسِ.",
+            "تَعَرُّفُ أَنْواعِ المَلابِسِ وَأَشْكالِها، وَطُرُقِ اخْتِيارِها."
+          ],
+          "vocabulary": [
+            { "ar": "المَلابِسُ", "en": "Clothes" },
+            { "ar": "الزِّيُّ المَدْرَسِيُّ", "en": "School Uniform" },
+            { "ar": "القُفّازاتُ", "en": "Gloves" },
+            { "ar": "البَذْلَةُ", "en": "Suit" },
+            { "ar": "البِنْطالُ", "en": "Trousers" }
+          ]
         }
       ]
     },
@@ -163,7 +230,7 @@
       "title_en": "Safety, Health and Environment",
       "general_idea_ar": "يُؤَثِّرُ تَفاعُلُ الفَرْدِ مَعَ البيئَةِ المُحيطَةِ بِهِ في صِحَّتِهِ وَسَلامَتِهِ، وَيُمْكِنُ تَعْزيزُ جَوْدَةِ الحَياةِ بِالْتِزامِ قَواعِدِ السَّلامَةِ وَالصِّحَّةِ.",
       "total_periods": null,
-      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box; objectives and vocabulary not transcribed — see known_gaps)",
+      "data_tier": "lesson-level (student book only: main idea, objectives and vocabulary all from each lesson's opener box)",
       "prior_knowledge": [],
       "lessons": [
         {
@@ -173,8 +240,15 @@
           "title_en": "Caring for Household Cleanliness",
           "main_idea_ar": "أَذْكُرُ فائِدَتَيْنِ لِتَنْظيفِ المَنْزِلِ.",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "أَهَمِّيَّةُ تَنْظيفِ المَنْزِلِ.",
+            "العِنايَةُ بِنَظافَةِ غُرْفَتي."
+          ],
+          "vocabulary": [
+            { "ar": "النَّظافَةُ", "en": "Cleanliness" },
+            { "ar": "مَسْحُ الغُبارِ", "en": "Wipe the Dust" },
+            { "ar": "الكَنْسُ", "en": "Sweep" }
+          ]
         },
         {
           "id": "u5_l2",
@@ -183,8 +257,15 @@
           "title_en": "Handling Cleaning Materials",
           "main_idea_ar": "أَذْكُرُ ثَلاثًا مِنْ مَوادِّ التَّنْظيفِ الَّتي تُسْتَخْدَمُ في المَنازِلِ.",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "تَعَرُّفُ مَوادِّ التَّنْظيفِ المُسْتَخْدَمَةِ في المَنْزِلِ.",
+            "التَّعامُلُ مَعَ مَوادِّ التَّنْظيفِ في المَنْزِلِ وَفْقَ قَواعِدِ السَّلامَةِ العامَّةِ."
+          ],
+          "vocabulary": [
+            { "ar": "مَوادُّ التَّنْظيفِ", "en": "Cleaning Materials" },
+            { "ar": "سائِلُ الجَلْيِ", "en": "Dish Soap" },
+            { "ar": "المُبَيِّضُ", "en": "Blench" }
+          ]
         },
         {
           "id": "u5_l3",
@@ -193,8 +274,16 @@
           "title_en": "Traffic Awareness",
           "main_idea_ar": "أُوَضِّحُ أَهَمِّيَّةَ التَّعامُلِ مَعَ الطَّريقِ وَالشّارِعِ بِطَريقَةٍ سَليمَةٍ.",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "توضيحُ أَهَمِّيَّةِ التَّعامُلِ مَعَ الطَّريقِ وَالشّارِعِ وَفْقَ القَواعِدِ المُرورِيَّةِ.",
+            "تَعَرُّفُ قَواعِدِ السَّلامَةِ المُرورِيَّةِ."
+          ],
+          "vocabulary": [
+            { "ar": "السَّلامَةُ المُرورِيَّةُ", "en": "Traffic Safety" },
+            { "ar": "الطَّريقُ", "en": "The Road" },
+            { "ar": "قَواعِدُ المُرورِ", "en": "Traffic Rules" },
+            { "ar": "مَمَرُّ المُشاةِ", "en": "Pedestrian Walkway" }
+          ]
         },
         {
           "id": "u5_l4",
@@ -203,8 +292,13 @@
           "title_en": "Traffic Signals",
           "main_idea_ar": "أُوَضِّحُ المَقْصودَ بِـ: «إِشارَةِ المُرورِ».",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "تَعَرُّفُ مَدْلولاتِ أَلْوانِ إِشارَةِ المُرورِ.",
+            "توضيحُ مَدْلولاتِ بَعْضِ الإِشاراتِ في الطُّرُقِ."
+          ],
+          "vocabulary": [
+            { "ar": "إِشارَةُ المُرورِ", "en": "Traffic light" }
+          ]
         }
       ]
     },
@@ -215,7 +309,7 @@
       "title_en": "Woodworking and Furniture Industries",
       "general_idea_ar": "صِناعَةُ الأَثاثِ وَالأَخْشابِ واحِدَةٌ مِنْ أَكْبَرِ الصِّناعاتِ؛ لِأَنَّها تَعْتَمِدُ عَلى العُمّالِ المَهَرَةِ، وَتُوَفِّرُ العَديدَ مِنْ فُرَصِ العَمَلِ. وَيَتَمَيَّزُ العامِلونَ في هذا المَجالِ بِمَهاراتٍ عالِيَةٍ وَدِقَّةٍ وَإِبْداعٍ فَنِّيٍّ.",
       "total_periods": null,
-      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box; objectives and vocabulary not transcribed — see known_gaps)",
+      "data_tier": "lesson-level (student book only: main idea, objectives and vocabulary all from each lesson's opener box)",
       "prior_knowledge": [],
       "lessons": [
         {
@@ -225,8 +319,17 @@
           "title_en": "Carpentry Work",
           "main_idea_ar": "أَذْكُرُ أَرْبَعَ أَدَواتٍ وَعُدَدٍ تُسْتَخْدَمُ في تَنْعيمِ قِطْعَةٍ خَشَبِيَّةٍ.",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "تَعَرُّفُ المَوادِّ وَالعُدَدِ المُسْتَخْدَمَةِ في أَعْمالِ النِّجارَةِ.",
+            "اسْتِعْمالُ العُدَدِ الخَفيفَةِ في النِّجارَةِ (مِثْلِ: المِبْرَدِ)."
+          ],
+          "vocabulary": [
+            { "ar": "الخَشَبُ", "en": "Wood" },
+            { "ar": "طاوِلَةُ العَمَلِ", "en": "Workpench" },
+            { "ar": "المِبْرَدُ", "en": "File" },
+            { "ar": "وَرَقُ الصَّنْفَرَةِ", "en": "Sandpaper" },
+            { "ar": "أَدَواتُ القِياسِ", "en": "Measuring Instruments" }
+          ]
         }
       ]
     },
@@ -237,7 +340,7 @@
       "title_en": "Hospitality and Tourism",
       "general_idea_ar": "تُعَدُّ السِّياحَةُ مِنَ القِطاعاتِ الاقْتِصادِيَّةِ المُهِمَّةِ في الأُرْدُنِّ، وَتَرْتَبِطُ مَعَ قِطاعاتٍ أُخْرى في مَجالاتٍ مُتَعَدِّدَةٍ، مِنْ خَدَماتٍ، وَنَقْلٍ، وَصِناعَةٍ، وَتِجارَةٍ، وَاتِّصالاتٍ.",
       "total_periods": null,
-      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box; objectives and vocabulary not transcribed — see known_gaps)",
+      "data_tier": "lesson-level (student book only: main idea, objectives and vocabulary all from each lesson's opener box)",
       "prior_knowledge": [],
       "lessons": [
         {
@@ -247,8 +350,17 @@
           "title_en": "Tourism Patterns in Jordan",
           "main_idea_ar": "أَذْكُرُ الأَنْماطَ السِّياحِيَّةَ في الأُرْدُنِّ.",
           "periods": null,
-          "objectives": [],
-          "vocabulary": []
+          "objectives": [
+            "التَّمْييزُ بَيْنَ أَنْماطِ السِّياحَةِ في الأُرْدُنِّ.",
+            "تَعَرُّفُ أَهَمِّ المَناطِقِ السِّياحِيَّةِ في الأُرْدُنِّ."
+          ],
+          "vocabulary": [
+            { "ar": "السِّياحَةُ الثَّقافِيَّةُ", "en": "Cultural Tourism" },
+            { "ar": "السِّياحَةُ الدّينِيَّةُ", "en": "Religious Tourism" },
+            { "ar": "السِّياحَةُ العِلاجِيَّةُ", "en": "Medical Tourism" },
+            { "ar": "السِّياحَةُ التَّرْفيهِيَّةُ", "en": "Leisure Tourism" },
+            { "ar": "السِّياحَةُ الرِّياضِيَّةُ", "en": "Sports Tourism" }
+          ]
         }
       ]
     }

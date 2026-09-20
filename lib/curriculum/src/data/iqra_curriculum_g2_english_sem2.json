@@ -1,0 +1,289 @@
+{
+  "meta": {
+    "grade": "الصف الثاني",
+    "grade_en": "Grade 2",
+    "subject": "اللغة الإنجليزية",
+    "subject_en": "English",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة اللغة الإنجليزية الصف الثاني الفصل الثاني (g2-english-s2-pupils-book, Jordan Team Together series, Pearson/York Press)"
+    ],
+    "provenance_note": "Read directly from the PDF via PyMuPDF on 2026-09-19 — extraction is clean (this book is in English). Same source and treatment as iqra_curriculum_g2_english_sem1.json: unit titles, page numbers, vocabulary, grammar phrases, and listening skill descriptors taken from the book's own two-page 'Scope and sequence' table (pp. 4-5); the Speaking/Reading/Writing/Project/Viewing columns were not used. Each numbered unit is split into two lessons — Vocabulary & Grammar, and Listening & Speaking. Units are numbered 5-8, continuing Semester 1's own numbering. The Welcome unit here is a review of Semester 1's vocabulary, so its table cell lists only category labels (e.g. 'Inside toys', 'Family') rather than individual words — `vocabulary` is left empty for it rather than re-listing Semester 1's word lists.",
+    "known_gaps": [
+      "This is real content (vocabulary lists, grammar phrases, listening skill descriptors), not title-only — but it is unit-level, not lesson-level: each unit's actual internal lesson count and exact per-page lesson titles were not verified page by page.",
+      "Following the established English-subject precedent, `main_idea_ar` and `objectives` hold literal English text (this book's own language), not Arabic; `title_ar` carries a plain Arabic gloss of the English title for search/display.",
+      "Phonics letter/word-family lists printed inside the table's Vocabulary column are excluded from `vocabulary` — they are letter-sound drill items, not thematic vocabulary, and this schema has no separate field for them.",
+      "The Welcome unit's Vocabulary cell lists category labels only (a review unit, not new words), so u0_l1's `vocabulary` array is empty — a genuine content difference from every other lesson in this book, not an extraction gap."
+    ]
+  },
+  "units": [
+    {
+      "id": "u0",
+      "number": 0,
+      "title_ar": "أهلاً وسهلاً (Hello!)",
+      "title_en": "Welcome: Hello!",
+      "general_idea_ar": "Naming toys; asking and answering about toys; naming body parts; naming family members; describing family members using parts of the face; naming classroom objects; talking about classroom objects and saying where they are",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u0_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "What's this? It's a (car). It's an (action figure). Where's (the pencil)? It's in/on/under (the desk). I've got (one face). I've got (ten toes). Who's this? It's (my uncle). He's got (blue eyes). She's got (green eyes).",
+          "periods": null,
+          "objectives": [
+            "What's this? It's a (car). It's an (action figure).",
+            "Where's (the pencil)? It's in/on/under (the desk).",
+            "I've got (one face). I've got (ten toes).",
+            "Who's this? It's (my uncle). He's got (blue eyes). She's got (green eyes)."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u0_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising familiar words and basic phrases; recognising cardinal numbers up to ten; recognising familiar, everyday nouns and adjectives.",
+          "periods": null,
+          "objectives": [
+            "Recognising familiar words and basic phrases; recognising cardinal numbers up to ten; recognising familiar, everyday nouns and adjectives."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "ساعِدِ الحيوانات!",
+      "title_en": "Help the Animals!",
+      "general_idea_ar": "Naming and describing animals; asking and answering about animals",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "What are these? They're cats. It's got big teeth.",
+          "periods": null,
+          "objectives": [
+            "What are these? They're cats.",
+            "It's got big teeth."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "cat" },
+            { "ar": "", "en": "duck" },
+            { "ar": "", "en": "fish" },
+            { "ar": "", "en": "hamster" },
+            { "ar": "", "en": "mouse" },
+            { "ar": "", "en": "parrot" },
+            { "ar": "", "en": "rabbit" },
+            { "ar": "", "en": "snake" },
+            { "ar": "", "en": "spider" },
+            { "ar": "", "en": "tortoise" },
+            { "ar": "", "en": "feathers" },
+            { "ar": "", "en": "fur" },
+            { "ar": "", "en": "shell" },
+            { "ar": "", "en": "tail" },
+            { "ar": "", "en": "teeth" },
+            { "ar": "", "en": "wings" },
+            { "ar": "", "en": "big" },
+            { "ar": "", "en": "long" },
+            { "ar": "", "en": "short" },
+            { "ar": "", "en": "small" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising familiar words and phrases in songs, chants and stories; recognising familiar everyday nouns and adjectives; recognising isolated words related to familiar topics; identifying people from a description of their physical appearance and clothes; following basic instructions; understanding basic phrases in short texts; understanding basic phrases or sentences about things people have; recognising the letters of the alphabet by their sounds.",
+          "periods": null,
+          "objectives": [
+            "Recognising familiar words and phrases in songs, chants and stories; recognising familiar everyday nouns and adjectives; recognising isolated words related to familiar topics; identifying people from a description of their physical appearance and clothes; following basic instructions; understanding basic phrases in short texts; understanding basic phrases or sentences about things people have; recognising the letters of the alphabet by their sounds."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "هل تحب البازلاء؟",
+      "title_en": "Do You Like Peas?",
+      "general_idea_ar": "Naming food items; expressing likes and dislikes; asking for food items",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "I like apples./I don't like pasta. Do you like cheese? Yes, I do./No, I don't. I like apples and I like oranges, too. I like oranges, but I don't like apples. I don't like oranges or apples.",
+          "periods": null,
+          "objectives": [
+            "I like apples./I don't like pasta.",
+            "Do you like cheese? Yes, I do./No, I don't.",
+            "I like apples and I like oranges, too.",
+            "I like oranges, but I don't like apples.",
+            "I don't like oranges or apples."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "apple" },
+            { "ar": "", "en": "banana" },
+            { "ar": "", "en": "bean" },
+            { "ar": "", "en": "carrot" },
+            { "ar": "", "en": "orange" },
+            { "ar": "", "en": "pasta" },
+            { "ar": "", "en": "pea" },
+            { "ar": "", "en": "potato" },
+            { "ar": "", "en": "rice" },
+            { "ar": "", "en": "tomato" },
+            { "ar": "", "en": "bread" },
+            { "ar": "", "en": "cheese" },
+            { "ar": "", "en": "chicken" },
+            { "ar": "", "en": "eggs" },
+            { "ar": "", "en": "fish" },
+            { "ar": "", "en": "juice" },
+            { "ar": "", "en": "meat" },
+            { "ar": "", "en": "milk" },
+            { "ar": "", "en": "water" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising isolated words related to familiar topics; recognising familiar words and basic phrases in short, illustrated stories; recognising familiar words and phrases in short, simple songs or chants; understanding simple expressions about likes and dislikes in stories or dialogues; recognising the letters of the alphabet by their sounds.",
+          "periods": null,
+          "objectives": [
+            "Recognising isolated words related to familiar topics; recognising familiar words and basic phrases in short, illustrated stories; recognising familiar words and phrases in short, simple songs or chants; understanding simple expressions about likes and dislikes in stories or dialogues; recognising the letters of the alphabet by their sounds."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "إنها عاصفة!",
+      "title_en": "It's Windy!",
+      "general_idea_ar": "Saying what the weather is like; describing clothes; giving instructions",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "What's the weather like? It's cloudy. I'm wearing a T-shirt and shorts.",
+          "periods": null,
+          "objectives": [
+            "What's the weather like? It's cloudy.",
+            "I'm wearing a T-shirt and shorts."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "cloudy" },
+            { "ar": "", "en": "cold" },
+            { "ar": "", "en": "foggy" },
+            { "ar": "", "en": "hot" },
+            { "ar": "", "en": "rainy" },
+            { "ar": "", "en": "snowy" },
+            { "ar": "", "en": "stormy" },
+            { "ar": "", "en": "sunny" },
+            { "ar": "", "en": "windy" },
+            { "ar": "", "en": "boots" },
+            { "ar": "", "en": "coat" },
+            { "ar": "", "en": "jumper" },
+            { "ar": "", "en": "T-shirt" },
+            { "ar": "", "en": "shoes" },
+            { "ar": "", "en": "shorts" },
+            { "ar": "", "en": "skirt" },
+            { "ar": "", "en": "trousers" }
+          ]
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising isolated words related to familiar topics; recognising familiar words and phrases in short, simple songs, chants and stories; understanding simple language relating to naming and describing people's clothes; following basic instructions; understanding simple instructions; recognising the letters of the alphabet by their sounds.",
+          "periods": null,
+          "objectives": [
+            "Recognising isolated words related to familiar topics; recognising familiar words and phrases in short, simple songs, chants and stories; understanding simple language relating to naming and describing people's clothes; following basic instructions; understanding simple instructions; recognising the letters of the alphabet by their sounds."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "مَن في المنزل؟",
+      "title_en": "Who's at Home?",
+      "general_idea_ar": "Naming rooms in a house; describing chores; asking for and offering to help",
+      "total_periods": null,
+      "data_tier": "unit-level (student book's own scope and sequence table)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary & Grammar",
+          "main_idea_ar": "Where's my dad? He's in the garden./He isn't in the bedroom. He's/She's tidying up.",
+          "periods": null,
+          "objectives": [
+            "Where's my dad? He's in the garden./He isn't in the bedroom.",
+            "He's/She's tidying up."
+          ],
+          "vocabulary": [
+            { "ar": "", "en": "balcony" },
+            { "ar": "", "en": "bathroom" },
+            { "ar": "", "en": "bedroom" },
+            { "ar": "", "en": "flat" },
+            { "ar": "", "en": "garage" },
+            { "ar": "", "en": "garden" },
+            { "ar": "", "en": "hall" },
+            { "ar": "", "en": "house" },
+            { "ar": "", "en": "kitchen" },
+            { "ar": "", "en": "living room" },
+            { "ar": "", "en": "clean the floor" },
+            { "ar": "", "en": "lay the table" },
+            { "ar": "", "en": "make the bed" },
+            { "ar": "", "en": "tidy up" },
+            { "ar": "", "en": "wash the car" },
+            { "ar": "", "en": "water the plants" }
+          ]
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "الاستماع والتحدث",
+          "title_en": "Listening & Speaking",
+          "main_idea_ar": "Recognising familiar words and phrases in short, simple songs, chants or stories; understanding basic statements about where things or people are; understanding phrases and sentences; identifying people from a short, simple description; identifying objects, places or people from short descriptions; understanding some basic words and phrases to show politeness; recognising the letters of the alphabet by their sounds.",
+          "periods": null,
+          "objectives": [
+            "Recognising familiar words and phrases in short, simple songs, chants or stories; understanding basic statements about where things or people are; understanding phrases and sentences; identifying people from a short, simple description; identifying objects, places or people from short descriptions; understanding some basic words and phrases to show politeness; recognising the letters of the alphabet by their sounds."
+          ],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

@@ -340,6 +340,51 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // 2026-09-19 via AskUserQuestion; user chose "Keep waiting", same as
   // Grade 3 Digital Skills. Paused, not built.
   'digital-literacy:grade-1',
+  //
+  // grade-2 joined MVP_GRADE_IDS 2026-09-19 with only Mathematics built —
+  // same staged rollout as grade-1/3/4/5's. mathematics:grade-2 closed the
+  // same day, both semesters, real content from each lesson's own «أَتَعَلَّمُ
+  // الْيَوْمَ» box (same HarperCollins/NCCD series and convention as
+  // g1MathSem1.ts; no unnumbered preparatory unit this time).
+  //
+  // PERMANENT — the subject is not declared at grade-2 in SUBJECTS.grades at
+  // all (physics/chemistry/biology/earth-science/financial-literacy start at
+  // grade-7 or SPECIALISED_FROM; geography/history/civic-education start at
+  // grade-9). vocational-education stays genuinely PERMANENT for grade-2 —
+  // no Grade 2 vocational book exists at all.
+  'chemistry:grade-2',
+  'physics:grade-2',
+  'biology:grade-2',
+  'earth-science:grade-2',
+  'financial-literacy:grade-2',
+  'geography:grade-2',
+  'history:grade-2',
+  'civic-education:grade-2',
+  'vocational-education:grade-2',
+  //
+  // ORDINARY GAPS — the subject is declared at grade-2 in SUBJECTS.grades,
+  // and Grade 2 source PDFs exist on disk (knowledge-base/grade-2-*), but no
+  // catalog has been built from them yet. Delete each line once its catalog
+  // and BOOKS row land, same as the grade-1 rollout above. This is an
+  // unusually complete source batch — real student books exist for both
+  // semesters of science/social/english/arabic/islamic. Digital Skills has
+  // no student book at all — same class of gap hit at every other grade in
+  // this project.
+  // science:grade-2 closed 2026-09-19, both semesters — see
+  // g2ScienceSem1.ts/g2ScienceSem2.ts.
+  // social:grade-2 closed 2026-09-19, both semesters — see
+  // g2SocialSem1.ts/g2SocialSem2.ts.
+  // english:grade-2 closed 2026-09-19, both semesters — see
+  // g2EnglishSem1.ts/g2EnglishSem2.ts.
+  // arabic:grade-2 closed 2026-09-19, both semesters — see
+  // g2ArabicSem1.ts/g2ArabicSem2.ts.
+  // islamic:grade-2 closed 2026-09-19, both semesters — see
+  // g2IslamicSem1.ts/g2IslamicSem2.ts.
+  // creative-arts:grade-2 closed 2026-09-19, one book (no semester split) —
+  // see g2CreativeArts.ts.
+  // physical-education:grade-2 closed 2026-09-19, one book, Semester 1 only
+  // (no Semester 2 book supplied) — see g2PhysicalEducationSem1.ts.
+  'digital-literacy:grade-2',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

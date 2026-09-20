@@ -7,7 +7,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { narrowToSelection } from '../teacherCatalogFilter.ts';
+import { narrowSubjectsForGrade, narrowToSelection } from '../teacherCatalogFilter.ts';
 
 const CATALOG = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
 
@@ -25,5 +25,26 @@ describe('narrowToSelection', () => {
     // Every picked id has since dropped out of the catalog — narrowing here
     // would otherwise leave an unexplained blank screen with no way out.
     assert.deepEqual(narrowToSelection(CATALOG, ['does-not-exist']), CATALOG);
+  });
+});
+
+describe('narrowSubjectsForGrade', () => {
+  const ASSIGNMENTS = [
+    { gradeId: 'grade-7', subjectIds: ['a'] },
+    { gradeId: 'grade-8', subjectIds: ['b', 'c'] },
+  ];
+
+  it('narrows to only the matching grade\'s own subjects, not every grade\'s', () => {
+    assert.deepEqual(narrowSubjectsForGrade(CATALOG, 'grade-7', ASSIGNMENTS, undefined), [{ id: 'a' }]);
+    assert.deepEqual(narrowSubjectsForGrade(CATALOG, 'grade-8', ASSIGNMENTS, undefined), [{ id: 'b' }, { id: 'c' }]);
+  });
+
+  it('falls back to the flat legacy list when this grade has no assignment', () => {
+    assert.deepEqual(narrowSubjectsForGrade(CATALOG, 'grade-9', undefined, ['a', 'c']), [{ id: 'a' }, { id: 'c' }]);
+    assert.deepEqual(narrowSubjectsForGrade(CATALOG, 'grade-9', [], ['a', 'c']), [{ id: 'a' }, { id: 'c' }]);
+  });
+
+  it('falls back to the full catalog when neither is set', () => {
+    assert.deepEqual(narrowSubjectsForGrade(CATALOG, 'grade-9', undefined, undefined), CATALOG);
   });
 });

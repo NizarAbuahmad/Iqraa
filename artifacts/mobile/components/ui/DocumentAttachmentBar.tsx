@@ -155,7 +155,7 @@ export function DocumentAttachmentBar({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.chipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+          contentContainerStyle={[styles.chipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }, rtl && { minWidth: '100%' }]}
         >
           {docs.map(d => (
             <View

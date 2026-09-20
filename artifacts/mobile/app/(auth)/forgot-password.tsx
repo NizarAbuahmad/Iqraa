@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { AuthBrandPanel, useAuthLayout } from '@/components/ui/AuthBrandPanel';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +25,7 @@ export default function ForgotPasswordScreen() {
   const insets = useSafeAreaInsets();
   const { forgotPassword, resetPassword } = useAuth();
   const { t, isRTL } = useLanguage();
+  const { isWide } = useAuthLayout();
 
   const [step, setStep] = useState<'email' | 'code'>('email');
   const [email, setEmail] = useState('');
@@ -69,15 +71,19 @@ export default function ForgotPasswordScreen() {
   const canSend = email.includes('@');
   const canReset = /^\d{6}$/.test(code) && password.length >= 8;
 
-  return (
+  const formPanel = (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={[styles.formPanel, isWide && styles.formPanelWide]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 },
+          {
+            paddingTop: isWide ? 40 : insets.top + 16,
+            paddingBottom: insets.bottom + 32,
+            maxWidth: isWide ? 480 : 560,
+          },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -85,6 +91,8 @@ export default function ForgotPasswordScreen() {
         <Pressable
           onPress={() => (step === 'code' ? setStep('email') : router.replace('/(auth)/login'))}
           style={[styles.back, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
@@ -158,7 +166,12 @@ export default function ForgotPasswordScreen() {
                 disabled={!canReset}
                 fullWidth
               />
-              <Pressable onPress={handleSend} disabled={loading} style={styles.resendRow}>
+              <Pressable
+                onPress={handleSend}
+                disabled={loading}
+                style={styles.resendRow}
+                accessibilityRole="link"
+              >
                 <Text style={[styles.resendText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
                   {t('resendCode')}
                 </Text>
@@ -169,10 +182,20 @@ export default function ForgotPasswordScreen() {
       </ScrollView>
     </KeyboardAvoidingView>
   );
+
+  return (
+    <View style={[styles.root, { backgroundColor: colors.background }, isWide && { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+      <AuthBrandPanel isWide={isWide} />
+      {formPanel}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexGrow: 1, paddingHorizontal: 24 },
+  root: { flex: 1 },
+  formPanel: { flex: 1, backgroundColor: '#F5F7FA' },
+  formPanelWide: { flex: 1, justifyContent: 'center' },
+  scroll: { flexGrow: 1, paddingHorizontal: 24, width: '100%', alignSelf: 'center' },
   back: { marginBottom: 20, width: 40 },
   heading: { fontSize: 26, marginBottom: 6 },
   sub: { fontSize: 14, marginBottom: 24 },
