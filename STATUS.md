@@ -2360,6 +2360,24 @@ shouldn't be handed casually). `docs/android-gradle-build-secrets.md` has the
 exact one-time steps for whoever runs `eas-cli` as `nizar.62`. Until those
 four secrets exist, the workflow explains what's missing and exits cleanly.
 
+**The four secrets were set 2026-09-20**, exported from the `Keystore
+name6.09 (Default)` configuration (alias `9f4ba23f…`, cert SHA256
+`D1:32:E5:D6…`) — the one every build since `e9388ee1` uses, not the retired
+`Build Credentials ZGa1BhB5fD` (alias `96e2be27…`) also sitting on the
+account. Confirmed by matching both fingerprints byte-for-byte against the
+table in «The signing key changed on 2026-09-07» above before choosing.
+
+**First run, 2026-09-20 09:53 UTC, run `35503531801`: failed in 62 seconds**,
+before touching the project at all. `android-actions/setup-android@v3`
+defaults its `packages` input to `"tools platform-tools"`, and Google removed
+the standalone `tools` package from the SDK repository years ago —
+`sdkmanager tools` exits 1 with `Failed to find package 'tools'`, which the
+action treats as fatal. Nothing in this workflow has ever needed that
+package. Fixed by pinning `packages: platform-tools` explicitly rather than
+taking the action's default. **Still unverified against a real run** — this
+fixes the first failure, not necessarily the last one; `expo prebuild` and
+`gradlew assembleRelease` have not been reached yet.
+
 ## Grades 3, 4 and 5: 11 books, +123 lessons, 2026-09-19
 
 **498 → 621 lessons illustrated, 2572 figures.** The catalogs landed between
