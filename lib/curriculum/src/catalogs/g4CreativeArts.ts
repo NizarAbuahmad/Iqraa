@@ -9,9 +9,11 @@
  * Semester 1 book, and no Semester 2 counterpart exists or is expected.
  *
  * Unlike g8CreativeArts, this book prints its own "الفِكْرَةُ الرَّئيسَة" (main
- * idea) box on every lesson's opener page, so main_idea_ar is transcribed for
- * all 30 lessons directly — no unit-level outcome-list mapping was needed.
- * objectives/vocabulary are left empty; see the JSON's known_gaps.
+ * idea) box on every lesson's opener page and its own "نَتاجاتُ التَّعَلُّمِ"
+ * (learning outcomes) box at the end of every lesson, so main_idea_ar and
+ * objectives are both transcribed for all 30 lessons directly — no unit-level
+ * outcome-list mapping was needed. vocabulary is left empty; see the JSON's
+ * known_gaps.
  *
  * This subject reached grade-4 only when `SUBJECTS.grades` was extended for
  * it — it had been declared for grade-6..grade-8 alone, which would have

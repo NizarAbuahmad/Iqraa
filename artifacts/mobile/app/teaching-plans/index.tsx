@@ -408,6 +408,7 @@ export default function TeachingPlansScreen() {
                     // line only for plans that never got one.
                     scheduleSummary(item) || item.topics,
                   ]
+                  const meta = [item.schoolName, classNameFor(item.classGroupId), ...scopeOf(item)]
                     .filter(Boolean)
                     .join(' · ');
                   return meta ? (
@@ -580,6 +581,16 @@ export default function TeachingPlansScreen() {
                   {`${t('planTopics')}: ${form.topics}`}
                 </Text>
               ) : null}
+                </View>
+              )}
+              <TextInput
+                value={form.topics}
+                onChangeText={v => setForm(f => ({ ...f, topics: v }))}
+                placeholder={t('planTopicsPlaceholder')}
+                placeholderTextColor={colors.mutedForeground}
+                multiline
+                style={[inputStyle, { minHeight: 70, textAlignVertical: 'top' }]}
+              />
               <TextInput
                 value={form.date}
                 onChangeText={v => setForm(f => ({ ...f, date: v }))}

@@ -8,6 +8,7 @@
  * says so when it isn't.
  */
 import { apiFetch } from './apiClient.ts';
+import { trackEvent } from './analytics.ts';
 
 export interface ClassGroup {
   id: string;
@@ -318,7 +319,15 @@ export async function claimRosterCode(
     method: 'POST',
     body: JSON.stringify({ claimCode: code, studentId }),
   });
-  return readJson(res, 'Joining class');
+  const claimed = await readJson<{ studentId: string; relation: 'self' | 'guardian' }>(
+    res,
+    'Joining class',
+  );
+  // Tracked here rather than on the two screens that call this: join-class.tsx
+  // and the mandatory first claim in claim-required.tsx are the same action,
+  // and instrumenting one of them is how half a funnel goes missing.
+  trackEvent('class_joined', { relation: claimed.relation });
+  return claimed;
 }
 
 /** Re-exported so screens have one roster import. Lives apart to stay testable. */

@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -71,8 +71,13 @@ import {
 } from '@/services/ai/teachingAssistant';
 import { classifyChatIntent, leavesClarificationStanding } from '@/services/ai/intentRouter';
 import { IqraaMark } from '@/components/ui/IqraaMark';
-import { CHAT_MAX_WIDTH } from '@/constants/layout';
+import { CHAT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
+import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
+import { MaterialCanvas } from '@/components/ui/MaterialCanvas';
+import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
+import { buildPrepBoard } from '@/services/lessonBoard';
+import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { MathParagraph } from '@/components/ui/MathParagraph';
 import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
@@ -100,7 +105,7 @@ import {
   subscribeSessionDocuments,
   type SessionDocument,
 } from '@/services/documents';
-import { lessonPickerParams, subjectPickerLabels } from '@/services/lessonPrep';
+import { lessonPickerParams, subjectPickerLabels, topicPickerParams } from '@/services/lessonPrep';
 import { resolveDeepLinkSend, type DeepLinkSend } from '@/services/chatDeepLink';
 import { pinnedResourceNote } from '@/services/mathSupportResources';
 import {
@@ -113,6 +118,7 @@ import {
   seedDefaultLessonMemory,
   softPinIfUnpinned,
   shouldReuseActiveLesson,
+  topicSwitchTarget,
   type LessonSuggestion,
 } from '@/services/lessonCopilot';
 import {
@@ -270,8 +276,11 @@ const CONTEXT_SUBJECTS = getPickerSubjects().map(s => ({
 }));
 
 // All MVP grades with KB content — same picker `home.tsx`'s change-lesson
-// sheet uses, so this sheet offers the same choice.
-const CONTEXT_GRADES = getPickerGrades();
+// sheet uses, so this sheet offers the same choice. Sorted by level for
+// display only: MVP_GRADE_IDS' own order is persisted as bare indices
+// elsewhere (see catalog.ts), so it can't be reordered just to fix this
+// row's visual order.
+const CONTEXT_GRADES = [...getPickerGrades()].sort((a, b) => a.level - b.level);
 
 // ─── Suggested questions per mode/language ───────────────────────────────────
 interface Suggestion {
@@ -765,8 +774,8 @@ const prepStyles = StyleSheet.create({
 
 function MessageBubble({
   message, colors, isRTL, onLongPress, onClarifySubject, onClarifyLesson, onPedagogicalClarify, prepProgress,
-  introName, introPitch, introActions, onEditArtifact, onCopy, onExport,
-  onSaveMaterial, onAddToClass, onPresentMaterial, busyMaterial,
+  introName, introPitch, introActions, introBoard, onEditArtifact, onCopy, onExport,
+  onSaveMaterial, onAddToClass, onPresentMaterial, onOpenCanvas, onCanvas, busyMaterial,
   copyLabel, exportLabel, t,
 }: {
   message: Message; colors: any; isRTL: boolean;
@@ -781,6 +790,16 @@ function MessageBubble({
   introPitch?: string;
   /** Starting actions, rendered under the pitch on the opening turn only. */
   introActions?: React.ReactNode;
+  /**
+   * The lesson's readiness board, on the opening turn only.
+   *
+   * A phone's empty chat was a logo, a pitch line and two chips over ~400px of
+   * nothing — the same dead space the desktop landing had, just narrower. The
+   * board puts the question a teacher actually arrives with ("what is still
+   * missing for third period?") in that space, without a sixth tab: five rows
+   * at 375px is the one thing a phone shows better than a laptop.
+   */
+  introBoard?: React.ReactNode;
   /** Commits a change to this message's structured material. */
   onEditArtifact?: (messageId: string, next: ChatArtifactData) => void;
   /** Both take the whole message: what is copied is not always what is shown. */
@@ -794,6 +813,19 @@ function MessageBubble({
   onSaveMaterial?: (message: Message) => void;
   onAddToClass?: (message: Message) => void;
   onPresentMaterial?: (message: Message) => void;
+  /**
+   * Desktop only: put this material back on the canvas. The canvas opens by
+   * itself when a material is generated, so this is for the one scrolled
+   * three answers back — without it, re-reading an earlier worksheet full-size
+   * meant regenerating it.
+   */
+  onOpenCanvas?: (message: Message) => void;
+  /**
+   * This message's material is already on the canvas, so the bubble drops the
+   * document and keeps only what was actually said about it. Without this the
+   * plan is on screen twice — once full-size, once in a 430px column.
+   */
+  onCanvas?: boolean;
   /** Save / present in flight for this message — both are round trips. */
   busyMaterial?: boolean;
   copyLabel?: string;
@@ -802,6 +834,9 @@ function MessageBubble({
 }) {
   const isUser = message.role === 'user';
   const timeLabel = message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // Only the intro reads this: at 64px with 14px copy it sat in a desktop
+  // window like a phone screenshot dropped into the middle of the page.
+  const isWide = useViewportWidth() >= DESKTOP_BREAKPOINT;
 
   if (isUser) {
     // User bubbles always sit on the trailing edge (right) — ChatGPT/WhatsApp style.
@@ -856,14 +891,15 @@ function MessageBubble({
    */
   if (message.id === 'welcome') {
     return (
-      <View style={styles.intro}>
-        <IqraaMark size={64} tone="soft" />
-        <Text style={[styles.introName, { color: colors.primary, fontFamily: 'Cairo_700Bold' }]}>
+      <View style={[styles.intro, isWide && styles.introWide]}>
+        <IqraaMark size={isWide ? 84 : 64} tone="soft" />
+        <Text style={[styles.introName, isWide && styles.introNameWide, { color: colors.primary, fontFamily: 'Cairo_700Bold' }]}>
           {introName}
         </Text>
         <Text
           style={[
             styles.introPitch,
+            isWide && styles.introPitchWide,
             {
               color: colors.mutedForeground,
               fontFamily: 'Almarai_400Regular',
@@ -873,6 +909,7 @@ function MessageBubble({
         >
           {introPitch}
         </Text>
+        {introBoard}
         {introActions}
       </View>
     );
@@ -883,11 +920,13 @@ function MessageBubble({
   // lead-in and the next-step line — still reads as conversation.
   const planData =
     message.artifactData?.kind === 'lesson-plan' ? message.artifactData : null;
+  /** The document renders in the thread only while the canvas is not showing it. */
+  const inlinePlan = onCanvas ? null : planData;
 
   // A rendered document replaces the formatted text it was built from. Showing
   // both put the whole lesson plan on screen twice — once editable, once as the
   // wall of separators the exporter produces.
-  const lines = (planData ? (message.artifactProse ?? '') : message.text).split('\n');
+  const lines = (planData || onCanvas ? (message.artifactProse ?? message.text) : message.text).split('\n');
 
   /**
    * The row under the bubble.
@@ -909,6 +948,15 @@ function MessageBubble({
     onPress: () => void;
   }[] = [];
 
+  if (canAct && onOpenCanvas && !onCanvas) {
+    messageActions.push({
+      key: 'canvas',
+      icon: 'expand-outline',
+      label: t('canvasOpen'),
+      color: colors.primary,
+      onPress: () => onOpenCanvas(message),
+    });
+  }
   if (canAct && onSaveMaterial) {
     const saved = Boolean(message.savedMaterialId);
     messageActions.push({
@@ -968,10 +1016,10 @@ function MessageBubble({
           delayLongPress={500}
           style={[styles.bubbleAssistant, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: 18 }]}
         >
-          {planData ? (
+          {inlinePlan ? (
             <View style={{ marginBottom: 8 }}>
               <LessonPlanView
-                plan={planData.plan}
+                plan={inlinePlan.plan}
                 colors={colors}
                 isRTL={isRTL}
                 t={t}
@@ -981,7 +1029,7 @@ function MessageBubble({
                     ? (field, value) =>
                         onEditArtifact(message.id, {
                           kind: 'lesson-plan',
-                          plan: { ...planData.plan, [field]: value },
+                          plan: { ...inlinePlan.plan, [field]: value },
                         })
                     : undefined
                 }
@@ -1222,6 +1270,19 @@ export default function IqraScreen() {
   const [startClassError, setStartClassError] = useState('');
   const [changeLessonOpen, setChangeLessonOpen] = useState(false);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
+  /**
+   * The message whose material is on the canvas, or null for a plain thread.
+   * A message id rather than a copy of the material: the message is the single
+   * copy every other action reads, so an edit made on the canvas is the same
+   * edit save, export and "start class" see.
+   */
+  const [canvasMessageId, setCanvasMessageId] = useState<string | null>(null);
+  /**
+   * Saved materials, for the readiness board in the empty state. Only loaded
+   * where the board is shown (phone / narrow web) — on desktop this screen is
+   * the conversation and the workspace home owns the board.
+   */
+  const [prepMaterials, setPrepMaterials] = useState<SavedMaterial[]>([]);
   const [exportText, setExportText] = useState('');
   const [exportVisible, setExportVisible] = useState(false);
   /**
@@ -1262,8 +1323,28 @@ export default function IqraScreen() {
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
+  /*
+    On focus rather than on mount: the board's whole job is to say what is
+    missing, and the way a teacher fixes that is to leave for a generator
+    screen and come back. Mount-only would show them "missing" for the
+    worksheet they just made.
+  */
+  const loadPrepMaterials = useCallback(() => {
+    getAllItems().then(setPrepMaterials).catch(() => {});
+  }, []);
+  useFocusEffect(useCallback(() => { loadPrepMaterials(); }, [loadPrepMaterials]));
+
   /** Centred column on desktop web; full-bleed on phones. */
   const centered = { width: '100%' as const, maxWidth: CHAT_MAX_WIDTH, alignSelf: 'center' as const };
+
+  /**
+   * Desktop web gets app chrome, not a stretched phone: the brand moves to the
+   * nav rail, the surviving bands lose their full-bleed backgrounds, and the
+   * composer becomes a card floating on the page ground instead of a strip
+   * welded to the window edge.
+   */
+  const viewportW = useViewportWidth();
+  const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
 
   // Web has no notch and no native header, so the 67pt allowance left a band
   // of dead space above the logo in the browser.
@@ -1670,10 +1751,22 @@ export default function IqraScreen() {
       const hasDocsEarly =
         docBundleEarly.readyCount > 0 && !!docBundleEarly.promptBlock.trim();
 
+      // The teacher said they are leaving the current lesson («خلينا نتكلم عن
+      // الأحياء»). Search the topic they named, not the sentence around it, and
+      // let neither the hard pin nor `teachingCtx` drag the old lesson back —
+      // a match below re-pins to the new one, a miss answers out-of-scope.
+      const switchTopic = pinnedLessonId ? null : topicSwitchTarget(q);
+      const searchText = switchTopic ?? q;
+      if (switchTopic !== null) {
+        setSessionMemory(prev => ({ ...prev, lessonPin: 'none' }));
+        setTeachingCtx('');
+        setTeachingCtxLessonId(null);
+      }
+
       // 1. Local KB retrieval — confidence-gated; soft default lesson must not steal topics.
       const ranked = pinnedLessonId
         ? []
-        : searchKBRanked(q, lang as 'ar' | 'en');
+        : searchKBRanked(searchText, lang as 'ar' | 'en');
       const confidentHit = isConfidentSingleSubjectHit(ranked);
 
       // The lesson this send was explicitly pinned to, when there is one. It
@@ -1691,13 +1784,13 @@ export default function IqraScreen() {
           : deduplicateByUnit(searchKBSemantic(q, lang as 'ar' | 'en'), 3);
       } else {
         results = deduplicateByUnit(
-          ranked.length ? ranked.map(r => r.lesson) : searchKBSemantic(q, lang as 'ar' | 'en'),
+          ranked.length ? ranked.map(r => r.lesson) : searchKBSemantic(searchText, lang as 'ar' | 'en'),
           3,
         );
       }
 
       // Prefer explicit teaching-context lesson when available
-      if (!pinnedLessonId && teachingCtx.trim()) {
+      if (!pinnedLessonId && switchTopic === null && teachingCtx.trim()) {
         const ctxLesson = resolvePickedLesson(
           teachingCtx.trim(),
           { lessonId: teachingCtxLessonId },
@@ -1814,7 +1907,7 @@ export default function IqraScreen() {
       // prefers `pinnedLesson`); this is the remote path catching up.
       const teachingTopic = pinnedLesson
         ? (lang === 'ar' ? pinnedLesson.titleAr : pinnedLesson.titleEn)
-        : teachingCtx;
+        : (switchTopic === null ? teachingCtx : '');
       const teachingPrefix = teachingTopic
         ? (lang === 'ar'
           ? `[سياق التدريس: المعلم يدرّس حاليًا "${teachingTopic}"]\n\n`
@@ -1851,7 +1944,9 @@ export default function IqraScreen() {
           mode,
           teachingContext: pinnedLesson
             ? (lang === 'ar' ? pinnedLesson.titleAr : pinnedLesson.titleEn)
-            : (teachingCtx || sessionMemory.activeTopicAr || sessionMemory.activeTopicEn),
+            : switchTopic !== null
+              ? null
+              : (teachingCtx || sessionMemory.activeTopicAr || sessionMemory.activeTopicEn),
           // DEMO_MODE is on by default, and in that path this — not
           // `buildResponse` — writes the reply the teacher reads. Threading the
           // pin only through the remote path would have left the fix invisible
@@ -2538,6 +2633,7 @@ export default function IqraScreen() {
       <View
         style={[
           variant === 'intro' ? styles.introChips : styles.composerChips,
+          variant === 'intro' && isDesktop && styles.introChipsWide,
           { flexDirection: isRTL ? 'row-reverse' : 'row' },
         ]}
       >
@@ -2547,6 +2643,7 @@ export default function IqraScreen() {
             onPress={item.onPress}
             style={({ pressed }) => [
               styles.chip,
+              variant === 'intro' && isDesktop && styles.chipWide,
               {
                 backgroundColor: colors.secondary,
                 borderColor: colors.primary + '2E',
@@ -2554,7 +2651,13 @@ export default function IqraScreen() {
               },
             ]}
           >
-            <Text style={[styles.chipText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
+            <Text
+              style={[
+                styles.chipText,
+                variant === 'intro' && isDesktop && styles.chipTextWide,
+                { color: colors.primary, fontFamily: 'Cairo_500Medium' },
+              ]}
+            >
               {item.label}
             </Text>
           </Pressable>
@@ -2562,6 +2665,56 @@ export default function IqraScreen() {
       </View>
     );
   };
+
+  /**
+   * The readiness board for the empty state, or null.
+   *
+   * Phone and narrow web only: on desktop the workspace home carries it, and
+   * repeating it here would be the same five rows twice on one window. Hidden
+   * once the conversation starts — it answers "what is missing", which stops
+   * being the question the moment the teacher has asked one.
+   */
+  const introPrepBoard = (() => {
+    if (isDesktop || messages.length > 1) return null;
+    const topic = currentLessonView?.topic?.trim() ?? '';
+    const rows = buildPrepBoard(prepMaterials, topic);
+    // The lesson's own grade and subject, never the picker's index 0 — see the
+    // subjectIdx trap in CLAUDE.md. `topicPickerParams` grounds a free-typed
+    // topic; both return null when the lesson is unknown, and then the tool
+    // opens on its own defaults rather than on a wrong subject.
+    const idx =
+      lessonPickerParams(currentLessonView?.lessonId, lang as 'ar' | 'en') ??
+      topicPickerParams(topic, lang as 'ar' | 'en');
+    const toolParams = { ...(topic ? { topic } : {}), ...(idx ?? {}) };
+    return (
+      <View style={{ width: '100%', marginTop: 14, gap: 8 }}>
+        <Text
+          style={{
+            fontFamily: 'Cairo_600SemiBold',
+            fontSize: 12.5,
+            color: colors.mutedForeground,
+            textAlign: isRTL ? 'right' : 'left',
+          }}
+        >
+          {t('homePrepTitle')} · {t('homeReady', rows.filter(r => r.done).length, rows.length)}
+        </Text>
+        <LessonPrepBoard
+          rows={rows}
+          colors={colors}
+          isRTL={isRTL}
+          isAr={lang === 'ar'}
+          compact
+          disabled={!topic}
+          openLabel={t('homeOpen')}
+          makeLabel={t('homePrepMake')}
+          onOpen={(row) =>
+            row.material && router.push({ pathname: '/workspace/view', params: { id: row.material.id } })
+          }
+          onMake={(row) => router.push({ pathname: row.route as never, params: toolParams as never })}
+        />
+      </View>
+    );
+  })();
 
   const livePrepProgress = DEMO_MODE
     ? buildPrepProgressView(sessionMemory, lang as 'ar' | 'en')
@@ -2575,9 +2728,70 @@ export default function IqraScreen() {
     return null;
   })();
 
+  /*
+    The canvas opens itself the moment a material exists, and only on desktop:
+    generating a lesson plan and then having to ask for it full-size is the
+    letterbox problem with an extra click in front of it. It stays on the
+    message, so scrolling the thread does not change what is on the canvas.
+  */
+  const lastArtifactMessageId = (() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i]?.artifactData && messages[i]?.artifactMeta) return messages[i]!.id;
+    }
+    return null;
+  })();
+  useEffect(() => {
+    if (!isDesktop || !lastArtifactMessageId) return;
+    setCanvasMessageId(lastArtifactMessageId);
+  }, [isDesktop, lastArtifactMessageId]);
+
+  const canvasMessage = isDesktop && canvasMessageId
+    ? messages.find(m => m.id === canvasMessageId) ?? null
+    : null;
+  const canvasOpen = Boolean(canvasMessage);
+  /** Narrowed once here so the canvas's edit callback needs no cast. */
+  const canvasPlan =
+    canvasMessage?.artifactData?.kind === 'lesson-plan' ? canvasMessage.artifactData : null;
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
+     <View style={{ flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+      <View
+        style={
+          canvasOpen
+            ? {
+                // Wide enough for a readable reply, narrow enough that the
+                // material — not the transcript — is what the window is for.
+                width: 430,
+                flexGrow: 0,
+                flexShrink: 0,
+                backgroundColor: colors.card,
+                borderEndWidth: 1,
+                borderEndColor: colors.border,
+              }
+            : { flex: 1 }
+        }
+      >
       {/* ─── Header ────────────────────────────────────────────────── */}
+      {isDesktop ? (
+        /*
+          Desktop keeps the one thing this band carried that the window does
+          not already say: the demo pill. The mark and the wordmark moved to
+          the nav rail, which is permanent — repeating them here cost ~110px
+          above every screen to name an app the teacher is already inside.
+          The pill stays, and stays visible, because hiding it would let
+          sample content read as real.
+        */
+        <View
+          style={[
+            styles.deskHeader,
+            centered,
+            { flexDirection: isRTL ? 'row-reverse' : 'row', paddingTop: topPad + 8 },
+          ]}
+        >
+          <AiSourceBadge isRTL={isRTL} />
+        </View>
+      ) : (
       <View
         style={[
           styles.header,
@@ -2634,9 +2848,11 @@ export default function IqraScreen() {
           <AiSourceBadge isRTL={isRTL} />
         </View>
       </View>
+      )}
 
       {/* ─── Current lesson (persistent, collapses on scroll) ───────── */}
       {currentLessonView ? (
+        <View style={isDesktop ? [centered, styles.lessonSlotWide] : undefined}>
         <CurrentLessonCard
           lesson={currentLessonView}
           collapsed={lessonCardCollapsed}
@@ -2651,7 +2867,17 @@ export default function IqraScreen() {
           uploadedLabel={(n) => t('lessonUploadedFiles', n)}
           onChangeLesson={() => setChangeLessonOpen(true)}
           onToggleCollapse={() => setLessonCardCollapsed(c => !c)}
+          // The board right below it is already counting, from better data.
+          hideCount={Boolean(introPrepBoard)}
+          // A band welded to both window edges on desktop; a card over the
+          // thread it describes here.
+          containerStyle={
+            isDesktop
+              ? { borderRadius: 14, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }
+              : undefined
+          }
         />
+        </View>
       ) : null}
 
       {(
@@ -2728,7 +2954,17 @@ export default function IqraScreen() {
         data={messages}
         keyExtractor={m => m.id}
         style={{ flex: 1 }}
-        contentContainerStyle={[styles.messageList, centered]}
+        /*
+          An empty thread used to pin its intro to the top of a 900px-tall
+          window with the composer welded to the bottom, and nothing in
+          between. Centred, the opening turn and the chips under it read as
+          one offer rather than two pieces of furniture at opposite edges.
+        */
+        contentContainerStyle={[
+          styles.messageList,
+          centered,
+          isDesktop && messages.length <= 1 && styles.messageListEmpty,
+        ]}
         showsVerticalScrollIndicator={false}
         onScroll={(e) => {
           const y = e.nativeEvent.contentOffset.y;
@@ -2747,6 +2983,8 @@ export default function IqraScreen() {
             onSaveMaterial={item.role === 'assistant' ? handleSaveMaterial : undefined}
             onAddToClass={item.role === 'assistant' ? handleAddToClass : undefined}
             onPresentMaterial={item.role === 'assistant' ? handlePresentMaterial : undefined}
+            onOpenCanvas={isDesktop && item.role === 'assistant' ? (m) => setCanvasMessageId(m.id) : undefined}
+            onCanvas={item.id === canvasMessageId}
             busyMaterial={materialBusyId === item.id}
             copyLabel={t('iqraCopyMessage')}
             exportLabel={t('iqraExportMessage')}
@@ -2760,6 +2998,7 @@ export default function IqraScreen() {
             introActions={
               item.id === 'welcome' && messages.length <= 1 ? starterChips('intro') : null
             }
+            introBoard={item.id === 'welcome' ? introPrepBoard : null}
             t={t}
             onEditArtifact={handleEditArtifact}
             prepProgress={
@@ -2792,13 +3031,23 @@ export default function IqraScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={{
-            maxHeight: 48,
-            backgroundColor: colors.card,
-            borderTopWidth: StyleSheet.hairlineWidth,
-            borderTopColor: colors.border,
-          }}
-          contentContainerStyle={[styles.docActionsScroll, centered]}
+          // A horizontal ScrollView ignores alignSelf on its *content*, so the
+          // column cap has to sit on the view itself — without it the chips
+          // ran along the window edge instead of the thread they belong to.
+          style={[
+            {
+              maxHeight: 48,
+              backgroundColor: isDesktop ? 'transparent' : colors.card,
+              borderTopWidth: isDesktop ? 0 : StyleSheet.hairlineWidth,
+              borderTopColor: colors.border,
+            },
+            isDesktop && centered,
+          ]}
+          contentContainerStyle={[
+            styles.docActionsScroll,
+            centered,
+            { flexDirection: isRTL ? 'row-reverse' : 'row' },
+          ]}
         >
           {starterChips('composer')}
         </ScrollView>
@@ -2809,7 +3058,15 @@ export default function IqraScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={{ maxHeight: 48, backgroundColor: colors.card, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
+          style={[
+            {
+              maxHeight: 48,
+              backgroundColor: isDesktop ? 'transparent' : colors.card,
+              borderTopWidth: isDesktop ? 0 : StyleSheet.hairlineWidth,
+              borderTopColor: colors.border,
+            },
+            isDesktop && centered,
+          ]}
           contentContainerStyle={[
             styles.docActionsScroll,
             centered,
@@ -2842,9 +3099,13 @@ export default function IqraScreen() {
         style={[
           styles.inputBar,
           {
-            backgroundColor: colors.card,
+            backgroundColor: isDesktop ? 'transparent' : colors.card,
             borderTopColor: colors.border,
-            paddingBottom: tabBarHeight + Math.max(insets.bottom, 8),
+            // The tab bar is display:none on desktop but still measures 84px,
+            // which is the band of dead space that sat under the composer.
+            borderTopWidth: isDesktop ? 0 : 1,
+            paddingBottom: isDesktop ? 22 : tabBarHeight + Math.max(insets.bottom, 8),
+            paddingHorizontal: isDesktop ? 16 : 12,
           },
         ]}
       >
@@ -2862,6 +3123,21 @@ export default function IqraScreen() {
           style={[
             styles.inputWrap,
             { backgroundColor: colors.muted, borderRadius: 24 },
+            // A card on the page ground, not a tinted slot inside a bar: on
+            // desktop the bar around it is gone, so the composer has to carry
+            // its own edge.
+            isDesktop && {
+              backgroundColor: colors.card,
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: colors.border,
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              shadowColor: '#081B3A',
+              shadowOpacity: 0.07,
+              shadowRadius: 14,
+              shadowOffset: { width: 0, height: 4 },
+            },
             isRTL && { flexDirection: 'row-reverse' },
           ]}
         >
@@ -2887,6 +3163,7 @@ export default function IqraScreen() {
           <TextInput
             style={[
               styles.input,
+              isDesktop && styles.inputWide,
               { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' },
             ]}
             placeholder={t(DOCUMENT_UPLOAD_ENABLED ? 'iqraPlaceholderDocs' : 'iqraPlaceholder')}
@@ -2924,6 +3201,60 @@ export default function IqraScreen() {
         </View>
         </View>
       </View>
+      </View>
+
+      {canvasMessage ? (
+        <MaterialCanvas
+          title={canvasMessage.artifactMeta?.title ?? t('canvasTitle')}
+          subtitle={[canvasMessage.artifactMeta?.subject, canvasMessage.artifactMeta?.grade]
+            .filter(Boolean)
+            .join(' • ')}
+          data={canvasMessage.artifactData}
+          text={documentTextFor(canvasMessage)}
+          colors={colors}
+          isRTL={isRTL}
+          t={t}
+          closeLabel={t('canvasClose')}
+          onClose={() => setCanvasMessageId(null)}
+          onEditPlan={
+            canvasPlan
+              ? (field, value) =>
+                  handleEditArtifact(canvasMessage.id, {
+                    kind: 'lesson-plan',
+                    plan: { ...canvasPlan.plan, [field]: value },
+                  })
+              : undefined
+          }
+          actions={[
+            ...(canvasMessage.artifactData && canPresentArtifact(canvasMessage.artifactData)
+              ? [{
+                  id: 'present',
+                  label: t('iqraPresentMaterial'),
+                  icon: 'tv-outline' as const,
+                  primary: true,
+                  disabled: materialBusyId === canvasMessage.id,
+                  onPress: () => handlePresentMaterial(canvasMessage),
+                }]
+              : []),
+            {
+              id: 'save',
+              label: canvasMessage.savedMaterialId ? t('iqraSavedMaterial') : t('iqraSaveMaterial'),
+              icon: canvasMessage.savedMaterialId
+                ? ('checkmark-circle' as const)
+                : ('bookmark-outline' as const),
+              disabled: materialBusyId === canvasMessage.id,
+              onPress: () => { void handleSaveMaterial(canvasMessage); },
+            },
+            {
+              id: 'export',
+              label: t('iqraExportMessage'),
+              icon: 'share-outline' as const,
+              onPress: () => handleExportMessage(canvasMessage),
+            },
+          ]}
+        />
+      ) : null}
+     </View>
       <ComposerToolsMenu
         visible={toolsMenuOpen}
         onClose={() => setToolsMenuOpen(false)}
@@ -3013,9 +3344,15 @@ const styles = StyleSheet.create({
   // Replaces the old `brandRow`, which space-between pinned to the row's start.
   brandCentre: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   headerBadgeRow: { flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 16, marginTop: 4 },
+  // Desktop: no card, no border, no logo — one row holding the demo pill,
+  // aligned to the start edge of the same column the thread uses.
+  deskHeader: { alignItems: 'center', paddingHorizontal: 16, paddingBottom: 2 },
+  lessonSlotWide: { paddingHorizontal: 16, paddingTop: 10 },
   brandWord: { fontFamily: 'Cairo_700Bold', fontSize: 19, letterSpacing: 0.2 },
   chip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  chipWide: { paddingHorizontal: 18, paddingVertical: 12, borderRadius: 14 },
   chipText: { fontSize: 12 },
+  chipTextWide: { fontSize: 14 },
   docActionsScroll: { paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
   docActionChip: {
     paddingHorizontal: 12,
@@ -3025,6 +3362,7 @@ const styles = StyleSheet.create({
   },
 
   messageList: { padding: 16, gap: 12, paddingBottom: 8, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
+  messageListEmpty: { flexGrow: 1, justifyContent: 'center', paddingBottom: 48 },
 
   // Physical trailing edge (right). Do not flip for language RTL — that pinned bubbles left.
   rowUser: { width: '100%', flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 },
@@ -3044,9 +3382,13 @@ const styles = StyleSheet.create({
   rowAssistantRTL: { flexDirection: 'row-reverse' },
   avatar: { marginTop: 4 },
   intro: { alignItems: 'center', gap: 10, paddingTop: 28, paddingBottom: 12, paddingHorizontal: 24 },
+  introWide: { gap: 14, paddingTop: 8 },
   introName: { fontSize: 22, textAlign: 'center' },
+  introNameWide: { fontSize: 30 },
   introPitch: { fontSize: 14, lineHeight: 23, textAlign: 'center', maxWidth: 380 },
+  introPitchWide: { fontSize: 16, lineHeight: 28, maxWidth: 520 },
   introChips: { flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 6 },
+  introChipsWide: { gap: 10, marginTop: 16 },
   composerChips: { gap: 8 },
   bubbleAssistant: { padding: 14, borderWidth: 1 },
   bubbleBold: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 2 },
@@ -3070,6 +3412,7 @@ const styles = StyleSheet.create({
   inputBarInner: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
   input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0 },
+  inputWide: { fontSize: 15, maxHeight: 160, lineHeight: 22 },
   plusBtn: {
     width: 34,
     height: 34,

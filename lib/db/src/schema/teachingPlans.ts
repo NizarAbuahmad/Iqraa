@@ -12,6 +12,13 @@
  * curriculum lesson ids against week numbers, so the plan is now readable by
  * the app and not only by its author. `topics`, `date` and `grades` survive
  * as the legacy display path for plans written before that.
+ * A plan is anchored to a class, and takes its grade and subject from it —
+ * the app stopped asking for `grades` as free text, because a typed
+ * "العاشر الف" is a string nothing can act on. `topics` and `date` are still
+ * free text and are the next thing to go: with a known grade and subject,
+ * they can become curriculum lesson ids against week numbers, which is what
+ * would let a plan answer «اختر الدرس الحالي» instead of a teacher picking
+ * it each session.
  */
 import { pgTable, text, timestamp, uuid, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";

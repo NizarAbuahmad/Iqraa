@@ -75,6 +75,12 @@ for your title before you commit to it — Play rejects listings likely to be
 confused with an existing app. `IQRA — مساعد المعلّم الذكي` is distinct enough
 to be defensible, but know what you are sitting next to.
 
+### 1. ~~`privacy@iqraa.app` is a placeholder~~ — resolved
+
+`artifacts/mobile/constants/legal.ts` now uses `info@iqrra.com`, on the domain
+the project actually holds. Confirm this mailbox is monitored before the
+listing is submitted — Play requires a contact email, a reviewer may write to
+it, and a data-subject request has a statutory clock.
 ### 1. `privacy@iqraa.app` is a placeholder
 
 `artifacts/mobile/constants/legal.ts` says so in its own comment. Play requires
