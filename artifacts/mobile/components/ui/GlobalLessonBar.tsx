@@ -18,6 +18,8 @@ type Colors = {
   foreground: string;
   mutedForeground: string;
   primary: string;
+  secondary: string;
+  radius: number;
 };
 
 type Props = {
@@ -40,22 +42,29 @@ export function GlobalLessonBar({ pick, lang, isRTL, colors, topInset, t, onPres
   const align = isRTL ? 'right' as const : 'left' as const;
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.bar,
-        {
-          paddingTop: topInset + 6,
-          backgroundColor: colors.card,
-          borderBottomColor: colors.border,
-          opacity: pressed ? 0.85 : 1,
-        },
+    <View
+      style={[
+        styles.wrap,
+        { paddingTop: topInset + 10, backgroundColor: colors.card, borderBottomColor: colors.border },
       ]}
-      accessibilityRole="button"
-      accessibilityLabel={t('changeLesson')}
     >
-      <View style={[styles.row, { flexDirection: rowDir }]}>
-        <Ionicons name="school-outline" size={15} color={colors.primary} />
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.pill,
+          {
+            flexDirection: rowDir,
+            backgroundColor: colors.secondary,
+            borderRadius: colors.radius,
+            opacity: pressed ? 0.85 : 1,
+          },
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={t('changeLesson')}
+      >
+        <View style={[styles.iconBubble, { backgroundColor: colors.card }]}>
+          <Ionicons name="school-outline" size={15} color={colors.primary} />
+        </View>
         <View style={{ flex: 1 }}>
           <Text numberOfLines={1} style={[styles.meta, { color: colors.mutedForeground, textAlign: align }]}>
             {subjectLabel} • {gradeLabel}
@@ -64,19 +73,31 @@ export function GlobalLessonBar({ pick, lang, isRTL, colors, topInset, t, onPres
             {pick?.topic || t('setTeachingContext')}
           </Text>
         </View>
-        <Ionicons name="swap-horizontal" size={15} color={colors.primary} />
-      </View>
-    </Pressable>
+        <Ionicons name="chevron-down" size={16} color={colors.primary} />
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: {
+  wrap: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 14,
-    paddingBottom: 8,
+    paddingBottom: 10,
   },
-  row: { alignItems: 'center', gap: 8 },
+  pill: {
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  iconBubble: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   meta: { fontFamily: 'Almarai_400Regular', fontSize: 10.5 },
   topic: { fontFamily: 'Cairo_600SemiBold', fontSize: 13 },
 });

@@ -164,7 +164,7 @@ export function ParticipantPickerSheet({
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={[styles.chipRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                  contentContainerStyle={[styles.chipRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }, isRTL && { minWidth: '100%' }]}
                 >
                   {classChips.map(cl => {
                     const allPicked = cl.members.every(m => selected.has(m.userId));

@@ -136,7 +136,9 @@ export default function CurriculumScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.gradeScroll, isRTL && { flexDirection: 'row-reverse' }]}
+          // minWidth fills the track so row-reverse packs the chips against the
+          // right edge; without it a short list hugs the left in an RTL page.
+          contentContainerStyle={[styles.gradeScroll, isRTL && { flexDirection: 'row-reverse', minWidth: '100%' }]}
         >
           {visibleGrades.map(g => {
             const isActive = g.id === selectedGrade.id;
