@@ -76,9 +76,8 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // grade-10 (one book, no semester, 23 lessons not the usual 30) — see
   // g10CreativeArts.ts.
   'creative-arts:grade-9',
-  // vocational-education joined the same day, same reason — SUBJECTS.grades
-  // is ['grade-8'] alone here too.
-  'vocational-education:grade-9',
+  // vocational-education:grade-9 closed 2026-09-20 — SUBJECTS.grades extended
+  // for grade-9 (was grade-4/6/7/8 only) — see g9VocationalSem1.ts.
   'vocational-education:grade-10',
   // social joined the same day, and both entries are PERMANENT — corrected
   // on 2026-09-10, having been recorded here as ordinary gaps to "delete the
