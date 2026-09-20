@@ -2282,6 +2282,66 @@ No `app.json` `version` bump: the last hand-run builds already carry
 `expo-updates`, and nothing native has been added since #420 — see «app.json's
 `version` is the OTA compatibility key» in CLAUDE.md before the next one.
 
+## A second Android build path that doesn't touch EAS Build at all, 2026-09-19
+
+The workflow above is still capped by Expo's free-tier Build quota until
+2026-10-01. `.github/workflows/mobile-build-gradle.yml` builds the same kind
+of APK without EAS Build: `expo prebuild` generates the native `android/`
+project (never committed — gitignored, per CLAUDE.md), then a plain
+`./gradlew assembleRelease` compiles it directly on the Actions runner.
+Iqraa is a public repo, so Actions minutes are free and uncapped — this path
+has no monthly limit.
+
+Two things EAS does invisibly had to be reproduced by hand:
+
+- **Signing.** `expo prebuild`'s generated `build.gradle` signs `release`
+  with the template's shared debug keystore (its own comment warns about
+  this). `eas build` patches real signing in remotely; this path can't, so
+  `artifacts/mobile/plugins/withAndroidReleaseSigning.js` — a local Expo
+  config plugin, new — does it during prebuild instead. It's a no-op unless
+  `ANDROID_RELEASE_STORE_FILE` is set (so `eas build` and `expo run:android`
+  are untouched), and when it is, it repoints `release` at a signingConfig
+  reading the keystore path and passwords from the environment at *Gradle*
+  build time, never at plugin-eval time — the secret values never pass
+  through committed code. Verified by feeding it the real SDK 54
+  `expo-template-bare-minimum` `build.gradle` and diffing the output: exactly
+  one `signingConfigs.release` block added, `buildTypes.release` repointed
+  from `signingConfigs.debug`, `buildTypes.debug` untouched, idempotent on a
+  second pass. **Not yet verified against a real `expo prebuild` run** — the
+  template could differ from what SDK 54.0.37 (this project's exact pin)
+  actually generates.
+- **The update channel.** `eas build` embeds the build profile's `channel`
+  into the compiled app through a mechanism that lives in EAS's own build
+  servers, not in anything `eas-cli` or `expo-updates` ships publicly.
+  `expo-updates` also reads the channel from a perfectly ordinary config
+  field, though — `updates.requestHeaders["expo-channel-name"]` in app.json
+  — so app.json now sets it to `"preview"` directly, matching every existing
+  APK and what `mobile-update.yml` publishes to. **Unverified end to end**:
+  nothing has confirmed a Gradle-built APK actually receives an OTA update.
+
+`versionCode` has no single committed source of truth — `eas.json`'s
+`appVersionSource: "remote"` means EAS's own account is the only counter, and
+app.json declares no `android.versionCode` at all (EAS's remote builds inject
+it at build time; a plain prebuild would otherwise default to `1`, which
+would collide with every existing install). The workflow reads the current
+value with the free, read-only `eas build:version:get --json`, uses
+`current + 1`, and best-effort reports the new value back with the same
+GraphQL mutation `eas build:version:set` calls interactively — that command
+has no non-interactive flag, so a hand-rolled `curl` against
+`api.expo.dev/graphql` with the exact mutation read out of `eas-cli`'s own
+source stands in for it. If that report step ever fails silently, a later
+EAS Build could reissue a `versionCode` this workflow already used, which
+would leave a device on this workflow's build unable to install that update.
+
+**Nothing here has run.** It needs four repository secrets — the project's
+*real* signing keystore, exported from EAS once and never regenerated, or
+Google Sign-In breaks again exactly as it did on 2026-09-07 — that nothing
+with API access is allowed to create (a repository secret needs an
+admin-scoped personal access token, which this session doesn't have and
+shouldn't be handed casually). `docs/android-gradle-build-secrets.md` has the
+exact one-time steps for whoever runs `eas-cli` as `nizar.62`. Until those
+four secrets exist, the workflow explains what's missing and exits cleanly.
+
 ## Grades 3, 4 and 5: 11 books, +123 lessons, 2026-09-19
 
 **498 → 621 lessons illustrated, 2572 figures.** The catalogs landed between

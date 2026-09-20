@@ -265,6 +265,23 @@ function ClassicTabLayout() {
     t,
     onPress: () => router.push({ pathname: '/iqra', params: { openLessonPicker: String(Date.now()) } }),
   };
+  // them anyway. Not shown on iQra itself either — CurrentLessonCard already
+  // does this job there, full-width and with the Start Class action; a second
+  // copy stacked above it would just be the same line twice.
+  const onWorkspaceHome = isDesktop && (pathname === '/' || pathname === '/index');
+  const bar = isTeacher && !pathname.startsWith('/iqra') && !onWorkspaceHome ? (
+    <GlobalLessonBar
+      layout="bar"
+      pick={lessonPick}
+      lang={lang as 'ar' | 'en'}
+      isRTL={isRTL}
+      colors={colors}
+      topInset={isDesktop ? 0 : insets.top}
+      t={t}
+      onPress={() => router.push({ pathname: '/iqra', params: { openLessonPicker: String(Date.now()) } })}
+    />
+  ) : null;
+
   if (!isDesktop) {
     // Not on iQra itself — CurrentLessonCard already does this job there,
     // full-width and with the Start Class action; a second copy stacked above
@@ -291,6 +308,10 @@ function ClassicTabLayout() {
         lessonCard={isTeacher ? <GlobalLessonBar layout="card" {...lessonProps} /> : null}
       />
       <View style={{ flex: 1 }}>{tabs}</View>
+      <View style={{ flex: 1 }}>
+        {bar}
+        <View style={{ flex: 1 }}>{tabs}</View>
+      </View>
       <CommandPalette
         enabled={isDesktop}
         /*
