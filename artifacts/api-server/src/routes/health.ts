@@ -80,6 +80,67 @@ router.get("/healthz/verifier", async (_req, res) => {
 });
 
 /**
+ * Can the deck builder actually get a photo?
+ *
+ * Unauthenticated and public, same reasoning as `/healthz/verifier`: it sends
+ * one fixed trivial query and reports reachability, never a caller's input and
+ * never the key.
+ *
+ * It exists because "the generated decks have no pictures" was diagnosed four
+ * times — wrong queries, a missing prompt field, a layout that swallowed the
+ * column, a model that never asked for one — while the actual cause sat here:
+ * Unsplash answering non-OK to every single lookup, including "flower". The
+ * proxy turned that into `{photo:null}`, which is indistinguishable from "that
+ * query had no results", so nothing anywhere said the lookup had failed. This
+ * makes the difference answerable in one request, with no AI spend and no deck.
+ */
+router.get("/healthz/unsplash", async (_req, res) => {
+  const accessKey = process.env.UNSPLASH_ACCESS_KEY;
+  if (!accessKey) {
+    res.status(503).json({
+      unsplash: "unconfigured",
+      hint: "UNSPLASH_ACCESS_KEY is not set on this service — every deck photo lookup returns nothing.",
+    });
+    return;
+  }
+  try {
+    const probe = await fetch(
+      "https://api.unsplash.com/search/photos?query=flower&per_page=1",
+      { headers: { Authorization: `Client-ID ${accessKey}` } },
+    );
+    // The two headers that separate "the key is wrong" from "the app has used
+    // up its hour", which need completely different fixes.
+    const limit = probe.headers.get("x-ratelimit-limit");
+    const remaining = probe.headers.get("x-ratelimit-remaining");
+    if (!probe.ok) {
+      res.status(503).json({
+        unsplash: "rejected",
+        status: probe.status,
+        rateLimit: limit,
+        rateLimitRemaining: remaining,
+        detail: (await probe.text().catch(() => "")).slice(0, 200),
+        hint: probe.status === 401
+          ? "The access key is not valid — check the application at unsplash.com/oauth/applications."
+          : "Unsplash refused the request; a 403 with rateLimitRemaining 0 means the hourly quota is spent.",
+      });
+      return;
+    }
+    const data = (await probe.json()) as { results?: unknown[] };
+    res.json({
+      unsplash: "ok",
+      results: Array.isArray(data.results) ? data.results.length : 0,
+      rateLimit: limit,
+      rateLimitRemaining: remaining,
+    });
+  } catch (err) {
+    res.status(503).json({
+      unsplash: "unreachable",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
+/**
  * Is real AI testing on, and how much of the test budget is left?
  *
  * Public and unauthenticated, same reasoning as /healthz/verifier above: no
