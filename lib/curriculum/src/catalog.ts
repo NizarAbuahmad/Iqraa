@@ -160,6 +160,10 @@ import {
   isG5DigitalSem1TitleOnlyLesson,
 } from './catalogs/g5DigitalSem1.ts';
 import {
+  G5_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  buildG5CreativeArtsBrowserCatalog,
+} from './catalogs/g5CreativeArts.ts';
+import {
   G4_MATH_S1_CURRICULUM_BOOK_ID,
   buildG4MathSem1BrowserCatalog,
 } from './catalogs/g4MathSem1.ts';
@@ -992,7 +996,10 @@ export const SUBJECTS: Subject[] = [
   // g2CreativeArts.ts. Extended to grade-10 on 2026-09-20 once its book
   // arrived — the oldest grade this subject reaches so far, and a more
   // advanced book (23 lessons, not the usual 30); see g10CreativeArts.ts.
-  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-1', 'grade-2', 'grade-3', 'grade-4', 'grade-6', 'grade-7', 'grade-8', 'grade-10'] },
+  // Extended to grade-5 the same day once its book arrived (found via a
+  // cross-check against the official NCCD textbook list), same one-book
+  // shape as every other grade below grade-10; see g5CreativeArts.ts.
+  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-1', 'grade-2', 'grade-3', 'grade-4', 'grade-6', 'grade-7', 'grade-8', 'grade-10', 'grade-5'] },
   // Seventh brand-new subject, added 2026-09-09 as part of the Grade 8
   // batch. Seven vocational tracks packed into one book per semester
   // (life skills, home economics, agriculture, health/safety, industry,
@@ -1375,6 +1382,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // g5DigitalSem1.ts). 'digital-literacy' is already in MVP_SUBJECT_IDS, so
   // no subject append is needed.
   G5_DIGITAL_S1_CURRICULUM_BOOK_ID,
+  // Grade 5 Art, Music and Drama Education — one book for the whole year (no
+  // semester split), found via a cross-check against the official NCCD
+  // textbook list. 'creative-arts' was already in MVP_SUBJECT_IDS, but
+  // SUBJECTS.grades needed extending for grade-5 — see the SUBJECTS
+  // declaration above and g5CreativeArts.ts.
+  G5_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
   // Grade 4 Mathematics, both semesters — the first Grade 4 book, and the
   // book that brings grade-4 into MVP_GRADE_IDS above. 'mathematics' is
   // already in MVP_SUBJECT_IDS, so no subject append is needed.
@@ -2717,6 +2730,26 @@ export const BOOKS: Book[] = [
     semester: 2,
     // Verified 2026-09-20: HEAD on nccd.gov.jo returned 200.
     pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6%D9%8A%D8%A9/5/2/Grade%2005_SE2.pdf',
+  },
+  // Grade 5 Art, Music and Drama Education — last of the Grade 5 MVP books.
+  // One book for the whole year — no semester field, same shape as
+  // g4CreativeArts.ts. This book prints a main-idea box on every lesson's
+  // own opener page and a real «نَتاجاتُ التَّعَلُّمِ» outcomes box at the end of
+  // every lesson, so main_idea_ar and objectives got transcribed for all 30
+  // lessons. Found via a cross-check against the official NCCD textbook list
+  // (nccd.gov.jo) — its student book already existed on disk but had never
+  // been built. See g5CreativeArts.ts.
+  {
+    id: G5_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+    title: 'Art, Music and Drama Education – Grade 5',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف الخامس',
+    subjectId: 'creative-arts',
+    gradeId: 'grade-5',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
   },
   // The first Grade 4 book in the repo, and the book that brings grade-4
   // into MVP_GRADE_IDS. HarperCollins/NCCD series, same publisher as
@@ -5882,6 +5915,7 @@ const _g5ArabicSem2Browser = buildG5ArabicSem2BrowserCatalog();
 const _g5SocialSem1Browser = buildG5SocialSem1BrowserCatalog();
 const _g5SocialSem2Browser = buildG5SocialSem2BrowserCatalog();
 const _g5DigitalSem1Browser = buildG5DigitalSem1BrowserCatalog();
+const _g5CreativeArtsBrowser = buildG5CreativeArtsBrowserCatalog();
 const _g4MathSem1Browser = buildG4MathSem1BrowserCatalog();
 const _g4MathSem2Browser = buildG4MathSem2BrowserCatalog();
 const _g4ScienceSem1Browser = buildG4ScienceSem1BrowserCatalog();
@@ -6204,6 +6238,7 @@ export const UNITS: Unit[] = [
   ..._g5SocialSem1Browser.units,
   ..._g5SocialSem2Browser.units,
   ..._g5DigitalSem1Browser.units,
+  ..._g5CreativeArtsBrowser.units,
   ..._g4MathSem1Browser.units,
   ..._g4MathSem2Browser.units,
   ..._g4ScienceSem1Browser.units,
@@ -6396,6 +6431,7 @@ export const LESSONS: Lesson[] = [
   ..._g5SocialSem1Browser.lessons,
   ..._g5SocialSem2Browser.lessons,
   ..._g5DigitalSem1Browser.lessons,
+  ..._g5CreativeArtsBrowser.lessons,
   ..._g4MathSem1Browser.lessons,
   ..._g4MathSem2Browser.lessons,
   ..._g4ScienceSem1Browser.lessons,

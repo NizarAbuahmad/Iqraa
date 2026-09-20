@@ -1,0 +1,5 @@
+/**
+ * Re-export shim — the real module lives in `@workspace/curriculum`.
+ * Mirrors curriculumG1CreativeArts.ts's pattern.
+ */
+export * from '@workspace/curriculum/catalogs/g5CreativeArts';
