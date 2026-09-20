@@ -14,7 +14,6 @@ import {
   Grade, Subject,
   getVisibleGrades, getSubjectsForGrade,
 } from '@/services/curriculumData';
-import { qrResourceCountForGrade } from '@/services/bookQrLinks';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { narrowSubjectsForGrade, narrowToSelection } from '@/services/teacherCatalogFilter';
@@ -96,10 +95,6 @@ export default function CurriculumScreen() {
   /** Centred column on desktop web; full-bleed on phones. */
   const centered = { width: '100%' as const, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' as const };
 
-  // Hidden rather than shown-and-empty: grades 6, 7 and 8 have no printed codes
-  // at all, so on those an entry row would be a promise with nothing behind it.
-  const qrCount = qrResourceCountForGrade(selectedGrade.id);
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* ─── Header ────────────────────────────────────────────── */}
@@ -110,6 +105,9 @@ export default function CurriculumScreen() {
         </Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('jordanCurriculum')}
+        </Text>
+        <Text style={[styles.intro, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          {t('curriculumIntro')}
         </Text>
 
         {/* Search */}
@@ -138,7 +136,9 @@ export default function CurriculumScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.gradeScroll, isRTL && { flexDirection: 'row-reverse' }]}
+          // minWidth fills the track so row-reverse packs the chips against the
+          // right edge; without it a short list hugs the left in an RTL page.
+          contentContainerStyle={[styles.gradeScroll, isRTL && { flexDirection: 'row-reverse', minWidth: '100%' }]}
         >
           {visibleGrades.map(g => {
             const isActive = g.id === selectedGrade.id;
@@ -193,44 +193,6 @@ export default function CurriculumScreen() {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <>
-            {/* The library of what this grade's books point at. Above the
-                subject grid because it is the one thing here that is not the
-                curriculum restated — it is material a student can open now. */}
-            {qrCount > 0 ? (
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push({
-                    pathname: '/curriculum/resources',
-                    params: {
-                      gradeId: selectedGrade.id,
-                      gradeName: lang === 'ar' ? selectedGrade.nameAr : selectedGrade.name,
-                    },
-                  });
-                }}
-                style={({ pressed }) => [
-                  styles.libraryRow,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                    borderRadius: colors.radius,
-                    flexDirection: isRTL ? 'row-reverse' : 'row',
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
-              >
-                <Ionicons name="library-outline" size={20} color={colors.primary} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.libraryTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
-                    {t('qrLibraryEntry')}
-                  </Text>
-                  <Text style={[styles.libraryMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-                    {t('qrLibraryCount', qrCount)}
-                  </Text>
-                </View>
-                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
-              </Pressable>
-            ) : null}
             <View style={[styles.gradeLabelRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Text style={[styles.gradeLabel, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', flex: 1 }]}>
                 {t('subjects_count', subjects.length)} · {lang === 'ar' ? selectedGrade.nameAr : selectedGrade.name}
@@ -286,7 +248,8 @@ export default function CurriculumScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1 },
   title: { fontSize: 28, marginBottom: 4 },
-  subtitle: { fontSize: 13, marginBottom: 14 },
+  subtitle: { fontSize: 13, marginBottom: 6 },
+  intro: { fontSize: 12.5, lineHeight: 19, marginBottom: 14 },
   searchRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
   searchInput: { flex: 1, fontSize: 14, paddingVertical: 0 },
   gradeBar: { borderBottomWidth: 1 },
@@ -297,9 +260,6 @@ const styles = StyleSheet.create({
   grid: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 120 },
   gradeLabelRow: { alignItems: 'center', gap: 10, marginBottom: 12 },
   gradeLabel: { fontSize: 12 },
-  libraryRow: { alignItems: 'center', gap: 12, borderWidth: 1, padding: 14, marginBottom: 14 },
-  libraryTitle: { fontSize: 14 },
-  libraryMeta: { fontSize: 11.5, marginTop: 2 },
   subjectCard: { flex: 1, padding: 18, borderWidth: 1, alignItems: 'center', gap: 8 },
   subjectIcon: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' },
   subjectName: { fontSize: 13 },

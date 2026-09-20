@@ -33,7 +33,7 @@ import {
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
 import { sanitizeCatalogIds, sanitizeTeachingAssignments } from "../lib/catalogIds.js";
 import { GRADES, SUBJECTS } from "@workspace/curriculum";
-import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
+import { sendGoogleAccountNoticeEmail, sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
 import {
   generateVerificationCode,
   hashVerificationCode,
@@ -608,9 +608,19 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
       .where(eq(users.email, email.toLowerCase().trim()))
       .limit(1);
 
-    // No account, or a Google-only account with no password to reset. Both
-    // stop here, and both answer exactly as success does.
-    if (!user || !user.passwordHash) {
+    // No account: nothing to tell, and no address to tell it to either way.
+    if (!user) {
+      res.json({ ok: true });
+      return;
+    }
+
+    // Google-only account, no password to reset. The API answer is still
+    // `{ok:true}` — identical to every other branch — but the inbox itself
+    // gets told why no code is coming, instead of silence that reads as a
+    // delivery failure.
+    if (!user.passwordHash) {
+      const sent = await sendGoogleAccountNoticeEmail(user.email);
+      if (!sent) logger.error({ userId: user.id }, "google-account notice could not be emailed");
       res.json({ ok: true });
       return;
     }

@@ -2228,6 +2228,60 @@ Grade 6 social S1/S2, Grade 6 vocational S2, Grade 6 arabic S2, Grade 7 art and
 Grade 7 digital literacy S1/S2. No contents rows at any tolerance and no
 openers — there is nothing in these books to read.
 
+## An Android build is now a workflow, not a laptop, 2026-09-19
+
+Every APK so far (`5c38a5fb`, `68522384`, `d32f5c0c`, `e9388ee1`) was built by
+hand from a machine with `eas-cli` logged in as `nizar.62`. The sandboxes that
+do most of the work on this repo have no Expo credentials at all — no
+`EXPO_TOKEN`, no `~/.expo` — so «give me a new APK» from one of them meant
+«wait for the laptop». The repository already holds `EXPO_TOKEN` for
+`mobile-update.yml` (its «Publish update» step ran and «Explain a skipped
+publish» skipped on run 159, 2026-09-19, so the secret is set and works), and
+a build needs nothing more.
+
+`.github/workflows/mobile-build.yml` is `workflow_dispatch` only: Actions →
+*Mobile Android build* → *Run workflow*, pick the branch and the `eas.json`
+profile (`preview` → sideloadable APK on the `preview` update channel, so it
+keeps taking OTA updates; `production` → the Play app-bundle). It runs
+`eas build --platform android --json`, waits, and writes the build id,
+version / versionCode and the download URL into the job summary at the top of
+the run page.
+
+**First run 2026-09-19 17:16 UTC, run `35457585370`, on `main` at `926c675`
+(#563 merged 17:16): failed, and not for a reason the workflow can fix.**
+Everything up to the build worked as designed: the archive uploaded, the
+`preview` env block loaded (`Environment variables loaded from the "preview"
+build profile "env" configuration: EXPO_PUBLIC_API_BASE_URL,
+EXPO_PUBLIC_DEMO_MODE, EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+EXPO_PUBLIC_POSTHOG_API_KEY`), the remote keystore resolved. Then:
+
+> This account has used its Android builds from the Free plan this month,
+> which will reset in 11 days (on Thu Oct 01 2026).
+
+**No Android build is possible on `nizar.62` until 2026-10-01**, or until
+the account is upgraded (`eas billing:subscribe starter --account nizar.62`,
+or expo.dev → Billing). That is a decision for a person, not a workflow. The
+September builds that spent the quota are the four in «The app has been built
+for a real device» and the fingerprint-policy attempts of 2026-09-13 (#420).
+
+**The archive was 1.1 GB, not 311 MB.** Reproduced locally at 1.2 GB with
+eas-cli 24.7.0's own `makeShallowCopyAsync`, no `node_modules` involved:
+`.git` 521 MB, `knowledge-base` 452 MB, `marketing` 139 MB, `lib` 64 MB.
+Two of those are waste. The tarball carries the shallow clone's `.git` —
+`git ls-files` can never mark it ignored, but eas-cli special-cases a `.git`
+line in `.easignore` and deletes the directory from the clone — and
+`marketing/` is reels and tutorials nothing in the app imports. Both are now
+in `.easignore`; re-measured at 518 MB, `.git` gone, `marketing/` an empty
+directory. `knowledge-base` stays, for the reason `.easignore`'s header
+gives (`services/bookFigureAssets.ts` static-requires the 2,631 PNGs). The
+2026-09-06 note that said 311 MB was true then; the figure PNGs for grades
+3-10 and the reels arrived after it. **The 518 MB archive is unverified by a
+build** — the next one is the first that can check it.
+
+No `app.json` `version` bump: the last hand-run builds already carry
+`expo-updates`, and nothing native has been added since #420 — see «app.json's
+`version` is the OTA compatibility key» in CLAUDE.md before the next one.
+
 ## Grades 3, 4 and 5: 11 books, +123 lessons, 2026-09-19
 
 **498 → 621 lessons illustrated, 2572 figures.** The catalogs landed between

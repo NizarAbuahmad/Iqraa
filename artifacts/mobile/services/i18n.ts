@@ -239,6 +239,8 @@ const translations = {
     // Curriculum — top level
     curriculumTitle: 'المنهاج',
     jordanCurriculum: 'المنهاج الأردني',
+    curriculumIntro:
+      'تصفّح المنهاج الأردني الرسمي حسب الصف والمادة والوحدة والدرس — بالترتيب نفسه وأرقام الصفحات نفسها الموجودة في الكتاب المطبوع، لتراجع محتوى الكتاب الحقيقي مباشرة من هنا.',
     searchSubjects: 'ابحث في المواد...',
     grade: 'الصف',
     subjects_count: (n: number) => arCountPhrase(n, 'مادة', 'مادتان', 'مواد'),
@@ -563,6 +565,40 @@ const translations = {
     iqraChatError: 'تعذر إتمام العملية. حاول مرة أخرى أو أعد صياغة الطلب.',
     iqraArtifactNeedTopic: 'حاضر — عن أي درس نجهّز هذه المادة؟ اكتب اسم الدرس أو اختر من الاقتراحات.',
     changeLesson: 'تغيير الدرس',
+
+    // ── Workspace home (desktop web) ──────────────────────────────
+    tabToday: 'اليوم',
+    homeReady: (done: number, total: number) => `${done} من ${total} جاهزة`,
+    homePrepTitle: 'جاهزية الدرس',
+    homePrepDone: 'جاهزة',
+    homePrepMake: 'أنشئها الآن',
+    homeOpen: 'افتح',
+    homeQuickTools: 'أدوات سريعة لهذا الدرس',
+    homeMyClasses: 'شُعَبي',
+    homeNoClasses: 'لم تنشئ شعبة بعد',
+    homeAssistant: 'مساعد اقرأ',
+    homeAssistantTiedToLesson: 'مرتبط بالدرس الحالي',
+    homeAskPlaceholder: 'اسأل عن الدرس، أو اطلب مادة…',
+    homeNoLesson: 'لم تختر درساً بعد',
+    homeNoLessonHint: 'اختر الصف والمادة والدرس لتبدأ التحضير.',
+    homeRecent: 'آخر المواد',
+    homeRecentEmpty: 'لا توجد مواد محفوظة بعد.',
+    homeOpenChat: 'افتح المحادثة',
+
+    // ── Command palette (⌘K) ──────────────────────────────────────
+    cmdPlaceholder: 'اكتب أمراً، أو ابحث عن أداة…',
+    cmdEmpty: 'لا نتائج',
+    cmdHintOpen: 'للفتح',
+    cmdHintMove: 'للتنقل',
+    cmdHintClose: 'للإغلاق',
+    cmdSectionLesson: 'الدرس الحالي',
+    cmdSectionTool: 'الأدوات',
+    cmdSectionNavigate: 'التنقل',
+
+    // ── Chat canvas (desktop web) ─────────────────────────────────
+    canvasOpen: 'افتح في اللوح',
+    canvasClose: 'إغلاق اللوح',
+    canvasTitle: 'اللوح',
     lessonUploadedFiles: (n: number) => `الملفات المرفوعة: ${n}`,
     lessonGeneratedLabel: 'جاهز:',
     teacherMode: 'وضع المعلم',
@@ -1739,6 +1775,8 @@ const translations = {
 
     curriculumTitle: 'Curriculum',
     jordanCurriculum: 'Jordanian Curriculum',
+    curriculumIntro:
+      "Browse the official Jordanian curriculum by grade, subject, unit and lesson — in the same order and with the same page numbers as the printed book, so you can review the real book's content directly from here.",
     searchSubjects: 'Search subjects...',
     grade: 'Grade',
     subjects_count: (n: number) => `${n} subject${n !== 1 ? 's' : ''}`,
@@ -2032,6 +2070,40 @@ const translations = {
     iqraChatError: 'Something went wrong while handling your request. Please try again or rephrase.',
     iqraArtifactNeedTopic: 'Sure — which lesson should this material cover? Type the lesson name or pick a topic below.',
     changeLesson: 'Change lesson',
+
+    // ── Workspace home (desktop web) ──────────────────────────────
+    tabToday: 'Today',
+    homeReady: (done: number, total: number) => `${done} of ${total} ready`,
+    homePrepTitle: 'Lesson readiness',
+    homePrepDone: 'Ready',
+    homePrepMake: 'Make it now',
+    homeOpen: 'Open',
+    homeQuickTools: 'Quick tools for this lesson',
+    homeMyClasses: 'My classes',
+    homeNoClasses: 'No classes yet',
+    homeAssistant: 'IQRA Assistant',
+    homeAssistantTiedToLesson: 'Tied to the current lesson',
+    homeAskPlaceholder: 'Ask about the lesson, or request a material…',
+    homeNoLesson: 'No lesson picked yet',
+    homeNoLessonHint: 'Pick a grade, subject and lesson to start preparing.',
+    homeRecent: 'Recent materials',
+    homeRecentEmpty: 'Nothing saved yet.',
+    homeOpenChat: 'Open chat',
+
+    // ── Command palette (⌘K) ──────────────────────────────────────
+    cmdPlaceholder: 'Type a command, or search for a tool…',
+    cmdEmpty: 'No results',
+    cmdHintOpen: 'to open',
+    cmdHintMove: 'to move',
+    cmdHintClose: 'to close',
+    cmdSectionLesson: 'Current lesson',
+    cmdSectionTool: 'Tools',
+    cmdSectionNavigate: 'Go to',
+
+    // ── Chat canvas (desktop web) ─────────────────────────────────
+    canvasOpen: 'Open in canvas',
+    canvasClose: 'Close canvas',
+    canvasTitle: 'Canvas',
     lessonUploadedFiles: (n: number) => `Uploaded files: ${n}`,
     lessonGeneratedLabel: 'Generated:',
     teacherMode: 'Teacher Mode',

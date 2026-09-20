@@ -18,6 +18,14 @@ cqv-reports/
 docs/
 artifacts/mockup-sandbox/
 .github/
+# The marketing reels and tutorials: 139 MB of mp4 nothing in the app imports.
+marketing/
+# The tarball otherwise carries the shallow clone's .git — 521 MB of blobs the
+# builder never reads (it gets the commit hash from EAS_BUILD_GIT_COMMIT_HASH).
+# eas-cli special-cases this line, since `git ls-files` can never mark .git
+# ignored; measured 2026-09-19, the first CI build: 1.1 GB archive, of which
+# this and marketing/ were 660 MB.
+.git
 
 # ── Verbatim copy of .gitignore below this line ──────────────────────────────
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
