@@ -20,8 +20,10 @@ import {
   buildPrepBoard,
   materialsForTopic,
   normalizeTopic,
+  PREP_ROWS,
   prepSummary,
   sameTopic,
+  withoutBoardTools,
   type MaterialLike,
 } from '../lessonBoard.ts';
 
@@ -105,5 +107,33 @@ describe('normalizeTopic', () => {
       TOPIC,
     );
     assert.deepEqual(list.map(m => m.id), ['b', 'a']);
+  });
+});
+
+describe('withoutBoardTools', () => {
+  it('drops every tool the board already has a row for', () => {
+    const kept = withoutBoardTools(PREP_ROWS.map(row => ({ id: row.type, route: row.route })));
+    assert.deepEqual(kept, []);
+  });
+
+  it('keeps the tools the board does not carry', () => {
+    const kept = withoutBoardTools([
+      { id: 'lesson-plan', route: '/ai-tools/lesson-plan' },
+      { id: 'game', route: '/ai-tools/game' },
+      { id: 'whiteboard', route: '/ai-tools/whiteboard' },
+    ]);
+    assert.deepEqual(kept.map(t => t.id), ['game', 'whiteboard']);
+  });
+
+  it('drops a second entry pointing at a board row’s generator', () => {
+    // 'homework' opens the worksheet generator, which the board already offers.
+    const kept = withoutBoardTools([{ id: 'homework', route: '/ai-tools/worksheet' }]);
+    assert.deepEqual(kept, []);
+  });
+
+  it('drops a tool with no route at all (GeoGebra opens a browser)', () => {
+    // Explicit type argument: inferring it from a literal with no `route`
+    // narrows T to `{ route?: string }`, which then rejects `id` as excess.
+    assert.deepEqual(withoutBoardTools<{ id: string; route?: string }>([{ id: 'geogebra' }]), []);
   });
 });
