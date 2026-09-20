@@ -39,7 +39,16 @@ function SidebarRow({ entry, isIOS, active }: { entry: TabEntry; isIOS: boolean;
   );
 }
 
-export function WebSidebar({ entries, isIOS }: { entries: TabEntry[]; isIOS: boolean }) {
+export function WebSidebar({
+  entries,
+  isIOS,
+  lessonCard,
+}: {
+  entries: TabEntry[];
+  isIOS: boolean;
+  /** The teacher's current-lesson card, above the nav; null for roles with no lesson to switch. */
+  lessonCard?: React.ReactNode;
+}) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
@@ -56,6 +65,7 @@ export function WebSidebar({ entries, isIOS }: { entries: TabEntry[]; isIOS: boo
         },
       ]}
     >
+      {lessonCard}
       {entries
         .filter((entry) => entry.visible)
         .map((entry) => (
