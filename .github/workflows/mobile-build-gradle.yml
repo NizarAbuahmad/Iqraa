@@ -113,13 +113,23 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # Installs cmdline-tools, a default platform/build-tools, and accepts
-      # the SDK licenses. The Android Gradle Plugin auto-downloads whatever
-      # exact compileSdk/NDK version the generated project asks for on top of
-      # this, using the same sdkmanager, as long as the licenses it needs are
+      # Installs cmdline-tools, platform-tools, and accepts the SDK licenses.
+      # The Android Gradle Plugin auto-downloads whatever exact
+      # compileSdk/NDK version the generated project asks for on top of this,
+      # using the same sdkmanager, as long as the licenses it needs are
       # already accepted — which is what this buys.
+      #
+      # packages must override this action's own default ("tools
+      # platform-tools") — first real run (2026-09-20) failed outright,
+      # before touching the project at all, because Google removed the
+      # standalone "tools" package from the SDK repository years ago:
+      # `sdkmanager tools` exits 1 with "Failed to find package 'tools'",
+      # which the action treats as fatal. Nothing here has ever asked for
+      # "tools" — only platform-tools is actually needed up front.
       - uses: android-actions/setup-android@v3
         if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        with:
+          packages: platform-tools
 
       # Keyed loosely (there's no android/ yet to hash — expo prebuild hasn't
       # run) so it's a cache that helps on a repeat run rather than one that
