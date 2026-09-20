@@ -18,7 +18,21 @@
 // the actual secret values never pass through this plugin or get written to
 // any generated file. Only the keystore *path* needs to already exist on disk
 // when Gradle runs.
-const { withAppBuildGradle } = require('@expo/config-plugins');
+//
+// Import from `expo/config-plugins`, NOT `@expo/config-plugins` directly.
+// `@expo/config-plugins` is only a *transitive* dependency of
+// `artifacts/mobile` (pulled in by `expo` itself), and this monorepo's pnpm
+// install is strict/non-hoisted, so a bare `require('@expo/config-plugins')`
+// from a file under `artifacts/mobile/plugins/` cannot resolve it — `expo` is
+// the direct dependency here, and `expo/config-plugins` is its own documented
+// re-export of the same module, resolvable through `expo`'s own dependency
+// tree instead. Confirmed the hard way: this exact mistake broke
+// `mobile-update.yml`'s OTA publish on every merge to `main` for about an
+// hour after #570 merged, because `eas update` also has to evaluate
+// app.json's `plugins` list — and the broken `require` executes at module
+// load time, before this file's own ANDROID_RELEASE_STORE_FILE check ever
+// runs, so "no-op unless the env var is set" did not save it.
+const { withAppBuildGradle } = require('expo/config-plugins');
 
 const MARKER = '// added by withAndroidReleaseSigning';
 
