@@ -581,14 +581,6 @@ export default function TeachingPlansScreen() {
                 </Text>
               ) : null}
               <TextInput
-                value={form.topics}
-                onChangeText={v => setForm(f => ({ ...f, topics: v }))}
-                placeholder={t('planTopicsPlaceholder')}
-                placeholderTextColor={colors.mutedForeground}
-                multiline
-                style={[inputStyle, { minHeight: 70, textAlignVertical: 'top' }]}
-              />
-              <TextInput
                 value={form.date}
                 onChangeText={v => setForm(f => ({ ...f, date: v }))}
                 placeholder={t('planDatePlaceholder')}
