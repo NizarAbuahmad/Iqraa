@@ -1,7 +1,9 @@
 /**
- * Teaching plans — a teacher's own free-text note of what they intend to
- * teach (school, grades, topics, schedule). See lib/db/src/schema/teachingPlans.ts
- * for why this is separate from `classGroups`/`/classes`.
+ * Teaching plans — what a teacher intends to teach a class, and when. The
+ * plan is anchored to a class (grade and subject come from it) and its
+ * schedule is `entries`: curriculum lesson ids against week numbers. See
+ * lib/db/src/schema/teachingPlans.ts for why this is separate from
+ * `classGroups`/`/classes`, and which fields are legacy.
  *
  * No student data here, so unlike roster.ts this does not need
  * `requireRosterConsent`.
@@ -18,6 +20,7 @@ import {
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
+import { parsePlanEntries } from "../lib/planEntries.js";
 
 const router = Router();
 
@@ -29,6 +32,7 @@ router.use("/teaching-plans", authMiddleware, requireRole(...TEACHER_ROLES));
 function trimmed(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
+
 
 /**
  * `classGroupId` is a link to another teacher-owned table, unlike every other
@@ -100,8 +104,10 @@ router.post("/teaching-plans", async (req: AuthenticatedRequest, res) => {
     }
 
     let classGroupId: string | null | undefined;
+    let entries: { lessonId: string; week: number }[] | undefined;
     try {
       classGroupId = await resolveClassGroupId(req.body?.classGroupId, req.user!.id);
+      entries = parsePlanEntries(req.body?.entries);
     } catch (msg) {
       res.status(400).json({ error: String(msg) });
       return;
@@ -114,6 +120,7 @@ router.post("/teaching-plans", async (req: AuthenticatedRequest, res) => {
         title,
         schoolName: trimmed(req.body?.schoolName),
         classGroupId: classGroupId ?? null,
+        entries: entries ?? [],
         grades: trimmed(req.body?.grades),
         topics: trimmed(req.body?.topics),
         date: trimmed(req.body?.date),
@@ -143,6 +150,8 @@ router.patch("/teaching-plans/:id", async (req: AuthenticatedRequest, res) => {
     try {
       const classGroupId = await resolveClassGroupId(req.body?.classGroupId, req.user!.id);
       if (classGroupId !== undefined) patch["classGroupId"] = classGroupId;
+      const entries = parsePlanEntries(req.body?.entries);
+      if (entries !== undefined) patch["entries"] = entries;
     } catch (msg) {
       res.status(400).json({ error: String(msg) });
       return;

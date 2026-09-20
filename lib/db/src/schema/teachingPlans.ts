@@ -6,6 +6,12 @@
  * class is going to be taught, and a teacher may have several (one per
  * school, term, or class).
  *
+ * A plan is anchored to a class and takes its grade and subject from it — the
+ * app stopped asking for `grades` as free text, because a typed "العاشر الف"
+ * is a string nothing can act on. `entries` finished the job: the schedule is
+ * curriculum lesson ids against week numbers, so the plan is now readable by
+ * the app and not only by its author. `topics`, `date` and `grades` survive
+ * as the legacy display path for plans written before that.
  * A plan is anchored to a class, and takes its grade and subject from it —
  * the app stopped asking for `grades` as free text, because a typed
  * "العاشر الف" is a string nothing can act on. `topics` and `date` are still
@@ -14,7 +20,7 @@
  * would let a plan answer «اختر الدرس الحالي» instead of a teacher picking
  * it each session.
  */
-import { pgTable, text, timestamp, uuid, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { users } from "./users";
@@ -41,7 +47,31 @@ export const teachingPlans = pgTable(
     classGroupId: uuid("class_group_id").references(() => classGroups.id, {
       onDelete: "set null",
     }),
+    /**
+     * The schedule: `[{ lessonId, week }]` — which curriculum lesson is
+     * taught in which week. A lesson is held by its **KB id**, never its
+     * title; `searchKBSemantic(title)` resolves 16 of 63 picker lessons to a
+     * *different* lesson, so a title-keyed plan silently swaps them
+     * (CLAUDE.md, "A lesson title does not identify a lesson").
+     *
+     * One column rather than a `teaching_plan_entries` child table: entries
+     * are always read and written whole and nothing queries across plans, so
+     * a table would buy a join and a second migration and nothing else.
+     * Nothing may trust its shape — see `normalizePlanEntries`
+     * (artifacts/mobile/services/planEntries.ts) and the server's own
+     * `parsePlanEntries`, which is the validating one.
+     */
+    entries: jsonb("entries")
+      .$type<{ lessonId: string; week: number }[]>()
+      .notNull()
+      .default([]),
     grades: text("grades").notNull().default(""),
+    /**
+     * Superseded by `entries`, kept because dropping a column is the one
+     * schema change that cannot be undone from a backup-free production. Both
+     * still render for plans written before `entries` existed; new plans
+     * leave them empty.
+     */
     topics: text("topics").notNull().default(""),
     date: text("date").notNull().default(""),
     time: text("time").notNull().default(""),
