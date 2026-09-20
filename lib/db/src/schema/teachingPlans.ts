@@ -9,16 +9,10 @@
  * A plan is anchored to a class and takes its grade and subject from it — the
  * app stopped asking for `grades` as free text, because a typed "العاشر الف"
  * is a string nothing can act on. `entries` finished the job: the schedule is
- * curriculum lesson ids against week numbers, so the plan is now readable by
- * the app and not only by its author. `topics`, `date` and `grades` survive
- * as the legacy display path for plans written before that.
- * A plan is anchored to a class, and takes its grade and subject from it —
- * the app stopped asking for `grades` as free text, because a typed
- * "العاشر الف" is a string nothing can act on. `topics` and `date` are still
- * free text and are the next thing to go: with a known grade and subject,
- * they can become curriculum lesson ids against week numbers, which is what
- * would let a plan answer «اختر الدرس الحالي» instead of a teacher picking
- * it each session.
+ * curriculum lesson ids against real calendar dates, so the plan can answer
+ * «ماذا أُدرِّس اليوم؟» directly instead of a teacher re-deriving it from an
+ * abstract week number every morning. `topics`, `date` and `grades` survive
+ * as the legacy display path for plans written before any of this existed.
  */
 import { pgTable, text, timestamp, uuid, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -48,21 +42,30 @@ export const teachingPlans = pgTable(
       onDelete: "set null",
     }),
     /**
-     * The schedule: `[{ lessonId, week }]` — which curriculum lesson is
-     * taught in which week. A lesson is held by its **KB id**, never its
+     * The schedule: `[{ lessonId, date }]` — one calendar date (`YYYY-MM-DD`)
+     * per curriculum lesson. A lesson is held by its **KB id**, never its
      * title; `searchKBSemantic(title)` resolves 16 of 63 picker lessons to a
      * *different* lesson, so a title-keyed plan silently swaps them
      * (CLAUDE.md, "A lesson title does not identify a lesson").
+     *
+     * Held `week: number` (an abstract week index) for a few hours on
+     * 2026-09-20 before shipping to nobody; that shape is not migrated, it is
+     * simply no longer valid — `normalizePlanEntries` drops a `week`-shaped
+     * row like any other malformed element.
      *
      * One column rather than a `teaching_plan_entries` child table: entries
      * are always read and written whole and nothing queries across plans, so
      * a table would buy a join and a second migration and nothing else.
      * Nothing may trust its shape — see `normalizePlanEntries`
      * (artifacts/mobile/services/planEntries.ts) and the server's own
-     * `parsePlanEntries`, which is the validating one.
+     * `parsePlanEntries`, which is the validating one. The "lay out my whole
+     * term" auto-fill (`autoScheduleEntries`) takes a start date and which
+     * weekdays the class meets, but neither of those is persisted — they are
+     * a one-time recipe, not plan state; only the dates they produce are
+     * saved.
      */
     entries: jsonb("entries")
-      .$type<{ lessonId: string; week: number }[]>()
+      .$type<{ lessonId: string; date: string }[]>()
       .notNull()
       .default([]),
     grades: text("grades").notNull().default(""),

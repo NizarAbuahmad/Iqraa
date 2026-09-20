@@ -1,5 +1,6 @@
 /**
- * Validation for a teaching plan's schedule — `[{ lessonId, week }]`.
+ * Validation for a teaching plan's schedule — `[{ lessonId, date }]`, one
+ * calendar date per lesson.
  *
  * Its own module, with no imports, for the reason mountOrder.test.ts explains
  * about the rest of this server: the route files use extensionless specifiers
@@ -14,13 +15,34 @@
  * worse than a failed save they can see.
  */
 
-/** Matches MAX_PLAN_ENTRIES / MAX_PLAN_WEEK in artifacts/mobile/services/planEntries.ts. */
+/** Matches MAX_PLAN_ENTRIES in artifacts/mobile/services/planEntries.ts. */
 export const MAX_PLAN_ENTRIES = 200;
-export const MAX_PLAN_WEEK = 60;
+/** How far a date may sit from today before it's a typo, not a schedule — matches the client. */
+const MAX_PLAN_DATE_SPAN_DAYS = 365 * 3;
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export interface PlanEntry {
   lessonId: string;
-  week: number;
+  date: string;
+}
+
+/**
+ * A syntactically-plausible, in-range calendar date. Rejects `2026-02-30`:
+ * `Date` silently rolls an impossible day into the next month, so
+ * re-formatting the parsed date and comparing strings is what actually
+ * catches it — a naive year/month/day range check would not.
+ */
+function isValidPlanDate(date: string): boolean {
+  if (!DATE_RE.test(date)) return false;
+  const parsed = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return false;
+  const y = parsed.getFullYear();
+  const m = String(parsed.getMonth() + 1).padStart(2, "0");
+  const d = String(parsed.getDate()).padStart(2, "0");
+  if (`${y}-${m}-${d}` !== date) return false;
+  const spanDays = Math.abs(parsed.getTime() - Date.now()) / 86_400_000;
+  return spanDays <= MAX_PLAN_DATE_SPAN_DAYS;
 }
 
 /**
@@ -42,17 +64,17 @@ export function parsePlanEntries(raw: unknown): PlanEntry[] | undefined {
   const parsed: PlanEntry[] = [];
   for (const item of raw) {
     if (typeof item !== "object" || item === null) throw "each entry must be an object";
-    const { lessonId, week } = item as { lessonId?: unknown; week?: unknown };
+    const { lessonId, date } = item as { lessonId?: unknown; date?: unknown };
     if (typeof lessonId !== "string" || !lessonId) throw "each entry needs a lessonId";
-    if (typeof week !== "number" || !Number.isInteger(week) || week < 1 || week > MAX_PLAN_WEEK) {
-      throw `each entry needs a whole week between 1 and ${MAX_PLAN_WEEK}`;
+    if (typeof date !== "string" || !isValidPlanDate(date)) {
+      throw "each entry needs a valid date (YYYY-MM-DD, within a few years of today)";
     }
-    // A lesson is taught in one week. Two entries for it is a client bug, and
-    // storing both would make the app's `weekOf` answer differently depending
+    // A lesson is taught on one date. Two entries for it is a client bug, and
+    // storing both would make the app's `dateOf` answer differently depending
     // on array order.
     if (seen.has(lessonId)) throw "a lesson cannot appear twice in one plan";
     seen.add(lessonId);
-    parsed.push({ lessonId, week });
+    parsed.push({ lessonId, date });
   }
   return parsed;
 }
