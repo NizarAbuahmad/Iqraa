@@ -2310,6 +2310,24 @@ Two things EAS does invisibly had to be reproduced by hand:
   second pass. **Not yet verified against a real `expo prebuild` run** — the
   template could differ from what SDK 54.0.37 (this project's exact pin)
   actually generates.
+
+  **This plugin broke OTA on `main` for about an hour, 2026-09-20.** #570
+  merged at 05:06 UTC; `mobile-update.yml`'s next two publishes (06:53, 06:54)
+  both failed with `Cannot find module '@expo/config-plugins'`. The plugin
+  imported `require('@expo/config-plugins')` — a *transitive* dependency of
+  `artifacts/mobile`, pulled in only through `expo` itself — and this
+  monorepo's pnpm install is strict/non-hoisted, so that bare specifier
+  cannot resolve from a file under `artifacts/mobile/plugins/`. Worse, the
+  "no-op unless `ANDROID_RELEASE_STORE_FILE` is set" guard did not save it:
+  the broken `require` sits at module-load time, which runs before that
+  check ever does, so it broke `eas update` too, unconditionally, even
+  though `eas update` never sets that variable. Fixed by importing from
+  `expo/config-plugins` instead — `expo`'s own documented re-export of the
+  same module, resolvable through `expo`'s dependency tree since `expo`
+  itself *is* a direct dependency here. **Confirms the "no-op unless an env
+  var is set" claim in this entry's own first paragraph was wrong** for the
+  hour between the merge and the fix — a runtime guard cannot save you from
+  a module that fails to load in the first place.
 - **The update channel.** `eas build` embeds the build profile's `channel`
   into the compiled app through a mechanism that lives in EAS's own build
   servers, not in anything `eas-cli` or `expo-updates` ships publicly.
