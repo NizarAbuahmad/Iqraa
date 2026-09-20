@@ -408,7 +408,6 @@ export default function TeachingPlansScreen() {
                     // line only for plans that never got one.
                     scheduleSummary(item) || item.topics,
                   ]
-                  const meta = [item.schoolName, classNameFor(item.classGroupId), ...scopeOf(item)]
                     .filter(Boolean)
                     .join(' · ');
                   return meta ? (
