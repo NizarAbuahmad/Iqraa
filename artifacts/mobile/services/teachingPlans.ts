@@ -1,19 +1,27 @@
 /**
- * Teaching plans service — a teacher's own free-text notes of what they
- * intend to teach (school, grades, topics, schedule). See
- * artifacts/api-server/src/routes/teachingPlans.ts.
+ * Teaching plans service — what a teacher intends to teach a class, and when.
+ * See artifacts/api-server/src/routes/teachingPlans.ts.
  *
  * Same shape as roster.ts: no local fallback, since a plan is server state
  * with no offline meaning.
  */
 import { apiFetch } from './apiClient.ts';
+import type { PlanEntry } from './planEntries.ts';
 
 export interface TeachingPlan {
   id: string;
   title: string;
   schoolName: string;
-  /** The linked class's id, null if the teacher hasn't attached one. */
+  /** The class this plan is for. Null only on plans predating the anchor. */
   classGroupId: string | null;
+  /**
+   * The schedule — lesson id against week. Comes off a `jsonb` column, so it
+   * is `unknown` until `normalizePlanEntries` (services/planEntries.ts) has
+   * had it: an older client wrote whatever it wrote, and nothing here can
+   * assume otherwise.
+   */
+  entries: unknown;
+  /** Legacy free text, superseded by `entries`/the class. Still displayed. */
   grades: string;
   topics: string;
   date: string;
@@ -68,6 +76,7 @@ export async function createTeachingPlan(input: {
   title: string;
   schoolName?: string;
   classGroupId?: string | null;
+  entries?: PlanEntry[];
   grades?: string;
   topics?: string;
   date?: string;
@@ -88,6 +97,7 @@ export async function updateTeachingPlan(
     title?: string;
     schoolName?: string;
     classGroupId?: string | null;
+    entries?: PlanEntry[];
     grades?: string;
     topics?: string;
     date?: string;

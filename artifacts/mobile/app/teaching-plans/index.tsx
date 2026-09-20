@@ -36,6 +36,15 @@ import {
 } from '@/services/teachingPlans';
 import { listClasses, type ClassGroup } from '@/services/roster';
 import { planScopeParts } from '@/services/planScope';
+import {
+  MAX_PLAN_WEEK,
+  entriesByWeek,
+  normalizePlanEntries,
+  setEntryWeek,
+  weekOf,
+  type PlanEntry,
+} from '@/services/planEntries';
+import { getLessonsForUnit, getUnitsForSubjectGrade } from '@/services/knowledgeBase';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { confirm } from '@/services/confirm';
 import type { TranslationKey } from '@/services/i18n';
@@ -44,10 +53,94 @@ import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 
 const ACCENT = '#1B6B62';
 
+/**
+ * One lesson, with the week it is taught in — blank meaning "not in this plan".
+ *
+ * Holds its own draft text rather than rendering the committed week directly:
+ * `setEntryWeek` refuses a week outside 1..MAX_PLAN_WEEK, so a controlled
+ * input bound to the committed value would silently snap back while someone
+ * was still typing. The draft is what you see; it is committed only once it
+ * parses, and clearing the box removes the lesson.
+ *
+ * Mounted under a key that changes with the plan being edited, so switching
+ * plans does not leave another plan's drafts on screen.
+ */
+function LessonWeekRow({ title, periods, week, onChangeWeek, isRTL, colors, periodsLabel, weekLabel }: {
+  title: string;
+  periods: number | null;
+  week: number | null;
+  onChangeWeek: (week: number | null) => void;
+  isRTL: boolean;
+  colors: ReturnType<typeof useColors>;
+  periodsLabel: (n: number) => string;
+  weekLabel: string;
+}) {
+  const [draft, setDraft] = useState(week === null ? '' : String(week));
+
+  const onDraft = (next: string) => {
+    // Arabic-Indic digits reach this box on an Arabic keyboard; fold them so
+    // «٣» is the same week as "3" rather than an unparseable string.
+    const latin = next.replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660));
+    if (latin && !/^\d{1,2}$/.test(latin)) return;
+    setDraft(latin);
+    if (latin === '') {
+      onChangeWeek(null);
+      return;
+    }
+    const parsed = Number(latin);
+    if (parsed >= 1 && parsed <= MAX_PLAN_WEEK) onChangeWeek(parsed);
+  };
+
+  const scheduled = week !== null;
+  return (
+    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
+      <View style={{ flex: 1 }}>
+        <Text
+          numberOfLines={2}
+          style={{
+            color: scheduled ? colors.foreground : colors.mutedForeground,
+            fontFamily: scheduled ? 'Cairo_500Medium' : 'Almarai_400Regular',
+            fontSize: 12.5,
+            textAlign: isRTL ? 'right' : 'left',
+          }}
+        >
+          {title}
+        </Text>
+        {periods ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: isRTL ? 'right' : 'left' }}>
+            {periodsLabel(periods)}
+          </Text>
+        ) : null}
+      </View>
+      <TextInput
+        value={draft}
+        onChangeText={onDraft}
+        placeholder={weekLabel}
+        placeholderTextColor={colors.mutedForeground}
+        keyboardType="number-pad"
+        maxLength={2}
+        style={{
+          width: 56,
+          paddingVertical: 6,
+          paddingHorizontal: 8,
+          borderRadius: 10,
+          borderWidth: 1.5,
+          borderColor: scheduled ? ACCENT : colors.border,
+          color: colors.foreground,
+          fontFamily: 'Almarai_400Regular',
+          fontSize: 12.5,
+          textAlign: 'center',
+        }}
+      />
+    </View>
+  );
+}
+
 const EMPTY_FORM = {
   title: '',
   schoolName: '',
   classGroupId: null as string | null,
+  entries: [] as PlanEntry[],
   grades: '',
   topics: '',
   date: '',
@@ -118,6 +211,8 @@ export default function TeachingPlansScreen() {
       title: plan.title,
       schoolName: plan.schoolName,
       classGroupId: plan.classGroupId,
+      // Straight off a jsonb column — normalize before anything reads it.
+      entries: normalizePlanEntries(plan.entries),
       grades: plan.grades,
       topics: plan.topics,
       date: plan.date,
@@ -158,6 +253,28 @@ export default function TeachingPlansScreen() {
    * a plan that already has one.
    */
   const canSave = Boolean(form.title.trim() && form.classGroupId);
+
+  /**
+   * The lessons this plan can schedule: the curriculum for the anchored
+   * class's own grade and subject. This is what the class anchor bought —
+   * before it, the screen had no grade or subject it could trust, so there
+   * was nothing to list.
+   */
+  const planClass = classes.find(c => c.id === form.classGroupId);
+  const scheduleUnits = planClass
+    ? getUnitsForSubjectGrade(planClass.subjectId, planClass.gradeId).map(unit => ({
+        unit,
+        lessons: getLessonsForUnit(unit.id),
+      }))
+    : [];
+
+  /** One line for the card: how much of the term this plan actually covers. */
+  const scheduleSummary = (plan: TeachingPlan): string => {
+    const entries = normalizePlanEntries(plan.entries);
+    if (entries.length === 0) return '';
+    const weeks = entriesByWeek(entries).length;
+    return `${t('planLessonsCount', entries.length)} · ${t('planWeeksCount', weeks)}`;
+  };
 
   const onSave = async () => {
     const title = form.title.trim();
@@ -283,7 +400,14 @@ export default function TeachingPlansScreen() {
                   // Grade and subject now come from the class; a plan made
                   // before the anchor existed still shows the text it was
                   // given. planScopeParts decides which, never both.
-                  const meta = [item.schoolName, classNameFor(item.classGroupId), ...scopeOf(item)]
+                  const meta = [
+                    item.schoolName,
+                    classNameFor(item.classGroupId),
+                    ...scopeOf(item),
+                    // The schedule if there is one; the old free-text topics
+                    // line only for plans that never got one.
+                    scheduleSummary(item) || item.topics,
+                  ]
                     .filter(Boolean)
                     .join(' · ');
                   return meta ? (
@@ -402,14 +526,60 @@ export default function TeachingPlansScreen() {
                   ) : null}
                 </View>
               )}
-              <TextInput
-                value={form.topics}
-                onChangeText={v => setForm(f => ({ ...f, topics: v }))}
-                placeholder={t('planTopicsPlaceholder')}
-                placeholderTextColor={colors.mutedForeground}
-                multiline
-                style={[inputStyle, { minHeight: 70, textAlignVertical: 'top' }]}
-              />
+              {/* Was a free-text «المواضيع» box. A typed topic is a string
+                  nothing can act on; a lesson id is the thing the rest of the
+                  app already speaks — which is why the class anchor had to
+                  come first, since lessons are only listable once the grade
+                  and subject are known. */}
+              {form.classGroupId ? (
+                // Keyed by the plan being edited so the rows' drafts do not
+                // survive into the next plan opened from this same modal.
+                <View key={`${editingId ?? 'new'}:${form.classGroupId}`} style={{ gap: 6 }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, textAlign: align }}>
+                    {t('planSchedule')}
+                  </Text>
+                  {scheduleUnits.length === 0 ? (
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+                      {t('planNoLessons')}
+                    </Text>
+                  ) : (
+                    <>
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, textAlign: align }}>
+                        {t('planScheduleHint')}
+                      </Text>
+                      {scheduleUnits.map(({ unit, lessons }) => (
+                        <View key={unit.id} style={{ gap: 4, marginTop: 6 }}>
+                          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: align }}>
+                            {lang === 'ar' ? unit.titleAr : unit.titleEn}
+                          </Text>
+                          {lessons.map(lesson => (
+                            <LessonWeekRow
+                              key={lesson.id}
+                              title={lang === 'ar' ? lesson.titleAr : lesson.titleEn}
+                              periods={lesson.periods}
+                              week={weekOf(form.entries, lesson.id)}
+                              onChangeWeek={week =>
+                                setForm(f => ({ ...f, entries: setEntryWeek(f.entries, lesson.id, week) }))
+                              }
+                              isRTL={isRTL}
+                              colors={colors}
+                              periodsLabel={n => t('planPeriodsCount', n)}
+                              weekLabel={t('planWeekShort')}
+                            />
+                          ))}
+                        </View>
+                      ))}
+                    </>
+                  )}
+                </View>
+              ) : null}
+              {/* Legacy topics, read-only: plans written before the schedule
+                  existed keep theirs visible, but nothing new writes here. */}
+              {form.topics ? (
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+                  {`${t('planTopics')}: ${form.topics}`}
+                </Text>
+              ) : null}
               <TextInput
                 value={form.date}
                 onChangeText={v => setForm(f => ({ ...f, date: v }))}
