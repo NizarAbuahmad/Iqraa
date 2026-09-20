@@ -193,9 +193,19 @@ jobs:
           EXPO_PUBLIC_DEMO_MODE: "false"
           EXPO_PUBLIC_GOOGLE_CLIENT_ID: 784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com
           EXPO_PUBLIC_POSTHOG_API_KEY: phc_t7Gd3Z4L7v3zDkPAciXoCvndiVqGfVxzGquEfbJPq9r8
+        # `timeout` is the backstop for a JVM OutOfMemoryError, not the fix
+        # for one (that's plugins/withAndroidGradleMemory.js). The first real
+        # run (2026-09-20, 35504077233) hit a Metaspace OOM in
+        # :expo-updates:kspReleaseKotlin and then never exited: a
+        # metaspace-exhausted JVM can fail to even finish printing its own
+        # "BUILD FAILED", so it sat spinning until the *job's* 90-minute
+        # timeout force-cancelled the whole run with no clear cause in the
+        # logs. Failing this one step at 45 minutes -- more than triple any
+        # successful run so far -- turns a repeat of that into a fast, named
+        # failure instead of another silent hour-long hang.
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleRelease --no-daemon
+          timeout 45m ./gradlew assembleRelease --no-daemon
 
       - name: Locate the built APK
         if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
