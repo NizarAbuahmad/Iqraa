@@ -403,6 +403,46 @@ Moving these to Secret Manager would make that class of leak impossible rather
 than merely discouraged. Until then the rule is the awkward one: never print a
 value, and treat any transcript that shows one as a rotation trigger.
 
+## The Android app (Google Play)
+
+**Nothing publishes the Android app automatically, on any path.** Both build
+paths are `workflow_dispatch`-only:
+
+- `.github/workflows/mobile-build.yml` — EAS Build. Free but capped by
+  Expo's monthly quota (ran out on its first use; see STATUS.md).
+- `.github/workflows/mobile-build-gradle.yml` — `expo prebuild` +
+  `./gradlew bundleRelease assembleRelease` directly on the Actions runner,
+  no EAS Build involved, no quota. Needs the four keystore secrets in
+  `docs/android-gradle-build-secrets.md` (one-time setup) before it will do
+  anything.
+
+Either way you get an APK and an AAB as downloadable run artifacts, not a
+store listing — getting from there into Google Play is a separate, manual
+process:
+
+1. **Finish the Play Console developer account** (Account → verify phone
+   number, identity) if not already done — a one-time gate before anything
+   else here works.
+2. **Create the app listing** (Play Console → *Create app*) if this is the
+   first release.
+3. **Upload the `.aab`, not the `.apk`.** Google has required an Android App
+   Bundle for a new app's production/testing tracks since 2021; a raw APK
+   only works for sideloading or Internal App Sharing links, not a Console
+   release track. Start with **Internal testing** (Release → Testing →
+   Internal testing → *Create release*) — instant, no review wait, the right
+   place to confirm Google Sign-In still works against this exact signing
+   certificate before testing more widely.
+4. On the first upload, accept **Play App Signing** — Google re-signs the
+   app for distribution while trusting the upload key this workflow already
+   signs with, so nothing about the OAuth client (bound to the signing
+   certificate — see STATUS.md's 2026-09-07 entry) changes.
+5. Fill in the store listing, content rating, target audience, and **Data
+   safety** form (Policy → App content) — answer Data safety against what
+   the app actually sends (Google Sign-In account info, PostHog analytics),
+   not against intent; it's checked against real behavior.
+6. Move Internal → Closed → Production testing tracks the same way, then
+   submit for review.
+
 ## Schema
 
 **Nothing deploys the database schema.** Not the build, not the deploy:
