@@ -1,0 +1,258 @@
+# What this is for
+#
+# .github/workflows/mobile-build.yml builds the Android APK through EAS
+# Build, which is free but capped: the account's monthly quota ran out on the
+# very first run (see STATUS.md, "An Android build is now a workflow, not a
+# laptop"), and won't reset until the 1st of the month.
+#
+# This workflow builds the same kind of APK without EAS Build at all: it runs
+# `expo prebuild` to generate the native Android project (not committed —
+# android/ is gitignored, see CLAUDE.md) and then compiles it with a plain
+# `./gradlew assembleRelease`, directly on the GitHub Actions runner. Iqraa is
+# a public repo, so Actions minutes are free and unlimited; there is no
+# monthly cap on this path.
+#
+# Two things EAS normally does for free had to be replaced by hand:
+#
+# 1. Signing. The `android/app/build.gradle` that `expo prebuild` generates
+#    signs `release` with the DEBUG keystore (its own comment says so) — `eas
+#    build` patches real signing in afterwards, on Expo's servers, using the
+#    keystore it holds. `plugins/withAndroidReleaseSigning.js` does the
+#    equivalent for this path: it's a no-op unless ANDROID_RELEASE_STORE_FILE
+#    is set (so `eas build` and local `expo run:android` are untouched), and
+#    when it is, it repoints `release` at a signingConfig that reads the
+#    keystore path and passwords from the environment at *Gradle* build time.
+#    This MUST be the project's real, existing keystore (the one `eas build`
+#    already signs with) — a different one breaks Google Sign-In exactly the
+#    way STATUS.md's "signing key changed on 2026-09-07" entry describes,
+#    since the OAuth client is bound to a signing certificate, not a project.
+#    Export it once with `eas credentials -p android` (this account is
+#    already logged in as nizar.62) and store the four secrets below — this
+#    workflow only ever reads them from GitHub Secrets, never derives or
+#    prints them.
+#
+# 2. The update channel. `eas build` embeds the eas.json build profile's
+#    `channel` into the compiled app so it knows which EAS Update channel to
+#    poll — undocumented outside EAS's own build servers, so a plain prebuild
+#    can't reproduce it. `expo-updates` reads the channel from
+#    `updates.requestHeaders["expo-channel-name"]` in app.json instead — a
+#    plain, ordinary config field (see @expo/config-types) — so app.json now
+#    sets it to "preview" directly, matching the channel mobile-update.yml
+#    publishes to and the channel every existing APK already carries.
+#
+# versionCode has no local source of truth (eas.json's `appVersionSource:
+# "remote"` means EAS's own account is the only counter, and app.json
+# declares no android.versionCode at all — the field EAS's remote builds
+# inject on the fly). This workflow reads the current value with the free,
+# read-only `eas build:version:get`, uses current+1, and best-effort reports
+# the new value back with the same GraphQL mutation `eas build:version:set`
+# calls interactively (that command has no non-interactive flag, so it can't
+# be shelled out to directly in CI). If that report step ever fails, a
+# subsequent EAS Build could reissue a versionCode this workflow already used
+# — installing it over a device already on this workflow's build would then
+# fail or silently not offer as an update. Unverified until a first run
+# proves the read/report round-trip end to end; see STATUS.md.
+name: Mobile Android build (Gradle, no EAS Build)
+
+on:
+  workflow_dispatch: {}
+
+# One at a time: two runs racing to read-then-write the same remote
+# versionCode would let one overwrite the other's reservation.
+concurrency:
+  group: mobile-build-gradle
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: gradle assembleRelease
+    runs-on: ubuntu-latest
+    # No EAS queue to wait on, but a cold Android SDK/NDK download plus a
+    # from-scratch native compile is slower than EAS's own ~22 minutes.
+    timeout-minutes: 90
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Explain a missing keystore secret
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 == '' }}
+        run: |
+          echo "ANDROID_KEYSTORE_BASE64 is not set — no build started."
+          echo "This workflow needs the project's real signing keystore, exported once from EAS:"
+          echo "  eas credentials -p android   # this account is already logged in as nizar.62"
+          echo "then base64 it and add these repository secrets (Settings > Secrets and variables > Actions):"
+          echo "  ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD"
+          echo "Reusing the existing keystore matters: a different one breaks Google Sign-In (see the"
+          echo "workflow file's header comment and STATUS.md's 2026-09-07 signing-key entry)."
+
+      - uses: actions/setup-node@v4
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        with:
+          node-version: 24.15.0
+
+      - name: Enable pnpm
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      - name: Install JS dependencies
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        run: pnpm install --frozen-lockfile
+
+      - uses: actions/setup-java@v4
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Installs cmdline-tools, a default platform/build-tools, and accepts
+      # the SDK licenses. The Android Gradle Plugin auto-downloads whatever
+      # exact compileSdk/NDK version the generated project asks for on top of
+      # this, using the same sdkmanager, as long as the licenses it needs are
+      # already accepted — which is what this buys.
+      - uses: android-actions/setup-android@v3
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+
+      # Keyed loosely (there's no android/ yet to hash — expo prebuild hasn't
+      # run) so it's a cache that helps on a repeat run rather than one that
+      # can ever be trusted to be correct; a cold cache just costs time, not
+      # correctness.
+      - name: Cache Gradle
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('artifacts/mobile/package.json') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Decode the release keystore
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        run: |
+          KEYSTORE_PATH="$RUNNER_TEMP/android-release.keystore"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+          {
+            echo "ANDROID_RELEASE_STORE_FILE=$KEYSTORE_PATH"
+            echo "ANDROID_RELEASE_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+            echo "ANDROID_RELEASE_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}"
+            echo "ANDROID_RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}"
+          } >> "$GITHUB_ENV"
+
+      - name: Resolve the next Android versionCode
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        working-directory: artifacts/mobile
+        run: |
+          CURRENT="$(npx eas-cli@latest build:version:get --platform android --profile preview --non-interactive --json 2>/dev/null | jq -r '.versionCode // empty')"
+          if [ -z "$CURRENT" ]; then
+            echo "::warning::Could not read the current versionCode from EAS (no EXPO_TOKEN, no network, or nothing set remotely yet). Starting from 0 -- check this doesn't collide with an existing install before relying on it."
+            CURRENT=0
+          fi
+          NEW=$((CURRENT + 1))
+          echo "EAS reports the current Android versionCode as $CURRENT; this build will use $NEW."
+          node -e "
+            const fs = require('fs');
+            const cfg = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            cfg.expo.android.versionCode = $NEW;
+            fs.writeFileSync('app.json', JSON.stringify(cfg, null, 2) + '\n');
+          "
+          echo "ANDROID_VERSION_CODE=$NEW" >> "$GITHUB_ENV"
+
+      - name: expo prebuild
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        working-directory: artifacts/mobile
+        run: npx expo prebuild --platform android --no-install
+
+      - name: gradlew assembleRelease
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        working-directory: artifacts/mobile/android
+        # Same four EXPO_PUBLIC_* values as eas.json's preview profile /
+        # mobile-update.yml — Metro inlines them into the JS bundle when the
+        # bundleReleaseJsAndAssets Gradle task runs, further down this chain.
+        env:
+          EXPO_PUBLIC_API_BASE_URL: https://iqraa-api-613126375862.europe-west1.run.app/api
+          EXPO_PUBLIC_DEMO_MODE: "false"
+          EXPO_PUBLIC_GOOGLE_CLIENT_ID: 784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com
+          EXPO_PUBLIC_POSTHOG_API_KEY: phc_t7Gd3Z4L7v3zDkPAciXoCvndiVqGfVxzGquEfbJPq9r8
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Locate the built APK
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        working-directory: artifacts/mobile
+        run: |
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$APK" ]; then
+            echo "::error::Expected APK not found at $APK -- gradlew reported success but the output moved or was renamed."
+            exit 1
+          fi
+          echo "APK_PATH=artifacts/mobile/$APK" >> "$GITHUB_ENV"
+          ls -lh "$APK"
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        with:
+          name: iqraa-android-preview-${{ github.run_number }}
+          path: ${{ env.APK_PATH }}
+          retention-days: 30
+
+      # Best effort, per the header comment: eas-cli has no non-interactive
+      # way to do this, so it's the same GraphQL mutation `eas
+      # build:version:set` calls, run directly. A failure here doesn't fail
+      # the build -- the APK above is already valid and installable -- but it
+      # does mean the next EAS Build could reissue this versionCode.
+      - name: Report the new versionCode back to EAS
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        working-directory: artifacts/mobile
+        run: |
+          STORE_VERSION="$(jq -r '.expo.version' app.json)"
+          APP_ID="$(jq -r '.expo.extra.eas.projectId' app.json)"
+          PACKAGE="$(jq -r '.expo.android.package' app.json)"
+          PAYLOAD="$(jq -n \
+            --arg appId "$APP_ID" \
+            --arg pkg "$PACKAGE" \
+            --arg storeVersion "$STORE_VERSION" \
+            --arg buildVersion "$ANDROID_VERSION_CODE" \
+            --arg runtimeVersion "$STORE_VERSION" \
+            '{
+              query: "mutation CreateAppVersionMutation($appVersionInput: AppVersionInput!) { appVersion { createAppVersion(appVersionInput: $appVersionInput) { id } } }",
+              variables: { appVersionInput: {
+                appId: $appId,
+                platform: "ANDROID",
+                applicationIdentifier: $pkg,
+                storeVersion: $storeVersion,
+                buildVersion: $buildVersion,
+                runtimeVersion: $runtimeVersion
+              } }
+            }')"
+          RESPONSE="$(curl -sS -X POST https://api.expo.dev/graphql \
+            -H "Authorization: Bearer $EXPO_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")"
+          echo "$RESPONSE"
+          if ! echo "$RESPONSE" | jq -e '.data.appVersion.createAppVersion.id' >/dev/null 2>&1; then
+            echo "::warning::Could not record versionCode $ANDROID_VERSION_CODE with EAS -- see the response above. A future EAS Build may reissue this versionCode; run 'eas build:version:set' by hand before then if that matters."
+          fi
+
+      - name: Job summary
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        run: |
+          {
+            echo "## Android APK (Gradle, no EAS Build)"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| versionCode | \`$ANDROID_VERSION_CODE\` |"
+            echo "| commit | \`${{ github.sha }}\` on \`${{ github.ref_name }}\` |"
+            echo "| download | the \`iqraa-android-preview-${{ github.run_number }}\` artifact on this run's summary page |"
+          } >> "$GITHUB_STEP_SUMMARY"
