@@ -630,6 +630,10 @@ import {
   buildG8CreativeArtsBrowserCatalog,
 } from './catalogs/g8CreativeArts.ts';
 import {
+  G10_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  buildG10CreativeArtsBrowserCatalog,
+} from './catalogs/g10CreativeArts.ts';
+import {
   G4_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
   buildG4CreativeArtsBrowserCatalog,
 } from './catalogs/g4CreativeArts.ts';
@@ -981,8 +985,10 @@ export const SUBJECTS: Subject[] = [
   // g3CreativeArts.ts. Extended to grade-1 on 2026-09-19 once its book
   // arrived, same one-book shape; see g1CreativeArts.ts. Extended to grade-2
   // on 2026-09-19 once its book arrived, same one-book shape; see
-  // g2CreativeArts.ts.
-  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-1', 'grade-2', 'grade-3', 'grade-4', 'grade-6', 'grade-7', 'grade-8'] },
+  // g2CreativeArts.ts. Extended to grade-10 on 2026-09-20 once its book
+  // arrived — the oldest grade this subject reaches so far, and a more
+  // advanced book (23 lessons, not the usual 30); see g10CreativeArts.ts.
+  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-1', 'grade-2', 'grade-3', 'grade-4', 'grade-6', 'grade-7', 'grade-8', 'grade-10'] },
   // Seventh brand-new subject, added 2026-09-09 as part of the Grade 8
   // batch. Seven vocational tracks packed into one book per semester
   // (life skills, home economics, agriculture, health/safety, industry,
@@ -1569,6 +1575,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // g5PhysicalEducationSem1.ts / g5PhysicalEducationSem2.ts.
   G5_PE_S1_CURRICULUM_BOOK_ID,
   G5_PE_S2_CURRICULUM_BOOK_ID,
+  // Grade 10 Art, Music and Drama Education — one book, no semester, same
+  // shape as g8CreativeArts.ts. 'creative-arts' is already in
+  // MVP_SUBJECT_IDS, but SUBJECTS.grades needed extending for grade-10 — see
+  // the SUBJECTS declaration above and g10CreativeArts.ts. Unlike the
+  // younger grades' books, this one is 23 lessons (7 + 8 + 8), not 30.
+  G10_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -4946,6 +4958,24 @@ export const BOOKS: Book[] = [
   // book-arabic-9 was read as "arabic has a Grade 9 book" during the
   // 2026-09-05 dead-end triage when it had nothing behind it. Grade 9 material
   // now lives only where it is real.
+  // ── Art, Music and Drama Education Grade 10 ────────────────────────────
+  // Extends SUBJECTS.grades for creative-arts (previously grade-1/2/3/4/6/7/8
+  // only) to the oldest grade this subject reaches in this repo. One book for
+  // the whole year — no semester field, unlike every other Grade 10 row in
+  // this table. This book is more advanced than the younger grades' — 23
+  // lessons (7 + 8 + 8), not the usual 30 — see g10CreativeArts.ts.
+  {
+    id: G10_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+    title: 'Art, Music and Drama Education – Grade 10',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف العاشر',
+    subjectId: 'creative-arts',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+  },
   {
     id: 'book-phys-11',
     title: 'Physics – Grade 11',
@@ -5762,6 +5792,7 @@ const _g8FinlitSem1Browser = buildG8FinlitSem1BrowserCatalog();
 const _g8DigitalSem1Browser = buildG8DigitalSem1BrowserCatalog();
 const _g8DigitalSem2Browser = buildG8DigitalSem2BrowserCatalog();
 const _g8CreativeArtsBrowser = buildG8CreativeArtsBrowserCatalog();
+const _g10CreativeArtsBrowser = buildG10CreativeArtsBrowserCatalog();
 const _g4CreativeArtsBrowser = buildG4CreativeArtsBrowserCatalog();
 const _g4VocSem1Browser = buildG4VocSem1BrowserCatalog();
 const _g4VocSem2Browser = buildG4VocSem2BrowserCatalog();
@@ -6062,6 +6093,7 @@ export const UNITS: Unit[] = [
   ..._g8DigitalSem1Browser.units,
   ..._g8DigitalSem2Browser.units,
   ..._g8CreativeArtsBrowser.units,
+  ..._g10CreativeArtsBrowser.units,
   ..._g4CreativeArtsBrowser.units,
   ..._g4VocSem1Browser.units,
   ..._g4VocSem2Browser.units,
@@ -6252,6 +6284,7 @@ export const LESSONS: Lesson[] = [
   ..._g8DigitalSem1Browser.lessons,
   ..._g8DigitalSem2Browser.lessons,
   ..._g8CreativeArtsBrowser.lessons,
+  ..._g10CreativeArtsBrowser.lessons,
   ..._g4CreativeArtsBrowser.lessons,
   ..._g4VocSem1Browser.lessons,
   ..._g4VocSem2Browser.lessons,

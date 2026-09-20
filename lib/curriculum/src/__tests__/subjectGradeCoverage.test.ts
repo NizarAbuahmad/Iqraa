@@ -70,10 +70,12 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'civic-education:grade-8',
   'physical-education:grade-8',
   // creative-arts joined MVP_SUBJECT_IDS the same day as its only book
-  // (Grade 8). SUBJECTS.grades for it is ['grade-8'] alone — no Grade 9 or
-  // 10 book is expected, so these two are permanent, not gaps to close.
+  // (Grade 8). No Grade 9 book is expected — NCCD does not publish one for
+  // this subject at grade-9, so this one is permanent, not a gap to close.
+  // creative-arts:grade-10 closed 2026-09-20 — SUBJECTS.grades extended for
+  // grade-10 (one book, no semester, 23 lessons not the usual 30) — see
+  // g10CreativeArts.ts.
   'creative-arts:grade-9',
-  'creative-arts:grade-10',
   // vocational-education joined the same day, same reason — SUBJECTS.grades
   // is ['grade-8'] alone here too.
   'vocational-education:grade-9',

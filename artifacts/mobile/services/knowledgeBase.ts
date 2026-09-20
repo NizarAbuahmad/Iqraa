@@ -159,6 +159,10 @@ import {
   buildG8CreativeArtsCatalog,
 } from './curriculumG8CreativeArts.ts';
 import {
+  G10_CREATIVE_ARTS_BOOK_ID,
+  buildG10CreativeArtsCatalog,
+} from './curriculumG10CreativeArts.ts';
+import {
   G8_VOC_S1_BOOK_ID,
   buildG8VocSem1Catalog,
 } from './curriculumG8VocationalSem1.ts';
@@ -1282,6 +1286,18 @@ export const KB_BOOKS: KBBook[] = [
     // placeholder the id-namespacing scope uses (see g8CreativeArts.ts).
     semester: 1,
     source: 'iqra_curriculum_g8_creative_arts.json (NCCD)',
+  },
+  {
+    id: G10_CREATIVE_ARTS_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'creative-arts',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف العاشر',
+    titleEn: 'Art, Music and Drama Education – Grade 10',
+    // Not actually Semester 1 — this book has no semester split at all.
+    // `semester` is required on KBBook, so 1 is used as the same technical
+    // placeholder the id-namespacing scope uses (see g10CreativeArts.ts).
+    semester: 1,
+    source: 'iqra_curriculum_g10_creative_arts.json (NCCD)',
   },
   {
     id: G8_VOC_S1_BOOK_ID,
@@ -3456,6 +3472,7 @@ const _g8FinlitSem1 = buildG8FinlitSem1Catalog();
 const _g8DigitalSem1 = buildG8DigitalSem1Catalog();
 const _g8DigitalSem2 = buildG8DigitalSem2Catalog();
 const _g8CreativeArts = buildG8CreativeArtsCatalog();
+const _g10CreativeArts = buildG10CreativeArtsCatalog();
 const _g4CreativeArts = buildG4CreativeArtsCatalog();
 const _g4VocSem1 = buildG4VocSem1Catalog();
 const _g4VocSem2 = buildG4VocSem2Catalog();
@@ -3763,6 +3780,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g8DigitalSem1.units,
   ..._g8DigitalSem2.units,
   ..._g8CreativeArts.units,
+  ..._g10CreativeArts.units,
   ..._g4CreativeArts.units,
   ..._g4VocSem1.units,
   ..._g4VocSem2.units,
@@ -3959,6 +3977,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g8DigitalSem1.lessons,
   ..._g8DigitalSem2.lessons,
   ..._g8CreativeArts.lessons,
+  ..._g10CreativeArts.lessons,
   ..._g4CreativeArts.lessons,
   ..._g4VocSem1.lessons,
   ..._g4VocSem2.lessons,

@@ -161,13 +161,15 @@ describe('subject isolation', () => {
       // book — no grade-9/10 form exists.
       // Grade 6 joined 2026-09-15, once SUBJECTS.grades was extended for it.
       'vocational-education': /^g\d+-voc-s[12]$/,
-      // Art, Music and Drama Education: Grade 7/8 only, one book per grade
-      // with no semester split — CurriculumIdScope still requires a
-      // semester number for id-namespacing, hardcoded to 1, so only the
-      // `-s1` form ever appears.
+      // Art, Music and Drama Education: one book per grade with no semester
+      // split — CurriculumIdScope still requires a semester number for
+      // id-namespacing, hardcoded to 1, so only the `-s1` form ever appears.
       // Grade 6 joined 2026-09-15. Still s1-only for every grade: this book
       // is not split by semester at any of them.
-      'creative-arts': /^g\d+-arts-s1$/,
+      // Grade 10 joined 2026-09-20 — grade-10 is `IMPLICIT_GRADE_ID` in
+      // curriculumIds.ts, so `bankTagsForParsedUnit` emits the bare `arts-s1`
+      // form for it with no `g10-` prefix, same as arabic/islamic below.
+      'creative-arts': /^(arts-s1|g\d+-arts-s1)$/,
       // Grade 10 Arabic predates this map and was silently unchecked — no
       // entry meant `continue`, not a pass. Added on 2026-09-08 alongside the
       // Grade 9 Arabic S1 book, so both grades are covered from here on.
