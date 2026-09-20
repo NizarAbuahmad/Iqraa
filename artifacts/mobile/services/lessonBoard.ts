@@ -119,3 +119,19 @@ export function buildPrepBoard(materials: MaterialLike[], topic: string): PrepRo
 export function prepSummary(rows: PrepRow[]): { done: number; total: number } {
   return { done: rows.filter(r => r.done).length, total: rows.length };
 }
+
+/**
+ * The catalog minus whatever the board already offers a row for.
+ *
+ * The workspace home shows both, and a «خطة درس» card sitting under a «خطة
+ * الدرس» row is the same button twice — the teacher reads it as two different
+ * things and finds out it isn't. The board wins that overlap: its row knows
+ * whether the material already exists, and the card does not.
+ *
+ * A route rather than an id decides it, because two catalog entries can lead
+ * to the same generator (homework and worksheet both open `/ai-tools/worksheet`).
+ */
+export function withoutBoardTools<T extends { route?: string }>(tools: T[]): T[] {
+  const boardRoutes = new Set<string>(PREP_ROWS.map(row => row.route));
+  return tools.filter(tool => tool.route && !boardRoutes.has(tool.route));
+}

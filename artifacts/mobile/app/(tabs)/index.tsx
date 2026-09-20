@@ -41,7 +41,7 @@ import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { JordanFlag } from '@/components/ui/JordanFlag';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
-import { buildPrepBoard, prepSummary, type PrepRow } from '@/services/lessonBoard';
+import { buildPrepBoard, prepSummary, withoutBoardTools, type PrepRow } from '@/services/lessonBoard';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { listClasses } from '@/services/roster';
@@ -53,7 +53,7 @@ import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from 
 import { DEFAULT_ACTIVE_LESSON_ID } from '@/services/lessonCopilot';
 import { buildClassDeck } from '@/services/startClass';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { BEFORE_CLASS } from '@/services/toolCatalog';
+import { WORKFLOW } from '@/services/toolCatalog';
 import { trackEvent } from '@/services/analytics';
 
 const START_CLASS_COLOR = '#B45309';
@@ -212,7 +212,15 @@ function LessonWorkspace() {
 
   const rowDir = isRTL ? 'row-reverse' as const : 'row' as const;
   const align = isRTL ? 'right' as const : 'left' as const;
-  const quickTools = BEFORE_CLASS.filter(tool => tool.route).slice(0, 4);
+  /*
+    Everything the board does not already offer. The first version took the
+    first four of BEFORE_CLASS, which put a «خطة درس» card directly under the
+    «خطة الدرس» row and a «شرائح الدرس» card under «عرض الحصة» — the same two
+    buttons twice, and the card was the worse of each pair because it cannot
+    say whether the material already exists. What is left is the rest of the
+    catalog: the tools that have no row.
+  */
+  const quickTools = withoutBoardTools(WORKFLOW.flatMap(section => section.tools)).slice(0, 4);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
