@@ -358,6 +358,10 @@ import {
   buildG6MathSem1BrowserCatalog,
 } from './catalogs/g6MathSem1.ts';
 import {
+  G6_MATH_S2_CURRICULUM_BOOK_ID,
+  buildG6MathSem2BrowserCatalog,
+} from './catalogs/g6MathSem2.ts';
+import {
   G6_ISLAMIC_S1_CURRICULUM_BOOK_ID,
   buildG6IslamicSem1BrowserCatalog,
   isG6IslamicSem1TitleOnlyUnit,
@@ -1279,6 +1283,7 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // grade-6 into MVP_GRADE_IDS below. 'science' and 'mathematics' are both
   // already in MVP_SUBJECT_IDS, so no subject append is needed.
   G6_MATH_S1_CURRICULUM_BOOK_ID,
+  G6_MATH_S2_CURRICULUM_BOOK_ID,
   G6_SCIENCE_S1_CURRICULUM_BOOK_ID,
   G6_SCIENCE_S2_CURRICULUM_BOOK_ID,
   // Grade 6 Arabic, both semesters — 'arabic' has been in MVP_SUBJECT_IDS
@@ -3640,12 +3645,14 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 2,
   },
-  // The first Grade 6 books in the repo. Maths carries four units and eighteen
-  // lessons from the student book alone (no S2 student book was supplied);
-  // science carries nine units and nineteen lessons across both semesters,
-  // numbered 1-4 then 5-9 continuously, the same convention as Grade 7 and 8.
-  // See g6MathSem1.ts / g6ScienceSem1.ts for what each book does and does not
-  // print, and the JSONs' known_gaps for what is deliberately empty.
+  // The first Grade 6 books in the repo. Maths S1 carries four units and
+  // eighteen lessons; Maths S2 (added 2026-09-20) continues with units 5-8
+  // and twenty-one lessons, eight units total across the year; science
+  // carries nine units and nineteen lessons across both semesters, numbered
+  // 1-4 then 5-9 continuously, the same convention as Grade 7 and 8.
+  // See g6MathSem1.ts / g6MathSem2.ts / g6ScienceSem1.ts for what each book
+  // does and does not print, and the JSONs' known_gaps for what is
+  // deliberately empty.
   {
     id: G6_MATH_S1_CURRICULUM_BOOK_ID,
     title: 'Mathematics – Grade 6, Semester 1',
@@ -3661,6 +3668,19 @@ export const BOOKS: Book[] = [
     // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
     pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Math/G6/1/ST/2026_MT06_SE1.pdf',
     guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/7.12.2023/action%20pack/TE06_Book.pdf',
+  },
+  {
+    id: G6_MATH_S2_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 6, Semester 2',
+    titleAr: 'الرياضيات – الصف السادس – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   {
     id: G6_SCIENCE_S1_CURRICULUM_BOOK_ID,
@@ -5845,6 +5865,7 @@ const _g4ArabicSem2Browser = buildG4ArabicSem2BrowserCatalog();
 const _g4EnglishSem1Browser = buildG4EnglishSem1BrowserCatalog();
 const _g4EnglishSem2Browser = buildG4EnglishSem2BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
+const _g6MathSem2Browser = buildG6MathSem2BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
 const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
 const _g6DigitalSem1Browser = buildG6DigitalSem1BrowserCatalog();
@@ -6165,6 +6186,7 @@ export const UNITS: Unit[] = [
   ..._g4EnglishSem1Browser.units,
   ..._g4EnglishSem2Browser.units,
   ..._g6MathSem1Browser.units,
+  ..._g6MathSem2Browser.units,
   ..._g6ScienceSem1Browser.units,
   ..._g6ArabicSem1Browser.units,
   ..._g6DigitalSem1Browser.units,
@@ -6355,6 +6377,7 @@ export const LESSONS: Lesson[] = [
   ..._g4EnglishSem1Browser.lessons,
   ..._g4EnglishSem2Browser.lessons,
   ..._g6MathSem1Browser.lessons,
+  ..._g6MathSem2Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
   ..._g6ArabicSem1Browser.lessons,
   ..._g6DigitalSem1Browser.lessons,
