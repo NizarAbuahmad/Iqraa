@@ -321,13 +321,17 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             </Pressable>
-            {/* A roster of real children belongs beside what the teacher
-                teaches, not filed under الإعدادات next to FAQ and sign-out.
-                Non-teachers keep their copy of this row in the settings list
-                below — they join classes, they just do not have a TEACHING
-                section to put it in. */}
-            <View style={{ marginTop: 8 }}>
+            {/* A roster of real children, a pacing plan, and a weekly period
+                grid all belong beside what the teacher teaches, not filed
+                under الإعدادات next to FAQ and sign-out. Non-teachers keep
+                their own copy of myClasses in the settings list below — they
+                join classes, they just do not have a TEACHING section to put
+                it in. خطط التدريس moved here from settings for the same
+                reason شُعَبي did; جدول الحصص never lived anywhere else. */}
+            <View style={{ marginTop: 8, gap: 8 }}>
               <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
+              <SettingRow icon="calendar-outline" label={t('myTeachingPlans')} onPress={() => router.push('/teaching-plans' as any)} isRTL={isRTL} colors={colors} />
+              <SettingRow icon="time-outline" label={t('myWeeklySchedule')} onPress={() => router.push('/schedule' as any)} isRTL={isRTL} colors={colors} />
             </View>
           </>
         ) : null}
@@ -341,7 +345,11 @@ export default function ProfileScreen() {
           {isTeacherRole(user?.role) ? null : (
             <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
           )}
-          <SettingRow icon="calendar-outline" label={t('myTeachingPlans')} onPress={() => router.push('/teaching-plans' as any)} isRTL={isRTL} colors={colors} />
+          {/* خطط التدريس was here unconditionally — a parent/student saw it
+              too, leading to a teacher-only screen the middleware would 403
+              (the exact door-to-nowhere pattern the iQra/AI-tools tabs are
+              already hidden from these roles to avoid). It now lives only in
+              the TEACHING block above, alongside جدول الحصص. */}
           {(user?.role === 'parent' || user?.role === 'student') && (
             <SettingRow
               icon="key-outline"
