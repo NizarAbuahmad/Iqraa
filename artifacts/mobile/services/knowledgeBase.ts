@@ -263,6 +263,14 @@ import {
   buildG5CreativeArtsCatalog,
 } from './curriculumG5CreativeArts.ts';
 import {
+  G5_VOC_S1_BOOK_ID,
+  buildG5VocSem1Catalog,
+} from './curriculumG5VocationalSem1.ts';
+import {
+  G5_VOC_S2_BOOK_ID,
+  buildG5VocSem2Catalog,
+} from './curriculumG5VocationalSem2.ts';
+import {
   G4_MATH_S1_BOOK_ID,
   buildG4MathSem1Catalog,
 } from './curriculumG4MathSem1.ts';
@@ -1543,6 +1551,24 @@ export const KB_BOOKS: KBBook[] = [
     // placeholder the id-namespacing scope uses (see g5CreativeArts.ts).
     semester: 1,
     source: 'iqra_curriculum_g5_creative_arts.json (NCCD)',
+  },
+  {
+    id: G5_VOC_S1_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف الخامس – الفصل الأول',
+    titleEn: 'Vocational Education – Grade 5 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g5_vocational_sem1.json (NCCD)',
+  },
+  {
+    id: G5_VOC_S2_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف الخامس – الفصل الثاني',
+    titleEn: 'Vocational Education – Grade 5 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g5_vocational_sem2.json (NCCD)',
   },
   {
     id: G4_MATH_S1_BOOK_ID,
@@ -3572,6 +3598,8 @@ const _g5SocialSem1 = buildG5SocialSem1Catalog();
 const _g5SocialSem2 = buildG5SocialSem2Catalog();
 const _g5DigitalSem1 = buildG5DigitalSem1Catalog();
 const _g5CreativeArts = buildG5CreativeArtsCatalog();
+const _g5VocSem1 = buildG5VocSem1Catalog();
+const _g5VocSem2 = buildG5VocSem2Catalog();
 const _g4MathSem1 = buildG4MathSem1Catalog();
 const _g4MathSem2 = buildG4MathSem2Catalog();
 const _g4ScienceSem1 = buildG4ScienceSem1Catalog();
@@ -3891,6 +3919,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g5MathSem2.units,
   ..._g5DigitalSem1.units,
   ..._g5CreativeArts.units,
+  ..._g5VocSem1.units,
+  ..._g5VocSem2.units,
   ..._g4MathSem1.units,
   ..._g4MathSem2.units,
   ..._g4ScienceSem1.units,
@@ -4092,6 +4122,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g5MathSem2.lessons,
   ..._g5DigitalSem1.lessons,
   ..._g5CreativeArts.lessons,
+  ..._g5VocSem1.lessons,
+  ..._g5VocSem2.lessons,
   ..._g4MathSem1.lessons,
   ..._g4MathSem2.lessons,
   ..._g4ScienceSem1.lessons,

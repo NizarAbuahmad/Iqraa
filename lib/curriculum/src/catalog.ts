@@ -662,6 +662,14 @@ import {
   buildG4VocSem2BrowserCatalog,
 } from './catalogs/g4VocationalSem2.ts';
 import {
+  G5_VOC_S1_CURRICULUM_BOOK_ID,
+  buildG5VocSem1BrowserCatalog,
+} from './catalogs/g5VocationalSem1.ts';
+import {
+  G5_VOC_S2_CURRICULUM_BOOK_ID,
+  buildG5VocSem2BrowserCatalog,
+} from './catalogs/g5VocationalSem2.ts';
+import {
   G8_SOCIAL_S1_CURRICULUM_BOOK_ID,
   buildG8SocialSem1BrowserCatalog,
 } from './catalogs/g8SocialSem1.ts';
@@ -1007,8 +1015,13 @@ export const SUBJECTS: Subject[] = [
   // grade-7 on 2026-09-12 once its book arrived (a different seven tracks).
   // Extended to grade-4 on 2026-09-17 once its book arrived — not
   // contiguous with grade-6..8 (no grade-5 book), same as creative-arts;
-  // see g4VocationalSem1.ts.
-  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-4', 'grade-6', 'grade-7', 'grade-8'] },
+  // see g4VocationalSem1.ts. Extended to grade-5 on 2026-09-20 once its
+  // book was found on disk for both semesters (a cross-check against the
+  // official NCCD textbook list caught it — it had never been built); see
+  // g5VocationalSem1.ts. APPENDED, matching this array's own pattern of
+  // adding grades as their books land rather than reordering to stay
+  // numeric.
+  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-4', 'grade-6', 'grade-7', 'grade-8', 'grade-5'] },
 ];
 
 /**
@@ -1599,6 +1612,13 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // the SUBJECTS declaration above and g10CreativeArts.ts. Unlike the
   // younger grades' books, this one is 23 lessons (7 + 8 + 8), not 30.
   G10_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  // Grade 5 Vocational Education, both semesters — found on disk 2026-09-20
+  // via a cross-check against the official NCCD textbook list.
+  // 'vocational-education' is already in MVP_SUBJECT_IDS, but
+  // SUBJECTS.grades needed extending for grade-5 — see the SUBJECTS
+  // declaration above and g5VocationalSem1.ts.
+  G5_VOC_S1_CURRICULUM_BOOK_ID,
+  G5_VOC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2750,6 +2770,40 @@ export const BOOKS: Book[] = [
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
+  },
+  // Grade 5 Vocational Education — both semesters, found on disk 2026-09-20
+  // via a cross-check against the official NCCD textbook list (the book had
+  // never been built despite existing for both semesters). Required
+  // extending SUBJECTS.grades for vocational-education (previously
+  // grade-4, grade-6..grade-8). Units restart at 1 each semester, same
+  // convention as g4VocationalSem1.ts/g8VocationalSem1.ts. Semester 1's PDF
+  // extracts cleanly through PyMuPDF; Semester 2's does not (word order
+  // reversed within many lines — see g5VocationalSem2.ts).
+  {
+    id: G5_VOC_S1_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 5, Semester 1',
+    titleAr: 'التربية المهنية – الصف الخامس – الفصل الأول',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-5',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G5_VOC_S2_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 5, Semester 2',
+    titleAr: 'التربية المهنية – الصف الخامس – الفصل الثاني',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-5',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // The first Grade 4 book in the repo, and the book that brings grade-4
   // into MVP_GRADE_IDS. HarperCollins/NCCD series, same publisher as
@@ -5916,6 +5970,8 @@ const _g5SocialSem1Browser = buildG5SocialSem1BrowserCatalog();
 const _g5SocialSem2Browser = buildG5SocialSem2BrowserCatalog();
 const _g5DigitalSem1Browser = buildG5DigitalSem1BrowserCatalog();
 const _g5CreativeArtsBrowser = buildG5CreativeArtsBrowserCatalog();
+const _g5VocSem1Browser = buildG5VocSem1BrowserCatalog();
+const _g5VocSem2Browser = buildG5VocSem2BrowserCatalog();
 const _g4MathSem1Browser = buildG4MathSem1BrowserCatalog();
 const _g4MathSem2Browser = buildG4MathSem2BrowserCatalog();
 const _g4ScienceSem1Browser = buildG4ScienceSem1BrowserCatalog();
@@ -6239,6 +6295,8 @@ export const UNITS: Unit[] = [
   ..._g5SocialSem2Browser.units,
   ..._g5DigitalSem1Browser.units,
   ..._g5CreativeArtsBrowser.units,
+  ..._g5VocSem1Browser.units,
+  ..._g5VocSem2Browser.units,
   ..._g4MathSem1Browser.units,
   ..._g4MathSem2Browser.units,
   ..._g4ScienceSem1Browser.units,
@@ -6432,6 +6490,8 @@ export const LESSONS: Lesson[] = [
   ..._g5SocialSem2Browser.lessons,
   ..._g5DigitalSem1Browser.lessons,
   ..._g5CreativeArtsBrowser.lessons,
+  ..._g5VocSem1Browser.lessons,
+  ..._g5VocSem2Browser.lessons,
   ..._g4MathSem1Browser.lessons,
   ..._g4MathSem2Browser.lessons,
   ..._g4ScienceSem1Browser.lessons,
