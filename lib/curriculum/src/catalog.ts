@@ -654,6 +654,10 @@ import {
   buildG8VocSem2BrowserCatalog,
 } from './catalogs/g8VocationalSem2.ts';
 import {
+  G9_VOC_S1_CURRICULUM_BOOK_ID,
+  buildG9VocSem1BrowserCatalog,
+} from './catalogs/g9VocationalSem1.ts';
+import {
   G4_VOC_S1_CURRICULUM_BOOK_ID,
   buildG4VocSem1BrowserCatalog,
 } from './catalogs/g4VocationalSem1.ts';
@@ -1018,10 +1022,11 @@ export const SUBJECTS: Subject[] = [
   // see g4VocationalSem1.ts. Extended to grade-5 on 2026-09-20 once its
   // book was found on disk for both semesters (a cross-check against the
   // official NCCD textbook list caught it — it had never been built); see
-  // g5VocationalSem1.ts. APPENDED, matching this array's own pattern of
-  // adding grades as their books land rather than reordering to stay
-  // numeric.
-  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-4', 'grade-6', 'grade-7', 'grade-8', 'grade-5'] },
+  // g5VocationalSem1.ts. Extended to grade-9 the same day once its Semester
+  // 1 book was supplied directly by the user; see g9VocationalSem1.ts.
+  // APPENDED, matching this array's own pattern of adding grades as their
+  // books land rather than reordering to stay numeric.
+  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-4', 'grade-6', 'grade-7', 'grade-8', 'grade-5', 'grade-9'] },
 ];
 
 /**
@@ -1619,6 +1624,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // declaration above and g5VocationalSem1.ts.
   G5_VOC_S1_CURRICULUM_BOOK_ID,
   G5_VOC_S2_CURRICULUM_BOOK_ID,
+  // Grade 9 Vocational Education, Semester 1 (source PDF supplied directly by
+  // the user; no Semester 2 book found on disk — see the JSON's known_gaps).
+  // 'vocational-education' extended to grade-9 in SUBJECTS.grades above (was
+  // grade-4/6/7/8/5 before this). See g9VocationalSem1.ts.
+  G9_VOC_S1_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -4361,6 +4371,24 @@ export const BOOKS: Book[] = [
     // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
     pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%D8%A9/8/2/%D9%85%D9%87%D9%86%D9%8A%20%D8%AB%D8%A7%D9%85%D9%86%20%D9%812%202025%20.pdf',
   },
+  // ── Vocational Education Grade 9 – Semester 1 ─────────────────────────────
+  // Eight units across six vocational tracks (life skills, home economics
+  // ×3, entrepreneurship, agriculture, security/health/safety, tourism).
+  // Source PDF supplied directly by the user; no Semester 2 book found on
+  // disk yet — see g9VocationalSem1.ts and the JSON's known_gaps.
+  {
+    id: G9_VOC_S1_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 9, Semester 1',
+    titleAr: 'التربية المهنية – الصف التاسع – الفصل الأول',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-9',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
   // ── Social Studies Grade 8 – Semesters 1 and 2 ────────────────────────────
   // First real book behind the pre-existing 'social' subject (declared
   // spanning grades 1-9, bookless until now). Combines civics, physical
@@ -5947,6 +5975,7 @@ const _g2CreativeArtsBrowser = buildG2CreativeArtsBrowserCatalog();
 const _g2PhysicalEducationSem1Browser = buildG2PhysicalEducationSem1BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
+const _g9VocSem1Browser = buildG9VocSem1BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
 const _g8SocialSem2Browser = buildG8SocialSem2BrowserCatalog();
 const _g8MathSem2Browser = buildG8MathSem2BrowserCatalog();
@@ -6252,6 +6281,7 @@ export const UNITS: Unit[] = [
   ..._g2PhysicalEducationSem1Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
+  ..._g9VocSem1Browser.units,
   ..._g8SocialSem1Browser.units,
   ..._g8SocialSem2Browser.units,
   ..._g8MathSem2Browser.units,
@@ -6447,6 +6477,7 @@ export const LESSONS: Lesson[] = [
   ..._g2PhysicalEducationSem1Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
+  ..._g9VocSem1Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
   ..._g8SocialSem2Browser.lessons,
   ..._g8MathSem2Browser.lessons,
