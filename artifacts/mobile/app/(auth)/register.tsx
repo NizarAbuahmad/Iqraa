@@ -256,7 +256,15 @@ export default function RegisterScreen() {
           />
 
           <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-            {t('registerTerms')}
+            {lang === 'ar' ? 'بإنشاء حسابك فإنك توافق على ' : 'By creating an account you agree to our '}
+            <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/terms')}>
+              {lang === 'ar' ? 'شروط الخدمة' : 'Terms of Service'}
+            </Text>
+            {lang === 'ar' ? ' و' : ' and '}
+            <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/privacy')}>
+              {lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}
+            </Text>
+            {'.'}
           </Text>
         </View>
 
