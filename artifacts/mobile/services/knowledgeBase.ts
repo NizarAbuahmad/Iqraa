@@ -727,6 +727,14 @@ import {
   G2_PE_S1_BOOK_ID,
   buildG2PhysicalEducationSem1Catalog,
 } from './curriculumG2PhysicalEducationSem1.ts';
+import {
+  G5_PE_S1_BOOK_ID,
+  buildG5PhysicalEducationSem1Catalog,
+} from './curriculumG5PhysicalEducationSem1.ts';
+import {
+  G5_PE_S2_BOOK_ID,
+  buildG5PhysicalEducationSem2Catalog,
+} from './curriculumG5PhysicalEducationSem2.ts';
 
 export interface KBBook {
   id: string;
@@ -1481,6 +1489,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Digital Skills – Grade 5 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g5_digital_sem1.json (NCCD)',
+  },
+  {
+    id: G5_PE_S1_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'physical-education',
+    titleAr: 'التربية الرياضية – الصف الخامس – الفصل الأول',
+    titleEn: 'Physical Education – Grade 5 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g5_physical_education_sem1.json (NCCD)',
+  },
+  {
+    id: G5_PE_S2_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'physical-education',
+    titleAr: 'التربية الرياضية – الصف الخامس – الفصل الثاني',
+    titleEn: 'Physical Education – Grade 5 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g5_physical_education_sem2.json (NCCD)',
   },
   {
     id: G4_MATH_S1_BOOK_ID,
@@ -3568,6 +3594,8 @@ const _engCommerce = buildEnglishCommerceKbCatalog();
 const _engAgriculture = buildEnglishAgricultureKbCatalog();
 const _engHospitality = buildEnglishHospitalityKbCatalog();
 const _engIndustry = buildEnglishIndustryKbCatalog();
+const _g5PhysicalEducationSem1 = buildG5PhysicalEducationSem1Catalog();
+const _g5PhysicalEducationSem2 = buildG5PhysicalEducationSem2Catalog();
 const _legacyS1UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === NCCD_S1_BOOK_ID).map(u => u.id),
 );
@@ -3868,6 +3896,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g7ArabicSem2.units,
   ..._g7EngSem1.units,
   ..._g7EngSem2.units,
+  ..._g5PhysicalEducationSem1.units,
+  ..._g5PhysicalEducationSem2.units,
 ];
 
 /** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 (G10 + G9) + NCCD FinLit S1 + English vocational tracks. */
@@ -4064,6 +4094,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g7ArabicSem2.lessons,
   ..._g7EngSem1.lessons,
   ..._g7EngSem2.lessons,
+  ..._g5PhysicalEducationSem1.lessons,
+  ..._g5PhysicalEducationSem2.lessons,
 ];
 
 // ─────────────────────────────────────────────────────
