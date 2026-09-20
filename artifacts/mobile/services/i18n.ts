@@ -243,6 +243,7 @@ const translations = {
       'تصفّح المنهاج الأردني الرسمي حسب الصف والمادة والوحدة والدرس — بالترتيب نفسه وأرقام الصفحات نفسها الموجودة في الكتاب المطبوع، لتراجع محتوى الكتاب الحقيقي مباشرة من هنا.',
     searchSubjects: 'ابحث في المواد...',
     grade: 'الصف',
+    subject: 'المادة',
     subjects_count: (n: number) => arCountPhrase(n, 'مادة', 'مادتان', 'مواد'),
     noSubjectsFound: 'لا توجد مواد مطابقة',
     // The library of what the books' own QR codes point at.
@@ -1779,6 +1780,7 @@ const translations = {
       "Browse the official Jordanian curriculum by grade, subject, unit and lesson — in the same order and with the same page numbers as the printed book, so you can review the real book's content directly from here.",
     searchSubjects: 'Search subjects...',
     grade: 'Grade',
+    subject: 'Subject',
     subjects_count: (n: number) => `${n} subject${n !== 1 ? 's' : ''}`,
     noSubjectsFound: 'No subjects found',
     qrLibraryEntry: 'Book resources',
