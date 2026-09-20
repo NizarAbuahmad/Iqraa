@@ -307,6 +307,7 @@ function ClassicTabLayout() {
         isIOS={isIOS}
         lessonCard={isTeacher ? <GlobalLessonBar layout="card" {...lessonProps} /> : null}
       />
+      <View style={{ flex: 1 }}>{tabs}</View>
       <View style={{ flex: 1 }}>
         {bar}
         <View style={{ flex: 1 }}>{tabs}</View>
