@@ -181,9 +181,13 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // PERMANENT — the subject is not declared at grade-5 in SUBJECTS.grades at
   // all. physics/chemistry/biology/earth-science and financial-literacy only
   // start at SPECIALISED_FROM (grade-9) or grade-7; geography/history/
-  // civic-education only start at grade-9; creative-arts and
-  // vocational-education are declared for grade-6..grade-8 only. None of
-  // these will ever get a grade-5 book.
+  // civic-education only start at grade-9; vocational-education is declared
+  // for grade-6..grade-8 only. physical-education:grade-5 and
+  // creative-arts:grade-5 both closed 2026-09-20 — both books were found via
+  // a cross-check against the official NCCD textbook list and
+  // SUBJECTS.grades was extended for each (see g5PhysicalEducationSem1.ts /
+  // g5CreativeArts.ts) — so neither is listed here any more. None of the
+  // remaining subjects below will ever get a grade-5 book.
   'chemistry:grade-5',
   'physics:grade-5',
   'biology:grade-5',
@@ -192,7 +196,6 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'geography:grade-5',
   'history:grade-5',
   'civic-education:grade-5',
-  'creative-arts:grade-5',
   'vocational-education:grade-5',
   // physical-education:grade-5 closed 2026-09-20, same SUBJECTS.grades
   // extension trap as grade-3/grade-1/grade-2 above — both semester student
