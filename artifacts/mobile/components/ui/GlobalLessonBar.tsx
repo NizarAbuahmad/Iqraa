@@ -94,6 +94,8 @@ export function GlobalLessonBar({ layout, pick, lang, isRTL, colors, topInset = 
   return (
     <View
       style={[
+        styles.wrap,
+        { paddingTop: topInset + 10, backgroundColor: colors.card, borderBottomColor: colors.border },
         styles.barWrap,
         { paddingTop: topInset + 8, backgroundColor: colors.background, borderBottomColor: colors.border },
       ]}
@@ -101,6 +103,10 @@ export function GlobalLessonBar({ layout, pick, lang, isRTL, colors, topInset = 
       <Pressable
         onPress={onPress}
         style={({ pressed }) => [
+          styles.pill,
+          {
+            flexDirection: rowDir,
+            backgroundColor: colors.secondary,
           styles.barPill,
           {
             flexDirection: rowDir,
@@ -113,6 +119,8 @@ export function GlobalLessonBar({ layout, pick, lang, isRTL, colors, topInset = 
         accessibilityRole="button"
         accessibilityLabel={t('changeLesson')}
       >
+        <View style={[styles.iconBubble, { backgroundColor: colors.card }]}>
+          <Ionicons name="school-outline" size={15} color={colors.primary} />
         <View style={[styles.iconBubble, { backgroundColor: colors.secondary }]}>
           <Ionicons name="school-outline" size={16} color={colors.primary} />
         </View>
@@ -124,6 +132,7 @@ export function GlobalLessonBar({ layout, pick, lang, isRTL, colors, topInset = 
             {topic}
           </Text>
         </View>
+        <Ionicons name="chevron-down" size={16} color={colors.primary} />
         {changeButton}
       </Pressable>
     </View>
@@ -131,6 +140,26 @@ export function GlobalLessonBar({ layout, pick, lang, isRTL, colors, topInset = 
 }
 
 const styles = StyleSheet.create({
+  wrap: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 14,
+    paddingBottom: 10,
+  },
+  pill: {
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  iconBubble: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  meta: { fontFamily: 'Almarai_400Regular', fontSize: 10.5 },
+  topic: { fontFamily: 'Cairo_600SemiBold', fontSize: 13 },
   barWrap: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 12,

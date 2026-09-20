@@ -34,9 +34,20 @@ import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
-import { MathParagraph } from '@/components/ui/MathParagraph';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { buildWorksheetHTML, buildWorksheetSlidesHTML, formatWorksheetText } from '@/services/share';
+import { EditableText } from '@/components/ui/Editable';
+import { optionLetter } from '@/services/optionLabels';
+import { confirm } from '@/services/confirm';
+import {
+  answerFor,
+  applyWorksheetAnswerEdit,
+  applyWorksheetOptionEdit,
+  applyWorksheetQuestionEdit,
+  flatIndexOf,
+  parsePoints,
+  removeWorksheetQuestionAt,
+} from '@/services/worksheetEdits';
 
 const ACCENT = '#8B5CF6';
 
@@ -56,7 +67,13 @@ const ALL_Q_TYPES: QType[] = ['multiple_choice', 'short_answer', 'fill_blank', '
 type Level = 'easy' | 'medium' | 'hard';
 /** Index-aligned with DIFFICULTY_IDS, so `diffIdx` doubles as the active level tab. */
 const LEVELS: Level[] = ['easy', 'medium', 'hard'];
-type LevelEntry = { result: WorksheetOutput; outcomes: VerifyOutcome[] | null; savedId?: string };
+type LevelEntry = {
+  result: WorksheetOutput;
+  outcomes: VerifyOutcome[] | null;
+  savedId?: string;
+  /** Flat question positions the teacher has hand-edited on this level's paper. */
+  editedFlatIndexes: Set<number>;
+};
 
 export default function WorksheetScreen() {
   const colors = useColors();
@@ -127,6 +144,15 @@ export default function WorksheetScreen() {
   /** null = not checked yet (or the check failed); [] onwards = per question. */
   const [outcomes, setOutcomes] = useState<VerifyOutcome[] | null>(null);
   /**
+   * Flat question positions (0-based, same indexing as `outcomes`) the
+   * teacher has hand-edited. A verified badge is dropped for these — the
+   * verifier proved the *generated* text, and an edit may have changed the
+   * very thing it proved. Same rule as the quiz screen's `editedQuestions`,
+   * keyed by position instead of a question id because `WorksheetQuestion`
+   * has none.
+   */
+  const [editedFlatIndexes, setEditedFlatIndexes] = useState<Set<number>>(new Set());
+  /**
    * Set only by «ثلاثة مستويات»: the same paper at each difficulty, keyed by
    * level. The active level lives in `result` / `outcomes` / `savedId` as
    * usual, so save, export, present and the verify summary need no changes;
@@ -190,7 +216,18 @@ export default function WorksheetScreen() {
 
   const isHomework = params.isHomework === '1';
 
-  const verification = summarizeVerification(outcomes ?? []);
+  /**
+   * A hand-edit invalidates whatever the verifier proved about that question
+   * — it checked the generated text, not whatever the teacher typed over it.
+   * Same shield-dropping rule as the quiz screen, applied by flat position.
+   */
+  const effectiveOutcomes: (VerifyOutcome | undefined)[] =
+    outcomes && result
+      ? outcomes.map((o, i) => (editedFlatIndexes.has(i) ? undefined : o))
+      : [];
+  const verification = summarizeVerification(
+    effectiveOutcomes.filter((o): o is VerifyOutcome => !!o),
+  );
 
   /**
    * Same pattern as the quiz tool: verification runs after the worksheet is
@@ -215,13 +252,14 @@ export default function WorksheetScreen() {
   const showLevel = (i: number) => {
     if (!levels || !result || i === diffIdx) return;
     const cur = LEVELS[diffIdx]!;
-    const next: Partial<Record<Level, LevelEntry>> = { ...levels, [cur]: { result, outcomes, savedId } };
+    const next: Partial<Record<Level, LevelEntry>> = { ...levels, [cur]: { result, outcomes, savedId, editedFlatIndexes } };
     const entry = next[LEVELS[i]!];
     if (!entry) return;
     setLevels(next);
     setDiffIdx(i);
     setResult(entry.result);
     setSavedId(entry.savedId);
+    setEditedFlatIndexes(entry.editedFlatIndexes);
     // null = never checked, or the check failed — ask again rather than show nothing.
     if (entry.outcomes) { verifyForRef.current = entry.result; setOutcomes(entry.outcomes); }
     else verifyKeys(entry.result);
@@ -252,6 +290,7 @@ export default function WorksheetScreen() {
     const controller = new AbortController();
     abortRef.current = controller;
     setLoading(true); setResult(null); setOutcomes(null); setCurriculumGrounded(null); setGroundedLesson(null);
+    setEditedFlatIndexes(new Set());
     // ponytail: Regenerate inside three-level mode regenerates the active
     // level only and drops back to a single paper. Regenerating all three at
     // once is a `levels: true` regenerate if teachers ask for it.
@@ -298,7 +337,7 @@ export default function WorksheetScreen() {
         // signal covers all three.
         const outs = await Promise.all(LEVELS.map(d => call({ ...baseReq, difficulty: d })));
         const entries = Object.fromEntries(
-          LEVELS.map((d, i) => [d, { result: outs[i]!, outcomes: null }]),
+          LEVELS.map((d, i) => [d, { result: outs[i]!, outcomes: null, editedFlatIndexes: new Set<number>() }]),
         ) as Record<Level, LevelEntry>;
         setLevels(entries);
         setDiffIdx(0);
@@ -370,6 +409,69 @@ export default function WorksheetScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
+  /** Marks the paper dirty and drops the verified badge at this position. */
+  const markEdited = (flatIndex: number) => {
+    if (flatIndex < 0) return;
+    setEditedFlatIndexes(prev => new Set(prev).add(flatIndex));
+    setSaveLabel(savedId ? 'updated' : 'save');
+  };
+
+  const updateQuestionText = (sectionIndex: number, questionIndex: number, text: string) => {
+    if (!result) return;
+    markEdited(flatIndexOf(result, sectionIndex, questionIndex));
+    setResult(prev => (prev ? applyWorksheetQuestionEdit(prev, sectionIndex, questionIndex, { text }) : prev));
+  };
+
+  const updateQuestionPoints = (sectionIndex: number, questionIndex: number, raw: string) => {
+    if (!result) return;
+    // Marks must stay a positive number — a zero-mark question takes a
+    // student's time and counts for nothing.
+    const points = parsePoints(raw);
+    if (points === null) return;
+    markEdited(flatIndexOf(result, sectionIndex, questionIndex));
+    setResult(prev => (prev ? applyWorksheetQuestionEdit(prev, sectionIndex, questionIndex, { points }) : prev));
+  };
+
+  const updateOption = (sectionIndex: number, questionIndex: number, optionIndex: number, next: string) => {
+    if (!result) return;
+    markEdited(flatIndexOf(result, sectionIndex, questionIndex));
+    setResult(prev => (prev ? applyWorksheetOptionEdit(prev, sectionIndex, questionIndex, optionIndex, next) : prev));
+  };
+
+  /** Free-text retype, or a tap marking a different option correct. */
+  const updateAnswer = (sectionIndex: number, questionIndex: number, next: string) => {
+    if (!result) return;
+    markEdited(flatIndexOf(result, sectionIndex, questionIndex));
+    setResult(prev => (prev ? applyWorksheetAnswerEdit(prev, sectionIndex, questionIndex, next) : prev));
+  };
+
+  const removeQuestion = async (sectionIndex: number, questionIndex: number) => {
+    const q = result?.sections[sectionIndex]?.questions[questionIndex];
+    if (!q || !result) return;
+    const ok = await confirm({
+      title: t('deleteQuestion'),
+      message: q.text,
+      confirmLabel: t('remove'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    const flatIndex = flatIndexOf(result, sectionIndex, questionIndex);
+    setResult(prev => (prev ? removeWorksheetQuestionAt(prev, sectionIndex, questionIndex) : prev));
+    // `outcomes` and `editedFlatIndexes` are positional against the old flat
+    // list — a delete shifts every later position down by one, not just this
+    // question's slot, or the badges after it would land on the wrong item.
+    setOutcomes(prev => (prev ? prev.filter((_, i) => i !== flatIndex) : prev));
+    setEditedFlatIndexes(prev => {
+      const next = new Set<number>();
+      prev.forEach(i => {
+        if (i < flatIndex) next.add(i);
+        else if (i > flatIndex) next.add(i - 1);
+      });
+      return next;
+    });
+    setSaveLabel(savedId ? 'updated' : 'save');
+  };
 
   const typeLabels: Record<QType, string> = {
     multiple_choice: t('typeMultipleChoice'),
@@ -637,8 +739,9 @@ export default function WorksheetScreen() {
                   lesson: grounding.lesson,
                   // Was a blanket verified: false, which hid the keys the
                   // verifier had actually proved. Per question now, so the
-                  // projector badges exactly what was checked.
-                  outcomes: outcomes ?? undefined,
+                  // projector badges exactly what was checked — and not a
+                  // key the teacher has since hand-edited on this screen.
+                  outcomes: effectiveOutcomes,
                   figureUri: bookFigureUri,
                 }),
               );
@@ -661,33 +764,85 @@ export default function WorksheetScreen() {
             </Text>
           </Pressable>
 
-          {result.sections.map(sec => (
+          {result.sections.map((sec, si) => (
             <View key={sec.title} style={{ marginBottom: 20 }}>
               <Text style={[styles.secTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{sec.title}</Text>
-              {sec.questions.map((q, i) => (
+              {sec.questions.map((q, i) => {
+                const correctAnswer = answerFor(result, si, i);
+                const flatIndex = flatIndexOf(result, si, i);
+                return (
                 <View key={i} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <Text style={[styles.qNum, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{i + 1}.</Text>
                   <View style={{ flex: 1 }}>
-                    <MathParagraph
-                      text={q.text}
-                      style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}
+                    <EditableText
+                      value={q.text}
+                      onChange={next => updateQuestionText(si, i, next)}
+                      colors={colors}
                       isRTL={isRTL}
+                      placeholder={t('editPlaceholder')}
+                      edited={editedFlatIndexes.has(flatIndex)}
                     />
-                    {q.options?.map(o => (
-                      <View key={o} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                        <View style={[styles.optionDot, { borderColor: colors.border }]} />
-                        <MathParagraph
-                          text={o}
-                          style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}
-                          containerStyle={{ flex: 1 }}
+                    {q.options?.map((o, oi) => {
+                      const isCorrect = o === correctAnswer;
+                      return (
+                        <View key={oi} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                          <Text style={[styles.optLabel, { color: isCorrect ? '#10B981' : colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+                            {optionLetter(oi, lang === 'ar')}.
+                          </Text>
+                          <View style={{ flex: 1 }}>
+                            <EditableText
+                              value={o}
+                              onChange={next => updateOption(si, i, oi, next)}
+                              colors={colors}
+                              isRTL={isRTL}
+                              placeholder={t('editPlaceholder')}
+                            />
+                          </View>
+                          {/* Marking the answer is a choice among the options, so
+                              it is made by picking one rather than retyping it
+                              into the key below — that also removes the way a
+                              retyped key could stop matching any option's text. */}
+                          <Pressable
+                            onPress={() => updateAnswer(si, i, o)}
+                            hitSlop={6}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: isCorrect }}
+                            accessibilityLabel={`${o} — ${t('answer')}`}
+                          >
+                            <Ionicons
+                              name={isCorrect ? 'checkmark-circle' : 'ellipse-outline'}
+                              size={16}
+                              color={isCorrect ? '#10B981' : colors.mutedForeground}
+                            />
+                          </Pressable>
+                        </View>
+                      );
+                    })}
+                    <View style={[styles.qFooter, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                      <View style={{ minWidth: 54 }}>
+                        <EditableText
+                          value={`${q.points}`}
+                          onChange={next => updateQuestionPoints(si, i, next)}
+                          colors={colors}
                           isRTL={isRTL}
+                          placeholder={t('pts')}
                         />
                       </View>
-                    ))}
-                    <Text style={[styles.pts, { color: ACCENT, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{q.points} {t('pts')}</Text>
+                      <Text style={[styles.pts, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>{t('pts')}</Text>
+                      <Pressable
+                        onPress={() => { void removeQuestion(si, i); }}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('deleteQuestion')}
+                        style={{ marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}
+                      >
+                        <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
+                      </Pressable>
+                    </View>
                   </View>
                 </View>
-              ))}
+                );
+              })}
             </View>
           ))}
 
@@ -698,20 +853,28 @@ export default function WorksheetScreen() {
                 <Text style={[styles.akTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{t('answerKeyTitle')}</Text>
               </View>
               <View style={[styles.akBody, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-                {result.answerKey.map(item => {
+                {/* `item.num` is the same 1-based flat position as `sections[].questions[]`
+                    in on-paper order — this is how an edit here finds its own question. */}
+                {(() => {
+                  const flatPositions = result.sections.flatMap((sec, si) => sec.questions.map((_, qi) => ({ si, qi })));
+                  return result.answerKey.map(item => {
                   // Outcomes are flat and positional; `item.num` is the same
                   // flat position, 1-based. Symbolic only — `bank` is also the
                   // verifier-down fallback and must not read as a per-key claim.
-                  const o = outcomes?.[item.num - 1];
+                  // A hand-edit invalidates it — `effectiveOutcomes` drops it.
+                  const o = effectiveOutcomes[item.num - 1];
                   const proved = o?.verifiedBy === 'symbolic';
+                  const pos = flatPositions[item.num - 1];
                   return (
                   <View key={item.num} style={[styles.akRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     <Text style={[styles.akNum, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{item.num}.</Text>
                     <View style={{ flex: 1 }}>
-                      <MathParagraph
-                        text={item.answer}
-                        style={{ fontSize: styles.akAnswer.fontSize, lineHeight: styles.akAnswer.lineHeight, color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }}
+                      <EditableText
+                        value={item.answer}
+                        onChange={next => { if (pos) updateAnswer(pos.si, pos.qi, next); }}
+                        colors={colors}
                         isRTL={isRTL}
+                        placeholder={t('editPlaceholder')}
                       />
                       {proved ? (
                         <View style={[styles.verifyRow, { marginTop: 2, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -729,7 +892,8 @@ export default function WorksheetScreen() {
                     </View>
                   </View>
                   );
-                })}
+                  });
+                })()}
               </View>
             </View>
           )}
@@ -827,8 +991,9 @@ const styles = StyleSheet.create({
   qCard: { padding: 14, borderWidth: 1, gap: 10, marginBottom: 8 },
   qNum: { fontSize: 14, width: 20 },
   optionRow: { alignItems: 'center', gap: 8, marginTop: 6 },
-  optionDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1.5, flexShrink: 0 },
-  pts: { fontSize: 11, marginTop: 8 },
+  optLabel: { fontSize: 12, width: 16 },
+  qFooter: { alignItems: 'center', gap: 6, marginTop: 8 },
+  pts: { fontSize: 11 },
   akHeader: { alignItems: 'center', gap: 6, marginBottom: 8, marginTop: 4 },
   akTitle: { fontSize: 14 },
   akBody: { borderWidth: 1, padding: 14 },

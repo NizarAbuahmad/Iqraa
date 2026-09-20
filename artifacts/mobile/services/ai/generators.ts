@@ -190,13 +190,20 @@ function tryMathPractice(
   lang: Lang,
   points: number,
   subject?: string,
+  /**
+   * Passed straight through to `takeConcreteMath`/`takeConcreteChem` — false
+   * for the worksheet path, so an exhausted family falls through to a
+   * generic topic-templated question instead of repeating a bank item
+   * verbatim on the same printed page. See `takeFromBank`.
+   */
+  allowRepeat: boolean = true,
 ): WQ | null {
   const tier: DiffTier = diff === 'easy' || diff === 'hard' ? diff : 'medium';
   if (isChemContext(topic, kb, subject)) {
-    return takeConcreteChem(type, topic, kb, tier, lang, points);
+    return takeConcreteChem(type, topic, kb, tier, lang, points, undefined, allowRepeat);
   }
   if (isMathContext(topic, kb, subject)) {
-    return takeConcreteMath(type, topic, kb, tier, lang, points);
+    return takeConcreteMath(type, topic, kb, tier, lang, points, undefined, allowRepeat);
   }
   return null;
 }
@@ -374,9 +381,9 @@ function tfPts(_diff: string) { return 2; }
 
 // ─── Arabic question factories — one question per call, random phrasing ───────
 
-function makeMCQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
+function makeMCQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = mcPts(diff);
-  const math = tryMathPractice('multiple_choice', topic, kb, diff, 'ar', pts, subject);
+  const math = tryMathPractice('multiple_choice', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
@@ -397,9 +404,9 @@ function makeMCQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   return pickTiered(templates, diff)();
 }
 
-function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
+function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = saPts(diff);
-  const math = tryMathPractice('short_answer', topic, kb, diff, 'ar', pts, subject);
+  const math = tryMathPractice('short_answer', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
@@ -417,9 +424,9 @@ function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   return pickTiered(templates, diff)();
 }
 
-function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
+function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = fbPts(diff);
-  const math = tryMathPractice('fill_blank', topic, kb, diff, 'ar', pts, subject);
+  const math = tryMathPractice('fill_blank', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
@@ -435,9 +442,9 @@ function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   return pickTiered(templates, diff)();
 }
 
-function makeTFQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
+function makeTFQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = tfPts(diff);
-  const math = tryMathPractice('true_false', topic, kb, diff, 'ar', pts, subject);
+  const math = tryMathPractice('true_false', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
   const c1 = kb?.keyConceptsAr?.[1] ?? `تطبيق ${topic}`;
@@ -455,9 +462,9 @@ function makeTFQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
 }
 
 /** Real-life word problem aligned with "حل مسائل حياتية" curriculum phrasing. */
-function makeWPQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
+function makeWPQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = saPts(diff);
-  const math = tryMathPractice('word_problem', topic, kb, diff, 'ar', pts, subject);
+  const math = tryMathPractice('word_problem', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
   const obj = kb?.objectives?.find(o => /حياتي|مسألة|نمذج/.test(o));
@@ -493,9 +500,9 @@ function makePriorReviewQ_ar(concept: string): WQ {
 
 // ─── English question factories ───────────────────────────────────────────────
 
-function makeMCQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
+function makeMCQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = mcPts(diff);
-  const math = tryMathPractice('multiple_choice', topic, kb, diff, 'en', pts, subject);
+  const math = tryMathPractice('multiple_choice', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
@@ -515,9 +522,9 @@ function makeMCQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   return pickTiered(templates, diff)();
 }
 
-function makeSAQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
+function makeSAQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = saPts(diff);
-  const math = tryMathPractice('short_answer', topic, kb, diff, 'en', pts, subject);
+  const math = tryMathPractice('short_answer', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
@@ -535,9 +542,9 @@ function makeSAQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   return pickTiered(templates, diff)();
 }
 
-function makeFBQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
+function makeFBQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = fbPts(diff);
-  const math = tryMathPractice('fill_blank', topic, kb, diff, 'en', pts, subject);
+  const math = tryMathPractice('fill_blank', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
@@ -553,9 +560,9 @@ function makeFBQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   return pickTiered(templates, diff)();
 }
 
-function makeTFQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
+function makeTFQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = tfPts(diff);
-  const math = tryMathPractice('true_false', topic, kb, diff, 'en', pts, subject);
+  const math = tryMathPractice('true_false', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
   const c1 = kb?.keyConceptsEn?.[1] ?? `application of ${topic}`;
@@ -573,9 +580,9 @@ function makeTFQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
 }
 
 /** Real-life word problem aligned with curriculum "solve real-life problems" outcomes. */
-function makeWPQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
+function makeWPQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = saPts(diff);
-  const math = tryMathPractice('word_problem', topic, kb, diff, 'en', pts, subject);
+  const math = tryMathPractice('word_problem', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
   const templates: TieredTemplate[] = [
@@ -821,19 +828,24 @@ export class MockAIService extends AIService {
 
     const usedStems = new Set<string>();
 
+    // `allowRepeat: false` — a worksheet is one printed page, not a fresh
+    // draw each time like a quiz retake. Once a lesson's concrete-math bank
+    // runs out of unused items at a family, the math factories fall through
+    // to their own topic-templated question instead of repeating a bank item
+    // verbatim under a different question type. See `takeFromBank`.
     const makeGenericQ = (type: QType, diff: DiffTier): WQ => {
       if (lang === 'ar') {
-        if (type === 'multiple_choice') return makeMCQ_ar(topic, kb, diff, req.subject);
-        if (type === 'short_answer') return makeSAQ_ar(topic, kb, diff, req.subject);
-        if (type === 'fill_blank') return makeFBQ_ar(topic, kb, diff, req.subject);
-        if (type === 'word_problem') return makeWPQ_ar(topic, kb, diff, req.subject);
-        return makeTFQ_ar(topic, kb, diff, req.subject);
+        if (type === 'multiple_choice') return makeMCQ_ar(topic, kb, diff, req.subject, false);
+        if (type === 'short_answer') return makeSAQ_ar(topic, kb, diff, req.subject, false);
+        if (type === 'fill_blank') return makeFBQ_ar(topic, kb, diff, req.subject, false);
+        if (type === 'word_problem') return makeWPQ_ar(topic, kb, diff, req.subject, false);
+        return makeTFQ_ar(topic, kb, diff, req.subject, false);
       }
-      if (type === 'multiple_choice') return makeMCQ_en(topic, kb, diff, req.subject);
-      if (type === 'short_answer') return makeSAQ_en(topic, kb, diff, req.subject);
-      if (type === 'fill_blank') return makeFBQ_en(topic, kb, diff, req.subject);
-      if (type === 'word_problem') return makeWPQ_en(topic, kb, diff, req.subject);
-      return makeTFQ_en(topic, kb, diff, req.subject);
+      if (type === 'multiple_choice') return makeMCQ_en(topic, kb, diff, req.subject, false);
+      if (type === 'short_answer') return makeSAQ_en(topic, kb, diff, req.subject, false);
+      if (type === 'fill_blank') return makeFBQ_en(topic, kb, diff, req.subject, false);
+      if (type === 'word_problem') return makeWPQ_en(topic, kb, diff, req.subject, false);
+      return makeTFQ_en(topic, kb, diff, req.subject, false);
     };
 
     /** Main-body question via shared factories (math → concrete practice). Dedup stems. */

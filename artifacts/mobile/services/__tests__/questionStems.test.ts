@@ -242,4 +242,22 @@ describe('a family stays on-topic when a lesson needs more items than it has', (
       assert.match(q!.text, /f\(x\)|g\(x\)|a_n/, `draw ${i + 1} left the functions family: ${q!.text}`);
     }
   });
+
+  it('the worksheet path (allowRepeat=false) hands the slot back instead of repeating once the family is spent', () => {
+    // Same «تركيب الاقترانات» family (5 concrete items), but through the
+    // worksheet generator's mode: it passes `allowRepeat: false` so a used-up
+    // family returns null on the next draw — the slot goes to the caller's
+    // own topic-templated question — instead of reprinting one of the five
+    // verbatim under a different question type. This is what stopped a
+    // 10-question worksheet on this lesson from asking «find (f∘g)(2)» twice.
+    const seen = new Set<string>();
+    for (let i = 0; i < 5; i++) {
+      const q = takeConcreteMath('short_answer', 'تركيب الاقترانات', null, 'medium', 'ar', 0, undefined, false);
+      assert.ok(q, `draw ${i + 1} of 5 returned nothing`);
+      assert.ok(!seen.has(q!.text), `draw ${i + 1} repeated: ${q!.text}`);
+      seen.add(q!.text);
+    }
+    const sixth = takeConcreteMath('short_answer', 'تركيب الاقترانات', null, 'medium', 'ar', 0, undefined, false);
+    assert.equal(sixth, null, 'the family is spent — this must come back null, not a repeat');
+  });
 });

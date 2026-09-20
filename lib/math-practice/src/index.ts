@@ -466,6 +466,18 @@ function takeFromBank(
   lang: Lang,
   points: number,
   used: Set<string>,
+  /**
+   * Whether a used-up family may hand back an already-served item.
+   *
+   * True everywhere this shipped first (quizzes, decks): a repeat from the
+   * *same* family beats drifting to an unrelated one. The worksheet
+   * generator passes `false` instead — a worksheet reads top to bottom, so a
+   * repeat here is not a fresh draw for a fresh screen, it is the same
+   * question appearing twice on one printed page. `false` returns null once
+   * the family (and the generic family) are spent, so the caller's own
+   * topic-templated question takes the slot instead of a duplicate.
+   */
+  allowRepeat: boolean = true,
 ): PracticeWQ | null {
   const preferWord = type === 'word_problem';
 
@@ -507,8 +519,16 @@ function takeFromBank(
     return ranked[Math.floor(Math.random() * ranked.length)] ?? null;
   };
 
-  let item = pickFrom(family) ?? pickFromRepeating(family) ?? pickFrom(genericFamily);
-  if (!item) {
+  // `!allowRepeat` stops at the family's own unused items — it must not
+  // drift into the generic family or the whole-bank fallback either, both of
+  // which trade a same-family repeat for an item with no connection to the
+  // lesson. The caller (the worksheet path) has its own topic-templated
+  // question for exactly this case; returning null here hands it that slot.
+  let item = pickFrom(family);
+  if (!item && allowRepeat) {
+    item = pickFromRepeating(family) ?? pickFrom(genericFamily);
+  }
+  if (!item && allowRepeat) {
     // Exhausted — allow any unused item from this bank
     item = bank.find(i => !used.has(i.id)) ?? null;
   }
@@ -541,6 +561,8 @@ export function takeConcreteMath(
    * request has neither problem.
    */
   session?: Set<string>,
+  /** See `takeFromBank` — false for the worksheet path, true everywhere else. */
+  allowRepeat: boolean = true,
 ): PracticeWQ | null {
   return takeFromBank(
     BANK,
@@ -551,6 +573,7 @@ export function takeConcreteMath(
     lang,
     points,
     session ?? usedIds,
+    allowRepeat,
   );
 }
 
@@ -568,6 +591,8 @@ export function takeConcreteChem(
   lang: Lang,
   points: number,
   session?: Set<string>,
+  /** See `takeFromBank` — false for the worksheet path, true everywhere else. */
+  allowRepeat: boolean = true,
 ): PracticeWQ | null {
   return takeFromBank(
     CHEM_BANK,
@@ -578,6 +603,7 @@ export function takeConcreteChem(
     lang,
     points,
     session ?? usedIds,
+    allowRepeat,
   );
 }
 
