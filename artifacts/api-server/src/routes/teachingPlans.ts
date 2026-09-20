@@ -1,7 +1,7 @@
 /**
  * Teaching plans — what a teacher intends to teach a class, and when. The
  * plan is anchored to a class (grade and subject come from it) and its
- * schedule is `entries`: curriculum lesson ids against week numbers. See
+ * schedule is `entries`: curriculum lesson ids against calendar dates. See
  * lib/db/src/schema/teachingPlans.ts for why this is separate from
  * `classGroups`/`/classes`, and which fields are legacy.
  *
@@ -20,7 +20,7 @@ import {
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
-import { parsePlanEntries } from "../lib/planEntries.js";
+import { parsePlanEntries, type PlanEntry } from "../lib/planEntries.js";
 
 const router = Router();
 
@@ -104,7 +104,7 @@ router.post("/teaching-plans", async (req: AuthenticatedRequest, res) => {
     }
 
     let classGroupId: string | null | undefined;
-    let entries: { lessonId: string; week: number }[] | undefined;
+    let entries: PlanEntry[] | undefined;
     try {
       classGroupId = await resolveClassGroupId(req.body?.classGroupId, req.user!.id);
       entries = parsePlanEntries(req.body?.entries);

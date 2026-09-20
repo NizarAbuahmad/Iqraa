@@ -37,14 +37,17 @@ import {
 import { listClasses, type ClassGroup } from '@/services/roster';
 import { planScopeParts } from '@/services/planScope';
 import {
-  MAX_PLAN_WEEK,
-  entriesByWeek,
+  autoScheduleEntries,
+  dateOf,
+  entriesOnDate,
+  isValidPlanDate,
+  nextEntry,
   normalizePlanEntries,
-  setEntryWeek,
-  weekOf,
+  setEntryDate,
+  todayISO,
   type PlanEntry,
 } from '@/services/planEntries';
-import { getLessonsForUnit, getUnitsForSubjectGrade } from '@/services/knowledgeBase';
+import { getLessonById, getLessonsForUnit, getUnitsForSubjectGrade } from '@/services/knowledgeBase';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { confirm } from '@/services/confirm';
 import type { TranslationKey } from '@/services/i18n';
@@ -54,44 +57,60 @@ import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 const ACCENT = '#1B6B62';
 
 /**
- * One lesson, with the week it is taught in — blank meaning "not in this plan".
+ * Weekday short labels, indexed like `Date#getDay()` (0 = Sunday). A fixed,
+ * language-paired enumeration — same pattern as GRADES/SUBJECTS in
+ * curriculumData.ts — not routed through `t()`, since these are seven values
+ * that never change independently of each other.
+ */
+const WEEKDAY_KEYS = [
+  'planWeekdaySun', 'planWeekdayMon', 'planWeekdayTue', 'planWeekdayWed',
+  'planWeekdayThu', 'planWeekdayFri', 'planWeekdaySat',
+] as const;
+
+/** Human date for display — "20 Sep" / "٢٠ سبتمبر", never the raw ISO string. */
+function formatPlanDate(date: string, lang: string): string {
+  const d = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return date;
+  return d.toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-GB', { day: 'numeric', month: 'short' });
+}
+
+/**
+ * One lesson, with the date it is taught on — blank meaning "not in this plan".
  *
- * Holds its own draft text rather than rendering the committed week directly:
- * `setEntryWeek` refuses a week outside 1..MAX_PLAN_WEEK, so a controlled
- * input bound to the committed value would silently snap back while someone
- * was still typing. The draft is what you see; it is committed only once it
- * parses, and clearing the box removes the lesson.
+ * Holds its own draft text rather than rendering the committed date directly:
+ * `setEntryDate` refuses anything that is not a real, in-range date, so a
+ * controlled input bound to the committed value would silently snap back
+ * while someone was still typing. The draft is what you see; it is committed
+ * only once it fully parses, and clearing the box removes the lesson.
  *
  * Mounted under a key that changes with the plan being edited, so switching
  * plans does not leave another plan's drafts on screen.
  */
-function LessonWeekRow({ title, periods, week, onChangeWeek, isRTL, colors, periodsLabel, weekLabel }: {
+function LessonDateRow({ title, periods, date, onChangeDate, isRTL, colors, periodsLabel }: {
   title: string;
   periods: number | null;
-  week: number | null;
-  onChangeWeek: (week: number | null) => void;
+  date: string | null;
+  onChangeDate: (date: string | null) => void;
   isRTL: boolean;
   colors: ReturnType<typeof useColors>;
   periodsLabel: (n: number) => string;
-  weekLabel: string;
 }) {
-  const [draft, setDraft] = useState(week === null ? '' : String(week));
+  const [draft, setDraft] = useState(date ?? '');
 
   const onDraft = (next: string) => {
     // Arabic-Indic digits reach this box on an Arabic keyboard; fold them so
-    // «٣» is the same week as "3" rather than an unparseable string.
+    // a date typed with «٢٠٢٦-٠٩-٢١» still parses as one.
     const latin = next.replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660));
-    if (latin && !/^\d{1,2}$/.test(latin)) return;
+    if (latin && !/^[\d-]{0,10}$/.test(latin)) return;
     setDraft(latin);
     if (latin === '') {
-      onChangeWeek(null);
+      onChangeDate(null);
       return;
     }
-    const parsed = Number(latin);
-    if (parsed >= 1 && parsed <= MAX_PLAN_WEEK) onChangeWeek(parsed);
+    if (isValidPlanDate(latin)) onChangeDate(latin);
   };
 
-  const scheduled = week !== null;
+  const scheduled = date !== null;
   return (
     <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
       <View style={{ flex: 1 }}>
@@ -115,12 +134,11 @@ function LessonWeekRow({ title, periods, week, onChangeWeek, isRTL, colors, peri
       <TextInput
         value={draft}
         onChangeText={onDraft}
-        placeholder={weekLabel}
+        placeholder="YYYY-MM-DD"
         placeholderTextColor={colors.mutedForeground}
-        keyboardType="number-pad"
-        maxLength={2}
+        maxLength={10}
         style={{
-          width: 56,
+          width: 92,
           paddingVertical: 6,
           paddingHorizontal: 8,
           borderRadius: 10,
@@ -132,6 +150,41 @@ function LessonWeekRow({ title, periods, week, onChangeWeek, isRTL, colors, peri
           textAlign: 'center',
         }}
       />
+    </View>
+  );
+}
+
+/** The plan form's weekday picker — which days this class meets, for auto-scheduling. */
+function WeekdayToggle({ selected, onToggle, isRTL, colors, t }: {
+  selected: readonly number[];
+  onToggle: (day: number) => void;
+  isRTL: boolean;
+  colors: ReturnType<typeof useColors>;
+  t: (k: TranslationKey) => string;
+}) {
+  return (
+    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 6, flexWrap: 'wrap' }}>
+      {WEEKDAY_KEYS.map((key, day) => {
+        const active = selected.includes(day);
+        return (
+          <Pressable
+            key={day}
+            onPress={() => onToggle(day)}
+            style={{
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              borderRadius: 14,
+              borderWidth: 1.5,
+              borderColor: active ? ACCENT : colors.border,
+              backgroundColor: active ? ACCENT + '16' : colors.card,
+            }}
+          >
+            <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular', fontSize: 12 }}>
+              {t(key)}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -162,6 +215,12 @@ export default function TeachingPlansScreen() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Auto-schedule inputs — a one-time recipe for generating dates, not saved
+  // to the plan itself (only the dates it produces are). Reset per plan so a
+  // stale start date from a previous edit never lingers.
+  const [scheduleStartDate, setScheduleStartDate] = useState(todayISO());
+  const [scheduleDays, setScheduleDays] = useState<number[]>([0, 1, 2, 3, 4]); // Sun–Thu, Jordan's school week
 
   const describe = useCallback(
     (err: unknown, fallback: TranslationKey): string => {
@@ -202,6 +261,8 @@ export default function TeachingPlansScreen() {
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setScheduleStartDate(todayISO());
+    setScheduleDays([0, 1, 2, 3, 4]);
     setShowForm(true);
   };
 
@@ -219,6 +280,8 @@ export default function TeachingPlansScreen() {
       time: plan.time,
       notes: plan.notes,
     });
+    setScheduleStartDate(todayISO());
+    setScheduleDays([0, 1, 2, 3, 4]);
     setShowForm(true);
   };
 
@@ -267,13 +330,48 @@ export default function TeachingPlansScreen() {
         lessons: getLessonsForUnit(unit.id),
       }))
     : [];
+  // Flattened in the same unit → lesson order the list above renders, since
+  // that order is what "lay out the term" means for auto-scheduling.
+  const scheduleLessons = scheduleUnits.flatMap(({ lessons }) => lessons.map(l => ({ id: l.id, periods: l.periods })));
 
-  /** One line for the card: how much of the term this plan actually covers. */
-  const scheduleSummary = (plan: TeachingPlan): string => {
+  const onAutoSchedule = async () => {
+    if (!isValidPlanDate(scheduleStartDate) || scheduleDays.length === 0 || scheduleLessons.length === 0) return;
+    if (form.entries.length > 0) {
+      const ok = await confirm({
+        title: t('planAutoScheduleTitle'),
+        message: t('planAutoScheduleConfirm'),
+        confirmLabel: t('planAutoScheduleAction'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    setForm(f => ({ ...f, entries: autoScheduleEntries(scheduleLessons, scheduleStartDate, scheduleDays) }));
+  };
+
+  /**
+   * What the LIST card shows for a plan's schedule — this is the whole point
+   * of today's change: a teacher should see what to teach without opening
+   * anything. Priority: today's lesson(s), else the next upcoming one, else
+   * (for a plan with no schedule yet) whatever legacy free text it holds —
+   * `date`/`time` from before this screen tracked real dates at all, then
+   * `topics`. Never more than one of these at once.
+   */
+  const scheduleLine = (plan: TeachingPlan): string => {
     const entries = normalizePlanEntries(plan.entries);
-    if (entries.length === 0) return '';
-    const weeks = entriesByWeek(entries).length;
-    return `${t('planLessonsCount', entries.length)} · ${t('planWeeksCount', weeks)}`;
+    if (entries.length > 0) {
+      const today = todayISO();
+      const lessonTitle = (id: string) => {
+        const lesson = getLessonById(id);
+        return lesson ? (lang === 'ar' ? lesson.titleAr : lesson.titleEn) : id;
+      };
+      const todays = entriesOnDate(entries, today);
+      if (todays.length > 0) return t('planTodayLesson', todays.map(e => lessonTitle(e.lessonId)).join('، '));
+      const upcoming = nextEntry(entries, today);
+      if (upcoming) return t('planNextLesson', formatPlanDate(upcoming.date, lang), lessonTitle(upcoming.lessonId));
+    }
+    if (plan.date) return plan.time ? `${plan.date} · ${plan.time}` : plan.date;
+    return plan.topics;
   };
 
   const onSave = async () => {
@@ -392,27 +490,34 @@ export default function TeachingPlansScreen() {
               onPress={() => openEdit(item)}
               style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, numColumns > 1 && { flex: 1 }]}
             >
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, gap: 2 }}>
                 <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
                   {item.title}
                 </Text>
                 {(() => {
                   // Grade and subject now come from the class; a plan made
                   // before the anchor existed still shows the text it was
-                  // given. planScopeParts decides which, never both.
-                  const meta = [
-                    item.schoolName,
-                    classNameFor(item.classGroupId),
-                    ...scopeOf(item),
-                    // The schedule if there is one; the old free-text topics
-                    // line only for plans that never got one.
-                    scheduleSummary(item) || item.topics,
-                  ]
+                  // given. planScopeParts decides which, never both. This is
+                  // secondary metadata — where and which class — kept muted
+                  // and separate from the schedule line below, which is the
+                  // one thing this card exists to answer.
+                  const meta = [item.schoolName, classNameFor(item.classGroupId), ...scopeOf(item)]
                     .filter(Boolean)
                     .join(' · ');
                   return meta ? (
                     <Text style={[styles.cardMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                       {meta}
+                    </Text>
+                  ) : null;
+                })()}
+                {(() => {
+                  const line = scheduleLine(item);
+                  return line ? (
+                    <Text
+                      numberOfLines={1}
+                      style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13, textAlign: align, marginTop: 2 }}
+                    >
+                      {line}
                     </Text>
                   ) : null;
                 })()}
@@ -547,24 +652,84 @@ export default function TeachingPlansScreen() {
                       <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, textAlign: align }}>
                         {t('planScheduleHint')}
                       </Text>
+                      {/* Bulk generation: pick a start date and which days
+                          this class meets, and every lesson below gets a real
+                          date in one tap. This is what makes real dates
+                          practical — nobody should have to type a YYYY-MM-DD
+                          by hand for forty lessons. */}
+                      <View style={{ gap: 8, marginTop: 4, marginBottom: 2 }}>
+                        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'center' }}>
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
+                            {t('planStartDate')}
+                          </Text>
+                          <TextInput
+                            value={scheduleStartDate}
+                            onChangeText={setScheduleStartDate}
+                            placeholder="YYYY-MM-DD"
+                            placeholderTextColor={colors.mutedForeground}
+                            maxLength={10}
+                            style={{
+                              flex: 1,
+                              paddingVertical: 6,
+                              paddingHorizontal: 10,
+                              borderRadius: 10,
+                              borderWidth: 1.5,
+                              borderColor: colors.border,
+                              color: colors.foreground,
+                              fontFamily: 'Almarai_400Regular',
+                              fontSize: 12.5,
+                              textAlign: align,
+                            }}
+                          />
+                        </View>
+                        <View style={{ gap: 4 }}>
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+                            {t('planMeetingDays')}
+                          </Text>
+                          <WeekdayToggle
+                            selected={scheduleDays}
+                            onToggle={day =>
+                              setScheduleDays(d => (d.includes(day) ? d.filter(x => x !== day) : [...d, day].sort()))
+                            }
+                            isRTL={isRTL}
+                            colors={colors}
+                            t={t}
+                          />
+                        </View>
+                        <Pressable
+                          onPress={() => { void onAutoSchedule(); }}
+                          disabled={!isValidPlanDate(scheduleStartDate) || scheduleDays.length === 0}
+                          style={{
+                            alignSelf: isRTL ? 'flex-end' : 'flex-start',
+                            paddingHorizontal: 14,
+                            paddingVertical: 7,
+                            borderRadius: 18,
+                            backgroundColor: ACCENT,
+                            opacity: !isValidPlanDate(scheduleStartDate) || scheduleDays.length === 0 ? 0.5 : 1,
+                          }}
+                        >
+                          <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>
+                            {t('planAutoSchedule')}
+                          </Text>
+                        </Pressable>
+                      </View>
                       {scheduleUnits.map(({ unit, lessons }) => (
                         <View key={unit.id} style={{ gap: 4, marginTop: 6 }}>
                           <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: align }}>
                             {lang === 'ar' ? unit.titleAr : unit.titleEn}
                           </Text>
                           {lessons.map(lesson => (
-                            <LessonWeekRow
+                            <LessonDateRow
                               key={lesson.id}
                               title={lang === 'ar' ? lesson.titleAr : lesson.titleEn}
                               periods={lesson.periods}
-                              week={weekOf(form.entries, lesson.id)}
-                              onChangeWeek={week =>
-                                setForm(f => ({ ...f, entries: setEntryWeek(f.entries, lesson.id, week) }))
+                              date={dateOf(form.entries, lesson.id)}
+                              onChangeDate={date =>
+                                setForm(f => ({ ...f, entries: setEntryDate(f.entries, lesson.id, date) }))
                               }
                               isRTL={isRTL}
                               colors={colors}
                               periodsLabel={n => t('planPeriodsCount', n)}
-                              weekLabel={t('planWeekShort')}
                             />
                           ))}
                         </View>
