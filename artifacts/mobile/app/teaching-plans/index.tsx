@@ -408,7 +408,6 @@ export default function TeachingPlansScreen() {
                     // line only for plans that never got one.
                     scheduleSummary(item) || item.topics,
                   ]
-                  const meta = [item.schoolName, classNameFor(item.classGroupId), ...scopeOf(item)]
                     .filter(Boolean)
                     .join(' · ');
                   return meta ? (
@@ -581,8 +580,6 @@ export default function TeachingPlansScreen() {
                   {`${t('planTopics')}: ${form.topics}`}
                 </Text>
               ) : null}
-                </View>
-              )}
               <TextInput
                 value={form.topics}
                 onChangeText={v => setForm(f => ({ ...f, topics: v }))}
