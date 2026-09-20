@@ -256,6 +256,15 @@ function ClassicTabLayout() {
 
   // Not shown to a parent/student: they have no lesson context to switch, and
   // the two tabs it would drive them toward (iQra, AI Tools) are hidden for
+  // them anyway.
+  const lessonProps = {
+    pick: lessonPick,
+    lang: lang as 'ar' | 'en',
+    isRTL,
+    colors,
+    t,
+    onPress: () => router.push({ pathname: '/iqra', params: { openLessonPicker: String(Date.now()) } }),
+  };
   // them anyway. Not shown on iQra itself either — CurrentLessonCard already
   // does this job there, full-width and with the Start Class action; a second
   // copy stacked above it would just be the same line twice.
@@ -273,6 +282,12 @@ function ClassicTabLayout() {
   ) : null;
 
   if (!isDesktop) {
+    // Not on iQra itself — CurrentLessonCard already does this job there,
+    // full-width and with the Start Class action; a second copy stacked above
+    // it would just be the same line twice.
+    const bar = isTeacher && !pathname.startsWith('/iqra') ? (
+      <GlobalLessonBar layout="bar" topInset={insets.top} {...lessonProps} />
+    ) : null;
     return (
       <View style={{ flex: 1 }}>
         {bar}
@@ -281,8 +296,17 @@ function ClassicTabLayout() {
     );
   }
 
+  // In the sidebar the card stays on iQra too: a nav rail whose top block
+  // vanishes on one tab reads as a bug, and it is beside the thread there,
+  // not stacked over CurrentLessonCard.
   return (
     <View style={{ flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+      <WebSidebar
+        entries={tabEntries}
+        isIOS={isIOS}
+        lessonCard={isTeacher ? <GlobalLessonBar layout="card" {...lessonProps} /> : null}
+      />
+      <View style={{ flex: 1 }}>{tabs}</View>
       <WebSidebar entries={tabEntries} isIOS={isIOS} />
       <View style={{ flex: 1 }}>
         {bar}

@@ -40,7 +40,16 @@ function SidebarRow({ entry, isIOS, active }: { entry: TabEntry; isIOS: boolean;
   );
 }
 
-export function WebSidebar({ entries, isIOS }: { entries: TabEntry[]; isIOS: boolean }) {
+export function WebSidebar({
+  entries,
+  isIOS,
+  lessonCard,
+}: {
+  entries: TabEntry[];
+  isIOS: boolean;
+  /** The teacher's current-lesson card, above the nav; null for roles with no lesson to switch. */
+  lessonCard?: React.ReactNode;
+}) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
@@ -62,6 +71,7 @@ export function WebSidebar({ entries, isIOS }: { entries: TabEntry[]; isIOS: boo
         },
       ]}
     >
+      {lessonCard}
       {/*
         The brand lives here on desktop, not over the thread. Every screen got
         its own centred logo band, which cost ~110px at the top of a window
