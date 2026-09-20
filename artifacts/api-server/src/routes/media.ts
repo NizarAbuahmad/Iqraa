@@ -56,6 +56,19 @@ mediaRouter.get("/media/unsplash-photo", async (req, res) => {
       headers: { Authorization: `Client-ID ${accessKey}` },
     });
     if (!response.ok) {
+      // Logged, not swallowed. This branch hid the real cause of "the decks
+      // have no pictures" for days: Unsplash answered non-OK for EVERY query —
+      // "flower" and "school" included — and the route turned that into a
+      // cheerful 200 `{photo:null}` that every caller reads as "no result for
+      // this query". Four rounds of fixes went into the queries, the prompt and
+      // the renderers while the lookup itself was never reaching Unsplash at
+      // all. `x-ratelimit-remaining` separates the two causes that matter: a
+      // demo app exhausting its 50/hour, and a key that is simply invalid.
+      logger.error({
+        status: response.status,
+        rateLimitRemaining: response.headers.get("x-ratelimit-remaining"),
+        body: (await response.text().catch(() => "")).slice(0, 200),
+      }, "unsplash search rejected — deck photos will be missing");
       res.json({ photo: null });
       return;
     }
