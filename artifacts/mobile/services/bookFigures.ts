@@ -69,6 +69,17 @@ import g8FinlitS1 from '../../../knowledge-base/grade-8-finlit/figures/g8-finlit
 import g8SocialS1 from '../../../knowledge-base/grade-8-social/figures/g8-social-s1-student-book/index.json' with { type: 'json' };
 import g8SocialS2 from '../../../knowledge-base/grade-8-social/figures/g8-social-s2-student-book/index.json' with { type: 'json' };
 import g8VocS1 from '../../../knowledge-base/grade-8-vocational/figures/g8-voc-s1-student-book/index.json' with { type: 'json' };
+import g3SciS1 from '../../../knowledge-base/grade-3-science/figures/g3-science-s1-student-book/index.json' with { type: 'json' };
+import g3SciS2 from '../../../knowledge-base/grade-3-science/figures/g3-science-s2-student-book/index.json' with { type: 'json' };
+import g3SocialS2 from '../../../knowledge-base/grade-3-social/figures/g3-social-s2-student-book/index.json' with { type: 'json' };
+import g4ArtsS1 from '../../../knowledge-base/grade-4-art/figures/g4-arts-s1-student-book/index.json' with { type: 'json' };
+import g4SciS1 from '../../../knowledge-base/grade-4-science/figures/g4-science-s1-student-book/index.json' with { type: 'json' };
+import g4SciS2 from '../../../knowledge-base/grade-4-science/figures/g4-science-s2-student-book/index.json' with { type: 'json' };
+import g4SocialS1 from '../../../knowledge-base/grade-4-social/figures/g4-social-s1-student-book/index.json' with { type: 'json' };
+import g4SocialS2 from '../../../knowledge-base/grade-4-social/figures/g4-social-s2-student-book/index.json' with { type: 'json' };
+import g4VocS1 from '../../../knowledge-base/grade-4-vocational/figures/g4-voc-s1-student-book/index.json' with { type: 'json' };
+import g5SciS1 from '../../../knowledge-base/grade-5-science/figures/g5-science-s1-student-book/index.json' with { type: 'json' };
+import g5SciS2 from '../../../knowledge-base/grade-5-science/figures/g5-science-s2-student-book/index.json' with { type: 'json' };
 import g8VocS2 from '../../../knowledge-base/grade-8-vocational/figures/g8-voc-s2-student-book/index.json' with { type: 'json' };
 import g8SciS2 from '../../../knowledge-base/grade-8-science/figures/g8-science-s2-student-book/index.json' with { type: 'json' };
 import g6VocS1 from '../../../knowledge-base/grade-6-vocational/figures/g6-voc-s1-student-book/index.json' with { type: 'json' };
@@ -152,6 +163,17 @@ const INDEXES: { sourceId: string; figures: BookFigure[] }[] = [
   g8SocialS1 as { sourceId: string; figures: BookFigure[] },
   g8SocialS2 as { sourceId: string; figures: BookFigure[] },
   g8VocS1 as { sourceId: string; figures: BookFigure[] },
+  g3SciS1 as { sourceId: string; figures: BookFigure[] },
+  g3SciS2 as { sourceId: string; figures: BookFigure[] },
+  g3SocialS2 as { sourceId: string; figures: BookFigure[] },
+  g4ArtsS1 as { sourceId: string; figures: BookFigure[] },
+  g4SciS1 as { sourceId: string; figures: BookFigure[] },
+  g4SciS2 as { sourceId: string; figures: BookFigure[] },
+  g4SocialS1 as { sourceId: string; figures: BookFigure[] },
+  g4SocialS2 as { sourceId: string; figures: BookFigure[] },
+  g4VocS1 as { sourceId: string; figures: BookFigure[] },
+  g5SciS1 as { sourceId: string; figures: BookFigure[] },
+  g5SciS2 as { sourceId: string; figures: BookFigure[] },
   g8VocS2 as { sourceId: string; figures: BookFigure[] },
   g8SciS2 as { sourceId: string; figures: BookFigure[] },
   g6VocS1 as { sourceId: string; figures: BookFigure[] },

@@ -159,6 +159,10 @@ import {
   buildG8CreativeArtsCatalog,
 } from './curriculumG8CreativeArts.ts';
 import {
+  G10_CREATIVE_ARTS_BOOK_ID,
+  buildG10CreativeArtsCatalog,
+} from './curriculumG10CreativeArts.ts';
+import {
   G8_VOC_S1_BOOK_ID,
   buildG8VocSem1Catalog,
 } from './curriculumG8VocationalSem1.ts';
@@ -166,6 +170,10 @@ import {
   G8_VOC_S2_BOOK_ID,
   buildG8VocSem2Catalog,
 } from './curriculumG8VocationalSem2.ts';
+import {
+  G9_VOC_S1_BOOK_ID,
+  buildG9VocSem1Catalog,
+} from './curriculumG9VocationalSem1.ts';
 import {
   G8_SOCIAL_S1_BOOK_ID,
   buildG8SocialSem1Catalog,
@@ -206,6 +214,10 @@ import {
   G5_MATH_S1_BOOK_ID,
   buildG5MathSem1Catalog,
 } from './curriculumG5MathSem1.ts';
+import {
+  G5_MATH_S2_BOOK_ID,
+  buildG5MathSem2Catalog,
+} from './curriculumG5MathSem2.ts';
 import {
   G5_SCIENCE_S1_BOOK_ID,
   buildG5ScienceSem1Catalog,
@@ -250,6 +262,18 @@ import {
   G5_DIGITAL_S1_BOOK_ID,
   buildG5DigitalSem1Catalog,
 } from './curriculumG5DigitalSem1.ts';
+import {
+  G5_CREATIVE_ARTS_BOOK_ID,
+  buildG5CreativeArtsCatalog,
+} from './curriculumG5CreativeArts.ts';
+import {
+  G5_VOC_S1_BOOK_ID,
+  buildG5VocSem1Catalog,
+} from './curriculumG5VocationalSem1.ts';
+import {
+  G5_VOC_S2_BOOK_ID,
+  buildG5VocSem2Catalog,
+} from './curriculumG5VocationalSem2.ts';
 import {
   G4_MATH_S1_BOOK_ID,
   buildG4MathSem1Catalog,
@@ -430,6 +454,10 @@ import {
   G6_MATH_S1_BOOK_ID,
   buildG6MathSem1Catalog,
 } from './curriculumG6MathSem1.ts';
+import {
+  G6_MATH_S2_BOOK_ID,
+  buildG6MathSem2Catalog,
+} from './curriculumG6MathSem2.ts';
 import {
   G6_ISLAMIC_S1_BOOK_ID,
   buildG6IslamicSem1Catalog,
@@ -667,6 +695,70 @@ import {
   buildEnglishHospitalityKbCatalog,
   buildEnglishIndustryKbCatalog,
 } from './curriculumG10EnglishVocational.ts';
+import {
+  G2_MATH_S1_BOOK_ID,
+  buildG2MathSem1Catalog,
+} from './curriculumG2MathSem1.ts';
+import {
+  G2_MATH_S2_BOOK_ID,
+  buildG2MathSem2Catalog,
+} from './curriculumG2MathSem2.ts';
+import {
+  G2_SCIENCE_S1_BOOK_ID,
+  buildG2ScienceSem1Catalog,
+} from './curriculumG2ScienceSem1.ts';
+import {
+  G2_SCIENCE_S2_BOOK_ID,
+  buildG2ScienceSem2Catalog,
+} from './curriculumG2ScienceSem2.ts';
+import {
+  G2_ISLAMIC_S1_BOOK_ID,
+  buildG2IslamicSem1Catalog,
+} from './curriculumG2IslamicSem1.ts';
+import {
+  G2_ISLAMIC_S2_BOOK_ID,
+  buildG2IslamicSem2Catalog,
+} from './curriculumG2IslamicSem2.ts';
+import {
+  G2_ENGLISH_S1_BOOK_ID,
+  buildG2EnglishSem1Catalog,
+} from './curriculumG2EnglishSem1.ts';
+import {
+  G2_ENGLISH_S2_BOOK_ID,
+  buildG2EnglishSem2Catalog,
+} from './curriculumG2EnglishSem2.ts';
+import {
+  G2_ARABIC_S1_BOOK_ID,
+  buildG2ArabicSem1Catalog,
+} from './curriculumG2ArabicSem1.ts';
+import {
+  G2_ARABIC_S2_BOOK_ID,
+  buildG2ArabicSem2Catalog,
+} from './curriculumG2ArabicSem2.ts';
+import {
+  G2_SOCIAL_S1_BOOK_ID,
+  buildG2SocialSem1Catalog,
+} from './curriculumG2SocialSem1.ts';
+import {
+  G2_SOCIAL_S2_BOOK_ID,
+  buildG2SocialSem2Catalog,
+} from './curriculumG2SocialSem2.ts';
+import {
+  G2_CREATIVE_ARTS_BOOK_ID,
+  buildG2CreativeArtsCatalog,
+} from './curriculumG2CreativeArts.ts';
+import {
+  G2_PE_S1_BOOK_ID,
+  buildG2PhysicalEducationSem1Catalog,
+} from './curriculumG2PhysicalEducationSem1.ts';
+import {
+  G5_PE_S1_BOOK_ID,
+  buildG5PhysicalEducationSem1Catalog,
+} from './curriculumG5PhysicalEducationSem1.ts';
+import {
+  G5_PE_S2_BOOK_ID,
+  buildG5PhysicalEducationSem2Catalog,
+} from './curriculumG5PhysicalEducationSem2.ts';
 
 export interface KBBook {
   id: string;
@@ -1216,6 +1308,18 @@ export const KB_BOOKS: KBBook[] = [
     source: 'iqra_curriculum_g8_creative_arts.json (NCCD)',
   },
   {
+    id: G10_CREATIVE_ARTS_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'creative-arts',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف العاشر',
+    titleEn: 'Art, Music and Drama Education – Grade 10',
+    // Not actually Semester 1 — this book has no semester split at all.
+    // `semester` is required on KBBook, so 1 is used as the same technical
+    // placeholder the id-namespacing scope uses (see g10CreativeArts.ts).
+    semester: 1,
+    source: 'iqra_curriculum_g10_creative_arts.json (NCCD)',
+  },
+  {
     id: G8_VOC_S1_BOOK_ID,
     gradeId: 'grade-8',
     subjectId: 'vocational-education',
@@ -1232,6 +1336,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Vocational Education – Grade 8 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g8_vocational_sem2.json (NCCD)',
+  },
+  {
+    id: G9_VOC_S1_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف التاسع – الفصل الأول',
+    titleEn: 'Vocational Education – Grade 9 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g9_vocational_sem1.json (NCCD)',
   },
   {
     id: G8_SOCIAL_S1_BOOK_ID,
@@ -1313,6 +1426,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Mathematics – Grade 5 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g5_math_sem1.json (NCCD)',
+  },
+  {
+    id: G5_MATH_S2_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف الخامس – الفصل الثاني',
+    titleEn: 'Mathematics – Grade 5 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g5_math_sem2.json (NCCD)',
   },
   {
     id: G5_SCIENCE_S1_BOOK_ID,
@@ -1412,6 +1534,54 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Digital Skills – Grade 5 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g5_digital_sem1.json (NCCD)',
+  },
+  {
+    id: G5_PE_S1_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'physical-education',
+    titleAr: 'التربية الرياضية – الصف الخامس – الفصل الأول',
+    titleEn: 'Physical Education – Grade 5 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g5_physical_education_sem1.json (NCCD)',
+  },
+  {
+    id: G5_PE_S2_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'physical-education',
+    titleAr: 'التربية الرياضية – الصف الخامس – الفصل الثاني',
+    titleEn: 'Physical Education – Grade 5 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g5_physical_education_sem2.json (NCCD)',
+  },
+  {
+    id: G5_CREATIVE_ARTS_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'creative-arts',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف الخامس',
+    titleEn: 'Art, Music and Drama Education – Grade 5',
+    // Not actually Semester 1 — this book has no semester split at all.
+    // `semester` is required on KBBook, so 1 is used as the same technical
+    // placeholder the id-namespacing scope uses (see g5CreativeArts.ts).
+    semester: 1,
+    source: 'iqra_curriculum_g5_creative_arts.json (NCCD)',
+  },
+  {
+    id: G5_VOC_S1_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف الخامس – الفصل الأول',
+    titleEn: 'Vocational Education – Grade 5 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g5_vocational_sem1.json (NCCD)',
+  },
+  {
+    id: G5_VOC_S2_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف الخامس – الفصل الثاني',
+    titleEn: 'Vocational Education – Grade 5 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g5_vocational_sem2.json (NCCD)',
   },
   {
     id: G4_MATH_S1_BOOK_ID,
@@ -1819,6 +1989,135 @@ export const KB_BOOKS: KBBook[] = [
     source: 'iqra_curriculum_g1_physical_education_sem2.json (NCCD)',
   },
   {
+    id: G2_MATH_S1_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف الثاني – الفصل الأول',
+    titleEn: 'Mathematics – Grade 2 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g2_math_sem1.json (NCCD)',
+  },
+  {
+    id: G2_MATH_S2_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف الثاني – الفصل الثاني',
+    titleEn: 'Mathematics – Grade 2 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g2_math_sem2.json (NCCD)',
+  },
+  {
+    id: G2_SCIENCE_S1_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف الثاني – الفصل الأول',
+    titleEn: 'Science – Grade 2 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g2_science_sem1.json (NCCD)',
+  },
+  {
+    id: G2_SCIENCE_S2_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف الثاني – الفصل الثاني',
+    titleEn: 'Science – Grade 2 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g2_science_sem2.json (NCCD)',
+  },
+  {
+    id: G2_ISLAMIC_S1_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف الثاني – الفصل الأول',
+    titleEn: 'Islamic Education – Grade 2 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g2_islamic_sem1.json (NCCD)',
+  },
+  {
+    id: G2_ISLAMIC_S2_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف الثاني – الفصل الثاني',
+    titleEn: 'Islamic Education – Grade 2 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g2_islamic_sem2.json (NCCD)',
+  },
+  {
+    id: G2_ENGLISH_S1_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف الثاني – الفصل الأول',
+    titleEn: 'English – Grade 2 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g2_english_sem1.json (NCCD)',
+  },
+  {
+    id: G2_ENGLISH_S2_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف الثاني – الفصل الثاني',
+    titleEn: 'English – Grade 2 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g2_english_sem2.json (NCCD)',
+  },
+  {
+    id: G2_ARABIC_S1_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف الثاني – الفصل الأول',
+    titleEn: 'Arabic – Grade 2 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g2_arabic_sem1.json (NCCD)',
+  },
+  {
+    id: G2_ARABIC_S2_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف الثاني – الفصل الثاني',
+    titleEn: 'Arabic – Grade 2 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g2_arabic_sem2.json (NCCD)',
+  },
+  {
+    id: G2_SOCIAL_S1_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'social',
+    titleAr: 'الدراسات الاجتماعية – الصف الثاني – الفصل الأول',
+    titleEn: 'Social Studies – Grade 2 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g2_social_sem1.json (NCCD)',
+  },
+  {
+    id: G2_SOCIAL_S2_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'social',
+    titleAr: 'الدراسات الاجتماعية – الصف الثاني – الفصل الثاني',
+    titleEn: 'Social Studies – Grade 2 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g2_social_sem2.json (NCCD)',
+  },
+  {
+    id: G2_CREATIVE_ARTS_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'creative-arts',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف الثاني',
+    titleEn: 'Art, Music and Drama Education – Grade 2',
+    // Not actually Semester 1 — this book has no semester split at all.
+    // `semester` is required on KBBook, so 1 is used as the same technical
+    // placeholder the id-namespacing scope uses (see g2CreativeArts.ts).
+    semester: 1,
+    source: 'iqra_curriculum_g2_creative_arts.json (NCCD)',
+  },
+  {
+    id: G2_PE_S1_BOOK_ID,
+    gradeId: 'grade-2',
+    subjectId: 'physical-education',
+    titleAr: 'التربية الرياضية – الصف الثاني – الفصل الأول',
+    titleEn: 'Physical Education – Grade 2 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g2_physical_education_sem1.json (NCCD)',
+  },
+  {
     id: G6_MATH_S1_BOOK_ID,
     gradeId: 'grade-6',
     subjectId: 'mathematics',
@@ -1826,6 +2125,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Mathematics – Grade 6 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g6_math_sem1.json (NCCD)',
+  },
+  {
+    id: G6_MATH_S2_BOOK_ID,
+    gradeId: 'grade-6',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف السادس – الفصل الثاني',
+    titleEn: 'Mathematics – Grade 6 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g6_math_sem2.json (NCCD)',
   },
   {
     id: G6_ISLAMIC_S1_BOOK_ID,
@@ -3232,6 +3540,7 @@ const _g8FinlitSem1 = buildG8FinlitSem1Catalog();
 const _g8DigitalSem1 = buildG8DigitalSem1Catalog();
 const _g8DigitalSem2 = buildG8DigitalSem2Catalog();
 const _g8CreativeArts = buildG8CreativeArtsCatalog();
+const _g10CreativeArts = buildG10CreativeArtsCatalog();
 const _g4CreativeArts = buildG4CreativeArtsCatalog();
 const _g4VocSem1 = buildG4VocSem1Catalog();
 const _g4VocSem2 = buildG4VocSem2Catalog();
@@ -3263,8 +3572,23 @@ const _g1SocialSem1 = buildG1SocialSem1Catalog();
 const _g1SocialSem2 = buildG1SocialSem2Catalog();
 const _g1CreativeArts = buildG1CreativeArtsCatalog();
 const _g1PhysicalEducationSem2 = buildG1PhysicalEducationSem2Catalog();
+const _g2MathSem1 = buildG2MathSem1Catalog();
+const _g2MathSem2 = buildG2MathSem2Catalog();
+const _g2ScienceSem1 = buildG2ScienceSem1Catalog();
+const _g2ScienceSem2 = buildG2ScienceSem2Catalog();
+const _g2IslamicSem1 = buildG2IslamicSem1Catalog();
+const _g2IslamicSem2 = buildG2IslamicSem2Catalog();
+const _g2EnglishSem1 = buildG2EnglishSem1Catalog();
+const _g2EnglishSem2 = buildG2EnglishSem2Catalog();
+const _g2ArabicSem1 = buildG2ArabicSem1Catalog();
+const _g2ArabicSem2 = buildG2ArabicSem2Catalog();
+const _g2SocialSem1 = buildG2SocialSem1Catalog();
+const _g2SocialSem2 = buildG2SocialSem2Catalog();
+const _g2CreativeArts = buildG2CreativeArtsCatalog();
+const _g2PhysicalEducationSem1 = buildG2PhysicalEducationSem1Catalog();
 const _g8VocSem1 = buildG8VocSem1Catalog();
 const _g8VocSem2 = buildG8VocSem2Catalog();
+const _g9VocSem1 = buildG9VocSem1Catalog();
 const _g8SocialSem1 = buildG8SocialSem1Catalog();
 const _g8SocialSem2 = buildG8SocialSem2Catalog();
 const _g8MathSem2 = buildG8MathSem2Catalog();
@@ -3275,6 +3599,7 @@ const _g7IslamicSem1 = buildG7IslamicSem1Catalog();
 const _g7IslamicSem2 = buildG7IslamicSem2Catalog();
 const _g7ScienceSem1 = buildG7ScienceSem1Catalog();
 const _g5MathSem1 = buildG5MathSem1Catalog();
+const _g5MathSem2 = buildG5MathSem2Catalog();
 const _g5ScienceSem1 = buildG5ScienceSem1Catalog();
 const _g5ScienceSem2 = buildG5ScienceSem2Catalog();
 const _g5IslamicSem1 = buildG5IslamicSem1Catalog();
@@ -3286,6 +3611,9 @@ const _g5ArabicSem2 = buildG5ArabicSem2Catalog();
 const _g5SocialSem1 = buildG5SocialSem1Catalog();
 const _g5SocialSem2 = buildG5SocialSem2Catalog();
 const _g5DigitalSem1 = buildG5DigitalSem1Catalog();
+const _g5CreativeArts = buildG5CreativeArtsCatalog();
+const _g5VocSem1 = buildG5VocSem1Catalog();
+const _g5VocSem2 = buildG5VocSem2Catalog();
 const _g4MathSem1 = buildG4MathSem1Catalog();
 const _g4MathSem2 = buildG4MathSem2Catalog();
 const _g4ScienceSem1 = buildG4ScienceSem1Catalog();
@@ -3300,6 +3628,7 @@ const _g4ArabicSem2 = buildG4ArabicSem2Catalog();
 const _g4EnglishSem1 = buildG4EnglishSem1Catalog();
 const _g4EnglishSem2 = buildG4EnglishSem2Catalog();
 const _g6MathSem1 = buildG6MathSem1Catalog();
+const _g6MathSem2 = buildG6MathSem2Catalog();
 const _g6ScienceSem1 = buildG6ScienceSem1Catalog();
 const _g6ArabicSem1 = buildG6ArabicSem1Catalog();
 const _g6DigitalSem1 = buildG6DigitalSem1Catalog();
@@ -3355,6 +3684,8 @@ const _engCommerce = buildEnglishCommerceKbCatalog();
 const _engAgriculture = buildEnglishAgricultureKbCatalog();
 const _engHospitality = buildEnglishHospitalityKbCatalog();
 const _engIndustry = buildEnglishIndustryKbCatalog();
+const _g5PhysicalEducationSem1 = buildG5PhysicalEducationSem1Catalog();
+const _g5PhysicalEducationSem2 = buildG5PhysicalEducationSem2Catalog();
 const _legacyS1UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === NCCD_S1_BOOK_ID).map(u => u.id),
 );
@@ -3522,6 +3853,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g8DigitalSem1.units,
   ..._g8DigitalSem2.units,
   ..._g8CreativeArts.units,
+  ..._g10CreativeArts.units,
   ..._g4CreativeArts.units,
   ..._g4VocSem1.units,
   ..._g4VocSem2.units,
@@ -3553,8 +3885,23 @@ export const KB_UNITS: KBUnit[] = [
   ..._g1SocialSem2.units,
   ..._g1CreativeArts.units,
   ..._g1PhysicalEducationSem2.units,
+  ..._g2MathSem1.units,
+  ..._g2MathSem2.units,
+  ..._g2ScienceSem1.units,
+  ..._g2ScienceSem2.units,
+  ..._g2IslamicSem1.units,
+  ..._g2IslamicSem2.units,
+  ..._g2EnglishSem1.units,
+  ..._g2EnglishSem2.units,
+  ..._g2ArabicSem1.units,
+  ..._g2ArabicSem2.units,
+  ..._g2SocialSem1.units,
+  ..._g2SocialSem2.units,
+  ..._g2CreativeArts.units,
+  ..._g2PhysicalEducationSem1.units,
   ..._g8VocSem1.units,
   ..._g8VocSem2.units,
+  ..._g9VocSem1.units,
   ..._g8SocialSem1.units,
   ..._g8SocialSem2.units,
   ..._g8MathSem2.units,
@@ -3584,7 +3931,11 @@ export const KB_UNITS: KBUnit[] = [
   ..._g7IslamicSem2.units,
   ..._g7ScienceSem1.units,
   ..._g5MathSem1.units,
+  ..._g5MathSem2.units,
   ..._g5DigitalSem1.units,
+  ..._g5CreativeArts.units,
+  ..._g5VocSem1.units,
+  ..._g5VocSem2.units,
   ..._g4MathSem1.units,
   ..._g4MathSem2.units,
   ..._g4ScienceSem1.units,
@@ -3609,6 +3960,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g5SocialSem1.units,
   ..._g5SocialSem2.units,
   ..._g6MathSem1.units,
+  ..._g6MathSem2.units,
   ..._g6ScienceSem1.units,
   ..._g6ArabicSem1.units,
   ..._g6DigitalSem1.units,
@@ -3640,6 +3992,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g7ArabicSem2.units,
   ..._g7EngSem1.units,
   ..._g7EngSem2.units,
+  ..._g5PhysicalEducationSem1.units,
+  ..._g5PhysicalEducationSem2.units,
 ];
 
 /** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 (G10 + G9) + NCCD FinLit S1 + English vocational tracks. */
@@ -3701,6 +4055,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g8DigitalSem1.lessons,
   ..._g8DigitalSem2.lessons,
   ..._g8CreativeArts.lessons,
+  ..._g10CreativeArts.lessons,
   ..._g4CreativeArts.lessons,
   ..._g4VocSem1.lessons,
   ..._g4VocSem2.lessons,
@@ -3732,8 +4087,23 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g1SocialSem2.lessons,
   ..._g1CreativeArts.lessons,
   ..._g1PhysicalEducationSem2.lessons,
+  ..._g2MathSem1.lessons,
+  ..._g2MathSem2.lessons,
+  ..._g2ScienceSem1.lessons,
+  ..._g2ScienceSem2.lessons,
+  ..._g2IslamicSem1.lessons,
+  ..._g2IslamicSem2.lessons,
+  ..._g2EnglishSem1.lessons,
+  ..._g2EnglishSem2.lessons,
+  ..._g2ArabicSem1.lessons,
+  ..._g2ArabicSem2.lessons,
+  ..._g2SocialSem1.lessons,
+  ..._g2SocialSem2.lessons,
+  ..._g2CreativeArts.lessons,
+  ..._g2PhysicalEducationSem1.lessons,
   ..._g8VocSem1.lessons,
   ..._g8VocSem2.lessons,
+  ..._g9VocSem1.lessons,
   ..._g8SocialSem1.lessons,
   ..._g8SocialSem2.lessons,
   ..._g8MathSem2.lessons,
@@ -3765,7 +4135,11 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g7IslamicSem2.lessons,
   ..._g7ScienceSem1.lessons,
   ..._g5MathSem1.lessons,
+  ..._g5MathSem2.lessons,
   ..._g5DigitalSem1.lessons,
+  ..._g5CreativeArts.lessons,
+  ..._g5VocSem1.lessons,
+  ..._g5VocSem2.lessons,
   ..._g4MathSem1.lessons,
   ..._g4MathSem2.lessons,
   ..._g4ScienceSem1.lessons,
@@ -3790,6 +4164,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g5SocialSem1.lessons,
   ..._g5SocialSem2.lessons,
   ..._g6MathSem1.lessons,
+  ..._g6MathSem2.lessons,
   ..._g6ScienceSem1.lessons,
   ..._g6ArabicSem1.lessons,
   ..._g6DigitalSem1.lessons,
@@ -3821,6 +4196,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g7ArabicSem2.lessons,
   ..._g7EngSem1.lessons,
   ..._g7EngSem2.lessons,
+  ..._g5PhysicalEducationSem1.lessons,
+  ..._g5PhysicalEducationSem2.lessons,
 ];
 
 // ─────────────────────────────────────────────────────

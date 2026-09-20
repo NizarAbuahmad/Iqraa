@@ -1,0 +1,162 @@
+{
+  "meta": {
+    "grade": "الصف الثاني",
+    "grade_en": "Grade 2",
+    "subject": "العلوم",
+    "subject_en": "Science",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة العلوم الصف الثاني الفصل الثاني (g2-science-s2-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ (4-6) ودروسُها السَّبْعَةُ من كتاب الطالب في 2026-09-19، بقراءةِ صفحةِ الفهرسِ وصفحةِ افتتاحِ كلِّ وحدةٍ وصفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF عبرَ PyMuPDF. نفسُ نمطِ g2ScienceSem1.ts: «الفِكْرَةُ العامَّةُ» على افتتاحيّةِ كلِّ وحدةٍ، و«الفِكْرَةُ الرَّئيسَةُ» و«المَفاهيمُ وَالمُصْطَلَحاتُ» الثنائيَّةُ اللغةِ على افتتاحيّةِ كلِّ درسٍ. الوحداتُ تُتابِعُ ترقيمَ الكتابِ نفسِهِ (4-6)، لا تَبدَأُ مِنْ 1. تُنقَلُ الدروسُ المرقَّمةُ في «قائِمَةِ الدُّروسِ» فقط؛ «الإِثْراءُ وَالتَّوَسُّعُ» و«مُراجَعَةُ الوَحْدَةِ» بلا رقمِ درسٍ، فاستُثْنِيا.",
+    "known_gaps": [
+      "objectives وprior_knowledge فارغتانِ لكلِّ الدروسِ السَّبْعَةِ: لا يطبَعُ الكتابُ صندوقَ «نَتاجاتُ التَّعَلُّمِ» ولا صندوقَ «تَعَلَّمْتُ سابِقًا» — نفسُ ما وُثِّقَ في g2ScienceSem1.ts."
+    ]
+  },
+  "units": [
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "جِسْمُ الْإِنْسانِ وَصِحَّتُهُ",
+      "title_en": "The Human Body and Its Health",
+      "general_idea_ar": "وَهَبَ اللَّهُ سُبْحانَهُ وَتَعالى الْإِنْسانَ أَعْضاءً مُخْتَلِفَةً تُساعِدُهُ عَلى الْعَيْشِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "أَعْضاءُ جِسْمِ الْإِنْسانِ",
+          "title_en": "Organs of the Human Body",
+          "main_idea_ar": "يَتَكَوَّنُ جِسْمُ الْإِنْسانِ مِنْ أَعْضاءٍ تُساعِدُهُ عَلى الْعَيْشِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْعُضْو", "en": "Organ" },
+            { "ar": "أَعْضاءُ الْحِسّ", "en": "Sense Organs" },
+            { "ar": "أَعْضاءٌ داخِلِيَّة", "en": "Internal Organs" },
+            { "ar": "الْهَضْم", "en": "Digestion" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "الْعاداتُ الصِّحِّيَّةُ",
+          "title_en": "Healthy Habits",
+          "main_idea_ar": "اتِّباعُ الْإِنْسانِ الْعاداتِ الصِّحِّيَّةَ في حَياتِهِ يُساعِدُهُ عَلى بَقاءِ جِسْمِهِ قَوِيًّا مَحْمِيًّا مِنَ الْأَمْراضِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "عاداتٌ صِحِّيَّة", "en": "Healthy Habits" },
+            { "ar": "غِذاءٌ صِحِّيّ", "en": "Healthy Food" },
+            { "ar": "غِذاءٌ غَيْرُ صِحِّيّ", "en": "Unhealthy Food" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "الصَّوْتُ وَالضَّوْءُ",
+      "title_en": "Sound and Light",
+      "general_idea_ar": "لِلصَّوْتِ وَالضَّوْءِ أَهَمِّيَّةٌ كَبيرَةٌ في حَياتِنا.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "الصَّوْتُ وَخَصائِصُهُ",
+          "title_en": "Sound and Its Characteristics",
+          "main_idea_ar": "يَنْشَأُ الصَّوْتُ عَنِ اهْتِزازِ الْأَجْسامِ، وَتَخْتَلِفُ الْأَصْواتُ بِاخْتِلافِ مَصْدَرِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الصَّوْت", "en": "Voice" },
+            { "ar": "اِهْتِزاز", "en": "Vibration" },
+            { "ar": "الْحَنْجَرَة", "en": "Larynx" },
+            { "ar": "الْحَبْلُ الصَّوْتِيّ", "en": "Vocal Cord" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "الضَّوْءُ وَمَصادِرُهُ",
+          "title_en": "Light and Its Sources",
+          "main_idea_ar": "يُمَكِّنُنا الضَّوْءُ مِنْ رُؤْيَةِ الْأَشْياءِ. وَتَخْتَلِفُ الْأَجْسامُ في تَمْريرِها لِلضَّوْءِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الضَّوْء", "en": "Light" },
+            { "ar": "مَصْدَرٌ طَبيعِيّ", "en": "Natural Source" },
+            { "ar": "مصْدَرٌ صِناعِيّ", "en": "Artificial Source" },
+            { "ar": "جِسْمٌ شَفّاف", "en": "Transparent Object" },
+            { "ar": "جِسْمٌ مُعْتِم", "en": "Opaque Object" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "الْمادَّةُ",
+      "title_en": "Matter",
+      "general_idea_ar": "تَخْتَلِفُ الْمَوادُّ مِنْ حَوْلِنا في خَصائِصِها وَاسْتِخْداماتِها.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "الْمادَّةُ وَخَصائِصُها",
+          "title_en": "Matter and Its Properties",
+          "main_idea_ar": "تَخْتَلِفُ الْمَوادُّ في خَصائِصِها، وَالْمادَّةُ كُلُّ شَيْءٍ لَهُ كُتْلَةٌ، وَيَشْغَلُ حَيِّزًا.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْمادَّة", "en": "Matter" },
+            { "ar": "الْكُتْلَة", "en": "Mass" },
+            { "ar": "الْحَجْم", "en": "Volume" },
+            { "ar": "الْمَوادُّ الْموصِلَةُ لِلْحَرارَة", "en": "Heat Conducting Materials" },
+            { "ar": "الْمَوادُّ الْعازِلَةُ لِلْحَرارَة", "en": "Heat Insulating Materials" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "حالاتُ الْمادَّةِ وَتَحَوُّلاتُها",
+          "title_en": "States of Matter and Their Changes",
+          "main_idea_ar": "لِلْمادَّةِ حالاتٌ ثَلاثٌ: صُلْبَةٌ، وَسائِلَةٌ، وَغازِيَّةٌ. وَتَتَحَوَّلُ الْمادَّةُ مِنْ حالَةٍ إِلى أُخْرى إِمّا بِالتَّسْخينِ أَو بِالتَّبْريدِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الاِنْصِهار", "en": "Melting" },
+            { "ar": "التَّجَمُّد", "en": "Freezing" },
+            { "ar": "التَّبَخُّر", "en": "Evaporation" },
+            { "ar": "التَّكاثُف", "en": "Condensation" }
+          ]
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "الْمادَّةُ وَالطّاقَةُ",
+          "title_en": "Matter and Energy",
+          "main_idea_ar": "الطّاقَةُ تَجْعَلُ الْأَشْياءَ تَعْمَلُ وَتَتَغَيَّرُ، وَلِلطّاقَةِ أَشْكالٌ مُتَنَوِّعَةٌ، وَفَوائِدُ عِدَّةٌ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الطّاقَة", "en": "Energy" },
+            { "ar": "الْحَرارَة", "en": "Heat" },
+            { "ar": "الْكَهْرَباء", "en": "Electricity" },
+            { "ar": "الرِّياح", "en": "Wind" },
+            { "ar": "الْماءُ الْمُتَحَرِّك", "en": "Moving Water" }
+          ]
+        }
+      ]
+    }
+  ]
+}

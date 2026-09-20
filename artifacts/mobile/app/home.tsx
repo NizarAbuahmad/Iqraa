@@ -493,6 +493,7 @@ export default function DashboardScreen() {
                 style={({ pressed }) => [
                   styles.startClassBtn,
                   {
+                    backgroundColor: colors.primary,
                     opacity: pressed ? 0.88 : 1,
                     flexDirection: isRTL ? 'row-reverse' : 'row',
                   },
@@ -1232,7 +1233,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#B45309',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 9,

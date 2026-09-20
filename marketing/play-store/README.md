@@ -81,6 +81,13 @@ to be defensible, but know what you are sitting next to.
 the project actually holds. Confirm this mailbox is monitored before the
 listing is submitted — Play requires a contact email, a reviewer may write to
 it, and a data-subject request has a statutory clock.
+### 1. `privacy@iqraa.app` is a placeholder
+
+`artifacts/mobile/constants/legal.ts` says so in its own comment. Play requires
+a contact email on the listing, a reviewer may write to it, and a data-subject
+request has a statutory clock. It must be a real, monitored mailbox before the
+listing is submitted — and note the `iqraa.app` domain is not one of the two
+domains the project actually holds (`iqrra.com`, the `pages.dev` app host).
 
 ### 2. Confirm a verification email actually lands in an inbox
 

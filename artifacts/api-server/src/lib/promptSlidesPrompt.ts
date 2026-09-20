@@ -59,8 +59,14 @@ function slideCountLine(b: any, isAr: boolean): string {
     : `Generate exactly ${capped} slides.`;
 }
 
-/** The teacher's grade/subject, offered as a hint the description can override. */
-function scopeLine(b: any, isAr: boolean): string {
+/**
+ * The teacher's grade/subject, offered as a hint the description can override.
+ *
+ * Exported for the clarifying-questions prompt, which used to ignore the
+ * grade the screen sent it and so asked the teacher for it — with a list of
+ * grades it made up.
+ */
+export function scopeLine(b: any, isAr: boolean): string {
   const grade = typeof b.grade === 'string' ? b.grade.trim() : '';
   const subject = typeof b.subject === 'string' ? b.subject.trim() : '';
   if (!grade && !subject) return '';
@@ -79,7 +85,16 @@ ${scopeLine(b, true)}
 الوصف يحدّد الموضوع والأسلوب وأي متطلّب ذكره المعلّم صراحةً. أكمل أنت كل ما يحتاجه عرض تعليمي متكامل حتى لو لم ينصّ عليه الوصف — لا تكتفِ بحرفية الوصف، ولا تترك شريحة شبه فارغة.
 ${slideCountLine(b, true)}
 
-بنية العرض — التزم بهذا الترتيب:
+قبل أي شيء: حدّد نوع العرض من الوصف نفسه. السؤال الفاصل واحد — هل هناك جمهور يتعلّم مادة سيُقاس إتقانه لها؟
+
+أ) عرض تعليمي: درس أو مراجعة أو شرح مفهوم. الإجابة نعم.
+ب) عرض عام: خطة، إحاطة، فعالية، طابور صباحي، لقاء أولياء أمور، احتفال، تعريف بمبادرة. الإجابة لا.
+
+لا تفترض (أ). عرض عن «يوم الأم» أو «خطة رحلة مدرسية» ليس حصة، وكتابة «أهداف الحصة» و«مثال محلول» و«تحقّق سريع» فوقه تجعل العرض يبدو قالبًا مفروضًا على موضوعه. وبالمثل لا تُفرغ درسًا حقيقيًا من مثاله وسؤاله بحجّة أنه «عام».
+
+لا تستخدم كلمة «الحصة» أو «الطالب» إلا في (أ) فعلًا.
+
+بنية (أ) — عرض تعليمي:
 1. شريحة غلاف (intro): العنوان + سطر واحد يقول ما الذي سيصبح الطالب قادرًا عليه في نهاية الحصة.
 2. شريحة تشويق (intro): سؤال أو موقف واقعي يجعل الموضوع يستحقّ الانتباه.
 3. شريحة أهداف (intro): ثلاثة أسطر تبدأ بـ "• "، كل هدف سلوكي قابل للملاحظة (يحسب، يفسّر، يقارن) — لا تكتب "يفهم" أو "يعرف".
@@ -88,6 +103,16 @@ ${slideCountLine(b, true)}
 6. شريحة مثال محلول (challenge) قرب النهاية، مع الحل الكامل في teacher.expectedAnswer.
 7. شريحة تحقّق (question) بأربعة خيارات.
 8. شريحة خلاصة (summary) في النهاية: ثلاثة أسطر "• " + جملة تقول ما الذي يأتي بعد هذه الحصة.
+
+بنية (ب) — عرض عام:
+1. شريحة غلاف (intro): العنوان + سطر واحد يقول ما الذي سيخرج به الحضور من هذا العرض.
+2. شريحة تشويق (intro): لماذا هذا الموضوع الآن — مناسبة أو موقف أو سؤال حقيقي.
+3. شريحة «ما الذي سنغطّيه» (intro): ثلاثة أسطر "• " تصف محتوى العرض نفسه، لا أهدافًا سلوكية. عنوانها من الموضوع («ماذا سنحضّر؟»، «محاور اللقاء»)، لا «أهداف الحصة».
+4. شريحة فاصلة (divider) واحدة على الأقل بين الأقسام.
+5. شرائح المحتوى (intro): معظم العرض. كل شريحة فكرة واحدة فقط، وعنوانها يقول الفكرة لا يسمّيها.
+6. شريحة عملية (challenge) قرب النهاية: خطوات تُنفَّذ أو قائمة تحقّق أو توزيع أدوار — شيء يفعله الحضور، لا مسألة تُحلّ. ضع التفاصيل في teacher.expectedAnswer.
+7. شريحة question اختيارية هنا: أضفها فقط إن كان في الموضوع قرار يستحق تصويت الحضور أو رأيًا يُستطلع. إن لم يكن، فلا تضعها — سؤال اختيار من متعدد على خطة احتفال يبدو امتحانًا في غير موضعه.
+8. شريحة خلاصة (summary) في النهاية: ثلاثة أسطر "• " + جملة تقول الخطوة التالية العملية.
 
 أعد JSON بالشكل الآتي (كل النصوص بالعربية عدا mediaPrompt):
 {
@@ -99,16 +124,17 @@ ${slideCountLine(b, true)}
   "duration": 30,
   "difficulty": "standard",
   "groupType": "whole-class",
-  "learningObjective": "هدف الحصة بجملة واحدة",
+  "learningObjective": "الهدف من هذا العرض بجملة واحدة",
   "materials": ["شاشة عرض"],
-  "teacherPreparation": "ما يحتاجه المعلّم قبل الحصة",
+  "deckPhotoQueries": ["english photo query for the cover", "english photo query for the section break", "english photo query for a content slide", "english photo query for another content slide"],
+  "teacherPreparation": "ما يحتاجه المعلّم قبل العرض",
   "slides": [
     {
       "slideNumber": 1, "type": "intro",
       "title": "عنوان العرض",
-      "content": "في نهاية الحصة ستكون قادرًا على ...",
+      "content": "بنهاية هذا العرض ستكون قادرًا على ...",
       "durationSeconds": 0,
-      "teacher": { "teachingTips": "كيف تفتتح الحصة بهذه الشريحة" }
+      "teacher": { "teachingTips": "كيف تفتتح بهذه الشريحة" }
     },
     {
       "slideNumber": 2, "type": "intro",
@@ -148,7 +174,7 @@ ${slideCountLine(b, true)}
       "title": "الخلاصة",
       "content": "• الفكرة الأولى\\n• الفكرة الثانية\\n• الفكرة الثالثة",
       "durationSeconds": 0,
-      "teacher": { "teachingTips": "ما الذي تبني عليه الحصة القادمة" }
+      "teacher": { "teachingTips": "ما الذي يُبنى على هذا لاحقًا" }
     }
   ],
   "teacherNotes": ["ملاحظة للمعلّم"],
@@ -174,8 +200,9 @@ ${slideCountLine(b, true)}
 - لا تضع "mediaPrompt" على شريحة تحمل "layout": تلك الشريحة تملأ الشاشة بشكلها الخاص ولا مكان فيها للصورة.
 - شريحة الشرح فكرة واحدة فقط. إن كان لديك فكرتان فاجعلهما شريحتين.
 - الخيارات الثلاثة الخاطئة في شريحة question أخطاء شائعة حقيقية، لا حشوًا ولا أرقامًا عشوائية. "correctIndex" فهرس مُصفَّر (0 يعني الخيار الأول)، لا ترتيب الخيار كما يعدّه الإنسان.
+- "deckPhotoQueries" مصفوفة من أربع عبارات بحث بالإنجليزية (٢-٥ كلمات لكل واحدة) تصف موضوع العرض نفسه، كلها مختلفة عن بعضها: الأولى لخلفية الغلاف، والثانية للشريحة الفاصلة، والثالثة والرابعة احتياط لشرائح المحتوى. الأربع مطلوبة. بالإنجليزية دائمًا مهما كانت لغة العرض — فهرس الصور إنجليزي، والبحث بالعربية يعود فارغًا. صِفْ الموضوع لا المادة الدراسية: عرض عن يوم الأم عبارته "mother and child hands" لا "mathematics classroom".
 - "type" واحد من: intro, divider, challenge, question, summary. لا تستخدم أي نوع آخر.
-- "mediaPrompt": ضعه فقط حين تضيف الصورة معنًى، في 3 شرائح كحدّ أقصى، واكتبه **بالإنجليزية** كعبارة بحث عن صورة (2-5 كلمات) لأنه يُمرَّر إلى محرّك بحث صور. لا تكتب "mediaUrl" إطلاقًا.
+- "mediaPrompt" مطلوب على ثلاث شرائح بالضبط — هذا شرط لا خيار. اخترها من شرائح الشرح/المحتوى التي تستفيد فعلًا من صورة، واكتب في كل واحدة عبارة بحث **بالإنجليزية** (2-5 كلمات) تصف ما يجب أن تُظهره الصورة. لأن هذه هي الطريقة الوحيدة لوصول صورة إلى شريحة محتوى: الغلاف والشريحة الفاصلة تأخذان خلفيتيهما من "deckPhotoQueries"، وكل شريحة أخرى تبقى نصًا خالصًا ما لم تحمل "mediaPrompt". عرض بلا واحدة منها هو عرض بصورتين فقط من عشر شرائح. لا تكتب "mediaUrl" إطلاقًا.
 - اكتب المعادلات بالحرفين اللاتينيين x و y حتى داخل النص العربي، فالتطبيق يرسم المنحنى من المعادلة الواردة في النص.
 - "durationSeconds": صفر لشرائح الشرح، و45-60 لشرائح السؤال.
 - لا تُضِف حقل "verified" أو "verifiedBy" إطلاقًا.`;
@@ -190,7 +217,16 @@ ${scopeLine(b, false)}
 The description sets the topic, the tone and any requirement the teacher stated outright. You fill in everything a complete teaching deck needs even where the description did not spell it out — do not stop at the literal words, and never leave a slide near-empty.
 ${slideCountLine(b, false)}
 
-Deck structure — follow this order:
+First, decide which kind of deck the description is asking for. One question settles it: is there an audience learning material they will be assessed on?
+
+A) A teaching deck: a lesson, a revision session, an explanation of a concept. The answer is yes.
+B) A general deck: a plan, a briefing, an event, a morning assembly, a parents' evening, a celebration, an introduction to an initiative. The answer is no.
+
+Do not assume (A). A deck about Mother's Day or a school trip plan is not a lesson, and putting "lesson objectives", a "worked example" and a "quick check" on top of it makes the deck look like a template forced onto its subject. Equally, do not strip a real lesson of its example and its check by calling it "general".
+
+Use the words "lesson", "class" and "student" only when (A) is actually true.
+
+Structure for (A) — a teaching deck:
 1. Cover slide (intro): the title + one line naming what a student will be able to do by the end.
 2. Hook slide (intro): a question or real situation that makes the topic worth attention.
 3. Objectives slide (intro): three lines starting "• ", each an observable outcome (calculates, explains, compares) — never "understands" or "knows".
@@ -199,6 +235,16 @@ Deck structure — follow this order:
 6. A worked example (challenge) near the end, with the full solution in teacher.expectedAnswer.
 7. A check slide (question) with four options.
 8. A summary slide at the end: three "• " lines + a sentence naming what comes next.
+
+Structure for (B) — a general deck:
+1. Cover slide (intro): the title + one line naming what the audience leaves with.
+2. Hook slide (intro): why this topic now — an occasion, a situation, or a real question.
+3. A "what we'll cover" slide (intro): three "• " lines describing the deck's own content, not behavioural objectives. Title it from the subject ("What we're preparing", "What we'll go through") — never "lesson objectives".
+4. At least one divider slide between sections.
+5. Content slides (intro): the bulk of the deck. One idea per slide, and the title states the idea rather than labelling it.
+6. A practical slide (challenge) near the end: steps to carry out, a checklist, or who does what — something the audience does, not a problem to solve. Put the detail in teacher.expectedAnswer.
+7. A question slide is OPTIONAL here: add one only if the topic holds a decision worth putting to the room or an opinion worth polling. Otherwise leave it out — a multiple-choice question about a celebration plan reads as an exam in the wrong place.
+8. A summary slide at the end: three "• " lines + a sentence naming the practical next step.
 
 Return JSON in this exact shape (all text in English; mediaPrompt is English too):
 {
@@ -210,16 +256,17 @@ Return JSON in this exact shape (all text in English; mediaPrompt is English too
   "duration": 30,
   "difficulty": "standard",
   "groupType": "whole-class",
-  "learningObjective": "The lesson goal in one sentence",
+  "learningObjective": "What this deck is for, in one sentence",
   "materials": ["Projector"],
-  "teacherPreparation": "What the teacher needs before class",
+  "deckPhotoQueries": ["english photo query for the cover", "english photo query for the section break", "english photo query for a content slide", "english photo query for another content slide"],
+  "teacherPreparation": "What the teacher needs before presenting",
   "slides": [
     {
       "slideNumber": 1, "type": "intro",
       "title": "Deck title",
-      "content": "By the end of this lesson you will be able to ...",
+      "content": "By the end of this deck you will be able to ...",
       "durationSeconds": 0,
-      "teacher": { "teachingTips": "How to open the lesson on this slide" }
+      "teacher": { "teachingTips": "How to open on this slide" }
     },
     {
       "slideNumber": 2, "type": "intro",
@@ -259,7 +306,7 @@ Return JSON in this exact shape (all text in English; mediaPrompt is English too
       "title": "Summary",
       "content": "• First takeaway\\n• Second takeaway\\n• Third takeaway",
       "durationSeconds": 0,
-      "teacher": { "teachingTips": "What the next lesson builds on" }
+      "teacher": { "teachingTips": "What gets built on this afterwards" }
     }
   ],
   "teacherNotes": ["A note for the teacher"],
@@ -285,8 +332,9 @@ Mandatory rules:
 - Never put "mediaPrompt" on a slide that carries a "layout": that slide fills the screen with its own shape and has nowhere to put a picture.
 - A concept slide carries exactly one idea. If you have two ideas, make two slides.
 - The three wrong options on a question slide are real, plausible misconceptions — not filler, not random numbers. "correctIndex" is 0-based (0 means the first option), never the option's position as a person would count it.
+- "deckPhotoQueries" is FOUR English search phrases (2-5 words each) describing the deck's own subject, all different from each other: the first backs the cover, the second the section break, and the third and fourth are spares for content slides. All four are required. Always English whatever language the deck is in — the photo index is English and an Arabic query comes back empty. Describe the TOPIC, not the school subject: a Mother's Day deck wants "mother and child hands", never "mathematics classroom".
 - "type" is one of: intro, divider, challenge, question, summary. Never any other type.
-- "mediaPrompt": include it only where a picture adds meaning, on at most 3 slides, and write it in **English** as a photo search phrase (2-5 words) because it is passed to an image search engine. Never write "mediaUrl".
+- "mediaPrompt" is REQUIRED on exactly three slides — a requirement, not an option. Choose the three concept/content slides that genuinely gain from a picture, and give each one an **English** search phrase (2-5 words) describing what the picture should show. This is the only way a picture ever reaches a content slide: the cover and the section break take their backgrounds from "deckPhotoQueries", and every other slide stays pure text unless it carries a "mediaPrompt". A deck with none is a deck with two pictures in ten slides. Never write "mediaUrl".
 - Write equations with latin x and y even inside other prose — the app plots the curve from the equation stated in the text.
 - "durationSeconds": zero for teaching slides, 45-60 for question slides.
 - Never add a "verified" or "verifiedBy" field.`;

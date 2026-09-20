@@ -89,7 +89,7 @@ export default function OnboardingScreen() {
             </Text>
           </Pressable>
           {!isLast && (
-            <Pressable onPress={handleSkip} hitSlop={8}>
+            <Pressable onPress={handleSkip} hitSlop={8} accessibilityRole="button">
               <Text style={[styles.skipText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
                 {t('onboardingSkip')}
               </Text>

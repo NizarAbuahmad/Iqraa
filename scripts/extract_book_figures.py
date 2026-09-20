@@ -445,6 +445,57 @@ BOOKS: dict[str, tuple[str, str]] = {
     "civic-s2-student-book": ("grade-10-civic", "knowledge-base/grade-10-civic/support-pdfs/كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الثاني.pdf"),
     "digital-s1-student-book": ("grade-10-digital-literacy", "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf"),
     "digital-s2-student-book": ("grade-10-digital-literacy", "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الثاني.pdf"),
+
+    # Grades 3, 4 and 5, added 2026-09-18 — the catalogs landed between
+    # 2026-09-16 and now (#481-#521), which is what had blocked these.
+    # 744 catalog lessons across 42 catalogs; 34 books registered here.
+    #
+    # Excluded on purpose: English (that series photographs rather than
+    # draws — `extract_book_photos.py`), and every book with no catalog —
+    # Grade 5 PE, art and vocational, and Grade 5 maths S2. Grade 3
+    # English S1 and the Grade 4/5 digital literacy books have catalogs
+    # but no PDF in the library.
+    #
+    # Matched on FILENAME tokens, never on the folder a file sits in: the
+    # library misfiles books across grade folders — Grade 7's arabic S2
+    # sits in the 8th-grade arabic folder — and a folder match would
+    # register one grade's book under another. Grade 5 spells arabic two
+    # ways («العربية لغتي» S1, «اللغة العربية» S2) and Grade 5 science S1
+    # carries a double space in «لمادة  العلوم».
+    "g3-arabic-s1-student-book": ("grade-3-arabic", "knowledge-base/grade-3-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية الصف الثالث الفصل الأول.pdf"),
+    "g3-arabic-s2-student-book": ("grade-3-arabic", "knowledge-base/grade-3-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية الصف الثالث الفصل الثاني.pdf"),
+    "g3-arts-student-book": ("grade-3-art", "knowledge-base/grade-3-art/support-pdfs/كتاب الطالب لمادة التربية الفنية للصف الثالث.pdf"),
+    "g3-islamic-s1-student-book": ("grade-3-islamic", "knowledge-base/grade-3-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف الثالث الفصل الأول.pdf"),
+    "g3-islamic-s2-student-book": ("grade-3-islamic", "knowledge-base/grade-3-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف الثالث الفصل الثاني.pdf"),
+    "g3-math-s1-student-book": ("grade-3-math", "knowledge-base/grade-3-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف الثالث الفصل الأول.pdf"),
+    "g3-math-s2-student-book": ("grade-3-math", "knowledge-base/grade-3-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف الثالث الفصل الثاني.pdf"),
+    "g3-pe-s1-student-book": ("grade-3-pe", "knowledge-base/grade-3-pe/support-pdfs/كتاب الطالب التربية الرياضية الصف الثالث الفصل الأول.pdf"),
+    "g3-science-s1-student-book": ("grade-3-science", "knowledge-base/grade-3-science/support-pdfs/كتاب الطالب لمادة العلوم الصف الثالث الفصل الأول.pdf"),
+    "g3-science-s2-student-book": ("grade-3-science", "knowledge-base/grade-3-science/support-pdfs/كتاب الطالب لمادة العلوم الصف الثالث الفصل الثاني.pdf"),
+    "g3-social-s1-student-book": ("grade-3-social", "knowledge-base/grade-3-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية الصف الثالث الفصل الأول.pdf"),
+    "g3-social-s2-student-book": ("grade-3-social", "knowledge-base/grade-3-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية الصف الثالث الفصل الثاني.pdf"),
+    "g4-arabic-s1-student-book": ("grade-4-arabic", "knowledge-base/grade-4-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف الرابع الفصل الأول.pdf"),
+    "g4-arabic-s2-student-book": ("grade-4-arabic", "knowledge-base/grade-4-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف الرابع الفصل الثاني.pdf"),
+    "g4-arts-s1-student-book": ("grade-4-art", "knowledge-base/grade-4-art/support-pdfs/كتاب الطالب لمادة التربية الفنية للصف الرابع.pdf"),
+    "g4-islamic-s1-student-book": ("grade-4-islamic", "knowledge-base/grade-4-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الأول.pdf"),
+    "g4-islamic-s2-student-book": ("grade-4-islamic", "knowledge-base/grade-4-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف الرابع الفصل الثاني.pdf"),
+    "g4-math-s1-student-book": ("grade-4-math", "knowledge-base/grade-4-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الأول.pdf"),
+    "g4-math-s2-student-book": ("grade-4-math", "knowledge-base/grade-4-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف الرابع الفصل الثاني.pdf"),
+    "g4-science-s1-student-book": ("grade-4-science", "knowledge-base/grade-4-science/support-pdfs/كتاب الطالب لمادة العلوم الصف الرابع الفصل الأول.pdf"),
+    "g4-science-s2-student-book": ("grade-4-science", "knowledge-base/grade-4-science/support-pdfs/كتاب الطالب لمادة العلوم الصف الرابع الفصل الثاني.pdf"),
+    "g4-social-s1-student-book": ("grade-4-social", "knowledge-base/grade-4-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الأول.pdf"),
+    "g4-social-s2-student-book": ("grade-4-social", "knowledge-base/grade-4-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الرابع الفصل الثاني.pdf"),
+    "g4-voc-s1-student-book": ("grade-4-vocational", "knowledge-base/grade-4-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الأول.pdf"),
+    "g4-voc-s2-student-book": ("grade-4-vocational", "knowledge-base/grade-4-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية للصف الرابع الفصل الثاني.pdf"),
+    "g5-arabic-s1-student-book": ("grade-5-arabic", "knowledge-base/grade-5-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف الخامس الفصل الأول.pdf"),
+    "g5-arabic-s2-student-book": ("grade-5-arabic", "knowledge-base/grade-5-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف الخامس الفصل الثاني.pdf"),
+    "g5-islamic-s1-student-book": ("grade-5-islamic", "knowledge-base/grade-5-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الأول.pdf"),
+    "g5-islamic-s2-student-book": ("grade-5-islamic", "knowledge-base/grade-5-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية للصف الخامس الفصل الثاني.pdf"),
+    "g5-math-s1-student-book": ("grade-5-math", "knowledge-base/grade-5-math/support-pdfs/كتاب الطالب لمادة الرياضيات للصف الخامس الفصل الأول.pdf"),
+    "g5-science-s1-student-book": ("grade-5-science", "knowledge-base/grade-5-science/support-pdfs/كتاب الطالب لمادة  العلوم الصف الخامس الفصل الأول.pdf"),
+    "g5-science-s2-student-book": ("grade-5-science", "knowledge-base/grade-5-science/support-pdfs/كتاب الطالب لمادة العلوم الصف الخامس الفصل الثاني.pdf"),
+    "g5-social-s1-student-book": ("grade-5-social", "knowledge-base/grade-5-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الأول.pdf"),
+    "g5-social-s2-student-book": ("grade-5-social", "knowledge-base/grade-5-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف الخامس الفصل الثاني.pdf"),
     "g8-digital-s1-student-book": (
         "grade-8-digital-literacy",
         MIRROR_G8 + "7asob/كتاب الطالب لمادة المهارات الرقمية الصف الثامن الفصل الأول.pdf",
@@ -1331,6 +1382,28 @@ CONTENTS_PLACEMENT: dict[str, float] = {
     # approach the answer from below.
     "g7-social-s1-student-book": 12.0,
     "g7-social-s2-student-book": 12.0,
+
+    # Grades 3, 4 and 5, 2026-09-19. 11 of 34 probed books reproduce their
+    # catalog — the best rate of any batch (grades 6/7 managed 8 of 28, grades
+    # 8/9/10 none of 19). Every one places by the contents route; not one of
+    # the 34 places by its opener.
+    #
+    # The expected blocker did NOT appear. STATUS predicted these books would
+    # need OCR because grade 4/5 contents spreads extract worse than their body
+    # prose. Measured: all 34 carry readable front matter, the worst at 2522
+    # Arabic characters on pages 1-14, and NONE needed OCR. That warning is
+    # real for text ingestion and does not transfer to figure placement.
+    "g3-science-s1-student-book": 4.0,
+    "g3-science-s2-student-book": 4.0,
+    "g3-social-s2-student-book": 8.0,
+    "g4-arts-s1-student-book": 4.0,
+    "g4-science-s1-student-book": 4.0,
+    "g4-science-s2-student-book": 4.0,
+    "g4-social-s1-student-book": 8.0,
+    "g4-social-s2-student-book": 12.0,
+    "g4-voc-s1-student-book": 4.0,
+    "g5-science-s1-student-book": 4.0,
+    "g5-science-s2-student-book": 8.0,
 }
 
 

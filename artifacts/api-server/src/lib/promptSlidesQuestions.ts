@@ -17,6 +17,8 @@
  * beats a question they did not.
  */
 
+import { scopeLine } from './promptSlidesPrompt.ts';
+
 /** Never ask more than this — it is one round, not an interview. */
 export const MAX_CLARIFYING_QUESTIONS = 3;
 
@@ -29,21 +31,50 @@ export type PromptSlidesQuestion = {
   options: { id: string; label: string }[];
 };
 
+/*
+ * Both builders below decide the deck's KIND before choosing what to ask, and
+ * that decision has to agree with `promptSlidesPrompt.ts`. The answers a
+ * teacher taps here are folded into the description the deck prompt reads, so
+ * a lesson-shaped question answered on a general deck («ما هدف الحصة؟ →
+ * التعريف بالتقاليد») tells the deck model it IS a lesson, and the deck comes
+ * back with «أهداف الحصة» on a celebration however carefully the deck prompt
+ * was told otherwise. The first version of this file did exactly that.
+ *
+ * Grade and subject are never asked. The screen sends them from the teacher's
+ * profile and the deck prompt already reads them; asking again is a wasted tap,
+ * and a model that does not know which grades exist answers by inventing a
+ * list of them — a teacher saw «السادس/السابع/الثامن/التاسع» offered for a
+ * Mother's Day deck.
+ */
+
 export function questionsPromptAr(b: any): string {
   return `أنت تساعد معلّمًا على توضيح ما يريده من عرض شرائحي قبل توليده.
 
 وصف المعلّم:
 "${b.prompt ?? ''}"
+${scopeLine(b, true)}
 
-مهمّتك: إن كان الوصف ناقصًا، اطرح ما لا يزيد عن ${MAX_CLARIFYING_QUESTIONS} أسئلة قصيرة تُجاب بالنقر على خيار.
+أولًا حدّد نوع العرض من الوصف. السؤال الفاصل: هل هناك جمهور يتعلّم مادة سيُقاس إتقانه لها؟
+- نعم → عرض تعليمي: درس أو مراجعة أو شرح مفهوم.
+- لا → عرض عام: خطة، فعالية، طابور صباحي، لقاء أولياء أمور، احتفال، مبادرة.
+لا تفترض أنه درس. عرض عن «يوم الأم» أو «رحلة مدرسية» ليس حصة.
+
+ثم، إن كان الوصف ناقصًا، اطرح ما لا يزيد عن ${MAX_CLARIFYING_QUESTIONS} أسئلة قصيرة تُجاب بالنقر على خيار.
+
+ما يستحقّ السؤال:
+- في عرض تعليمي: الغرض (شرح جديد / مراجعة / تقييم)، هل درس الطلبة الموضوع سابقًا، التركيز المطلوب.
+- في عرض عام: لمن العرض (طلبة / أولياء أمور / معلّمون / جمهور مختلط)، الإطار (داخل الصف / طابور / فعالية)، النبرة (رسمية / دافئة / مرحة)، ما المطلوب من الحضور في النهاية.
+
+لا تسأل أبدًا عن:
+- الصف أو المادة. معروفان من ملف المعلّم أعلاه، ولا تخترع قائمة صفوف.
+- الموضوع نفسه إن ذكره الوصف.
+- «هدف الحصة» أو «هل درس الطلبة الموضوع» في عرض عام. لا حصة هناك.
 
 أعد JSON فقط بهذا الشكل:
-{"questions":[{"id":"purpose","question":"ما هدف الحصة؟","options":[{"id":"new","label":"شرح جديد"},{"id":"revision","label":"مراجعة"},{"id":"assessment","label":"تقييم"}]}]}
+{"questions":[{"id":"audience","question":"لمن هذا العرض؟","options":[{"id":"students","label":"للطلبة"},{"id":"parents","label":"لأولياء الأمور"},{"id":"mixed","label":"جمهور مختلط"}]}]}
 
 قواعد:
-- إن كان الوصف يذكر الموضوع والصف والهدف والطول فأعد {"questions":[]} — لا تسأل لمجرّد السؤال.
-- اسأل فقط عمّا يغيّر محتوى الشرائح فعلًا: الهدف من الحصة، المستوى، ما إذا كان الطلبة درسوا الموضوع سابقًا، التركيز المطلوب.
-- لا تسأل عن الموضوع نفسه إن ذكره الوصف.
+- إن كان الوصف يجيب عن هذه الأسئلة أصلًا فأعد {"questions":[]} — لا تسأل لمجرّد السؤال.
 - كل سؤال من 2 إلى 4 خيارات، وكل خيار كلمتان أو ثلاث بالعربية.
 - "id" بالإنجليزية بحروف صغيرة بلا مسافات.`;
 }
@@ -53,16 +84,29 @@ export function questionsPromptEn(b: any): string {
 
 The teacher's description:
 "${b.prompt ?? ''}"
+${scopeLine(b, false)}
 
-Your task: if the description is thin, ask at most ${MAX_CLARIFYING_QUESTIONS} short questions that can be answered by tapping an option.
+First, decide which kind of deck this is. One question settles it: is there an audience learning material they will be assessed on?
+- Yes → a teaching deck: a lesson, a revision session, an explanation of a concept.
+- No → a general deck: a plan, an event, a morning assembly, a parents' evening, a celebration, an initiative.
+Do not assume a lesson. A deck about Mother's Day or a school trip is not a class.
+
+Then, if the description is thin, ask at most ${MAX_CLARIFYING_QUESTIONS} short questions that can be answered by tapping an option.
+
+What is worth asking:
+- For a teaching deck: the purpose (new explanation / revision / assessment), whether students have met the topic before, what to emphasise.
+- For a general deck: who it is for (students / parents / staff / a mixed audience), the setting (in class / assembly / an event), the tone (formal / warm / playful), what the audience should do at the end.
+
+Never ask about:
+- The grade or the subject. They are known from the teacher's profile above; do not invent a list of grades.
+- The topic itself, if the description names it.
+- "The lesson's objective" or "have students studied this" on a general deck. There is no lesson.
 
 Return JSON only, in this shape:
-{"questions":[{"id":"purpose","question":"What is this lesson for?","options":[{"id":"new","label":"New explanation"},{"id":"revision","label":"Revision"},{"id":"assessment","label":"Assessment"}]}]}
+{"questions":[{"id":"audience","question":"Who is this deck for?","options":[{"id":"students","label":"Students"},{"id":"parents","label":"Parents"},{"id":"mixed","label":"A mixed audience"}]}]}
 
 Rules:
-- If the description already states the topic, the year group, the purpose and the length, return {"questions":[]} — do not ask for the sake of asking.
-- Only ask about things that actually change the slides: the purpose of the lesson, the level, whether students have met the topic before, what to emphasise.
-- Never ask about the topic itself if the description names it.
+- If the description already answers these, return {"questions":[]} — do not ask for the sake of asking.
 - Each question has 2 to 4 options, each option two or three words.
 - "id" is lowercase English with no spaces.`;
 }

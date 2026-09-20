@@ -1,14 +1,16 @@
 /**
- * Teaching plans — a teacher's own free-text note of what they intend to
- * teach (school, grades, topics, schedule). See lib/db/src/schema/teachingPlans.ts
- * for why this is separate from `classGroups`/`/classes`.
+ * Teaching plans — what a teacher intends to teach a class, and when. The
+ * plan is anchored to a class (grade and subject come from it) and its
+ * schedule is `entries`: curriculum lesson ids against calendar dates. See
+ * lib/db/src/schema/teachingPlans.ts for why this is separate from
+ * `classGroups`/`/classes`, and which fields are legacy.
  *
  * No student data here, so unlike roster.ts this does not need
  * `requireRosterConsent`.
  */
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { teachingPlans } from "@workspace/db";
+import { classGroups, teachingPlans } from "@workspace/db";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import {
   authMiddleware,
@@ -18,6 +20,7 @@ import {
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
+import { parsePlanEntries, type PlanEntry } from "../lib/planEntries.js";
 
 const router = Router();
 
@@ -28,6 +31,31 @@ router.use("/teaching-plans", authMiddleware, requireRole(...TEACHER_ROLES));
 
 function trimmed(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+
+/**
+ * `classGroupId` is a link to another teacher-owned table, unlike every other
+ * field here — `savedMaterials.classGroupId` (workspace.ts) accepts it
+ * unchecked, which would let a client attach a plan to a class it does not
+ * own. Returns `undefined` (field omitted), `null` (explicit detach), or a
+ * verified id; throws a plain string on an id that does not belong to this
+ * teacher, which the caller turns into a 400.
+ */
+async function resolveClassGroupId(
+  raw: unknown,
+  teacherId: string,
+): Promise<string | null | undefined> {
+  if (raw === undefined) return undefined;
+  if (raw === null || raw === "") return null;
+  if (typeof raw !== "string") throw "classGroupId must be a string or null";
+
+  const [owned] = await db
+    .select({ id: classGroups.id })
+    .from(classGroups)
+    .where(and(eq(classGroups.id, raw), eq(classGroups.teacherId, teacherId)));
+  if (!owned) throw "classGroupId does not refer to one of your classes";
+  return raw;
 }
 
 /** Single exit for every teaching-plan failure: 503 + a code when the schema is absent. */
@@ -75,15 +103,29 @@ router.post("/teaching-plans", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
+    let classGroupId: string | null | undefined;
+    let entries: PlanEntry[] | undefined;
+    try {
+      classGroupId = await resolveClassGroupId(req.body?.classGroupId, req.user!.id);
+      entries = parsePlanEntries(req.body?.entries);
+    } catch (msg) {
+      res.status(400).json({ error: String(msg) });
+      return;
+    }
+
     const [row] = await db
       .insert(teachingPlans)
       .values({
         teacherId: req.user!.id,
         title,
         schoolName: trimmed(req.body?.schoolName),
+        classGroupId: classGroupId ?? null,
+        entries: entries ?? [],
         grades: trimmed(req.body?.grades),
         topics: trimmed(req.body?.topics),
+        date: trimmed(req.body?.date),
         time: trimmed(req.body?.time),
+        notes: trimmed(req.body?.notes),
       })
       .returning();
 
@@ -97,11 +139,21 @@ router.patch("/teaching-plans/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const planId = req.params["id"] as string;
     const patch: Record<string, unknown> = { updatedAt: new Date() };
-    for (const field of ["title", "schoolName", "grades", "topics", "time"] as const) {
+    for (const field of ["title", "schoolName", "grades", "topics", "date", "time", "notes"] as const) {
       if (req.body?.[field] !== undefined) patch[field] = trimmed(req.body[field]);
     }
     if (patch["title"] === "") {
       res.status(400).json({ error: "title cannot be empty" });
+      return;
+    }
+
+    try {
+      const classGroupId = await resolveClassGroupId(req.body?.classGroupId, req.user!.id);
+      if (classGroupId !== undefined) patch["classGroupId"] = classGroupId;
+      const entries = parsePlanEntries(req.body?.entries);
+      if (entries !== undefined) patch["entries"] = entries;
+    } catch (msg) {
+      res.status(400).json({ error: String(msg) });
       return;
     }
 

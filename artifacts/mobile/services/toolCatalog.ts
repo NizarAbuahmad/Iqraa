@@ -72,15 +72,6 @@ const BEFORE_CLASS_ALL: ToolDef[] = [
     color: '#1B6B62',
     route: '/ai-tools/lesson-plan',
   },
-  {
-    id: 'simplify',
-    titleKey: 'simplifyExplanationTitle',
-    descKey: 'simplifyExplanationSubtitle',
-    icon: 'bulb-outline',
-    color: '#00A99D',
-    route: '/ai-tools/lesson-plan',
-    routeParams: { simplify: '1' },
-  },
   // Generates the whole lesson journey in one pass, so it belongs with prep
   // rather than in a drawer of leftovers.
   {

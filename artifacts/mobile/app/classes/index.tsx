@@ -23,15 +23,85 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { RosterError, archiveClass, createClass, listClasses, type ClassGroup } from '@/services/roster';
 import { confirm } from '@/services/confirm';
 import { countStudents, type TranslationKey } from '@/services/i18n';
-import { getPickerGrades } from '@/services/curriculumData';
+import { SUBJECTS, getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { narrowSubjectsForGrade, resolveSelectedId } from '@/services/teacherCatalogFilter';
 import { RosterConsentGate } from '@/components/RosterConsentGate';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 
 const ACCENT = '#1B6B62';
+
+/** A class's subject for the list card. Empty when unset or off-catalog. */
+function subjectName(subjectId: string | undefined, lang: string): string {
+  const subject = subjectId ? SUBJECTS.find(s => s.id === subjectId) : undefined;
+  if (!subject) return '';
+  return lang === 'ar' ? subject.nameAr : subject.name;
+}
+
+/**
+ * One row of single-select pills in the new-class sheet — grade, then subject.
+ *
+ * Renders nothing for a list of one: the teacher has no decision to make, and
+ * the single value is submitted either way.
+ */
+function ChipRow({ label, options, selectedId, onSelect, isRTL, lang, colors }: {
+  label: string;
+  options: readonly { id: string; name: string; nameAr: string }[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+  isRTL: boolean;
+  lang: string;
+  colors: ReturnType<typeof useColors>;
+}) {
+  if (options.length < 2) return null;
+  return (
+    <View style={{ marginTop: 12, gap: 6 }}>
+      <Text
+        style={{
+          color: colors.mutedForeground,
+          fontFamily: 'Cairo_500Medium',
+          fontSize: 12,
+          textAlign: isRTL ? 'right' : 'left',
+        }}
+      >
+        {label}
+      </Text>
+      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+        {options.map(o => {
+          const active = selectedId === o.id;
+          return (
+            <Pressable
+              key={o.id}
+              onPress={() => onSelect(o.id)}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 7,
+                borderRadius: 18,
+                borderWidth: 1.5,
+                borderColor: active ? ACCENT : colors.border,
+                backgroundColor: active ? ACCENT + '16' : colors.card,
+              }}
+            >
+              <Text
+                style={{
+                  color: active ? ACCENT : colors.mutedForeground,
+                  fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                  fontSize: 13,
+                }}
+              >
+                {lang === 'ar' ? o.nameAr : o.name}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
 
 /**
  * The roster's front door, and so where the consent gate sits. A teacher with
@@ -60,9 +130,29 @@ function ClassesList() {
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [newGradeId, setNewGradeId] = useState('grade-10');
+  const [newSubjectId, setNewSubjectId] = useState('');
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const pickerGrades = getPickerGrades();
+
+  /**
+   * `classes.subject_id` has always existed and the API has always accepted
+   * it, but this form never sent one — so every class created in the app
+   * carries an empty subject, and a teacher who teaches two subjects to the
+   * same grade has two indistinguishable classes.
+   *
+   * The choices are the subjects this teacher already said they teach *to
+   * this grade* (`/setup-subjects`), which is the same narrowing the
+   * curriculum browser does — nobody should have to state that twice.
+   */
+  const { user } = useAuth();
+  const pickerSubjects = narrowSubjectsForGrade(
+    getPickerSubjects(newGradeId),
+    newGradeId,
+    user?.teachingAssignments,
+    user?.subjectIds,
+  );
+  const selectedSubjectId = resolveSelectedId(pickerSubjects, newSubjectId);
 
   /**
    * The API answers in English; this screen is Arabic-first. Translate the
@@ -129,11 +219,16 @@ function ClassesList() {
     setCreating(true);
     setError('');
     try {
-      const created = await createClass({ name, gradeId: newGradeId });
+      const created = await createClass({
+        name,
+        gradeId: newGradeId,
+        subjectId: selectedSubjectId || undefined,
+      });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowNew(false);
       setNewName('');
       setNewGradeId('grade-10');
+      setNewSubjectId('');
       setClasses(prev => [...prev, created]);
       router.push({ pathname: '/classes/[id]', params: { id: created.id } });
     } catch (err) {
@@ -243,7 +338,13 @@ function ClassesList() {
                     { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align },
                   ]}
                 >
-                  {countStudents(item.studentCount, lang)}
+                  {/* Storing the subject is only worth anything if it shows:
+                      two classes of the same grade differ by this line.
+                      Classes created before the picker existed have no
+                      subject — they keep the bare student count. */}
+                  {[subjectName(item.subjectId, lang), countStudents(item.studentCount, lang)]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </Text>
               </View>
               {/* Deleting a class was reachable from nowhere: archiveClass has
@@ -307,45 +408,27 @@ function ClassesList() {
                 },
               ]}
             />
-            {/* Grade picker — only worth showing once there is a real choice. */}
-            {pickerGrades.length > 1 ? (
-              <View
-                style={{
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                  gap: 8,
-                  flexWrap: 'wrap',
-                  marginTop: 12,
-                }}
-              >
-                {pickerGrades.map(g => {
-                  const active = newGradeId === g.id;
-                  return (
-                    <Pressable
-                      key={g.id}
-                      onPress={() => setNewGradeId(g.id)}
-                      style={{
-                        paddingHorizontal: 14,
-                        paddingVertical: 7,
-                        borderRadius: 18,
-                        borderWidth: 1.5,
-                        borderColor: active ? ACCENT : colors.border,
-                        backgroundColor: active ? ACCENT + '16' : colors.card,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: active ? ACCENT : colors.mutedForeground,
-                          fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                          fontSize: 13,
-                        }}
-                      >
-                        {lang === 'ar' ? g.nameAr : g.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : null}
+            {/* Two pill rows now, so each needs saying which it is. Either one
+                hides itself when it holds a single option — that is not a
+                choice, and the value is sent regardless. */}
+            <ChipRow
+              label={t('grade')}
+              options={pickerGrades}
+              selectedId={newGradeId}
+              onSelect={setNewGradeId}
+              isRTL={isRTL}
+              lang={lang}
+              colors={colors}
+            />
+            <ChipRow
+              label={t('subject')}
+              options={pickerSubjects}
+              selectedId={selectedSubjectId}
+              onSelect={setNewSubjectId}
+              isRTL={isRTL}
+              lang={lang}
+              colors={colors}
+            />
             {/* The list's error banner sits behind this sheet, so a failed
                 create looked like nothing happened. Say it here too. */}
             {error ? (
@@ -370,6 +453,7 @@ function ClassesList() {
                 onPress={() => {
                   setShowNew(false);
                   setNewGradeId('grade-10');
+                  setNewSubjectId('');
                 }}
                 style={styles.modalBtn}
               >

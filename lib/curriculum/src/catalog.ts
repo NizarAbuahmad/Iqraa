@@ -160,6 +160,10 @@ import {
   isG5DigitalSem1TitleOnlyLesson,
 } from './catalogs/g5DigitalSem1.ts';
 import {
+  G5_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  buildG5CreativeArtsBrowserCatalog,
+} from './catalogs/g5CreativeArts.ts';
+import {
   G4_MATH_S1_CURRICULUM_BOOK_ID,
   buildG4MathSem1BrowserCatalog,
 } from './catalogs/g4MathSem1.ts';
@@ -350,9 +354,17 @@ import {
   buildG5MathSem1BrowserCatalog,
 } from './catalogs/g5MathSem1.ts';
 import {
+  G5_MATH_S2_CURRICULUM_BOOK_ID,
+  buildG5MathSem2BrowserCatalog,
+} from './catalogs/g5MathSem2.ts';
+import {
   G6_MATH_S1_CURRICULUM_BOOK_ID,
   buildG6MathSem1BrowserCatalog,
 } from './catalogs/g6MathSem1.ts';
+import {
+  G6_MATH_S2_CURRICULUM_BOOK_ID,
+  buildG6MathSem2BrowserCatalog,
+} from './catalogs/g6MathSem2.ts';
 import {
   G6_ISLAMIC_S1_CURRICULUM_BOOK_ID,
   buildG6IslamicSem1BrowserCatalog,
@@ -626,6 +638,10 @@ import {
   buildG8CreativeArtsBrowserCatalog,
 } from './catalogs/g8CreativeArts.ts';
 import {
+  G10_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  buildG10CreativeArtsBrowserCatalog,
+} from './catalogs/g10CreativeArts.ts';
+import {
   G4_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
   buildG4CreativeArtsBrowserCatalog,
 } from './catalogs/g4CreativeArts.ts';
@@ -638,6 +654,10 @@ import {
   buildG8VocSem2BrowserCatalog,
 } from './catalogs/g8VocationalSem2.ts';
 import {
+  G9_VOC_S1_CURRICULUM_BOOK_ID,
+  buildG9VocSem1BrowserCatalog,
+} from './catalogs/g9VocationalSem1.ts';
+import {
   G4_VOC_S1_CURRICULUM_BOOK_ID,
   buildG4VocSem1BrowserCatalog,
 } from './catalogs/g4VocationalSem1.ts';
@@ -645,6 +665,14 @@ import {
   G4_VOC_S2_CURRICULUM_BOOK_ID,
   buildG4VocSem2BrowserCatalog,
 } from './catalogs/g4VocationalSem2.ts';
+import {
+  G5_VOC_S1_CURRICULUM_BOOK_ID,
+  buildG5VocSem1BrowserCatalog,
+} from './catalogs/g5VocationalSem1.ts';
+import {
+  G5_VOC_S2_CURRICULUM_BOOK_ID,
+  buildG5VocSem2BrowserCatalog,
+} from './catalogs/g5VocationalSem2.ts';
 import {
   G8_SOCIAL_S1_CURRICULUM_BOOK_ID,
   buildG8SocialSem1BrowserCatalog,
@@ -727,6 +755,74 @@ import {
   ENG_S2_CURRICULUM_BOOK_ID,
   buildEngSem2BrowserCatalog,
 } from './catalogs/g10EnglishSem2.ts';
+import {
+  G2_MATH_S1_CURRICULUM_BOOK_ID,
+  buildG2MathSem1BrowserCatalog,
+} from './catalogs/g2MathSem1.ts';
+import {
+  G2_MATH_S2_CURRICULUM_BOOK_ID,
+  buildG2MathSem2BrowserCatalog,
+} from './catalogs/g2MathSem2.ts';
+import {
+  G2_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  buildG2ScienceSem1BrowserCatalog,
+} from './catalogs/g2ScienceSem1.ts';
+import {
+  G2_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  buildG2ScienceSem2BrowserCatalog,
+} from './catalogs/g2ScienceSem2.ts';
+import {
+  G2_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  buildG2IslamicSem1BrowserCatalog,
+} from './catalogs/g2IslamicSem1.ts';
+import {
+  G2_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  buildG2IslamicSem2BrowserCatalog,
+} from './catalogs/g2IslamicSem2.ts';
+import {
+  G2_ENGLISH_S1_CURRICULUM_BOOK_ID,
+  buildG2EnglishSem1BrowserCatalog,
+} from './catalogs/g2EnglishSem1.ts';
+import {
+  G2_ENGLISH_S2_CURRICULUM_BOOK_ID,
+  buildG2EnglishSem2BrowserCatalog,
+} from './catalogs/g2EnglishSem2.ts';
+import {
+  G2_ARABIC_S1_CURRICULUM_BOOK_ID,
+  buildG2ArabicSem1BrowserCatalog,
+  isG2ArabicSem1TitleOnlyUnit,
+  isG2ArabicSem1TitleOnlyLesson,
+} from './catalogs/g2ArabicSem1.ts';
+import {
+  G2_ARABIC_S2_CURRICULUM_BOOK_ID,
+  buildG2ArabicSem2BrowserCatalog,
+  isG2ArabicSem2TitleOnlyUnit,
+  isG2ArabicSem2TitleOnlyLesson,
+} from './catalogs/g2ArabicSem2.ts';
+import {
+  G2_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  buildG2SocialSem1BrowserCatalog,
+} from './catalogs/g2SocialSem1.ts';
+import {
+  G2_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  buildG2SocialSem2BrowserCatalog,
+} from './catalogs/g2SocialSem2.ts';
+import {
+  G2_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  buildG2CreativeArtsBrowserCatalog,
+} from './catalogs/g2CreativeArts.ts';
+import {
+  G2_PE_S1_CURRICULUM_BOOK_ID,
+  buildG2PhysicalEducationSem1BrowserCatalog,
+} from './catalogs/g2PhysicalEducationSem1.ts';
+import {
+  G5_PE_S1_CURRICULUM_BOOK_ID,
+  buildG5PhysicalEducationSem1BrowserCatalog,
+} from './catalogs/g5PhysicalEducationSem1.ts';
+import {
+  G5_PE_S2_CURRICULUM_BOOK_ID,
+  buildG5PhysicalEducationSem2BrowserCatalog,
+} from './catalogs/g5PhysicalEducationSem2.ts';
 
 export interface Grade {
   id: string;
@@ -891,8 +987,14 @@ export const SUBJECTS: Subject[] = [
   // main-idea box and bilingual glossary per lesson; see
   // g3PhysicalEducationSem1.ts. Extended to grade-1 on 2026-09-19 once its
   // book arrived — Semester 2 only (opposite gap from grade-3/6), same real
-  // box shape; see g1PhysicalEducationSem2.ts.
-  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-1', 'grade-3', 'grade-6', 'grade-7', 'grade-9'] },
+  // box shape; see g1PhysicalEducationSem2.ts. Extended to grade-2 on
+  // 2026-09-19 once its book arrived — Semester 1 only (same gap as
+  // grade-3/6, opposite of grade-1), same real box shape; see
+  // g2PhysicalEducationSem1.ts. Extended to grade-5 on 2026-09-20 once BOTH
+  // semester books arrived (the first PE grade with a full year on disk from
+  // the start) — same real box shape; see g5PhysicalEducationSem1.ts /
+  // g5PhysicalEducationSem2.ts.
+  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-1', 'grade-2', 'grade-3', 'grade-6', 'grade-7', 'grade-9', 'grade-5'] },
   // Sixth brand-new subject, added 2026-09-09 as part of the Grade 8 batch.
   // Combines three domains (Art, Music, Drama) NCCD prints as one book —
   // see g8CreativeArts.ts. Extended to grade-7 on 2026-09-12 once its book
@@ -901,8 +1003,15 @@ export const SUBJECTS: Subject[] = [
   // grade-6..8 (no grade-5 book); see g4CreativeArts.ts. Extended to grade-3
   // on 2026-09-18 once its book arrived, same one-book shape; see
   // g3CreativeArts.ts. Extended to grade-1 on 2026-09-19 once its book
-  // arrived, same one-book shape; see g1CreativeArts.ts.
-  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-1', 'grade-3', 'grade-4', 'grade-6', 'grade-7', 'grade-8'] },
+  // arrived, same one-book shape; see g1CreativeArts.ts. Extended to grade-2
+  // on 2026-09-19 once its book arrived, same one-book shape; see
+  // g2CreativeArts.ts. Extended to grade-10 on 2026-09-20 once its book
+  // arrived — the oldest grade this subject reaches so far, and a more
+  // advanced book (23 lessons, not the usual 30); see g10CreativeArts.ts.
+  // Extended to grade-5 the same day once its book arrived (found via a
+  // cross-check against the official NCCD textbook list), same one-book
+  // shape as every other grade below grade-10; see g5CreativeArts.ts.
+  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-1', 'grade-2', 'grade-3', 'grade-4', 'grade-6', 'grade-7', 'grade-8', 'grade-10', 'grade-5'] },
   // Seventh brand-new subject, added 2026-09-09 as part of the Grade 8
   // batch. Seven vocational tracks packed into one book per semester
   // (life skills, home economics, agriculture, health/safety, industry,
@@ -910,8 +1019,14 @@ export const SUBJECTS: Subject[] = [
   // grade-7 on 2026-09-12 once its book arrived (a different seven tracks).
   // Extended to grade-4 on 2026-09-17 once its book arrived — not
   // contiguous with grade-6..8 (no grade-5 book), same as creative-arts;
-  // see g4VocationalSem1.ts.
-  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-4', 'grade-6', 'grade-7', 'grade-8'] },
+  // see g4VocationalSem1.ts. Extended to grade-5 on 2026-09-20 once its
+  // book was found on disk for both semesters (a cross-check against the
+  // official NCCD textbook list caught it — it had never been built); see
+  // g5VocationalSem1.ts. Extended to grade-9 the same day once its Semester
+  // 1 book was supplied directly by the user; see g9VocationalSem1.ts.
+  // APPENDED, matching this array's own pattern of adding grades as their
+  // books land rather than reordering to stay numeric.
+  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-4', 'grade-6', 'grade-7', 'grade-8', 'grade-5', 'grade-9'] },
 ];
 
 /**
@@ -973,7 +1088,7 @@ export const INVESTOR_MVP_CURRICULUM = true;
 // tail, after grade-3 — grade-2 has no catalog at all yet, so the sequence
 // is deliberately non-contiguous. See g1MathSem1.ts / g1MathSem2.ts and
 // KNOWN_BOOKLESS in subjectGradeCoverage.test.ts.
-export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7', 'grade-6', 'grade-5', 'grade-4', 'grade-3', 'grade-1'];
+export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7', 'grade-6', 'grade-5', 'grade-4', 'grade-3', 'grade-1', 'grade-2'];
 // Appended, never inserted: these positions are persisted as bare indices in
 // formState and route URLs, so inserting shifts what a saved URL resolves to.
 // 'physics' joined on 2026-09-03 with the Grade 10 S1 curriculum. Without it,
@@ -1199,6 +1314,7 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // grade-6 into MVP_GRADE_IDS below. 'science' and 'mathematics' are both
   // already in MVP_SUBJECT_IDS, so no subject append is needed.
   G6_MATH_S1_CURRICULUM_BOOK_ID,
+  G6_MATH_S2_CURRICULUM_BOOK_ID,
   G6_SCIENCE_S1_CURRICULUM_BOOK_ID,
   G6_SCIENCE_S2_CURRICULUM_BOOK_ID,
   // Grade 6 Arabic, both semesters — 'arabic' has been in MVP_SUBJECT_IDS
@@ -1253,6 +1369,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // brings grade-5 into MVP_GRADE_IDS below. 'mathematics' is already in
   // MVP_SUBJECT_IDS, so no subject append is needed.
   G5_MATH_S1_CURRICULUM_BOOK_ID,
+  // Grade 5 Mathematics S2 — closes the gap Semester 1 alone left, found via
+  // a cross-check against the NCCD textbook list on nccd.gov.jo. Units 6-10,
+  // continuing S1's 1-5 (see g5MathSem2.ts).
+  G5_MATH_S2_CURRICULUM_BOOK_ID,
   // Grade 5 Science, both semesters — 'science' is already in
   // MVP_SUBJECT_IDS, so no subject append is needed.
   G5_SCIENCE_S1_CURRICULUM_BOOK_ID,
@@ -1280,6 +1400,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // g5DigitalSem1.ts). 'digital-literacy' is already in MVP_SUBJECT_IDS, so
   // no subject append is needed.
   G5_DIGITAL_S1_CURRICULUM_BOOK_ID,
+  // Grade 5 Art, Music and Drama Education — one book for the whole year (no
+  // semester split), found via a cross-check against the official NCCD
+  // textbook list. 'creative-arts' was already in MVP_SUBJECT_IDS, but
+  // SUBJECTS.grades needed extending for grade-5 — see the SUBJECTS
+  // declaration above and g5CreativeArts.ts.
+  G5_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
   // Grade 4 Mathematics, both semesters — the first Grade 4 book, and the
   // book that brings grade-4 into MVP_GRADE_IDS above. 'mathematics' is
   // already in MVP_SUBJECT_IDS, so no subject append is needed.
@@ -1433,6 +1559,76 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // g1PhysicalEducationSem2.ts. Same real-content box shape as
   // g3PhysicalEducationSem1.ts, opposite semester gap.
   G1_PE_S2_CURRICULUM_BOOK_ID,
+  // Grade 2 Mathematics, both semesters — the first Grade 2 book in this
+  // repo. 'mathematics' is already declared for every grade in
+  // SUBJECTS.grades, so no subject append or SUBJECTS.grades extension is
+  // needed. Same HarperCollins/NCCD series and box conventions as
+  // g1MathSem1.ts; no unnumbered preparatory unit. See g2MathSem1.ts /
+  // g2MathSem2.ts. This is also the book that brings grade-2 into
+  // MVP_GRADE_IDS below.
+  G2_MATH_S1_CURRICULUM_BOOK_ID,
+  G2_MATH_S2_CURRICULUM_BOOK_ID,
+  // Grade 2 Science, both semesters. 'science' is already declared for
+  // grade-2 in SUBJECTS.grades (GRADES.slice(0, 9)), so no subject append or
+  // SUBJECTS.grades extension is needed. Same NCCD box conventions as
+  // g1ScienceSem1.ts. See g2ScienceSem1.ts / g2ScienceSem2.ts.
+  G2_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  G2_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  // Grade 2 Islamic Education, both semesters. 'islamic' is already
+  // declared for every grade in SUBJECTS.grades, so no subject append or
+  // SUBJECTS.grades extension is needed. Unlike g1IslamicSem1.ts, this book
+  // DOES print «الفِكْرَةُ الرَّئيسَةُ» on every lesson. See g2IslamicSem1.ts
+  // / g2IslamicSem2.ts.
+  G2_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  G2_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 2 English, both semesters. 'english' is already declared for
+  // every grade in SUBJECTS.grades, so no subject append or SUBJECTS.grades
+  // extension is needed. See g2EnglishSem1.ts / g2EnglishSem2.ts.
+  G2_ENGLISH_S1_CURRICULUM_BOOK_ID,
+  G2_ENGLISH_S2_CURRICULUM_BOOK_ID,
+  // Grade 2 Arabic, both semesters. 'arabic' is already declared for every
+  // grade in SUBJECTS.grades, so no subject append or SUBJECTS.grades
+  // extension is needed. See g2ArabicSem1.ts / g2ArabicSem2.ts.
+  G2_ARABIC_S1_CURRICULUM_BOOK_ID,
+  G2_ARABIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 2 Social Studies, both semesters. 'social' is already declared
+  // (GRADES.slice(0, 9)) for grade-2, so no SUBJECTS.grades extension is
+  // needed. See g2SocialSem1.ts / g2SocialSem2.ts.
+  G2_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  G2_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  // Grade 2 Art, Music and Drama Education, one book for the whole year
+  // (no semester split). 'creative-arts' extended to grade-2 in
+  // SUBJECTS.grades above. See g2CreativeArts.ts.
+  G2_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  // Grade 2 Physical Education, Semester 1 only (no Semester 2 book
+  // supplied). 'physical-education' extended to grade-2 in SUBJECTS.grades
+  // above. See g2PhysicalEducationSem1.ts.
+  G2_PE_S1_CURRICULUM_BOOK_ID,
+  // Grade 5 Physical Education, both semesters — unlike every other PE grade
+  // rollout so far, both books existed on disk from the start (found via a
+  // cross-check against the NCCD textbook list). 'physical-education'
+  // extended to grade-5 in SUBJECTS.grades above. See
+  // g5PhysicalEducationSem1.ts / g5PhysicalEducationSem2.ts.
+  G5_PE_S1_CURRICULUM_BOOK_ID,
+  G5_PE_S2_CURRICULUM_BOOK_ID,
+  // Grade 10 Art, Music and Drama Education — one book, no semester, same
+  // shape as g8CreativeArts.ts. 'creative-arts' is already in
+  // MVP_SUBJECT_IDS, but SUBJECTS.grades needed extending for grade-10 — see
+  // the SUBJECTS declaration above and g10CreativeArts.ts. Unlike the
+  // younger grades' books, this one is 23 lessons (7 + 8 + 8), not 30.
+  G10_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  // Grade 5 Vocational Education, both semesters — found on disk 2026-09-20
+  // via a cross-check against the official NCCD textbook list.
+  // 'vocational-education' is already in MVP_SUBJECT_IDS, but
+  // SUBJECTS.grades needed extending for grade-5 — see the SUBJECTS
+  // declaration above and g5VocationalSem1.ts.
+  G5_VOC_S1_CURRICULUM_BOOK_ID,
+  G5_VOC_S2_CURRICULUM_BOOK_ID,
+  // Grade 9 Vocational Education, Semester 1 (source PDF supplied directly by
+  // the user; no Semester 2 book found on disk — see the JSON's known_gaps).
+  // 'vocational-education' extended to grade-9 in SUBJECTS.grades above (was
+  // grade-4/6/7/8/5 before this). See g9VocationalSem1.ts.
+  G9_VOC_S1_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2324,9 +2520,11 @@ export const BOOKS: Book[] = [
     guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D9%85%D9%87%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A%D8%A9/G6/1/G6%20TG%20Full%20Bookv13.pdf',
   },
   // The first Grade 5 book in the repo. Maths carries five units and
-  // twenty-five lessons from the student book alone (no S2 student book was
-  // supplied). See g5MathSem1.ts for what it does and does not print, and the
-  // JSON's known_gaps for what is deliberately empty.
+  // twenty-five lessons from the Semester 1 student book alone; Semester 2
+  // (below) adds a further five units (6-10) and twenty-seven lessons, found
+  // on disk 2026-09-20 via a cross-check against the NCCD textbook list. See
+  // g5MathSem1.ts / g5MathSem2.ts for what each book does and does not print,
+  // and each JSON's known_gaps for what is deliberately empty.
   {
     id: G5_MATH_S1_CURRICULUM_BOOK_ID,
     title: 'Mathematics – Grade 5, Semester 1',
@@ -2339,6 +2537,22 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // Grade 5 Mathematics S2 — the gap Semester 1 alone left, closed
+  // 2026-09-20 once its student-book PDF was found on disk (see g5MathSem2.ts
+  // for the extraction notes). Units 6-10, continuing S1's numbering.
+  {
+    id: G5_MATH_S2_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 5, Semester 2',
+    titleAr: 'الرياضيات – الصف الخامس – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-5',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // Grade 5 Science, both semesters — the second Grade 5 subject. Units are
   // numbered 1-5 then 6-10 continuously across the two semesters, the same
@@ -2508,6 +2722,98 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // ── Physical Education Grade 5 – Semesters 1 and 2 ─────────────────────────
+  // Extends the subject to grade-5 (SUBJECTS.grades updated) — found via a
+  // cross-check against the official NCCD textbook list, which turned up
+  // both semester student books already on disk despite the subject never
+  // having been declared for this grade. Real-content layout like
+  // g3PhysicalEducationSem1.ts: main idea + bilingual glossary per lesson.
+  // No teacher guide, so objectives stay empty. See g5PhysicalEducationSem1.ts
+  // / g5PhysicalEducationSem2.ts.
+  {
+    id: G5_PE_S1_CURRICULUM_BOOK_ID,
+    title: 'Physical Education – Grade 5, Semester 1',
+    titleAr: 'التربية الرياضية – الصف الخامس – الفصل الأول',
+    subjectId: 'physical-education',
+    gradeId: 'grade-5',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+    // Verified 2026-09-20: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Sport/G5/1/Sport%20G5%20S1%202026%20.pdf',
+  },
+  {
+    id: G5_PE_S2_CURRICULUM_BOOK_ID,
+    title: 'Physical Education – Grade 5, Semester 2',
+    titleAr: 'التربية الرياضية – الصف الخامس – الفصل الثاني',
+    subjectId: 'physical-education',
+    gradeId: 'grade-5',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+    // Verified 2026-09-20: HEAD on nccd.gov.jo returned 200.
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6%D9%8A%D8%A9/5/2/Grade%2005_SE2.pdf',
+  },
+  // Grade 5 Art, Music and Drama Education — last of the Grade 5 MVP books.
+  // One book for the whole year — no semester field, same shape as
+  // g4CreativeArts.ts. This book prints a main-idea box on every lesson's
+  // own opener page and a real «نَتاجاتُ التَّعَلُّمِ» outcomes box at the end of
+  // every lesson, so main_idea_ar and objectives got transcribed for all 30
+  // lessons. Found via a cross-check against the official NCCD textbook list
+  // (nccd.gov.jo) — its student book already existed on disk but had never
+  // been built. See g5CreativeArts.ts.
+  {
+    id: G5_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+    title: 'Art, Music and Drama Education – Grade 5',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف الخامس',
+    subjectId: 'creative-arts',
+    gradeId: 'grade-5',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+  },
+  // Grade 5 Vocational Education — both semesters, found on disk 2026-09-20
+  // via a cross-check against the official NCCD textbook list (the book had
+  // never been built despite existing for both semesters). Required
+  // extending SUBJECTS.grades for vocational-education (previously
+  // grade-4, grade-6..grade-8). Units restart at 1 each semester, same
+  // convention as g4VocationalSem1.ts/g8VocationalSem1.ts. Semester 1's PDF
+  // extracts cleanly through PyMuPDF; Semester 2's does not (word order
+  // reversed within many lines — see g5VocationalSem2.ts).
+  {
+    id: G5_VOC_S1_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 5, Semester 1',
+    titleAr: 'التربية المهنية – الصف الخامس – الفصل الأول',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-5',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G5_VOC_S2_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 5, Semester 2',
+    titleAr: 'التربية المهنية – الصف الخامس – الفصل الثاني',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-5',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // The first Grade 4 book in the repo, and the book that brings grade-4
   // into MVP_GRADE_IDS. HarperCollins/NCCD series, same publisher as
@@ -3024,6 +3330,237 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 2,
   },
+  // ── Mathematics Grade 2 – Semesters 1 and 2 ─────────────────────────────
+  // The first Grade 2 book in this repo. Same HarperCollins/NCCD series;
+  // «الفِكْرَةُ الرَّئيسَةُ» is never printed, and the objectives box is under
+  // «أَتَعَلَّمُ الْيَوْمَ» like g1MathSem1.ts. No unnumbered preparatory unit —
+  // S1 opens directly with its own numbered units 1-5; S2 continues 6-10.
+  // See g2MathSem1.ts / g2MathSem2.ts.
+  {
+    id: G2_MATH_S1_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 2, Semester 1',
+    titleAr: 'الرياضيات – الصف الثاني – الفصل الأول',
+    subjectId: 'mathematics',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G2_MATH_S2_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 2, Semester 2',
+    titleAr: 'الرياضيات – الصف الثاني – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Science Grade 2 – Semesters 1 and 2 ─────────────────────────────────
+  // Second Grade 2 book in this repo. 'science' is already declared for
+  // grade-2 in SUBJECTS.grades (GRADES.slice(0, 9)), so no subject append or
+  // SUBJECTS.grades extension is needed. Same NCCD box conventions as
+  // g1ScienceSem1.ts. See g2ScienceSem1.ts / g2ScienceSem2.ts.
+  {
+    id: G2_SCIENCE_S1_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 2, Semester 1',
+    titleAr: 'العلوم – الصف الثاني – الفصل الأول',
+    subjectId: 'science',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G2_SCIENCE_S2_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 2, Semester 2',
+    titleAr: 'العلوم – الصف الثاني – الفصل الثاني',
+    subjectId: 'science',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Islamic Education Grade 2 – Semesters 1 and 2 ───────────────────────
+  // Third Grade 2 book in this repo. 'islamic' is already declared for
+  // every grade in SUBJECTS.grades, so no subject append or SUBJECTS.grades
+  // extension is needed. Unlike g1IslamicSem1.ts, this book DOES print
+  // «الفِكْرَةُ الرَّئيسَةُ» on every lesson opener — same box shape as
+  // g3IslamicSem1.ts. S2's own table of contents restarts unit numbering at
+  // 1 rather than continuing 5-8, same as g1IslamicSem2.ts. See
+  // g2IslamicSem1.ts / g2IslamicSem2.ts.
+  {
+    id: G2_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 2, Semester 1',
+    titleAr: 'التربية الإسلامية – الصف الثاني – الفصل الأول',
+    subjectId: 'islamic',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G2_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 2, Semester 2',
+    titleAr: 'التربية الإسلامية – الصف الثاني – الفصل الثاني',
+    subjectId: 'islamic',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── English Grade 2 – Semesters 1 and 2 ─────────────────────────────────
+  // Fourth Grade 2 book in this repo. 'english' is already declared for
+  // every grade in SUBJECTS.grades, so no subject append or SUBJECTS.grades
+  // extension is needed. "Jordan Team Together" Pearson/York Press series,
+  // same scope-and-sequence-table technique as g1EnglishSem1.ts. Unlike
+  // Grade 1's Semester 1, this Semester 1's Welcome unit DOES carry a full
+  // Grammar/Listening row, so it gets the standard two-lesson shape. See
+  // g2EnglishSem1.ts / g2EnglishSem2.ts.
+  {
+    id: G2_ENGLISH_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 2, Semester 1',
+    titleAr: 'اللغة الإنجليزية – الصف الثاني – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'English',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G2_ENGLISH_S2_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 2, Semester 2',
+    titleAr: 'اللغة الإنجليزية – الصف الثاني – الفصل الثاني',
+    subjectId: 'english',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'English',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Arabic Grade 2 – Semesters 1 and 2 ───────────────────────────────────
+  // Sixth Grade 2 book in this repo. 'arabic' is already declared for every
+  // grade in SUBJECTS.grades, so no subject append or SUBJECTS.grades
+  // extension is needed. Title-only, same as g3ArabicSem1.ts — fixed
+  // five-lesson-per-unit «لغتي» reader structure, not Grade 1's
+  // letter-teaching primer. S2's own table of contents proved unreliable
+  // for mapping lesson groups to units (column-jumbling); the JSON was
+  // built by reading each lesson opener page directly instead. See
+  // g2ArabicSem1.ts / g2ArabicSem2.ts.
+  {
+    id: G2_ARABIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 2, Semester 1',
+    titleAr: 'اللغة العربية – الصف الثاني – الفصل الأول',
+    subjectId: 'arabic',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G2_ARABIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 2, Semester 2',
+    titleAr: 'اللغة العربية – الصف الثاني – الفصل الثاني',
+    subjectId: 'arabic',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Social Studies Grade 2 – Semesters 1 and 2 ──────────────────────────
+  // Seventh Grade 2 book in this repo. 'social' is already declared for
+  // grade-2 in SUBJECTS.grades (GRADES.slice(0, 9)), so no subject append or
+  // SUBJECTS.grades extension is needed. Standard NCCD box layout, same as
+  // g2ScienceSem1.ts. See g2SocialSem1.ts / g2SocialSem2.ts.
+  {
+    id: G2_SOCIAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 2, Semester 1',
+    titleAr: 'الدراسات الاجتماعية – الصف الثاني – الفصل الأول',
+    subjectId: 'social',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G2_SOCIAL_S2_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 2, Semester 2',
+    titleAr: 'الدراسات الاجتماعية – الصف الثاني – الفصل الثاني',
+    subjectId: 'social',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Art, Music and Drama Education Grade 2 ──────────────────────────────
+  // Eighth Grade 2 book in this repo, required extending SUBJECTS.grades
+  // for creative-arts (previously grade-1/3/4/6/7/8 only). One book for the
+  // whole year — no semester field, same shape as g1CreativeArts.ts.
+  {
+    id: G2_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+    title: 'Art, Music and Drama Education – Grade 2',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف الثاني',
+    subjectId: 'creative-arts',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+  },
+  // ── Physical Education Grade 2 – Semester 1 ─────────────────────────────
+  // Ninth and last Grade 2 MVP book in this repo, required extending
+  // SUBJECTS.grades for physical-education (previously grade-1/3/6/7/9
+  // only). Semester 1 only — no Semester 2 book exists in the supplied set,
+  // same gap as g3PhysicalEducationSem1.ts/g6PhysicalEducationSem1.ts.
+  {
+    id: G2_PE_S1_CURRICULUM_BOOK_ID,
+    title: 'Physical Education – Grade 2, Semester 1',
+    titleAr: 'التربية الرياضية – الصف الثاني – الفصل الأول',
+    subjectId: 'physical-education',
+    gradeId: 'grade-2',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
   // ── Science Grade 1 – Semesters 1 and 2 ─────────────────────────────────
   // Second Grade 1 book in this repo. 'science' is already declared for
   // grade-1 in SUBJECTS.grades (GRADES.slice(0, 9)), so no subject append or
@@ -3217,12 +3754,14 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 2,
   },
-  // The first Grade 6 books in the repo. Maths carries four units and eighteen
-  // lessons from the student book alone (no S2 student book was supplied);
-  // science carries nine units and nineteen lessons across both semesters,
-  // numbered 1-4 then 5-9 continuously, the same convention as Grade 7 and 8.
-  // See g6MathSem1.ts / g6ScienceSem1.ts for what each book does and does not
-  // print, and the JSONs' known_gaps for what is deliberately empty.
+  // The first Grade 6 books in the repo. Maths S1 carries four units and
+  // eighteen lessons; Maths S2 (added 2026-09-20) continues with units 5-8
+  // and twenty-one lessons, eight units total across the year; science
+  // carries nine units and nineteen lessons across both semesters, numbered
+  // 1-4 then 5-9 continuously, the same convention as Grade 7 and 8.
+  // See g6MathSem1.ts / g6MathSem2.ts / g6ScienceSem1.ts for what each book
+  // does and does not print, and the JSONs' known_gaps for what is
+  // deliberately empty.
   {
     id: G6_MATH_S1_CURRICULUM_BOOK_ID,
     title: 'Mathematics – Grade 6, Semester 1',
@@ -3238,6 +3777,19 @@ export const BOOKS: Book[] = [
     // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
     pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Math/G6/1/ST/2026_MT06_SE1.pdf',
     guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/7.12.2023/action%20pack/TE06_Book.pdf',
+  },
+  {
+    id: G6_MATH_S2_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 6, Semester 2',
+    titleAr: 'الرياضيات – الصف السادس – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-6',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   {
     id: G6_SCIENCE_S1_CURRICULUM_BOOK_ID,
@@ -3818,6 +4370,24 @@ export const BOOKS: Book[] = [
     semester: 2,
     // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
     pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%D8%A9/8/2/%D9%85%D9%87%D9%86%D9%8A%20%D8%AB%D8%A7%D9%85%D9%86%20%D9%812%202025%20.pdf',
+  },
+  // ── Vocational Education Grade 9 – Semester 1 ─────────────────────────────
+  // Eight units across six vocational tracks (life skills, home economics
+  // ×3, entrepreneurship, agriculture, security/health/safety, tourism).
+  // Source PDF supplied directly by the user; no Semester 2 book found on
+  // disk yet — see g9VocationalSem1.ts and the JSON's known_gaps.
+  {
+    id: G9_VOC_S1_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 9, Semester 1',
+    titleAr: 'التربية المهنية – الصف التاسع – الفصل الأول',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-9',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
   },
   // ── Social Studies Grade 8 – Semesters 1 and 2 ────────────────────────────
   // First real book behind the pre-existing 'social' subject (declared
@@ -4523,6 +5093,24 @@ export const BOOKS: Book[] = [
   // book-arabic-9 was read as "arabic has a Grade 9 book" during the
   // 2026-09-05 dead-end triage when it had nothing behind it. Grade 9 material
   // now lives only where it is real.
+  // ── Art, Music and Drama Education Grade 10 ────────────────────────────
+  // Extends SUBJECTS.grades for creative-arts (previously grade-1/2/3/4/6/7/8
+  // only) to the oldest grade this subject reaches in this repo. One book for
+  // the whole year — no semester field, unlike every other Grade 10 row in
+  // this table. This book is more advanced than the younger grades' — 23
+  // lessons (7 + 8 + 8), not the usual 30 — see g10CreativeArts.ts.
+  {
+    id: G10_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+    title: 'Art, Music and Drama Education – Grade 10',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف العاشر',
+    subjectId: 'creative-arts',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+  },
   {
     id: 'book-phys-11',
     title: 'Physics – Grade 11',
@@ -5339,6 +5927,7 @@ const _g8FinlitSem1Browser = buildG8FinlitSem1BrowserCatalog();
 const _g8DigitalSem1Browser = buildG8DigitalSem1BrowserCatalog();
 const _g8DigitalSem2Browser = buildG8DigitalSem2BrowserCatalog();
 const _g8CreativeArtsBrowser = buildG8CreativeArtsBrowserCatalog();
+const _g10CreativeArtsBrowser = buildG10CreativeArtsBrowserCatalog();
 const _g4CreativeArtsBrowser = buildG4CreativeArtsBrowserCatalog();
 const _g4VocSem1Browser = buildG4VocSem1BrowserCatalog();
 const _g4VocSem2Browser = buildG4VocSem2BrowserCatalog();
@@ -5370,8 +5959,23 @@ const _g1SocialSem1Browser = buildG1SocialSem1BrowserCatalog();
 const _g1SocialSem2Browser = buildG1SocialSem2BrowserCatalog();
 const _g1CreativeArtsBrowser = buildG1CreativeArtsBrowserCatalog();
 const _g1PhysicalEducationSem2Browser = buildG1PhysicalEducationSem2BrowserCatalog();
+const _g2MathSem1Browser = buildG2MathSem1BrowserCatalog();
+const _g2MathSem2Browser = buildG2MathSem2BrowserCatalog();
+const _g2ScienceSem1Browser = buildG2ScienceSem1BrowserCatalog();
+const _g2ScienceSem2Browser = buildG2ScienceSem2BrowserCatalog();
+const _g2IslamicSem1Browser = buildG2IslamicSem1BrowserCatalog();
+const _g2IslamicSem2Browser = buildG2IslamicSem2BrowserCatalog();
+const _g2EnglishSem1Browser = buildG2EnglishSem1BrowserCatalog();
+const _g2EnglishSem2Browser = buildG2EnglishSem2BrowserCatalog();
+const _g2ArabicSem1Browser = buildG2ArabicSem1BrowserCatalog();
+const _g2ArabicSem2Browser = buildG2ArabicSem2BrowserCatalog();
+const _g2SocialSem1Browser = buildG2SocialSem1BrowserCatalog();
+const _g2SocialSem2Browser = buildG2SocialSem2BrowserCatalog();
+const _g2CreativeArtsBrowser = buildG2CreativeArtsBrowserCatalog();
+const _g2PhysicalEducationSem1Browser = buildG2PhysicalEducationSem1BrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
+const _g9VocSem1Browser = buildG9VocSem1BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
 const _g8SocialSem2Browser = buildG8SocialSem2BrowserCatalog();
 const _g8MathSem2Browser = buildG8MathSem2BrowserCatalog();
@@ -5382,6 +5986,7 @@ const _g7IslamicSem1Browser = buildG7IslamicSem1BrowserCatalog();
 const _g7IslamicSem2Browser = buildG7IslamicSem2BrowserCatalog();
 const _g7ScienceSem1Browser = buildG7ScienceSem1BrowserCatalog();
 const _g5MathSem1Browser = buildG5MathSem1BrowserCatalog();
+const _g5MathSem2Browser = buildG5MathSem2BrowserCatalog();
 const _g5ScienceSem1Browser = buildG5ScienceSem1BrowserCatalog();
 const _g5ScienceSem2Browser = buildG5ScienceSem2BrowserCatalog();
 const _g5IslamicSem1Browser = buildG5IslamicSem1BrowserCatalog();
@@ -5393,6 +5998,9 @@ const _g5ArabicSem2Browser = buildG5ArabicSem2BrowserCatalog();
 const _g5SocialSem1Browser = buildG5SocialSem1BrowserCatalog();
 const _g5SocialSem2Browser = buildG5SocialSem2BrowserCatalog();
 const _g5DigitalSem1Browser = buildG5DigitalSem1BrowserCatalog();
+const _g5CreativeArtsBrowser = buildG5CreativeArtsBrowserCatalog();
+const _g5VocSem1Browser = buildG5VocSem1BrowserCatalog();
+const _g5VocSem2Browser = buildG5VocSem2BrowserCatalog();
 const _g4MathSem1Browser = buildG4MathSem1BrowserCatalog();
 const _g4MathSem2Browser = buildG4MathSem2BrowserCatalog();
 const _g4ScienceSem1Browser = buildG4ScienceSem1BrowserCatalog();
@@ -5407,6 +6015,7 @@ const _g4ArabicSem2Browser = buildG4ArabicSem2BrowserCatalog();
 const _g4EnglishSem1Browser = buildG4EnglishSem1BrowserCatalog();
 const _g4EnglishSem2Browser = buildG4EnglishSem2BrowserCatalog();
 const _g6MathSem1Browser = buildG6MathSem1BrowserCatalog();
+const _g6MathSem2Browser = buildG6MathSem2BrowserCatalog();
 const _g6ScienceSem1Browser = buildG6ScienceSem1BrowserCatalog();
 const _g6ArabicSem1Browser = buildG6ArabicSem1BrowserCatalog();
 const _g6DigitalSem1Browser = buildG6DigitalSem1BrowserCatalog();
@@ -5465,6 +6074,8 @@ const _engIndustryBrowser = buildEnglishIndustryBrowserCatalog();
 // 2026-09-10.
 const _engSem1Browser = buildEngSem1BrowserCatalog();
 const _engSem2Browser = buildEngSem2BrowserCatalog();
+const _g5PhysicalEducationSem1Browser = buildG5PhysicalEducationSem1BrowserCatalog();
+const _g5PhysicalEducationSem2Browser = buildG5PhysicalEducationSem2BrowserCatalog();
 
 // ─── Authored-Bloom's enrichment for NCCD browser rows ───────────────────────
 //
@@ -5622,6 +6233,7 @@ export const UNITS: Unit[] = [
   ..._g8DigitalSem1Browser.units,
   ..._g8DigitalSem2Browser.units,
   ..._g8CreativeArtsBrowser.units,
+  ..._g10CreativeArtsBrowser.units,
   ..._g4CreativeArtsBrowser.units,
   ..._g4VocSem1Browser.units,
   ..._g4VocSem2Browser.units,
@@ -5653,8 +6265,23 @@ export const UNITS: Unit[] = [
   ..._g1SocialSem2Browser.units,
   ..._g1CreativeArtsBrowser.units,
   ..._g1PhysicalEducationSem2Browser.units,
+  ..._g2MathSem1Browser.units,
+  ..._g2MathSem2Browser.units,
+  ..._g2ScienceSem1Browser.units,
+  ..._g2ScienceSem2Browser.units,
+  ..._g2IslamicSem1Browser.units,
+  ..._g2IslamicSem2Browser.units,
+  ..._g2EnglishSem1Browser.units,
+  ..._g2EnglishSem2Browser.units,
+  ..._g2ArabicSem1Browser.units,
+  ..._g2ArabicSem2Browser.units,
+  ..._g2SocialSem1Browser.units,
+  ..._g2SocialSem2Browser.units,
+  ..._g2CreativeArtsBrowser.units,
+  ..._g2PhysicalEducationSem1Browser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
+  ..._g9VocSem1Browser.units,
   ..._g8SocialSem1Browser.units,
   ..._g8SocialSem2Browser.units,
   ..._g8MathSem2Browser.units,
@@ -5685,6 +6312,7 @@ export const UNITS: Unit[] = [
   ..._g7IslamicSem2Browser.units,
   ..._g7ScienceSem1Browser.units,
   ..._g5MathSem1Browser.units,
+  ..._g5MathSem2Browser.units,
   ..._g5ScienceSem1Browser.units,
   ..._g5ScienceSem2Browser.units,
   ..._g5IslamicSem1Browser.units,
@@ -5696,6 +6324,9 @@ export const UNITS: Unit[] = [
   ..._g5SocialSem1Browser.units,
   ..._g5SocialSem2Browser.units,
   ..._g5DigitalSem1Browser.units,
+  ..._g5CreativeArtsBrowser.units,
+  ..._g5VocSem1Browser.units,
+  ..._g5VocSem2Browser.units,
   ..._g4MathSem1Browser.units,
   ..._g4MathSem2Browser.units,
   ..._g4ScienceSem1Browser.units,
@@ -5710,6 +6341,7 @@ export const UNITS: Unit[] = [
   ..._g4EnglishSem1Browser.units,
   ..._g4EnglishSem2Browser.units,
   ..._g6MathSem1Browser.units,
+  ..._g6MathSem2Browser.units,
   ..._g6ScienceSem1Browser.units,
   ..._g6ArabicSem1Browser.units,
   ..._g6DigitalSem1Browser.units,
@@ -5741,6 +6373,8 @@ export const UNITS: Unit[] = [
   ..._g7ArabicSem2Browser.units,
   ..._g7EngSem1Browser.units,
   ..._g7EngSem2Browser.units,
+  ..._g5PhysicalEducationSem1Browser.units,
+  ..._g5PhysicalEducationSem2Browser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
@@ -5795,6 +6429,7 @@ export const LESSONS: Lesson[] = [
   ..._g8DigitalSem1Browser.lessons,
   ..._g8DigitalSem2Browser.lessons,
   ..._g8CreativeArtsBrowser.lessons,
+  ..._g10CreativeArtsBrowser.lessons,
   ..._g4CreativeArtsBrowser.lessons,
   ..._g4VocSem1Browser.lessons,
   ..._g4VocSem2Browser.lessons,
@@ -5826,8 +6461,23 @@ export const LESSONS: Lesson[] = [
   ..._g1SocialSem2Browser.lessons,
   ..._g1CreativeArtsBrowser.lessons,
   ..._g1PhysicalEducationSem2Browser.lessons,
+  ..._g2MathSem1Browser.lessons,
+  ..._g2MathSem2Browser.lessons,
+  ..._g2ScienceSem1Browser.lessons,
+  ..._g2ScienceSem2Browser.lessons,
+  ..._g2IslamicSem1Browser.lessons,
+  ..._g2IslamicSem2Browser.lessons,
+  ..._g2EnglishSem1Browser.lessons,
+  ..._g2EnglishSem2Browser.lessons,
+  ..._g2ArabicSem1Browser.lessons,
+  ..._g2ArabicSem2Browser.lessons,
+  ..._g2SocialSem1Browser.lessons,
+  ..._g2SocialSem2Browser.lessons,
+  ..._g2CreativeArtsBrowser.lessons,
+  ..._g2PhysicalEducationSem1Browser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
+  ..._g9VocSem1Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
   ..._g8SocialSem2Browser.lessons,
   ..._g8MathSem2Browser.lessons,
@@ -5858,6 +6508,7 @@ export const LESSONS: Lesson[] = [
   ..._g7IslamicSem2Browser.lessons,
   ..._g7ScienceSem1Browser.lessons,
   ..._g5MathSem1Browser.lessons,
+  ..._g5MathSem2Browser.lessons,
   ..._g5ScienceSem1Browser.lessons,
   ..._g5ScienceSem2Browser.lessons,
   ..._g5IslamicSem1Browser.lessons,
@@ -5869,6 +6520,9 @@ export const LESSONS: Lesson[] = [
   ..._g5SocialSem1Browser.lessons,
   ..._g5SocialSem2Browser.lessons,
   ..._g5DigitalSem1Browser.lessons,
+  ..._g5CreativeArtsBrowser.lessons,
+  ..._g5VocSem1Browser.lessons,
+  ..._g5VocSem2Browser.lessons,
   ..._g4MathSem1Browser.lessons,
   ..._g4MathSem2Browser.lessons,
   ..._g4ScienceSem1Browser.lessons,
@@ -5883,6 +6537,7 @@ export const LESSONS: Lesson[] = [
   ..._g4EnglishSem1Browser.lessons,
   ..._g4EnglishSem2Browser.lessons,
   ..._g6MathSem1Browser.lessons,
+  ..._g6MathSem2Browser.lessons,
   ..._g6ScienceSem1Browser.lessons,
   ..._g6ArabicSem1Browser.lessons,
   ..._g6DigitalSem1Browser.lessons,
@@ -5914,6 +6569,8 @@ export const LESSONS: Lesson[] = [
   ..._g7ArabicSem2Browser.lessons,
   ..._g7EngSem1Browser.lessons,
   ..._g7EngSem2Browser.lessons,
+  ..._g5PhysicalEducationSem1Browser.lessons,
+  ..._g5PhysicalEducationSem2Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */
@@ -5956,7 +6613,9 @@ export function isBrowserUnitTitleOnly(unitId: string): boolean {
     || isG5SocialSem1TitleOnlyUnit(unitId)
     || isG5SocialSem2TitleOnlyUnit(unitId)
     || isG1ArabicSem1TitleOnlyUnit(unitId)
-    || isG1ArabicSem2TitleOnlyUnit(unitId);
+    || isG1ArabicSem2TitleOnlyUnit(unitId)
+    || isG2ArabicSem1TitleOnlyUnit(unitId)
+    || isG2ArabicSem2TitleOnlyUnit(unitId);
 }
 
 /** UI: Sem1 units 2–4 lessons — title confirmed, no per-lesson objectives yet. */
@@ -5988,7 +6647,9 @@ export function isBrowserLessonTitleOnly(lessonId: string): boolean {
     || isG5SocialSem1TitleOnlyLesson(lessonId)
     || isG5SocialSem2TitleOnlyLesson(lessonId)
     || isG1ArabicSem1TitleOnlyLesson(lessonId)
-    || isG1ArabicSem2TitleOnlyLesson(lessonId);
+    || isG1ArabicSem2TitleOnlyLesson(lessonId)
+    || isG2ArabicSem1TitleOnlyLesson(lessonId)
+    || isG2ArabicSem2TitleOnlyLesson(lessonId);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

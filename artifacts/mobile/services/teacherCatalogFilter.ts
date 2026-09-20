@@ -17,3 +17,43 @@ export function narrowToSelection<T extends { id: string }>(all: T[], selectedId
   const narrowed = all.filter(item => selectedIds.includes(item.id));
   return narrowed.length > 0 ? narrowed : all;
 }
+
+/**
+ * The subjects narrowing above should have used all along for a *specific*
+ * grade: `narrowToSelection(SUBJECTS, user.subjectIds)` narrows to every
+ * subject the teacher picked for *any* grade, so a teacher who set up Math
+ * for grade 7 and only Science for grade 8 still saw Math offered under
+ * grade 8. `teachingAssignments` (set by `/setup-subjects`) carries the real
+ * pairing; this reads the one entry for `gradeId` and narrows to just its
+ * subjects.
+ *
+ * Falls back to the flat `legacySubjectIds` narrowing when there is no
+ * matching assignment — an account set up before `teachingAssignments`
+ * existed, or (defensively) a grade somehow selected outside the teacher's
+ * picked set.
+ */
+export function narrowSubjectsForGrade<T extends { id: string }>(
+  all: T[],
+  gradeId: string,
+  teachingAssignments: { gradeId: string; subjectIds: string[] }[] | undefined,
+  legacySubjectIds: string[] | undefined,
+): T[] {
+  const assignment = teachingAssignments?.find(a => a.gradeId === gradeId);
+  return narrowToSelection(all, assignment ? assignment.subjectIds : legacySubjectIds);
+}
+
+/**
+ * Keeps a single-select picker's id valid as its list changes underneath it.
+ *
+ * The new-class sheet's subject row is rebuilt by `narrowSubjectsForGrade`
+ * every time the grade changes, so the subject picked for the previous grade
+ * can be absent from the new list — and that stale id is what `createClass`
+ * would otherwise persist. Derived on render rather than reconciled in an
+ * effect, so there is no frame where the two disagree.
+ */
+export function resolveSelectedId<T extends { id: string }>(
+  options: readonly T[],
+  selectedId: string,
+): string {
+  return options.some(o => o.id === selectedId) ? selectedId : (options[0]?.id ?? '');
+}
