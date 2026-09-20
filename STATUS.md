@@ -2378,6 +2378,42 @@ taking the action's default. **Still unverified against a real run** — this
 fixes the first failure, not necessarily the last one; `expo prebuild` and
 `gradlew assembleRelease` have not been reached yet.
 
+**Second run, 2026-09-20 10:05 UTC, run `35504077233`: reached
+`gradlew assembleRelease`, then hung for the full 90-minute job timeout.**
+`expo prebuild` and every step before it succeeded, confirming both fixes
+above. `:expo-updates:kspReleaseKotlin` — Kotlin Symbol Processing, run across
+this many native modules (react-native-svg, expo-dev-launcher, expo-updates,
+...) — failed at 10:17 with `java.lang.OutOfMemoryError: Metaspace`: the
+template's default `-XX:MaxMetaspaceSize=512m` in `android/gradle.properties`
+wasn't enough. Worse, the JVM never actually exited after that: from 10:19 to
+11:28 it kept throwing the identical `OutOfMemoryError` from an idle RMI
+thread roughly once a minute — a metaspace-exhausted JVM can fail to finish
+even its own error handling and shutdown — so the step never reported "BUILD
+FAILED"; it just sat there consuming the runner until the job's 90-minute
+timeout force-cancelled the whole run with no clear cause in the log summary
+(only visible by reading the raw job log). Two fixes, both in this PR:
+
+- **The memory limit itself.** `artifacts/mobile/plugins/withAndroidGradleMemory.js`
+  — a new local Expo config plugin — raises `org.gradle.jvmargs` to `-Xmx4096m
+  -XX:MaxMetaspaceSize=1536m` and adds `kotlin.daemon.jvmargs=-Xmx3072m
+  -XX:MaxMetaspaceSize=1024m` to `android/gradle.properties` during prebuild,
+  using `withGradleProperties` from `expo/config-plugins` (same import path as
+  `withAndroidReleaseSigning.js`, for the same pnpm-resolution reason). The
+  runner has 16GB; this always applies, including to `eas build` and `expo
+  run:android`, since more JVM headroom doesn't hurt those either. Verified
+  locally: `expo prebuild --platform android` now writes exactly these two
+  lines into the generated `gradle.properties`, no duplicate defaults left
+  behind.
+- **The hang itself.** `mobile-build-gradle.yml`'s `gradlew assembleRelease`
+  step now runs under `timeout 45m` — more than triple any run that's reached
+  this step so far. If the memory fix above isn't enough, or something else
+  wedges the JVM the same way, this turns a repeat into a named failure at 45
+  minutes instead of another silent hour-long hang eating the full job
+  timeout.
+
+**Still unverified against a real run** — this fixes the two failures seen so
+far, not necessarily the next one; the APK has not yet been produced.
+
 ## Grades 3, 4 and 5: 11 books, +123 lessons, 2026-09-19
 
 **498 → 621 lessons illustrated, 2572 figures.** The catalogs landed between
