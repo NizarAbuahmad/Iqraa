@@ -52,6 +52,16 @@
 # — installing it over a device already on this workflow's build would then
 # fail or silently not offer as an update. Unverified until a first run
 # proves the read/report round-trip end to end; see STATUS.md.
+#
+# Both an APK and an AAB come out of the same Gradle invocation
+# (`bundleRelease assembleRelease` together, not two separate builds — they
+# share almost the entire task graph, only the final packaging step
+# differs). The APK is for sideloading / sharing a direct install link. The
+# AAB is what Google Play actually requires: since 2021 a new app's
+# production/testing tracks only accept an Android App Bundle, not a raw
+# APK — `withAndroidReleaseSigning.js`'s signingConfig patch applies to
+# `buildTypes.release` itself, so it covers both output tasks identically,
+# no separate signing setup needed for the Play upload.
 name: Mobile Android build (Gradle, no EAS Build)
 
 on:
@@ -68,7 +78,7 @@ permissions:
 
 jobs:
   build:
-    name: gradle assembleRelease
+    name: gradle build (APK + AAB)
     runs-on: ubuntu-latest
     # No EAS queue to wait on, but a cold Android SDK/NDK download plus a
     # from-scratch native compile is slower than EAS's own ~22 minutes.
@@ -182,7 +192,7 @@ jobs:
         working-directory: artifacts/mobile
         run: npx expo prebuild --platform android --no-install
 
-      - name: gradlew assembleRelease
+      - name: gradlew bundleRelease assembleRelease
         if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
         working-directory: artifacts/mobile/android
         # Same four EXPO_PUBLIC_* values as eas.json's preview profile /
@@ -203,27 +213,49 @@ jobs:
         # logs. Failing this one step at 45 minutes -- more than triple any
         # successful run so far -- turns a repeat of that into a fast, named
         # failure instead of another silent hour-long hang.
+        #
+        # bundleRelease and assembleRelease share almost the entire task
+        # graph (JS bundling, Kotlin/Java compilation, resource merging --
+        # everything up to final packaging), so asking Gradle for both in one
+        # invocation costs a few seconds of extra packaging time, not a
+        # second full build.
         run: |
           chmod +x ./gradlew
-          timeout 45m ./gradlew assembleRelease --no-daemon
+          timeout 45m ./gradlew bundleRelease assembleRelease --no-daemon
 
-      - name: Locate the built APK
+      - name: Locate the built APK and AAB
         if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
         working-directory: artifacts/mobile
         run: |
           APK="android/app/build/outputs/apk/release/app-release.apk"
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
           if [ ! -f "$APK" ]; then
             echo "::error::Expected APK not found at $APK -- gradlew reported success but the output moved or was renamed."
             exit 1
           fi
+          if [ ! -f "$AAB" ]; then
+            echo "::error::Expected AAB not found at $AAB -- gradlew reported success but the output moved or was renamed."
+            exit 1
+          fi
           echo "APK_PATH=artifacts/mobile/$APK" >> "$GITHUB_ENV"
-          ls -lh "$APK"
+          echo "AAB_PATH=artifacts/mobile/$AAB" >> "$GITHUB_ENV"
+          ls -lh "$APK" "$AAB"
 
       - uses: actions/upload-artifact@v4
         if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
         with:
           name: iqraa-android-preview-${{ github.run_number }}
           path: ${{ env.APK_PATH }}
+          retention-days: 30
+
+      # For Google Play: production/testing tracks only accept an AAB, not
+      # this workflow's APK (see the header comment). Upload this artifact's
+      # .aab directly to a Play Console release track.
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        with:
+          name: iqraa-android-preview-aab-${{ github.run_number }}
+          path: ${{ env.AAB_PATH }}
           retention-days: 30
 
       # Best effort, per the header comment: eas-cli has no non-interactive
@@ -268,11 +300,12 @@ jobs:
         if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
         run: |
           {
-            echo "## Android APK (Gradle, no EAS Build)"
+            echo "## Android build (Gradle, no EAS Build)"
             echo
             echo "| | |"
             echo "| --- | --- |"
             echo "| versionCode | \`$ANDROID_VERSION_CODE\` |"
             echo "| commit | \`${{ github.sha }}\` on \`${{ github.ref_name }}\` |"
-            echo "| download | the \`iqraa-android-preview-${{ github.run_number }}\` artifact on this run's summary page |"
+            echo "| APK (sideload / direct install) | the \`iqraa-android-preview-${{ github.run_number }}\` artifact on this run's summary page |"
+            echo "| AAB (upload to Google Play) | the \`iqraa-android-preview-aab-${{ github.run_number }}\` artifact on this run's summary page |"
           } >> "$GITHUB_STEP_SUMMARY"

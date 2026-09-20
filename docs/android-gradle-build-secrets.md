@@ -72,9 +72,13 @@ identically.
 
 Actions → **Mobile Android build (Gradle, no EAS Build)** → *Run workflow*.
 No profile or branch choice needed — it always builds the `preview` channel,
-matching every existing APK. The APK is attached to the run as a downloadable
-artifact (not a public URL like EAS's — you need to be signed in to GitHub
-with access to this repo to download it).
+matching every existing APK. Both an APK and an AAB come out of the same run,
+each attached as its own downloadable artifact (not a public URL like EAS's —
+you need to be signed in to GitHub with access to this repo to download
+them): `iqraa-android-preview-N` (the `.apk`, for sideloading or sharing a
+direct install link) and `iqraa-android-preview-aab-N` (the `.aab` — this is
+the one Google Play actually accepts for a production/testing track release;
+see `docs/deploying.md`).
 
 Until these secrets exist, the workflow runs, prints what's missing, and
 exits cleanly without attempting a build.
