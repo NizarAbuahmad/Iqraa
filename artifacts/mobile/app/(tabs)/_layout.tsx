@@ -271,6 +271,7 @@ function ClassicTabLayout() {
   const onWorkspaceHome = isDesktop && (pathname === '/' || pathname === '/index');
   const bar = isTeacher && !pathname.startsWith('/iqra') && !onWorkspaceHome ? (
     <GlobalLessonBar
+      layout="bar"
       pick={lessonPick}
       lang={lang as 'ar' | 'en'}
       isRTL={isRTL}
