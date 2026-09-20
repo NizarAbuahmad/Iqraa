@@ -350,6 +350,10 @@ import {
   buildG5MathSem1BrowserCatalog,
 } from './catalogs/g5MathSem1.ts';
 import {
+  G5_MATH_S2_CURRICULUM_BOOK_ID,
+  buildG5MathSem2BrowserCatalog,
+} from './catalogs/g5MathSem2.ts';
+import {
   G6_MATH_S1_CURRICULUM_BOOK_ID,
   buildG6MathSem1BrowserCatalog,
 } from './catalogs/g6MathSem1.ts';
@@ -1318,6 +1322,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // brings grade-5 into MVP_GRADE_IDS below. 'mathematics' is already in
   // MVP_SUBJECT_IDS, so no subject append is needed.
   G5_MATH_S1_CURRICULUM_BOOK_ID,
+  // Grade 5 Mathematics S2 — closes the gap Semester 1 alone left, found via
+  // a cross-check against the NCCD textbook list on nccd.gov.jo. Units 6-10,
+  // continuing S1's 1-5 (see g5MathSem2.ts).
+  G5_MATH_S2_CURRICULUM_BOOK_ID,
   // Grade 5 Science, both semesters — 'science' is already in
   // MVP_SUBJECT_IDS, so no subject append is needed.
   G5_SCIENCE_S1_CURRICULUM_BOOK_ID,
@@ -2434,9 +2442,11 @@ export const BOOKS: Book[] = [
     guidePdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D9%85%D9%87%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A%D8%A9/G6/1/G6%20TG%20Full%20Bookv13.pdf',
   },
   // The first Grade 5 book in the repo. Maths carries five units and
-  // twenty-five lessons from the student book alone (no S2 student book was
-  // supplied). See g5MathSem1.ts for what it does and does not print, and the
-  // JSON's known_gaps for what is deliberately empty.
+  // twenty-five lessons from the Semester 1 student book alone; Semester 2
+  // (below) adds a further five units (6-10) and twenty-seven lessons, found
+  // on disk 2026-09-20 via a cross-check against the NCCD textbook list. See
+  // g5MathSem1.ts / g5MathSem2.ts for what each book does and does not print,
+  // and each JSON's known_gaps for what is deliberately empty.
   {
     id: G5_MATH_S1_CURRICULUM_BOOK_ID,
     title: 'Mathematics – Grade 5, Semester 1',
@@ -2449,6 +2459,22 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // Grade 5 Mathematics S2 — the gap Semester 1 alone left, closed
+  // 2026-09-20 once its student-book PDF was found on disk (see g5MathSem2.ts
+  // for the extraction notes). Units 6-10, continuing S1's numbering.
+  {
+    id: G5_MATH_S2_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 5, Semester 2',
+    titleAr: 'الرياضيات – الصف الخامس – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-5',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // Grade 5 Science, both semesters — the second Grade 5 subject. Units are
   // numbered 1-5 then 6-10 continuously across the two semesters, the same
@@ -5737,6 +5763,7 @@ const _g7IslamicSem1Browser = buildG7IslamicSem1BrowserCatalog();
 const _g7IslamicSem2Browser = buildG7IslamicSem2BrowserCatalog();
 const _g7ScienceSem1Browser = buildG7ScienceSem1BrowserCatalog();
 const _g5MathSem1Browser = buildG5MathSem1BrowserCatalog();
+const _g5MathSem2Browser = buildG5MathSem2BrowserCatalog();
 const _g5ScienceSem1Browser = buildG5ScienceSem1BrowserCatalog();
 const _g5ScienceSem2Browser = buildG5ScienceSem2BrowserCatalog();
 const _g5IslamicSem1Browser = buildG5IslamicSem1BrowserCatalog();
@@ -6054,6 +6081,7 @@ export const UNITS: Unit[] = [
   ..._g7IslamicSem2Browser.units,
   ..._g7ScienceSem1Browser.units,
   ..._g5MathSem1Browser.units,
+  ..._g5MathSem2Browser.units,
   ..._g5ScienceSem1Browser.units,
   ..._g5ScienceSem2Browser.units,
   ..._g5IslamicSem1Browser.units,
@@ -6241,6 +6269,7 @@ export const LESSONS: Lesson[] = [
   ..._g7IslamicSem2Browser.lessons,
   ..._g7ScienceSem1Browser.lessons,
   ..._g5MathSem1Browser.lessons,
+  ..._g5MathSem2Browser.lessons,
   ..._g5ScienceSem1Browser.lessons,
   ..._g5ScienceSem2Browser.lessons,
   ..._g5IslamicSem1Browser.lessons,

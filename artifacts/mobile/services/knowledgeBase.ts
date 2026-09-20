@@ -207,6 +207,10 @@ import {
   buildG5MathSem1Catalog,
 } from './curriculumG5MathSem1.ts';
 import {
+  G5_MATH_S2_BOOK_ID,
+  buildG5MathSem2Catalog,
+} from './curriculumG5MathSem2.ts';
+import {
   G5_SCIENCE_S1_BOOK_ID,
   buildG5ScienceSem1Catalog,
 } from './curriculumG5ScienceSem1.ts';
@@ -1369,6 +1373,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Mathematics – Grade 5 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g5_math_sem1.json (NCCD)',
+  },
+  {
+    id: G5_MATH_S2_BOOK_ID,
+    gradeId: 'grade-5',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف الخامس – الفصل الثاني',
+    titleEn: 'Mathematics – Grade 5 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g5_math_sem2.json (NCCD)',
   },
   {
     id: G5_SCIENCE_S1_BOOK_ID,
@@ -3474,6 +3487,7 @@ const _g7IslamicSem1 = buildG7IslamicSem1Catalog();
 const _g7IslamicSem2 = buildG7IslamicSem2Catalog();
 const _g7ScienceSem1 = buildG7ScienceSem1Catalog();
 const _g5MathSem1 = buildG5MathSem1Catalog();
+const _g5MathSem2 = buildG5MathSem2Catalog();
 const _g5ScienceSem1 = buildG5ScienceSem1Catalog();
 const _g5ScienceSem2 = buildG5ScienceSem2Catalog();
 const _g5IslamicSem1 = buildG5IslamicSem1Catalog();
@@ -3797,6 +3811,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g7IslamicSem2.units,
   ..._g7ScienceSem1.units,
   ..._g5MathSem1.units,
+  ..._g5MathSem2.units,
   ..._g5DigitalSem1.units,
   ..._g4MathSem1.units,
   ..._g4MathSem2.units,
@@ -3992,6 +4007,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g7IslamicSem2.lessons,
   ..._g7ScienceSem1.lessons,
   ..._g5MathSem1.lessons,
+  ..._g5MathSem2.lessons,
   ..._g5DigitalSem1.lessons,
   ..._g4MathSem1.lessons,
   ..._g4MathSem2.lessons,
