@@ -10,7 +10,7 @@
  */
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { classGroups, teachingPlans } from "@workspace/db";
+import { teachingPlans } from "@workspace/db";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import {
   authMiddleware,
@@ -21,6 +21,7 @@ import {
 import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { parsePlanEntries, type PlanEntry } from "../lib/planEntries.js";
+import { resolveClassGroupId } from "../lib/classOwnership.js";
 
 const router = Router();
 
@@ -33,30 +34,6 @@ function trimmed(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-
-/**
- * `classGroupId` is a link to another teacher-owned table, unlike every other
- * field here — `savedMaterials.classGroupId` (workspace.ts) accepts it
- * unchecked, which would let a client attach a plan to a class it does not
- * own. Returns `undefined` (field omitted), `null` (explicit detach), or a
- * verified id; throws a plain string on an id that does not belong to this
- * teacher, which the caller turns into a 400.
- */
-async function resolveClassGroupId(
-  raw: unknown,
-  teacherId: string,
-): Promise<string | null | undefined> {
-  if (raw === undefined) return undefined;
-  if (raw === null || raw === "") return null;
-  if (typeof raw !== "string") throw "classGroupId must be a string or null";
-
-  const [owned] = await db
-    .select({ id: classGroups.id })
-    .from(classGroups)
-    .where(and(eq(classGroups.id, raw), eq(classGroups.teacherId, teacherId)));
-  if (!owned) throw "classGroupId does not refer to one of your classes";
-  return raw;
-}
 
 /** Single exit for every teaching-plan failure: 503 + a code when the schema is absent. */
 function failTeachingPlans(

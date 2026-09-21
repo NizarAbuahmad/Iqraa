@@ -1174,6 +1174,24 @@ const translations = {
     teachingPlansUpdateFailed: 'تعذّر تحديث الخطة. حاول مرة أخرى.',
     teachingPlansLoadFailed: 'تعذّر تحميل خطط التدريس.',
 
+    // Weekly period timetable — which class meets when, and each period's time
+    myWeeklySchedule: 'جدول الحصص',
+    scheduleEmptyPeriods: 'لم تُحدَّد حصص بعد. أضف حصصك أولًا لتتمكن من توزيع الشُّعَب عليها.',
+    scheduleSetupPeriods: 'إعداد الحصص',
+    schedulePeriodsTitle: 'إعداد الحصص',
+    schedulePeriodNumber: (n: number) => `الحصة ${n}`,
+    scheduleStartTime: 'وقت البداية',
+    scheduleDuration: 'المدة (بالدقائق)',
+    scheduleAddPeriod: 'إضافة حصة',
+    scheduleDeletePeriodConfirm: (n: number) => `حذف الحصة ${n}؟ ستبقى أي شُعبة موضوعة فيها بلا وقت محدَّد.`,
+    scheduleSlotTitle: (day: string, period: number) => `${day} — الحصة ${period}`,
+    scheduleSlotNotesPlaceholder: 'ملاحظة لهذه الحصة (اختياري)',
+    scheduleClearSlot: 'إفراغ الحصة',
+    scheduleLoadFailed: 'تعذّر تحميل الجدول.',
+    scheduleSaveFailed: 'تعذّر حفظ التغيير. حاول مرة أخرى.',
+    scheduleStorageUnavailable: 'الجدول الأسبوعي غير مُهيَّأ على الخادم بعد. تواصل مع مسؤول النظام لتفعيله.',
+    scheduleNeedsConnection: 'الجدول الأسبوعي يحتاج اتصالاً بالخادم',
+
     // Class ↔ materials
     classTabStudents: 'الطلبة',
     classTabMaterials: 'الموارد',
@@ -2687,6 +2705,24 @@ const translations = {
     teachingPlansCreateFailed: 'Could not create the plan. Please try again.',
     teachingPlansUpdateFailed: 'Could not update the plan. Please try again.',
     teachingPlansLoadFailed: 'Could not load your teaching plans.',
+
+    // Weekly period timetable — which class meets when, and each period's time
+    myWeeklySchedule: 'Weekly schedule',
+    scheduleEmptyPeriods: 'No periods set up yet. Add your periods first so you can assign classes to them.',
+    scheduleSetupPeriods: 'Set up periods',
+    schedulePeriodsTitle: 'Set up periods',
+    schedulePeriodNumber: (n: number) => `Period ${n}`,
+    scheduleStartTime: 'Start time',
+    scheduleDuration: 'Duration (minutes)',
+    scheduleAddPeriod: 'Add period',
+    scheduleDeletePeriodConfirm: (n: number) => `Delete period ${n}? Any class in it will be left without a time.`,
+    scheduleSlotTitle: (day: string, period: number) => `${day} — Period ${period}`,
+    scheduleSlotNotesPlaceholder: 'Note for this period (optional)',
+    scheduleClearSlot: 'Clear period',
+    scheduleLoadFailed: 'Could not load your schedule.',
+    scheduleSaveFailed: 'Could not save that change. Please try again.',
+    scheduleStorageUnavailable: 'The weekly schedule is not set up on the server yet. Ask your administrator to enable it.',
+    scheduleNeedsConnection: 'The weekly schedule needs a server connection',
 
     // Class ↔ materials
     classTabStudents: 'Students',
