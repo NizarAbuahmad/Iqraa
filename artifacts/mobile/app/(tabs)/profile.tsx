@@ -321,17 +321,22 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             </Pressable>
-            {/* A roster of real children, a pacing plan, and a weekly period
-                grid all belong beside what the teacher teaches, not filed
-                under الإعدادات next to FAQ and sign-out. Non-teachers keep
-                their own copy of myClasses in the settings list below — they
-                join classes, they just do not have a TEACHING section to put
-                it in. خطط التدريس moved here from settings for the same
-                reason شُعَبي did; جدول الحصص never lived anywhere else. */}
+            {/* A roster of real children, a pacing plan, a weekly period
+                grid, and the calendar combining the two all belong beside
+                what the teacher teaches, not filed under الإعدادات next to
+                FAQ and sign-out. Non-teachers keep their own copy of
+                myClasses in the settings list below — they join classes,
+                they just do not have a TEACHING section to put it in.
+                خطط التدريس moved here from settings for the same reason
+                شُعَبي did; جدول الحصص and التقويم never lived anywhere else.
+                calendar-outline moved to التقويم, the screen that is
+                actually calendar-shaped — it was sitting on خطط التدريس,
+                which is a list of plans, not a calendar. */}
             <View style={{ marginTop: 8, gap: 8 }}>
               <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
-              <SettingRow icon="calendar-outline" label={t('myTeachingPlans')} onPress={() => router.push('/teaching-plans' as any)} isRTL={isRTL} colors={colors} />
+              <SettingRow icon="clipboard-outline" label={t('myTeachingPlans')} onPress={() => router.push('/teaching-plans' as any)} isRTL={isRTL} colors={colors} />
               <SettingRow icon="time-outline" label={t('myWeeklySchedule')} onPress={() => router.push('/schedule' as any)} isRTL={isRTL} colors={colors} />
+              <SettingRow icon="calendar-outline" label={t('myCalendar')} onPress={() => router.push('/calendar' as any)} isRTL={isRTL} colors={colors} />
             </View>
           </>
         ) : null}
