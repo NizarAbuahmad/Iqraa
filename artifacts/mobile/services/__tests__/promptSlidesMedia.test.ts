@@ -11,7 +11,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { attachDrawnVisuals, attachSearchedMedia } from '../promptSlidesMedia.ts';
+import { attachDrawnVisuals, attachSearchedMedia, deckSearchQueries } from '../promptSlidesMedia.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
 
 const slide = (over: Partial<ActivitySlide> = {}): ActivitySlide => ({
@@ -60,6 +60,35 @@ describe('attachDrawnVisuals — free, no network', () => {
       slide({ type: 'summary', title: 'الخلاصة' }),
     ]), true);
     out.slides.forEach((s, i) => assert.equal(s.slideNumber, i + 1));
+  });
+});
+
+describe('deckSearchQueries — the deck’s topic, not the teacher’s subject', () => {
+  const subjectFallback: [string, string] = ['mathematics equations chalkboard', 'geometry classroom students'];
+
+  it('prefers the queries the model wrote about this deck', () => {
+    const d = deck([slide()]);
+    d.deckPhotoQueries = ['mother and child hands', 'family celebration table'];
+    assert.deepEqual(deckSearchQueries(d, subjectFallback), ['mother and child hands', 'family celebration table']);
+  });
+
+  it('falls back to the subject when the model wrote none', () => {
+    assert.deepEqual(deckSearchQueries(deck([slide()]), subjectFallback), subjectFallback);
+  });
+
+  it('rejects an arabic query — unsplash answers those with a 204', () => {
+    // The whole reason this field is specified as English. A deck that asked
+    // Unsplash for «يوم الأم» would lose both photos silently; a subject photo
+    // is worse-but-working, which beats none.
+    const d = deck([slide()]);
+    d.deckPhotoQueries = ['يوم الأم', 'احتفال العائلة'];
+    assert.deepEqual(deckSearchQueries(d, subjectFallback), subjectFallback);
+  });
+
+  it('borrows the subject’s section query when the model gave only one', () => {
+    const d = deck([slide()]);
+    d.deckPhotoQueries = ['mother and child hands'];
+    assert.deepEqual(deckSearchQueries(d, subjectFallback), ['mother and child hands', subjectFallback[1]]);
   });
 });
 
@@ -112,6 +141,37 @@ describe('attachSearchedMedia — photos and video', () => {
     const onLayout = out.slides.find(s => s.layout === 'statement');
     assert.equal(onLayout?.sideImageUrl, undefined);
     assert.ok(out.slides.find(s => s.mediaPrompt === 'another photo')?.sideImageUrl);
+  });
+
+  it('illustrates content slides from the deck’s spare queries when no slide asked', async () => {
+    // Measured, not hypothetical: a production deck made exactly two Unsplash
+    // calls because not one slide carried a `mediaPrompt` — while filling
+    // `deckPhotoQueries` perfectly, because that one is a required array.
+    const d = deck([
+      slide(), slide(), slide(),
+      slide({ type: 'divider', title: 'القسم الثاني' }),
+      slide(), slide({ type: 'summary' }),
+    ]);
+    d.deckPhotoQueries = ['cover shot', 'section shot', 'content shot one', 'content shot two'];
+    const out = await attachSearchedMedia(d, opts);
+    const sided = out.slides.filter(s => s.sideImageUrl);
+    assert.ok(sided.length >= 2, `expected content slides to be illustrated, got ${sided.length}`);
+    assert.ok(sided.every(s => s.type === 'intro'), 'only prose slides may carry a side photo');
+    assert.ok(sided.some(s => s.sideImageUrl!.includes('content')), 'should use the SPARE queries, not the cover one');
+  });
+
+  it('prefers the slide’s own mediaPrompt over a spare query', async () => {
+    const d = deck([slide(), slide({ mediaPrompt: 'its own picture' }), slide({ type: 'summary' })]);
+    d.deckPhotoQueries = ['cover shot', 'section shot', 'spare one', 'spare two'];
+    const out = await attachSearchedMedia(d, opts);
+    const sided = out.slides.filter(s => s.sideImageUrl);
+    assert.equal(sided.length, 1, 'the model asked for one picture; spares must not pile on');
+    assert.ok(sided[0]!.sideImageUrl!.includes('own'));
+  });
+
+  it('adds no side photos at all when the deck has no spare queries', async () => {
+    const out = await attachSearchedMedia(deck([slide(), slide(), slide({ type: 'summary' })]), opts);
+    assert.equal(out.slides.filter(s => s.sideImageUrl).length, 0);
   });
 
   it('puts a hero photo on the first slide and one on the divider', async () => {

@@ -1,0 +1,134 @@
+{
+  "meta": {
+    "grade": "الصف الثاني",
+    "grade_en": "Grade 2",
+    "subject": "العلوم",
+    "subject_en": "Science",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة العلوم الصف الثاني الفصل الأول (g2-science-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ ودروسُها السِّتَّةُ من كتاب الطالب في 2026-09-19، بقراءةِ صفحةِ الفهرسِ وصفحةِ افتتاحِ كلِّ وحدةٍ وصفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF عبرَ PyMuPDF. نفسُ نمطِ g1ScienceSem1.ts: «الفِكْرَةُ العامَّةُ» على افتتاحيّةِ كلِّ وحدةٍ، و«الفِكْرَةُ الرَّئيسَةُ» و«المَفاهيمُ وَالمُصْطَلَحاتُ» الثنائيَّةُ اللغةِ على افتتاحيّةِ كلِّ درسٍ. تُنقَلُ الدروسُ المرقَّمةُ في «قائِمَةِ الدُّروسِ» فقط؛ «الإِثْراءُ وَالتَّوَسُّعُ» و«مُراجَعَةُ الوَحْدَةِ» بلا رقمِ درسٍ، فاستُثْنِيا.",
+    "known_gaps": [
+      "objectives وprior_knowledge فارغتانِ لكلِّ الدروسِ السِّتَّةِ: لا يطبَعُ الكتابُ صندوقَ «نَتاجاتُ التَّعَلُّمِ» ولا صندوقَ «تَعَلَّمْتُ سابِقًا» — نفسُ ما وُثِّقَ في g1ScienceSem1.ts."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "خَصائِصُ الْكائِناتِ الْحَيَّةِ وَصِفاتُها",
+      "title_en": "Characteristics of Living Things",
+      "general_idea_ar": "تَشْتَرِكُ الْكائِناتُ الْحَيَّةُ في خَصائِصَ رَئيسَةٍ، وَمَعَ ذلِكَ لِكُلِّ كائِنٍ حَيٍّ صِفاتٌ مُحَدَّدَةٌ تُمَيِّزُهُ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "خَصائِصُ الْكائِناتِ الْحَيَّةِ",
+          "title_en": "Characteristics of Living Things",
+          "main_idea_ar": "تَشْتَرِكُ الْكائِناتُ الْحَيَّةُ بِخَصائِصَ عامَّةٍ، وَتَخْتَلِفُ عَنْ بَعْضِها في بَعْضِ الصِّفاتِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "النُّمُوّ", "en": "Growth" },
+            { "ar": "التَّكاثُر", "en": "Reproduction" },
+            { "ar": "الاسْتِجابَة", "en": "Response" },
+            { "ar": "آكِلاتُ الْعُشْب", "en": "Herbivores" },
+            { "ar": "آكِلاتُ اللُّحوم", "en": "Carnivores" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "الْكائِناتُ الْحَيَّةُ تُوَرِّثُ صِفاتِها",
+          "title_en": "Living Things Inherit Their Traits",
+          "main_idea_ar": "تَرِثُ صِغارُ الْكائِناتِ الْحَيَّةِ كَثيرًا مِنْ صِفاتِ آبائِها، وَتَكْتَسِبُ صِفاتٍ أُخْرى مِنَ الْبيئَةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "الْوِراثَة", "en": "Heredity" }]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "تَفاعُلُ الْكائِناتِ الْحَيَّةِ في الْبيئَةِ",
+      "title_en": "Interaction of Living Things in the Environment",
+      "general_idea_ar": "تَتَفاعَلُ الْكائِناتُ الْحَيَّةُ مَعَ بيئاتِها لِضَمانِ اسْتِمْرارِ حَياتِها.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "حاجاتُ الْكائِناتِ الْحَيَّةِ",
+          "title_en": "Needs of Living Things",
+          "main_idea_ar": "تَعْتَمِدُ النَّباتاتُ وَالْحَيَواناتُ عَلى بَعْضِها؛ لِلْحُصولِ عَلى حاجاتِها اللّازِمَةِ لِعَيْشِها في بيئَتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الْمَأْوى", "en": "Shelter" },
+            { "ar": "السِّلْسِلَةُ الْغِذائِيَّة", "en": "Food Chain" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "تَكَيُّفُ الْكائِناتِ الْحَيَّةِ",
+          "title_en": "Adaptation of Living Things",
+          "main_idea_ar": "تَمْتَلِكُ الْكائِناتُ الْحَيَّةُ تَراكيبَ، تُساعِدُها عَلى التَّكَيُّفِ مَعَ الْبيئَةِ الَّتي تَعيشُ فيها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التَّكَيُّف", "en": "Adaptation" },
+            { "ar": "تَراكيب", "en": "Structures" },
+            { "ar": "التَّمْويه", "en": "Camouflage" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "الْأَرْضُ وَالشَّمْسُ",
+      "title_en": "Earth and the Sun",
+      "general_idea_ar": "تُشَكِّلُ الصُّخورُ وَالتُّرْبَةُ الْيابِسَةَ عَلى سَطْحِ الْأَرْضِ، وَيَتَغَيَّرُ سَطْحُ الْأَرْضِ بِاسْتِمْرارٍ مَعَ مُرورِ الزَّمَنِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from «الفِكْرَةُ الرَّئيسَةُ», bilingual terms from «المَفاهيمُ وَالمُصْطَلَحاتُ»; objectives and prior_knowledge not printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "كَيْفَ يَتَغَيَّرُ سَطْحُ الْأَرْضِ؟",
+          "title_en": "How Does Earth's Surface Change?",
+          "main_idea_ar": "التُّرْبَةُ مِنْ مُكَوِّناتِ الْيابِسَةِ، وَهِيَ مُهِمَّةٌ لِحَياةِ الْكائِناتِ الْحَيَّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "صُخور", "en": "Rocks" },
+            { "ar": "التَّجْوِيَة", "en": "Weathering" },
+            { "ar": "التَّعْرِيَة", "en": "Erosion" },
+            { "ar": "تُرْبَة", "en": "Soil" },
+            { "ar": "فُتاتٌ صَخْرِيّ", "en": "Rocks Crumbs" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الشَّمْسُ نَجْمٌ قَريبٌ",
+          "title_en": "The Sun is a Nearby Star",
+          "main_idea_ar": "الشَّمْسُ أَقْرَبُ النُّجومِ إِلى الْأَرْضِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [{ "ar": "نَجْم", "en": "Star" }]
+        }
+      ]
+    }
+  ]
+}

@@ -73,3 +73,24 @@ describe("a hostile request cannot make the prompt arbitrarily large", () => {
     assert.equal(clampPromptText(huge, CHAT_MESSAGE_MAX_CHARS).length, CHAT_MESSAGE_MAX_CHARS);
   });
 });
+
+describe("the prompt follows a change of subject", () => {
+  // The catalog covers Grades 1–12 across every MVP subject, but the prompt
+  // still said "Grade 10 maths and chemistry" and told the model to redirect
+  // anything else — so a Grade 1 teacher moving to biology was pushed away by
+  // the prompt itself, before the pinned-lesson context even came into it.
+  for (const teacher of [true, false]) {
+    it(`Arabic, ${teacher ? "teacher" : "student"}`, () => {
+      const p = buildSystemPromptAr(teacher);
+      assert.match(p, /من الصف الأول إلى الصف الثاني عشر/);
+      assert.match(p, /عند تغيير الموضوع/);
+      assert.doesNotMatch(p, /خارج نطاق منهج الصف العاشر/);
+    });
+    it(`English, ${teacher ? "teacher" : "student"}`, () => {
+      const p = buildSystemPromptEn(teacher);
+      assert.match(p, /Grades 1 to 12/);
+      assert.match(p, /when they change topic/);
+      assert.doesNotMatch(p, /outside Grade 10/);
+    });
+  }
+});

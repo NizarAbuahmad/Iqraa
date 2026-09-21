@@ -1,12 +1,13 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { useViewportWidth } from '@/hooks/useViewportWidth';
+import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { DEMO_MODE } from '@/services/ai/demoMode';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { openGeogebraGraphing } from '@/services/geogebra';
@@ -53,14 +54,61 @@ function ToolCard({
   colors,
   t,
   compact,
+  grid,
 }: {
   tool: ToolDef;
   isRTL: boolean;
   colors: ReturnType<typeof useColors>;
   t: (key: any) => string;
   compact?: boolean;
+  grid?: boolean;
 }) {
   const isExternal = !!tool.externalAction;
+
+  // A left-icon/right-text row reads fine at phone width, but stretched
+  // across a desktop grid tile it leaves the icon and chevron stranded at
+  // opposite edges of mostly empty space. The grid tile centers everything
+  // instead — icon on top, bigger, the way a launcher tile or app icon reads.
+  if (grid) {
+    return (
+      <Pressable
+        onPress={() => { void runToolAction(tool); }}
+        style={({ pressed }) => [
+          styles.gridCard,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            borderRadius: colors.radius,
+            opacity: pressed ? 0.8 : 1,
+          },
+        ]}
+      >
+        <View style={[styles.gridIconWrap, { backgroundColor: tool.color + '1A', borderRadius: 16 }]}>
+          <Ionicons name={tool.icon} size={30} color={tool.color} />
+        </View>
+        <View style={[styles.gridTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: 'center' }]}>
+            {t(tool.titleKey as any)}
+          </Text>
+          {tool.badgeKey && (
+            <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
+              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'Cairo_600SemiBold' }]}>
+                {t(tool.badgeKey as any)}
+              </Text>
+            </View>
+          )}
+        </View>
+        <Text
+          style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}
+          numberOfLines={2}
+        >
+          {t(tool.descKey as any)}
+        </Text>
+        {isExternal && <Ionicons name="open-outline" size={14} color={colors.mutedForeground} />}
+      </Pressable>
+    );
+  }
+
   return (
     <Pressable
       onPress={() => { void runToolAction(tool); }}
@@ -117,6 +165,8 @@ export default function AIToolsScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const viewportW = useViewportWidth();
+  const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
 
   return (
     <ScrollView
@@ -148,9 +198,9 @@ export default function AIToolsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
             {t(section.titleKey as any)}
           </Text>
-          <View style={styles.list}>
+          <View style={[styles.list, isDesktop && styles.listGrid]}>
             {section.tools.map(tool => (
-              <ToolCard key={tool.id} tool={tool} isRTL={isRTL} colors={colors} t={t} />
+              <ToolCard key={tool.id} tool={tool} isRTL={isRTL} colors={colors} t={t} grid={isDesktop} />
             ))}
           </View>
         </View>
@@ -183,6 +233,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   list: { paddingHorizontal: 20, gap: 10, paddingBottom: 8 },
+  listGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+  gridCard: {
+    flexBasis: '31%',
+    flexGrow: 1,
+    minWidth: 220,
+    alignItems: 'center',
+    padding: 20,
+    borderWidth: 1,
+    gap: 8,
+  },
+  gridIconWrap: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  gridTitleRow: { alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' },
   card: { alignItems: 'center', padding: 16, borderWidth: 1, gap: 14 },
   cardCompact: { padding: 14 },
   iconWrap: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

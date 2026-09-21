@@ -68,6 +68,86 @@ export type EnrichOptions = {
 /** Ceiling on per-slide photo lookups — one Unsplash call each. */
 const MAX_SIDE_PHOTOS = 3;
 
+/**
+ * The cover and section-break queries for THIS deck, preferring the ones the
+ * model wrote about the deck's own topic.
+ *
+ * The fallback is `deckPhotoQueries(subjectId, subjectName)`, which keys off
+ * the curriculum subject. In the older Slides Maker that subject IS the deck's
+ * topic, so it is the right answer there. Here it is only the teacher's
+ * profile, and a deck about Mother's Day built by a maths teacher searched
+ * Unsplash for "mathematics equations chalkboard" — a real photo, fetched and
+ * shown, with nothing to do with the deck. A wrong picture reads as a broken
+ * feature just as much as a missing one does.
+ *
+ * The latin-script gate is the part that matters. Unsplash is an English
+ * index: «يوم الأم» returns a 204, so a model that answers in the deck's
+ * language instead of English would silently cost the deck both photos. When
+ * that happens the subject fallback is worse-but-working, which beats nothing.
+ */
+export function deckSearchQueries(
+  deck: ClassroomActivity,
+  fallback: [cover: string, section: string],
+): [cover: string, section: string] {
+  const usable = deckQueries(deck);
+  if (usable.length === 0) return fallback;
+  return [usable[0]!, usable[1] ?? fallback[1]];
+}
+
+/** The deck-level queries that are actually searchable — English, non-empty. */
+function deckQueries(deck: ClassroomActivity): string[] {
+  return (deck.deckPhotoQueries ?? [])
+    .map(q => (typeof q === 'string' ? q.trim() : ''))
+    .filter(q => q.length > 0 && !/[؀-ۿ]/.test(q));
+}
+
+/**
+ * Types whose body is prose, and so the only ones a side photo can sit beside.
+ * Mirrors `PROSE_TYPES` in `promptSlidesPolish.ts` for the same reason: every
+ * other type's own branch fills the slide before the side-image column.
+ */
+const PHOTOGRAPHABLE = new Set<ActivitySlide['type']>(['intro', 'reveal']);
+
+/**
+ * Slides to illustrate when the model asked for none.
+ *
+ * Measured, not guessed. A production deck at 12:09 made exactly two Unsplash
+ * calls — the cover and the section break — because not one slide carried a
+ * `mediaPrompt`: the rule asked for it "only where a picture adds meaning",
+ * and the model read that permission as licence to skip it entirely. The same
+ * deck filled `deckPhotoQueries` perfectly, because that is a required array
+ * in the skeleton.
+ *
+ * So the floor stops depending on the optional field. The prompt now asks for
+ * four deck queries instead of two, and the spares land here — on the content
+ * slides nearest the middle of the deck, which are the ones a class actually
+ * dwells on. If the model did its job and wrote `mediaPrompt`s, this never
+ * runs: those are specific to their slide and always better than a spare.
+ */
+function fallbackPhotoSlides(
+  slides: readonly ActivitySlide[],
+  queries: readonly string[],
+): { slide: ActivitySlide; index: number; query: string }[] {
+  if (queries.length === 0) return [];
+  const eligible = slides
+    .map((slide, index) => ({ slide, index }))
+    .filter(({ slide, index }) => (
+      index > 0
+      && PHOTOGRAPHABLE.has(slide.type)
+      && !slide.layout && !slide.sideImageUrl && !slide.mediaUrl && !slide.visual
+      && (slide.content ?? '').trim().length > 0
+    ));
+  // From the middle outwards: slide 2 is usually the hook and the last content
+  // slide usually runs into the summary, so neither is where a picture earns
+  // the most.
+  const mid = Math.floor(eligible.length / 2);
+  return eligible
+    .slice(mid)
+    .concat(eligible.slice(0, mid))
+    .slice(0, queries.length)
+    .map((e, i) => ({ ...e, query: queries[i]! }));
+}
+
 function photoCredit(photographer: string, isAr: boolean): string {
   return isAr ? `📷 ${photographer} · Unsplash` : `📷 Photo by ${photographer} on Unsplash`;
 }
@@ -133,19 +213,27 @@ export async function attachSearchedMedia(
   // branch in each renderer, which fills the slide and never reaches the
   // side-image column — a photo assigned there would be fetched, stored and
   // silently never shown.
-  const wantPhotos = slides
+  const asked = slides
     .map((slide, index) => ({ slide, index }))
     .filter(({ slide }) => (
       typeof slide.mediaPrompt === 'string' && slide.mediaPrompt.trim()
       && !slide.sideImageUrl && !slide.layout
     ))
-    .slice(0, MAX_SIDE_PHOTOS);
+    .slice(0, MAX_SIDE_PHOTOS)
+    .map(e => ({ ...e, query: e.slide.mediaPrompt!.trim() }));
+
+  // Nothing asked for a picture — put the deck's spare queries on content
+  // slides rather than shipping a deck whose only two images are the cover and
+  // the section break. See `fallbackPhotoSlides`.
+  const wantPhotos = asked.length > 0
+    ? asked
+    : fallbackPhotoSlides(slides, deckQueries(deck).slice(2, 2 + MAX_SIDE_PHOTOS));
 
   const [coverQuery, sectionQuery] = opts.photoQueries ?? [deck.lesson || topic, `${deck.subject || topic} classroom`];
   const [hero, section, sidePhotos, videos] = await Promise.all([
     safePhoto(searchPhoto, coverQuery),
     safePhoto(searchPhoto, sectionQuery),
-    Promise.all(wantPhotos.map(({ slide }) => safePhoto(searchPhoto, slide.mediaPrompt!.trim()))),
+    Promise.all(wantPhotos.map(({ query }) => safePhoto(searchPhoto, query))),
     opts.wantVideo === false ? Promise.resolve([]) : safeVideos(searchVideos, videoQuery(deck, topic, isAr), lang),
   ]);
 

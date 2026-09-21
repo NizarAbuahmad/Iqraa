@@ -31,7 +31,7 @@ import {
   ROSTER_CONSENT_VERSION,
 } from "../lib/rosterConsent.js";
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
-import { sanitizeCatalogIds } from "../lib/catalogIds.js";
+import { sanitizeCatalogIds, sanitizeTeachingAssignments } from "../lib/catalogIds.js";
 import { GRADES, SUBJECTS } from "@workspace/curriculum";
 import { sendGoogleAccountNoticeEmail, sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
 import {
@@ -433,6 +433,7 @@ router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, asyn
         avatarUrl: avatarUrlFor(verified.avatarKey),
         gradeIds: verified.gradeIds,
         subjectIds: verified.subjectIds,
+        teachingAssignments: verified.teachingAssignments,
         createdAt: verified.createdAt,
         // This is the call that hands back the session register used to, so
         // it owes the client the same field login does — without it a
@@ -1026,6 +1027,7 @@ router.post("/login", loginLimiter, async (req, res) => {
         avatarUrl: avatarUrlFor(user.avatarKey),
         gradeIds: user.gradeIds,
         subjectIds: user.subjectIds,
+        teachingAssignments: user.teachingAssignments,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
         ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
@@ -1211,6 +1213,13 @@ router.post("/google", googleLimiter, async (req, res) => {
     res.json({
       accessToken,
       refreshToken: refreshTokenValue,
+      // Whether this credential just minted an account or signed an existing
+      // one in. Only the server can tell them apart — the client gets an
+      // identical token pair either way — so without this the app would have to
+      // count the button someone pressed instead of the account that was
+      // created, and every existing teacher who tapped "sign up" would inflate
+      // the signup number.
+      isNewAccount,
       user: {
         id: user.id,
         firstName: user.firstName,
@@ -1221,6 +1230,7 @@ router.post("/google", googleLimiter, async (req, res) => {
         avatarUrl: avatarUrlFor(user.avatarKey),
         gradeIds: user.gradeIds,
         subjectIds: user.subjectIds,
+        teachingAssignments: user.teachingAssignments,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
         ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
@@ -1407,6 +1417,7 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       // the mobile app's routeGating.ts, the gate these two drive.
       gradeIds: user.gradeIds,
       subjectIds: user.subjectIds,
+      teachingAssignments: user.teachingAssignments,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
       ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
@@ -1423,23 +1434,37 @@ const VALID_SUBJECT_IDS = new Set(SUBJECTS.map(s => s.id));
 // PATCH /users/profile
 router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
-    const { preferredLanguage, firstName, lastName, gradeIds, subjectIds } = req.body as {
+    const { preferredLanguage, firstName, lastName, gradeIds, subjectIds, teachingAssignments } = req.body as {
       preferredLanguage?: string;
       firstName?: string;
       lastName?: string;
       /** Catalog ids from GRADES/SUBJECTS — see needsTeacherSetup in the mobile app. */
       gradeIds?: unknown;
       subjectIds?: unknown;
+      /** Per-grade pairs from /setup-subjects. Takes priority over the flat ids below. */
+      teachingAssignments?: unknown;
     };
 
     const updates: Record<string, unknown> = {};
     if (preferredLanguage) updates.preferredLanguage = preferredLanguage;
     if (firstName?.trim()) updates.firstName = firstName.trim();
     if (lastName?.trim()) updates.lastName = lastName.trim();
-    const sanitizedGradeIds = sanitizeCatalogIds(gradeIds, VALID_GRADE_IDS);
-    if (sanitizedGradeIds) updates.gradeIds = sanitizedGradeIds;
-    const sanitizedSubjectIds = sanitizeCatalogIds(subjectIds, VALID_SUBJECT_IDS);
-    if (sanitizedSubjectIds) updates.subjectIds = sanitizedSubjectIds;
+
+    const sanitizedAssignments = sanitizeTeachingAssignments(teachingAssignments, VALID_GRADE_IDS, VALID_SUBJECT_IDS);
+    if (sanitizedAssignments) {
+      // The current screen only ever sends this — gradeIds/subjectIds stay in
+      // sync as their derived union so needsTeacherSetup and anything else
+      // still reading the flat columns keep working unchanged.
+      updates.teachingAssignments = sanitizedAssignments;
+      updates.gradeIds = [...new Set(sanitizedAssignments.map(a => a.gradeId))];
+      updates.subjectIds = [...new Set(sanitizedAssignments.flatMap(a => a.subjectIds))];
+    } else {
+      // Older client build sending the flat lists directly.
+      const sanitizedGradeIds = sanitizeCatalogIds(gradeIds, VALID_GRADE_IDS);
+      if (sanitizedGradeIds) updates.gradeIds = sanitizedGradeIds;
+      const sanitizedSubjectIds = sanitizeCatalogIds(subjectIds, VALID_SUBJECT_IDS);
+      if (sanitizedSubjectIds) updates.subjectIds = sanitizedSubjectIds;
+    }
 
     if (Object.keys(updates).length === 0) {
       res.status(400).json({ error: "No valid fields to update" });
@@ -1462,6 +1487,7 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
       avatarUrl: avatarUrlFor(updated.avatarKey),
       gradeIds: updated.gradeIds,
       subjectIds: updated.subjectIds,
+      teachingAssignments: updated.teachingAssignments,
       createdAt: updated.createdAt,
     });
   } catch (err) {

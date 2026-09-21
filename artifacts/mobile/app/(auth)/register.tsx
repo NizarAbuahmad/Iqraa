@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { AuthBrandPanel, useAuthLayout } from '@/components/ui/AuthBrandPanel';
 import { AuthModeSwitch } from '@/components/ui/AuthModeSwitch';
 import { Button } from '@/components/ui/Button';
 import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
@@ -24,6 +25,7 @@ export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
   const { register, loginWithGoogle } = useAuth();
   const { t, lang, isRTL } = useLanguage();
+  const { isWide } = useAuthLayout();
 
   // v1 is teacher-only; the server refuses a student or parent registration
   // outright (see lib/features.ts there). Asked of the server rather than
@@ -101,25 +103,33 @@ export default function RegisterScreen() {
     (confirmPassword === '' || confirmPassword === password) &&
     termsAccepted;
 
-  return (
+  const formPanel = (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={[styles.formPanel, isWide && styles.formPanelWide]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 },
+          {
+            paddingTop: isWide ? 40 : insets.top + 16,
+            paddingBottom: insets.bottom + 32,
+            maxWidth: isWide ? 560 : 640,
+          },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Pressable
-          onPress={() => router.back()}
-          style={[styles.back, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
-        >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-        </Pressable>
+        <View style={[styles.topRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.back}
+            accessibilityRole="button"
+            accessibilityLabel={t('back')}
+          >
+            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
+          </Pressable>
+        </View>
 
         <AuthModeSwitch
           mode="register"
@@ -288,11 +298,22 @@ export default function RegisterScreen() {
       </ScrollView>
     </KeyboardAvoidingView>
   );
+
+  return (
+    <View style={[styles.root, { backgroundColor: colors.background }, isWide && { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+      <AuthBrandPanel isWide={isWide} />
+      {formPanel}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexGrow: 1, paddingHorizontal: 24 },
-  back: { marginBottom: 20, width: 40 },
+  root: { flex: 1 },
+  formPanel: { flex: 1, backgroundColor: '#F5F7FA' },
+  formPanelWide: { flex: 1, justifyContent: 'center' },
+  scroll: { flexGrow: 1, paddingHorizontal: 24, width: '100%', alignSelf: 'center' },
+  topRow: { alignItems: 'center', justifyContent: 'flex-start', marginBottom: 20 },
+  back: { width: 40 },
   heading: { fontSize: 26, marginBottom: 6 },
   sub: { fontSize: 14, marginBottom: 24 },
   card: { padding: 24, borderWidth: 1, marginBottom: 24, gap: 16 },

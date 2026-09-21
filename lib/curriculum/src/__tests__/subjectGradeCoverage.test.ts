@@ -70,13 +70,14 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'civic-education:grade-8',
   'physical-education:grade-8',
   // creative-arts joined MVP_SUBJECT_IDS the same day as its only book
-  // (Grade 8). SUBJECTS.grades for it is ['grade-8'] alone — no Grade 9 or
-  // 10 book is expected, so these two are permanent, not gaps to close.
+  // (Grade 8). No Grade 9 book is expected — NCCD does not publish one for
+  // this subject at grade-9, so this one is permanent, not a gap to close.
+  // creative-arts:grade-10 closed 2026-09-20 — SUBJECTS.grades extended for
+  // grade-10 (one book, no semester, 23 lessons not the usual 30) — see
+  // g10CreativeArts.ts.
   'creative-arts:grade-9',
-  'creative-arts:grade-10',
-  // vocational-education joined the same day, same reason — SUBJECTS.grades
-  // is ['grade-8'] alone here too.
-  'vocational-education:grade-9',
+  // vocational-education:grade-9 closed 2026-09-20 — SUBJECTS.grades extended
+  // for grade-9 (was grade-4/6/7/8 only) — see g9VocationalSem1.ts.
   'vocational-education:grade-10',
   // social joined the same day, and both entries are PERMANENT — corrected
   // on 2026-09-10, having been recorded here as ordinary gaps to "delete the
@@ -179,10 +180,18 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // PERMANENT — the subject is not declared at grade-5 in SUBJECTS.grades at
   // all. physics/chemistry/biology/earth-science and financial-literacy only
   // start at SPECIALISED_FROM (grade-9) or grade-7; geography/history/
-  // civic-education only start at grade-9; physical-education is declared
-  // for grade-6, grade-7, grade-9 but not grade-5; creative-arts and
-  // vocational-education are declared for grade-6..grade-8 only. None of
-  // these will ever get a grade-5 book.
+  // civic-education only start at grade-9. None of these will ever get a
+  // grade-5 book.
+  // physical-education:grade-5 closed 2026-09-20, same SUBJECTS.grades
+  // extension trap as grade-3/grade-1/grade-2 above — both semester student
+  // books were already on disk (found via a cross-check against the NCCD
+  // textbook list), just never declared or catalogued. See
+  // g5PhysicalEducationSem1.ts / g5PhysicalEducationSem2.ts.
+  // creative-arts:grade-5 closed 2026-09-20 the same way — its book was
+  // found via the same NCCD textbook-list cross-check; see g5CreativeArts.ts.
+  // vocational-education:grade-5 closed 2026-09-20 — its book had been
+  // sitting on disk unbuilt for both semesters, found via a cross-check
+  // against the official NCCD textbook list; see g5VocationalSem1.ts.
   'chemistry:grade-5',
   'physics:grade-5',
   'biology:grade-5',
@@ -191,9 +200,6 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'geography:grade-5',
   'history:grade-5',
   'civic-education:grade-5',
-  'physical-education:grade-5',
-  'creative-arts:grade-5',
-  'vocational-education:grade-5',
   //
   // ORDINARY GAPS — the subject is declared at grade-5 (arabic/english/
   // digital-literacy span all grades; social spans grade-1..grade-9), and
@@ -340,6 +346,51 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // 2026-09-19 via AskUserQuestion; user chose "Keep waiting", same as
   // Grade 3 Digital Skills. Paused, not built.
   'digital-literacy:grade-1',
+  //
+  // grade-2 joined MVP_GRADE_IDS 2026-09-19 with only Mathematics built —
+  // same staged rollout as grade-1/3/4/5's. mathematics:grade-2 closed the
+  // same day, both semesters, real content from each lesson's own «أَتَعَلَّمُ
+  // الْيَوْمَ» box (same HarperCollins/NCCD series and convention as
+  // g1MathSem1.ts; no unnumbered preparatory unit this time).
+  //
+  // PERMANENT — the subject is not declared at grade-2 in SUBJECTS.grades at
+  // all (physics/chemistry/biology/earth-science/financial-literacy start at
+  // grade-7 or SPECIALISED_FROM; geography/history/civic-education start at
+  // grade-9). vocational-education stays genuinely PERMANENT for grade-2 —
+  // no Grade 2 vocational book exists at all.
+  'chemistry:grade-2',
+  'physics:grade-2',
+  'biology:grade-2',
+  'earth-science:grade-2',
+  'financial-literacy:grade-2',
+  'geography:grade-2',
+  'history:grade-2',
+  'civic-education:grade-2',
+  'vocational-education:grade-2',
+  //
+  // ORDINARY GAPS — the subject is declared at grade-2 in SUBJECTS.grades,
+  // and Grade 2 source PDFs exist on disk (knowledge-base/grade-2-*), but no
+  // catalog has been built from them yet. Delete each line once its catalog
+  // and BOOKS row land, same as the grade-1 rollout above. This is an
+  // unusually complete source batch — real student books exist for both
+  // semesters of science/social/english/arabic/islamic. Digital Skills has
+  // no student book at all — same class of gap hit at every other grade in
+  // this project.
+  // science:grade-2 closed 2026-09-19, both semesters — see
+  // g2ScienceSem1.ts/g2ScienceSem2.ts.
+  // social:grade-2 closed 2026-09-19, both semesters — see
+  // g2SocialSem1.ts/g2SocialSem2.ts.
+  // english:grade-2 closed 2026-09-19, both semesters — see
+  // g2EnglishSem1.ts/g2EnglishSem2.ts.
+  // arabic:grade-2 closed 2026-09-19, both semesters — see
+  // g2ArabicSem1.ts/g2ArabicSem2.ts.
+  // islamic:grade-2 closed 2026-09-19, both semesters — see
+  // g2IslamicSem1.ts/g2IslamicSem2.ts.
+  // creative-arts:grade-2 closed 2026-09-19, one book (no semester split) —
+  // see g2CreativeArts.ts.
+  // physical-education:grade-2 closed 2026-09-19, one book, Semester 1 only
+  // (no Semester 2 book supplied) — see g2PhysicalEducationSem1.ts.
+  'digital-literacy:grade-2',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

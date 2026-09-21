@@ -2228,7 +2228,273 @@ Grade 6 social S1/S2, Grade 6 vocational S2, Grade 6 arabic S2, Grade 7 art and
 Grade 7 digital literacy S1/S2. No contents rows at any tolerance and no
 openers — there is nothing in these books to read.
 
+## An Android build is now a workflow, not a laptop, 2026-09-19
+
+Every APK so far (`5c38a5fb`, `68522384`, `d32f5c0c`, `e9388ee1`) was built by
+hand from a machine with `eas-cli` logged in as `nizar.62`. The sandboxes that
+do most of the work on this repo have no Expo credentials at all — no
+`EXPO_TOKEN`, no `~/.expo` — so «give me a new APK» from one of them meant
+«wait for the laptop». The repository already holds `EXPO_TOKEN` for
+`mobile-update.yml` (its «Publish update» step ran and «Explain a skipped
+publish» skipped on run 159, 2026-09-19, so the secret is set and works), and
+a build needs nothing more.
+
+`.github/workflows/mobile-build.yml` is `workflow_dispatch` only: Actions →
+*Mobile Android build* → *Run workflow*, pick the branch and the `eas.json`
+profile (`preview` → sideloadable APK on the `preview` update channel, so it
+keeps taking OTA updates; `production` → the Play app-bundle). It runs
+`eas build --platform android --json`, waits, and writes the build id,
+version / versionCode and the download URL into the job summary at the top of
+the run page.
+
+**First run 2026-09-19 17:16 UTC, run `35457585370`, on `main` at `926c675`
+(#563 merged 17:16): failed, and not for a reason the workflow can fix.**
+Everything up to the build worked as designed: the archive uploaded, the
+`preview` env block loaded (`Environment variables loaded from the "preview"
+build profile "env" configuration: EXPO_PUBLIC_API_BASE_URL,
+EXPO_PUBLIC_DEMO_MODE, EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+EXPO_PUBLIC_POSTHOG_API_KEY`), the remote keystore resolved. Then:
+
+> This account has used its Android builds from the Free plan this month,
+> which will reset in 11 days (on Thu Oct 01 2026).
+
+**No Android build is possible on `nizar.62` until 2026-10-01**, or until
+the account is upgraded (`eas billing:subscribe starter --account nizar.62`,
+or expo.dev → Billing). That is a decision for a person, not a workflow. The
+September builds that spent the quota are the four in «The app has been built
+for a real device» and the fingerprint-policy attempts of 2026-09-13 (#420).
+
+**The archive was 1.1 GB, not 311 MB.** Reproduced locally at 1.2 GB with
+eas-cli 24.7.0's own `makeShallowCopyAsync`, no `node_modules` involved:
+`.git` 521 MB, `knowledge-base` 452 MB, `marketing` 139 MB, `lib` 64 MB.
+Two of those are waste. The tarball carries the shallow clone's `.git` —
+`git ls-files` can never mark it ignored, but eas-cli special-cases a `.git`
+line in `.easignore` and deletes the directory from the clone — and
+`marketing/` is reels and tutorials nothing in the app imports. Both are now
+in `.easignore`; re-measured at 518 MB, `.git` gone, `marketing/` an empty
+directory. `knowledge-base` stays, for the reason `.easignore`'s header
+gives (`services/bookFigureAssets.ts` static-requires the 2,631 PNGs). The
+2026-09-06 note that said 311 MB was true then; the figure PNGs for grades
+3-10 and the reels arrived after it. **The 518 MB archive is unverified by a
+build** — the next one is the first that can check it.
+
+No `app.json` `version` bump: the last hand-run builds already carry
+`expo-updates`, and nothing native has been added since #420 — see «app.json's
+`version` is the OTA compatibility key» in CLAUDE.md before the next one.
+
+## A second Android build path that doesn't touch EAS Build at all, 2026-09-19
+
+The workflow above is still capped by Expo's free-tier Build quota until
+2026-10-01. `.github/workflows/mobile-build-gradle.yml` builds the same kind
+of APK without EAS Build: `expo prebuild` generates the native `android/`
+project (never committed — gitignored, per CLAUDE.md), then a plain
+`./gradlew assembleRelease` compiles it directly on the Actions runner.
+Iqraa is a public repo, so Actions minutes are free and uncapped — this path
+has no monthly limit.
+
+Two things EAS does invisibly had to be reproduced by hand:
+
+- **Signing.** `expo prebuild`'s generated `build.gradle` signs `release`
+  with the template's shared debug keystore (its own comment warns about
+  this). `eas build` patches real signing in remotely; this path can't, so
+  `artifacts/mobile/plugins/withAndroidReleaseSigning.js` — a local Expo
+  config plugin, new — does it during prebuild instead. It's a no-op unless
+  `ANDROID_RELEASE_STORE_FILE` is set (so `eas build` and `expo run:android`
+  are untouched), and when it is, it repoints `release` at a signingConfig
+  reading the keystore path and passwords from the environment at *Gradle*
+  build time, never at plugin-eval time — the secret values never pass
+  through committed code. Verified by feeding it the real SDK 54
+  `expo-template-bare-minimum` `build.gradle` and diffing the output: exactly
+  one `signingConfigs.release` block added, `buildTypes.release` repointed
+  from `signingConfigs.debug`, `buildTypes.debug` untouched, idempotent on a
+  second pass. **Not yet verified against a real `expo prebuild` run** — the
+  template could differ from what SDK 54.0.37 (this project's exact pin)
+  actually generates.
+
+  **This plugin broke OTA on `main` for about an hour, 2026-09-20.** #570
+  merged at 05:06 UTC; `mobile-update.yml`'s next two publishes (06:53, 06:54)
+  both failed with `Cannot find module '@expo/config-plugins'`. The plugin
+  imported `require('@expo/config-plugins')` — a *transitive* dependency of
+  `artifacts/mobile`, pulled in only through `expo` itself — and this
+  monorepo's pnpm install is strict/non-hoisted, so that bare specifier
+  cannot resolve from a file under `artifacts/mobile/plugins/`. Worse, the
+  "no-op unless `ANDROID_RELEASE_STORE_FILE` is set" guard did not save it:
+  the broken `require` sits at module-load time, which runs before that
+  check ever does, so it broke `eas update` too, unconditionally, even
+  though `eas update` never sets that variable. Fixed by importing from
+  `expo/config-plugins` instead — `expo`'s own documented re-export of the
+  same module, resolvable through `expo`'s dependency tree since `expo`
+  itself *is* a direct dependency here. **Confirms the "no-op unless an env
+  var is set" claim in this entry's own first paragraph was wrong** for the
+  hour between the merge and the fix — a runtime guard cannot save you from
+  a module that fails to load in the first place.
+- **The update channel.** `eas build` embeds the build profile's `channel`
+  into the compiled app through a mechanism that lives in EAS's own build
+  servers, not in anything `eas-cli` or `expo-updates` ships publicly.
+  `expo-updates` also reads the channel from a perfectly ordinary config
+  field, though — `updates.requestHeaders["expo-channel-name"]` in app.json
+  — so app.json now sets it to `"preview"` directly, matching every existing
+  APK and what `mobile-update.yml` publishes to. **Unverified end to end**:
+  nothing has confirmed a Gradle-built APK actually receives an OTA update.
+
+`versionCode` has no single committed source of truth — `eas.json`'s
+`appVersionSource: "remote"` means EAS's own account is the only counter, and
+app.json declares no `android.versionCode` at all (EAS's remote builds inject
+it at build time; a plain prebuild would otherwise default to `1`, which
+would collide with every existing install). The workflow reads the current
+value with the free, read-only `eas build:version:get --json`, uses
+`current + 1`, and best-effort reports the new value back with the same
+GraphQL mutation `eas build:version:set` calls interactively — that command
+has no non-interactive flag, so a hand-rolled `curl` against
+`api.expo.dev/graphql` with the exact mutation read out of `eas-cli`'s own
+source stands in for it. If that report step ever fails silently, a later
+EAS Build could reissue a `versionCode` this workflow already used, which
+would leave a device on this workflow's build unable to install that update.
+
+**Nothing here has run.** It needs four repository secrets — the project's
+*real* signing keystore, exported from EAS once and never regenerated, or
+Google Sign-In breaks again exactly as it did on 2026-09-07 — that nothing
+with API access is allowed to create (a repository secret needs an
+admin-scoped personal access token, which this session doesn't have and
+shouldn't be handed casually). `docs/android-gradle-build-secrets.md` has the
+exact one-time steps for whoever runs `eas-cli` as `nizar.62`. Until those
+four secrets exist, the workflow explains what's missing and exits cleanly.
+
+**The four secrets were set 2026-09-20**, exported from the `Keystore
+name6.09 (Default)` configuration (alias `9f4ba23f…`, cert SHA256
+`D1:32:E5:D6…`) — the one every build since `e9388ee1` uses, not the retired
+`Build Credentials ZGa1BhB5fD` (alias `96e2be27…`) also sitting on the
+account. Confirmed by matching both fingerprints byte-for-byte against the
+table in «The signing key changed on 2026-09-07» above before choosing.
+
+**First run, 2026-09-20 09:53 UTC, run `35503531801`: failed in 62 seconds**,
+before touching the project at all. `android-actions/setup-android@v3`
+defaults its `packages` input to `"tools platform-tools"`, and Google removed
+the standalone `tools` package from the SDK repository years ago —
+`sdkmanager tools` exits 1 with `Failed to find package 'tools'`, which the
+action treats as fatal. Nothing in this workflow has ever needed that
+package. Fixed by pinning `packages: platform-tools` explicitly rather than
+taking the action's default. **Still unverified against a real run** — this
+fixes the first failure, not necessarily the last one; `expo prebuild` and
+`gradlew assembleRelease` have not been reached yet.
+
+**Second run, 2026-09-20 10:05 UTC, run `35504077233`: reached
+`gradlew assembleRelease`, then hung for the full 90-minute job timeout.**
+`expo prebuild` and every step before it succeeded, confirming both fixes
+above. `:expo-updates:kspReleaseKotlin` — Kotlin Symbol Processing, run across
+this many native modules (react-native-svg, expo-dev-launcher, expo-updates,
+...) — failed at 10:17 with `java.lang.OutOfMemoryError: Metaspace`: the
+template's default `-XX:MaxMetaspaceSize=512m` in `android/gradle.properties`
+wasn't enough. Worse, the JVM never actually exited after that: from 10:19 to
+11:28 it kept throwing the identical `OutOfMemoryError` from an idle RMI
+thread roughly once a minute — a metaspace-exhausted JVM can fail to finish
+even its own error handling and shutdown — so the step never reported "BUILD
+FAILED"; it just sat there consuming the runner until the job's 90-minute
+timeout force-cancelled the whole run with no clear cause in the log summary
+(only visible by reading the raw job log). Two fixes, both in this PR:
+
+- **The memory limit itself.** `artifacts/mobile/plugins/withAndroidGradleMemory.js`
+  — a new local Expo config plugin — raises `org.gradle.jvmargs` to `-Xmx4096m
+  -XX:MaxMetaspaceSize=1536m` and adds `kotlin.daemon.jvmargs=-Xmx3072m
+  -XX:MaxMetaspaceSize=1024m` to `android/gradle.properties` during prebuild,
+  using `withGradleProperties` from `expo/config-plugins` (same import path as
+  `withAndroidReleaseSigning.js`, for the same pnpm-resolution reason). The
+  runner has 16GB; this always applies, including to `eas build` and `expo
+  run:android`, since more JVM headroom doesn't hurt those either. Verified
+  locally: `expo prebuild --platform android` now writes exactly these two
+  lines into the generated `gradle.properties`, no duplicate defaults left
+  behind.
+- **The hang itself.** `mobile-build-gradle.yml`'s `gradlew assembleRelease`
+  step now runs under `timeout 45m` — more than triple any run that's reached
+  this step so far. If the memory fix above isn't enough, or something else
+  wedges the JVM the same way, this turns a repeat into a named failure at 45
+  minutes instead of another silent hour-long hang eating the full job
+  timeout.
+
+**Still unverified against a real run** — this fixes the two failures seen so
+far, not necessarily the next one; the APK has not yet been produced.
+
+## Grades 3, 4 and 5: 11 books, +123 lessons, 2026-09-19
+
+**498 → 621 lessons illustrated, 2572 figures.** The catalogs landed between
+2026-09-16 and 2026-09-18 (#481-#521), which unblocked the entry below. 34
+books registered and probed, 11 ship.
+
+| Shipped | Kept | Lessons | Recovered from `_dropped/` |
+| --- | --- | --- | --- |
+| Grade 4 vocational S1 | 97 of 170 | **15 of 15** | 13 |
+| Grade 4 social S2 | 76 of 108 | 12 of 13 | 6 |
+| Grade 4 art | 72 of 175 | 29 of 30 | 16 |
+| Grade 5 science S2 | 44 of 90 | 10 of 11 | 8 |
+| Grade 4 science S2 | 42 of 95 | **10 of 10** | 6 |
+| Grade 3 social S2 | 41 of 100 | 7 of 9 | 2 |
+| Grade 4 science S1 | 40 of 96 | **9 of 9** | 2 |
+| Grade 5 science S1 | 32 of 78 | 9 of 11 | 3 |
+| Grade 3 science S1 | 29 of 67 | 6 of 7 | 2 |
+| Grade 3 science S2 | 28 of 54 | 5 of 6 | 2 |
+| Grade 4 social S1 | 21 of 55 | 12 of 15 | 0 |
+
+**The contents route is the ONLY way into these grades.** All 11 place by the
+contents table and **not one of the 34 places by its opener** — lower-grade
+books do not print a detectable «الدرس» opener at all. For grades 3-5 the
+contents parser is not a fallback.
+
+**The predicted blocker did not exist.** The entry below warned these books
+would need OCR because their contents spreads extract worse than their body
+prose. Measured: all 34 carry readable front matter, the worst at 2522 Arabic
+characters on pages 1-14, and **none needed OCR**. That warning is real for
+text ingestion and does not transfer to figure placement — the contents spread
+being the worst page in a book still leaves it far above the threshold for
+finding «الدرس» rows.
+
+**FIVE of the eleven need a UNIT OFFSET, and the entry gate cannot see any of
+them.** Every S2 book is shifted: the contents parser infers units from the
+lesson numbering resetting and counts them from 1, while the catalog continues
+the S1 numbering. Grade 3 science S2 +3, Grade 3 social S2 +3, Grade 4 social
+S2 +4, Grade 4 science S2 +5, Grade 5 science S2 +5. The gate compares unit
+COUNTS, so a uniform shift passes unnoticed; each was measured against its
+extracted index afterwards. Unjoined, every figure in five books would land on
+a semester-1 lesson. This class of error has now bitten seven times
+(g8-science-s2 +4, g7-social-s2 +6, and these five) — **always check the unit
+NUMBERS, never just the counts.**
+
+**60 figures were recovered from `_dropped/`**, and they are the strongest
+evidence yet for #469's change. They cluster exactly where edge density fails
+as a signal: 16 in Grade 4 art (colour-value studies, gradient strips, musical
+notation), 13 in Grade 4 vocational (small objects photographed on white), 6
+each in Grade 4 science S2 and social S2 (the Earth-orbit and solstice
+diagrams). Grade 4 social S1, which is photo-heavy, needed none — so the test
+is not uniformly wrong, it is wrong on sparse CONTENT. Without `_dropped/`
+those 60 would have been deleted silently and the books would have shipped
+looking complete.
+
+**A recovered crop must be RENAMED, not just moved.** `_dropped/` names its
+crops `pNNN_cN.png` — the candidate index, because the page's letter counter
+rewinds when a crop is dropped, so `pNNN.png` may later be claimed by another
+crop on the same page. `bookFigures.test.ts` asserts every filename matches
+`^p\d{3}[a-z]?\.png$`, so all 60 recoveries had to take the next FREE letter on
+their page, computed after the cull when the final set per page is known.
+Recovering one as-is fails that test — which is the test's job: the filename is
+how a figure is checked back against the book, and it only works if the whole
+corpus spells it one way.
+
+**Grade 4 art's source id carries `-s1`** (`g4-arts-s1-student-book`) because
+its catalog scope is `{grade-4, arts, semester 1}` and its lesson ids are
+therefore `kbl-g4-arts-s1-nccd-...`. `bookFigures.test.ts` derives the expected
+source id from the lesson id, so the bare `g4-arts-student-book` this was first
+registered as would have failed that check — which is the check's job. The
+`g8-arts-student-book` registration has the same shape and never reached the
+test because it ships no figures.
+
+**23 books do not ship**, and the split is worth keeping: 8 near misses (rows
+found, short of the catalog) and 15 closed with readable contents pages that
+simply do not use «الدرس» rows. Grade 3 English S1 and the Grade 4/5 digital
+literacy books have catalogs but no PDF in the library; Grade 5 PE, art,
+vocational and maths S2 have PDFs but no catalog.
+
 ## Grades 3, 4 and 5 figures are blocked on CATALOGS, 2026-09-16
+
+**RESOLVED 2026-09-19 — the catalogs landed and 11 books shipped; see the entry above. Kept for the prerequisite argument, which still holds for any grade whose catalog does not exist yet.**
 
 Asked for and not started, because the blocker is upstream of the figure
 pipeline: **there is no Grade 3/4/5 curriculum catalog.** No

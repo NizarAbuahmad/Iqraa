@@ -278,7 +278,13 @@ describe('scopePickerParams', () => {
   });
 
   it('returns null rather than a fabricated index for an unknown scope', () => {
-    assert.equal(scopePickerParams('grade-2', 'mathematics'), null);
+    // scopePickerParams only checks picker-list membership, not whether a
+    // book actually exists for the combination — so the "unknown grade"
+    // example must be a grade outside MVP_GRADE_IDS entirely. Grades 1-10
+    // are all in MVP_GRADE_IDS now (grade-2 joined 2026-09-19 with
+    // g2MathSem1.ts/g2MathSem2.ts, which is why this used to read
+    // grade-2/mathematics); grade-11 exists in GRADES but was never added.
+    assert.equal(scopePickerParams('grade-11', 'mathematics'), null);
     assert.equal(scopePickerParams('grade-10', 'no-such-subject'), null);
     assert.equal(scopePickerParams(null, 'mathematics'), null);
     assert.equal(scopePickerParams('grade-10', undefined), null);

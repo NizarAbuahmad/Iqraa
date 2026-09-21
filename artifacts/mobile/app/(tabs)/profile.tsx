@@ -249,40 +249,71 @@ export default function ProfileScreen() {
               onPress={() => router.push({ pathname: '/setup-subjects', params: { mode: 'edit' } } as any)}
               style={({ pressed }) => [styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 }]}
             >
-              {(user?.subjectIds?.length ?? 0) > 0 ? (
-                <View style={styles.tagSection}>
-                  <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('mySubjects')}</Text>
-                  <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    {user?.subjectIds?.map(id => {
-                      const subject = SUBJECTS.find(s => s.id === id);
-                      return (
-                        <View key={id} style={[styles.tag, { backgroundColor: colors.secondary }]}>
-                          <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
-                            {subject ? (isRTL ? subject.nameAr : subject.name) : id}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </View>
-              ) : null}
-              {(user?.gradeIds?.length ?? 0) > 0 ? (
-                <View style={styles.tagSection}>
-                  <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('myGrades')}</Text>
-                  <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    {user?.gradeIds?.map(id => {
-                      const grade = GRADES.find(g => g.id === id);
-                      return (
-                        <View key={id} style={[styles.tag, { backgroundColor: colors.muted }]}>
-                          <Text style={[styles.tagText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
-                            {grade ? (isRTL ? grade.nameAr : grade.name) : id}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </View>
-              ) : null}
+              {/* One row per grade, each with only the subjects taught in it —
+                  `teachingAssignments` is the pairing; the old flat
+                  gradeIds/subjectIds tags below only ever show for an account
+                  that hasn't opened /setup-subjects since that field shipped. */}
+              {(user?.teachingAssignments?.length ?? 0) > 0 ? (
+                user?.teachingAssignments?.map(a => {
+                  const grade = GRADES.find(g => g.id === a.gradeId);
+                  return (
+                    <View key={a.gradeId} style={styles.tagSection}>
+                      <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                        {grade ? (isRTL ? grade.nameAr : grade.name) : a.gradeId}
+                      </Text>
+                      <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                        {a.subjectIds.map(id => {
+                          const subject = SUBJECTS.find(s => s.id === id);
+                          return (
+                            <View key={id} style={[styles.tag, { backgroundColor: colors.secondary }]}>
+                              <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
+                                {subject ? (isRTL ? subject.nameAr : subject.name) : id}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  );
+                })
+              ) : (
+                <>
+                  {(user?.subjectIds?.length ?? 0) > 0 ? (
+                    <View style={styles.tagSection}>
+                      <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('mySubjects')}</Text>
+                      <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                        {user?.subjectIds?.map(id => {
+                          const subject = SUBJECTS.find(s => s.id === id);
+                          return (
+                            <View key={id} style={[styles.tag, { backgroundColor: colors.secondary }]}>
+                              <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
+                                {subject ? (isRTL ? subject.nameAr : subject.name) : id}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  ) : null}
+                  {(user?.gradeIds?.length ?? 0) > 0 ? (
+                    <View style={styles.tagSection}>
+                      <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('myGrades')}</Text>
+                      <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                        {user?.gradeIds?.map(id => {
+                          const grade = GRADES.find(g => g.id === id);
+                          return (
+                            <View key={id} style={[styles.tag, { backgroundColor: colors.muted }]}>
+                              <Text style={[styles.tagText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+                                {grade ? (isRTL ? grade.nameAr : grade.name) : id}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  ) : null}
+                </>
+              )}
               <View style={[styles.tagSection, { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 0 }]}>
                 <Ionicons name="create-outline" size={14} color={colors.primary} />
                 <Text style={[styles.tagLabel, { color: colors.primary, fontFamily: 'Cairo_500Medium', marginBottom: 0 }]}>
@@ -290,6 +321,18 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             </Pressable>
+            {/* A roster of real children, a pacing plan, and a weekly period
+                grid all belong beside what the teacher teaches, not filed
+                under الإعدادات next to FAQ and sign-out. Non-teachers keep
+                their own copy of myClasses in the settings list below — they
+                join classes, they just do not have a TEACHING section to put
+                it in. خطط التدريس moved here from settings for the same
+                reason شُعَبي did; جدول الحصص never lived anywhere else. */}
+            <View style={{ marginTop: 8, gap: 8 }}>
+              <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
+              <SettingRow icon="calendar-outline" label={t('myTeachingPlans')} onPress={() => router.push('/teaching-plans' as any)} isRTL={isRTL} colors={colors} />
+              <SettingRow icon="time-outline" label={t('myWeeklySchedule')} onPress={() => router.push('/schedule' as any)} isRTL={isRTL} colors={colors} />
+            </View>
           </>
         ) : null}
 
@@ -299,8 +342,14 @@ export default function ProfileScreen() {
         </Text>
         <View style={{ gap: 8 }}>
           <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
-          <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
-          <SettingRow icon="calendar-outline" label={t('myTeachingPlans')} onPress={() => router.push('/teaching-plans' as any)} isRTL={isRTL} colors={colors} />
+          {isTeacherRole(user?.role) ? null : (
+            <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
+          )}
+          {/* خطط التدريس was here unconditionally — a parent/student saw it
+              too, leading to a teacher-only screen the middleware would 403
+              (the exact door-to-nowhere pattern the iQra/AI-tools tabs are
+              already hidden from these roles to avoid). It now lives only in
+              the TEACHING block above, alongside جدول الحصص. */}
           {(user?.role === 'parent' || user?.role === 'student') && (
             <SettingRow
               icon="key-outline"

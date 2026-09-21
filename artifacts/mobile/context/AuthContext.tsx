@@ -8,6 +8,7 @@ import {
   setOnRefreshFailed,
   getApiBaseUrl,
 } from '@/services/apiClient';
+import { trackEvent } from '@/services/analytics';
 import { fetchWithTimeout } from '@/services/fetchWithTimeout';
 import { setActiveLessonContextUser } from '@/services/lessonContext';
 import { setActiveMediaUser } from '@/services/lessonMedia';
@@ -44,6 +45,12 @@ export function isStudentRole(role: UserRole | null | undefined): boolean {
   return role === 'student';
 }
 
+/** A grade this teacher teaches, paired with which subjects they teach in it. */
+export interface TeachingAssignment {
+  gradeId: string;
+  subjectIds: string[];
+}
+
 export interface User {
   id: string;
   firstName: string;
@@ -67,10 +74,20 @@ export interface User {
    * this teacher picked at signup, editable later from the profile screen.
    * Both empty is what `needsTeacherSetup` (routeGating.ts) reads to send a
    * brand-new teacher to `/setup-subjects`; absent/empty for every other
-   * role, where the field does not apply.
+   * role, where the field does not apply. Kept as the union across
+   * `teachingAssignments` — narrowing to a specific grade's own subjects
+   * needs that field instead, not these two.
    */
   gradeIds?: string[];
   subjectIds?: string[];
+  /**
+   * Which subjects this teacher teaches in each grade — the pairing
+   * `gradeIds`/`subjectIds` can't express on their own. Possibly empty even
+   * when those two are not, for an account set up before this field existed;
+   * treat that the same as "one assignment per grade, covering every picked
+   * subject" (see `setup-subjects.tsx`'s initial state).
+   */
+  teachingAssignments?: TeachingAssignment[];
   // Legacy optional fields kept for profile screen compatibility
   phone?: string;
   school?: string;
@@ -130,6 +147,7 @@ interface AuthContextType {
     lastName?: string;
     gradeIds?: string[];
     subjectIds?: string[];
+    teachingAssignments?: TeachingAssignment[];
   }) => Promise<void>;
   /** Throws with the server's own message (e.g. "too large", "not set up yet") on failure. */
   uploadAvatar: (dataUrl: string) => Promise<void>;
@@ -170,6 +188,7 @@ type ApiUser = {
   hasRosterLink?: boolean;
   gradeIds?: string[];
   subjectIds?: string[];
+  teachingAssignments?: TeachingAssignment[];
 };
 
 function toUser(apiUser: ApiUser): User {
@@ -187,6 +206,7 @@ function toUser(apiUser: ApiUser): User {
     hasRosterLink: apiUser.hasRosterLink,
     gradeIds: apiUser.gradeIds ?? [],
     subjectIds: apiUser.subjectIds ?? [],
+    teachingAssignments: apiUser.teachingAssignments ?? [],
   };
 }
 
@@ -315,7 +335,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     credential: string,
     signup?: Pick<RegisterData, 'role'>,
   ) => {
-    const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
+    // `isNewAccount` is optional on purpose: an app build can outlive the API
+    // revision that answers it (and predates it during a rollout). Absent is
+    // read as "not a signup", so the count under-reports for a few minutes
+    // rather than inventing signups for every returning teacher.
+    const data = await apiJson<{
+      accessToken: string;
+      refreshToken: string;
+      user: ApiUser;
+      isNewAccount?: boolean;
+    }>(
       '/auth/google',
       {
         method: 'POST',
@@ -328,6 +357,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     await storeTokens(data.accessToken, data.refreshToken);
     setUser(toUser(data.user));
+    if (data.isNewAccount) {
+      trackEvent('signup_completed', { method: 'google', role: data.user.role });
+    }
   }, []);
 
   const register = useCallback(async (payload: RegisterData) => {
@@ -354,6 +386,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     );
 
+    trackEvent('signup_started', { method: 'email', role: payload.role ?? 'unspecified' });
     return { email: data.email };
   }, []);
 
@@ -368,6 +401,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     await storeTokens(data.accessToken, data.refreshToken);
     setUser(toUser(data.user));
+    // The account only becomes usable here — /auth/register returns no session.
+    // Pairing this with signup_started is what makes the verification drop-off
+    // visible at all.
+    trackEvent('signup_completed', { method: 'email', role: data.user.role });
   }, []);
 
   const resendVerification = useCallback(async (email: string) => {
@@ -445,6 +482,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     lastName?: string;
     gradeIds?: string[];
     subjectIds?: string[];
+    teachingAssignments?: TeachingAssignment[];
   }) => {
     const updated = await apiJson<ApiUser>('/auth/users/profile', {
       method: 'PATCH',

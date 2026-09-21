@@ -137,7 +137,7 @@ describe('subject isolation', () => {
       // Grade 5 joined 2026-09-16, same shape as Grade 6.
       // Grade 1 joined 2026-09-18 — its Semester 1 book's unnumbered
       // preparatory unit is u0, so the tag can be `g1-math-s1-u0`.
-      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?|g8-math-s[12](-u\d+)?|g7-math-s[12](-u\d+)?|g6-math-s[12](-u\d+)?|g5-math-s[12](-u\d+)?|g4-math-s[12](-u\d+)?|g3-math-s[12](-u\d+)?|g1-math-s[12](-u\d+)?)$/,
+      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?|g8-math-s[12](-u\d+)?|g7-math-s[12](-u\d+)?|g6-math-s[12](-u\d+)?|g5-math-s[12](-u\d+)?|g4-math-s[12](-u\d+)?|g3-math-s[12](-u\d+)?|g2-math-s[12](-u\d+)?|g1-math-s[12](-u\d+)?)$/,
       // Chemistry is `unitLevel: true` in curriculumIds.ts, so a lesson emits
       // BOTH the semester scope and the narrower unit scope — `g9-chem-s1` and
       // `g9-chem-s1-u1`. The `(-u\d+)?` is doing real work here; a Grade 9
@@ -157,17 +157,20 @@ describe('subject isolation', () => {
       // Grade 6 joined 2026-09-15. Collapsed to g\d+ — no bare form exists,
       // since Grade 9 and up split this into geography/history/civic.
       social: /^g\d+-social-s[12]$/,
-      // Vocational Education: Grade 7/8 only, a different seven tracks per
-      // book — no grade-9/10 form exists.
-      // Grade 6 joined 2026-09-15, once SUBJECTS.grades was extended for it.
+      // Vocational Education: a different set of vocational tracks per book,
+      // several per grade — no bare or unprefixed form exists.
+      // Grade 6 joined 2026-09-15, Grade 9 joined 2026-09-20, once
+      // SUBJECTS.grades was extended for each.
       'vocational-education': /^g\d+-voc-s[12]$/,
-      // Art, Music and Drama Education: Grade 7/8 only, one book per grade
-      // with no semester split — CurriculumIdScope still requires a
-      // semester number for id-namespacing, hardcoded to 1, so only the
-      // `-s1` form ever appears.
+      // Art, Music and Drama Education: one book per grade with no semester
+      // split — CurriculumIdScope still requires a semester number for
+      // id-namespacing, hardcoded to 1, so only the `-s1` form ever appears.
       // Grade 6 joined 2026-09-15. Still s1-only for every grade: this book
       // is not split by semester at any of them.
-      'creative-arts': /^g\d+-arts-s1$/,
+      // Grade 10 joined 2026-09-20 — grade-10 is `IMPLICIT_GRADE_ID` in
+      // curriculumIds.ts, so `bankTagsForParsedUnit` emits the bare `arts-s1`
+      // form for it with no `g10-` prefix, same as arabic/islamic below.
+      'creative-arts': /^(arts-s1|g\d+-arts-s1)$/,
       // Grade 10 Arabic predates this map and was silently unchecked — no
       // entry meant `continue`, not a pass. Added on 2026-09-08 alongside the
       // Grade 9 Arabic S1 book, so both grades are covered from here on.
@@ -213,7 +216,7 @@ describe('subject isolation', () => {
       // `science-s[12]` form to allow. Grade 7 joined 2026-09-12, Grade 6 on
       // 2026-09-13, Grade 5 on 2026-09-16, Grade 4 and Grade 3 both on
       // 2026-09-17, Grade 1 on 2026-09-18.
-      science: /^(g8-science-s[12]|g7-science-s[12]|g6-science-s[12]|g5-science-s[12]|g4-science-s[12]|g3-science-s[12]|g1-science-s[12])$/,
+      science: /^(g8-science-s[12]|g7-science-s[12]|g6-science-s[12]|g5-science-s[12]|g4-science-s[12]|g3-science-s[12]|g2-science-s[12]|g1-science-s[12])$/,
     };
     for (const lesson of KB_LESSONS) {
       const subjectId = getBookForLesson(lesson)?.subjectId;

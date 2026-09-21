@@ -11,9 +11,29 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { WebSidebar } from '@/components/ui/WebSidebar';
+import { CommandPalette } from '@/components/ui/CommandPalette';
 import { GlobalLessonBar } from '@/components/ui/GlobalLessonBar';
 import { TranslationKey } from '@/services/i18n';
 import { HomeLessonPick, loadLessonPick, subscribeLessonPick } from '@/services/lessonContext';
+import { DEFAULT_ACTIVE_LESSON_ID } from '@/services/lessonCopilot';
+import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
+
+/**
+ * Ionicons name per tab, for surfaces that need the name rather than the
+ * rendered icon (the command palette). Kept next to `buildTabEntries` so a new
+ * tab is one edit away from being addressable by ⌘K.
+ */
+function iconNameFor(name: string): string {
+  switch (name) {
+    case 'index': return 'grid-outline';
+    case 'iqra': return 'chatbubble-ellipses-outline';
+    case 'curriculum': return 'library-outline';
+    case 'ai-tools': return 'sparkles-outline';
+    case 'notifications': return 'chatbubble-outline';
+    case 'profile': return 'person-circle-outline';
+    default: return 'ellipse-outline';
+  }
+}
 
 /** Hides a tab without unregistering its route, so a deep link to it still resolves. */
 const HIDDEN = { tabBarButton: () => null, tabBarItemStyle: { display: 'none' as const } };
@@ -32,8 +52,25 @@ export type TabEntry = {
   icon: TabIcon;
 };
 
-function buildTabEntries(isTeacher: boolean): TabEntry[] {
+function buildTabEntries(isTeacher: boolean, isDesktop: boolean): TabEntry[] {
   return [
+    {
+      /*
+        The desktop landing: the lesson and what is still missing from it.
+        Desktop only, and only for a teacher — a phone opens straight into the
+        chat (see index.tsx), where a workspace this wide has nowhere to go,
+        and a sixth item would crush the tab bar.
+      */
+      name: 'index',
+      titleKey: 'tabToday',
+      visible: isTeacher && isDesktop,
+      icon: ({ color, focused, isIOS }) =>
+        isIOS ? (
+          <SymbolView name={focused ? 'square.grid.2x2.fill' : 'square.grid.2x2'} tintColor={color} size={22} />
+        ) : (
+          <Ionicons name={focused ? 'grid' : 'grid-outline'} size={22} color={color} />
+        ),
+    },
     {
       name: 'iqra',
       titleKey: 'tabIqra',
@@ -135,7 +172,29 @@ function ClassicTabLayout() {
     return subscribeLessonPick(setLessonPick);
   }, [isTeacher]);
 
-  const tabEntries = buildTabEntries(isTeacher);
+  /*
+    The lesson ⌘K acts on: the teacher's pick, or the one the chat and the
+    workspace both fall back to when there is none. Resolved here rather than
+    in the palette so all three surfaces name the same lesson.
+  */
+  const fallbackLesson = resolveLessonPrepContext(DEFAULT_ACTIVE_LESSON_ID, lang as 'ar' | 'en');
+  const activeLesson = lessonPick?.topic?.trim()
+    ? {
+        topic: lessonPick.topic.trim(),
+        lessonId: lessonPick.lessonId ?? null,
+        gradeId: lessonPick.gradeId,
+        subjectId: lessonPick.subjectId,
+      }
+    : fallbackLesson
+      ? {
+          topic: fallbackLesson.topic,
+          lessonId: fallbackLesson.lessonId,
+          gradeId: fallbackLesson.gradeId,
+          subjectId: fallbackLesson.subjectId,
+        }
+      : null;
+
+  const tabEntries = buildTabEntries(isTeacher, isDesktop);
 
   const tabs = (
     <Tabs
@@ -171,16 +230,13 @@ function ClassicTabLayout() {
       }}
     >
       {/*
-        ── Landing (redirects to iQra) ──────────────────────
-        "index" is still the route Expo Router lands on, but it now forwards to
-        the chat rather than rendering a home screen. Home and chat had grown
-        into the same screen — both carried the current lesson, the same tool
-        chips and a text box — except home's box was a keyword matcher that
-        silently fell back to generating a lesson plan for anything it did not
-        recognise. Chat's box is the real one, so chat is the landing.
+        ── Landing ──────────────────────────────────────────
+        "index" is the route Expo Router lands on. On desktop web it renders
+        the lesson workspace and appears in the rail as «اليوم»; everywhere
+        else it forwards to the chat (see index.tsx) and stays out of the tab
+        bar — which is why it is an ordinary entry in `tabEntries` now, with
+        `visible` doing the deciding, rather than a hard-coded hidden screen.
       */}
-      <Tabs.Screen name="index" options={HIDDEN} />
-
       {tabEntries.map((entry) => (
         <Tabs.Screen
           key={entry.name}
@@ -200,11 +256,22 @@ function ClassicTabLayout() {
 
   // Not shown to a parent/student: they have no lesson context to switch, and
   // the two tabs it would drive them toward (iQra, AI Tools) are hidden for
+  // them anyway.
+  const lessonProps = {
+    pick: lessonPick,
+    lang: lang as 'ar' | 'en',
+    isRTL,
+    colors,
+    t,
+    onPress: () => router.push({ pathname: '/iqra', params: { openLessonPicker: String(Date.now()) } }),
+  };
   // them anyway. Not shown on iQra itself either — CurrentLessonCard already
   // does this job there, full-width and with the Start Class action; a second
   // copy stacked above it would just be the same line twice.
-  const bar = isTeacher && !pathname.startsWith('/iqra') ? (
+  const onWorkspaceHome = isDesktop && (pathname === '/' || pathname === '/index');
+  const bar = isTeacher && !pathname.startsWith('/iqra') && !onWorkspaceHome ? (
     <GlobalLessonBar
+      layout="bar"
       pick={lessonPick}
       lang={lang as 'ar' | 'en'}
       isRTL={isRTL}
@@ -216,6 +283,12 @@ function ClassicTabLayout() {
   ) : null;
 
   if (!isDesktop) {
+    // Not on iQra itself — CurrentLessonCard already does this job there,
+    // full-width and with the Start Class action; a second copy stacked above
+    // it would just be the same line twice.
+    const bar = isTeacher && !pathname.startsWith('/iqra') ? (
+      <GlobalLessonBar layout="bar" topInset={insets.top} {...lessonProps} />
+    ) : null;
     return (
       <View style={{ flex: 1 }}>
         {bar}
@@ -224,13 +297,42 @@ function ClassicTabLayout() {
     );
   }
 
+  // In the sidebar the card stays on iQra too: a nav rail whose top block
+  // vanishes on one tab reads as a bug, and it is beside the thread there,
+  // not stacked over CurrentLessonCard.
   return (
     <View style={{ flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
-      <WebSidebar entries={tabEntries} isIOS={isIOS} />
+      <WebSidebar
+        entries={tabEntries}
+        isIOS={isIOS}
+        lessonCard={isTeacher ? <GlobalLessonBar layout="card" {...lessonProps} /> : null}
+      />
       <View style={{ flex: 1 }}>
         {bar}
         <View style={{ flex: 1 }}>{tabs}</View>
       </View>
+      <CommandPalette
+        enabled={isDesktop}
+        /*
+          The same lesson the chat card and the workspace show when a teacher
+          has never opened the picker — otherwise ⌘K is the one surface that
+          claims there is no lesson while the two screens beside it name one.
+        */
+        lessonTopic={activeLesson?.topic ?? null}
+        lessonParams={
+          activeLesson
+            ? {
+                topic: activeLesson.topic,
+                ...(lessonPickerParams(activeLesson.lessonId, lang as 'ar' | 'en') ??
+                  scopePickerParams(activeLesson.gradeId, activeLesson.subjectId) ??
+                  {}),
+              }
+            : undefined
+        }
+        nav={tabEntries
+          .filter(e => e.visible)
+          .map(e => ({ name: e.name, label: t(e.titleKey), icon: iconNameFor(e.name) }))}
+      />
     </View>
   );
 }
