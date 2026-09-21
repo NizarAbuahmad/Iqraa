@@ -2,19 +2,26 @@
  * A teacher's weekly period timetable — "جدول الحصص": which class meets on
  * which day at which period, and what time each period actually is.
  *
+ * Laid out as an actual timetable: day rows × period columns, the day column
+ * pinned while the periods scroll sideways on a phone. Periods are set up by
+ * the wizard (components/schedule/PeriodsWizard) and edited by tapping a
+ * column heading; a cell's class is picked from a dropdown anchored to the
+ * cell (SlotPopover) and saved on pick.
+ *
  * Distinct from /teaching-plans: a plan is *what curriculum lesson* is
  * covered on a date, for one class; this is *which class* a teacher is in
- * front of at a recurring day+period, every week, regardless of which lesson
- * that class happens to be on. See services/schedule.ts.
+ * front of at a recurring day+period, every week. See services/schedule.ts.
  */
-import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useViewportWidth } from '@/hooks/useViewportWidth';
+import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import {
   ScheduleError,
   deleteSchedulePeriod,
@@ -25,226 +32,49 @@ import {
   type ScheduleSlot,
 } from '@/services/schedule';
 import { listClasses, type ClassGroup } from '@/services/roster';
+import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { confirm } from '@/services/confirm';
 import type { TranslationKey } from '@/services/i18n';
+import { MAX_PERIOD_COUNT, endTime, formatRange, type GeneratedPeriod } from '@/services/schedulePeriods';
+import type { Anchor } from '@/components/schedule/Popover';
+import { SlotPopover } from '@/components/schedule/SlotPopover';
+import { PeriodPopover } from '@/components/schedule/PeriodPopover';
+import { PeriodsWizard } from '@/components/schedule/PeriodsWizard';
 
 const ACCENT = '#1B6B62';
-const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
-
-/** Same weekday keys teaching-plans/index.tsx uses — a fixed enumeration, not screen-specific. */
+/** Same weekday keys teaching-plans/index.tsx and calendar/index.tsx use. */
 const WEEKDAY_KEYS = [
   'planWeekdaySun', 'planWeekdayMon', 'planWeekdayTue', 'planWeekdayWed',
   'planWeekdayThu', 'planWeekdayFri', 'planWeekdaySat',
 ] as const satisfies readonly TranslationKey[];
 
-type T = (key: TranslationKey, ...args: any[]) => string;
+const ROW_H = 60;
+const HEAD_H = 52;
 
-/** One period's time+duration editor, inline. The always-present blank row
- *  at the bottom (`isNew`) is how a period gets added — no separate "add"
- *  flow, just fill it in and confirm. */
-function PeriodRow({ period, isNew, onSave, onDelete, isRTL, colors, t }: {
-  period: SchedulePeriod | { periodNumber: number; startTime: string; durationMinutes: number };
-  isNew?: boolean;
-  onSave: (periodNumber: number, input: { startTime: string; durationMinutes: number }) => void;
-  onDelete: (periodNumber: number) => void;
-  isRTL: boolean;
-  colors: ReturnType<typeof useColors>;
-  t: T;
-}) {
-  const [time, setTime] = useState(period.startTime);
-  const [duration, setDuration] = useState(String(period.durationMinutes));
-
-  const validTime = TIME_RE.test(time);
-  const durationNum = Number(duration);
-  const validDuration = /^\d{1,3}$/.test(duration) && durationNum >= 1 && durationNum <= 480;
-  const dirty = time !== period.startTime || duration !== String(period.durationMinutes);
-  const canSave = validTime && validDuration && (isNew || dirty);
-
-  return (
-    <View style={{ gap: 6, paddingBottom: 10, borderBottomWidth: isNew ? 0 : 1, borderBottomColor: colors.border }}>
-      <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
-        {t('schedulePeriodNumber', period.periodNumber)}
-      </Text>
-      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'center' }}>
-        <TextInput
-          value={time}
-          onChangeText={setTime}
-          placeholder="HH:MM"
-          placeholderTextColor={colors.mutedForeground}
-          maxLength={5}
-          style={{
-            width: 76, paddingVertical: 7, paddingHorizontal: 8, borderRadius: 8, borderWidth: 1.5,
-            borderColor: colors.border, color: colors.foreground, fontFamily: 'Almarai_400Regular',
-            fontSize: 13, textAlign: 'center',
-          }}
-        />
-        <TextInput
-          value={duration}
-          onChangeText={v => (v === '' || /^\d{1,3}$/.test(v)) && setDuration(v)}
-          placeholder={t('scheduleDuration')}
-          placeholderTextColor={colors.mutedForeground}
-          keyboardType="number-pad"
-          maxLength={3}
-          style={{
-            width: 60, paddingVertical: 7, paddingHorizontal: 8, borderRadius: 8, borderWidth: 1.5,
-            borderColor: colors.border, color: colors.foreground, fontFamily: 'Almarai_400Regular',
-            fontSize: 13, textAlign: 'center',
-          }}
-        />
-        <Pressable
-          onPress={() => onSave(period.periodNumber, { startTime: time, durationMinutes: durationNum })}
-          disabled={!canSave}
-          style={{ opacity: canSave ? 1 : 0.35, padding: 8, borderRadius: 8, backgroundColor: ACCENT }}
-        >
-          <Ionicons name="checkmark" size={16} color="#fff" />
-        </Pressable>
-        {!isNew ? (
-          <Pressable onPress={() => onDelete(period.periodNumber)} hitSlop={8}>
-            <Ionicons name="trash-outline" size={16} color={colors.mutedForeground} />
-          </Pressable>
-        ) : null}
-      </View>
-    </View>
-  );
-}
-
-function PeriodsEditorModal({ visible, periods, onClose, onSave, onDelete, isRTL, colors, t }: {
-  visible: boolean;
-  periods: SchedulePeriod[];
-  onClose: () => void;
-  onSave: (periodNumber: number, input: { startTime: string; durationMinutes: number }) => void;
-  onDelete: (periodNumber: number) => void;
-  isRTL: boolean;
-  colors: ReturnType<typeof useColors>;
-  t: T;
-}) {
-  const align = isRTL ? 'right' : 'left';
-  const nextNumber = (periods.at(-1)?.periodNumber ?? 0) + 1;
-
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.modalBackdrop}>
-        <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
-            {t('schedulePeriodsTitle')}
-          </Text>
-          <ScrollView style={{ maxHeight: 380 }} contentContainerStyle={{ gap: 10 }}>
-            {periods.map(period => (
-              <PeriodRow key={period.periodNumber} period={period} onSave={onSave} onDelete={onDelete} isRTL={isRTL} colors={colors} t={t} />
-            ))}
-            {/* Keyed by nextNumber, which changes the moment a save grows the
-                list — React unmounts this instance and mounts a fresh one for
-                the new next number, which is what resets its draft text
-                without any explicit reset code. */}
-            <PeriodRow
-              key={`new-${nextNumber}`}
-              period={{ periodNumber: nextNumber, startTime: '', durationMinutes: 45 }}
-              isNew
-              onSave={onSave}
-              onDelete={onDelete}
-              isRTL={isRTL}
-              colors={colors}
-              t={t}
-            />
-          </ScrollView>
-          <View style={styles.modalActions}>
-            <Pressable onPress={onClose} style={styles.modalBtn}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>{t('cancel')}</Text>
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-function SlotEditorModal({ dayLabel, periodNumber, classes, current, onClose, onSave, isRTL, lang, colors, t }: {
-  dayLabel: string;
-  periodNumber: number;
-  classes: ClassGroup[];
-  current: ScheduleSlot | null;
-  onClose: () => void;
-  onSave: (patch: { classGroupId: string | null; notes: string }) => void;
-  isRTL: boolean;
-  lang: string;
-  colors: ReturnType<typeof useColors>;
-  t: T;
-}) {
-  const [selected, setSelected] = useState<string | null>(current?.classGroupId ?? null);
-  const [notes, setNotes] = useState(current?.notes ?? '');
-  const align = isRTL ? 'right' : 'left';
-
-  return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.modalBackdrop}>
-        <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
-            {t('scheduleSlotTitle', dayLabel, periodNumber)}
-          </Text>
-          <ScrollView style={{ maxHeight: 320 }} contentContainerStyle={{ gap: 12 }}>
-            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
-              {[{ id: null as string | null, name: t('planNoClass'), nameAr: t('planNoClass') }, ...classes].map(c => {
-                const active = selected === c.id;
-                const label = lang === 'ar' && c.nameAr ? c.nameAr : c.name;
-                return (
-                  <Pressable
-                    key={c.id ?? '__none'}
-                    onPress={() => setSelected(c.id)}
-                    style={{
-                      paddingHorizontal: 14, paddingVertical: 7, borderRadius: 18, borderWidth: 1.5,
-                      borderColor: active ? ACCENT : colors.border,
-                      backgroundColor: active ? ACCENT + '16' : colors.card,
-                    }}
-                  >
-                    <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular', fontSize: 13 }}>
-                      {label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <TextInput
-              value={notes}
-              onChangeText={setNotes}
-              placeholder={t('scheduleSlotNotesPlaceholder')}
-              placeholderTextColor={colors.mutedForeground}
-              multiline
-              style={{
-                borderWidth: 1, borderRadius: 10, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12,
-                fontSize: 14, minHeight: 64, textAlignVertical: 'top', color: colors.foreground,
-                fontFamily: 'Almarai_400Regular', textAlign: align,
-              }}
-            />
-          </ScrollView>
-          <View style={styles.modalActions}>
-            <Pressable onPress={onClose} style={styles.modalBtn}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>{t('cancel')}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => onSave({ classGroupId: selected, notes })}
-              style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT }]}
-            >
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>{t('save')}</Text>
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-}
+type Measurable = { measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => void };
 
 export default function ScheduleScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  const viewportW = useViewportWidth();
+  const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
+  const COL_W = isDesktop ? 124 : 104;
+  const DAY_W = isDesktop ? 96 : 72;
 
   const [periods, setPeriods] = useState<SchedulePeriod[]>([]);
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [classes, setClasses] = useState<ClassGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showPeriodsEditor, setShowPeriodsEditor] = useState(false);
-  const [editingCell, setEditingCell] = useState<{ dayOfWeek: number; periodNumber: number } | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [slotEdit, setSlotEdit] = useState<{ dayOfWeek: number; periodNumber: number; anchor: Anchor } | null>(null);
+  const [periodEdit, setPeriodEdit] = useState<{
+    periodNumber: number; isNew: boolean; initialStart: string; initialDuration: number; anchor: Anchor;
+  } | null>(null);
+  const cellRefs = useRef(new Map<string, Measurable | null>());
+  const scrollRef = useRef<ScrollView>(null);
 
   const load = useCallback(async () => {
     setError('');
@@ -261,12 +91,12 @@ export default function ScheduleScreen() {
     } finally {
       setLoading(false);
     }
-    // Best-effort, same as teaching-plans: class names are a convenience for
-    // labelling filled slots, not the point of this screen.
+    // Best-effort, same as the other schedule screens: class names and
+    // colours label filled cells, they are not what the grid depends on.
     try {
       setClasses(await listClasses());
     } catch {
-      /* slots still work by id; the label just won't resolve */
+      /* cells still work by id; the label just won't resolve */
     }
   }, [t]);
 
@@ -279,23 +109,64 @@ export default function ScheduleScreen() {
   const sortedPeriods = [...periods].sort((a, b) => a.periodNumber - b.periodNumber);
   const slotAt = (dayOfWeek: number, periodNumber: number) =>
     slots.find(s => s.dayOfWeek === dayOfWeek && s.periodNumber === periodNumber);
-  const classNameFor = (id: string | null): string => {
-    if (!id) return '';
-    const found = classes.find(c => c.id === id);
-    return found ? (lang === 'ar' && found.nameAr ? found.nameAr : found.name) : '';
+  const classById = (id: string | null | undefined) => (id ? classes.find(c => c.id === id) : undefined);
+
+  // Class labelling: a cell is coloured by its class's subject — the same
+  // `color` the curriculum browser uses for that subject — so one class
+  // reads as one colour across the week.
+  const nameOf = (c: ClassGroup) => (lang === 'ar' && c.nameAr ? c.nameAr : c.name);
+  const subjectOf = (c: ClassGroup) => SUBJECTS.find(s => s.id === c.subjectId);
+  const gradeOf = (c: ClassGroup) => GRADES.find(g => g.id === c.gradeId);
+  const colorOf = (c: ClassGroup) => subjectOf(c)?.color ?? ACCENT;
+  const subjectName = (c: ClassGroup) => {
+    const s = subjectOf(c);
+    return s ? (lang === 'ar' ? s.nameAr : s.name) : '';
+  };
+  const captionOf = (c: ClassGroup) => {
+    const g = gradeOf(c);
+    return [g ? (lang === 'ar' ? g.nameAr : g.name) : '', subjectName(c)].filter(Boolean).join(' · ');
   };
 
-  const onSavePeriod = async (periodNumber: number, input: { startTime: string; durationMinutes: number }) => {
+  const fail = (msg: string) => {
+    setError(msg);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+  };
+
+  /** Save one cell. Optimistic: the grid updates on pick; a failed save puts the old value back and says so. */
+  const saveSlot = async (dayOfWeek: number, periodNumber: number, patch: { classGroupId?: string | null; notes?: string }) => {
+    const before = slots;
+    const existing = slotAt(dayOfWeek, periodNumber);
+    const optimistic: ScheduleSlot = {
+      id: existing?.id ?? '',
+      dayOfWeek,
+      periodNumber,
+      classGroupId: patch.classGroupId !== undefined ? patch.classGroupId : existing?.classGroupId ?? null,
+      notes: patch.notes !== undefined ? patch.notes : existing?.notes ?? '',
+    };
+    setSlots(prev => [...prev.filter(s => !(s.dayOfWeek === dayOfWeek && s.periodNumber === periodNumber)), optimistic]);
+    setError('');
+    try {
+      const saved = await setScheduleSlot(dayOfWeek, periodNumber, patch);
+      setSlots(prev => [...prev.filter(s => !(s.dayOfWeek === dayOfWeek && s.periodNumber === periodNumber)), saved]);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      setSlots(before);
+      fail(t('scheduleSaveFailed'));
+    }
+  };
+
+  const savePeriod = async (periodNumber: number, input: { startTime: string; durationMinutes: number }) => {
+    setError('');
     try {
       const saved = await setSchedulePeriod(periodNumber, input);
       setPeriods(prev => [...prev.filter(p => p.periodNumber !== periodNumber), saved]);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
-      setError(t('scheduleSaveFailed'));
+      fail(t('scheduleSaveFailed'));
     }
   };
 
-  const onDeletePeriod = async (periodNumber: number) => {
+  const removePeriod = async (periodNumber: number) => {
     const ok = await confirm({
       title: t('remove'),
       message: t('scheduleDeletePeriodConfirm', periodNumber),
@@ -304,37 +175,101 @@ export default function ScheduleScreen() {
       destructive: true,
     });
     if (!ok) return;
+    setError('');
     try {
       await deleteSchedulePeriod(periodNumber);
       setPeriods(prev => prev.filter(p => p.periodNumber !== periodNumber));
     } catch {
-      setError(t('scheduleSaveFailed'));
+      fail(t('scheduleSaveFailed'));
     }
   };
 
-  const onSaveSlot = async (dayOfWeek: number, periodNumber: number, patch: { classGroupId: string | null; notes: string }) => {
+  /**
+   * The wizard's output replaces the whole set: upsert each generated period
+   * (the API is per-period; ≤ 12 calls, idempotent), then drop any period
+   * numbered past the new count. Slots keep their period numbers — a class
+   * in الحصة 3 is still in الحصة 3, just at the new time.
+   */
+  const applyWizard = async (generated: GeneratedPeriod[]) => {
+    if (generated.length === 0) return;
+    if (sortedPeriods.length > 0) {
+      const ok = await confirm({
+        title: t('scheduleApply'),
+        message: t('scheduleReplaceConfirm'),
+        confirmLabel: t('scheduleApply'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    setApplying(true);
+    setError('');
     try {
-      const saved = await setScheduleSlot(dayOfWeek, periodNumber, patch);
-      setSlots(prev => [...prev.filter(s => !(s.dayOfWeek === dayOfWeek && s.periodNumber === periodNumber)), saved]);
+      const saved: SchedulePeriod[] = [];
+      for (const p of generated) {
+        saved.push(await setSchedulePeriod(p.periodNumber, { startTime: p.startTime, durationMinutes: p.durationMinutes }));
+      }
+      for (const p of sortedPeriods.filter(x => x.periodNumber > generated.length)) {
+        await deleteSchedulePeriod(p.periodNumber);
+      }
+      setPeriods(saved);
+      setWizardOpen(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setEditingCell(null);
     } catch {
-      setError(t('scheduleSaveFailed'));
+      fail(t('scheduleSaveFailed'));
+      void load(); // whatever partially landed is the truth now; show it
+    } finally {
+      setApplying(false);
     }
   };
 
-  const align = isRTL ? 'right' : 'left';
+  const measure = (key: string, cb: (anchor: Anchor) => void) => {
+    const el = cellRefs.current.get(key);
+    if (!el) return;
+    el.measureInWindow((x, y, width, height) => cb({ x, y, width, height }));
+  };
+  const openSlot = (dayOfWeek: number, periodNumber: number) =>
+    measure(`s:${dayOfWeek}:${periodNumber}`, anchor => setSlotEdit({ dayOfWeek, periodNumber, anchor }));
+  const openPeriod = (period: SchedulePeriod) =>
+    measure(`p:${period.periodNumber}`, anchor =>
+      setPeriodEdit({ periodNumber: period.periodNumber, isNew: false, initialStart: period.startTime, initialDuration: period.durationMinutes, anchor }),
+    );
+  const openNewPeriod = () => {
+    const last = sortedPeriods.at(-1);
+    measure('p:new', anchor =>
+      setPeriodEdit({
+        periodNumber: (last?.periodNumber ?? 0) + 1,
+        isNew: true,
+        initialStart: last ? endTime(last) || last.startTime : '08:00',
+        initialDuration: last?.durationMinutes ?? 45,
+        anchor,
+      }),
+    );
+  };
+  const setRef = (key: string) => (el: Measurable | null) => {
+    cellRefs.current.set(key, el);
+  };
+
+  const align = isRTL ? 'right' as const : 'left' as const;
+  const rowDir = isRTL ? 'row-reverse' as const : 'row' as const;
+  const canAddPeriod = sortedPeriods.length < MAX_PERIOD_COUNT;
+
+  const dayLabel = (key: TranslationKey) => (
+    <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: align }}>{t(key)}</Text>
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
-        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ flexDirection: rowDir, justifyContent: 'space-between', alignItems: 'center' }}>
           <Pressable onPress={() => router.back()} hitSlop={12}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
-          <Pressable onPress={() => setShowPeriodsEditor(true)} hitSlop={12}>
-            <Ionicons name="settings-outline" size={22} color="#fff" />
-          </Pressable>
+          {sortedPeriods.length > 0 ? (
+            <Pressable onPress={() => setWizardOpen(true)} hitSlop={12} accessibilityLabel={t('schedulePeriodsTitle')}>
+              <Ionicons name="settings-outline" size={22} color="#fff" />
+            </Pressable>
+          ) : null}
         </View>
         <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
           {t('myWeeklySchedule')}
@@ -346,7 +281,7 @@ export default function ScheduleScreen() {
           <ActivityIndicator color={ACCENT} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60, gap: 18 }}>
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60, gap: 16 }}>
           {error ? (
             <View style={[styles.errorBox, { borderColor: colors.destructive }]}>
               <Ionicons name="cloud-offline-outline" size={18} color={colors.destructive} />
@@ -357,93 +292,177 @@ export default function ScheduleScreen() {
           ) : null}
 
           {sortedPeriods.length === 0 ? (
-            <View style={styles.empty}>
-              <Ionicons name="time-outline" size={40} color={colors.mutedForeground} />
-              <Text
-                style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center', lineHeight: 20, maxWidth: 280 }}
-              >
-                {t('scheduleEmptyPeriods')}
+            // First run: the wizard is the screen, not a button to a modal.
+            <View style={[styles.wizardCard, { backgroundColor: colors.card, borderColor: colors.border, alignSelf: 'center' }]}>
+              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, textAlign: align }}>
+                {t('schedulePeriodsTitle')}
               </Text>
-              <Pressable
-                onPress={() => setShowPeriodsEditor(true)}
-                style={{ marginTop: 4, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 18, backgroundColor: ACCENT }}
-              >
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13.5 }}>
-                  {t('scheduleSetupPeriods')}
-                </Text>
-              </Pressable>
+              <PeriodsWizard isRTL={isRTL} colors={colors} t={t} busy={applying} onApply={p => { void applyWizard(p); }} />
             </View>
           ) : (
-            WEEKDAY_KEYS.map((dayKey, dayOfWeek) => (
-              <View key={dayOfWeek} style={{ gap: 8 }}>
-                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
-                  {t(dayKey)}
-                </Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8 }}
-                >
-                  {sortedPeriods.map(period => {
-                    const slot = slotAt(dayOfWeek, period.periodNumber);
-                    const className = classNameFor(slot?.classGroupId ?? null);
-                    const filled = Boolean(className);
-                    return (
-                      <Pressable
-                        key={period.periodNumber}
-                        onPress={() => setEditingCell({ dayOfWeek, periodNumber: period.periodNumber })}
-                        style={{
-                          width: 108, padding: 10, borderRadius: 12, borderWidth: 1.5, gap: 3,
-                          borderColor: filled ? ACCENT : colors.border,
-                          backgroundColor: filled ? ACCENT + '12' : colors.card,
-                        }}
-                      >
-                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10.5, textAlign: align }}>
-                          {`${t('schedulePeriodNumber', period.periodNumber)} · ${period.startTime}`}
-                        </Text>
-                        <Text
-                          numberOfLines={2}
-                          style={{
-                            color: filled ? ACCENT : colors.mutedForeground,
-                            fontFamily: filled ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                            fontSize: 12.5, textAlign: align,
-                          }}
-                        >
-                          {filled ? className : '+'}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
+            <View style={{ flexDirection: rowDir, alignItems: 'flex-start', width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}>
+              {/* Pinned day column: corner cell + one row header per weekday,
+                  sharing the grid's row heights so rows line up with the
+                  scrolling half. */}
+              <View style={{ width: DAY_W }}>
+                <View style={{ height: HEAD_H }} />
+                {WEEKDAY_KEYS.map((key, dayOfWeek) => (
+                  <View key={dayOfWeek} style={{ height: ROW_H, justifyContent: 'center', paddingHorizontal: 6 }}>
+                    {dayLabel(key)}
+                  </View>
+                ))}
               </View>
-            ))
+
+              <ScrollView
+                ref={scrollRef}
+                horizontal
+                showsHorizontalScrollIndicator
+                style={{ flex: 1, minWidth: 0 }}
+                // A horizontal ScrollView opens at its content's start — the
+                // left — so in RTL the first period would begin off-screen.
+                onContentSizeChange={() => { if (isRTL) scrollRef.current?.scrollToEnd({ animated: false }); }}
+              >
+                <View>
+                  {/* Period headings */}
+                  <View style={{ flexDirection: rowDir, height: HEAD_H }}>
+                    {sortedPeriods.map(p => (
+                      <Pressable
+                        key={p.periodNumber}
+                        ref={setRef(`p:${p.periodNumber}`) as never}
+                        onPress={() => openPeriod(p)}
+                        style={{ width: COL_W, height: HEAD_H, padding: 4 }}
+                      >
+                        <View style={{ flex: 1, borderRadius: 10, backgroundColor: colors.secondary, alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>
+                            {t('schedulePeriodNumber', p.periodNumber)}
+                          </Text>
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10.5 }}>
+                            {formatRange(p)}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    ))}
+                    {canAddPeriod ? (
+                      <Pressable ref={setRef('p:new') as never} onPress={openNewPeriod} style={{ width: COL_W, height: HEAD_H, padding: 4 }}>
+                        <View style={{ flex: 1, borderRadius: 10, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.border, alignItems: 'center', justifyContent: 'center', flexDirection: rowDir, gap: 4 }}>
+                          <Ionicons name="add" size={14} color={colors.mutedForeground} />
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>{t('scheduleAddPeriod')}</Text>
+                        </View>
+                      </Pressable>
+                    ) : null}
+                  </View>
+
+                  {/* One row per weekday */}
+                  {WEEKDAY_KEYS.map((_, dayOfWeek) => (
+                    <View key={dayOfWeek} style={{ flexDirection: rowDir, height: ROW_H }}>
+                      {sortedPeriods.map(p => {
+                        const slot = slotAt(dayOfWeek, p.periodNumber);
+                        const cls = classById(slot?.classGroupId);
+                        const color = cls ? colorOf(cls) : null;
+                        return (
+                          <Pressable
+                            key={p.periodNumber}
+                            ref={setRef(`s:${dayOfWeek}:${p.periodNumber}`) as never}
+                            onPress={() => openSlot(dayOfWeek, p.periodNumber)}
+                            style={{ width: COL_W, height: ROW_H, padding: 4 }}
+                          >
+                            <View
+                              style={{
+                                flex: 1, borderRadius: 10, paddingHorizontal: 8, justifyContent: 'center',
+                                borderWidth: cls ? 0 : 1, borderStyle: cls ? 'solid' : 'dashed', borderColor: colors.border,
+                                backgroundColor: color ? `${color}24` : 'transparent',
+                                ...(color ? (isRTL ? { borderRightWidth: 3, borderRightColor: color } : { borderLeftWidth: 3, borderLeftColor: color }) : {}),
+                              }}
+                            >
+                              {cls ? (
+                                <>
+                                  <Text numberOfLines={1} style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: align }}>
+                                    {nameOf(cls)}
+                                  </Text>
+                                  <View style={{ flexDirection: rowDir, alignItems: 'center', gap: 4 }}>
+                                    <Text numberOfLines={1} style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10.5, textAlign: align }}>
+                                      {subjectName(cls)}
+                                    </Text>
+                                    {slot?.notes ? <Ionicons name="document-text-outline" size={11} color={colors.mutedForeground} /> : null}
+                                  </View>
+                                </>
+                              ) : (
+                                <View style={{ flexDirection: rowDir, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                                  <Ionicons name="add" size={16} color={colors.mutedForeground} style={{ opacity: 0.6 }} />
+                                  {slot?.notes ? <Ionicons name="document-text-outline" size={11} color={colors.mutedForeground} /> : null}
+                                </View>
+                              )}
+                            </View>
+                          </Pressable>
+                        );
+                      })}
+                      {canAddPeriod ? <View style={{ width: COL_W }} /> : null}
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
           )}
         </ScrollView>
       )}
 
-      <PeriodsEditorModal
-        visible={showPeriodsEditor}
-        periods={sortedPeriods}
-        onClose={() => setShowPeriodsEditor(false)}
-        onSave={onSavePeriod}
-        onDelete={onDeletePeriod}
-        isRTL={isRTL}
-        colors={colors}
-        t={t}
-      />
+      {/* Re-run the wizard from the gear icon. Same form as the empty state, in a dialog. */}
+      <Modal visible={wizardOpen} transparent animationType="fade" onRequestClose={() => setWizardOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 18, textAlign: align }}>
+              {t('schedulePeriodsTitle')}
+            </Text>
+            <PeriodsWizard isRTL={isRTL} colors={colors} t={t} busy={applying} onApply={p => { void applyWizard(p); }} onCancel={() => setWizardOpen(false)} />
+          </View>
+        </View>
+      </Modal>
 
-      {editingCell ? (
-        <SlotEditorModal
-          dayLabel={t(WEEKDAY_KEYS[editingCell.dayOfWeek]!)}
-          periodNumber={editingCell.periodNumber}
-          classes={classes}
-          current={slotAt(editingCell.dayOfWeek, editingCell.periodNumber) ?? null}
-          onClose={() => setEditingCell(null)}
-          onSave={patch => { void onSaveSlot(editingCell.dayOfWeek, editingCell.periodNumber, patch); }}
+      {slotEdit ? (
+        <SlotPopover
+          anchor={slotEdit.anchor}
+          isDesktop={isDesktop}
           isRTL={isRTL}
-          lang={lang}
           colors={colors}
           t={t}
+          classes={classes}
+          current={slotAt(slotEdit.dayOfWeek, slotEdit.periodNumber) ?? null}
+          title={t('scheduleSlotTitle', t(WEEKDAY_KEYS[slotEdit.dayOfWeek]!), slotEdit.periodNumber)}
+          nameOf={nameOf}
+          captionOf={captionOf}
+          colorOf={colorOf}
+          onPick={classGroupId => {
+            const { dayOfWeek, periodNumber } = slotEdit;
+            setSlotEdit(null);
+            void saveSlot(dayOfWeek, periodNumber, { classGroupId });
+          }}
+          onNote={notes => { void saveSlot(slotEdit.dayOfWeek, slotEdit.periodNumber, { notes }); }}
+          onClose={() => setSlotEdit(null)}
+        />
+      ) : null}
+
+      {periodEdit ? (
+        <PeriodPopover
+          anchor={periodEdit.anchor}
+          isDesktop={isDesktop}
+          isRTL={isRTL}
+          colors={colors}
+          t={t}
+          periodNumber={periodEdit.periodNumber}
+          initialStart={periodEdit.initialStart}
+          initialDuration={periodEdit.initialDuration}
+          isNew={periodEdit.isNew}
+          onSave={input => {
+            const n = periodEdit.periodNumber;
+            setPeriodEdit(null);
+            void savePeriod(n, input);
+          }}
+          onDelete={() => {
+            const n = periodEdit.periodNumber;
+            setPeriodEdit(null);
+            void removePeriod(n);
+          }}
+          onClose={() => setPeriodEdit(null)}
         />
       ) : null}
     </View>
@@ -454,15 +473,11 @@ const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 20, gap: 12 },
   heroTitle: { fontSize: 26, color: '#fff' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  empty: { alignItems: 'center', gap: 10, paddingTop: 60 },
   errorBox: {
     flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12,
     borderRadius: 12, borderWidth: 1,
   },
+  wizardCard: { width: '100%', maxWidth: 560, borderRadius: 16, borderWidth: 1, padding: 20, gap: 14 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  modalCard: { width: '100%', maxWidth: 420, borderRadius: 16, padding: 20, gap: 14 },
-  modalTitle: { fontSize: 18 },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
-  modalBtn: { paddingHorizontal: 18, paddingVertical: 11, borderRadius: 10 },
-  modalPrimary: { minWidth: 90, alignItems: 'center' },
+  modalCard: { width: '100%', maxWidth: 560, borderRadius: 16, padding: 20, gap: 14 },
 });

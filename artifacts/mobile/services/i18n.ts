@@ -1191,6 +1191,20 @@ const translations = {
     scheduleSaveFailed: 'تعذّر حفظ التغيير. حاول مرة أخرى.',
     scheduleStorageUnavailable: 'الجدول الأسبوعي غير مُهيَّأ على الخادم بعد. تواصل مع مسؤول النظام لتفعيله.',
     scheduleNeedsConnection: 'الجدول الأسبوعي يحتاج اتصالاً بالخادم',
+    // The period wizard and the timetable grid
+    scheduleWizardIntro: 'أخبرنا بعدد الحصص ووقت بداية أولها ومدة كل حصة، ونرتّب اليوم كله. يمكنك تعديل أي حصة لاحقًا بالضغط على عنوانها.',
+    schedulePeriodCount: 'عدد الحصص',
+    scheduleFirstStart: 'بداية الحصة الأولى',
+    scheduleBreakAfter: 'فُسحة بعد الحصة',
+    scheduleBreakMinutes: 'مدة الفُسحة (بالدقائق)',
+    scheduleNoBreak: 'بدون فُسحة',
+    schedulePreview: 'معاينة',
+    scheduleApply: 'اعتماد الجدول',
+    scheduleReplaceConfirm: 'سيُستبدل توقيت الحصص الحالي بالكامل. الشُّعَب الموضوعة في الحصص تبقى على أرقام حصصها.',
+    scheduleDoesNotFit: 'هذا الترتيب يتجاوز منتصف الليل. قلّل عدد الحصص أو مدتها.',
+    scheduleEditPeriod: 'تعديل الحصة',
+    scheduleSlotNote: 'ملاحظة',
+    scheduleEmptyCell: 'فارغة',
 
     // Calendar — combines the weekly period timetable with each plan's own
     // dated lessons into one "what is my day" view.
@@ -2732,6 +2746,20 @@ const translations = {
     scheduleSaveFailed: 'Could not save that change. Please try again.',
     scheduleStorageUnavailable: 'The weekly schedule is not set up on the server yet. Ask your administrator to enable it.',
     scheduleNeedsConnection: 'The weekly schedule needs a server connection',
+    // The period wizard and the timetable grid
+    scheduleWizardIntro: 'Tell us how many periods there are, when the first one starts and how long each is, and we lay out the whole day. Tap any period heading later to adjust it.',
+    schedulePeriodCount: 'Number of periods',
+    scheduleFirstStart: 'First period starts at',
+    scheduleBreakAfter: 'Break after period',
+    scheduleBreakMinutes: 'Break length (minutes)',
+    scheduleNoBreak: 'No break',
+    schedulePreview: 'Preview',
+    scheduleApply: 'Apply schedule',
+    scheduleReplaceConfirm: 'This replaces the current period times entirely. Classes already placed keep their period numbers.',
+    scheduleDoesNotFit: 'These periods run past midnight. Reduce the count or the duration.',
+    scheduleEditPeriod: 'Edit period',
+    scheduleSlotNote: 'Note',
+    scheduleEmptyCell: 'Empty',
 
     // Calendar — combines the weekly period timetable with each plan's own
     // dated lessons into one "what is my day" view.
