@@ -43,6 +43,7 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const handleGoogleCredential = async (credential: string) => {
     setError('');
@@ -99,7 +100,8 @@ export default function RegisterScreen() {
     lastName.trim().length > 0 &&
     email.includes('@') &&
     password.length >= 8 &&
-    (confirmPassword === '' || confirmPassword === password);
+    (confirmPassword === '' || confirmPassword === password) &&
+    termsAccepted;
 
   const formPanel = (
     <KeyboardAvoidingView
@@ -265,9 +267,32 @@ export default function RegisterScreen() {
             fullWidth
           />
 
-          <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-            {t('registerTerms')}
-          </Text>
+          <Pressable
+            onPress={() => setTermsAccepted(v => !v)}
+            style={[styles.termsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: termsAccepted }}
+          >
+            <View style={[
+              styles.checkbox,
+              {
+                borderColor: termsAccepted ? colors.primary : colors.border,
+                backgroundColor: termsAccepted ? colors.primary : 'transparent',
+              },
+            ]}>
+              {termsAccepted && <Ionicons name="checkmark" size={12} color="#fff" />}
+            </View>
+            <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', flex: 1 }]}>
+              {lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
+              <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/terms')}>
+                {lang === 'ar' ? 'شروط الخدمة' : 'Terms of Service'}
+              </Text>
+              {lang === 'ar' ? ' و' : ' and '}
+              <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/privacy')}>
+                {lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}
+              </Text>
+            </Text>
+          </Pressable>
         </View>
 
       </ScrollView>
@@ -300,5 +325,7 @@ const styles = StyleSheet.create({
   googleLoadingText: { fontSize: 12, textAlign: 'center', marginTop: -6 },
   nameRow: { flexDirection: 'row', gap: 12 },
   nameField: { flex: 1 },
-  terms: { fontSize: 11, textAlign: 'center', lineHeight: 17 },
+  termsRow: { alignItems: 'flex-start', gap: 10 },
+  checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  terms: { fontSize: 11, lineHeight: 17 },
 });
