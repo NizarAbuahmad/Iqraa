@@ -1192,6 +1192,15 @@ const translations = {
     scheduleStorageUnavailable: 'الجدول الأسبوعي غير مُهيَّأ على الخادم بعد. تواصل مع مسؤول النظام لتفعيله.',
     scheduleNeedsConnection: 'الجدول الأسبوعي يحتاج اتصالاً بالخادم',
 
+    // Calendar — combines the weekly period timetable with each plan's own
+    // dated lessons into one "what is my day" view.
+    myCalendar: 'التقويم',
+    calendarNoActivity: 'لا يوجد شيء مجدول هذا اليوم.',
+    calendarPeriodsSection: 'الحصص',
+    calendarLessonsSection: 'الدروس',
+    calendarLessonFrom: (planTitle: string) => `من: ${planTitle}`,
+    calendarLoadFailed: 'تعذّر تحميل التقويم.',
+
     // Class ↔ materials
     classTabStudents: 'الطلبة',
     classTabMaterials: 'الموارد',
@@ -2723,6 +2732,15 @@ const translations = {
     scheduleSaveFailed: 'Could not save that change. Please try again.',
     scheduleStorageUnavailable: 'The weekly schedule is not set up on the server yet. Ask your administrator to enable it.',
     scheduleNeedsConnection: 'The weekly schedule needs a server connection',
+
+    // Calendar — combines the weekly period timetable with each plan's own
+    // dated lessons into one "what is my day" view.
+    myCalendar: 'Calendar',
+    calendarNoActivity: 'Nothing scheduled this day.',
+    calendarPeriodsSection: 'Periods',
+    calendarLessonsSection: 'Lessons',
+    calendarLessonFrom: (planTitle: string) => `From: ${planTitle}`,
+    calendarLoadFailed: 'Could not load your calendar.',
 
     // Class ↔ materials
     classTabStudents: 'Students',
