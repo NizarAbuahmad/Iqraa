@@ -16,6 +16,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View, type ViewStyle } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
+import { NATIVE_DRIVER } from '@/constants/animation';
 
 const TEAL = '#00A99D';
 const AQUA = '#34D6C6';
@@ -50,13 +51,13 @@ export function IqraaMark({ size = 34, tone = 'soft', thinking = false, style }:
           toValue: 1,
           duration: 620,
           easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver: NATIVE_DRIVER,
         }),
         Animated.timing(pulse, {
           toValue: 0,
           duration: 620,
           easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver: NATIVE_DRIVER,
         }),
       ]),
     );

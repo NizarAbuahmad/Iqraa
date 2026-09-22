@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
+import { NATIVE_DRIVER } from '@/constants/animation';
 
 interface ToastProps {
   visible: boolean;
@@ -25,9 +26,9 @@ export function Toast({ visible, message, duration = 2000, onHide }: ToastProps)
     if (!visible) return;
     opacity.setValue(0);
     const seq = Animated.sequence([
-      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: NATIVE_DRIVER }),
       Animated.delay(duration),
-      Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: NATIVE_DRIVER }),
     ]);
     // `finished` is false when a newer message stopped this run — that one owns
     // the view now, and hiding on its behalf would cut it short.
