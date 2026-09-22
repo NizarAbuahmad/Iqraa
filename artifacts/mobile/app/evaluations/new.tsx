@@ -53,8 +53,14 @@ const ACCENT = '#1B6B62';
  * the type here too (`NOT_AI_GENERATABLE` in routes/evaluations.ts) so a stale
  * client cannot ask anyway.
  *
- * It still has a label in TYPE_LABEL_KEY below: existing read-aloud questions
- * are displayed all over the teacher UI, they just are not born here.
+ * `dictation` is absent for the Arabic version of the same reason: its key is
+ * a spelling, so a model that writes «هذة» for «هذه» hands a whole class a
+ * wrong answer, and there is no verifier for Arabic orthography the way there
+ * is SymPy for a maths key. Dictation words come from the curriculum spelling
+ * bank or from the teacher.
+ *
+ * Both still have labels in TYPE_LABEL_KEY below: existing questions of these
+ * types are displayed all over the teacher UI, they just are not born here.
  */
 const ALL_TYPES: QuestionType[] = [
   'multiple_choice',
@@ -76,6 +82,7 @@ const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
   problem_solving: 'typeProblemSolving',
   practical_task: 'typePracticalTask',
   read_aloud: 'typeReadAloud',
+  dictation: 'typeDictation',
 };
 const DIFFICULTIES: Difficulty[] = ['basic', 'standard', 'advanced'];
 const DIFFICULTY_KEY: Record<Difficulty, TranslationKey> = {

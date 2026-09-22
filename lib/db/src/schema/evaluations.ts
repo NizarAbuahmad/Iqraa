@@ -44,7 +44,24 @@ export type QuestionType =
    *
    * The column is `text()`, not a pg enum, so adding this needs no schema push.
    */
-  | "read_aloud";
+  | "read_aloud"
+  /**
+   * Dictation (إملاء). The prompt is spoken, not printed: the student hears a
+   * word or sentence and writes it (`body.mode` = "write", grades 3 and up), or
+   * taps the correctly spelled one among near-miss spellings (`mode` =
+   * "choice", grades 1–2, who cannot yet type).
+   *
+   * Audio is optional. Without it the question means "the teacher reads it
+   * aloud", which is how إملاء has always been taught and is the only mode that
+   * works on a native device or in a room with one screen.
+   *
+   * Graded by a strict Arabic comparator that deliberately does not use
+   * `normalizeArabic` — see `modules/assessment/dictation.ts`, which folds none
+   * of the letters a spelling test is about.
+   *
+   * The column is `text()`, not a pg enum, so adding this needs no schema push.
+   */
+  | "dictation";
 
 /**
  * How a question's marks are decided.

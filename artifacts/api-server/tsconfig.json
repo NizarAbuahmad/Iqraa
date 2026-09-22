@@ -23,6 +23,9 @@
       "path": "../../lib/curriculum"
     },
     {
+      "path": "../../lib/arabic-spelling"
+    },
+    {
       "path": "../../lib/integrations-openai-ai-server"
     }
   ]

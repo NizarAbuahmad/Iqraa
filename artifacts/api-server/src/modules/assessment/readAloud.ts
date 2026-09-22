@@ -68,8 +68,13 @@ export function normalizeForReading(text: string): string[] {
  *
  * Two rows rather than a full matrix: only the previous row is ever read, and
  * at MAX_WORDS a full matrix is 360,000 numbers for no benefit.
+ *
+ * Exported for `dictation.ts`, which aligns written words the same way. Shared
+ * because the alignment is the part that has nothing to do with English or with
+ * Arabic — what must NOT be shared is the normalisation that feeds it, and that
+ * file explains why at length.
  */
-function wordDistance(a: readonly string[], b: readonly string[]): number {
+export function wordDistance(a: readonly string[], b: readonly string[]): number {
   if (a.length === 0) return b.length;
   if (b.length === 0) return a.length;
 

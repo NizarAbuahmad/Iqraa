@@ -27,7 +27,8 @@ export type QuestionType =
   | 'open_ended'
   | 'problem_solving'
   | 'practical_task'
-  | 'read_aloud';
+  | 'read_aloud'
+  | 'dictation';
 
 export type Difficulty = 'basic' | 'standard' | 'advanced';
 export type EvaluationStatus = 'draft' | 'published' | 'closed';

@@ -57,6 +57,7 @@ const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
   problem_solving: 'typeProblemSolving',
   practical_task: 'typePracticalTask',
   read_aloud: 'typeReadAloud',
+  dictation: 'typeDictation',
 };
 
 /**
@@ -80,8 +81,25 @@ function questionText(q: EvaluationQuestion): string {
     // matching question existed but not what it asked. The left column is what
     // it asks about.
     ?? matchingLeftText(body['left'])
+    // A dictation body has none of the above — the prompt is spoken, not
+    // written. On the teacher's own screen the dictated text IS what the
+    // question asks, and showing it here is what lets a teacher read the list
+    // aloud to the class when there is no audio (which is the normal case, and
+    // the only one that works on a native device).
+    ?? dictationText(q)
     ?? '',
   );
+}
+
+function dictationText(q: EvaluationQuestion): string | undefined {
+  if (q.type !== 'dictation') return undefined;
+  if (q.body['mode'] === 'choice') {
+    const options = Array.isArray(q.body['options']) ? q.body['options'] : [];
+    const labels = options.map(o => (o as { text?: string })?.text).filter(Boolean);
+    return labels.length > 0 ? labels.join(' · ') : undefined;
+  }
+  const text = q.expectedAnswer['text'];
+  return typeof text === 'string' && text.trim() ? text.trim() : undefined;
 }
 
 function matchingLeftText(left: unknown): string | undefined {
