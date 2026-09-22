@@ -1,40 +1,55 @@
 /**
  * Turns a `BookFigure` into a URI the render surfaces can actually load.
  *
- * Kept apart from `bookFigures.ts` on purpose: this module imports
- * `react-native`, and `bookFigures.ts` is pulled into `node --test` suites
- * that have no React Native runtime. Splitting the lookup (pure, testable)
- * from the asset handle (platform) keeps those suites runnable.
+ * Kept apart from `bookFigures.ts` for what used to be a hard reason — this
+ * module imported `react-native` for `Image.resolveAssetSource`, and
+ * `bookFigures.ts` is pulled into `node --test` suites with no React Native
+ * runtime. Serving the figures removed that import, so the split is now only
+ * about layering: the lesson→figure lookup stays independent of where the
+ * bytes live.
  *
- * The figures are bundled rather than served, so they need no network and no
- * API: `require()`d by `bookFigureAssets.ts` at build time, resolved to a URI
- * here. On web that is a URL under the static export; on native, the packaged
- * asset. Either way `<Image>`, the print HTML and the PPTX export all take a
- * plain string, which is why nothing downstream had to learn about figures.
+ * The figures are served from R2's anonymous-read bucket, not bundled. They
+ * were bundled until 2026-09-22: 2,572 static `require()`s put every reachable
+ * PNG — 425 MB on disk — into the binary, the store `.aab` reached 267 MB, and
+ * Play installs were killed on the first launches. Serving them costs a
+ * network fetch per figure and takes essentially all of that weight out.
+ *
+ * `<Image>`, the print HTML and the PPTX export all take a plain string, so
+ * nothing downstream changed — the string is just an https URL now. Two
+ * consequences that are real: a figure needs connectivity the first time it is
+ * shown (it was offline-safe before), and the PPTX export fetches it over the
+ * wire, which it already tolerates failing (see `fetchAsDataUrl`).
  */
-import { Image } from 'react-native';
-
-import { BOOK_FIGURE_ASSETS } from './bookFigureAssets';
+import { BOOK_FIGURE_KEYS } from './bookFigureAssets';
 import { figuresForLesson, type BookFigure } from './bookFigures';
 import { lessonIdsForObjectiveIds } from '@workspace/curriculum';
 import { bookFigureCaption } from './lessonSlides';
 import { EXPORT_FIGURE_MAX, type BookFigureRef } from './exportHtml.ts';
 
 /**
- * `null` when the figure was never bundled — a figure extracted after the last
- * `gen_book_figure_assets.mjs` run, say. Callers drop the slide rather than
- * render a broken image; the drift test is what stops it reaching a build.
+ * Where the figures are served from: `iqraa-public`'s anonymous-read origin,
+ * the same bucket `docs/adding-a-book.md` describes and that already hosts
+ * book PDFs and avatars. A constant rather than an env var on purpose — the
+ * public bucket's URL is already pasted verbatim into `catalog.ts` rows, and
+ * an unset variable at build time would silently ship an app whose every
+ * figure is a broken image.
+ */
+export const FIGURE_BASE_URL = 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/figures';
+
+/**
+ * `null` when the figure is not one the app knows about — a figure extracted
+ * after the last `gen_book_figure_assets.mjs` run, say. Callers drop the slide
+ * rather than render a broken image; the drift test is what stops it reaching
+ * a build.
+ *
+ * Checked against the generated key set rather than just building a URL from
+ * the figure, so an unknown figure is still refused locally instead of
+ * becoming a 404 the UI would have to discover by trying to render it.
  */
 export function bookFigureUri(figure: BookFigure): string | null {
-  const asset = BOOK_FIGURE_ASSETS[`${figure.sourceId}/${figure.file}`];
-  if (asset === undefined) return null;
-  // Metro's web output makes the asset a module that already exports its URL
-  // (`/assets/__knowledge-base/.../p021.<hash>.png`); only native hands back
-  // an id needing the registry. Reading the object directly rather than
-  // relying on resolveAssetSource to pass it through keeps the web path — the
-  // one that actually ships — independent of that function's behaviour.
-  if (typeof asset === 'object') return asset.uri || null;
-  return Image.resolveAssetSource(asset)?.uri ?? null;
+  const key = `${figure.sourceId}/${figure.file}`;
+  if (!BOOK_FIGURE_KEYS.has(key)) return null;
+  return `${FIGURE_BASE_URL}/${key}`;
 }
 
 /**
