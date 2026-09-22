@@ -3735,10 +3735,20 @@ function normalizeHardcodedLesson(lesson: HardcodedKBLesson): KBLesson {
 // carries as a placeholder (summary = objectives re-joined, concepts = the
 // vocabulary list verbatim, terms with empty definitions, titleEn = titleAr).
 
+/**
+ * U+064B–U+065F harakat/tanween/shadda/sukun, U+0670 dagger alef,
+ * U+0640 tatweel.
+ *
+ * One definition because there were three and they disagreed: `titleKey` had
+ * all of it, `normalizeAr` was missing the dagger alef and the tatweel, and
+ * `normalizeTokens` — the one deciding whether a lesson is a candidate at
+ * all — stripped nothing.
+ */
+const TASHKEEL = /[\u064B-\u065F\u0670\u0640]/g;
+
 /** Diacritics-insensitive Arabic title key — «مكوَّن» and «مكون» must match. */
 function titleKey(s: string): string {
-  // U+064B–U+065F harakat/tanween/shadda/sukun, U+0670 dagger alef, U+0640 tatweel.
-  return s.replace(/[\u064B-\u065F\u0670\u0640]/g, '').replace(/\s+/g, ' ').trim();
+  return s.replace(TASHKEEL, '').replace(/\s+/g, ' ').trim();
 }
 
 const _enrichmentByTitle: Map<string, HardcodedKBLesson> = (() => {
@@ -4348,7 +4358,7 @@ function normalizeAr(s: string): string {
     .replace(/[أإآ]/g, 'ا')
     .replace(/ى/g, 'ي')
     .replace(/ة/g, 'ه')
-    .replace(/[\u064B-\u065F]/g, ''); // strip tashkeel
+    .replace(TASHKEEL, '');
 }
 
 function normalizeTitleKey(s: string): string {
@@ -4395,6 +4405,41 @@ function strongTitleAffinity(query: string, title: string): boolean {
 }
 
 /**
+ * Last resort when `searchKBRanked` scored nothing at all.
+ *
+ * Scoring compares tokens WITHOUT folding tashkeel, and the catalogs store
+ * titles fully vowelled — so «تكاثر الكائنات الحية ودورات حياتها» scored 0
+ * against its own lesson «تَكاثُرُ الْكائِناتِ الْحَيَّةِ...», was filtered out, and
+ * the whole grounding chain went quiet: no lesson meant
+ * `groundedSubjectConflict` had nothing to compare, and a science topic
+ * generated a maths paper under a science title.
+ *
+ * Deliberately NOT fixed by folding tashkeel inside the scorer. That re-ranks
+ * results that already worked: grade-8 science «التفاعلاتُ الكيميائيّةُ» and
+ * grade-10 chemistry «التفاعلات الكيميائية» are different lessons with the
+ * same name, and folding promoted the science one over the chemistry one for
+ * a chemistry topic. This runs only where the answer was previously `null`,
+ * so it can add a resolution but never change one.
+ *
+ * Two lessons can share a title across subjects, so an ambiguous match stays
+ * `null`: ungrounded is recoverable, silently grounding to the wrong subject
+ * is what this whole path exists to prevent.
+ */
+function titleOnlyFallback(query: string, lang: 'ar' | 'en'): KBLesson | null {
+  const key = normalizeTitleKey(query);
+  if (!key) return null;
+
+  let hit: KBLesson | null = null;
+  for (const lesson of KB_LESSONS) {
+    const title = lang === 'ar' ? lesson.titleAr : lesson.titleEn;
+    if (normalizeTitleKey(title) !== key) continue;
+    if (hit) return null;
+    hit = lesson;
+  }
+  return hit;
+}
+
+/**
  * Resolve a curriculum-grounded lesson for AI generation.
  * Returns null when there is no exact / high-confidence title-aligned match.
  * Callers must treat null as ungrounded — never substitute a weak fuzzy hit.
@@ -4407,7 +4452,6 @@ export function resolveGroundedKbLesson(
   if (!q) return null;
 
   const ranked = searchKBRanked(q, lang);
-  if (ranked.length === 0) return null;
 
   const exact = ranked.find(r => {
     const title = lang === 'ar' ? r.lesson.titleAr : r.lesson.titleEn;
@@ -4415,6 +4459,16 @@ export function resolveGroundedKbLesson(
   });
   if (exact) return exact.lesson;
 
+  // The scorer does not fold tashkeel, so a lesson whose title IS the query
+  // can score 0 and never appear in `ranked` at all — the check above then
+  // searches a list the right answer was already filtered out of. Ask the
+  // whole KB before falling through to the fuzzy heuristics: an exact title
+  // is a stronger signal than an affinity guess, and this is the only way
+  // the unvowelled form of a vowelled title is ever reachable.
+  const byTitle = titleOnlyFallback(q, lang);
+  if (byTitle) return byTitle;
+
+  if (ranked.length === 0) return null;
   if (!isConfidentKbHit(ranked)) return null;
 
   const top = ranked[0]!;
