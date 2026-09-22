@@ -52,13 +52,13 @@ account and credentials as `iqraa-media`, just a different `Bucket` name — no
 new secret to rotate, only the token's scope needs to cover both buckets.
 
 **`iqraa-public` also holds every book figure, from 2026-09-22.** Under
-`figures/<sourceId>/<file>`, uploaded by `scripts/upload-figures-r2.mjs` and
+`figures/<sourceId>/<file>`, uploaded by `lib/curriculum/scripts/upload-figures-r2.ts` and
 read by the app as a plain URL (`bookFigureUri`'s `FIGURE_BASE_URL`). They used
 to be `require()`d into the binary, which is what made the store build 267 MB
 and got Play installs killed on launch. **Extracting new figures is therefore a
 two-step job now:** regenerate the key list with
 `node scripts/gen_book_figure_assets.mjs`, then upload with
-`node scripts/upload-figures-r2.mjs`. Do the second one — the drift test checks
+`pnpm --filter @workspace/curriculum run upload-figures-r2`. Do the second one — the drift test checks
 the list, nothing checks the bucket, so a skipped upload shows up as a figure
 silently missing from a slide.
 
