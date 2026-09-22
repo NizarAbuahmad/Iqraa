@@ -6,7 +6,8 @@
  * worked and cost 250 MB: every reachable PNG went into the binary, and the
  * store build reached 267 MB and was killed on the first launches. The figures
  * are served from R2 now, so this emits only the *keys* — which figures exist
- * — and `scripts/upload-figures-r2.mjs` puts exactly those keys in the bucket.
+ * — and `lib/curriculum/scripts/upload-figures-r2.ts` puts exactly those keys in
+ * the bucket.
  *
  * Only figures a lesson actually asks for are emitted. Chemistry's four are
  * skipped along with every unmapped maths figure, because a picture nothing
@@ -132,7 +133,7 @@ writeFileSync(OUT, `/**
  * \`bookFigureUri\` must be able to answer "no such figure" without a network
  * round trip — a figure extracted after the last upload would otherwise render
  * as a broken image on a slide instead of being dropped. This list is what it
- * checks against, and \`scripts/upload-figures-r2.mjs\` uploads exactly these
+ * checks against, and \`upload-figures-r2.ts\` uploads exactly these
  * keys, so the two cannot disagree about what exists.
  */
 export const BOOK_FIGURE_KEYS: ReadonlySet<string> = new Set([

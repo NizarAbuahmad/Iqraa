@@ -28,6 +28,7 @@
     "verify-qr-links": "node --experimental-strip-types scripts/verify-qr-links.ts",
     "verify-ingest": "node --experimental-strip-types scripts/verify-external-ingest.ts",
     "upload-r2": "node --experimental-strip-types scripts/upload-to-r2.ts",
+    "upload-figures-r2": "node --experimental-strip-types scripts/upload-figures-r2.ts",
     "audit-r2": "node --experimental-strip-types scripts/audit-r2.ts"
   },
   "devDependencies": {

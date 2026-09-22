@@ -13,7 +13,7 @@
  * `bookFigureUri` must be able to answer "no such figure" without a network
  * round trip — a figure extracted after the last upload would otherwise render
  * as a broken image on a slide instead of being dropped. This list is what it
- * checks against, and `scripts/upload-figures-r2.mjs` uploads exactly these
+ * checks against, and `upload-figures-r2.ts` uploads exactly these
  * keys, so the two cannot disagree about what exists.
  */
 export const BOOK_FIGURE_KEYS: ReadonlySet<string> = new Set([
