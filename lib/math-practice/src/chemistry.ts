@@ -27,6 +27,9 @@
  * `chemistry.test.ts` pins that none are missing.
  */
 import type { ConcreteItem, KBLesson } from './index.ts';
+// Value import from `./subjects.ts`, not `./index.ts`: index imports the bank
+// from this file, so importing a value back would close a cycle.
+import { subjectIdFromName } from './subjects.ts';
 
 export type ChemFamily =
   | 'atom_basics'
@@ -45,14 +48,6 @@ export type ChemFamily =
   | 'general_chem';
 
 /**
- * Subject names that are chemistry — `Subject.name`/`.nameAr` from
- * `lib/curriculum/src/catalog.ts`. Matched rather than imported, for the same
- * reason `KNOWN_NON_MATH_SUBJECT` is: one lookup does not justify a dependency
- * on the whole curriculum package.
- */
-const CHEM_SUBJECT = /^(chemistry|الكيمياء)$/i;
-
-/**
  * Last-resort text heuristic, used only for a free-text topic with no lesson
  * picked and no subject passed. Deliberately narrower than the maths one:
  * «تفاعل» and «طاقة» appear in physics and biology lessons too, so this asks
@@ -68,7 +63,8 @@ const CHEM_TEXT_RE =
  * subject id is ground truth, the caller's `subject` string is the fallback
  * for an ungrounded topic, and the text heuristic only runs when neither says
  * anything. A maths lesson on «المعادلات» must not answer true here just
- * because a chemical equation is also a معادلة.
+ * because a chemical equation is also a معادلة. The guessed-lesson limitation
+ * documented on `isMathContext` applies here too.
  */
 export function isChemContext(
   topic: string,
@@ -79,8 +75,8 @@ export function isChemContext(
 ): boolean {
   if (lessonSubjectId) return lessonSubjectId === 'chemistry';
 
-  const s = subject?.trim();
-  if (s) return CHEM_SUBJECT.test(s);
+  const named = subjectIdFromName(subject);
+  if (named) return named === 'chemistry';
 
   return CHEM_TEXT_RE.test(bare(textBlob ?? topic));
 }
