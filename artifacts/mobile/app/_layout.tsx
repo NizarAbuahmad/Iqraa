@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { AppSplash } from '@/components/ui/AppSplash';
 /**
  * Arabic type. Inter has no Arabic glyphs, so every Arabic string — which is
  * nearly the whole product — was being drawn by whatever fallback each device
@@ -150,12 +151,12 @@ function RootLayoutNav() {
    * This used to fire as soon as the fonts loaded, which is well before
    * `/auth/me` answers — so reopening the app after Android had killed it
    * revealed a bare header and tab bar with an empty screen between them, and
-   * only then the real destination. Gating on `isLoading` means the user sees
-   * the logo and then their screen, with nothing in between.
-   *
-   * Declared after the navigation effect above on purpose: that one dispatches
-   * its `router.replace` in the same commit, so the destination is already
-   * chosen by the time this reveals anything.
+   * only then the real destination. The wait is now `AppSplash`'s job: it hands
+   * the native splash off to itself the moment it paints (`onLayout` below),
+   * and holds the screen — animated, and saying it is loading — until
+   * `isLoading` clears. This effect stays as the backstop for the case where
+   * auth resolves before the overlay ever paints, which would otherwise leave
+   * the native splash up forever. Both calls are idempotent.
    *
    * It cannot stick: `isLoading` flips in AuthContext's `finally`, and every
    * await inside that block now goes through `fetchWithTimeout`.
@@ -165,6 +166,7 @@ function RootLayoutNav() {
   }, [isLoading]);
 
   return (
+    <>
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -194,6 +196,8 @@ function RootLayoutNav() {
       <Stack.Screen name="claim-required" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="setup-subjects" options={{ headerShown: false, gestureEnabled: false }} />
     </Stack>
+    <AppSplash visible={isLoading} onLayout={() => SplashScreen.hideAsync().catch(() => {})} />
+    </>
   );
 }
 
