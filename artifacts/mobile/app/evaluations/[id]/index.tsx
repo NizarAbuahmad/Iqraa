@@ -30,6 +30,7 @@ import { summariseKeyChecks, type KeyCheckSummary } from '@/services/keyCheckSum
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { copyToClipboard } from '@/services/share';
 import { AddReadAloudModal } from '@/components/AddReadAloudModal';
+import { AddDictationModal } from '@/components/AddDictationModal';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookFigureRefsForObjectives } from '@/services/bookFigureUri';
@@ -120,6 +121,7 @@ export default function EvaluationDetailScreen() {
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [pickingClass, setPickingClass] = useState(false);
   const [addingReadAloud, setAddingReadAloud] = useState(false);
+  const [addingDictation, setAddingDictation] = useState(false);
   const [questions, setQuestions] = useState<EvaluationQuestion[]>([]);
   // Silence used to be the answer for three different situations — keys
   // verified, verifier unreachable, nothing checkable — and a teacher cannot
@@ -450,6 +452,18 @@ export default function EvaluationDetailScreen() {
               {t('addReadAloudBtn')}
             </Text>
           </Pressable>
+          {/* Dictation is appended for the same reason, and adds a whole list
+              at once: a teacher dictates ten words, not one. */}
+          <Pressable
+            onPress={() => setAddingDictation(true)}
+            disabled={!!busy}
+            style={[styles.actionBtnOutline, { borderColor: ACCENT, opacity: !!busy ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="create-outline" size={16} color={ACCENT} />
+            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+              {t('addDictationBtn')}
+            </Text>
+          </Pressable>
         </View>
       )}
 
@@ -464,6 +478,17 @@ export default function EvaluationDetailScreen() {
           // numeric(6,2) and `recomputeTotal` writes `total.toFixed(2)`, so
           // this is exactly the string a reload would bring back. Storing the
           // bare number would show "25" until the next focus and then "25.00".
+          setEvaluation(prev => (prev ? { ...prev, totalMarks: totalMarks.toFixed(2) } : prev));
+        }}
+      />
+
+      <AddDictationModal
+        visible={addingDictation}
+        onClose={() => setAddingDictation(false)}
+        evaluationId={id}
+        objectiveIds={evaluation?.objectiveIds ?? []}
+        onAdded={(added, totalMarks) => {
+          setQuestions(prev => [...prev, ...added]);
           setEvaluation(prev => (prev ? { ...prev, totalMarks: totalMarks.toFixed(2) } : prev));
         }}
       />
