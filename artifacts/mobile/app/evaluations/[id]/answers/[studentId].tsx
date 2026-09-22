@@ -669,6 +669,17 @@ function QuestionInput({
       {question.type === 'fill_blank' && (
         <FillBlankInput body={body} response={response} onChange={onChange} onCommit={onCommit} colors={colors} align={align} t={t} />
       )}
+      {/* A dictation transcribed off paper. Both modes reuse the inputs already
+          here, because #602 chose the response shapes ({optionIds} and {text})
+          to be the ones these two already produce — the choice column is the
+          spellings the child was shown, and write mode is a word to type in. */}
+      {question.type === 'dictation' && (
+        body['mode'] === 'choice' ? (
+          <MultipleChoiceInput body={body} response={response} onChange={r => { onChange(r); onCommit(r); }} colors={colors} isRTL={isRTL} align={align} />
+        ) : (
+          <OpenTextInput body={body} response={response} onChange={onChange} onCommit={onCommit} colors={colors} align={align} t={t} />
+        )
+      )}
       {isPaperQuestion(question) ? (
         // A paper exam holds no question text and no answer to transcribe —
         // the paper has both. Only the mark and the comment below apply.

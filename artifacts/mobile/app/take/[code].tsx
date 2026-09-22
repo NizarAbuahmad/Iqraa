@@ -49,7 +49,7 @@ import {
   type StudentQuestion,
   type StudentResponse,
 } from '@/services/studentExam';
-import { FillBlankInput, MatchingInput, ReadAloudInput } from '@/components/QuestionInputs';
+import { DictationInput, FillBlankInput, MatchingInput, ReadAloudInput } from '@/components/QuestionInputs';
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { TranslationKey } from '@/services/i18n';
 
@@ -580,6 +580,18 @@ function QuestionCard({
           token={token}
           onSaved={onAnswer}
           colors={colors}
+          t={t}
+        />
+      )}
+
+      {question.type === 'dictation' && (
+        <DictationInput
+          body={body}
+          response={response}
+          onChange={onAnswer}
+          onCommit={onAnswer}
+          colors={colors}
+          align={align}
           t={t}
         />
       )}
