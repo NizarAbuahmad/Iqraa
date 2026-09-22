@@ -135,15 +135,14 @@ const MATH_TEXT_RE = /رياضيات|math|kbl-math|kbu-math|kb-math|معادل|�
  * gives a real answer does this fall back to the old topic/lesson-text
  * heuristic, which is still what free-text topics with no picked lesson need.
  *
- * KNOWN LIMITATION, not an oversight: screens always send a `lessonId`, and
- * `generatorLessonId` resolves it by matching the free-text topic against
- * lesson TITLES. So a guessed lesson arrives looking exactly like a picked
- * one, and its subject then outranks the subject the teacher actually chose —
- * type a topic that title-matches a maths lesson while working in «اللغة
- * العربية» and the sheet comes back as systems of equations. Fixing that means
- * telling picked lessons from guessed ones, which needs a signal neither this
- * function nor its callers currently carry; flipping the precedence instead
- * would break the mislabelling cases `mathPractice.test.ts` pins on purpose.
+ * A caller whose `subject` disagrees with the resolved lesson loses, by
+ * design — `mathPractice.test.ts` pins that in both directions. What stops
+ * that becoming "«اللغة العربية» returns systems of equations" is not this
+ * function: it is `groundedSubjectConflict` on the generator screens, which
+ * refuses a topic whose grounded lesson belongs to another subject before any
+ * generation starts. That guard is the reason the precedence here is safe, so
+ * a new generator screen that skips it re-opens the hole — see CLAUDE.md,
+ * "Generators branch on the subject NAME".
  */
 export function isMathContext(
   topic: string,
