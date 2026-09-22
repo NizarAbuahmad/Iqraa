@@ -91,10 +91,15 @@ const ALL_TYPES = Object.keys(QUESTION_TYPES) as QuestionType[];
  * and would put text nobody vetted in front of a class as a reading exercise.
  * Passages come from the curated external-resource manifest instead.
  *
+ * `dictation` is the same failure in Arabic. Its key IS a spelling, so a model
+ * that writes «هذة» for «هذه» ships a wrong answer to a whole class — and
+ * unlike a maths key there is no verifier to catch it. The words come from the
+ * curriculum spelling bank or from the teacher.
+ *
  * Enforced server-side as well as hidden in the picker, because the picker is
  * a client and a stale one still gets a vote.
  */
-const NOT_AI_GENERATABLE: readonly QuestionType[] = ["read_aloud"];
+const NOT_AI_GENERATABLE: readonly QuestionType[] = ["read_aloud", "dictation"];
 const GENERATABLE_TYPES = ALL_TYPES.filter(t => !NOT_AI_GENERATABLE.includes(t));
 const DIFFICULTIES: Difficulty[] = ["basic", "standard", "advanced"];
 const MAX_QUESTIONS = 50;

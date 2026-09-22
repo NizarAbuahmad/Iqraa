@@ -67,32 +67,40 @@ describe("QuestionType stays in sync across the two packages", () => {
     );
   });
 
-  it("never offers read_aloud to the generator", () => {
+  it("never offers an unvettable type to the generator", () => {
     /*
      * The prompt builder emits an uncontracted type as `- <type>: {}` —
      * free rein — so a type with no entry in TYPE_CONTRACTS is one the model
      * will happily invent from nothing. For read_aloud that means fabricating
      * an English passage and putting it in front of a class as a reading
-     * exercise, which is the line every other generator here declines to cross.
+     * exercise. For dictation it means inventing an Arabic spelling key, with
+     * no verifier to catch «هذة» for «هذه». Both are the line every other
+     * generator here declines to cross.
      *
      * Two independent guards, and this pins both: the teacher's picker does
-     * not list it, and the server filters it out of a generate request anyway
-     * because a picker is a client and a stale one still gets a vote.
+     * not list them, and the server filters them out of a generate request
+     * anyway because a picker is a client and a stale one still gets a vote.
      */
+    const ungeneratable = ["read_aloud", "dictation"] as const;
+
     const picker = readFileSync(
       path.join(repoRoot, "artifacts/mobile/app/evaluations/new.tsx"),
       "utf8",
     );
     const allTypes = /const ALL_TYPES: QuestionType\[\] = \[([\s\S]*?)\]/.exec(picker);
     assert.ok(allTypes, "ALL_TYPES not found in new.tsx — has it been renamed?");
-    assert.doesNotMatch(allTypes[1]!, /read_aloud/, "the generator picker must not offer read_aloud");
 
     const routes = readFileSync(path.join(repoRoot, "artifacts/api-server/src/routes/evaluations.ts"), "utf8");
-    assert.match(routes, /NOT_AI_GENERATABLE[\s\S]{0,200}read_aloud/, "the server must refuse it too");
+    const serverList = /NOT_AI_GENERATABLE: readonly QuestionType\[\] = \[([\s\S]*?)\]/.exec(routes);
+    assert.ok(serverList, "NOT_AI_GENERATABLE not found — has it been renamed?");
     assert.match(routes, /GENERATABLE_TYPES\.includes/, "the generate route must filter on the narrowed list");
 
-    // And it must stay contract-less: adding one would quietly re-enable it.
-    assert.equal(TYPE_CONTRACTS["read_aloud"], undefined);
+    for (const type of ungeneratable) {
+      assert.doesNotMatch(allTypes[1]!, new RegExp(type), `the generator picker must not offer ${type}`);
+      assert.match(serverList[1]!, new RegExp(type), `the server must refuse ${type} too`);
+      // And it must stay contract-less: adding one would quietly re-enable it.
+      assert.equal(TYPE_CONTRACTS[type], undefined, `${type} must have no generation contract`);
+    }
   });
 
   it("gives every declared type a registry entry", () => {

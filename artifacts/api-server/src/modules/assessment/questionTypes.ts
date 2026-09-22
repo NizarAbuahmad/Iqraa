@@ -18,6 +18,12 @@
 import type { GradingMode, QuestionType } from "@workspace/db";
 import { matchesAny, normalizeArabic } from "./normalize.ts";
 import { MAX_WORDS, normalizeForReading, scoreReading } from "./readAloud.ts";
+import {
+  dictationDetail,
+  dictationWords,
+  normalizeForDictation,
+  scoreDictation,
+} from "./dictation.ts";
 
 /** Below this a single mispronounced word moves the score too far to mean anything. */
 const MIN_PASSAGE_WORDS = 10;
@@ -375,6 +381,152 @@ const readAloud: TypeModule = {
   },
 };
 
+/**
+ * Dictation (إملاء).
+ *
+ * Two response modes behind one type, because a teacher picks a *grade*, not a
+ * response modality — the mode is a consequence of it. Grades 1–2 tap the
+ * correctly spelled word among near misses (they cannot yet type); grades 3 and
+ * up write what they heard.
+ *
+ * `mode` is read explicitly and never inferred from whether `options` is
+ * present. Inferring would make a dropped array silently become write mode,
+ * which is a six-year-old facing an Arabic keyboard. Fail loud instead.
+ *
+ * **Not folded into `fill_blank` with an audio field**, which looks like the
+ * smaller change and is not: `fillBlank.grade` routes through `matchesAny` →
+ * `normalizeArabic`, which marks «مدرسه» correct for «مدرسة». Reusing it would
+ * mean a comparator-switching flag in jsonb, putting every fill-blank question
+ * in the system one boolean away from marking differently. `short_answer` has
+ * no deterministic grader at all, so a ten-word list would become ten
+ * hand-marked questions.
+ *
+ * `audioUrl` is optional on purpose. Absent means the teacher reads the word
+ * aloud, which covers demo mode, a spent AI budget, an unconfigured bucket, a
+ * native device that cannot play audio, and a classroom with one screen — all
+ * without a second code path.
+ */
+const dictation: TypeModule = {
+  defaultGradingMode: "deterministic",
+  // The key IS a spelling. A model that misspells it ships a wrong answer to a
+  // whole class, and unlike maths there is no verifier to catch it — the words
+  // come from the curriculum bank or from the teacher. Same line `read_aloud`
+  // draws, for the same reason.
+  mockable: false,
+  validate(q) {
+    const errors: string[] = [];
+    const mode = str(q.body["mode"]);
+    if (mode !== "write" && mode !== "choice") {
+      errors.push('Dictation mode must be "write" or "choice"');
+    }
+
+    const audioUrl = str(q.body["audioUrl"]);
+    if (audioUrl) {
+      // This becomes an <audio src> on a student's device, so an unchecked
+      // value is a fetch to any origin a generator or a paste can name. The
+      // bucket-host pin lives on the route that mints these, which knows its
+      // own bucket — validation must not depend on env or it would reject in
+      // a test what it accepts in production.
+      let parsed: URL | null = null;
+      try {
+        parsed = new URL(audioUrl);
+      } catch {
+        parsed = null;
+      }
+      if (!parsed || parsed.protocol !== "https:") errors.push("Audio URL must be https");
+    }
+
+    const playLimit = q.body["playLimit"];
+    if (playLimit !== undefined) {
+      if (typeof playLimit !== "number" || !Number.isInteger(playLimit) || playLimit < 1 || playLimit > 10) {
+        errors.push("Play limit must be a whole number between 1 and 10");
+      }
+    }
+
+    if (mode === "choice") {
+      const options = asList(q.body["options"]);
+      const texts = options.map(o => str((o as Record<string, unknown>)?.["text"]));
+      const ids = options.map(o => str((o as Record<string, unknown>)?.["id"]));
+      if (options.length < 3) errors.push("Dictation choice needs at least 3 spellings");
+      if (options.length > 5) errors.push("Dictation choice takes at most 5 spellings");
+      if (texts.some(t => !t)) errors.push("A spelling option has no text");
+      if (new Set(texts).size !== texts.length) errors.push("Duplicate spellings");
+      if (ids.some(id => !id) || new Set(ids).size !== ids.length) {
+        errors.push("Every spelling option needs a unique id");
+      }
+
+      const correct = asList(q.expectedAnswer["optionIds"]).map(str).filter(Boolean);
+      if (correct.length !== 1) errors.push("Exactly one spelling is correct");
+      if (correct.some(id => !ids.includes(id))) errors.push("Correct spelling is not in the list");
+      // The correct spelling already lives in `body.options`. A second copy in
+      // the key would drift from what the student was shown — the same
+      // reasoning read_aloud gives for keeping its passage in `body`.
+      if (str(q.expectedAnswer["text"])) {
+        errors.push("Choice dictation grades by option id; expectedAnswer.text must be empty");
+      }
+    }
+
+    if (mode === "write") {
+      const text = q.expectedAnswer["text"];
+      if (!normalizeForDictation(text)) errors.push("Dictation text is empty");
+      if (asList(q.body["options"]).length > 0) {
+        errors.push("Write dictation has no options to choose from");
+      }
+      const wordCount = q.body["wordCount"];
+      if (wordCount !== undefined) {
+        const actual = dictationWords(text).length;
+        if (wordCount !== actual) errors.push(`wordCount says ${String(wordCount)} but the text has ${actual}`);
+      }
+    }
+    return errors;
+  },
+  sanitizeForStudent(q) {
+    const common = {
+      mode: q.body["mode"],
+      audioUrl: q.body["audioUrl"],
+      playLimit: q.body["playLimit"],
+    };
+    if (str(q.body["mode"]) === "choice") {
+      return {
+        ...common,
+        options: asList(q.body["options"]).map(o => ({
+          id: (o as Record<string, unknown>)["id"],
+          text: (o as Record<string, unknown>)["text"],
+        })),
+      };
+    }
+    // `wordCount` so the student screen can size its input without ever
+    // holding the spelling it is sizing for.
+    return { ...common, wordCount: q.body["wordCount"] };
+  },
+  grade(q, response) {
+    if (str(q.body["mode"]) === "choice") {
+      const picked = asList(response["optionIds"]).map(str).filter(Boolean);
+      if (picked.length === 0) return UNANSWERED;
+      const correct = asList(q.expectedAnswer["optionIds"]).map(str);
+      const right = picked.length === 1 && correct.includes(picked[0]!);
+      if (right) return scored(1, true);
+      const chosen = asList(q.body["options"])
+        .map(o => o as Record<string, unknown>)
+        .find(o => str(o["id"]) === picked[0]);
+      const answer = asList(q.body["options"])
+        .map(o => o as Record<string, unknown>)
+        .find(o => correct.includes(str(o["id"])));
+      return scored(0, true, `اختار «${str(chosen?.["text"])}» والصواب «${str(answer?.["text"])}»`);
+    }
+
+    const written = response["text"];
+    // An empty box is unanswered. Anything typed is an attempt that earned
+    // what it earned — a different diagnosis, and one a teacher should see.
+    if (!normalizeForDictation(written)) return UNANSWERED;
+
+    const expected = str(q.expectedAnswer["text"]);
+    const requireTashkeel = q.body["requireTashkeel"] === true;
+    const score = scoreDictation(expected, written, { requireTashkeel });
+    return scored(score.accuracy, true, dictationDetail(expected, written, score));
+  },
+};
+
 export const QUESTION_TYPES: Record<QuestionType, TypeModule> = {
   multiple_choice: multipleChoice,
   true_false: trueFalse,
@@ -385,6 +537,7 @@ export const QUESTION_TYPES: Record<QuestionType, TypeModule> = {
   problem_solving: openResponse("ai_rubric", ["scenario"], true),
   practical_task: practicalTask,
   read_aloud: readAloud,
+  dictation,
 };
 
 export function moduleFor(type: QuestionType): TypeModule | undefined {

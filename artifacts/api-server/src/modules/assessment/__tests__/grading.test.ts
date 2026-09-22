@@ -289,6 +289,9 @@ describe("what may be auto-marked at all", () => {
     "matching",
     "fill_blank",
     "read_aloud",
+    // A dictation key is a known spelling, so comparing against it is a
+    // measurement, not a judgement — the same reason read_aloud sits here.
+    "dictation",
   ] as const;
 
   /**
