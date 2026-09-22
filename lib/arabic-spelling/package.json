@@ -10,10 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --experimental-strip-types --test \"src/**/__tests__/**/*.test.ts\""
   },
-  "dependencies": {
-    "@workspace/curriculum": "workspace:*"
-  },
   "devDependencies": {
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "@workspace/curriculum": "workspace:*"
   }
 }

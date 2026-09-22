@@ -153,6 +153,9 @@ importers:
       '@react-navigation/bottom-tabs':
         specifier: ^7.18.14
         version: 7.18.14(@react-navigation/native@7.3.14(react-native@0.81.5(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.1.17)(react@19.1.0)(supports-color@8.1.1))(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native@0.81.5(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.1.17)(react@19.1.0)(supports-color@8.1.1))(react@19.1.0))(react-native-screens@4.16.0(react-native@0.81.5(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.1.17)(react@19.1.0)(supports-color@8.1.1))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.1.17)(react@19.1.0)(supports-color@8.1.1))(react@19.1.0)
+      '@workspace/arabic-spelling':
+        specifier: workspace:*
+        version: link:../../lib/arabic-spelling
       '@workspace/math-practice':
         specifier: workspace:*
         version: link:../../lib/math-practice
@@ -357,14 +360,13 @@ importers:
         version: 3.25.76
 
   lib/arabic-spelling:
-    dependencies:
-      '@workspace/curriculum':
-        specifier: workspace:*
-        version: link:../curriculum
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
         version: 25.9.5
+      '@workspace/curriculum':
+        specifier: workspace:*
+        version: link:../curriculum
 
   lib/curriculum:
     devDependencies:
