@@ -12,8 +12,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View,
-} from 'react-native';
+  View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,18 +28,14 @@ import {
   LessonFlowOutput,
   LessonPlanOutput,
   QuizOutput,
-  WorksheetOutput,
-} from '@/services/ai/AIService';
+  WorksheetOutput } from '@/services/ai/AIService';
 import {
   runLessonFlowFrom,
   LessonFlowStepError,
   type LessonFlowPrior,
-  type StepKey,
-} from '@/services/ai/lessonFlowRunner';
-import {
-  getPickerGrades, getPickerSubjects, resolvePickerIndex,
-} from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams, subjectPickerLabels } from '@/services/lessonPrep';
+  type StepKey } from '@/services/ai/lessonFlowRunner';
+import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { Button } from '@/components/ui/Button';
@@ -96,19 +91,10 @@ export default function LessonFlowScreen() {
 
   // Form state
   const [topic, setTopic] = useState(params.topic ?? '');
-  // These were pinned to `undefined` — index 0, Grade 10 Mathematics — so this
-  // screen was the one generator a caller could not aim at a subject, however
-  // much it knew. Every sibling screen already reads them.
-  // A bare `topic` param (old bookmarks, callers without picker params) says
-  // which grade and subject it belongs to better than picker index 0 does —
-  // ground it instead of opening a math lesson under whatever subject sits
-  // first in the list.
-  const [inferredScope] = useState(() =>
-    params.gradeIdx == null && params.subjectIdx == null
-      ? topicPickerParams(params.topic, lang as 'ar' | 'en')
-      : null,
-  );
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
+  // An index the picker list cannot honour is NOT index 0 — see
+  // `scopeFromParams`. Grounding the topic is what recovers the right scope.
+  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en'));
+  const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
   const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
@@ -116,7 +102,7 @@ export default function LessonFlowScreen() {
   // in it, so it must not be offered under the combined name. Same
   // index alignment as the mask above.
   const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
+  const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   const [durationIdx, setDurationIdx] = useState(0);
 
   // Generation state

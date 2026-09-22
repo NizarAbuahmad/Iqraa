@@ -1732,6 +1732,26 @@ export function getPickerSubjects(gradeId?: string): Subject[] {
   return inMvpOrder(SUBJECTS, MVP_SUBJECT_IDS);
 }
 
+/**
+ * A saved/route picker index, or null when it names no entry in the current
+ * list — absent, unparseable, negative, or past the end.
+ *
+ * Null means "this says nothing", which is not the same as "index 0". A route
+ * carrying an index the list cannot honour used to be indistinguishable from
+ * one carrying no index at all: both became 0, and index 0 is Mathematics. A
+ * caller that has a better source (grounding the topic, say) can only reach
+ * for it if it can tell those two apart.
+ */
+export function pickerIndexOrNull(
+  raw: string | number | undefined,
+  length: number,
+): number | null {
+  if (length <= 0) return null;
+  const n = typeof raw === 'string' ? parseInt(raw, 10) : raw;
+  if (n == null || !Number.isFinite(n) || n < 0 || n >= length) return null;
+  return n;
+}
+
 /** Clamp a saved/route picker index into the current picker list. */
 export function resolvePickerIndex(
   raw: string | number | undefined,
@@ -1739,9 +1759,7 @@ export function resolvePickerIndex(
   fallback = 0,
 ): number {
   if (length <= 0) return 0;
-  const n = typeof raw === 'string' ? parseInt(raw, 10) : raw;
-  if (n == null || !Number.isFinite(n) || n < 0 || n >= length) return fallback;
-  return n;
+  return pickerIndexOrNull(raw, length) ?? fallback;
 }
 
 /** True when a subject/grade pair is allowed in investor-facing pickers. */

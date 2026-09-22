@@ -12,10 +12,8 @@ import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generat
 import { isolateForeignRuns } from '@/services/mathRender';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
-import {
-  getPickerGrades, getPickerSubjects, resolvePickerIndex,
-} from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams, subjectPickerLabels } from '@/services/lessonPrep';
+import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
@@ -26,8 +24,7 @@ import { getItem, saveItem, updateItem } from '@/services/workspace';
 import {
   ACTIVITY_TYPE_IDS,
   activityTypeLabel,
-  type ActivityTypeId,
-} from '@/constants/activityType';
+  type ActivityTypeId } from '@/constants/activityType';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { aiErrorMessageKey } from '@/services/ai/aiProvenance';
@@ -56,16 +53,10 @@ export default function ActivityScreen() {
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
   const activityTypeLabels = ACTIVITY_TYPE_IDS.map(id => activityTypeLabel(id, t));
 
-  // A bare `topic` param (old bookmarks, callers without picker params) says
-  // which grade and subject it belongs to better than picker index 0 does —
-  // ground it instead of opening a math lesson under whatever subject sits
-  // first in the list.
-  const [inferredScope] = useState(() =>
-    params.gradeIdx == null && params.subjectIdx == null
-      ? topicPickerParams(params.topic, lang as 'ar' | 'en')
-      : null,
-  );
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
+  // An index the picker list cannot honour is NOT index 0 — see
+  // `scopeFromParams`. Grounding the topic is what recovers the right scope.
+  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en'));
+  const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
   const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
@@ -73,7 +64,7 @@ export default function ActivityScreen() {
   // in it, so it must not be offered under the combined name. Same
   // index alignment as the mask above.
   const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
+  const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   const [topic, setTopic] = useState(params.topic ?? '');
   const [activityTypeIdx, setActivityTypeIdx] = useState(params.activityTypeIdx ? parseInt(params.activityTypeIdx, 10) : 1);
   const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 1);

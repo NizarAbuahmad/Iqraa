@@ -15,10 +15,8 @@ import { buildDeckFromWorksheet } from '@/services/classDeck';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import {
-  getPickerGrades, getPickerSubjects, resolvePickerIndex,
-} from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams, subjectPickerLabels } from '@/services/lessonPrep';
+import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
@@ -46,8 +44,7 @@ import {
   applyWorksheetQuestionEdit,
   flatIndexOf,
   parsePoints,
-  removeWorksheetQuestionAt,
-} from '@/services/worksheetEdits';
+  removeWorksheetQuestionAt } from '@/services/worksheetEdits';
 
 const ACCENT = '#8B5CF6';
 
@@ -97,16 +94,10 @@ export default function WorksheetScreen() {
     try { return new Set(JSON.parse(raw) as QType[]); } catch { return new Set(['multiple_choice', 'short_answer']); }
   };
 
-  // A bare `topic` param (old bookmarks, callers without picker params) says
-  // which grade and subject it belongs to better than picker index 0 does —
-  // ground it instead of opening a math lesson under whatever subject sits
-  // first in the list.
-  const [inferredScope] = useState(() =>
-    params.gradeIdx == null && params.subjectIdx == null
-      ? topicPickerParams(params.topic, lang as 'ar' | 'en')
-      : null,
-  );
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
+  // An index the picker list cannot honour is NOT index 0 — see
+  // `scopeFromParams`. Grounding the topic is what recovers the right scope.
+  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en'));
+  const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
   const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
@@ -114,7 +105,7 @@ export default function WorksheetScreen() {
   // in it, so it must not be offered under the combined name. Same
   // index alignment as the mask above.
   const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
+  const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   const [topic, setTopic] = useState(params.topic ?? '');
   const [diffIdx, setDiffIdx] = useState(params.diffIdx ? parseInt(params.diffIdx, 10) : 0);
 
