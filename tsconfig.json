@@ -24,5 +24,8 @@
     {
       "path": "./lib/math-practice"
     },
+    {
+      "path": "./lib/arabic-spelling"
+    },
   ]
 }

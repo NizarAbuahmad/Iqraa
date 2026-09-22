@@ -65,6 +65,9 @@ importers:
       '@workspace/api-zod':
         specifier: workspace:*
         version: link:../../lib/api-zod
+      '@workspace/arabic-spelling':
+        specifier: workspace:*
+        version: link:../../lib/arabic-spelling
       '@workspace/curriculum':
         specifier: workspace:*
         version: link:../../lib/curriculum
@@ -352,6 +355,16 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 3.25.76
+
+  lib/arabic-spelling:
+    dependencies:
+      '@workspace/curriculum':
+        specifier: workspace:*
+        version: link:../curriculum
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.5
 
   lib/curriculum:
     devDependencies:
