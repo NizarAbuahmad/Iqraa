@@ -22,6 +22,7 @@ import {
   DECK_MUTED as TEXT_MUTED, DECK_PINK as PINK, DECK_TEXT as TEXT_PRIMARY,
   DECK_ACCENT as ACCENT, slideTypeAccent, TIMER_AMBER, TIMER_GREEN, TIMER_RED,
 } from '@/services/deckTheme';
+import { NATIVE_DRIVER } from '@/constants/animation';
 import { useLanguage } from '@/context/LanguageContext';
 import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/classroomStore';
@@ -346,11 +347,11 @@ function TeacherPanel({
   const translateY = useRef(new Animated.Value(600)).current;
 
   useEffect(() => {
-    Animated.spring(translateY, { toValue: 0, useNativeDriver: true, damping: 22, stiffness: 200 }).start();
+    Animated.spring(translateY, { toValue: 0, useNativeDriver: NATIVE_DRIVER, damping: 22, stiffness: 200 }).start();
   }, []);
 
   const close = () => {
-    Animated.timing(translateY, { toValue: 600, duration: 220, useNativeDriver: true }).start(onClose);
+    Animated.timing(translateY, { toValue: 600, duration: 220, useNativeDriver: NATIVE_DRIVER }).start(onClose);
   };
 
   const teacher = slide.teacher;
@@ -969,13 +970,13 @@ export default function PresentationScreen() {
     celebrationAnim.setValue(0);
     celebrationScale.setValue(0.5);
     Animated.parallel([
-      Animated.spring(celebrationAnim,  { toValue: 1, useNativeDriver: true, damping: 14, stiffness: 180 }),
-      Animated.spring(celebrationScale, { toValue: 1, useNativeDriver: true, damping: 14, stiffness: 180 }),
+      Animated.spring(celebrationAnim,  { toValue: 1, useNativeDriver: NATIVE_DRIVER, damping: 14, stiffness: 180 }),
+      Animated.spring(celebrationScale, { toValue: 1, useNativeDriver: NATIVE_DRIVER, damping: 14, stiffness: 180 }),
     ]).start();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     // Held in a ref so leaving the slide can cancel it — see the effect below.
     celebrationExit.current = setTimeout(() => {
-      Animated.timing(celebrationAnim, { toValue: 0, duration: 400, useNativeDriver: true }).start(() => {
+      Animated.timing(celebrationAnim, { toValue: 0, duration: 400, useNativeDriver: NATIVE_DRIVER }).start(() => {
         setCelebrationVisible(false);
       });
     }, 2800);
@@ -1015,10 +1016,10 @@ export default function PresentationScreen() {
   const goToSlide = (idx: number) => {
     if (!activity || idx < 0 || idx >= activity.slides.length) return;
     const nextSlide = activity.slides[idx];
-    Animated.timing(fadeAnim, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
+    Animated.timing(fadeAnim, { toValue: 0, duration: 140, useNativeDriver: NATIVE_DRIVER }).start(() => {
       setSlideIndex(idx);
       initSlide(nextSlide);
-      Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+      Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: NATIVE_DRIVER }).start();
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };

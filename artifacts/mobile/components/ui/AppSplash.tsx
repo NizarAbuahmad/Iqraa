@@ -20,22 +20,14 @@
  * shuttles rather than pretending to fill.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, Platform, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
+import { NATIVE_DRIVER } from '@/constants/animation';
 
 const LOGO_MARK = require('@/assets/images/logo-mark.png');
 
 const NAVY = '#081B3A';
 const TEAL = '#00A99D';
 const INK = '#DFE7E9';
-
-/**
- * react-native-web has no native animation module, so a `useNativeDriver: true`
- * animation there does not fall back frame by frame — it snaps straight to its
- * end value. (Traced with a value listener: 0 → 1, no frames in between.) Every
- * other Animated call in this app passes `true` unconditionally, which is why
- * none of them move in the browser.
- */
-const NATIVE_DRIVER = Platform.OS !== 'web';
 
 const BAR_W = 168;
 const BAR_FILL_W = 58;
