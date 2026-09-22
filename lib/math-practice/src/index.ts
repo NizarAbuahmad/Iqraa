@@ -24,9 +24,11 @@
  * depending on a field the API server has no way to supply.
  */
 import { CHEM_BANK, detectChemFamily, type ChemFamily } from './chemistry.ts';
+import { subjectIdFromName } from './subjects.ts';
 
 export { isChemContext, detectChemFamily, CHEM_BANK } from './chemistry.ts';
 export type { ChemFamily } from './chemistry.ts';
+export { subjectIdFromName } from './subjects.ts';
 
 export interface PracticeLesson {
   id: string;
@@ -114,14 +116,6 @@ export function lessonTextBlob(topic: string, kb: KBLesson | null): string {
   ].join(' ');
 }
 
-/**
- * Subject names — `Subject.name`/`.nameAr` from `lib/curriculum/src/catalog.ts` —
- * that are known and are NOT mathematics. Matched, not imported: this file has
- * no dependency on `@workspace/curriculum`, and duplicating the handful of
- * names as a regex is cheaper than adding one for a single lookup.
- */
-const KNOWN_NON_MATH_SUBJECT = /^(chemistry|الكيمياء|physics|الفيزياء|biology|الأحياء|science|العلوم|financial literacy|الثقافة المالية|arabic|اللغة العربية|english|اللغة الإنجليزية|islamic studies|التربية الإسلامية|social studies|الدراسات الاجتماعية|computer|الحاسوب)$/i;
-
 const MATH_TEXT_RE = /رياضيات|math|kbl-math|kbu-math|kb-math|معادل|أسي|أسس|دائر|مثلث|جيوب|جيب|اقتران|مشتق|متجه|احتمال|إحصاء|جيوجبرا|geogebra|quadratic|trigon|derivative|vector|circle|exponent|polynomial|sequence|statistic|probabilit/i;
 
 /**
@@ -140,6 +134,15 @@ const MATH_TEXT_RE = /رياضيات|math|kbl-math|kbu-math|kb-math|معادل|�
  * lesson resolved) where nothing else names the subject. Only when neither
  * gives a real answer does this fall back to the old topic/lesson-text
  * heuristic, which is still what free-text topics with no picked lesson need.
+ *
+ * A caller whose `subject` disagrees with the resolved lesson loses, by
+ * design — `mathPractice.test.ts` pins that in both directions. What stops
+ * that becoming "«اللغة العربية» returns systems of equations" is not this
+ * function: it is `groundedSubjectConflict` on the generator screens, which
+ * refuses a topic whose grounded lesson belongs to another subject before any
+ * generation starts. That guard is the reason the precedence here is safe, so
+ * a new generator screen that skips it re-opens the hole — see CLAUDE.md,
+ * "Generators branch on the subject NAME".
  */
 export function isMathContext(
   topic: string,
@@ -148,19 +151,14 @@ export function isMathContext(
   /**
    * The lesson's own subject id, when the caller can resolve one. Passed in
    * rather than looked up: on mobile it comes from `getBookForLesson`, and on
-   * the server the evaluation already stores its `subjectId`. This is the
-   * strongest signal available, so it still wins over everything below.
+   * the server the evaluation already stores its `subjectId`.
    */
   lessonSubjectId?: string,
 ): boolean {
-  const kbSubjectId = lessonSubjectId;
-  if (kbSubjectId) return kbSubjectId === 'mathematics';
+  if (lessonSubjectId) return lessonSubjectId === 'mathematics';
 
-  const s = subject?.trim();
-  if (s) {
-    if (KNOWN_NON_MATH_SUBJECT.test(s)) return false;
-    if (/^(mathematics|رياضيات|math)$/i.test(s)) return true;
-  }
+  const named = subjectIdFromName(subject);
+  if (named) return named === 'mathematics';
 
   return MATH_TEXT_RE.test(lessonTextBlob(topic, kb));
 }
