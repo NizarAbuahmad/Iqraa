@@ -31,14 +31,11 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { ActivitySlide, ClassroomActivity, LessonPlanOutput } from '@/services/ai/AIService';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
-import {
-  buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey, withoutSlide,
-} from '@/services/lessonSlides';
+import { buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey, withoutSlide } from '@/services/lessonSlides';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import {
   applyMediaEdit, extractGraphCommands, insertLessonResources, nextVideoSuggestion,
-  shouldSearchForVideo, videoCaption,
-} from '@/services/classMedia';
+  shouldSearchForVideo, videoCaption } from '@/services/classMedia';
 import type { AttachedResource } from '@/services/classMedia';
 import { LessonResources } from '@/components/ui/LessonResources';
 import { LessonAttachments } from '@/components/ui/LessonAttachments';
@@ -53,10 +50,8 @@ import { deleteItem, getAllItems, saveItem, updateItem } from '@/services/worksp
 import { findMatchingItem } from '@/services/savedMaterialMatch';
 import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
-import {
-  getPickerGrades, getPickerSubjects, resolvePickerIndex,
-} from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels, topicPickerParams } from '@/services/lessonPrep';
+import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams } from '@/services/lessonPrep';
 
 const ACCENT = '#0EA5E9';
 
@@ -77,16 +72,10 @@ export default function SlidesScreen() {
   const params = useLocalSearchParams<{
     gradeIdx?: string; subjectIdx?: string; topic?: string;
   }>();
-  // A bare `topic` param (old bookmarks, callers without picker params) says
-  // which grade and subject it belongs to better than picker index 0 does —
-  // ground it instead of opening a math lesson under whatever subject sits
-  // first in the list.
-  const [inferredScope] = useState(() =>
-    params.gradeIdx == null && params.subjectIdx == null
-      ? topicPickerParams(params.topic, lang as 'ar' | 'en')
-      : null,
-  );
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
+  // An index the picker list cannot honour is NOT index 0 — see
+  // `scopeFromParams`. Grounding the topic is what recovers the right scope.
+  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en'));
+  const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
   const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
@@ -94,7 +83,7 @@ export default function SlidesScreen() {
   // it, so it must not be offered under the combined name. Same index
   // alignment as the mask above.
   const subjectNames = subjectPickerLabels(grades[gradeIdx].id, isAr ? 'ar' : 'en');
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
+  const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   const [topic, setTopic] = useState(params.topic ?? '');
   // Live as the teacher types, not gated behind pressing Generate — same
   // timing as `LessonResources`' own `topic` prop just below it.

@@ -19,6 +19,8 @@ import {
   getObjectiveById,
   getPickerGrades,
   getPickerSubjects,
+  pickerIndexOrNull,
+  resolvePickerIndex,
   getUnitById,
   hasCurriculumForSubjectGrade,
   subjectForGrade,
@@ -149,6 +151,49 @@ export function scopePickerParams(
   const subjectIdx = getPickerSubjects().findIndex(s => s.id === subjectId);
   if (gradeIdx < 0 || subjectIdx < 0) return null;
   return { gradeIdx: String(gradeIdx), subjectIdx: String(subjectIdx) };
+}
+
+/**
+ * The grade/subject a generator screen should open on, given its route params.
+ *
+ * Every screen used to inline this, and the inline version had two holes that
+ * met in one URL:
+ *
+ *   1. `resolvePickerIndex` turned an index the list cannot honour into 0, and
+ *      index 0 is Mathematics. A route saying «subject 17» and a route saying
+ *      nothing produced the same answer.
+ *   2. The topic was only grounded when BOTH params were absent, so a URL
+ *      carrying one unusable index suppressed the one input that knew better.
+ *
+ * Together: `?topic=<a grade-3 science lesson>&subjectIdx=17` with no
+ * `gradeIdx` opened Grade 10 Mathematics and generated systems of equations
+ * under a science title.
+ *
+ * So an index that names no entry is treated as absent, and the topic is
+ * ground whenever either index is missing — each falling back independently.
+ * Grounding stays lazy: it costs a KB search, and a URL with both indices
+ * usable never pays for it.
+ */
+export function scopeFromParams(
+  params: { topic?: string; gradeIdx?: string; subjectIdx?: string },
+  lang: 'ar' | 'en',
+): { gradeIdx: number; subjectIdx: number } {
+  const grades = getPickerGrades();
+  const subjects = getPickerSubjects();
+
+  const fromRoute = {
+    gradeIdx: pickerIndexOrNull(params.gradeIdx, grades.length),
+    subjectIdx: pickerIndexOrNull(params.subjectIdx, subjects.length),
+  };
+  if (fromRoute.gradeIdx != null && fromRoute.subjectIdx != null) {
+    return { gradeIdx: fromRoute.gradeIdx, subjectIdx: fromRoute.subjectIdx };
+  }
+
+  const inferred = topicPickerParams(params.topic, lang);
+  return {
+    gradeIdx: fromRoute.gradeIdx ?? resolvePickerIndex(inferred?.gradeIdx, grades.length),
+    subjectIdx: fromRoute.subjectIdx ?? resolvePickerIndex(inferred?.subjectIdx, subjects.length),
+  };
 }
 
 /**
