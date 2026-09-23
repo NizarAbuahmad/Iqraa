@@ -129,7 +129,8 @@ function isArtifact(q: string): boolean {
     return true;
   }
   // Full phrases anywhere in the message
-  if (/خطة\s*درس|ورقة\s*عمل|اختبار\s*قصير|نشاط\s*صفي|واجب\s*منزلي|lesson\s*plan|classroom\s*activity/i.test(q)) {
+  // "خطة عمل" is treated as synonymous with "خطة درس" — teachers use both.
+  if (/خطة\s*(?:درس|عمل)|ورقة\s*عمل|اختبار\s*قصير|نشاط\s*صفي|واجب\s*منزلي|lesson\s*plan|classroom\s*activity/i.test(q)) {
     return true;
   }
   // Bare / short artifact shortcuts teachers tap or type (e.g. "خطة", "إعداد اختبار")

@@ -146,6 +146,24 @@ import {
   materialTypeFor,
 } from '@/services/chatMaterialActions';
 
+/**
+ * Returns the KB subject ID when the query explicitly names a curriculum
+ * subject. Used to auto-scope KB results and skip the "which subject?" prompt.
+ */
+function extractQuerySubjectId(q: string): 'chemistry' | 'mathematics' | null {
+  if (/\bالكيمياء\b|\bكيمياء\b/i.test(q)) return 'chemistry';
+  if (/\bالرياضيات\b|\bرياضيات\b/i.test(q)) return 'mathematics';
+  return null;
+}
+
+/**
+ * True when the query names any recognisable subject (curriculum or otherwise).
+ * Prevents the "which subject?" dialog when the teacher already stated the subject.
+ */
+function queryNamesSubject(q: string): boolean {
+  return /\b(الكيمياء|كيمياء|الرياضيات|رياضيات|الأحياء|الاحياء|أحياء|احياء|الفيزياء|فيزياء|التاريخ|الجغرافيا|اللغة\s+العربية|اللغة\s+الإنجليزية|التربية\s+الإسلامية)\b/i.test(q);
+}
+
 function promptForTeachingAction(
   type: TeachingAction['type'],
   topic: string,
@@ -1724,6 +1742,7 @@ export default function IqraScreen() {
 
       // 0. Intent Router — BEFORE curriculum context / Teaching Assistant.
       //    Greetings & small talk must never trigger lesson generation.
+      const wasAwaitingClarify = awaitingClarifyRef.current;
       const route = classifyChatIntent(q, lang as 'ar' | 'en', awaitingClarifyRef.current);
       awaitingClarifyRef.current = route.intent === 'ambiguous';
       if (route.intent === 'artifact') {
@@ -1861,15 +1880,23 @@ export default function IqraScreen() {
         return;
       }
 
-      // Scope to a specific subject when the teacher answered a clarification chip
+      // Scope to a specific subject: chip tap takes priority, then an explicit
+      // subject name in the query text (e.g. "الكيمياء" / "الرياضيات").
+      const querySubjectId = extractQuerySubjectId(q);
       if (scopeSubjectId) {
         results = filterResultsBySubject(results, scopeSubjectId);
+      } else if (querySubjectId) {
+        results = filterResultsBySubject(results, querySubjectId);
       }
 
-      // 1b. Ambiguity check — only when nothing is pinned (soft default does not count)
+      // 1b. Ambiguity check — only when nothing is pinned (soft default does not count).
+      // Also skipped when the teacher named any recognisable subject in their query;
+      // asking "which subject?" when they just said "الأحياء" is confusing.
       const hasHardContext = Boolean(
         pinnedLessonId
         || scopeSubjectId
+        || querySubjectId
+        || queryNamesSubject(q)
         || teachingCtx
         || sessionMemory.lessonPin === 'hard',
       );
@@ -2015,10 +2042,16 @@ export default function IqraScreen() {
         // Artifact shortcuts like "خطة" must not die silently — ask for the lesson topic.
         if (route.intent === 'artifact') {
           responseText = t('iqraArtifactNeedTopic');
+        } else if (wasAwaitingClarify) {
+          // Short / vague reply to a clarifying question — keep the dialogue open
+          // rather than showing the generic out-of-scope message.
+          responseText = lang === 'ar'
+            ? 'وضّح لي أكثر — أخبرني بالمادة والدرس الذي تريد التحضير له؟'
+            : 'Tell me more — which subject and lesson would you like to prepare for?';
         } else {
           responseText = t('iqraOutOfScope');
+          outOfScopeSuggestions = getTopicSuggestions(3, lang as 'ar' | 'en');
         }
-        outOfScopeSuggestions = getTopicSuggestions(3, lang as 'ar' | 'en');
       } else if (
         artifactType
         && (route.intent === 'artifact' || route.intent === 'refinement')
