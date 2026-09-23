@@ -82,16 +82,37 @@ function itemsFromOwnWords(lines: string[]): SpellingItem[] {
   }));
 }
 
+/**
+ * The grade number inside a curriculum grade id (`grade-2` → 2).
+ *
+ * Null rather than a guess when it does not parse: the bank reads a missing
+ * grade as "no filter", which is the safe direction — a teacher sees the whole
+ * rule and can drop what does not suit, where a wrong number would silently
+ * hide words they wanted.
+ */
+function gradeNumber(gradeId: string | undefined): number | undefined {
+  const match = /(\d+)/.exec(gradeId ?? '');
+  return match ? Number(match[1]) : undefined;
+}
+
 export function AddDictationModal({
   visible,
   onClose,
   evaluationId,
+  gradeId,
   objectiveIds,
   onAdded,
 }: {
   visible: boolean;
   onClose: () => void;
   evaluationId: string;
+  /**
+   * The grade this evaluation is for, so the bank does not offer a
+   * seven-year-old a word from the grade 5 half of the same rule. The
+   * curriculum revisits these rules for years, so a rule spans grades and its
+   * words do not.
+   */
+  gradeId?: string;
   /** The objectives this evaluation was scoped to; the server refuses any other. */
   objectiveIds: string[];
   onAdded: (questions: EvaluationQuestion[], totalMarks: number) => void;
@@ -127,12 +148,13 @@ export function AddDictationModal({
    * eight words twice should give the same eight words, or a teacher who
    * reopens the sheet to check something finds a different paper.
    */
+  const grade = gradeNumber(gradeId);
   const items = useMemo<SpellingItem[]>(() => {
     if (source === 'own') return itemsFromOwnWords(ownLines);
     if (!rule) return [];
     const n = Math.min(Math.max(1, Number(count) || 0), MAX_WORDS);
-    return takeSpellingItems(rule, n, { seed: rule.id.length + n });
-  }, [source, ownLines, rule, count]);
+    return takeSpellingItems(rule, n, { seed: rule.id.length + n, grade });
+  }, [source, ownLines, rule, count, grade]);
 
   const marksValue = Number(marks);
   const canSave = items.length > 0 && marksValue > 0 && !!objectiveId && !busy;

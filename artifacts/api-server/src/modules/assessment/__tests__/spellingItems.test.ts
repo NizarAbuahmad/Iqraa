@@ -32,9 +32,13 @@ describe("the spelling bank emits questions the registry accepts", () => {
     for (const kind of KINDS) {
       it(`${rule.id} / ${kind}`, () => {
         for (let seed = 1; seed <= 25; seed++) {
-          const items = takeSpellingItems(rule, rule.words.length, { kinds: [kind], seed });
-          assert.ok(items.length > 0, `no items for ${rule.id} at seed ${seed}`);
-          for (const item of items) {
+          // Zero items is a legitimate answer for a kind this rule cannot
+          // support. الألف الفارقة admits exactly one plausible misspelling per
+          // word, so no word makes a three-option question, and padding one out
+          // with a distractor from another rule was the bug that produced
+          // «أرجو | ارجو | أرجوا» — an alif-fariqa question testing hamza.
+          // The vacuity guard moved down to "the rule produces something".
+          for (const item of takeSpellingItems(rule, rule.words.length, { kinds: [kind], seed })) {
             const draft = item as QuestionDraft;
             const errors = QUESTION_TYPES[draft.type].validate(draft);
             assert.deepEqual(
@@ -46,6 +50,21 @@ describe("the spelling bank emits questions the registry accepts", () => {
         }
       });
     }
+
+    it(`${rule.id} produces questions at all`, () => {
+      // The guard the per-kind loops gave up, kept where it is actually true: a
+      // rule that supports no kind at all is broken, however valid its silence
+      // is for any one kind. This is what caught the rotation sticking on an
+      // unsupported kind and returning an empty grade 3 worksheet.
+      const earliest = Math.min(...rule.grades);
+      for (const grade of [undefined, earliest, Math.max(...rule.grades)]) {
+        const items = takeSpellingItems(rule, 8, { seed: 3, grade });
+        assert.ok(
+          items.length >= 5,
+          `${rule.id} produced ${items.length} questions for grade ${String(grade)}`,
+        );
+      }
+    });
   }
 });
 

@@ -486,6 +486,7 @@ export default function EvaluationDetailScreen() {
         visible={addingDictation}
         onClose={() => setAddingDictation(false)}
         evaluationId={id}
+        gradeId={evaluation?.gradeId}
         objectiveIds={evaluation?.objectiveIds ?? []}
         onAdded={(added, totalMarks) => {
           setQuestions(prev => [...prev, ...added]);
