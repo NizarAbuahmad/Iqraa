@@ -19,6 +19,7 @@ import { useColors } from '@/hooks/useColors';
 import { countBlanks, showBlanks } from '@/services/evaluationBlanks';
 import { isolateForeignRuns } from '@/services/mathRender';
 import { blobToDataUrl, formatDuration } from '@/services/readAloudRecorder';
+import { isPlaybackSupported, playPrompt, playsLeft } from '@/services/dictationAudio';
 import { useReadAloudRecorder } from '@/hooks/useReadAloudRecorder';
 import { uploadReadAloud } from '@/services/studentExam';
 import { setBlankAt, setMatchPair, type MatchPair, type StudentResponse } from '@/services/studentAnswers';
@@ -287,8 +288,162 @@ export function ReadAloudInput({
   );
 }
 
+/**
+ * Take a dictation (إملاء): hear a word, then write it or tap it.
+ *
+ * Two modes behind one component because they are one activity. Grades 1–2 tap
+ * the correctly spelled word among near misses — they cannot yet type, and for
+ * many of them the audio is also the only instruction they can follow. Grades 3
+ * and up write what they heard.
+ *
+ * **The prompt is often a person, not a file.** A question with no `audioUrl`
+ * means the teacher reads it aloud, which is how إملاء has always been taught
+ * and the only thing that works on a native device — this app has no audio
+ * playback dependency at all. So "no audio" renders as an instruction to
+ * listen to the teacher, not as a broken control or an error.
+ *
+ * Play is one button, never `<audio controls>`: a scrub handle lets a child
+ * drag past the word, which stops being a dictation. The remaining-plays count
+ * is a nudge rather than a lock — the URL is anonymous-read by design, and a
+ * limit that pretends to be a lock is worse than one that admits what it is.
+ *
+ * The answer box is RTL and right-aligned, unlike read-aloud's LTR passage.
+ * The student is writing Arabic, and the whole question is whether they wrote
+ * the right letters.
+ */
+export function DictationInput({
+  body, response, onChange, onCommit, colors, align, t,
+}: Shared & {
+  onChange: (r: StudentResponse) => void;
+  onCommit: (r: StudentResponse) => void;
+  t: (key: TranslationKey, ...args: string[]) => string;
+}) {
+  const [playing, setPlaying] = useState(false);
+  const mode = body['mode'] === 'choice' ? 'choice' : 'write';
+  const audioUrl = typeof body['audioUrl'] === 'string' ? body['audioUrl'] : '';
+  const canPlay = !!audioUrl && isPlaybackSupported();
+  const left = playsLeft(body['playLimit'], response['played']);
+
+  const text = typeof response['text'] === 'string' ? response['text'] : '';
+  const picked = Array.isArray(response['optionIds']) ? (response['optionIds'] as string[]) : [];
+  const options = items(body['options']);
+
+  async function play() {
+    if (playing || left <= 0) return;
+    setPlaying(true);
+    // Counted on tap, not on 'ended': a student who plays it and navigates away
+    // has still heard the word, and counting only completed playbacks hands out
+    // unlimited plays to anyone who taps twice.
+    const played = typeof response['played'] === 'number' ? response['played'] : 0;
+    onCommit({ ...response, played: played + 1 });
+    await playPrompt(audioUrl);
+    setPlaying(false);
+  }
+
+  return (
+    <View style={{ marginTop: 12, gap: 12 }}>
+      {canPlay ? (
+        <View style={{ gap: 6 }}>
+          <Pressable
+            onPress={() => void play()}
+            disabled={playing || left <= 0}
+            style={[styles.recordBtn, { backgroundColor: ACCENT, opacity: playing || left <= 0 ? 0.6 : 1 }]}
+          >
+            <Ionicons name={playing ? 'volume-high' : 'play'} size={20} color="#fff" />
+            <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+              {playing ? t('dictationPlaying') : t('dictationPlay')}
+            </Text>
+          </Pressable>
+          <Text style={{ color: colors.mutedForeground, fontSize: 12, textAlign: align }}>
+            {left > 0 ? t('dictationPlaysLeft', String(left)) : t('dictationNoPlaysLeft')}
+          </Text>
+        </View>
+      ) : (
+        // The no-audio case and the native case land here together, and they
+        // read the same to a student: someone will say the word out loud.
+        <Text style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 22, textAlign: align }}>
+          {audioUrl ? t('dictationWebOnly') : t('dictationListenToTeacher')}
+        </Text>
+      )}
+
+      {mode === 'choice' ? (
+        <View style={{ gap: 10 }}>
+          <Text style={{ color: colors.foreground, fontSize: 15, textAlign: align }}>
+            {t('dictationTapCorrect')}
+          </Text>
+          {options.map(o => {
+            const on = picked.includes(o.id);
+            return (
+              <Pressable
+                key={o.id}
+                onPress={() => onCommit({ ...response, optionIds: [o.id] })}
+                style={[
+                  styles.spellingOption,
+                  {
+                    // Selected, never correct. There is no correctness to show
+                    // a student mid-exam.
+                    borderColor: on ? ACCENT : colors.border,
+                    backgroundColor: on ? ACCENT + '12' : 'transparent',
+                  },
+                ]}
+              >
+                {/* Large and centred: the child is comparing the shape of two
+                    words that differ by a single letter. */}
+                <Text
+                  style={{
+                    color: colors.foreground,
+                    fontFamily: 'Almarai_400Regular',
+                    fontSize: 24,
+                    lineHeight: 42,
+                    textAlign: 'center',
+                    writingDirection: 'rtl',
+                  }}
+                >
+                  {o.text ?? o.id}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : (
+        <View style={{ gap: 6 }}>
+          <Text style={{ color: colors.foreground, fontSize: 15, textAlign: align }}>
+            {t('dictationWriteWhatYouHear')}
+          </Text>
+          <TextInput
+            value={text}
+            onChangeText={v => onChange({ ...response, text: v })}
+            onBlur={() => onCommit({ ...response, text })}
+            multiline={typeof body['wordCount'] === 'number' && (body['wordCount'] as number) > 1}
+            placeholder={t('dictationWritePlaceholder')}
+            placeholderTextColor={colors.mutedForeground}
+            // autoCorrect and spellCheck off, emphatically. A keyboard that
+            // quietly fixes «مدرسه» to «مدرسة» answers the question for the
+            // child, and marks a spelling they did not write.
+            autoCorrect={false}
+            autoCapitalize="none"
+            spellCheck={false}
+            style={[
+              styles.dictationInput,
+              {
+                color: colors.foreground,
+                borderColor: colors.border,
+                backgroundColor: colors.card,
+                textAlign: 'right',
+                writingDirection: 'rtl',
+              },
+            ]}
+          />
+        </View>
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   passage: { borderWidth: 1, borderRadius: 12, padding: 16 },
+  spellingOption: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14 },
+  dictationInput: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, fontSize: 22, lineHeight: 40, minHeight: 64 },
   recordBtn: {
     flexDirection: 'row',
     alignItems: 'center',
