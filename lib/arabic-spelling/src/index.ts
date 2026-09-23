@@ -8,8 +8,8 @@
  * does: the evaluation generator on the API server needs it, and a self-marking
  * question requires a known answer that the server cannot ask a model for.
  */
-export type { SpellingRule, SpellingWord } from "./rules.ts";
-export { SPELLING_RULES, ruleById, rulesForGrade, rulesForLesson } from "./rules.ts";
+export type { SpellingRule, SpellingWord, VariantClass } from "./rules.ts";
+export { SPELLING_RULES, ruleById, rulesForGrade, rulesForLesson, wordsForGrade } from "./rules.ts";
 
 export type { SpellingItem, SpellingItemKind, TakeOptions } from "./items.ts";
 export { takeSpellingItems, spellingRulesForLesson, orthographicVariants } from "./items.ts";

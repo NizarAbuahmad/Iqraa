@@ -11,7 +11,7 @@
  * on different papers is not the same test. The seed is what varies them on
  * purpose — by lesson, by class, by attempt — rather than by luck.
  */
-import type { SpellingRule, SpellingWord } from "./rules.ts";
+import { wordsForGrade, type SpellingRule, type SpellingWord, type VariantClass } from "./rules.ts";
 
 /**
  * The shape the assessment layer stores, mirrored rather than imported.
@@ -35,6 +35,13 @@ export interface TakeOptions {
   kinds?: readonly SpellingItemKind[];
   /** Varies which words are picked without making the result unrepeatable. */
   seed?: number;
+  /**
+   * Draw only words this grade should have met, cumulatively.
+   *
+   * Omit to use the whole rule — which is right when a teacher chose the rule
+   * themselves rather than the app inferring it from a lesson.
+   */
+  grade?: number;
 }
 
 /**
@@ -92,7 +99,7 @@ function bare(word: string): string {
  * الألف الفارقة admits exactly one plausible misspelling per word, so it is
  * taught by true/false and by writing — which is how the book teaches it too.
  */
-export function orthographicVariants(correct: string): string[] {
+export function orthographicVariants(correct: string, only?: VariantClass): string[] {
   const word = bare(correct);
   const out: string[] = [];
   const push = (v: string) => {
@@ -100,25 +107,37 @@ export function orthographicVariants(correct: string): string[] {
   };
   const swapLast = (to: string) => push(word.slice(0, -1) + to);
   const swapFirst = (to: string) => push(to + word.slice(1));
+  const allows = (cls: VariantClass) => only === undefined || only === cls;
 
-  switch (word[word.length - 1]) {
-    case "ة": swapLast("ه"); swapLast("ت"); break;
-    case "ه": swapLast("ة"); break;
-    case "ى": swapLast("ي"); break;
-    case "ي": swapLast("ى"); break;
+  if (allows("final-taa")) {
+    switch (word[word.length - 1]) {
+      case "ة": swapLast("ه"); swapLast("ت"); break;
+      case "ه": swapLast("ة"); break;
+    }
   }
 
-  switch (word[0]) {
-    case "ا": swapFirst("أ"); swapFirst("إ"); break;
-    case "أ": swapFirst("ا"); swapFirst("إ"); break;
-    case "إ": swapFirst("ا"); swapFirst("أ"); break;
-    case "آ": swapFirst("ا"); swapFirst("أ"); break;
+  if (allows("final-alif-layyina")) {
+    switch (word[word.length - 1]) {
+      case "ى": swapLast("ي"); break;
+      case "ي": swapLast("ى"); break;
+    }
   }
 
-  // The silent alif after a plural waw: adding one where it does not belong and
-  // dropping one where it does are the two halves of the same lesson.
-  if (word.endsWith("وا")) push(word.slice(0, -1));
-  else if (word.endsWith("و")) push(word + "ا");
+  if (allows("initial-hamza")) {
+    switch (word[0]) {
+      case "ا": swapFirst("أ"); swapFirst("إ"); break;
+      case "أ": swapFirst("ا"); swapFirst("إ"); break;
+      case "إ": swapFirst("ا"); swapFirst("أ"); break;
+      case "آ": swapFirst("ا"); swapFirst("أ"); break;
+    }
+  }
+
+  if (allows("final-waw")) {
+    // The silent alif after a plural waw: adding one where it does not belong
+    // and dropping one where it does are the two halves of the same lesson.
+    if (word.endsWith("وا")) push(word.slice(0, -1));
+    else if (word.endsWith("و")) push(word + "ا");
+  }
 
   return out;
 }
@@ -138,13 +157,15 @@ function optionsFor(
   seed: number,
   max: number,
   taken: ReadonlySet<string>,
+  variantClass: VariantClass | undefined,
 ): { id: string; text: string }[] | null {
   const correct = bare(word.correct);
   const listed = word.wrong.map(bare);
   // Authored misspellings first — they are the ones a teacher vouched for —
-  // then derived ones to fill the question out.
+  // then derived ones, restricted to the rule's own confusion, to fill the
+  // question out.
   const pool: string[] = [];
-  for (const candidate of [...listed, ...orthographicVariants(word.correct)]) {
+  for (const candidate of [...listed, ...orthographicVariants(word.correct, variantClass)]) {
     // A distractor that is another word's correct spelling would be a second
     // right answer on the page.
     if (candidate === correct || pool.includes(candidate) || taken.has(candidate)) continue;
@@ -160,8 +181,9 @@ function chooseItem(
   word: SpellingWord,
   seed: number,
   taken: ReadonlySet<string>,
+  variantClass: VariantClass | undefined,
 ): SpellingItem | null {
-  const options = optionsFor(word, seed, 4, taken);
+  const options = optionsFor(word, seed, 4, taken, variantClass);
   if (!options) return null;
   const correct = options.find(o => o.text === bare(word.correct))!;
   return {
@@ -201,8 +223,9 @@ function tapItem(
   word: SpellingWord,
   seed: number,
   taken: ReadonlySet<string>,
+  variantClass: VariantClass | undefined,
 ): SpellingItem | null {
-  const options = optionsFor(word, seed, 3, taken);
+  const options = optionsFor(word, seed, 3, taken, variantClass);
   if (!options) return null;
   const correct = options.find(o => o.text === bare(word.correct))!;
   return {
@@ -231,27 +254,50 @@ export function takeSpellingItems(
     ? opts.kinds
     : ["choose", "judge", "write", "tap"];
   const seed = opts.seed ?? 1;
-  // Every correct spelling in the rule, so a derived distractor can never be
-  // another word's answer.
+  // Grade filters the pool, not the questions: a rule the books revisit for
+  // four years holds words a seven-year-old has never met, and before this a
+  // Grade 2 worksheet could draw «اِجْتَمَعَ».
+  const pool = wordsForGrade(rule, opts.grade);
+  // Every correct spelling in the rule — including the ones this grade is not
+  // being asked about — so a derived distractor can never be another word's
+  // answer.
   const taken = new Set(rule.words.map(w => bare(w.correct)));
+
+  /**
+   * Drop kinds no word in this pool can produce, before drawing anything.
+   *
+   * Without this the rotation sticks. الألف الفارقة admits exactly one
+   * plausible misspelling per word, so no word makes a three-option question —
+   * every word failed `choose`, the kind index never advanced past it, and a
+   * grade 3 worksheet came back **empty**. A shifted mix is a compromise a
+   * teacher can see on the preview list; an empty worksheet is a broken
+   * feature, and the tests now pin both.
+   */
+  const usableKinds = kinds.filter(kind => {
+    if (kind === "write") return true;
+    if (kind === "judge") return pool.some(w => w.wrong.length > 0);
+    const max = kind === "choose" ? 4 : 3;
+    return pool.some(w => optionsFor(w, seed, max, taken, rule.variantClass) !== null);
+  });
+  if (usableKinds.length === 0) return [];
 
   const items: SpellingItem[] = [];
   let kindIndex = 0;
-  for (const word of shuffled(rule.words, seed)) {
+  for (const word of shuffled(pool, seed)) {
     if (items.length >= Math.max(0, count)) break;
-    const kind = kinds[kindIndex % kinds.length]!;
+    const kind = usableKinds[kindIndex % usableKinds.length]!;
     const wordSeed = seed + items.length * 7919;
 
     let item: SpellingItem | null;
     switch (kind) {
       case "choose":
-        item = chooseItem(word, wordSeed, taken);
+        item = chooseItem(word, wordSeed, taken, rule.variantClass);
         break;
       case "judge":
         item = word.wrong.length > 0 ? judgeItem(word, wordSeed) : null;
         break;
       case "tap":
-        item = tapItem(word, wordSeed, taken);
+        item = tapItem(word, wordSeed, taken, rule.variantClass);
         break;
       case "write":
         item = writeItem(word);

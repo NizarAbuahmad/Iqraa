@@ -14,8 +14,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { normalizeArabic } from "@workspace/curriculum";
-import { SPELLING_RULES, rulesForGrade, rulesForLesson } from "../rules.ts";
-import { takeSpellingItems } from "../items.ts";
+import { SPELLING_RULES, rulesForGrade, rulesForLesson, wordsForGrade } from "../rules.ts";
+import { orthographicVariants, takeSpellingItems } from "../items.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "../../../..");
@@ -99,6 +99,45 @@ describe("every rule is well formed", () => {
           for (const bad of w.wrong) {
             const d = editDistance(strict(w.correct), strict(bad));
             assert.ok(d >= 1 && d <= 2, `«${bad}» is ${d} edits from «${w.correct}»`);
+          }
+        }
+      });
+
+      it("gives every word a grade the rule actually covers", () => {
+        // The bug this pins: before `grade` existed, a Grade 2 worksheet on
+        // همزة الوصل could draw «اِجْتَمَعَ» — a خماسي verb a seven-year-old
+        // has never met — because the rule spans grades 2 to 5 and the words
+        // were one undifferentiated pool.
+        for (const w of rule.words) {
+          assert.ok(
+            rule.grades.includes(w.grade),
+            `«${w.correct}» is grade ${w.grade}, which ${rule.id} does not teach (${rule.grades.join(", ")})`,
+          );
+        }
+      });
+
+      it("has enough words for the earliest grade that meets it", () => {
+        // A rule whose words are all tagged for later grades would silently
+        // produce an empty worksheet for the grade that introduces it.
+        const earliest = Math.min(...rule.grades);
+        const available = wordsForGrade(rule, earliest);
+        assert.ok(
+          available.length >= 5,
+          `${rule.id} offers only ${available.length} words to grade ${earliest}, which introduces it`,
+        );
+      });
+
+      it("only derives distractors that test this rule", () => {
+        // «أَرْجُو» sits in الألف الفارقة and opens with همزة قطع, so an
+        // unrestricted derivation offered «ارجو» and turned an alif-fariqa
+        // question into a hamza one. A child's wrong answer then tells the
+        // teacher nothing about the lesson they just taught.
+        if (!rule.variantClass) return;
+        for (const w of rule.words) {
+          const scoped = orthographicVariants(w.correct, rule.variantClass);
+          const unscoped = orthographicVariants(w.correct);
+          for (const v of scoped) {
+            assert.ok(unscoped.includes(v), `scoping invented a variant: ${v}`);
           }
         }
       });
@@ -266,6 +305,51 @@ describe("takeSpellingItems", () => {
           assert.ok(known, `«${answer.text}» is marked correct but is not a spelling in ${r.id}`);
         }
       }
+    }
+  });
+
+  it("never serves a later grade's word to an earlier grade", () => {
+    // The whole point of the grade tag, asserted end to end rather than on the
+    // data alone: a Grade 2 request must not contain Grade 4 or 5 vocabulary.
+    for (const r of SPELLING_RULES) {
+      const earliest = Math.min(...r.grades);
+      const allowed = new Set(
+        wordsForGrade(r, earliest).flatMap(w => [strict(w.correct), ...w.wrong.map(strict)]),
+      );
+      for (let seed = 1; seed <= 20; seed++) {
+        for (const item of takeSpellingItems(r, 50, { grade: earliest, seed })) {
+          const shown = JSON.stringify(item);
+          for (const w of r.words) {
+            if (w.grade <= earliest) continue;
+            assert.ok(
+              !shown.includes(strict(w.correct)),
+              `${r.id} served grade-${w.grade} «${w.correct}» to grade ${earliest}`,
+            );
+          }
+        }
+      }
+      assert.ok(allowed.size > 0);
+    }
+  });
+
+  it("still fills a worksheet for the grade that introduces each rule", () => {
+    // Filtering that leaves a teacher with two questions is not a fix.
+    for (const r of SPELLING_RULES) {
+      const earliest = Math.min(...r.grades);
+      const items = takeSpellingItems(r, 8, { grade: earliest, seed: 11 });
+      assert.ok(items.length >= 5, `${r.id} gave grade ${earliest} only ${items.length} questions`);
+    }
+  });
+
+  it("draws earlier grades' words when a later grade revises", () => {
+    for (const r of SPELLING_RULES) {
+      const earliest = Math.min(...r.grades);
+      const latest = Math.max(...r.grades);
+      if (earliest === latest) continue;
+      assert.ok(
+        wordsForGrade(r, latest).length > wordsForGrade(r, earliest).length,
+        `${r.id} gives grade ${latest} no more than grade ${earliest} — revision should be cumulative`,
+      );
     }
   });
 
