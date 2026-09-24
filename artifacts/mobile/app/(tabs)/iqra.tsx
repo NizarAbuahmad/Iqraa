@@ -889,7 +889,7 @@ function MessageBubble({
               {message.text}
             </Text>
           ) : null}
-          <Text style={[styles.timestamp, { color: 'rgba(255,255,255,0.7)', textAlign: isRTL ? 'left' : 'right' }]}>
+          <Text style={[styles.timestamp, { color: 'rgba(255,255,255,0.95)', textAlign: isRTL ? 'left' : 'right' }]}>
             {timeLabel}
           </Text>
         </View>
@@ -2721,16 +2721,6 @@ export default function IqraScreen() {
     const toolParams = { ...(topic ? { topic } : {}), ...(idx ?? {}) };
     return (
       <View style={{ width: '100%', marginTop: 14, gap: 8 }}>
-        <Text
-          style={{
-            fontFamily: 'Cairo_600SemiBold',
-            fontSize: 12.5,
-            color: colors.mutedForeground,
-            textAlign: isRTL ? 'right' : 'left',
-          }}
-        >
-          {t('homePrepTitle')} · {t('homeReady', rows.filter(r => r.done).length, rows.length)}
-        </Text>
         <LessonPrepBoard
           rows={rows}
           colors={colors}
@@ -2738,8 +2728,13 @@ export default function IqraScreen() {
           isAr={lang === 'ar'}
           compact
           disabled={!topic}
+          title={t('homePrepTitle')}
+          readyLabel={t('homeReady', rows.filter(r => r.done).length, rows.length)}
           openLabel={t('homeOpen')}
           makeLabel={t('homePrepMake')}
+          createLabel={t('homePrepCreate')}
+          notYetLabel={t('homePrepNotYet')}
+          doneLabel={t('homePrepDone')}
           onOpen={(row) =>
             row.material && router.push({ pathname: '/workspace/view', params: { id: row.material.id } })
           }

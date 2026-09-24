@@ -51,6 +51,7 @@ import { allPremade } from '@workspace/curriculum/premade';
 import { EXTERNAL_RESOURCES } from '@workspace/curriculum';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
 const KIND_LABEL: Record<ResourceKind, TranslationKey> = {
   worksheet: 'resourceKindWorksheet',
@@ -93,7 +94,9 @@ const SECTION_LABEL: Record<ResourceSource, TranslationKey> = {
   'book-qr': 'qrLibraryTitle',
 };
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 function ResourceRow({ item, accent }: { item: ResourceItem; accent: string }) {
   const colors = useColors();
@@ -244,7 +247,7 @@ export default function ResourcesScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <Pressable
           onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
@@ -294,7 +297,7 @@ export default function ResourcesScreen() {
                     style={[
                       styles.chipText,
                       {
-                        color: active ? '#fff' : colors.mutedForeground,
+                        color: active ? palette.primaryForeground : colors.mutedForeground,
                         fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
                       },
                     ]}
@@ -335,7 +338,7 @@ export default function ResourcesScreen() {
                       styles.chipText,
                       {
                         maxWidth: 200,
-                        color: active ? '#fff' : colors.mutedForeground,
+                        color: active ? palette.primaryForeground : colors.mutedForeground,
                         fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
                       },
                     ]}
@@ -474,7 +477,7 @@ const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 18, gap: 6 },
   backBtn: { padding: 4, marginBottom: 4 },
   heroTitle: { color: '#fff', fontSize: 22 },
-  heroMeta: { color: '#ffffffcc', fontSize: 13, lineHeight: 21 },
+  heroMeta: { color: 'rgba(255,255,255,0.95)', fontSize: 13, lineHeight: 21 },
   intro: { fontSize: 12.5, lineHeight: 20, paddingHorizontal: 20, paddingTop: 14 },
   chipRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },

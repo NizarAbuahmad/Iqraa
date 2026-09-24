@@ -19,8 +19,11 @@ import { getLessonById } from '@/services/knowledgeBase';
 import { buildDayAgenda, dayHasAgenda, isInMonth, monthGridDates } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 const WEEKDAY_KEYS = [
   'planWeekdaySun', 'planWeekdayMon', 'planWeekdayTue', 'planWeekdayWed',
   'planWeekdayThu', 'planWeekdayFri', 'planWeekdaySat',
@@ -116,7 +119,7 @@ export default function CalendarScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <View style={{ flexDirection: rowDir, justifyContent: 'space-between', alignItems: 'center' }}>
           <Pressable onPress={() => goBack()} hitSlop={12}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
@@ -189,7 +192,7 @@ export default function CalendarScreen() {
                     >
                       <Text
                         style={{
-                          color: isSelected ? '#fff' : inMonth ? colors.foreground : colors.mutedForeground,
+                          color: isSelected ? palette.primaryForeground : inMonth ? colors.foreground : colors.mutedForeground,
                           fontFamily: isToday || isSelected ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
                           fontSize: 13, opacity: inMonth ? 1 : 0.4,
                         }}

@@ -58,8 +58,11 @@ import { findMatchingItem } from '@/services/savedMaterialMatch';
 import { confirm } from '@/services/confirm';
 import { timerSecondsForSlide } from '@/services/presentationUtils';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 const MAX_SLIDE_COUNT = 20;
 
 export default function PromptSlidesScreen() {
@@ -433,7 +436,7 @@ export default function PromptSlidesScreen() {
               <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
                 {t('promptSlidesTitle')}
               </Text>
-              <Text style={{ color: 'rgba(255,255,255,0.78)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }}>
+              <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }}>
                 {t('promptSlidesSubtitle')}
               </Text>
             </View>
@@ -579,7 +582,7 @@ export default function PromptSlidesScreen() {
                           }]}
                         >
                           <Text style={{
-                            color: on ? '#fff' : colors.mutedForeground,
+                            color: on ? palette.primaryForeground : colors.mutedForeground,
                             fontFamily: 'Cairo_500Medium', fontSize: 12,
                           }}>
                             {opt.label}
@@ -631,7 +634,7 @@ export default function PromptSlidesScreen() {
             below the form, so the screen says what the next step produces. */}
         {!deck && !loading && !cancelled && !error && (
           <View style={[styles.emptyCard, { borderColor: colors.border, borderRadius: colors.radius }]}>
-            <View style={[styles.emptyIcon, { backgroundColor: ACCENT }]}>
+            <View style={[styles.emptyIcon, { backgroundColor: ACCENT_FILL }]}>
               <Ionicons name="sparkles" size={26} color="#fff" />
             </View>
             <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
@@ -700,7 +703,7 @@ export default function PromptSlidesScreen() {
 
             <Pressable
               onPress={present}
-              style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
+              style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT_FILL, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
             >
               <Ionicons name="tv-outline" size={20} color="#fff" />
               <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 15 }}>{t('presentOnScreen')}</Text>
@@ -725,8 +728,8 @@ export default function PromptSlidesScreen() {
                   },
                 ]}
               >
-                <Ionicons name={savedId ? 'bookmark' : 'bookmark-outline'} size={16} color={savedId ? '#fff' : ACCENT} />
-                <Text style={{ color: savedId ? '#fff' : ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                <Ionicons name={savedId ? 'bookmark' : 'bookmark-outline'} size={16} color={savedId ? palette.primaryForeground : ACCENT} />
+                <Text style={{ color: savedId ? palette.primaryForeground : ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
                   {savedId ? t('savedLabel') : t('save')}
                 </Text>
               </Pressable>
@@ -813,7 +816,7 @@ export default function PromptSlidesScreen() {
               </Pressable>
               <Pressable
                 onPress={applyEdit}
-                style={[styles.secondaryBtn, { borderColor: ACCENT, backgroundColor: ACCENT, borderRadius: colors.radius }]}
+                style={[styles.secondaryBtn, { borderColor: ACCENT, backgroundColor: ACCENT_FILL, borderRadius: colors.radius }]}
               >
                 <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('save')}</Text>
               </Pressable>

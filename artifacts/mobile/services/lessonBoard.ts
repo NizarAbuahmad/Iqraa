@@ -31,6 +31,8 @@ export type MaterialLike = {
 export type PrepRowMeta = {
   type: PrepType;
   emoji: string;
+  /** Ionicons name — the board draws it in a tile; the emoji stays for chat text. */
+  icon: string;
   labelAr: string;
   labelEn: string;
   /** The generator that makes this material. */
@@ -46,11 +48,11 @@ export type PrepRow = PrepRowMeta & {
 };
 
 export const PREP_ROWS: PrepRowMeta[] = [
-  { type: 'lesson-plan', emoji: '📘', labelAr: 'خطة الدرس', labelEn: 'Lesson plan', route: '/ai-tools/lesson-plan' },
-  { type: 'worksheet', emoji: '📝', labelAr: 'ورقة عمل', labelEn: 'Worksheet', route: '/ai-tools/worksheet' },
-  { type: 'quiz', emoji: '✅', labelAr: 'اختبار قصير', labelEn: 'Quiz', route: '/ai-tools/quiz' },
-  { type: 'slides', emoji: '🎬', labelAr: 'عرض الحصة', labelEn: 'Class slides', route: '/ai-tools/slides' },
-  { type: 'activity', emoji: '🎯', labelAr: 'نشاط صفّي', labelEn: 'Class activity', route: '/ai-tools/activity' },
+  { type: 'lesson-plan', emoji: '📘', icon: 'document-text-outline', labelAr: 'خطة الدرس', labelEn: 'Lesson plan', route: '/ai-tools/lesson-plan' },
+  { type: 'worksheet', emoji: '📝', icon: 'list-outline', labelAr: 'ورقة عمل', labelEn: 'Worksheet', route: '/ai-tools/worksheet' },
+  { type: 'quiz', emoji: '✅', icon: 'checkmark-done-outline', labelAr: 'اختبار قصير', labelEn: 'Quiz', route: '/ai-tools/quiz' },
+  { type: 'slides', emoji: '🎬', icon: 'tv-outline', labelAr: 'عرض الحصة', labelEn: 'Class slides', route: '/ai-tools/slides' },
+  { type: 'activity', emoji: '🎯', icon: 'people-outline', labelAr: 'نشاط صفّي', labelEn: 'Class activity', route: '/ai-tools/activity' },
 ];
 
 /**

@@ -30,8 +30,9 @@ import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, formatLessonPlanText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
 
 const DURATION_VALUES = [30, 45, 60, 90];
 const STYLE_IDS = ['direct', 'inquiry', 'collaborative'] as const;

@@ -8,8 +8,9 @@ import { pickLessonFiles, pickLessonPhotos } from '@/services/lessonMediaPick';
 import {
   deleteLessonMedia, listLessonMedia, uploadLessonMedia, type LessonMediaItem,
 } from '@/services/lessonMediaApi';
+import { palette } from '@/constants/colors';
 
-const TEAL = '#007C74';
+const TEAL = palette.primary;
 
 type Props = {
   /** The lesson's own KB id (e.g. `kbl-math-s1-nccd-u2_l1`) — empty when the topic isn't a grounded lesson yet, in which case nothing renders. */

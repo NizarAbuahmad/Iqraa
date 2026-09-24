@@ -31,6 +31,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useReadAloudRecorder } from '@/hooks/useReadAloudRecorder';
 import { blobToDataUrl, formatDuration } from '@/services/readAloudRecorder';
 import { scorePracticeReadAloud, type PracticeResult } from '@/services/practiceReadAloud';
+import { palette } from '@/constants/colors';
 
 /** Where a reading stops being worth repeating and starts being worth moving on from. */
 const GOOD_ENOUGH = 0.9;
@@ -259,7 +260,7 @@ function PassageCard({ passage }: { passage: PracticePassage }) {
   );
 }
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
 
 export function ReadAloudPracticePanel({ lessonId, accent }: { lessonId: string; accent: string }) {
   const colors = useColors();

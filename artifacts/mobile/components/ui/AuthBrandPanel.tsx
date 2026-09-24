@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   valueProp: {
     fontSize: 14,
     lineHeight: 22,
-    color: 'rgba(255,255,255,0.82)',
+    color: 'rgba(255,255,255,0.95)',
     maxWidth: 320,
     marginTop: 2,
   },

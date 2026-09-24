@@ -40,8 +40,12 @@ import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams } from '@/services/lessonPrep';
 import { ToolHeader } from '@/components/ui/ToolHeader';
+import { readableOn } from '@/services/readableColor';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 const QUESTION_COUNTS = [5, 8, 10, 12];
 
 export default function ClassGameScreen() {
@@ -204,7 +208,7 @@ export default function ClassGameScreen() {
           </Text>
           {[t('gameHow1'), t('gameHow2'), t('gameHow3'), t('gameHow4')].map((line, i) => (
             <View key={i} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', marginTop: 6 }}>
-              <View style={[styles.stepNum, { backgroundColor: ACCENT }]}>
+              <View style={[styles.stepNum, { backgroundColor: ACCENT_FILL }]}>
                 <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
               <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
@@ -277,7 +281,7 @@ export default function ClassGameScreen() {
                   }]}
                 >
                   <Text style={{ fontSize: 14 }}>{team.emoji}</Text>
-                  <Text style={{ color: team.color, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>{team.name}</Text>
+                  <Text style={{ color: readableOn(team.color, colors.card, 5.5) /* on the team tint, so a margin over 4.5 */, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>{team.name}</Text>
                 </View>
               ))}
             </View>
@@ -359,7 +363,7 @@ export default function ClassGameScreen() {
               </Text>
               {deck.materials.map((m, i) => (
                 <View key={i} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', marginTop: 5 }}>
-                  <View style={[styles.dot, { backgroundColor: ACCENT }]} />
+                  <View style={[styles.dot, { backgroundColor: ACCENT_FILL }]} />
                   <Text
                     style={{
                       flex: 1,
@@ -379,7 +383,7 @@ export default function ClassGameScreen() {
 
             <Pressable
               onPress={start}
-              style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
+              style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT_FILL, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
             >
               <Ionicons name="play-circle" size={22} color="#fff" />
               <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 16 }}>{t('gameStart')}</Text>

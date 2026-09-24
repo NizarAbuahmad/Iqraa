@@ -8,8 +8,9 @@ import { classifyMediaUrl } from '@/services/classMedia';
 import {
   addLessonMedia, getLessonMedia, removeLessonMedia, type LessonMediaItem,
 } from '@/services/lessonMedia';
+import { palette } from '@/constants/colors';
 
-const TEAL = '#007C74';
+const TEAL = palette.primary;
 
 type Props = {
   /** Lesson these resources belong to. Empty means no lesson picked yet. */

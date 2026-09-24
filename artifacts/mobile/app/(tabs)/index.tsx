@@ -283,12 +283,6 @@ function LessonWorkspace() {
                   </Text>
                 ) : null}
               </View>
-              {topic ? (
-                <View style={{ alignItems: 'center' }}>
-                  <Text style={[s.ready, { color: colors.primary }]}>{summary.done}/{summary.total}</Text>
-                  <Text style={[s.readyLabel, { color: colors.mutedForeground }]}>{t('homePrepTitle')}</Text>
-                </View>
-              ) : null}
             </View>
 
             {startClassError ? (
@@ -305,8 +299,13 @@ function LessonWorkspace() {
                 isRTL={isRTL}
                 isAr={isAr}
                 disabled={!topic}
+                title={t('homePrepTitle')}
+                readyLabel={t('homeReady', summary.done, summary.total)}
                 openLabel={t('homeOpen')}
                 makeLabel={t('homePrepMake')}
+                createLabel={t('homePrepCreate')}
+                notYetLabel={t('homePrepNotYet')}
+                doneLabel={t('homePrepDone')}
                 onOpen={(row) => row.material && router.push({ pathname: '/workspace/view', params: { id: row.material.id } })}
                 onMake={(row) => router.push({ pathname: row.route as never, params: toolParams as never })}
               />
@@ -468,8 +467,6 @@ const s = StyleSheet.create({
   crumb: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular' },
   lessonTitle: { fontSize: 22, fontFamily: 'Cairo_700Bold', lineHeight: 34 },
   hint: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', marginTop: 6 },
-  ready: { fontSize: 26, fontFamily: 'Cairo_700Bold' },
-  readyLabel: { fontSize: 11, lineHeight: 18, fontFamily: 'Almarai_400Regular' },
 
 
   errorRow: { alignItems: 'center', gap: 7, borderRadius: 10, padding: 9, marginTop: 12 },

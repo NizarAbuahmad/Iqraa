@@ -66,8 +66,11 @@ import { confirm } from '@/services/confirm';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 /** Centred column on desktop web; full-bleed on phones. */
 const CENTERED = { width: '100%' as const, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' as const };
 
@@ -462,7 +465,7 @@ export default function ClassDetailScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <View
           style={{
             flexDirection: isRTL ? 'row-reverse' : 'row',
@@ -774,7 +777,7 @@ export default function ClassDetailScreen() {
         }}
         accessibilityRole="button"
         accessibilityLabel={t(tab === 'students' ? 'addStudents' : tab === 'exams' ? 'attachExam' : 'attachMaterial')}
-        style={[styles.fab, { backgroundColor: ACCENT, bottom: insets.bottom + 24 }]}
+        style={[styles.fab, { backgroundColor: ACCENT_FILL, bottom: insets.bottom + 24 }]}
       >
         <Ionicons name={tab === 'students' ? 'person-add' : 'add'} size={22} color="#fff" />
       </Pressable>
@@ -929,7 +932,7 @@ export default function ClassDetailScreen() {
                 style={[
                   styles.modalBtn,
                   styles.modalPrimary,
-                  { backgroundColor: ACCENT, opacity: !editName.trim() || savingEdit ? 0.5 : 1 },
+                  { backgroundColor: ACCENT_FILL, opacity: !editName.trim() || savingEdit ? 0.5 : 1 },
                 ]}
               >
                 {savingEdit ? (
@@ -1018,7 +1021,7 @@ export default function ClassDetailScreen() {
                   styles.modalBtn,
                   styles.modalPrimary,
                   {
-                    backgroundColor: ACCENT,
+                    backgroundColor: ACCENT_FILL,
                     opacity: parsedNames.length === 0 || saving ? 0.5 : 1,
                   },
                 ]}
@@ -1090,7 +1093,7 @@ export default function ClassDetailScreen() {
                 style={[
                   styles.modalBtn,
                   styles.modalPrimary,
-                  { backgroundColor: ACCENT, opacity: savingNote ? 0.5 : 1 },
+                  { backgroundColor: ACCENT_FILL, opacity: savingNote ? 0.5 : 1 },
                 ]}
               >
                 {savingNote ? (
@@ -1440,7 +1443,7 @@ const styles = StyleSheet.create({
   tabs: { marginTop: 6 },
   tab: { paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 2, alignItems: 'center', gap: 2 },
   tabLabel: { fontSize: 15 },
-  tabCount: { fontSize: 11, lineHeight: 18, color: 'rgba(255,255,255,0.75)' },
+  tabCount: { fontSize: 11, lineHeight: 18, color: 'rgba(255,255,255,0.95)' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   row: {
     flexDirection: 'row',

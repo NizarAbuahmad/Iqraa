@@ -15,6 +15,7 @@ import {
   isCurriculumBookVisible,
 } from '@/services/curriculumData';
 import { goBack } from '@/services/navigation';
+import { readableOn } from '@/services/readableColor';
 
 /** Unit picker for a selected semester (book). */
 export default function LessonsScreen() {
@@ -35,7 +36,10 @@ export default function LessonsScreen() {
     semesterLabel?: string;
   }>();
 
-  const color = subjectColor ?? colors.primary;
+  // Subject colours are picked for hue; `colorFill` carries white header text,
+  // `color` is text and tints on cards — each adjusted to stay legible.
+  const colorFill = readableOn(subjectColor ?? colors.hero, '#FFFFFF');
+  const color = readableOn(subjectColor ?? colors.primary, colors.card);
   const bookAllowed = isCurriculumBookVisible(bookId ?? '');
   const book = getBookById(bookId ?? '');
 
@@ -55,17 +59,17 @@ export default function LessonsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { backgroundColor: color, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.header, { backgroundColor: colorFill, paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.eyebrow, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.eyebrow, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {semesterLabel}
         </Text>
         <Text style={[styles.title, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('selectUnit')}
         </Text>
-        <Text style={[styles.sub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.sub, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('unitsAvailable', units.length)}
         </Text>
       </View>

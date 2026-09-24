@@ -37,6 +37,7 @@ import { EditableText } from '@/components/ui/Editable';
 import { optionLetter } from '@/services/optionLabels';
 import { confirm } from '@/services/confirm';
 import { ToolHeader } from '@/components/ui/ToolHeader';
+import { palette } from '@/constants/colors';
 import {
   answerFor,
   applyWorksheetAnswerEdit,
@@ -46,7 +47,9 @@ import {
   parsePoints,
   removeWorksheetQuestionAt } from '@/services/worksheetEdits';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 type DifficultyLevel = 'normal' | 'high' | 'difficult';
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
@@ -692,7 +695,7 @@ export default function WorksheetScreen() {
                     accessibilityState={{ selected: active }}
                     style={[styles.levelTab, { backgroundColor: active ? ACCENT : 'transparent', borderRadius: colors.radius }]}
                   >
-                    <Text style={{ color: active ? '#fff' : ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{label}</Text>
+                    <Text style={{ color: active ? palette.primaryForeground : ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{label}</Text>
                   </Pressable>
                 );
               })}
@@ -730,7 +733,7 @@ export default function WorksheetScreen() {
             style={({ pressed }) => [
               styles.presentBtn,
               {
-                backgroundColor: ACCENT,
+                backgroundColor: ACCENT_FILL,
                 borderRadius: colors.radius,
                 flexDirection: isRTL ? 'row-reverse' : 'row',
                 opacity: pressed ? 0.88 : 1,

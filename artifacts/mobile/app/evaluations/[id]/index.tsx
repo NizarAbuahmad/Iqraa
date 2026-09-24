@@ -36,8 +36,11 @@ import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookFigureRefsForObjectives } from '@/services/bookFigureUri';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 const STATUS_KEY: Record<Evaluation['status'], TranslationKey> = {
   draft: 'evalStatusDraft',
@@ -222,7 +225,7 @@ export default function EvaluationDetailScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ paddingBottom: 60 }}>
-      <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
@@ -296,7 +299,7 @@ export default function EvaluationDetailScreen() {
         <View style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
           <Pressable
             onPress={() => router.push({ pathname: '/evaluations/[id]/answers', params: { id: evaluation.id } })}
-            style={[styles.enterAnswersBtn, { backgroundColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            style={[styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="create-outline" size={18} color="#fff" />
             <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
@@ -340,7 +343,7 @@ export default function EvaluationDetailScreen() {
         {questions.map((q, i) => (
           <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <View style={[styles.qNum, { backgroundColor: ACCENT }]}>
+              <View style={[styles.qNum, { backgroundColor: ACCENT_FILL }]}>
                 <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 12 }}>{i + 1}</Text>
               </View>
               <View style={[styles.typeBadge, { backgroundColor: ACCENT + '18' }]}>
@@ -414,7 +417,7 @@ export default function EvaluationDetailScreen() {
           <Pressable
             onPress={onPublish}
             disabled={!!busy || questions.length === 0}
-            style={[styles.actionBtn, { backgroundColor: ACCENT, opacity: !!busy || questions.length === 0 ? 0.6 : 1 }]}
+            style={[styles.actionBtn, { backgroundColor: ACCENT_FILL, opacity: !!busy || questions.length === 0 ? 0.6 : 1 }]}
           >
             {busy === 'publish' ? (
               <ActivityIndicator color="#fff" size="small" />

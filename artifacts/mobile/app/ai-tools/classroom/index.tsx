@@ -12,8 +12,10 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { ACTIVITY_CARDS, ActivityCard, buildBuilderRoute, cardMetaLabel } from '@/services/classroomRouting';
 import { arCountPhrase } from '@/services/arCount';
 import { ToolHeader } from '@/components/ui/ToolHeader';
+import { readableOn } from '@/services/readableColor';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
 
 type FilterKey = 'all' | 'quick' | 'team' | 'solo';
 
@@ -104,7 +106,7 @@ export default function ClassroomHubScreen() {
                 onPress={() => { setFilter(f.key); Haptics.selectionAsync(); }}
                 style={[styles.chip, { backgroundColor: active ? ACCENT : colors.muted, borderColor: active ? ACCENT : colors.border }]}
               >
-                <Text style={[styles.chipText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
+                <Text style={[styles.chipText, { color: active ? palette.primaryForeground : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
                   {t(f.labelKey as any)}
                 </Text>
               </Pressable>
@@ -179,7 +181,7 @@ export default function ClassroomHubScreen() {
                 >
                   {/* New badge */}
                   {card.isNew && (
-                    <View style={[styles.newBadge, { backgroundColor: card.accentColor }]}>
+                    <View style={[styles.newBadge, { backgroundColor: readableOn(card.accentColor, '#FFFFFF') }]}>
                       <Text style={[styles.newBadgeText, { fontFamily: 'Cairo_600SemiBold' }]}>
                         {t('marketplaceNew' as any)}
                       </Text>
@@ -198,13 +200,13 @@ export default function ClassroomHubScreen() {
                         {t(card.descKey as any)}
                       </Text>
                     </View>
-                    <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={card.accentColor} style={{ alignSelf: 'center' }} />
+                    <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={readableOn(card.accentColor, colors.card)} style={{ alignSelf: 'center' }} />
                   </View>
 
                   <View style={[styles.metaRow, { flexDirection: isRTL ? 'row-reverse' : 'row', borderTopColor: colors.border }]}>
-                    <MetaPill icon="time-outline"       label={cardMetaLabel(card.duration, lang)}     color={card.accentColor} />
-                    <MetaPill icon="people-outline"     label={cardMetaLabel(card.groupType, lang)}    color={card.accentColor} />
-                    <MetaPill icon="speedometer-outline" label={cardMetaLabel(card.difficulty, lang)}  color={card.accentColor} />
+                    <MetaPill icon="time-outline"       label={cardMetaLabel(card.duration, lang)}     color={readableOn(card.accentColor, colors.card)} />
+                    <MetaPill icon="people-outline"     label={cardMetaLabel(card.groupType, lang)}    color={readableOn(card.accentColor, colors.card)} />
+                    <MetaPill icon="speedometer-outline" label={cardMetaLabel(card.difficulty, lang)}  color={readableOn(card.accentColor, colors.card)} />
                   </View>
                 </Pressable>
               ))}
@@ -248,7 +250,7 @@ const styles = StyleSheet.create({
   featuredTop:   { alignItems: 'center', padding: 20, paddingBottom: 16 },
   featuredEmoji: { fontSize: 44, flexShrink: 0 },
   featuredTitle: { fontSize: 20, color: '#fff', marginBottom: 6 },
-  featuredDesc:  { fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 18 },
+  featuredDesc:  { fontSize: 13, color: 'rgba(255,255,255,0.95)', lineHeight: 18 },
   featuredArrow: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 18, flexShrink: 0 },
   featuredMeta:  { borderTopWidth: 1, paddingHorizontal: 20, paddingVertical: 12, gap: 18 },
   // Cards

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
+import { scheme } from '@/constants/colors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { Ionicons } from '@expo/vector-icons';
@@ -145,6 +146,7 @@ function ClassicTabLayout() {
   const isWeb = Platform.OS === 'web';
   const insets = useSafeAreaInsets();
   const { t, lang, isRTL } = useLanguage();
+  const isDark = scheme === 'dark';
   const { user } = useAuth();
   const viewportW = useViewportWidth();
   const isDesktop = isWeb && viewportW >= DESKTOP_BREAKPOINT;
@@ -216,7 +218,7 @@ function ClassicTabLayout() {
           isIOS ? (
             <BlurView
               intensity={100}
-              tint="light"
+              tint={isDark ? 'dark' : 'light'}
               style={StyleSheet.absoluteFill}
             />
           ) : isWeb ? (

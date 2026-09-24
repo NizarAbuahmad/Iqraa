@@ -47,10 +47,13 @@ import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { buildLessonFlowHTML, exportAsPDF } from '@/services/share';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 const NAVY = '#081B3A';
 const DURATION_VALUES = [45, 60, 90];
 
@@ -333,7 +336,7 @@ export default function LessonFlowScreen() {
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const STEPS: Array<{ key: StepKey; labelKey: string; icon: keyof typeof Ionicons.glyphMap; color: string }> = [
-    { key: 'objectives', labelKey: 'lessonFlowStepObjectives', icon: 'flag-outline', color: NAVY },
+    { key: 'objectives', labelKey: 'lessonFlowStepObjectives', icon: 'flag-outline', color: palette.foreground },
     { key: 'warmup',     labelKey: 'lessonFlowStepWarmup',     icon: 'flame-outline', color: '#C2410C' },
     { key: 'activity',   labelKey: 'lessonFlowStepActivity',   icon: 'flash-outline', color: '#4F46E5' },
     { key: 'guided',     labelKey: 'lessonFlowStepGuided',     icon: 'pencil-outline', color: ACCENT },
@@ -370,11 +373,11 @@ export default function LessonFlowScreen() {
                 <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
                   {t('toolLessonFlowTitle')}
                 </Text>
-                <View style={{ backgroundColor: ACCENT, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+                <View style={{ backgroundColor: ACCENT_FILL, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
                   <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 9 }}>NEW</Text>
                 </View>
               </View>
-              <Text style={[styles.headerSub, { color: '#5C6675', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.headerSub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('toolLessonFlowSub')}
               </Text>
               <AiSourceBadge onDark isRTL={isRTL} />
@@ -387,10 +390,10 @@ export default function LessonFlowScreen() {
               <View style={[styles.progressBg, { backgroundColor: '#1E3A5F' }]}>
                 <View style={[styles.progressFill, {
                   width: `${(completedCount / 6) * 100}%`,
-                  backgroundColor: ACCENT,
+                  backgroundColor: ACCENT_FILL,
                 }]} />
               </View>
-              <Text style={{ color: '#5C6675', fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+              <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
                 {isDone
                   ? (lang === 'ar' ? '✓ جاهز' : '✓ Ready')
                   : `${lang === 'ar' ? 'خطوة' : 'Step'} ${completedCount + 1} ${lang === 'ar' ? 'من' : 'of'} 6`}
@@ -476,7 +479,6 @@ export default function LessonFlowScreen() {
                 label={t('lessonFlowBuildBtn')}
                 onPress={handleBuild}
                 disabled={!topic.trim()}
-                style={{ backgroundColor: NAVY }}
               />
               {/*
                 A greyed-out primary button with nothing next to it reads as a
@@ -712,7 +714,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
         <View style={{ paddingHorizontal: 14, paddingBottom: 8, gap: 5 }}>
           {(objectives ?? []).map((obj, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start' }]}>
-              <View style={[styles.bullet, { backgroundColor: NAVY }]} />
+              <View style={[styles.bullet, { backgroundColor: palette.foreground }]} />
               <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(obj)}</Text>
             </View>
           ))}

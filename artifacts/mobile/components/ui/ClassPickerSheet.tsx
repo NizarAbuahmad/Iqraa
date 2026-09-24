@@ -47,8 +47,9 @@ import { useLanguage } from '@/context/LanguageContext';
 import { listClasses, type ClassGroup } from '@/services/roster';
 import { className } from '@/services/materialClass';
 import { countStudents } from '@/services/i18n';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
 
 /** One chosen class, with its name already resolved for the active language. */
 export type ClassPick = { id: string; name: string };

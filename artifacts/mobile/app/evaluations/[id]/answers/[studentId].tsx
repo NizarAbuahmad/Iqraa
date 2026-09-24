@@ -51,8 +51,11 @@ import { isolateForeignRuns } from '@/services/mathRender';
 import { FillBlankInput, MatchingInput } from '@/components/QuestionInputs';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 const LEVEL_KEY: Record<LevelKey, TranslationKey> = {
   beginner: 'levelBeginner',
@@ -335,12 +338,12 @@ export default function AnswerEntryScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-        <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
+        <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
           <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>{studentName}</Text>
-          <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: align, color: 'rgba(255,255,255,0.85)' }]} numberOfLines={1}>
+          <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: align, color: 'rgba(255,255,255,0.95)' }]} numberOfLines={1}>
             {evaluationTitle}
           </Text>
         </View>
@@ -437,7 +440,7 @@ export default function AnswerEntryScreen() {
           <Pressable
             onPress={onSubmit}
             disabled={submitting || questions.length === 0}
-            style={[styles.submitBtn, { backgroundColor: ACCENT, opacity: submitting ? 0.7 : 1 }]}
+            style={[styles.submitBtn, { backgroundColor: ACCENT_FILL, opacity: submitting ? 0.7 : 1 }]}
           >
             {submitting ? (
               <ActivityIndicator color="#fff" size="small" />
@@ -650,7 +653,7 @@ function QuestionInput({
   return (
     <View style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <View style={[styles.qNum, { backgroundColor: ACCENT }]}>
+        <View style={[styles.qNum, { backgroundColor: ACCENT_FILL }]}>
           <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 12 }}>{index + 1}</Text>
         </View>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
@@ -859,7 +862,7 @@ function TrueFalseInput({
               onPress={() => onChange({ value: opt.v })}
               style={[styles.tfBtn, { borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? ACCENT : 'transparent' }]}
             >
-              <Text style={{ color: selected ? '#fff' : colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 14 }}>{t(opt.key)}</Text>
+              <Text style={{ color: selected ? palette.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 14 }}>{t(opt.key)}</Text>
             </Pressable>
           );
         })}

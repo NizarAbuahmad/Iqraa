@@ -13,6 +13,7 @@ import {
   isCurriculumBookVisible,
 } from '@/services/curriculumData';
 import { goBack } from '@/services/navigation';
+import { readableOn } from '@/services/readableColor';
 
 export default function UnitLessonsScreen() {
   const colors = useColors();
@@ -25,7 +26,10 @@ export default function UnitLessonsScreen() {
     semesterLabel?: string;
   }>();
 
-  const color = subjectColor ?? colors.primary;
+  // Subject colours are picked for hue; `colorFill` carries white header text,
+  // `color` is text and tints on cards — each adjusted to stay legible.
+  const colorFill = readableOn(subjectColor ?? colors.hero, '#FFFFFF');
+  const color = readableOn(subjectColor ?? colors.primary, colors.card);
   const bookAllowed = isCurriculumBookVisible(bookId ?? '');
   const unit = unitId ? getUnitById(unitId) : undefined;
 
@@ -41,17 +45,17 @@ export default function UnitLessonsScreen() {
   const unitName = lang === 'ar' ? (unit.nameAr || unit.name) : unit.name;
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { backgroundColor: color, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.header, { backgroundColor: colorFill, paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.eyebrow, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.eyebrow, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {semesterLabel ? `${semesterLabel} · ` : ''}{t('unitLabel')} {unit.order}
         </Text>
         <Text style={[styles.title, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
           {unitName}
         </Text>
-        <Text style={[styles.sub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.sub, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('selectLesson')} · {t('lessonsCount', lessons.length)}
         </Text>
       </View>
@@ -93,7 +97,7 @@ export default function UnitLessonsScreen() {
                 },
               ]}
             >
-              <View style={[styles.lessonAccent, { backgroundColor: color }]} />
+              <View style={[styles.lessonAccent, { backgroundColor: colorFill }]} />
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <Text

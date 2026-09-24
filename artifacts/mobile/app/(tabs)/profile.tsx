@@ -153,7 +153,7 @@ export default function ProfileScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={[styles.headerBg, { backgroundColor: colors.primary, paddingTop: topPad + 16 }]}>
+      <View style={[styles.headerBg, { backgroundColor: colors.hero, paddingTop: topPad + 16 }]}>
         <View style={styles.avatarWrap}>
           <View>
             <Pressable
@@ -167,13 +167,13 @@ export default function ProfileScreen() {
               {user?.avatarUrl ? (
                 <Image source={{ uri: user.avatarUrl }} style={styles.avatarPhoto} />
               ) : (
-                <Text style={[styles.initials, { color: colors.primaryForeground, fontFamily: 'Cairo_700Bold' }]}>
+                <Text style={[styles.initials, { color: '#FFFFFF', fontFamily: 'Cairo_700Bold' }]}>
                   {initials}
                 </Text>
               )}
               {avatarBusy ? (
                 <View style={styles.avatarBusyOverlay}>
-                  <ActivityIndicator color={colors.primaryForeground} />
+                  <ActivityIndicator color={'#FFFFFF'} />
                 </View>
               ) : null}
             </Pressable>
@@ -184,10 +184,10 @@ export default function ProfileScreen() {
                 onPress={handleChangePhoto}
                 style={[
                   styles.avatarEditBadge,
-                  { backgroundColor: colors.primaryForeground, borderColor: colors.primary },
+                  { backgroundColor: '#FFFFFF', borderColor: colors.hero },
                 ]}
               >
-                <Ionicons name="camera" size={14} color={colors.primary} />
+                <Ionicons name="camera" size={14} color={colors.hero} />
               </Pressable>
             )}
             {user?.avatarUrl && !avatarBusy ? (
@@ -195,15 +195,15 @@ export default function ProfileScreen() {
                 onPress={handleRemovePhoto}
                 style={[styles.avatarRemoveBadge, { backgroundColor: colors.destructive }]}
               >
-                <Ionicons name="close" size={12} color={colors.primaryForeground} />
+                <Ionicons name="close" size={12} color={'#FFFFFF'} />
               </Pressable>
             ) : null}
           </View>
-          <Text style={[styles.userName, { color: colors.primaryForeground, fontFamily: 'Cairo_700Bold' }]}>
+          <Text style={[styles.userName, { color: '#FFFFFF', fontFamily: 'Cairo_700Bold' }]}>
             {user ? `${user.firstName} ${user.lastName}` : t('roleTeacher')}
           </Text>
-          <View style={[styles.roleBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-            <Text style={[styles.roleText, { color: colors.primaryForeground, fontFamily: 'Cairo_500Medium' }]}>
+          <View style={[styles.roleBadge, { backgroundColor: 'rgba(0,0,0,0.2)' }]}>
+            <Text style={[styles.roleText, { color: '#FFFFFF', fontFamily: 'Cairo_500Medium' }]}>
               {roleLabel}
             </Text>
           </View>

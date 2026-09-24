@@ -28,8 +28,11 @@ import { listClasses, type ClassGroup } from '@/services/roster';
 import { confirm } from '@/services/confirm';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /** Same weekday keys teaching-plans/index.tsx uses — a fixed enumeration, not screen-specific. */
@@ -95,7 +98,7 @@ function PeriodRow({ period, isNew, onSave, onDelete, isRTL, colors, t }: {
         <Pressable
           onPress={() => onSave(period.periodNumber, { startTime: time, durationMinutes: durationNum })}
           disabled={!canSave}
-          style={{ opacity: canSave ? 1 : 0.35, padding: 8, borderRadius: 8, backgroundColor: ACCENT }}
+          style={{ opacity: canSave ? 1 : 0.35, padding: 8, borderRadius: 8, backgroundColor: ACCENT_FILL }}
         >
           <Ionicons name="checkmark" size={16} color="#fff" />
         </Pressable>
@@ -223,7 +226,7 @@ function SlotEditorModal({ dayLabel, periodNumber, classes, current, onClose, on
             </Pressable>
             <Pressable
               onPress={() => onSave({ classGroupId: selected, notes })}
-              style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT }]}
+              style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT_FILL }]}
             >
               <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>{t('save')}</Text>
             </Pressable>
@@ -328,7 +331,7 @@ export default function ScheduleScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Pressable onPress={() => goBack()} hitSlop={12}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
@@ -367,7 +370,7 @@ export default function ScheduleScreen() {
               </Text>
               <Pressable
                 onPress={() => setShowPeriodsEditor(true)}
-                style={{ marginTop: 4, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 18, backgroundColor: ACCENT }}
+                style={{ marginTop: 4, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 18, backgroundColor: ACCENT_FILL }}
               >
                 <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13.5 }}>
                   {t('scheduleSetupPeriods')}

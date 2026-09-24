@@ -48,8 +48,11 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { saveItem } from '@/services/workspace';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 const STATUS_KEY: Record<AttemptStatus, TranslationKey> = {
   not_started: 'attemptStatusNotStarted',
@@ -138,14 +141,14 @@ export default function ResultsDashboardScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]} numberOfLines={1}>
           {t('resultsDashboardTitle')}
         </Text>
-        <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: align, color: 'rgba(255,255,255,0.85)' }]} numberOfLines={1}>
+        <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: align, color: 'rgba(255,255,255,0.95)' }]} numberOfLines={1}>
           {evaluation ? (lang === 'ar' ? evaluation.titleAr : evaluation.title) || t('newEvaluation') : ''}
         </Text>
       </View>

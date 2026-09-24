@@ -19,8 +19,9 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { getClass, listClasses, type ClassGroup, type RosterStudent } from '@/services/roster';
 import { countStudents } from '@/services/i18n';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
 
 export function StudentPickerSheet({
   visible,

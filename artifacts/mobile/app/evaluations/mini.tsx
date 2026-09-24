@@ -47,8 +47,11 @@ import {
   MINI_EVAL_TYPES,
 } from '@/services/miniEval';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 export default function MiniEvalScreen() {
   const colors = useColors();
@@ -171,7 +174,7 @@ export default function MiniEvalScreen() {
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ paddingBottom: 60 }}
     >
-      <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <Pressable
           onPress={() => goBack()}
           style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
@@ -296,7 +299,7 @@ export default function MiniEvalScreen() {
             style={[
               styles.cta,
               {
-                backgroundColor: ACCENT,
+                backgroundColor: ACCENT_FILL,
                 opacity: !objectiveId || working ? 0.5 : 1,
                 flexDirection: isRTL ? 'row-reverse' : 'row',
               },
