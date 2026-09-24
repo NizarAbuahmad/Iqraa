@@ -24,8 +24,11 @@ import { aiErrorMessageKey } from '@/services/ai/aiProvenance';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ACTIVITY_CARDS, cardMetaLabel, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
 import { ToolHeader } from '@/components/ui/ToolHeader';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 type Difficulty = 'easy' | 'standard' | 'advanced';
 type GroupType = 'individual' | 'pairs' | 'groups' | 'whole-class';
@@ -310,7 +313,7 @@ export default function ClassroomBuilderScreen() {
             </Text>
             {result.materials.map((m, i) => (
               <View key={i} style={[styles.bullet, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <View style={[styles.dot, { backgroundColor: ACCENT }]} />
+                <View style={[styles.dot, { backgroundColor: ACCENT_FILL }]} />
                 <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{m}</Text>
               </View>
             ))}
@@ -334,7 +337,7 @@ export default function ClassroomBuilderScreen() {
           {/* CTA */}
           <Pressable
             onPress={handleStartPresentation}
-            style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
+            style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT_FILL, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
           >
             <Ionicons name="play-circle" size={22} color="#fff" />
             <Text style={[styles.ctaText, { fontFamily: 'Cairo_700Bold' }]}>{t('startPresentation')}</Text>

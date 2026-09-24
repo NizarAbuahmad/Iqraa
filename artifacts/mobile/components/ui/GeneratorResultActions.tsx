@@ -26,6 +26,7 @@ import { confirm } from '@/services/confirm';
 import { MaterialClassField } from './MaterialClassField';
 import { FeedbackWidget } from './FeedbackWidget';
 import { RelatedResourcesPanel } from './RelatedResourcesPanel';
+import { textOn } from '@/services/readableColor';
 
 export type SaveState = 'save' | 'saved' | 'updated';
 
@@ -140,8 +141,8 @@ export function GeneratorResultActions({
             },
           ]}
         >
-          <Ionicons name={saveDone ? 'checkmark-circle' : 'bookmark-outline'} size={16} color={saveDone ? '#fff' : accent} />
-          <Text style={[styles.actionText, { color: saveDone ? '#fff' : accent, fontFamily: 'Cairo_600SemiBold' }]}>
+          <Ionicons name={saveDone ? 'checkmark-circle' : 'bookmark-outline'} size={16} color={saveDone ? textOn(accent) : accent} />
+          <Text style={[styles.actionText, { color: saveDone ? textOn(accent) : accent, fontFamily: 'Cairo_600SemiBold' }]}>
             {saveBtnLabel}
           </Text>
         </Pressable>

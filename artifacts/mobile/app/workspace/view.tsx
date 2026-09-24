@@ -36,6 +36,7 @@ import {
   shareAsText,
 } from '@/services/share';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
 export default function WorkspaceViewScreen() {
   const colors = useColors();
@@ -598,7 +599,7 @@ function QuizView({ quiz, colors, isRTL, t, accent, lang }: {
 
 // ─── Lesson Flow renderer ─────────────────────────────────────────────────────
 
-const FLOW_TEAL = '#007C74';
+const FLOW_TEAL = palette.primary;
 const FLOW_NAVY = '#081B3A';
 
 /** Plain-text outline of a saved deck — what share/copy hands over. */

@@ -23,8 +23,9 @@ import {
   type PickerClass,
   type PickerContact,
 } from '@/services/participantPicker';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
 
 type Contact = PickerContact;
 type ClassOption = PickerClass;

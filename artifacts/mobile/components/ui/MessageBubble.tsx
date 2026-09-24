@@ -55,7 +55,7 @@ export function MessageBubble({
               {body}
             </Text>
           ) : null}
-          <Text style={[styles.timestamp, { color: 'rgba(255,255,255,0.7)', textAlign: isRTL ? 'left' : 'right' }]}>
+          <Text style={[styles.timestamp, { color: 'rgba(255,255,255,0.95)', textAlign: isRTL ? 'left' : 'right' }]}>
             {timeLabel}
           </Text>
         </View>

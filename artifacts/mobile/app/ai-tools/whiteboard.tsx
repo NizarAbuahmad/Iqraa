@@ -18,8 +18,9 @@ import { Button } from '@/components/ui/Button';
 import { DECK_BG, DECK_TEXT } from '@/services/deckTheme';
 import { canFullscreen, toggleFullscreen } from '@/services/presentationUtils';
 import { ToolHeader } from '@/components/ui/ToolHeader';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
 
 export default function WhiteboardScreen() {
   const colors = useColors();
@@ -96,7 +97,7 @@ export default function WhiteboardScreen() {
             disabled={!text.trim()}
             fullWidth
             size="lg"
-            style={{ backgroundColor: ACCENT, marginTop: 'auto' }}
+            style={{ marginTop: 'auto' }}
           />
         </View>
       </View>

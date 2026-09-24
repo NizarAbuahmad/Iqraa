@@ -41,8 +41,11 @@ import {
 } from '@/services/evaluations';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 /**
  * The types a teacher may ask the generator for.
@@ -276,7 +279,7 @@ export default function NewEvaluationScreen() {
       contentContainerStyle={{ paddingBottom: 60 }}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
@@ -309,7 +312,7 @@ export default function NewEvaluationScreen() {
                 onPress={() => setMode(m)}
                 style={[styles.modeChip, { borderColor: active ? ACCENT : colors.border, backgroundColor: active ? ACCENT : colors.card }]}
               >
-                <Text style={{ color: active ? '#fff' : colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+                <Text style={{ color: active ? palette.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
                   {t(m === 'generate' ? 'evalModeGenerate' : 'evalModePaper')}
                 </Text>
               </Pressable>
@@ -465,7 +468,7 @@ export default function NewEvaluationScreen() {
         <Pressable
           onPress={onSubmit}
           disabled={creating}
-          style={[styles.submitBtn, { backgroundColor: ACCENT, opacity: creating ? 0.7 : 1 }]}
+          style={[styles.submitBtn, { backgroundColor: ACCENT_FILL, opacity: creating ? 0.7 : 1 }]}
         >
           {creating ? (
             <ActivityIndicator color="#fff" size="small" />
@@ -513,7 +516,7 @@ function PaperRowEditor({
   return (
     <View style={[styles.paperRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-        <View style={[styles.paperNum, { backgroundColor: ACCENT }]}>
+        <View style={[styles.paperNum, { backgroundColor: ACCENT_FILL }]}>
           <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 12 }}>{index + 1}</Text>
         </View>
         <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>

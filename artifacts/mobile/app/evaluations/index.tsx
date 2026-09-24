@@ -19,8 +19,11 @@ import { EvaluationError, listEvaluations, type Evaluation } from '@/services/ev
 import { bookLabel, formatListDate } from '@/services/evaluationRow';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 const STATUS_KEY: Record<Evaluation['status'], TranslationKey> = {
   draft: 'evalStatusDraft',
@@ -104,14 +107,14 @@ export default function EvaluationsScreen() {
       </View>
       <Pressable
         onPress={() => router.push('/evaluations/new')}
-        style={[styles.deskNewBtn, { backgroundColor: ACCENT }]}
+        style={[styles.deskNewBtn, { backgroundColor: ACCENT_FILL }]}
       >
         <Ionicons name="add" size={18} color="#fff" />
         <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>{t('newEvaluation')}</Text>
       </Pressable>
     </View>
   ) : (
-    <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
+    <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
       {backButton}
       <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
         {t('myEvaluations')}
@@ -119,7 +122,7 @@ export default function EvaluationsScreen() {
       <Text
         style={[
           styles.heroSub,
-          { fontFamily: 'Almarai_400Regular', textAlign: align, color: 'rgba(255,255,255,0.85)' },
+          { fontFamily: 'Almarai_400Regular', textAlign: align, color: 'rgba(255,255,255,0.95)' },
         ]}
       >
         {t('evaluationsSubtitle')}
@@ -241,7 +244,7 @@ export default function EvaluationsScreen() {
       {isDesktop ? null : (
         <Pressable
           onPress={() => router.push('/evaluations/new')}
-          style={[styles.fab, { backgroundColor: ACCENT, bottom: insets.bottom + 24 }]}
+          style={[styles.fab, { backgroundColor: ACCENT_FILL, bottom: insets.bottom + 24 }]}
         >
           <Ionicons name="add" size={26} color="#fff" />
         </Pressable>

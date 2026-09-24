@@ -17,8 +17,11 @@ import { useAuth } from '@/context/AuthContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { Button } from '@/components/ui/Button';
 import type { TranslationKey } from '@/services/i18n';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 const GAMES: Array<{
   id: string;
@@ -47,11 +50,11 @@ export default function PlayHubScreen() {
         contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.header, { paddingTop: topPad, backgroundColor: ACCENT }]}>
+        <View style={[styles.header, { paddingTop: topPad, backgroundColor: ACCENT_FILL }]}>
           <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 24, textAlign: 'center' }}>
             {t('playHubTitle')}
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center', marginTop: 6 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center', marginTop: 6 }}>
             {t('playHubSubtitle')}
           </Text>
         </View>
@@ -87,7 +90,6 @@ export default function PlayHubScreen() {
             <Button
               label={t('playCtaButton')}
               onPress={() => router.push('/(auth)/register')}
-              style={{ backgroundColor: ACCENT }}
               fullWidth
               size="lg"
             />

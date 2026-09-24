@@ -20,6 +20,7 @@ import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { VocabularyPracticePanel } from '@/components/ui/VocabularyPracticePanel';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { goBack } from '@/services/navigation';
+import { readableOn } from '@/services/readableColor';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
@@ -42,7 +43,10 @@ export default function LessonDetailScreen() {
     openLessonPlan?: string;
   }>();
   const lesson = getLessonById(lessonId);
-  const color = subjectColor ?? colors.primary;
+  // Subject colours are picked for hue; `colorFill` carries white header text,
+  // `color` is text and tints on cards — each adjusted to stay legible.
+  const colorFill = readableOn(subjectColor ?? colors.hero, '#FFFFFF');
+  const color = readableOn(subjectColor ?? colors.primary, colors.card);
   const showTitleOnly = lesson ? isBrowserLessonTitleOnly(lesson.id) : false;
   /**
    * Preparation happens on this page. Opening it is one tap and it generates
@@ -80,7 +84,7 @@ export default function LessonDetailScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Hero */}
-      <View style={[styles.hero, { backgroundColor: color, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.hero, { backgroundColor: colorFill, paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
@@ -133,7 +137,7 @@ export default function LessonDetailScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               setPrepOpen(open => !open);
             }}
-            style={[styles.aiBtn, { backgroundColor: color, borderRadius: colors.radius, flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            style={[styles.aiBtn, { backgroundColor: colorFill, borderRadius: colors.radius, flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name={prepOpen ? 'chevron-up' : 'sparkles'} size={18} color="#fff" />
             <Text style={[styles.aiBtnText, { color: '#fff', fontFamily: 'Cairo_600SemiBold' }]}>
@@ -216,7 +220,7 @@ export default function LessonDetailScreen() {
         <Section title={t('learningObjectives')} icon="checkmark-circle-outline" color={color} isRTL={isRTL}>
           {objectivesArr.map((obj, i) => (
             <View key={i} style={[styles.bullet, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <View style={[styles.bulletDot, { backgroundColor: color }]} />
+              <View style={[styles.bulletDot, { backgroundColor: colorFill }]} />
               <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                 {obj}
               </Text>

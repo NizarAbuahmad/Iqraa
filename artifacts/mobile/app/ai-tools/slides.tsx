@@ -52,8 +52,11 @@ import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams } from '@/services/lessonPrep';
 import { ToolHeader } from '@/components/ui/ToolHeader';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 export default function SlidesScreen() {
   const colors = useColors();
@@ -939,7 +942,7 @@ export default function SlidesScreen() {
 
             <Pressable
               onPress={present}
-              style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
+              style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT_FILL, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
             >
               <Ionicons name="tv-outline" size={20} color="#fff" />
               <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 15 }}>{t('presentOnScreen')}</Text>
@@ -966,8 +969,8 @@ export default function SlidesScreen() {
                   },
                 ]}
               >
-                <Ionicons name={savedId ? 'bookmark' : 'bookmark-outline'} size={16} color={savedId ? '#fff' : ACCENT} />
-                <Text style={{ color: savedId ? '#fff' : ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                <Ionicons name={savedId ? 'bookmark' : 'bookmark-outline'} size={16} color={savedId ? palette.primaryForeground : ACCENT} />
+                <Text style={{ color: savedId ? palette.primaryForeground : ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
                   {savedId ? t('savedLabel') : t('save')}
                 </Text>
               </Pressable>
@@ -1125,7 +1128,7 @@ export default function SlidesScreen() {
               </Pressable>
               <Pressable
                 onPress={applyEdit}
-                style={[styles.secondaryBtn, { borderColor: ACCENT, backgroundColor: ACCENT, borderRadius: colors.radius }]}
+                style={[styles.secondaryBtn, { borderColor: ACCENT, backgroundColor: ACCENT_FILL, borderRadius: colors.radius }]}
               >
                 <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('save')}</Text>
               </Pressable>

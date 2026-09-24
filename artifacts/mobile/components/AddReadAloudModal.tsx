@@ -34,8 +34,11 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { addEvaluationQuestion, type CompetencyKey, type EvaluationQuestion } from '@/services/evaluations';
 import type { TranslationKey } from '@/services/i18n';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 /**
  * Mirrors MIN_PASSAGE_WORDS / MAX_WORDS in api-server. Advisory only — the
@@ -248,7 +251,7 @@ export function AddReadAloudModal({
             <Pressable
               onPress={() => void save()}
               disabled={!canSave}
-              style={[styles.saveBtn, { backgroundColor: ACCENT, opacity: canSave ? 1 : 0.5 }]}
+              style={[styles.saveBtn, { backgroundColor: ACCENT_FILL, opacity: canSave ? 1 : 0.5 }]}
             >
               {busy ? (
                 <ActivityIndicator color="#fff" size="small" />

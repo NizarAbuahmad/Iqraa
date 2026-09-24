@@ -30,8 +30,11 @@ import {
   type Gender, type MessageKind, type Tone,
 } from '@/services/parentMessage';
 import { ToolHeader } from '@/components/ui/ToolHeader';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 export default function ParentMessageScreen() {
   const colors = useColors();
@@ -192,7 +195,7 @@ export default function ParentMessageScreen() {
             }]}
           >
             <Text style={[styles.pillText, {
-              color: active ? '#fff' : colors.mutedForeground,
+              color: active ? palette.primaryForeground : colors.mutedForeground,
               fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
             }]}>
               {o.label}
@@ -272,7 +275,7 @@ export default function ParentMessageScreen() {
                   >
                     <Text style={{ fontSize: 13 }}>{kindEmoji(k)}</Text>
                     <Text style={[styles.pillText, {
-                      color: active ? '#fff' : colors.mutedForeground,
+                      color: active ? palette.primaryForeground : colors.mutedForeground,
                       fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
                       marginHorizontal: 5,
                     }]}>
@@ -369,7 +372,7 @@ export default function ParentMessageScreen() {
             onPress={onSendInApp}
             disabled={!canSendInApp}
             style={({ pressed }) => [styles.primaryBtn, {
-              backgroundColor: ACCENT, borderRadius: colors.radius,
+              backgroundColor: ACCENT_FILL, borderRadius: colors.radius,
               flexDirection: isRTL ? 'row-reverse' : 'row',
               marginTop: 12,
               opacity: !canSendInApp ? 0.4 : pressed ? 0.88 : 1,

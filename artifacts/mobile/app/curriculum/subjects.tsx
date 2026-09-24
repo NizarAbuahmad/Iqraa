@@ -16,6 +16,7 @@ import {
   getUnitsForBook,
 } from '@/services/curriculumData';
 import { goBack } from '@/services/navigation';
+import { readableOn } from '@/services/readableColor';
 
 function DownloadChip({ label, url, icon, color }: {
   label: string; url: string; icon: 'download-outline' | 'school-outline' | 'clipboard-outline'; color: string;
@@ -72,22 +73,25 @@ export default function SubjectsScreen() {
     semesterCounts.set(s, (semesterCounts.get(s) ?? 0) + 1);
   }
 
-  const color = subjectColor ?? colors.primary;
+  // Subject colours are picked for hue; `colorFill` carries white header text,
+  // `color` is text and tints on cards — each adjusted to stay legible.
+  const colorFill = readableOn(subjectColor ?? colors.hero, '#FFFFFF');
+  const color = readableOn(subjectColor ?? colors.primary, colors.card);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.hero, { backgroundColor: color, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.hero, { backgroundColor: colorFill, paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <View style={[styles.heroContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Text style={[styles.heroGrade, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.heroGrade, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('jordanCurriculum')} · {gradeName}
           </Text>
           <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
             {subjectName}
           </Text>
-          <Text style={[styles.heroSub, { color: 'rgba(255,255,255,0.85)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.heroSub, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('selectSemester')}
           </Text>
         </View>
@@ -155,7 +159,7 @@ export default function SubjectsScreen() {
                 },
               ]}
             >
-              <View style={[styles.semesterBadge, { backgroundColor: color }]}>
+              <View style={[styles.semesterBadge, { backgroundColor: colorFill }]}>
                 <Text style={[styles.semesterBadgeText, { fontFamily: 'Cairo_700Bold' }]}>
                   {semesterNum ?? '•'}
                 </Text>

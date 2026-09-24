@@ -54,9 +54,12 @@ import {
   removeLessonMedia,
   type LessonMediaItem,
 } from '@/services/lessonMedia';
+import { palette } from '@/constants/colors';
 
 const NAVY = '#081B3A';
-const TEAL = '#007C74';
+const TEAL = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const TEAL_FILL = palette.hero;
 
 /** Soft accent tints for hero prep tabs */
 const SUGGEST_ACCENT: Record<string, { bg: string; border: string; iconBg: string }> = {
@@ -493,7 +496,7 @@ export default function DashboardScreen() {
                 style={({ pressed }) => [
                   styles.startClassBtn,
                   {
-                    backgroundColor: colors.primary,
+                    backgroundColor: colors.hero,
                     opacity: pressed ? 0.88 : 1,
                     flexDirection: isRTL ? 'row-reverse' : 'row',
                   },
@@ -1120,7 +1123,7 @@ export default function DashboardScreen() {
             >
               <Text
                 style={{
-                  color: draftTopic.trim() ? '#fff' : colors.mutedForeground,
+                  color: draftTopic.trim() ? palette.primaryForeground : colors.mutedForeground,
                   fontFamily: 'Cairo_600SemiBold',
                   fontSize: 15,
                 }}
@@ -1158,7 +1161,7 @@ const styles = StyleSheet.create({
     gap: 4,
     width: '100%',
   },
-  contextFlag: { color: NAVY, fontSize: 13 },
+  contextFlag: { color: palette.foreground, fontSize: 13 },
   contextMeta: { fontSize: 12 },
   contextLesson: { fontSize: 14, lineHeight: 20, marginTop: 2 },
   changeLessonBtn: {
@@ -1167,7 +1170,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 20,
-    backgroundColor: TEAL,
+    backgroundColor: TEAL_FILL,
     marginTop: 8,
   },
   changeLessonBtnText: {
@@ -1186,7 +1189,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginTop: 1,
   },
   coachNumText: { color: '#fff', fontSize: 11 },
-  coachStep: { color: 'rgba(255,255,255,0.86)', fontSize: 12.5, lineHeight: 19, flex: 1 },
+  coachStep: { color: 'rgba(255,255,255,0.95)', fontSize: 12.5, lineHeight: 19, flex: 1 },
   coachBtn: {
     alignSelf: 'flex-start', marginTop: 4,
     backgroundColor: 'rgba(255,255,255,0.14)',
@@ -1264,7 +1267,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   heroTitle: { color: '#fff', fontSize: 22, lineHeight: 30 },
-  heroSub: { color: 'rgba(255,255,255,0.72)', fontSize: 14, lineHeight: 21 },
+  heroSub: { color: 'rgba(255,255,255,0.95)', fontSize: 14, lineHeight: 21 },
   promptBox: {
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 16,
@@ -1286,7 +1289,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: TEAL,
+    backgroundColor: TEAL_FILL,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1338,7 +1341,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   continueBtn: {
-    backgroundColor: TEAL,
+    backgroundColor: TEAL_FILL,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,

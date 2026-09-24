@@ -54,8 +54,11 @@ import type { TranslationKey } from '@/services/i18n';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 /**
  * Weekday short labels, indexed like `Date#getDay()` (0 = Sunday). A fixed,
@@ -432,7 +435,7 @@ export default function TeachingPlansScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <Pressable
           onPress={() => goBack()}
           hitSlop={12}
@@ -536,7 +539,7 @@ export default function TeachingPlansScreen() {
         />
       )}
 
-      <Pressable onPress={openCreate} style={[styles.fab, { backgroundColor: ACCENT, bottom: insets.bottom + 24 }]}>
+      <Pressable onPress={openCreate} style={[styles.fab, { backgroundColor: ACCENT_FILL, bottom: insets.bottom + 24 }]}>
         <Ionicons name="add" size={26} color="#fff" />
       </Pressable>
 
@@ -705,7 +708,7 @@ export default function TeachingPlansScreen() {
                             paddingHorizontal: 14,
                             paddingVertical: 7,
                             borderRadius: 18,
-                            backgroundColor: ACCENT,
+                            backgroundColor: ACCENT_FILL,
                             opacity: !isValidPlanDate(scheduleStartDate) || scheduleDays.length === 0 ? 0.5 : 1,
                           }}
                         >
@@ -784,7 +787,7 @@ export default function TeachingPlansScreen() {
               <Pressable
                 onPress={onSave}
                 disabled={!canSave || saving}
-                style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT, opacity: !canSave || saving ? 0.5 : 1 }]}
+                style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT_FILL, opacity: !canSave || saving ? 0.5 : 1 }]}
               >
                 {saving ? (
                   <ActivityIndicator color="#fff" size="small" />

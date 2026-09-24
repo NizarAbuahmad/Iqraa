@@ -43,8 +43,11 @@ import { Toast } from '@/components/ui/Toast';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { buildQuizHTML, buildQuizSlidesHTML, formatQuizText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 type QType = 'multiple_choice' | 'true_false' | 'short_answer';
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -459,7 +462,7 @@ export default function QuizScreen() {
           out of sight of the button that had just been pressed.
         */}
         {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
-        <Button label={loading ? t('generatingQuiz') : t('generateQuizBtn')} onPress={() => generate()} loading={loading} disabled={!topic.trim()} fullWidth style={{ backgroundColor: ACCENT }} />
+        <Button label={loading ? t('generatingQuiz') : t('generateQuizBtn')} onPress={() => generate()} loading={loading} disabled={!topic.trim()} fullWidth />
         {/*
           A greyed-out primary button with nothing next to it reads as a broken
           product rather than an unmet precondition. It says which one.
@@ -573,7 +576,7 @@ export default function QuizScreen() {
             style={({ pressed }) => [
               styles.presentBtn,
               {
-                backgroundColor: ACCENT,
+                backgroundColor: ACCENT_FILL,
                 borderRadius: colors.radius,
                 flexDirection: isRTL ? 'row-reverse' : 'row',
                 opacity: pressed ? 0.88 : 1,
@@ -603,7 +606,7 @@ export default function QuizScreen() {
             return (
               <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
                 <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                  <View style={[styles.qNumCircle, { backgroundColor: ACCENT }]}>
+                  <View style={[styles.qNumCircle, { backgroundColor: ACCENT_FILL }]}>
                     <Text style={[{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 12 }]}>{i + 1}</Text>
                   </View>
                   <View style={[styles.typeBadge, { backgroundColor: tc + '18' }]}>

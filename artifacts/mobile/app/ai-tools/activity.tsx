@@ -32,8 +32,11 @@ import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { buildActivityHTML, buildActivitySlidesHTML, formatActivityText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 const DURATION_VALUES = [20, 30, 45, 60];
 type AType = ActivityTypeId;
 
@@ -547,7 +550,7 @@ function ResultSection({ title, icon, isRTL, children }: {
 function BulletItem({ text, colors, isRTL }: { text: string; colors: ReturnType<typeof useColors>; isRTL: boolean }) {
   return (
     <View style={[styles.bulletRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-      <View style={[styles.bulletDot, { backgroundColor: ACCENT }]} />
+      <View style={[styles.bulletDot, { backgroundColor: ACCENT_FILL }]} />
       <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{isolateForeignRuns(text)}</Text>
     </View>
   );

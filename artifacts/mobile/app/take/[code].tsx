@@ -52,8 +52,11 @@ import {
 import { DictationInput, FillBlankInput, MatchingInput, ReadAloudInput } from '@/components/QuestionInputs';
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { TranslationKey } from '@/services/i18n';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 type Phase = 'loading' | 'pick' | 'confirm' | 'answering' | 'review' | 'done' | 'error';
 
@@ -197,7 +200,7 @@ export default function TakeExamScreen() {
   }
 
   const header = (
-    <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: insets.top + 14 }]}>
+    <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 14 }]}>
       <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]} numberOfLines={2}>
         {title}
       </Text>
@@ -233,7 +236,7 @@ export default function TakeExamScreen() {
                   {error}
                 </Text>
               ) : null}
-              <Pressable onPress={start} disabled={busy} style={[styles.primaryBtn, { backgroundColor: ACCENT, opacity: busy ? 0.7 : 1 }]}>
+              <Pressable onPress={start} disabled={busy} style={[styles.primaryBtn, { backgroundColor: ACCENT_FILL, opacity: busy ? 0.7 : 1 }]}>
                 {busy ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
@@ -324,7 +327,7 @@ export default function TakeExamScreen() {
             <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>{error}</Text>
           ) : null}
 
-          <Pressable onPress={hand} disabled={busy} style={[styles.primaryBtn, { backgroundColor: ACCENT, opacity: busy ? 0.7 : 1 }]}>
+          <Pressable onPress={hand} disabled={busy} style={[styles.primaryBtn, { backgroundColor: ACCENT_FILL, opacity: busy ? 0.7 : 1 }]}>
             {busy ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
@@ -400,11 +403,11 @@ export default function TakeExamScreen() {
             <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 14 }}>{t('takePrevious')}</Text>
           </Pressable>
           {index < questions.length - 1 ? (
-            <Pressable onPress={() => setIndex(i => i + 1)} style={[styles.navBtn, { borderColor: ACCENT, backgroundColor: ACCENT, flex: 1 }]}>
+            <Pressable onPress={() => setIndex(i => i + 1)} style={[styles.navBtn, { borderColor: ACCENT, backgroundColor: ACCENT_FILL, flex: 1 }]}>
               <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>{t('takeNext')}</Text>
             </Pressable>
           ) : (
-            <Pressable onPress={() => setPhase('review')} style={[styles.navBtn, { borderColor: ACCENT, backgroundColor: ACCENT, flex: 1 }]}>
+            <Pressable onPress={() => setPhase('review')} style={[styles.navBtn, { borderColor: ACCENT, backgroundColor: ACCENT_FILL, flex: 1 }]}>
               <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>{t('takeReview')}</Text>
             </Pressable>
           )}
@@ -532,7 +535,7 @@ function QuestionCard({
                 onPress={() => onAnswer({ value: opt.v })}
                 style={[styles.tf, { borderColor: on ? ACCENT : colors.border, backgroundColor: on ? ACCENT : 'transparent' }]}
               >
-                <Text style={{ color: on ? '#fff' : colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+                <Text style={{ color: on ? palette.primaryForeground : colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
                   {t(opt.key)}
                 </Text>
               </Pressable>
@@ -617,7 +620,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingBottom: 16, gap: 4 },
   headerTitle: { color: '#fff', fontSize: 19 },
-  headerSub: { color: 'rgba(255,255,255,0.85)', fontSize: 14, lineHeight: 22 },
+  headerSub: { color: 'rgba(255,255,255,0.95)', fontSize: 14, lineHeight: 22 },
   nameRow: { alignItems: 'center', borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, gap: 10 },
   card: { borderWidth: 1, borderRadius: 14, padding: 18 },
   option: { alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 14 },

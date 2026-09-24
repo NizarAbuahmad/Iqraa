@@ -11,6 +11,7 @@
 import React, { useState } from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { textOn } from '@/services/readableColor';
 
 export interface PillOption<T extends string | number> {
   value: T;
@@ -115,7 +116,7 @@ function Pill<T extends string | number>({
       ]}
     >
       <Text style={[styles.pillText, {
-        color: active ? '#fff' : colors.mutedForeground,
+        color: active ? textOn(accent) : colors.mutedForeground,
         fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
       }]}>
         {option.label}

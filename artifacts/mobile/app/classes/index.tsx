@@ -33,8 +33,11 @@ import { RosterConsentGate } from '@/components/RosterConsentGate';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 /** A class's subject for the list card. Empty when unset or off-catalog. */
 function subjectName(subjectId: string | undefined, lang: string): string {
@@ -247,7 +250,7 @@ function ClassesList() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <Pressable
           onPress={() => goBack()}
           hitSlop={12}
@@ -377,7 +380,7 @@ function ClassesList() {
 
       <Pressable
         onPress={() => setShowNew(true)}
-        style={[styles.fab, { backgroundColor: ACCENT, bottom: insets.bottom + 24 }]}
+        style={[styles.fab, { backgroundColor: ACCENT_FILL, bottom: insets.bottom + 24 }]}
       >
         <Ionicons name="add" size={26} color="#fff" />
       </Pressable>
@@ -468,7 +471,7 @@ function ClassesList() {
                 style={[
                   styles.modalBtn,
                   styles.modalPrimary,
-                  { backgroundColor: ACCENT, opacity: !newName.trim() || creating ? 0.5 : 1 },
+                  { backgroundColor: ACCENT_FILL, opacity: !newName.trim() || creating ? 0.5 : 1 },
                 ]}
               >
                 {creating ? (

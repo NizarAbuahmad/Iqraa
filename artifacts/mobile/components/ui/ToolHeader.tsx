@@ -32,7 +32,7 @@ export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = tr
   const row = { flexDirection: isRTL ? 'row-reverse' : 'row' } as const;
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
   return (
-    <View style={[styles.band, { backgroundColor: colors.primary, paddingTop: topPad + 12 }]}>
+    <View style={[styles.band, { backgroundColor: colors.hero, paddingTop: topPad + 12 }]}>
       <Pressable
         onPress={goBack}
         hitSlop={10}
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.16)',
+    backgroundColor: 'rgba(0,0,0,0.18)',
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -75,5 +75,5 @@ const styles = StyleSheet.create({
   titleRow: { alignItems: 'center', gap: 8 },
   emoji: { fontSize: 22 },
   title: { flexShrink: 1, color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 22 },
-  subtitle: { color: 'rgba(255,255,255,0.88)', fontFamily: 'Almarai_400Regular', fontSize: 13.5, lineHeight: 22 },
+  subtitle: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 13.5, lineHeight: 22 },
 });

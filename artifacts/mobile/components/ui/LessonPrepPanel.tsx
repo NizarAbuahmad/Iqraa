@@ -57,6 +57,7 @@ import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
 import { Toast } from '@/components/ui/Toast';
+import { textOn } from '@/services/readableColor';
 
 /** Same ladder the lesson-plan tool offers, so a saved plan can reopen there. */
 const DURATION_VALUES = [30, 45, 60, 90];
@@ -637,8 +638,8 @@ function ActionButton({ icon, label, onPress, accent, filled, colors, isRTL }: {
         },
       ]}
     >
-      <Ionicons name={icon} size={16} color={filled ? '#fff' : accent} />
-      <Text style={[styles.actionBtnText, { color: filled ? '#fff' : accent, fontFamily: 'Cairo_600SemiBold' }]}>
+      <Ionicons name={icon} size={16} color={filled ? textOn(accent) : accent} />
+      <Text style={[styles.actionBtnText, { color: filled ? textOn(accent) : accent, fontFamily: 'Cairo_600SemiBold' }]}>
         {label}
       </Text>
     </Pressable>

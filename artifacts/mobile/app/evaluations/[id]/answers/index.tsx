@@ -17,8 +17,11 @@ import { RosterError, getClass, listClasses, type ClassGroup, type RosterStudent
 import { listAttempts, type AttemptListRow, type AttemptStatus } from '@/services/evaluations';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 const STATUS_KEY: Record<AttemptStatus, TranslationKey> = {
   not_started: 'attemptStatusNotStarted',
@@ -103,7 +106,7 @@ export default function PickStudentScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <Pressable
           onPress={() => (classId ? setClassId(null) : goBack())}
           hitSlop={12}

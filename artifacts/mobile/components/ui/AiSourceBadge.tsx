@@ -6,6 +6,7 @@ import {
   AiGenerationRecord, aiSourceBadgeState, getLastGeneration, subscribeToGenerations,
 } from '@/services/ai/aiProvenance';
 import { useLanguage } from '@/context/LanguageContext';
+import { useColors } from '@/hooks/useColors';
 
 type Props = {
   /** Use on dark colored headers (teal/purple). */
@@ -33,6 +34,7 @@ function useLastGeneration(): AiGenerationRecord | null {
  */
 export function AiSourceBadge({ onDark = false, isRTL }: Props) {
   const { t, isRTL: ctxRtl } = useLanguage();
+  const colors = useColors();
   const rtl = isRTL ?? ctxRtl;
   const state = aiSourceBadgeState(DEMO_MODE, useLastGeneration());
 
@@ -42,8 +44,10 @@ export function AiSourceBadge({ onDark = false, isRTL }: Props) {
 
   // The warning has to out-shout a header it sits on top of; the other states
   // stay secondary to the IQRA brand, as the demo badge always did.
-  const quiet = onDark ? 'rgba(255,255,255,0.55)' : '#8BA0B8';
-  const tint = warn ? (onDark ? '#FFD8A8' : '#B25E02') : quiet;
+  // It says the content is sample content, so it has to be legible: the old
+  // greys were 2.4:1 on both the header band and the page.
+  const quiet = onDark ? 'rgba(255,255,255,0.92)' : colors.mutedForeground;
+  const tint = warn ? (onDark ? '#FFD8A8' : colors.warning) : quiet;
 
   return (
     <View
@@ -81,7 +85,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   wrapDark: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(0,0,0,0.18)',
   },
   wrapLight: {
     backgroundColor: 'rgba(139,160,184,0.12)',

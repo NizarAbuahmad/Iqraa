@@ -24,8 +24,11 @@ import { useReadAloudRecorder } from '@/hooks/useReadAloudRecorder';
 import { uploadReadAloud } from '@/services/studentExam';
 import { setBlankAt, setMatchPair, type MatchPair, type StudentResponse } from '@/services/studentAnswers';
 import type { TranslationKey } from '@/services/i18n';
+import { palette } from '@/constants/colors';
 
-const ACCENT = '#007C74';
+const ACCENT = palette.primary;
+/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
+const ACCENT_FILL = palette.hero;
 
 /** Mirrors MAX_TAKES_PER_QUESTION in api-server's lib/readAloudUpload.ts. */
 const MAX_TAKES = 3;
@@ -347,7 +350,7 @@ export function DictationInput({
           <Pressable
             onPress={() => void play()}
             disabled={playing || left <= 0}
-            style={[styles.recordBtn, { backgroundColor: ACCENT, opacity: playing || left <= 0 ? 0.6 : 1 }]}
+            style={[styles.recordBtn, { backgroundColor: ACCENT_FILL, opacity: playing || left <= 0 ? 0.6 : 1 }]}
           >
             <Ionicons name={playing ? 'volume-high' : 'play'} size={20} color="#fff" />
             <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
