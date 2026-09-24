@@ -24,7 +24,7 @@ import {
   type PickerContact,
 } from '@/services/participantPicker';
 
-const ACCENT = '#8B5CF6';
+const ACCENT = '#007C74';
 
 type Contact = PickerContact;
 type ClassOption = PickerClass;
@@ -273,7 +273,7 @@ export function ParticipantPickerSheet({
                       <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }} numberOfLines={1}>
                         {item.firstName} {item.lastName}
                       </Text>
-                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }} numberOfLines={1}>
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }} numberOfLines={1}>
                         {item.role === 'student' ? t('roleStudent') : t('roleParent')} · {item.studentName}
                       </Text>
                     </View>
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   sheet: { maxHeight: '75%', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 16, gap: 12 },
   head: { alignItems: 'center', paddingHorizontal: 16 },
   title: { fontSize: 17 },
-  hint: { fontSize: 13, paddingVertical: 28, paddingHorizontal: 16 },
+  hint: { fontSize: 13, lineHeight: 21, paddingVertical: 28, paddingHorizontal: 16 },
   emptyTitle: { fontSize: 14 },
   searchWrap: { alignItems: 'center', gap: 8, marginHorizontal: 16, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, borderWidth: 1 },
   // No explicit height: the row sizes to the input, and a fixed one clips

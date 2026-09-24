@@ -32,8 +32,9 @@ import { narrowSubjectsForGrade, resolveSelectedId } from '@/services/teacherCat
 import { RosterConsentGate } from '@/components/RosterConsentGate';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 
 /** A class's subject for the list card. Empty when unset or off-catalog. */
 function subjectName(subjectId: string | undefined, lang: string): string {
@@ -248,7 +249,7 @@ function ClassesList() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack()}
           hitSlop={12}
           style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
         >
@@ -499,7 +500,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cardTitle: { fontSize: 16 },
-  cardMeta: { fontSize: 13, marginTop: 4 },
+  cardMeta: { fontSize: 13, lineHeight: 21, marginTop: 4 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17 },
   emptyText: { fontSize: 14, maxWidth: 280, lineHeight: 20 },

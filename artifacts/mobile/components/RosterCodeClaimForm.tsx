@@ -89,7 +89,7 @@ export function RosterCodeClaimForm({
                     {entry.displayName}
                   </Text>
                   {entry.taken ? (
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10 }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10, lineHeight: 16 }}>
                       {t('joinNameTaken')}
                     </Text>
                   ) : null}

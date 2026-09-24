@@ -18,7 +18,7 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { Button } from '@/components/ui/Button';
 import type { TranslationKey } from '@/services/i18n';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 
 const GAMES: Array<{
   id: string;
@@ -30,7 +30,7 @@ const GAMES: Array<{
 }> = [
   { id: 'flags', route: '/play/flags', icon: 'flag-outline', color: '#1D4ED8', titleKey: 'playFlagsTitle', descKey: 'playFlagsDesc' },
   { id: 'capitals', route: '/play/capitals', icon: 'location-outline', color: '#0E8F86', titleKey: 'playCapitalsTitle', descKey: 'playCapitalsDesc' },
-  { id: 'memory', route: '/play/memory', icon: 'apps-outline', color: '#0EA5E9', titleKey: 'playMemoryTitle', descKey: 'playMemoryDesc' },
+  { id: 'memory', route: '/play/memory', icon: 'apps-outline', color: '#0369A1', titleKey: 'playMemoryTitle', descKey: 'playMemoryDesc' },
   { id: 'colors', route: '/play/colors', icon: 'color-palette-outline', color: '#DB2777', titleKey: 'playColorsTitle', descKey: 'playColorsDesc' },
 ];
 
@@ -51,7 +51,7 @@ export default function PlayHubScreen() {
           <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 24, textAlign: 'center' }}>
             {t('playHubTitle')}
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: 'center', marginTop: 6 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center', marginTop: 6 }}>
             {t('playHubSubtitle')}
           </Text>
         </View>
@@ -69,7 +69,7 @@ export default function PlayHubScreen() {
               <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, textAlign: 'center' }}>
                 {t(g.titleKey)}
               </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: 'center' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: 'center' }}>
                 {t(g.descKey)}
               </Text>
             </Pressable>

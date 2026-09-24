@@ -37,6 +37,7 @@ import { buildWorksheetHTML, buildWorksheetSlidesHTML, formatWorksheetText } fro
 import { EditableText } from '@/components/ui/Editable';
 import { optionLetter } from '@/services/optionLabels';
 import { confirm } from '@/services/confirm';
+import { goBack } from '@/services/navigation';
 import {
   answerFor,
   applyWorksheetAnswerEdit,
@@ -46,7 +47,7 @@ import {
   parsePoints,
   removeWorksheetQuestionAt } from '@/services/worksheetEdits';
 
-const ACCENT = '#8B5CF6';
+const ACCENT = '#007C74';
 
 type DifficultyLevel = 'normal' | 'high' | 'difficult';
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
@@ -472,7 +473,7 @@ export default function WorksheetScreen() {
     word_problem: t('typeWordProblem'),
   };
 
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const getExportTitle = () => (lang === 'ar' ? `ورقة عمل: ${topic.trim()}` : `Worksheet: ${topic.trim()}`) + levelSuffix;
   // Localised, like the picker above it. Taking `.name` straight off the
@@ -524,7 +525,7 @@ export default function WorksheetScreen() {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: topPad + 12 }]}>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <AiSourceBadge onDark isRTL={isRTL} />
@@ -579,7 +580,7 @@ export default function WorksheetScreen() {
             <Text style={{
               color: colors.mutedForeground,
               fontFamily: 'Almarai_400Regular',
-              fontSize: 12,
+              fontSize: 12, lineHeight: 19,
               marginTop: 2,
               textAlign: isRTL ? 'right' : 'left',
             }}>
@@ -594,7 +595,7 @@ export default function WorksheetScreen() {
           beside the spinner they replace — they used to render above the form,
           out of sight of the button that had just been pressed.
         */}
-        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button label={loading ? t('generating') : t('createWorksheetBtn')} onPress={() => generate()} loading={loading} disabled={!topic.trim()} fullWidth />
         {/* The same paper at every difficulty, for a class that is not one
             level. Costs three generations the first time a lesson is asked
@@ -613,7 +614,7 @@ export default function WorksheetScreen() {
           product rather than an unmet precondition. It says which one.
         */}
         {!topic.trim() ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
             {t('needTopicHint')}
           </Text>
         ) : null}
@@ -668,13 +669,13 @@ export default function WorksheetScreen() {
               <Ionicons
                 name={verification.anySymbolic ? 'shield-checkmark' : 'library-outline'}
                 size={14}
-                color={verification.anySymbolic ? '#10B981' : colors.mutedForeground}
+                color={verification.anySymbolic ? '#067647' : colors.mutedForeground}
               />
               <Text
                 style={[
                   styles.verifyText,
                   {
-                    color: verification.anySymbolic ? '#10B981' : colors.mutedForeground,
+                    color: verification.anySymbolic ? '#067647' : colors.mutedForeground,
                     textAlign: isRTL ? 'right' : 'left',
                   },
                 ]}
@@ -777,7 +778,7 @@ export default function WorksheetScreen() {
                       const isCorrect = o === correctAnswer;
                       return (
                         <View key={oi} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                          <Text style={[styles.optLabel, { color: isCorrect ? '#10B981' : colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+                          <Text style={[styles.optLabel, { color: isCorrect ? '#067647' : colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
                             {optionLetter(oi, lang === 'ar')}.
                           </Text>
                           <View style={{ flex: 1 }}>
@@ -803,7 +804,7 @@ export default function WorksheetScreen() {
                             <Ionicons
                               name={isCorrect ? 'checkmark-circle' : 'ellipse-outline'}
                               size={16}
-                              color={isCorrect ? '#10B981' : colors.mutedForeground}
+                              color={isCorrect ? '#067647' : colors.mutedForeground}
                             />
                           </Pressable>
                         </View>
@@ -869,14 +870,14 @@ export default function WorksheetScreen() {
                       />
                       {proved ? (
                         <View style={[styles.verifyRow, { marginTop: 2, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                          <Ionicons name="shield-checkmark" size={12} color="#10B981" />
-                          <Text style={[styles.verifyText, { fontSize: 11, color: '#10B981', textAlign: isRTL ? 'right' : 'left' }]}>
+                          <Ionicons name="shield-checkmark" size={12} color="#067647" />
+                          <Text style={[styles.verifyText, { fontSize: 11, color: '#067647', textAlign: isRTL ? 'right' : 'left' }]}>
                             {t('verifiedBySymbolic')}
                           </Text>
                         </View>
                       ) : null}
                       {proved && o?.computedAnswer ? (
-                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: isRTL ? 'right' : 'left' }}>
+                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
                           {isolateForeignRuns(t('verifiedComputed', prettifySymPy(o.computedAnswer)))}
                         </Text>
                       ) : null}
@@ -969,7 +970,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 24 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   headerTitle: { fontSize: 26 },
-  headerSub: { fontSize: 13, marginTop: 4 },
+  headerSub: { fontSize: 13, lineHeight: 21, marginTop: 4 },
   label: { fontSize: 13, marginBottom: 6 },
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },

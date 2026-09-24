@@ -20,7 +20,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { getClass, listClasses, type ClassGroup, type RosterStudent } from '@/services/roster';
 import { countStudents } from '@/services/i18n';
 
-const ACCENT = '#8B5CF6';
+const ACCENT = '#007C74';
 
 export function StudentPickerSheet({
   visible,
@@ -163,7 +163,7 @@ export function StudentPickerSheet({
                       style={{
                         color: colors.mutedForeground,
                         fontFamily: 'Almarai_400Regular',
-                        fontSize: 12,
+                        fontSize: 12, lineHeight: 19,
                         textAlign: align,
                       }}
                     >
@@ -205,7 +205,7 @@ export function StudentPickerSheet({
                         style={{
                           color: colors.mutedForeground,
                           fontFamily: 'Almarai_400Regular',
-                          fontSize: 12,
+                          fontSize: 12, lineHeight: 19,
                           textAlign: align,
                         }}
                         numberOfLines={1}
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   card: { width: '100%', maxWidth: 440, borderRadius: 16, padding: 20, gap: 12 },
   head: { alignItems: 'center', gap: 10 },
   title: { fontSize: 18 },
-  hint: { fontSize: 13 },
+  hint: { fontSize: 13, lineHeight: 21 },
   row: {
     alignItems: 'center',
     gap: 10,

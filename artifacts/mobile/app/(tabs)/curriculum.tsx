@@ -86,7 +86,7 @@ export default function CurriculumScreen() {
     );
   });
 
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
   const showGradePicker = visibleGrades.length > 1;
 
   const viewportW = useViewportWidth();
@@ -248,7 +248,7 @@ export default function CurriculumScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1 },
   title: { fontSize: 28, marginBottom: 4 },
-  subtitle: { fontSize: 13, marginBottom: 6 },
+  subtitle: { fontSize: 13, lineHeight: 21, marginBottom: 6 },
   intro: { fontSize: 12.5, lineHeight: 19, marginBottom: 14 },
   searchRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
   searchInput: { flex: 1, fontSize: 14, paddingVertical: 0 },
@@ -264,5 +264,5 @@ const styles = StyleSheet.create({
   subjectIcon: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' },
   subjectName: { fontSize: 13 },
   empty: { alignItems: 'center', paddingTop: 48, gap: 10 },
-  emptyText: { fontSize: 14 },
+  emptyText: { fontSize: 14, lineHeight: 22 },
 });

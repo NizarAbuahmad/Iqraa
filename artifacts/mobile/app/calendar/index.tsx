@@ -7,7 +7,7 @@
  */
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
@@ -18,8 +18,9 @@ import { listClasses, type ClassGroup } from '@/services/roster';
 import { getLessonById } from '@/services/knowledgeBase';
 import { buildDayAgenda, dayHasAgenda, isInMonth, monthGridDates } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 const WEEKDAY_KEYS = [
   'planWeekdaySun', 'planWeekdayMon', 'planWeekdayTue', 'planWeekdayWed',
   'planWeekdayThu', 'planWeekdayFri', 'planWeekdaySat',
@@ -117,7 +118,7 @@ export default function CalendarScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
         <View style={{ flexDirection: rowDir, justifyContent: 'space-between', alignItems: 'center' }}>
-          <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Pressable onPress={() => goBack()} hitSlop={12}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <Pressable onPress={goToday} hitSlop={12}>
@@ -158,7 +159,7 @@ export default function CalendarScreen() {
             {WEEKDAY_KEYS.map(key => (
               <Text
                 key={key}
-                style={{ flex: 1, textAlign: 'center', color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}
+                style={{ flex: 1, textAlign: 'center', color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}
               >
                 {t(key)}
               </Text>
@@ -217,14 +218,14 @@ export default function CalendarScreen() {
             </Text>
 
             {selectedAgenda.periods.length === 0 && selectedAgenda.lessons.length === 0 ? (
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                 {t('calendarNoActivity')}
               </Text>
             ) : (
               <>
                 {selectedAgenda.periods.length > 0 ? (
                   <View style={{ gap: 6 }}>
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, textAlign: align }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, textAlign: align }}>
                       {t('calendarPeriodsSection')}
                     </Text>
                     {selectedAgenda.periods.map(p => (
@@ -238,7 +239,7 @@ export default function CalendarScreen() {
                         <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>
                           {p.startTime || t('schedulePeriodNumber', p.periodNumber)}
                         </Text>
-                        <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
+                        <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                           {classNameFor(p.classGroupId)}
                         </Text>
                       </View>
@@ -248,7 +249,7 @@ export default function CalendarScreen() {
 
                 {selectedAgenda.lessons.length > 0 ? (
                   <View style={{ gap: 6 }}>
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, textAlign: align }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, textAlign: align }}>
                       {t('calendarLessonsSection')}
                     </Text>
                     {selectedAgenda.lessons.map(l => {
@@ -262,7 +263,7 @@ export default function CalendarScreen() {
                           <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: align }}>
                             {title}
                           </Text>
-                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, textAlign: align }}>
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, textAlign: align }}>
                             {t('calendarLessonFrom', l.planTitle)}
                           </Text>
                         </View>

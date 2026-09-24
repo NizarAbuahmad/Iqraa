@@ -40,8 +40,9 @@ import {
   type QuestionType,
 } from '@/services/evaluations';
 import type { TranslationKey } from '@/services/i18n';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 
 /**
  * The types a teacher may ask the generator for.
@@ -276,7 +277,7 @@ export default function NewEvaluationScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => router.back()} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
@@ -348,7 +349,7 @@ export default function NewEvaluationScreen() {
                       {b.titleAr}
                     </Text>
                     {!b.evaluable && (
-                      <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 11, marginTop: 2, textAlign: align }]}>
+                      <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginTop: 2, textAlign: align }]}>
                         {t('bookNotEvaluable')}
                       </Text>
                     )}
@@ -456,7 +457,7 @@ export default function NewEvaluationScreen() {
         )}
 
         {error ? (
-          <Text style={{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular', marginBottom: 12, textAlign: align }}>
+          <Text style={{ color: colors.destructive, fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', marginBottom: 12, textAlign: align }}>
             {error}
           </Text>
         ) : null}
@@ -535,7 +536,7 @@ function PaperRowEditor({
               onPress={() => onChange({ competencyKey: key })}
               style={[styles.compChip, { borderColor: active ? ACCENT : colors.border, backgroundColor: active ? ACCENT + '18' : 'transparent' }]}
             >
-              <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
+              <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
                 {t(COMPETENCY_KEY[key])}
               </Text>
             </Pressable>
@@ -611,7 +612,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 20, gap: 12 },
   headerTitle: { fontSize: 22, color: '#fff' },
   label: { fontSize: 13, marginBottom: 6 },
-  hint: { fontSize: 12, marginBottom: 8, marginTop: -2 },
+  hint: { fontSize: 12, lineHeight: 19, marginBottom: 8, marginTop: -2 },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, marginBottom: 16 },
   bookRow: { alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 8 },
   modeRow: { gap: 8, marginBottom: 8 },

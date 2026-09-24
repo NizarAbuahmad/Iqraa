@@ -18,8 +18,9 @@ import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { EvaluationError, listEvaluations, type Evaluation } from '@/services/evaluations';
 import { bookLabel, formatListDate } from '@/services/evaluationRow';
 import type { TranslationKey } from '@/services/i18n';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 
 const STATUS_KEY: Record<Evaluation['status'], TranslationKey> = {
   draft: 'evalStatusDraft',
@@ -27,8 +28,8 @@ const STATUS_KEY: Record<Evaluation['status'], TranslationKey> = {
   closed: 'evalStatusClosed',
 };
 const STATUS_COLOR: Record<Evaluation['status'], string> = {
-  draft: '#F59E0B',
-  published: '#10B981',
+  draft: '#B54708',
+  published: '#067647',
   closed: '#6B7280',
 };
 
@@ -80,7 +81,7 @@ export default function EvaluationsScreen() {
 
   const backButton = (
     <Pressable
-      onPress={() => router.back()}
+      onPress={() => goBack()}
       hitSlop={12}
       accessibilityRole="button"
       accessibilityLabel={t('back')}
@@ -252,7 +253,7 @@ export default function EvaluationsScreen() {
 const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 20, gap: 8 },
   heroTitle: { fontSize: 26, color: '#fff' },
-  heroSub: { fontSize: 13 },
+  heroSub: { fontSize: 13, lineHeight: 21 },
   deskHeader: {
     alignItems: 'flex-end',
     justifyContent: 'space-between',
@@ -262,7 +263,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   deskTitle: { fontSize: 26, marginTop: 8 },
-  deskSub: { fontSize: 14 },
+  deskSub: { fontSize: 14, lineHeight: 22 },
   deskNewBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -275,7 +276,7 @@ const styles = StyleSheet.create({
   card: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 14, borderWidth: 1 },
   cardTop: { alignItems: 'center', gap: 8 },
   cardTitle: { fontSize: 16, flex: 1 },
-  cardMeta: { fontSize: 13, marginTop: 4 },
+  cardMeta: { fontSize: 13, lineHeight: 21, marginTop: 4 },
   statusPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17 },

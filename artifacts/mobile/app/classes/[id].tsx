@@ -65,8 +65,9 @@ import { countMaterials, countStudents } from '@/services/i18n';
 import { confirm } from '@/services/confirm';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 /** Centred column on desktop web; full-bleed on phones. */
 const CENTERED = { width: '100%' as const, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' as const };
 
@@ -469,7 +470,7 @@ export default function ClassDetailScreen() {
             justifyContent: 'space-between',
           }}
         >
-          <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Pressable onPress={() => goBack()} hitSlop={12}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           {/* The name and grade set at creation and never editable again —
@@ -723,7 +724,7 @@ export default function ClassDetailScreen() {
                   <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
                     {t('miniEvalBtn')}
                   </Text>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: align }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
                     {t('miniEvalSubtitle')}
                   </Text>
                 </View>
@@ -750,7 +751,7 @@ export default function ClassDetailScreen() {
                   <Text style={[styles.rowName, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]} numberOfLines={1}>
                     {title}
                   </Text>
-                  <Text style={[styles.rowRef, { color: draft ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                  <Text style={[styles.rowRef, { color: draft ? '#B54708' : colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                     {draft
                       ? t('examNotPublished')
                       : t('examMarkedCount', String(item.markedCount ?? 0), String(students.length))}
@@ -910,7 +911,7 @@ export default function ClassDetailScreen() {
               </View>
             ) : null}
             {error ? (
-              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12.5, textAlign: align }}>
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: align }}>
                 {error}
               </Text>
             ) : null}
@@ -1278,7 +1279,7 @@ export default function ClassDetailScreen() {
                     style={{
                       color: colors.foreground,
                       fontFamily: 'Almarai_400Regular',
-                      fontSize: 14,
+                      fontSize: 14, lineHeight: 22,
                       flex: 1,
                       textAlign: align,
                     }}
@@ -1369,7 +1370,7 @@ function MasterySection({
           {t('masteryTitle')}
         </Text>
         {gaps.length > 0 && (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
             {t('masteryBasis', t('countExams', mastery.evaluationCount))}
           </Text>
         )}
@@ -1377,10 +1378,10 @@ function MasterySection({
 
       {gaps.length === 0 ? (
         <View style={{ gap: 2 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
             {t('masteryEmpty')}
           </Text>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
             {t('masteryEmptyDesc')}
           </Text>
         </View>
@@ -1388,7 +1389,7 @@ function MasterySection({
         gaps.map(o => (
           <View key={o.objectiveId} style={{ gap: 3 }}>
             <Text
-              style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}
+              style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}
               numberOfLines={2}
             >
               {(lang === 'ar' ? o.titleAr : o.title) || o.objectiveId}
@@ -1399,16 +1400,16 @@ function MasterySection({
                   style={{
                     width: `${Math.max(0, Math.min(100, o.percent))}%`,
                     height: '100%',
-                    backgroundColor: o.percent < 60 ? '#DC2626' : o.percent < 80 ? '#F59E0B' : '#059669',
+                    backgroundColor: o.percent < 60 ? '#DC2626' : o.percent < 80 ? '#B54708' : '#067647',
                   }}
                 />
               </View>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>
                 {`${Math.round(o.percent)}%`}
               </Text>
             </View>
             {typeof o.studentsBelowGap === 'number' && typeof o.studentCount === 'number' && (
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10, textAlign: align }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10, lineHeight: 16, textAlign: align }}>
                 {t('masteryBelowGap', String(o.studentsBelowGap), String(o.studentCount))}
               </Text>
             )}
@@ -1437,7 +1438,7 @@ const styles = StyleSheet.create({
   tabs: { marginTop: 6 },
   tab: { paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 2, alignItems: 'center', gap: 2 },
   tabLabel: { fontSize: 15 },
-  tabCount: { fontSize: 11, color: 'rgba(255,255,255,0.75)' },
+  tabCount: { fontSize: 11, lineHeight: 18, color: 'rgba(255,255,255,0.75)' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   row: {
     flexDirection: 'row',
@@ -1449,7 +1450,7 @@ const styles = StyleSheet.create({
   },
   matIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   rowName: { fontSize: 15 },
-  rowRef: { fontSize: 12, marginTop: 2 },
+  rowRef: { fontSize: 12, lineHeight: 19, marginTop: 2 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17 },
   emptyText: { fontSize: 14, maxWidth: 280, lineHeight: 20 },
@@ -1480,7 +1481,7 @@ const styles = StyleSheet.create({
   },
   modalCard: { width: '100%', maxWidth: 460, borderRadius: 16, padding: 20, gap: 12 },
   modalTitle: { fontSize: 18 },
-  modalHint: { fontSize: 13 },
+  modalHint: { fontSize: 13, lineHeight: 21 },
   pickRow: {
     alignItems: 'center',
     gap: 10,
@@ -1508,7 +1509,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
-  count: { fontSize: 13 },
+  count: { fontSize: 13, lineHeight: 21 },
   codeText: { fontSize: 28, letterSpacing: 4, textAlign: 'center', marginTop: 4 },
   codeActions: { gap: 8 },
   linkedPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },

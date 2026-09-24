@@ -47,8 +47,9 @@ import { summariseAttempts } from '@/services/attemptSummary';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { saveItem } from '@/services/workspace';
 import type { TranslationKey } from '@/services/i18n';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 
 const STATUS_KEY: Record<AttemptStatus, TranslationKey> = {
   not_started: 'attemptStatusNotStarted',
@@ -60,13 +61,13 @@ const STATUS_KEY: Record<AttemptStatus, TranslationKey> = {
   abandoned: 'attemptStatusAbandoned',
 };
 const STATUS_COLOR: Record<AttemptStatus, string> = {
-  not_started: '#9CA3AF',
-  in_progress: '#F59E0B',
-  submitted: '#3B82F6',
-  grading: '#3B82F6',
-  graded: '#10B981',
-  needs_review: '#EF4444',
-  abandoned: '#9CA3AF',
+  not_started: '#6B7280',
+  in_progress: '#B54708',
+  submitted: '#1D4ED8',
+  grading: '#1D4ED8',
+  graded: '#067647',
+  needs_review: '#D92D20',
+  abandoned: '#6B7280',
 };
 const LEVEL_ORDER: LevelKey[] = ['advanced', 'proficient', 'developing', 'beginner'];
 const LEVEL_KEY: Record<LevelKey, TranslationKey> = {
@@ -76,10 +77,10 @@ const LEVEL_KEY: Record<LevelKey, TranslationKey> = {
   advanced: 'levelAdvanced',
 };
 const LEVEL_COLOR: Record<LevelKey, string> = {
-  beginner: '#EF4444',
-  developing: '#F59E0B',
-  proficient: '#10B981',
-  advanced: '#059669',
+  beginner: '#D92D20',
+  developing: '#B54708',
+  proficient: '#067647',
+  advanced: '#067647',
 };
 
 export default function ResultsDashboardScreen() {
@@ -138,7 +139,7 @@ export default function ResultsDashboardScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => router.back()} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]} numberOfLines={1}>
@@ -167,14 +168,14 @@ export default function ResultsDashboardScreen() {
             <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 16 }]}>
               <View style={[styles.summaryTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={{ alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                     {t('gradedCountLabel', gradedCount, attempts.length)}
                   </Text>
                   {/* Named rather than folded in: these papers carry a result
                       the machine wrote over the questions it could mark, and
                       averaging that in would flatter the class. */}
                   {provisionalCount > 0 && (
-                    <Text style={{ color: '#EF4444', fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2 }}>
+                    <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 2 }}>
                       {t('provisionalCountLabel', provisionalCount)}
                     </Text>
                   )}
@@ -196,7 +197,7 @@ export default function ResultsDashboardScreen() {
                     const widthPct = (count / maxLevelCount) * 100;
                     return (
                       <View key={key} style={[styles.levelBarRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                        <Text style={{ width: 70, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+                        <Text style={{ width: 70, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
                           {t(LEVEL_KEY[key])}
                         </Text>
                         <View style={[styles.barTrack, { backgroundColor: colors.muted }]}>
@@ -255,7 +256,7 @@ export default function ResultsDashboardScreen() {
                       {t(LEVEL_KEY[item.result.levelKey])}
                     </Text>
                   )}
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
                     {t('resultPercentLabel', item.result.percent)}
                   </Text>
                 </View>
@@ -351,7 +352,7 @@ function ClassGaps({
       <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: align }}>
         {t('classGapsTitle')}
       </Text>
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: align }}>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
         {t('classGapsHint', String(insights.studentCount))}
       </Text>
 
@@ -361,14 +362,14 @@ function ClassGaps({
         return (
           <View key={o.objectiveId} style={{ gap: 4 }}>
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ color: weak ? '#EF4444' : colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>
+              <Text style={{ color: weak ? '#D92D20' : colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>
                 {t('resultPercentLabel', String(o.percent))}
               </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>
                 {t('classBelowLine', String(o.studentsBelowGap), String(o.studentCount))}
               </Text>
             </View>
-            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
               {title}
             </Text>
           </View>
@@ -408,7 +409,7 @@ function ClassGaps({
         </Pressable>
       ) : null}
       {warmError ? (
-        <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: align }}>
+        <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
           {warmError}
         </Text>
       ) : null}
@@ -420,7 +421,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingBottom: 20, gap: 8 },
   headerTitle: { fontSize: 22, color: '#fff' },
-  headerSub: { fontSize: 13 },
+  headerSub: { fontSize: 13, lineHeight: 21 },
   errorBox: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1 },
   summaryCard: { borderWidth: 1, borderRadius: 14, padding: 16 },
   summaryTop: { alignItems: 'center' },

@@ -212,7 +212,7 @@ export function EditableList({
             style={{
               color: colors.mutedForeground,
               fontFamily: 'Almarai_400Regular',
-              fontSize: 12.5,
+              fontSize: 12.5, lineHeight: 20,
             }}
           >
             {addLabel}

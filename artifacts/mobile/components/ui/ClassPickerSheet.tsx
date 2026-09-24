@@ -48,7 +48,7 @@ import { listClasses, type ClassGroup } from '@/services/roster';
 import { className } from '@/services/materialClass';
 import { countStudents } from '@/services/i18n';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 
 /** One chosen class, with its name already resolved for the active language. */
 export type ClassPick = { id: string; name: string };
@@ -202,7 +202,7 @@ export function ClassPickerSheet({
                       style={{
                         color: current ? ACCENT : colors.mutedForeground,
                         fontFamily: 'Almarai_400Regular',
-                        fontSize: 12,
+                        fontSize: 12, lineHeight: 19,
                         textAlign: align,
                       }}
                     >
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   },
   card: { width: '100%', maxWidth: 440, borderRadius: 16, padding: 20, gap: 12 },
   title: { fontSize: 18 },
-  hint: { fontSize: 13 },
+  hint: { fontSize: 13, lineHeight: 21 },
   row: {
     alignItems: 'center',
     gap: 10,

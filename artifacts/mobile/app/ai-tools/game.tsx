@@ -40,8 +40,9 @@ import { createGame, MAX_TEAMS, MIN_TEAMS } from '@/services/classGame';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams } from '@/services/lessonPrep';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#F59E0B';
+const ACCENT = '#007C74';
 const QUESTION_COUNTS = [5, 8, 10, 12];
 
 export default function ClassGameScreen() {
@@ -50,7 +51,7 @@ export default function ClassGameScreen() {
   const { t, isRTL, lang } = useLanguage();
   const isAr = lang === 'ar';
   const scrollRef = useRef<ScrollView>(null);
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
@@ -195,7 +196,7 @@ export default function ClassGameScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-          <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+          <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <AiSourceBadge onDark isRTL={isRTL} />
@@ -311,7 +312,7 @@ export default function ClassGameScreen() {
           />
 
           {error ? (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
           ) : null}
@@ -327,7 +328,7 @@ export default function ClassGameScreen() {
         {loading && (
           <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <ActivityIndicator color={ACCENT} />
-            <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }}>
               {t('gameBuilding')}
             </Text>
             <Pressable onPress={cancelGenerate} hitSlop={8}>
@@ -437,7 +438,7 @@ const styles = StyleSheet.create({
   readyTitle: { fontSize: 17, marginBottom: 12 },
   statsRow: { borderTopWidth: 1, paddingTop: 12, gap: 16 },
   materialsCard: { borderWidth: 1, padding: 14, marginBottom: 12 },
-  sectionLabel: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  sectionLabel: { fontSize: 12, textTransform: 'uppercase', marginBottom: 4 },
   dot: { width: 5, height: 5, borderRadius: 3, marginTop: 8, flexShrink: 0 },
   ctaBtn: { alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16, marginBottom: 10 },
   regenBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, padding: 14, borderWidth: 1.5 },

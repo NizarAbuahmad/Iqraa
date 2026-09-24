@@ -50,8 +50,9 @@ import {
 import { isolateForeignRuns } from '@/services/mathRender';
 import { FillBlankInput, MatchingInput } from '@/components/QuestionInputs';
 import type { TranslationKey } from '@/services/i18n';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 
 const LEVEL_KEY: Record<LevelKey, TranslationKey> = {
   beginner: 'levelBeginner',
@@ -60,10 +61,10 @@ const LEVEL_KEY: Record<LevelKey, TranslationKey> = {
   advanced: 'levelAdvanced',
 };
 const LEVEL_COLOR: Record<LevelKey, string> = {
-  beginner: '#EF4444',
-  developing: '#F59E0B',
-  proficient: '#10B981',
-  advanced: '#059669',
+  beginner: '#D92D20',
+  developing: '#B54708',
+  proficient: '#067647',
+  advanced: '#067647',
 };
 const COMPETENCY_ORDER: CompetencyKey[] = ['knowledge', 'understanding', 'application', 'critical_thinking'];
 const COMPETENCY_KEY: Record<CompetencyKey, TranslationKey> = {
@@ -335,7 +336,7 @@ export default function AnswerEntryScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
-          <Pressable onPress={() => router.back()} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
+          <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>{studentName}</Text>
@@ -392,7 +393,7 @@ export default function AnswerEntryScreen() {
               {scanning ? t('scanReading') : t('scanMarksBtn')}
             </Text>
           </Pressable>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, marginTop: 6, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginTop: 6, textAlign: align }}>
             {t('scanMarksHint')}
           </Text>
         </View>
@@ -485,7 +486,7 @@ function ResultCard({
         </View>
 
         {noMarks ? (
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 10, textAlign: align }]}>
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 10, textAlign: align }]}>
             {t('noGradedQuestionsYet')}
           </Text>
         ) : (
@@ -501,12 +502,12 @@ function ResultCard({
               <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
                 {t('resultPercentLabel', result.percent)}
               </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                 {result.earnedMarks} / {result.totalMarks}
               </Text>
             </View>
             {result.isProvisional && (
-              <Text style={[{ color: '#F59E0B', fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 8, textAlign: align }]}>
+              <Text style={[{ color: '#B54708', fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 8, textAlign: align }]}>
                 {t('provisionalResultNote')}
               </Text>
             )}
@@ -515,7 +516,7 @@ function ResultCard({
                 const c = result.competencyScores[key];
                 return (
                   <View key={key} style={[styles.competencyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, flex: 1, textAlign: align }}>
+                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, flex: 1, textAlign: align }}>
                       {t(COMPETENCY_KEY[key])}
                     </Text>
                     <Text style={{ color: c?.sufficient ? colors.foreground : colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
@@ -584,7 +585,7 @@ function NextStepsCard({
         <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 16, textAlign: align }}>
           {t('nextStepsTitle')}
         </Text>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 4, textAlign: align }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 4, textAlign: align }}>
           {t('nextStepsSubtitle')}
         </Text>
 
@@ -601,11 +602,11 @@ function NextStepsCard({
                   <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
                     {t(KIND_LABEL[rec.kind])}
                   </Text>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
                     {t('recEvidence', String(rec.payload.percent), String(rec.payload.marksLost))}
                   </Text>
                 </View>
-                <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
+                <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                   {title}
                 </Text>
                 {canGenerate && rec.kind !== 'reassess' && title ? (
@@ -652,7 +653,7 @@ function QuestionInput({
         <View style={[styles.qNum, { backgroundColor: ACCENT }]}>
           <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 12 }}>{index + 1}</Text>
         </View>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
           {t('marksAbbrev', question.marks)}
         </Text>
       </View>
@@ -743,11 +744,11 @@ function GradeRow({
           keyboardType="decimal-pad"
           style={[styles.markInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
         />
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
           {t('markOutOf', question.marks)}
         </Text>
         {grade?.grader ? (
-          <Text style={{ color: byTeacher ? ACCENT : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
+          <Text style={{ color: byTeacher ? ACCENT : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
             {t(byTeacher ? 'markedByTeacher' : 'markedAutomatically')}
           </Text>
         ) : null}
@@ -812,7 +813,7 @@ function MultipleChoiceInput({
                 style={{
                   color: colors.foreground,
                   fontFamily: 'Almarai_400Regular',
-                  fontSize: 14,
+                  fontSize: 14, lineHeight: 22,
                   flex: 1,
                   textAlign: align,
                   writingDirection: align === 'right' ? 'rtl' : 'ltr',
@@ -905,7 +906,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingBottom: 20, gap: 8 },
   headerTitle: { fontSize: 22, color: '#fff' },
-  headerSub: { fontSize: 13 },
+  headerSub: { fontSize: 13, lineHeight: 21 },
   errorBox: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1 },
   resultCard: { borderWidth: 1, borderRadius: 14, padding: 16 },
   resultTop: { alignItems: 'center' },

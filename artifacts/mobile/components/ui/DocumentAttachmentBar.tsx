@@ -186,7 +186,7 @@ export function DocumentAttachmentBar({
                 </Text>
                 <Text
                   numberOfLines={1}
-                  style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10 }}
+                  style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10, lineHeight: 16 }}
                 >
                   {statusLabel(d)}
                   {d.status !== 'ready' && d.status !== 'error'
@@ -212,7 +212,7 @@ export function DocumentAttachmentBar({
           style={{
             color: colors.mutedForeground,
             fontFamily: 'Almarai_400Regular',
-            fontSize: 11,
+            fontSize: 11, lineHeight: 18,
             textAlign: rtl ? 'right' : 'left',
             paddingHorizontal: 4,
             marginBottom: 4,

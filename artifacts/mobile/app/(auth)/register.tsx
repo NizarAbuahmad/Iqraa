@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/Input';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { useStudentAccountsStatus } from '@/services/features';
 import { Ionicons } from '@expo/vector-icons';
+import { goBack } from '@/services/navigation';
 
 type SignupRole = 'teacher' | 'parent' | 'student';
 
@@ -122,7 +123,7 @@ export default function RegisterScreen() {
       >
         <View style={[styles.topRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBack()} hitSlop={10}
             style={styles.back}
             accessibilityRole="button"
             accessibilityLabel={t('back')}
@@ -315,14 +316,14 @@ const styles = StyleSheet.create({
   topRow: { alignItems: 'center', justifyContent: 'flex-start', marginBottom: 20 },
   back: { width: 40 },
   heading: { fontSize: 26, marginBottom: 6 },
-  sub: { fontSize: 14, marginBottom: 24 },
+  sub: { fontSize: 14, lineHeight: 22, marginBottom: 24 },
   card: { padding: 24, borderWidth: 1, marginBottom: 24, gap: 16 },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
-  errorText: { flex: 1, fontSize: 13 },
+  errorText: { flex: 1, fontSize: 13, lineHeight: 21 },
   dividerRow: { alignItems: 'center', gap: 10, marginVertical: 2 },
   dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 12 },
-  googleLoadingText: { fontSize: 12, textAlign: 'center', marginTop: -6 },
+  dividerText: { fontSize: 12, lineHeight: 19 },
+  googleLoadingText: { fontSize: 12, lineHeight: 19, textAlign: 'center', marginTop: -6 },
   nameRow: { flexDirection: 'row', gap: 12 },
   nameField: { flex: 1 },
   termsRow: { alignItems: 'flex-start', gap: 10 },

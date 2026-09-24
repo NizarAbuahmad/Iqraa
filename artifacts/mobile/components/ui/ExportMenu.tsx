@@ -76,7 +76,7 @@ export function ExportMenu({
       icon: 'share-outline',
       label: labels.shareLabel,
       sublabel: labels.shareSub,
-      color: '#3B82F6',
+      color: '#1D4ED8',
       onPress: onShare,
     },
     {
@@ -92,7 +92,7 @@ export function ExportMenu({
       icon: 'document-outline',
       label: labels.pdfLabel,
       sublabel: labels.pdfSub,
-      color: '#EF4444',
+      color: '#D92D20',
       loading: loadingPDF,
       onPress: onPDF,
     },
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   rowLabel: { fontSize: 15 },
-  rowSub: { fontSize: 12 },
+  rowSub: { fontSize: 12, lineHeight: 19 },
   cancelBtn: { marginTop: 12, padding: 14, alignItems: 'center' },
   cancelText: { fontSize: 15 },
 });

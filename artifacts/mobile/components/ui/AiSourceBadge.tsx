@@ -90,7 +90,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(217,119,6,0.16)',
   },
   text: {
-    fontSize: 10,
-    letterSpacing: 0.1,
+    fontSize: 10, lineHeight: 16,
   },
 });

@@ -46,8 +46,9 @@ import {
   MINI_EVAL_DIFFICULTY,
   MINI_EVAL_TYPES,
 } from '@/services/miniEval';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 
 export default function MiniEvalScreen() {
   const colors = useColors();
@@ -172,7 +173,7 @@ export default function MiniEvalScreen() {
     >
       <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack()}
           style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
           hitSlop={10}
         >
@@ -277,7 +278,7 @@ export default function MiniEvalScreen() {
                     size={18}
                     color={selected ? ACCENT : colors.mutedForeground}
                   />
-                  <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, flex: 1, textAlign: align }}>
+                  <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, flex: 1, textAlign: align }}>
                     {(lang === 'ar' ? o.descriptionAr : o.description) || o.description}
                   </Text>
                 </Pressable>
@@ -322,7 +323,7 @@ export default function MiniEvalScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 18, gap: 6 },
   headerTitle: { color: '#fff', fontSize: 20 },
-  headerSub: { color: '#fff', opacity: 0.9, fontSize: 13 },
+  headerSub: { color: '#fff', opacity: 0.9, fontSize: 13, lineHeight: 21 },
   errorBox: {
     margin: 20,
     marginBottom: 0,
@@ -333,8 +334,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   label: { fontSize: 14, marginBottom: 4 },
-  hint: { fontSize: 12 },
-  empty: { padding: 20, fontSize: 13 },
+  hint: { fontSize: 12, lineHeight: 19 },
+  empty: { padding: 20, fontSize: 13, lineHeight: 21 },
   row: { borderWidth: 1, borderRadius: 12, padding: 12 },
   cta: {
     borderRadius: 14,

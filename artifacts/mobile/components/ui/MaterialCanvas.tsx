@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   title: { fontSize: 15, fontFamily: 'Cairo_600SemiBold' },
-  subtitle: { fontSize: 11.5, fontFamily: 'Almarai_400Regular', marginTop: 1 },
+  subtitle: { fontSize: 11.5, lineHeight: 18, fontFamily: 'Almarai_400Regular', marginTop: 1 },
   btn: { alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 11, paddingHorizontal: 12, paddingVertical: 8 },
   btnText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
   close: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

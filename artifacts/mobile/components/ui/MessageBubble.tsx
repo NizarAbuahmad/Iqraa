@@ -86,6 +86,6 @@ const styles = StyleSheet.create({
   rowOther: { width: '100%', flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginBottom: 8 },
   bubble: { maxWidth: '78%', padding: 12, paddingHorizontal: 16 },
   attachment: { width: 200, height: 200, borderRadius: 12, marginBottom: 6 },
-  text: { fontSize: 14, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
-  timestamp: { fontSize: 10, marginTop: 6, fontFamily: 'Almarai_400Regular' },
+  text: { fontSize: 14, lineHeight: 22, fontFamily: 'Almarai_400Regular' },
+  timestamp: { fontSize: 10, lineHeight: 16, marginTop: 6, fontFamily: 'Almarai_400Regular' },
 });

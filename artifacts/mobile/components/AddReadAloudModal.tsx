@@ -35,7 +35,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { addEvaluationQuestion, type CompetencyKey, type EvaluationQuestion } from '@/services/evaluations';
 import type { TranslationKey } from '@/services/i18n';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 
 /**
  * Mirrors MIN_PASSAGE_WORDS / MAX_WORDS in api-server. Advisory only — the
@@ -202,7 +202,7 @@ export function AddReadAloudModal({
                       />
                       <Text
                         numberOfLines={1}
-                        style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, flex: 1 }}
+                        style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, flex: 1 }}
                       >
                         {t('readAloudObjectiveN', String(i + 1))}
                       </Text>
@@ -235,7 +235,7 @@ export function AddReadAloudModal({
                       size={18}
                       color={competency === c.key ? ACCENT : colors.mutedForeground}
                     />
-                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>
+                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22 }}>
                       {t(c.label)}
                     </Text>
                   </Pressable>

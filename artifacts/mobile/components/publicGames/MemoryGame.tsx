@@ -10,7 +10,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { GameShell } from './GameShell';
 import { buildMemoryDeck, isMatch, type MemoryCard } from '@/services/publicGames/memory';
 
-const ACCENT = '#0EA5E9';
+const ACCENT = '#0369A1';
 const PAIR_COUNT = 8;
 
 export function MemoryGame() {

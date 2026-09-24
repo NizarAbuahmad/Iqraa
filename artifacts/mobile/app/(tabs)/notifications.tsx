@@ -159,7 +159,7 @@ export default function NotificationsScreen() {
     />
   );
 
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
   const unreadCount = threads.reduce((sum, th) => sum + th.unreadCount, 0);
   const align = isRTL ? 'right' : 'left';
 
@@ -178,7 +178,7 @@ export default function NotificationsScreen() {
         </View>
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 16, paddingBottom: 6 }]}>
           {isTeacherRole(user?.role) && (
-            <Pressable onPress={() => router.push('/messaging/new-group')} hitSlop={10}>
+            <Pressable onPress={() => router.push('/messaging/new-group')} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('messagingNewGroup')}>
               <Ionicons name="people-circle-outline" size={26} color={colors.primary} />
             </Pressable>
           )}
@@ -188,7 +188,7 @@ export default function NotificationsScreen() {
             explaining why — indistinguishable from the feature being broken.
             The sheet now says what is missing and how to fix it.
           */}
-          <Pressable onPress={() => setNewChatOpen(true)} hitSlop={10}>
+          <Pressable onPress={() => setNewChatOpen(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('messagingStartConversation')}>
             <Ionicons name="create-outline" size={24} color={colors.primary} />
           </Pressable>
         </View>
@@ -296,19 +296,19 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1 },
   title: { fontSize: 28 },
-  unreadCount: { fontSize: 13, marginTop: 2 },
+  unreadCount: { fontSize: 13, lineHeight: 21, marginTop: 2 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   threadCard: { padding: 14, gap: 12, borderWidth: 1, alignItems: 'center' },
   groupIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   threadName: { fontSize: 15, marginBottom: 3 },
-  threadPreview: { fontSize: 13 },
+  threadPreview: { fontSize: 13, lineHeight: 21 },
   dot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
   empty: { alignItems: 'center', paddingTop: 60, paddingBottom: 24, paddingHorizontal: 32, gap: 8 },
   emptyText: { fontSize: 15, fontFamily: 'Cairo_500Medium' as any },
-  emptyDesc: { fontSize: 13, textAlign: 'center' },
+  emptyDesc: { fontSize: 13, lineHeight: 21, textAlign: 'center' },
   contactCard: { padding: 12, gap: 12, borderWidth: 1, alignItems: 'center' },
   messageBtn: { paddingHorizontal: 14, paddingVertical: 8, minWidth: 72, alignItems: 'center' },
-  errorBanner: { fontSize: 12, paddingHorizontal: 16, paddingVertical: 8 },
+  errorBanner: { fontSize: 12, lineHeight: 19, paddingHorizontal: 16, paddingVertical: 8 },
   newChatBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   newChatSheet: { maxHeight: '70%', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 16 },
   newChatHeader: { justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 14 },

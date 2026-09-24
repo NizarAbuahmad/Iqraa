@@ -21,6 +21,7 @@ import { apiJson } from '@/services/apiClient';
 import { openExternal } from '@/services/externalLinks';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
+import { goBack } from '@/services/navigation';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -121,7 +122,7 @@ export default function AdminDashboardScreen() {
         <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, marginTop: 12, textAlign: 'center' }}>
           {lang === 'ar' ? 'هذه الصفحة للإدارة فقط' : 'This page is for admins only'}
         </Text>
-        <Pressable onPress={() => router.back()} style={{ marginTop: 16 }}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={{ marginTop: 16 }}>
           <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold' }}>{lang === 'ar' ? 'رجوع' : 'Go back'}</Text>
         </Pressable>
       </View>
@@ -132,7 +133,7 @@ export default function AdminDashboardScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={[{ paddingBottom: 60 }, centered]} showsVerticalScrollIndicator={false}>
         <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-          <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+          <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
@@ -207,7 +208,7 @@ export default function AdminDashboardScreen() {
                         {summary.usersWithoutRecovery}
                       </Text>
                     </View>
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, textAlign: isRTL ? 'right' : 'left' }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
                       {lang === 'ar'
                         ? 'تدخل بكلمة مرور ولا حساب Google لها. إن نسي أصحابها كلمة المرور فلا سبيل إلى استعادتها إلا بتدخّل مشرف.'
                         : 'They sign in with a password and have no Google account. If the owner forgets it, only an admin can get them back in.'}
@@ -219,13 +220,13 @@ export default function AdminDashboardScreen() {
                     {lang === 'ar' ? 'المواد المحفوظة حسب النوع' : 'Saved materials by type'}
                   </Text>
                   {Object.entries(summary.materialsByType).length === 0 ? (
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12.5 }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20 }}>
                       {lang === 'ar' ? 'لا يوجد بعد' : 'None yet'}
                     </Text>
                   ) : (
                     Object.entries(summary.materialsByType).map(([type, count]) => (
                       <View key={type} style={[styles.barRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                        <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>{type}</Text>
+                        <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>{type}</Text>
                         <Text style={{ color: ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 13 }}>{count}</Text>
                       </View>
                     ))
@@ -256,7 +257,7 @@ export default function AdminDashboardScreen() {
               </View>
 
               {items.length === 0 ? (
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 12, textAlign: 'center' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 12, textAlign: 'center' }}>
                   {lang === 'ar' ? 'لا توجد ملاحظات بعد' : 'No feedback yet'}
                 </Text>
               ) : (
@@ -288,7 +289,7 @@ function StatCard({ label, value, colors }: { label: string; value: number; colo
   return (
     <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
       <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 20 }}>{value}</Text>
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, marginTop: 2, textAlign: 'center' }}>{label}</Text>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, marginTop: 2, textAlign: 'center' }}>{label}</Text>
     </View>
   );
 }
@@ -316,19 +317,19 @@ function FeedbackRow({ item, isRTL, colors }: { item: FeedbackItem; isRTL: boole
         <Ionicons
           name={item.rating === 'up' ? 'thumbs-up' : 'thumbs-down'}
           size={14}
-          color={item.rating === 'up' ? '#10B981' : colors.destructive}
+          color={item.rating === 'up' ? '#067647' : colors.destructive}
         />
         <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
           {item.materialType} · {item.toolId}
         </Text>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>{date}</Text>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>{date}</Text>
       </View>
       {!!item.comment && (
         <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}>
           {item.comment}
         </Text>
       )}
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: isRTL ? 'right' : 'left' }}>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
         {item.userFirstName} {item.userLastName} · {item.userEmail}
       </Text>
     </View>

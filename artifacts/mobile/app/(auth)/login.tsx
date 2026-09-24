@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   formHeader: { gap: 6, marginBottom: 6 },
-  cardTitle: { fontSize: 28, letterSpacing: -0.3 },
+  cardTitle: { fontSize: 28 },
   cardSubtitle: { fontSize: 15, lineHeight: 22 },
   errorBanner: {
     alignItems: 'center',
@@ -241,10 +241,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-  errorText: { flex: 1, fontSize: 13 },
+  errorText: { flex: 1, fontSize: 13, lineHeight: 21 },
   dividerRow: { alignItems: 'center', gap: 10, marginVertical: 2 },
   dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 12 },
-  googleLoadingText: { fontSize: 12, textAlign: 'center', marginTop: -6 },
+  dividerText: { fontSize: 12, lineHeight: 19 },
+  googleLoadingText: { fontSize: 12, lineHeight: 19, textAlign: 'center', marginTop: -6 },
   signInBtn: { marginTop: 4 },
 });

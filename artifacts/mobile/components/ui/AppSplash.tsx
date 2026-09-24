@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   arabic: {
     color: INK,
     fontFamily: 'Almarai_400Regular',
-    fontSize: 15,
+    fontSize: 15, lineHeight: 24,
     textAlign: 'center',
     marginTop: 6,
   },

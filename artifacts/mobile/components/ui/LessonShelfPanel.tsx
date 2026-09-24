@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   row: { alignItems: 'center', gap: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
   rowBody: { flex: 1, gap: 2 },
   rowTitle: { fontSize: 12.5, lineHeight: 18 },
-  rowAuthor: { fontSize: 11 },
+  rowAuthor: { fontSize: 11, lineHeight: 18 },
   kindPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1 },
   kindText: { fontSize: 10.5 },
   toggle: { alignItems: 'center', gap: 6, paddingVertical: 8, marginTop: 4 },

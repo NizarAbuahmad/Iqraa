@@ -12,6 +12,7 @@ import {
   isBrowserLessonTitleOnly,
   isCurriculumBookVisible,
 } from '@/services/curriculumData';
+import { goBack } from '@/services/navigation';
 
 export default function UnitLessonsScreen() {
   const colors = useColors();
@@ -41,7 +42,7 @@ export default function UnitLessonsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { backgroundColor: color, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={[styles.eyebrow, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -141,9 +142,9 @@ export default function UnitLessonsScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 24 },
   backBtn: { marginBottom: 12, width: 40, height: 40, justifyContent: 'center' },
-  eyebrow: { fontSize: 13, marginBottom: 4 },
+  eyebrow: { fontSize: 13, lineHeight: 21, marginBottom: 4 },
   title: { fontSize: 22, marginBottom: 4 },
-  sub: { fontSize: 13 },
+  sub: { fontSize: 13, lineHeight: 21 },
   lessonCard: {
     alignItems: 'center',
     paddingVertical: 14,
@@ -155,9 +156,9 @@ const styles = StyleSheet.create({
   lessonAccent: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
   lessonTitle: { fontSize: 14, marginBottom: 4 },
   lessonMeta: { alignItems: 'center', gap: 5 },
-  lessonTime: { fontSize: 11 },
+  lessonTime: { fontSize: 11, lineHeight: 18 },
   prepBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, flexShrink: 0 },
   prepBadgeText: { fontSize: 11 },
   empty: { alignItems: 'center', paddingTop: 80, gap: 10 },
-  emptyText: { fontSize: 14 },
+  emptyText: { fontSize: 14, lineHeight: 22 },
 });

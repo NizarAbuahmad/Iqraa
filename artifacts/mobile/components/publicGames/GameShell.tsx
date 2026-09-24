@@ -63,7 +63,7 @@ export function GameShell({
             <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 22, textAlign: 'center' }}>
               {t('playGameOverTitle')}
             </Text>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 16, textAlign: 'center' }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 16, lineHeight: 26, textAlign: 'center' }}>
               {gameOver.message}
             </Text>
 

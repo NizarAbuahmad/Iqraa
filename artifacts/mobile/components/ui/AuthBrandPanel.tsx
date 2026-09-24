@@ -164,7 +164,6 @@ const styles = StyleSheet.create({
 
   eyebrow: {
     fontSize: 12,
-    letterSpacing: 1.2,
     textTransform: 'uppercase',
     color: AQUA,
     marginBottom: 2,

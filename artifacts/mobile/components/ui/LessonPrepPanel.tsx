@@ -411,7 +411,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
               <Text style={{
                 color: colors.mutedForeground,
                 fontFamily: 'Almarai_400Regular',
-                fontSize: 12,
+                fontSize: 12, lineHeight: 19,
                 marginTop: 2,
                 textAlign: align,
               }}>
@@ -502,7 +502,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
                 icon={favorited ? 'star' : 'star-outline'}
                 label={favorited ? t('inFavorites') : t('addToFavorites')}
                 onPress={handleToggleFavorite}
-                accent={favorited ? '#F59E0B' : colors.mutedForeground}
+                accent={favorited ? '#B54708' : colors.mutedForeground}
                 colors={colors}
                 isRTL={isRTL}
               />
@@ -650,7 +650,7 @@ const styles = StyleSheet.create({
   head: { alignItems: 'center', gap: 10 },
   headIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   headTitle: { fontSize: 15 },
-  headMeta: { fontSize: 12, marginTop: 2 },
+  headMeta: { fontSize: 12, lineHeight: 19, marginTop: 2 },
   optionsToggle: { alignItems: 'center', gap: 6, marginTop: 12 },
   optionsToggleText: { fontSize: 12 },
   options: { marginTop: 10, gap: 4 },
@@ -664,8 +664,8 @@ const styles = StyleSheet.create({
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 4 },
   checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   loadingBox: { alignItems: 'center', gap: 12, padding: 16, marginTop: 12 },
-  loadingText: { fontSize: 13 },
-  error: { fontSize: 13, marginTop: 10 },
+  loadingText: { fontSize: 13, lineHeight: 21 },
+  error: { fontSize: 13, lineHeight: 21, marginTop: 10 },
   readyRow: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1, marginTop: 12, marginBottom: 4 },
   readyText: { fontSize: 13 },
   actionBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, padding: 13, borderWidth: 1.5 },

@@ -9,7 +9,7 @@ import {
   addLessonMedia, getLessonMedia, removeLessonMedia, type LessonMediaItem,
 } from '@/services/lessonMedia';
 
-const TEAL = '#1B6B62';
+const TEAL = '#007C74';
 
 type Props = {
   /** Lesson these resources belong to. Empty means no lesson picked yet. */
@@ -109,11 +109,11 @@ export function LessonResources({ topic, onChange }: Props) {
           <Ionicons
             name={m.kind === 'video' ? 'logo-youtube' : 'image-outline'}
             size={18}
-            color={m.kind === 'video' ? '#EF4444' : TEAL}
+            color={m.kind === 'video' ? '#D92D20' : TEAL}
           />
           <Text
             numberOfLines={1}
-            style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, textAlign: isRTL ? 'right' : 'left' }}
+            style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}
           >
             {m.caption || m.url}
           </Text>
@@ -134,7 +134,7 @@ export function LessonResources({ topic, onChange }: Props) {
             autoCorrect={false}
             // A URL is latin text: left-aligned even in the RTL layout, or it
             // renders with the scheme at the wrong end.
-            style={[styles.input, { backgroundColor: colors.card, borderColor: error ? '#EF4444' : colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: 'left' }]}
+            style={[styles.input, { backgroundColor: colors.card, borderColor: error ? '#D92D20' : colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: 'left' }]}
           />
           <TextInput
             value={caption}
@@ -144,7 +144,7 @@ export function LessonResources({ topic, onChange }: Props) {
             style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }]}
           />
           {error ? (
-            <Text style={{ color: '#EF4444', fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
           ) : null}

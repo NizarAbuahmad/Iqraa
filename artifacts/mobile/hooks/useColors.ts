@@ -1,23 +1,13 @@
-import { useColorScheme } from 'react-native';
 import colors from '@/constants/colors';
 
 /**
- * Returns the design tokens for the current color scheme.
+ * Returns the design tokens for the app. Light only, on purpose.
  *
- * The returned object contains all color tokens for the active palette
- * plus scheme-independent values like `radius`.
- *
- * Falls back to the light palette when no dark key is defined in
- * constants/colors.ts (the scaffold ships light-only by default).
- * When a sibling web artifact's dark tokens are synced into a `dark`
- * key, this hook will automatically switch palettes based on the
- * device's appearance setting.
+ * ponytail: dark mode is off. ~60 screens still hardcode navy heroes, `#fff`
+ * surfaces and category hexes that do not flip, so following the OS scheme
+ * produced navy-on-navy headers. `colors.dark` is kept and ready; re-enable by
+ * switching on `useColorScheme()` here once those screens read tokens.
  */
 export function useColors() {
-  const scheme = useColorScheme();
-  const palette =
-    scheme === 'dark' && 'dark' in colors
-      ? (colors as unknown as Record<string, typeof colors.light>).dark
-      : colors.light;
-  return { ...palette, radius: colors.radius };
+  return { ...colors.light, radius: colors.radius };
 }

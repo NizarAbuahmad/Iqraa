@@ -12,8 +12,9 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { ACTIVITY_CARDS, ActivityCard, buildBuilderRoute } from '@/services/classroomRouting';
 import { arCountPhrase } from '@/services/arCount';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#4F46E5';
+const ACCENT = '#007C74';
 
 type FilterKey = 'all' | 'quick' | 'team' | 'solo';
 
@@ -27,7 +28,7 @@ export default function ClassroomHubScreen() {
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
-  const topPad  = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad  = insets.top + (insets.top === 0 ? 16 : 0);
   const params  = useLocalSearchParams<{ noActivity?: string }>();
 
   const [query,  setQuery]  = useState('');
@@ -70,7 +71,7 @@ export default function ClassroomHubScreen() {
 
         {/* ── Header ── */}
         <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-          <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+          <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 8 }]}>
@@ -127,7 +128,7 @@ export default function ClassroomHubScreen() {
         {filter === 'all' && !query.trim() && (
           <View style={styles.section}>
             <View style={[styles.sectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Ionicons name="star" size={14} color="#F59E0B" />
+              <Ionicons name="star" size={14} color="#B54708" />
               <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
                 {t('marketplaceFeatured' as any)}
               </Text>
@@ -173,7 +174,7 @@ export default function ClassroomHubScreen() {
           {filtered.length === 0 ? (
             <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
               <Text style={{ fontSize: 32 }}>🔍</Text>
-              <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: 'center' }]}>
+              <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }]}>
                 {lang === 'ar' ? 'لا توجد أنشطة مطابقة لبحثك' : 'No activities match your search'}
               </Text>
             </View>

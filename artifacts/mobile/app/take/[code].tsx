@@ -53,7 +53,7 @@ import { DictationInput, FillBlankInput, MatchingInput, ReadAloudInput } from '@
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { TranslationKey } from '@/services/i18n';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 
 type Phase = 'loading' | 'pick' | 'confirm' | 'answering' | 'review' | 'done' | 'error';
 
@@ -173,7 +173,7 @@ export default function TakeExamScreen() {
         <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, textAlign: 'center' }}>
           {error || t('takeLinkFailed')}
         </Text>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center' }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
           {t('takeAskTeacher')}
         </Text>
       </View>
@@ -189,7 +189,7 @@ export default function TakeExamScreen() {
         </Text>
         {/* No score. Releasing a result is the teacher's decision, and showing
             correctness here would leak the key to everyone still sitting. */}
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: 'center' }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
           {t('takeTeacherWillReview')}
         </Text>
       </View>
@@ -214,7 +214,7 @@ export default function TakeExamScreen() {
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         {header}
         <ScrollView contentContainerStyle={{ padding: 20, gap: 10, paddingBottom: 40 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
             {t('takeQuestionsAndMarks', String(exam?.questionCount ?? 0), String(exam?.totalMarks ?? ''))}
           </Text>
 
@@ -225,11 +225,11 @@ export default function TakeExamScreen() {
               <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 22, textAlign: 'center' }}>
                 {chosen.displayName}
               </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: 'center' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
                 {t('takeConfirmName')}
               </Text>
               {error ? (
-                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center' }}>
+                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
                   {error}
                 </Text>
               ) : null}
@@ -252,7 +252,7 @@ export default function TakeExamScreen() {
                 {t('takePickYourName')}
               </Text>
               {error ? (
-                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
+                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                   {error}
                 </Text>
               ) : null}
@@ -275,7 +275,7 @@ export default function TakeExamScreen() {
                     {s.displayName}
                   </Text>
                   {s.taken && (
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
                       {t('takeNameTaken')}
                     </Text>
                   )}
@@ -317,11 +317,11 @@ export default function TakeExamScreen() {
           </View>
 
           {/* Name the number. "Are you sure?" is not information. */}
-          <Text style={{ color: unanswered > 0 ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: align }}>
+          <Text style={{ color: unanswered > 0 ? '#B54708' : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: align }}>
             {unanswered > 0 ? t('takeUnansweredWarning', String(unanswered)) : t('takeAllAnswered')}
           </Text>
           {error ? (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>{error}</Text>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>{error}</Text>
           ) : null}
 
           <Pressable onPress={hand} disabled={busy} style={[styles.primaryBtn, { backgroundColor: ACCENT, opacity: busy ? 0.7 : 1 }]}>
@@ -349,11 +349,11 @@ export default function TakeExamScreen() {
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
             {t('takeProgress', String(index + 1), String(questions.length))}
           </Text>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
             {t('marksAbbrev', question?.marks ?? '')}
           </Text>
           {saveFailed && (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
               {t('takeSaveFailed')}
             </Text>
           )}
@@ -508,7 +508,7 @@ function QuestionCard({
                   style={{
                     color: colors.foreground,
                     fontFamily: 'Almarai_400Regular',
-                    fontSize: 15,
+                    fontSize: 15, lineHeight: 24,
                     flex: 1,
                     textAlign: align,
                     writingDirection: isRTL ? 'rtl' : 'ltr',
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingBottom: 16, gap: 4 },
   headerTitle: { color: '#fff', fontSize: 19 },
-  headerSub: { color: 'rgba(255,255,255,0.85)', fontSize: 14 },
+  headerSub: { color: 'rgba(255,255,255,0.85)', fontSize: 14, lineHeight: 22 },
   nameRow: { alignItems: 'center', borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, gap: 10 },
   card: { borderWidth: 1, borderRadius: 14, padding: 18 },
   option: { alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 14 },

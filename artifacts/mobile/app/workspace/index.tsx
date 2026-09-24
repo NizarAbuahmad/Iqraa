@@ -22,6 +22,7 @@ import {
   MATERIAL_ICON,
   MATERIAL_LABEL_KEY,
 } from '@/constants/materialKind';
+import { goBack } from '@/services/navigation';
 
 const TABS: Array<{ key: MaterialType | 'all'; labelKey: string }> = [
   { key: 'all', labelKey: 'allFilter' },
@@ -34,7 +35,7 @@ export default function WorkspaceScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const [items, setItems] = useState<SavedMaterial[]>([]);
   const [activeTab, setActiveTab] = useState<MaterialType | 'all'>('all');
@@ -233,7 +234,7 @@ export default function WorkspaceScreen() {
             <Ionicons
               name={item.isFavorite ? 'star' : 'star-outline'}
               size={20}
-              color={item.isFavorite ? '#F59E0B' : colors.mutedForeground}
+              color={item.isFavorite ? '#B54708' : colors.mutedForeground}
             />
           </Pressable>
           <Pressable
@@ -255,7 +256,7 @@ export default function WorkspaceScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
@@ -322,14 +323,14 @@ export default function WorkspaceScreen() {
           style={[
             styles.filterBtn,
             {
-              backgroundColor: favoritesOnly ? '#F59E0B' + '22' : colors.muted,
+              backgroundColor: favoritesOnly ? '#B54708' + '22' : colors.muted,
               borderRadius: 20,
               flexDirection: isRTL ? 'row-reverse' : 'row',
             },
           ]}
         >
-          <Ionicons name={favoritesOnly ? 'star' : 'star-outline'} size={14} color={favoritesOnly ? '#F59E0B' : colors.mutedForeground} />
-          <Text style={[styles.filterText, { color: favoritesOnly ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+          <Ionicons name={favoritesOnly ? 'star' : 'star-outline'} size={14} color={favoritesOnly ? '#B54708' : colors.mutedForeground} />
+          <Text style={[styles.filterText, { color: favoritesOnly ? '#B54708' : colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
             {t('favoritesFilter')}
           </Text>
         </Pressable>
@@ -457,7 +458,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 0, borderBottomWidth: 1 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 4 },
   headerTitle: { fontSize: 26, marginBottom: 2 },
-  headerSub: { fontSize: 13, marginBottom: 14 },
+  headerSub: { fontSize: 13, lineHeight: 21, marginBottom: 14 },
   searchRow: { alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 14 },
   searchInput: { flex: 1, fontSize: 14, padding: 0 },
   tabs: { gap: 0 },
@@ -466,7 +467,7 @@ const styles = StyleSheet.create({
   filterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },
   filterBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6 },
   filterText: { fontSize: 12 },
-  countText: { fontSize: 12 },
+  countText: { fontSize: 12, lineHeight: 19 },
   card: { padding: 14, borderWidth: 1, gap: 12, alignItems: 'flex-start' },
   cardIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   cardTitle: { fontSize: 14, marginBottom: 6, lineHeight: 20 },
@@ -474,7 +475,7 @@ const styles = StyleSheet.create({
   classPill: { alignItems: 'center', gap: 3 },
   typePill: { paddingHorizontal: 8, paddingVertical: 2 },
   typeText: { fontSize: 11 },
-  metaText: { fontSize: 11 },
+  metaText: { fontSize: 11, lineHeight: 18 },
   cardActions: { justifyContent: 'flex-start', flexShrink: 0 },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12, paddingHorizontal: 20 },
   emptyTitle: { fontSize: 18, marginTop: 8 },

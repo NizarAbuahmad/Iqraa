@@ -76,7 +76,7 @@ export function BookFiguresPanel({ figures, isRTL, colors, labels }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { marginTop: 4, marginBottom: 12 },
-  title: { fontSize: 12.5, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 2 },
+  title: { fontSize: 12.5, fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
   note: { fontSize: 11, fontStyle: 'italic', marginBottom: 8, lineHeight: 16 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   card: {

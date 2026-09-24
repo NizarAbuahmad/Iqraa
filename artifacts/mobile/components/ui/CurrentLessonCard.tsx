@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   },
   curriculum: {
     fontFamily: 'Almarai_400Regular',
-    fontSize: 11,
+    fontSize: 11, lineHeight: 18,
   },
   subject: {
     fontFamily: 'Cairo_500Medium',
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
   },
   meta: {
     fontFamily: 'Almarai_400Regular',
-    fontSize: 11,
+    fontSize: 11, lineHeight: 18,
   },
   actionRow: {
     alignItems: 'center',

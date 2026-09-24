@@ -37,11 +37,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const applyRTL = (l: Lang) => {
-    const shouldBeRTL = l === 'ar';
     if (Platform.OS !== 'web') {
-      // On mobile the app must restart for I18nManager to take full effect.
-      // We handle per-component RTL via `writingDirection` and `textAlign`.
-      I18nManager.allowRTL(shouldBeRTL);
+      // Same reasoning as the web branch below: every row flips itself with
+      // `isRTL ? 'row-reverse' : 'row'`, which assumes a neutral LTR layout.
+      // Letting the OS mirror too (an Arabic-locale phone, allowRTL(true))
+      // cancels those flips back to LTR and swaps textAlign left/right.
+      // So native is pinned LTR and direction stays per component.
+      I18nManager.allowRTL(false);
+      I18nManager.forceRTL(false);
       return;
     }
 
@@ -77,7 +80,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     //
     // If the per-component flips are ever replaced by real document-level RTL,
     // this is one of three places that must change together: set `dir` from
-    // `shouldBeRTL` here, stop the injector hard-coding it, and delete the
+    // `l === 'ar'` here (and on native), stop the injector hard-coding it, and delete the
     // flips — all in the same commit. Any two without the third brings the
     // double-flip straight back.
     const root = typeof document !== 'undefined' ? document.documentElement : null;

@@ -22,6 +22,7 @@ import { confirm } from '@/services/confirm.ts';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { Avatar } from '@/components/ui/Avatar';
 import { Toast } from '@/components/ui/Toast';
+import { goBack } from '@/services/navigation';
 
 interface Guardian {
   userId: string;
@@ -172,7 +173,7 @@ export default function ClaimCodeScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad, backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
+        <Pressable onPress={() => goBack()} hitSlop={10}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]} numberOfLines={1}>
@@ -255,7 +256,7 @@ export default function ClaimCodeScreen() {
                 <Text
                   style={
                     code
-                      ? { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center' }
+                      ? { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }
                       : { color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }
                   }
                 >
@@ -346,14 +347,14 @@ const styles = StyleSheet.create({
   cardDesc: { fontSize: 13, lineHeight: 18, marginBottom: 4 },
   codeRow: { alignItems: 'center', gap: 10, marginTop: 8 },
   codeText: { fontSize: 24, letterSpacing: 3 },
-  expiresText: { fontSize: 12 },
+  expiresText: { fontSize: 12, lineHeight: 19 },
   regenerateBtn: { marginTop: 4, paddingVertical: 8 },
   generateBtn: { marginTop: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
   sectionTitle: { fontSize: 15 },
-  emptyGuardians: { fontSize: 13, marginTop: 8 },
+  emptyGuardians: { fontSize: 13, lineHeight: 21, marginTop: 8 },
   guardianRow: { padding: 12, gap: 10, borderWidth: 1, alignItems: 'center' },
   guardianName: { fontSize: 14 },
-  guardianRole: { fontSize: 11, marginTop: 1 },
+  guardianRole: { fontSize: 11, lineHeight: 18, marginTop: 1 },
   messageBtn: { paddingHorizontal: 12, paddingVertical: 7, minWidth: 64, alignItems: 'center' },
-  errorText: { fontSize: 12 },
+  errorText: { fontSize: 12, lineHeight: 19 },
 });

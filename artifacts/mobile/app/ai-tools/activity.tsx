@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -32,8 +32,9 @@ import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { buildActivityHTML, buildActivitySlidesHTML, formatActivityText } from '@/services/share';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#E67E22';
+const ACCENT = '#007C74';
 const DURATION_VALUES = [20, 30, 45, 60];
 type AType = ActivityTypeId;
 
@@ -246,7 +247,7 @@ export default function ActivityScreen() {
     onCopied: key => showToast(t(key)),
   });
 
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const exportLabels = {
     title: t('exportTitle'),
@@ -269,7 +270,7 @@ export default function ActivityScreen() {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: topPad + 12 }]}>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <View style={[styles.headerBadge, { flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
@@ -318,7 +319,7 @@ export default function ActivityScreen() {
           />
         </View>
 
-        {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button
           label={loading ? t('generatingActivity') : t('generateActivityBtn')}
           onPress={() => generate()}
@@ -331,7 +332,7 @@ export default function ActivityScreen() {
           product rather than an unmet precondition. It says which one.
         */}
         {!topic.trim() ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
             {t('needTopicHint')}
           </Text>
         ) : null}
@@ -420,7 +421,7 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
   t: (k: any, ...a: any[]) => string;
   lang: string;
 }) {
-  const ACCENT_LOCAL = '#E67E22';
+  const ACCENT_LOCAL = '#C2410C';
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
       {/* Success banner */}
@@ -496,7 +497,7 @@ function MetaPill({ icon, label, color }: { icon: keyof typeof Ionicons.glyphMap
 function StepCard({ step, colors, isRTL, t }: {
   step: ActivityStep; colors: ReturnType<typeof useColors>; isRTL: boolean; t: (k: any) => string;
 }) {
-  const ACCENT_LOCAL = '#E67E22';
+  const ACCENT_LOCAL = '#C2410C';
   return (
     <View style={[styles.stepCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
       <View style={[styles.stepHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -542,7 +543,7 @@ function ResultSection({ title, icon, isRTL, children }: {
   title: string; icon: keyof typeof Ionicons.glyphMap; isRTL: boolean; children: React.ReactNode;
 }) {
   const colors = useColors();
-  const ACCENT_LOCAL = '#E67E22';
+  const ACCENT_LOCAL = '#C2410C';
   return (
     <View style={{ marginBottom: 16 }}>
       <View style={[styles.resultSectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -580,7 +581,7 @@ const styles = StyleSheet.create({
   inputBox: { borderWidth: 1.5, padding: 14, marginBottom: 16 },
   textInput: { fontSize: 15, padding: 0, minHeight: 44 },
   loadingBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginBottom: 16 },
-  loadingText: { fontSize: 14 },
+  loadingText: { fontSize: 14, lineHeight: 22 },
   resultHeader: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1, marginBottom: 16 },
   resultHeaderText: { fontSize: 14 },
   metaRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, marginBottom: 16, borderRadius: 10, overflow: 'hidden' },
@@ -596,6 +597,6 @@ const styles = StyleSheet.create({
   stepHeader: { alignItems: 'center', gap: 10, marginBottom: 8 },
   stepNum: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   stepTitle: { fontSize: 13 },
-  stepDur: { fontSize: 11 },
+  stepDur: { fontSize: 11, lineHeight: 18 },
   stepDesc: { fontSize: 13, lineHeight: 20 },
 });

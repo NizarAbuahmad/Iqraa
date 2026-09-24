@@ -57,8 +57,9 @@ import { deleteItem, getAllItems, saveItem, updateItem } from '@/services/worksp
 import { findMatchingItem } from '@/services/savedMaterialMatch';
 import { confirm } from '@/services/confirm';
 import { timerSecondsForSlide } from '@/services/presentationUtils';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#7C3AED';
+const ACCENT = '#007C74';
 const MAX_SLIDE_COUNT = 20;
 
 export default function PromptSlidesScreen() {
@@ -67,7 +68,7 @@ export default function PromptSlidesScreen() {
   const { t, isRTL, lang } = useLanguage();
   const isAr = lang === 'ar';
   const scrollRef = useRef<ScrollView>(null);
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const { user } = useAuth();
 
@@ -416,12 +417,12 @@ export default function PromptSlidesScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <LinearGradient
-          colors={['#8B5CF6', '#6D28D9', '#3B1D8F']}
+          colors={['#6D28D9', '#6D28D9', '#3B1D8F']}
           start={{ x: 0.1, y: 0 }}
           end={{ x: 0.9, y: 1 }}
           style={[styles.header, { paddingTop: topPad + 12 }]}
         >
-          <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+          <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}>
@@ -475,7 +476,7 @@ export default function PromptSlidesScreen() {
             }]}
           />
           {error && !prompt.trim() ? (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
           ) : null}
@@ -670,7 +671,7 @@ export default function PromptSlidesScreen() {
                       </View>
                       <Text
                         style={{
-                          flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13,
+                          flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21,
                           textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr',
                         }}
                         numberOfLines={1}

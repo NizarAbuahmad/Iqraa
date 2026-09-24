@@ -19,14 +19,15 @@ import { askAboutLessonHandoff } from '@/services/lessonShelf';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { VocabularyPracticePanel } from '@/components/ui/VocabularyPracticePanel';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
+import { goBack } from '@/services/navigation';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
-  Understand: '#3B82F6',
-  Apply: '#10B981',
-  Analyze: '#F59E0B',
+  Understand: '#1D4ED8',
+  Apply: '#067647',
+  Analyze: '#B54708',
   Evaluate: '#F97316',
-  Create: '#EF4444',
+  Create: '#D92D20',
 };
 
 export default function LessonDetailScreen() {
@@ -80,7 +81,7 @@ export default function LessonDetailScreen() {
     >
       {/* Hero */}
       <View style={[styles.hero, { backgroundColor: color, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -326,5 +327,5 @@ const styles = StyleSheet.create({
   outcomeDesc: { fontSize: 14, lineHeight: 20, marginBottom: 10 },
   skills: { flexWrap: 'wrap', gap: 6 },
   skillPill: { paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
-  skillText: { fontSize: 11 },
+  skillText: { fontSize: 11, lineHeight: 18 },
 });
