@@ -9,10 +9,9 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
-import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
-import { ACTIVITY_CARDS, ActivityCard, buildBuilderRoute } from '@/services/classroomRouting';
+import { ACTIVITY_CARDS, ActivityCard, buildBuilderRoute, cardMetaLabel } from '@/services/classroomRouting';
 import { arCountPhrase } from '@/services/arCount';
-import { goBack } from '@/services/navigation';
+import { ToolHeader } from '@/components/ui/ToolHeader';
 
 const ACCENT = '#007C74';
 
@@ -70,24 +69,13 @@ export default function ClassroomHubScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }} showsVerticalScrollIndicator={false}>
 
         {/* ── Header ── */}
-        <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-          <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
-          <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 8 }]}>
-            <Ionicons name="storefront-outline" size={16} color="rgba(255,255,255,0.8)" />
-            <Text style={[styles.headerBadge, { fontFamily: 'Cairo_500Medium' }]}>{t('classroomBadge')}</Text>
-          </View>
-          <AiSourceBadge onDark isRTL={isRTL} />
-          <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-            {lang === 'ar' ? 'أنشطة الحصة' : 'Activity Marketplace'}
-          </Text>
-          <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-            {lang === 'ar'
-              ? `${arCountPhrase(ACTIVITY_CARDS.length, 'نشاط تفاعلي جاهز', 'نشاطان تفاعليان جاهزان', 'أنشطة تفاعلية جاهزة')} — اختر نشاطاً وابدأ الحصة`
-              : `${ACTIVITY_CARDS.length} interactive activities — pick one and launch in seconds`}
-          </Text>
-
+        <ToolHeader
+          topPad={topPad}
+          isRTL={isRTL}
+          title={lang === 'ar' ? 'أنشطة الحصة' : 'Activity Marketplace'}
+          subtitle={lang === 'ar' ? `${arCountPhrase(ACTIVITY_CARDS.length, 'نشاط تفاعلي جاهز', 'نشاطان تفاعليان جاهزان', 'أنشطة تفاعلية جاهزة')} — اختر نشاطاً وابدأ الحصة` : `${ACTIVITY_CARDS.length} interactive activities — pick one and launch in seconds`}
+          eyebrow={{ icon: 'storefront-outline', label: t('classroomBadge') }}
+        >
           {/* Search */}
           <View style={[styles.searchBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="search-outline" size={16} color="rgba(255,255,255,0.7)" />
@@ -104,7 +92,7 @@ export default function ClassroomHubScreen() {
               </Pressable>
             )}
           </View>
-        </View>
+        </ToolHeader>
 
         {/* ── Filter chips ── */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.filterRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }, isRTL && { minWidth: '100%' }]}>
@@ -155,9 +143,9 @@ export default function ClassroomHubScreen() {
                 </View>
               </View>
               <View style={[styles.featuredMeta, { flexDirection: isRTL ? 'row-reverse' : 'row', borderTopColor: 'rgba(255,255,255,0.2)' }]}>
-                <FeaturedPill icon="time-outline"       label={featured.duration} />
-                <FeaturedPill icon="people-outline"     label={featured.groupType} />
-                <FeaturedPill icon="speedometer-outline" label={featured.difficulty} />
+                <FeaturedPill icon="time-outline"       label={cardMetaLabel(featured.duration, lang)} />
+                <FeaturedPill icon="people-outline"     label={cardMetaLabel(featured.groupType, lang)} />
+                <FeaturedPill icon="speedometer-outline" label={cardMetaLabel(featured.difficulty, lang)} />
               </View>
             </Pressable>
           </View>
@@ -214,9 +202,9 @@ export default function ClassroomHubScreen() {
                   </View>
 
                   <View style={[styles.metaRow, { flexDirection: isRTL ? 'row-reverse' : 'row', borderTopColor: colors.border }]}>
-                    <MetaPill icon="time-outline"       label={card.duration}     color={card.accentColor} />
-                    <MetaPill icon="people-outline"     label={card.groupType}    color={card.accentColor} />
-                    <MetaPill icon="speedometer-outline" label={card.difficulty}  color={card.accentColor} />
+                    <MetaPill icon="time-outline"       label={cardMetaLabel(card.duration, lang)}     color={card.accentColor} />
+                    <MetaPill icon="people-outline"     label={cardMetaLabel(card.groupType, lang)}    color={card.accentColor} />
+                    <MetaPill icon="speedometer-outline" label={cardMetaLabel(card.difficulty, lang)}  color={card.accentColor} />
                   </View>
                 </Pressable>
               ))}
@@ -247,11 +235,6 @@ function FeaturedPill({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; l
 }
 
 const styles = StyleSheet.create({
-  header:        { paddingHorizontal: 20, paddingBottom: 24 },
-  backBtn:       { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
-  headerBadge:   { fontSize: 13, color: 'rgba(255,255,255,0.85)' },
-  headerTitle:   { fontSize: 26, color: '#fff', marginBottom: 6 },
-  headerSub:     { fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 18, marginBottom: 16 },
   searchBar:     { alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)' },
   searchInput:   { flex: 1, fontSize: 14, color: '#fff', padding: 0 },
   filterRow:     { paddingHorizontal: 16, paddingVertical: 14, gap: 8 },

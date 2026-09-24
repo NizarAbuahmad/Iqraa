@@ -27,10 +27,9 @@ import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
-import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, formatLessonPlanText } from '@/services/share';
-import { goBack } from '@/services/navigation';
+import { ToolHeader } from '@/components/ui/ToolHeader';
 
 const ACCENT = '#007C74';
 
@@ -363,19 +362,7 @@ export default function LessonPlanScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: topPad + 12 }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
-        <View style={[styles.headerBadge, { flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name="sparkles" size={14} color="#fff" />
-          <Text style={[styles.headerBadgeText, { color: '#fff', fontFamily: 'Cairo_500Medium' }]}>{t('aiLessonPlanBadge')}</Text>
-        </View>
-        <AiSourceBadge onDark isRTL={isRTL} />
-        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('generateLessonPlanTitle')}
-        </Text>
-      </View>
+      <ToolHeader topPad={topPad} isRTL={isRTL} title={t('generateLessonPlanTitle')} eyebrow={{ icon: 'sparkles', label: t('aiLessonPlanBadge') }} />
 
       {/* Form */}
       <View style={styles.form}>
@@ -654,11 +641,6 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 28 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
-  headerBadge: { alignItems: 'center', gap: 6, marginBottom: 8 },
-  headerBadgeText: { fontSize: 13 },
-  headerTitle: { fontSize: 24 },
   form: { padding: 20, paddingBottom: 8 },
   fieldLabel: { fontSize: 13, marginBottom: 6 },
   inputBox: { borderWidth: 1.5, padding: 14, marginBottom: 16 },
@@ -669,11 +651,4 @@ const styles = StyleSheet.create({
   checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   resultHeader: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1, marginBottom: 20 },
   resultHeaderText: { fontSize: 14 },
-  resultSectionHeader: { alignItems: 'center', gap: 6, marginBottom: 8 },
-  resultSectionTitle: { fontSize: 14 },
-  resultSectionBody: { padding: 14, borderWidth: 1 },
-  bulletRow: { gap: 10, marginBottom: 6, alignItems: 'flex-start' },
-  bulletDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
-  bulletText: { flex: 1, fontSize: 13, lineHeight: 20 },
-  bodyText: { fontSize: 13, lineHeight: 20 },
 });

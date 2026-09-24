@@ -22,8 +22,8 @@ import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generat
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels } from '@/services/lessonPrep';
 import { aiErrorMessageKey } from '@/services/ai/aiProvenance';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { ACTIVITY_CARDS, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
-import { goBack } from '@/services/navigation';
+import { ACTIVITY_CARDS, cardMetaLabel, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
+import { ToolHeader } from '@/components/ui/ToolHeader';
 
 const ACCENT = '#007C74';
 
@@ -171,20 +171,7 @@ export default function ClassroomBuilderScreen() {
       keyboardShouldPersistTaps="handled"
     >
       {/* Header */}
-      <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
-        <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 6 }]}>
-          <Text style={{ fontSize: 22 }}>{selectedCard?.emoji ?? '🔐'}</Text>
-          <Text style={[{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }]}>
-            {selectedCard ? t(selectedCard.titleKey as any) : t('classroomBuilderSubtitle')}
-          </Text>
-        </View>
-        <Text style={[{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('classroomBuilderTitle')}
-        </Text>
-      </View>
+      <ToolHeader topPad={topPad} isRTL={isRTL} title={selectedCard ? t(selectedCard.titleKey as any) : t('classroomBuilderSubtitle')} subtitle={t('classroomBuilderTitle')} leading={selectedCard?.emoji ?? '🔐'} sourceBadge={false} />
 
       {/* Form */}
       <View style={styles.form}>
@@ -312,7 +299,7 @@ export default function ClassroomBuilderScreen() {
             <View style={[styles.statsRow, { flexDirection: isRTL ? 'row-reverse' : 'row', borderTopColor: colors.border }]}>
               <StatItem icon="layers-outline" label={t('slideCount', result.slides.length)} accent={ACCENT} />
               <StatItem icon="time-outline" label={`${result.duration} ${t('min')}`} accent={ACCENT} />
-              <StatItem icon="people-outline" label={result.groupType} accent={ACCENT} />
+              <StatItem icon="people-outline" label={cardMetaLabel(result.groupType, lang)} accent={ACCENT} />
             </View>
           </View>
 
@@ -377,8 +364,6 @@ function StatItem({ icon, label, accent }: { icon: keyof typeof Ionicons.glyphMa
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 24 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   form: { padding: 20 },
   loadingBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginBottom: 16 },
   loadingText: { fontSize: 14, lineHeight: 22 },

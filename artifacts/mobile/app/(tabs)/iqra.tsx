@@ -2846,38 +2846,21 @@ export default function IqraScreen() {
           demo pill, which stays because hiding it would let sample content
           read as real.
         */}
-        <View style={[styles.headerTop, centered]}>
-          {/*
-            The mark, not the lockup. BrandLogo is the full two-line lockup —
-            اقرأ stacked over the IQRA wordmark — in a 1024px square; at the 28px
-            this header allows, each line of type lands about ten pixels tall and
-            dissolves into a grey smudge. IqraaMark exists for exactly this size
-            (see its own note), and the word beside it is live text, so it stays
-            sharp and reads at a glance.
-          */}
+        {/*
+          One row: the mark at the start, the demo pill at the end. The pill
+          once had its own line because it collided with a CENTRED brand
+          (~85px) at 170-200px wide; pinned to opposite ends they fit a 360px
+          phone with room to spare, and the header loses a row.
+          The pill stays visible — hiding it would let sample content read
+          as real.
+        */}
+        <View style={[styles.headerTop, centered, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <View style={[styles.brandCentre, isRTL && { flexDirection: 'row-reverse' }]}>
-            <IqraaMark size={30} tone="brand" />
+            <IqraaMark size={28} tone="brand" />
             <Text style={[styles.brandWord, { color: colors.foreground }]}>
               {t('appName')}
             </Text>
           </View>
-        </View>
-
-        {/*
-          The badge gets its own line rather than sharing the brand's row.
-          Sharing it is what pushed اقرأ off-centre, and centring the brand
-          while the badge stayed in the row would have overlapped it: the badge
-          renders «وضع العرض · محتوى تجريبي» or «تعذّر الاتصال · محتوى تجريبي»,
-          roughly 170-200px, against ~85px of centred brand on a 360px screen —
-          they collide, and DEMO_MODE defaults on, so the long label is the
-          normal case rather than an edge one. Truncating it was the
-          alternative and a worse one: the half that would disappear is
-          «محتوى تجريبي», which is the half that stops sample output reading as
-          real. This costs one row of header height, against the note above
-          about keeping this header short — a deliberate trade, not an
-          oversight.
-        */}
-        <View style={[styles.headerBadgeRow, centered]}>
           <AiSourceBadge isRTL={isRTL} />
         </View>
       </View>
@@ -3377,10 +3360,9 @@ const styles = StyleSheet.create({
   // `center`, not `space-between`: the brand is now this row's only child, and
   // space-between would pin a lone child to the start — which is exactly where
   // اقرأ used to sit.
-  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 16 },
   // Replaces the old `brandRow`, which space-between pinned to the row's start.
   brandCentre: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  headerBadgeRow: { flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 16, marginTop: 4 },
   // Desktop: no card, no border, no logo — one row holding the demo pill,
   // aligned to the start edge of the same column the thread uses.
   deskHeader: { alignItems: 'center', paddingHorizontal: 16, paddingBottom: 2 },

@@ -18,6 +18,10 @@
  * whose text the prompt does apply. The last guard below is what would have
  * caught the shape.
  *
+ * `prompt-slides` left the menus on 2026-09-24: a second card beside Lesson
+ * slides, near-identical name, same deck at the end. It is a link inside the
+ * slides screen now, so it is parked here like the others.
+ *
  * Parked tools stay in the catalog (their routes still resolve for saved
  * materials and deep links) but must not reappear on a menu — which is easy to
  * undo by accident, since adding a tool to the arrays is how you add one at
@@ -29,14 +33,14 @@ import assert from 'node:assert/strict';
 import { AFTER_CLASS, ALL_TOOLS, BEFORE_CLASS, DURING_CLASS, WORKFLOW } from '../toolCatalog.ts';
 
 const OFFERED_TOOLS = [
-  'slides', 'prompt-slides', 'lesson-plan',                               // before
+  'slides', 'lesson-plan',                                                // before
   'worksheet', 'classroom', 'game', 'activity', 'whiteboard', 'games',     // during
   'quiz', 'evaluations', 'parent-msg',                                    // after
 ];
 
 /** Parked on 2026-08-18 and still parked — none of these may reach a menu. */
 const PARKED_TOOLS = [
-  'lesson-flow', 'geogebra', 'lesson-media', 'homework',
+  'lesson-flow', 'geogebra', 'lesson-media', 'homework', 'prompt-slides',
 ];
 
 describe('toolCatalog — the offered surface', () => {
