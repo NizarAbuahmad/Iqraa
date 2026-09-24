@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Platform, StyleSheet, useColorScheme, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
@@ -141,8 +141,6 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean): TabEntry[] {
 
 function ClassicTabLayout() {
   const colors = useColors();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
   const isIOS = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
   const insets = useSafeAreaInsets();
@@ -204,7 +202,7 @@ function ClassicTabLayout() {
         tabBarInactiveTintColor: colors.mutedForeground,
         tabBarStyle: {
           position: 'absolute',
-          backgroundColor: isIOS ? 'transparent' : colors.background,
+          backgroundColor: isIOS ? 'transparent' : colors.card,
           borderTopWidth: isWeb ? 1 : 0,
           borderTopColor: colors.border,
           elevation: 0,
@@ -218,15 +216,15 @@ function ClassicTabLayout() {
           isIOS ? (
             <BlurView
               intensity={100}
-              tint={isDark ? 'dark' : 'light'}
+              tint="light"
               style={StyleSheet.absoluteFill}
             />
           ) : isWeb ? (
             <View
-              style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]}
+              style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]}
             />
           ) : null,
-        tabBarLabelStyle: { fontFamily: 'Cairo_500Medium', fontSize: 10 },
+        tabBarLabelStyle: { fontFamily: 'Cairo_600SemiBold', fontSize: 11 },
       }}
     >
       {/*

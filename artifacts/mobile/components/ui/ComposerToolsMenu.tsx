@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   grabber: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 10 },
   headerRow: { alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingBottom: 6 },
   title: { fontFamily: 'Cairo_700Bold', fontSize: 16 },
-  context: { fontFamily: 'Almarai_400Regular', fontSize: 11.5, marginTop: 1 },
+  context: { fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, marginTop: 1 },
   body: { paddingHorizontal: 10, paddingBottom: 4 },
   group: { paddingTop: 6 },
   sectionTitle: {
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   iconWrap: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   titleRow: { alignItems: 'center', gap: 6 },
   rowTitle: { fontFamily: 'Cairo_600SemiBold', fontSize: 13.5 },
-  rowDesc: { fontFamily: 'Almarai_400Regular', fontSize: 11.5 },
+  rowDesc: { fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18 },
   badge: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: 7 },
   badgeText: { fontFamily: 'Cairo_500Medium', fontSize: 9.5 },
 });

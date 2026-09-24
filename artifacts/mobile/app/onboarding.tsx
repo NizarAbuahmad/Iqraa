@@ -30,9 +30,9 @@ type Slide = {
 // The keys are not renumbered as slides come and go: they are identifiers, and
 // a gap costs nothing next to rewriting every one of them in two locales.
 const SLIDES: Slide[] = [
-  { icon: 'sparkles-outline', color: '#00A99D', titleKey: 'onboardingSlide1Title', descKey: 'onboardingSlide1Desc' },
-  { icon: 'git-branch-outline', color: '#0EA5E9', titleKey: 'onboardingSlide2Title', descKey: 'onboardingSlide2Desc' },
-  { icon: 'tv-outline', color: '#F59E0B', titleKey: 'onboardingSlide4Title', descKey: 'onboardingSlide4Desc' },
+  { icon: 'sparkles-outline', color: '#007C74', titleKey: 'onboardingSlide1Title', descKey: 'onboardingSlide1Desc' },
+  { icon: 'git-branch-outline', color: '#0369A1', titleKey: 'onboardingSlide2Title', descKey: 'onboardingSlide2Desc' },
+  { icon: 'tv-outline', color: '#B54708', titleKey: 'onboardingSlide4Title', descKey: 'onboardingSlide4Desc' },
   { icon: 'people-outline', color: '#7C3AED', titleKey: 'onboardingSlide5Title', descKey: 'onboardingSlide5Desc' },
 ];
 

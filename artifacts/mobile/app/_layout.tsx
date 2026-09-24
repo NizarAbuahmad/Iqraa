@@ -22,7 +22,7 @@ import {
   Cairo_600SemiBold,
   Cairo_700Bold,
 } from '@expo-google-fonts/cairo';
-import { useFonts } from '@expo-google-fonts/inter';
+import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';

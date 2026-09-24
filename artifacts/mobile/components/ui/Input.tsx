@@ -87,7 +87,7 @@ export function Input({
 
 const styles = StyleSheet.create({
   container: { marginBottom: 16 },
-  label: { fontSize: 14, marginBottom: 7, letterSpacing: 0.2, fontWeight: '500' },
+  label: { fontSize: 14, marginBottom: 7, fontWeight: '500' },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -99,6 +99,6 @@ const styles = StyleSheet.create({
   rightIcon: { marginRight: 12 },
   rightIconBtn: { paddingRight: 12, padding: 4 },
   leftIconBtn: { paddingLeft: 12, padding: 4 },
-  error: { fontSize: 12, marginTop: 4 },
-  hint: { fontSize: 12, marginTop: 4 },
+  error: { fontSize: 12, lineHeight: 19, marginTop: 4 },
+  hint: { fontSize: 12, lineHeight: 19, marginTop: 4 },
 });

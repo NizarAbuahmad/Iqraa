@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 15 },
   body: { marginHorizontal: 20, borderWidth: 1, borderRadius: 14, padding: 14, gap: 18 },
   item: { gap: 6 },
-  itemTitle: { fontSize: 14 },
+  itemTitle: { fontSize: 14, lineHeight: 22 },
   frame: {
     width: '100%',
     aspectRatio: 16 / 9,

@@ -15,6 +15,7 @@ import {
   getSemesterLabel,
   getUnitsForBook,
 } from '@/services/curriculumData';
+import { goBack } from '@/services/navigation';
 
 function DownloadChip({ label, url, icon, color }: {
   label: string; url: string; icon: 'download-outline' | 'school-outline' | 'clipboard-outline'; color: string;
@@ -76,7 +77,7 @@ export default function SubjectsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: color, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <View style={[styles.heroContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
@@ -205,9 +206,9 @@ const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 28 },
   backBtn: { marginBottom: 16, width: 40, height: 40, justifyContent: 'center' },
   heroContent: { gap: 4 },
-  heroGrade: { fontSize: 13 },
+  heroGrade: { fontSize: 13, lineHeight: 21 },
   heroTitle: { fontSize: 28 },
-  heroSub: { fontSize: 14, marginTop: 6 },
+  heroSub: { fontSize: 14, lineHeight: 22, marginTop: 6 },
   semesterCard: { alignItems: 'center', padding: 18, borderWidth: 1, gap: 14 },
   semesterBadge: {
     width: 48,
@@ -219,16 +220,16 @@ const styles = StyleSheet.create({
   },
   semesterBadgeText: { fontSize: 20, color: '#fff' },
   semesterTitle: { fontSize: 17, marginBottom: 4 },
-  semesterMeta: { fontSize: 13 },
+  semesterMeta: { fontSize: 13, lineHeight: 21 },
   downloadRow: { gap: 8, flexWrap: 'wrap' },
   downloadChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 12, paddingVertical: 7,
     borderWidth: 1, borderRadius: 20,
   },
-  downloadChipText: { fontSize: 12 },
-  downloadNote: { fontSize: 11, paddingHorizontal: 2 },
+  downloadChipText: { fontSize: 12, lineHeight: 19 },
+  downloadNote: { fontSize: 11, lineHeight: 18, paddingHorizontal: 2 },
   empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
   emptyTitle: { fontSize: 18 },
-  emptyText: { fontSize: 14 },
+  emptyText: { fontSize: 14, lineHeight: 22 },
 });

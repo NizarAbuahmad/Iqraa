@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   cardHeader: { alignItems: 'center', gap: 6 },
   cardLabel: { fontFamily: 'Cairo_600SemiBold', fontSize: 11 },
   cardTopic: { fontFamily: 'Cairo_700Bold', fontSize: 15, lineHeight: 22 },
-  meta: { fontFamily: 'Almarai_400Regular', fontSize: 11 },
+  meta: { fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 },
   changeBtn: {
     alignItems: 'center',
     justifyContent: 'center',

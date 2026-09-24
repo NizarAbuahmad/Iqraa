@@ -34,7 +34,7 @@ export default function ClassThreadRedirect() {
   return (
     <View style={[styles.center, { backgroundColor: colors.background }]}>
       {error ? (
-        <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13 }}>{error}</Text>
+        <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>{error}</Text>
       ) : (
         <ActivityIndicator color={colors.primary} />
       )}

@@ -9,6 +9,7 @@ import Constants from 'expo-constants';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { versionLabel } from '@/services/versionLabel';
+import { goBack } from '@/services/navigation';
 
 export default function SettingsScreen() {
   const colors = useColors();
@@ -22,7 +23,7 @@ export default function SettingsScreen() {
     await toggleLang();
   };
 
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   // Read inline rather than in a hook or service: `pnpm test` is bare
   // `node --test` with no RN transform, so a module importing expo-updates at
@@ -37,7 +38,7 @@ export default function SettingsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -112,7 +113,7 @@ export default function SettingsScreen() {
             label={t('version')}
             isRTL={isRTL}
             colors={colors}
-            right={<Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13 }]}>{buildLabel}</Text>}
+            right={<Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }]}>{buildLabel}</Text>}
           />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <SettingRow
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1 },
   backBtn: { marginBottom: 8, width: 40, height: 40, justifyContent: 'center' },
   title: { fontSize: 28 },
-  sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginBottom: 8 },
+  sectionLabel: { fontSize: 11, marginBottom: 8 },
   card: { borderWidth: 1, overflow: 'hidden', marginBottom: 4 },
   settingRow: { alignItems: 'center', padding: 16, gap: 12 },
   settingLabel: { fontSize: 15 },

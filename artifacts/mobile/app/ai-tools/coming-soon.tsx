@@ -1,11 +1,12 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { TranslationKey } from '@/services/i18n';
+import { goBack } from '@/services/navigation';
 
 const TOOL_TITLE_KEYS: Record<string, TranslationKey> = {
   homework: 'toolHomeworkTitle',
@@ -21,13 +22,13 @@ export default function ComingSoonScreen() {
   const toolTitleKey = tool ? TOOL_TITLE_KEYS[tool] : undefined;
   const toolTitle = toolTitleKey ? t(toolTitleKey) : t('aiTools');
 
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -50,7 +51,7 @@ export default function ComingSoonScreen() {
         </Text>
 
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtnLarge, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
         >
           <Text style={[styles.backBtnText, { color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold' }]}>

@@ -90,6 +90,5 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   label: {
-    letterSpacing: 0.1,
   },
 });

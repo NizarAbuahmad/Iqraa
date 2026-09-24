@@ -46,10 +46,11 @@ import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { buildLessonFlowHTML, exportAsPDF } from '@/services/share';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
+import { goBack } from '@/services/navigation';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ACCENT = '#00A99D';
+const ACCENT = '#007C74';
 const NAVY = '#081B3A';
 const DURATION_VALUES = [45, 60, 90];
 
@@ -329,15 +330,15 @@ export default function LessonFlowScreen() {
 
   // ── Rendering ───────────────────────────────────────────────────────────────
 
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const STEPS: Array<{ key: StepKey; labelKey: string; icon: keyof typeof Ionicons.glyphMap; color: string }> = [
     { key: 'objectives', labelKey: 'lessonFlowStepObjectives', icon: 'flag-outline', color: NAVY },
-    { key: 'warmup',     labelKey: 'lessonFlowStepWarmup',     icon: 'flame-outline', color: '#E67E22' },
+    { key: 'warmup',     labelKey: 'lessonFlowStepWarmup',     icon: 'flame-outline', color: '#C2410C' },
     { key: 'activity',   labelKey: 'lessonFlowStepActivity',   icon: 'flash-outline', color: '#4F46E5' },
     { key: 'guided',     labelKey: 'lessonFlowStepGuided',     icon: 'pencil-outline', color: ACCENT },
-    { key: 'worksheet',  labelKey: 'lessonFlowStepWorksheet',  icon: 'document-text-outline', color: '#8B5CF6' },
-    { key: 'exitTicket', labelKey: 'lessonFlowStepExitTicket', icon: 'ticket-outline', color: '#F59E0B' },
+    { key: 'worksheet',  labelKey: 'lessonFlowStepWorksheet',  icon: 'document-text-outline', color: '#6D28D9' },
+    { key: 'exitTicket', labelKey: 'lessonFlowStepExitTicket', icon: 'ticket-outline', color: '#B54708' },
   ];
 
   const isDone = phase === 'done';
@@ -358,7 +359,7 @@ export default function LessonFlowScreen() {
         <View style={[styles.header, { paddingTop: topPad + 8, backgroundColor: NAVY, borderBottomColor: NAVY }]}>
           <View style={[styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => goBack()}
               style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
               hitSlop={12}
             >
@@ -373,7 +374,7 @@ export default function LessonFlowScreen() {
                   <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 9 }}>NEW</Text>
                 </View>
               </View>
-              <Text style={[styles.headerSub, { color: '#94A3B8', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.headerSub, { color: '#5C6675', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('toolLessonFlowSub')}
               </Text>
               <AiSourceBadge onDark isRTL={isRTL} />
@@ -389,7 +390,7 @@ export default function LessonFlowScreen() {
                   backgroundColor: ACCENT,
                 }]} />
               </View>
-              <Text style={{ color: '#94A3B8', fontFamily: 'Almarai_400Regular', fontSize: 11, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+              <Text style={{ color: '#5C6675', fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
                 {isDone
                   ? (lang === 'ar' ? '✓ جاهز' : '✓ Ready')
                   : `${lang === 'ar' ? 'خطوة' : 'Step'} ${completedCount + 1} ${lang === 'ar' ? 'من' : 'of'} 6`}
@@ -467,7 +468,7 @@ export default function LessonFlowScreen() {
             </View>
 
             {error ? (
-              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 12, textAlign: isRTL ? 'right' : 'left' }}>{error}</Text>
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 12, textAlign: isRTL ? 'right' : 'left' }}>{error}</Text>
             ) : null}
 
             <View style={{ marginTop: 24 }}>
@@ -482,7 +483,7 @@ export default function LessonFlowScreen() {
                 broken product rather than an unmet precondition. It says which.
               */}
               {!topic.trim() ? (
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
                   {t('needTopicHint')}
                 </Text>
               ) : null}
@@ -532,13 +533,13 @@ export default function LessonFlowScreen() {
         {/* ── Error banner with Retry ── */}
         {isBuilding && error && failedStep && (
           <View style={[styles.errorBanner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="alert-circle-outline" size={16} color="#EF4444" style={{ marginTop: 1 }} />
-            <Text style={{ flex: 1, color: '#EF4444', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
+            <Ionicons name="alert-circle-outline" size={16} color="#D92D20" style={{ marginTop: 1 }} />
+            <Text style={{ flex: 1, color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
             <Pressable
               onPress={handleRetry}
-              style={({ pressed }) => ({ backgroundColor: '#EF4444', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, opacity: pressed ? 0.8 : 1 })}
+              style={({ pressed }) => ({ backgroundColor: '#D92D20', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, opacity: pressed ? 0.8 : 1 })}
             >
               <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
                 {lang === 'ar' ? 'أعد المحاولة' : 'Retry'}
@@ -648,26 +649,26 @@ function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, co
           ) : status === 'done' ? (
             <Ionicons name={icon} size={18} color={color} />
           ) : status === 'error' ? (
-            <Ionicons name="warning-outline" size={18} color="#EF4444" />
+            <Ionicons name="warning-outline" size={18} color="#D92D20" />
           ) : (
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{stepNum}</Text>
           )}
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.stepLabel, {
-            color: status === 'done' ? colors.foreground : status === 'error' ? '#EF4444' : colors.mutedForeground,
+            color: status === 'done' ? colors.foreground : status === 'error' ? '#D92D20' : colors.mutedForeground,
             fontFamily: 'Cairo_600SemiBold',
             textAlign: isRTL ? 'right' : 'left',
           }]}>
             {label}
           </Text>
           {status === 'loading' && (
-            <Text style={{ color: color, fontFamily: 'Almarai_400Regular', fontSize: 11.5, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: color, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
               Generating…
             </Text>
           )}
           {status === 'error' && (
-            <Text style={{ color: '#EF4444', fontFamily: 'Almarai_400Regular', fontSize: 11.5, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
               {lang === 'ar' ? 'تعذّر إكمال الخطوة — أعد المحاولة' : 'Failed — tap Retry below'}
             </Text>
           )}
@@ -727,12 +728,12 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
           <Text style={[{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{isolateForeignRuns(act.title)}</Text>
           {act.steps.map((step, i) => (
             <View key={i} style={[styles.activityStep, { backgroundColor: colors.muted }]}>
-              <View style={[styles.stepNum, { backgroundColor: stepKey === 'warmup' ? '#E67E22' : '#4F46E5' }]}>
+              <View style={[styles.stepNum, { backgroundColor: stepKey === 'warmup' ? '#C2410C' : '#4F46E5' }]}>
                 <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(step.title)}</Text>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2, lineHeight: 17, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(step.description)}</Text>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2, lineHeight: 19, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(step.description)}</Text>
               </View>
             </View>
           ))}
@@ -758,11 +759,11 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
         <View style={{ paddingHorizontal: 14, paddingBottom: 8, gap: 6 }}>
           {allQs.slice(0, 5).map((q, i) => (
             <View key={i} style={[styles.qBlock, { backgroundColor: colors.muted }]}>
-              <View style={[styles.qNum, { backgroundColor: '#8B5CF6' }]}>
+              <View style={[styles.qNum, { backgroundColor: '#6D28D9' }]}>
                 <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 18, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>{q.points}pt</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>{q.points}pt</Text>
             </View>
           ))}
         </View>
@@ -776,11 +777,11 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
         <View style={{ paddingHorizontal: 14, paddingBottom: 8, gap: 6 }}>
           {allQs.slice(0, 3).map((q, i) => (
             <View key={i} style={[styles.qBlock, { backgroundColor: colors.muted }]}>
-              <View style={[styles.qNum, { backgroundColor: '#F59E0B' }]}>
+              <View style={[styles.qNum, { backgroundColor: '#B54708' }]}>
                 <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 18, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>{q.points}pt</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>{q.points}pt</Text>
             </View>
           ))}
         </View>
@@ -811,7 +812,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
   },
   headerSub: {
-    fontSize: 11.5,
+    fontSize: 11.5, lineHeight: 18,
     marginTop: 2,
   },
   progressContainer: {

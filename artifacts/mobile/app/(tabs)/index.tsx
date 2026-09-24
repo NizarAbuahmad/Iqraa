@@ -457,7 +457,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     borderBottomWidth: 1,
   },
-  today: { fontSize: 12.5, fontFamily: 'Almarai_400Regular' },
+  today: { fontSize: 12.5, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
   btn: { alignItems: 'center', gap: 7, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12 },
   btnGhost: { borderWidth: 1 },
   btnText: { color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 },
@@ -465,15 +465,15 @@ const s = StyleSheet.create({
   body: { flex: 1, gap: 20, padding: 22 },
   mainCol: { gap: 16, paddingBottom: 40 },
   card: { borderWidth: 1, borderRadius: 18, padding: 22 },
-  crumb: { fontSize: 12, fontFamily: 'Almarai_400Regular' },
+  crumb: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular' },
   lessonTitle: { fontSize: 22, fontFamily: 'Cairo_700Bold', lineHeight: 34 },
-  hint: { fontSize: 13, fontFamily: 'Almarai_400Regular', marginTop: 6 },
+  hint: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', marginTop: 6 },
   ready: { fontSize: 26, fontFamily: 'Cairo_700Bold' },
-  readyLabel: { fontSize: 11, fontFamily: 'Almarai_400Regular' },
+  readyLabel: { fontSize: 11, lineHeight: 18, fontFamily: 'Almarai_400Regular' },
 
 
   errorRow: { alignItems: 'center', gap: 7, borderRadius: 10, padding: 9, marginTop: 12 },
-  errorText: { fontSize: 12, fontFamily: 'Almarai_400Regular', flex: 1 },
+  errorText: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular', flex: 1 },
 
   sectionTitle: { fontSize: 14.5, fontFamily: 'Cairo_600SemiBold', marginTop: 6 },
   tool: { flex: 1, alignItems: 'center', gap: 9, borderWidth: 1, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 10 },
@@ -481,7 +481,7 @@ const s = StyleSheet.create({
   toolText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
   classChip: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
   classChipText: { fontSize: 13, fontFamily: 'Cairo_500Medium' },
-  empty: { fontSize: 13, fontFamily: 'Almarai_400Regular' },
+  empty: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular' },
 
   side: {
     width: SIDE_PANEL_WIDTH,
@@ -493,7 +493,7 @@ const s = StyleSheet.create({
     padding: 16,
   },
   sideTitle: { fontSize: 14.5, fontFamily: 'Cairo_600SemiBold' },
-  sideHint: { fontSize: 11.5, fontFamily: 'Almarai_400Regular', marginTop: 1 },
+  sideHint: { fontSize: 11.5, lineHeight: 18, fontFamily: 'Almarai_400Regular', marginTop: 1 },
   sugg: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   suggText: { fontSize: 12.5, fontFamily: 'Almarai_400Regular', lineHeight: 20 },
   composer: { alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 9 },

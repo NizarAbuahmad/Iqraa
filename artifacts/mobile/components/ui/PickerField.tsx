@@ -62,7 +62,7 @@ export function PickerField({ label, value, options, onChange, colors, isRTL, ac
         onPress={() => setOpen(o => !o)}
         style={[styles.pickerBtn, { backgroundColor: colors.card, borderColor: open ? accent : colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
       >
-        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
+        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
       </Pressable>
       {open && (

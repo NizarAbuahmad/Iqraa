@@ -178,6 +178,6 @@ const styles = StyleSheet.create({
   statement: { borderWidth: 1, padding: 14, marginTop: 4 },
   statementText: { fontSize: 14, lineHeight: 25 },
   note: { fontSize: 12.5, lineHeight: 21 },
-  error: { fontSize: 13 },
+  error: { fontSize: 13, lineHeight: 21 },
   button: { marginTop: 10, paddingVertical: 15, alignItems: 'center', justifyContent: 'center' },
 });

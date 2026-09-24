@@ -51,7 +51,7 @@ export function ColorSpotGame() {
       onReplay={replay}
     >
       <View style={{ flex: 1, padding: 20, gap: 20 }}>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: 'center' }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
           {t('playColorsInstructions')}
         </Text>
         <View style={styles.grid}>

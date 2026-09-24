@@ -9,7 +9,7 @@ import {
   deleteLessonMedia, listLessonMedia, uploadLessonMedia, type LessonMediaItem,
 } from '@/services/lessonMediaApi';
 
-const TEAL = '#1B6B62';
+const TEAL = '#007C74';
 
 type Props = {
   /** The lesson's own KB id (e.g. `kbl-math-s1-nccd-u2_l1`) — empty when the topic isn't a grounded lesson yet, in which case nothing renders. */
@@ -125,7 +125,7 @@ export function LessonAttachments({ lessonId, onChange }: Props) {
               )}
               <Text
                 numberOfLines={1}
-                style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, textAlign: isRTL ? 'right' : 'left' }}
+                style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}
               >
                 {m.caption || m.mimeType}
               </Text>
@@ -136,7 +136,7 @@ export function LessonAttachments({ lessonId, onChange }: Props) {
           ))}
 
           {error ? (
-            <Text style={{ color: '#EF4444', fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
           ) : null}

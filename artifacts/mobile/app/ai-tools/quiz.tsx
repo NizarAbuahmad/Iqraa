@@ -43,8 +43,9 @@ import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { buildQuizHTML, buildQuizSlidesHTML, formatQuizText } from '@/services/share';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#F59E0B';
+const ACCENT = '#007C74';
 
 type QType = 'multiple_choice' | 'true_false' | 'short_answer';
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -176,9 +177,9 @@ export default function QuizScreen() {
     short_answer: t('typeShortAnswer'),
   };
   const TYPE_COLOR: Record<QType, string> = {
-    multiple_choice: '#F59E0B',
-    true_false: '#3B82F6',
-    short_answer: '#10B981',
+    multiple_choice: '#B54708',
+    true_false: '#1D4ED8',
+    short_answer: '#067647',
   };
 
   /*
@@ -368,7 +369,7 @@ export default function QuizScreen() {
   };
 
 
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const getExportTitle = () => lang === 'ar' ? `اختبار: ${topic.trim()}` : `Quiz: ${topic.trim()}`;
   // Localised, like the picker above it. Taking `.name` straight off the
@@ -420,7 +421,7 @@ export default function QuizScreen() {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: topPad + 12 }]}>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <AiSourceBadge onDark isRTL={isRTL} />
@@ -469,14 +470,14 @@ export default function QuizScreen() {
           beside the spinner they replace — they used to render above the form,
           out of sight of the button that had just been pressed.
         */}
-        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button label={loading ? t('generatingQuiz') : t('generateQuizBtn')} onPress={() => generate()} loading={loading} disabled={!topic.trim()} fullWidth style={{ backgroundColor: ACCENT }} />
         {/*
           A greyed-out primary button with nothing next to it reads as a broken
           product rather than an unmet precondition. It says which one.
         */}
         {!topic.trim() ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
             {t('needTopicHint')}
           </Text>
         ) : null}
@@ -531,13 +532,13 @@ export default function QuizScreen() {
               <Ionicons
                 name={verification.anySymbolic ? 'shield-checkmark' : 'library-outline'}
                 size={14}
-                color={verification.anySymbolic ? '#10B981' : colors.mutedForeground}
+                color={verification.anySymbolic ? '#067647' : colors.mutedForeground}
               />
               <Text
                 style={[
                   styles.verifyText,
                   {
-                    color: verification.anySymbolic ? '#10B981' : colors.mutedForeground,
+                    color: verification.anySymbolic ? '#067647' : colors.mutedForeground,
                     textAlign: isRTL ? 'right' : 'left',
                   },
                 ]}
@@ -651,14 +652,14 @@ export default function QuizScreen() {
                     checked. The aggregate row above still covers the rest. */}
                 {o?.verifiedBy === 'symbolic' ? (
                   <View style={[styles.verifyRow, { marginTop: 0, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <Ionicons name="shield-checkmark" size={13} color="#10B981" />
-                    <Text style={[styles.verifyText, { color: '#10B981', textAlign: isRTL ? 'right' : 'left' }]}>
+                    <Ionicons name="shield-checkmark" size={13} color="#067647" />
+                    <Text style={[styles.verifyText, { color: '#067647', textAlign: isRTL ? 'right' : 'left' }]}>
                       {t('verifiedBySymbolic')}
                     </Text>
                   </View>
                 ) : null}
                 {showAnswers && o?.verifiedBy === 'symbolic' && o.computedAnswer ? (
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: isRTL ? 'right' : 'left' }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
                     {isolateForeignRuns(t('verifiedComputed', prettifySymPy(o.computedAnswer)))}
                   </Text>
                 ) : null}
@@ -677,8 +678,8 @@ export default function QuizScreen() {
                   const marker = optionMarkerState(showAnswers, opt, q.correctAnswer);
                   const isCorrect = marker === 'selected';
                   return (
-                    <View key={oi} style={[styles.optRow, { backgroundColor: isCorrect ? '#10B981' + '15' : colors.muted, borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                      <Text style={[styles.optLabel, { color: isCorrect ? '#10B981' : colors.mutedForeground, fontFamily: isCorrect ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
+                    <View key={oi} style={[styles.optRow, { backgroundColor: isCorrect ? '#067647' + '15' : colors.muted, borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                      <Text style={[styles.optLabel, { color: isCorrect ? '#067647' : colors.mutedForeground, fontFamily: isCorrect ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
                         {optionLetter(oi, lang === 'ar')}.
                       </Text>
                       <View style={{ flex: 1 }}>
@@ -707,7 +708,7 @@ export default function QuizScreen() {
                           <Ionicons
                             name={isCorrect ? 'checkmark-circle' : 'ellipse-outline'}
                             size={17}
-                            color={isCorrect ? '#10B981' : colors.mutedForeground}
+                            color={isCorrect ? '#067647' : colors.mutedForeground}
                           />
                         </Pressable>
                       )}
@@ -716,9 +717,9 @@ export default function QuizScreen() {
                 })}
 
                 {showAnswers && q.type === 'true_false' && (
-                  <View style={[styles.ansBox, { backgroundColor: '#10B981' + '15', borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <Ionicons name="checkmark-circle" size={14} color="#10B981" />
-                    <Text style={[{ color: '#10B981', fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>{t('answer')}:</Text>
+                  <View style={[styles.ansBox, { backgroundColor: '#067647' + '15', borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    <Ionicons name="checkmark-circle" size={14} color="#067647" />
+                    <Text style={[{ color: '#067647', fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>{t('answer')}:</Text>
                     <View style={{ flex: 1 }}>
                       <EditableText
                         value={q.correctAnswer}
@@ -732,7 +733,7 @@ export default function QuizScreen() {
                 )}
 
                 {showAnswers && q.type === 'short_answer' && (
-                  <View style={[styles.ansBox, { backgroundColor: '#3B82F6' + '12', borderRadius: 8 }]}>
+                  <View style={[styles.ansBox, { backgroundColor: '#1D4ED8' + '12', borderRadius: 8 }]}>
                     <EditableText
                       value={q.correctAnswer}
                       onChange={next => updateQuestion(i, { correctAnswer: next })}
@@ -838,7 +839,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 24 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   headerTitle: { fontSize: 26 },
-  headerSub: { fontSize: 13, marginTop: 4 },
+  headerSub: { fontSize: 13, lineHeight: 21, marginTop: 4 },
   label: { fontSize: 13, marginBottom: 6 },
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },

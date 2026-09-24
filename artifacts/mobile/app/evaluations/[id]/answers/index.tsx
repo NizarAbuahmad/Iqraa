@@ -16,8 +16,9 @@ import { useLanguage } from '@/context/LanguageContext';
 import { RosterError, getClass, listClasses, type ClassGroup, type RosterStudent } from '@/services/roster';
 import { listAttempts, type AttemptListRow, type AttemptStatus } from '@/services/evaluations';
 import type { TranslationKey } from '@/services/i18n';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 
 const STATUS_KEY: Record<AttemptStatus, TranslationKey> = {
   not_started: 'attemptStatusNotStarted',
@@ -29,13 +30,13 @@ const STATUS_KEY: Record<AttemptStatus, TranslationKey> = {
   abandoned: 'attemptStatusAbandoned',
 };
 const STATUS_COLOR: Record<AttemptStatus, string> = {
-  not_started: '#9CA3AF',
-  in_progress: '#F59E0B',
-  submitted: '#3B82F6',
-  grading: '#3B82F6',
-  graded: '#10B981',
-  needs_review: '#EF4444',
-  abandoned: '#9CA3AF',
+  not_started: '#6B7280',
+  in_progress: '#B54708',
+  submitted: '#1D4ED8',
+  grading: '#1D4ED8',
+  graded: '#067647',
+  needs_review: '#D92D20',
+  abandoned: '#6B7280',
 };
 
 export default function PickStudentScreen() {
@@ -104,7 +105,7 @@ export default function PickStudentScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
         <Pressable
-          onPress={() => (classId ? setClassId(null) : router.back())}
+          onPress={() => (classId ? setClassId(null) : goBack())}
           hitSlop={12}
           style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
         >
@@ -159,7 +160,7 @@ export default function PickStudentScreen() {
                     {item.displayName}
                   </Text>
                   {attempt?.result && (
-                    <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2, textAlign: align }]}>
+                    <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 2, textAlign: align }]}>
                       {t('resultPercentLabel', attempt.result.percent)}
                     </Text>
                   )}

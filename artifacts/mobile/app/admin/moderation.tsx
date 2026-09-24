@@ -14,7 +14,6 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -24,6 +23,7 @@ import { useAuth } from '@/context/AuthContext';
 import { apiJson } from '@/services/apiClient';
 import { confirm } from '@/services/confirm';
 import { LEGAL_CONTACT_EMAIL } from '@/constants/legal';
+import { goBack } from '@/services/navigation';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -175,7 +175,7 @@ export default function ModerationScreen() {
         <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, marginTop: 12, textAlign: 'center' }}>
           {ar ? 'هذه الصفحة للإدارة فقط' : 'This page is for admins only'}
         </Text>
-        <Pressable onPress={() => router.back()} style={{ marginTop: 16 }}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={{ marginTop: 16 }}>
           <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold' }}>{ar ? 'رجوع' : 'Go back'}</Text>
         </Pressable>
       </View>
@@ -185,13 +185,13 @@ export default function ModerationScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
           {ar ? 'البلاغات' : 'Reports'}
         </Text>
-        <Text style={{ color: '#fff', opacity: 0.85, fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }}>
+        <Text style={{ color: '#fff', opacity: 0.85, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }}>
           {openCount === 0
             ? ar ? 'لا بلاغات مفتوحة' : 'No open reports'
             : ar ? `${openCount} بلاغ مفتوح` : `${openCount} open`}
@@ -214,7 +214,7 @@ export default function ModerationScreen() {
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
         {error ? (
-          <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 12, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 12, textAlign: isRTL ? 'right' : 'left' }}>
             {error}
           </Text>
         ) : null}
@@ -296,25 +296,25 @@ function ReportCard({
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
       <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
         {report.reportedName}
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
           {'  '}{report.reportedEmail} · {report.reportedRole}
         </Text>
       </Text>
 
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 4, textAlign: align }}>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 4, textAlign: align }}>
         {ar ? 'أبلغ عنه: ' : 'Reported by '}{report.reporterName}
         {' · '}{new Date(report.createdAt).toLocaleString()}
         {report.threadTitle ? ` · ${report.threadTitle}` : ''}
       </Text>
 
       {report.reason ? (
-        <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 10, textAlign: align }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 10, textAlign: align }}>
           {ar ? 'السبب: ' : 'Reason: '}{report.reason}
         </Text>
       ) : null}
 
       <View style={[styles.quote, { borderColor: colors.border, backgroundColor: colors.muted }]}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
           {report.messageId === null
             ? (ar ? '— لم يُحدَّد نصّ رسالة —' : '— no message named —')
             : report.messageBody?.trim()
@@ -322,7 +322,7 @@ function ReportCard({
               : (ar ? '— رسالة بلا نصّ —' : '— message with no text —')}
         </Text>
         {report.messageAttachmentKind ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 6, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: align }}>
             {ar ? 'مرفق: ' : 'Attachment: '}{report.messageAttachmentKind}
           </Text>
         ) : null}

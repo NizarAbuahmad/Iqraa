@@ -23,8 +23,9 @@ import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurricu
 import { aiErrorMessageKey } from '@/services/ai/aiProvenance';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ACTIVITY_CARDS, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#4F46E5';
+const ACCENT = '#007C74';
 
 type Difficulty = 'easy' | 'standard' | 'advanced';
 type GroupType = 'individual' | 'pairs' | 'groups' | 'whole-class';
@@ -40,7 +41,7 @@ export default function ClassroomBuilderScreen() {
   // Header reflects the card the teacher picked (falls back to escape-challenge).
   const selectedCard = ACTIVITY_CARDS.find(c => c.id === resolveActivityType(params));
   const scrollRef = useRef<ScrollView>(null);
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
@@ -171,7 +172,7 @@ export default function ClassroomBuilderScreen() {
     >
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 6 }]}>
@@ -180,7 +181,7 @@ export default function ClassroomBuilderScreen() {
             {selectedCard ? t(selectedCard.titleKey as any) : t('classroomBuilderSubtitle')}
           </Text>
         </View>
-        <Text style={[{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }]}>
           {t('classroomBuilderTitle')}
         </Text>
       </View>
@@ -249,7 +250,7 @@ export default function ClassroomBuilderScreen() {
           accent={ACCENT}
         />
 
-        {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
 
         <Button
           label={loading ? t('generatingClassroom') : t('generateClassroomBtn')}
@@ -380,7 +381,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   form: { padding: 20 },
   loadingBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginBottom: 16 },
-  loadingText: { fontSize: 14 },
+  loadingText: { fontSize: 14, lineHeight: 22 },
   readyBanner: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1, marginBottom: 14 },
   readyText: { fontSize: 14 },
   previewCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
@@ -388,7 +389,7 @@ const styles = StyleSheet.create({
   previewObj: { fontSize: 13, lineHeight: 20, marginBottom: 14 },
   statsRow: { borderTopWidth: 1, paddingTop: 12, flexDirection: 'row', gap: 16 },
   sectionCard: { borderWidth: 1, padding: 14, marginBottom: 12 },
-  sectionLabel: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  sectionLabel: { fontSize: 12, textTransform: 'uppercase', marginBottom: 8 },
   bullet: { gap: 8, marginBottom: 5, alignItems: 'flex-start' },
   dot: { width: 5, height: 5, borderRadius: 3, marginTop: 8, flexShrink: 0 },
   bulletText: { flex: 1, fontSize: 13, lineHeight: 20 },

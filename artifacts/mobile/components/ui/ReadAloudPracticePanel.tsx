@@ -259,7 +259,7 @@ function PassageCard({ passage }: { passage: PracticePassage }) {
   );
 }
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 
 export function ReadAloudPracticePanel({ lessonId, accent }: { lessonId: string; accent: string }) {
   const colors = useColors();

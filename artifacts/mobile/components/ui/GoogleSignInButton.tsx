@@ -149,7 +149,7 @@ function NativeGoogleButton({
       />
       {error ? (
         <Text
-          style={{ color: '#EF4444', fontSize: 13, marginTop: 8, textAlign: 'center' }}
+          style={{ color: '#D92D20', fontSize: 13, marginTop: 8, textAlign: 'center' }}
         >
           {error}
         </Text>

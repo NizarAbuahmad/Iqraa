@@ -58,7 +58,7 @@ export default function ProfileScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const initials = user
     ? [user.firstName?.[0], user.lastName?.[0]]
@@ -426,12 +426,12 @@ const styles = StyleSheet.create({
   userName: { fontSize: 22 },
   roleBadge: { paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20, marginTop: 2 },
   roleText: { fontSize: 12 },
-  section: { fontSize: 11, letterSpacing: 0.8, marginBottom: 8 },
+  section: { fontSize: 11, marginBottom: 8 },
   infoCard: { borderWidth: 1, overflow: 'hidden' },
   infoRow: { alignItems: 'center', padding: 14, gap: 12 },
   infoIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  infoLabel: { fontSize: 11, marginBottom: 2, fontFamily: 'Almarai_400Regular' },
-  infoValue: { fontSize: 14, fontFamily: 'Almarai_400Regular' },
+  infoLabel: { fontSize: 11, lineHeight: 18, marginBottom: 2, fontFamily: 'Almarai_400Regular' },
+  infoValue: { fontSize: 14, lineHeight: 22, fontFamily: 'Almarai_400Regular' },
   divider: { height: 1, marginHorizontal: 14 },
   tagSection: { padding: 14, gap: 8 },
   tagLabel: { fontSize: 13 },

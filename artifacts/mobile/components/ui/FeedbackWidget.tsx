@@ -91,11 +91,11 @@ export function FeedbackWidget({ materialType, toolId }: Props) {
             accessibilityRole="button"
             accessibilityLabel={lang === 'ar' ? 'مفيد' : 'Helpful'}
             style={[styles.thumb, {
-              borderColor: rating === 'up' ? '#10B981' : colors.border,
+              borderColor: rating === 'up' ? '#067647' : colors.border,
               backgroundColor: rating === 'up' ? '#10B98118' : 'transparent',
             }]}
           >
-            <Ionicons name="thumbs-up" size={16} color={rating === 'up' ? '#10B981' : colors.mutedForeground} />
+            <Ionicons name="thumbs-up" size={16} color={rating === 'up' ? '#067647' : colors.mutedForeground} />
           </Pressable>
           <Pressable
             onPress={() => pick('down')}
@@ -174,6 +174,6 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, minHeight: 44 },
   submitBtn: { alignSelf: 'flex-start', paddingHorizontal: 18, paddingVertical: 9 },
   submitText: { color: '#fff', fontSize: 13 },
-  thanks: { fontSize: 13.5 },
+  thanks: { fontSize: 13.5, lineHeight: 22 },
   failed: { fontSize: 12.5, lineHeight: 18 },
 });

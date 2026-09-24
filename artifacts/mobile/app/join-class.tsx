@@ -16,7 +16,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -28,6 +27,7 @@ import { useJoinCodeLookup } from '@/hooks/useJoinCodeLookup';
 import { RosterCodeClaimForm } from '@/components/RosterCodeClaimForm';
 import { RosterError, claimRosterCode } from '@/services/roster';
 import { claimErrorKey } from '@/services/claimCodeGate';
+import { goBack } from '@/services/navigation';
 
 export default function JoinClassScreen() {
   const colors = useColors();
@@ -69,7 +69,7 @@ export default function JoinClassScreen() {
         <Text style={[styles.successTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: 'center' }]}>
           {t('joinAnotherClassSuccess')}
         </Text>
-        <Button label={t('joinAnotherClassDone')} onPress={() => router.back()} fullWidth style={{ marginTop: 24 }} />
+        <Button label={t('joinAnotherClassDone')} onPress={() => goBack()} fullWidth style={{ marginTop: 24 }} />
       </View>
     );
   }
@@ -86,7 +86,7 @@ export default function JoinClassScreen() {
         ]}
       >
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 22 },
   desc: { fontSize: 14, lineHeight: 22, marginBottom: 20 },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1, marginTop: 16 },
-  errorText: { flex: 1, fontSize: 13 },
+  errorText: { flex: 1, fontSize: 13, lineHeight: 21 },
   successWrap: { flex: 1, alignItems: 'center', paddingHorizontal: 32 },
   successIcon: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   successTitle: { fontSize: 19, lineHeight: 27 },

@@ -1,54 +1,60 @@
-// ─── IQRA Brand Palette ───────────────────────────────────────────────────────
+// ─── IQRA Palette ─────────────────────────────────────────────────────────────
 //
-//  Midnight Navy  #081B3A  — trust, intelligence, professionalism
-//  Emerald Teal   #00A99D  — innovation, growth, learning
-//  Soft Aqua      #34D6C6  — interactive & AI-element highlight
-//  Light Gray     #F5F7FA  — page background
-//  Dark Gray      #1D2939  — body text, dark surfaces
+//  Brand Teal    #00A99D  — the logo colour. Decorative only: it is 2.9:1 on
+//                           white, so text or a white label on it fails WCAG AA.
+//  Primary Teal  #007C74  — the same hue, deepened to 5.1:1 on white. Every
+//                           button, link and active state uses this one.
+//  Midnight Ink  #0B1B33  — body text and dark surfaces.
+//  Paper         #F6F5F1  — warm page background; cards sit on it in white.
+//
+//  Every text/background pair below is ≥ 4.5:1 — check a new one before
+//  adding it (muted-on-paper is the pair that failed before, at 4.08).
 
 const colors = {
   light: {
-    text:                '#081B3A',
-    tint:                '#00A99D',
-    background:          '#F5F7FA',
-    foreground:          '#081B3A',
+    text:                '#0B1B33',
+    tint:                '#007C74',
+    background:          '#F6F5F1',
+    foreground:          '#0B1B33',
     card:                '#FFFFFF',
-    cardForeground:      '#081B3A',
-    primary:             '#00A99D',   // Emerald Teal
+    cardForeground:      '#0B1B33',
+    primary:             '#007C74',
     primaryForeground:   '#FFFFFF',
-    secondary:           '#E6F7F6',
-    secondaryForeground: '#00A99D',
-    muted:               '#EEF4F4',
-    mutedForeground:     '#6B7A8D',
-    accent:              '#34D6C6',   // Soft Aqua — AI element highlights
-    accentForeground:    '#081B3A',
-    destructive:         '#EF4444',
+    secondary:           '#E3F2EF',
+    secondaryForeground: '#006A63',
+    muted:               '#EFEDE7',
+    mutedForeground:     '#5C6675',
+    accent:              '#34D6C6',   // Soft Aqua — AI element highlights, never text
+    accentForeground:    '#0B1B33',
+    brand:               '#00A99D',   // logo teal — decoration only
+    destructive:         '#D92D20',
     destructiveForeground: '#FFFFFF',
-    border:              '#DDE6E8',
-    input:               '#E8EEF0',
-    success:             '#10B981',
-    warning:             '#F59E0B',
-    info:                '#3B82F6',
+    border:              '#E6E3DB',
+    input:               '#F2F0EB',
+    success:             '#067647',
+    warning:             '#B54708',
+    info:                '#1D4ED8',
   },
   dark: {
-    text:                '#E8F4F2',
-    tint:                '#34D6C6',
-    background:          '#081B3A',   // Midnight Navy
-    foreground:          '#E8F4F2',
-    card:                '#0D2247',
-    cardForeground:      '#E8F4F2',
-    primary:             '#34D6C6',   // Soft Aqua — pops on navy
+    text:                '#E8EEF4',
+    tint:                '#2DD4BF',
+    background:          '#0A1628',
+    foreground:          '#E8EEF4',
+    card:                '#111F36',
+    cardForeground:      '#E8EEF4',
+    primary:             '#2DD4BF',
     primaryForeground:   '#081B3A',
-    secondary:           '#0D2450',
-    secondaryForeground: '#34D6C6',
-    muted:               '#0D2247',
-    mutedForeground:     '#8BA0B8',
+    secondary:           '#12302F',
+    secondaryForeground: '#5EEAD4',
+    muted:               '#16243B',
+    mutedForeground:     '#9AA9BC',
     accent:              '#34D6C6',
     accentForeground:    '#081B3A',
+    brand:               '#00A99D',
     destructive:         '#F87171',
     destructiveForeground: '#FFFFFF',
-    border:              '#1A3356',
-    input:               '#152B4A',
+    border:              '#1F3050',
+    input:               '#16243B',
     success:             '#34D399',
     warning:             '#FBBF24',
     info:                '#60A5FA',

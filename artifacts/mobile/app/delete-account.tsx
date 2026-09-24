@@ -23,7 +23,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -32,6 +31,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { apiJson } from '@/services/apiClient';
 import { confirm } from '@/services/confirm';
+import { goBack } from '@/services/navigation';
 
 export default function DeleteAccountScreen() {
   const colors = useColors();
@@ -63,7 +63,7 @@ export default function DeleteAccountScreen() {
   }, []);
 
   const align = isRTL ? 'right' : 'left';
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
   const teacher = isTeacherRole(user?.role);
   const ready = hasPassword !== undefined;
   const canSubmit = ready && proof.trim().length > 0 && !busy;
@@ -106,7 +106,7 @@ export default function DeleteAccountScreen() {
         ]}
       >
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack()} hitSlop={10}
           accessibilityRole="button"
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
         >
@@ -192,7 +192,7 @@ export default function DeleteAccountScreen() {
           )}
         </Pressable>
 
-        <Pressable onPress={() => router.back()} disabled={busy} style={styles.cancelBtn}>
+        <Pressable onPress={() => goBack()} hitSlop={10} disabled={busy} style={styles.cancelBtn}>
           <Text style={[styles.cancelText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
             {t('deleteAccountCancel')}
           </Text>
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   hint: { fontSize: 13, lineHeight: 22, marginTop: 12 },
   label: { fontSize: 14, marginTop: 28, marginBottom: 8 },
   input: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
-  error: { fontSize: 13, marginTop: 8 },
+  error: { fontSize: 13, lineHeight: 21, marginTop: 8 },
   deleteBtn: { marginTop: 24, paddingVertical: 15, alignItems: 'center', justifyContent: 'center' },
   deleteBtnText: { fontSize: 15 },
   cancelBtn: { marginTop: 8, paddingVertical: 14, alignItems: 'center' },

@@ -9,13 +9,13 @@
  */
 import React, { useState } from 'react';
 import { LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, Text, UIManager, View } from 'react-native';
-import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import type { TranslationKey } from '@/services/i18n';
+import { goBack } from '@/services/navigation';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -64,7 +64,7 @@ export default function FaqScreen() {
         ]}
       >
         <View style={[styles.headerRow, { flexDirection: rowDir }]}>
-          <Pressable onPress={() => router.back()} hitSlop={10} accessibilityRole="button">
+          <Pressable onPress={() => goBack()} hitSlop={10} accessibilityRole="button">
             <Ionicons
               name={isRTL ? 'arrow-forward' : 'arrow-back'}
               size={22}

@@ -51,6 +51,7 @@ import { mergeNewMessages } from '@/services/messageMerge';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { saveRemoteImage } from '@/services/share';
+import { goBack } from '@/services/navigation';
 
 const REPORT_REASON_KEYS = ['reportReasonInappropriate', 'reportReasonBullying', 'reportReasonSpam', 'reportReasonOther'] as const;
 
@@ -230,7 +231,7 @@ export default function ThreadScreen() {
     setLeaving(true);
     try {
       await removeGroupMember(threadId, user.id);
-      router.back();
+      goBack();
     } catch (e) {
       setError(e instanceof MessagingError ? e.message : t('messagingLoadError'));
       setLeaving(false);
@@ -292,7 +293,7 @@ export default function ThreadScreen() {
           { paddingTop: topPad, backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
         ]}
       >
-        <Pressable onPress={() => router.back()} hitSlop={10}>
+        <Pressable onPress={() => goBack()} hitSlop={10}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
         {isGroup ? (
@@ -631,8 +632,8 @@ const styles = StyleSheet.create({
   headerName: { fontSize: 16, flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 80, gap: 12 },
-  emptyText: { fontSize: 14 },
-  errorText: { fontSize: 12, paddingHorizontal: 16, paddingBottom: 4 },
+  emptyText: { fontSize: 14, lineHeight: 22 },
+  errorText: { fontSize: 12, lineHeight: 19, paddingHorizontal: 16, paddingBottom: 4 },
   inputBar: { borderTopWidth: 1, paddingHorizontal: 12, paddingTop: 10 },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
   input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0 },
@@ -643,7 +644,7 @@ const styles = StyleSheet.create({
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 10 },
   menuText: { fontSize: 14, flex: 1 },
   readOnlyNotice: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 12 },
-  readOnlyText: { fontSize: 12.5, flexShrink: 1 },
+  readOnlyText: { fontSize: 12.5, lineHeight: 20, flexShrink: 1 },
   attachmentPreview: { alignItems: 'center', gap: 8, paddingHorizontal: 4, paddingBottom: 8 },
   viewerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
   viewerBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 8 },

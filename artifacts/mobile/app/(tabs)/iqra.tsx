@@ -1001,7 +1001,7 @@ function MessageBubble({
       key: 'present',
       icon: 'tv-outline',
       label: t('iqraPresentMaterial'),
-      color: '#0EA5E9',
+      color: '#0369A1',
       disabled: busyMaterial,
       onPress: () => onPresentMaterial(message),
     });
@@ -3190,6 +3190,7 @@ export default function IqraScreen() {
             ]}
             accessibilityRole="button"
             accessibilityLabel={t('chatToolsTitle')}
+            hitSlop={5}
           >
             <Ionicons name="add" size={20} color={colors.primary} />
           </Pressable>
@@ -3216,6 +3217,9 @@ export default function IqraScreen() {
           <Pressable
             onPress={() => sendMessage(input)}
             disabled={!input.trim() || isThinking}
+            accessibilityRole="button"
+            accessibilityLabel={t('iqraSend')}
+            hitSlop={3}
             style={({ pressed }) => [
               styles.sendBtn,
               {
@@ -3381,7 +3385,7 @@ const styles = StyleSheet.create({
   // aligned to the start edge of the same column the thread uses.
   deskHeader: { alignItems: 'center', paddingHorizontal: 16, paddingBottom: 2 },
   lessonSlotWide: { paddingHorizontal: 16, paddingTop: 10 },
-  brandWord: { fontFamily: 'Cairo_700Bold', fontSize: 19, letterSpacing: 0.2 },
+  brandWord: { fontFamily: 'Cairo_700Bold', fontSize: 19 },
   chip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   chipWide: { paddingHorizontal: 18, paddingVertical: 12, borderRadius: 14 },
   chipText: { fontSize: 12 },
@@ -3427,8 +3431,8 @@ const styles = StyleSheet.create({
   bubbleBold: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 2 },
   bubbleText: { fontSize: 13, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
   bulletRow: { flexDirection: 'row', alignItems: 'flex-start', marginVertical: 1 },
-  sourceText: { fontSize: 11, marginTop: 6, fontFamily: 'Almarai_400Regular', fontStyle: 'italic' },
-  timestamp: { fontSize: 10, marginTop: 6, fontFamily: 'Almarai_400Regular' },
+  sourceText: { fontSize: 11, lineHeight: 18, marginTop: 6, fontFamily: 'Almarai_400Regular', fontStyle: 'italic' },
+  timestamp: { fontSize: 10, lineHeight: 16, marginTop: 6, fontFamily: 'Almarai_400Regular' },
 
   msgActions: { alignItems: 'center', flexWrap: 'wrap', columnGap: 14, rowGap: 8, marginTop: 6, paddingHorizontal: 4 },
   msgActionBtn: { alignItems: 'center', gap: 4 },
@@ -3439,7 +3443,7 @@ const styles = StyleSheet.create({
 
   thinkingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   thinkingBubble: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
-  thinkingText: { fontSize: 13 },
+  thinkingText: { fontSize: 13, lineHeight: 21 },
 
   inputBar: { borderTopWidth: 1, paddingHorizontal: 12, paddingTop: 10 },
   inputBarInner: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
@@ -3481,7 +3485,7 @@ const ctxStyles = StyleSheet.create({
   modalCancelText: { fontSize: 14 },
   modalTitle:   { fontSize: 16 },
   modalBody:    { padding: 20, paddingBottom: 40 },
-  modalSectionLabel: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  modalSectionLabel: { fontSize: 12, textTransform: 'uppercase', marginBottom: 10 },
   modalFooter:  { padding: 16, borderTopWidth: 1 },
   askBtn:       { alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16 },
   askBtnText:   { fontSize: 15, flexShrink: 1 },

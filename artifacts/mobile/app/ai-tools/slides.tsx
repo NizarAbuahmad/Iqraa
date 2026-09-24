@@ -52,8 +52,9 @@ import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams } from '@/services/lessonPrep';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#0EA5E9';
+const ACCENT = '#007C74';
 
 export default function SlidesScreen() {
   const colors = useColors();
@@ -61,7 +62,7 @@ export default function SlidesScreen() {
   const { t, isRTL, lang } = useLanguage();
   const isAr = lang === 'ar';
   const scrollRef = useRef<ScrollView>(null);
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
@@ -749,7 +750,7 @@ export default function SlidesScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-          <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+          <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <AiSourceBadge onDark isRTL={isRTL} />
@@ -759,7 +760,7 @@ export default function SlidesScreen() {
               {t('slidesTitle')}
             </Text>
           </View>
-          <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
             {t('slidesSubtitle')}
           </Text>
         </View>
@@ -819,7 +820,7 @@ export default function SlidesScreen() {
             beside the spinner they replace.
           */}
           {error && !topic.trim() ? (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
           ) : null}
@@ -886,10 +887,10 @@ export default function SlidesScreen() {
                     <Ionicons
                       name={v.anySymbolic ? 'shield-checkmark' : 'library-outline'}
                       size={14}
-                      color={v.anySymbolic ? '#10B981' : colors.mutedForeground}
+                      color={v.anySymbolic ? '#067647' : colors.mutedForeground}
                     />
                     <Text style={[styles.verifyText, {
-                      color: v.anySymbolic ? '#10B981' : colors.mutedForeground,
+                      color: v.anySymbolic ? '#067647' : colors.mutedForeground,
                       textAlign: isRTL ? 'right' : 'left',
                     }]}>
                       {v.anySymbolic
@@ -925,7 +926,7 @@ export default function SlidesScreen() {
                           flex: 1,
                           color: colors.foreground,
                           fontFamily: 'Almarai_400Regular',
-                          fontSize: 13,
+                          fontSize: 13, lineHeight: 21,
                           textAlign: isRTL ? 'right' : 'left',
                           writingDirection: isRTL ? 'rtl' : 'ltr',
                         }}
@@ -1178,5 +1179,5 @@ const styles = StyleSheet.create({
   modalHint: { fontSize: 11, lineHeight: 17, marginTop: -4, marginBottom: 2 },
   modalInputMultiline: { minHeight: 110, textAlignVertical: 'top' },
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
-  verifyText: { fontSize: 12, fontFamily: 'Almarai_400Regular', flex: 1 },
+  verifyText: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular', flex: 1 },
 });

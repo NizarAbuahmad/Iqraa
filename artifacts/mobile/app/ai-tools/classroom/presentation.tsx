@@ -42,6 +42,7 @@ import {
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
 import { MathText } from '@/components/classroom/MathText';
 import { hasRenderableMath, isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
+import { goBack } from '@/services/navigation';
 
 /** Open a media URL outside the app (native fallback — no WebView dep). */
 async function openExternalMedia(url: string): Promise<void> {
@@ -110,8 +111,8 @@ function VisualView({ slide }: { slide: ActivitySlide }) {
   return (
     <View style={styles.visualWrap}>
       <Svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H}>
-        {g.axisX !== null && <Line x1={0} y1={g.axisX} x2={W} y2={g.axisX} stroke="#9CA3AF" strokeWidth={1} />}
-        {g.axisY !== null && <Line x1={g.axisY} y1={0} x2={g.axisY} y2={H} stroke="#9CA3AF" strokeWidth={1} />}
+        {g.axisX !== null && <Line x1={0} y1={g.axisX} x2={W} y2={g.axisX} stroke="#6B7280" strokeWidth={1} />}
+        {g.axisY !== null && <Line x1={g.axisY} y1={0} x2={g.axisY} y2={H} stroke="#6B7280" strokeWidth={1} />}
         {g.series.map((sr, i) => (
           <Polyline
             key={i}
@@ -128,7 +129,7 @@ function VisualView({ slide }: { slide: ActivitySlide }) {
   );
 }
 
-const VISUAL_COLORS = ['#1B6B62', '#C2410C', '#4F46E5', '#B91C1C'];
+const VISUAL_COLORS = ['#007C74', '#C2410C', '#4F46E5', '#B91C1C'];
 
 // ─── Graph slide ──────────────────────────────────────────────────────────────
 // The curve is drawn from the slide's own commands as react-native-svg — the
@@ -269,7 +270,7 @@ function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
             accessibilityLabel={slide.mediaCaption || ''}
           />
           {!!slide.mediaCaption && (
-            <Text style={[mediaStyles.zoomCaption, { fontFamily: 'Cairo_400Regular' }]}>
+            <Text style={[mediaStyles.zoomCaption, { fontFamily: 'Almarai_400Regular' }]}>
               {isolateForeignRuns(slide.mediaCaption)}
             </Text>
           )}
@@ -326,7 +327,7 @@ function HeroSlideView({ slide, accent }: { slide: ActivitySlide; accent: string
           already render theirs; this is the same line, sized not to compete
           with the title. */}
       {!!slide.mediaCaption && (
-        <Text style={[heroStyles.credit, { fontFamily: 'Cairo_400Regular' }]}>
+        <Text style={[heroStyles.credit, { fontFamily: 'Almarai_400Regular' }]}>
           {isolateForeignRuns(slide.mediaCaption)}
         </Text>
       )}
@@ -437,7 +438,7 @@ function QuestionOptions({
     <View style={qStyles.wrap}>
       {/* Routine reminder — projected so students see the rule, not just hear it */}
       <View style={[qStyles.respondBanner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Ionicons name="hand-left-outline" size={16} color="#3B82F6" />
+        <Ionicons name="hand-left-outline" size={16} color="#1D4ED8" />
         <Text style={[qStyles.respondText, { fontFamily: 'Cairo_600SemiBold' }]}>
           {t('allStudentsAnswer')}
         </Text>
@@ -460,8 +461,8 @@ function QuestionOptions({
                 },
               ]}
             >
-              <View style={[qStyles.letterBadge, { backgroundColor: isCorrect ? TIMER_GREEN : '#3B82F6' + '30' }]}>
-                <Text style={[qStyles.letterText, { color: isCorrect ? '#fff' : '#3B82F6', fontFamily: 'Cairo_700Bold' }]}>
+              <View style={[qStyles.letterBadge, { backgroundColor: isCorrect ? TIMER_GREEN : '#1D4ED8' + '30' }]}>
+                <Text style={[qStyles.letterText, { color: isCorrect ? '#fff' : '#1D4ED8', fontFamily: 'Cairo_700Bold' }]}>
                   {letters[i] ?? '•'}
                 </Text>
               </View>
@@ -1056,7 +1057,7 @@ export default function PresentationScreen() {
         // Esc mid-class must not dump the deck just because the teacher wanted
         // the browser chrome back.
         if (document.fullscreenElement) toggleFullscreen();
-        else router.back();
+        else goBack();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -1115,7 +1116,7 @@ export default function PresentationScreen() {
       {/* ── Top Bar ── */}
       <View style={[styles.topBar, { paddingTop: insets.top + 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {/* Exit */}
-        <Pressable onPress={() => router.back()} style={styles.exitBtn} hitSlop={12}>
+        <Pressable onPress={() => goBack()} style={styles.exitBtn} hitSlop={12}>
           <Ionicons name="close" size={22} color={TEXT_MUTED} />
         </Pressable>
 
@@ -1585,9 +1586,9 @@ const mediaStyles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: '#0EA5E9' + '18',
+    backgroundColor: '#0369A1' + '18',
     borderWidth: 1,
-    borderColor: '#0EA5E9' + '45',
+    borderColor: '#0369A1' + '45',
   },
   cmdText: { fontSize: 20, color: TEXT_PRIMARY },
   emptyHint: { fontSize: 14, color: TEXT_MUTED, lineHeight: 22 },
@@ -1633,7 +1634,7 @@ const mediaStyles = StyleSheet.create({
   // A figure is mostly white, so it needs its own ground against the dark
   // backdrop or the strokes float in the void.
   zoomImage: { width: '100%', flex: 1, borderRadius: 12, backgroundColor: '#fff' },
-  zoomCaption: { fontSize: 16, color: '#E2E8F0', textAlign: 'center' },
+  zoomCaption: { fontSize: 16, color: '#E6E3DB', textAlign: 'center' },
   zoomClose: {
     position: 'absolute', top: 18, right: 18,
     width: 44, height: 44, borderRadius: 22,
@@ -1654,8 +1655,8 @@ const mediaStyles = StyleSheet.create({
 // Sized for projection: options readable from the back of a classroom.
 const qStyles = StyleSheet.create({
   wrap: { marginTop: 8, gap: 14 },
-  respondBanner: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, backgroundColor: '#3B82F6' + '14', borderWidth: 1, borderColor: '#3B82F6' + '35', alignSelf: 'center' },
-  respondText: { fontSize: 14, color: '#3B82F6' },
+  respondBanner: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, backgroundColor: '#1D4ED8' + '14', borderWidth: 1, borderColor: '#1D4ED8' + '35', alignSelf: 'center' },
+  respondText: { fontSize: 14, color: '#1D4ED8' },
   grid: { gap: 12 },
   option: { alignItems: 'center', gap: 14, borderWidth: 2, borderRadius: 16, paddingVertical: 18, paddingHorizontal: 18 },
   letterBadge: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
@@ -1675,7 +1676,7 @@ const panelStyles = StyleSheet.create({
   headerText: { flex: 1, fontSize: 16, color: TEXT_PRIMARY },
   closeBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   section: { marginBottom: 16 },
-  sectionLabel: { fontSize: 11, color: ACCENT, fontFamily: 'Cairo_600SemiBold', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
+  sectionLabel: { fontSize: 11, color: ACCENT, fontFamily: 'Cairo_600SemiBold', textTransform: 'uppercase', marginBottom: 6 },
   sectionText: { fontSize: 13, color: TEXT_PRIMARY, lineHeight: 20 },
   bulletQ: { fontSize: 13, color: TEXT_PRIMARY, lineHeight: 20, marginBottom: 4 },
 });

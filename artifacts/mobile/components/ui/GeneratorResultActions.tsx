@@ -153,7 +153,7 @@ export function GeneratorResultActions({
             style={({ pressed }) => [
               styles.actionBtn,
               {
-                borderColor: favorite.favorited ? '#F59E0B' : colors.mutedForeground,
+                borderColor: favorite.favorited ? '#B54708' : colors.mutedForeground,
                 borderRadius: colors.radius,
                 flexDirection: isRTL ? 'row-reverse' : 'row',
                 backgroundColor: favorite.favorited ? '#F59E0B18' : 'transparent',
@@ -161,8 +161,8 @@ export function GeneratorResultActions({
               },
             ]}
           >
-            <Ionicons name={favorite.favorited ? 'star' : 'star-outline'} size={16} color={favorite.favorited ? '#F59E0B' : colors.mutedForeground} />
-            <Text style={[styles.actionText, { color: favorite.favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Ionicons name={favorite.favorited ? 'star' : 'star-outline'} size={16} color={favorite.favorited ? '#B54708' : colors.mutedForeground} />
+            <Text style={[styles.actionText, { color: favorite.favorited ? '#B54708' : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
               {favorite.favorited ? t('inFavorites') : t('addToFavorites')}
             </Text>
           </Pressable>

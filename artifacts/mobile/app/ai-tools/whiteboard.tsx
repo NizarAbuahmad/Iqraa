@@ -9,7 +9,6 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
@@ -18,14 +17,15 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { Button } from '@/components/ui/Button';
 import { DECK_BG, DECK_TEXT } from '@/services/deckTheme';
 import { canFullscreen, toggleFullscreen } from '@/services/presentationUtils';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#2563EB';
+const ACCENT = '#007C74';
 
 export default function WhiteboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useLanguage();
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const [text, setText] = useState('');
   const [presenting, setPresenting] = useState(false);
@@ -65,7 +65,7 @@ export default function WhiteboardScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', flex: 1 }}>
         <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-          <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+          <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -99,7 +99,7 @@ export default function WhiteboardScreen() {
               },
             ]}
           />
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}>
             {t('whiteboardHint')}
           </Text>
 

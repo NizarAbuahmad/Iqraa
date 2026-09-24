@@ -164,7 +164,7 @@ export default function AIToolsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
   const viewportW = useViewportWidth();
   const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
 
@@ -227,7 +227,6 @@ const styles = StyleSheet.create({
   section: { paddingTop: 8 },
   sectionTitle: {
     fontSize: 12,
-    letterSpacing: 0.4,
     textTransform: 'uppercase',
     marginBottom: 10,
     paddingHorizontal: 20,

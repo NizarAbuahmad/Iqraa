@@ -31,7 +31,7 @@ export default function LegalScreen() {
   const id = isLegalDocId(doc) ? doc : 'privacy';
   const content = getLegalDoc(id, lang);
   const align = isRTL ? 'right' : 'left';
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth },
   backBtn: { padding: 4, marginBottom: 8 },
   title: { fontSize: 22 },
-  updated: { fontSize: 12, marginTop: 4 },
+  updated: { fontSize: 12, lineHeight: 19, marginTop: 4 },
   intro: { fontSize: 15, lineHeight: 26 },
   section: { marginTop: 26 },
   heading: { fontSize: 16, marginBottom: 10 },

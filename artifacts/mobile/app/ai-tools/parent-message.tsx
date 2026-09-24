@@ -9,7 +9,6 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -30,8 +29,9 @@ import {
   seedDetailsFromNote,
   type Gender, type MessageKind, type Tone,
 } from '@/services/parentMessage';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#8B5CF6';
+const ACCENT = '#007C74';
 
 export default function ParentMessageScreen() {
   const colors = useColors();
@@ -39,7 +39,7 @@ export default function ParentMessageScreen() {
   const { t, isRTL, lang } = useLanguage();
   const { user } = useAuth();
   const isAr = lang === 'ar';
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const [studentName, setStudentName] = useState('');
   const [studentGender, setStudentGender] = useState<Gender>('male');
@@ -216,7 +216,7 @@ export default function ParentMessageScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }} keyboardShouldPersistTaps="handled">
         <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-          <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+          <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -367,7 +367,7 @@ export default function ParentMessageScreen() {
                 {message}
               </Text>
             ) : (
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center', paddingVertical: 20 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center', paddingVertical: 20 }}>
                 {t('parentMsgNeedsName')}
               </Text>
             )}

@@ -53,7 +53,7 @@ export function WebSidebar({
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   return (
     <View
@@ -66,12 +66,14 @@ export function WebSidebar({
           // content. Both surfaces were the same grey before, so the window
           // was one flat sheet with a hairline down it.
           backgroundColor: colors.card,
-          borderRightColor: colors.border,
+          borderColor: colors.border,
+          // The rail sits on the right in Arabic, so its seam is its left edge.
+          ...(isRTL ? { borderLeftWidth: 1 } : { borderRightWidth: 1 }),
           paddingTop: insets.top + 16,
+          paddingBottom: 16,
         },
       ]}
     >
-      {lessonCard}
       {/*
         The brand lives here on desktop, not over the thread. Every screen got
         its own centred logo band, which cost ~110px at the top of a window
@@ -86,13 +88,14 @@ export function WebSidebar({
         .map((entry) => (
           <SidebarRow key={entry.name} entry={entry} isIOS={isIOS} active={pathname.startsWith(`/${entry.name}`)} />
         ))}
+      {/* Brand and nav first, the lesson being prepared last: it is context, not navigation. */}
+      {lessonCard ? <View style={styles.lessonSlot}>{lessonCard}</View> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   sidebar: {
-    borderRightWidth: 1,
     paddingHorizontal: 12,
     gap: 4,
   },
@@ -103,7 +106,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingBottom: 18,
   },
-  brandWord: { fontFamily: 'Cairo_700Bold', fontSize: 19, letterSpacing: 0.2 },
+  lessonSlot: { marginTop: 'auto' },
+  brandWord: { fontFamily: 'Cairo_700Bold', fontSize: 19 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

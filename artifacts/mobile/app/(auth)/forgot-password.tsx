@@ -198,10 +198,10 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, paddingHorizontal: 24, width: '100%', alignSelf: 'center' },
   back: { marginBottom: 20, width: 40 },
   heading: { fontSize: 26, marginBottom: 6 },
-  sub: { fontSize: 14, marginBottom: 24 },
+  sub: { fontSize: 14, lineHeight: 22, marginBottom: 24 },
   card: { padding: 24, borderWidth: 1, marginBottom: 24, gap: 16 },
   banner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
-  bannerText: { flex: 1, fontSize: 13 },
+  bannerText: { flex: 1, fontSize: 13, lineHeight: 21 },
   resendRow: { alignItems: 'center', paddingVertical: 8 },
   resendText: { fontSize: 14 },
 });

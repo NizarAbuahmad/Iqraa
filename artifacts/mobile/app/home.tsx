@@ -56,7 +56,7 @@ import {
 } from '@/services/lessonMedia';
 
 const NAVY = '#081B3A';
-const TEAL = '#00A99D';
+const TEAL = '#007C74';
 
 /** Soft accent tints for hero prep tabs */
 const SUGGEST_ACCENT: Record<string, { bg: string; border: string; iconBg: string }> = {
@@ -160,7 +160,7 @@ export default function DashboardScreen() {
     setRefreshing(false);
   };
 
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
   const firstName = user?.firstName || user?.name?.split(' ')[0] || t('teacher');
 
   const demoContinue = DEMO_MODE && !continueItem;
@@ -621,7 +621,7 @@ export default function DashboardScreen() {
         <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('homeAiToolsTitle')}
         </Text>
-        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>
           {lang === 'ar' ? 'قبل الحصة · أثناءها · بعدها' : 'Before · during · after class'}
         </Text>
         <View style={[styles.toolsGrid, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -676,7 +676,7 @@ export default function DashboardScreen() {
                 {continueCard.primaryHeading}
               </Text>
               <Text
-                style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}
+                style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}
                 numberOfLines={1}
               >
                 {continueCard.editedLabel}
@@ -692,7 +692,7 @@ export default function DashboardScreen() {
             onPress={() => openGenerator('lesson-plan')}
             style={[styles.continueRow, { backgroundColor: colors.card, borderColor: colors.border }]}
           >
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
               {t('continueEmptyDesc')}
             </Text>
           </Pressable>
@@ -715,7 +715,7 @@ export default function DashboardScreen() {
         </View>
 
         {recentItems.length === 0 ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left', marginTop: 4 }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left', marginTop: 4 }}>
             {t('recentEmptyDesc')}
           </Text>
         ) : (
@@ -746,7 +746,7 @@ export default function DashboardScreen() {
                   >
                     {m.title}
                   </Text>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: isRTL ? 'right' : 'left' }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
                     {formatDate(m.savedAt)}
                   </Text>
                 </View>
@@ -774,7 +774,7 @@ export default function DashboardScreen() {
             ]}
           >
             <Pressable onPress={() => setPickerOpen(false)} hitSlop={10} style={{ width: 64 }}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22 }}>
                 {lang === 'ar' ? 'إلغاء' : 'Cancel'}
               </Text>
             </Pressable>
@@ -794,7 +794,7 @@ export default function DashboardScreen() {
               style={{
                 color: colors.mutedForeground,
                 fontFamily: 'Almarai_400Regular',
-                fontSize: 13,
+                fontSize: 13, lineHeight: 21,
                 marginBottom: 14,
                 textAlign: isRTL ? 'right' : 'left',
               }}
@@ -976,7 +976,7 @@ export default function DashboardScreen() {
                       style={{
                         color: colors.mutedForeground,
                         fontFamily: 'Almarai_400Regular',
-                        fontSize: 11,
+                        fontSize: 11, lineHeight: 18,
                       }}
                     >
                       {t('addMediaOptional')}
@@ -988,7 +988,7 @@ export default function DashboardScreen() {
                     style={{
                       color: colors.mutedForeground,
                       fontFamily: 'Almarai_400Regular',
-                      fontSize: 12,
+                      fontSize: 12, lineHeight: 19,
                       marginTop: 6,
                       marginBottom: 10,
                       textAlign: isRTL ? 'right' : 'left',
@@ -1013,7 +1013,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name={m.kind === 'video' ? 'logo-youtube' : 'image-outline'}
                       size={18}
-                      color={m.kind === 'video' ? '#EF4444' : TEAL}
+                      color={m.kind === 'video' ? '#D92D20' : TEAL}
                     />
                     <Text
                       numberOfLines={1}
@@ -1021,7 +1021,7 @@ export default function DashboardScreen() {
                         flex: 1,
                         color: colors.foreground,
                         fontFamily: 'Almarai_400Regular',
-                        fontSize: 12.5,
+                        fontSize: 12.5, lineHeight: 20,
                         textAlign: isRTL ? 'right' : 'left',
                       }}
                     >
@@ -1045,7 +1045,7 @@ export default function DashboardScreen() {
                       styles.mediaInput,
                       {
                         backgroundColor: colors.card,
-                        borderColor: mediaError ? '#EF4444' : colors.border,
+                        borderColor: mediaError ? '#D92D20' : colors.border,
                         color: colors.foreground,
                         textAlign: isRTL ? 'right' : 'left',
                       },
@@ -1069,9 +1069,9 @@ export default function DashboardScreen() {
                   {mediaError ? (
                     <Text
                       style={{
-                        color: '#EF4444',
+                        color: '#D92D20',
                         fontFamily: 'Almarai_400Regular',
-                        fontSize: 12,
+                        fontSize: 12, lineHeight: 19,
                         textAlign: isRTL ? 'right' : 'left',
                       }}
                     >
@@ -1142,7 +1142,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 10,
   },
-  greet: { fontSize: 20, letterSpacing: -0.2 },
+  greet: { fontSize: 20 },
 
   sectionPad: { paddingHorizontal: 20, paddingTop: 8 },
   section: { paddingHorizontal: 20, paddingTop: 22, gap: 12 },
@@ -1263,7 +1263,7 @@ const styles = StyleSheet.create({
     padding: 18,
     gap: 12,
   },
-  heroTitle: { color: '#fff', fontSize: 22, letterSpacing: -0.3, lineHeight: 30 },
+  heroTitle: { color: '#fff', fontSize: 22, lineHeight: 30 },
   heroSub: { color: 'rgba(255,255,255,0.72)', fontSize: 14, lineHeight: 21 },
   promptBox: {
     backgroundColor: 'rgba(255,255,255,0.08)',
@@ -1310,7 +1310,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   suggestEmoji: { fontSize: 13 },
-  suggestChipText: { color: '#fff', fontSize: 12.5, letterSpacing: -0.1 },
+  suggestChipText: { color: '#fff', fontSize: 12.5 },
 
   toolsGrid: { flexWrap: 'wrap', gap: 10 },
   toolCard: {

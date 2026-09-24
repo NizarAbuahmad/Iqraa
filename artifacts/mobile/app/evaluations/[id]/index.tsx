@@ -35,8 +35,9 @@ import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookFigureRefsForObjectives } from '@/services/bookFigureUri';
 import type { TranslationKey } from '@/services/i18n';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 
 const STATUS_KEY: Record<Evaluation['status'], TranslationKey> = {
   draft: 'evalStatusDraft',
@@ -44,8 +45,8 @@ const STATUS_KEY: Record<Evaluation['status'], TranslationKey> = {
   closed: 'evalStatusClosed',
 };
 const STATUS_COLOR: Record<Evaluation['status'], string> = {
-  draft: '#F59E0B',
-  published: '#10B981',
+  draft: '#B54708',
+  published: '#067647',
   closed: '#6B7280',
 };
 const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
@@ -222,7 +223,7 @@ export default function EvaluationDetailScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ paddingBottom: 60 }}>
       <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => router.back()} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
+        <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]} numberOfLines={2}>
@@ -235,10 +236,10 @@ export default function EvaluationDetailScreen() {
                 {t(STATUS_KEY[evaluation.status])}
               </Text>
             </View>
-            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
               {t('evalQuestionCount', questions.length)}
             </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
               {t('evalTotalMarks', evaluation.totalMarks)}
             </Text>
           </View>
@@ -326,7 +327,7 @@ export default function EvaluationDetailScreen() {
             <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
             <View style={{ flex: 1, gap: 4 }}>
               {genWarnings.map((w, i) => (
-                <Text key={i} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+                <Text key={i} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
                   {`• ${w}`}
                 </Text>
               ))}
@@ -347,7 +348,7 @@ export default function EvaluationDetailScreen() {
                   {t(TYPE_LABEL_KEY[q.type])}
                 </Text>
               </View>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
                 {t('marksAbbrev', q.marks)}
               </Text>
             </View>
@@ -356,8 +357,8 @@ export default function EvaluationDetailScreen() {
                 doubt about questions the verifier never had an opinion on. */}
             {q.verification?.verified ? (
               <View style={[styles.verifiedRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Ionicons name="shield-checkmark" size={13} color="#059669" />
-                <Text style={{ color: '#059669', fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
+                <Ionicons name="shield-checkmark" size={13} color="#067647" />
+                <Text style={{ color: '#067647', fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
                   {t('keyVerifiedBadge')}
                 </Text>
               </View>
@@ -365,7 +366,7 @@ export default function EvaluationDetailScreen() {
             {/* The strongest evidence there is: the verifier's own answer,
                 derived independently of the key it agreed with. */}
             {q.verification?.verified && q.verification.computedAnswer ? (
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, marginBottom: 6, textAlign: align }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginBottom: 6, textAlign: align }}>
                 {isolateForeignRuns(t('verifiedComputed', prettifySymPy(q.verification.computedAnswer)))}
               </Text>
             ) : null}
@@ -528,7 +529,7 @@ function KeyCheckNotice({
   t: (key: TranslationKey, ...args: any[]) => string;
 }) {
   const tone = summary.kind === 'verified'
-    ? { fg: '#059669', bg: '#05966912', border: '#05966933', icon: 'shield-checkmark' as const }
+    ? { fg: '#067647', bg: '#05966912', border: '#05966933', icon: 'shield-checkmark' as const }
     : summary.kind === 'verifier-down'
       ? { fg: '#B45309', bg: '#F59E0B14', border: '#F59E0B38', icon: 'cloud-offline-outline' as const }
       : { fg: colors.mutedForeground, bg: colors.card, border: colors.border, icon: 'information-circle-outline' as const };
@@ -592,7 +593,7 @@ function ShareLinkCard({
 
         {!attachedToClass ? (
           <>
-            <Text style={{ color: '#F59E0B', fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 8, textAlign: align }}>
+            <Text style={{ color: '#B54708', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 8, textAlign: align }}>
               {t('shareExamNeedsClass')}
             </Text>
             {/* Naming the problem without offering the fix is what made this a
@@ -609,7 +610,7 @@ function ShareLinkCard({
           </>
         ) : (
           <>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 4, textAlign: align }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 4, textAlign: align }}>
               {t('shareExamHint')}
             </Text>
             <Text
@@ -618,7 +619,7 @@ function ShareLinkCard({
             >
               {shareCode}
             </Text>
-            <Text selectable style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: 'center' }}>
+            <Text selectable style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: 'center' }}>
               {url}
             </Text>
             <Pressable

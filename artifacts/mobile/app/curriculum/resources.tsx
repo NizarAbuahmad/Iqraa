@@ -50,6 +50,7 @@ import {
 import { allPremade } from '@workspace/curriculum/premade';
 import { EXTERNAL_RESOURCES } from '@workspace/curriculum';
 import type { TranslationKey } from '@/services/i18n';
+import { goBack } from '@/services/navigation';
 
 const KIND_LABEL: Record<ResourceKind, TranslationKey> = {
   worksheet: 'resourceKindWorksheet',
@@ -92,7 +93,7 @@ const SECTION_LABEL: Record<ResourceSource, TranslationKey> = {
   'book-qr': 'qrLibraryTitle',
 };
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 
 function ResourceRow({ item, accent }: { item: ResourceItem; accent: string }) {
   const colors = useColors();
@@ -245,7 +246,7 @@ export default function ResourcesScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
@@ -473,7 +474,7 @@ const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 18, gap: 6 },
   backBtn: { padding: 4, marginBottom: 4 },
   heroTitle: { color: '#fff', fontSize: 22 },
-  heroMeta: { color: '#ffffffcc', fontSize: 13 },
+  heroMeta: { color: '#ffffffcc', fontSize: 13, lineHeight: 21 },
   intro: { fontSize: 12.5, lineHeight: 20, paddingHorizontal: 20, paddingTop: 14 },
   chipRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
@@ -497,7 +498,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   kindText: { fontSize: 11 },
-  rowTitle: { fontSize: 13 },
+  rowTitle: { fontSize: 13, lineHeight: 21 },
   rowNote: { fontSize: 11, lineHeight: 16, marginTop: 2 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 48, paddingHorizontal: 40 },
   emptyText: { fontSize: 13, textAlign: 'center', lineHeight: 20 },

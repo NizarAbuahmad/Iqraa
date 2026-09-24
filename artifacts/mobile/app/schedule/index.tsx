@@ -9,7 +9,7 @@
  */
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -27,8 +27,9 @@ import {
 import { listClasses, type ClassGroup } from '@/services/roster';
 import { confirm } from '@/services/confirm';
 import type { TranslationKey } from '@/services/i18n';
+import { goBack } from '@/services/navigation';
 
-const ACCENT = '#1B6B62';
+const ACCENT = '#007C74';
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /** Same weekday keys teaching-plans/index.tsx uses — a fixed enumeration, not screen-specific. */
@@ -329,7 +330,7 @@ export default function ScheduleScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Pressable onPress={() => goBack()} hitSlop={12}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <Pressable onPress={() => setShowPeriodsEditor(true)} hitSlop={12}>
@@ -398,7 +399,7 @@ export default function ScheduleScreen() {
                           backgroundColor: filled ? ACCENT + '12' : colors.card,
                         }}
                       >
-                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10.5, textAlign: align }}>
+                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10.5, lineHeight: 17, textAlign: align }}>
                           {`${t('schedulePeriodNumber', period.periodNumber)} · ${period.startTime}`}
                         </Text>
                         <Text

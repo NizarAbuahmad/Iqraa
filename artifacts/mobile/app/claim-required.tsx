@@ -232,9 +232,9 @@ const styles = StyleSheet.create({
   roleCard: { borderWidth: 1, padding: 14, marginBottom: 24 },
   roleRow: { alignItems: 'center', gap: 8 },
   roleText: { flex: 1, fontSize: 14 },
-  roleEmail: { fontSize: 12, marginTop: 4 },
+  roleEmail: { fontSize: 12, lineHeight: 19, marginTop: 4 },
   roleLink: { fontSize: 13, marginTop: 10 },
   roleActions: { gap: 8, alignItems: 'center' },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1, marginTop: 16 },
-  errorText: { flex: 1, fontSize: 13 },
+  errorText: { flex: 1, fontSize: 13, lineHeight: 21 },
 });

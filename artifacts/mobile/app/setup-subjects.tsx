@@ -21,7 +21,7 @@
  *    default `app/(tabs)/curriculum.tsx` to.
  *  - Optional, from the profile screen's "Grades & Subjects" row, to change
  *    or add more later. `editMode` distinguishes the two: a back arrow instead
- *    of nothing, "Save" instead of "Continue", and `router.back()` instead of
+ *    of nothing, "Save" instead of "Continue", and `goBack()` instead of
  *    `router.replace('/(tabs)')` on success.
  */
 import React, { useState } from 'react';
@@ -43,6 +43,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { TeachingAssignment, useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { getPickerGrades, getSubjectsForGrade } from '@/services/curriculumData';
+import { goBack } from '@/services/navigation';
 
 function toggle(list: string[], id: string): string[] {
   return list.includes(id) ? list.filter(x => x !== id) : [...list, id];
@@ -127,7 +128,7 @@ export default function SetupSubjectsScreen() {
     try {
       await updateProfile({ teachingAssignments: assignments });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      if (editMode) router.back();
+      if (editMode) goBack();
       else router.replace('/(tabs)');
     } catch {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -150,7 +151,7 @@ export default function SetupSubjectsScreen() {
       >
         {editMode ? (
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBack()} hitSlop={10}
             style={[styles.back, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
           >
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
@@ -271,7 +272,7 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 13 },
-  hint: { fontSize: 12, marginTop: 10 },
+  hint: { fontSize: 12, lineHeight: 19, marginTop: 10 },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1, marginTop: 16 },
-  errorText: { flex: 1, fontSize: 13 },
+  errorText: { flex: 1, fontSize: 13, lineHeight: 21 },
 });
