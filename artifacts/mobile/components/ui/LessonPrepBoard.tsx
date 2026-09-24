@@ -9,7 +9,6 @@
  */
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import type { PrepRow } from '@/services/lessonBoard';
 
 type Colors = {
@@ -60,16 +59,6 @@ export function LessonPrepBoard({
             { borderColor: colors.border, backgroundColor: colors.card, flexDirection: rowDir },
           ]}
         >
-          <View
-            style={[
-              styles.tick,
-              row.done
-                ? { backgroundColor: colors.primary }
-                : { borderWidth: 1.5, borderColor: colors.border },
-            ]}
-          >
-            {row.done ? <Ionicons name="checkmark" size={12} color={colors.primaryForeground} /> : null}
-          </View>
           <Text
             numberOfLines={1}
             style={[
@@ -114,7 +103,6 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   rowCompact: { paddingVertical: 9, paddingHorizontal: 11, borderRadius: 11, gap: 9 },
-  tick: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   label: { fontSize: 13.5, fontFamily: 'Cairo_500Medium' },
   labelCompact: { fontSize: 12.5 },
   action: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
