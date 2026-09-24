@@ -639,7 +639,7 @@ export default function ClassDetailScreen() {
                   <Ionicons name="key-outline" size={18} color={colors.mutedForeground} />
                 </Pressable>
               ) : null}
-              <Pressable onPress={() => { void onRemove(item); }} hitSlop={10}>
+              <Pressable onPress={() => { void onRemove(item); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('remove')}>
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
               </Pressable>
             </Pressable>
@@ -692,7 +692,7 @@ export default function ClassDetailScreen() {
                   {t(MATERIAL_LABEL_KEY[item.type])}
                 </Text>
               </View>
-              <Pressable onPress={() => { void onDetach(item); }} hitSlop={10}>
+              <Pressable onPress={() => { void onDetach(item); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('remove')}>
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
               </Pressable>
             </Pressable>
@@ -757,7 +757,7 @@ export default function ClassDetailScreen() {
                       : t('examMarkedCount', String(item.markedCount ?? 0), String(students.length))}
                   </Text>
                 </View>
-                <Pressable onPress={() => { void onDetachExam(item); }} hitSlop={10}>
+                <Pressable onPress={() => { void onDetachExam(item); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('remove')}>
                   <Ionicons name="close" size={20} color={colors.mutedForeground} />
                 </Pressable>
               </Pressable>
@@ -772,6 +772,8 @@ export default function ClassDetailScreen() {
           else if (tab === 'exams') void openAttachExam();
           else void openAttach();
         }}
+        accessibilityRole="button"
+        accessibilityLabel={t(tab === 'students' ? 'addStudents' : tab === 'exams' ? 'attachExam' : 'attachMaterial')}
         style={[styles.fab, { backgroundColor: ACCENT, bottom: insets.bottom + 24 }]}
       >
         <Ionicons name={tab === 'students' ? 'person-add' : 'add'} size={22} color="#fff" />

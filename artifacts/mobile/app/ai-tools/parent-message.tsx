@@ -29,7 +29,7 @@ import {
   seedDetailsFromNote,
   type Gender, type MessageKind, type Tone,
 } from '@/services/parentMessage';
-import { goBack } from '@/services/navigation';
+import { ToolHeader } from '@/components/ui/ToolHeader';
 
 const ACCENT = '#007C74';
 
@@ -215,20 +215,7 @@ export default function ParentMessageScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }} keyboardShouldPersistTaps="handled">
-        <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-          <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
-          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <Text style={{ fontSize: 22 }}>✉️</Text>
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
-              {t('parentMsgTitle')}
-            </Text>
-          </View>
-          <Text style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
-            {t('parentMsgSubtitle')}
-          </Text>
-        </View>
+        <ToolHeader topPad={topPad} isRTL={isRTL} title={t('parentMsgTitle')} subtitle={t('parentMsgSubtitle')} leading="✉️" sourceBadge={false} />
 
         <View style={{ padding: 20 }}>
           <Field label={t('parentMsgStudentName')}>
@@ -441,8 +428,6 @@ export default function ParentMessageScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 24 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   label: { fontSize: 13, marginBottom: 8 },
   pillRow: { flexWrap: 'wrap', gap: 8 },
   pickLink: { alignItems: 'center', gap: 6, marginTop: 8 },

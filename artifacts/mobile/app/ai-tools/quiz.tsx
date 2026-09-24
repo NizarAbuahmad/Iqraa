@@ -40,10 +40,9 @@ import { useFavorite } from '@/hooks/useFavorite';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
-import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { buildQuizHTML, buildQuizSlidesHTML, formatQuizText } from '@/services/share';
-import { goBack } from '@/services/navigation';
+import { ToolHeader } from '@/components/ui/ToolHeader';
 
 const ACCENT = '#007C74';
 
@@ -420,18 +419,7 @@ export default function QuizScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: topPad + 12 }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
-        <AiSourceBadge onDark isRTL={isRTL} />
-        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('createQuizTitle')}
-        </Text>
-        <Text style={[styles.headerSub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('quizSubtitle')}
-        </Text>
-      </View>
+      <ToolHeader topPad={topPad} isRTL={isRTL} title={t('createQuizTitle')} subtitle={t('quizSubtitle')} />
 
       {/* Form */}
       <View style={{ padding: 20 }}>
@@ -836,10 +824,6 @@ function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
 const styles = StyleSheet.create({
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
   verifyText: { fontFamily: 'Cairo_600SemiBold', fontSize: 12, flex: 1 },
-  header: { paddingHorizontal: 20, paddingBottom: 24 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
-  headerTitle: { fontSize: 26 },
-  headerSub: { fontSize: 13, lineHeight: 21, marginTop: 4 },
   label: { fontSize: 13, marginBottom: 6 },
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },

@@ -27,7 +27,6 @@ import { PillSelector } from '@/components/ui/PillSelector';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
-import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import { isolateForeignRuns } from '@/services/mathRender';
@@ -40,7 +39,7 @@ import { createGame, MAX_TEAMS, MIN_TEAMS } from '@/services/classGame';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams } from '@/services/lessonPrep';
-import { goBack } from '@/services/navigation';
+import { ToolHeader } from '@/components/ui/ToolHeader';
 
 const ACCENT = '#007C74';
 const QUESTION_COUNTS = [5, 8, 10, 12];
@@ -195,21 +194,7 @@ export default function ClassGameScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-          <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
-          <AiSourceBadge onDark isRTL={isRTL} />
-          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <Text style={{ fontSize: 22 }}>🏆</Text>
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
-              {t('gameTitle')}
-            </Text>
-          </View>
-          <Text style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left', lineHeight: 20 }}>
-            {t('gameSubtitle')}
-          </Text>
-        </View>
+        <ToolHeader topPad={topPad} isRTL={isRTL} title={t('gameTitle')} subtitle={t('gameSubtitle')} leading="🏆" />
 
         {/* How it works — the format is unfamiliar, and a teacher will not risk
             a class period on a mode they have to guess at. */}
@@ -424,8 +409,6 @@ function Stat({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: st
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 24 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   howCard: { margin: 20, marginBottom: 0, padding: 16, borderWidth: 1 },
   howTitle: { fontSize: 14, marginBottom: 4 },
   stepNum: { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginTop: 2, flexShrink: 0 },

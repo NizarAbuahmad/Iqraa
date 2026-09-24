@@ -28,11 +28,10 @@ import {
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { aiErrorMessageKey } from '@/services/ai/aiProvenance';
-import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { buildActivityHTML, buildActivitySlidesHTML, formatActivityText } from '@/services/share';
-import { goBack } from '@/services/navigation';
+import { ToolHeader } from '@/components/ui/ToolHeader';
 
 const ACCENT = '#007C74';
 const DURATION_VALUES = [20, 30, 45, 60];
@@ -269,19 +268,7 @@ export default function ActivityScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: topPad + 12 }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
-        <View style={[styles.headerBadge, { flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name="flash" size={14} color="#fff" />
-          <Text style={[styles.headerBadgeText, { color: '#fff', fontFamily: 'Cairo_500Medium' }]}>{t('activityBadge')}</Text>
-        </View>
-        <AiSourceBadge onDark isRTL={isRTL} />
-        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('createActivityTitle')}
-        </Text>
-      </View>
+      <ToolHeader topPad={topPad} isRTL={isRTL} title={t('createActivityTitle')} eyebrow={{ icon: 'flash', label: t('activityBadge') }} />
 
       {/* Form */}
       <View style={styles.form}>
@@ -571,11 +558,6 @@ function BodyText({ text, colors, isRTL }: { text: string; colors: ReturnType<ty
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 28 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
-  headerBadge: { alignItems: 'center', gap: 6, marginBottom: 8 },
-  headerBadgeText: { fontSize: 13 },
-  headerTitle: { fontSize: 24 },
   form: { padding: 20, paddingBottom: 8 },
   fieldLabel: { fontSize: 13, marginBottom: 6 },
   inputBox: { borderWidth: 1.5, padding: 14, marginBottom: 16 },

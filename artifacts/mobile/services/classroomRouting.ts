@@ -303,3 +303,17 @@ export function applyClassroomSetup<
     ? { ...activity, materials }
     : { ...activity, materials: [projector, ...materials] };
 }
+
+/**
+ * The card meta ('Easy–Advanced', 'Whole Class', '10–30 min') is stored in
+ * English and was rendered as-is on the Arabic hub. Translated word by word at
+ * display time so the data stays one list.
+ */
+const META_AR: [RegExp, string][] = [
+  [/Whole[ -]Class/gi, 'الصف كاملًا'], [/Individual/gi, 'فردي'], [/Groups/gi, 'مجموعات'],
+  [/Pairs/gi, 'أزواج'], [/Teams/gi, 'فرق'], [/Easy/g, 'سهل'], [/Medium/g, 'متوسط'],
+  [/Advanced/g, 'متقدم'], [/\bmin\b/g, 'دقيقة'],
+];
+export function cardMetaLabel(value: string, lang: string): string {
+  return lang === 'ar' ? META_AR.reduce((s, [re, ar]) => s.replace(re, ar), value) : value;
+}

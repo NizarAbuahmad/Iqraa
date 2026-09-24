@@ -30,14 +30,13 @@ import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
-import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { buildWorksheetHTML, buildWorksheetSlidesHTML, formatWorksheetText } from '@/services/share';
 import { EditableText } from '@/components/ui/Editable';
 import { optionLetter } from '@/services/optionLabels';
 import { confirm } from '@/services/confirm';
-import { goBack } from '@/services/navigation';
+import { ToolHeader } from '@/components/ui/ToolHeader';
 import {
   answerFor,
   applyWorksheetAnswerEdit,
@@ -524,18 +523,7 @@ export default function WorksheetScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: topPad + 12 }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
-        <AiSourceBadge onDark isRTL={isRTL} />
-        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-          {isHomework ? t('createHomework') : t('createWorksheetTitle')}
-        </Text>
-        <Text style={[styles.headerSub, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-          {isHomework ? t('homeworkSubtitle') : t('worksheetSubtitle')}
-        </Text>
-      </View>
+      <ToolHeader topPad={topPad} isRTL={isRTL} title={isHomework ? t('createHomework') : t('createWorksheetTitle')} subtitle={isHomework ? t('homeworkSubtitle') : t('worksheetSubtitle')} />
 
       {/* Form */}
       <View style={{ padding: 20 }}>
@@ -967,10 +955,6 @@ function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
 const styles = StyleSheet.create({
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
   verifyText: { fontFamily: 'Cairo_600SemiBold', fontSize: 12, flex: 1 },
-  header: { paddingHorizontal: 20, paddingBottom: 24 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
-  headerTitle: { fontSize: 26 },
-  headerSub: { fontSize: 13, lineHeight: 21, marginTop: 4 },
   label: { fontSize: 13, marginBottom: 6 },
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },
@@ -991,5 +975,4 @@ const styles = StyleSheet.create({
   akBody: { borderWidth: 1, padding: 14 },
   akRow: { gap: 8, marginBottom: 6, alignItems: 'flex-start' },
   akNum: { fontSize: 13, width: 22 },
-  akAnswer: { flex: 1, fontSize: 13, lineHeight: 19 },
 });

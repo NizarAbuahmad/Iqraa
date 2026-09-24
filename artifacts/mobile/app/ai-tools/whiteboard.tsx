@@ -17,7 +17,7 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { Button } from '@/components/ui/Button';
 import { DECK_BG, DECK_TEXT } from '@/services/deckTheme';
 import { canFullscreen, toggleFullscreen } from '@/services/presentationUtils';
-import { goBack } from '@/services/navigation';
+import { ToolHeader } from '@/components/ui/ToolHeader';
 
 const ACCENT = '#007C74';
 
@@ -64,20 +64,7 @@ export default function WhiteboardScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', flex: 1 }}>
-        <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-          <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
-          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <Ionicons name="easel-outline" size={22} color="#fff" />
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
-              {t('toolWhiteboardTitle')}
-            </Text>
-          </View>
-          <Text style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
-            {t('toolWhiteboardDesc')}
-          </Text>
-        </View>
+        <ToolHeader topPad={topPad} isRTL={isRTL} title={t('toolWhiteboardTitle')} subtitle={t('toolWhiteboardDesc')} leading={{ icon: 'easel-outline' }} sourceBadge={false} />
 
         <View style={{ padding: 20, gap: 12, flex: 1 }}>
           <TextInput
@@ -118,8 +105,6 @@ export default function WhiteboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 24 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   input: {
     flex: 1,
     minHeight: 160,

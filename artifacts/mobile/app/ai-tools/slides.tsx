@@ -18,14 +18,13 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { TopicSelector } from '@/components/ui/TopicSelector';
-import { PillSelector } from '@/components/ui/PillSelector';
+import { PickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
-import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { isolateForeignRuns } from '@/services/mathRender';
@@ -52,7 +51,7 @@ import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams } from '@/services/lessonPrep';
-import { goBack } from '@/services/navigation';
+import { ToolHeader } from '@/components/ui/ToolHeader';
 
 const ACCENT = '#007C74';
 
@@ -749,42 +748,12 @@ export default function SlidesScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-          <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
-          <AiSourceBadge onDark isRTL={isRTL} />
-          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <Text style={{ fontSize: 22 }}>🖥️</Text>
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
-              {t('slidesTitle')}
-            </Text>
-          </View>
-          <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
-            {t('slidesSubtitle')}
-          </Text>
-        </View>
+        <ToolHeader topPad={topPad} isRTL={isRTL} title={t('slidesTitle')} subtitle={t('slidesSubtitle')} leading="🖥️" />
 
         <View style={styles.form}>
-          <PillSelector
-            label={t('grade')}
-            options={grades.map((g, i) => ({ value: i, label: isAr ? g.nameAr : g.name }))}
-            value={gradeIdx}
-            onChange={setGradeIdx}
-            colors={colors}
-            isRTL={isRTL}
-            accent={ACCENT}
-          />
+          <PickerField label={t('grade')} value={isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name} options={grades.map(g => (isAr ? g.nameAr : g.name))} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />
           <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
-          <PillSelector
-            label={t('subjects')}
-            options={subjects.map((s, i) => ({ value: i, label: subjectNames[i] })).filter(o => !subjectHidden[o.value])}
-            value={subjectIdx}
-            onChange={setSubjectIdx}
-            colors={colors}
-            isRTL={isRTL}
-            accent={ACCENT}
-          />
+          <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} hidden={subjectHidden} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />
 
           <TopicSelector
             subjectId={subjects[subjectIdx].id}
@@ -831,6 +800,18 @@ export default function SlidesScreen() {
             loading={loading}
             fullWidth
           />
+          {/* The free-prompt deck used to be its own card beside this one, with a
+              near-identical name. It is the same output from a different start. */}
+          <Pressable
+            onPress={() => router.push('/ai-tools/prompt-slides')}
+            accessibilityRole="link"
+            hitSlop={8}
+            style={{ alignSelf: 'center', marginTop: 14 }}
+          >
+            <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+              {t('slidesFromPromptLink')}
+            </Text>
+          </Pressable>
         </View>
 
         <GenerationStatus
@@ -1159,8 +1140,6 @@ export default function SlidesScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 24 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   form: { padding: 20 },
   toggle: { alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5 },
   toggleText: { fontSize: 13 },

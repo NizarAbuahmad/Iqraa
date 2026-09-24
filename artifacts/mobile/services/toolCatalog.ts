@@ -53,11 +53,13 @@ const BEFORE_CLASS_ALL: ToolDef[] = [
     titleKey: 'toolSlidesTitle',
     descKey: 'toolSlidesDesc',
     icon: 'tv-outline',
-    color: '#0EA5E9',
+    color: '#0369A1',
     route: '/ai-tools/slides',
   },
+  // Folded into Lesson slides as a link (2026-09-24): two cards, one output.
   {
     id: 'prompt-slides',
+    hidden: true,
     titleKey: 'toolPromptSlidesTitle',
     descKey: 'toolPromptSlidesDesc',
     icon: 'sparkles-outline',
@@ -69,7 +71,7 @@ const BEFORE_CLASS_ALL: ToolDef[] = [
     titleKey: 'toolLessonPlanTitle',
     descKey: 'toolLessonPlanDesc',
     icon: 'document-text-outline',
-    color: '#1B6B62',
+    color: '#007C74',
     route: '/ai-tools/lesson-plan',
   },
   // Generates the whole lesson journey in one pass, so it belongs with prep
@@ -80,7 +82,7 @@ const BEFORE_CLASS_ALL: ToolDef[] = [
     titleKey: 'toolLessonFlowTitle',
     descKey: 'toolLessonFlowSub',
     icon: 'git-branch-outline',
-    color: '#0EA5E9',
+    color: '#0369A1',
     route: '/ai-tools/lesson-flow',
   },
 ];
@@ -114,7 +116,7 @@ const DURING_CLASS_ALL: ToolDef[] = [
     titleKey: 'toolGameTitle',
     descKey: 'toolGameDesc',
     icon: 'trophy-outline',
-    color: '#F59E0B',
+    color: '#B54708',
     route: '/ai-tools/game',
   },
   {
@@ -122,7 +124,7 @@ const DURING_CLASS_ALL: ToolDef[] = [
     titleKey: 'toolActivityTitle',
     descKey: 'toolActivityDesc',
     icon: 'people-outline',
-    color: '#E67E22',
+    color: '#C2410C',
     route: '/ai-tools/activity',
   },
   {
@@ -141,7 +143,7 @@ const DURING_CLASS_ALL: ToolDef[] = [
     titleKey: 'toolGamesTitle',
     descKey: 'toolGamesDesc',
     icon: 'game-controller-outline',
-    color: '#16A34A',
+    color: '#15803D',
     route: '/play',
   },
   {
@@ -177,7 +179,7 @@ const AFTER_CLASS_ALL: ToolDef[] = [
     titleKey: 'toolQuizTitle',
     descKey: 'toolQuizDesc',
     icon: 'checkmark-circle-outline',
-    color: '#F59E0B',
+    color: '#B54708',
     route: '/ai-tools/quiz',
   },
   {
@@ -186,7 +188,7 @@ const AFTER_CLASS_ALL: ToolDef[] = [
     titleKey: 'toolHomeworkTitle',
     descKey: 'toolHomeworkDesc',
     icon: 'home-outline',
-    color: '#1B6B62',
+    color: '#007C74',
     route: '/ai-tools/worksheet',
     routeParams: { isHomework: '1' },
   },
@@ -206,7 +208,7 @@ const AFTER_CLASS_ALL: ToolDef[] = [
     titleKey: 'toolParentMsgTitle',
     descKey: 'toolParentMsgDesc',
     icon: 'mail-outline',
-    color: '#8B5CF6',
+    color: '#6D28D9',
     route: '/ai-tools/parent-message',
   },
 ];
