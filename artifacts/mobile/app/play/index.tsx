@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { Button } from '@/components/ui/Button';
 import type { TranslationKey } from '@/services/i18n';
@@ -37,6 +38,7 @@ export default function PlayHubScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const topPad = insets.top + (insets.top === 0 ? 20 : 0);
 
   return (
@@ -74,21 +76,23 @@ export default function PlayHubScreen() {
           ))}
         </View>
 
-        <View style={[styles.ctaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, textAlign: 'center' }}>
-            {t('playCtaHeading')}
-          </Text>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
-            {t('playCtaBody')}
-          </Text>
-          <Button
-            label={t('playCtaButton')}
-            onPress={() => router.push('/(auth)/register')}
-            style={{ backgroundColor: ACCENT }}
-            fullWidth
-            size="lg"
-          />
-        </View>
+        {!user && (
+          <View style={[styles.ctaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, textAlign: 'center' }}>
+              {t('playCtaHeading')}
+            </Text>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+              {t('playCtaBody')}
+            </Text>
+            <Button
+              label={t('playCtaButton')}
+              onPress={() => router.push('/(auth)/register')}
+              style={{ backgroundColor: ACCENT }}
+              fullWidth
+              size="lg"
+            />
+          </View>
+        )}
       </ScrollView>
     </View>
   );

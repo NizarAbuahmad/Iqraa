@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { Button } from '@/components/ui/Button';
 import type { TranslationKey } from '@/services/i18n';
@@ -33,6 +34,7 @@ export function GameShell({
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   return (
@@ -67,15 +69,17 @@ export function GameShell({
 
             <Button label={t('playPlayAgain')} onPress={() => onReplay?.()} style={{ backgroundColor: accent, marginTop: 12 }} fullWidth size="lg" />
 
-            <View style={[styles.ctaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: 'center' }}>
-                {t('playCtaHeading')}
-              </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
-                {t('playCtaBody')}
-              </Text>
-              <Button label={t('playCtaButton')} onPress={() => router.push('/(auth)/register')} variant="secondary" fullWidth />
-            </View>
+            {!user && (
+              <View style={[styles.ctaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: 'center' }}>
+                  {t('playCtaHeading')}
+                </Text>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+                  {t('playCtaBody')}
+                </Text>
+                <Button label={t('playCtaButton')} onPress={() => router.push('/(auth)/register')} variant="secondary" fullWidth />
+              </View>
+            )}
           </View>
         ) : (
           children
