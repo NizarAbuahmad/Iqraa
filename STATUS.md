@@ -504,13 +504,15 @@ covers 36 lessons and 458 words across the eight G1–4 books.
   They were glossed by hand on 2026-09-25 and **have not been reviewed by a
   teacher yet**. Entries that are topic labels rather than words ("Numbers
   11-20", "fair/brown/red/black hair") are dropped by `isDrillableWord`.
-- **Audio is not generated yet.** `pnpm --filter @workspace/curriculum run
-  english-audio` voices each word once with OpenAI TTS (`gpt-4o-mini-tts`, a
-  British voice) into `iqraa-public/english-audio/<slug>.mp3`. The first run
-  was refused because the local `.env` still carries the `sk-your…` placeholder
-  key; the R2 side (listing `iqraa-public`) worked. Until it runs, every
-  "listen" button is silent: the page asks for the MP3, gets a 404, and carries
-  on, so the games still work by reading.
+- **Audio is generated: 458 MP3s, 12 MB, in `iqraa-public/english-audio/<slug>.mp3`**,
+  as of 2026-09-25. It was voiced once with OpenAI TTS (`gpt-4o-mini-tts`, a
+  British voice) by `pnpm --filter @workspace/curriculum run english-audio`,
+  using a restricted key that can only call text-to-speech. The OpenAI project
+  **allow-lists models**, so `gpt-4o-mini-tts` (and its dated
+  `-2025-12-15` snapshot) had to be enabled under Project → Limits. The change
+  took a few minutes to apply, and the script's per-word resume rode it out. A
+  new or renamed word needs the script re-run; a word with no file plays
+  nothing and the game carries on.
 - **`expo-audio` is the new native module**, with its microphone permission
   off, so `app.json` `version` moved 1.0.0 → 1.1.0. Installed Android builds
   stop receiving OTA updates until a 1.1.0 build ships.

@@ -34,6 +34,8 @@ const INSTRUCTIONS =
 
 const force = process.argv.includes('--force');
 const dryRun = process.argv.includes('--dry-run');
+/** Set on the first auth/access refusal; every worker stops at its next word. */
+let stopped = false;
 
 const { R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, OPENAI_API_KEY } = process.env;
 if (!R2_ENDPOINT || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
@@ -75,10 +77,17 @@ async function speak(text: string): Promise<Buffer> {
       body: JSON.stringify({ model: MODEL, voice: VOICE, input: text, instructions: INSTRUCTIONS, response_format: 'mp3' }),
     });
     if (res.ok) return Buffer.from(await res.arrayBuffer());
-    // A bad key fails every word the same way — stop everything, not 458 errors.
+    // A bad key, a missing scope or a project that can't use the model fails
+    // every word the same way — stop everything, not 458 errors. Print OpenAI's
+    // reason: "does not have access to model" is fixed in the project's Limits,
+    // not by a new key.
     if (res.status === 401 || res.status === 403) {
-      console.error(`TTS ${res.status}: the OpenAI key was refused. Nothing more will be voiced.`);
-      process.exit(2);
+      const reason = ((await res.json().catch(() => null)) as { error?: { message?: string } } | null)?.error?.message;
+      // A flag, not process.exit(): exiting under in-flight fetches trips a
+      // libuv assertion on Windows and buries this message under a crash.
+      if (!stopped) console.error(`TTS ${res.status}: ${reason ?? 'refused'}. Nothing more will be voiced.`);
+      stopped = true;
+      throw new Error('stopped');
     }
     // 429 and 5xx are worth waiting out; anything else (bad model, bad input) is not.
     if (attempt >= 4 || (res.status !== 429 && res.status < 500)) {
@@ -119,6 +128,7 @@ const failed: string[] = [];
 
 async function worker(slice: [string, string][]): Promise<void> {
   for (const [slug, word] of slice) {
+    if (stopped) return;
     try {
       const body = await speak(word);
       await client.send(
@@ -134,6 +144,7 @@ async function worker(slice: [string, string][]): Promise<void> {
       bytes += body.length;
       if (++done % 50 === 0) console.log(`  ${done}/${todo.length}`);
     } catch (err) {
+      if (stopped) return;
       failed.push(word);
       console.error((err as Error).message);
     }
@@ -144,8 +155,9 @@ const CONCURRENCY = 4;
 const slices = Array.from({ length: CONCURRENCY }, (_, i) => todo.filter((_, n) => n % CONCURRENCY === i));
 await Promise.all(slices.map(worker));
 
+if (stopped) process.exitCode = 2;
 console.log(`voiced ${done} words (${(bytes / 1048576).toFixed(1)} MB) → ${BUCKET}/${PREFIX}/`);
 if (failed.length) {
   console.error(`${failed.length} failed — re-run to retry: ${failed.slice(0, 10).join(', ')}`);
-  process.exit(1);
+  process.exitCode = 1;
 }
