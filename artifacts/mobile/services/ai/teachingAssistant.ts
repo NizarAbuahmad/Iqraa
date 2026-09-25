@@ -408,7 +408,7 @@ export function detectIntent(query: string): Intent {
   if (/واجب|homework/i.test(q)) return 'homework';
   if (/ورقة(\s*عمل)?|worksheet/i.test(q)) return 'worksheet';
   if (/اختبار|تقويم|quiz|assessment/i.test(q)) return 'quiz';
-  if (/نشاط|activity|تعاوني|جماعي|لعبة/i.test(q)) return 'activity';
+  if (/نشاط|activity|تعاوني|جماعي|لعبة|game/i.test(q)) return 'activity';
   if (/مثال|example|تمارين?\s*محلول|أضف\s*مثالاً?|اضف\s*مثال|add\s*an?\s*example/i.test(q)) {
     return 'example';
   }

@@ -32,6 +32,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   KBLesson,
+  getBookForLesson,
   getLessonById,
   getTopicSuggestions,
   KB_CONFIDENT_SCORE,
@@ -44,6 +45,7 @@ import {
   buildResponse,
   deduplicateByUnit,
   detectSubjectAmbiguity,
+  filterResultsByGrade,
   filterResultsBySubject,
   isConfidentSingleSubjectHit,
 } from '@/services/kbContext';
@@ -111,6 +113,7 @@ import { pinnedResourceNote } from '@/services/mathSupportResources';
 import {
   buildCurrentLessonView,
   buildLessonSuggestions,
+  extractQueryGradeId,
   isBareArtifactShortcut,
   pinLesson,
   resolvePickedLesson,
@@ -1782,6 +1785,13 @@ export default function IqraScreen() {
         setTeachingCtxLessonId(null);
       }
 
+      // A grade the teacher names explicitly ("grade one", «الصف الأول») beats
+      // whatever grade the picker's pinned/default lesson happens to be — see
+      // extractQueryGradeId's doc comment for the reported bug this closes.
+      // Not applied to `pinnedLessonId`: that is a lesson tapped this exact
+      // turn, a stronger and more deliberate signal than a word in free text.
+      const queryGradeId = extractQueryGradeId(q);
+
       // 1. Local KB retrieval — confidence-gated; soft default lesson must not steal topics.
       const ranked = pinnedLessonId
         ? []
@@ -1808,31 +1818,38 @@ export default function IqraScreen() {
         );
       }
 
-      // Prefer explicit teaching-context lesson when available
+      // Prefer explicit teaching-context lesson when available — unless the
+      // teacher just named a different grade than that lesson's own. Computed
+      // once here and reused below for the "currently teaching" prompt text,
+      // which must drop the same mismatched lesson rather than announcing it.
+      let teachingCtxOverruledByGrade = false;
       if (!pinnedLessonId && switchTopic === null && teachingCtx.trim()) {
         const ctxLesson = resolvePickedLesson(
           teachingCtx.trim(),
           { lessonId: teachingCtxLessonId },
           lang as 'ar' | 'en',
         );
-        if (ctxLesson) {
+        teachingCtxOverruledByGrade =
+          !!queryGradeId
+          && !!ctxLesson
+          && getBookForLesson(ctxLesson)?.gradeId !== queryGradeId;
+        if (ctxLesson && !teachingCtxOverruledByGrade) {
           results = [ctxLesson, ...results.filter(r => r.id !== ctxLesson.id)].slice(0, 3);
         }
       }
 
       // Reuse active lesson only when pin strength + intent allow it
+      const activeLesson = sessionMemory.activeLessonId ? getLessonById(sessionMemory.activeLessonId) : null;
       const reuseActive = shouldReuseActiveLesson({
         memory: sessionMemory,
         intent: route.intent,
         query: q,
         hasConfidentKbHit: confidentHit,
         hasDocuments: hasDocsEarly,
+        activeLessonGradeId: activeLesson ? getBookForLesson(activeLesson)?.gradeId : null,
       });
-      if (!pinnedLessonId && reuseActive && sessionMemory.activeLessonId) {
-        const active = getLessonById(sessionMemory.activeLessonId);
-        if (active) {
-          results = [active, ...results.filter(r => r.id !== active.id)].slice(0, 3);
-        }
+      if (!pinnedLessonId && reuseActive && activeLesson) {
+        results = [activeLesson, ...results.filter(r => r.id !== activeLesson.id)].slice(0, 3);
       }
 
       // With uploads + soft pin only: clear KB results so generators/TA ground on documents
@@ -1889,6 +1906,13 @@ export default function IqraScreen() {
         results = filterResultsBySubject(results, querySubjectId);
       }
 
+      // Scope to a grade the teacher named explicitly — same reasoning as the
+      // subject scope above, so a wrong-grade default lesson can't sneak back
+      // in through the general KB search results.
+      if (queryGradeId) {
+        results = filterResultsByGrade(results, queryGradeId);
+      }
+
       // 1b. Ambiguity check — only when nothing is pinned (soft default does not count).
       // Also skipped when the teacher named any recognisable subject in their query;
       // asking "which subject?" when they just said "الأحياء" is confusing.
@@ -1934,7 +1958,7 @@ export default function IqraScreen() {
       // prefers `pinnedLesson`); this is the remote path catching up.
       const teachingTopic = pinnedLesson
         ? (lang === 'ar' ? pinnedLesson.titleAr : pinnedLesson.titleEn)
-        : (switchTopic === null ? teachingCtx : '');
+        : (switchTopic === null && !teachingCtxOverruledByGrade ? teachingCtx : '');
       const teachingPrefix = teachingTopic
         ? (lang === 'ar'
           ? `[سياق التدريس: المعلم يدرّس حاليًا "${teachingTopic}"]\n\n`
@@ -1971,7 +1995,7 @@ export default function IqraScreen() {
           mode,
           teachingContext: pinnedLesson
             ? (lang === 'ar' ? pinnedLesson.titleAr : pinnedLesson.titleEn)
-            : switchTopic !== null
+            : switchTopic !== null || teachingCtxOverruledByGrade
               ? null
               : (teachingCtx || sessionMemory.activeTopicAr || sessionMemory.activeTopicEn),
           // DEMO_MODE is on by default, and in that path this — not

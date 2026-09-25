@@ -175,11 +175,74 @@ export function topicSwitchTarget(query: string): string | null {
   return null;
 }
 
+const GRADE_WORDS_EN: Array<[cardinal: string, ordinal: string]> = [
+  ['one', 'first'], ['two', 'second'], ['three', 'third'], ['four', 'fourth'],
+  ['five', 'fifth'], ['six', 'sixth'], ['seven', 'seventh'], ['eight', 'eighth'],
+  ['nine', 'ninth'], ['ten', 'tenth'], ['eleven', 'eleventh'], ['twelve', 'twelfth'],
+];
+
+/**
+ * «الصف الثاني» is a prefix of «الصف الثاني عشر» (2 vs 12), same for the
+ * absence of a standalone «الصف الحادي» (11 only exists as "حادي عشر"). The
+ * negative lookahead keeps grade 2 from matching inside grade 12's name.
+ * JS `\b` is ASCII-only and never matches next to Arabic letters (see
+ * `topicSwitchTarget` above), so these rely on the lookahead instead.
+ */
+const GRADE_PATTERNS_AR: Array<[gradeId: string, pattern: RegExp]> = [
+  ['grade-1', /الصف\s*ال(?:أ|ا)ول/],
+  ['grade-2', /الصف\s*الثاني(?!\s*عشر)/],
+  ['grade-3', /الصف\s*الثالث/],
+  ['grade-4', /الصف\s*الرابع/],
+  ['grade-5', /الصف\s*الخامس/],
+  ['grade-6', /الصف\s*السادس/],
+  ['grade-7', /الصف\s*السابع/],
+  ['grade-8', /الصف\s*الثامن/],
+  ['grade-9', /الصف\s*التاسع/],
+  ['grade-10', /الصف\s*العاشر/],
+  ['grade-11', /الصف\s*الحادي\s*عشر/],
+  ['grade-12', /الصف\s*الثاني\s*عشر/],
+];
+
+/**
+ * The grade id ("grade-1" .. "grade-12") when the teacher names one explicitly
+ * — "grade one", "grade 1", "1st grade", «الصف الأول» — or null.
+ *
+ * Reported from app.iqrra.com on 2026-09-24: a chat message naming "grade one"
+ * was answered against whatever grade the top-right lesson picker happened to
+ * have pinned (grade 10, by default), because nothing ever read a grade out of
+ * the free-text query. This is the read side of that fix — see its callers in
+ * iqra.tsx for where a named grade now overrides the pinned/active lesson.
+ */
+export function extractQueryGradeId(query: string): string | null {
+  const q = query.trim();
+  if (!q) return null;
+
+  const numeric = q.match(/\bgrade\s*(\d{1,2})\b/i) ?? q.match(/\b(\d{1,2})\s*(?:st|nd|rd|th)?\s*grade\b/i);
+  if (numeric) {
+    const n = Number(numeric[1]);
+    if (n >= 1 && n <= 12) return `grade-${n}`;
+  }
+
+  for (let i = 0; i < GRADE_WORDS_EN.length; i++) {
+    const [cardinal, ordinal] = GRADE_WORDS_EN[i]!;
+    if (new RegExp(`\\bgrade\\s+${cardinal}\\b|\\b${ordinal}\\s+grade\\b`, 'i').test(q)) {
+      return `grade-${i + 1}`;
+    }
+  }
+
+  for (const [gradeId, pattern] of GRADE_PATTERNS_AR) {
+    if (pattern.test(q)) return gradeId;
+  }
+
+  return null;
+}
+
 /**
  * Decide whether chat should force the session's active lesson into results.
  * Soft pins must not override a confident KB hit for a different topic.
  * Teacher-uploaded documents beat a soft-pinned default lesson.
  * A message that names a new topic never reuses the old lesson, however pinned.
+ * Same for a message that names a different grade than the active lesson's own.
  */
 export function shouldReuseActiveLesson(opts: {
   memory: ChatSessionMemory;
@@ -188,10 +251,14 @@ export function shouldReuseActiveLesson(opts: {
   hasConfidentKbHit: boolean;
   /** Ready session documents — soft pin must not steal their topic. */
   hasDocuments?: boolean;
+  /** The active lesson's own grade — bail when the query names a different one. */
+  activeLessonGradeId?: string | null;
 }): boolean {
-  const { memory, intent, query, hasConfidentKbHit, hasDocuments = false } = opts;
+  const { memory, intent, query, hasConfidentKbHit, hasDocuments = false, activeLessonGradeId = null } = opts;
   if (!memory.activeLessonId || memory.lessonPin === 'none') return false;
   if (topicSwitchTarget(query) !== null) return false;
+  const queryGradeId = extractQueryGradeId(query);
+  if (queryGradeId && activeLessonGradeId && queryGradeId !== activeLessonGradeId) return false;
 
   // Uploads are primary context until the teacher hard-pins a curriculum lesson
   if (hasDocuments && memory.lessonPin !== 'hard' && intent !== 'refinement') {

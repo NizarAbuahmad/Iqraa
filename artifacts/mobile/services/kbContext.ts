@@ -397,6 +397,17 @@ export function filterResultsBySubject(
   });
 }
 
+/** Same as `filterResultsBySubject`, but for a grade the teacher named explicitly. */
+export function filterResultsByGrade(
+  results: KBLesson[],
+  gradeId: string,
+): KBLesson[] {
+  return results.filter(lesson => {
+    const book = getBookForLesson(lesson);
+    return book?.gradeId === gradeId;
+  });
+}
+
 // ─── Unit deduplication ───────────────────────────────────────────────────────
 
 /**
