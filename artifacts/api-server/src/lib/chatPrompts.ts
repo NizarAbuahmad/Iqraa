@@ -33,7 +33,7 @@ export function buildSystemPromptAr(isTeacher: boolean, context?: string): strin
 
 ## المبادئ الأساسية
 - **الدقة أولًا:** استخدم الصيغ والمصطلحات والمفاهيم الواردة في الكتاب المدرسي الأردني فقط.
-- **المنهج يحكم:** إذا وُجد سياق الكتاب المدرسي في الرسالة، فهو مرجعك الأول والأخير.
+- **المنهج يحكم:** إذا وُجد سياق الكتاب المدرسي في الرسالة وكان السؤال عن محتواه، فهو مرجعك الأول والأخير. أما السؤال العام (إدارة الصف، أساليب التدريس، استخدام التطبيق) فأجب عنه مباشرة ولا تحوّله إلى الدرس المختار.
 - **الوضوح إلزامي:** للمسائل الرياضية والعلمية، استخدم خطوات مرقمة مع ذكر القانون في كل خطوة.
 - **${isTeacher ? "المنظور التعليمي: ركّز على الشرح والأمثلة وأساليب التدريس وملاحظات المعلم." : "مناسب للطالب: اشرح بأسلوب بسيط مع أمثلة توضيحية خطوة بخطوة."}**
 - **لا تخمّن:** إذا كان السؤال خارج المنهاج الأردني أو خارج مستوى الصف المعروض، وضّح ذلك بأدب وأعد التوجيه.
@@ -82,7 +82,7 @@ The Jordanian national curriculum, Grades 1 to 12: Arabic, English, Mathematics,
 
 ## Core Principles
 - **Accuracy first:** Ground every answer in the Jordanian textbook's formulas, terminology, and concepts.
-- **Curriculum governs:** When textbook context is provided, treat it as your primary and highest-priority source.
+- **Curriculum governs:** When textbook context is provided and the question is about its content, treat it as your primary and highest-priority source. A general question (classroom management, teaching methods, using the app) gets a direct answer — do not steer it back to the selected lesson.
 - **Clarity is mandatory:** For maths and science problems, use clearly numbered steps and state the formula or rule at each step.
 - **${isTeacher ? "Teaching perspective: focus on explanations, worked examples, teaching strategies, and teacher notes." : "Student-friendly: explain with simple language, worked examples, and step-by-step guidance."}**
 - **Don't guess:** If the question falls outside the Jordanian curriculum, or outside the grade shown, say so clearly and redirect.

@@ -374,8 +374,6 @@ const translations = {
     toolPromptSlidesDesc: 'اكتب وصفًا بكلماتك، واحصل على عرض شرائح كامل — مجانًا بقالب جاهز أو بالذكاء الاصطناعي.',
     toolGameTitle: 'تحدي الصف',
     toolGameDesc: 'لعبة أسئلة بين فرق الصف — بلا هواتف وبلا تحضير: الطلبة يرفعون أيديهم للإجابة وأنت تسجّل النقاط.',
-    toolWhiteboardTitle: 'السبورة الذكية',
-    toolWhiteboardDesc: 'اكتب سؤالاً أو فكرة واعرضها بخط كبير على الشاشة أمام الطلبة.',
     toolGamesTitle: 'ألعاب اقرأ',
     toolGamesDesc: 'ألعاب مجانية بلا تسجيل — شاركها مع طلبتك للمتعة والمراجعة.',
     toolLessonMediaTitle: 'وسائط الدرس والقوالب',
@@ -1681,12 +1679,6 @@ const translations = {
     messagingAllowStudentPosting: 'السماح للطلبة بالكتابة',
     messagingReadOnlyGroup: 'المعلّم وحده يمكنه الكتابة في هذه المجموعة',
 
-    // Smart Whiteboard — type a prompt, display it big. No AI, no drawing.
-    whiteboardPlaceholder: 'اكتب سؤالاً أو فكرة لعرضها على الطلبة…',
-    whiteboardDisplayButton: 'اعرض على الشاشة',
-    whiteboardEditButton: 'تعديل',
-    whiteboardHint: 'سيظهر هذا النص بخط كبير على كامل الشاشة.',
-
     // Public games hub (/play) — free, no login. Acquisition funnel: every
     // game ends with a CTA to create a teacher account.
     playHubTitle: 'ألعاب اقرأ',
@@ -1749,6 +1741,29 @@ const translations = {
     hubAgain: 'العب مرة أخرى',
     hubBackToLesson: 'عودة إلى الأنشطة',
     hubOpenFromLesson: 'العب بكلمات هذا الدرس',
+
+    playMultiplyTitle: 'تحدّي جدول الضرب',
+    playMultiplyDesc: 'كم مسألة ضرب تحلّ قبل انتهاء الوقت؟',
+    playDrillPickTables: 'اختر جداول الضرب',
+    playDrillDuration: 'المدة',
+    playDrillSecs: (n: number) => `${n} ثانية`,
+    playDrillStart: 'ابدأ',
+    playDrillShare: 'شارك الرابط مع الطلبة',
+    playDrillCopied: 'نُسخ الرابط',
+    playDrillTimeLeft: (n: number) => `الوقت المتبقي: ${n}`,
+    playDrillResult: (correct: number, attempted: number) => `${correct} إجابة صحيحة من ${attempted}`,
+    playDivideTitle: 'تحدّي القسمة',
+    playDivideDesc: 'كم مسألة قسمة تحلّ قبل انتهاء الوقت؟',
+    playAddTitle: 'تحدّي الجمع',
+    playAddDesc: 'كم مسألة جمع تحلّ قبل انتهاء الوقت؟',
+    playDrillPickDivisors: 'القسمة على',
+    playDrillPickMax: 'المجموع حتى',
+    iqraDrillTables: (tables: string) => `الجداول ${tables}`,
+    iqraDrillDivisors: (tables: string) => `القسمة على ${tables}`,
+    iqraDrillUpTo: (max: number) => `المجموع حتى ${max}`,
+    iqraDrillReady: (title: string, detail: string, secs: number) =>
+      `جهّزت لك ${title}: ${detail}، لمدة ${secs} ثانية.\n\nافتحه لتجرّبه، أو شارك رابطه مع طلبتك — يعمل دون تسجيل دخول.`,
+    iqraDrillOpen: (title: string) => `🎮 افتح ${title}`,
   },
 
   en: {
@@ -2007,8 +2022,6 @@ const translations = {
     toolPromptSlidesDesc: 'Describe what you want in your own words and get a full deck — free with an instant template, or AI-generated.',
     toolGameTitle: 'Class challenge',
     toolGameDesc: 'A team quiz game with no phones and no prep — students raise their hands to answer and you score it on screen.',
-    toolWhiteboardTitle: 'Smart whiteboard',
-    toolWhiteboardDesc: 'Type a question or idea and display it in large text on the screen for your students.',
     toolGamesTitle: 'Iqraa Games',
     toolGamesDesc: 'Free games, no login — share them with your students for fun and review.',
     toolLessonMediaTitle: 'Lesson media & templates',
@@ -3263,12 +3276,6 @@ const translations = {
     messagingAllowStudentPosting: 'Allow students to post',
     messagingReadOnlyGroup: 'Only the teacher can post in this group',
 
-    // Smart Whiteboard — type a prompt, display it big. No AI, no drawing.
-    whiteboardPlaceholder: 'Type a question or idea to show your students…',
-    whiteboardDisplayButton: 'Display on screen',
-    whiteboardEditButton: 'Edit',
-    whiteboardHint: 'This text will fill the screen in large type.',
-
     // Public games hub (/play) — free, no login. Acquisition funnel: every
     // game ends with a CTA to create a teacher account.
     playHubTitle: 'Iqraa Games',
@@ -3331,6 +3338,29 @@ const translations = {
     hubAgain: 'Play again',
     hubBackToLesson: 'Back to activities',
     hubOpenFromLesson: 'Play with this lesson’s words',
+
+    playMultiplyTitle: 'Times Table Challenge',
+    playMultiplyDesc: 'How many can you solve before time runs out?',
+    playDrillPickTables: 'Pick the times tables',
+    playDrillDuration: 'Time',
+    playDrillSecs: (n: number) => `${n} seconds`,
+    playDrillStart: 'Start',
+    playDrillShare: 'Share link with students',
+    playDrillCopied: 'Link copied',
+    playDrillTimeLeft: (n: number) => `Time left: ${n}`,
+    playDrillResult: (correct: number, attempted: number) => `${correct} correct out of ${attempted}`,
+    playDivideTitle: 'Division Challenge',
+    playDivideDesc: 'How many divisions can you solve before time runs out?',
+    playAddTitle: 'Addition Challenge',
+    playAddDesc: 'How many sums can you solve before time runs out?',
+    playDrillPickDivisors: 'Divide by',
+    playDrillPickMax: 'Sums up to',
+    iqraDrillTables: (tables: string) => `tables ${tables}`,
+    iqraDrillDivisors: (tables: string) => `dividing by ${tables}`,
+    iqraDrillUpTo: (max: number) => `sums up to ${max}`,
+    iqraDrillReady: (title: string, detail: string, secs: number) =>
+      `Ready: ${title} — ${detail}, ${secs} seconds.\n\nOpen it to try it, or share the link with your students — no sign-in needed.`,
+    iqraDrillOpen: (title: string) => `🎮 Open ${title}`,
   },
 } as const;
 

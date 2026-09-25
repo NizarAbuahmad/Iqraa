@@ -63,7 +63,7 @@ async function openExternalMedia(url: string): Promise<void> {
 // and the PPTX import the same values, so the three renderings cannot drift.
 
 // Projector fullscreen (web only — a native app is already fullscreen) now
-// lives in services/presentationUtils.ts, shared with whiteboard.tsx.
+// lives in services/presentationUtils.ts.
 
 // ─── Visual block (plot / chart) ──────────────────────────────────────────────
 // Draws the same spec the PDF and PPTX draw, via react-native-svg, so the three
