@@ -277,6 +277,8 @@ interface Message {
    * teacher confirms a guess instead of supplying the topic from scratch.
    */
   clarificationLessons?: { id: string; title: string }[];
+  /** Places in the app this reply points at — solid buttons inside the bubble. */
+  placeLinks?: EphemeralSuggestion[];
   pedagogicalClarification?: ClarificationOption[];
   clarificationQuery?: string;
   showLessonPrep?: boolean;
@@ -811,7 +813,7 @@ const prepStyles = StyleSheet.create({
 });
 
 function MessageBubble({
-  message, colors, isRTL, onLongPress, onClarifySubject, onClarifyLesson, onPedagogicalClarify, prepProgress,
+  message, colors, isRTL, onLongPress, onClarifySubject, onClarifyLesson, onPedagogicalClarify, onPlacePress, prepProgress,
   introName, introPitch, introActions, introBoard, onEditArtifact, onCopy, onExport,
   onSaveMaterial, onAddToClass, onPresentMaterial, onOpenCanvas, onCanvas, busyMaterial,
   copyLabel, exportLabel, t,
@@ -821,6 +823,7 @@ function MessageBubble({
   onClarifySubject?: (originalQuery: string, subjectId: string) => void;
   onClarifyLesson?: (originalQuery: string, lessonId: string) => void;
   onPedagogicalClarify?: (originalQuery: string, option: ClarificationOption) => void;
+  onPlacePress?: (place: EphemeralSuggestion) => void;
   /** Live session prep progress — shown under the latest meaningful reply. */
   prepProgress?: PrepProgressView | null;
   /** Assistant identity, shown on the opening turn only. */
@@ -1244,6 +1247,37 @@ function MessageBubble({
                 <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }]}>
                   {candidate.title}
                 </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+        {/* Solid, inside the reply: as a pale chip down by the composer the
+            button read as decoration and teachers did not see it. */}
+        {message.placeLinks && message.placeLinks.length > 0 && (
+          <View style={[styles.suggestionChipsRow, isRTL && { flexDirection: 'row-reverse' }]}>
+            {message.placeLinks.map(place => (
+              <Pressable
+                key={place.id}
+                onPress={() => onPlacePress?.(place)}
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.suggestionChip,
+                  {
+                    backgroundColor: colors.primary,
+                    borderColor: colors.primary,
+                    opacity: pressed ? 0.85 : 1,
+                    paddingHorizontal: 16,
+                    paddingVertical: 9,
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                  },
+                ]}
+              >
+                <Text style={[styles.suggestionChipText, { color: colors.primaryForeground || '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 }]}>
+                  {place.label}
+                </Text>
+                <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={14} color={colors.primaryForeground || '#fff'} />
               </Pressable>
             ))}
           </View>
@@ -1809,16 +1843,17 @@ export default function IqraScreen() {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
           text: help.text,
+          placeLinks: help.places.map(p => ({
+            id: `place-${p.id}`,
+            label: t(p.labelKey as TranslationKey),
+            prompt: '',
+            route: p.route,
+            routeParams: p.routeParams,
+            isTool: p.isTool,
+          })),
           timestamp: new Date(),
         }]);
-        setEphemeralSuggestions(help.places.map(p => ({
-          id: `place-${p.id}`,
-          label: `📍 ${t(p.labelKey as TranslationKey)}`,
-          prompt: '',
-          route: p.route,
-          routeParams: p.routeParams,
-          isTool: p.isTool,
-        })));
+        setEphemeralSuggestions([]);
         return;
       }
       if (!route.useTeachingPipeline) {
@@ -3156,6 +3191,7 @@ export default function IqraScreen() {
             onClarifySubject={handleClarifySubject}
             onClarifyLesson={handleClarifyLesson}
             onPedagogicalClarify={handlePedagogicalClarify}
+            onPlacePress={handleEphemeralPress}
             introName={t('iqraAgentName')}
             introPitch={t('iqraAgentPitch')}
             // Only while the thread is still just the intro — otherwise the
