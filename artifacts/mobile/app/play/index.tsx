@@ -36,6 +36,8 @@ const GAMES: Array<{
   { id: 'memory', route: '/play/memory', icon: 'apps-outline', color: '#0369A1', titleKey: 'playMemoryTitle', descKey: 'playMemoryDesc' },
   { id: 'colors', route: '/play/colors', icon: 'color-palette-outline', color: '#DB2777', titleKey: 'playColorsTitle', descKey: 'playColorsDesc' },
   { id: 'multiply', route: '/play/multiply', icon: 'calculator-outline', color: '#B45309', titleKey: 'playMultiplyTitle', descKey: 'playMultiplyDesc' },
+  { id: 'divide', route: '/play/divide', icon: 'pie-chart-outline', color: '#7C3AED', titleKey: 'playDivideTitle', descKey: 'playDivideDesc' },
+  { id: 'add', route: '/play/add', icon: 'add-circle-outline', color: '#4338CA', titleKey: 'playAddTitle', descKey: 'playAddDesc' },
 ];
 
 export default function PlayHubScreen() {
