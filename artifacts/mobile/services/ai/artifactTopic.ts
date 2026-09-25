@@ -67,6 +67,46 @@ const LEAD_IN_RE = new RegExp(
 );
 
 /**
+ * A grade or audience the ask names. It is scope, not topic — `extractQueryGradeId` reads
+ * it separately — and left in, "a quiz for grade 7" was titled «grade 7».
+ */
+const SCOPE_PHRASE_RE = new RegExp(
+  [
+    '(?:for\\s+)?grade\\s*(?:\\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)',
+    '(?:for\\s+)?(?:\\d{1,2}(?:st|nd|rd|th)?|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth)\\s+grade',
+    '(?:ال|لل)صف\\s*ال[^\\s]+(?:\\s*عشر)?',
+    // The audience, same reason. A phrase only: bare 'class' is often the
+    // topic («Class Management»), see QUALIFIERS.
+    '(?:for\\s+)?(?:my|our|the)\\s+(?:class|students|kids)',
+  ].map(p => `(^|\\s)${p}(?=\\s|$)`).join('|'),
+  'gi',
+);
+
+/**
+ * Words that ask politely but name nothing. Trimmed from the edges only, never
+ * the middle, so a topic that contains one («Vitamin A») keeps it. Without
+ * this, "make me a quiz" resolved to the topic «me a» and beat the lesson the
+ * teacher had picked.
+ */
+const EDGE_FILLER = new Set([
+  'me', 'us', 'a', 'an', 'the', 'some', 'please', 'pls', 'can', 'could', 'would',
+  'will', 'you', 'i', 'need', 'want', 'give', 'get', 'just', 'my', 'our', 'to',
+  'now', 'thanks', 'another', 'new', 'one',
+  'لي', 'لنا', 'أريد', 'اريد', 'أبغى', 'ابغى', 'بدي', 'بدنا', 'ممكن', 'من', 'فضلك',
+  'لو', 'سمحت', 'أعطني', 'اعطني', 'عطيني', 'هات', 'الرجاء', 'رجاء', 'رجاءً',
+  'جديد', 'جديدة', 'آخر', 'أخرى', 'اخرى', 'لطلابي', 'لصفي', 'للطلاب', 'الآن', 'الان',
+]);
+
+function trimEdgeFiller(s: string): string {
+  const words = s.split(' ').filter(Boolean);
+  while (words.length && EDGE_FILLER.has(words[0]!.toLowerCase())) words.shift();
+  // Case-sensitive at the end: a capital there is a name («Vitamin A»), while
+  // at the start it is only the sentence case of "Can you…".
+  while (words.length && EDGE_FILLER.has(words[words.length - 1]!)) words.pop();
+  return words.join(' ');
+}
+
+/**
  * The topic an ask is about, with the asking stripped off.
  *
  * Not cosmetic: this string titles the saved material and heads the first
@@ -80,7 +120,9 @@ const LEAD_IN_RE = new RegExp(
  * that only becomes a leading word once the noun in front of it is gone.
  */
 export function topicFromQuery(query: string): string {
-  let out = query;
+  // Trailing «؟» / "?" glued to the last word hid it from the whole-word strip
+  // («خطة درس؟» left «درس؟»).
+  let out = query.replace(/[?؟!.]+/g, ' ').replace(SCOPE_PHRASE_RE, '$1');
   for (let pass = 0; pass < 4; pass += 1) {
     const before = out;
     out = out.replace(STRIP, '$1').replace(/\s+/g, ' ').trim();
@@ -97,7 +139,7 @@ export function topicFromQuery(query: string): string {
     // the front of that would cut into the word.
     .replace(/^(?:a|an|the)\s+/i, '')
     .trim();
-  return out;
+  return trimEdgeFiller(out);
 }
 
 /** Resolve topic string for generation from lesson / docs / query. */

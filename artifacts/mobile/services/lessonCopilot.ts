@@ -12,6 +12,7 @@ import {
   type SessionArtifact,
 } from './ai/teachingAssistant.ts';
 import { DEMO_CONTINUE } from './continueTeaching.ts';
+import { topicFromQuery } from './ai/artifactTopic.ts';
 import {
   getBookForLesson,
   getLessonById,
@@ -130,10 +131,15 @@ export function seedDefaultLessonMemory(base?: ChatSessionMemory): ChatSessionMe
   };
 }
 
-/** Bare tool shortcut with little/no topic signal (e.g. "خطة", "اختبار قصير"). */
+/**
+ * An ask that names no topic of its own — "خطة", "make me a quiz", «اعمل لي
+ * اختبار» — so it is about the lesson already picked. It used to be a fixed
+ * list of bare nouns, so any polite wording («بدي اختبار») lost the picked
+ * lesson. A named grade is scope, not topic; `shouldReuseActiveLesson` checks
+ * it against the pinned lesson's grade separately.
+ */
 export function isBareArtifactShortcut(query: string): boolean {
-  const q = query.trim();
-  return /^(إعداد\s*)?(خطة(\s*درس)?|ورقة(\s*عمل)?|اختبار(\s*قصير)?|واجب(\s*منزلي)?|نشاط(\s*صفي)?|homework|quiz|worksheet|lesson\s*plan|activity)$/i.test(q);
+  return topicFromQuery(query) === '';
 }
 
 /**
