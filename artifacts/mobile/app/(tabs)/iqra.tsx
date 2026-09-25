@@ -133,7 +133,7 @@ import {
 import {
   DEFAULT_SECONDS,
   DRILL_TITLE_KEYS,
-  defaultAddMaxForGrade,
+  defaultMaxForGrade,
   defaultTablesForGrade,
   drillAskOp,
   drillPath,
@@ -1957,13 +1957,15 @@ export default function IqraScreen() {
         const drill: DrillConfig = {
           op: drillOp,
           tables: defaultTablesForGrade(gradeId),
-          max: defaultAddMaxForGrade(gradeId),
+          max: defaultMaxForGrade(gradeId),
           seconds: DEFAULT_SECONDS,
         };
         const title = t(DRILL_TITLE_KEYS[drillOp]);
         const tables = tablesLabel(drill.tables, lang === 'ar' ? '، ' : ', ');
         const detail = drillOp === 'add'
           ? t('iqraDrillUpTo', drill.max)
+          : drillOp === 'sub'
+          ? t('iqraDrillNumbersUpTo', drill.max)
           : t(drillOp === 'div' ? 'iqraDrillDivisors' : 'iqraDrillTables', tables);
         setMessages(prev => [...prev, {
           id: (Date.now() + 1).toString(),

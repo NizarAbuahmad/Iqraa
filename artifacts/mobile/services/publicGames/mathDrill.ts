@@ -1,8 +1,9 @@
 /**
- * Quick arithmetic drills (× ÷ +) — config, problems and the chat trigger.
+ * Quick arithmetic drills (× ÷ + −) — config, problems and the chat trigger.
  *
  * A drill is fully determined by its config, so the /play/multiply,
- * /play/divide or /play/add link is the whole assignment a teacher hands out:
+ * /play/divide, /play/add or /play/subtract link is the whole assignment a
+ * teacher hands out:
  * no backend, no stored state. That also makes the URL params untrusted input
  * from anyone — `parseDrillParams` must never throw and never return an empty
  * drill.
@@ -10,11 +11,11 @@
 
 import type { TranslationKey } from '../i18n.ts';
 
-export type DrillOp = 'mul' | 'div' | 'add';
+export type DrillOp = 'mul' | 'div' | 'add' | 'sub';
 
 export const DRILL_SECONDS = [30, 60, 90] as const;
 export const DEFAULT_SECONDS = 60;
-/** "Sums up to" choices for addition — addition has no times tables. */
+/** "Numbers up to" choices for + and − — they have no times tables. */
 export const ADD_MAXES = [10, 20, 100] as const;
 export const DEFAULT_ADD_MAX = 20;
 const MIN_TABLE = 1;
@@ -27,15 +28,21 @@ export const DRILL_ROUTES: Record<DrillOp, string> = {
   mul: '/play/multiply',
   div: '/play/divide',
   add: '/play/add',
+  sub: '/play/subtract',
 };
-export const DRILL_SYMBOL: Record<DrillOp, string> = { mul: '×', div: '÷', add: '+' };
+// U+2212 MINUS SIGN, not a hyphen: same width as + in the problem line.
+export const DRILL_SYMBOL: Record<DrillOp, string> = { mul: '×', div: '÷', add: '+', sub: '−' };
 export const DRILL_TITLE_KEYS: Record<DrillOp, TranslationKey> = {
   mul: 'playMultiplyTitle',
   div: 'playDivideTitle',
   add: 'playAddTitle',
+  sub: 'playSubtractTitle',
 };
 
-/** `tables` drives × and ÷; `max` drives +. Both are always present so switching nothing breaks. */
+/** + and − are set by a "numbers up to" range; × and ÷ by times tables. */
+export const usesRange = (op: DrillOp): boolean => op === 'add' || op === 'sub';
+
+/** `tables` drives × and ÷; `max` drives + and −. Both are always present so switching nothing breaks. */
 export type DrillConfig = { op: DrillOp; tables: number[]; max: number; seconds: number };
 export type DrillProblem = { op: DrillOp; a: number; b: number; answer: number };
 
@@ -80,16 +87,16 @@ export function defaultTablesForGrade(gradeId: string | null | undefined): numbe
   return gradeId === 'grade-1' || gradeId === 'grade-2' ? [1, 2, 3, 4, 5] : ALL_TABLES;
 }
 
-/** Sums up to 10 in grade 1, 20 in grade 2, 100 from grade 3; 20 when the grade is unknown. */
-export function defaultAddMaxForGrade(gradeId: string | null | undefined): number {
+/** Numbers up to 10 in grade 1, 20 in grade 2, 100 from grade 3; 20 when the grade is unknown. */
+export function defaultMaxForGrade(gradeId: string | null | undefined): number {
   if (gradeId === 'grade-1') return 10;
   if (gradeId === 'grade-2' || !gradeId) return DEFAULT_ADD_MAX;
   return 100;
 }
 
-/** Path + query only — what chat pushes in-app. Addition carries its range, the others their tables. */
+/** Path + query only — what chat pushes in-app. + and − carry their range, × and ÷ their tables. */
 export function drillPath(config: DrillConfig): string {
-  const detail = config.op === 'add' ? `max=${config.max}` : `tables=${config.tables.join(',')}`;
+  const detail = usesRange(config.op) ? `max=${config.max}` : `tables=${config.tables.join(',')}`;
   return `${DRILL_ROUTES[config.op]}?${detail}&secs=${config.seconds}`;
 }
 
@@ -106,6 +113,12 @@ function drawProblem(config: DrillConfig, rng: () => number): DrillProblem {
     const a = 1 + pick(config.max - 1);
     const b = 1 + pick(config.max - a);
     return { op, a, b, answer: a + b };
+  }
+  if (op === 'sub') {
+    // Never negative; 0 is allowed (7 − 7) — decided with the product owner.
+    const a = 1 + pick(config.max);
+    const b = 1 + pick(a);
+    return { op, a, b, answer: a - b };
   }
   const table = config.tables[pick(config.tables.length)]!;
   const other = pick(MAX_TABLE) + 1;
@@ -181,6 +194,8 @@ const OP_WORDS: Array<[DrillOp, RegExp]> = [
   ['div', /\bdivi(?:de|des|ding|sion)\b|قسمة|قسمه/i],
   // Not bare "add": "add a practice game" is a request to add something, not an addition drill.
   // «جمع» only as a whole word, or «مجموعة»/«جماعي»-style words could trip it.
+  // «طرح» also means "to put forward": «طرح سؤال/الأسئلة/الأفكار» is asking, not subtracting.
+  ['sub', new RegExp(`\\bsubtract(?:ion|ing|s)?\\b|\\bminus\\b|\\btake\\s*away\\b|${AR_EDGE_BEFORE}(?:ال|و|بال)?طرح${AR_EDGE_AFTER}(?!\\s*(?:ال)?(?:سؤال|أسئلة|اسئلة|أفكار|افكار|فكرة))`, 'i')],
   ['add', new RegExp(`\\baddition\\b|\\badding\\b|\\bplus\\b|\\bsums?\\b|${AR_EDGE_BEFORE}(?:ال|و|بال)?جمع${AR_EDGE_AFTER}`, 'i')],
 ];
 
