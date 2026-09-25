@@ -89,9 +89,8 @@ import { DOCUMENT_UPLOAD_ENABLED } from '@/services/features';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { ComposerToolsMenu, type MenuAction, type MenuSection } from '@/components/ui/ComposerToolsMenu';
 import {
-  AFTER_CLASS,
-  BEFORE_CLASS,
-  DURING_CLASS,
+  ALL_TOOLS,
+  LIBRARY_TOOL,
   type ToolDef,
 } from '@/services/toolCatalog';
 import { openGeogebraGraphing } from '@/services/geogebra';
@@ -2694,10 +2693,10 @@ export default function IqraScreen() {
     homework: 'homework',
   };
 
+  // One flat list, library first — the same order as the Tools tab, which
+  // dropped its before/during/after headings on 2026-09-25.
   const toolsMenuSections: MenuSection[] = [
-    { id: 'before', title: t('toolsBeforeClass'), tools: BEFORE_CLASS },
-    { id: 'during', title: t('toolsDuringClass'), tools: DURING_CLASS },
-    { id: 'after', title: t('toolsAfterClass'), tools: AFTER_CLASS },
+    { id: 'all', title: '', tools: [LIBRARY_TOOL, ...ALL_TOOLS] },
   ];
 
   const toolsMenuActions: MenuAction[] = DOCUMENT_UPLOAD_ENABLED
