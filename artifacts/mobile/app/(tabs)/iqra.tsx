@@ -108,6 +108,7 @@ import {
 } from '@/services/documents';
 import { lessonPickerParams, subjectPickerLabels, topicPickerParams } from '@/services/lessonPrep';
 import { answerAppHelp } from '@/services/appHelp';
+import { TOOL_ASK_TARGETS, toolAskFromQuery, toolAskReply } from '@/services/chatToolAsk';
 import type { TranslationKey } from '@/services/i18n';
 import { resolveDeepLinkSend, type DeepLinkSend } from '@/services/chatDeepLink';
 import { pinnedResourceNote } from '@/services/mathSupportResources';
@@ -1855,6 +1856,34 @@ export default function IqraScreen() {
         setEphemeralSuggestions([]);
         return;
       }
+
+      // Material with its own screen (game, slides, test, إملاء) → a button
+      // that opens it on this lesson. Ahead of the social check because a bare
+      // «إملاء» classifies as ambiguous; arithmetic games stay with the drill.
+      const toolAsk = route.intent === 'off_topic' || drillAskOp(q) ? null : toolAskFromQuery(q);
+      if (toolAsk) {
+        const target = TOOL_ASK_TARGETS[toolAsk];
+        const topic = target.isTool
+          ? ((lang === 'ar' ? sessionMemory.activeTopicAr : sessionMemory.activeTopicEn) ?? null)
+          : null;
+        awaitingClarifyRef.current = false;
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          text: toolAskReply(toolAsk, lang as 'ar' | 'en', topic),
+          placeLinks: [{
+            id: `tool-ask-${toolAsk}`,
+            label: t(target.labelKey as TranslationKey),
+            prompt: '',
+            route: target.route,
+            isTool: target.isTool,
+          }],
+          timestamp: new Date(),
+        }]);
+        setEphemeralSuggestions([]);
+        return;
+      }
+
       if (!route.useTeachingPipeline) {
         const socialMsg: Message = {
           id: (Date.now() + 1).toString(),
