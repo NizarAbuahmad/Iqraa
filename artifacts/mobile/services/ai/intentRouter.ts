@@ -2,6 +2,7 @@
  * Intent Router — classifies chat messages BEFORE curriculum / Teaching Assistant.
  * Demo Mode only; fully local. Greetings & small talk never trigger lesson generation.
  */
+import { isAppHelpQuery } from '../appHelp.ts';
 
 export type ChatRouteIntent =
   | 'greeting'
@@ -10,7 +11,9 @@ export type ChatRouteIntent =
   | 'teaching'
   | 'artifact'
   | 'refinement'
-  | 'ambiguous';
+  | 'ambiguous'
+  /** "Where do I find X in the app" — answered by the screen from `appHelp.ts`. */
+  | 'app_help';
 
 export type IntentRouteResult = {
   intent: ChatRouteIntent;
@@ -200,7 +203,7 @@ function greetingReply(isAr: boolean): string {
 function offTopicReply(isAr: boolean): string {
   if (isAr) {
     return [
-      'أنا اقرأ، مساعد تدريس مختص بالمنهاج الوطني الأردني — رياضيات وكيمياء الصف العاشر.',
+      'أنا اقرأ، مساعد تدريس مختص بالمنهاج الوطني الأردني.',
       'هذا السؤال خارج مجال عملي، فلا أتابع الأخبار أو المواضيع العامة.',
       '',
       'لكن يسعدني مساعدتك في:',
@@ -210,7 +213,7 @@ function offTopicReply(isAr: boolean): string {
     ].join('\n');
   }
   return [
-    "I'm IQRA, a teaching assistant for the Jordanian national curriculum — Grade 10 Maths and Chemistry.",
+    "I'm IQRA, a teaching assistant for the Jordanian national curriculum.",
     "That question is outside what I do, so I don't cover news or general topics.",
     '',
     'I would be glad to help you with:',
@@ -298,6 +301,12 @@ export function classifyChatIntent(
       useTeachingPipeline: false,
       socialReply: smallTalkReply(q, isAr),
     };
+  }
+
+  // Questions about the app itself. Before artifact detection too: «وين ألاقي
+  // ورقة العمل؟» asks where the tool is, not for a worksheet.
+  if (isAppHelpQuery(q)) {
+    return { intent: 'app_help', useTeachingPipeline: false };
   }
 
   // Off-topic subjects — answered with what Iqraa *is* for, never generated over.

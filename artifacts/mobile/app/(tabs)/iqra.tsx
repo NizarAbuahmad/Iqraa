@@ -32,6 +32,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   KBLesson,
+  getBookForLesson,
   getLessonById,
   getTopicSuggestions,
   KB_CONFIDENT_SCORE,
@@ -44,6 +45,7 @@ import {
   buildResponse,
   deduplicateByUnit,
   detectSubjectAmbiguity,
+  filterResultsByGrade,
   filterResultsBySubject,
   isConfidentSingleSubjectHit,
 } from '@/services/kbContext';
@@ -106,11 +108,14 @@ import {
   type SessionDocument,
 } from '@/services/documents';
 import { lessonPickerParams, subjectPickerLabels, topicPickerParams } from '@/services/lessonPrep';
+import { answerAppHelp } from '@/services/appHelp';
+import type { TranslationKey } from '@/services/i18n';
 import { resolveDeepLinkSend, type DeepLinkSend } from '@/services/chatDeepLink';
 import { pinnedResourceNote } from '@/services/mathSupportResources';
 import {
   buildCurrentLessonView,
   buildLessonSuggestions,
+  extractQueryGradeId,
   isBareArtifactShortcut,
   pinLesson,
   resolvePickedLesson,
@@ -121,6 +126,16 @@ import {
   topicSwitchTarget,
   type LessonSuggestion,
 } from '@/services/lessonCopilot';
+import {
+  DEFAULT_SECONDS,
+  DRILL_TITLE_KEYS,
+  defaultAddMaxForGrade,
+  defaultTablesForGrade,
+  drillAskOp,
+  drillPath,
+  tablesLabel,
+  type DrillConfig,
+} from '@/services/publicGames/mathDrill';
 import {
   formatActivityText,
   formatLessonPlanText,
@@ -278,6 +293,11 @@ type EphemeralSuggestion = {
   lessonId?: string;
   subjectColor?: string;
   toolType?: 'worksheet' | 'quiz' | 'lesson-plan' | 'activity' | 'homework';
+  /** Navigate here instead of sending a chat turn. */
+  route?: string;
+  routeParams?: Record<string, string>;
+  /** A generator screen: open it on the current lesson's grade and subject. */
+  isTool?: boolean;
 };
 
 // ─── Teaching-context subject options ────────────────────────────────────────
@@ -907,6 +927,34 @@ function MessageBubble({
    * can do, then get out of the way. It sits at the top of the thread, so it
    * scrolls off on its own once a real conversation starts.
    */
+  if (message.id === 'welcome' && !isWide) {
+    /*
+      Phone: the header right above already carries the mark and «اقرأ», so
+      a 64px tile and «مساعد اقرأ» under it said the name twice before the
+      teacher reached anything they could do. One line of purpose, then the
+      readiness board — which is the thing to do.
+    */
+    return (
+      <View style={styles.introCompact}>
+        <Text
+          style={[
+            styles.introCompactText,
+            {
+              color: colors.foreground,
+              fontFamily: 'Cairo_600SemiBold',
+              textAlign: isRTL ? 'right' : 'left',
+              writingDirection: isRTL ? 'rtl' : 'ltr',
+            },
+          ]}
+        >
+          {introPitch}
+        </Text>
+        {introBoard}
+        {introActions}
+      </View>
+    );
+  }
+
   if (message.id === 'welcome') {
     return (
       <View style={[styles.intro, isWide && styles.introWide]}>
@@ -1258,6 +1306,7 @@ export default function IqraScreen() {
   const mode: Mode = 'teacher';
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [inputFocused, setInputFocused] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
@@ -1754,6 +1803,24 @@ export default function IqraScreen() {
       }
 
       try {
+      if (route.intent === 'app_help') {
+        const help = answerAppHelp(q, lang as 'ar' | 'en', k => t(k as TranslationKey));
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          text: help.text,
+          timestamp: new Date(),
+        }]);
+        setEphemeralSuggestions(help.places.map(p => ({
+          id: `place-${p.id}`,
+          label: `📍 ${t(p.labelKey as TranslationKey)}`,
+          prompt: '',
+          route: p.route,
+          routeParams: p.routeParams,
+          isTool: p.isTool,
+        })));
+        return;
+      }
       if (!route.useTeachingPipeline) {
         const socialMsg: Message = {
           id: (Date.now() + 1).toString(),
@@ -1762,6 +1829,41 @@ export default function IqraScreen() {
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, socialMsg]);
+        return;
+      }
+
+      // An arithmetic game/drill ask (× ÷ +) gets the drill itself rather than a
+      // generic activity write-up: it's fixed arithmetic, so there is nothing
+      // for the curriculum pipeline to ground. Grade: named in the message,
+      // else the lesson the chat is on.
+      const drillOp = drillAskOp(q);
+      if (drillOp) {
+        const ctxLessonId = pinnedLessonId ?? teachingCtxLessonId ?? sessionMemory.activeLessonId;
+        const ctxLesson = ctxLessonId ? getLessonById(ctxLessonId) : null;
+        const gradeId = extractQueryGradeId(q) ?? (ctxLesson ? getBookForLesson(ctxLesson)?.gradeId : null);
+        const drill: DrillConfig = {
+          op: drillOp,
+          tables: defaultTablesForGrade(gradeId),
+          max: defaultAddMaxForGrade(gradeId),
+          seconds: DEFAULT_SECONDS,
+        };
+        const title = t(DRILL_TITLE_KEYS[drillOp]);
+        const tables = tablesLabel(drill.tables, lang === 'ar' ? '، ' : ', ');
+        const detail = drillOp === 'add'
+          ? t('iqraDrillUpTo', drill.max)
+          : t(drillOp === 'div' ? 'iqraDrillDivisors' : 'iqraDrillTables', tables);
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          text: t('iqraDrillReady', title, detail, drill.seconds),
+          timestamp: new Date(),
+        }]);
+        setEphemeralSuggestions([{
+          id: 'play-drill',
+          label: t('iqraDrillOpen', title),
+          prompt: '',
+          route: drillPath(drill),
+        }]);
         return;
       }
 
@@ -1781,6 +1883,13 @@ export default function IqraScreen() {
         setTeachingCtx('');
         setTeachingCtxLessonId(null);
       }
+
+      // A grade the teacher names explicitly ("grade one", «الصف الأول») beats
+      // whatever grade the picker's pinned/default lesson happens to be — see
+      // extractQueryGradeId's doc comment for the reported bug this closes.
+      // Not applied to `pinnedLessonId`: that is a lesson tapped this exact
+      // turn, a stronger and more deliberate signal than a word in free text.
+      const queryGradeId = extractQueryGradeId(q);
 
       // 1. Local KB retrieval — confidence-gated; soft default lesson must not steal topics.
       const ranked = pinnedLessonId
@@ -1808,31 +1917,38 @@ export default function IqraScreen() {
         );
       }
 
-      // Prefer explicit teaching-context lesson when available
+      // The picked lesson is background, not a leash. This block used to push
+      // it to the top of `results` on every send, bypassing
+      // `shouldReuseActiveLesson` below — so «كيف أدير صفًا مزعجًا؟» came back
+      // about the lesson on the card. The gate below now decides alone; this
+      // only resolves the lesson so the prompt line can tell whether it made
+      // it into `results`.
+      let teachingCtxOverruledByGrade = false;
+      let ctxLesson: KBLesson | null = null;
       if (!pinnedLessonId && switchTopic === null && teachingCtx.trim()) {
-        const ctxLesson = resolvePickedLesson(
+        ctxLesson = resolvePickedLesson(
           teachingCtx.trim(),
           { lessonId: teachingCtxLessonId },
           lang as 'ar' | 'en',
         );
-        if (ctxLesson) {
-          results = [ctxLesson, ...results.filter(r => r.id !== ctxLesson.id)].slice(0, 3);
-        }
+        teachingCtxOverruledByGrade =
+          !!queryGradeId
+          && !!ctxLesson
+          && getBookForLesson(ctxLesson)?.gradeId !== queryGradeId;
       }
 
       // Reuse active lesson only when pin strength + intent allow it
+      const activeLesson = sessionMemory.activeLessonId ? getLessonById(sessionMemory.activeLessonId) : null;
       const reuseActive = shouldReuseActiveLesson({
         memory: sessionMemory,
         intent: route.intent,
         query: q,
         hasConfidentKbHit: confidentHit,
         hasDocuments: hasDocsEarly,
+        activeLessonGradeId: activeLesson ? getBookForLesson(activeLesson)?.gradeId : null,
       });
-      if (!pinnedLessonId && reuseActive && sessionMemory.activeLessonId) {
-        const active = getLessonById(sessionMemory.activeLessonId);
-        if (active) {
-          results = [active, ...results.filter(r => r.id !== active.id)].slice(0, 3);
-        }
+      if (!pinnedLessonId && reuseActive && activeLesson) {
+        results = [activeLesson, ...results.filter(r => r.id !== activeLesson.id)].slice(0, 3);
       }
 
       // With uploads + soft pin only: clear KB results so generators/TA ground on documents
@@ -1889,6 +2005,13 @@ export default function IqraScreen() {
         results = filterResultsBySubject(results, querySubjectId);
       }
 
+      // Scope to a grade the teacher named explicitly — same reasoning as the
+      // subject scope above, so a wrong-grade default lesson can't sneak back
+      // in through the general KB search results.
+      if (queryGradeId) {
+        results = filterResultsByGrade(results, queryGradeId);
+      }
+
       // 1b. Ambiguity check — only when nothing is pinned (soft default does not count).
       // Also skipped when the teacher named any recognisable subject in their query;
       // asking "which subject?" when they just said "الأحياء" is confusing.
@@ -1932,13 +2055,20 @@ export default function IqraScreen() {
       // just left while the answer below was grounded on the new one. The
       // offline path already resolved this the same way (`teachingContext`
       // prefers `pinnedLesson`); this is the remote path catching up.
+      // Announce the card's lesson only when it is actually part of this
+      // answer's grounding. Stamping it on every turn told the model the
+      // teacher was still on that lesson whatever they had just asked.
+      // A card topic with no curriculum lesson behind it follows the gate.
+      const ctxLessonInPlay = ctxLesson
+        ? results.some(r => r.id === ctxLesson!.id)
+        : reuseActive;
       const teachingTopic = pinnedLesson
         ? (lang === 'ar' ? pinnedLesson.titleAr : pinnedLesson.titleEn)
-        : (switchTopic === null ? teachingCtx : '');
+        : (switchTopic === null && !teachingCtxOverruledByGrade && ctxLessonInPlay ? teachingCtx : '');
       const teachingPrefix = teachingTopic
         ? (lang === 'ar'
-          ? `[سياق التدريس: المعلم يدرّس حاليًا "${teachingTopic}"]\n\n`
-          : `[Teaching context: Teacher is currently teaching "${teachingTopic}"]\n\n`)
+          ? `[سياق التدريس: الدرس المختار في التطبيق هو "${teachingTopic}". اربط إجابتك به فقط إن كان السؤال عنه أو يشير إليه؛ وإلا فأجب عن السؤال كما طُرح.]\n\n`
+          : `[Teaching context: the lesson selected in the app is "${teachingTopic}". Tie your answer to it only if the question is about it or refers to it; otherwise answer the question as asked.]\n\n`)
         : '';
 
       const kbPart = hasKBMatch
@@ -1971,7 +2101,7 @@ export default function IqraScreen() {
           mode,
           teachingContext: pinnedLesson
             ? (lang === 'ar' ? pinnedLesson.titleAr : pinnedLesson.titleEn)
-            : switchTopic !== null
+            : switchTopic !== null || teachingCtxOverruledByGrade || !ctxLessonInPlay
               ? null
               : (teachingCtx || sessionMemory.activeTopicAr || sessionMemory.activeTopicEn),
           // DEMO_MODE is on by default, and in that path this — not
@@ -2444,11 +2574,35 @@ export default function IqraScreen() {
         return;
       }
 
+      // A ready-made URL (the times-table drill carries its own query string).
+      if (suggestion.route && !suggestion.isTool && !suggestion.routeParams) {
+        router.push(suggestion.route as any);
+        return;
+      }
+
+      if (suggestion.route) {
+        const topic =
+          (lang === 'ar' ? sessionMemory.activeTopicAr : sessionMemory.activeTopicEn) ?? '';
+        router.push({
+          pathname: suggestion.route as any,
+          // Same params as the "+" menu: a generator opened without the
+          // lesson's picker indices defaults to the first subject.
+          params: suggestion.isTool
+            ? {
+              ...(topic ? { topic } : {}),
+              ...(lessonPickerParams(sessionMemory.activeLessonId, lang as 'ar' | 'en') ?? {}),
+              ...(suggestion.routeParams ?? {}),
+            }
+            : suggestion.routeParams,
+        });
+        return;
+      }
+
       if (suggestion.prompt.trim()) {
         sendMessage(suggestion.prompt, suggestion.lessonId);
       }
     },
-    [colors.primary, sendMessage],
+    [colors.primary, lang, sendMessage, sessionMemory],
   );
 
   const handleLessonSuggestion = useCallback((s: LessonSuggestion) => {
@@ -3006,8 +3160,10 @@ export default function IqraScreen() {
             introPitch={t('iqraAgentPitch')}
             // Only while the thread is still just the intro — otherwise the
             // same three chips appear twice on one screen.
+            // Nor the lesson chips under the readiness board: its rows already are
+            // «حضّر خطة الدرس» / «أنشئ ورقة عمل», the same actions twice.
             introActions={
-              item.id === 'welcome' && messages.length <= 1 ? starterChips('intro') : null
+              item.id === 'welcome' && messages.length <= 1 && !(introPrepBoard && lessonSuggestions.length > 0) ? starterChips('intro') : null
             }
             introBoard={item.id === 'welcome' ? introPrepBoard : null}
             t={t}
@@ -3149,6 +3305,10 @@ export default function IqraScreen() {
               shadowRadius: 14,
               shadowOffset: { width: 0, height: 4 },
             },
+            // Focus shows on the pill itself. The web default was a hard black
+            // rectangle around the bare textarea, inside the rounded pill.
+            !isDesktop && { borderWidth: 1.5, borderColor: 'transparent' },
+            inputFocused && { borderColor: colors.primary },
             isRTL && { flexDirection: 'row-reverse' },
           ]}
         >
@@ -3188,6 +3348,8 @@ export default function IqraScreen() {
             accessibilityHint={t('iqraInputHint')}
             value={input}
             onChangeText={setInput}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             multiline
             maxLength={800}
             onSubmitEditing={() => sendMessage(input)}
@@ -3396,6 +3558,8 @@ const styles = StyleSheet.create({
   rowAssistantRTL: { flexDirection: 'row-reverse' },
   avatar: { marginTop: 4 },
   intro: { alignItems: 'center', gap: 10, paddingTop: 28, paddingBottom: 12, paddingHorizontal: 24 },
+  introCompact: { gap: 14, paddingTop: 16, paddingBottom: 8, paddingHorizontal: 4 },
+  introCompactText: { fontSize: 15, lineHeight: 26 },
   introWide: { gap: 14, paddingTop: 8 },
   introName: { fontSize: 22, textAlign: 'center' },
   introNameWide: { fontSize: 30 },
@@ -3425,7 +3589,7 @@ const styles = StyleSheet.create({
   inputBar: { borderTopWidth: 1, paddingHorizontal: 12, paddingTop: 10 },
   inputBarInner: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
-  input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0 },
+  input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0, outlineStyle: 'none' as never },
   inputWide: { fontSize: 15, maxHeight: 160, lineHeight: 22 },
   plusBtn: {
     width: 34,
