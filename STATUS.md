@@ -489,6 +489,38 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## An English corner for Grades 1–4, 2026-09-25
+
+Students can practise their English lesson words on their own at
+`/curriculum/english`. It's reached from a banner on the Curriculum tab for
+Grades 1–4, and from «العب بكلمات هذا الدرس» on the matching lesson pages. It
+covers 36 lessons and 458 words across the eight G1–4 books.
+
+- **Four activities**, all pure logic in `services/englishHub/games.ts`: flashcards,
+  listen-and-choose, match the English word to its Arabic meaning, and spell it.
+  Distractors come from the same lesson. Spelling ignores case, spaces and
+  hyphens.
+- **The Arabic meanings are new.** Every G1–4 vocabulary entry had `ar: ""`.
+  They were glossed by hand on 2026-09-25 and **have not been reviewed by a
+  teacher yet**. Entries that are topic labels rather than words ("Numbers
+  11-20", "fair/brown/red/black hair") are dropped by `isDrillableWord`.
+- **Audio is not generated yet.** `pnpm --filter @workspace/curriculum run
+  english-audio` voices each word once with OpenAI TTS (`gpt-4o-mini-tts`, a
+  British voice) into `iqraa-public/english-audio/<slug>.mp3`. The first run
+  was refused because the local `.env` still carries the `sk-your…` placeholder
+  key; the R2 side (listing `iqraa-public`) worked. Until it runs, every
+  "listen" button is silent: the page asks for the MP3, gets a 404, and carries
+  on, so the games still work by reading.
+- **`expo-audio` is the new native module**, with its microphone permission
+  off, so `app.json` `version` moved 1.0.0 → 1.1.0. Installed Android builds
+  stop receiving OTA updates until a 1.1.0 build ships.
+- **Progress is device-only.** Stars and a day streak are kept in AsyncStorage
+  (`englishHub.progress.v1`). Nothing reaches a teacher. A server table and a
+  teacher view are Phase 2.
+- **Verified on web on 2026-09-25**, by playing all four activities through
+  on a local build with the route made public for that session and then
+  reverted. Not yet checked on a device.
+
 ## A report could name anyone, and moderation believed it, 2026-09-15
 
 **`POST /messaging/reports` checked the reporter and trusted the rest.** It

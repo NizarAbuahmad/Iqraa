@@ -18,6 +18,7 @@ import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
 import { askAboutLessonHandoff } from '@/services/lessonShelf';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { VocabularyPracticePanel } from '@/components/ui/VocabularyPracticePanel';
+import { hubLesson } from '@workspace/curriculum/englishHub';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { goBack } from '@/services/navigation';
 import { readableOn } from '@/services/readableColor';
@@ -216,6 +217,23 @@ export default function LessonDetailScreen() {
             with no server call to make. Renders nothing elsewhere. */}
         <VocabularyPracticePanel lessonId={lesson.id} accent={color} />
 
+        {/* Grades 1–4 English: the same words, voiced and played with. */}
+        {hubLesson(lesson.id) ? (
+          <Pressable
+            onPress={() => router.push({ pathname: '/curriculum/english/[lessonId]', params: { lessonId: lesson.id } } as never)}
+            style={({ pressed }) => [
+              styles.hubLink,
+              { backgroundColor: colorFill, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.9 : 1 },
+            ]}
+          >
+            <Text style={{ fontSize: 24 }}>🎧</Text>
+            <Text style={{ flex: 1, color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('hubOpenFromLesson')}
+            </Text>
+            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#fff" />
+          </Pressable>
+        ) : null}
+
         {/* Objectives */}
         <Section title={t('learningObjectives')} icon="checkmark-circle-outline" color={color} isRTL={isRTL}>
           {objectivesArr.map((obj, i) => (
@@ -301,6 +319,7 @@ function Section({ title, icon, color, isRTL, children }: { title: string; icon:
 }
 
 const styles = StyleSheet.create({
+  hubLink: { alignItems: 'center', gap: 12, padding: 14, marginTop: 12 },
   hero: { paddingHorizontal: 20, paddingBottom: 28 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 10 },
   heroTitle: { fontSize: 22, lineHeight: 30, marginBottom: 12 },
