@@ -74,16 +74,6 @@ const BEFORE_CLASS_ALL: ToolDef[] = [
     color: '#007C74',
     route: '/ai-tools/lesson-plan',
   },
-  // The per-grade resources library. It lives under /curriculum so students can
-  // reach it too; this card is the teacher's door since #551 hid the old row.
-  {
-    id: 'library',
-    titleKey: 'toolLibraryTitle',
-    descKey: 'toolLibraryDesc',
-    icon: 'library-outline',
-    color: '#7C3AED',
-    route: '/curriculum/resources',
-  },
   // Generates the whole lesson journey in one pass, so it belongs with prep
   // rather than in a drawer of leftovers.
   {
@@ -239,6 +229,21 @@ export const AFTER_CLASS: ToolDef[] = visible(AFTER_CLASS_ALL);
 // — a live feature (evaluations), two working tools, and one dead stub — behind
 // a disclosure a teacher had no reason to open. Everything moved into the stage
 // where it is actually used; the stub became a real screen.
+
+/**
+ * The per-grade resources library. Not a generator, so it sits in its own
+ * section at the top of the Tools tab rather than in a workflow stage — and
+ * not in ALL_TOOLS, so the chat "+" menu doesn't offer it as something chat
+ * can make. It lives under /curriculum so students can reach it too.
+ */
+export const LIBRARY_TOOL: ToolDef = {
+  id: 'library',
+  titleKey: 'toolLibraryTitle',
+  descKey: 'toolLibraryDesc',
+  icon: 'library-outline',
+  color: '#7C3AED',
+  route: '/curriculum/resources',
+};
 
 export const WORKFLOW: WorkflowSection[] = [
   { id: 'before', titleKey: 'toolsBeforeClass', tools: BEFORE_CLASS },

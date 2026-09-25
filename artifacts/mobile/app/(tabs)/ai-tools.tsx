@@ -18,6 +18,7 @@ import {
   AFTER_CLASS,
   BEFORE_CLASS,
   DURING_CLASS,
+  LIBRARY_TOOL,
   WORKFLOW,
   type ToolDef,
 } from '@/services/toolCatalog';
@@ -191,6 +192,15 @@ export default function AIToolsScreen() {
         <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('aiToolsSubtitle')}
         </Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+          {t('toolsResources')}
+        </Text>
+        <View style={styles.list}>
+          <ToolCard tool={LIBRARY_TOOL} isRTL={isRTL} colors={colors} t={t} />
+        </View>
       </View>
 
       {WORKFLOW.map(section => (
