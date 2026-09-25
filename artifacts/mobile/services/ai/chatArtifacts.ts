@@ -6,6 +6,7 @@
 import type {
   ActivityOutput,
   AIRequest,
+  InfographicOutput,
   LessonPlanOutput,
   QuizOutput,
   WorksheetOutput,
@@ -23,6 +24,7 @@ import {
   formatQuizText,
   formatWorksheetText,
 } from '@/services/share';
+import { formatInfographicText } from './infographic.ts';
 
 /**
  * The structured output, kept alongside the text.
@@ -36,7 +38,8 @@ export type ChatArtifactData =
   | { kind: 'lesson-plan'; plan: LessonPlanOutput }
   | { kind: 'worksheet'; worksheet: WorksheetOutput }
   | { kind: 'quiz'; quiz: QuizOutput }
-  | { kind: 'activity'; activity: ActivityOutput };
+  | { kind: 'activity'; activity: ActivityOutput }
+  | { kind: 'infographic'; infographic: InfographicOutput };
 
 export type ChatArtifactResult = {
   /** The whole material as text — what copy and export hand over. */
@@ -265,6 +268,37 @@ export async function generateChatArtifact(opts: {
     data,
     topic: titleBase,
     lessonId: lessonForGen?.id,
+  };
+}
+
+/**
+ * A lesson infographic for the chat bubble.
+ *
+ * Kept apart from `generateChatArtifact` rather than added to
+ * `SessionArtifact`: that union keys the prep board, the next-step table and
+ * the composer chips, none of which have a slot for an infographic.
+ */
+export async function generateChatInfographic(opts: {
+  topic: string;
+  lesson?: KBLesson | null;
+  lang: 'ar' | 'en';
+}): Promise<Omit<ChatArtifactResult, 'artifact'> & { data: ChatArtifactData }> {
+  const { topic, lesson = null, lang } = opts;
+  const isAr = lang === 'ar';
+  const req = buildRequest(topic, lesson, lang);
+  const out = await remoteAIService.generateInfographic(req);
+  const prose = isAr
+    ? `جهّزت إنفوجرافيك لدرس «${topic}». انسخه أو صدّره للطباعة من الأزرار بالأسفل.`
+    : `Here is an infographic for “${topic}”. Copy it or export it for printing below.`;
+  const title = `${isAr ? 'إنفوجرافيك' : 'Infographic'}: ${topic}`;
+  return {
+    text: `${prose}\n\n${formatInfographicText(out, isAr)}`,
+    prose,
+    title,
+    meta: { subject: req.subject, grade: req.grade },
+    data: { kind: 'infographic', infographic: out },
+    topic,
+    lessonId: lesson?.id,
   };
 }
 

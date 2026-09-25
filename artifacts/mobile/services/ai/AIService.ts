@@ -568,6 +568,9 @@ export interface GenerateOptions {
   signal?: AbortSignal;
 }
 
+export type { InfographicOutput } from './infographic.ts';
+import type { InfographicOutput } from './infographic.ts';
+
 export abstract class AIService {
   abstract generateLessonPlan(req: AIRequest, opts?: GenerateOptions): Promise<LessonPlanOutput>;
   abstract generateWorksheet(req: AIRequest, opts?: GenerateOptions): Promise<WorksheetOutput>;
@@ -575,6 +578,7 @@ export abstract class AIService {
   abstract generateHomework(req: AIRequest, opts?: GenerateOptions): Promise<WorksheetOutput>;
   abstract generateActivity(req: AIRequest, opts?: GenerateOptions): Promise<ActivityOutput>;
   abstract generateClassroomActivity(req: ClassroomActivityRequest, opts?: GenerateOptions): Promise<ClassroomActivity>;
+  abstract generateInfographic(req: AIRequest, opts?: GenerateOptions): Promise<InfographicOutput>;
   // `generatePromptSlides` is deliberately NOT here. Every generator above has
   // an offline twin in MockAIService; prompt-slides does not, because the only
   // honest offline deck it could produce was a page of "edit this text"

@@ -10,6 +10,8 @@ import {
   SYSTEM_EN,
   activityPromptAr,
   activityPromptEn,
+  infographicPromptAr,
+  infographicPromptEn,
   lessonPlanPromptAr,
   lessonPlanPromptEn,
   quizPromptAr,
@@ -611,6 +613,23 @@ generateRouter.post("/generate/activity", async (req: AuthenticatedRequest, res)
     res.json(withMeta(result, grounding));
   } catch (err) {
     respondAiError(err, res, "generate activity");
+  }
+});
+
+// ─── Infographic ──────────────────────────────────────────────────────────────
+// No book figures: the card has nowhere to place one.
+generateRouter.post("/generate/infographic", async (req: AuthenticatedRequest, res) => {
+  try {
+    const isAr = req.body.language !== "english";
+    const { body, grounding } = withGrounding(req.body, isAr);
+    const prompt = isAr ? infographicPromptAr(body) : infographicPromptEn(body);
+    const result = await generateContent({
+      kind: "infographic", systemPrompt: systemPrompt(isAr), userPrompt: prompt,
+      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+    });
+    res.json(withMeta(result, grounding));
+  } catch (err) {
+    respondAiError(err, res, "generate infographic");
   }
 });
 

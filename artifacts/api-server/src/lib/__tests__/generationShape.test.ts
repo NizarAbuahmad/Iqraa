@@ -206,3 +206,24 @@ describe("deckShortfalls — reported, never refused", () => {
     assert.deepEqual(deckShortfalls({}), []);
   });
 });
+
+describe("infographic contract", () => {
+  const infographic = () => ({
+    title: "الاقترانات",
+    keyFacts: [{ label: "المجال", value: "قيم x المسموح بها" }],
+    sections: [{ heading: "التعريف", icon: "bulb-outline", points: ["نقطة"] }],
+    takeaway: "كل مدخل له مخرج واحد",
+  });
+
+  it("accepts a complete infographic, with or without a subtitle", () => {
+    assert.deepEqual(missingFields("infographic", infographic()), []);
+  });
+
+  it("rejects one with no sections — the card would be empty", () => {
+    assert.deepEqual(missingFields("infographic", { ...infographic(), sections: [] }), ["sections"]);
+    assert.throws(
+      () => assertUsableGeneration("infographic", { ...infographic(), sections: [] }),
+      UnusableGenerationError,
+    );
+  });
+});
