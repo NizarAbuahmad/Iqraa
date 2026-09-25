@@ -186,7 +186,7 @@ describe('ingest refusal', () => {
   });
 
   it('refuses a licence that grants no redistribution right', () => {
-    for (const license of ['embed-terms', 'CC-BY-SA-4.0'] as const) {
+    for (const license of ['embed-terms', 'CC-BY-SA-4.0', 'CC-BY-SA-3.0'] as const) {
       assert.match(
         ingestRefusal({ ...ok, license }, now) ?? '',
         /grants no redistribution right/,

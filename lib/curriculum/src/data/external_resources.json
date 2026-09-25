@@ -405,6 +405,345 @@
       "attribution": "NASA Video Collection",
       "licenseCheckedAt": "2026-09-11",
       "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-food-web",
+      "lessonIds": [
+        "kbl-g5-science-s1-nccd-u1_l1"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "Food web diagram",
+      "titleAr": "شبكة غذائية: من يأكل من؟",
+      "provider": "wikimedia",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Food_web_diagram.svg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/Food_web_diagram.svg/1280px-Food_web_diagram.svg.png",
+      "attribution": "LadyofHats, CC0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-azraq-wetland",
+      "lessonIds": [
+        "kbl-g5-science-s1-nccd-u1_l1",
+        "kbl-g5-science-s1-nccd-u1_l2"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "Azraq Wetland Reserve, Jordan",
+      "titleAr": "محمية الأزرق المائية: نظام بيئي أردني",
+      "provider": "wikimedia",
+      "license": "CC-BY-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Azraq_view.jpg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/76/Azraq_view.jpg/1280px-Azraq_view.jpg",
+      "attribution": "Ldud at English Wikipedia, CC BY 3.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-flower-parts-ar",
+      "lessonIds": [
+        "kbl-g5-science-s1-nccd-u2_l1"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "Parts of a flower (Arabic labels)",
+      "titleAr": "أجزاء الزهرة (بالعربية)",
+      "provider": "wikimedia",
+      "license": "public-domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mature_flower_diagram-ar.svg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4f/Mature_flower_diagram-ar.svg/1280px-Mature_flower_diagram-ar.svg.png",
+      "attribution": "Mariana Ruiz (LadyofHats), public domain, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-fly-agaric",
+      "lessonIds": [
+        "kbl-g5-science-s1-nccd-u2_l3"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "Fly agaric mushroom (poisonous)",
+      "titleAr": "فطر الغاريقون الأحمر (فطر سامّ)",
+      "provider": "wikimedia",
+      "license": "CC-BY-SA-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Fly_Agaric_mushroom_04.jpg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/Fly_Agaric_mushroom_04.jpg/1280px-Fly_Agaric_mushroom_04.jpg",
+      "attribution": "Tony Wills, CC BY-SA 3.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-dead-sea-salt",
+      "lessonIds": [
+        "kbl-g5-science-s1-nccd-u3_l1",
+        "kbl-g5-science-s1-nccd-u4_l2"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "Salt deposits on the Dead Sea shore, Jordan",
+      "titleAr": "ترسّبات الملح على شاطئ البحر الميت",
+      "provider": "wikimedia",
+      "license": "CC-BY-SA-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Salt,_Dead_Sea,_Jordan.jpg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/05/Salt%2C_Dead_Sea%2C_Jordan.jpg/1280px-Salt%2C_Dead_Sea%2C_Jordan.jpg",
+      "attribution": "Gerda Arendt, CC BY-SA 4.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-tafila-wind-farm",
+      "lessonIds": [
+        "kbl-g5-science-s1-nccd-u3_l2"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "Tafila Wind Farm, Jordan",
+      "titleAr": "مزرعة رياح الطفيلة: طاقة متجددة",
+      "provider": "wikimedia",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Tafila_Wind_Farm_1.jpg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/12/Tafila_Wind_Farm_1.jpg/1280px-Tafila_Wind_Farm_1.jpg",
+      "attribution": "Makeandtoss, CC0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-maan-solar",
+      "lessonIds": [
+        "kbl-g5-science-s1-nccd-u3_l2"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "Shams Ma'an solar power plant, Jordan",
+      "titleAr": "محطة شمس معان للطاقة الشمسية",
+      "provider": "wikimedia",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:%D8%B4%D9%85%D8%B3_%D9%85%D8%B9%D8%A7%D9%86.jpg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fa/%D8%B4%D9%85%D8%B3_%D9%85%D8%B9%D8%A7%D9%86.jpg/1280px-%D8%B4%D9%85%D8%B3_%D9%85%D8%B9%D8%A7%D9%86.jpg",
+      "attribution": "Chumash11, CC BY 4.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-prism-spectrum",
+      "lessonIds": [
+        "kbl-g5-science-s1-nccd-u5_l1"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "White light split by a prism",
+      "titleAr": "تحلّل الضوء الأبيض في المنشور",
+      "provider": "wikimedia",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Prism_flat_rainbow_(cropped).jpg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fa/Prism_flat_rainbow_%28cropped%29.jpg/1280px-Prism_flat_rainbow_%28cropped%29.jpg",
+      "attribution": "Kelvinsong, CC0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-myplate",
+      "lessonIds": [
+        "kbl-g5-science-s2-nccd-u6_l1",
+        "kbl-g5-science-s2-nccd-u6_l2"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "MyPlate: a balanced meal (English labels)",
+      "titleAr": "طبق الغذاء المتوازن (بالإنجليزية)",
+      "provider": "wikimedia",
+      "license": "public-domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:USDA_MyPlate_green.svg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/USDA_MyPlate_green.svg/1280px-USDA_MyPlate_green.svg.png",
+      "attribution": "United States Department of Agriculture, public domain, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-urinary-ar",
+      "lessonIds": [
+        "kbl-g5-science-s2-nccd-u7_l1"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "Urinary system (Arabic labels)",
+      "titleAr": "أجزاء الجهاز البولي (بالعربية)",
+      "provider": "wikimedia",
+      "license": "public-domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Illu_urinary_system-ar.jpg",
+      "fetchUrl": "https://upload.wikimedia.org/wikipedia/commons/d/df/Illu_urinary_system-ar.jpg",
+      "attribution": "Arcadian; Arabic: علاء, public domain, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-digestive-ar",
+      "lessonIds": [
+        "kbl-g5-science-s2-nccd-u7_l1"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "Digestive system (Arabic labels)",
+      "titleAr": "الجهاز الهضمي (بالعربية)",
+      "provider": "wikimedia",
+      "license": "CC-BY-SA-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Digestive_system_diagram_ar.svg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fe/Digestive_system_diagram_ar.svg/1280px-Digestive_system_diagram_ar.svg.png",
+      "attribution": "Mariana Ruiz, Jmarchn, CC BY-SA 3.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-respiratory-ar",
+      "lessonIds": [
+        "kbl-g5-science-s2-nccd-u7_l2"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "Respiratory system (Arabic labels)",
+      "titleAr": "الجهاز التنفسي (بالعربية)",
+      "provider": "wikimedia",
+      "license": "public-domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Respiratory_system_complete_ar.svg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/Respiratory_system_complete_ar.svg/1280px-Respiratory_system_complete_ar.svg.png",
+      "attribution": "LadyofHats; Arabic: histolo2, Jmarchn, public domain, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-pulmonary-circuit-ar",
+      "lessonIds": [
+        "kbl-g5-science-s2-nccd-u7_l2"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "Pulmonary circulation (Arabic labels)",
+      "titleAr": "الدورة الدموية الصغرى (بالعربية)",
+      "provider": "wikimedia",
+      "license": "public-domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Illu_pulmonary_circuit-ar.jpg",
+      "fetchUrl": "https://upload.wikimedia.org/wikipedia/commons/2/23/Illu_pulmonary_circuit-ar.jpg",
+      "attribution": "Arabic derivative: علاء, public domain, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-arm-bones-ar",
+      "lessonIds": [
+        "kbl-g5-science-s2-nccd-u7_l3"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "Bones of the arm (Arabic labels)",
+      "titleAr": "عظام الطرف العلوي (بالعربية)",
+      "provider": "wikimedia",
+      "license": "public-domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Human_arm_bones_diagram-ar.svg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/46/Human_arm_bones_diagram-ar.svg/1280px-Human_arm_bones_diagram-ar.svg.png",
+      "attribution": "Moataz Egbaria, after LadyofHats, public domain, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-earth-layers",
+      "lessonIds": [
+        "kbl-g5-science-s2-nccd-u10_l1"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "Layers of the Earth (3D model)",
+      "titleAr": "طبقات الأرض (نموذج مجسّم)",
+      "provider": "wikimedia",
+      "license": "CC-BY-SA-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Earth_layers_%D8%B7%D8%A8%D9%82%D8%A7%D8%AA_%D8%A7%D9%84%D8%A7%D8%B1%D8%B6.png",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/57/Earth_layers_%D8%B7%D8%A8%D9%82%D8%A7%D8%AA_%D8%A7%D9%84%D8%A7%D8%B1%D8%B6.png/1280px-Earth_layers_%D8%B7%D8%A8%D9%82%D8%A7%D8%AA_%D8%A7%D9%84%D8%A7%D8%B1%D8%B6.png",
+      "attribution": "A.shteiwi, CC BY-SA 4.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-g5-weather-station",
+      "lessonIds": [
+        "kbl-g5-science-s2-nccd-u10_l2"
+      ],
+      "gradeIds": [
+        "grade-5"
+      ],
+      "subjectId": "science",
+      "kind": "image",
+      "titleEn": "Weather station with anemometer and rain gauge",
+      "titleAr": "محطة أرصاد جوية: مقياس الرياح ومقياس المطر",
+      "provider": "wikimedia",
+      "license": "CC-BY-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Farm_Weather_Monitoring_Station_-_Davis_Instruments_(46833704315).jpg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/70/Farm_Weather_Monitoring_Station_-_Davis_Instruments_%2846833704315%29.jpg/1280px-Farm_Weather_Monitoring_Station_-_Davis_Instruments_%2846833704315%29.jpg",
+      "attribution": "Tony Webster, CC BY 2.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-25",
+      "authority": "third-party"
     }
   ]
 }
