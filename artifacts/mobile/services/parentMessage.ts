@@ -296,3 +296,39 @@ export function guardiansForStudent(
   const entry = contacts.find(c => c.studentId === studentId);
   return (entry?.contacts ?? []).filter(c => c.role === 'parent');
 }
+
+// ─── Contact history ─────────────────────────────────────────────────────────
+
+const HISTORY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+/** Kinds where repeating the same letter stops working and a meeting is the next step. */
+const ESCALATING_KINDS: MessageKind[] = ['missing-homework', 'absence'];
+/** Prior letters of one escalating kind in the window before we suggest a meeting instead. */
+const ESCALATE_AFTER = 2;
+
+export interface ContactSummary {
+  /** Newest contact, or null when this student's parents were never contacted. */
+  last: { kind: MessageKind; createdAt: string } | null;
+  /** Letters per kind in the last 30 days. */
+  recent: Partial<Record<MessageKind, number>>;
+}
+
+/** `contacts` in any order; `createdAt` ISO strings as the API returns them. */
+export function summarizeContacts(
+  contacts: { kind: string; createdAt: string }[],
+  now: Date,
+): ContactSummary {
+  const sorted = [...contacts].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  const recent: ContactSummary['recent'] = {};
+  for (const c of sorted) {
+    if (now.getTime() - Date.parse(c.createdAt) > HISTORY_WINDOW_MS) continue;
+    const k = c.kind as MessageKind;
+    recent[k] = (recent[k] ?? 0) + 1;
+  }
+  const first = sorted[0];
+  return { last: first ? { kind: first.kind as MessageKind, createdAt: first.createdAt } : null, recent };
+}
+
+/** True when this would be at least the 3rd missing-homework/absence letter in 30 days. */
+export function suggestMeeting(summary: ContactSummary, kind: MessageKind): boolean {
+  return ESCALATING_KINDS.includes(kind) && (summary.recent[kind] ?? 0) >= ESCALATE_AFTER;
+}

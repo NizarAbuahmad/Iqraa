@@ -188,7 +188,7 @@ export function answerAppHelp(
     return `• **${t(p.labelKey)}**: ${where}`;
   });
   return {
-    text: [isAr ? 'تجده هنا:' : "Here's where to find it:", ...lines, '', isAr ? 'أو اضغط الزر بالأسفل لأفتحه لك.' : 'Or tap the button below to open it.'].join('\n'),
+    text: [isAr ? 'تجده هنا:' : "Here's where to find it:", ...lines, '', isAr ? 'أو اضغط الزر لأفتحه لك:' : 'Or tap the button to open it:'].join('\n'),
     places,
   };
 }

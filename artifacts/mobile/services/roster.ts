@@ -330,5 +330,31 @@ export async function claimRosterCode(
   return claimed;
 }
 
+export interface ParentContact {
+  kind: string;
+  channel: 'in_app' | 'share' | 'copy';
+  createdAt: string;
+}
+
+/** Newest first, at most 50. */
+export async function listParentContacts(studentId: string): Promise<ParentContact[]> {
+  const res = await apiFetch(`/students/${studentId}/parent-contacts`);
+  const data = await readJson<{ contacts: ParentContact[] }>(res, 'Loading parent contacts');
+  return data.contacts;
+}
+
+export async function logParentContact(
+  studentId: string,
+  kind: string,
+  channel: ParentContact['channel'],
+): Promise<ParentContact> {
+  const res = await apiFetch(`/students/${studentId}/parent-contacts`, {
+    method: 'POST',
+    body: JSON.stringify({ kind, channel }),
+  });
+  const data = await readJson<{ contact: ParentContact }>(res, 'Logging parent contact');
+  return data.contact;
+}
+
 /** Re-exported so screens have one roster import. Lives apart to stay testable. */
 export { parseStudentNames } from './rosterNames.ts';
