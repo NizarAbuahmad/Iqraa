@@ -1,7 +1,7 @@
 /**
- * Times-table sprint: pick tables, answer as many as you can before the clock
- * runs out. Solo, no login, nothing stored — the /play/multiply link carries
- * the whole config, which is how a teacher assigns it (see mathDrill.ts).
+ * Arithmetic sprint (× ÷ +): pick what to practise, answer as many as you can
+ * before the clock runs out. Solo, no login, nothing stored — the /play link
+ * carries the whole config, which is how a teacher assigns it (see mathDrill.ts).
  */
 import React, { useEffect, useReducer, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -12,16 +12,21 @@ import { Button } from '@/components/ui/Button';
 import { GameShell } from './GameShell';
 import { shareAsText } from '@/services/share';
 import {
+  ADD_MAXES,
   DRILL_SECONDS,
+  DRILL_SYMBOL,
+  DRILL_TITLE_KEYS as TITLES,
   drillReducer,
   drillShareUrl,
   nextProblem,
   startDrill,
   type DrillConfig,
+  type DrillOp,
   type DrillProblem,
 } from '@/services/publicGames/mathDrill';
 
-const ACCENT = '#B45309';
+// Solid fills carrying white text — each ≥ 4.5:1 against #fff.
+const ACCENTS: Record<DrillOp, string> = { mul: '#B45309', div: '#7C3AED', add: '#4338CA' };
 const RIGHT = '#16A34A';
 const WRONG = '#DC2626';
 const ALL_TABLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -53,7 +58,7 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
   const share = () => {
     // `window.location` is undefined on native; drillShareUrl falls back to production then.
     const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
-    shareAsText(drillShareUrl(config, origin), t('playMultiplyTitle'))
+    shareAsText(drillShareUrl(config, origin), t(TITLES[config.op]))
       .then(how => setCopied(how === 'copied'))
       .catch(() => {});
   };
@@ -64,10 +69,11 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
   };
 
   const align = isRTL ? 'right' : 'left';
+  const ACCENT = ACCENTS[config.op];
 
   return (
     <GameShell
-      titleKey="playMultiplyTitle"
+      titleKey={TITLES[config.op]}
       accent={ACCENT}
       gameOver={phase === 'over' ? { message: t('playDrillResult', result.correct, result.attempted) } : null}
       onReplay={start}
@@ -83,23 +89,51 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
         />
       ) : (
         <View style={{ flex: 1, padding: 20, gap: 14 }}>
-          <Text style={[styles.label, { color: colors.foreground, textAlign: align }]}>{t('playDrillPickTables')}</Text>
-          <View style={styles.chips}>
-            {ALL_TABLES.map(n => {
-              const on = config.tables.includes(n);
-              return (
-                <Pressable
-                  key={n}
-                  onPress={() => toggleTable(n)}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: on }}
-                  style={[styles.chip, { backgroundColor: on ? ACCENT : colors.card, borderColor: on ? ACCENT : colors.border }]}
-                >
-                  <Text style={[styles.chipText, { color: on ? '#fff' : colors.foreground, writingDirection: 'ltr' }]}>×{n}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          {config.op === 'add' ? (
+            <>
+              <Text style={[styles.label, { color: colors.foreground, textAlign: align }]}>{t('playDrillPickMax')}</Text>
+              <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                {ADD_MAXES.map(m => {
+                  const on = config.max === m;
+                  return (
+                    <Pressable
+                      key={m}
+                      onPress={() => { setCopied(false); setConfig(c => ({ ...c, max: m })); }}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: on }}
+                      style={[styles.pill, { backgroundColor: on ? ACCENT : colors.card, borderColor: on ? ACCENT : colors.border }]}
+                    >
+                      <Text style={[styles.chipText, { color: on ? '#fff' : colors.foreground }]}>{m}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={[styles.label, { color: colors.foreground, textAlign: align }]}>
+                {t(config.op === 'div' ? 'playDrillPickDivisors' : 'playDrillPickTables')}
+              </Text>
+              <View style={styles.chips}>
+                {ALL_TABLES.map(n => {
+                  const on = config.tables.includes(n);
+                  return (
+                    <Pressable
+                      key={n}
+                      onPress={() => toggleTable(n)}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: on }}
+                      style={[styles.chip, { backgroundColor: on ? ACCENT : colors.card, borderColor: on ? ACCENT : colors.border }]}
+                    >
+                      <Text style={[styles.chipText, { color: on ? '#fff' : colors.foreground, writingDirection: 'ltr' }]}>
+                        {DRILL_SYMBOL[config.op]}{n}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          )}
 
           <Text style={[styles.label, { color: colors.foreground, textAlign: align, marginTop: 6 }]}>{t('playDrillDuration')}</Text>
           <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -138,7 +172,8 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
 function DrillRound({ config, onDone }: { config: DrillConfig; onDone: (r: Result) => void }) {
   const colors = useColors();
   const { t } = useLanguage();
-  const draw = (prev?: DrillProblem) => nextProblem(config.tables, Math.random, prev);
+  const ACCENT = ACCENTS[config.op];
+  const draw = (prev?: DrillProblem) => nextProblem(config, Math.random, prev);
   const [state, dispatch] = useReducer(drillReducer, undefined, () => startDrill(draw()));
   // A fixed end time, not a decrementing counter, so a backgrounded tab doesn't stretch the clock.
   const [endAt] = useState(() => Date.now() + config.seconds * 1000);
@@ -201,7 +236,7 @@ function DrillRound({ config, onDone }: { config: DrillConfig; onDone: (r: Resul
 
       <View style={styles.problemWrap} accessibilityLiveRegion="polite">
         <Text style={[styles.problem, { color: colors.foreground }]}>
-          {a} × {b} ={' '}
+          {a} {DRILL_SYMBOL[state.problem.op]} {b} ={' '}
           <Text style={{ color: state.wrong ? WRONG : ACCENT, textDecorationLine: state.wrong ? 'line-through' : 'none' }}>
             {state.typed || '?'}
           </Text>
