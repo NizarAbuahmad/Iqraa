@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,9 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { versionLabel } from '@/services/versionLabel';
 import { goBack } from '@/services/navigation';
+import { apiJson } from '@/services/apiClient';
+
+type AiUsage = { spentUsd: number | null; limitUsd: number; resetsAt: string };
 
 export default function SettingsScreen() {
   const colors = useColors();
@@ -17,6 +20,18 @@ export default function SettingsScreen() {
   const { t, isRTL, lang, toggleLang } = useLanguage();
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
+  const [usage, setUsage] = useState<AiUsage | null>(null);
+
+  // Hidden unless there is a cap and a known spend: an older server, a failed
+  // request or an unreadable ledger all leave the row out rather than show 0%.
+  useEffect(() => {
+    let cancelled = false;
+    apiJson<AiUsage>('/auth/me/ai-usage')
+      .then(u => { if (!cancelled && u.limitUsd > 0 && u.spentUsd !== null) setUsage(u); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  const usedPct = usage ? Math.min(100, Math.round(((usage.spentUsd ?? 0) / usage.limitUsd) * 100)) : 0;
 
   const handleToggleLanguage = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -138,6 +153,30 @@ export default function SettingsScreen() {
             nothing else in Settings is irreversible. */}
         <SectionLabel label={t('accountSection')} isRTL={isRTL} colors={colors} top />
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+          {usage && (
+            <>
+              <SettingRow
+                icon="sparkles-outline"
+                label={t('aiUsage')}
+                isRTL={isRTL}
+                colors={colors}
+                right={<Text style={{ color: usedPct >= 100 ? colors.destructive : colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{usedPct}%</Text>}
+              />
+              <View style={{ paddingHorizontal: 16, paddingBottom: 14, gap: 6 }}>
+                <View
+                  accessibilityRole="progressbar"
+                  accessibilityValue={{ min: 0, max: 100, now: usedPct }}
+                  style={[styles.meterTrack, { backgroundColor: colors.muted, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                >
+                  <View style={{ width: `${usedPct}%`, backgroundColor: usedPct >= 100 ? colors.destructive : colors.primary, borderRadius: 3 }} />
+                </View>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
+                  {t('aiUsageResets')} {new Date(usage.resetsAt).toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' })}
+                </Text>
+              </View>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            </>
+          )}
           <SettingRow
             icon="trash-outline"
             label={t('deleteAccount')}
@@ -193,4 +232,5 @@ const styles = StyleSheet.create({
   settingLabel: { fontSize: 15 },
   divider: { height: 1, marginHorizontal: 16 },
   langToggle: { paddingHorizontal: 14, paddingVertical: 7 },
+  meterTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
 });

@@ -50,6 +50,8 @@ import { decideRoleSwitch } from "../lib/roleSwitch.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 import { extensionForAvatarMime, MAX_AVATAR_DATA_URL_LENGTH } from "../lib/avatarUpload.js";
 import { parseDataUrl } from "../lib/lessonMediaUpload.js";
+import { getUserBudgetLimitUsd } from "../lib/aiBudget.js";
+import { currentPeriodStart, readUserPeriodSpendUsd } from "../lib/aiUsageLog.js";
 
 const router = Router();
 
@@ -1426,6 +1428,19 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
     logger.error({ err }, "get profile failed");
     res.status(500).json({ error: "Failed to fetch user" });
   }
+});
+
+// GET /auth/me/ai-usage — this month's AI spend against the caller's own
+// allowance, so the limit is visible before it refuses something. limitUsd 0
+// means no per-user cap is configured; spentUsd null means the ledger could
+// not be read (unknown, not zero — same contract as the quota check).
+router.get("/me/ai-usage", authMiddleware, async (req: AuthenticatedRequest, res) => {
+  const start = currentPeriodStart();
+  res.json({
+    spentUsd: await readUserPeriodSpendUsd(req.user!.id),
+    limitUsd: getUserBudgetLimitUsd(req.user!.role),
+    resetsAt: new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1)).toISOString(),
+  });
 });
 
 const VALID_GRADE_IDS = new Set(GRADES.map(g => g.id));
