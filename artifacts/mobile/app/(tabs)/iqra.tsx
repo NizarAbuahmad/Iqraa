@@ -108,6 +108,8 @@ import {
   type SessionDocument,
 } from '@/services/documents';
 import { lessonPickerParams, subjectPickerLabels, topicPickerParams } from '@/services/lessonPrep';
+import { answerAppHelp } from '@/services/appHelp';
+import type { TranslationKey } from '@/services/i18n';
 import { resolveDeepLinkSend, type DeepLinkSend } from '@/services/chatDeepLink';
 import { pinnedResourceNote } from '@/services/mathSupportResources';
 import {
@@ -290,6 +292,9 @@ type EphemeralSuggestion = {
   toolType?: 'worksheet' | 'quiz' | 'lesson-plan' | 'activity' | 'homework';
   /** Navigate here instead of sending a chat turn. */
   route?: string;
+  routeParams?: Record<string, string>;
+  /** A generator screen: open it on the current lesson's grade and subject. */
+  isTool?: boolean;
 };
 
 // ─── Teaching-context subject options ────────────────────────────────────────
@@ -1795,6 +1800,24 @@ export default function IqraScreen() {
       }
 
       try {
+      if (route.intent === 'app_help') {
+        const help = answerAppHelp(q, lang as 'ar' | 'en', k => t(k as TranslationKey));
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          text: help.text,
+          timestamp: new Date(),
+        }]);
+        setEphemeralSuggestions(help.places.map(p => ({
+          id: `place-${p.id}`,
+          label: `📍 ${t(p.labelKey as TranslationKey)}`,
+          prompt: '',
+          route: p.route,
+          routeParams: p.routeParams,
+          isTool: p.isTool,
+        })));
+        return;
+      }
       if (!route.useTeachingPipeline) {
         const socialMsg: Message = {
           id: (Date.now() + 1).toString(),
@@ -2526,11 +2549,6 @@ export default function IqraScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setEphemeralSuggestions([]);
 
-      if (suggestion.route) {
-        router.push(suggestion.route as any);
-        return;
-      }
-
       // Deep-link "Open lesson" — navigate once; not a chat turn
       if (suggestion.id.startsWith('open-lesson-') && suggestion.lessonId) {
         router.push({
@@ -2543,11 +2561,35 @@ export default function IqraScreen() {
         return;
       }
 
+      // A ready-made URL (the times-table drill carries its own query string).
+      if (suggestion.route && !suggestion.isTool && !suggestion.routeParams) {
+        router.push(suggestion.route as any);
+        return;
+      }
+
+      if (suggestion.route) {
+        const topic =
+          (lang === 'ar' ? sessionMemory.activeTopicAr : sessionMemory.activeTopicEn) ?? '';
+        router.push({
+          pathname: suggestion.route as any,
+          // Same params as the "+" menu: a generator opened without the
+          // lesson's picker indices defaults to the first subject.
+          params: suggestion.isTool
+            ? {
+              ...(topic ? { topic } : {}),
+              ...(lessonPickerParams(sessionMemory.activeLessonId, lang as 'ar' | 'en') ?? {}),
+              ...(suggestion.routeParams ?? {}),
+            }
+            : suggestion.routeParams,
+        });
+        return;
+      }
+
       if (suggestion.prompt.trim()) {
         sendMessage(suggestion.prompt, suggestion.lessonId);
       }
     },
-    [colors.primary, sendMessage],
+    [colors.primary, lang, sendMessage, sessionMemory],
   );
 
   const handleLessonSuggestion = useCallback((s: LessonSuggestion) => {
