@@ -17,7 +17,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { resolveArtifactTopic } from '../ai/artifactTopic.ts';
+import { resolveArtifactTopic, topicFromQuery } from '../ai/artifactTopic.ts';
+import { isBareArtifactShortcut } from '../lessonCopilot.ts';
 
 const base = {
   lesson: null,
@@ -136,5 +137,30 @@ describe('resolveArtifactTopic — sources, in order', () => {
       }),
       'الاقترانات',
     );
+  });
+});
+
+// An ask that names nothing is about the picked lesson. "make me a quiz" used
+// to resolve to the topic «me a», which beat the lesson the teacher picked.
+describe('an ask with no topic of its own carries the picked lesson', () => {
+  const bare = [
+    'make me a quiz', 'can you make a quiz please', 'give me a worksheet',
+    'I need a lesson plan', 'quiz for my class', 'make a quiz for grade 7',
+    'اعمل لي اختبار', 'أريد ورقة عمل', 'بدي اختبار قصير من فضلك', 'ممكن خطة درس؟',
+    'اختبار للصف السابع',
+  ];
+  for (const q of bare) {
+    it(JSON.stringify(q), () => {
+      assert.equal(topicFromQuery(q), '');
+      assert.equal(isBareArtifactShortcut(q), true);
+    });
+  }
+
+  it('a named topic still wins, and keeps its own words', () => {
+    assert.equal(topicFromQuery('make a quiz on fractions'), 'fractions');
+    assert.equal(topicFromQuery('make a quiz on Vitamin A'), 'Vitamin A');
+    assert.equal(topicFromQuery('worksheet on Class Management'), 'Class Management');
+    assert.equal(topicFromQuery('اعمل لي اختبار عن الكسور'), 'الكسور');
+    assert.equal(isBareArtifactShortcut('make a quiz on fractions'), false);
   });
 });

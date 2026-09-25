@@ -2316,7 +2316,17 @@ export default function IqraScreen() {
             : null,
           preferDocuments: hasDocs && sessionMemory.lessonPin !== 'hard',
         });
-        const topicRanked = searchKBRanked(topicForArt, lang as 'ar' | 'en');
+        // A new topic keeps the picked grade unless the message names another:
+        // "a quiz on fractions" with grade 7 picked meant grade 7's fractions,
+        // not whichever grade's lesson scored highest.
+        const artGradeId = queryGradeId
+          ?? (activeLesson ? getBookForLesson(activeLesson)?.gradeId : null)
+          ?? (ctxLesson ? getBookForLesson(ctxLesson)?.gradeId : null);
+        const topicRankedAll = searchKBRanked(topicForArt, lang as 'ar' | 'en');
+        const topicRankedInGrade = artGradeId
+          ? topicRankedAll.filter(r => getBookForLesson(r.lesson)?.gradeId === artGradeId)
+          : [];
+        const topicRanked = topicRankedInGrade.length ? topicRankedInGrade : topicRankedAll;
         const topicConfident = isConfidentSingleSubjectHit(topicRanked);
         // Unit-level asks (الدائرة) often tie several lessons — still prefer that unit
         const topicStrong =
