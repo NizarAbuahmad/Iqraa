@@ -1719,6 +1719,20 @@ const translations = {
     playColorsRound: (n: number) => `الجولة ${n}`,
     playColorsLives: (n: number) => `المحاولات المتبقية: ${n}`,
     playColorsGameOver: (round: number) => `وصلت إلى الجولة ${round}`,
+
+    playMultiplyTitle: 'تحدّي جدول الضرب',
+    playMultiplyDesc: 'كم مسألة ضرب تحلّ قبل انتهاء الوقت؟',
+    playDrillPickTables: 'اختر جداول الضرب',
+    playDrillDuration: 'المدة',
+    playDrillSecs: (n: number) => `${n} ثانية`,
+    playDrillStart: 'ابدأ',
+    playDrillShare: 'شارك الرابط مع الطلبة',
+    playDrillCopied: 'نُسخ الرابط',
+    playDrillTimeLeft: (n: number) => `الوقت المتبقي: ${n}`,
+    playDrillResult: (correct: number, attempted: number) => `${correct} إجابة صحيحة من ${attempted}`,
+    iqraDrillReady: (tables: string, secs: number) =>
+      `جهّزت لك تحدّي جدول الضرب: الجداول ${tables}، لمدة ${secs} ثانية.\n\nافتحه لتجرّبه، أو شارك رابطه مع طلبتك — يعمل دون تسجيل دخول.`,
+    iqraDrillOpen: '🎮 افتح تحدّي الضرب',
   },
 
   en: {
@@ -3271,6 +3285,20 @@ const translations = {
     playColorsRound: (n: number) => `Round ${n}`,
     playColorsLives: (n: number) => `Lives left: ${n}`,
     playColorsGameOver: (round: number) => `You reached round ${round}`,
+
+    playMultiplyTitle: 'Times Table Challenge',
+    playMultiplyDesc: 'How many can you solve before time runs out?',
+    playDrillPickTables: 'Pick the times tables',
+    playDrillDuration: 'Time',
+    playDrillSecs: (n: number) => `${n} seconds`,
+    playDrillStart: 'Start',
+    playDrillShare: 'Share link with students',
+    playDrillCopied: 'Link copied',
+    playDrillTimeLeft: (n: number) => `Time left: ${n}`,
+    playDrillResult: (correct: number, attempted: number) => `${correct} correct out of ${attempted}`,
+    iqraDrillReady: (tables: string, secs: number) =>
+      `Here's a times table challenge: tables ${tables}, ${secs} seconds.\n\nOpen it to try it, or share the link with your students — no sign-in needed.`,
+    iqraDrillOpen: '🎮 Open the times table challenge',
   },
 } as const;
 

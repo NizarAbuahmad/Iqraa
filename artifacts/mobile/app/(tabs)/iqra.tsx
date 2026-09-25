@@ -125,6 +125,13 @@ import {
   type LessonSuggestion,
 } from '@/services/lessonCopilot';
 import {
+  DEFAULT_SECONDS,
+  defaultTablesForGrade,
+  drillParams,
+  isMultiplicationDrillAsk,
+  tablesLabel,
+} from '@/services/publicGames/mathDrill';
+import {
   formatActivityText,
   formatLessonPlanText,
   formatQuizText,
@@ -281,6 +288,8 @@ type EphemeralSuggestion = {
   lessonId?: string;
   subjectColor?: string;
   toolType?: 'worksheet' | 'quiz' | 'lesson-plan' | 'activity' | 'homework';
+  /** Navigate here instead of sending a chat turn. */
+  route?: string;
 };
 
 // ─── Teaching-context subject options ────────────────────────────────────────
@@ -1797,6 +1806,31 @@ export default function IqraScreen() {
         return;
       }
 
+      // A multiplication game/drill ask gets the drill itself rather than a
+      // generic activity write-up: it's fixed arithmetic, so there is nothing
+      // for the curriculum pipeline to ground. Grade: named in the message,
+      // else the lesson the chat is on.
+      if (isMultiplicationDrillAsk(q)) {
+        const ctxLessonId = pinnedLessonId ?? teachingCtxLessonId ?? sessionMemory.activeLessonId;
+        const ctxLesson = ctxLessonId ? getLessonById(ctxLessonId) : null;
+        const gradeId = extractQueryGradeId(q) ?? (ctxLesson ? getBookForLesson(ctxLesson)?.gradeId : null);
+        const drill = { tables: defaultTablesForGrade(gradeId), seconds: DEFAULT_SECONDS };
+        const { tables, secs } = drillParams(drill);
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          text: t('iqraDrillReady', tablesLabel(drill.tables, lang === 'ar' ? '، ' : ', '), drill.seconds),
+          timestamp: new Date(),
+        }]);
+        setEphemeralSuggestions([{
+          id: 'play-drill',
+          label: t('iqraDrillOpen'),
+          prompt: '',
+          route: `/play/multiply?tables=${tables}&secs=${secs}`,
+        }]);
+        return;
+      }
+
       // Docs first — soft-pinned curriculum must not steal uploaded materials.
       const docBundleEarly = getDocumentContextBundle(lang as 'ar' | 'en');
       const hasDocsEarly =
@@ -2484,6 +2518,11 @@ export default function IqraScreen() {
     (suggestion: EphemeralSuggestion) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setEphemeralSuggestions([]);
+
+      if (suggestion.route) {
+        router.push(suggestion.route as any);
+        return;
+      }
 
       // Deep-link "Open lesson" — navigate once; not a chat turn
       if (suggestion.id.startsWith('open-lesson-') && suggestion.lessonId) {
