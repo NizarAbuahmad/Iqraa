@@ -668,6 +668,8 @@ const translations = {
     // path to exist inside the app.
     accountSection: 'الحساب',
     deleteAccount: 'حذف الحساب',
+    aiUsage: 'استخدام الذكاء الاصطناعي هذا الشهر',
+    aiUsageResets: 'يتجدد في',
     deleteAccountTitle: 'حذف الحساب',
     deleteAccountLead: 'حذف الحساب نهائيّ ولا يمكن التراجع عنه. سيجري فورًا، لا بعد مهلة.',
     deleteAccountWhatGoesTeacher: 'سيُحذف معه: شُعَبك وسجلّات طلبتك وملاحظاتك عنهم، والاختبارات وأوراق العمل ونتائجها، والمواد المحفوظة، والملفات التي رفعتها، والرسائل التي أرسلتها.',
@@ -2295,6 +2297,8 @@ const translations = {
     // path to exist inside the app.
     accountSection: 'ACCOUNT',
     deleteAccount: 'Delete account',
+    aiUsage: 'AI use this month',
+    aiUsageResets: 'Resets',
     deleteAccountTitle: 'Delete account',
     deleteAccountLead: 'Deleting your account is permanent and cannot be undone. It happens immediately, not after a waiting period.',
     deleteAccountWhatGoesTeacher: 'This also deletes: your classes, your student records and the notes you wrote about them, your tests and worksheets and their results, saved materials, files you uploaded, and messages you sent.',
