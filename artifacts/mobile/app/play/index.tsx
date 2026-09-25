@@ -38,6 +38,7 @@ const GAMES: Array<{
   { id: 'multiply', route: '/play/multiply', icon: 'calculator-outline', color: '#B45309', titleKey: 'playMultiplyTitle', descKey: 'playMultiplyDesc' },
   { id: 'divide', route: '/play/divide', icon: 'pie-chart-outline', color: '#7C3AED', titleKey: 'playDivideTitle', descKey: 'playDivideDesc' },
   { id: 'add', route: '/play/add', icon: 'add-circle-outline', color: '#4338CA', titleKey: 'playAddTitle', descKey: 'playAddDesc' },
+  { id: 'subtract', route: '/play/subtract', icon: 'remove-circle-outline', color: '#BE123C', titleKey: 'playSubtractTitle', descKey: 'playSubtractDesc' },
 ];
 
 export default function PlayHubScreen() {

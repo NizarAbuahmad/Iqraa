@@ -1,5 +1,5 @@
 /**
- * Quick arithmetic drills (×, ÷, +) — the pure half (config, problems, chat trigger).
+ * Quick arithmetic drills (×, ÷, +, −) — the pure half (config, problems, chat trigger).
  *
  * Run:
  *   node --experimental-strip-types --test \
@@ -16,7 +16,7 @@ import assert from 'node:assert/strict';
 import {
   DEFAULT_ADD_MAX,
   DEFAULT_SECONDS,
-  defaultAddMaxForGrade,
+  defaultMaxForGrade,
   defaultTablesForGrade,
   drillAskOp,
   drillPath,
@@ -27,6 +27,7 @@ import {
   startDrill,
   tablesLabel,
   type DrillConfig,
+  type DrillOp,
   type DrillProblem,
 } from '../publicGames/mathDrill.ts';
 import { makeRng } from '../publicGames/rng.ts';
@@ -113,6 +114,24 @@ describe('nextProblem', () => {
     });
   }
 
+  for (const max of [10, 20, 100]) {
+    it(`subtraction: never negative, first number within ${max}, second at least 1`, () => {
+      drawMany({ ...base, op: 'sub', max }, 300, max + 1, p => {
+        assert.equal(p.answer, p.a - p.b);
+        assert.ok(p.b >= 1 && p.b <= p.a, `${p.a}−${p.b}`);
+        assert.ok(p.a <= max, `${p.a}−${p.b}`);
+        assert.ok(p.answer >= 0);
+      });
+    });
+  }
+
+  it('subtraction includes zero answers (decided: 7 − 7 = 0 is allowed)', () => {
+    const rng = makeRng(3);
+    let zeros = 0;
+    for (let i = 0; i < 300; i++) if (nextProblem({ ...base, op: 'sub', max: 10 }, rng).answer === 0) zeros++;
+    assert.ok(zeros > 0);
+  });
+
   it('still avoids a repeat with a single table', () => {
     drawMany({ ...base, op: 'mul', tables: [1] }, 50, 7, () => {});
     drawMany({ ...base, op: 'div', tables: [1] }, 50, 7, () => {});
@@ -128,16 +147,16 @@ describe('grade defaults', () => {
   });
 
   it('grows the addition range with the grade', () => {
-    assert.equal(defaultAddMaxForGrade('grade-1'), 10);
-    assert.equal(defaultAddMaxForGrade('grade-2'), 20);
-    assert.equal(defaultAddMaxForGrade('grade-3'), 100);
-    assert.equal(defaultAddMaxForGrade('grade-10'), 100);
-    assert.equal(defaultAddMaxForGrade(null), DEFAULT_ADD_MAX);
+    assert.equal(defaultMaxForGrade('grade-1'), 10);
+    assert.equal(defaultMaxForGrade('grade-2'), 20);
+    assert.equal(defaultMaxForGrade('grade-3'), 100);
+    assert.equal(defaultMaxForGrade('grade-10'), 100);
+    assert.equal(defaultMaxForGrade(null), DEFAULT_ADD_MAX);
   });
 });
 
 describe('drillShareUrl / drillPath', () => {
-  const roundTrip = (url: string, op: 'mul' | 'div' | 'add') => {
+  const roundTrip = (url: string, op: DrillOp) => {
     const q = new URL(url).searchParams;
     const get = (k: string) => q.get(k) ?? undefined;
     return parseDrillParams(op, { tables: get('tables'), max: get('max'), secs: get('secs') });
@@ -153,10 +172,14 @@ describe('drillShareUrl / drillPath', () => {
     assert.deepEqual(roundTrip(drillShareUrl(div, 'http://x'), 'div'), div);
   });
 
-  it('addition links carry the range, not tables', () => {
+  it('addition and subtraction links carry the range, not tables', () => {
     const add: DrillConfig = { op: 'add', tables: ALL, max: 10, seconds: 90 };
     assert.equal(drillPath(add), '/play/add?max=10&secs=90');
     assert.deepEqual(roundTrip(drillShareUrl(add, 'http://x'), 'add'), add);
+
+    const sub: DrillConfig = { op: 'sub', tables: ALL, max: 20, seconds: 60 };
+    assert.equal(drillPath(sub), '/play/subtract?max=20&secs=60');
+    assert.deepEqual(roundTrip(drillShareUrl(sub, 'http://x'), 'sub'), sub);
   });
 
   it('falls back to production when there is no origin (native)', () => {
@@ -226,7 +249,7 @@ describe('tablesLabel', () => {
 });
 
 describe('drillAskOp', () => {
-  const asks: Array<[string, 'mul' | 'div' | 'add']> = [
+  const asks: Array<[string, DrillOp]> = [
     ['help make game to teach my grade one studnet multibly in math', 'mul'],
     ['help make a game to teach my grade one student multiply in math', 'mul'],
     ['لعبة جدول الضرب', 'mul'],
@@ -243,6 +266,13 @@ describe('drillAskOp', () => {
     ['تمرين جمع سريع', 'add'],
     ['a game for addition and multiplication', 'add'],
     ['لعبة ضرب وجمع', 'mul'],
+    ['subtraction game for grade 2', 'sub'],
+    ['minus drill', 'sub'],
+    ['take away practice for grade one', 'sub'],
+    ['a game to practice subtracting', 'sub'],
+    ['لعبة الطرح للصف الأول', 'sub'],
+    ['تدريب طرح سريع', 'sub'],
+    ['لعبة جمع وطرح', 'add'],
   ];
   for (const [q, op] of asks) {
     it(`"${q}" → ${op}`, () => assert.equal(drillAskOp(q), op));
@@ -258,6 +288,11 @@ describe('drillAskOp', () => {
     'a game to summarize the lesson',
     'explain long division',
     'نشاط جماعي للصف',
+    // «طرح» also means "to put forward": asking questions, raising ideas.
+    'لعبة لطرح الأسئلة على الطلبة',
+    'لعبة طرح أسئلة سريعة',
+    'نشاط تدريب على طرح الأفكار',
+    'لعبة طرح سؤال',
   ];
   for (const q of notAsks) {
     it(`"${q}" is not a drill ask`, () => assert.equal(drillAskOp(q), null));

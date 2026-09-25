@@ -16,6 +16,7 @@ import {
   DRILL_SECONDS,
   DRILL_SYMBOL,
   DRILL_TITLE_KEYS as TITLES,
+  usesRange,
   drillReducer,
   drillShareUrl,
   nextProblem,
@@ -26,7 +27,7 @@ import {
 } from '@/services/publicGames/mathDrill';
 
 // Solid fills carrying white text — each ≥ 4.5:1 against #fff.
-const ACCENTS: Record<DrillOp, string> = { mul: '#B45309', div: '#7C3AED', add: '#4338CA' };
+const ACCENTS: Record<DrillOp, string> = { mul: '#B45309', div: '#7C3AED', add: '#4338CA', sub: '#BE123C' };
 const RIGHT = '#16A34A';
 const WRONG = '#DC2626';
 const ALL_TABLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -89,9 +90,9 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
         />
       ) : (
         <View style={{ flex: 1, padding: 20, gap: 14 }}>
-          {config.op === 'add' ? (
+          {usesRange(config.op) ? (
             <>
-              <Text style={[styles.label, { color: colors.foreground, textAlign: align }]}>{t('playDrillPickMax')}</Text>
+              <Text style={[styles.label, { color: colors.foreground, textAlign: align }]}>{t(config.op === 'sub' ? 'playDrillPickNumbersMax' : 'playDrillPickMax')}</Text>
               <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 {ADD_MAXES.map(m => {
                   const on = config.max === m;
