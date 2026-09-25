@@ -24,6 +24,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
+import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { RosterError, archiveClass, createClass, listClasses, type ClassGroup } from '@/services/roster';
 import { confirm } from '@/services/confirm';
 import { countStudents, type TranslationKey } from '@/services/i18n';
@@ -133,11 +134,13 @@ function ClassesList() {
   const [error, setError] = useState('');
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newGradeId, setNewGradeId] = useState('grade-10');
+  // Only the grades/subjects this teacher picked on /setup-subjects are offered.
+  const teacherScope = useTeacherScope();
+  const [newGradeId, setNewGradeId] = useState(teacherScope.defaultIds.gradeId);
   const [newSubjectId, setNewSubjectId] = useState('');
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const pickerGrades = getPickerGrades();
+  const pickerGrades = getPickerGrades().filter(g => teacherScope.isGradeShown(g.id));
 
   /**
    * `classes.subject_id` has always existed and the API has always accepted
@@ -231,7 +234,7 @@ function ClassesList() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowNew(false);
       setNewName('');
-      setNewGradeId('grade-10');
+      setNewGradeId(teacherScope.defaultIds.gradeId);
       setNewSubjectId('');
       setClasses(prev => [...prev, created]);
       router.push({ pathname: '/classes/[id]', params: { id: created.id } });
@@ -456,7 +459,7 @@ function ClassesList() {
               <Pressable
                 onPress={() => {
                   setShowNew(false);
-                  setNewGradeId('grade-10');
+                  setNewGradeId(teacherScope.defaultIds.gradeId);
                   setNewSubjectId('');
                 }}
                 style={styles.modalBtn}

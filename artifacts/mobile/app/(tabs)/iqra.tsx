@@ -40,6 +40,7 @@ import {
   searchKBSemantic,
 } from '@/services/knowledgeBase';
 import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
+import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { loadLessonPick, saveLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
@@ -377,12 +378,14 @@ function ContextBanner({
   onGlobalPick?: (pick: ChatLessonPick) => void;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [subjIdx, setSubjIdx] = useState(0);
-  const [gradeId, setGradeId] = useState('grade-10');
+  // Only the grades/subjects this teacher picked on /setup-subjects are offered.
+  const teacherScope = useTeacherScope();
+  const [subjIdx, setSubjIdx] = useState(teacherScope.defaultScope.subjectIdx);
+  const [gradeId, setGradeId] = useState(teacherScope.defaultIds.gradeId);
   const [topic, setTopicInternal] = useState('');
   // Draft topic while modal is open; only committed on confirm
   const [draftTopic, setDraftTopic] = useState('');
-  const [draftSubjIdx, setDraftSubjIdx] = useState(0);
+  const [draftSubjIdx, setDraftSubjIdx] = useState(subjIdx);
   const [draftGradeId, setDraftGradeId] = useState(gradeId);
   // The KB id of the lesson the teacher tapped, straight from the picker.
   // Kept because the title alone does not identify it again — see
@@ -407,9 +410,10 @@ function ContextBanner({
   const visibleSubjIdxs = useMemo(
     () => CONTEXT_SUBJECTS
       .map((s, i) => ({ s, i }))
-      .filter(({ s }) => hasCurriculumForSubjectGrade(s.subjectId, draftGradeId))
+      .filter(({ s }) => hasCurriculumForSubjectGrade(s.subjectId, draftGradeId) && teacherScope.isSubjectShown(s.subjectId, draftGradeId))
       .map(({ i }) => i),
-    [draftGradeId],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- teacherScope is rebuilt every render
+    [draftGradeId, teacherScope.subjectHiddenFor(draftGradeId).join()],
   );
 
   /**
@@ -481,8 +485,8 @@ function ContextBanner({
 
   const handleClear = () => {
     setTopicInternal('');
-    setSubjIdx(0);
-    setGradeId('grade-10');
+    setSubjIdx(teacherScope.defaultScope.subjectIdx);
+    setGradeId(teacherScope.defaultIds.gradeId);
     setDraftLessonId(null);
     onContextChange('');
   };
@@ -554,13 +558,13 @@ function ContextBanner({
             showsVerticalScrollIndicator={false}
           >
             {/* Grade pills — only worth showing once there is a real choice. */}
-            {CONTEXT_GRADES.length > 1 ? (
+            {CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).length > 1 ? (
               <>
                 <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                   {lang === 'ar' ? 'الصف' : 'Grade'}
                 </Text>
                 <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                  {CONTEXT_GRADES.map(g => (
+                  {CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).map(g => (
                     <Pressable
                       key={g.id}
                       onPress={() => {
@@ -590,7 +594,7 @@ function ContextBanner({
             ) : null}
 
             {/* Subject pills */}
-            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: CONTEXT_GRADES.length > 1 ? 18 : 0 }]}>
+            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).length > 1 ? 18 : 0 }]}>
               {lang === 'ar' ? 'المادة' : 'Subject'}
             </Text>
             <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>

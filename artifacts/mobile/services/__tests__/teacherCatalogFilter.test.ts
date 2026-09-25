@@ -7,7 +7,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { narrowSubjectsForGrade, narrowToSelection, resolveSelectedId } from '../teacherCatalogFilter.ts';
+import { hiddenOutsideSelection, hiddenSubjectsForGrade, narrowSubjectsForGrade, narrowToSelection, resolveSelectedId } from '../teacherCatalogFilter.ts';
 
 const CATALOG = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
 
@@ -62,5 +62,22 @@ describe('resolveSelectedId', () => {
 
   it('is empty rather than stale when there is nothing to pick', () => {
     assert.equal(resolveSelectedId([], 'b'), '');
+  });
+});
+
+describe('hidden masks (index-aligned pickers)', () => {
+  it('hides everything the teacher did not pick, keeping positions', () => {
+    assert.deepEqual(hiddenOutsideSelection(CATALOG, ['b']), [true, false, true]);
+  });
+
+  it('hides nothing with no selection, or a fully stale one', () => {
+    assert.deepEqual(hiddenOutsideSelection(CATALOG, undefined), [false, false, false]);
+    assert.deepEqual(hiddenOutsideSelection(CATALOG, ['gone']), [false, false, false]);
+  });
+
+  it('masks subjects per grade from teachingAssignments, legacy ids otherwise', () => {
+    const assignments = [{ gradeId: 'g7', subjectIds: ['a'] }, { gradeId: 'g8', subjectIds: ['c'] }];
+    assert.deepEqual(hiddenSubjectsForGrade(CATALOG, 'g8', assignments, ['a', 'c']), [true, true, false]);
+    assert.deepEqual(hiddenSubjectsForGrade(CATALOG, 'g9', assignments, ['a', 'c']), [false, true, false]);
   });
 });

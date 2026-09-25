@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
+import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { useLanguage } from '@/context/LanguageContext';
 import { SavedMaterial, getRecentItems } from '@/services/workspace';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
@@ -84,8 +85,10 @@ export default function DashboardScreen() {
   const [lessonPick, setLessonPick] = useState<HomeLessonPick | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [draftTopic, setDraftTopic] = useState('');
-  const [draftSubjectId, setDraftSubjectId] = useState('mathematics');
-  const [draftGradeId, setDraftGradeId] = useState('grade-10');
+  // Only the grades/subjects this teacher picked on /setup-subjects are offered.
+  const teacherScope = useTeacherScope();
+  const [draftSubjectId, setDraftSubjectId] = useState(teacherScope.defaultIds.subjectId);
+  const [draftGradeId, setDraftGradeId] = useState(teacherScope.defaultIds.gradeId);
   const [draftDetail, setDraftDetail] = useState<TopicSelectionDetail>({
     unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null,
   });
@@ -108,9 +111,9 @@ export default function DashboardScreen() {
     // Relabelled for the grade as well as filtered by it: Grade 6's
     // creative-arts book has no music in it. See subjectForGrade.
     () => pickerSubjects
-      .filter(s => hasCurriculumForSubjectGrade(s.id, draftGradeId))
+      .filter(s => hasCurriculumForSubjectGrade(s.id, draftGradeId) && teacherScope.isSubjectShown(s.id, draftGradeId))
       .map(s => subjectForGrade(s, draftGradeId)),
-    [draftGradeId],
+    [draftGradeId, user],
   );
   // Class Mode media attached to the CURRENT lesson (shown as deck slides).
   const [media, setMedia] = useState<LessonMediaItem[]>([]);
@@ -235,8 +238,8 @@ export default function DashboardScreen() {
   const openChangeLesson = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDraftTopic('');
-    setDraftSubjectId(lessonPick?.subjectId ?? 'mathematics');
-    setDraftGradeId(lessonPick?.gradeId ?? 'grade-10');
+    setDraftSubjectId(lessonPick?.subjectId ?? teacherScope.defaultIds.subjectId);
+    setDraftGradeId(lessonPick?.gradeId ?? teacherScope.defaultIds.gradeId);
     setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null });
     setPickerOpen(true);
   };
@@ -808,7 +811,7 @@ export default function DashboardScreen() {
             </Text>
 
             {/* Grade pills — only worth showing once there is a real choice. */}
-            {pickerGrades.length > 1 ? (
+            {pickerGrades.filter(g => teacherScope.isGradeShown(g.id)).length > 1 ? (
               <>
                 <Text
                   style={{
@@ -822,7 +825,7 @@ export default function DashboardScreen() {
                   {lang === 'ar' ? 'الصف' : 'Grade'}
                 </Text>
                 <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-                  {pickerGrades.map(g => {
+                  {pickerGrades.filter(g => teacherScope.isGradeShown(g.id)).map(g => {
                     const active = draftGradeId === g.id;
                     return (
                       <Pressable
@@ -835,8 +838,8 @@ export default function DashboardScreen() {
                           // grade does not teach, leaving a selection the
                           // teacher can no longer see. Move to the first it
                           // does teach.
-                          if (!hasCurriculumForSubjectGrade(draftSubjectId, g.id)) {
-                            const first = pickerSubjects.find(s => hasCurriculumForSubjectGrade(s.id, g.id));
+                          if (!hasCurriculumForSubjectGrade(draftSubjectId, g.id) || !teacherScope.isSubjectShown(draftSubjectId, g.id)) {
+                            const first = pickerSubjects.find(s => hasCurriculumForSubjectGrade(s.id, g.id) && teacherScope.isSubjectShown(s.id, g.id));
                             if (first) setDraftSubjectId(first.id);
                           }
                           setDraftTopic('');
