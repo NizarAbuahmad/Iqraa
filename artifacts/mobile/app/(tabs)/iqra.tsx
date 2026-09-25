@@ -128,10 +128,13 @@ import {
 } from '@/services/lessonCopilot';
 import {
   DEFAULT_SECONDS,
+  DRILL_TITLE_KEYS,
+  defaultAddMaxForGrade,
   defaultTablesForGrade,
-  drillParams,
-  isMultiplicationDrillAsk,
+  drillAskOp,
+  drillPath,
   tablesLabel,
+  type DrillConfig,
 } from '@/services/publicGames/mathDrill';
 import {
   formatActivityText,
@@ -1829,27 +1832,37 @@ export default function IqraScreen() {
         return;
       }
 
-      // A multiplication game/drill ask gets the drill itself rather than a
+      // An arithmetic game/drill ask (× ÷ +) gets the drill itself rather than a
       // generic activity write-up: it's fixed arithmetic, so there is nothing
       // for the curriculum pipeline to ground. Grade: named in the message,
       // else the lesson the chat is on.
-      if (isMultiplicationDrillAsk(q)) {
+      const drillOp = drillAskOp(q);
+      if (drillOp) {
         const ctxLessonId = pinnedLessonId ?? teachingCtxLessonId ?? sessionMemory.activeLessonId;
         const ctxLesson = ctxLessonId ? getLessonById(ctxLessonId) : null;
         const gradeId = extractQueryGradeId(q) ?? (ctxLesson ? getBookForLesson(ctxLesson)?.gradeId : null);
-        const drill = { tables: defaultTablesForGrade(gradeId), seconds: DEFAULT_SECONDS };
-        const { tables, secs } = drillParams(drill);
+        const drill: DrillConfig = {
+          op: drillOp,
+          tables: defaultTablesForGrade(gradeId),
+          max: defaultAddMaxForGrade(gradeId),
+          seconds: DEFAULT_SECONDS,
+        };
+        const title = t(DRILL_TITLE_KEYS[drillOp]);
+        const tables = tablesLabel(drill.tables, lang === 'ar' ? '، ' : ', ');
+        const detail = drillOp === 'add'
+          ? t('iqraDrillUpTo', drill.max)
+          : t(drillOp === 'div' ? 'iqraDrillDivisors' : 'iqraDrillTables', tables);
         setMessages(prev => [...prev, {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          text: t('iqraDrillReady', tablesLabel(drill.tables, lang === 'ar' ? '، ' : ', '), drill.seconds),
+          text: t('iqraDrillReady', title, detail, drill.seconds),
           timestamp: new Date(),
         }]);
         setEphemeralSuggestions([{
           id: 'play-drill',
-          label: t('iqraDrillOpen'),
+          label: t('iqraDrillOpen', title),
           prompt: '',
-          route: `/play/multiply?tables=${tables}&secs=${secs}`,
+          route: drillPath(drill),
         }]);
         return;
       }
