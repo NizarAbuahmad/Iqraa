@@ -186,24 +186,31 @@ export default function OnboardingScreen() {
               read out as the heading above. Which dot is current needs saying
               twice: `accessibilityState.selected` for iOS/Android, and
               `aria-current="step"`, because React Native Web drops `selected`
-              on role="button" and emits nothing at all. */}
+              on role="button" and emits nothing at all.
+
+              The target is padding around the visible bar, not hitSlop:
+              React Native Web ignores hitSlop, and an 8px dot was missed
+              by real clicks on web. */}
           {SLIDES.map((s, i) => (
             <Pressable
               key={s.titleKey}
               onPress={() => { Haptics.selectionAsync(); setIndex(i); }}
-              hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel={t('onboardingSlideLabel', i + 1, SLIDES.length)}
               accessibilityState={{ selected: i === index }}
               aria-current={i === index ? 'step' : undefined}
-              style={[
-                styles.dot,
-                {
-                  backgroundColor: i === index ? colors.primary : colors.border,
-                  width: i === index ? 22 : 8,
-                },
-              ]}
-            />
+              style={styles.dotTarget}
+            >
+              <View
+                style={[
+                  styles.dot,
+                  {
+                    backgroundColor: i === index ? colors.primary : colors.border,
+                    width: i === index ? 22 : 8,
+                  },
+                ]}
+              />
+            </Pressable>
           ))}
         </View>
         <View style={[styles.actions, { flexDirection: row }]}>
@@ -265,7 +272,8 @@ const styles = StyleSheet.create({
   desc: { fontSize: 16, lineHeight: 26, maxWidth: 380, textAlign: 'center' },
 
   footer: { gap: 20, paddingTop: 12, alignSelf: 'center', width: '100%', maxWidth: 440 },
-  dots: { alignSelf: 'center', alignItems: 'center', gap: 8 },
+  dots: { alignSelf: 'center', alignItems: 'center' },
+  dotTarget: { minWidth: 24, minHeight: 24, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
   dot: { height: 8, borderRadius: 4 },
   actions: { gap: 12 },
   backBtn: { flex: 1 },
