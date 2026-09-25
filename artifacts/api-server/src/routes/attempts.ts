@@ -7,6 +7,7 @@
  * proven by joining back to the evaluation that owns it.
  */
 import { Router } from "express";
+import { createRateLimiter } from "../lib/rateLimit";
 import { db } from "@workspace/db";
 import {
   attemptAnswers,
@@ -66,6 +67,17 @@ const router = Router();
 // requireRole closes the gap where any authenticated user, not just a
 // teacher, could review or grade attempts.
 router.use("/attempts", authMiddleware, requireRole(...TEACHER_ROLES));
+
+// Burst ceiling on the one model-backed route here. /chat and /generate get
+// theirs in routes/index.ts; this one was missed, so a loop could call the
+// model as fast as it answered. Mounted after authMiddleware so it keys per
+// user, not per school NAT address.
+const aiLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 20,
+  name: "ai-scan-marks",
+  key: (req) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
+});
 
 async function ownedAttempt(attemptId: string, teacherId: string) {
   const [row] = await db
@@ -550,7 +562,7 @@ router.put("/attempts/:id/grades/:questionId", async (req: AuthenticatedRequest,
  * to minors is a decision that deserves its own conversation rather than
  * arriving as a side effect of a convenience feature.
  */
-router.post("/attempts/:id/scan-marks", async (req: AuthenticatedRequest, res) => {
+router.post("/attempts/:id/scan-marks", aiLimiter, async (req: AuthenticatedRequest, res) => {
   try {
     const owned = await ownedAttempt(req.params["id"] as string, req.user!.id);
     if (!owned) {

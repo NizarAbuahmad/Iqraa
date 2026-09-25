@@ -100,7 +100,9 @@ router.post("/practice/read-aloud", async (req: AuthenticatedRequest, res) => {
 
     assertLiveModeEnabled();
     assertBudgetAvailable();
-    await assertUserQuotaAvailable(userId);
+    // Pass the role: practice is the student surface, and without it a student
+    // is checked against the teacher allowance instead of AI_STUDENT_BUDGET_USD.
+    await assertUserQuotaAvailable(userId, req.user?.role);
 
     /*
      * Count the transcription, not the request — and only now, after every

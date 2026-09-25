@@ -43,8 +43,10 @@ import { createRateLimiter } from "../lib/rateLimit";
 import {
   AiBudgetExceededError,
   AiLiveModeOffError,
+  AiUserQuotaExceededError,
   assertBudgetAvailable,
   assertLiveModeEnabled,
+  assertUserQuotaAvailable,
   recordAudioUsage,
 } from "../lib/aiBudget";
 import { MAX_DATA_URL_LENGTH, parseDataUrl } from "../lib/lessonMediaUpload";
@@ -490,6 +492,36 @@ router.post("/take/attempt/audio/:questionId", async (req, res) => {
     assertLiveModeEnabled();
     assertBudgetAvailable();
 
+    /*
+     * Bill the spend to the teacher who owns the exam.
+     *
+     * The student has no account — the link is the identity — so there is no
+     * user of their own to charge, and an unattributed row makes "which class
+     * is costing money" unanswerable. The owning teacher is the only honest
+     * answer available.
+     *
+     * Its own try/catch on purpose: this is a metrics attribution, and a
+     * failed lookup must not fail a recording the student has already made. It
+     * also leaves no teacher to check a quota against, so the global cap is
+     * the only one in force for that request.
+     */
+    let owningTeacherId: string | null = null;
+    try {
+      const [owner] = await db
+        .select({ teacherId: evaluations.teacherId })
+        .from(evaluations)
+        .where(eq(evaluations.id, attempt.evaluationId))
+        .limit(1);
+      owningTeacherId = owner?.teacherId ?? null;
+    } catch (err) {
+      logger.warn({ err }, "could not attribute read-aloud spend to a teacher");
+    }
+    // The owning teacher's allowance covers their students' recordings. This
+    // route used to check only the global cap, so one exam could spend past
+    // the teacher's AI_USER_BUDGET_USD. Checked before the upload, not after,
+    // so a refused recording costs neither storage nor a transcription.
+    await assertUserQuotaAvailable(owningTeacherId);
+
     const key = newAttemptAudioKey(verdict.extension);
     await putObject(key, parsed.buffer, parsed.mime);
 
@@ -507,29 +539,6 @@ router.post("/take/attempt/audio/:questionId", async (req, res) => {
     // runtime image, so every browser recording would fail on conversion.
     const transcript = await speechToText(parsed.buffer, verdict.transcribeAs);
 
-    /*
-     * Bill the spend to the teacher who owns the exam.
-     *
-     * The student has no account — the link is the identity — so there is no
-     * user of their own to charge, and an unattributed row makes "which class
-     * is costing money" unanswerable. The owning teacher is the only honest
-     * answer available.
-     *
-     * Its own try/catch on purpose: this is a metrics attribution, and a
-     * failed lookup must not fail a recording the student has already made and
-     * we have already paid to transcribe.
-     */
-    let owningTeacherId: string | null = null;
-    try {
-      const [owner] = await db
-        .select({ teacherId: evaluations.teacherId })
-        .from(evaluations)
-        .where(eq(evaluations.id, attempt.evaluationId))
-        .limit(1);
-      owningTeacherId = owner?.teacherId ?? null;
-    } catch (err) {
-      logger.warn({ err }, "could not attribute read-aloud spend to a teacher");
-    }
     recordAudioUsage(verdict.durationMs / 1000, "gpt-4o-mini-transcribe", owningTeacherId);
 
     const response = { audioKey: key, transcript, durationMs: verdict.durationMs, takes: takes + 1 };
@@ -546,7 +555,11 @@ router.post("/take/attempt/audio/:questionId", async (req, res) => {
     // result here would tell them their mark before the teacher has the paper.
     res.json({ saved: true, transcript, takesLeft: MAX_TAKES_PER_QUESTION - (takes + 1) });
   } catch (err) {
-    if (err instanceof AiLiveModeOffError || err instanceof AiBudgetExceededError) {
+    if (
+      err instanceof AiLiveModeOffError
+      || err instanceof AiBudgetExceededError
+      || err instanceof AiUserQuotaExceededError
+    ) {
       logger.warn({ err: err.message }, "read-aloud transcription refused");
       res.status(503).json({ error: "Recording is unavailable right now", code: "ai_unavailable" });
       return;

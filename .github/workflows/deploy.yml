@@ -170,6 +170,11 @@ jobs:
       # decoded buffer at once, and lib/curriculum caches parsed corpus JSON in
       # an unbounded module-level Map — change it here, in its own commit, so a
       # regression has exactly one suspect.
+      # Per-user monthly AI allowances (USD, reset on the 1st, UTC). Unset means
+      # no per-user cap at all (aiBudget.getUserBudgetLimitUsd), which on a free
+      # plan lets one account spend everyone's month. They live here rather than
+      # in the console so a deploy can't silently drop them; change them here.
+      # A teacher's allowance also covers their students' exam recordings.
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy iqraa-api \
@@ -181,7 +186,7 @@ jobs:
             --cpu 1 \
             --concurrency 80 \
             --timeout 300 \
-            --update-env-vars "GIT_SHA=${GITHUB_SHA::7}"
+            --update-env-vars "GIT_SHA=${GITHUB_SHA::7},AI_USER_BUDGET_USD=1,AI_STUDENT_BUDGET_USD=0.20"
 
       # gcloud reporting success is not evidence the new code is serving. It
       # has printed a success line while traffic stayed pinned to an older
