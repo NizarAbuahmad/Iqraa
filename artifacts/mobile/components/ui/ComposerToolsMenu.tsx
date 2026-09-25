@@ -129,11 +129,14 @@ export function ComposerToolsMenu({
 
             {sections.map(section => (
               <View key={section.id} style={styles.group}>
-                <Text
-                  style={[styles.sectionTitle, { color: colors.mutedForeground, textAlign: align }]}
-                >
-                  {section.title}
-                </Text>
+                {/* An empty title means an unheaded list — chat passes one flat section. */}
+                {section.title ? (
+                  <Text
+                    style={[styles.sectionTitle, { color: colors.mutedForeground, textAlign: align }]}
+                  >
+                    {section.title}
+                  </Text>
+                ) : null}
                 {section.tools.map(tool => {
                   const badge = badgeFor(tool);
                   return (
