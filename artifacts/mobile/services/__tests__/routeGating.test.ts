@@ -73,7 +73,7 @@ describe('isPublicRoute', () => {
   });
 
   it('lets anyone open the free games hub with no account', () => {
-    for (const p of ['/play', '/play/flags', '/play/capitals', '/play/memory', '/play/colors']) {
+    for (const p of ['/play', '/play/flags', '/play/capitals', '/play/memory', '/play/colors', '/play/multiply']) {
       assert.equal(isPublicRoute(p), true, p);
     }
   });

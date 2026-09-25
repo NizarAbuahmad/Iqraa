@@ -35,6 +35,7 @@ const GAMES: Array<{
   { id: 'capitals', route: '/play/capitals', icon: 'location-outline', color: '#0E8F86', titleKey: 'playCapitalsTitle', descKey: 'playCapitalsDesc' },
   { id: 'memory', route: '/play/memory', icon: 'apps-outline', color: '#0369A1', titleKey: 'playMemoryTitle', descKey: 'playMemoryDesc' },
   { id: 'colors', route: '/play/colors', icon: 'color-palette-outline', color: '#DB2777', titleKey: 'playColorsTitle', descKey: 'playColorsDesc' },
+  { id: 'multiply', route: '/play/multiply', icon: 'calculator-outline', color: '#B45309', titleKey: 'playMultiplyTitle', descKey: 'playMultiplyDesc' },
 ];
 
 export default function PlayHubScreen() {
