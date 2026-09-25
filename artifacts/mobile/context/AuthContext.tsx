@@ -219,9 +219,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // transition (login, register, session restore, logout) in one place —
   // without it a second account on the same device inherited the previous
   // teacher's lesson pick and skipped first-run onboarding.
+  //
+  // Set during render, not in an effect: React runs child effects before
+  // parent ones, so the tab layout's `loadLessonPick()` ran in the same commit
+  // as sign-in but *before* this scope was set, read the unscoped key, got
+  // nothing, and never retried. The sidebar said «اختر الدرس الحالي» while
+  // the chat — reading later — showed the teacher's real lesson. Both setters
+  // are plain assignments, so repeating them on every render is harmless.
+  setActiveLessonContextUser(user?.id ?? null);
+  setActiveMediaUser(user?.id ?? null);
   useEffect(() => {
-    setActiveLessonContextUser(user?.id ?? null);
-    setActiveMediaUser(user?.id ?? null);
     // Signed in → the teacher will likely generate materials shortly. Wake
     // the sleeping verifier now so the symbolic badge is available when they
     // do, instead of silently degrading to the bank label. The route needs a
