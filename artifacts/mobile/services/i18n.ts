@@ -266,7 +266,7 @@ const translations = {
     qrKindPage: 'صفحة ويب',
     // The resources tab: everything supplementary a teacher can use or hand
     // out, in one place. The book QR codes above are one shelf of it.
-    resourcesTitle: 'مكتبة المصادر',
+    resourcesTitle: 'المكتبة',
     resourcesIntro:
       'قوالبُ جاهزة، وأوراقٌ للطباعة، وأنشطةٌ صفّية، ووسائطُ المنهج من صوتٍ وفيديو وصور، ومصادرُ الكتب — مرتّبةً حسب الصف. اختر ما يناسب درسك.',
     resourcesAllSubjects: 'كل المواد',
@@ -413,7 +413,7 @@ const translations = {
     parentMsgPickForSend: 'اختر الطالب/ة من قائمة شُعَبك لإرسال الرسالة داخل اقرأ.',
     parentMsgNoGuardian: 'لم يربط وليّ أمر هذا الطالب/ة حسابه بعد — استخدم المشاركة.',
     toolsResources: 'المصادر',
-    toolLibraryTitle: 'مكتبة المصادر',
+    toolLibraryTitle: 'المكتبة',
     toolLibraryDesc: 'صوت وفيديو وصور وأوراق عمل وأنشطة وقوالب جاهزة لكل صف.',
     toolWorksheetTitle: 'ورقة عمل',
     toolWorksheetDesc: 'ورقة قابلة للطباعة لتمرين الطلبة داخل الصف — تدريب موجّه ومستقل.',
@@ -1886,7 +1886,7 @@ const translations = {
     qrKindDocument: 'Document',
     qrKindImage: 'Image',
     qrKindPage: 'Web page',
-    resourcesTitle: 'Resource library',
+    resourcesTitle: 'Library',
     resourcesIntro:
       'Ready-made templates, printable worksheets, classroom activities, curriculum audio, video and images, and the book resources — by grade. Pick what suits your lesson.',
     resourcesAllSubjects: 'All subjects',
@@ -2022,7 +2022,7 @@ const translations = {
     parentMsgPickForSend: 'Pick the student from your classes to send inside Iqraa.',
     parentMsgNoGuardian: 'No guardian has linked an account for this student yet — use Share.',
     toolsResources: 'Resources',
-    toolLibraryTitle: 'Resource library',
+    toolLibraryTitle: 'Library',
     toolLibraryDesc: 'Audio, video, images, worksheets, activities and ready-made templates for each grade.',
     toolWorksheetTitle: 'Worksheet',
     toolWorksheetDesc: 'A printable student practice sheet for class — guided and independent work.',
