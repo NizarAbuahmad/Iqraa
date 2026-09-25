@@ -220,9 +220,13 @@ export function TopicSelector({
     ? unitGroups.find(g => g.units.some(u => u.id === selectedUnit.id))?.label
     : null;
 
-  const unitTitle = selectedUnit
-    ? (lang === 'ar' ? selectedUnit.titleAr : selectedUnit.titleEn)
-    : '';
+  // English books print English titles only; `titleAr` there is our gloss.
+  // Display-only: the topic string sent via onChange above stays as it was,
+  // since grounding matches on it.
+  const shownTitle = (x: { titleAr: string; titleEn: string }) =>
+    (subjectId === 'english' || lang !== 'ar') ? (x.titleEn || x.titleAr) : x.titleAr;
+
+  const unitTitle = selectedUnit ? shownTitle(selectedUnit) : '';
   const unitDisplayValue = selectedUnitId === ENTIRE_BOOK
     ? t('entireBook')
     : selectedUnit
@@ -232,7 +236,7 @@ export function TopicSelector({
   const lessonDisplayValue = selectedLessonId === ENTIRE_UNIT
     ? t('entireUnit')
     : selectedLessonId
-      ? (lessons.find(l => l.id === selectedLessonId)?.[lang === 'ar' ? 'titleAr' : 'titleEn'] ?? '')
+      ? (() => { const l = lessons.find(x => x.id === selectedLessonId); return l ? shownTitle(l) : ''; })()
       : '';
 
   const unitBorderColor = hasError && !selectedUnitId
@@ -283,7 +287,7 @@ export function TopicSelector({
                 {group.units.map(unit => (
                   <DropdownItem
                     key={unit.id}
-                    label={lang === 'ar' ? unit.titleAr : unit.titleEn}
+                    label={shownTitle(unit)}
                     selected={selectedUnitId === unit.id}
                     onPress={() => handleUnitSelect(unit.id)}
                     accent={accent} colors={colors} isRTL={isRTL}
@@ -332,7 +336,7 @@ export function TopicSelector({
                 {lessons.map(lesson => (
                   <DropdownItem
                     key={lesson.id}
-                    label={lang === 'ar' ? lesson.titleAr : lesson.titleEn}
+                    label={shownTitle(lesson)}
                     selected={selectedLessonId === lesson.id}
                     onPress={() => { setSelectedLessonId(lesson.id); setLessonOpen(false); }}
                     accent={accent} colors={colors} isRTL={isRTL}
