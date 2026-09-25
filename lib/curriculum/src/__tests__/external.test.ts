@@ -23,10 +23,13 @@ import {
   type ExternalResource,
 } from '../external.ts';
 import { usePolicy } from '../bank.ts';
+import { GRADES, SUBJECTS } from '../catalog.ts';
 
 const base: ExternalResource = {
   id: 'test-resource',
   lessonIds: ['kbl-eng-s1-nccd-u1_l1'],
+  gradeIds: ['grade-10'],
+  subjectId: 'english',
   kind: 'text',
   titleEn: 'A title',
   titleAr: 'عنوان',
@@ -60,6 +63,15 @@ describe('the shipped manifest', () => {
     // and a manifest nobody re-checks is a manifest that is quietly wrong.
     const stale = EXTERNAL_RESOURCES.filter(r => isLicenseCheckStale(r)).map(r => r.id);
     assert.deepEqual(stale, [], `licence check older than ${LICENSE_CHECK_MAX_AGE_DAYS} days`);
+  });
+
+  it('files every resource under a real grade and subject', () => {
+    const grades = new Set(GRADES.map(g => g.id));
+    const subjects = new Set(SUBJECTS.map(s => s.id));
+    for (const r of EXTERNAL_RESOURCES) {
+      for (const g of r.gradeIds) assert.ok(grades.has(g), `${r.id}: unknown grade ${g}`);
+      assert.ok(subjects.has(r.subjectId), `${r.id}: unknown subject ${r.subjectId}`);
+    }
   });
 
   it('never carries a copy it has no right to take', () => {
@@ -107,7 +119,14 @@ describe('validation catches what would ship silently', () => {
   it('rejects a lesson anchor that is not a kbl-* id', () => {
     // A title does not identify a lesson, and neither does a unit id.
     assert.match(check({ lessonIds: ['Looking good'] }).join('\n'), /not a kbl-\* lesson id/);
-    assert.match(check({ lessonIds: [] }).join('\n'), /attached to no lesson/);
+  });
+
+  it('files every resource under a grade and a subject, but not necessarily a lesson', () => {
+    // The resources library lists by grade; a row with no grade never appears.
+    assert.match(check({ gradeIds: [] }).join('\n'), /filed under no grade/);
+    assert.match(check({ gradeIds: ['10'] }).join('\n'), /not a grade-\* id/);
+    assert.match(check({ subjectId: '' }).join('\n'), /no subjectId/);
+    assert.deepEqual(check({ lessonIds: [] }), []);
   });
 
   it('rejects a malformed or missing licence date', () => {

@@ -222,6 +222,21 @@ export const AFTER_CLASS: ToolDef[] = visible(AFTER_CLASS_ALL);
 // a disclosure a teacher had no reason to open. Everything moved into the stage
 // where it is actually used; the stub became a real screen.
 
+/**
+ * The per-grade resources library. Not a generator, so it sits in its own
+ * section at the top of the Tools tab rather than in a workflow stage — and
+ * not in ALL_TOOLS, so the chat "+" menu doesn't offer it as something chat
+ * can make. It lives under /curriculum so students can reach it too.
+ */
+export const LIBRARY_TOOL: ToolDef = {
+  id: 'library',
+  titleKey: 'toolLibraryTitle',
+  descKey: 'toolLibraryDesc',
+  icon: 'library-outline',
+  color: '#7C3AED',
+  route: '/curriculum/resources',
+};
+
 export const WORKFLOW: WorkflowSection[] = [
   { id: 'before', titleKey: 'toolsBeforeClass', tools: BEFORE_CLASS },
   { id: 'during', titleKey: 'toolsDuringClass', tools: DURING_CLASS },

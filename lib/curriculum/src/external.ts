@@ -76,8 +76,21 @@ export interface ExternalIngest {
 export interface ExternalResource {
   /** Stable slug, e.g. `voa-le-plastic-oceans`. Referenced from question bodies. */
   id: string;
-  /** `kbl-*` lesson ids. Ids, never titles — a title does not identify a lesson. */
+  /**
+   * `kbl-*` lesson ids. Ids, never titles — a title does not identify a lesson.
+   * May be empty: a resource for the whole grade (a poster, a song) is filed by
+   * `gradeIds` alone.
+   */
   lessonIds: string[];
+  /**
+   * `grade-*` ids from `GRADES`. What the resources library files a row under.
+   * Stated rather than derived: a lesson id like `kbl-phys-s1-nccd-u2_l3` does
+   * not say which grade it belongs to, and resolving it would mean loading the
+   * KB on every render of the library.
+   */
+  gradeIds: string[];
+  /** A `SUBJECTS` id — what the library's subject chips narrow by. */
+  subjectId: string;
   kind: ExternalResourceKind;
   titleEn: string;
   titleAr: string;
@@ -221,7 +234,13 @@ export function validateExternalResources(
     if (seen.has(r.id)) errors.push(`${r.id}: duplicate id`);
     seen.add(r.id);
 
-    if (!r.lessonIds.length) errors.push(`${r.id}: attached to no lesson`);
+    // Membership in GRADES/SUBJECTS is checked in the test, not here: importing
+    // the catalog would drag every grade's book into this metadata-only module.
+    if (!r.gradeIds?.length) errors.push(`${r.id}: filed under no grade`);
+    for (const id of r.gradeIds ?? []) {
+      if (!id.startsWith('grade-')) errors.push(`${r.id}: "${id}" is not a grade-* id`);
+    }
+    if (!r.subjectId) errors.push(`${r.id}: no subjectId`);
     for (const id of r.lessonIds) {
       if (!id.startsWith('kbl-')) errors.push(`${r.id}: "${id}" is not a kbl-* lesson id`);
     }

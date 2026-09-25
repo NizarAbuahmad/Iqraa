@@ -3,7 +3,9 @@
  *
  * This began as the book-QR library: every NCCD student book prints QR codes
  * in its margins, and the decoded manifest sat unread in `knowledge-base/`.
- * That shelf is still here, and it is now one of four. A teacher preparing a
+ * That shelf is still here, and it is now one of five — ready-made tool
+ * starters (templates, teacher-only) were added 2026-09-25, along with grade
+ * and subject chips so it can be opened from the Tools tab with no grade param. A teacher preparing a
  * lesson also gets the ready-made practice sheets, the classroom activity
  * formats, and the licensed third-party media — browsable together, filterable
  * by kind and by lesson, because a teacher is preparing ONE lesson and does
@@ -36,6 +38,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
+import { narrowSubjectsForGrade, narrowToSelection } from '@/services/teacherCatalogFilter';
+import { RESOURCE_TEMPLATES, templateParams } from '@/services/resourceTemplates';
 import { openExternal } from '@/services/externalLinks';
 import { qrResourcesForGrade } from '@/services/bookQrLinks';
 import { ACTIVITY_CARDS } from '@/services/classroomRouting';
@@ -48,7 +53,13 @@ import {
   type ResourceSource,
 } from '@/services/resourceCatalog';
 import { allPremade } from '@workspace/curriculum/premade';
-import { EXTERNAL_RESOURCES } from '@workspace/curriculum';
+import {
+  EXTERNAL_RESOURCES,
+  getPickerGrades,
+  getPickerSubjects,
+  getSubjectsForGrade,
+  getVisibleGrades,
+} from '@workspace/curriculum';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
@@ -62,6 +73,7 @@ const KIND_LABEL: Record<ResourceKind, TranslationKey> = {
   document: 'qrKindDocument',
   image: 'qrKindImage',
   page: 'qrKindPage',
+  template: 'resourceKindTemplate',
 };
 
 const KIND_ICON: Record<ResourceKind, React.ComponentProps<typeof Ionicons>['name']> = {
@@ -73,10 +85,12 @@ const KIND_ICON: Record<ResourceKind, React.ComponentProps<typeof Ionicons>['nam
   document: 'document-text-outline',
   image: 'image-outline',
   page: 'globe-outline',
+  template: 'construct-outline',
 };
 
 /** The order the filter chips appear in — audio first, because it is the rarest. */
 const KIND_ORDER: ResourceKind[] = [
+  'template',
   'worksheet',
   'game',
   'audio',
@@ -88,6 +102,7 @@ const KIND_ORDER: ResourceKind[] = [
 ];
 
 const SECTION_LABEL: Record<ResourceSource, TranslationKey> = {
+  template: 'sectionTemplates',
   'premade-sheet': 'sectionPremadeSheets',
   activity: 'sectionActivities',
   'curriculum-media': 'sectionCuratedMedia',
@@ -98,7 +113,10 @@ const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
-function ResourceRow({ item, accent }: { item: ResourceItem; accent: string }) {
+/** Picker indices for the library's current grade and subject; -1 when absent. */
+type PickerScope = { gradeIdx: number; subjectIdx: number };
+
+function ResourceRow({ item, accent, scope }: { item: ResourceItem; accent: string; scope?: PickerScope }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const title = lang === 'ar' ? item.titleAr : item.titleEn;
@@ -113,6 +131,14 @@ function ResourceRow({ item, accent }: { item: ResourceItem; accent: string }) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (item.url) {
       void openExternal(item.url);
+      return;
+    }
+    if (item.route) {
+      // A starter opens its tool preset, on the grade and subject in view.
+      router.push({
+        pathname: item.route as never,
+        params: templateParams(item.params ?? {}, scope ?? { gradeIdx: -1, subjectIdx: -1 }),
+      });
       return;
     }
     // An activity is built and run in the classroom hub. Sheets get their own
@@ -188,14 +214,33 @@ export default function ResourcesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
-  const { gradeId, gradeName } = useLocalSearchParams<{ gradeId: string; gradeName?: string }>();
+  const { user } = useAuth();
+  const isTeacher = isTeacherRole(user?.role);
+  const { gradeId } = useLocalSearchParams<{ gradeId?: string; gradeName?: string }>();
+  // Opened from the Tools card there is no grade param: start on the
+  // teacher's own first grade, the same narrowing the curriculum tab does.
+  const grades = useMemo(
+    () => narrowToSelection(getVisibleGrades(), isTeacher ? user?.gradeIds : undefined),
+    [isTeacher, user?.gradeIds],
+  );
+  const [grade, setGrade] = useState<string>(gradeId || grades[0]?.id || '');
+  const [subjectId, setSubjectId] = useState<string | null>(null);
   const [kind, setKind] = useState<ResourceKind | null>(null);
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [openBook, setOpenBook] = useState<string | null>(null);
 
-  const grade = gradeId ?? '';
+  const gradeInfo = getVisibleGrades().find(g => g.id === grade);
+  const gradeName = gradeInfo ? (lang === 'ar' ? gradeInfo.nameAr : gradeInfo.name) : '';
 
-  const items = useMemo(
+  const pickGrade = (id: string) => {
+    setGrade(id);
+    // Lessons and subjects belong to a grade; carrying them over empties the list.
+    setSubjectId(null);
+    setLessonId(null);
+    setKind(null);
+  };
+
+  const allItems = useMemo(
     () =>
       buildResourceCatalog({
         premade: allPremade().filter(sheet => sheet.gradeId === grade),
@@ -206,14 +251,48 @@ export default function ResourcesScreen() {
           titleAr: t(card.titleKey as TranslationKey),
           titleEn: t(card.titleKey as TranslationKey),
         })),
-        // Not grade-filtered: an ExternalResource carries lessonIds, not a
-        // grade, and deriving one would mean resolving every id against the KB
-        // on every render. The lesson and kind chips are what narrow this.
+        // Grade-filtered below by `gradeIds`, which each entry states.
         external: EXTERNAL_RESOURCES,
         qr: qrResourcesForGrade(grade),
+        // Starters open /ai-tools, which students cannot reach: a row that
+        // bounces them is worse than no row.
+        templates: isTeacher ? RESOURCE_TEMPLATES : [],
       }),
-    [grade, t],
+    [grade, t, isTeacher],
   );
+
+  const inGrade = useMemo(() => filterResources(allItems, { gradeId: grade }), [allItems, grade]);
+
+  // The grade's subjects, narrowed to what this teacher teaches.
+  const gradeSubjects = useMemo(
+    () =>
+      isTeacher
+        ? narrowSubjectsForGrade(getSubjectsForGrade(grade), grade, user?.teachingAssignments, user?.subjectIds)
+        : getSubjectsForGrade(grade),
+    [grade, isTeacher, user?.teachingAssignments, user?.subjectIds],
+  );
+
+  // Chips only for subjects with a subject-specific row: a chip that re-shows
+  // just the gradeless rows is a filter that does nothing.
+  const subjects = useMemo(() => {
+    const withRows = new Set(inGrade.map(i => i.subjectId).filter(Boolean));
+    return gradeSubjects.filter(s => withRows.has(s.id));
+  }, [inGrade, gradeSubjects]);
+
+  const items = useMemo(
+    () => filterResources(inGrade, { subjectId: subjectId ?? undefined }),
+    [inGrade, subjectId],
+  );
+
+  // What a template hands its tool. The teacher's own first subject for this
+  // grade when no chip is chosen, so a starter doesn't open on index 0.
+  const scope = useMemo<PickerScope>(() => {
+    const sid = subjectId ?? (isTeacher ? gradeSubjects[0]?.id : undefined);
+    return {
+      gradeIdx: getPickerGrades().findIndex(g => g.id === grade),
+      subjectIdx: sid ? getPickerSubjects().findIndex(s => s.id === sid) : -1,
+    };
+  }, [grade, subjectId, isTeacher, gradeSubjects]);
 
   // Which chips to offer, and how many each would leave. Derived rather than
   // fixed: offering a filter that empties the screen is a worse affordance
@@ -272,6 +351,30 @@ export default function ResourcesScreen() {
         >
           {t('resourcesIntro')}
         </Text>
+
+        {grades.length > 1 ? (
+          <ChipRow
+            isRTL={isRTL}
+            options={grades.map(g => ({ id: g.id, label: lang === 'ar' ? g.nameAr : g.name }))}
+            active={grade}
+            onPick={id => id && pickGrade(id)}
+          />
+        ) : null}
+
+        {subjects.length > 1 ? (
+          <ChipRow
+            isRTL={isRTL}
+            options={[
+              { id: null, label: t('resourcesAllSubjects') },
+              ...subjects.map(s => ({ id: s.id, label: lang === 'ar' ? s.nameAr : s.name })),
+            ]}
+            active={subjectId}
+            onPick={id => {
+              setSubjectId(id);
+              setLessonId(null);
+            }}
+          />
+        ) : null}
 
         {kindCounts.size > 1 ? (
           <ScrollView
@@ -376,7 +479,7 @@ export default function ResourcesScreen() {
               ) : (
                 <View style={styles.rows}>
                   {section.items.map(item => (
-                    <ResourceRow key={item.key} item={item} accent={ACCENT} />
+                    <ResourceRow key={item.key} item={item} accent={ACCENT} scope={scope} />
                   ))}
                 </View>
               )}
@@ -385,6 +488,57 @@ export default function ResourcesScreen() {
         )}
       </ScrollView>
     </View>
+  );
+}
+
+/** One horizontal row of filter chips; `null` is the "all" chip. */
+function ChipRow({
+  options,
+  active,
+  onPick,
+  isRTL,
+}: {
+  options: Array<{ id: string | null; label: string }>;
+  active: string | null;
+  onPick: (id: string | null) => void;
+  isRTL: boolean;
+}) {
+  const colors = useColors();
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={[styles.chipRow, isRTL && { flexDirection: 'row-reverse', minWidth: '100%' }]}
+    >
+      {options.map(o => {
+        const on = o.id === active;
+        return (
+          <Pressable
+            key={o.id ?? 'all'}
+            onPress={() => {
+              Haptics.selectionAsync();
+              onPick(o.id);
+            }}
+            accessibilityRole="button"
+            accessibilityState={{ selected: on }}
+            style={[styles.chip, { backgroundColor: on ? ACCENT : colors.muted }]}
+          >
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.chipText,
+                {
+                  color: on ? palette.primaryForeground : colors.mutedForeground,
+                  fontFamily: on ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                },
+              ]}
+            >
+              {o.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
   );
 }
 

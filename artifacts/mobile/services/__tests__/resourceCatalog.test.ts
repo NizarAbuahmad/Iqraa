@@ -22,6 +22,7 @@ import {
   groupBySource,
   type ResourceCatalogInput,
 } from '../resourceCatalog.ts';
+import { RESOURCE_TEMPLATES } from '../resourceTemplates.ts';
 
 const input: ResourceCatalogInput = {
   premade: [
@@ -45,6 +46,8 @@ const input: ResourceCatalogInput = {
     {
       id: 'voa-le-plastic-oceans',
       lessonIds: ['kbl-math-s1-nccd-u1_l1'],
+      gradeIds: ['grade-10'],
+      subjectId: 'mathematics',
       kind: 'video',
       titleEn: 'Plastic oceans',
       titleAr: 'المحيطات البلاستيكية',
@@ -60,6 +63,17 @@ const input: ResourceCatalogInput = {
       attribution: 'PhET',
       sourceUrl: 'https://example.invalid/sim',
     },
+    {
+      id: 'commons-grade-4-poster',
+      lessonIds: [],
+      gradeIds: ['grade-4'],
+      subjectId: 'science',
+      kind: 'image',
+      titleEn: 'Water cycle poster',
+      titleAr: 'ملصق دورة الماء',
+      attribution: 'Wikimedia Commons',
+      sourceUrl: 'https://example.invalid/poster',
+    },
   ] as ResourceCatalogInput['external'],
   qr: [
     {
@@ -71,6 +85,7 @@ const input: ResourceCatalogInput = {
       ],
     },
   ],
+  templates: RESOURCE_TEMPLATES,
 };
 
 describe('building the catalog', () => {
@@ -128,9 +143,18 @@ describe('building the catalog', () => {
     assert.equal(rows.find(r => r.page === 12)?.insecure, false);
   });
 
+  it('offers a template as a tool route, never as a link', () => {
+    const tpl = buildResourceCatalog(input).find(i => i.source === 'template');
+    assert.ok(tpl, 'no template in the catalog');
+    assert.deepEqual(tpl.actions, ['use']);
+    assert.match(tpl.route ?? '', /^\/ai-tools\//);
+    assert.equal(tpl.url, undefined);
+  });
+
   it('never offers an action it cannot carry out', () => {
     for (const item of buildResourceCatalog(input)) {
       if (item.actions.includes('open')) assert.ok(item.url, `${item.key} opens nothing`);
+      if (item.actions.includes('use')) assert.ok(item.route, `${item.key} goes nowhere`);
       if (item.actions.includes('add-to-class')) {
         assert.ok(addToClassPlan(item).length > 0, `${item.key} has no way to attach`);
       }
@@ -158,6 +182,26 @@ describe('filtering', () => {
     assert.deepEqual(filterResources(items, { lessonId: 'kbl-nope' }), []);
   });
 
+  it('filters by grade, keeping rows that belong to every grade', () => {
+    const g10 = filterResources(buildResourceCatalog(input), { gradeId: 'grade-10' });
+    const keys = g10.map(i => i.key);
+    assert.ok(keys.includes('curriculum-media:voa-le-plastic-oceans'));
+    assert.ok(!keys.includes('curriculum-media:commons-grade-4-poster'), 'a grade-4 poster leaked into grade 10');
+    assert.ok(keys.includes('activity:bingo'), 'a gradeless activity was dropped');
+    assert.ok(keys.some(k => k.startsWith('template:')), 'templates were dropped');
+
+    const g4 = filterResources(buildResourceCatalog(input), { gradeId: 'grade-4' }).map(i => i.key);
+    assert.ok(g4.includes('curriculum-media:commons-grade-4-poster'));
+    assert.ok(!g4.includes('premade-sheet:pw-kbl-math-s1-nccd-u1_l1-medium'));
+  });
+
+  it('filters by subject, keeping rows with no subject', () => {
+    const sci = filterResources(buildResourceCatalog(input), { subjectId: 'science' }).map(i => i.key);
+    assert.ok(sci.includes('curriculum-media:commons-grade-4-poster'));
+    assert.ok(!sci.includes('curriculum-media:voa-le-plastic-oceans'));
+    assert.ok(sci.includes('activity:bingo'));
+  });
+
   it('matches a query against either language', () => {
     const items = buildResourceCatalog(input);
     assert.ok(filterResources(items, { query: 'Bingo' }).length === 1);
@@ -183,7 +227,7 @@ describe('grouping', () => {
 
   it('orders sections so the teacher sees ready-to-use material first', () => {
     const order = groupBySource(buildResourceCatalog(input)).map(g => g.source);
-    assert.deepEqual(order, ['premade-sheet', 'activity', 'curriculum-media', 'book-qr']);
+    assert.deepEqual(order, ['template', 'premade-sheet', 'activity', 'curriculum-media', 'book-qr']);
   });
 });
 

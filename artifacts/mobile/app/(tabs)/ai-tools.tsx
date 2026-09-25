@@ -15,10 +15,8 @@ import { trackEvent } from '@/services/analytics';
 import { getPickerSubjects } from '@/services/curriculumData';
 import { loadLessonPick } from '@/services/lessonContext';
 import {
-  AFTER_CLASS,
-  BEFORE_CLASS,
-  DURING_CLASS,
-  WORKFLOW,
+  ALL_TOOLS,
+  LIBRARY_TOOL,
   type ToolDef,
 } from '@/services/toolCatalog';
 
@@ -193,18 +191,17 @@ export default function AIToolsScreen() {
         </Text>
       </View>
 
-      {WORKFLOW.map(section => (
-        <View key={section.id} style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
-            {t(section.titleKey as any)}
-          </Text>
-          <View style={[styles.list, isDesktop && styles.listGrid]}>
-            {section.tools.map(tool => (
-              <ToolCard key={tool.id} tool={tool} isRTL={isRTL} colors={colors} t={t} grid={isDesktop} />
-            ))}
-          </View>
+      {/* One flat grid, library first. The before/during/after headings were
+          dropped 2026-09-25: with a dozen tools they cost scrolling without
+          helping a teacher choose. WORKFLOW still orders the list, and still
+          groups the home screen and command palette. */}
+      <View style={[styles.section, { paddingTop: 16 }]}>
+        <View style={[styles.list, isDesktop && styles.listGrid]}>
+          {[LIBRARY_TOOL, ...ALL_TOOLS].map(tool => (
+            <ToolCard key={tool.id} tool={tool} isRTL={isRTL} colors={colors} t={t} grid={isDesktop} />
+          ))}
         </View>
-      ))}
+      </View>
 
       {DEMO_MODE && (
         <View style={[styles.note, { backgroundColor: colors.muted, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>

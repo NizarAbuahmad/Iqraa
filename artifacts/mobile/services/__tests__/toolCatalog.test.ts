@@ -22,6 +22,9 @@
  * slides, near-identical name, same deck at the end. It is a link inside the
  * slides screen now, so it is parked here like the others.
  *
+ * The resources library (2026-09-25) is deliberately NOT in this list: it is
+ * `LIBRARY_TOOL`, a standalone section at the top of the Tools tab.
+ *
  * Parked tools stay in the catalog (their routes still resolve for saved
  * materials and deep links) but must not reappear on a menu — which is easy to
  * undo by accident, since adding a tool to the arrays is how you add one at
