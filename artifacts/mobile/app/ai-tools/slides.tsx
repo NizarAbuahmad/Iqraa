@@ -50,7 +50,8 @@ import { findMatchingItem } from '@/services/savedMaterialMatch';
 import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams } from '@/services/lessonPrep';
+import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 
@@ -77,11 +78,13 @@ export default function SlidesScreen() {
   }>();
   // An index the picker list cannot honour is NOT index 0 — see
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
-  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en'));
+  // Only the grades/subjects this teacher picked on /setup-subjects are offered.
+  const teacherScope = useTeacherScope();
+  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en', teacherScope.defaultScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
-  const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  const subjectHidden = teacherScope.subjectHiddenFor(grades[gradeIdx].id);
   // Labels are per-grade too: Grade 6's creative-arts book has no music in
   // it, so it must not be offered under the combined name. Same index
   // alignment as the mask above.
@@ -754,7 +757,7 @@ export default function SlidesScreen() {
         <ToolHeader topPad={topPad} isRTL={isRTL} title={t('slidesTitle')} subtitle={t('slidesSubtitle')} leading="🖥️" />
 
         <View style={styles.form}>
-          <PickerField label={t('grade')} value={isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name} options={grades.map(g => (isAr ? g.nameAr : g.name))} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />
+          <PickerField label={t('grade')} value={isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name} options={grades.map(g => (isAr ? g.nameAr : g.name))} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />
           <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
           <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} hidden={subjectHidden} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />
 

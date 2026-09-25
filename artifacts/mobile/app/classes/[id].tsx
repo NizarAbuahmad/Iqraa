@@ -52,6 +52,7 @@ import {
   type RosterStudent,
 } from '@/services/roster';
 import { getPickerGrades } from '@/services/curriculumData';
+import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { copyToClipboard, shareAsText } from '@/services/share';
 import { Toast } from '@/components/ui/Toast';
 import { getItems, updateItem, type SavedMaterial } from '@/services/workspace';
@@ -116,7 +117,10 @@ export default function ClassDetailScreen() {
   const [editName, setEditName] = useState('');
   const [editGradeId, setEditGradeId] = useState('grade-10');
   const [savingEdit, setSavingEdit] = useState(false);
-  const pickerGrades = getPickerGrades();
+  // The teacher's own grades (/setup-subjects), plus whatever grade this
+  // class already has so editing never hides its current value.
+  const teacherScope = useTeacherScope();
+  const pickerGrades = getPickerGrades().filter(g => teacherScope.isGradeShown(g.id) || g.id === group?.gradeId);
 
   /** Server errors arrive in English; this screen is Arabic-first. */
   const describe = useCallback(

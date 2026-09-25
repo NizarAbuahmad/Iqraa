@@ -177,6 +177,9 @@ export function scopePickerParams(
 export function scopeFromParams(
   params: { topic?: string; gradeIdx?: string; subjectIdx?: string },
   lang: 'ar' | 'en',
+  // Where to open when neither the route nor the topic says: the teacher's
+  // own first grade/subject (`useTeacherScope`), rather than index 0.
+  fallback: { gradeIdx: number; subjectIdx: number } = { gradeIdx: 0, subjectIdx: 0 },
 ): { gradeIdx: number; subjectIdx: number } {
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
@@ -191,8 +194,8 @@ export function scopeFromParams(
 
   const inferred = topicPickerParams(params.topic, lang);
   return {
-    gradeIdx: fromRoute.gradeIdx ?? resolvePickerIndex(inferred?.gradeIdx, grades.length),
-    subjectIdx: fromRoute.subjectIdx ?? resolvePickerIndex(inferred?.subjectIdx, subjects.length),
+    gradeIdx: fromRoute.gradeIdx ?? resolvePickerIndex(inferred?.gradeIdx, grades.length, fallback.gradeIdx),
+    subjectIdx: fromRoute.subjectIdx ?? resolvePickerIndex(inferred?.subjectIdx, subjects.length, fallback.subjectIdx),
   };
 }
 

@@ -43,6 +43,28 @@ export function narrowSubjectsForGrade<T extends { id: string }>(
 }
 
 /**
+ * `narrowToSelection` as an index-aligned hide mask, for the pickers whose
+ * positions are persisted as bare indices (`PickerField`'s `hidden` prop) and
+ * so cannot be handed a shortened list. Same fallback: nothing hidden when
+ * narrowing would leave nothing.
+ */
+export function hiddenOutsideSelection<T extends { id: string }>(all: T[], selectedIds: string[] | undefined): boolean[] {
+  const kept = new Set(narrowToSelection(all, selectedIds).map(item => item.id));
+  return all.map(item => !kept.has(item.id));
+}
+
+/** `narrowSubjectsForGrade` as an index-aligned hide mask — see above. */
+export function hiddenSubjectsForGrade<T extends { id: string }>(
+  all: T[],
+  gradeId: string,
+  teachingAssignments: { gradeId: string; subjectIds: string[] }[] | undefined,
+  legacySubjectIds: string[] | undefined,
+): boolean[] {
+  const assignment = teachingAssignments?.find(a => a.gradeId === gradeId);
+  return hiddenOutsideSelection(all, assignment ? assignment.subjectIds : legacySubjectIds);
+}
+
+/**
  * Keeps a single-select picker's id valid as its list changes underneath it.
  *
  * The new-class sheet's subject row is rebuilt by `narrowSubjectsForGrade`

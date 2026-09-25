@@ -12,14 +12,15 @@ import { PillSelector } from '@/components/ui/PillSelector';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { Button } from '@/components/ui/Button';
 import {
-  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+  getPickerGrades, getPickerSubjects,
 } from '@/services/curriculumData';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
 import { isolateForeignRuns } from '@/services/mathRender';
 import { regenerationFields } from '@/services/ai/regeneration';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId } from '@/services/kbContext';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, subjectPickerLabels } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels } from '@/services/lessonPrep';
+import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { aiErrorMessageKey } from '@/services/ai/aiProvenance';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ACTIVITY_CARDS, cardMetaLabel, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
@@ -49,15 +50,17 @@ export default function ClassroomBuilderScreen() {
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
 
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(undefined, grades.length));
+  // Only the grades/subjects this teacher picked on /setup-subjects are offered.
+  const teacherScope = useTeacherScope();
+  const [gradeIdx, setGradeIdx] = useState(teacherScope.defaultScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
-  const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  const subjectHidden = teacherScope.subjectHiddenFor(grades[gradeIdx].id);
   // Labels are per-grade too: Grade 6's creative-arts book has no music in
   // it, so it must not be offered under the combined name. Same index
   // alignment as the mask above.
   const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
+  const [subjectIdx, setSubjectIdx] = useState(teacherScope.defaultScope.subjectIdx);
   const [topic, setTopic] = useState('');
   const [durationIdx, setDurationIdx] = useState(1); // 20 min default
   const [difficulty, setDifficulty] = useState<Difficulty>('standard');
@@ -181,7 +184,7 @@ export default function ClassroomBuilderScreen() {
         {/* Grade */}
         <PillSelector
           label={t('grade')}
-          options={grades.map((g, idx) => ({ value: idx, label: lang === 'ar' ? g.nameAr : g.name }))}
+          options={grades.map((g, idx) => ({ value: idx, label: lang === 'ar' ? g.nameAr : g.name })).filter(o => !teacherScope.gradeHidden[o.value])}
           value={gradeIdx}
           onChange={setGradeIdx}
           colors={colors}
