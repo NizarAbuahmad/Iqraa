@@ -106,6 +106,11 @@ export type LicenseId =
   | 'CC-BY-3.0'
   /** Reprintable in principle, but see the policy map — we decline it. */
   | 'CC-BY-SA-4.0'
+  /**
+   * The 3.0 generation of share-alike, and the licence most Arabic-labelled
+   * diagrams on Commons carry. Same policy as 4.0: pointed at, never copied.
+   */
+  | 'CC-BY-SA-3.0'
   /** No redistribution right; the terms permit an embed or a link only. */
   | 'embed-terms'
   /**
@@ -141,6 +146,7 @@ const POLICY_BY_LICENSE: Record<LicenseId, BankUsePolicy> = {
   // until someone with authority to make that call decides otherwise — the
   // conservative direction, and reversible.
   'CC-BY-SA-4.0': 'reference-only',
+  'CC-BY-SA-3.0': 'reference-only',
   'embed-terms': 'embed-only',
   // Quotable by Nizar's decision, 2026-09-16: Iqraa holds the right to use
   // these books. He was given the notice verbatim, the reading that the

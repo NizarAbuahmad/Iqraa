@@ -272,6 +272,7 @@ describe('use policy — explicit licences', () => {
 
   it('declines share-alike rather than risk licensing our own material', () => {
     assert.equal(usePolicy(item('CC-BY-SA-4.0')), 'reference-only');
+    assert.equal(usePolicy(item('CC-BY-SA-3.0')), 'reference-only');
   });
 
   it('falls closed on a licence string this build does not know', () => {
