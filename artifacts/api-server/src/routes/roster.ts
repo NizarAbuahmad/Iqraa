@@ -18,10 +18,12 @@ import {
   classGroups,
   classMemberships,
   evaluations,
+  parentContacts,
   rosterLinks,
   students,
+  type ParentContactChannel,
 } from "@workspace/db";
-import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
 import { resolveObjectiveIds } from "@workspace/curriculum";
 import { aggregateClass } from "../modules/assessment/classInsights.ts";
 import type { ObjectiveScore } from "../modules/assessment/scoring.ts";
@@ -608,6 +610,66 @@ router.patch("/students/:id", async (req: AuthenticatedRequest, res) => {
     res.json({ student: row });
   } catch (err) {
     failRoster(res, err, "update student", "Failed to update student");
+  }
+});
+
+// ─── Parent contact log ──────────────────────────────────────────────────────
+// See lib/db/src/schema/parentContacts.ts. Kinds mirror MessageKind in the
+// mobile app's services/parentMessage.ts.
+
+const PARENT_CONTACT_KINDS = new Set([
+  "praise", "progress", "missing-homework", "academic-concern", "absence", "behaviour", "meeting",
+]);
+const PARENT_CONTACT_CHANNELS = new Set(["in_app", "share", "copy"]);
+
+async function ownsStudent(studentId: string, teacherId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: students.id })
+    .from(students)
+    .where(and(eq(students.id, studentId), eq(students.teacherId, teacherId)))
+    .limit(1);
+  return Boolean(row);
+}
+
+router.post("/students/:id/parent-contacts", async (req: AuthenticatedRequest, res) => {
+  try {
+    const studentId = req.params["id"] as string;
+    const kind = trimmed(req.body?.kind);
+    const channel = trimmed(req.body?.channel) as ParentContactChannel;
+    if (!PARENT_CONTACT_KINDS.has(kind) || !PARENT_CONTACT_CHANNELS.has(channel)) {
+      res.status(400).json({ error: "Invalid kind or channel" });
+      return;
+    }
+    if (!(await ownsStudent(studentId, req.user!.id))) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+    const [row] = await db
+      .insert(parentContacts)
+      .values({ teacherId: req.user!.id, studentId, kind, channel })
+      .returning({ kind: parentContacts.kind, channel: parentContacts.channel, createdAt: parentContacts.createdAt });
+    res.status(201).json({ contact: row });
+  } catch (err) {
+    failRoster(res, err, "log parent contact", "Failed to log parent contact");
+  }
+});
+
+router.get("/students/:id/parent-contacts", async (req: AuthenticatedRequest, res) => {
+  try {
+    const studentId = req.params["id"] as string;
+    if (!(await ownsStudent(studentId, req.user!.id))) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+    const contacts = await db
+      .select({ kind: parentContacts.kind, channel: parentContacts.channel, createdAt: parentContacts.createdAt })
+      .from(parentContacts)
+      .where(and(eq(parentContacts.studentId, studentId), eq(parentContacts.teacherId, req.user!.id)))
+      .orderBy(desc(parentContacts.createdAt))
+      .limit(50);
+    res.json({ contacts });
+  } catch (err) {
+    failRoster(res, err, "load parent contacts", "Failed to load parent contacts");
   }
 });
 

@@ -24,6 +24,8 @@ import {
   MESSAGE_KINDS,
   needsDetails,
   seedDetailsFromNote,
+  suggestMeeting,
+  summarizeContacts,
   type MessageKind,
   type ParentMessageInput,
 } from '../parentMessage.ts';
@@ -266,5 +268,51 @@ describe('guardiansForStudent', () => {
 
   it('returns nothing for a student nobody has linked yet', () => {
     assert.deepEqual(guardiansForStudent(CONTACTS, 's3'), []);
+  });
+});
+
+describe('summarizeContacts / suggestMeeting', () => {
+  const NOW = new Date('2026-09-25T12:00:00Z');
+  const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86_400_000).toISOString();
+
+  it('reports no history for a student never contacted', () => {
+    const s = summarizeContacts([], NOW);
+    assert.equal(s.last, null);
+    assert.deepEqual(s.recent, {});
+    assert.equal(suggestMeeting(s, 'missing-homework'), false);
+  });
+
+  it('picks the newest contact regardless of input order', () => {
+    const s = summarizeContacts([
+      { kind: 'praise', createdAt: daysAgo(10) },
+      { kind: 'absence', createdAt: daysAgo(2) },
+    ], NOW);
+    assert.deepEqual(s.last, { kind: 'absence', createdAt: daysAgo(2) });
+  });
+
+  it('counts only the last 30 days', () => {
+    const s = summarizeContacts([
+      { kind: 'missing-homework', createdAt: daysAgo(5) },
+      { kind: 'missing-homework', createdAt: daysAgo(29) },
+      { kind: 'missing-homework', createdAt: daysAgo(31) },
+    ], NOW);
+    assert.equal(s.recent['missing-homework'], 2);
+  });
+
+  it('suggests a meeting on the third same-kind concern, not the second', () => {
+    const one = summarizeContacts([{ kind: 'absence', createdAt: daysAgo(3) }], NOW);
+    assert.equal(suggestMeeting(one, 'absence'), false);
+    const two = summarizeContacts([
+      { kind: 'absence', createdAt: daysAgo(3) },
+      { kind: 'absence', createdAt: daysAgo(9) },
+    ], NOW);
+    assert.equal(suggestMeeting(two, 'absence'), true);
+    // Different kinds don't add up, and praise never escalates.
+    assert.equal(suggestMeeting(two, 'missing-homework'), false);
+    const praise = summarizeContacts([
+      { kind: 'praise', createdAt: daysAgo(1) },
+      { kind: 'praise', createdAt: daysAgo(2) },
+    ], NOW);
+    assert.equal(suggestMeeting(praise, 'praise'), false);
   });
 });
