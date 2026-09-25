@@ -1745,9 +1745,18 @@ const translations = {
     playDrillCopied: 'نُسخ الرابط',
     playDrillTimeLeft: (n: number) => `الوقت المتبقي: ${n}`,
     playDrillResult: (correct: number, attempted: number) => `${correct} إجابة صحيحة من ${attempted}`,
-    iqraDrillReady: (tables: string, secs: number) =>
-      `جهّزت لك تحدّي جدول الضرب: الجداول ${tables}، لمدة ${secs} ثانية.\n\nافتحه لتجرّبه، أو شارك رابطه مع طلبتك — يعمل دون تسجيل دخول.`,
-    iqraDrillOpen: '🎮 افتح تحدّي الضرب',
+    playDivideTitle: 'تحدّي القسمة',
+    playDivideDesc: 'كم مسألة قسمة تحلّ قبل انتهاء الوقت؟',
+    playAddTitle: 'تحدّي الجمع',
+    playAddDesc: 'كم مسألة جمع تحلّ قبل انتهاء الوقت؟',
+    playDrillPickDivisors: 'القسمة على',
+    playDrillPickMax: 'المجموع حتى',
+    iqraDrillTables: (tables: string) => `الجداول ${tables}`,
+    iqraDrillDivisors: (tables: string) => `القسمة على ${tables}`,
+    iqraDrillUpTo: (max: number) => `المجموع حتى ${max}`,
+    iqraDrillReady: (title: string, detail: string, secs: number) =>
+      `جهّزت لك ${title}: ${detail}، لمدة ${secs} ثانية.\n\nافتحه لتجرّبه، أو شارك رابطه مع طلبتك — يعمل دون تسجيل دخول.`,
+    iqraDrillOpen: (title: string) => `🎮 افتح ${title}`,
   },
 
   en: {
@@ -3326,9 +3335,18 @@ const translations = {
     playDrillCopied: 'Link copied',
     playDrillTimeLeft: (n: number) => `Time left: ${n}`,
     playDrillResult: (correct: number, attempted: number) => `${correct} correct out of ${attempted}`,
-    iqraDrillReady: (tables: string, secs: number) =>
-      `Here's a times table challenge: tables ${tables}, ${secs} seconds.\n\nOpen it to try it, or share the link with your students — no sign-in needed.`,
-    iqraDrillOpen: '🎮 Open the times table challenge',
+    playDivideTitle: 'Division Challenge',
+    playDivideDesc: 'How many divisions can you solve before time runs out?',
+    playAddTitle: 'Addition Challenge',
+    playAddDesc: 'How many sums can you solve before time runs out?',
+    playDrillPickDivisors: 'Divide by',
+    playDrillPickMax: 'Sums up to',
+    iqraDrillTables: (tables: string) => `tables ${tables}`,
+    iqraDrillDivisors: (tables: string) => `dividing by ${tables}`,
+    iqraDrillUpTo: (max: number) => `sums up to ${max}`,
+    iqraDrillReady: (title: string, detail: string, secs: number) =>
+      `Ready: ${title} — ${detail}, ${secs} seconds.\n\nOpen it to try it, or share the link with your students — no sign-in needed.`,
+    iqraDrillOpen: (title: string) => `🎮 Open ${title}`,
   },
 } as const;
 
