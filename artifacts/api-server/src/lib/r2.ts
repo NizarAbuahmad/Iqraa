@@ -81,6 +81,11 @@ export function newChatMediaKey(extension: string): string {
   return `chat-media/${randomUUID()}${extension}`;
 }
 
+/** Resources-library uploads, in the public bucket: every teacher of the grade may open them. */
+export function newLibraryKey(extension: string): string {
+  return `library/${randomUUID()}${extension}`;
+}
+
 /** Same reasoning as newLessonMediaKey, but under the public bucket's own `avatars/` prefix. */
 export function newAvatarKey(extension: string): string {
   return `avatars/${randomUUID()}${extension}`;

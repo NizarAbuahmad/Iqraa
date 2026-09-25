@@ -185,6 +185,17 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 404);
   });
 
+  it("guards the resources library, reads and writes alike", async () => {
+    // Writes put files in a public bucket for every teacher; an unguarded
+    // upload route would be free file hosting.
+    const get = await fetch(`${base}/library?gradeId=grade-5`);
+    assert.equal(get.status, 401, "listing the library must require a token");
+    for (const route of ["/library/link", "/library/file"]) {
+      const res = await fetch(`${base}${route}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      assert.equal(res.status, 401, `${route} must require a token`);
+    }
+  });
+
   it("guards the OpenAI-backed routes", async () => {
     // `/practice/read-aloud` belongs here for the same reason as the rest: it
     // spends money on transcription per call. Unauthenticated it would have no

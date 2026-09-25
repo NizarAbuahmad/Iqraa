@@ -1,15 +1,13 @@
 /**
- * The resources tab — everything supplementary, in one place.
+ * The library (المكتبة) — ready-made resources per grade, in one place.
  *
- * This began as the book-QR library: every NCCD student book prints QR codes
- * in its margins, and the decoded manifest sat unread in `knowledge-base/`.
- * That shelf is still here, and it is now one of five — ready-made tool
- * starters (templates, teacher-only) were added 2026-09-25, along with grade
- * and subject chips so it can be opened from the Tools tab with no grade param. A teacher preparing a
- * lesson also gets the ready-made practice sheets, the classroom activity
- * formats, and the licensed third-party media — browsable together, filterable
- * by kind and by lesson, because a teacher is preparing ONE lesson and does
- * not want four separate screens to check.
+ * Three shelves: what Iqraa staff upload per grade/subject/lesson, grouped by
+ * category (infographics, videos, audio, games, worksheets, templates…); the
+ * ready-made practice sheets; and the QR codes printed in the NCCD books.
+ * Filterable by grade, subject, category and lesson, because a teacher is
+ * preparing ONE lesson. Nothing here opens a generator — since 2026-09-25 the
+ * library is ready-made material only. A system_admin sees «إضافة مورد»,
+ * which opens `/admin/library`.
  *
  * **Student-reachable with no gating change.** `isNonTeacherRoute` matches by
  * prefix and `/curriculum` is already on the allowlist, so this route is
@@ -30,9 +28,9 @@
  * list where one link is insecure and the rest are not, a single header note
  * tells a student nothing about the one they are about to tap.
  */
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -40,83 +38,86 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { narrowSubjectsForGrade, narrowToSelection } from '@/services/teacherCatalogFilter';
-import { RESOURCE_TEMPLATES, templateParams } from '@/services/resourceTemplates';
+import { listLibrary, type LibraryCategory, type LibraryItem } from '@/services/libraryApi';
+import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
 import { qrResourcesForGrade } from '@/services/bookQrLinks';
-import { ACTIVITY_CARDS } from '@/services/classroomRouting';
 import {
   buildResourceCatalog,
   filterResources,
-  groupBySource,
+  groupIntoSections,
   type ResourceItem,
   type ResourceKind,
-  type ResourceSource,
+  type ResourceSection,
 } from '@/services/resourceCatalog';
 import { allPremade } from '@workspace/curriculum/premade';
-import {
-  EXTERNAL_RESOURCES,
-  getPickerGrades,
-  getPickerSubjects,
-  getSubjectsForGrade,
-  getVisibleGrades,
-} from '@workspace/curriculum';
+import { getSubjectsForGrade, getVisibleGrades } from '@workspace/curriculum';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 
 const KIND_LABEL: Record<ResourceKind, TranslationKey> = {
-  worksheet: 'resourceKindWorksheet',
-  game: 'resourceKindGame',
-  text: 'resourceKindText',
-  audio: 'qrKindAudio',
-  video: 'qrKindVideo',
-  document: 'qrKindDocument',
+  infographic: 'libraryCatInfographic',
+  video: 'libraryCatVideo',
+  audio: 'libraryCatAudio',
+  game: 'libraryCatGame',
+  worksheet: 'libraryCatWorksheet',
+  template: 'libraryCatTemplate',
+  presentation: 'libraryCatPresentation',
+  document: 'libraryCatDocument',
   image: 'qrKindImage',
   page: 'qrKindPage',
-  template: 'resourceKindTemplate',
 };
 
 const KIND_ICON: Record<ResourceKind, React.ComponentProps<typeof Ionicons>['name']> = {
-  worksheet: 'document-text-outline',
-  game: 'game-controller-outline',
-  text: 'reader-outline',
-  audio: 'musical-notes-outline',
+  infographic: 'bar-chart-outline',
   video: 'play-circle-outline',
-  document: 'document-text-outline',
+  audio: 'musical-notes-outline',
+  game: 'game-controller-outline',
+  worksheet: 'document-text-outline',
+  template: 'copy-outline',
+  presentation: 'easel-outline',
+  document: 'document-outline',
   image: 'image-outline',
   page: 'globe-outline',
-  template: 'construct-outline',
 };
 
-/** The order the filter chips appear in — audio first, because it is the rarest. */
+/** The order the category chips appear in. */
 const KIND_ORDER: ResourceKind[] = [
-  'template',
-  'worksheet',
-  'game',
-  'audio',
+  'infographic',
   'video',
+  'audio',
+  'game',
+  'worksheet',
+  'template',
+  'presentation',
   'document',
   'image',
-  'text',
   'page',
 ];
 
-const SECTION_LABEL: Record<ResourceSource, TranslationKey> = {
-  template: 'sectionTemplates',
-  'premade-sheet': 'sectionPremadeSheets',
-  activity: 'sectionActivities',
-  'curriculum-media': 'sectionCuratedMedia',
-  'book-qr': 'qrLibraryTitle',
+/** Plural section headings for the uploaded categories. */
+const CATEGORY_SECTION_LABEL: Record<LibraryCategory, TranslationKey> = {
+  infographic: 'librarySecInfographic',
+  video: 'librarySecVideo',
+  audio: 'librarySecAudio',
+  game: 'librarySecGame',
+  worksheet: 'librarySecWorksheet',
+  template: 'librarySecTemplate',
+  presentation: 'librarySecPresentation',
+  document: 'librarySecDocument',
 };
+
+function sectionLabel(section: ResourceSection): TranslationKey {
+  if (section.type === 'category') return CATEGORY_SECTION_LABEL[section.category];
+  return section.source === 'premade-sheet' ? 'sectionPremadeSheets' : 'qrLibraryTitle';
+}
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
-/** Picker indices for the library's current grade and subject; -1 when absent. */
-type PickerScope = { gradeIdx: number; subjectIdx: number };
-
-function ResourceRow({ item, accent, scope }: { item: ResourceItem; accent: string; scope?: PickerScope }) {
+function ResourceRow({ item, accent }: { item: ResourceItem; accent: string }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const title = lang === 'ar' ? item.titleAr : item.titleEn;
@@ -129,21 +130,7 @@ function ResourceRow({ item, accent, scope }: { item: ResourceItem; accent: stri
 
   const onPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (item.url) {
-      void openExternal(item.url);
-      return;
-    }
-    if (item.route) {
-      // A starter opens its tool preset, on the grade and subject in view.
-      router.push({
-        pathname: item.route as never,
-        params: templateParams(item.params ?? {}, scope ?? { gradeIdx: -1, subjectIdx: -1 }),
-      });
-      return;
-    }
-    // An activity is built and run in the classroom hub. Sheets get their own
-    // actions in the row below rather than a whole-row press.
-    if (item.source === 'activity') router.push('/ai-tools/classroom');
+    if (item.url) void openExternal(item.url);
   };
 
   return (
@@ -178,16 +165,14 @@ function ResourceRow({ item, accent, scope }: { item: ResourceItem; accent: stri
         >
           {page ? t('qrOnPage', page) : title}
         </Text>
-        {/* Rendered verbatim wherever the item appears — a licence term, not a
-            caption the layout may drop when space is tight. */}
-        {item.attribution ? (
+        {item.description ? (
           <Text
             style={[
               styles.rowNote,
               { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' },
             ]}
           >
-            {item.attribution}
+            {item.description}
           </Text>
         ) : null}
         {item.insecure ? (
@@ -216,6 +201,7 @@ export default function ResourcesScreen() {
   const { t, isRTL, lang } = useLanguage();
   const { user } = useAuth();
   const isTeacher = isTeacherRole(user?.role);
+  const isStaff = user?.role === 'system_admin';
   const { gradeId } = useLocalSearchParams<{ gradeId?: string; gradeName?: string }>();
   // Opened from the Tools card there is no grade param: start on the
   // teacher's own first grade, the same narrowing the curriculum tab does.
@@ -240,25 +226,25 @@ export default function ResourcesScreen() {
     setKind(null);
   };
 
+  // Staff uploads for this grade. Refetched on focus so an item added on the
+  // upload screen is there on the way back.
+  const [uploaded, setUploaded] = useState<LibraryItem[]>([]);
+  const loadUploaded = useCallback(() => {
+    let live = true;
+    void listLibrary(grade).then(rows => { if (live) setUploaded(rows); });
+    return () => { live = false; };
+  }, [grade]);
+  useFocusEffect(loadUploaded);
+  useEffect(loadUploaded, [loadUploaded]);
+
   const allItems = useMemo(
     () =>
       buildResourceCatalog({
+        uploaded,
         premade: allPremade().filter(sheet => sheet.gradeId === grade),
-        // The cards carry i18n keys, not titles, so they are resolved here and
-        // the catalog module stays free of i18n.
-        activities: ACTIVITY_CARDS.filter(card => card.available).map(card => ({
-          id: card.id,
-          titleAr: t(card.titleKey as TranslationKey),
-          titleEn: t(card.titleKey as TranslationKey),
-        })),
-        // Grade-filtered below by `gradeIds`, which each entry states.
-        external: EXTERNAL_RESOURCES,
         qr: qrResourcesForGrade(grade),
-        // Starters open /ai-tools, which students cannot reach: a row that
-        // bounces them is worse than no row.
-        templates: isTeacher ? RESOURCE_TEMPLATES : [],
       }),
-    [grade, t, isTeacher],
+    [grade, uploaded],
   );
 
   const inGrade = useMemo(() => filterResources(allItems, { gradeId: grade }), [allItems, grade]);
@@ -284,16 +270,6 @@ export default function ResourcesScreen() {
     [inGrade, subjectId],
   );
 
-  // What a template hands its tool. The teacher's own first subject for this
-  // grade when no chip is chosen, so a starter doesn't open on index 0.
-  const scope = useMemo<PickerScope>(() => {
-    const sid = subjectId ?? (isTeacher ? gradeSubjects[0]?.id : undefined);
-    return {
-      gradeIdx: getPickerGrades().findIndex(g => g.id === grade),
-      subjectIdx: sid ? getPickerSubjects().findIndex(s => s.id === sid) : -1,
-    };
-  }, [grade, subjectId, isTeacher, gradeSubjects]);
-
   // Which chips to offer, and how many each would leave. Derived rather than
   // fixed: offering a filter that empties the screen is a worse affordance
   // than not offering it.
@@ -303,14 +279,21 @@ export default function ResourcesScreen() {
     return counts;
   }, [items]);
 
-  /** Lessons that actually have something attached, so no chip empties the list. */
+  /**
+   * Lessons that actually have something attached, so no chip empties the
+   * list. Labelled with the lesson's own title from the KB, falling back to
+   * the row's title when the KB doesn't know the id.
+   */
   const lessons = useMemo(() => {
     const seen = new Map<string, string>();
     for (const item of items) {
-      if (item.lessonId && !seen.has(item.lessonId)) seen.set(item.lessonId, item.titleAr);
+      if (item.lessonId && !seen.has(item.lessonId)) {
+        const lesson = getLessonById(item.lessonId);
+        seen.set(item.lessonId, lesson ? (lang === 'ar' ? lesson.titleAr : lesson.titleEn) : item.titleAr);
+      }
     }
     return [...seen.entries()];
-  }, [items]);
+  }, [items, lang]);
 
   const shown = useMemo(
     () =>
@@ -321,7 +304,7 @@ export default function ResourcesScreen() {
     [items, kind, lessonId],
   );
 
-  const sections = useMemo(() => groupBySource(shown), [shown]);
+  const sections = useMemo(() => groupIntoSections(shown), [shown]);
   const total = shown.length;
 
   return (
@@ -340,6 +323,18 @@ export default function ResourcesScreen() {
           {gradeName ? `${gradeName} · ` : ''}
           {t('resourcesCount', total)}
         </Text>
+        {isStaff ? (
+          <Pressable
+            onPress={() => router.push({ pathname: '/admin/library' as never, params: { gradeId: grade } })}
+            accessibilityRole="button"
+            style={[styles.addBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="add-circle-outline" size={18} color={ACCENT_FILL} />
+            <Text style={[styles.addBtnText, { color: ACCENT_FILL, fontFamily: 'Cairo_600SemiBold' }]}>
+              {t('libraryAddResource')}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
@@ -465,21 +460,21 @@ export default function ResourcesScreen() {
           </View>
         ) : (
           sections.map(section => (
-            <View key={section.source} style={styles.section}>
+            <View key={section.id} style={styles.section}>
               <Text
                 style={[
                   styles.sectionTitle,
                   { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' },
                 ]}
               >
-                {t(SECTION_LABEL[section.source])}
+                {t(sectionLabel(section))}
               </Text>
-              {section.source === 'book-qr' ? (
+              {section.type === 'source' && section.source === 'book-qr' ? (
                 <BookShelf items={section.items} openBook={openBook} setOpenBook={setOpenBook} />
               ) : (
                 <View style={styles.rows}>
                   {section.items.map(item => (
-                    <ResourceRow key={item.key} item={item} accent={ACCENT} scope={scope} />
+                    <ResourceRow key={item.key} item={item} accent={ACCENT} />
                   ))}
                 </View>
               )}
@@ -632,6 +627,16 @@ const styles = StyleSheet.create({
   backBtn: { padding: 4, marginBottom: 4 },
   heroTitle: { color: '#fff', fontSize: 22 },
   heroMeta: { color: 'rgba(255,255,255,0.95)', fontSize: 13, lineHeight: 21 },
+  addBtn: {
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    marginTop: 6,
+  },
+  addBtnText: { fontSize: 13 },
   intro: { fontSize: 12.5, lineHeight: 20, paddingHorizontal: 20, paddingTop: 14 },
   chipRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },

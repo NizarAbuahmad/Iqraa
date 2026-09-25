@@ -18,6 +18,7 @@ import studentAttemptRouter from "./studentAttempt";
 import mediaRouter from "./media";
 import practiceRouter from "./practice";
 import lessonMediaRouter from "./lessonMedia";
+import libraryRouter from "./library";
 import feedbackRouter from "./feedback";
 import adminRouter from "./admin";
 import messagingRouter from "./messaging";
@@ -134,6 +135,10 @@ router.use(
 );
 router.use("/media", lessonMediaRouter);
 router.use(practiceRouter);
+// The resources library: any signed-in user reads, system_admin writes
+// (library.ts guards its write routes itself).
+router.use("/library", authMiddleware);
+router.use(libraryRouter);
 // feedback.ts and admin.ts declare authMiddleware/requireRole per-route
 // themselves (a mix of any-signed-in-user and admin-only routes lives in the
 // same file), so no blanket guard is needed at this mount site.
