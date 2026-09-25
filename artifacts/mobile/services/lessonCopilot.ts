@@ -188,19 +188,22 @@ const GRADE_WORDS_EN: Array<[cardinal: string, ordinal: string]> = [
  * JS `\b` is ASCII-only and never matches next to Arabic letters (see
  * `topicSwitchTarget` above), so these rely on the lookahead instead.
  */
+// «لـ + الصف» is written «للصف» (the alef drops), and "for grade N" is the
+// commonest way a teacher names a grade — so it must match as well as «الصف».
+const SAFF = '(?:ال|لل)صف\\s*';
 const GRADE_PATTERNS_AR: Array<[gradeId: string, pattern: RegExp]> = [
-  ['grade-1', /الصف\s*ال(?:أ|ا)ول/],
-  ['grade-2', /الصف\s*الثاني(?!\s*عشر)/],
-  ['grade-3', /الصف\s*الثالث/],
-  ['grade-4', /الصف\s*الرابع/],
-  ['grade-5', /الصف\s*الخامس/],
-  ['grade-6', /الصف\s*السادس/],
-  ['grade-7', /الصف\s*السابع/],
-  ['grade-8', /الصف\s*الثامن/],
-  ['grade-9', /الصف\s*التاسع/],
-  ['grade-10', /الصف\s*العاشر/],
-  ['grade-11', /الصف\s*الحادي\s*عشر/],
-  ['grade-12', /الصف\s*الثاني\s*عشر/],
+  ['grade-1', new RegExp(`${SAFF}ال(?:أ|ا)ول`)],
+  ['grade-2', new RegExp(`${SAFF}الثاني(?!\\s*عشر)`)],
+  ['grade-3', new RegExp(`${SAFF}الثالث`)],
+  ['grade-4', new RegExp(`${SAFF}الرابع`)],
+  ['grade-5', new RegExp(`${SAFF}الخامس`)],
+  ['grade-6', new RegExp(`${SAFF}السادس`)],
+  ['grade-7', new RegExp(`${SAFF}السابع`)],
+  ['grade-8', new RegExp(`${SAFF}الثامن`)],
+  ['grade-9', new RegExp(`${SAFF}التاسع`)],
+  ['grade-10', new RegExp(`${SAFF}العاشر`)],
+  ['grade-11', new RegExp(`${SAFF}الحادي\\s*عشر`)],
+  ['grade-12', new RegExp(`${SAFF}الثاني\\s*عشر`)],
 ];
 
 /**

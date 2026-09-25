@@ -30,6 +30,13 @@ describe('extractQueryGradeId', () => {
     ['اختبار الصف الحادي عشر', 'grade-11'],
     ['اختبار الصف الثاني عشر', 'grade-12'],
     ['نشاط الصف العاشر', 'grade-10'],
+    // «لـ + الصف» is written «للصف» — the alef drops. This is how a teacher
+    // actually says "for grade N", and it slipped past the first version.
+    ['لعبة الجمع للصف الأول', 'grade-1'],
+    ['لعبة القسمة للصف الرابع', 'grade-4'],
+    ['ورقة عمل للصف الثاني', 'grade-2'],
+    ['اختبار للصف الثاني عشر', 'grade-12'],
+    ['خطة درس بالصف الثالث', 'grade-3'],
   ];
   for (const [query, gradeId] of named) {
     it(`"${query}" names "${gradeId}"`, () => {
