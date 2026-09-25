@@ -34,7 +34,7 @@ import { AFTER_CLASS, ALL_TOOLS, BEFORE_CLASS, DURING_CLASS, WORKFLOW } from '..
 
 const OFFERED_TOOLS = [
   'slides', 'lesson-plan',                                                // before
-  'worksheet', 'classroom', 'game', 'activity', 'whiteboard', 'games',     // during
+  'worksheet', 'classroom', 'game', 'activity', 'games',                   // during
   'quiz', 'evaluations', 'parent-msg',                                    // after
 ];
 

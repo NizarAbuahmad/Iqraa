@@ -374,8 +374,6 @@ const translations = {
     toolPromptSlidesDesc: 'اكتب وصفًا بكلماتك، واحصل على عرض شرائح كامل — مجانًا بقالب جاهز أو بالذكاء الاصطناعي.',
     toolGameTitle: 'تحدي الصف',
     toolGameDesc: 'لعبة أسئلة بين فرق الصف — بلا هواتف وبلا تحضير: الطلبة يرفعون أيديهم للإجابة وأنت تسجّل النقاط.',
-    toolWhiteboardTitle: 'السبورة الذكية',
-    toolWhiteboardDesc: 'اكتب سؤالاً أو فكرة واعرضها بخط كبير على الشاشة أمام الطلبة.',
     toolGamesTitle: 'ألعاب اقرأ',
     toolGamesDesc: 'ألعاب مجانية بلا تسجيل — شاركها مع طلبتك للمتعة والمراجعة.',
     toolLessonMediaTitle: 'وسائط الدرس والقوالب',
@@ -1681,12 +1679,6 @@ const translations = {
     messagingAllowStudentPosting: 'السماح للطلبة بالكتابة',
     messagingReadOnlyGroup: 'المعلّم وحده يمكنه الكتابة في هذه المجموعة',
 
-    // Smart Whiteboard — type a prompt, display it big. No AI, no drawing.
-    whiteboardPlaceholder: 'اكتب سؤالاً أو فكرة لعرضها على الطلبة…',
-    whiteboardDisplayButton: 'اعرض على الشاشة',
-    whiteboardEditButton: 'تعديل',
-    whiteboardHint: 'سيظهر هذا النص بخط كبير على كامل الشاشة.',
-
     // Public games hub (/play) — free, no login. Acquisition funnel: every
     // game ends with a CTA to create a teacher account.
     playHubTitle: 'ألعاب اقرأ',
@@ -1991,8 +1983,6 @@ const translations = {
     toolPromptSlidesDesc: 'Describe what you want in your own words and get a full deck — free with an instant template, or AI-generated.',
     toolGameTitle: 'Class challenge',
     toolGameDesc: 'A team quiz game with no phones and no prep — students raise their hands to answer and you score it on screen.',
-    toolWhiteboardTitle: 'Smart whiteboard',
-    toolWhiteboardDesc: 'Type a question or idea and display it in large text on the screen for your students.',
     toolGamesTitle: 'Iqraa Games',
     toolGamesDesc: 'Free games, no login — share them with your students for fun and review.',
     toolLessonMediaTitle: 'Lesson media & templates',
@@ -3246,12 +3236,6 @@ const translations = {
     messagingLeaveGroup: 'Leave group',
     messagingAllowStudentPosting: 'Allow students to post',
     messagingReadOnlyGroup: 'Only the teacher can post in this group',
-
-    // Smart Whiteboard — type a prompt, display it big. No AI, no drawing.
-    whiteboardPlaceholder: 'Type a question or idea to show your students…',
-    whiteboardDisplayButton: 'Display on screen',
-    whiteboardEditButton: 'Edit',
-    whiteboardHint: 'This text will fill the screen in large type.',
 
     // Public games hub (/play) — free, no login. Acquisition funnel: every
     // game ends with a CTA to create a teacher account.
