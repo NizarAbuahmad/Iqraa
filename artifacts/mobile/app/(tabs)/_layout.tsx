@@ -170,7 +170,9 @@ function ClassicTabLayout() {
     if (!isTeacher) return;
     loadLessonPick().then(setLessonPick);
     return subscribeLessonPick(setLessonPick);
-  }, [isTeacher]);
+  // `user?.id` too: a second teacher signing in on the same device kept the
+  // first one's lesson, because the role — the only dependency — never changed.
+  }, [isTeacher, user?.id]);
 
   /*
     The lesson ⌘K acts on: the teacher's pick, or the one the chat and the
@@ -257,8 +259,12 @@ function ClassicTabLayout() {
   // Not shown to a parent/student: they have no lesson context to switch, and
   // the two tabs it would drive them toward (iQra, AI Tools) are hidden for
   // them anyway.
+  // The fallback-aware lesson, not the raw pick: with no pick saved yet the bar
+  // said «اختر الدرس الحالي» while the chat card beside it showed the default
+  // lesson it seeds — the same teacher told two different things.
+  const shownPick: HomeLessonPick | null = activeLesson ? { ...activeLesson, unitOrder: null } : null;
   const lessonProps = {
-    pick: lessonPick,
+    pick: shownPick,
     lang: lang as 'ar' | 'en',
     isRTL,
     colors,
@@ -272,7 +278,7 @@ function ClassicTabLayout() {
   const bar = isTeacher && !pathname.startsWith('/iqra') && !onWorkspaceHome ? (
     <GlobalLessonBar
       layout="bar"
-      pick={lessonPick}
+      pick={shownPick}
       lang={lang as 'ar' | 'en'}
       isRTL={isRTL}
       colors={colors}
