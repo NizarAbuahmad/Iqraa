@@ -40,6 +40,8 @@ export * from "./lessonMedia";
 // Person-to-person chat — teacher/parent/student threads and groups. Not the
 // AI chatbot (that's ./conversations + ./messages) — see routes/messaging.ts
 export * from "./messaging";
+// Log of parent letters sent/shared/copied per student — see parentContacts.ts
+export * from "./parentContacts";
 
 // Rate-limit counters, shared across instances — see lib/rateLimit.ts
 export * from "./rateLimits";

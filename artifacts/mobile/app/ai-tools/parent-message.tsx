@@ -7,7 +7,7 @@
  * tone or kind is what makes it obvious the tool is arranging *your* facts
  * rather than writing its own.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,14 +19,17 @@ import { useAuth } from '@/context/AuthContext';
 import { Toast } from '@/components/ui/Toast';
 import { copyToClipboard, shareAsText } from '@/services/share';
 import { StudentPickerSheet } from '@/components/ui/StudentPickerSheet';
-import type { RosterStudent } from '@/services/roster';
+import {
+  listParentContacts, logParentContact,
+  type ParentContact, type RosterStudent,
+} from '@/services/roster';
 import {
   MessagingError, getTeacherContacts, sendMessage, startThread,
   type ContactStudent,
 } from '@/services/messaging';
 import {
   composeParentMessage, guardiansForStudent, kindEmoji, kindLabel, MESSAGE_KINDS, needsDetails,
-  seedDetailsFromNote,
+  seedDetailsFromNote, suggestMeeting, summarizeContacts,
   type Gender, type MessageKind, type Tone,
 } from '@/services/parentMessage';
 import { ToolHeader } from '@/components/ui/ToolHeader';
@@ -63,6 +66,10 @@ export default function ParentMessageScreen() {
   const [pickedStudentId, setPickedStudentId] = useState<string | null>(null);
   const [guardians, setGuardians] = useState<ContactStudent['contacts']>([]);
   const [sending, setSending] = useState(false);
+  /** Past letters about the picked student, newest first. Null = none picked, or the fetch failed. */
+  const [history, setHistory] = useState<ParentContact[] | null>(null);
+  const pickedRef = useRef<string | null>(null);
+  pickedRef.current = pickedStudentId;
   const showToast = (m: string) => { setToastMsg(m); setToastVisible(true); };
 
   /**
@@ -102,14 +109,37 @@ export default function ParentMessageScreen() {
   useEffect(() => {
     if (!pickedStudentId) {
       setGuardians([]);
+      setHistory(null);
       return;
     }
     let cancelled = false;
     getTeacherContacts()
       .then(contacts => { if (!cancelled) setGuardians(guardiansForStudent(contacts, pickedStudentId)); })
       .catch(() => { if (!cancelled) setGuardians([]); });
+    // Same degrade-quietly rule: no history (null) hides the strip, it never
+    // blocks writing the letter.
+    setHistory(null);
+    listParentContacts(pickedStudentId)
+      .then(rows => { if (!cancelled) setHistory(rows); })
+      .catch(() => { if (!cancelled) setHistory(null); });
     return () => { cancelled = true; };
   }, [pickedStudentId]);
+
+  /**
+   * Remember that a letter about this student left the app. Only for roster
+   * students — a typed name has no row to hang history on. Fire-and-forget: a
+   * failed log must never undo or delay the send the teacher just made.
+   */
+  const recordContact = (channel: ParentContact['channel']) => {
+    const studentId = pickedStudentId;
+    if (!studentId) return;
+    logParentContact(studentId, kind, channel)
+      // The teacher may have picked another student while this was in flight.
+      .then(row => { if (pickedRef.current === studentId) setHistory(prev => (prev ? [row, ...prev] : prev)); })
+      .catch(() => {});
+  };
+
+  const summary = useMemo(() => (history ? summarizeContacts(history, new Date()) : null), [history]);
 
   const message = useMemo(
     () => composeParentMessage(
@@ -124,6 +154,7 @@ export default function ParentMessageScreen() {
   const onCopy = async () => {
     if (!ready) return;
     await copyToClipboard(message);
+    recordContact('copy');
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     showToast(t('copiedToClipboard'));
   };
@@ -134,6 +165,7 @@ export default function ParentMessageScreen() {
     // shareAsText falls back to the clipboard where the OS share sheet is
     // unavailable (desktop web), and says which happened so the toast is honest.
     const how = await shareAsText(message, t('parentMsgTitle'));
+    recordContact(how === 'shared' ? 'share' : 'copy');
     showToast(how === 'shared' ? t('parentMsgSent') : t('copiedToClipboard'));
   };
 
@@ -155,6 +187,7 @@ export default function ParentMessageScreen() {
         const thread = await startThread(g.userId);
         await sendMessage(thread.id, message);
       }
+      recordContact('in_app');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast(t('parentMsgSentInApp'));
     } catch (e) {
@@ -245,6 +278,23 @@ export default function ParentMessageScreen() {
                 {t('pickFromMyClasses')}
               </Text>
             </Pressable>
+            {summary ? (
+              <View style={[styles.history, { backgroundColor: ACCENT + '10', borderRadius: colors.radius }]}>
+                <Text style={[styles.historyText, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }]}>
+                  {summary.last
+                    ? `${t('parentMsgHistoryLast')} ${kindEmoji(summary.last.kind)} ${kindLabel(summary.last.kind, isAr)} · ${new Date(summary.last.createdAt).toLocaleDateString(isAr ? 'ar-JO' : 'en-GB', { day: 'numeric', month: 'short' })}`
+                    : t('parentMsgHistoryNone')}
+                </Text>
+                {Object.keys(summary.recent).length > 0 ? (
+                  <Text style={[styles.historyText, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>
+                    {`${t('parentMsgHistoryRecent')} ${MESSAGE_KINDS
+                      .filter(k => summary.recent[k])
+                      .map(k => `${kindLabel(k, isAr)} ×${summary.recent[k]}`)
+                      .join(isAr ? '، ' : ', ')}`}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
           </Field>
 
           <Field label={t('parentMsgStudentGender')}>
@@ -285,6 +335,18 @@ export default function ParentMessageScreen() {
                 );
               })}
             </View>
+            {/* A suggestion, not a switch: the teacher may have reasons to
+                send the third reminder anyway. Tapping picks «دعوة لاجتماع». */}
+            {summary && suggestMeeting(summary, kind) ? (
+              <Pressable
+                onPress={() => { setKind('meeting'); Haptics.selectionAsync(); }}
+                style={[styles.history, { backgroundColor: palette.warning + '1A', borderRadius: colors.radius }]}
+              >
+                <Text style={[styles.historyText, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }]}>
+                  {`${kindEmoji('meeting')} ${t('parentMsgHistorySuggestMeeting')}`}
+                </Text>
+              </Pressable>
+            ) : null}
           </Field>
 
           {/* The tool states plainly that it will not invent the specifics —
@@ -435,6 +497,8 @@ const styles = StyleSheet.create({
   pillRow: { flexWrap: 'wrap', gap: 8 },
   pickLink: { alignItems: 'center', gap: 6, marginTop: 8 },
   pickLinkText: { fontSize: 13 },
+  history: { marginTop: 10, paddingHorizontal: 12, paddingVertical: 8, gap: 2 },
+  historyText: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular' },
   pill: { alignItems: 'center', paddingHorizontal: 13, paddingVertical: 8, borderWidth: 1.5 },
   pillText: { fontSize: 13 },
   input: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },
