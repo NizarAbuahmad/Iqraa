@@ -74,6 +74,16 @@ const BEFORE_CLASS_ALL: ToolDef[] = [
     color: '#007C74',
     route: '/ai-tools/lesson-plan',
   },
+  // The per-grade resources library. It lives under /curriculum so students can
+  // reach it too; this card is the teacher's door since #551 hid the old row.
+  {
+    id: 'library',
+    titleKey: 'toolLibraryTitle',
+    descKey: 'toolLibraryDesc',
+    icon: 'library-outline',
+    color: '#7C3AED',
+    route: '/curriculum/resources',
+  },
   // Generates the whole lesson journey in one pass, so it belongs with prep
   // rather than in a drawer of leftovers.
   {

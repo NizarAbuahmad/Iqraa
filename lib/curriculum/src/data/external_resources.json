@@ -10,6 +10,8 @@
         "kbl-eng-s1-nccd-u3_l3",
         "kbl-eng-s1-nccd-u3_l6"
       ],
+      "gradeIds": ["grade-10"],
+      "subjectId": "english",
       "kind": "text",
       "titleEn": "Nutrients and Nutrition",
       "titleAr": "العناصر الغذائية والتغذية",
@@ -31,6 +33,8 @@
         "kbl-eng-s1-nccd-u1_l2",
         "kbl-eng-s1-nccd-u1_l5"
       ],
+      "gradeIds": ["grade-10"],
+      "subjectId": "english",
       "kind": "text",
       "titleEn": "Everyday Grammar: When Nouns Act Like Adjectives",
       "titleAr": "قواعد يومية: عندما تعمل الأسماء عمل الصفات",
@@ -51,6 +55,8 @@
         "kbl-eng-s1-nccd-u5_l3",
         "kbl-eng-s1-nccd-u5_l5"
       ],
+      "gradeIds": ["grade-10"],
+      "subjectId": "english",
       "kind": "text",
       "titleEn": "Everyday Grammar: Fun with Future Tenses",
       "titleAr": "قواعد يومية: أزمنة المستقبل",
@@ -70,6 +76,8 @@
     {
       "id": "noaa-ocean-surface-currents",
       "lessonIds": ["kbl-earth-science-s2-nccd-u4_l3"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "earth-science",
       "kind": "image",
       "titleEn": "Map of ocean surface currents",
       "titleAr": "خريطة تيّارات سطح المحيط",
@@ -91,6 +99,8 @@
     {
       "id": "noaa-gulf-stream-sst",
       "lessonIds": ["kbl-earth-science-s2-nccd-u4_l3"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "earth-science",
       "kind": "image",
       "titleEn": "The Gulf Stream seen through sea-surface temperature",
       "titleAr": "تيّار الخليج مرئيًّا بدرجة حرارة سطح البحر",
@@ -112,6 +122,8 @@
     {
       "id": "commons-basalt-columbia-river",
       "lessonIds": ["kbl-earth-science-s1-nccd-u1_l1"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "earth-science",
       "kind": "image",
       "titleEn": "Basalt — Columbia River flood basalt, Oregon",
       "titleAr": "البازلت — بازلت نهر كولومبيا الفيضي، أوريغون",
@@ -133,6 +145,8 @@
     {
       "id": "commons-conglomerate-sharon",
       "lessonIds": ["kbl-earth-science-s1-nccd-u1_l2"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "earth-science",
       "kind": "image",
       "titleEn": "Quartz-pebble conglomerate — Sharon Conglomerate, Ohio",
       "titleAr": "الكونغلوميرات الحصوي — تكوين شارون، أوهايو",
@@ -154,6 +168,8 @@
     {
       "id": "commons-gneiss-ellsworth",
       "lessonIds": ["kbl-earth-science-s1-nccd-u1_l3"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "earth-science",
       "kind": "image",
       "titleEn": "Gneiss — Ellsworth Schist, Maine",
       "titleAr": "النايس — شيست إلزوورث، ماين",
@@ -176,6 +192,8 @@
     {
       "id": "commons-hydrogen-emission-spectrum",
       "lessonIds": ["kbl-chem-s1-nccd-u1_lab", "kbl-chem-s1-nccd-u1_l1"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "chemistry",
       "kind": "image",
       "titleEn": "Hydrogen emission spectrum, with wavelengths labelled",
       "titleAr": "طيف انبعاث الهيدروجين مع الأطوال الموجية",
@@ -197,6 +215,8 @@
     {
       "id": "commons-periodic-table",
       "lessonIds": ["kbl-chem-s1-nccd-u2_l2"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "chemistry",
       "kind": "image",
       "titleEn": "Periodic table of the elements",
       "titleAr": "الجدول الدوري للعناصر",
@@ -218,6 +238,8 @@
     {
       "id": "commons-force-parallelogram",
       "lessonIds": ["kbl-phys-s1-nccd-u1_lab", "kbl-phys-s1-nccd-u1_l2"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "physics",
       "kind": "image",
       "titleEn": "Parallelogram of forces — the resultant of two forces",
       "titleAr": "متوازي أضلاع القوى — محصّلة قوّتين",
@@ -239,6 +261,8 @@
     {
       "id": "commons-net-force",
       "lessonIds": ["kbl-phys-s1-nccd-u2_l3"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "physics",
       "kind": "image",
       "titleEn": "Net force on a body",
       "titleAr": "القوة المحصّلة المؤثرة في جسم",
@@ -260,6 +284,8 @@
     {
       "id": "commons-projectile-motion",
       "lessonIds": ["kbl-phys-s1-nccd-u2_l2"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "physics",
       "kind": "image",
       "titleEn": "Projectile motion — the path of a thrown object",
       "titleAr": "حركة المقذوف — مسار جسم مقذوف",
@@ -282,6 +308,8 @@
     {
       "id": "yt-nasa-newtons-second-law",
       "lessonIds": ["kbl-phys-s1-nccd-u2_l3"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "physics",
       "kind": "video",
       "titleEn": "STEMonstrations: Newton's 2nd Law of Motion",
       "titleAr": "ناسا: قانون نيوتن الثاني للحركة",
@@ -296,6 +324,8 @@
     {
       "id": "yt-nasa-newtons-laws-iss",
       "lessonIds": ["kbl-phys-s1-nccd-u2_l1", "kbl-phys-s1-nccd-u2_l3"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "physics",
       "kind": "video",
       "titleEn": "Launchpad: Newton's Laws on board the International Space Station",
       "titleAr": "قوانين نيوتن على متن محطة الفضاء الدولية",
@@ -310,6 +340,8 @@
     {
       "id": "yt-harvard-flame-tests",
       "lessonIds": ["kbl-chem-s1-nccd-u1_lab", "kbl-chem-s1-nccd-u1_l1"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "chemistry",
       "kind": "video",
       "titleEn": "Flame Tests of Metals",
       "titleAr": "اختبار اللهب للفلزّات",
@@ -325,6 +357,8 @@
     {
       "id": "yt-nasa-large-scale-ocean-currents",
       "lessonIds": ["kbl-earth-science-s2-nccd-u4_l3"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "earth-science",
       "kind": "video",
       "titleEn": "NASA: Large Scale Ocean Currents",
       "titleAr": "ناسا: تيّارات المحيط واسعة النطاق",
@@ -339,6 +373,8 @@
     {
       "id": "yt-nasa-ocean-in-motion",
       "lessonIds": ["kbl-earth-science-s2-nccd-u4_l2", "kbl-earth-science-s2-nccd-u4_l3"],
+      "gradeIds": ["grade-10"],
+      "subjectId": "earth-science",
       "kind": "video",
       "titleEn": "An Ocean in Motion: NASA's view of Earth's underwater highways",
       "titleAr": "محيط في حركة: رؤية ناسا لطرق الأعماق",
@@ -357,6 +393,8 @@
         "kbl-earth-science-s1-nccd-u1_l2",
         "kbl-earth-science-s1-nccd-u1_l3"
       ],
+      "gradeIds": ["grade-10"],
+      "subjectId": "earth-science",
       "kind": "video",
       "titleEn": "Our World: The Rock Cycle",
       "titleAr": "عالمنا: دورة الصخور",

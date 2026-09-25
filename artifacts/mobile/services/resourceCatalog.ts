@@ -1,5 +1,8 @@
 /**
- * One list out of four unrelated libraries.
+ * One list out of five unrelated libraries.
+ *
+ * Fifth, added 2026-09-25: tool starters (`resourceTemplates.ts`), listed first
+ * because they are the one row that ends in something made for this class.
  *
  * The resources tab offers a teacher everything supplementary in one place:
  * frozen practice sheets, the classroom activity formats, the licensed
@@ -28,9 +31,10 @@
 import type { PremadeWorksheet } from '@workspace/curriculum/premade';
 import type { ExternalResource } from '@workspace/curriculum/external';
 import type { QrResourceBook } from './bookQrLinks.ts';
+import { TOOL_ROUTE, type ResourceTemplate } from './resourceTemplates.ts';
 
 /** Which library a row came out of. Also the section it renders under. */
-export type ResourceSource = 'premade-sheet' | 'activity' | 'curriculum-media' | 'book-qr';
+export type ResourceSource = 'template' | 'premade-sheet' | 'activity' | 'curriculum-media' | 'book-qr';
 
 export type ResourceKind =
   | 'worksheet'
@@ -40,7 +44,8 @@ export type ResourceKind =
   | 'audio'
   | 'document'
   | 'page'
-  | 'text';
+  | 'text'
+  | 'template';
 
 /**
  * What a row lets a teacher do.
@@ -50,7 +55,7 @@ export type ResourceKind =
  * classroom presenter. `open` leaves the app. `add-to-class` files a copy —
  * see `addToClassPlan` for what that actually costs per source.
  */
-export type ResourceAction = 'add-to-class' | 'print' | 'open' | 'run';
+export type ResourceAction = 'add-to-class' | 'print' | 'open' | 'run' | 'use';
 
 export interface ResourceItem {
   /** `<source>:<nativeId>`. Unique across every source by construction. */
@@ -64,6 +69,8 @@ export interface ResourceItem {
   /** KB lesson id when the row is lesson-scoped. An id, never a title. */
   lessonId?: string;
   gradeId?: string;
+  /** Curated media can serve several grades; `gradeId` holds just one. */
+  gradeIds?: string[];
   subjectId?: string;
   /** Rendered verbatim wherever the row appears. A licence term, not a label. */
   attribution?: string;
@@ -80,6 +87,9 @@ export interface ResourceItem {
    */
   insecure?: boolean;
   actions: ResourceAction[];
+  /** Where `use` goes — a template's tool route, and the params it starts with. */
+  route?: string;
+  params?: Record<string, string>;
 }
 
 export interface ResourceCatalogInput {
@@ -92,12 +102,19 @@ export interface ResourceCatalogInput {
   activities: Array<{ id: string; titleAr: string; titleEn: string }>;
   external: ExternalResource[];
   qr: QrResourceBook[];
+  templates: ResourceTemplate[];
 }
 
 export interface ResourceFilter {
   kinds?: ResourceKind[];
   sources?: ResourceSource[];
   lessonId?: string;
+  /**
+   * Keeps rows filed under this grade, plus rows filed under none — an
+   * activity format or a starter works for every grade.
+   */
+  gradeId?: string;
+  subjectId?: string;
   query?: string;
 }
 
@@ -108,6 +125,7 @@ export interface ResourceFilter {
  * media is a link to judge; the book codes are a reference shelf.
  */
 const SOURCE_ORDER: ResourceSource[] = [
+  'template',
   'premade-sheet',
   'activity',
   'curriculum-media',
@@ -162,9 +180,25 @@ function fromExternal(resource: ExternalResource): ResourceItem | null {
     titleAr: resource.titleAr,
     titleEn: resource.titleEn,
     lessonId: resource.lessonIds[0],
+    gradeIds: resource.gradeIds,
+    subjectId: resource.subjectId,
     attribution: resource.attribution,
     url,
     actions: ['open'],
+  };
+}
+
+function fromTemplate(template: ResourceTemplate): ResourceItem {
+  return {
+    key: `template:${template.id}`,
+    source: 'template',
+    nativeId: template.id,
+    kind: 'template',
+    titleAr: template.titleAr,
+    titleEn: template.titleEn,
+    route: TOOL_ROUTE[template.tool],
+    params: template.params,
+    actions: ['use'],
   };
 }
 
@@ -198,6 +232,7 @@ function fromQrBook(book: QrResourceBook): ResourceItem[] {
 /** Adapt every library into one list, in section order. */
 export function buildResourceCatalog(input: ResourceCatalogInput): ResourceItem[] {
   const items: ResourceItem[] = [
+    ...input.templates.map(fromTemplate),
     ...input.premade.map(fromPremade),
     ...input.activities.map(fromActivity),
     ...input.external.map(fromExternal).filter((item): item is ResourceItem => item !== null),
@@ -221,6 +256,11 @@ export function filterResources(items: ResourceItem[], filter: ResourceFilter): 
     if (filter.kinds?.length && !filter.kinds.includes(item.kind)) return false;
     if (filter.sources?.length && !filter.sources.includes(item.source)) return false;
     if (filter.lessonId && item.lessonId !== filter.lessonId) return false;
+    if (filter.gradeId) {
+      const grades = item.gradeIds ?? (item.gradeId ? [item.gradeId] : []);
+      if (grades.length && !grades.includes(filter.gradeId)) return false;
+    }
+    if (filter.subjectId && item.subjectId && item.subjectId !== filter.subjectId) return false;
     if (query) {
       const haystack = `${item.titleAr} ${item.titleEn}`.toLowerCase();
       if (!haystack.includes(query)) return false;
@@ -261,6 +301,8 @@ export function addToClassPlan(item: Pick<ResourceItem, 'source'>): AddToClassSt
       return ['save-material', 'attach-material'];
     case 'curriculum-media':
     case 'book-qr':
+    // A starter has nothing to attach until the tool has generated something.
+    case 'template':
       return [];
   }
 }

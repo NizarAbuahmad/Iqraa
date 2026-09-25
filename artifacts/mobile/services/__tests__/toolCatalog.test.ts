@@ -22,6 +22,9 @@
  * slides, near-identical name, same deck at the end. It is a link inside the
  * slides screen now, so it is parked here like the others.
  *
+ * `library` joined on 2026-09-25: the per-grade resources library, whose only
+ * entry row #551 had hidden.
+ *
  * Parked tools stay in the catalog (their routes still resolve for saved
  * materials and deep links) but must not reappear on a menu — which is easy to
  * undo by accident, since adding a tool to the arrays is how you add one at
@@ -33,7 +36,7 @@ import assert from 'node:assert/strict';
 import { AFTER_CLASS, ALL_TOOLS, BEFORE_CLASS, DURING_CLASS, WORKFLOW } from '../toolCatalog.ts';
 
 const OFFERED_TOOLS = [
-  'slides', 'lesson-plan',                                                // before
+  'slides', 'lesson-plan', 'library',                                     // before
   'worksheet', 'classroom', 'game', 'activity', 'whiteboard', 'games',     // during
   'quiz', 'evaluations', 'parent-msg',                                    // after
 ];
