@@ -36,6 +36,8 @@ export * from "./aiArtifacts";
 
 // Teacher-uploaded lesson attachments (R2-backed) — see routes/lessonMedia.ts
 export * from "./lessonMedia";
+// Staff-uploaded resources library, per grade/subject/lesson — see routes/library.ts
+export * from "./libraryResources";
 
 // Person-to-person chat — teacher/parent/student threads and groups. Not the
 // AI chatbot (that's ./conversations + ./messages) — see routes/messaging.ts
