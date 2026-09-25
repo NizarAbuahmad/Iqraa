@@ -624,3 +624,62 @@ Return JSON in this exact shape:
   "assessment": "How to assess activity success"
 }`;
 }
+
+/**
+ * Icons an infographic section may use. The app draws them with Ionicons and
+ * swaps anything outside this list for a neutral one, so a model that invents
+ * a name costs a generic icon, not a blank square. Keep in step with
+ * `INFOGRAPHIC_ICONS` in artifacts/mobile/services/ai/infographic.ts.
+ */
+export const INFOGRAPHIC_ICONS = [
+  "bulb-outline", "book-outline", "calculator-outline", "flask-outline",
+  "globe-outline", "leaf-outline", "time-outline", "list-outline",
+  "git-compare-outline", "alert-circle-outline", "checkmark-circle-outline",
+  "star-outline", "people-outline", "stats-chart-outline", "shapes-outline",
+  "water-outline", "planet-outline", "heart-outline", "construct-outline",
+  "chatbubbles-outline",
+] as const;
+
+export function infographicPromptAr(b: any): string {
+  return `صمّم محتوى إنفوجرافيك تعليمي لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}".
+${b.additionalContext ? `\nسياق الكتاب المدرسي:\n${b.additionalContext}` : ""}
+
+الإنفوجرافيك صفحة واحدة يلخّص الدرس بصريًا للطلبة. قواعد:
+- عبارات قصيرة لا فقرات: كل نقطة 12 كلمة على الأكثر.
+- keyFacts: من 3 إلى 4 حقائق أو مصطلحات أساسية؛ label كلمة أو كلمتان، value جملة قصيرة أو رقم أو قانون.
+- sections: من 3 إلى 5 أقسام، لكل قسم عنوان قصير و2 إلى 4 نقاط.
+- icon لكل قسم من هذه القائمة فقط: ${INFOGRAPHIC_ICONS.join("، ")}.
+- takeaway: جملة واحدة يتذكّرها الطالب.
+- التزم بمصطلحات الكتاب المدرسي الأردني ومستوى الصف. اكتب الرياضيات بترميز نصي بسيط (x^2، 3/4) لا LaTeX.
+
+أعد JSON بالشكل الآتي (بالعربية):
+{
+  "title": "عنوان الإنفوجرافيك",
+  "subtitle": "سطر تعريفي قصير",
+  "keyFacts": [{ "label": "مصطلح", "value": "تعريف قصير" }],
+  "sections": [{ "heading": "عنوان القسم", "icon": "bulb-outline", "points": ["نقطة 1", "نقطة 2"] }],
+  "takeaway": "الفكرة الأهم في جملة"
+}`;
+}
+
+export function infographicPromptEn(b: any): string {
+  return `Design the content of a one-page educational infographic for ${b.subject}, ${b.grade}, on "${b.topic}".
+${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ""}
+
+The infographic summarises the lesson visually for students. Rules:
+- Short phrases, never paragraphs: at most 12 words per point.
+- keyFacts: 3 to 4 key facts or terms; label is one or two words, value a short sentence, number or formula.
+- sections: 3 to 5 sections, each with a short heading and 2 to 4 points.
+- Each section's icon must come from this list only: ${INFOGRAPHIC_ICONS.join(", ")}.
+- takeaway: one sentence a student will remember.
+- Use the Jordanian textbook's terminology and the grade's level. Write maths in plain notation (x^2, 3/4), never LaTeX.
+
+Return JSON in this exact shape:
+{
+  "title": "Infographic title",
+  "subtitle": "One short intro line",
+  "keyFacts": [{ "label": "Term", "value": "Short definition" }],
+  "sections": [{ "heading": "Section heading", "icon": "bulb-outline", "points": ["point 1", "point 2"] }],
+  "takeaway": "The single most important idea"
+}`;
+}

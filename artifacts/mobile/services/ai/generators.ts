@@ -7,6 +7,7 @@ import type {
   WorksheetOutput, WorksheetSection,
 } from './AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
+import { buildInfographicFromLesson, type InfographicOutput } from './infographic.ts';
 import { getLessonById, getUnitForLesson, resolveGroundedKbLesson } from '../knowledgeBase.ts';
 import { figuresForLesson } from '../bookFigures.ts';
 import {
@@ -1109,6 +1110,12 @@ export class MockAIService extends AIService {
       differentiation: blueprint.differentiation,
       assessment: blueprint.assessment,
     };
+  }
+
+  async generateInfographic(req: AIRequest): Promise<InfographicOutput> {
+    await this.delay();
+    const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
+    return buildInfographicFromLesson(req.topic, groundedKb(req.topic, lang, req.lessonId), lang);
   }
 
   async generateClassroomActivity(req: ClassroomActivityRequest): Promise<ClassroomActivity> {

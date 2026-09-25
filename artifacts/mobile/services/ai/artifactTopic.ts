@@ -32,7 +32,9 @@ const VERBS = [
 const NOUNS = [
   `خطة${ACC}(?:\\s*درس)?`, `ورقة${ACC}(?:\\s*عمل)?`, `اختبار${ACC}`, `واجب${ACC}`,
   `نشاط${ACC}`, `درس${ACC}`, `بطاقة${ACC}(?:\\s*خروج)?`,
+  '[اإ]نفو[جغك]رافي[كك]', 'ملخص\\s*بصري',
   'lesson\\s*plan', 'worksheet', 'quiz', 'homework', 'activity', 'exit\\s*ticket',
+  'infographic', 'visual\\s*summary',
 ];
 
 /**
