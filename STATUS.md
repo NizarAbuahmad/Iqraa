@@ -491,10 +491,13 @@ an announcement by default» below.
 
 ## An English corner for Grades 1–4, 2026-09-25
 
-Students can practise their English lesson words on their own at
-`/curriculum/english`. It's reached from a banner on the Curriculum tab for
-Grades 1–4, and from «العب بكلمات هذا الدرس» on the matching lesson pages. It
-covers 36 lessons and 458 words across the eight G1–4 books.
+Anyone can practise the Grade 1–4 English lesson words at
+`/curriculum/english`, **with no account** — it's the first card on the `/play`
+games page. `/curriculum/english` is in `PUBLIC_ROUTES`; the rest of
+`/curriculum` still needs sign-in, which `routeGating.test.ts` pins. Signed-in users
+also reach it from a banner on the Curriculum tab when Grades 1–4 are selected,
+and from «العب بكلمات هذا الدرس» on the matching lesson pages. It covers 36
+lessons and 458 words across the eight G1–4 books.
 
 - **Four activities**, all pure logic in `services/englishHub/games.ts`: flashcards,
   listen-and-choose, match the English word to its Arabic meaning, and spell it.

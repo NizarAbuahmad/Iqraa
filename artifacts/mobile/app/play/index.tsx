@@ -31,6 +31,8 @@ const GAMES: Array<{
   titleKey: TranslationKey;
   descKey: TranslationKey;
 }> = [
+  // First: it's the one game built from the students' own books.
+  { id: 'english', route: '/curriculum/english', icon: 'headset-outline', color: '#006D65', titleKey: 'hubTitle', descKey: 'playEnglishDesc' },
   { id: 'flags', route: '/play/flags', icon: 'flag-outline', color: '#1D4ED8', titleKey: 'playFlagsTitle', descKey: 'playFlagsDesc' },
   { id: 'capitals', route: '/play/capitals', icon: 'location-outline', color: '#0E8F86', titleKey: 'playCapitalsTitle', descKey: 'playCapitalsDesc' },
   { id: 'memory', route: '/play/memory', icon: 'apps-outline', color: '#0369A1', titleKey: 'playMemoryTitle', descKey: 'playMemoryDesc' },

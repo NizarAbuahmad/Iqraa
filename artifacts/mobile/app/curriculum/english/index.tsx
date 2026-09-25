@@ -35,7 +35,10 @@ export default function EnglishHubScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { backgroundColor: colors.hero, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        {/* Public page: with no history, `goBack()`'s fallback is `/`, which
+            sends a visitor with no account to the login screen. `/play` is where
+            they came from, or where they'd want to go. */}
+        <Pressable onPress={() => (router.canGoBack() ? goBack() : router.replace('/play' as never))} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={[styles.title, { textAlign: align }]}>{t('hubTitle')}</Text>

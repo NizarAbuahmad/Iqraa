@@ -54,7 +54,9 @@ export default function EnglishHubLessonScreen() {
     if (activity) {
       setActivity(null);
       setResult(null);
-    } else goBack();
+    // Public page: with no history, `goBack()` lands a visitor on login.
+    } else if (router.canGoBack()) goBack();
+    else router.replace('/curriculum/english' as never);
   };
 
   const body = () => {
