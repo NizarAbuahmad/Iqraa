@@ -910,6 +910,34 @@ function MessageBubble({
    * can do, then get out of the way. It sits at the top of the thread, so it
    * scrolls off on its own once a real conversation starts.
    */
+  if (message.id === 'welcome' && !isWide) {
+    /*
+      Phone: the header right above already carries the mark and «اقرأ», so
+      a 64px tile and «مساعد اقرأ» under it said the name twice before the
+      teacher reached anything they could do. One line of purpose, then the
+      readiness board — which is the thing to do.
+    */
+    return (
+      <View style={styles.introCompact}>
+        <Text
+          style={[
+            styles.introCompactText,
+            {
+              color: colors.foreground,
+              fontFamily: 'Cairo_600SemiBold',
+              textAlign: isRTL ? 'right' : 'left',
+              writingDirection: isRTL ? 'rtl' : 'ltr',
+            },
+          ]}
+        >
+          {introPitch}
+        </Text>
+        {introBoard}
+        {introActions}
+      </View>
+    );
+  }
+
   if (message.id === 'welcome') {
     return (
       <View style={[styles.intro, isWide && styles.introWide]}>
@@ -1261,6 +1289,7 @@ export default function IqraScreen() {
   const mode: Mode = 'teacher';
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [inputFocused, setInputFocused] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
@@ -3030,8 +3059,10 @@ export default function IqraScreen() {
             introPitch={t('iqraAgentPitch')}
             // Only while the thread is still just the intro — otherwise the
             // same three chips appear twice on one screen.
+            // Nor the lesson chips under the readiness board: its rows already are
+            // «حضّر خطة الدرس» / «أنشئ ورقة عمل», the same actions twice.
             introActions={
-              item.id === 'welcome' && messages.length <= 1 ? starterChips('intro') : null
+              item.id === 'welcome' && messages.length <= 1 && !(introPrepBoard && lessonSuggestions.length > 0) ? starterChips('intro') : null
             }
             introBoard={item.id === 'welcome' ? introPrepBoard : null}
             t={t}
@@ -3173,6 +3204,10 @@ export default function IqraScreen() {
               shadowRadius: 14,
               shadowOffset: { width: 0, height: 4 },
             },
+            // Focus shows on the pill itself. The web default was a hard black
+            // rectangle around the bare textarea, inside the rounded pill.
+            !isDesktop && { borderWidth: 1.5, borderColor: 'transparent' },
+            inputFocused && { borderColor: colors.primary },
             isRTL && { flexDirection: 'row-reverse' },
           ]}
         >
@@ -3212,6 +3247,8 @@ export default function IqraScreen() {
             accessibilityHint={t('iqraInputHint')}
             value={input}
             onChangeText={setInput}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             multiline
             maxLength={800}
             onSubmitEditing={() => sendMessage(input)}
@@ -3420,6 +3457,8 @@ const styles = StyleSheet.create({
   rowAssistantRTL: { flexDirection: 'row-reverse' },
   avatar: { marginTop: 4 },
   intro: { alignItems: 'center', gap: 10, paddingTop: 28, paddingBottom: 12, paddingHorizontal: 24 },
+  introCompact: { gap: 14, paddingTop: 16, paddingBottom: 8, paddingHorizontal: 4 },
+  introCompactText: { fontSize: 15, lineHeight: 26 },
   introWide: { gap: 14, paddingTop: 8 },
   introName: { fontSize: 22, textAlign: 'center' },
   introNameWide: { fontSize: 30 },
@@ -3449,7 +3488,7 @@ const styles = StyleSheet.create({
   inputBar: { borderTopWidth: 1, paddingHorizontal: 12, paddingTop: 10 },
   inputBarInner: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
-  input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0 },
+  input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0, outlineStyle: 'none' as never },
   inputWide: { fontSize: 15, maxHeight: 160, lineHeight: 22 },
   plusBtn: {
     width: 34,
