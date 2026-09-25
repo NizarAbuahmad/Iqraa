@@ -46,6 +46,7 @@ import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
 import { COMPETENCY_KEYS, type CompetencyKey } from "../modules/assessment/competency";
 import { isPaperQuestion, parsePaperRows } from "../modules/assessment/paperExam";
+import { partitionForRegeneration } from "../modules/assessment/regeneration";
 import { aggregateClass, finishedAttempts } from "../modules/assessment/classInsights";
 import { generateShareCode } from "../modules/assessment/studentView";
 import {
@@ -600,16 +601,21 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
     }
 
     // Replace rather than append: generating twice should not silently double
-    // the length of the evaluation.
-    await db
-      .update(evaluationQuestions)
-      .set({ deletedAt: new Date() })
-      .where(
-        and(
-          eq(evaluationQuestions.evaluationId, evaluation.id),
-          isNull(evaluationQuestions.deletedAt),
-        ),
-      );
+    // the length of the evaluation. Questions the teacher wrote survive — see
+    // `partitionForRegeneration` — and move after the new generated ones.
+    const { keep, replace } = partitionForRegeneration(await liveQuestions(evaluation.id));
+    if (replace.length > 0) {
+      await db
+        .update(evaluationQuestions)
+        .set({ deletedAt: new Date() })
+        .where(inArray(evaluationQuestions.id, replace.map(q => q.id)));
+    }
+    for (const [i, q] of keep.entries()) {
+      await db
+        .update(evaluationQuestions)
+        .set({ orderIndex: keyCheck.kept.length + i })
+        .where(eq(evaluationQuestions.id, q.id));
+    }
 
     if (keyCheck.kept.length > 0) {
       await db.insert(evaluationQuestions).values(
@@ -844,7 +850,7 @@ router.post("/evaluations/:id/questions", async (req: AuthenticatedRequest, res)
     }
 
     const existingCount = await db
-      .select({ id: evaluationQuestions.id })
+      .select({ id: evaluationQuestions.id, orderIndex: evaluationQuestions.orderIndex })
       .from(evaluationQuestions)
       .where(
         and(
@@ -861,11 +867,11 @@ router.post("/evaluations/:id/questions", async (req: AuthenticatedRequest, res)
       .insert(evaluationQuestions)
       .values({
         evaluationId: evaluation.id,
-        // Appended, not inserted: `orderIndex` counts from the current length,
-        // so adding a question never renumbers one a teacher has already
-        // placed. Soft-deleted rows are excluded above, so a gap in the
-        // sequence is possible and harmless — order is relative, not dense.
-        orderIndex: existingCount.length,
+        // Appended, not inserted: one past the highest live `orderIndex`, so
+        // adding a question never renumbers one a teacher has already placed.
+        // Not the count — after a delete leaves a gap, the count equals the
+        // last question's index and the new one would tie with it.
+        orderIndex: Math.max(-1, ...existingCount.map(q => q.orderIndex)) + 1,
         type,
         body,
         expectedAnswer,
@@ -894,6 +900,11 @@ router.patch(
       const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
       if (!evaluation) {
         res.status(404).json({ error: "Evaluation not found" });
+        return;
+      }
+      // Same rule as adding: once published, students may be sitting it.
+      if (evaluation.status !== "draft") {
+        res.status(409).json({ error: "Only a draft can be edited" });
         return;
       }
 
@@ -1005,6 +1016,10 @@ router.delete(
       const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
       if (!evaluation) {
         res.status(404).json({ error: "Evaluation not found" });
+        return;
+      }
+      if (evaluation.status !== "draft") {
+        res.status(409).json({ error: "Only a draft can be edited" });
         return;
       }
       const [removed] = await db

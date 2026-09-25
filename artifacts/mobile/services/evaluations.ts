@@ -257,6 +257,7 @@ export async function addEvaluationQuestion(
     difficulty?: Difficulty;
     body: Record<string, unknown>;
     expectedAnswer?: Record<string, unknown>;
+    rubric?: Record<string, unknown>;
   },
 ): Promise<{ question: EvaluationQuestion; totalMarks: number }> {
   const res = await apiFetch(`/evaluations/${evaluationId}/questions`, {
@@ -264,6 +265,32 @@ export async function addEvaluationQuestion(
     body: JSON.stringify(question),
   });
   return readJson(res, 'Adding the question');
+}
+
+/** Edit one question of a draft. An AI question becomes `ai_edited`. */
+export async function updateEvaluationQuestion(
+  evaluationId: string,
+  questionId: string,
+  patch: {
+    marks?: number;
+    difficulty?: Difficulty;
+    body?: Record<string, unknown>;
+    expectedAnswer?: Record<string, unknown>;
+  },
+): Promise<{ question: EvaluationQuestion; totalMarks: number }> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/questions/${questionId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  });
+  return readJson(res, 'Saving the question');
+}
+
+export async function deleteEvaluationQuestion(
+  evaluationId: string,
+  questionId: string,
+): Promise<{ totalMarks: number }> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/questions/${questionId}`, { method: 'DELETE' });
+  return readJson(res, 'Deleting the question');
 }
 
 export async function publishEvaluation(id: string): Promise<Evaluation> {
