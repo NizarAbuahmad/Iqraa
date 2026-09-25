@@ -14,7 +14,7 @@
 import {
   ActivityOutput, AIRequest, AIService,
   ClassroomActivity, ClassroomActivityRequest,
-  GenerateOptions,
+  GenerateOptions, InfographicOutput,
   LessonPlanOutput, PromptSlidesQuestion, PromptSlidesRequest, QuizOutput, WorksheetOutput,
 } from './AIService';
 import { DEMO_MODE } from './demoMode';
@@ -132,6 +132,14 @@ export class RemoteAIService extends AIService {
       'activity',
       () => postJSON<ActivityOutput>('/generate/activity', req, opts),
       () => this.fallback.generateActivity(req),
+    );
+  }
+
+  async generateInfographic(req: AIRequest, opts?: GenerateOptions): Promise<InfographicOutput> {
+    return generateWithProvenance(
+      'infographic',
+      () => postJSON<InfographicOutput>('/generate/infographic', req, opts),
+      () => this.fallback.generateInfographic(req),
     );
   }
 

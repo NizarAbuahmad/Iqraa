@@ -43,7 +43,7 @@ export type AiSourceReason =
 /** Which generator ran — matches the API path segment, e.g. 'lesson-plan'. */
 export type AiGenerationKind =
   | 'lesson-plan' | 'worksheet' | 'quiz' | 'activity' | 'homework'
-  | 'classroom-activity' | 'prompt-slides' | 'chat';
+  | 'classroom-activity' | 'prompt-slides' | 'infographic' | 'chat';
 
 export interface AiGenerationRecord {
   kind: AiGenerationKind;

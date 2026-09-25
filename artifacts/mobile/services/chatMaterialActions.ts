@@ -21,6 +21,18 @@ import { buildDeckFromQuiz, buildDeckFromWorksheet } from './classDeck.ts';
 import { buildLessonDeck } from './lessonSlides.ts';
 
 /**
+ * Kinds the workspace can store. An infographic is not one yet:
+ * `app/workspace/view.tsx` has no renderer for it, and filing it under another
+ * type would open it in the wrong viewer — the trap described below for
+ * activities. The bubble hides save / add-to-class for it instead.
+ */
+export type SavableKind = Exclude<ChatArtifactData['kind'], 'infographic'>;
+
+export function canSaveArtifact(data: ChatArtifactData): data is Extract<ChatArtifactData, { kind: SavableKind }> {
+  return data.kind !== 'infographic';
+}
+
+/**
  * Workspace type for a chat artifact.
  *
  * An activity is filed as `activity`, its own type. That was unsafe until
@@ -30,7 +42,7 @@ import { buildLessonDeck } from './lessonSlides.ts';
  * `lesson` and the type sat dead in `MaterialType`. The viewer renders them
  * now, and the type says what the material is.
  */
-export function materialTypeFor(kind: ChatArtifactData['kind']): MaterialType {
+export function materialTypeFor(kind: SavableKind): MaterialType {
   switch (kind) {
     case 'worksheet':
       return 'worksheet';
@@ -54,6 +66,8 @@ export function materialContentFor(data: ChatArtifactData): unknown {
       return data.quiz;
     case 'activity':
       return data.activity;
+    case 'infographic':
+      return data.infographic;
   }
 }
 
@@ -79,7 +93,8 @@ export function materialFormStateFor(topic: string): Record<string, string> {
  * nothing would be worse than not offering it — this is the "if applicable".
  */
 export function canPresentArtifact(data: ChatArtifactData): boolean {
-  return data.kind !== 'activity';
+  // An infographic is one page, not a deck.
+  return data.kind !== 'activity' && data.kind !== 'infographic';
 }
 
 export type ArtifactDeckOptions = {
@@ -129,6 +144,7 @@ export function deckForArtifact(
     case 'quiz':
       return buildDeckFromQuiz(data.quiz, topic, isAr, { lesson, figureUri });
     case 'activity':
+    case 'infographic':
       return null;
   }
 }

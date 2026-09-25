@@ -138,6 +138,18 @@ export default function OnboardingScreen() {
       </View>
 
       <Animated.View style={[styles.content, animated]}>
+        {/* Headline first, then the card as its proof: that is the order the
+            eye reads it, and the order a screen reader announces it. */}
+        <Text
+          accessibilityRole="header"
+          style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', writingDirection: dir }]}
+        >
+          {t(slide.titleKey)}
+        </Text>
+        <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', writingDirection: dir }]}>
+          {t(slide.descKey)}
+        </Text>
+
         {/* The illustration: a feature card in the slide's tone, its three
             points as rows, soft blobs behind. The rows are real text, so the
             card reads out as content rather than an unlabelled image. */}
@@ -145,13 +157,9 @@ export default function OnboardingScreen() {
           <View style={[styles.blob, styles.blobA, { backgroundColor: tone + '1F' }]} />
           <View style={[styles.blob, styles.blobB, { backgroundColor: colors.accent + '26' }]} />
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={[styles.cardHead, { backgroundColor: tone + '14', flexDirection: row }]}>
+            <View style={[styles.cardHead, { backgroundColor: tone + '14' }]}>
               <View style={[styles.cardIcon, { backgroundColor: tone }]}>
                 <Ionicons name={slide.icon} size={26} color={colors.card} />
-              </View>
-              <View style={styles.cardHeadLines}>
-                <View style={[styles.line, { width: '70%', backgroundColor: tone + '55', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
-                <View style={[styles.line, { width: '45%', backgroundColor: colors.border, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
               </View>
             </View>
             {points.map((p, i) => (
@@ -167,16 +175,6 @@ export default function OnboardingScreen() {
             ))}
           </View>
         </View>
-
-        <Text
-          accessibilityRole="header"
-          style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', writingDirection: dir }]}
-        >
-          {t(slide.titleKey)}
-        </Text>
-        <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', writingDirection: dir }]}>
-          {t(slide.descKey)}
-        </Text>
       </Animated.View>
 
       <View style={styles.footer}>
@@ -246,7 +244,7 @@ const styles = StyleSheet.create({
   skipText: { fontSize: 15 },
 
   content: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, alignSelf: 'center', width: '100%', maxWidth: 440 },
-  stage: { width: '100%', maxWidth: 340, marginBottom: 14 },
+  stage: { width: '100%', maxWidth: 340, marginTop: 18 },
   blob: { position: 'absolute', borderRadius: 999 },
   blobA: { width: 220, height: 220, top: -36, left: -40 },
   blobB: { width: 150, height: 150, bottom: -30, right: -30 },
@@ -260,10 +258,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 4,
   },
-  cardHead: { alignItems: 'center', gap: 12, padding: 16 },
+  cardHead: { alignItems: 'center', padding: 14 },
   cardIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  cardHeadLines: { flex: 1, gap: 8 },
-  line: { height: 8, borderRadius: 4 },
   pointRow: { alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1 },
   pointIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   pointText: { flex: 1, fontSize: 14, lineHeight: 22 },

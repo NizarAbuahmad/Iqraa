@@ -55,6 +55,7 @@ import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
 import {
   generateChatArtifact,
+  generateChatInfographic,
   resolveArtifactTopic,
   type ChatArtifactData,
 } from '@/services/ai/chatArtifacts';
@@ -109,6 +110,9 @@ import {
 import { lessonPickerParams, subjectPickerLabels, topicPickerParams } from '@/services/lessonPrep';
 import { answerAppHelp } from '@/services/appHelp';
 import { TOOL_ASK_TARGETS, toolAskFromQuery, toolAskReply } from '@/services/chatToolAsk';
+import { formatInfographicText, isInfographicAsk } from '@/services/ai/infographic';
+import { topicFromQuery } from '@/services/ai/artifactTopic';
+import { InfographicView } from '@/components/ui/InfographicView';
 import type { TranslationKey } from '@/services/i18n';
 import { resolveDeepLinkSend, type DeepLinkSend } from '@/services/chatDeepLink';
 import { pinnedResourceNote } from '@/services/mathSupportResources';
@@ -155,6 +159,7 @@ import type { Lang } from '@/services/i18n';
 import { attachToClasses, getItem, saveItem, updateItem } from '@/services/workspace';
 import {
   canPresentArtifact,
+  canSaveArtifact,
   deckForArtifact,
   materialContentFor,
   materialFormStateFor,
@@ -991,11 +996,13 @@ function MessageBubble({
     message.artifactData?.kind === 'lesson-plan' ? message.artifactData : null;
   /** The document renders in the thread only while the canvas is not showing it. */
   const inlinePlan = onCanvas ? null : planData;
+  const infographic =
+    message.artifactData?.kind === 'infographic' ? message.artifactData.infographic : null;
 
   // A rendered document replaces the formatted text it was built from. Showing
   // both put the whole lesson plan on screen twice — once editable, once as the
   // wall of separators the exporter produces.
-  const lines = (planData || onCanvas ? (message.artifactProse ?? message.text) : message.text).split('\n');
+  const lines = (planData || infographic || onCanvas ? (message.artifactProse ?? message.text) : message.text).split('\n');
 
   /**
    * The row under the bubble.
@@ -1007,7 +1014,8 @@ function MessageBubble({
    * because they are the next step; copy and export stay muted behind them.
    */
   const artifact = message.artifactData;
-  const canAct = Boolean(artifact && message.artifactMeta);
+  // An infographic has copy and export only — see `canSaveArtifact`.
+  const canAct = Boolean(artifact && message.artifactMeta && canSaveArtifact(artifact));
   const messageActions: {
     key: string;
     icon: keyof typeof Ionicons.glyphMap;
@@ -1057,7 +1065,7 @@ function MessageBubble({
       onPress: () => onPresentMaterial(message),
     });
   }
-  if (onCopy && onExport && (canAct || message.text.trim().length > 60)) {
+  if (onCopy && onExport && (canAct || infographic || message.text.trim().length > 60)) {
     messageActions.push(
       {
         key: 'copy',
@@ -1103,6 +1111,11 @@ function MessageBubble({
                     : undefined
                 }
               />
+            </View>
+          ) : null}
+          {infographic ? (
+            <View style={{ marginBottom: 8 }}>
+              <InfographicView data={infographic} colors={colors} isRTL={isRTL} />
             </View>
           ) : null}
           {lines.map((line, i) => {
@@ -1484,6 +1497,8 @@ export default function IqraScreen() {
         return formatQuizText(data.quiz, meta.title, m, isAr);
       case 'activity':
         return formatActivityText(data.activity, meta.title, m, isAr);
+      case 'infographic':
+        return formatInfographicText(data.infographic, isAr);
       default:
         return message.text;
     }
@@ -1523,7 +1538,7 @@ export default function IqraScreen() {
   const saveMessageMaterial = useCallback(async (message: Message): Promise<string | null> => {
     const data = message.artifactData;
     const meta = message.artifactMeta;
-    if (!data || !meta) return null;
+    if (!data || !meta || !canSaveArtifact(data)) return null;
     const topic = message.lessonTopic?.trim() || meta.title;
     const payload = {
       type: materialTypeFor(data.kind),
@@ -1854,6 +1869,41 @@ export default function IqraScreen() {
           timestamp: new Date(),
         }]);
         setEphemeralSuggestions([]);
+        return;
+      }
+
+      // An infographic, generated here and drawn as a card. Ahead of the social
+      // check for the same reason as below: a bare «إنفوجرافيك» is "ambiguous".
+      if (route.intent !== 'off_topic' && isInfographicAsk(q)) {
+        setThinkingLabel(t('iqraGeneratingArtifact'));
+        const named = topicFromQuery(q);
+        const namedRanked = named.length >= 3 ? searchKBRanked(named, lang as 'ar' | 'en') : [];
+        const namedLesson = namedRanked[0]
+          && (isConfidentSingleSubjectHit(namedRanked) || namedRanked[0].score >= KB_CONFIDENT_SCORE)
+          ? namedRanked[0].lesson
+          : null;
+        // «عن الدرس» / «لهذا الدرس» names no topic — it means the card's lesson.
+        const namesNothing = !named || /درس|هذا|هذه|الحالي|\bthis\b|\blesson\b/i.test(named);
+        const ctxId = pinnedLessonId ?? teachingCtxLessonId ?? sessionMemory.activeLessonId;
+        const lesson = namedLesson ?? (namesNothing && ctxId ? getLessonById(ctxId) : null);
+        const topic = lesson
+          ? (lang === 'ar' ? lesson.titleAr : lesson.titleEn)
+          : (namesNothing
+            ? ((lang === 'ar' ? sessionMemory.activeTopicAr : sessionMemory.activeTopicEn) ?? named)
+            : named);
+        const generated = await generateChatInfographic({ topic: topic || q, lesson, lang: lang as 'ar' | 'en' });
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          text: generated.text,
+          artifactData: generated.data,
+          artifactProse: generated.prose,
+          artifactMeta: { title: generated.title, ...generated.meta },
+          lessonTopic: generated.topic,
+          timestamp: new Date(),
+        }]);
+        setEphemeralSuggestions([]);
+        awaitingClarifyRef.current = false;
         return;
       }
 
