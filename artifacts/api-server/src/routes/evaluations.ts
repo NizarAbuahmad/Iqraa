@@ -8,6 +8,7 @@
  * constraint.
  */
 import { Router } from "express";
+import { createRateLimiter } from "../lib/rateLimit";
 import { db } from "@workspace/db";
 import {
   attemptResults,
@@ -78,6 +79,17 @@ const router = Router();
 // requireRole closes the gap where any authenticated user, not just a
 // teacher, could author or read evaluations.
 router.use("/evaluations", authMiddleware, requireRole(...TEACHER_ROLES));
+
+// Burst ceiling on the one model-backed route here. /chat and /generate get
+// theirs in routes/index.ts; this one was missed, so a loop could call the
+// model as fast as it answered. Mounted after authMiddleware so it keys per
+// user, not per school NAT address.
+const aiLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 10,
+  name: "ai-evaluation-generate",
+  key: (req) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
+});
 
 const ALL_TYPES = Object.keys(QUESTION_TYPES) as QuestionType[];
 
@@ -387,7 +399,7 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
   }
 });
 
-router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) => {
+router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedRequest, res) => {
   try {
     const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
     if (!evaluation) {

@@ -30,10 +30,11 @@ const router: IRouter = Router();
  *
  * These are the DoS half of the AI cost controls, and the half that works with
  * no configuration: `assertUserQuotaAvailable` is a no-op unless
- * AI_USER_BUDGET_USD is set (`getUserBudgetLimitUsd` returns 0 otherwise, and
- * neither render.yaml nor deploy.yml sets it), so on a deployment that has not
- * set it these limiters are the only thing standing between one account and
- * the whole shared monthly budget.
+ * AI_USER_BUDGET_USD is set (`getUserBudgetLimitUsd` returns 0 otherwise).
+ * deploy.yml sets it for production; on any deployment that has not, these
+ * limiters are the only thing standing between one account and the whole
+ * shared monthly budget. Exam generation and scan-marking carry their own,
+ * in evaluations.ts and attempts.ts.
  *
  * Keyed by user id rather than IP on purpose — see rateLimit.ts: a school is
  * one NAT address, so an IP-keyed limit here would let one busy classroom
