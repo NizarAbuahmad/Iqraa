@@ -1881,13 +1881,16 @@ export default function IqraScreen() {
         );
       }
 
-      // Prefer explicit teaching-context lesson when available — unless the
-      // teacher just named a different grade than that lesson's own. Computed
-      // once here and reused below for the "currently teaching" prompt text,
-      // which must drop the same mismatched lesson rather than announcing it.
+      // The picked lesson is background, not a leash. This block used to push
+      // it to the top of `results` on every send, bypassing
+      // `shouldReuseActiveLesson` below — so «كيف أدير صفًا مزعجًا؟» came back
+      // about the lesson on the card. The gate below now decides alone; this
+      // only resolves the lesson so the prompt line can tell whether it made
+      // it into `results`.
       let teachingCtxOverruledByGrade = false;
+      let ctxLesson: KBLesson | null = null;
       if (!pinnedLessonId && switchTopic === null && teachingCtx.trim()) {
-        const ctxLesson = resolvePickedLesson(
+        ctxLesson = resolvePickedLesson(
           teachingCtx.trim(),
           { lessonId: teachingCtxLessonId },
           lang as 'ar' | 'en',
@@ -1896,9 +1899,6 @@ export default function IqraScreen() {
           !!queryGradeId
           && !!ctxLesson
           && getBookForLesson(ctxLesson)?.gradeId !== queryGradeId;
-        if (ctxLesson && !teachingCtxOverruledByGrade) {
-          results = [ctxLesson, ...results.filter(r => r.id !== ctxLesson.id)].slice(0, 3);
-        }
       }
 
       // Reuse active lesson only when pin strength + intent allow it
@@ -2019,13 +2019,20 @@ export default function IqraScreen() {
       // just left while the answer below was grounded on the new one. The
       // offline path already resolved this the same way (`teachingContext`
       // prefers `pinnedLesson`); this is the remote path catching up.
+      // Announce the card's lesson only when it is actually part of this
+      // answer's grounding. Stamping it on every turn told the model the
+      // teacher was still on that lesson whatever they had just asked.
+      // A card topic with no curriculum lesson behind it follows the gate.
+      const ctxLessonInPlay = ctxLesson
+        ? results.some(r => r.id === ctxLesson!.id)
+        : reuseActive;
       const teachingTopic = pinnedLesson
         ? (lang === 'ar' ? pinnedLesson.titleAr : pinnedLesson.titleEn)
-        : (switchTopic === null && !teachingCtxOverruledByGrade ? teachingCtx : '');
+        : (switchTopic === null && !teachingCtxOverruledByGrade && ctxLessonInPlay ? teachingCtx : '');
       const teachingPrefix = teachingTopic
         ? (lang === 'ar'
-          ? `[سياق التدريس: المعلم يدرّس حاليًا "${teachingTopic}"]\n\n`
-          : `[Teaching context: Teacher is currently teaching "${teachingTopic}"]\n\n`)
+          ? `[سياق التدريس: الدرس المختار في التطبيق هو "${teachingTopic}". اربط إجابتك به فقط إن كان السؤال عنه أو يشير إليه؛ وإلا فأجب عن السؤال كما طُرح.]\n\n`
+          : `[Teaching context: the lesson selected in the app is "${teachingTopic}". Tie your answer to it only if the question is about it or refers to it; otherwise answer the question as asked.]\n\n`)
         : '';
 
       const kbPart = hasKBMatch
@@ -2058,7 +2065,7 @@ export default function IqraScreen() {
           mode,
           teachingContext: pinnedLesson
             ? (lang === 'ar' ? pinnedLesson.titleAr : pinnedLesson.titleEn)
-            : switchTopic !== null || teachingCtxOverruledByGrade
+            : switchTopic !== null || teachingCtxOverruledByGrade || !ctxLessonInPlay
               ? null
               : (teachingCtx || sessionMemory.activeTopicAr || sessionMemory.activeTopicEn),
           // DEMO_MODE is on by default, and in that path this — not
