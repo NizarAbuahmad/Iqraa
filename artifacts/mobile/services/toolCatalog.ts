@@ -127,14 +127,6 @@ const DURING_CLASS_ALL: ToolDef[] = [
     color: '#C2410C',
     route: '/ai-tools/activity',
   },
-  {
-    id: 'whiteboard',
-    titleKey: 'toolWhiteboardTitle',
-    descKey: 'toolWhiteboardDesc',
-    icon: 'easel-outline',
-    color: '#2563EB',
-    route: '/ai-tools/whiteboard',
-  },
   // The public, no-login games hub (app/play) — a share-with-students link,
   // not a generator. Linked here so a signed-in teacher can find it without
   // already knowing the URL; the page itself still works for anyone.

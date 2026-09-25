@@ -74,8 +74,8 @@ export function timerSecondsForSlide(slide: { type: string; durationSeconds: num
 }
 
 // ─── Projector fullscreen (web only) ───────────────────────────────────────
-// Shared by presentation.tsx and whiteboard.tsx — both project onto a screen
-// and both need the browser chrome out of the way. `document` alone (rather
+// Used by presentation.tsx, which projects onto a screen and needs the
+// browser chrome out of the way. `document` alone (rather
 // than also checking `Platform.OS`) keeps this file free of a react-native
 // import, since node --test cannot load that module — a native app is
 // already fullscreen, and `document` is simply undefined there.
