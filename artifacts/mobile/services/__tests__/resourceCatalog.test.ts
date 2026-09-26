@@ -11,7 +11,8 @@ import {
   addToClassPlan,
   buildResourceCatalog,
   filterResources,
-  groupIntoSections,
+  groupIntoShelves,
+  shelfOf,
   type ResourceCatalogInput,
 } from '../resourceCatalog.ts';
 import type { LibraryItem } from '../libraryApi.ts';
@@ -129,19 +130,24 @@ describe('filtering', () => {
   });
 });
 
-describe('sections', () => {
-  it('splits uploads by category, then sheets, then book codes, and drops empty ones', () => {
-    const sections = groupIntoSections(buildResourceCatalog(input));
-    assert.deepEqual(sections.map(s => s.id), [
-      'category:infographic',
-      'category:image',
-      'category:video',
-      'category:audio',
-      'source:premade-sheet',
-      'source:book-qr',
-    ]);
-    const total = sections.reduce((n, s) => n + s.items.length, 0);
-    assert.equal(total, buildResourceCatalog(input).length, 'a row fell out of every section');
+describe('shelves (one tile per kind)', () => {
+  it('puts every item on exactly one shelf, in display order, dropping empty shelves', () => {
+    const items = buildResourceCatalog(input);
+    const shelves = groupIntoShelves(items);
+    assert.deepEqual(shelves.map(s => s.shelf), ['infographic', 'image', 'video', 'audio', 'worksheet', 'book-qr']);
+    const total = shelves.reduce((n, s) => n + s.items.length, 0);
+    assert.equal(total, items.length, 'an item fell off every shelf');
+  });
+
+  it('merges uploaded and ready-made worksheets onto one shelf', () => {
+    const items = buildResourceCatalog({ ...input, uploaded: [...input.uploaded, upload({ id: 'w1', category: 'worksheet' })] });
+    const ws = groupIntoShelves(items).find(s => s.shelf === 'worksheet')!;
+    assert.deepEqual(ws.items.map(i => i.source).sort(), ['premade-sheet', 'uploaded']);
+  });
+
+  it('keeps book codes together on their own shelf whatever their kind', () => {
+    assert.equal(shelfOf({ source: 'book-qr', kind: 'video' }), 'book-qr');
+    assert.equal(shelfOf({ source: 'uploaded', kind: 'video' }), 'video');
   });
 });
 

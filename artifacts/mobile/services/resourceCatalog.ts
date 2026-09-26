@@ -164,15 +164,14 @@ export function filterResources(items: ResourceItem[], filter: ResourceFilter): 
 }
 
 /**
- * A section of the screen. Uploads are split by category — infographics,
- * videos, audio… — because that is how a teacher looks for them; the sheets
- * and the book codes are one section each.
+ * A shelf is one tile on the library screen: every item of one kind, whatever
+ * library it came from. Uploaded worksheets and the ready-made sheets share
+ * the worksheet shelf; the book QR codes get one of their own, since they are
+ * a mix of kinds grouped by book.
  */
-export type ResourceSection =
-  | { id: string; type: 'category'; category: LibraryCategory; items: ResourceItem[] }
-  | { id: string; type: 'source'; source: Exclude<ResourceSource, 'uploaded'>; items: ResourceItem[] };
+export type Shelf = LibraryCategory | 'book-qr';
 
-const CATEGORY_ORDER: LibraryCategory[] = [
+export const SHELF_ORDER: Shelf[] = [
   'infographic',
   'image',
   'video',
@@ -182,20 +181,18 @@ const CATEGORY_ORDER: LibraryCategory[] = [
   'template',
   'presentation',
   'document',
+  'book-qr',
 ];
 
-/** Sections in display order, omitting any with no rows. */
-export function groupIntoSections(items: ResourceItem[]): ResourceSection[] {
-  const sections: ResourceSection[] = [];
-  for (const category of CATEGORY_ORDER) {
-    const rows = items.filter(i => i.source === 'uploaded' && i.kind === category);
-    if (rows.length) sections.push({ id: `category:${category}`, type: 'category', category, items: rows });
-  }
-  for (const source of ['premade-sheet', 'book-qr'] as const) {
-    const rows = items.filter(i => i.source === source);
-    if (rows.length) sections.push({ id: `source:${source}`, type: 'source', source, items: rows });
-  }
-  return sections;
+export function shelfOf(item: Pick<ResourceItem, 'source' | 'kind'>): Shelf | null {
+  if (item.source === 'book-qr') return 'book-qr';
+  return (SHELF_ORDER as string[]).includes(item.kind) ? (item.kind as Shelf) : null;
+}
+
+/** Shelves in display order, omitting any with no items. */
+export function groupIntoShelves(items: ResourceItem[]): Array<{ shelf: Shelf; items: ResourceItem[] }> {
+  return SHELF_ORDER.map(shelf => ({ shelf, items: items.filter(i => shelfOf(i) === shelf) }))
+    .filter(group => group.items.length > 0);
 }
 
 /**
