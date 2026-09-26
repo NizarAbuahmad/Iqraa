@@ -13,13 +13,14 @@ import type { TranslationKey } from '@/services/i18n';
 import { HUB_ACTIVITIES, progressKey, starsFor, type HubActivity } from '@/services/englishHub/games';
 import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
-import { Flashcards, ListenChoose, MatchMeaning, SpellIt } from '@/components/englishHub/Activities';
+import { Flashcards, ListenChoose, MatchMeaning, Scramble, SpellIt } from '@/components/englishHub/Activities';
 
 const META: Record<HubActivity, { icon: keyof typeof Ionicons.glyphMap; title: TranslationKey; desc: TranslationKey }> = {
   flashcards: { icon: 'albums-outline', title: 'hubFlashcards', desc: 'hubFlashcardsDesc' },
   listen: { icon: 'ear-outline', title: 'hubListen', desc: 'hubListenDesc' },
   match: { icon: 'git-compare-outline', title: 'hubMatch', desc: 'hubMatchDesc' },
   spell: { icon: 'create-outline', title: 'hubSpell', desc: 'hubSpellDesc' },
+  scramble: { icon: 'shuffle-outline', title: 'hubScramble', desc: 'hubScrambleDesc' },
 };
 
 export default function EnglishHubLessonScreen() {
@@ -85,6 +86,7 @@ export default function EnglishHubLessonScreen() {
     if (activity === 'listen') return <ListenChoose key={round} {...props} />;
     if (activity === 'match') return <MatchMeaning key={round} {...props} />;
     if (activity === 'spell') return <SpellIt key={round} {...props} />;
+    if (activity === 'scramble') return <Scramble key={round} {...props} />;
 
     return (
       <View style={{ gap: 10 }}>

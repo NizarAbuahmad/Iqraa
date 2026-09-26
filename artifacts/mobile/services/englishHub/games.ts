@@ -11,8 +11,8 @@
 import type { HubWord } from '@workspace/curriculum/englishHub';
 import { sample, shuffle } from '../publicGames/rng.ts';
 
-export type HubActivity = 'flashcards' | 'listen' | 'match' | 'spell';
-export const HUB_ACTIVITIES: HubActivity[] = ['flashcards', 'listen', 'match', 'spell'];
+export type HubActivity = 'flashcards' | 'listen' | 'match' | 'spell' | 'scramble';
+export const HUB_ACTIVITIES: HubActivity[] = ['flashcards', 'listen', 'match', 'spell', 'scramble'];
 
 /** Enough to guess at 25%, few enough for a six-year-old to read. */
 export const LISTEN_OPTIONS = 4;
@@ -61,10 +61,18 @@ export function isMatchPair(a: MatchCard, b: MatchCard): boolean {
   return a.id !== b.id && a.pairId === b.pairId;
 }
 
-/** Spelling rounds skip multi-word phrases: "put litter in the bin" tests typing, not spelling. */
-export function buildSpellRound(words: readonly HubWord[], rng: () => number = Math.random): HubWord[] {
+/**
+ * Words usable for a single-word round: no "put litter in the bin", which
+ * tests typing a sentence, not a word. Shared by spelling and scrambling —
+ * both fall back to the full lesson if too few single words survive the filter.
+ */
+function singleWordPool(words: readonly HubWord[]): HubWord[] {
   const single = words.filter(w => !w.en.trim().includes(' '));
-  return sample(single.length >= 4 ? single : [...words], ROUND_LENGTH, rng);
+  return single.length >= 4 ? single : [...words];
+}
+
+export function buildSpellRound(words: readonly HubWord[], rng: () => number = Math.random): HubWord[] {
+  return sample(singleWordPool(words), ROUND_LENGTH, rng);
 }
 
 /**
@@ -78,6 +86,52 @@ export function normaliseSpelling(text: string): string {
 export function isSpeltCorrectly(typed: string, word: string): boolean {
   const t = normaliseSpelling(typed);
   return t.length > 0 && t === normaliseSpelling(word);
+}
+
+// ─── Word scramble ──────────────────────────────────────────────────────────
+
+export interface ScrambleTile {
+  /** A stable key for React — index in the scrambled order, not the letter,
+   *  since a word can repeat a letter ("puzzle" has two z's... no, but
+   *  "little" has two t's and two l's). */
+  id: number;
+  letter: string;
+}
+
+export interface ScrambleQuestion {
+  word: HubWord;
+  /** The letters of `word.en` (lower-cased, hyphen/space stripped — same
+   *  alphabet `normaliseSpelling` checks against), shuffled into tiles. */
+  tiles: ScrambleTile[];
+}
+
+/**
+ * A shuffle that is never already the answer. A one-letter or two-letter word
+ * has few enough permutations that "shuffle until different" could spin for a
+ * while, so it retries a bounded number of times and accepts the last attempt
+ * rather than loop forever on "a" or "an" — a scramble of a single letter has
+ * no wrong order anyway.
+ */
+function shuffledLetters(letters: string[], rng: () => number): string[] {
+  const original = letters.join('');
+  let attempt = letters;
+  for (let i = 0; i < 8 && (attempt.join('') === original || attempt.length < 2); i += 1) {
+    attempt = shuffle(letters, rng);
+  }
+  return attempt;
+}
+
+export function buildScrambleRound(words: readonly HubWord[], rng: () => number = Math.random): ScrambleQuestion[] {
+  return sample(singleWordPool(words), ROUND_LENGTH, rng).map(word => {
+    const letters = normaliseSpelling(word.en).split('');
+    const scrambled = shuffledLetters(letters, rng);
+    return { word, tiles: scrambled.map((letter, id) => ({ id, letter })) };
+  });
+}
+
+/** Tiles read back in their current order, compared the same way typing is. */
+export function isScrambleSolved(tiles: readonly ScrambleTile[], word: string): boolean {
+  return isSpeltCorrectly(tiles.map(t => t.letter).join(''), word);
 }
 
 /** 3 stars at 90%+, 2 at 60%+, 1 for finishing at all. */
@@ -142,7 +196,7 @@ export function currentStreak(p: HubProgress, today: string): number {
 
 /** Stars earned on a lesson across its activities (flashcards give none — nothing is tested). */
 export function lessonStars(p: HubProgress, lessonId: string): number {
-  return (['listen', 'match', 'spell'] as const).reduce((s, a) => s + (p.stars[progressKey(lessonId, a)] ?? 0), 0);
+  return (['listen', 'match', 'spell', 'scramble'] as const).reduce((s, a) => s + (p.stars[progressKey(lessonId, a)] ?? 0), 0);
 }
 
 /** Tolerant parse: storage is the student's device, and old or corrupt data must not crash the hub. */

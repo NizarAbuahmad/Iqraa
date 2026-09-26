@@ -9,11 +9,14 @@ import {
   MATCH_PAIRS,
   buildListenRound,
   buildMatchDeck,
+  buildScrambleRound,
   buildSpellRound,
   currentStreak,
   isMatchPair,
+  isScrambleSolved,
   isSpeltCorrectly,
   lessonStars,
+  normaliseSpelling,
   parseProgress,
   recordResult,
   starsFor,
@@ -66,6 +69,46 @@ describe('spelling', () => {
       const singles = lesson.words.filter(w => !w.en.includes(' '));
       if (singles.length < 4) continue;
       for (const w of buildSpellRound(lesson.words, makeRng(5))) assert.ok(!w.en.includes(' '), w.en);
+    }
+  });
+});
+
+describe('scramble', () => {
+  it('shuffles into the right letters, never already solved, for every G1-4 lesson', () => {
+    for (const lesson of ENGLISH_HUB_LESSONS) {
+      for (const q of buildScrambleRound(lesson.words, makeRng(11))) {
+        const original = normaliseSpelling(q.word.en).split('');
+        // .sort() mutates in place, so each side gets its own copy.
+        assert.deepEqual(
+          [...q.tiles.map(t => t.letter)].sort(),
+          [...original].sort(),
+          `${lesson.id}: ${q.word.en}`,
+        );
+        assert.ok(!isScrambleSolved(q.tiles, `not-${q.word.en}`), `${q.word.en} matched the wrong word`);
+        if (original.length >= 2) {
+          assert.notDeepEqual(q.tiles.map(t => t.letter).join(''), original.join(''), `${q.word.en} was left unshuffled`);
+        }
+      }
+    }
+  });
+
+  it('checks the tiles in their current order, not as a bag of letters', () => {
+    const solved = [{ id: 0, letter: 'c' }, { id: 1, letter: 'a' }, { id: 2, letter: 't' }];
+    const unsolved = [{ id: 0, letter: 'a' }, { id: 1, letter: 'c' }, { id: 2, letter: 't' }];
+    assert.ok(isScrambleSolved(solved, 'cat'));
+    assert.ok(!isScrambleSolved(unsolved, 'cat'));
+  });
+
+  it('is reproducible for a seed', () => {
+    const words = ENGLISH_HUB_LESSONS[0].words;
+    assert.deepEqual(buildScrambleRound(words, makeRng(1)), buildScrambleRound(words, makeRng(1)));
+  });
+
+  it('prefers single words when a lesson has enough', () => {
+    for (const lesson of ENGLISH_HUB_LESSONS) {
+      const singles = lesson.words.filter(w => !w.en.includes(' '));
+      if (singles.length < 4) continue;
+      for (const q of buildScrambleRound(lesson.words, makeRng(5))) assert.ok(!q.word.en.includes(' '), q.word.en);
     }
   });
 });

@@ -16,10 +16,13 @@ import { playWord } from '@/services/englishAudio';
 import {
   buildListenRound,
   buildMatchDeck,
+  buildScrambleRound,
   buildSpellRound,
   isMatchPair,
+  isScrambleSolved,
   isSpeltCorrectly,
   type MatchCard,
+  type ScrambleTile,
 } from '@/services/englishHub/games';
 
 const RIGHT = '#16A34A';
@@ -290,6 +293,108 @@ export function SpellIt({ words, onFinish }: { words: HubWord[]; onFinish: Finis
   );
 }
 
+// ─── Scramble ───────────────────────────────────────────────────────────────
+
+/**
+ * Tap-to-place tiles, not drag-and-drop: no gesture library, and it's the same
+ * interaction as every other activity here. Tapping a tray tile fills the next
+ * empty slot; tapping a placed tile returns it to the tray, so a mis-tap is a
+ * second tap away from fixed, not a restart.
+ */
+export function Scramble({ words, onFinish }: { words: HubWord[]; onFinish: Finish }) {
+  const { colors, t } = useUi();
+  const round = useMemo(() => buildScrambleRound(words), [words]);
+  const [i, setI] = useState(0);
+  const [slots, setSlots] = useState<(ScrambleTile | null)[]>(() => round[0].tiles.map(() => null));
+  const [result, setResult] = useState<boolean | null>(null);
+  const [correct, setCorrect] = useState(0);
+  const q = round[i];
+  const tray = q.tiles.filter(tile => !slots.some(s => s?.id === tile.id));
+
+  const place = (tile: ScrambleTile) => {
+    if (result !== null) return;
+    const empty = slots.indexOf(null);
+    if (empty === -1) return;
+    const next = [...slots];
+    next[empty] = tile;
+    setSlots(next);
+    if (next.every(s => s !== null)) {
+      const ok = isScrambleSolved(next as ScrambleTile[], q.word.en);
+      setResult(ok);
+      if (ok) setCorrect(c => c + 1);
+      void Haptics.notificationAsync(ok ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error).catch(() => {});
+    }
+  };
+
+  const unplace = (slotIndex: number) => {
+    if (result !== null || slots[slotIndex] === null) return;
+    const next = [...slots];
+    next[slotIndex] = null;
+    setSlots(next);
+  };
+
+  const next = () => {
+    if (i + 1 >= round.length) return onFinish(correct, round.length);
+    const j = i + 1;
+    setI(j);
+    setSlots(round[j].tiles.map(() => null));
+    setResult(null);
+    void playWord(round[j].word.en);
+  };
+
+  return (
+    <View style={{ gap: 16, alignItems: 'center' }}>
+      <Progress i={i} n={round.length} />
+      <HearButton word={q.word.en} big />
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 18, writingDirection: 'rtl' }}>{q.word.ar}</Text>
+
+      {/* Answer slots: empty ones show a dashed placeholder, filled ones the letter. */}
+      <View style={styles.tileRow}>
+        {slots.map((tile, idx) => (
+          <Pressable
+            key={idx}
+            onPress={() => unplace(idx)}
+            style={[
+              styles.tile,
+              {
+                borderColor: result === null ? colors.border : result ? RIGHT : WRONG,
+                backgroundColor: tile ? colors.card : 'transparent',
+                borderStyle: tile ? 'solid' : 'dashed',
+              },
+            ]}
+          >
+            {tile ? <Text style={styles.tileText}>{tile.letter}</Text> : null}
+          </Pressable>
+        ))}
+      </View>
+
+      {/* Tray: the remaining scrambled letters, tap one to place it. */}
+      <View style={styles.tileRow}>
+        {tray.map(tile => (
+          <Pressable
+            key={tile.id}
+            onPress={() => place(tile)}
+            style={[styles.tile, { borderColor: colors.border, backgroundColor: colors.muted }]}
+          >
+            <Text style={styles.tileText}>{tile.letter}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {result !== null ? (
+        <>
+          <Text style={{ color: result ? RIGHT : WRONG, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            {result ? t('hubCorrect') : t('hubWrong', q.word.en)}
+          </Text>
+          <Pressable onPress={next} style={[styles.primary, { backgroundColor: colors.primary }]}>
+            <Text style={styles.primaryText}>{t('hubNext')}</Text>
+          </Pressable>
+        </>
+      ) : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   hear: { borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   flash: { width: '100%', minHeight: 200, borderWidth: 1.5, borderRadius: 20, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
@@ -303,4 +408,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
   matchCard: { width: '47%', minHeight: 64, borderWidth: 1.5, borderRadius: 14, alignItems: 'center', justifyContent: 'center', padding: 10 },
   input: { width: '100%', borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 24, fontFamily: 'Cairo_600SemiBold', textAlign: 'center', writingDirection: 'ltr' },
+  tileRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
+  tile: { width: 44, height: 44, borderWidth: 1.5, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  tileText: { fontFamily: 'Cairo_700Bold', fontSize: 22, textTransform: 'uppercase' },
 });
