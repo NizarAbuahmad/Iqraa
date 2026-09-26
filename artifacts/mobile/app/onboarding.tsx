@@ -114,7 +114,7 @@ export default function OnboardingScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 20 }]}>
       <View style={[styles.topBar, { flexDirection: row }]}>
-        <BrandLogo variant="mark" width={24} height={22} accessibilityLabel="IQRA" />
+        <BrandLogo variant="mark" width={24} height={22} accessibilityLabel="Iqraa" />
         <View style={[styles.topBarActions, { flexDirection: row }]}>
           <Pressable
             onPress={() => { Haptics.selectionAsync(); toggleLang(); }}
