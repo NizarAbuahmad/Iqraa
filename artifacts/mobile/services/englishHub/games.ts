@@ -11,8 +11,8 @@
 import type { HubWord } from '@workspace/curriculum/englishHub';
 import { sample, shuffle } from '../publicGames/rng.ts';
 
-export type HubActivity = 'flashcards' | 'listen' | 'match' | 'spell' | 'scramble';
-export const HUB_ACTIVITIES: HubActivity[] = ['flashcards', 'listen', 'match', 'spell', 'scramble'];
+export type HubActivity = 'flashcards' | 'listen' | 'match' | 'spell' | 'scramble' | 'picture' | 'speaking';
+export const HUB_ACTIVITIES: HubActivity[] = ['flashcards', 'listen', 'match', 'spell', 'scramble', 'picture', 'speaking'];
 
 /** Enough to guess at 25%, few enough for a six-year-old to read. */
 export const LISTEN_OPTIONS = 4;
@@ -134,6 +134,117 @@ export function isScrambleSolved(tiles: readonly ScrambleTile[], word: string): 
   return isSpeltCorrectly(tiles.map(t => t.letter).join(''), word);
 }
 
+// ─── Picture matching ───────────────────────────────────────────────────────
+
+/**
+ * Concrete, common nouns only, each with one clean, unambiguous emoji — no
+ * near-duplicates ("hill" next to "mountain"), no adjectives/adverbs/phrases
+ * (nothing to draw for "carefully" or "arrive on time"), no institutions
+ * ("school nurse", "headteacher" — compound and abstract). This is a curated
+ * subset by design: about a third of the 458 hub words have no honest single
+ * picture, and forcing one in would make the game itself untrustworthy.
+ *
+ * Values are unique — two different words never share an emoji — so two cards
+ * in the same round are never visually identical for different reasons.
+ */
+const WORD_EMOJI: Record<string, string> = {
+  one: '1️⃣', two: '2️⃣', three: '3️⃣', four: '4️⃣', five: '5️⃣',
+  six: '6️⃣', seven: '7️⃣', eight: '8️⃣', nine: '9️⃣', ten: '🔟',
+  blue: '🔵', green: '🟢', orange: '🟠', red: '🔴', yellow: '🟡',
+  brown: '🟤', black: '⚫', pink: '🩷', purple: '🟣', white: '⚪',
+  boy: '👦', girl: '👧', mum: '👩', dad: '👨', grandad: '👴', granny: '👵',
+  // ('bag' is dropped, not given its own emoji: 🎒 is precisely "backpack",
+  // and a generic school bag has no other clean, distinct glyph.)
+  cat: '🐱', frog: '🐸', giraffe: '🦒', lizard: '🦎', monkey: '🐒',
+  snake: '🐍', spider: '🕷️', tiger: '🐯', zebra: '🦓', duck: '🦆',
+  fish: '🐟', hamster: '🐹', mouse: '🐭', parrot: '🦜', rabbit: '🐰',
+  tortoise: '🐢', hippo: '🦛', elephant: '🐘', crocodile: '🐊', penguin: '🐧',
+  eagle: '🦅', kangaroo: '🦘', cow: '🐄', donkey: '🫏', horse: '🐴',
+  goat: '🐐', sheep: '🐑', bird: '🐦', bee: '🐝', turkey: '🦃',
+  dinosaur: '🦕', robot: '🤖', teddy: '🧸', doll: '🪆',
+  book: '📖', crayon: '🖍️', pen: '🖊️', pencil: '✏️',
+  ruler: '📏', scissors: '✂️', computer: '💻', chair: '🪑', door: '🚪',
+  window: '🪟', ball: '⚽', car: '🚗', train: '🚂', plane: '✈️',
+  kite: '🪁', bike: '🚲', scooter: '🛴', puzzle: '🧩', yoyo: '🪀',
+  boots: '👢', dress: '👗', jacket: '🧥', jeans: '👖', shirt: '👕',
+  shoes: '👟', hat: '🎩', scarf: '🧣', socks: '🧦', glasses: '👓',
+  backpack: '🎒', phone: '📱',
+  apple: '🍎', apples: '🍎', banana: '🍌', carrot: '🥕', carrots: '🥕',
+  grapes: '🍇', potato: '🥔', rice: '🍚', tomato: '🍅', bread: '🍞',
+  cheese: '🧀', chicken: '🍗', eggs: '🥚', milk: '🥛', water: '💧',
+  juice: '🧃', lemons: '🍋', cakes: '🎂', sweets: '🍬', coconut: '🥥',
+  burger: '🍔', kiwi: '🥝', mango: '🥭', cereal: '🥣', noodles: '🍜',
+  olives: '🫒', salad: '🥗', sandwiches: '🥪', vegetables: '🥦',
+  coffee: '☕', tea: '🍵',
+  sunny: '☀️', rainy: '🌧️', cloudy: '☁️', snowy: '❄️', windy: '💨',
+  hot: '🥵', cold: '🥶',
+  bathroom: '🛁', bedroom: '🛏️', kitchen: '🍳', house: '🏠',
+  city: '🏙️', forest: '🌲', island: '🏝️', mountain: '⛰️', town: '🏘️',
+  bridge: '🌉', zoo: '🦁', museum: '🏛️', hotel: '🏨', restaurant: '🍽️',
+  market: '🏪', 'train station': '🚉', 'bus stop': '🚏', 'car park': '🅿️',
+  doctor: '🩺', nurse: '🧑‍⚕️', firefighter: '🧑‍🚒', astronaut: '🧑‍🚀',
+  pilot: '🧑‍✈️', 'police officer': '👮', builder: '👷', chef: '🧑‍🍳',
+  artist: '🧑‍🎨', farmer: '🧑‍🌾', scientist: '🧑‍🔬', carpenter: '🔨',
+  bus: '🚌', boat: '⛵', motorbike: '🏍️', underground: '🚇',
+  eyes: '👀', mouth: '👄', nose: '👃', teeth: '🦷',
+  Egypt: '🇪🇬', Jordan: '🇯🇴', Qatar: '🇶🇦', Spain: '🇪🇸',
+  'the United Kingdom': '🇬🇧', 'the United Arab Emirates': '🇦🇪',
+  happy: '😊', sad: '😢',
+  candle: '🕯️', present: '🎁', invitation: '💌', wedding: '💍',
+  'big wheel': '🎡', rollercoaster: '🎢', costume: '🎭',
+  sofa: '🛋️', television: '📺', mirror: '🪞', clock: '🕐',
+  keys: '🔑', handbag: '👜',
+};
+
+const MIN_PICTURE_WORDS = 4;
+
+/** Whether a word has a curated emoji at all — exported so the "renders nothing" floor is testable directly. */
+export function isPicturable(word: string): boolean {
+  return !!WORD_EMOJI[word];
+}
+
+export interface PictureCard {
+  id: string;
+  /** Which face is shown — the emoji, or the English word it stands for. */
+  kind: 'emoji' | 'word';
+  text: string;
+  pairId: number;
+}
+
+/** Same layout as `buildMatchDeck`, emoji↔English instead of English↔Arabic. */
+export function buildPictureDeck(words: readonly HubWord[], rng: () => number = Math.random): PictureCard[] {
+  const picturable = words.filter(w => WORD_EMOJI[w.en]);
+  const picked = sample(picturable, MATCH_PAIRS, rng);
+  const cards = picked.flatMap((w, pairId): PictureCard[] => [
+    { id: `${pairId}-emoji`, kind: 'emoji', text: WORD_EMOJI[w.en], pairId },
+    { id: `${pairId}-word`, kind: 'word', text: w.en, pairId },
+  ]);
+  return shuffle(cards, rng);
+}
+
+export function isPictureMatch(a: PictureCard, b: PictureCard): boolean {
+  return a.id !== b.id && a.pairId === b.pairId;
+}
+
+/** Whether a lesson has enough picturable words to offer this activity at all. */
+export function lessonHasPictureMatch(words: readonly HubWord[]): boolean {
+  return words.filter(w => isPicturable(w.en)).length >= MIN_PICTURE_WORDS;
+}
+
+// ─── Speaking ───────────────────────────────────────────────────────────────
+
+/**
+ * Same word pool as spelling — single words only, since a sentence is a
+ * Story Time concern, not a vocabulary-drill one. Kept as its own named
+ * function (not an alias for `buildSpellRound`) because the two are only
+ * coincidentally the same selection today; a future reason to diverge
+ * (skip words that are hard to hear the difference on when spoken, say)
+ * shouldn't have to un-couple them from a shared name first.
+ */
+export function buildSpeakingRound(words: readonly HubWord[], rng: () => number = Math.random): HubWord[] {
+  return sample(singleWordPool(words), ROUND_LENGTH, rng);
+}
+
 /** 3 stars at 90%+, 2 at 60%+, 1 for finishing at all. */
 export function starsFor(correct: number, total: number): 0 | 1 | 2 | 3 {
   if (total <= 0) return 0;
@@ -148,13 +259,16 @@ export function starsFor(correct: number, total: number): 0 | 1 | 2 | 3 {
 export interface HubProgress {
   /** `${lessonId}|${activity}` → best stars ever. */
   stars: Record<string, number>;
-  /** Consecutive days with at least one finished activity. */
+  /** Consecutive days with at least one finished activity. Resets on a missed day. */
   streak: number;
+  /** The highest `streak` ever reached — never decreases. What streak badges check:
+   *  an achievement earned once must survive a later missed day, unlike the display streak. */
+  bestStreak: number;
   /** Local calendar day (YYYY-MM-DD) of the last finished activity. */
   lastDay: string | null;
 }
 
-export const EMPTY_PROGRESS: HubProgress = { stars: {}, streak: 0, lastDay: null };
+export const EMPTY_PROGRESS: HubProgress = { stars: {}, streak: 0, bestStreak: 0, lastDay: null };
 
 export function progressKey(lessonId: string, activity: HubActivity): string {
   return `${lessonId}|${activity}`;
@@ -184,6 +298,7 @@ export function recordResult(
   return {
     stars: { ...p.stars, [key]: Math.max(p.stars[key] ?? 0, stars) },
     streak,
+    bestStreak: Math.max(p.bestStreak, streak),
     lastDay: today,
   };
 }
@@ -194,9 +309,12 @@ export function currentStreak(p: HubProgress, today: string): number {
   return daysBetween(p.lastDay, today) <= 1 ? p.streak : 0;
 }
 
-/** Stars earned on a lesson across its activities (flashcards give none — nothing is tested). */
+/** Every activity a finished round can earn stars on — flashcards and speaking give none (nothing is scored). */
+const SCORED_ACTIVITIES = ['listen', 'match', 'spell', 'scramble', 'picture'] as const;
+
+/** Stars earned on a lesson across its activities. */
 export function lessonStars(p: HubProgress, lessonId: string): number {
-  return (['listen', 'match', 'spell', 'scramble'] as const).reduce((s, a) => s + (p.stars[progressKey(lessonId, a)] ?? 0), 0);
+  return SCORED_ACTIVITIES.reduce((s, a) => s + (p.stars[progressKey(lessonId, a)] ?? 0), 0);
 }
 
 /** Tolerant parse: storage is the student's device, and old or corrupt data must not crash the hub. */
@@ -204,12 +322,76 @@ export function parseProgress(raw: string | null): HubProgress {
   try {
     const v = raw ? JSON.parse(raw) : null;
     if (!v || typeof v !== 'object') return EMPTY_PROGRESS;
+    const streak = Number.isInteger(v.streak) && v.streak > 0 ? v.streak : 0;
+    // `bestStreak` is new: a device with an older stored record has no field to
+    // read, so its current streak is the best lower bound we can assume — never
+    // invents a badge that wasn't actually earned, at worst under-credits by one
+    // read (the very next `recordResult` catches it back up to `streak`).
+    const storedBest = Number.isInteger(v.bestStreak) && v.bestStreak > 0 ? v.bestStreak : 0;
     return {
       stars: v.stars && typeof v.stars === 'object' ? v.stars : {},
-      streak: Number.isInteger(v.streak) && v.streak > 0 ? v.streak : 0,
+      streak,
+      bestStreak: Math.max(storedBest, streak),
       lastDay: typeof v.lastDay === 'string' ? v.lastDay : null,
     };
   } catch {
     return EMPTY_PROGRESS;
   }
+}
+
+// ─── Badges ──────────────────────────────────────────────────────────────────
+
+/**
+ * Every badge is a threshold over `HubProgress` alone — no new storage, and
+ * nothing a badge checks is specific to today's set of activities. Adding a
+ * sixth or seventh activity later changes nothing here: `totalStars`/
+ * `lessonsTouched` sum over whatever keys exist, not a hardcoded count, so a
+ * badge earned today stays earned and a new activity doesn't need its own
+ * badge threshold rewritten in.
+ */
+export type BadgeId =
+  | 'first_star'
+  | 'perfect_round'
+  | 'three_day_streak'
+  | 'week_streak'
+  | 'ten_stars'
+  | 'fifty_stars'
+  | 'five_lessons';
+
+/** Display order, easiest first — matches the order a student is likely to earn them in. */
+export const BADGE_IDS: BadgeId[] = [
+  'first_star', 'perfect_round', 'ten_stars', 'three_day_streak', 'five_lessons', 'week_streak', 'fifty_stars',
+];
+
+function totalStars(p: HubProgress): number {
+  return Object.values(p.stars).reduce((sum, s) => sum + s, 0);
+}
+
+/** Distinct lessons with any progress at all, regardless of which activity. */
+function lessonsTouched(p: HubProgress): number {
+  return new Set(Object.keys(p.stars).map(k => k.split('|')[0])).size;
+}
+
+/**
+ * Badges once earned never disappear — the streak badges check `bestStreak`,
+ * never `streak` (which resets on a missed day) or `currentStreak`'s decayed
+ * display value. A missed day should cost the streak display, not retroactively
+ * un-earn an achievement.
+ */
+export function badgesEarned(p: HubProgress): BadgeId[] {
+  const earned: BadgeId[] = [];
+  if (Object.keys(p.stars).length > 0) earned.push('first_star');
+  if (Object.values(p.stars).some(s => s >= 3)) earned.push('perfect_round');
+  if (totalStars(p) >= 10) earned.push('ten_stars');
+  if (p.bestStreak >= 3) earned.push('three_day_streak');
+  if (lessonsTouched(p) >= 5) earned.push('five_lessons');
+  if (p.bestStreak >= 7) earned.push('week_streak');
+  if (totalStars(p) >= 50) earned.push('fifty_stars');
+  return earned;
+}
+
+/** What a finish just unlocked — the diff, not the full set, so the UI can celebrate only what's new. */
+export function newlyEarnedBadges(before: HubProgress, after: HubProgress): BadgeId[] {
+  const had = new Set(badgesEarned(before));
+  return badgesEarned(after).filter(b => !had.has(b));
 }
