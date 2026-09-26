@@ -26,6 +26,8 @@ export type MaterialLike = {
   title: string;
   topic: string;
   savedAt: string;
+  /** `SavedMaterial['formState']`; `lessonId` is stamped at save time by workspace.ts. */
+  formState?: { lessonId?: unknown } | null;
 };
 
 export type PrepRowMeta = {
@@ -102,16 +104,31 @@ export function sameTopic(a: string, b: string): boolean {
   return x.length > 0 && x === y;
 }
 
-/** Materials saved for this lesson's topic, newest first. */
-export function materialsForTopic<T extends MaterialLike>(materials: T[], topic: string): T[] {
+function lessonIdOf(m: MaterialLike): string | null {
+  const id = m.formState?.lessonId;
+  return typeof id === 'string' && id ? id : null;
+}
+
+/**
+ * Materials saved for this lesson, newest first.
+ *
+ * The lesson id decides when both sides carry one — a title does not identify
+ * a lesson (CLAUDE.md), and a teacher's free-typed topic that grounded to this
+ * lesson should still count. The topic is the fallback for materials saved
+ * before ids were stamped, and for a board that has no lesson id.
+ */
+export function materialsForTopic<T extends MaterialLike>(materials: T[], topic: string, lessonId?: string | null): T[] {
   return materials
-    .filter(m => sameTopic(m.topic, topic))
+    .filter(m => {
+      const id = lessonIdOf(m);
+      return lessonId && id ? id === lessonId : sameTopic(m.topic, topic);
+    })
     .sort((a, b) => b.savedAt.localeCompare(a.savedAt));
 }
 
 /** The five rows, each saying whether the lesson already has that material. */
-export function buildPrepBoard(materials: MaterialLike[], topic: string): PrepRow[] {
-  const mine = materialsForTopic(materials, topic);
+export function buildPrepBoard(materials: MaterialLike[], topic: string, lessonId?: string | null): PrepRow[] {
+  const mine = materialsForTopic(materials, topic, lessonId);
   return PREP_ROWS.map(meta => {
     const hits = mine.filter(m => rowTypeOf(m.type) === meta.type);
     return { ...meta, done: hits.length > 0, material: hits[0] ?? null, count: hits.length };

@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch, getAccessToken } from './apiClient';
 import { trackEvent } from './analytics';
 import { attachAcrossClasses } from './classAttach';
+import { generatorLessonId } from './kbContext';
 
 // 'activity' is a first-class kind: it is stage 3 of the lesson flow, a CQV
 // artifact type ('classroom-activity'), and already has a `materialActivity`
@@ -115,10 +116,30 @@ async function apiGet<T>(path: string): Promise<T | null> {
 
 // ─── Public API ────────────────────────────────────────────────────────────────
 
+/**
+ * `formState` with the curriculum lesson id added, when the topic grounds to one.
+ *
+ * The prep board matches materials to a lesson by this id (lessonBoard.ts),
+ * because a title does not identify a lesson. Stamped here, the one place every
+ * screen and the chat save through, rather than in each of them. An id the
+ * caller already set wins; a free-typed topic that grounds to nothing gets
+ * none and the board falls back to the topic.
+ */
+function withLessonId(
+  formState: Record<string, any> | undefined,
+  topic: string | undefined,
+  language: 'ar' | 'en' | undefined,
+): Record<string, any> | undefined {
+  if (!formState || formState.lessonId || !topic?.trim()) return formState;
+  const lessonId = generatorLessonId(topic.trim(), language ?? 'ar');
+  return lessonId ? { ...formState, lessonId } : formState;
+}
+
 /** Save a new material. Returns the saved item. */
 export async function saveItem(
-  payload: Omit<SavedMaterial, 'id' | 'savedAt' | 'isFavorite'>,
+  raw: Omit<SavedMaterial, 'id' | 'savedAt' | 'isFavorite'>,
 ): Promise<SavedMaterial> {
+  const payload = { ...raw, formState: withLessonId(raw.formState ?? {}, raw.topic, raw.language) ?? {} };
   // Fired on the attempt, not gated on which storage path succeeds — the
   // teacher choosing to keep this material is the signal, not where it landed.
   trackEvent('material_saved', { type: payload.type });
@@ -173,8 +194,13 @@ export async function saveItem(
  */
 export async function updateItem(
   id: string,
-  updates: Partial<Omit<SavedMaterial, 'id'>>,
+  raw: Partial<Omit<SavedMaterial, 'id'>>,
 ): Promise<boolean> {
+  // Only when the caller sends both: a partial update (a favourite toggle)
+  // must not touch formState.
+  const updates = raw.formState && raw.topic
+    ? { ...raw, formState: withLessonId(raw.formState, raw.topic, raw.language) }
+    : raw;
   if (await isAuthenticated()) {
     try {
       const res = await apiFetch(`/workspace/items/${id}`, {
