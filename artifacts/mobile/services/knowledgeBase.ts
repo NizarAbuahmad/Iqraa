@@ -4253,7 +4253,7 @@ const SCORE_STOPWORDS = new Set([
  * Token exact match = full weight; token substring (≥3 chars each) = half weight.
  * Stopwords and single/double-char tokens are skipped to avoid false positives.
  */
-function scoreField(query: string, field: string, weight: number): number {
+function scoreFieldRaw(query: string, field: string, weight: number): number {
   const fieldLower = field.toLowerCase();
   const queryLower = query.toLowerCase();
 
@@ -4290,11 +4290,32 @@ function scoreField(query: string, field: string, weight: number): number {
 export type KBScoredLesson = { lesson: KBLesson; score: number };
 
 /** Ranked KB hits with scores — used for confidence gating in chat. */
-export function searchKBRanked(query: string, lang: 'ar' | 'en' = 'ar'): KBScoredLesson[] {
+/**
+ * `gradeId` searches one grade only, and ignores harakat while it does.
+ * Early-grade books are fully vowelled («الْجَمْعُ») and teachers type bare
+ * («الجمع»), so without it a grade 1–3 lesson never matched a typed word. It
+ * is scoped to the grade-filtered search on purpose: across all grades the
+ * same change surfaces same-named lessons in other subjects (grade 8 science
+ * «التفاعلاتُ الكيميائيّةُ» outranks grade 10 chemistry's) and re-grounds the
+ * generators — see chemPractice.test.ts before widening it.
+ */
+export function searchKBRanked(
+  query: string,
+  lang: 'ar' | 'en' = 'ar',
+  opts: { gradeId?: string } = {},
+): KBScoredLesson[] {
   const q = query.trim();
   if (!q) return [];
 
-  const scored = KB_LESSONS.map(lesson => {
+  const { gradeId } = opts;
+  const scoreField = gradeId
+    ? (qq: string, f: string, w: number) => scoreFieldRaw(qq.replace(TASHKEEL, ''), f.replace(TASHKEEL, ''), w)
+    : scoreFieldRaw;
+  const pool = gradeId
+    ? KB_LESSONS.filter(l => getBookForLesson(l)?.gradeId === gradeId)
+    : KB_LESSONS;
+
+  const scored = pool.map(lesson => {
     let score = 0;
 
     const title    = lang === 'ar' ? lesson.titleAr    : lesson.titleEn;

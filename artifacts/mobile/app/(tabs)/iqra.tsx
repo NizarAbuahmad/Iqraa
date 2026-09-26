@@ -2328,7 +2328,7 @@ export default function IqraScreen() {
           ?? (ctxLesson ? getBookForLesson(ctxLesson)?.gradeId : null);
         const topicRankedAll = searchKBRanked(topicForArt, lang as 'ar' | 'en');
         const topicRankedInGrade = artGradeId
-          ? topicRankedAll.filter(r => getBookForLesson(r.lesson)?.gradeId === artGradeId)
+          ? searchKBRanked(topicForArt, lang as 'ar' | 'en', { gradeId: artGradeId })
           : [];
         const topicRanked = topicRankedInGrade.length ? topicRankedInGrade : topicRankedAll;
         const topicConfident = isConfidentSingleSubjectHit(topicRanked);
