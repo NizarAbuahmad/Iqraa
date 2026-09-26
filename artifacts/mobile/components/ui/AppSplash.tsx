@@ -108,7 +108,7 @@ export function AppSplash({ visible, onLayout }: Props) {
       style={[styles.root, { opacity: exit, pointerEvents: visible ? 'auto' : 'none' }]}
       onLayout={onLayout}
       accessibilityRole="progressbar"
-      accessibilityLabel="IQRA"
+      accessibilityLabel="Iqraa"
       accessibilityHint="جارٍ التحميل"
     >
       <Animated.View
@@ -129,8 +129,8 @@ export function AppSplash({ visible, onLayout }: Props) {
           opacity: enter.interpolate({ inputRange: [0, 0.55, 1], outputRange: [0, 0, 1] }),
         }}
       >
-        <Text style={styles.latin}>AI TEACHING ASSISTANT</Text>
-        <Text style={styles.arabic}>ذكاء يُساعدك لتعليم أفضل</Text>
+        <Text style={styles.latin}>YOUR LESSON-PREP COMPANION</Text>
+        <Text style={styles.arabic}>رفيقك في تحضير الحصص</Text>
       </Animated.View>
 
       <View style={styles.track}>
