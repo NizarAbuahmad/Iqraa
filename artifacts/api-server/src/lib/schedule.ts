@@ -16,6 +16,19 @@ export const MIN_DURATION_MINUTES = 1;
 /** Eight hours; a bound against nonsense, not a real ceiling on a period. */
 export const MAX_DURATION_MINUTES = 480;
 export const MAX_NOTES_LENGTH = 500;
+export const MAX_SCHOOL_NAME_LENGTH = 80;
+
+/** "" is the unnamed default school. Normalized because it is part of both
+ *  tables' unique keys — see lib/db/src/schema/schedule.ts. */
+export function parseSchoolName(raw: unknown): string {
+  if (raw === undefined || raw === null) return "";
+  if (typeof raw !== "string") throw "schoolName must be a string";
+  const name = raw.trim().replace(/\s+/g, " ");
+  if (name.length > MAX_SCHOOL_NAME_LENGTH) {
+    throw `schoolName must be at most ${MAX_SCHOOL_NAME_LENGTH} characters`;
+  }
+  return name;
+}
 
 export function isValidPeriodNumber(n: unknown): n is number {
   return typeof n === "number" && Number.isInteger(n) && n >= MIN_PERIOD_NUMBER && n <= MAX_PERIOD_NUMBER;

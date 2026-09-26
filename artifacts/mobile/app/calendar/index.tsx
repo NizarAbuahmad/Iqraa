@@ -233,7 +233,7 @@ export default function CalendarScreen() {
                     </Text>
                     {selectedAgenda.periods.map(p => (
                       <View
-                        key={p.periodNumber}
+                        key={`${p.schoolName}|${p.periodNumber}`}
                         style={{
                           flexDirection: rowDir, alignItems: 'center', gap: 8, padding: 10,
                           borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card,
@@ -245,6 +245,11 @@ export default function CalendarScreen() {
                         <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                           {classNameFor(p.classGroupId)}
                         </Text>
+                        {p.schoolName ? (
+                          <Text numberOfLines={1} style={{ maxWidth: 140, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5 }}>
+                            {p.schoolName}
+                          </Text>
+                        ) : null}
                       </View>
                     ))}
                   </View>
