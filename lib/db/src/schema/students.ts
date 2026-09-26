@@ -101,6 +101,13 @@ export const students = pgTable(
      */
     teacherNote: text("teacher_note").notNull().default(""),
     /**
+     * 'male' | 'female', or '' when the teacher hasn't said. Arabic inflects
+     * almost every clause of a letter home for it, so the parent-letter tool
+     * asks once and keeps the answer here. Never inferred from the name —
+     * guessing would misgender a real child.
+     */
+    gender: text("gender").notNull().default(""),
+    /**
      * A short code the teacher hands to a parent or the student themself, so
      * their self-serve signup can link to this exact roster row instead of
      * creating a dangling account. Mirrors `classGroups.joinCode`. Plain text,

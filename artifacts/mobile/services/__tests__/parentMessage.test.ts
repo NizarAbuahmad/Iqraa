@@ -23,6 +23,8 @@ import {
   kindLabel,
   MESSAGE_KINDS,
   needsDetails,
+  parseSavedSignature,
+  rosterGender,
   seedDetailsFromNote,
   suggestMeeting,
   summarizeClassContacts,
@@ -393,5 +395,24 @@ describe('read state', () => {
       { studentId: 'd', kind: 'absence', createdAt: daysAgo(8), channel: 'share', read: null },
     ], NOW);
     assert.deepEqual(s.unread.map(u => u.id), ['a']);
+  });
+});
+
+describe('remembered answers', () => {
+  it('reads back a saved signature and rejects anything malformed', () => {
+    assert.deepEqual(
+      parseSavedSignature(JSON.stringify({ teacherName: 'أ. نزار', teacherGender: 'male' })),
+      { teacherName: 'أ. نزار', teacherGender: 'male' },
+    );
+    for (const raw of [null, '', '{', '"x"', '{"teacherName":"a","teacherGender":"x"}', '{"teacherGender":"female"}']) {
+      assert.equal(parseSavedSignature(raw), null, `should reject ${raw}`);
+    }
+  });
+
+  it('treats an unrecorded roster gender as unknown, never as male', () => {
+    assert.equal(rosterGender('female'), 'female');
+    assert.equal(rosterGender('male'), 'male');
+    assert.equal(rosterGender(''), null);
+    assert.equal(rosterGender(undefined), null);
   });
 });
