@@ -42,6 +42,8 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { TeachingAssignment, useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
+import { PillSelector } from '@/components/ui/PillSelector';
+import { useStudentAccountsEnabled } from '@/services/features';
 import { getPickerGrades, getSubjectsForGrade } from '@/services/curriculumData';
 import { goBack } from '@/services/navigation';
 
@@ -92,9 +94,29 @@ export default function SetupSubjectsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, lang, isRTL } = useLanguage();
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, switchRole } = useAuth();
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const editMode = mode === 'edit';
+
+  // Every new teacher account lands here first — including ones that never saw
+  // the register screen's role picker (Google from the login screen creates a
+  // teacher). So ask once more. Picking parent/student switches right away;
+  // the routing gate then sends the account to /claim-required, which has its
+  // own way back to teacher.
+  const studentAccounts = useStudentAccountsEnabled();
+  const [switchingRole, setSwitchingRole] = useState(false);
+  const handleRole = async (role: 'teacher' | 'parent' | 'student') => {
+    if (role === 'teacher' || switchingRole) return;
+    setSwitchingRole(true);
+    setError('');
+    try {
+      await switchRole(role);
+    } catch {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError(t('claimRequiredSwitchFailed'));
+      setSwitchingRole(false);
+    }
+  };
 
   const [assignments, setAssignments] = useState<TeachingAssignment[]>(() => initialAssignments(user));
   const [saving, setSaving] = useState(false);
@@ -161,6 +183,24 @@ export default function SetupSubjectsScreen() {
             <Ionicons name="school-outline" size={32} color={colors.primary} />
           </View>
         )}
+
+        {!editMode && studentAccounts ? (
+          <PillSelector
+            label={t('iAmA')}
+            options={[
+              { value: 'teacher', label: t('roleTeacher') },
+              { value: 'parent', label: t('roleParent') },
+              { value: 'student', label: t('roleStudent') },
+            ]}
+            value="teacher"
+            onChange={handleRole}
+            colors={colors}
+            isRTL={isRTL}
+            accent={colors.primary}
+            haptics
+            containerStyle={{ marginBottom: 20 }}
+          />
+        ) : null}
 
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
           {editMode ? t('editTeachingTitle') : t('teacherSetupTitle')}
