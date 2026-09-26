@@ -37,12 +37,16 @@ import {
 } from '@/services/share';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { allPremade } from '@workspace/curriculum/premade';
+import { GRADES, SUBJECTS } from '@workspace/curriculum';
 
 export default function WorkspaceViewScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `premade` opens a ready-made sheet from the library (read-only: no Edit,
+  // no Favourite — both act on a teacher's own saved copy, which this isn't).
+  const { id, premade } = useLocalSearchParams<{ id?: string; premade?: string }>();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const [item, setItem] = useState<SavedMaterial | null>(null);
@@ -57,14 +61,32 @@ export default function WorkspaceViewScreen() {
     useFavorite(item?.id, key => showToast(t(key)));
 
   useEffect(() => {
-    if (id) {
+    if (premade) {
+      const sheet = allPremade().find(s => s.id === premade);
+      const subject = SUBJECTS.find(s => s.id === sheet?.subjectId);
+      const grade = GRADES.find(g => g.id === sheet?.gradeId);
+      setItem(sheet ? {
+        id: sheet.id,
+        type: 'worksheet',
+        title: lang === 'ar' ? sheet.titleAr : sheet.titleEn,
+        subject: (lang === 'ar' ? subject?.nameAr : subject?.name) ?? '',
+        grade: (lang === 'ar' ? grade?.nameAr : grade?.name) ?? '',
+        topic: sheet.titleAr,
+        language: 'ar',
+        savedAt: sheet.generatedAt,
+        isFavorite: false,
+        content: JSON.stringify(sheet.content),
+        formState: {},
+      } : null);
+      setLoading(false);
+    } else if (id) {
       getItem(id).then(m => {
         setItem(m);
         setFavorited(m?.isFavorite ?? false);
         setLoading(false);
       });
     }
-  }, [id]);
+  }, [id, premade, lang]);
 
   if (loading) {
     return (
@@ -210,6 +232,7 @@ export default function WorkspaceViewScreen() {
 
       {/* Action bar */}
       <View style={[styles.actionBar, { backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        {!premade && (
         <Pressable
           onPress={() => router.push({ pathname: editRoute as any, params: { savedId: item.id, ...item.formState } })}
           style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -217,6 +240,8 @@ export default function WorkspaceViewScreen() {
           <Ionicons name="create-outline" size={16} color={accent} />
           <Text style={[{ color: accent, fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>{t('editItem')}</Text>
         </Pressable>
+        )}
+        {!premade && (
         <Pressable
           onPress={handleToggleFavorite}
           style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -230,6 +255,7 @@ export default function WorkspaceViewScreen() {
             {favorited ? t('inFavorites') : t('favoriteShort')}
           </Text>
         </Pressable>
+        )}
         <Pressable
           onPress={() => setShowExport(true)}
           style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
