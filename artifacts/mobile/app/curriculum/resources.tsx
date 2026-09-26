@@ -29,7 +29,7 @@
  * tells a student nothing about the one they are about to tap.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -125,6 +125,20 @@ const SHELF_COLOR: Record<Shelf, string> = {
 };
 
 const ACCENT = palette.primary;
+
+/** YouTube video ID → thumbnail URL, or null for non-YouTube URLs. */
+function youtubeThumbnail(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
+  return m ? `https://img.youtube.com/vi/${m[1]}/mqdefault.jpg` : null;
+}
+
+function itemThumbnail(item: ResourceItem): string | null {
+  if (item.thumbnailUrl) return item.thumbnailUrl;
+  if (!item.url) return null;
+  if (item.kind === 'video') return youtubeThumbnail(item.url);
+  if (item.kind === 'image') return item.url;
+  return null;
+}
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
@@ -133,6 +147,7 @@ const ACCENT_FILL = palette.hero;
  * already says «أوراق عمل» does not need every row underneath repeating it.
  */
 function ResourceRow({ item, accent, showKind = true }: { item: ResourceItem; accent: string; showKind?: boolean }) {
+  const thumb = itemThumbnail(item);
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const isAr = lang === 'ar';
@@ -208,6 +223,14 @@ function ResourceRow({ item, accent, showKind = true }: { item: ResourceItem; ac
           </Text>
         ) : null}
       </View>
+      {thumb ? (
+        <Image
+          source={{ uri: thumb }}
+          style={styles.thumb}
+          resizeMode="cover"
+          accessibilityElementsHidden
+        />
+      ) : null}
       <View style={{ flex: 1 }}>
         <Text
           numberOfLines={2}
@@ -694,6 +717,7 @@ const styles = StyleSheet.create({
   countText: { fontSize: 11.5 },
   rows: { gap: 8, paddingHorizontal: 20 },
   row: { alignItems: 'center', gap: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
+  thumb: { width: 64, height: 48, borderRadius: 6, flexShrink: 0 },
   kindPill: {
     flexDirection: 'row',
     alignItems: 'center',

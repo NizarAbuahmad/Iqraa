@@ -70,10 +70,12 @@ export default function LibraryAdminScreen() {
     () => getUnitsForSubjectGrade(subjectId, gradeId).flatMap(u => getLessonsForUnit(u.id)),
     [subjectId, gradeId],
   );
-  const [lessonIdx, setLessonIdx] = useState(0); // 0 = whole subject
+  const [scope, setScope] = useState<'all' | 'semester-1' | 'semester-2' | 'lesson'>('all');
+  const [lessonIdx, setLessonIdx] = useState(0);
   const [category, setCategory] = useState<LibraryCategory>('infographic');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [mode, setMode] = useState<'file' | 'link'>('file');
   const [picked, setPicked] = useState<Picked | null>(null);
   const [url, setUrl] = useState('');
@@ -88,7 +90,7 @@ export default function LibraryAdminScreen() {
 
   // A lesson belongs to one subject; a subject list belongs to one grade.
   useEffect(() => { setSubjectIdx(0); }, [gradeId]);
-  useEffect(() => { setLessonIdx(0); }, [subjectId, gradeId]);
+  useEffect(() => { setLessonIdx(0); setScope('all'); }, [subjectId, gradeId]);
 
   if (user?.role !== 'system_admin') {
     return (
@@ -112,10 +114,12 @@ export default function LibraryAdminScreen() {
     const meta = {
       gradeId,
       subjectId,
-      lessonId: lessonIdx > 0 ? lessons[lessonIdx - 1]?.id ?? null : null,
+      lessonId: scope === 'lesson' ? (lessons[lessonIdx]?.id ?? null) : null,
+      semester: scope === 'semester-1' ? (1 as const) : scope === 'semester-2' ? (2 as const) : null,
       category,
       titleAr: title.trim(),
       description: description.trim(),
+      thumbnailUrl: thumbnailUrl.trim() || null,
     };
     if (!meta.gradeId || !meta.subjectId || !meta.titleAr || (mode === 'file' ? !picked : !url.trim())) {
       setMessage({ ok: false, text: t('libraryAdminMissing') });
@@ -139,6 +143,7 @@ export default function LibraryAdminScreen() {
       setDescription('');
       setPicked(null);
       setUrl('');
+      setThumbnailUrl('');
       reload();
     } catch (err) {
       setMessage({ ok: false, text: err instanceof Error ? err.message : String(err) });
@@ -195,16 +200,34 @@ export default function LibraryAdminScreen() {
         isRTL={isRTL}
         accent={ACCENT}
       />
-      <PickerField
-        label={t('libraryAdminLesson')}
-        value={lessonIdx === 0 ? t('libraryAdminAnyLesson') : lessons[lessonIdx - 1]?.titleAr ?? ''}
-        options={[t('libraryAdminAnyLesson'), ...lessons.map(l => l.titleAr)]}
-        onChange={setLessonIdx}
-        colors={colors}
-        isRTL={isRTL}
-        accent={ACCENT}
-        maxHeight={320}
-      />
+      <Text style={label}>{t('libraryAdminScope')}</Text>
+      <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        {(['all', 'semester-1', 'semester-2', 'lesson'] as const).map(s => (
+          <Pressable
+            key={s}
+            onPress={() => setScope(s)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: s === scope }}
+            style={[styles.chip, { backgroundColor: s === scope ? ACCENT : colors.muted }]}
+          >
+            <Text style={{ color: s === scope ? palette.primaryForeground : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+              {s === 'all' ? t('libraryAdminScopeAll') : s === 'semester-1' ? t('libraryAdminScopeS1') : s === 'semester-2' ? t('libraryAdminScopeS2') : t('libraryAdminScopeLesson')}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      {scope === 'lesson' ? (
+        <PickerField
+          label={t('libraryAdminLesson')}
+          value={lessons[lessonIdx]?.titleAr ?? ''}
+          options={lessons.map(l => l.titleAr)}
+          onChange={setLessonIdx}
+          colors={colors}
+          isRTL={isRTL}
+          accent={ACCENT}
+          maxHeight={320}
+        />
+      ) : null}
 
       <Text style={label}>{t('libraryAdminCategory')}</Text>
       <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -227,6 +250,8 @@ export default function LibraryAdminScreen() {
       <TextInput value={title} onChangeText={setTitle} style={input} maxLength={200} />
       <Text style={label}>{t('libraryAdminDescription')}</Text>
       <TextInput value={description} onChangeText={setDescription} style={[...input, { minHeight: 70 }]} multiline maxLength={1000} />
+      <Text style={label}>{t('libraryAdminThumbnail')}</Text>
+      <TextInput value={thumbnailUrl} onChangeText={setThumbnailUrl} style={input} autoCapitalize="none" keyboardType="url" placeholder="https://" />
 
       <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row', marginTop: 8 }]}>
         {(['file', 'link'] as const).map(m => (

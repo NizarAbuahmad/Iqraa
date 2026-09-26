@@ -30,6 +30,10 @@ export type LibraryItem = {
   isLink: boolean;
   /** Null only if the server can't compose a public URL right now. */
   url: string | null;
+  /** 1 or 2 when the resource covers one semester only; null = whole book. */
+  semester: 1 | 2 | null;
+  /** Optional cover image URL (set by admin or auto-derived from YouTube). */
+  thumbnailUrl: string | null;
   createdAt: string;
 };
 
@@ -37,9 +41,11 @@ export type LibraryMeta = {
   gradeId: string;
   subjectId: string;
   lessonId?: string | null;
+  semester?: 1 | 2 | null;
   category: LibraryCategory;
   titleAr: string;
   description?: string;
+  thumbnailUrl?: string | null;
 };
 
 /** Must match the server's MAX_LIBRARY_FILE_BYTES; checked here so a big file fails before it uploads. */
@@ -65,9 +71,11 @@ export function uploadLibraryFile(meta: LibraryMeta, file: Blob, mimeType: strin
     gradeId: meta.gradeId,
     subjectId: meta.subjectId,
     lessonId: meta.lessonId ?? '',
+    semester: meta.semester != null ? String(meta.semester) : '',
     category: meta.category,
     titleAr: meta.titleAr,
     description: meta.description ?? '',
+    thumbnailUrl: meta.thumbnailUrl ?? '',
   });
   return apiJson<LibraryItem>(`/library/file?${query}`, {
     method: 'POST',
