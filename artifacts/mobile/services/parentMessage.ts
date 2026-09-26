@@ -328,6 +328,55 @@ export function summarizeContacts(
   return { last: first ? { kind: first.kind as MessageKind, createdAt: first.createdAt } : null, recent };
 }
 
+const POSITIVE_KINDS: MessageKind[] = ['praise', 'progress'];
+const CONCERN_KINDS: MessageKind[] = ['missing-homework', 'academic-concern', 'absence', 'behaviour'];
+
+export interface ClassContactSummary {
+  /** Letters counted across the class, all time. `meeting` is neither. */
+  positive: number;
+  concern: number;
+  /** No letter in the last 30 days, never-contacted first, then longest silence first. */
+  quiet: { id: string; displayName: string; lastAt: string | null }[];
+  /** Parents have only ever heard concerns about this child — no praise or progress letter. */
+  concernOnly: { id: string; displayName: string; concerns: number }[];
+}
+
+/**
+ * Class-level view of the parent contact log. `students` is the class roster
+ * (GET /classes/:id) so a student with no letters at all still shows up —
+ * the log alone can't know who is missing from it.
+ */
+export function summarizeClassContacts(
+  students: { id: string; displayName: string }[],
+  contacts: { studentId: string; kind: string; createdAt: string }[],
+  now: Date,
+): ClassContactSummary {
+  const per = new Map<string, { last: number; positive: number; concern: number }>();
+  let positive = 0;
+  let concern = 0;
+  for (const c of contacts) {
+    const at = Date.parse(c.createdAt);
+    const s = per.get(c.studentId) ?? { last: 0, positive: 0, concern: 0 };
+    s.last = Math.max(s.last, at);
+    if (POSITIVE_KINDS.includes(c.kind as MessageKind)) { s.positive++; positive++; }
+    if (CONCERN_KINDS.includes(c.kind as MessageKind)) { s.concern++; concern++; }
+    per.set(c.studentId, s);
+  }
+
+  const quiet = students
+    .filter(st => { const s = per.get(st.id); return !s || now.getTime() - s.last > HISTORY_WINDOW_MS; })
+    .map(st => { const s = per.get(st.id); return { id: st.id, displayName: st.displayName, lastAt: s ? new Date(s.last).toISOString() : null }; })
+    .sort((a, b) => (a.lastAt ?? '').localeCompare(b.lastAt ?? ''));
+
+  const concernOnly = students
+    .map(st => ({ st, s: per.get(st.id) }))
+    .filter(({ s }) => s && s.concern > 0 && s.positive === 0)
+    .map(({ st, s }) => ({ id: st.id, displayName: st.displayName, concerns: s!.concern }))
+    .sort((a, b) => b.concerns - a.concerns);
+
+  return { positive, concern, quiet, concernOnly };
+}
+
 /** True when this would be at least the 3rd missing-homework/absence letter in 30 days. */
 export function suggestMeeting(summary: ContactSummary, kind: MessageKind): boolean {
   return ESCALATING_KINDS.includes(kind) && (summary.recent[kind] ?? 0) >= ESCALATE_AFTER;

@@ -10,6 +10,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
@@ -47,9 +48,14 @@ export default function ParentMessageScreen() {
   const isAr = lang === 'ar';
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
-  const [studentName, setStudentName] = useState('');
+  // Arriving from a class's parent-contact card: the student is already chosen,
+  // and for a concern-only family the card asks for the missing praise letter.
+  const params = useLocalSearchParams<{ studentId?: string; studentName?: string; kind?: string }>();
+  const paramKind = MESSAGE_KINDS.find(k => k === params.kind);
+
+  const [studentName, setStudentName] = useState(params.studentName ?? '');
   const [studentGender, setStudentGender] = useState<Gender>('male');
-  const [kind, setKind] = useState<MessageKind>('praise');
+  const [kind, setKind] = useState<MessageKind>(paramKind ?? 'praise');
   const [details, setDetails] = useState('');
   const [tone, setTone] = useState<Tone>('formal');
   const [teacherName, setTeacherName] = useState(user?.name ?? '');
@@ -63,7 +69,7 @@ export default function ParentMessageScreen() {
    * teacher typed a name by hand — in-app delivery needs a student id to find
    * the guardian behind, so that path stays share-only.
    */
-  const [pickedStudentId, setPickedStudentId] = useState<string | null>(null);
+  const [pickedStudentId, setPickedStudentId] = useState<string | null>(params.studentId ?? null);
   const [guardians, setGuardians] = useState<ContactStudent['contacts']>([]);
   const [sending, setSending] = useState(false);
   /** Past letters about the picked student, newest first. Null = none picked, or the fetch failed. */

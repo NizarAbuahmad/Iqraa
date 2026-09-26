@@ -1276,6 +1276,12 @@ const translations = {
     masteryEmptyDesc: 'صحّح امتحانًا واحدًا ليظهر هنا ما تحتاج الشعبة مراجعته',
     masteryBelowGap: (below: string, total: string) => `${below} من ${total} دون المستوى`,
     masteryMarksLost: (lost: string) => `فُقدت ${lost} علامة`,
+    parentContactsTitle: 'التواصل مع أولياء الأمور',
+    parentContactsBalance: (pos: string, con: string) => `رسائل إشادة وتقدّم: ${pos} · رسائل ملاحظات: ${con}`,
+    parentContactsQuiet: (n: string) => `لم تصلهم رسالة منذ شهر أو أكثر (${n})`,
+    parentContactsConcernOnly: (n: string) => `وصلت أسرَهم ملاحظاتٌ فقط، دون إشادة (${n})`,
+    parentContactsAllGood: 'وصلت رسالةٌ إلى أسرة كل طالب خلال الشهر، ولم تقتصر أيٌّ منها على الملاحظات.',
+    parentContactsTapHint: 'اضغط على اسم لكتابة رسالة لأسرته.',
     // Not «تحقّق سريع» and not «تذكرة الخروج» — the classroom-activity
     // generator already owns both of those (`activityType: 'quick-check'` and
     // `'exit-ticket'`). This one belongs to the evaluations family, produces a
@@ -2969,6 +2975,12 @@ const translations = {
     masteryEmptyDesc: 'Mark one exam and this will show what the class needs to go back over',
     masteryBelowGap: (below: string, total: string) => `${below} of ${total} below the line`,
     masteryMarksLost: (lost: string) => `${lost} marks lost`,
+    parentContactsTitle: 'Contact with parents',
+    parentContactsBalance: (pos: string, con: string) => `Praise & progress letters: ${pos} · Concern letters: ${con}`,
+    parentContactsQuiet: (n: string) => `No letter in a month or more (${n})`,
+    parentContactsConcernOnly: (n: string) => `Parents have only heard concerns, no praise (${n})`,
+    parentContactsAllGood: "Every student's family got a letter this month, and none has heard only concerns.",
+    parentContactsTapHint: 'Tap a name to write to their family.',
     miniEvalBtn: 'Quick evaluation',
     miniEvalTitle: 'Quick evaluation',
     miniEvalSubtitle: 'Three questions that mark themselves — no marks to enter',

@@ -674,6 +674,37 @@ router.get("/students/:id/parent-contacts", async (req: AuthenticatedRequest, re
 });
 
 /**
+ * Every letter to the parents of this class's students, newest first. The
+ * client already holds the roster (GET /classes/:id), so the "who hasn't been
+ * contacted" rollup is done there against it rather than duplicated here.
+ */
+router.get("/classes/:id/parent-contacts", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    const [group] = await db
+      .select({ id: classGroups.id })
+      .from(classGroups)
+      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      .limit(1);
+    if (!group) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+    const contacts = await db
+      .select({ studentId: parentContacts.studentId, kind: parentContacts.kind, createdAt: parentContacts.createdAt })
+      .from(parentContacts)
+      .innerJoin(classMemberships, eq(classMemberships.studentId, parentContacts.studentId))
+      .where(and(eq(classMemberships.classGroupId, classId), eq(parentContacts.teacherId, req.user!.id)))
+      .orderBy(desc(parentContacts.createdAt))
+      // ponytail: flat cap — ~30 students × a year of letters fits; paginate if a class ever outgrows it.
+      .limit(2000);
+    res.json({ contacts });
+  } catch (err) {
+    failRoster(res, err, "load class parent contacts", "Failed to load parent contacts");
+  }
+});
+
+/**
  * Returns the student's current claim code, so the teacher can re-open the
  * screen and share the code they already handed out.
  *
