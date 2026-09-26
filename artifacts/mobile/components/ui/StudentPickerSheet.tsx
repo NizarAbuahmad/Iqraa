@@ -30,8 +30,8 @@ export function StudentPickerSheet({
 }: {
   visible: boolean;
   onClose: () => void;
-  /** The chosen student, carrying whatever note the teacher has written. */
-  onPick: (student: RosterStudent) => void;
+  /** The chosen student, carrying whatever note the teacher has written, and the class it was picked from. */
+  onPick: (student: RosterStudent, fromClass: ClassGroup) => void;
 }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
@@ -183,7 +183,7 @@ export function StudentPickerSheet({
               ListEmptyComponent={emptyLine(t('noStudentsYet'))}
               renderItem={({ item }) => (
                 <Pressable
-                  onPress={() => onPick(item)}
+                  onPress={() => { if (openClass) onPick(item, openClass); }}
                   style={[
                     styles.row,
                     { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
