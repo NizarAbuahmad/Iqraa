@@ -77,8 +77,12 @@ export function useStudentAccountsStatus(): { enabled: boolean; loading: boolean
     cached ? { enabled: cached.studentAccounts, loading: false } : { enabled: false, loading: true },
   );
 
+  // Always ask, even if `cached` is set by now: another screen can fill the
+  // cache between this one's first render and this effect (a full load of
+  // /register bounces through the entry gate first), and returning early here
+  // left `loading` true forever — no role picker, no Google button.
+  // fetchFeatures answers from the cache without a request in that case.
   useEffect(() => {
-    if (cached) return;
     let live = true;
     fetchFeatures().then(f => {
       if (live) setState({ enabled: f.studentAccounts, loading: false });
