@@ -163,6 +163,11 @@ function ResourceRow({
   grid?: boolean;
 }) {
   const thumb = itemThumbnail(item);
+  // A cover URL can be present but dead (wrong link, expired share, a page
+  // instead of a direct image) — fall back to the icon tile rather than the
+  // blank gap `<Image>` leaves behind when it fails to load.
+  const [thumbFailed, setThumbFailed] = useState(false);
+  const showThumb = thumb && !thumbFailed;
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const isAr = lang === 'ar';
@@ -237,14 +242,19 @@ function ResourceRow({
           </Text>
         ) : null}
       </View>
-      {thumb ? (
+      {showThumb ? (
         <Image
           source={{ uri: thumb }}
           style={styles.thumb}
           resizeMode="cover"
           accessibilityElementsHidden
+          onError={() => setThumbFailed(true)}
         />
-      ) : null}
+      ) : (
+        <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: accent + '15' }]}>
+          <Ionicons name={KIND_ICON[item.kind]} size={22} color={accent} />
+        </View>
+      )}
       <View style={{ flex: 1 }}>
         <Text
           numberOfLines={2}
@@ -748,6 +758,7 @@ const styles = StyleSheet.create({
   rowsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   row: { alignItems: 'center', gap: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
   thumb: { width: 64, height: 48, borderRadius: 6, flexShrink: 0 },
+  thumbFallback: { alignItems: 'center', justifyContent: 'center' },
   gridCell: { width: '48.5%', paddingVertical: 14 },
   actionPill: {
     alignItems: 'center',
