@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
@@ -20,9 +21,11 @@ import { useAuth } from '@/context/AuthContext';
 import { Toast } from '@/components/ui/Toast';
 import { copyToClipboard, shareAsText } from '@/services/share';
 import { StudentPickerSheet } from '@/components/ui/StudentPickerSheet';
+import { confirm } from '@/services/confirm';
+import { SUBJECTS } from '@/services/curriculumData';
 import {
-  listParentContacts, logParentContact,
-  type ParentContact, type RosterStudent,
+  listParentContacts, logParentContact, updateStudent,
+  type ClassGroup, type ParentContact, type RosterStudent,
 } from '@/services/roster';
 import {
   MessagingError, getTeacherContacts, sendMessage, startThread,
@@ -30,7 +33,7 @@ import {
 } from '@/services/messaging';
 import {
   composeParentMessage, guardiansForStudent, kindEmoji, kindLabel, MESSAGE_KINDS, needsDetails,
-  seedDetailsFromNote, suggestMeeting, summarizeContacts,
+  parseSavedSignature, rosterGender, seedDetailsFromNote, SIGNATURE_STORAGE_KEY, suggestMeeting, summarizeContacts,
   type Gender, type MessageKind, type Tone,
 } from '@/services/parentMessage';
 import { ToolHeader } from '@/components/ui/ToolHeader';
@@ -70,6 +73,8 @@ export default function ParentMessageScreen() {
    * the guardian behind, so that path stays share-only.
    */
   const [pickedStudentId, setPickedStudentId] = useState<string | null>(params.studentId ?? null);
+  /** What the roster already says about the picked student's gender; null = not recorded. */
+  const [pickedGender, setPickedGender] = useState<Gender | null>(null);
   const [guardians, setGuardians] = useState<ContactStudent['contacts']>([]);
   const [sending, setSending] = useState(false);
   /** Past letters about the picked student, newest first. Null = none picked, or the fetch failed. */
@@ -91,15 +96,53 @@ export default function ParentMessageScreen() {
    * review — a number that lands in a parent's WhatsApp cannot be one the
    * teacher has not confirmed.
    *
-   * Gender is not touched: the roster does not record it, and guessing it from
-   * a name would misgender a real child in Arabic, which inflects for it in
-   * almost every clause.
+   * Gender comes from the roster when the teacher has recorded it there (see
+   * `onStudentGender`), never from the name — guessing would misgender a real
+   * child in Arabic, which inflects for it in almost every clause. The subject
+   * comes from the class the student was picked from, unless already typed.
    */
-  const onPickStudent = (student: RosterStudent) => {
+  const onPickStudent = (student: RosterStudent, fromClass: ClassGroup) => {
     setPickingStudent(false);
     setStudentName(student.displayName);
     setPickedStudentId(student.id);
+    setPickedGender(rosterGender(student.gender));
+    const known = rosterGender(student.gender);
+    if (known) setStudentGender(known);
     setDetails(seedDetailsFromNote(details, student.teacherNote));
+    const classSubject = SUBJECTS.find(s => s.id === fromClass.subjectId);
+    if (classSubject && !subject.trim()) setSubject(isAr ? classSubject.nameAr : classSubject.name);
+  };
+
+  /**
+   * Picking a gender for a roster student saves it on the roster, so the next
+   * letter about this child doesn't ask again. Fire-and-forget: a failed save
+   * costs one repeated question next time, not this letter.
+   */
+  const onStudentGender = (g: Gender) => {
+    setStudentGender(g);
+    const id = pickedStudentId;
+    if (!id || pickedGender === g) return;
+    setPickedGender(g);
+    updateStudent(id, { gender: g }).catch(() => {});
+  };
+
+  // The last signature used on this device. Read once; a missing or broken
+  // value leaves the account name and the default in place.
+  useEffect(() => {
+    AsyncStorage.getItem(SIGNATURE_STORAGE_KEY)
+      .then(raw => {
+        const saved = parseSavedSignature(raw);
+        if (!saved) return;
+        if (saved.teacherName) setTeacherName(saved.teacherName);
+        setTeacherGender(saved.teacherGender);
+      })
+      .catch(() => {});
+  }, []);
+
+  /** Called whenever a letter leaves the app — that's when the signature was clearly the one they meant. */
+  const rememberSignature = () => {
+    AsyncStorage.setItem(SIGNATURE_STORAGE_KEY, JSON.stringify({ teacherName: teacherName.trim(), teacherGender }))
+      .catch(() => {});
   };
 
   /**
@@ -161,6 +204,7 @@ export default function ParentMessageScreen() {
     if (!ready) return;
     await copyToClipboard(message);
     recordContact('copy');
+    rememberSignature();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     showToast(t('copiedToClipboard'));
   };
@@ -172,6 +216,7 @@ export default function ParentMessageScreen() {
     // unavailable (desktop web), and says which happened so the toast is honest.
     const how = await shareAsText(message, t('parentMsgTitle'));
     recordContact(how === 'shared' ? 'share' : 'copy');
+    rememberSignature();
     showToast(how === 'shared' ? t('parentMsgSent') : t('copiedToClipboard'));
   };
 
@@ -187,19 +232,42 @@ export default function ParentMessageScreen() {
    */
   const onSendInApp = async () => {
     if (!canSendInApp) return;
+    const names = guardians.map(g => `${g.firstName} ${g.lastName}`.trim());
+    // A letter to a parent can't be unsent, so say who it reaches before it goes.
+    const ok = await confirm({
+      title: t('parentMsgConfirmTitle'),
+      message: t('parentMsgRecipients', names.join('، ')),
+      confirmLabel: t('parentMsgConfirmSend'),
+      cancelLabel: t('cancel'),
+    });
+    if (!ok) return;
     setSending(true);
+    // Each guardian is a separate send, so a failure can land halfway. Track
+    // who actually got it: those letters did go, and must be logged and said.
+    const reached: string[] = [];
     try {
-      for (const g of guardians) {
+      for (const [i, g] of guardians.entries()) {
         const thread = await startThread(g.userId);
         await sendMessage(thread.id, message);
+        reached.push(names[i]);
       }
       recordContact('in_app');
+      rememberSignature();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast(t('parentMsgSentInApp'));
     } catch (e) {
-      // The server's own wording here is already teacher-facing ("You are not
-      // connected to this person"), so it beats a generic failure line.
-      showToast(e instanceof MessagingError ? e.message : t('messagingSendError'));
+      if (reached.length > 0) {
+        recordContact('in_app');
+        rememberSignature();
+        showToast(t('parentMsgPartialSend', reached.join('، '), names.slice(reached.length).join('، ')));
+        // Only the ones still waiting stay as recipients, so a retry can't
+        // hand the same letter twice to a parent who already has it.
+        setGuardians(guardians.slice(reached.length));
+      } else {
+        // The server's own wording here is already teacher-facing ("You are not
+        // connected to this person"), so it beats a generic failure line.
+        showToast(e instanceof MessagingError ? e.message : t('messagingSendError'));
+      }
     } finally {
       setSending(false);
     }
@@ -308,7 +376,7 @@ export default function ParentMessageScreen() {
           <Field label={t('parentMsgStudentGender')}>
             <Segmented
               value={studentGender}
-              onChange={setStudentGender}
+              onChange={onStudentGender}
               options={[
                 { value: 'male', label: t('parentMsgMale') },
                 { value: 'female', label: t('parentMsgFemale') },
