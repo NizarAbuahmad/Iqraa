@@ -151,7 +151,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     return `<div class="deck-slide deck-title-slide${slide.mediaUrl ? ' deck-on-photo' : ''}">
       ${deckHeroLayer(slide.mediaUrl, slide.mediaCaption)}
       <div class="deck-title-content">
-        <div class="deck-title-badge">IQRA</div>
+        <div class="deck-title-badge">Iqraa</div>
         <h1 class="deck-title-main">${esc(slide.title)}</h1>
         <div class="deck-title-rule"></div>
         ${meta ? `<div class="deck-title-meta">${esc(meta)}</div>` : ''}

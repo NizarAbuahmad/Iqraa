@@ -38,7 +38,7 @@ const STATEMENT = {
     'وبأنّني لن أُدخل إلّا ما تقتضيه الحاجة التعليمية.',
   en:
     'I confirm that my school has obtained the parental or guardian consent required for me ' +
-    "to enter my students' information into IQRA, and that I will enter only what I need for teaching.",
+    "to enter my students' information into Iqraa, and that I will enter only what I need for teaching.",
 };
 
 const COPY = {

@@ -426,7 +426,7 @@ export default function LessonFlowScreen() {
 
             {/* Grade */}
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
-              {lang === 'ar' ? 'الصف' : 'Grade'}
+              {t('grade')}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
               {gradeNames.map((g, i) => teacherScope.gradeHidden[i] ? null : (
@@ -440,7 +440,7 @@ export default function LessonFlowScreen() {
 
             {/* Subject */}
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
-              {lang === 'ar' ? 'المادة' : 'Subject'}
+              {t('subject')}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
               {/* `i` survives the filter on purpose — it is the index stored as

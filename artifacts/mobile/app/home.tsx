@@ -189,13 +189,13 @@ export default function DashboardScreen() {
     : undefined;
   const contextSubject = pickedSubject
     ? (lang === 'ar' ? pickedSubject.nameAr : pickedSubject.name)
-    : (lang === 'ar' ? 'الرياضيات' : 'Mathematics');
+    : '';
   const pickedGrade = lessonPick?.gradeId
     ? pickerGrades.find(g => g.id === lessonPick.gradeId)
     : undefined;
   const contextGrade = pickedGrade
     ? (lang === 'ar' ? pickedGrade.nameAr : pickedGrade.name)
-    : (lang === 'ar' ? 'الصف العاشر' : 'Grade 10');
+    : '';
   const unitNumber = lessonPick
     ? lessonPick.unitOrder
     : (continueItem?.formState?.unitNumber as number | undefined)
@@ -467,7 +467,7 @@ export default function DashboardScreen() {
               {t('jordanCurriculum')}
             </Text>
             <Text style={[styles.contextMeta, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-              {contextSubject} • {contextGrade}
+              {[contextSubject, contextGrade].filter(Boolean).join(' • ') || t('setTeachingContext')}
             </Text>
             <Text
               style={[styles.contextLesson, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}
@@ -781,7 +781,7 @@ export default function DashboardScreen() {
           >
             <Pressable onPress={() => setPickerOpen(false)} hitSlop={10} style={{ width: 64 }}>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22 }}>
-                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                {t('cancel')}
               </Text>
             </Pressable>
             <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 16 }}>
@@ -806,8 +806,8 @@ export default function DashboardScreen() {
               }}
             >
               {lang === 'ar'
-                ? 'اختر المادة ثم الوحدة ثم الدرس من المنهاج الأردني — الصف العاشر.'
-                : 'Pick the subject, unit, then lesson — Jordan curriculum, Grade 10.'}
+                ? 'اختر المادة ثم الوحدة ثم الدرس من المنهاج الأردني.'
+                : 'Pick the subject, unit, then lesson from the Jordanian curriculum.'}
             </Text>
 
             {/* Grade pills — only worth showing once there is a real choice. */}
@@ -822,7 +822,7 @@ export default function DashboardScreen() {
                     textAlign: isRTL ? 'right' : 'left',
                   }}
                 >
-                  {lang === 'ar' ? 'الصف' : 'Grade'}
+                  {t('grade')}
                 </Text>
                 <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
                   {pickerGrades.filter(g => teacherScope.isGradeShown(g.id)).map(g => {
@@ -880,7 +880,7 @@ export default function DashboardScreen() {
                 textAlign: isRTL ? 'right' : 'left',
               }}
             >
-              {lang === 'ar' ? 'المادة' : 'Subject'}
+              {t('subject')}
             </Text>
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
               {visibleSubjects.map(s => {
