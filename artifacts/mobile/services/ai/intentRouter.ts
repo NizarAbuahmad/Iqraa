@@ -193,7 +193,7 @@ function greetingReply(isAr: boolean, name?: string): string {
   return [
     salutation,
     '',
-    "I'm IQRA, your smart assistant for lesson preparation.",
+    "I'm Iqraa, your lesson-prep companion.",
     '',
     'I can help you with:',
     ...capabilityLines(false),
@@ -215,7 +215,7 @@ function offTopicReply(isAr: boolean): string {
     ].join('\n');
   }
   return [
-    "I'm IQRA, a teaching assistant for the Jordanian national curriculum.",
+    "I'm Iqraa, a teaching assistant for the Jordanian national curriculum.",
     "That question is outside what I do, so I don't cover news or general topics.",
     '',
     'I would be glad to help you with:',
