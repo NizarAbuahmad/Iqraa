@@ -3000,7 +3000,7 @@ export default function IqraScreen() {
   const introPrepBoard = (() => {
     if (isDesktop || messages.length > 1) return null;
     const topic = currentLessonView?.topic?.trim() ?? '';
-    const rows = buildPrepBoard(prepMaterials, topic);
+    const rows = buildPrepBoard(prepMaterials, topic, currentLessonView?.lessonId);
     // The lesson's own grade and subject, never the picker's index 0 — see the
     // subjectIdx trap in CLAUDE.md. `topicPickerParams` grounds a free-typed
     // topic; both return null when the lesson is unknown, and then the tool

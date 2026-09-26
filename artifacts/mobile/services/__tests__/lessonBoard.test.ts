@@ -36,8 +36,35 @@ function material(over: Partial<MaterialLike> & { type: string }): MaterialLike 
     title: over.title ?? 'مادة',
     topic: over.topic ?? TOPIC,
     savedAt: over.savedAt ?? '2026-09-19T08:00:00.000Z',
+    formState: over.formState,
   };
 }
+
+describe('buildPrepBoard with lesson ids', () => {
+  it('matches on the lesson id even when the topic text differs', () => {
+    const rows = buildPrepBoard(
+      [material({ type: 'worksheet', topic: 'ورقة عن تركيب الدوال', formState: { lessonId: 'L1' } })],
+      TOPIC,
+      'L1',
+    );
+    assert.equal(rows.find(r => r.type === 'worksheet')?.done, true);
+  });
+
+  it('does not match a same-titled material that belongs to another lesson', () => {
+    const rows = buildPrepBoard([material({ type: 'quiz', formState: { lessonId: 'L2' } })], TOPIC, 'L1');
+    assert.equal(prepSummary(rows).done, 0);
+  });
+
+  it('falls back to the topic for a material saved before ids were stored', () => {
+    const rows = buildPrepBoard([material({ type: 'quiz' })], TOPIC, 'L1');
+    assert.equal(rows.find(r => r.type === 'quiz')?.done, true);
+  });
+
+  it('falls back to the topic when the board has no lesson id', () => {
+    const rows = buildPrepBoard([material({ type: 'quiz', formState: { lessonId: 'L2' } })], TOPIC);
+    assert.equal(rows.find(r => r.type === 'quiz')?.done, true);
+  });
+});
 
 describe('buildPrepBoard', () => {
   it('ticks only the row the material belongs to', () => {
