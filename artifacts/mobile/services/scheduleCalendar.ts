@@ -218,6 +218,26 @@ export function nextPeriodLesson(
   return null;
 }
 
+/**
+ * «الحصة القادمة · العاشر ب · 10:15» — the line above a lesson card that came
+ * from the timetable. The weekday joins the time when the period is not today.
+ */
+export function formatNextPeriod(
+  next: NextPeriodLesson,
+  opts: { classLabel: string | null; today: string; lang: 'ar' | 'en'; nowLabel: string; nextLabel: string },
+): string {
+  let when = next.startTime;
+  if (next.date !== opts.today) {
+    try {
+      const day = new Date(`${next.date}T00:00:00`).toLocaleDateString(opts.lang === 'ar' ? 'ar-JO' : 'en-GB', { weekday: 'long' });
+      when = `${day} ${when}`.trim();
+    } catch {
+      /* no weekday then */
+    }
+  }
+  return [next.happeningNow ? opts.nowLabel : opts.nextLabel, opts.classLabel, when].filter(Boolean).join(' · ');
+}
+
 function toMinutes(hhmm: string): number | null {
   const m = /^(\d{2}):(\d{2})$/.exec(hhmm);
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;

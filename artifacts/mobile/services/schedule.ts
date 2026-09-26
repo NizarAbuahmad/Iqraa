@@ -10,6 +10,8 @@
  * offline meaning.
  */
 import { apiFetch } from './apiClient.ts';
+import { nextPeriodLesson, type NextPeriodLesson } from './scheduleCalendar.ts';
+import { listTeachingPlans } from './teachingPlans.ts';
 
 export interface SchedulePeriod {
   id: string;
@@ -77,6 +79,21 @@ export async function getSchedule(): Promise<{ periods: SchedulePeriod[]; slots:
   const res = await apiFetch('/schedule');
   const data = await readJson<{ periods: SchedulePeriod[]; slots: ScheduleSlot[] }>(res, 'Loading schedule');
   return { periods: data.periods.map(withSchool), slots: data.slots.map(withSchool) };
+}
+
+/**
+ * The period now or next and its pacing-plan lesson (`nextPeriodLesson`), or
+ * null. Never throws: a server without the schedule or plan tables, or a
+ * teacher with neither, means "no timetable", and every caller then keeps the
+ * lesson it would have shown anyway.
+ */
+export async function loadNextPeriod(now: Date = new Date()): Promise<NextPeriodLesson | null> {
+  try {
+    const [schedule, plans] = await Promise.all([getSchedule(), listTeachingPlans()]);
+    return nextPeriodLesson(now, schedule.periods, schedule.slots, plans);
+  } catch {
+    return null;
+  }
 }
 
 export async function setSchedulePeriod(
