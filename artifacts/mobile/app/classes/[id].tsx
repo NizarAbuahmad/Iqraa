@@ -50,6 +50,7 @@ import {
   updateStudent,
   type ClassGroup,
   type ClassMastery,
+  type ClassParentContact,
   type RosterStudent,
 } from '@/services/roster';
 import { getPickerGrades } from '@/services/curriculumData';
@@ -110,7 +111,7 @@ export default function ClassDetailScreen() {
   const [savedCount, setSavedCount] = useState(0);
   const [mastery, setMastery] = useState<ClassMastery | null>(null);
   /** Null until loaded, or when the log can't be read — the card then hides. */
-  const [parentContacts, setParentContacts] = useState<{ studentId: string; kind: string; createdAt: string }[] | null>(null);
+  const [parentContacts, setParentContacts] = useState<ClassParentContact[] | null>(null);
   const [noteStudent, setNoteStudent] = useState<RosterStudent | null>(null);
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
@@ -1492,7 +1493,7 @@ function ParentContactSection({
       {text}
     </Text>
   );
-  const allGood = summary.quiet.length === 0 && summary.concernOnly.length === 0;
+  const allGood = summary.quiet.length === 0 && summary.concernOnly.length === 0 && summary.unread.length === 0;
 
   return (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10, flexDirection: 'column', alignItems: 'stretch' }]}>
@@ -1507,6 +1508,12 @@ function ParentContactSection({
 
       {allGood ? label(t('parentContactsAllGood')) : (
         <>
+          {summary.unread.length > 0 && (
+            <View style={{ gap: 6 }}>
+              {label(t('parentContactsUnread', String(summary.unread.length)))}
+              {names(summary.unread)}
+            </View>
+          )}
           {summary.concernOnly.length > 0 && (
             <View style={{ gap: 6 }}>
               {label(t('parentContactsConcernOnly', String(summary.concernOnly.length)))}
