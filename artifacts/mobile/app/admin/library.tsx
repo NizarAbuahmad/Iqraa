@@ -28,6 +28,7 @@ import {
   addLibraryLink,
   deleteLibraryItem,
   listLibrary,
+  updateLibraryItem,
   uploadLibraryFile,
   type LibraryCategory,
   type LibraryItem,
@@ -82,6 +83,8 @@ export default function LibraryAdminScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [existing, setExisting] = useState<LibraryItem[]>([]);
+  /** Item currently being edited — null means "add new". */
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const reload = useCallback(() => {
     void listLibrary(gradeId).then(setExisting);
@@ -99,6 +102,29 @@ export default function LibraryAdminScreen() {
       </View>
     );
   }
+
+  const startEdit = (item: LibraryItem) => {
+    setEditingId(item.id);
+    setTitle(item.titleAr);
+    setDescription(item.description ?? '');
+    setCategory(item.category);
+    setThumbnailUrl(item.thumbnailUrl ?? '');
+    const s = item.semester;
+    setScope(s === 1 ? 'semester-1' : s === 2 ? 'semester-2' : item.lessonId ? 'lesson' : 'all');
+    setMode('link');
+    setMessage(null);
+    // Scroll to top handled by the ScrollView ref if needed — omit for now.
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setTitle('');
+    setDescription('');
+    setThumbnailUrl('');
+    setPicked(null);
+    setUrl('');
+    setMessage(null);
+  };
 
   const pickFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false });
@@ -121,17 +147,30 @@ export default function LibraryAdminScreen() {
       description: description.trim(),
       thumbnailUrl: thumbnailUrl.trim() || null,
     };
-    if (!meta.gradeId || !meta.subjectId || !meta.titleAr || (mode === 'file' ? !picked : !url.trim())) {
+    if (!editingId && (!meta.gradeId || !meta.subjectId || !meta.titleAr || (mode === 'file' ? !picked : !url.trim()))) {
       setMessage({ ok: false, text: t('libraryAdminMissing') });
       return;
     }
-    if (mode === 'file' && picked && picked.size > MAX_LIBRARY_FILE_BYTES) {
+    if (!editingId && mode === 'file' && picked && picked.size > MAX_LIBRARY_FILE_BYTES) {
       setMessage({ ok: false, text: t('libraryAdminTooBig') });
+      return;
+    }
+    if (editingId && !meta.titleAr) {
+      setMessage({ ok: false, text: t('libraryAdminMissing') });
       return;
     }
     setBusy(true);
     try {
-      if (mode === 'file' && picked) {
+      if (editingId) {
+        await updateLibraryItem(editingId, {
+          titleAr: meta.titleAr,
+          description: meta.description,
+          category: meta.category,
+          thumbnailUrl: meta.thumbnailUrl ?? null,
+          semester: meta.semester,
+        });
+        setEditingId(null);
+      } else if (mode === 'file' && picked) {
         // Web hands back a File; native a file:// uri that fetch turns into a Blob.
         const blob = picked.file ?? (await (await fetch(picked.uri)).blob());
         await uploadLibraryFile(meta, blob, picked.mimeType || blob.type);
@@ -288,16 +327,37 @@ export default function LibraryAdminScreen() {
         <Text style={[styles.hint, { color: message.ok ? colors.primary : '#B42318', textAlign: align, marginTop: 10 }]}>{message.text}</Text>
       ) : null}
 
-      <Pressable
-        onPress={save}
-        disabled={busy}
-        style={[styles.saveBtn, { backgroundColor: palette.hero, borderRadius: colors.radius, opacity: busy ? 0.7 : 1 }]}
-      >
-        {busy ? <ActivityIndicator color="#fff" /> : null}
-        <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 15 }}>
-          {busy ? t('libraryAdminSaving') : t('libraryAdminSave')}
-        </Text>
-      </Pressable>
+      {editingId ? (
+        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10, marginTop: 16, marginBottom: 28 }}>
+          <Pressable
+            onPress={save}
+            disabled={busy}
+            style={[styles.saveBtn, { flex: 1, margin: 0, backgroundColor: palette.hero, borderRadius: colors.radius, opacity: busy ? 0.7 : 1 }]}
+          >
+            {busy ? <ActivityIndicator color="#fff" /> : null}
+            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 15 }}>
+              {busy ? t('libraryAdminSaving') : t('libraryAdminEditSave')}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={cancelEdit}
+            style={[styles.saveBtn, { margin: 0, backgroundColor: colors.muted, borderRadius: colors.radius }]}
+          >
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_700Bold', fontSize: 15 }}>{t('cancel')}</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable
+          onPress={save}
+          disabled={busy}
+          style={[styles.saveBtn, { backgroundColor: palette.hero, borderRadius: colors.radius, opacity: busy ? 0.7 : 1 }]}
+        >
+          {busy ? <ActivityIndicator color="#fff" /> : null}
+          <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 15 }}>
+            {busy ? t('libraryAdminSaving') : t('libraryAdminSave')}
+          </Text>
+        </Pressable>
+      )}
 
       <Text style={[styles.sectionTitle, { color: colors.foreground, textAlign: align }]}>
         {t('libraryAdminExisting')} · {existing.length}
@@ -314,6 +374,9 @@ export default function LibraryAdminScreen() {
               {item.lessonId ? ` · ${item.lessonId}` : ''}
             </Text>
           </View>
+          <Pressable onPress={() => startEdit(item)} hitSlop={8} accessibilityLabel={t('libraryAdminEditSave')}>
+            <Ionicons name="pencil-outline" size={18} color={ACCENT} />
+          </Pressable>
           <Pressable onPress={() => remove(item)} hitSlop={8} accessibilityLabel={t('libraryAdminDelete')}>
             <Ionicons name="trash-outline" size={18} color="#B42318" />
           </Pressable>
