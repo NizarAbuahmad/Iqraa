@@ -361,3 +361,37 @@ describe('summarizeClassContacts', () => {
     assert.deepEqual(s.quiet.map(q => q.id), ['a']);
   });
 });
+
+describe('read state', () => {
+  const NOW = new Date('2026-09-25T12:00:00Z');
+  const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86_400_000).toISOString();
+  const ROSTER = [
+    { id: 'a', displayName: 'Amal' },
+    { id: 'b', displayName: 'Basel' },
+    { id: 'c', displayName: 'Carim' },
+    { id: 'd', displayName: 'Dana' },
+  ];
+
+  it('carries the latest letter\'s read flag into the per-student summary', () => {
+    const s = summarizeContacts([
+      { kind: 'absence', createdAt: daysAgo(1), read: false },
+      { kind: 'praise', createdAt: daysAgo(5), read: true },
+    ], NOW);
+    assert.equal(s.last?.read, false);
+  });
+
+  it('lists students whose latest in-app letter is unread after two days, oldest first', () => {
+    const s = summarizeClassContacts(ROSTER, [
+      // Amal: unread for 5 days → listed.
+      { studentId: 'a', kind: 'absence', createdAt: daysAgo(5), channel: 'in_app', read: false },
+      // Basel: unread but only 1 day old → too soon.
+      { studentId: 'b', kind: 'praise', createdAt: daysAgo(1), channel: 'in_app', read: false },
+      // Carim: an old unread letter, but the newer one was read → not listed.
+      { studentId: 'c', kind: 'absence', createdAt: daysAgo(9), channel: 'in_app', read: false },
+      { studentId: 'c', kind: 'praise', createdAt: daysAgo(3), channel: 'in_app', read: true },
+      // Dana: shared via WhatsApp — read state unknowable, never listed.
+      { studentId: 'd', kind: 'absence', createdAt: daysAgo(8), channel: 'share', read: null },
+    ], NOW);
+    assert.deepEqual(s.unread.map(u => u.id), ['a']);
+  });
+});

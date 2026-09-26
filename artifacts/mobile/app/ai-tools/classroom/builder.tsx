@@ -144,7 +144,7 @@ export default function ClassroomBuilderScreen() {
     { value: 'individual', label: t('activityTypeIndividual') },
     { value: 'pairs', label: lang === 'ar' ? 'ثنائي' : 'Pairs' },
     { value: 'groups', label: lang === 'ar' ? 'مجموعات' : 'Groups' },
-    { value: 'whole-class', label: lang === 'ar' ? 'الصف' : 'Whole Class' },
+    { value: 'whole-class', label: lang === 'ar' ? 'كل الصف' : 'Whole class' },
   ];
   const setupOpts: { value: ClassroomSetup; label: string }[] = [
     { value: 'screen', label: lang === 'ar' ? 'شاشة عرض' : 'Projector' },
@@ -230,7 +230,7 @@ export default function ClassroomBuilderScreen() {
         />
 
         <PillSelector label={t('difficultyLabel')} options={difficultyOpts} value={difficulty} onChange={setDifficulty} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PillSelector label={lang === 'ar' ? 'نوع المجموعة' : 'Class type'} options={groupOpts} value={groupType} onChange={setGroupType} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PillSelector label={lang === 'ar' ? 'نوع المجموعة' : 'Group type'} options={groupOpts} value={groupType} onChange={setGroupType} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PillSelector label={t('teachingGoalLabel')} options={goalOpts} value={teachingGoal} onChange={setTeachingGoal} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PillSelector
           label={lang === 'ar' ? 'تجهيزات الصف' : 'Classroom setup'}

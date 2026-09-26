@@ -42,8 +42,8 @@ export function GlobalLessonBar({ layout, pick, lang, isRTL, colors, topInset = 
   const isAr = lang === 'ar';
   const grade = pick?.gradeId ? getPickerGrades().find(g => g.id === pick.gradeId) : undefined;
   const subject = pick?.subjectId ? getPickerSubjects().find(s => s.id === pick.subjectId) : undefined;
-  const gradeLabel = grade ? (isAr ? grade.nameAr : grade.name) : (isAr ? 'الصف العاشر' : 'Grade 10');
-  const subjectLabel = subject ? (isAr ? subject.nameAr : subject.name) : (isAr ? 'الرياضيات' : 'Mathematics');
+  const gradeLabel = grade ? (isAr ? grade.nameAr : grade.name) : '';
+  const subjectLabel = subject ? (isAr ? subject.nameAr : subject.name) : '';
   const topic = pick?.topic || t('setTeachingContext');
   const rowDir = isRTL ? 'row-reverse' as const : 'row' as const;
   const align = isRTL ? 'right' as const : 'left' as const;
@@ -84,7 +84,7 @@ export function GlobalLessonBar({ layout, pick, lang, isRTL, colors, topInset = 
           {topic}
         </Text>
         <Text numberOfLines={1} style={[styles.meta, { color: colors.mutedForeground, textAlign: align }]}>
-          {subjectLabel} • {gradeLabel}
+          {[subjectLabel, gradeLabel].filter(Boolean).join(' • ') || t('jordanCurriculum')}
         </Text>
         {changeButton}
       </Pressable>
@@ -118,7 +118,7 @@ export function GlobalLessonBar({ layout, pick, lang, isRTL, colors, topInset = 
         </View>
         <View style={{ flex: 1 }}>
           <Text numberOfLines={1} style={[styles.meta, { color: colors.mutedForeground, textAlign: align }]}>
-            {subjectLabel} • {gradeLabel}
+            {[subjectLabel, gradeLabel].filter(Boolean).join(' • ') || t('jordanCurriculum')}
           </Text>
           <Text numberOfLines={1} style={[styles.barTopic, { color: colors.foreground, textAlign: align }]}>
             {topic}

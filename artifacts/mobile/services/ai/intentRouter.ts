@@ -108,7 +108,7 @@ const TEACHING_SIGNAL =
   /منهج|درس|دروس|حصة|الصف|صف\s*عاشر|طلاب|طلبة|طالب|طالبة|تلاميذ|خطة|ورقة\s*عمل|اختبار|امتحان|واجب|نشاط|تقييم|اشرح|أشرح|شرح|وضّح|وضح|مثال|مسألة|تمرين|سؤال\s*عن|رياضيات|كيمياء|معادلة|اقتران|اقترانات|مشتقة|المشتقات|متجه|متجهات|احتمال|إحصاء|احصاء|مثلثات|دائرة|الأسس|لوغاريتم|ذرة|الذرة|جدول\s*دوري|رابطة|تكافؤ|مول|تفاعل/i;
 
 const TEACHING_SIGNAL_EN =
-  /\blesson\b|\bteach|\bstudent|\bclassroom\b|\bcurriculum\b|\bworksheet\b|\bquiz\b|\bexam\b|\bhomework\b|\bactivity\b|\bexplain\b|\bexample\b|\bexercise\b|\bgrade\s*10\b|\bmath|\bchemistr|\bequation\b|\bfunction\b|\bderivative\b|\bvector\b|\bprobabilit|\bstatistic|\btrigonometr|\batom|\bbond(ing)?\b|\bmole\b/i;
+  /\blesson\b|\bteach|\bstudent|\bclassroom\b|\bcurriculum\b|\bworksheet\b|\bquiz\b|\bexam\b|\bhomework\b|\bactivity\b|\bexplain\b|\bexample\b|\bexercise\b|\bgrade\s*\d+\b|\bmath|\bchemistr|\bequation\b|\bfunction\b|\bderivative\b|\bvector\b|\bprobabilit|\bstatistic|\btrigonometr|\batom|\bbond(ing)?\b|\bmole\b/i;
 
 function isOffTopic(q: string): boolean {
   if (TEACHING_SIGNAL.test(q) || TEACHING_SIGNAL_EN.test(q)) return false;
@@ -193,7 +193,7 @@ function greetingReply(isAr: boolean, name?: string): string {
   return [
     salutation,
     '',
-    "I'm IQRA, your smart assistant for lesson preparation.",
+    "I'm Iqraa, your lesson-prep companion.",
     '',
     'I can help you with:',
     ...capabilityLines(false),
@@ -215,7 +215,7 @@ function offTopicReply(isAr: boolean): string {
     ].join('\n');
   }
   return [
-    "I'm IQRA, a teaching assistant for the Jordanian national curriculum.",
+    "I'm Iqraa, a teaching assistant for the Jordanian national curriculum.",
     "That question is outside what I do, so I don't cover news or general topics.",
     '',
     'I would be glad to help you with:',

@@ -60,6 +60,6 @@ describe('chatRoleLabel', () => {
     assert.equal(chatRoleLabel('student', en), 'Student');
     assert.equal(chatRoleLabel('parent', en), 'Parent');
     assert.equal(chatRoleLabel('teacher', en), 'Teacher');
-    assert.equal(chatRoleLabel('school_admin', en), 'School Admin');
+    assert.equal(chatRoleLabel('school_admin', en), 'School admin');
   });
 });

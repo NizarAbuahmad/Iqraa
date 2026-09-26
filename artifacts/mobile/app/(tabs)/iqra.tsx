@@ -542,7 +542,7 @@ function ContextBanner({
           <View style={[ctxStyles.modalHeader, { borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Pressable onPress={handleCancel} hitSlop={10} style={ctxStyles.modalCancel}>
               <Text style={[ctxStyles.modalCancelText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                {t('cancel')}
               </Text>
             </Pressable>
             <Text style={[ctxStyles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
@@ -562,7 +562,7 @@ function ContextBanner({
             {CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).length > 1 ? (
               <>
                 <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-                  {lang === 'ar' ? 'الصف' : 'Grade'}
+                  {t('grade')}
                 </Text>
                 <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   {CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).map(g => (
@@ -596,7 +596,7 @@ function ContextBanner({
 
             {/* Subject pills */}
             <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).length > 1 ? 18 : 0 }]}>
-              {lang === 'ar' ? 'المادة' : 'Subject'}
+              {t('subject')}
             </Text>
             <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               {visibleSubjIdxs.map(i => CONTEXT_SUBJECTS[i]).map((s, vi) => {
@@ -663,7 +663,7 @@ function ContextBanner({
                 fontFamily: 'Cairo_700Bold',
               }]}>
                 {draftTopic.trim()
-                  ? (lang === 'ar' ? `ابدأ التحضير: ${draftTopic}` : `Ask IQRA about: ${draftTopic}`)
+                  ? (lang === 'ar' ? `ابدأ التحضير: ${draftTopic}` : `Ask Iqraa about: ${draftTopic}`)
                   : (lang === 'ar' ? 'اختر الدرس أولاً' : 'Select a lesson first')}
               </Text>
             </Pressable>
@@ -676,10 +676,10 @@ function ContextBanner({
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
 // Subject label map for clarification chips
-const SUBJECT_LABELS: Record<string, { ar: string; en: string; icon: string }> = {
-  mathematics: { ar: 'الرياضيات', en: 'Mathematics', icon: '📐' },
-  chemistry:   { ar: 'الكيمياء',  en: 'Chemistry',   icon: '🧪' },
-};
+const SUBJECT_ICONS: Record<string, string> = { mathematics: '📐', chemistry: '🧪' };
+const SUBJECT_LABELS: Record<string, { ar: string; en: string; icon: string }> = Object.fromEntries(
+  getPickerSubjects().map(s => [s.id, { ar: s.nameAr, en: s.name, icon: SUBJECT_ICONS[s.id] ?? '📘' }]),
+);
 
 /** Compact guided preparation checklist — Demo Mode, session-only. */
 function LessonPrepProgressCard({
@@ -2302,7 +2302,7 @@ export default function IqraScreen() {
           // Short / vague reply to a clarifying question — keep the dialogue open
           // rather than showing the generic out-of-scope message.
           responseText = lang === 'ar'
-            ? 'وضّح لي أكثر — أخبرني بالمادة والدرس الذي تريد التحضير له؟'
+            ? 'وضّح لي أكثر: ما المادة والدرس الذي تريد التحضير له؟'
             : 'Tell me more — which subject and lesson would you like to prepare for?';
         } else {
           responseText = t('iqraOutOfScope');
@@ -3168,6 +3168,11 @@ export default function IqraScreen() {
           uploadedLabel={(n) => t('lessonUploadedFiles', n)}
           onChangeLesson={() => setChangeLessonOpen(true)}
           onToggleCollapse={() => setLessonCardCollapsed(c => !c)}
+          onClear={() => {
+            setSessionMemory(prev => ({ ...prev, lessonPin: 'none' }));
+            setTeachingCtx('');
+            setTeachingCtxLessonId(null);
+          }}
           // The board right below it is already counting, from better data.
           hideCount={Boolean(introPrepBoard)}
           // A band welded to both window edges on desktop; a card over the
@@ -3593,7 +3598,7 @@ export default function IqraScreen() {
         loadingWord={loadingWord}
         onShare={async () => {
           setExportVisible(false);
-          await shareAsText(exportText, currentLessonView?.topic ?? 'IQRA');
+          await shareAsText(exportText, currentLessonView?.topic ?? 'Iqraa');
         }}
         onCopy={async () => {
           setExportVisible(false);
