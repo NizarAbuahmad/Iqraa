@@ -1,11 +1,9 @@
 /**
- * Evaluation detail — review the generated questions and publish.
+ * Evaluation detail — review the generated questions, adjust them, publish.
  *
- * Read-only: editing an individual question (retype the stem, fix an option,
- * change its marks) is the authoring-UI work this pass doesn't build. What's
- * here is enough to see what was generated, understand why a requested type
- * didn't show up, and publish so the evaluation becomes reachable by the
- * attempts API that already exists.
+ * While a draft, each question can be edited or deleted, and the teacher can
+ * add their own (`EditQuestionModal`). Once published it is read-only — the
+ * server refuses question writes then, since students may be sitting it.
  */
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -17,6 +15,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { confirm } from '@/services/confirm';
 import {
   EvaluationError,
+  deleteEvaluationQuestion,
   generateEvaluation,
   getEvaluation,
   publishEvaluation,
@@ -31,6 +30,8 @@ import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { copyToClipboard } from '@/services/share';
 import { AddReadAloudModal } from '@/components/AddReadAloudModal';
 import { AddDictationModal } from '@/components/AddDictationModal';
+import { EditQuestionModal } from '@/components/EditQuestionModal';
+import { isEditableQuestion } from '@/services/questionDraft';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookFigureRefsForObjectives } from '@/services/bookFigureUri';
@@ -126,6 +127,8 @@ export default function EvaluationDetailScreen() {
   const [pickingClass, setPickingClass] = useState(false);
   const [addingReadAloud, setAddingReadAloud] = useState(false);
   const [addingDictation, setAddingDictation] = useState(false);
+  /** The question open in the editor; 'new' when writing one from scratch. */
+  const [editing, setEditing] = useState<EvaluationQuestion | 'new' | null>(null);
   const [questions, setQuestions] = useState<EvaluationQuestion[]>([]);
   // Silence used to be the answer for three different situations — keys
   // verified, verifier unreachable, nothing checkable — and a teacher cannot
@@ -174,8 +177,45 @@ export default function EvaluationDetailScreen() {
     }, [load]),
   );
 
+  // `toFixed(2)` is not cosmetic: `evaluations.total_marks` is numeric(6,2) and
+  // `recomputeTotal` writes `total.toFixed(2)`, so this is exactly the string a
+  // reload would bring back.
+  const setTotal = (totalMarks: number) =>
+    setEvaluation(prev => (prev ? { ...prev, totalMarks: totalMarks.toFixed(2) } : prev));
+
+  const onDelete = async (q: EvaluationQuestion) => {
+    if (!id || busy) return;
+    const ok = await confirm({
+      title: t('questionDeleteConfirm'),
+      message: questionText(q) || undefined,
+      confirmLabel: t('questionDeleteBtn'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    setError('');
+    try {
+      const { totalMarks } = await deleteEvaluationQuestion(id, q.id);
+      setQuestions(prev => prev.filter(x => x.id !== q.id));
+      setTotal(totalMarks);
+    } catch (err) {
+      setError(err instanceof EvaluationError ? err.message : t('questionSaveFailed'));
+    }
+  };
+
   const onRegenerate = async () => {
     if (!id || busy) return;
+    // Say what survives before anything is replaced — an edited AI question
+    // does not, and the teacher should hear that first.
+    if (questions.some(q => q.source !== 'ai')) {
+      const ok = await confirm({
+        title: t('regenerateQuestionsBtn'),
+        message: t('regenerateKeepsOwnNote'),
+        confirmLabel: t('regenerateQuestionsBtn'),
+        cancelLabel: t('cancel'),
+      });
+      if (!ok) return;
+    }
     setBusy('generate');
     setError('');
     try {
@@ -354,6 +394,18 @@ export default function EvaluationDetailScreen() {
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
                 {t('marksAbbrev', q.marks)}
               </Text>
+              {evaluation?.status === 'draft' && (
+                <>
+                  {isEditableQuestion(q) && (
+                    <Pressable onPress={() => setEditing(q)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('questionEditBtn')}>
+                      <Ionicons name="pencil-outline" size={17} color={ACCENT} />
+                    </Pressable>
+                  )}
+                  <Pressable onPress={() => void onDelete(q)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('questionDeleteBtn')}>
+                    <Ionicons name="trash-outline" size={17} color={colors.destructive} />
+                  </Pressable>
+                </>
+              )}
             </View>
             {/* Only a confirmed key is marked. Nothing is shown for the rest,
                 because a "not verified" chip on most of the paper would read as
@@ -443,9 +495,18 @@ export default function EvaluationDetailScreen() {
               </>
             )}
           </Pressable>
-          {/* Note this sits next to "regenerate" but is not part of it. A
-              read-aloud question is written by a person and appended; the
-              generator both writes and replaces, and would wipe this one. */}
+          <Pressable
+            onPress={() => setEditing('new')}
+            disabled={!!busy}
+            style={[styles.actionBtnOutline, { borderColor: ACCENT, opacity: !!busy ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="add-circle-outline" size={16} color={ACCENT} />
+            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+              {t('addOwnQuestionBtn')}
+            </Text>
+          </Pressable>
+          {/* Hand-written questions, this one included, are appended and
+              survive "regenerate": it replaces only generated questions. */}
           <Pressable
             onPress={() => setAddingReadAloud(true)}
             disabled={!!busy}
@@ -478,13 +539,24 @@ export default function EvaluationDetailScreen() {
         objectiveIds={evaluation?.objectiveIds ?? []}
         onAdded={(question, totalMarks) => {
           setQuestions(prev => [...prev, question]);
-          // `toFixed(2)` is not cosmetic: `evaluations.total_marks` is
-          // numeric(6,2) and `recomputeTotal` writes `total.toFixed(2)`, so
-          // this is exactly the string a reload would bring back. Storing the
-          // bare number would show "25" until the next focus and then "25.00".
-          setEvaluation(prev => (prev ? { ...prev, totalMarks: totalMarks.toFixed(2) } : prev));
+          setTotal(totalMarks);
         }}
       />
+
+      {editing && (
+        <EditQuestionModal
+          onClose={() => setEditing(null)}
+          evaluationId={id}
+          objectiveIds={evaluation?.objectiveIds ?? []}
+          question={editing === 'new' ? undefined : editing}
+          onSaved={(saved, totalMarks) => {
+            setQuestions(prev =>
+              prev.some(x => x.id === saved.id) ? prev.map(x => (x.id === saved.id ? saved : x)) : [...prev, saved],
+            );
+            setTotal(totalMarks);
+          }}
+        />
+      )}
 
       <AddDictationModal
         visible={addingDictation}
@@ -494,7 +566,7 @@ export default function EvaluationDetailScreen() {
         objectiveIds={evaluation?.objectiveIds ?? []}
         onAdded={(added, totalMarks) => {
           setQuestions(prev => [...prev, ...added]);
-          setEvaluation(prev => (prev ? { ...prev, totalMarks: totalMarks.toFixed(2) } : prev));
+          setTotal(totalMarks);
         }}
       />
     </ScrollView>
