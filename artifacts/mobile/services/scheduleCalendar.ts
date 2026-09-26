@@ -10,7 +10,7 @@
  * Free of `@workspace/curriculum` and React Native, so the bare `node --test`
  * runner can load it (CLAUDE.md on `services/__tests__`).
  */
-import { normalizePlanEntries, toISODate } from './planEntries.ts';
+import { nextEntry, normalizePlanEntries, toISODate } from './planEntries.ts';
 
 export interface AgendaPeriod {
   schoolName: string;
@@ -167,6 +167,55 @@ export function defaultDay(today: number, visible: readonly number[]): number {
     if (visible.includes(d)) return d;
   }
   return visible[0] ?? 0;
+}
+
+export interface NextPeriodLesson extends AgendaPeriod {
+  /** ISO date of the period. */
+  date: string;
+  happeningNow: boolean;
+  /** From this class's pacing plan; null when the class has no plan or it is empty. */
+  lessonId: string | null;
+}
+
+/**
+ * The class a teacher is in front of now or next, and which lesson its pacing
+ * plan puts there — what the home card should be about.
+ *
+ * The period: today's first that has not ended, else the first period of the
+ * next day within a week that has one. The lesson: the plan's entry on that
+ * date; failing that the latest one before it (a lesson worth two periods
+ * carries over — see `autoScheduleEntries`, which records only its first
+ * day); failing that the first upcoming one, for a plan that starts later.
+ */
+export function nextPeriodLesson(
+  now: Date,
+  periods: readonly SchedulePeriodLike[],
+  slots: readonly ScheduleSlotLike[],
+  plans: readonly (PlanLike & { classGroupId?: string | null })[],
+): NextPeriodLesson | null {
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  for (let offset = 0; offset < 7; offset++) {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+    const date = toISODate(day);
+    const period = buildDayAgenda(date, periods, slots, []).periods.find(p => {
+      if (offset > 0) return true;
+      const start = toMinutes(p.startTime);
+      return start !== null && nowMinutes < start + p.durationMinutes;
+    });
+    if (!period) continue;
+
+    const plan = plans.find(p => p.classGroupId === period.classGroupId);
+    const entries = plan ? normalizePlanEntries(plan.entries) : [];
+    const before = entries.filter(e => e.date <= date).sort((a, b) => b.date.localeCompare(a.date));
+    const lessonId = (before[0] ?? nextEntry(entries, date))?.lessonId ?? null;
+    return {
+      ...period,
+      date,
+      happeningNow: offset === 0 && isHappeningNow(period.startTime, period.durationMinutes, now),
+      lessonId,
+    };
+  }
+  return null;
 }
 
 function toMinutes(hhmm: string): number | null {
