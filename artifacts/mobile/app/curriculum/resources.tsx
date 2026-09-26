@@ -85,6 +85,7 @@ const KIND_ICON: Record<ResourceKind, React.ComponentProps<typeof Ionicons>['nam
 /** The order the category chips appear in. */
 const KIND_ORDER: ResourceKind[] = [
   'infographic',
+  'image',
   'video',
   'audio',
   'game',
@@ -92,7 +93,6 @@ const KIND_ORDER: ResourceKind[] = [
   'template',
   'presentation',
   'document',
-  'image',
   'page',
 ];
 
@@ -106,6 +106,7 @@ const CATEGORY_SECTION_LABEL: Record<LibraryCategory, TranslationKey> = {
   template: 'librarySecTemplate',
   presentation: 'librarySecPresentation',
   document: 'librarySecDocument',
+  image: 'librarySecImage',
 };
 
 function sectionLabel(section: ResourceSection): TranslationKey {

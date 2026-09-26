@@ -47,6 +47,7 @@ const CATEGORY_LABEL: Record<LibraryCategory, TranslationKey> = {
   template: 'libraryCatTemplate',
   presentation: 'libraryCatPresentation',
   document: 'libraryCatDocument',
+  image: 'libraryCatImage',
 };
 
 type Picked = { name: string; mimeType: string; size: number; uri: string; file?: File };

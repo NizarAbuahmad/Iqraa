@@ -37,6 +37,7 @@ const input: ResourceCatalogInput = {
     upload({}),
     upload({ id: 'u2', category: 'video', isLink: true, url: 'https://www.youtube.com/watch?v=x', lessonId: null }),
     upload({ id: 'u3', subjectId: 'arabic', category: 'audio', lessonId: null }),
+    upload({ id: 'u5', category: 'image' }),
     upload({ id: 'u4', url: null }),
   ],
   premade: [
@@ -133,6 +134,7 @@ describe('sections', () => {
     const sections = groupIntoSections(buildResourceCatalog(input));
     assert.deepEqual(sections.map(s => s.id), [
       'category:infographic',
+      'category:image',
       'category:video',
       'category:audio',
       'source:premade-sheet',
