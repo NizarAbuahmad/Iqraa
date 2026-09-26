@@ -35,25 +35,43 @@ export const DOCUMENT_UPLOAD_ENABLED = false;
 // the answer before anyone has signed in.
 
 import { useEffect, useState } from 'react';
-import { apiJson } from './apiClient';
 
 export type Features = { studentAccounts: boolean };
 
 /** Fails closed. Offering a signup door that answers 403 is worse than hiding one that works. */
 const CLOSED: Features = { studentAccounts: false };
 
+/**
+ * Failing closed has a cost: the role picker on /register and /setup-subjects
+ * disappears and the account is created as a teacher. So a failure is retried
+ * before it is believed — a cold Cloud Run start or one dropped request on a
+ * phone should not decide someone's account type.
+ */
+const RETRY_DELAYS_MS = [1000, 3000];
+
 let cached: Features | null = null;
 
-export async function fetchFeatures(): Promise<Features> {
+// Imported lazily so the retry logic below loads under bare `node --test`
+// (apiClient pulls in expo-secure-store).
+const loadFromApi = async (): Promise<Partial<Features>> =>
+  (await import('./apiClient')).apiJson<Partial<Features>>('/healthz/features');
+
+export async function fetchFeatures(
+  load: () => Promise<Partial<Features>> = loadFromApi,
+  delaysMs: readonly number[] = RETRY_DELAYS_MS,
+): Promise<Features> {
   if (cached) return cached;
-  try {
-    const res = await apiJson<Partial<Features>>('/healthz/features');
-    // Only a success is cached: caching a network blip would hide the feature
-    // for the rest of the session with no way back short of a restart.
-    cached = { studentAccounts: res.studentAccounts === true };
-    return cached;
-  } catch {
-    return CLOSED;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await load();
+      // Only a success is cached: caching a network blip would hide the feature
+      // for the rest of the session with no way back short of a restart.
+      cached = { studentAccounts: res.studentAccounts === true };
+      return cached;
+    } catch {
+      if (attempt >= delaysMs.length) return CLOSED;
+      await new Promise(r => setTimeout(r, delaysMs[attempt]));
+    }
   }
 }
 
