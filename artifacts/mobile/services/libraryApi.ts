@@ -85,6 +85,13 @@ export function uploadLibraryFile(meta: LibraryMeta, file: Blob, mimeType: strin
   });
 }
 
+export function updateLibraryItem(
+  id: string,
+  patch: { titleAr: string; description?: string; category?: LibraryCategory; thumbnailUrl?: string | null; semester?: 1 | 2 | null },
+): Promise<LibraryItem> {
+  return apiJson<LibraryItem>(`/library/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
+}
+
 export async function deleteLibraryItem(id: string): Promise<boolean> {
   const res = await apiFetch(`/library/${id}`, { method: 'DELETE' });
   return res.ok;
