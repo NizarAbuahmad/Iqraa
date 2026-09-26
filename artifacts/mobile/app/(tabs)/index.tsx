@@ -135,7 +135,10 @@ function LessonWorkspace() {
       : null;
 
   const topic = active?.topic ?? '';
-  const board = useMemo(() => buildPrepBoard(materials, topic), [materials, topic]);
+  const board = useMemo(
+    () => buildPrepBoard(materials, topic, active?.lessonId),
+    [materials, topic, active?.lessonId],
+  );
   const summary = prepSummary(board);
 
   const grade = active?.gradeId ? getPickerGrades().find(g => g.id === active.gradeId) : undefined;
