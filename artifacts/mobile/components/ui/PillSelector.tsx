@@ -38,7 +38,8 @@ interface Props<T extends string | number> {
    */
   hint?: string;
   options: PillOption<T>[];
-  value: T;
+  /** Null selects nothing — for a question that must be answered, not defaulted. */
+  value: T | null;
   onChange: (value: T) => void;
   colors: Colors;
   isRTL: boolean;

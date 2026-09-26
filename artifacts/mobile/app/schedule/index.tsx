@@ -379,10 +379,13 @@ export default function ScheduleScreen() {
             </View>
           ) : (
             WEEKDAY_KEYS.map((dayKey, dayOfWeek) => (
-              <View key={dayOfWeek} style={{ gap: 8 }}>
-                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
-                  {t(dayKey)}
-                </Text>
+              <View key={dayOfWeek} style={{ gap: 10 }}>
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10 }}>
+                  <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 15 }}>
+                    {t(dayKey)}
+                  </Text>
+                  <View style={{ flex: 1, height: 1, backgroundColor: colors.border, opacity: 0.6 }} />
+                </View>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -397,24 +400,31 @@ export default function ScheduleScreen() {
                         key={period.periodNumber}
                         onPress={() => setEditingCell({ dayOfWeek, periodNumber: period.periodNumber })}
                         style={{
-                          width: 108, padding: 10, borderRadius: 12, borderWidth: 1.5, gap: 3,
+                          width: 108, minHeight: 76, padding: 10, borderRadius: 12, borderWidth: 1.5,
                           borderColor: filled ? ACCENT : colors.border,
                           backgroundColor: filled ? ACCENT + '12' : colors.card,
+                          justifyContent: filled ? 'flex-start' : 'center',
+                          alignItems: filled ? 'flex-start' : 'center',
+                          gap: filled ? 3 : 6,
                         }}
                       >
-                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10.5, lineHeight: 17, textAlign: align }}>
+                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10.5, lineHeight: 17, textAlign: align, alignSelf: 'stretch' }}>
                           {`${t('schedulePeriodNumber', period.periodNumber)} · ${period.startTime}`}
                         </Text>
-                        <Text
-                          numberOfLines={2}
-                          style={{
-                            color: filled ? ACCENT : colors.mutedForeground,
-                            fontFamily: filled ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                            fontSize: 12.5, textAlign: align,
-                          }}
-                        >
-                          {filled ? className : '+'}
-                        </Text>
+                        {filled ? (
+                          <Text
+                            numberOfLines={2}
+                            style={{
+                              color: ACCENT,
+                              fontFamily: 'Cairo_600SemiBold',
+                              fontSize: 12.5, textAlign: align,
+                            }}
+                          >
+                            {className}
+                          </Text>
+                        ) : (
+                          <Ionicons name="add-circle-outline" size={22} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
+                        )}
                       </Pressable>
                     );
                   })}
