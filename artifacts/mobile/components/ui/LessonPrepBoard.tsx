@@ -7,8 +7,8 @@
  * board that ticks a worksheet on one screen and not the other is worse than
  * no board — so the rows live here and `buildPrepBoard` decides what they say.
  *
- * Each row is one tap target: the icon tile turns into a tick when the
- * material exists, the second line says so, and the whole row opens it or
+ * Each row is one tap target: the icon tile fills and gains a tick badge when
+ * the material exists, the second line says so, and the whole row opens it or
  * starts it. The old rows put an empty radio, an emoji and the same
  * «أنشئها الآن ←» link five times side by side; the progress was a bare
  * «0/5» floating beside the title.
@@ -69,6 +69,13 @@ export function LessonPrepBoard({
   const align = isRTL ? ('right' as const) : ('left' as const);
   const done = rows.filter(r => r.done).length;
   const pct = rows.length ? done / rows.length : 0;
+  /*
+    Only the first missing row gets a filled button. Three identical outlined
+    «أنشئ» pills read as three equal choices; one filled one says "this next",
+    in the order a teacher prepares. The rest stay tappable (the whole row is
+    the target) and show a quiet link.
+  */
+  const nextType = disabled ? null : rows.find(r => !r.done)?.type ?? null;
 
   return (
     <View style={{ gap: compact ? 6 : 8, width: '100%' }}>
@@ -111,6 +118,11 @@ export function LessonPrepBoard({
                 },
               ]}
             >
+              {/*
+                The tile keeps the material's own icon when done — a bare tick
+                made every finished row look the same — and a corner badge
+                carries the "done".
+              */}
               <View
                 style={[
                   styles.tile,
@@ -119,10 +131,21 @@ export function LessonPrepBoard({
                 ]}
               >
                 <Ionicons
-                  name={(row.done ? 'checkmark' : row.icon) as keyof typeof Ionicons.glyphMap}
+                  name={row.icon as keyof typeof Ionicons.glyphMap}
                   size={compact ? 16 : 18}
                   color={row.done ? colors.primaryForeground : colors.primary}
                 />
+                {row.done ? (
+                  <View
+                    style={[
+                      styles.badge,
+                      isRTL ? { left: -5 } : { right: -5 },
+                      { backgroundColor: colors.card, borderColor: colors.primary },
+                    ]}
+                  >
+                    <Ionicons name="checkmark" size={10} color={colors.primary} />
+                  </View>
+                ) : null}
               </View>
               <View style={{ flex: 1, gap: 1 }}>
                 <Text numberOfLines={1} style={[styles.label, compact && styles.labelCompact, { color: colors.foreground, textAlign: align }]}>
@@ -137,14 +160,13 @@ export function LessonPrepBoard({
                   <Text style={[styles.ctaText, { color: colors.mutedForeground }]}>{openLabel}</Text>
                   <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={14} color={colors.mutedForeground} />
                 </View>
+              ) : row.type === nextType ? (
+                <View style={[styles.cta, styles.ctaMake, { flexDirection: rowDir, backgroundColor: colors.primary }]}>
+                  <Ionicons name="add" size={15} color={colors.primaryForeground} />
+                  <Text style={[styles.ctaText, { color: colors.primaryForeground }]}>{createLabel}</Text>
+                </View>
               ) : (
-                <View
-                  style={[
-                    styles.cta,
-                    styles.ctaMake,
-                    { flexDirection: rowDir, borderColor: disabled ? colors.border : colors.primary },
-                  ]}
-                >
+                <View style={[styles.cta, { flexDirection: rowDir }]}>
                   <Ionicons name="add" size={15} color={disabled ? colors.mutedForeground : colors.primary} />
                   <Text style={[styles.ctaText, { color: disabled ? colors.mutedForeground : colors.primary }]}>{createLabel}</Text>
                 </View>
@@ -159,8 +181,8 @@ export function LessonPrepBoard({
 
 const styles = StyleSheet.create({
   head: { alignItems: 'baseline', justifyContent: 'space-between' },
-  headTitle: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
-  headCount: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
+  headTitle: { fontSize: 15, fontFamily: 'Cairo_600SemiBold' },
+  headCount: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
   track: { height: 6, borderRadius: 3, overflow: 'hidden' },
   fill: { position: 'absolute', top: 0, bottom: 0, borderRadius: 3 },
   row: {
@@ -174,10 +196,20 @@ const styles = StyleSheet.create({
   rowCompact: { paddingVertical: 8, paddingHorizontal: 10, borderRadius: 12, gap: 10 },
   tile: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   tileCompact: { width: 34, height: 34, borderRadius: 9 },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   label: { fontSize: 14, fontFamily: 'Cairo_600SemiBold' },
-  labelCompact: { fontSize: 13 },
-  status: { fontSize: 11.5, lineHeight: 18, fontFamily: 'Almarai_400Regular' },
+  labelCompact: { fontSize: 13.5 },
+  status: { fontSize: 12.5, lineHeight: 19, fontFamily: 'Almarai_400Regular' },
   cta: { alignItems: 'center', gap: 3 },
-  ctaMake: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 },
-  ctaText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
+  ctaMake: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
+  ctaText: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
 });
