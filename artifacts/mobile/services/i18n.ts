@@ -462,6 +462,8 @@ const translations = {
     parentMsgHistoryNone: 'لم تراسل وليّ الأمر من اقرأ بعد.',
     parentMsgHistoryLast: 'آخر رسالة:',
     parentMsgHistoryRecent: 'آخر 30 يومًا:',
+    parentMsgHistoryRead: 'قرأها وليّ الأمر ✓',
+    parentMsgHistoryUnread: 'لم تُقرأ بعد',
     parentMsgHistorySuggestMeeting: 'هذه الرسالة الثالثة في الموضوع نفسه خلال شهر — قد تكون دعوة وليّ الأمر لاجتماع أجدى.',
     toolWorksheetTitle: 'ورقة عمل',
     toolWorksheetDesc: 'ورقة قابلة للطباعة لتمرين الطلبة داخل الصف — تدريب موجّه ومستقل.',
@@ -1308,6 +1310,7 @@ const translations = {
     parentContactsConcernOnly: (n: string) => `وصلت أسرَهم ملاحظاتٌ فقط، دون إشادة (${n})`,
     parentContactsAllGood: 'وصلت رسالةٌ إلى أسرة كل طالب خلال الشهر، ولم تقتصر أيٌّ منها على الملاحظات.',
     parentContactsTapHint: 'اضغط على اسم لكتابة رسالة لأسرته.',
+    parentContactsUnread: (n: string) => `رسالة داخل اقرأ لم تُفتح منذ يومين أو أكثر (${n})`,
     // Not «تحقّق سريع» and not «تذكرة الخروج» — the classroom-activity
     // generator already owns both of those (`activityType: 'quick-check'` and
     // `'exit-ticket'`). This one belongs to the evaluations family, produces a
@@ -2242,6 +2245,8 @@ const translations = {
     parentMsgHistoryNone: "You haven't written to this student's parents from Iqraa yet.",
     parentMsgHistoryLast: 'Last message:',
     parentMsgHistoryRecent: 'Last 30 days:',
+    parentMsgHistoryRead: 'Read by the parent ✓',
+    parentMsgHistoryUnread: 'Not read yet',
     parentMsgHistorySuggestMeeting: 'This is the third message on the same topic this month — inviting the parents to a meeting may work better.',
     toolWorksheetTitle: 'Worksheet',
     toolWorksheetDesc: 'A printable student practice sheet for class — guided and independent work.',
@@ -3057,6 +3062,7 @@ const translations = {
     parentContactsConcernOnly: (n: string) => `Parents have only heard concerns, no praise (${n})`,
     parentContactsAllGood: "Every student's family got a letter this month, and none has heard only concerns.",
     parentContactsTapHint: 'Tap a name to write to their family.',
+    parentContactsUnread: (n: string) => `In-app letter not opened for 2+ days (${n})`,
     miniEvalBtn: 'Quick evaluation',
     miniEvalTitle: 'Quick evaluation',
     miniEvalSubtitle: 'Three questions that mark themselves — no marks to enter',
