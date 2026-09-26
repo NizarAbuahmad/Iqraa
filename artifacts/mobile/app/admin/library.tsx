@@ -9,7 +9,7 @@
  * on every write (api-server routes/library.ts).
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextStyle } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextStyle } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -77,6 +77,7 @@ export default function LibraryAdminScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
   const [mode, setMode] = useState<'file' | 'link'>('file');
   const [picked, setPicked] = useState<Picked | null>(null);
   const [url, setUrl] = useState('');
@@ -109,6 +110,7 @@ export default function LibraryAdminScreen() {
     setDescription(item.description ?? '');
     setCategory(item.category);
     setThumbnailUrl(item.thumbnailUrl ?? '');
+    setThumbnailFailed(false);
     const s = item.semester;
     setScope(s === 1 ? 'semester-1' : s === 2 ? 'semester-2' : item.lessonId ? 'lesson' : 'all');
     setMode('link');
@@ -121,6 +123,7 @@ export default function LibraryAdminScreen() {
     setTitle('');
     setDescription('');
     setThumbnailUrl('');
+    setThumbnailFailed(false);
     setPicked(null);
     setUrl('');
     setMessage(null);
@@ -149,6 +152,13 @@ export default function LibraryAdminScreen() {
     };
     if (!editingId && (!meta.gradeId || !meta.subjectId || !meta.titleAr || (mode === 'file' ? !picked : !url.trim()))) {
       setMessage({ ok: false, text: t('libraryAdminMissing') });
+      return;
+    }
+    // Mirrors the server's own check (libraryResource.ts) — catching it here
+    // means the admin sees why instead of a save that "worked" but truncated
+    // a long signed URL into a dead link.
+    if (meta.thumbnailUrl && (meta.thumbnailUrl.length > 2000 || !/^https:\/\//.test(meta.thumbnailUrl))) {
+      setMessage({ ok: false, text: t('libraryAdminThumbnailBadUrl') });
       return;
     }
     if (!editingId && mode === 'file' && picked && picked.size > MAX_LIBRARY_FILE_BYTES) {
@@ -183,6 +193,7 @@ export default function LibraryAdminScreen() {
       setPicked(null);
       setUrl('');
       setThumbnailUrl('');
+      setThumbnailFailed(false);
       reload();
     } catch (err) {
       setMessage({ ok: false, text: err instanceof Error ? err.message : String(err) });
@@ -290,7 +301,28 @@ export default function LibraryAdminScreen() {
       <Text style={label}>{t('libraryAdminDescription')}</Text>
       <TextInput value={description} onChangeText={setDescription} style={[...input, { minHeight: 70 }]} multiline maxLength={1000} />
       <Text style={label}>{t('libraryAdminThumbnail')}</Text>
-      <TextInput value={thumbnailUrl} onChangeText={setThumbnailUrl} style={input} autoCapitalize="none" keyboardType="url" placeholder="https://" />
+      <TextInput
+        value={thumbnailUrl}
+        onChangeText={v => { setThumbnailUrl(v); setThumbnailFailed(false); }}
+        style={input}
+        autoCapitalize="none"
+        keyboardType="url"
+        placeholder="https://"
+      />
+      {thumbnailUrl.trim() ? (
+        thumbnailFailed ? (
+          <Text style={[styles.hint, { color: '#B42318', textAlign: align, marginBottom: 8 }]}>
+            {t('libraryAdminThumbnailPreviewFailed')}
+          </Text>
+        ) : (
+          <Image
+            source={{ uri: thumbnailUrl.trim() }}
+            style={[styles.thumbPreview, { borderColor: colors.border, borderRadius: colors.radius }]}
+            resizeMode="cover"
+            onError={() => setThumbnailFailed(true)}
+          />
+        )
+      ) : null}
 
       <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row', marginTop: 8 }]}>
         {(['file', 'link'] as const).map(m => (
@@ -392,6 +424,7 @@ const styles = StyleSheet.create({
   title: { flex: 1, fontSize: 20, fontFamily: 'Cairo_700Bold' },
   label: { fontSize: 14, fontFamily: 'Cairo_500Medium', marginBottom: 6, marginTop: 6 },
   input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, fontFamily: 'Almarai_400Regular', marginBottom: 8 },
+  thumbPreview: { width: 120, height: 90, borderWidth: 1, marginBottom: 8 },
   chips: { flexWrap: 'wrap', gap: 8, marginBottom: 10 },
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
   pickBtn: { alignItems: 'center', gap: 10, borderWidth: 1.5, borderStyle: 'dashed', padding: 16 },
