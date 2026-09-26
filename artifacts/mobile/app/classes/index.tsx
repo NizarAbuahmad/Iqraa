@@ -17,7 +17,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -39,6 +40,16 @@ import { palette } from '@/constants/colors';
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
+
+const CLASSES_QUERY_KEY = ['classes'] as const;
+/**
+ * This screen is stack-pushed (Profile → Classes, Teaching Plans → Classes),
+ * so every visit used to be a fresh mount that re-earned the roster over the
+ * network before painting anything. A minute of cache means a quick back-and
+ * -forth (the common case — check a class, go back, open another) paints
+ * instantly from the last fetch instead of blanking to a spinner again.
+ */
+const CLASSES_STALE_MS = 60_000;
 
 /** A class's subject for the list card. Empty when unset or off-catalog. */
 function subjectName(subjectId: string | undefined, lang: string): string {
@@ -128,9 +139,8 @@ function ClassesList() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  const queryClient = useQueryClient();
 
-  const [classes, setClasses] = useState<ClassGroup[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
@@ -177,22 +187,17 @@ function ClassesList() {
     [t],
   );
 
-  const load = useCallback(async () => {
-    setError('');
-    try {
-      setClasses(await listClasses());
-    } catch (err) {
-      setError(describe(err, 'rosterLoadFailed'));
-    } finally {
-      setLoading(false);
-    }
-  }, [describe]);
-
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
+  const {
+    data: classes = [],
+    isLoading: loading,
+    isError: loadFailed,
+    error: loadErrorRaw,
+  } = useQuery({
+    queryKey: CLASSES_QUERY_KEY,
+    queryFn: listClasses,
+    staleTime: CLASSES_STALE_MS,
+  });
+  const loadError = loadFailed ? describe(loadErrorRaw, 'rosterLoadFailed') : '';
 
   const onDelete = async (group: ClassGroup) => {
     const name = lang === 'ar' && group.nameAr ? group.nameAr : group.name;
@@ -211,7 +216,9 @@ function ClassesList() {
       // Drop it only once the archive actually persisted. Removing it
       // optimistically made a failed delete look done until the next focus
       // put the class straight back — the same trap the materials list hit.
-      setClasses(prev => prev.filter(c => c.id !== group.id));
+      queryClient.setQueryData<ClassGroup[]>(CLASSES_QUERY_KEY, prev =>
+        (prev ?? []).filter(c => c.id !== group.id),
+      );
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err) {
       setError(describe(err, 'rosterLoadFailed'));
@@ -236,7 +243,7 @@ function ClassesList() {
       setNewName('');
       setNewGradeId(teacherScope.defaultIds.gradeId);
       setNewSubjectId('');
-      setClasses(prev => [...prev, created]);
+      queryClient.setQueryData<ClassGroup[]>(CLASSES_QUERY_KEY, prev => [...(prev ?? []), created]);
       router.push({ pathname: '/classes/[id]', params: { id: created.id } });
     } catch (err) {
       setError(describe(err, 'rosterCreateFailed'));
@@ -245,6 +252,9 @@ function ClassesList() {
     }
   };
 
+  // An action error (create/delete) takes priority over a stale load error —
+  // it's the more recent thing the teacher is looking at.
+  const displayError = error || loadError;
   const align = isRTL ? 'right' : 'left';
   const viewportW = useViewportWidth();
   const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
@@ -282,7 +292,7 @@ function ClassesList() {
           contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 12 }, centered]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            error ? (
+            displayError ? (
               <View style={[styles.errorBox, { borderColor: colors.destructive }]}>
                 <Ionicons name="cloud-offline-outline" size={18} color={colors.destructive} />
                 <Text
@@ -293,13 +303,13 @@ function ClassesList() {
                     textAlign: align,
                   }}
                 >
-                  {error}
+                  {displayError}
                 </Text>
               </View>
             ) : null
           }
           ListEmptyComponent={
-            error ? null : (
+            displayError ? null : (
               <View style={styles.empty}>
                 <Ionicons name="people-outline" size={40} color={colors.mutedForeground} />
                 <Text
