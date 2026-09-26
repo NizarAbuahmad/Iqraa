@@ -12,11 +12,13 @@ import {
   MAX_DURATION_MINUTES,
   MAX_NOTES_LENGTH,
   MAX_PERIOD_NUMBER,
+  MAX_SCHOOL_NAME_LENGTH,
   isValidDayOfWeek,
   isValidDurationMinutes,
   isValidPeriodNumber,
   isValidTimeOfDay,
   parsePeriodInput,
+  parseSchoolName,
   parseSlotInput,
 } from "../schedule.ts";
 
@@ -101,6 +103,28 @@ describe("parsePeriodInput", () => {
     assert.match(
       rejects(() => parsePeriodInput({ startTime: "08:00", durationMinutes: 0 })),
       /durationMinutes must be/,
+    );
+  });
+});
+
+describe("parseSchoolName", () => {
+  it("reads an omitted or null school as the unnamed default", () => {
+    assert.equal(parseSchoolName(undefined), "");
+    assert.equal(parseSchoolName(null), "");
+  });
+
+  // Both are part of a unique key: "مدرسة النور " and "مدرسة  النور" must not
+  // become two schools with the same visible name.
+  it("trims and collapses inner whitespace", () => {
+    assert.equal(parseSchoolName("  مدرسة   النور "), "مدرسة النور");
+    assert.equal(parseSchoolName("   "), "");
+  });
+
+  it("rejects a non-string or an over-long name", () => {
+    assert.match(rejects(() => parseSchoolName(5)), /schoolName must be a string/);
+    assert.match(
+      rejects(() => parseSchoolName("a".repeat(MAX_SCHOOL_NAME_LENGTH + 1))),
+      /at most 80 characters/,
     );
   });
 });

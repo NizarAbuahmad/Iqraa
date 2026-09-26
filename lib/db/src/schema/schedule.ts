@@ -15,6 +15,12 @@
  * العاشر ب" (one row per day×period). Folding them into one table would mean
  * a school moving period 3 to 9:40 requires updating up to seven rows instead
  * of one.
+ *
+ * `schoolName` splits both tables per school: a teacher who works in two
+ * schools has two bell schedules, and "الحصة 3" means a different time in
+ * each. It is plain text like `teachingPlans.schoolName`, not a schools
+ * table — "" is the unnamed default every pre-existing row belongs to, and a
+ * rename is one UPDATE per table (routes/schedule.ts, PUT /schedule/schools).
  */
 import { pgTable, text, timestamp, uuid, integer, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -29,7 +35,8 @@ export const schedulePeriods = pgTable(
     teacherId: uuid("teacher_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    /** 1-based, and the only thing `scheduleSlots` uses to find this row's time. */
+    schoolName: text("school_name").notNull().default(""),
+    /** 1-based; with `schoolName`, the only thing `scheduleSlots` uses to find this row's time. */
     periodNumber: integer("period_number").notNull(),
     /** "HH:MM", 24-hour. Free text like every other time/date field in this
      *  schema (`teachingPlans.time`) — validated at the API boundary, not here. */
@@ -39,9 +46,9 @@ export const schedulePeriods = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   t => [
-    // One time for period N per teacher — this is what makes "the time" a
-    // single fact instead of one copy per weekday.
-    uniqueIndex("schedule_periods_teacher_period_idx").on(t.teacherId, t.periodNumber),
+    // One time for period N per teacher per school — this is what makes "the
+    // time" a single fact instead of one copy per weekday.
+    uniqueIndex("schedule_periods_teacher_school_period_idx").on(t.teacherId, t.schoolName, t.periodNumber),
   ],
 );
 
@@ -52,6 +59,7 @@ export const scheduleSlots = pgTable(
     teacherId: uuid("teacher_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    schoolName: text("school_name").notNull().default(""),
     /** 0 = Sunday .. 6 = Saturday, matching `Date#getDay()` and the app's own
      *  weekday convention (see artifacts/mobile/services/planEntries.ts). */
     dayOfWeek: integer("day_of_week").notNull(),
@@ -73,8 +81,14 @@ export const scheduleSlots = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   t => [
-    // One class per day+period per teacher — this IS the grid's shape.
-    uniqueIndex("schedule_slots_teacher_day_period_idx").on(t.teacherId, t.dayOfWeek, t.periodNumber),
+    // One class per day+period per teacher per school — this IS the grid's
+    // shape. Morning and evening schools can both have a Sunday period 1.
+    uniqueIndex("schedule_slots_teacher_school_day_period_idx").on(
+      t.teacherId,
+      t.schoolName,
+      t.dayOfWeek,
+      t.periodNumber,
+    ),
     index("schedule_slots_class_idx").on(t.classGroupId),
   ],
 );
