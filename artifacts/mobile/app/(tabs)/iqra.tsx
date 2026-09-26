@@ -30,6 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import {
   KBLesson,
   getBookForLesson,
@@ -1338,6 +1339,7 @@ export default function IqraScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useSafeTabBarHeight();
   const { t, lang, isRTL } = useLanguage();
+  const { user } = useAuth();
   const params = useLocalSearchParams<{
     initialMessage?: string;
     lessonId?: string;
@@ -1720,8 +1722,13 @@ export default function IqraScreen() {
         setSessionMemory(prev => softPinIfUnpinned(prev, restored));
       }
     });
+  // `user?.id`: the pick is stored per user, and a page reload straight onto
+  // /iqra ran this before sign-in was restored — it read the unscoped key, got
+  // nothing, and the chat sat on the grade 10 default while the sidebar (which
+  // already re-reads on user change) showed the teacher's real lesson. "make
+  // me a quiz" then asked which subject instead of using it.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
+  }, [lang, user?.id]);
 
   useEffect(() => {
     teachingCtxRef.current = teachingCtx;
