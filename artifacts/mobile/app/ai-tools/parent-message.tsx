@@ -436,6 +436,15 @@ export default function ParentMessageScreen() {
               have today. Collapsing them into one «أرسل» would mean the same
               tap sometimes reaches a parent and sometimes only fills a
               clipboard, with nothing on screen to say which. */}
+          {/* Above the button, not under it: the teacher reads this before the
+              tap — either who the letter will reach, or why it can't. */}
+          {ready ? (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 12, textAlign: isRTL ? 'right' : 'left' }}>
+              {guardians.length > 0
+                ? t('parentMsgRecipients', guardians.map(g => `${g.firstName} ${g.lastName}`).join('، '))
+                : pickedStudentId ? t('parentMsgNoGuardian') : t('parentMsgPickForSend')}
+            </Text>
+          ) : null}
           <Pressable
             onPress={onSendInApp}
             disabled={!canSendInApp}
@@ -451,12 +460,6 @@ export default function ParentMessageScreen() {
               : <Ionicons name="paper-plane-outline" size={18} color="#fff" />}
             <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 14 }}>{t('parentMsgSendInApp')}</Text>
           </Pressable>
-
-          {ready && guardians.length === 0 ? (
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 17, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
-              {pickedStudentId ? t('parentMsgNoGuardian') : t('parentMsgPickForSend')}
-            </Text>
-          ) : null}
 
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10, marginTop: 10 }}>
             <Pressable
