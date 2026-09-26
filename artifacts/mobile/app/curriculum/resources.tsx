@@ -41,6 +41,7 @@ import { narrowSubjectsForGrade, narrowToSelection } from '@/services/teacherCat
 import { listLibrary, type LibraryCategory, type LibraryItem } from '@/services/libraryApi';
 import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
+import { buildWorksheetHTML, exportAsPDF } from '@/services/share';
 import { qrResourcesForGrade } from '@/services/bookQrLinks';
 import {
   buildResourceCatalog,
@@ -118,21 +119,55 @@ const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
-function ResourceRow({ item, accent }: { item: ResourceItem; accent: string }) {
+/**
+ * One row. `showKind` is off inside a single-kind section: a heading that
+ * already says «أوراق عمل» does not need every row underneath repeating it.
+ */
+function ResourceRow({ item, accent, showKind = true }: { item: ResourceItem; accent: string; showKind?: boolean }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
-  const title = lang === 'ar' ? item.titleAr : item.titleEn;
+  const isAr = lang === 'ar';
+  const title = isAr ? item.titleAr : item.titleEn;
   const page =
     item.page === undefined
       ? null
-      : lang === 'ar'
+      : isAr
         ? item.page.toLocaleString('ar-EG')
         : String(item.page);
+  const printable = item.actions.includes('print');
+
+  // A frozen sheet has no URL: it is rendered on the spot and handed to the
+  // print/share sheet, the same path the worksheet generator's PDF export takes.
+  const printSheet = () => {
+    const sheet = allPremade().find(s => s.id === item.nativeId);
+    if (!sheet) return;
+    const grade = getVisibleGrades().find(g => g.id === sheet.gradeId);
+    const subject = getSubjectsForGrade(sheet.gradeId).find(s => s.id === sheet.subjectId);
+    const html = buildWorksheetHTML(
+      sheet.content,
+      title,
+      {
+        subject: subject ? (isAr ? subject.nameAr : subject.name) : '',
+        grade: grade ? (isAr ? grade.nameAr : grade.name) : '',
+      },
+      isAr,
+    );
+    void exportAsPDF(html, `${title}.pdf`);
+  };
 
   const onPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (item.url) void openExternal(item.url);
+    else if (printable) printSheet();
   };
+
+  const trailingIcon = item.url
+    ? 'open-outline'
+    : printable
+      ? 'print-outline'
+      : isRTL
+        ? 'chevron-back'
+        : 'chevron-forward';
 
   return (
     <Pressable
@@ -152,9 +187,11 @@ function ResourceRow({ item, accent }: { item: ResourceItem; accent: string }) {
     >
       <View style={[styles.kindPill, { backgroundColor: accent + '15', borderColor: accent + '30' }]}>
         <Ionicons name={KIND_ICON[item.kind]} size={14} color={accent} />
-        <Text style={[styles.kindText, { color: accent, fontFamily: 'Cairo_500Medium' }]}>
-          {t(KIND_LABEL[item.kind])}
-        </Text>
+        {showKind ? (
+          <Text style={[styles.kindText, { color: accent, fontFamily: 'Cairo_500Medium' }]}>
+            {t(KIND_LABEL[item.kind])}
+          </Text>
+        ) : null}
       </View>
       <View style={{ flex: 1 }}>
         <Text
@@ -187,11 +224,7 @@ function ResourceRow({ item, accent }: { item: ResourceItem; accent: string }) {
           </Text>
         ) : null}
       </View>
-      <Ionicons
-        name={item.url ? 'open-outline' : 'chevron-forward'}
-        size={16}
-        color={colors.mutedForeground}
-      />
+      <Ionicons name={trailingIcon} size={16} color={colors.mutedForeground} />
     </Pressable>
   );
 }
@@ -475,7 +508,7 @@ export default function ResourcesScreen() {
               ) : (
                 <View style={styles.rows}>
                   {section.items.map(item => (
-                    <ResourceRow key={item.key} item={item} accent={ACCENT} />
+                    <ResourceRow key={item.key} item={item} accent={ACCENT} showKind={false} />
                   ))}
                 </View>
               )}

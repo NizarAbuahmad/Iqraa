@@ -268,7 +268,7 @@ const translations = {
     // out, in one place. The book QR codes above are one shelf of it.
     resourcesTitle: 'المكتبة',
     resourcesIntro:
-      'قوالبُ جاهزة، وأوراقٌ للطباعة، وأنشطةٌ صفّية، ووسائطُ المنهج من صوتٍ وفيديو وصور، ومصادرُ الكتب — مرتّبةً حسب الصف. اختر ما يناسب درسك.',
+      'أوراق عمل وفيديوهات وصور وأنشطة ومصادر الكتب، جاهزة للاستخدام. اختر الصف والمادة والدرس ليظهر ما يخصّه.',
     resourcesAllSubjects: 'كل المواد',
     libraryCatInfographic: 'إنفوجرافيك',
     libraryCatImage: 'صورة',
@@ -312,7 +312,7 @@ const translations = {
     libraryAdminDeleteConfirm: 'حذف هذا المورد من المكتبة لكل المعلمين؟',
     libraryAdminNotAllowed: 'هذه الصفحة لفريق اقرأ فقط.',
     resourcesCount: (n: number) => arCountPhrase(n, 'مورد', 'موردان', 'موارد'),
-    resourcesEmpty: 'لا توجد موارد مطابقة لهذا التصفية.',
+    resourcesEmpty: 'لا توجد موارد تطابق هذا الاختيار. جرّب صفًّا أو مادة أو نوعًا آخر.',
     resourcesAllLessons: 'كل الدروس',
     sectionPremadeSheets: 'أوراق عمل جاهزة',
     sectionActivities: 'أنشطة وألعاب صفّية',
@@ -2001,7 +2001,7 @@ const translations = {
     qrKindPage: 'Web page',
     resourcesTitle: 'Library',
     resourcesIntro:
-      'Ready-made templates, printable worksheets, classroom activities, curriculum audio, video and images, and the book resources — by grade. Pick what suits your lesson.',
+      'Worksheets, videos, photos, activities and book resources, ready to use. Pick a grade, subject and lesson to see what belongs to it.',
     resourcesAllSubjects: 'All subjects',
     libraryCatInfographic: 'Infographic',
     libraryCatImage: 'Photo',
@@ -2045,7 +2045,7 @@ const translations = {
     libraryAdminDeleteConfirm: 'Delete this resource from the library for every teacher?',
     libraryAdminNotAllowed: 'This page is for the Iqraa team only.',
     resourcesCount: (n: number) => `${n} resource${n === 1 ? '' : 's'}`,
-    resourcesEmpty: 'Nothing matches this filter.',
+    resourcesEmpty: 'Nothing matches this selection. Try another grade, subject or type.',
     resourcesAllLessons: 'All lessons',
     sectionPremadeSheets: 'Ready-made worksheets',
     sectionActivities: 'Classroom activities',
