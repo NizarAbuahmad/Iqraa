@@ -25,6 +25,7 @@ import {
   needsDetails,
   seedDetailsFromNote,
   suggestMeeting,
+  summarizeClassContacts,
   summarizeContacts,
   type MessageKind,
   type ParentMessageInput,
@@ -314,5 +315,49 @@ describe('summarizeContacts / suggestMeeting', () => {
       { kind: 'praise', createdAt: daysAgo(2) },
     ], NOW);
     assert.equal(suggestMeeting(praise, 'praise'), false);
+  });
+});
+
+describe('summarizeClassContacts', () => {
+  const NOW = new Date('2026-09-25T12:00:00Z');
+  const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86_400_000).toISOString();
+  const ROSTER = [
+    { id: 'a', displayName: 'Amal' },
+    { id: 'b', displayName: 'Basel' },
+    { id: 'c', displayName: 'Carim' },
+    { id: 'd', displayName: 'Dana' },
+  ];
+
+  it('lists never-contacted students first, then the longest silence, and skips recent ones', () => {
+    const s = summarizeClassContacts(ROSTER, [
+      { studentId: 'a', kind: 'praise', createdAt: daysAgo(3) },
+      { studentId: 'b', kind: 'absence', createdAt: daysAgo(40) },
+      { studentId: 'c', kind: 'absence', createdAt: daysAgo(90) },
+    ], NOW);
+    assert.deepEqual(s.quiet.map(q => q.id), ['d', 'c', 'b']);
+    assert.equal(s.quiet[0].lastAt, null);
+  });
+
+  it('flags students whose parents only ever got concerns, most concerns first', () => {
+    const s = summarizeClassContacts(ROSTER, [
+      { studentId: 'a', kind: 'absence', createdAt: daysAgo(3) },
+      { studentId: 'a', kind: 'praise', createdAt: daysAgo(2) },
+      { studentId: 'b', kind: 'behaviour', createdAt: daysAgo(5) },
+      { studentId: 'c', kind: 'missing-homework', createdAt: daysAgo(5) },
+      { studentId: 'c', kind: 'absence', createdAt: daysAgo(6) },
+      { studentId: 'd', kind: 'meeting', createdAt: daysAgo(1) },
+    ], NOW);
+    assert.deepEqual(s.concernOnly.map(x => [x.id, x.concerns]), [['c', 2], ['b', 1]]);
+    // A meeting invitation is neither praise nor concern.
+    assert.equal(s.positive, 1);
+    assert.equal(s.concern, 4);
+  });
+
+  it('ignores log rows for students no longer on the roster', () => {
+    const s = summarizeClassContacts([{ id: 'a', displayName: 'Amal' }], [
+      { studentId: 'gone', kind: 'absence', createdAt: daysAgo(1) },
+    ], NOW);
+    assert.deepEqual(s.concernOnly, []);
+    assert.deepEqual(s.quiet.map(q => q.id), ['a']);
   });
 });
