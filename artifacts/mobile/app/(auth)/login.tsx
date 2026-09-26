@@ -188,7 +188,11 @@ export default function LoginScreen() {
 
         <Pressable
           onPress={() => router.push('/(auth)/forgot-password' as any)}
-          style={{ alignSelf: isRTL ? 'flex-start' : 'flex-end', paddingVertical: 4 }}
+          // Pulled up against the password field it belongs to: the form's
+          // 14px gap plus Input's own 16px bottom margin left it floating
+          // nearer the sign-in button than its field. The button's marginTop
+          // opens the gap on the other side.
+          style={{ alignSelf: isRTL ? 'flex-start' : 'flex-end', paddingVertical: 4, marginTop: -24 }}
           accessibilityRole="link"
         >
           <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
@@ -246,5 +250,5 @@ const styles = StyleSheet.create({
   dividerLine: { flex: 1, height: 1 },
   dividerText: { fontSize: 12, lineHeight: 19 },
   googleLoadingText: { fontSize: 12, lineHeight: 19, textAlign: 'center', marginTop: -6 },
-  signInBtn: { marginTop: 4 },
+  signInBtn: { marginTop: 12 },
 });
