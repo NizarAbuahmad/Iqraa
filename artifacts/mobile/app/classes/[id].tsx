@@ -43,6 +43,7 @@ import {
   generateJoinCode,
   getClass,
   getClassMastery,
+  listClassParentContacts,
   parseStudentNames,
   removeStudentFromClass,
   updateClass,
@@ -67,6 +68,7 @@ import { confirm } from '@/services/confirm';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
+import { summarizeClassContacts, type ClassContactSummary } from '@/services/parentMessage';
 import { palette } from '@/constants/colors';
 
 const ACCENT = palette.primary;
@@ -107,6 +109,8 @@ export default function ClassDetailScreen() {
   const [attachingId, setAttachingId] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState(0);
   const [mastery, setMastery] = useState<ClassMastery | null>(null);
+  /** Null until loaded, or when the log can't be read — the card then hides. */
+  const [parentContacts, setParentContacts] = useState<{ studentId: string; kind: string; createdAt: string }[] | null>(null);
   const [noteStudent, setNoteStudent] = useState<RosterStudent | null>(null);
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
@@ -156,7 +160,14 @@ export default function ClassDetailScreen() {
     // A class with no marked attempts yet answers with empty objectives, which
     // the section renders as "nothing yet" rather than as an error.
     setMastery(await getClassMastery(id).catch(() => null));
+    // Same rule: the contact card is advice, never a reason to fail the roster.
+    setParentContacts(await listClassParentContacts(id).catch(() => null));
   }, [id, describe]);
+
+  const contactSummary = useMemo(
+    () => (parentContacts ? summarizeClassContacts(students, parentContacts, new Date()) : null),
+    [students, parentContacts],
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -555,7 +566,14 @@ export default function ClassDetailScreen() {
           keyExtractor={s => s.id}
           contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={errorBanner}
+          ListHeaderComponent={
+            <View style={{ gap: 10 }}>
+              {errorBanner}
+              {students.length > 0 && (
+                <ParentContactSection summary={contactSummary} colors={colors} isRTL={isRTL} align={align} t={t} />
+              )}
+            </View>
+          }
           ListEmptyComponent={
             error ? null : empty('person-add-outline', 'noStudentsYet', 'noStudentsDesc')
           }
@@ -1424,6 +1442,87 @@ function MasterySection({
             )}
           </View>
         ))
+      )}
+    </View>
+  );
+}
+
+/**
+ * Who in this class hasn't heard from school lately, and whose family has
+ * only ever heard bad news — read off the parent-message log. Each name opens
+ * the letter screen with that student already picked; for a concern-only
+ * family it starts on «إشادة وتقدير», because that is the letter that's missing.
+ */
+function ParentContactSection({
+  summary, colors, isRTL, align, t,
+}: {
+  summary: ClassContactSummary | null;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  align: 'left' | 'right';
+  t: (key: any, ...args: any[]) => string;
+}) {
+  if (!summary) return null;
+  const MAX_NAMES = 8;
+
+  const names = (list: { id: string; displayName: string }[], kind?: string) => (
+    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6 }}>
+      {list.slice(0, MAX_NAMES).map(s => (
+        <Pressable
+          key={s.id}
+          onPress={() => router.push({
+            pathname: '/ai-tools/parent-message',
+            params: { studentId: s.id, studentName: s.displayName, ...(kind ? { kind } : {}) },
+          })}
+          style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, borderWidth: 1, borderColor: colors.border }}
+        >
+          <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{s.displayName}</Text>
+        </Pressable>
+      ))}
+      {list.length > MAX_NAMES && (
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, alignSelf: 'center' }}>
+          {`+${list.length - MAX_NAMES}`}
+        </Text>
+      )}
+    </View>
+  );
+
+  const label = (text: string) => (
+    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+      {text}
+    </Text>
+  );
+  const allGood = summary.quiet.length === 0 && summary.concernOnly.length === 0;
+
+  return (
+    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10, flexDirection: 'column', alignItems: 'stretch' }]}>
+      <View style={{ gap: 2 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+          {t('parentContactsTitle')}
+        </Text>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
+          {t('parentContactsBalance', String(summary.positive), String(summary.concern))}
+        </Text>
+      </View>
+
+      {allGood ? label(t('parentContactsAllGood')) : (
+        <>
+          {summary.concernOnly.length > 0 && (
+            <View style={{ gap: 6 }}>
+              {label(t('parentContactsConcernOnly', String(summary.concernOnly.length)))}
+              {names(summary.concernOnly, 'praise')}
+            </View>
+          )}
+          {summary.quiet.length > 0 && (
+            <View style={{ gap: 6 }}>
+              {label(t('parentContactsQuiet', String(summary.quiet.length)))}
+              {names(summary.quiet)}
+            </View>
+          )}
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10, lineHeight: 16, textAlign: align }}>
+            {t('parentContactsTapHint')}
+          </Text>
+        </>
       )}
     </View>
   );

@@ -29,6 +29,8 @@ const upload = (patch: Partial<LibraryItem>): LibraryItem => ({
   sizeBytes: 1000,
   isLink: false,
   url: 'https://pub.example/library/u1.png',
+  semester: null,
+  thumbnailUrl: null,
   createdAt: '2026-09-25T00:00:00Z',
   ...patch,
 });
