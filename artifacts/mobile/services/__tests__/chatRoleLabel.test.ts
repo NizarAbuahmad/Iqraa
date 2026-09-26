@@ -52,7 +52,7 @@ describe('chatRoleLabel', () => {
     // than drifting into a second copy of the translation.
     const ar = getT('ar');
     assert.equal(chatRoleLabel('student', ar), 'طالب/ة');
-    assert.equal(chatRoleLabel('parent', ar), 'ولي أمر');
+    assert.equal(chatRoleLabel('parent', ar), 'وليّ أمر');
     assert.equal(chatRoleLabel('teacher', ar), 'معلم');
     assert.equal(chatRoleLabel('school_admin', ar), 'مدير المدرسة');
 
@@ -60,6 +60,6 @@ describe('chatRoleLabel', () => {
     assert.equal(chatRoleLabel('student', en), 'Student');
     assert.equal(chatRoleLabel('parent', en), 'Parent');
     assert.equal(chatRoleLabel('teacher', en), 'Teacher');
-    assert.equal(chatRoleLabel('school_admin', en), 'School Admin');
+    assert.equal(chatRoleLabel('school_admin', en), 'School admin');
   });
 });

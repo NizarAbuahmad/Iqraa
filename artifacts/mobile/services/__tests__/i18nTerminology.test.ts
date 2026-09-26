@@ -32,7 +32,7 @@ import assert from 'node:assert/strict';
 import translations from '../i18n.ts';
 
 /** Each ban carries the reason, so a failure explains itself without git log. */
-const BANNED: Array<{ term: string; use: string; why: string }> = [
+const BANNED: Array<{ term: string; use: string; why: string; exact?: boolean }> = [
   {
     term: 'رمز الصف',
     use: 'رمز الربط',
@@ -76,6 +76,35 @@ const BANNED: Array<{ term: string; use: string; why: string }> = [
     use: 'نتاجات التعلّم',
     why: "the NCCD's own term, and it separates outcomes from «الأهداف التعليمية»",
   },
+  // The 2026-09-26 bilingual copy review. Each of these was live in the
+  // English table alongside its replacement.
+  {
+    term: 'IQRA',
+    use: 'Iqraa',
+    why: 'one English spelling of the brand — the domain, the emails and the store listing say Iqraa',
+    // Case-sensitive: folded, "iqra" is a substring of every "Iqraa".
+    exact: true,
+  },
+  {
+    term: 'roster',
+    use: 'class list',
+    why: 'a teacher never says roster; the Arabic is «قائمة الطلبة»',
+  },
+  {
+    term: 'guardian',
+    use: 'parent',
+    why: 'the rest of the table says parent; the Arabic is «وليّ الأمر» either way',
+  },
+  {
+    term: 'please ',
+    use: 'the bare imperative',
+    why: 'the Arabic never says «يرجى»; every other error in the table is a plain instruction',
+  },
+  {
+    term: 'اً',
+    use: 'ًا',
+    why: 'tanwīn goes on the letter before the alif, as the other ~90 strings write it',
+  },
 ];
 
 /** Strings as themselves; functions as their source, which holds the literal. */
@@ -84,7 +113,7 @@ function renderedText(value: unknown): string {
 }
 
 describe('i18n terminology', () => {
-  for (const { term, use, why } of BANNED) {
+  for (const { term, use, why, exact } of BANNED) {
     it(`never renders «${term}» — say «${use}»`, () => {
       const offenders: string[] = [];
 
@@ -92,7 +121,8 @@ describe('i18n terminology', () => {
         for (const [key, value] of Object.entries(table as Record<string, unknown>)) {
           // Case-insensitive so "Class code" at the start of a sentence is
           // caught; Arabic is unaffected by the fold.
-          if (renderedText(value).toLowerCase().includes(term.toLowerCase())) {
+          const text = renderedText(value);
+          if (exact ? text.includes(term) : text.toLowerCase().includes(term.toLowerCase())) {
             offenders.push(`${lang}.${key}`);
           }
         }

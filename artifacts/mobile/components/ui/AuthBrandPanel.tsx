@@ -71,7 +71,7 @@ export function AuthBrandPanel({ isWide }: { isWide: boolean }) {
           variant="mark"
           onDark
           style={[styles.logo, isWide ? styles.logoWide : styles.logoNarrow]}
-          accessibilityLabel="IQRA"
+          accessibilityLabel="Iqraa"
         />
 
         <Text
