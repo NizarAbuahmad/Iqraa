@@ -56,6 +56,8 @@ type Props = {
    * on a phone it is a full-bleed band and this stays undefined.
    */
   containerStyle?: ViewStyle;
+  /** Remove the current lesson (un-pin). */
+  onClear?: () => void;
   /**
    * Drop the «٣/٥» pill.
    *
@@ -83,6 +85,7 @@ export function CurrentLessonCard({
   onChangeLesson,
   onToggleCollapse,
   containerStyle,
+  onClear,
   hideCount = false,
 }: Props) {
   const align = isRTL ? 'right' : 'left' as const;
@@ -216,6 +219,17 @@ export function CurrentLessonCard({
             ) : null}
             <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
           </Pressable>
+          {onClear ? (
+            <Pressable
+              onPress={onClear}
+              hitSlop={8}
+              style={({ pressed }) => [styles.clearBtn, { opacity: pressed ? 0.7 : 1 }]}
+              accessibilityRole="button"
+              accessibilityLabel="إلغاء تثبيت الدرس"
+            >
+              <Ionicons name="close" size={14} color={colors.mutedForeground} />
+            </Pressable>
+          ) : null}
         </View>
         {errorStrip}
       </View>
@@ -312,6 +326,18 @@ export function CurrentLessonCard({
               {changeLabel}
             </Text>
           </Pressable>
+
+          {onClear ? (
+            <Pressable
+              onPress={onClear}
+              hitSlop={8}
+              style={({ pressed }) => [styles.clearBtnExpanded, { opacity: pressed ? 0.7 : 1 }]}
+              accessibilityRole="button"
+              accessibilityLabel="إلغاء تثبيت الدرس"
+            >
+              <Ionicons name="close" size={14} color={colors.mutedForeground} />
+            </Pressable>
+          ) : null}
         </View>
 
         {errorStrip}
@@ -461,5 +487,21 @@ const styles = StyleSheet.create({
   changeBtnText: {
     fontFamily: 'Cairo_600SemiBold',
     fontSize: 12,
+  },
+  clearBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  clearBtnExpanded: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
 });
