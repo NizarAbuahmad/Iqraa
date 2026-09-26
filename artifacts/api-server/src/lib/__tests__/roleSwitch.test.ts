@@ -18,6 +18,7 @@ const base: RoleSwitchInput = {
   requestedRole: "teacher",
   studentAccountsEnabled: true,
   hasRosterLink: async () => false,
+  hasTeachingData: async () => false,
 };
 
 const decide = (over: Partial<RoleSwitchInput>) => decideRoleSwitch({ ...base, ...over });
@@ -43,8 +44,28 @@ describe("decideRoleSwitch", () => {
     }
   });
 
-  it("refuses a teacher — this is not a way out of a teacher account", async () => {
-    const d = await decide({ currentRole: "teacher", requestedRole: "parent" });
+  it("lets a teacher with no classes or students become a parent or student", async () => {
+    for (const requestedRole of ["parent", "student"] as const) {
+      assert.deepEqual(
+        await decide({ currentRole: "teacher", requestedRole }),
+        { ok: true, role: requestedRole, changed: true },
+      );
+    }
+  });
+
+  it("refuses a teacher who owns a class or a student", async () => {
+    const d = await decide({ currentRole: "teacher", requestedRole: "parent", hasTeachingData: async () => true });
+    assert.equal(d.ok === false && d.code, "role_locked_teaching");
+    assert.equal(d.ok === false && d.status, 409);
+  });
+
+  it("refuses a teacher moving into parent/student while student accounts are off", async () => {
+    const d = await decide({ currentRole: "teacher", requestedRole: "parent", studentAccountsEnabled: false });
+    assert.equal(d.ok === false && d.code, "student_accounts_disabled");
+  });
+
+  it("refuses an account that is none of the three (admins)", async () => {
+    const d = await decide({ currentRole: "admin", requestedRole: "parent" });
     assert.equal(d.ok === false && d.code, "role_locked");
     assert.equal(d.ok === false && d.status, 403);
   });
@@ -64,7 +85,7 @@ describe("decideRoleSwitch", () => {
     assert.equal(calls, 1);
     calls = 0;
     await decide({ requestedRole: "admin", hasRosterLink });
-    await decide({ currentRole: "teacher", hasRosterLink });
+    await decide({ currentRole: "teacher", requestedRole: "parent", hasRosterLink });
     assert.equal(calls, 0);
   });
 

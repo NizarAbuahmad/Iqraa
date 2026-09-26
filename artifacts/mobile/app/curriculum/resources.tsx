@@ -29,6 +29,7 @@
  * tells a student nothing about the one they are about to tap.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -129,6 +130,20 @@ const SHELF_COLOR: Record<Shelf, string> = {
 };
 
 const ACCENT = palette.primary;
+
+/** YouTube video ID → thumbnail URL, or null for non-YouTube URLs. */
+function youtubeThumbnail(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
+  return m ? `https://img.youtube.com/vi/${m[1]}/mqdefault.jpg` : null;
+}
+
+function itemThumbnail(item: ResourceItem): string | null {
+  if (item.thumbnailUrl) return item.thumbnailUrl;
+  if (!item.url) return null;
+  if (item.kind === 'video') return youtubeThumbnail(item.url);
+  if (item.kind === 'image') return item.url;
+  return null;
+}
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
@@ -136,6 +151,8 @@ const ACCENT_FILL = palette.hero;
  * One row. `showKind` is off inside a single-kind section: a heading that
  * already says «أوراق عمل» does not need every row underneath repeating it.
  */
+function ResourceRow({ item, accent, showKind = true }: { item: ResourceItem; accent: string; showKind?: boolean }) {
+  const thumb = itemThumbnail(item);
 function ResourceRow({
   item,
   accent,
@@ -195,6 +212,13 @@ function ResourceRow({
     else if (printable) printSheet();
   };
 
+  const trailingIcon = item.url
+    ? 'open-outline'
+    : opensSheet
+      ? (isRTL ? 'chevron-back' : 'chevron-forward')
+      : printable
+        ? 'print-outline'
+        : null;
   const trailingIcon = item.url ? 'open-outline' : null;
 
   return (
@@ -222,6 +246,14 @@ function ResourceRow({
           </Text>
         ) : null}
       </View>
+      {thumb ? (
+        <Image
+          source={{ uri: thumb }}
+          style={styles.thumb}
+          resizeMode="cover"
+          accessibilityElementsHidden
+        />
+      ) : null}
       <View style={{ flex: 1 }}>
         <Text
           numberOfLines={2}
@@ -253,6 +285,7 @@ function ResourceRow({
           </Text>
         ) : null}
       </View>
+      {trailingIcon ? <Ionicons name={trailingIcon} size={16} color={colors.mutedForeground} /> : null}
       {printable ? (
         // The action is spelled out: a lone glyph at the far end of a wide row
         // went unnoticed, and the row looked like it did nothing. «فتح» when
@@ -511,6 +544,11 @@ export default function ResourcesScreen() {
               </View>
             </View>
             {openShelf.shelf === 'book-qr' ? (
+              <BookShelf items={openShelf.items} openBook={openBook} setOpenBook={setOpenBook} />
+            ) : (
+              <View style={styles.rows}>
+                {openShelf.items.map(item => (
+                  <ResourceRow key={item.key} item={item} accent={SHELF_COLOR[openShelf.shelf]} showKind={false} />
               <BookShelf items={openShelf.items} openBook={openBook} setOpenBook={setOpenBook} grid={grid} />
             ) : (
               <View style={[styles.rows, grid && styles.rowsGrid, grid && isRTL && { flexDirection: 'row-reverse' }]}>
@@ -535,6 +573,7 @@ export default function ResourcesScreen() {
               >
                 <View style={[styles.tileIcon, { backgroundColor: SHELF_COLOR[id] + '1F' }]}>
                   <Ionicons name={SHELF_ICON[id]} size={26} color={SHELF_COLOR[id]} />
+
                 </View>
                 <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
                   {t(SHELF_LABEL[id])}
@@ -726,6 +765,7 @@ const styles = StyleSheet.create({
   rows: { gap: 8, paddingHorizontal: 20 },
   rowsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   row: { alignItems: 'center', gap: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
+  thumb: { width: 64, height: 48, borderRadius: 6, flexShrink: 0 },
   // 48.5% + 48.5% + the 10px gap fits any track ≥ 340px, so two cells never
   // wrap to one because of rounding.
   gridCell: { width: '48.5%', paddingVertical: 14 },

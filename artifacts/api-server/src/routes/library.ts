@@ -49,6 +49,8 @@ function toClient(row: typeof libraryResources.$inferSelect) {
     sizeBytes: row.sizeBytes,
     isLink: !row.r2Key,
     url: row.r2Key ? publicUrl(row.r2Key) : row.sourceUrl,
+    semester: row.semester,
+    thumbnailUrl: row.thumbnailUrl,
     createdAt: row.createdAt,
   };
 }
