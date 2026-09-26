@@ -100,6 +100,54 @@ function Chip({ label, active, onPress, icon, colors }: {
   );
 }
 
+const twoDigits = (v: string) => v.replace(/\D/g, '').slice(0, 2);
+
+/**
+ * Hours and minutes as two boxes around a fixed colon — the colon is a label,
+ * not a character the teacher can delete or mistype. Laid out left-to-right in
+ * both languages, the way a clock reads. Filling the hours moves to minutes.
+ */
+function TimeField({ hours, minutes, onHours, onMinutes, colors }: {
+  hours: string;
+  minutes: string;
+  onHours: (v: string) => void;
+  onMinutes: (v: string) => void;
+  colors: Colors;
+}) {
+  const minutesRef = useRef<TextInput>(null);
+  const box = [styles.timeBox, { color: colors.foreground }];
+  return (
+    <View style={[styles.timeField, { borderColor: colors.border }]}>
+      <TextInput
+        value={hours}
+        onChangeText={v => {
+          const d = twoDigits(v);
+          onHours(d);
+          if (d.length === 2) minutesRef.current?.focus();
+        }}
+        placeholder="--"
+        placeholderTextColor={colors.mutedForeground}
+        keyboardType="number-pad"
+        maxLength={2}
+        selectTextOnFocus
+        style={box}
+      />
+      <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 14 }}>:</Text>
+      <TextInput
+        ref={minutesRef}
+        value={minutes}
+        onChangeText={v => onMinutes(twoDigits(v))}
+        placeholder="--"
+        placeholderTextColor={colors.mutedForeground}
+        keyboardType="number-pad"
+        maxLength={2}
+        selectTextOnFocus
+        style={box}
+      />
+    </View>
+  );
+}
+
 /** One period's time+duration editor, inline. The always-present blank row
  *  at the bottom (`isNew`) is how a period gets added — no separate "add"
  *  flow, just fill it in and confirm. */
@@ -112,9 +160,12 @@ function PeriodRow({ period, isNew, onSave, onDelete, isRTL, colors, t }: {
   colors: Colors;
   t: T;
 }) {
-  const [time, setTime] = useState(period.startTime);
+  const [initialH = '', initialM = ''] = period.startTime ? period.startTime.split(':') : [];
+  const [hours, setHours] = useState(initialH);
+  const [minutes, setMinutes] = useState(initialM);
   const [duration, setDuration] = useState(String(period.durationMinutes));
 
+  const time = hours && minutes ? `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}` : '';
   const validTime = TIME_RE.test(time);
   const durationNum = Number(duration);
   const validDuration = /^\d{1,3}$/.test(duration) && durationNum >= 1 && durationNum <= 480;
@@ -127,14 +178,7 @@ function PeriodRow({ period, isNew, onSave, onDelete, isRTL, colors, t }: {
         {t('schedulePeriodNumber', period.periodNumber)}
       </Text>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'center' }}>
-        <TextInput
-          value={time}
-          onChangeText={setTime}
-          placeholder="HH:MM"
-          placeholderTextColor={colors.mutedForeground}
-          maxLength={5}
-          style={[styles.smallInput, { width: 76, borderColor: colors.border, color: colors.foreground }]}
-        />
+        <TimeField hours={hours} minutes={minutes} onHours={setHours} onMinutes={setMinutes} colors={colors} />
         <TextInput
           value={duration}
           onChangeText={v => (v === '' || /^\d{1,3}$/.test(v)) && setDuration(v)}
@@ -161,60 +205,31 @@ function PeriodRow({ period, isNew, onSave, onDelete, isRTL, colors, t }: {
   );
 }
 
-function PeriodsEditorModal({ visible, schoolName, periods, onClose, onSave, onDelete, onRename, isRTL, colors, t }: {
+function PeriodsEditorModal({ visible, schoolName, schoolLabel, periods, onClose, onSave, onDelete, isRTL, colors, t }: {
   visible: boolean;
   schoolName: string;
+  schoolLabel: string;
   periods: SchedulePeriod[];
   onClose: () => void;
   onSave: (periodNumber: number, input: { startTime: string; durationMinutes: number }) => void;
   onDelete: (periodNumber: number) => void;
-  /** Resolves to an error message, or '' on success. */
-  onRename: (to: string) => Promise<string>;
   isRTL: boolean;
   colors: Colors;
   t: T;
 }) {
   const align = isRTL ? 'right' : 'left';
   const nextNumber = (periods.at(-1)?.periodNumber ?? 0) + 1;
-  const [name, setName] = useState(schoolName);
-  const [renameError, setRenameError] = useState('');
-  useEffect(() => {
-    setName(schoolName);
-    setRenameError('');
-  }, [schoolName, visible]);
-  const nameDirty = normalizeSchool(name) !== schoolName;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalBackdrop}>
         <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
-            {t('schedulePeriodsTitle')}
-          </Text>
-          <View style={{ gap: 6 }}>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
-              {t('scheduleSchoolLabel')}
+          <View style={{ gap: 2 }}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+              {t('schedulePeriodsTitle')}
             </Text>
-            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'center' }}>
-              <TextInput
-                value={name}
-                onChangeText={v => { setName(v); setRenameError(''); }}
-                placeholder={t('scheduleSchoolPlaceholder')}
-                placeholderTextColor={colors.mutedForeground}
-                maxLength={80}
-                style={[styles.smallInput, { flex: 1, borderColor: colors.border, color: colors.foreground, textAlign: align }]}
-              />
-              {nameDirty ? (
-                <Pressable
-                  onPress={async () => setRenameError(await onRename(normalizeSchool(name)))}
-                  style={{ padding: 8, borderRadius: 8, backgroundColor: ACCENT_FILL }}
-                >
-                  <Ionicons name="checkmark" size={16} color="#fff" />
-                </Pressable>
-              ) : null}
-            </View>
-            <Text style={{ color: renameError ? colors.destructive : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, textAlign: align }}>
-              {renameError || t('scheduleSchoolHint')}
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, textAlign: align }}>
+              {`${schoolLabel} · ${t('scheduleSchoolHint')}`}
             </Text>
           </View>
           <ScrollView style={{ maxHeight: 340 }} contentContainerStyle={{ gap: 10 }}>
@@ -247,46 +262,53 @@ function PeriodsEditorModal({ visible, schoolName, periods, onClose, onSave, onD
   );
 }
 
-function AddSchoolModal({ existing, onClose, onAdd, isRTL, colors, t }: {
-  existing: string[];
+/** Naming a school — used both to add one and to rename the selected one. */
+function SchoolNameModal({ title, initial, taken, onClose, onSubmit, isRTL, colors, t }: {
+  title: string;
+  initial: string;
+  /** Names already used by the teacher's *other* schools. */
+  taken: string[];
   onClose: () => void;
-  onAdd: (name: string) => void;
+  /** Resolves to an error message, or '' once the name is saved. */
+  onSubmit: (name: string) => Promise<string> | string;
   isRTL: boolean;
   colors: Colors;
   t: T;
 }) {
-  const [name, setName] = useState('');
+  const [name, setName] = useState(initial);
+  const [error, setError] = useState('');
   const align = isRTL ? 'right' : 'left';
   const clean = normalizeSchool(name);
-  const taken = existing.includes(clean);
+  const isTaken = taken.includes(clean);
+  const canSave = Boolean(clean) && !isTaken && clean !== initial;
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalBackdrop}>
         <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
           <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
-            {t('scheduleNewSchoolTitle')}
+            {title}
           </Text>
           <TextInput
             value={name}
-            onChangeText={setName}
+            onChangeText={v => { setName(v); setError(''); }}
             autoFocus
             placeholder={t('scheduleSchoolPlaceholder')}
             placeholderTextColor={colors.mutedForeground}
             maxLength={80}
             style={[styles.smallInput, { borderColor: colors.border, color: colors.foreground, textAlign: align, paddingVertical: 10 }]}
           />
-          <Text style={{ color: taken ? colors.destructive : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, textAlign: align }}>
-            {taken ? t('scheduleSchoolNameTaken') : t('scheduleSchoolHint')}
+          <Text style={{ color: error || isTaken ? colors.destructive : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, textAlign: align }}>
+            {error || (isTaken ? t('scheduleSchoolNameTaken') : t('scheduleSchoolHint'))}
           </Text>
           <View style={styles.modalActions}>
             <Pressable onPress={onClose} style={styles.modalBtn}>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>{t('cancel')}</Text>
             </Pressable>
             <Pressable
-              onPress={() => onAdd(clean)}
-              disabled={!clean || taken}
-              style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT_FILL, opacity: !clean || taken ? 0.4 : 1 }]}
+              onPress={async () => setError(await onSubmit(clean))}
+              disabled={!canSave}
+              style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT_FILL, opacity: canSave ? 1 : 0.4 }]}
             >
               <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>{t('save')}</Text>
             </Pressable>
@@ -633,7 +655,7 @@ export default function ScheduleScreen() {
   const [showWeekend, setShowWeekend] = useState(false);
   const [day, setDay] = useState<number | null>(null);
   const [showPeriodsEditor, setShowPeriodsEditor] = useState(false);
-  const [addingSchool, setAddingSchool] = useState(false);
+  const [schoolModal, setSchoolModal] = useState<'add' | 'rename' | null>(null);
   const [editingCell, setEditingCell] = useState<Cell | null>(null);
 
   useEffect(() => {
@@ -726,13 +748,21 @@ export default function ScheduleScreen() {
     }
   };
 
+  const onAddSchool = (name: string): string => {
+    setDraftSchools(prev => [...prev, name]);
+    setSelectedSchool(name);
+    setSchoolModal(null);
+    setShowPeriodsEditor(true);
+    return '';
+  };
+
   const onRenameSchool = async (to: string): Promise<string> => {
-    if (to === school) return '';
     if (schools.includes(to)) return t('scheduleSchoolNameTaken');
     // A school with nothing saved yet exists only on this screen.
     if (!savedSchools.includes(school)) {
       setDraftSchools(prev => [...prev.filter(s => s !== school), to]);
       setSelectedSchool(to);
+      setSchoolModal(null);
       return '';
     }
     try {
@@ -740,6 +770,7 @@ export default function ScheduleScreen() {
       setPeriods(prev => prev.map(p => (p.schoolName === school ? { ...p, schoolName: to } : p)));
       setSlots(prev => prev.map(s => (s.schoolName === school ? { ...s, schoolName: to } : s)));
       setSelectedSchool(to);
+      setSchoolModal(null);
       return '';
     } catch (err) {
       return err instanceof ScheduleError && err.isSchoolNameTaken ? t('scheduleSchoolNameTaken') : t('scheduleSaveFailed');
@@ -835,7 +866,8 @@ export default function ScheduleScreen() {
                   {schools.map(s => (
                     <Chip key={s || '__default'} label={schoolLabel(s)} active={s === school} onPress={() => setSelectedSchool(s)} colors={colors} />
                   ))}
-                  <Chip label={t('scheduleAddSchool')} icon="add" active={false} onPress={() => setAddingSchool(true)} colors={colors} />
+                  <Chip label={t('scheduleRenameSchool')} icon="create-outline" active={false} onPress={() => setSchoolModal('rename')} colors={colors} />
+                  <Chip label={t('scheduleAddSchool')} icon="add" active={false} onPress={() => setSchoolModal('add')} colors={colors} />
                 </View>
               ) : null}
 
@@ -894,26 +926,23 @@ export default function ScheduleScreen() {
       <PeriodsEditorModal
         visible={showPeriodsEditor}
         schoolName={school}
+        schoolLabel={schoolLabel(school)}
         periods={schoolPeriods}
         onClose={() => setShowPeriodsEditor(false)}
         onSave={onSavePeriod}
         onDelete={onDeletePeriod}
-        onRename={onRenameSchool}
         isRTL={isRTL}
         colors={colors}
         t={t}
       />
 
-      {addingSchool ? (
-        <AddSchoolModal
-          existing={schools}
-          onClose={() => setAddingSchool(false)}
-          onAdd={name => {
-            setDraftSchools(prev => [...prev, name]);
-            setSelectedSchool(name);
-            setAddingSchool(false);
-            setShowPeriodsEditor(true);
-          }}
+      {schoolModal ? (
+        <SchoolNameModal
+          title={schoolModal === 'add' ? t('scheduleNewSchoolTitle') : t('scheduleRenameSchool')}
+          initial={schoolModal === 'add' ? '' : school}
+          taken={schoolModal === 'add' ? schools : schools.filter(s => s !== school)}
+          onClose={() => setSchoolModal(null)}
+          onSubmit={schoolModal === 'add' ? onAddSchool : onRenameSchool}
           isRTL={isRTL}
           colors={colors}
           t={t}
@@ -948,6 +977,11 @@ const styles = StyleSheet.create({
   errorBox: { alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1 },
   periodCol: { width: 92, paddingVertical: 8, paddingHorizontal: 6 },
   dayCol: { flex: 1, minWidth: 104 },
+  timeField: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2,
+    width: 92, paddingVertical: 3, borderRadius: 8, borderWidth: 1.5,
+  },
+  timeBox: { width: 30, paddingVertical: 4, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: 'center' },
   smallInput: {
     paddingVertical: 7, paddingHorizontal: 8, borderRadius: 8, borderWidth: 1.5,
     fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center',
