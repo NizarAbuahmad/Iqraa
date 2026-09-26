@@ -5,6 +5,7 @@ import { verifyDerivative } from "../lib/mathVerifierClient.ts";
 import { isVerifierUnreachable } from "../lib/derivativeVerified.ts";
 import { getBudgetStatus } from "../lib/aiBudget.ts";
 import { getRecentErrors } from "../lib/errorLog.ts";
+import { createRateLimiter } from "../lib/rateLimit.ts";
 import { studentAccountsEnabled } from "../lib/features.js";
 
 const router: IRouter = Router();
@@ -93,8 +94,19 @@ router.get("/healthz/verifier", async (_req, res) => {
  * proxy turned that into `{photo:null}`, which is indistinguishable from "that
  * query had no results", so nothing anywhere said the lookup had failed. This
  * makes the difference answerable in one request, with no AI spend and no deck.
+ *
+ * Each call spends one real Unsplash request from a small hourly quota that the
+ * deck builder shares, so a public loop on it would blank every deck's photos.
+ * One global bucket, not per-IP: rotating addresses must not multiply the cap.
  */
-router.get("/healthz/unsplash", async (_req, res) => {
+const unsplashProbeLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  name: "unsplash-probe",
+  key: () => "global",
+});
+
+router.get("/healthz/unsplash", unsplashProbeLimiter, async (_req, res) => {
   const accessKey = process.env.UNSPLASH_ACCESS_KEY;
   if (!accessKey) {
     res.status(503).json({
