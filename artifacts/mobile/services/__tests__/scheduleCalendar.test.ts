@@ -16,6 +16,7 @@ import {
   isHappeningNow,
   isInMonth,
   monthGridDates,
+  nextPeriodLesson,
   schoolsOf,
   visibleWeekdays,
 } from '../scheduleCalendar.ts';
@@ -209,5 +210,49 @@ describe('isInMonth', () => {
     assert.equal(isInMonth('2026-09-15', 2026, 8), true);
     assert.equal(isInMonth('2026-08-30', 2026, 8), false);
     assert.equal(isInMonth('2026-10-01', 2026, 8), false);
+  });
+});
+
+describe('nextPeriodLesson', () => {
+  // Sunday 2026-09-20: period 1 (08:00–08:45) is class c1; Tuesday 09-22 period 1 is c2.
+  const plans = [
+    { id: 'p1', title: 'A', classGroupId: 'c1', entries: [{ lessonId: 'l1', date: '2026-09-13' }, { lessonId: 'l2', date: '2026-09-20' }, { lessonId: 'l3', date: '2026-09-27' }] },
+    { id: 'p2', title: 'B', classGroupId: 'c2', entries: [{ lessonId: 'm1', date: '2026-09-15' }, { lessonId: 'm2', date: '2026-09-29' }] },
+  ];
+  const at = (iso: string) => new Date(iso);
+
+  it('takes the period in progress, and the plan\'s lesson for that exact date', () => {
+    const next = nextPeriodLesson(at('2026-09-20T08:10:00'), PERIODS, SLOTS, plans);
+    assert.equal(next?.classGroupId, 'c1');
+    assert.equal(next?.date, '2026-09-20');
+    assert.equal(next?.happeningNow, true);
+    assert.equal(next?.lessonId, 'l2');
+  });
+
+  it('skips a period that has ended and looks ahead to the next school day', () => {
+    const next = nextPeriodLesson(at('2026-09-20T09:00:00'), PERIODS, SLOTS, plans);
+    assert.equal(next?.classGroupId, 'c2');
+    assert.equal(next?.date, '2026-09-22');
+    assert.equal(next?.happeningNow, false);
+  });
+
+  it('with no entry that day, stays on the latest lesson dated before it', () => {
+    const next = nextPeriodLesson(at('2026-09-22T07:00:00'), PERIODS, SLOTS, plans);
+    assert.equal(next?.lessonId, 'm1');
+  });
+
+  it('before the plan starts, uses its first upcoming lesson', () => {
+    const early = [{ id: 'p', title: 'A', classGroupId: 'c1', entries: [{ lessonId: 'z', date: '2026-10-04' }] }];
+    assert.equal(nextPeriodLesson(at('2026-09-20T07:00:00'), PERIODS, SLOTS, early)?.lessonId, 'z');
+  });
+
+  it('gives the period with no lesson when the class has no plan', () => {
+    const next = nextPeriodLesson(at('2026-09-20T07:00:00'), PERIODS, SLOTS, []);
+    assert.equal(next?.classGroupId, 'c1');
+    assert.equal(next?.lessonId, null);
+  });
+
+  it('is null with no timetable at all', () => {
+    assert.equal(nextPeriodLesson(at('2026-09-20T07:00:00'), PERIODS, [], plans), null);
   });
 });

@@ -499,13 +499,56 @@ also reach it from a banner on the Curriculum tab when Grades 1–4 are selected
 and from «العب بكلمات هذا الدرس» on the matching lesson pages. It covers 36
 lessons and 458 words across the eight G1–4 books.
 
-- **Five activities**, all pure logic in `services/englishHub/games.ts`: flashcards,
-  listen-and-choose, match the English word to its Arabic meaning, spell it, and
-  (added 2026-09-26) unscramble it — tap letter tiles into order, tap a placed
-  tile to send it back to the tray. Distractors come from the same lesson.
-  Spelling and scrambling both ignore case, spaces and hyphens, and both skip
-  multi-word phrases ("put litter in the bin" tests typing a sentence, not a
-  word), falling back to the full lesson if fewer than 4 single words survive.
+- **Seven activities**, all pure logic in `services/englishHub/games.ts`: flashcards,
+  listen-and-choose, match the English word to its Arabic meaning, spell it,
+  unscramble it (tap letter tiles into order, tap a placed tile to send it back
+  to the tray), and, added 2026-09-26: **match the picture** (English word ↔
+  a curated emoji, 188 of the 458 words have one — no real book figures exist
+  for G1–4 English, figure extraction only starts at grade 7, so this is
+  emoji standing in for art, not book art; a lesson with under 4 picturable
+  words simply doesn't offer it, `lessonHasPictureMatch`) and **say it**
+  (record yourself, hear yourself back — see below). Distractors/pool rules
+  for spelling and scrambling are unchanged from before.
+- **Badges, 2026-09-26.** Seven thresholds purely derived from `HubProgress`
+  (`games.ts`'s `badgesEarned`) — no new storage beyond one new field. Once
+  earned they never disappear: the streak badges check a new `bestStreak`
+  field (highest streak ever reached), not the resettable `streak` — a bug the
+  test suite caught before it shipped (a badge earning message that could
+  un-earn itself after a missed day). Shown as a shelf on the hub home screen
+  (only badges already earned — an empty row of seven unearned badges reads as
+  a to-do list, not encouragement) and as a one-off "just unlocked" card on a
+  round's finish screen, computed by diffing `badgesEarned` before/after via
+  the exported `newlyEarnedBadges`.
+- **A daily-goal line and an opt-in local reminder, 2026-09-26.** The hub home
+  shows "practised today" or not, from `progress.lastDay` alone — no new
+  storage. A `services/englishHub/dailyReminder.ts` schedules ONE local
+  notification (not a repeating one — see its header for why) for 5pm local
+  time, only if today's goal isn't met, re-synced every time the hub screen is
+  focused; native only (same no-op-on-web posture as `pushTokens.ts`). Off by
+  default; the toggle requests notification permission on the same tap that
+  turns it on.
+- **A "say it" speaking activity, 2026-09-26 — record only, not scored.**
+  `expo-audio`'s recorder is genuinely cross-platform (confirmed by reading its
+  own web implementation: `AudioRecorderWeb` wraps `MediaRecorder` internally),
+  so `hooks/useSpeakingRecorder.ts` needed no per-platform branch, unlike the
+  older Grade 9–10 `useReadAloudRecorder` it deliberately does NOT extend (that
+  one is shaped for a different, take-limited, upload-and-score flow). Hear the
+  word, record, hear yourself back — no upload, no AI transcription, no score.
+  That's a deliberate choice, not a gap: scoring every hub word via the
+  existing `/practice/read-aloud` pattern would mean per-word Whisper calls
+  across hundreds of words × every student, a materially bigger and more
+  frequent AI-budget cost than the ~6-passage feature it would resemble. Add
+  scoring later, on purpose, if usage says it's worth spending on.
+  **This needs the mic permission**, so `expo-audio`'s plugin config in
+  `app.json` changed (`microphonePermission` is now a real prompt string,
+  `recordAudioAndroid: true`) and `version` moved **1.1.0 → 1.2.0** — another
+  Android build is needed before this reaches installed apps.
+  Permission denial degrades to an inline "ask a parent" message, verified in
+  the browser preview (the Browser pane itself blocks mic access, which
+  incidentally exercises this exact path). **The actual recording — granted
+  permission, a real file, playback — cannot be verified without a physical
+  Android device;** this is the one thing in the whole hub so far that a
+  browser and `node --test` genuinely cannot confirm.
 - **The Arabic meanings are new.** Every G1–4 vocabulary entry had `ar: ""`.
   They were glossed by hand on 2026-09-25 and **have not been reviewed by a
   teacher yet**. Entries that are topic labels rather than words ("Numbers
@@ -519,16 +562,21 @@ lessons and 458 words across the eight G1–4 books.
   took a few minutes to apply, and the script's per-word resume rode it out. A
   new or renamed word needs the script re-run; a word with no file plays
   nothing and the game carries on.
-- **`expo-audio` is the new native module**, with its microphone permission
-  off, so `app.json` `version` moved 1.0.0 → 1.1.0. Installed Android builds
-  stop receiving OTA updates until a 1.1.0 build ships.
-- **Progress is device-only.** Stars and a day streak are kept in AsyncStorage
-  (`englishHub.progress.v1`). Nothing reaches a teacher. A server table and a
-  teacher view are Phase 2.
-- **Verified on web on 2026-09-25 and 2026-09-26**, by playing all five
-  activities through on a local build with the route made public for that
-  session and then reverted, including the scramble's undo and wrong-answer
-  paths. Not yet checked on a device.
+- **`expo-audio` is the new native module**, first added 2026-09-25 for
+  playback with its microphone permission off (`app.json` `version` 1.0.0 →
+  1.1.0), then the mic itself turned on 2026-09-26 for speaking (→ 1.2.0 — see
+  above). Installed Android builds stop receiving OTA updates until a matching
+  build ships each time.
+- **Progress is device-only**, now including `bestStreak` (see badges above).
+  Kept in AsyncStorage (`englishHub.progress.v1`). Nothing reaches a teacher. A
+  server table and a teacher view are Phase 2.
+- **Verified on web on 2026-09-25 and 2026-09-26**, by playing all seven
+  activities through — the newest three (picture match, a full round with a
+  deliberate miss; a badge unlock; speaking's permission-denial fallback) —
+  on a local build with the route already public from Phase 1. `bestStreak`'s
+  survival through a broken streak, and every badge threshold, has unit
+  coverage in `englishHubGames.test.ts`. Speaking's actual recording still
+  needs a real device (see above); nothing else in the hub has that gap.
 - **Ideas looked at and not taken:** funenglishgames.com was reviewed as a
   source of game ideas/materials on 2026-09-26. Its games don't run (Flash-era,
   ad frames only), it states no reuse licence, and it's ad- and
