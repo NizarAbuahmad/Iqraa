@@ -3168,6 +3168,11 @@ export default function IqraScreen() {
           uploadedLabel={(n) => t('lessonUploadedFiles', n)}
           onChangeLesson={() => setChangeLessonOpen(true)}
           onToggleCollapse={() => setLessonCardCollapsed(c => !c)}
+          onClear={() => {
+            setSessionMemory(prev => ({ ...prev, lessonPin: 'none' }));
+            setTeachingCtx('');
+            setTeachingCtxLessonId(null);
+          }}
           // The board right below it is already counting, from better data.
           hideCount={Boolean(introPrepBoard)}
           // A band welded to both window edges on desktop; a card over the
