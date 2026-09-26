@@ -288,7 +288,9 @@ export default function ParentMessageScreen() {
               <View style={[styles.history, { backgroundColor: ACCENT + '10', borderRadius: colors.radius }]}>
                 <Text style={[styles.historyText, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }]}>
                   {summary.last
-                    ? `${t('parentMsgHistoryLast')} ${kindEmoji(summary.last.kind)} ${kindLabel(summary.last.kind, isAr)} · ${new Date(summary.last.createdAt).toLocaleDateString(isAr ? 'ar-JO' : 'en-GB', { day: 'numeric', month: 'short' })}`
+                    ? `${t('parentMsgHistoryLast')} ${kindEmoji(summary.last.kind)} ${kindLabel(summary.last.kind, isAr)} · ${new Date(summary.last.createdAt).toLocaleDateString(isAr ? 'ar-JO' : 'en-GB', { day: 'numeric', month: 'short' })}${
+                      // Only in-app letters can be tracked; shared/copied ones carry read: null.
+                      summary.last.read == null ? '' : ` · ${t(summary.last.read ? 'parentMsgHistoryRead' : 'parentMsgHistoryUnread')}`}`
                     : t('parentMsgHistoryNone')}
                 </Text>
                 {Object.keys(summary.recent).length > 0 ? (
