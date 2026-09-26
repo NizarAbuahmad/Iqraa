@@ -175,10 +175,11 @@ function capabilityLines(isAr: boolean): string[] {
       ];
 }
 
-function greetingReply(isAr: boolean): string {
+function greetingReply(isAr: boolean, name?: string): string {
   if (isAr) {
+    const salutation = name ? `أهلاً ${name} 👋` : 'أهلاً بك 👋';
     return [
-      'أهلاً بك 👋',
+      salutation,
       '',
       'أنا اقرأ، رفيقك في تحضير الحصص.',
       '',
@@ -188,8 +189,9 @@ function greetingReply(isAr: boolean): string {
       'من أين نبدأ اليوم؟',
     ].join('\n');
   }
+  const salutation = name ? `Welcome, ${name} 👋` : 'Welcome 👋';
   return [
-    'Welcome 👋',
+    salutation,
     '',
     "I'm IQRA, your smart assistant for lesson preparation.",
     '',
@@ -268,6 +270,7 @@ export function classifyChatIntent(
   query: string,
   lang: 'ar' | 'en' = 'ar',
   afterClarify = false,
+  userName?: string,
 ): IntentRouteResult {
   const isAr = lang === 'ar';
   const q = normalizeQuery(query);
@@ -292,7 +295,7 @@ export function classifyChatIntent(
     return {
       intent: 'greeting',
       useTeachingPipeline: false,
-      socialReply: greetingReply(isAr),
+      socialReply: greetingReply(isAr, userName),
     };
   }
   if (isSmallTalk(q)) {
