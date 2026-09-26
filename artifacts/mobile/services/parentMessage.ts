@@ -401,3 +401,35 @@ export function summarizeClassContacts(
 export function suggestMeeting(summary: ContactSummary, kind: MessageKind): boolean {
   return ESCALATING_KINDS.includes(kind) && (summary.recent[kind] ?? 0) >= ESCALATE_AFTER;
 }
+
+/**
+ * The signature a teacher last used, remembered on this device so the letter
+ * doesn't re-ask their name and gender every time.
+ *
+ * ponytail: per device, in AsyncStorage. Move it onto the user row if teachers
+ * switch devices often enough to notice.
+ */
+export interface SavedSignature {
+  teacherName: string;
+  teacherGender: Gender;
+}
+
+export const SIGNATURE_STORAGE_KEY = 'parentMsg.signature.v1';
+
+/** Tolerates anything storage hands back — a bad value just means "nothing saved". */
+export function parseSavedSignature(raw: string | null): SavedSignature | null {
+  if (!raw) return null;
+  try {
+    const v = JSON.parse(raw) as Partial<SavedSignature>;
+    if (typeof v.teacherName !== 'string') return null;
+    if (v.teacherGender !== 'male' && v.teacherGender !== 'female') return null;
+    return { teacherName: v.teacherName, teacherGender: v.teacherGender };
+  } catch {
+    return null;
+  }
+}
+
+/** A roster row's stored gender, or null when the teacher hasn't recorded one. */
+export function rosterGender(value: string | undefined): Gender | null {
+  return value === 'male' || value === 'female' ? value : null;
+}
