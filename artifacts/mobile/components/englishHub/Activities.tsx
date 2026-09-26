@@ -12,16 +12,20 @@ import * as Haptics from 'expo-haptics';
 import type { HubWord } from '@workspace/curriculum/englishHub';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { playWord } from '@/services/englishAudio';
+import { playLocalUri, playWord } from '@/services/englishAudio';
+import { useSpeakingRecorder } from '@/hooks/useSpeakingRecorder';
 import {
   buildListenRound,
   buildMatchDeck,
+  buildPictureDeck,
   buildScrambleRound,
   buildSpellRound,
   isMatchPair,
+  isPictureMatch,
   isScrambleSolved,
   isSpeltCorrectly,
   type MatchCard,
+  type PictureCard,
   type ScrambleTile,
 } from '@/services/englishHub/games';
 
@@ -395,12 +399,135 @@ export function Scramble({ words, onFinish }: { words: HubWord[]; onFinish: Fini
   );
 }
 
+// ─── Picture matching ───────────────────────────────────────────────────────
+
+export function PictureMatch({ words, onFinish }: { words: HubWord[]; onFinish: Finish }) {
+  const { colors, t } = useUi();
+  const deck = useMemo(() => buildPictureDeck(words), [words]);
+  const [selected, setSelected] = useState<PictureCard | null>(null);
+  const [matched, setMatched] = useState<Set<number>>(new Set());
+  const [miss, setMiss] = useState<string[]>([]);
+  const [moves, setMoves] = useState(0);
+  const pairs = deck.length / 2;
+
+  const tap = (c: PictureCard) => {
+    if (matched.has(c.pairId) || miss.length) return;
+    if (c.kind === 'word') void playWord(c.text);
+    if (!selected || selected.id === c.id) return setSelected(selected?.id === c.id ? null : c);
+    if (selected.kind === c.kind) return setSelected(c);
+    const m = moves + 1;
+    setMoves(m);
+    setSelected(null);
+    if (isPictureMatch(selected, c)) {
+      const next = new Set(matched).add(c.pairId);
+      setMatched(next);
+      if (next.size === pairs) setTimeout(() => onFinish(pairs, m), 400);
+    } else {
+      setMiss([selected.id, c.id]);
+      setTimeout(() => setMiss([]), 700);
+    }
+  };
+
+  return (
+    <View style={{ gap: 12 }}>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13, textAlign: 'center' }}>{t('hubMoves', moves)}</Text>
+      <View style={styles.grid}>
+        {deck.map(c => {
+          const done = matched.has(c.pairId);
+          const bad = miss.includes(c.id);
+          const on = selected?.id === c.id;
+          const border = done ? RIGHT : bad ? WRONG : on ? colors.primary : colors.border;
+          return (
+            <Pressable
+              key={c.id}
+              onPress={() => tap(c)}
+              style={[styles.matchCard, { borderColor: border, backgroundColor: done ? RIGHT + '18' : on ? colors.primary + '14' : colors.card, opacity: done ? 0.7 : 1 }]}
+            >
+              {c.kind === 'emoji' ? (
+                <Text style={{ fontSize: 32 }}>{c.text}</Text>
+              ) : (
+                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: 'center' }}>{c.text}</Text>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+// ─── Speaking ───────────────────────────────────────────────────────────────
+
+/**
+ * Hear it, then record yourself saying it, then hear yourself back. No score —
+ * see `useSpeakingRecorder`'s header for why. Browsed like Flashcards, not
+ * scored like the other four: no `onFinish`, no round loop, no "done" screen,
+ * and (matching Flashcards) never appears with a star count on the activity
+ * list, because nothing here is graded to earn one.
+ */
+export function Speaking({ words }: { words: HubWord[] }) {
+  const { colors, t, row } = useUi();
+  const [i, setI] = useState(0);
+  const rec = useSpeakingRecorder();
+  const w = words[i];
+
+  const go = (next: number) => {
+    const j = (next + words.length) % words.length;
+    setI(j);
+    rec.reset();
+    void playWord(words[j].en);
+  };
+
+  const onMicPress = () => {
+    if (rec.phase === 'recording') void rec.stop();
+    else void rec.start();
+  };
+
+  return (
+    <View style={{ gap: 16, alignItems: 'center' }}>
+      <Progress i={i} n={words.length} />
+      <Text style={[styles.flashEn, { color: colors.foreground }]}>{w.en}</Text>
+      <View style={{ flexDirection: row, alignItems: 'center', gap: 20 }}>
+        <HearButton word={w.en} />
+        <Pressable
+          onPress={onMicPress}
+          accessibilityRole="button"
+          accessibilityLabel={t(rec.phase === 'recording' ? 'hubStopRecording' : 'hubRecord')}
+          style={[
+            styles.mic,
+            { backgroundColor: rec.phase === 'recording' ? WRONG : colors.card, borderColor: rec.phase === 'recording' ? WRONG : colors.border },
+          ]}
+        >
+          <Ionicons name={rec.phase === 'recording' ? 'stop' : 'mic'} size={30} color={rec.phase === 'recording' ? '#fff' : colors.primary} />
+        </Pressable>
+        {rec.uri ? (
+          <Pressable onPress={() => void playLocalUri(rec.uri!)} style={[styles.navBtn, { borderColor: colors.border }]}>
+            <Ionicons name="play" size={18} color={colors.foreground} />
+          </Pressable>
+        ) : null}
+      </View>
+      <Text style={{ color: colors.mutedForeground, fontSize: 13, fontFamily: 'Almarai_400Regular', textAlign: 'center' }}>
+        {rec.phase === 'denied' ? t('hubMicDenied') : rec.phase === 'recording' ? t('hubRecording') : rec.uri ? t('hubHearYourself') : t('hubTapMicToRecord')}
+      </Text>
+      <View style={{ flexDirection: row, alignItems: 'center', gap: 20 }}>
+        <Pressable onPress={() => go(i - 1)} style={[styles.navBtn, { borderColor: colors.border }]}>
+          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }}>{t('hubPrev')}</Text>
+        </Pressable>
+        <Pressable onPress={() => go(i + 1)} style={[styles.navBtn, { borderColor: colors.border }]}>
+          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }}>{t('hubNext')}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   hear: { borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   flash: { width: '100%', minHeight: 200, borderWidth: 1.5, borderRadius: 20, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
   flashEn: { fontFamily: 'Cairo_700Bold', fontSize: 40, textAlign: 'center' },
   flashAr: { fontFamily: 'Cairo_700Bold', fontSize: 34, lineHeight: 56, textAlign: 'center', writingDirection: 'rtl' },
   navBtn: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
+  mic: { width: 64, height: 64, borderRadius: 32, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   option: { borderWidth: 1.5, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 16 },
   optionText: { fontFamily: 'Cairo_600SemiBold', fontSize: 20, textAlign: 'center' },
   primary: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 32 },

@@ -4,18 +4,26 @@ import assert from 'node:assert/strict';
 import { ENGLISH_HUB_LESSONS } from '@workspace/curriculum/englishHub';
 import { makeRng } from '../publicGames/rng.ts';
 import {
+  BADGE_IDS,
   EMPTY_PROGRESS,
   LISTEN_OPTIONS,
   MATCH_PAIRS,
+  badgesEarned,
   buildListenRound,
   buildMatchDeck,
+  buildPictureDeck,
   buildScrambleRound,
+  buildSpeakingRound,
   buildSpellRound,
   currentStreak,
   isMatchPair,
+  isPictureMatch,
+  isPicturable,
   isScrambleSolved,
   isSpeltCorrectly,
+  lessonHasPictureMatch,
   lessonStars,
+  newlyEarnedBadges,
   normaliseSpelling,
   parseProgress,
   recordResult,
@@ -113,6 +121,97 @@ describe('scramble', () => {
   });
 });
 
+describe('picture matching', () => {
+  it('pairs every emoji with the exact word it stands for, using only picturable words', () => {
+    let sawAny = false;
+    for (const lesson of ENGLISH_HUB_LESSONS) {
+      if (!lessonHasPictureMatch(lesson.words)) continue;
+      sawAny = true;
+      const deck = buildPictureDeck(lesson.words, makeRng(3));
+      assert.ok(deck.length >= 8 && deck.length % 2 === 0, lesson.id);
+      for (const emoji of deck.filter(c => c.kind === 'emoji')) {
+        const word = deck.find(c => c.kind === 'word' && c.pairId === emoji.pairId)!;
+        assert.ok(lesson.words.some(w => w.en === word.text), `${word.text} not in ${lesson.id}`);
+        assert.ok(isPictureMatch(emoji, word));
+        assert.ok(!isPictureMatch(emoji, emoji));
+      }
+    }
+    assert.ok(sawAny, 'no lesson in G1-4 had enough picturable words to test against');
+  });
+
+  it('never offers a lesson with fewer than 4 picturable words', () => {
+    for (const lesson of ENGLISH_HUB_LESSONS) {
+      const picturable = lesson.words.filter(w => isPicturable(w.en));
+      assert.equal(lessonHasPictureMatch(lesson.words), picturable.length >= 4, lesson.id);
+    }
+  });
+});
+
+describe('speaking', () => {
+  it('draws from the same single-word pool as spelling', () => {
+    for (const lesson of ENGLISH_HUB_LESSONS) {
+      const singles = lesson.words.filter(w => !w.en.includes(' '));
+      if (singles.length < 4) continue;
+      for (const w of buildSpeakingRound(lesson.words, makeRng(5))) assert.ok(!w.en.includes(' '), w.en);
+    }
+  });
+
+  it('is reproducible for a seed', () => {
+    const words = ENGLISH_HUB_LESSONS[0].words;
+    assert.deepEqual(buildSpeakingRound(words, makeRng(1)), buildSpeakingRound(words, makeRng(1)));
+  });
+});
+
+describe('badges', () => {
+  it('earns nothing from an empty slate', () => {
+    assert.deepEqual(badgesEarned(EMPTY_PROGRESS), []);
+  });
+
+  it('earns badges in order as stars and streak grow, and never loses one', () => {
+    let p = EMPTY_PROGRESS;
+    p = recordResult(p, 'L1', 'listen', 1, '2026-09-25');
+    assert.deepEqual(badgesEarned(p), ['first_star']);
+
+    p = recordResult(p, 'L1', 'match', 3, '2026-09-25');
+    assert.deepEqual(badgesEarned(p), ['first_star', 'perfect_round']);
+
+    // 5 lessons touched, still under 10 total stars.
+    for (const lesson of ['L2', 'L3', 'L4', 'L5']) p = recordResult(p, lesson, 'listen', 1, '2026-09-25');
+    assert.ok(badgesEarned(p).includes('five_lessons'));
+    assert.ok(!badgesEarned(p).includes('ten_stars'), `total is ${JSON.stringify(p.stars)}`);
+
+    // A day off, then back — streak is 1 again, but nothing already earned is lost.
+    p = recordResult(p, 'L1', 'spell', 2, '2026-09-28');
+    assert.equal(p.streak, 1);
+    assert.deepEqual(badgesEarned(p), BADGE_IDS.filter(b => badgesEarned(p).includes(b)));
+    assert.ok(badgesEarned(p).includes('first_star') && badgesEarned(p).includes('five_lessons'));
+  });
+
+  it('reports only what a finish newly unlocked', () => {
+    const before = recordResult(EMPTY_PROGRESS, 'L', 'listen', 1, '2026-09-25');
+    const after = recordResult(before, 'L', 'spell', 3, '2026-09-25');
+    assert.deepEqual(newlyEarnedBadges(before, after), ['perfect_round']);
+    assert.deepEqual(newlyEarnedBadges(after, after), []);
+  });
+
+  it('a 3-day and 7-day streak unlock in order, and stay unlocked after the streak resets', () => {
+    let p = recordResult(EMPTY_PROGRESS, 'L', 'listen', 1, '2026-09-20');
+    for (const day of ['2026-09-21', '2026-09-22']) p = recordResult(p, 'L', 'listen', 1, day);
+    assert.equal(p.streak, 3);
+    assert.ok(badgesEarned(p).includes('three_day_streak'));
+    assert.ok(!badgesEarned(p).includes('week_streak'));
+
+    for (const day of ['2026-09-23', '2026-09-24', '2026-09-25', '2026-09-26']) p = recordResult(p, 'L', 'listen', 1, day);
+    assert.equal(p.streak, 7);
+    assert.ok(badgesEarned(p).includes('week_streak'));
+
+    // Break the streak entirely; the badge (an achievement, not a live status) survives.
+    p = recordResult(p, 'L', 'listen', 1, '2026-10-05');
+    assert.equal(p.streak, 1);
+    assert.ok(badgesEarned(p).includes('week_streak') && badgesEarned(p).includes('three_day_streak'));
+  });
+});
+
 describe('stars and streak', () => {
   it('grades a round', () => {
     assert.equal(starsFor(8, 8), 3);
@@ -136,7 +235,7 @@ describe('stars and streak', () => {
   });
 
   it('crosses a month boundary', () => {
-    const p = recordResult({ stars: {}, streak: 4, lastDay: '2026-09-30' }, 'L', 'match', 1, '2026-10-01');
+    const p = recordResult({ stars: {}, streak: 4, bestStreak: 4, lastDay: '2026-09-30' }, 'L', 'match', 1, '2026-10-01');
     assert.equal(p.streak, 5);
   });
 
