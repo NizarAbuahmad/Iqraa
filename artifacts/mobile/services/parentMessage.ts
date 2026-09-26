@@ -307,14 +307,14 @@ const ESCALATE_AFTER = 2;
 
 export interface ContactSummary {
   /** Newest contact, or null when this student's parents were never contacted. */
-  last: { kind: MessageKind; createdAt: string } | null;
+  last: { kind: MessageKind; createdAt: string; read?: boolean | null } | null;
   /** Letters per kind in the last 30 days. */
   recent: Partial<Record<MessageKind, number>>;
 }
 
 /** `contacts` in any order; `createdAt` ISO strings as the API returns them. */
 export function summarizeContacts(
-  contacts: { kind: string; createdAt: string }[],
+  contacts: { kind: string; createdAt: string; read?: boolean | null }[],
   now: Date,
 ): ContactSummary {
   const sorted = [...contacts].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
@@ -325,7 +325,12 @@ export function summarizeContacts(
     recent[k] = (recent[k] ?? 0) + 1;
   }
   const first = sorted[0];
-  return { last: first ? { kind: first.kind as MessageKind, createdAt: first.createdAt } : null, recent };
+  return {
+    last: first
+      ? { kind: first.kind as MessageKind, createdAt: first.createdAt, ...(first.read !== undefined && { read: first.read }) }
+      : null,
+    recent,
+  };
 }
 
 const POSITIVE_KINDS: MessageKind[] = ['praise', 'progress'];
@@ -339,7 +344,12 @@ export interface ClassContactSummary {
   quiet: { id: string; displayName: string; lastAt: string | null }[];
   /** Parents have only ever heard concerns about this child — no praise or progress letter. */
   concernOnly: { id: string; displayName: string; concerns: number }[];
+  /** Latest in-app letter still unopened by every guardian after UNREAD_AFTER_MS, oldest first. */
+  unread: { id: string; displayName: string; sentAt: string }[];
 }
+
+/** Give a parent two days before calling an in-app letter unread — nobody checks every app daily. */
+const UNREAD_AFTER_MS = 2 * 24 * 60 * 60 * 1000;
 
 /**
  * Class-level view of the parent contact log. `students` is the class roster
@@ -348,9 +358,10 @@ export interface ClassContactSummary {
  */
 export function summarizeClassContacts(
   students: { id: string; displayName: string }[],
-  contacts: { studentId: string; kind: string; createdAt: string }[],
+  contacts: { studentId: string; kind: string; createdAt: string; channel?: string; read?: boolean | null }[],
   now: Date,
 ): ClassContactSummary {
+  const latestInApp = new Map<string, { at: number; read: boolean }>();
   const per = new Map<string, { last: number; positive: number; concern: number }>();
   let positive = 0;
   let concern = 0;
@@ -361,6 +372,9 @@ export function summarizeClassContacts(
     if (POSITIVE_KINDS.includes(c.kind as MessageKind)) { s.positive++; positive++; }
     if (CONCERN_KINDS.includes(c.kind as MessageKind)) { s.concern++; concern++; }
     per.set(c.studentId, s);
+    if (c.channel === 'in_app' && (latestInApp.get(c.studentId)?.at ?? -1) < at) {
+      latestInApp.set(c.studentId, { at, read: c.read === true });
+    }
   }
 
   const quiet = students
@@ -374,7 +388,13 @@ export function summarizeClassContacts(
     .map(({ st, s }) => ({ id: st.id, displayName: st.displayName, concerns: s!.concern }))
     .sort((a, b) => b.concerns - a.concerns);
 
-  return { positive, concern, quiet, concernOnly };
+  const unread = students
+    .map(st => ({ st, l: latestInApp.get(st.id) }))
+    .filter(({ l }) => l && !l.read && now.getTime() - l.at >= UNREAD_AFTER_MS)
+    .map(({ st, l }) => ({ id: st.id, displayName: st.displayName, sentAt: new Date(l!.at).toISOString() }))
+    .sort((a, b) => a.sentAt.localeCompare(b.sentAt));
+
+  return { positive, concern, quiet, concernOnly, unread };
 }
 
 /** True when this would be at least the 3rd missing-homework/absence letter in 30 days. */
