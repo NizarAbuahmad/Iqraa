@@ -374,7 +374,7 @@ function EdgeScroll({ isRTL, children }: { isRTL: boolean; children: React.React
       ref={ref}
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ flexGrow: 1 }}
+      contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 1 }}
       onContentSizeChange={() => { if (isRTL) ref.current?.scrollToEnd({ animated: false }); }}
     >
       {children}
