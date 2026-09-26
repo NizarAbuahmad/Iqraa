@@ -2,7 +2,7 @@
   "expo": {
     "name": "IQRA | اقرأ",
     "slug": "mobile",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
@@ -78,7 +78,14 @@
       ],
       "@react-native-google-signin/google-signin",
       "./plugins/withAndroidReleaseSigning.js",
-      "./plugins/withAndroidGradleMemory.js"
+      "./plugins/withAndroidGradleMemory.js",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

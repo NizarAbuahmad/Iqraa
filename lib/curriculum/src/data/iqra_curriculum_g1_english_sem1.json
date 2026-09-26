@@ -40,22 +40,22 @@
             "Introducing the characters; introducing colours and numbers."
           ],
           "vocabulary": [
-            { "ar": "", "en": "one" },
-            { "ar": "", "en": "two" },
-            { "ar": "", "en": "three" },
-            { "ar": "", "en": "four" },
-            { "ar": "", "en": "five" },
-            { "ar": "", "en": "six" },
-            { "ar": "", "en": "seven" },
-            { "ar": "", "en": "eight" },
-            { "ar": "", "en": "nine" },
-            { "ar": "", "en": "ten" },
-            { "ar": "", "en": "blue" },
-            { "ar": "", "en": "green" },
-            { "ar": "", "en": "orange" },
-            { "ar": "", "en": "red" },
-            { "ar": "", "en": "yellow" },
-            { "ar": "", "en": "brown" }
+            { "ar": "واحد", "en": "one" },
+            { "ar": "اثنان", "en": "two" },
+            { "ar": "ثلاثة", "en": "three" },
+            { "ar": "أربعة", "en": "four" },
+            { "ar": "خمسة", "en": "five" },
+            { "ar": "ستة", "en": "six" },
+            { "ar": "سبعة", "en": "seven" },
+            { "ar": "ثمانية", "en": "eight" },
+            { "ar": "تسعة", "en": "nine" },
+            { "ar": "عشرة", "en": "ten" },
+            { "ar": "أزرق", "en": "blue" },
+            { "ar": "أخضر", "en": "green" },
+            { "ar": "برتقالي", "en": "orange" },
+            { "ar": "أحمر", "en": "red" },
+            { "ar": "أصفر", "en": "yellow" },
+            { "ar": "بنّي", "en": "brown" }
           ]
         }
       ]
@@ -83,14 +83,14 @@
             "Who's this? This is (my) …"
           ],
           "vocabulary": [
-            { "ar": "", "en": "boy" },
-            { "ar": "", "en": "brother" },
-            { "ar": "", "en": "dad" },
-            { "ar": "", "en": "friend" },
-            { "ar": "", "en": "girl" },
-            { "ar": "", "en": "mum" },
-            { "ar": "", "en": "sister" },
-            { "ar": "", "en": "cat" }
+            { "ar": "ولد", "en": "boy" },
+            { "ar": "أخ", "en": "brother" },
+            { "ar": "أبي", "en": "dad" },
+            { "ar": "صديق", "en": "friend" },
+            { "ar": "بنت", "en": "girl" },
+            { "ar": "أمي", "en": "mum" },
+            { "ar": "أخت", "en": "sister" },
+            { "ar": "قطة", "en": "cat" }
           ]
         },
         {
@@ -129,14 +129,14 @@
             "I haven't got …"
           ],
           "vocabulary": [
-            { "ar": "", "en": "bag" },
-            { "ar": "", "en": "book" },
-            { "ar": "", "en": "crayon" },
-            { "ar": "", "en": "eraser" },
-            { "ar": "", "en": "pen" },
-            { "ar": "", "en": "pencil" },
-            { "ar": "", "en": "pencil case" },
-            { "ar": "", "en": "ruler" }
+            { "ar": "حقيبة", "en": "bag" },
+            { "ar": "كتاب", "en": "book" },
+            { "ar": "قلم تلوين", "en": "crayon" },
+            { "ar": "ممحاة", "en": "eraser" },
+            { "ar": "قلم حبر", "en": "pen" },
+            { "ar": "قلم رصاص", "en": "pencil" },
+            { "ar": "مقلمة", "en": "pencil case" },
+            { "ar": "مسطرة", "en": "ruler" }
           ]
         },
         {
@@ -176,14 +176,14 @@
             "The pens are on the floor."
           ],
           "vocabulary": [
-            { "ar": "", "en": "chair" },
-            { "ar": "", "en": "desk" },
-            { "ar": "", "en": "door" },
-            { "ar": "", "en": "floor" },
-            { "ar": "", "en": "teacher" },
-            { "ar": "", "en": "wall" },
-            { "ar": "", "en": "whiteboard" },
-            { "ar": "", "en": "window" }
+            { "ar": "كرسي", "en": "chair" },
+            { "ar": "مقعد الدراسة", "en": "desk" },
+            { "ar": "باب", "en": "door" },
+            { "ar": "أرضية", "en": "floor" },
+            { "ar": "معلّم", "en": "teacher" },
+            { "ar": "جدار", "en": "wall" },
+            { "ar": "لوح أبيض", "en": "whiteboard" },
+            { "ar": "نافذة", "en": "window" }
           ]
         },
         {
@@ -223,16 +223,16 @@
             "What's your favourite toy? It's my …"
           ],
           "vocabulary": [
-            { "ar": "", "en": "ball" },
-            { "ar": "", "en": "car" },
-            { "ar": "", "en": "doll" },
-            { "ar": "", "en": "plane" },
-            { "ar": "", "en": "robot" },
-            { "ar": "", "en": "teddy" },
-            { "ar": "", "en": "train" },
-            { "ar": "", "en": "yoyo" },
-            { "ar": "", "en": "happy" },
-            { "ar": "", "en": "sad" }
+            { "ar": "كرة", "en": "ball" },
+            { "ar": "سيارة", "en": "car" },
+            { "ar": "دمية", "en": "doll" },
+            { "ar": "طائرة", "en": "plane" },
+            { "ar": "روبوت", "en": "robot" },
+            { "ar": "دبدوب", "en": "teddy" },
+            { "ar": "قطار", "en": "train" },
+            { "ar": "يويو", "en": "yoyo" },
+            { "ar": "سعيد", "en": "happy" },
+            { "ar": "حزين", "en": "sad" }
           ]
         },
         {

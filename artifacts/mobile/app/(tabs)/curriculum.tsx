@@ -211,6 +211,24 @@ export default function CurriculumScreen() {
                 </Pressable>
               ) : null}
             </View>
+            {selectedGrade.level <= 4 ? (
+              <Pressable
+                onPress={() => router.push({ pathname: '/curriculum/english', params: { grade: String(selectedGrade.level) } } as never)}
+                style={({ pressed }) => [
+                  styles.hubBanner,
+                  { backgroundColor: colors.hero, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.9 : 1 },
+                ]}
+              >
+                <Text style={{ fontSize: 28 }}>🎧</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 16, textAlign: isRTL ? 'right' : 'left' }}>{t('hubTitle')}</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
+                    {t('hubListenDesc')} · {t('hubSpell')} · {t('hubMatch')}
+                  </Text>
+                </View>
+                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#fff" />
+              </Pressable>
+            ) : null}
           </>
         }
         ListEmptyComponent={
@@ -247,6 +265,7 @@ export default function CurriculumScreen() {
 
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1 },
+  hubBanner: { alignItems: 'center', gap: 12, padding: 14, marginBottom: 12 },
   title: { fontSize: 28, marginBottom: 4 },
   subtitle: { fontSize: 13, lineHeight: 21, marginBottom: 6 },
   intro: { fontSize: 12.5, lineHeight: 19, marginBottom: 14 },

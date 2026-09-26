@@ -31,8 +31,13 @@
  *
  * `/play` is the free, no-account mini-games hub — a top-of-funnel link
  * meant to be shared and opened cold, same reasoning as `/take`.
+ *
+ * `/curriculum/english` is the English corner, linked from `/play` for the same
+ * reason. It calls no API: the words ship in the bundle, the audio is in the
+ * public bucket, and progress stays on the device. Only this subtree is public;
+ * the rest of `/curriculum` still needs an account.
  */
-const PUBLIC_ROUTES = ['/take', '/legal', '/play'];
+const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english'];
 
 export function isPublicRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;

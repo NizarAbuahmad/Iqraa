@@ -40,8 +40,8 @@
             "Demonstrative pronouns (singular/plural) — e.g. This is a pen./These are pens. That is a pen./Those are pens."
           ],
           "vocabulary": [
-            { "ar": "", "en": "Alphabet" },
-            { "ar": "", "en": "Numbers 11-20" }
+            { "ar": "الحروف الأبجدية", "en": "Alphabet" },
+            { "ar": "الأعداد من 11 إلى 20", "en": "Numbers 11-20" }
           ]
         },
         {
@@ -85,20 +85,20 @@
             "Present simple, affirmative/negative statements and Wh-questions about daily routines — e.g. I play/don't play. We have/don't have lunch. When do you go home? We go home in the afternoon."
           ],
           "vocabulary": [
-            { "ar": "", "en": "get up" },
-            { "ar": "", "en": "have breakfast" },
-            { "ar": "", "en": "go to school" },
-            { "ar": "", "en": "have art lessons" },
-            { "ar": "", "en": "play with my friends" },
-            { "ar": "", "en": "go home" },
-            { "ar": "", "en": "have lunch" },
-            { "ar": "", "en": "do homework" },
-            { "ar": "", "en": "have dinner" },
-            { "ar": "", "en": "go to bed" },
-            { "ar": "", "en": "morning" },
-            { "ar": "", "en": "afternoon" },
-            { "ar": "", "en": "evening" },
-            { "ar": "", "en": "night" }
+            { "ar": "أستيقظ", "en": "get up" },
+            { "ar": "أتناول الفطور", "en": "have breakfast" },
+            { "ar": "أذهب إلى المدرسة", "en": "go to school" },
+            { "ar": "أحضر حصة الفن", "en": "have art lessons" },
+            { "ar": "ألعب مع أصدقائي", "en": "play with my friends" },
+            { "ar": "أعود إلى البيت", "en": "go home" },
+            { "ar": "أتناول الغداء", "en": "have lunch" },
+            { "ar": "أحلّ الواجب", "en": "do homework" },
+            { "ar": "أتناول العشاء", "en": "have dinner" },
+            { "ar": "أذهب إلى النوم", "en": "go to bed" },
+            { "ar": "صباح", "en": "morning" },
+            { "ar": "بعد الظهر", "en": "afternoon" },
+            { "ar": "مساء", "en": "evening" },
+            { "ar": "ليل", "en": "night" }
           ]
         },
         {
@@ -143,22 +143,22 @@
             "Possessive adjectives (our/your/their) — e.g. Our glasses are blue. Your keys are grey. Their phones are green."
           ],
           "vocabulary": [
-            { "ar": "", "en": "dress" },
-            { "ar": "", "en": "sandals" },
-            { "ar": "", "en": "socks" },
-            { "ar": "", "en": "hat" },
-            { "ar": "", "en": "scarf" },
-            { "ar": "", "en": "jeans" },
-            { "ar": "", "en": "pyjamas" },
-            { "ar": "", "en": "trainers" },
-            { "ar": "", "en": "baseball cap" },
-            { "ar": "", "en": "shirt" },
-            { "ar": "", "en": "glasses" },
-            { "ar": "", "en": "keys" },
-            { "ar": "", "en": "handbag" },
-            { "ar": "", "en": "backpack" },
-            { "ar": "", "en": "phone" },
-            { "ar": "", "en": "computer" }
+            { "ar": "فستان", "en": "dress" },
+            { "ar": "صندل", "en": "sandals" },
+            { "ar": "جوارب", "en": "socks" },
+            { "ar": "قبعة", "en": "hat" },
+            { "ar": "وشاح", "en": "scarf" },
+            { "ar": "بنطال جينز", "en": "jeans" },
+            { "ar": "ملابس النوم", "en": "pyjamas" },
+            { "ar": "حذاء رياضي", "en": "trainers" },
+            { "ar": "قبعة رياضية", "en": "baseball cap" },
+            { "ar": "قميص", "en": "shirt" },
+            { "ar": "نظارة", "en": "glasses" },
+            { "ar": "مفاتيح", "en": "keys" },
+            { "ar": "حقيبة يد", "en": "handbag" },
+            { "ar": "حقيبة ظهر", "en": "backpack" },
+            { "ar": "هاتف", "en": "phone" },
+            { "ar": "حاسوب", "en": "computer" }
           ]
         },
         {
@@ -202,23 +202,23 @@
             "Present simple, third person singular (affirmative/negative/questions) — e.g. He/She plays video games. He/She doesn't watch TV. Does he do karate on Saturday? Yes, he does./No, he doesn't."
           ],
           "vocabulary": [
-            { "ar": "", "en": "watch TV" },
-            { "ar": "", "en": "table tennis" },
-            { "ar": "", "en": "read books" },
-            { "ar": "", "en": "play badminton" },
-            { "ar": "", "en": "play video games" },
-            { "ar": "", "en": "play tennis" },
-            { "ar": "", "en": "play basketball" },
-            { "ar": "", "en": "roller skate" },
-            { "ar": "", "en": "skateboard" },
-            { "ar": "", "en": "do karate" },
-            { "ar": "", "en": "Sunday" },
-            { "ar": "", "en": "Monday" },
-            { "ar": "", "en": "Tuesday" },
-            { "ar": "", "en": "Wednesday" },
-            { "ar": "", "en": "Thursday" },
-            { "ar": "", "en": "Friday" },
-            { "ar": "", "en": "Saturday" }
+            { "ar": "يشاهد التلفاز", "en": "watch TV" },
+            { "ar": "تنس الطاولة", "en": "table tennis" },
+            { "ar": "يقرأ الكتب", "en": "read books" },
+            { "ar": "يلعب الريشة الطائرة", "en": "play badminton" },
+            { "ar": "يلعب ألعاب الفيديو", "en": "play video games" },
+            { "ar": "يلعب التنس", "en": "play tennis" },
+            { "ar": "يلعب كرة السلة", "en": "play basketball" },
+            { "ar": "يتزلّج بالعجلات", "en": "roller skate" },
+            { "ar": "لوح تزلّج", "en": "skateboard" },
+            { "ar": "يمارس الكاراتيه", "en": "do karate" },
+            { "ar": "الأحد", "en": "Sunday" },
+            { "ar": "الاثنين", "en": "Monday" },
+            { "ar": "الثلاثاء", "en": "Tuesday" },
+            { "ar": "الأربعاء", "en": "Wednesday" },
+            { "ar": "الخميس", "en": "Thursday" },
+            { "ar": "الجمعة", "en": "Friday" },
+            { "ar": "السبت", "en": "Saturday" }
           ]
         },
         {
@@ -266,22 +266,22 @@
             "goes to work by (means of transport) — e.g. He/She goes to work by bus."
           ],
           "vocabulary": [
-            { "ar": "", "en": "teacher" },
-            { "ar": "", "en": "doctor" },
-            { "ar": "", "en": "nurse" },
-            { "ar": "", "en": "firefighter" },
-            { "ar": "", "en": "astronaut" },
-            { "ar": "", "en": "pilot" },
-            { "ar": "", "en": "police officer" },
-            { "ar": "", "en": "builder" },
-            { "ar": "", "en": "chef" },
-            { "ar": "", "en": "artist" },
-            { "ar": "", "en": "bus" },
-            { "ar": "", "en": "boat" },
-            { "ar": "", "en": "underground" },
-            { "ar": "", "en": "train" },
-            { "ar": "", "en": "motorbike" },
-            { "ar": "", "en": "car" }
+            { "ar": "معلّم", "en": "teacher" },
+            { "ar": "طبيب", "en": "doctor" },
+            { "ar": "ممرّض", "en": "nurse" },
+            { "ar": "رجل إطفاء", "en": "firefighter" },
+            { "ar": "رائد فضاء", "en": "astronaut" },
+            { "ar": "طيّار", "en": "pilot" },
+            { "ar": "شرطي", "en": "police officer" },
+            { "ar": "عامل بناء", "en": "builder" },
+            { "ar": "طاهٍ", "en": "chef" },
+            { "ar": "فنان", "en": "artist" },
+            { "ar": "حافلة", "en": "bus" },
+            { "ar": "قارب", "en": "boat" },
+            { "ar": "قطار الأنفاق", "en": "underground" },
+            { "ar": "قطار", "en": "train" },
+            { "ar": "دراجة نارية", "en": "motorbike" },
+            { "ar": "سيارة", "en": "car" }
           ]
         },
         {

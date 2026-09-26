@@ -14,6 +14,7 @@
     "./practice": "./src/practice.ts",
     "./premade": "./src/premade.ts",
     "./vocabulary": "./src/vocabulary.ts",
+    "./englishHub": "./src/englishHub.ts",
     "./passages": "./src/passages.ts",
     "./catalogs/*": "./src/catalogs/*.ts",
     "./validateCurriculum": "./src/validateCurriculum.ts"
@@ -29,6 +30,7 @@
     "verify-ingest": "node --experimental-strip-types scripts/verify-external-ingest.ts",
     "upload-r2": "node --experimental-strip-types scripts/upload-to-r2.ts",
     "upload-figures-r2": "node --experimental-strip-types scripts/upload-figures-r2.ts",
+    "english-audio": "node --experimental-strip-types scripts/generate-english-audio.ts",
     "audit-r2": "node --experimental-strip-types scripts/audit-r2.ts"
   },
   "devDependencies": {

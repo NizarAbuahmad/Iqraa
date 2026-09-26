@@ -72,6 +72,16 @@ describe('isPublicRoute', () => {
     }
   });
 
+  it('opens the English corner to anyone, and nothing else under /curriculum', () => {
+    for (const p of ['/curriculum/english', '/curriculum/english/kbl-g1-eng-s1-nccd-u0_l1']) {
+      assert.equal(isPublicRoute(p), true, p);
+    }
+    // A prefix match, not a substring one: the lesson browser stays private.
+    for (const p of ['/curriculum', '/curriculum/lesson-detail', '/curriculum/englishx', '/curriculum/unit']) {
+      assert.equal(isPublicRoute(p), false, p);
+    }
+  });
+
   it('lets anyone open the free games hub with no account', () => {
     for (const p of ['/play', '/play/flags', '/play/capitals', '/play/memory', '/play/colors', '/play/multiply', '/play/divide', '/play/add', '/play/subtract']) {
       assert.equal(isPublicRoute(p), true, p);

@@ -489,6 +489,52 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## An English corner for Grades 1–4, 2026-09-25
+
+Anyone can practise the Grade 1–4 English lesson words at
+`/curriculum/english`, **with no account** — it's the first card on the `/play`
+games page. `/curriculum/english` is in `PUBLIC_ROUTES`; the rest of
+`/curriculum` still needs sign-in, which `routeGating.test.ts` pins. Signed-in users
+also reach it from a banner on the Curriculum tab when Grades 1–4 are selected,
+and from «العب بكلمات هذا الدرس» on the matching lesson pages. It covers 36
+lessons and 458 words across the eight G1–4 books.
+
+- **Five activities**, all pure logic in `services/englishHub/games.ts`: flashcards,
+  listen-and-choose, match the English word to its Arabic meaning, spell it, and
+  (added 2026-09-26) unscramble it — tap letter tiles into order, tap a placed
+  tile to send it back to the tray. Distractors come from the same lesson.
+  Spelling and scrambling both ignore case, spaces and hyphens, and both skip
+  multi-word phrases ("put litter in the bin" tests typing a sentence, not a
+  word), falling back to the full lesson if fewer than 4 single words survive.
+- **The Arabic meanings are new.** Every G1–4 vocabulary entry had `ar: ""`.
+  They were glossed by hand on 2026-09-25 and **have not been reviewed by a
+  teacher yet**. Entries that are topic labels rather than words ("Numbers
+  11-20", "fair/brown/red/black hair") are dropped by `isDrillableWord`.
+- **Audio is generated: 458 MP3s, 12 MB, in `iqraa-public/english-audio/<slug>.mp3`**,
+  as of 2026-09-25. It was voiced once with OpenAI TTS (`gpt-4o-mini-tts`, a
+  British voice) by `pnpm --filter @workspace/curriculum run english-audio`,
+  using a restricted key that can only call text-to-speech. The OpenAI project
+  **allow-lists models**, so `gpt-4o-mini-tts` (and its dated
+  `-2025-12-15` snapshot) had to be enabled under Project → Limits. The change
+  took a few minutes to apply, and the script's per-word resume rode it out. A
+  new or renamed word needs the script re-run; a word with no file plays
+  nothing and the game carries on.
+- **`expo-audio` is the new native module**, with its microphone permission
+  off, so `app.json` `version` moved 1.0.0 → 1.1.0. Installed Android builds
+  stop receiving OTA updates until a 1.1.0 build ships.
+- **Progress is device-only.** Stars and a day streak are kept in AsyncStorage
+  (`englishHub.progress.v1`). Nothing reaches a teacher. A server table and a
+  teacher view are Phase 2.
+- **Verified on web on 2026-09-25 and 2026-09-26**, by playing all five
+  activities through on a local build with the route made public for that
+  session and then reverted, including the scramble's undo and wrong-answer
+  paths. Not yet checked on a device.
+- **Ideas looked at and not taken:** funenglishgames.com was reviewed as a
+  source of game ideas/materials on 2026-09-26. Its games don't run (Flash-era,
+  ad frames only), it states no reuse licence, and it's ad- and
+  tracker-heavy — not linked from Iqraa. Word scramble was the one idea worth
+  building, from scratch, against our own words and audio.
+
 ## A report could name anyone, and moderation believed it, 2026-09-15
 
 **`POST /messaging/reports` checked the reporter and trusted the rest.** It
