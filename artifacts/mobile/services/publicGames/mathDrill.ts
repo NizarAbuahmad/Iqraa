@@ -22,6 +22,7 @@ const MIN_TABLE = 1;
 const MAX_TABLE = 10;
 const ALL_TABLES = Array.from({ length: MAX_TABLE }, (_, i) => i + MIN_TABLE);
 const PROD_ORIGIN = 'https://app.iqrra.com';
+const ZERO_ANSWER_SHARE = 0.1;
 
 /** Route per operation. /play/multiply shipped first and its links are out there — never rename it. */
 export const DRILL_ROUTES: Record<DrillOp, string> = {
@@ -115,9 +116,14 @@ function drawProblem(config: DrillConfig, rng: () => number): DrillProblem {
     return { op, a, b, answer: a + b };
   }
   if (op === 'sub') {
-    // Never negative; 0 is allowed (7 − 7) — decided with the product owner.
-    const a = 1 + pick(config.max);
-    const b = 1 + pick(a);
+    // Never negative. 0 is allowed (7 − 7) but kept to ~1 in 10 on purpose:
+    // drawing b uniformly from 1..a made "x − x" ~3 in 10 at max 10.
+    if (rng() < ZERO_ANSWER_SHARE) {
+      const a = 1 + pick(config.max);
+      return { op, a, b: a, answer: 0 };
+    }
+    const a = 2 + pick(config.max - 1);
+    const b = 1 + pick(a - 1);
     return { op, a, b, answer: a - b };
   }
   const table = config.tables[pick(config.tables.length)]!;
