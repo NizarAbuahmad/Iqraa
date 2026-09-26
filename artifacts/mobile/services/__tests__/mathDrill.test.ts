@@ -125,12 +125,22 @@ describe('nextProblem', () => {
     });
   }
 
-  it('subtraction includes zero answers (decided: 7 − 7 = 0 is allowed)', () => {
-    const rng = makeRng(3);
-    let zeros = 0;
-    for (let i = 0; i < 300; i++) if (nextProblem({ ...base, op: 'sub', max: 10 }, rng).answer === 0) zeros++;
-    assert.ok(zeros > 0);
-  });
+  // 0 answers are allowed (7 − 7), but only occasionally: picking the second
+  // number uniformly from 1..a made "x − x" about 3 in 10 problems at max 10.
+  for (const max of [10, 20, 100]) {
+    it(`subtraction up to ${max}: zero answers are occasional (~1 in 10), not rare or dominant`, () => {
+      const rng = makeRng(max * 7);
+      let zeros = 0;
+      const n = 2000;
+      let prev: DrillProblem | undefined;
+      for (let i = 0; i < n; i++) {
+        prev = nextProblem({ ...base, op: 'sub', max }, rng, prev);
+        if (prev.answer === 0) zeros++;
+      }
+      const rate = zeros / n;
+      assert.ok(rate >= 0.05 && rate <= 0.15, `zero rate ${(rate * 100).toFixed(1)}%`);
+    });
+  }
 
   it('still avoids a repeat with a single table', () => {
     drawMany({ ...base, op: 'mul', tables: [1] }, 50, 7, () => {});
