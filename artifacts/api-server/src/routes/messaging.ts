@@ -155,9 +155,10 @@ async function participantsOf(threadId: string) {
 
 /** A message as sent over the wire: the R2 key never leaves the server, only a time-limited signed URL (see lib/r2.ts). */
 async function toClientMessage(row: typeof chatMessages.$inferSelect) {
+  const { attachmentKey, ...rest } = row;
   return {
-    ...row,
-    attachmentUrl: row.attachmentKey ? await presignedGetUrl(row.attachmentKey) : null,
+    ...rest,
+    attachmentUrl: attachmentKey ? await presignedGetUrl(attachmentKey) : null,
   };
 }
 

@@ -52,7 +52,10 @@ function renderEmailShell(bodyHtml: string): string {
 export async function sendVerificationEmail(to: string, code: string): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    logger.warn({ to, code }, "RESEND_API_KEY not set — verification code logged instead of emailed");
+    // The code in the log is how local dev signs up; in production it would let
+    // anyone with log access verify any address, so it never goes there.
+    const loggable = process.env.NODE_ENV === "production" ? { to } : { to, code };
+    logger.warn(loggable, "RESEND_API_KEY not set — verification email not sent");
     return false;
   }
 
