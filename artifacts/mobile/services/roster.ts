@@ -334,7 +334,11 @@ export interface ParentContact {
   kind: string;
   channel: 'in_app' | 'share' | 'copy';
   createdAt: string;
+  /** In-app only: has a linked guardian opened the thread since? Null for shared/copied letters. */
+  read?: boolean | null;
 }
+
+export type ClassParentContact = ParentContact & { studentId: string };
 
 /** Newest first, at most 50. */
 export async function listParentContacts(studentId: string): Promise<ParentContact[]> {
@@ -346,11 +350,9 @@ export async function listParentContacts(studentId: string): Promise<ParentConta
 /** Every letter to parents of this class's students, newest first. */
 export async function listClassParentContacts(
   classId: string,
-): Promise<{ studentId: string; kind: string; createdAt: string }[]> {
+): Promise<ClassParentContact[]> {
   const res = await apiFetch(`/classes/${classId}/parent-contacts`);
-  const data = await readJson<{ contacts: { studentId: string; kind: string; createdAt: string }[] }>(
-    res, 'Loading class parent contacts',
-  );
+  const data = await readJson<{ contacts: ClassParentContact[] }>(res, 'Loading class parent contacts');
   return data.contacts;
 }
 
