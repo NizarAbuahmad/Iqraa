@@ -174,6 +174,7 @@ export type ResourceSection =
 
 const CATEGORY_ORDER: LibraryCategory[] = [
   'infographic',
+  'image',
   'video',
   'audio',
   'game',

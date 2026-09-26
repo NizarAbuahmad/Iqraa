@@ -6,6 +6,7 @@ import { apiFetch, apiJson } from './apiClient.ts';
 
 export const LIBRARY_CATEGORIES = [
   'infographic',
+  'image',
   'video',
   'audio',
   'game',
