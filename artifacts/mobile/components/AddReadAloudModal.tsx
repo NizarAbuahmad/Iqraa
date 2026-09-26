@@ -48,7 +48,7 @@ const ACCENT_FILL = palette.hero;
 const MIN_WORDS = 10;
 const MAX_WORDS = 600;
 
-const COMPETENCIES: { key: CompetencyKey; label: TranslationKey }[] = [
+export const COMPETENCIES: { key: CompetencyKey; label: TranslationKey }[] = [
   { key: 'knowledge', label: 'competencyKnowledge' },
   { key: 'understanding', label: 'competencyUnderstanding' },
   { key: 'application', label: 'competencyApplication' },

@@ -30,6 +30,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -56,6 +57,10 @@ import { getSubjectsForGrade, getVisibleGrades } from '@workspace/curriculum';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+
+/** Two cards per row once the track is wide enough for two readable titles. */
+const GRID_MIN_WIDTH = 760;
 
 const KIND_LABEL: Record<ResourceKind, TranslationKey> = {
   infographic: 'libraryCatInfographic',
@@ -148,6 +153,18 @@ const ACCENT_FILL = palette.hero;
  */
 function ResourceRow({ item, accent, showKind = true }: { item: ResourceItem; accent: string; showKind?: boolean }) {
   const thumb = itemThumbnail(item);
+function ResourceRow({
+  item,
+  accent,
+  showKind = true,
+  grid = false,
+}: {
+  item: ResourceItem;
+  accent: string;
+  showKind?: boolean;
+  /** Half-width card in a wrapping two-column track. */
+  grid?: boolean;
+}) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const isAr = lang === 'ar';
@@ -159,11 +176,15 @@ function ResourceRow({ item, accent, showKind = true }: { item: ResourceItem; ac
         ? item.page.toLocaleString('ar-EG')
         : String(item.page);
   const printable = item.actions.includes('print');
+  const sheet = printable ? allPremade().find(s => s.id === item.nativeId) : undefined;
+  const questionCount = sheet?.content.sections.reduce((n, s) => n + s.questions.length, 0) ?? 0;
+  // A sheet's note says what a teacher gets before printing; a title alone
+  // does not tell «12 questions with a key» from «a blank page».
+  const note = item.description ?? (sheet ? t('premadeSheetMeta', questionCount) : null);
 
   // A frozen sheet has no URL: it is rendered on the spot and handed to the
   // print/share sheet, the same path the worksheet generator's PDF export takes.
   const printSheet = () => {
-    const sheet = allPremade().find(s => s.id === item.nativeId);
     if (!sheet) return;
     const grade = getVisibleGrades().find(g => g.id === sheet.gradeId);
     const subject = getSubjectsForGrade(sheet.gradeId).find(s => s.id === sheet.subjectId);
@@ -198,6 +219,7 @@ function ResourceRow({ item, accent, showKind = true }: { item: ResourceItem; ac
       : printable
         ? 'print-outline'
         : null;
+  const trailingIcon = item.url ? 'open-outline' : null;
 
   return (
     <Pressable
@@ -206,6 +228,7 @@ function ResourceRow({ item, accent, showKind = true }: { item: ResourceItem; ac
       accessibilityLabel={`${t(KIND_LABEL[item.kind])} — ${title}`}
       style={({ pressed }) => [
         styles.row,
+        grid && styles.gridCell,
         {
           backgroundColor: colors.card,
           borderColor: colors.border,
@@ -241,14 +264,14 @@ function ResourceRow({ item, accent, showKind = true }: { item: ResourceItem; ac
         >
           {page ? t('qrOnPage', page) : title}
         </Text>
-        {item.description ? (
+        {note ? (
           <Text
             style={[
               styles.rowNote,
               { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' },
             ]}
           >
-            {item.description}
+            {note}
           </Text>
         ) : null}
         {item.insecure ? (
@@ -263,6 +286,19 @@ function ResourceRow({ item, accent, showKind = true }: { item: ResourceItem; ac
         ) : null}
       </View>
       {trailingIcon ? <Ionicons name={trailingIcon} size={16} color={colors.mutedForeground} /> : null}
+      {printable ? (
+        // The action is spelled out: a lone glyph at the far end of a wide row
+        // went unnoticed, and the row looked like it did nothing. «فتح» when
+        // the tap opens the viewer, «طباعة» when it prints directly.
+        <View style={[styles.actionPill, { backgroundColor: accent, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Ionicons name={opensSheet ? 'eye-outline' : 'print-outline'} size={14} color={palette.primaryForeground} />
+          <Text style={[styles.actionText, { color: palette.primaryForeground, fontFamily: 'Cairo_600SemiBold' }]}>
+            {t(opensSheet ? 'resourceActionOpen' : 'resourceActionPrint')}
+          </Text>
+        </View>
+      ) : trailingIcon ? (
+        <Ionicons name={trailingIcon} size={16} color={colors.mutedForeground} />
+      ) : null}
     </Pressable>
   );
 }
@@ -272,6 +308,7 @@ export default function ResourcesScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const { user } = useAuth();
+  const grid = useWindowDimensions().width >= GRID_MIN_WIDTH;
   const isTeacher = isTeacherRole(user?.role);
   const isStaff = user?.role === 'system_admin';
   const { gradeId } = useLocalSearchParams<{ gradeId?: string; gradeName?: string }>();
@@ -398,7 +435,10 @@ export default function ResourcesScreen() {
         ) : null}
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 48, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
+        showsVerticalScrollIndicator={false}
+      >
         <Text
           style={[
             styles.intro,
@@ -509,6 +549,11 @@ export default function ResourcesScreen() {
               <View style={styles.rows}>
                 {openShelf.items.map(item => (
                   <ResourceRow key={item.key} item={item} accent={SHELF_COLOR[openShelf.shelf]} showKind={false} />
+              <BookShelf items={openShelf.items} openBook={openBook} setOpenBook={setOpenBook} grid={grid} />
+            ) : (
+              <View style={[styles.rows, grid && styles.rowsGrid, grid && isRTL && { flexDirection: 'row-reverse' }]}>
+                {openShelf.items.map(item => (
+                  <ResourceRow key={item.key} item={item} accent={SHELF_COLOR[openShelf.shelf]} showKind={false} grid={grid} />
                 ))}
               </View>
             )}
@@ -606,10 +651,12 @@ function BookShelf({
   items,
   openBook,
   setOpenBook,
+  grid,
 }: {
   items: ResourceItem[];
   openBook: string | null;
   setOpenBook: (title: string | null) => void;
+  grid: boolean;
 }) {
   const colors = useColors();
   const { isRTL, lang } = useLanguage();
@@ -668,9 +715,9 @@ function BookShelf({
               </View>
             </Pressable>
             {expanded ? (
-              <View style={styles.rows}>
+              <View style={[styles.rows, grid && styles.rowsGrid, grid && isRTL && { flexDirection: 'row-reverse' }]}>
                 {rows.map(row => (
-                  <ResourceRow key={row.key} item={row} accent={ACCENT} />
+                  <ResourceRow key={row.key} item={row} accent={ACCENT} grid={grid} />
                 ))}
               </View>
             ) : null}
@@ -716,8 +763,20 @@ const styles = StyleSheet.create({
   countPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   countText: { fontSize: 11.5 },
   rows: { gap: 8, paddingHorizontal: 20 },
+  rowsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   row: { alignItems: 'center', gap: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
   thumb: { width: 64, height: 48, borderRadius: 6, flexShrink: 0 },
+  // 48.5% + 48.5% + the 10px gap fits any track ≥ 340px, so two cells never
+  // wrap to one because of rounding.
+  gridCell: { width: '48.5%', paddingVertical: 14 },
+  actionPill: {
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  actionText: { fontSize: 12 },
   kindPill: {
     flexDirection: 'row',
     alignItems: 'center',
