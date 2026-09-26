@@ -343,6 +343,17 @@ export async function listParentContacts(studentId: string): Promise<ParentConta
   return data.contacts;
 }
 
+/** Every letter to parents of this class's students, newest first. */
+export async function listClassParentContacts(
+  classId: string,
+): Promise<{ studentId: string; kind: string; createdAt: string }[]> {
+  const res = await apiFetch(`/classes/${classId}/parent-contacts`);
+  const data = await readJson<{ contacts: { studentId: string; kind: string; createdAt: string }[] }>(
+    res, 'Loading class parent contacts',
+  );
+  return data.contacts;
+}
+
 export async function logParentContact(
   studentId: string,
   kind: string,
