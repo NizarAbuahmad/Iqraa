@@ -75,7 +75,6 @@ import {
   type TeachingAction,
 } from '@/services/ai/teachingAssistant';
 import { classifyChatIntent, leavesClarificationStanding } from '@/services/ai/intentRouter';
-import { useAuth } from '@/context/AuthContext';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
@@ -1357,7 +1356,6 @@ export default function IqraScreen() {
     openLessonPicker?: string;
   }>();
 
-  const { user } = useAuth();
   const mode: Mode = 'teacher';
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
