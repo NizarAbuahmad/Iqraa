@@ -49,6 +49,10 @@ export interface ResourceItem {
   description?: string;
   /** Where `open` goes. Absent on rows that never leave the app. */
   url?: string;
+  /** Cover image URL: set by admin, or auto-derived from a YouTube URL. */
+  thumbnailUrl?: string;
+  /** 1 or 2 when the resource covers one semester only. */
+  semester?: 1 | 2;
   /** The printed page a book-QR code sits on. */
   page?: number;
   /** The row opens over plain http — warned per row, not once per screen. */
@@ -88,6 +92,8 @@ function fromUploaded(item: LibraryItem): ResourceItem | null {
     subjectId: item.subjectId,
     description: item.description || undefined,
     url: item.url,
+    thumbnailUrl: item.thumbnailUrl ?? undefined,
+    semester: item.semester ?? undefined,
     actions: ['open'],
   };
 }

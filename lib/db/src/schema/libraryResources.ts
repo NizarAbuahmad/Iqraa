@@ -12,7 +12,7 @@
  * reason as `lesson_media.lesson_id`: the curriculum lives in files.
  */
 import { sql } from "drizzle-orm";
-import { check, index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { check, index, integer, pgTable, smallint, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { users } from "./users";
 
 export const libraryResources = pgTable(
@@ -29,6 +29,10 @@ export const libraryResources = pgTable(
     mimeType: text("mime_type"),
     sizeBytes: integer("size_bytes"),
     sourceUrl: text("source_url"),
+    /** 1 or 2 when the resource covers one semester only; null = whole book / grade. */
+    semester: smallint("semester"),
+    /** Optional cover image shown in the library row (YouTube thumbnail, Wikimedia image, etc.). */
+    thumbnailUrl: text("thumbnail_url"),
     createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },

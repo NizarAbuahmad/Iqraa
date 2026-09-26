@@ -54,9 +54,13 @@ export interface LibraryMeta {
   gradeId: string;
   subjectId: string;
   lessonId: string | null;
+  /** 1 or 2 when the resource covers one semester only; null = whole book. */
+  semester: 1 | 2 | null;
   category: LibraryCategory;
   titleAr: string;
   description: string;
+  /** URL of a cover/thumbnail image (optional). */
+  thumbnailUrl: string | null;
 }
 
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -68,12 +72,17 @@ export function parseLibraryMeta(input: Record<string, unknown>): LibraryMeta | 
   const lessonId = str(input.lessonId, 120) || null;
   const titleAr = str(input.titleAr, 200);
   const description = str(input.description, 1000);
+  const thumbnailRaw = str(input.thumbnailUrl, 500);
+  const thumbnailUrl = thumbnailRaw || null;
+  const semesterRaw = Number(input.semester);
+  const semester = semesterRaw === 1 ? 1 : semesterRaw === 2 ? 2 : null;
   if (!/^grade-\d{1,2}$/.test(gradeId)) return { error: "gradeId must look like grade-5" };
   if (!/^[a-z][a-z0-9-]*$/.test(subjectId)) return { error: "subjectId is required" };
   if (lessonId && !lessonId.startsWith("kbl-")) return { error: "lessonId must be a kbl-* lesson id" };
   if (!isLibraryCategory(input.category)) return { error: `category must be one of ${LIBRARY_CATEGORIES.join(", ")}` };
   if (!titleAr) return { error: "titleAr is required" };
-  return { gradeId, subjectId, lessonId, category: input.category, titleAr, description };
+  if (thumbnailUrl && !/^https:\/\//.test(thumbnailUrl)) return { error: "thumbnailUrl must be https" };
+  return { gradeId, subjectId, lessonId, semester, category: input.category, titleAr, description, thumbnailUrl };
 }
 
 /** A link item's URL: https only, so a teacher's tap never lands on plain http or a javascript: URL. */
