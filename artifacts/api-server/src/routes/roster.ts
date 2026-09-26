@@ -172,6 +172,7 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
         externalRef: students.externalRef,
         gradeId: students.gradeId,
         teacherNote: students.teacherNote,
+        gender: students.gender,
         createdAt: students.createdAt,
         linkedCount: count(rosterLinks.id),
       })
@@ -389,6 +390,7 @@ router.get("/students", async (req: AuthenticatedRequest, res) => {
         externalRef: students.externalRef,
         gradeId: students.gradeId,
         teacherNote: students.teacherNote,
+        gender: students.gender,
         createdAt: students.createdAt,
       })
       .from(students)
@@ -578,6 +580,8 @@ router.delete("/classes/:id/students/:studentId", async (req: AuthenticatedReque
   }
 });
 
+const STUDENT_GENDERS = new Set(["male", "female", ""]);
+
 router.patch("/students/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const studentId = req.params["id"] as string;
@@ -597,6 +601,13 @@ router.patch("/students/:id", async (req: AuthenticatedRequest, res) => {
     // clearing it, and the column is NOT NULL. Only surrounding whitespace goes.
     if (req.body?.teacherNote !== undefined) {
       patch["teacherNote"] = trimmed(req.body.teacherNote);
+    }
+    if (req.body?.gender !== undefined) {
+      if (!STUDENT_GENDERS.has(req.body.gender)) {
+        res.status(400).json({ error: "gender must be 'male', 'female' or ''" });
+        return;
+      }
+      patch["gender"] = req.body.gender;
     }
 
     const [row] = await db

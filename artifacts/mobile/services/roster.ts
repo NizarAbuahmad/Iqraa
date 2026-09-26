@@ -31,6 +31,8 @@ export interface RosterStudent {
   gradeId: string;
   /** The teacher's running note on this child. Empty string, never null. */
   teacherNote: string;
+  /** '' = not recorded. Optional: a server older than this field omits it. */
+  gender?: '' | 'male' | 'female';
   createdAt: string;
   /** Somebody has signed up against this name. Absent from the class list endpoint, which does not compute it. */
   linked?: boolean;
@@ -216,7 +218,7 @@ export async function removeStudentFromClass(
  */
 export async function updateStudent(
   studentId: string,
-  changes: { displayName?: string; externalRef?: string; teacherNote?: string },
+  changes: { displayName?: string; externalRef?: string; teacherNote?: string; gender?: '' | 'male' | 'female' },
 ): Promise<RosterStudent> {
   const res = await apiFetch(`/students/${studentId}`, {
     method: 'PATCH',
