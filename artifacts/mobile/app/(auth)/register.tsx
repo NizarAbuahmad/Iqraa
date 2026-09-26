@@ -33,7 +33,11 @@ export default function RegisterScreen() {
   // mirrored into a build-time constant so the two cannot disagree.
   const { enabled: studentAccounts, loading: featuresLoading } = useStudentAccountsStatus();
 
-  const [role, setRole] = useState<SignupRole>('teacher');
+  // No default. A pre-selected "teacher" meant a parent or student who scrolled
+  // past the picker became a teacher without ever being asked.
+  const [role, setRole] = useState<SignupRole | null>(null);
+  // With student accounts off there is only one answer, so nothing to ask.
+  const chosenRole: SignupRole | null = studentAccounts ? role : 'teacher';
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -47,6 +51,7 @@ export default function RegisterScreen() {
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   const handleGoogleCredential = async (credential: string) => {
+    if (!chosenRole) return; // the button is not rendered until a role is picked
     setError('');
     setGoogleLoading(true);
     try {
@@ -55,9 +60,7 @@ export default function RegisterScreen() {
       // was selected, because this call carried nothing but the credential.
       // No roster code here anymore either: a parent/student claims one
       // afterwards, on the mandatory screen the routing gate sends them to.
-      await loginWithGoogle(credential, {
-        role: studentAccounts ? role : 'teacher',
-      });
+      await loginWithGoogle(credential, { role: chosenRole });
       router.replace('/(tabs)');
     } catch (e: any) {
       setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول عبر Google' : 'Google sign-in failed'));
@@ -67,6 +70,7 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
+    if (!chosenRole) return;
     setError('');
     setLoading(true);
     try {
@@ -81,7 +85,7 @@ export default function RegisterScreen() {
         // code is collected here — a parent/student claims one afterwards,
         // on the mandatory screen the routing gate sends them to (see
         // needsRosterClaim in services/routeGating.ts).
-        role: studentAccounts ? role : 'teacher',
+        role: chosenRole,
       });
       // No session yet — a password account is unverified until it proves
       // the address it just typed. Google's "Continue with" button above
@@ -97,6 +101,7 @@ export default function RegisterScreen() {
 
   const canSubmit =
     !featuresLoading &&
+    chosenRole !== null &&
     firstName.trim().length > 0 &&
     lastName.trim().length > 0 &&
     email.includes('@') &&
@@ -169,6 +174,7 @@ export default function RegisterScreen() {
               ]}
               value={role}
               onChange={setRole}
+              hint={role ? undefined : t('pickRoleFirst')}
               colors={colors}
               isRTL={isRTL}
               accent={colors.primary}
@@ -176,7 +182,9 @@ export default function RegisterScreen() {
             />
           ) : null}
 
-          {isGoogleSignInAvailable() && (
+          {/* Hidden until the role is known: Google creates the account on
+              the first tap, and the role cannot be asked afterwards. */}
+          {isGoogleSignInAvailable() && !featuresLoading && chosenRole && (
             <>
               <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
               {googleLoading ? (

@@ -8,7 +8,9 @@
  * signup on the same email is refused, and signing in again with Google keeps
  * the role already stored. So the only exit was a second email address.
  *
- * Open only while nothing depends on the answer: no roster link yet. Once
+ * A teacher may leave too, while they own no class and no student — see
+ * `hasTeachingData`. Otherwise open only while nothing depends on the answer:
+ * no roster link yet. Once
  * there is one this account is somebody's guardian or the student themselves
  * — `guardiansForStudent()` filters on `role === 'parent'`, and a teacher has
  * generated work hanging off theirs — so changing it then would leave rows
@@ -27,6 +29,7 @@ export type RoleSwitchErrorCode =
   | "role_invalid"
   | "role_locked"
   | "role_locked_linked"
+  | "role_locked_teaching"
   | "student_accounts_disabled";
 
 export type RoleSwitchDecision =
@@ -42,6 +45,13 @@ export interface RoleSwitchInput {
   studentAccountsEnabled: boolean;
   /** Asked at most once, and only on the path that can still say yes. */
   hasRosterLink: () => Promise<boolean>;
+  /**
+   * Whether a teacher owns a class or a student — the rows other accounts
+   * hang off (join codes, roster links, guardians). Personal work (plans,
+   * generations, schedule) does not count: it is still there if they switch
+   * back, which an unlinked parent/student may. Asked only for a teacher.
+   */
+  hasTeachingData: () => Promise<boolean>;
 }
 
 export async function decideRoleSwitch(input: RoleSwitchInput): Promise<RoleSwitchDecision> {
@@ -51,9 +61,11 @@ export async function decideRoleSwitch(input: RoleSwitchInput): Promise<RoleSwit
   }
   const role = requested as SwitchableRole;
 
-  // A teacher is never stuck on the claim screen, and their account is the one
-  // with work hanging off it. Nothing here is a route out of a teacher account.
-  if (input.currentRole !== "parent" && input.currentRole !== "student") {
+  // Signup pre-selected "teacher" for a long time, and Google sign-in from the
+  // login screen still creates one — so a parent can end up here by accident.
+  // Let a teacher out only while no class or student depends on the role.
+  const isTeacher = input.currentRole === "teacher";
+  if (!isTeacher && input.currentRole !== "parent" && input.currentRole !== "student") {
     return { ok: false, status: 403, code: "role_locked", error: "This account's type can no longer be changed" };
   }
 
@@ -71,6 +83,18 @@ export async function decideRoleSwitch(input: RoleSwitchInput): Promise<RoleSwit
 
   // Before the no-op shortcut, so that every `ok` decision — changed or not —
   // is one made about an account with nothing attached to its current role.
+  if (isTeacher) {
+    if (await input.hasTeachingData()) {
+      return {
+        ok: false,
+        status: 409,
+        code: "role_locked_teaching",
+        error: "This account already has classes or students",
+      };
+    }
+    return { ok: true, role, changed: role !== input.currentRole };
+  }
+
   if (await input.hasRosterLink()) {
     return {
       ok: false,

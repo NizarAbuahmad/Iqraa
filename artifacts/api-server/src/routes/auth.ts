@@ -248,6 +248,14 @@ async function hasAnyRosterLink(userId: string): Promise<boolean> {
   return !!row;
 }
 
+/** Any class or student owned by this teacher — see hasTeachingData in lib/roleSwitch.ts. Archived ones count. */
+async function hasAnyTeachingData(userId: string): Promise<boolean> {
+  const [cls] = await db.select({ id: classGroups.id }).from(classGroups).where(eq(classGroups.teacherId, userId)).limit(1);
+  if (cls) return true;
+  const [stu] = await db.select({ id: students.id }).from(students).where(eq(students.teacherId, userId)).limit(1);
+  return !!stu;
+}
+
 // POST /auth/register
 router.post("/register", registerLimiter, registerEmailLimiter, async (req, res) => {
   try {
@@ -816,6 +824,7 @@ router.post("/role", roleSwitchLimiter, authMiddleware, async (req: Authenticate
       requestedRole: (req.body ?? {}).role,
       studentAccountsEnabled: studentAccountsEnabled(),
       hasRosterLink: () => hasAnyRosterLink(req.user!.id),
+      hasTeachingData: () => hasAnyTeachingData(req.user!.id),
     });
 
     if (!decision.ok) {

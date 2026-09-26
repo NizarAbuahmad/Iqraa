@@ -709,6 +709,9 @@ const translations = {
     // path to exist inside the app.
     accountSection: 'الحساب',
     deleteAccount: 'حذف الحساب',
+    accountType: 'نوع الحساب',
+    accountTypeSwitchNote: 'متاح فقط قبل إنشاء أي شعبة أو إضافة طلبة. بعد التغيير سيُطلب منك رمز الربط.',
+    accountTypeLockedTeaching: 'لا يمكن تغيير نوع الحساب بعد إنشاء شعب أو إضافة طلبة.',
     aiUsage: 'استخدام الذكاء الاصطناعي هذا الشهر',
     aiUsageResets: 'يتجدد في',
     deleteAccountTitle: 'حذف الحساب',
@@ -1630,6 +1633,7 @@ const translations = {
 
     // Sign-up role step + class code claim, and person-to-person messaging
     iAmA: 'أنا',
+    pickRoleFirst: 'اختر نوع حسابك للمتابعة',
     roleParent: 'ولي أمر',
     roleStudent: 'طالب/ة',
     classCode: 'رمز الربط',
@@ -2416,6 +2420,9 @@ const translations = {
     // path to exist inside the app.
     accountSection: 'ACCOUNT',
     deleteAccount: 'Delete account',
+    accountType: 'Account type',
+    accountTypeSwitchNote: "Only possible before you create a class or add students. You'll be asked for a link code next.",
+    accountTypeLockedTeaching: "The account type can't be changed once you have classes or students.",
     aiUsage: 'AI use this month',
     aiUsageResets: 'Resets',
     deleteAccountTitle: 'Delete account',
@@ -3307,6 +3314,7 @@ const translations = {
 
     // Sign-up role step + class code claim, and person-to-person messaging
     iAmA: 'I am a',
+    pickRoleFirst: 'Choose your account type to continue',
     roleParent: 'Parent',
     roleStudent: 'Student',
     classCode: 'Link code',

@@ -10,7 +10,11 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { versionLabel } from '@/services/versionLabel';
 import { goBack } from '@/services/navigation';
-import { apiJson } from '@/services/apiClient';
+import { ApiError, apiJson } from '@/services/apiClient';
+import { useAuth } from '@/context/AuthContext';
+import { useStudentAccountsEnabled } from '@/services/features';
+import { PillSelector } from '@/components/ui/PillSelector';
+import { Button } from '@/components/ui/Button';
 
 type AiUsage = { spentUsd: number | null; limitUsd: number; resetsAt: string };
 
@@ -21,6 +25,30 @@ export default function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [usage, setUsage] = useState<AiUsage | null>(null);
+  const { user, switchRole } = useAuth();
+  const studentAccounts = useStudentAccountsEnabled();
+  // A teacher account made by mistake (the old pre-selected signup pill, or
+  // Google on the login screen) can still become a parent/student while it
+  // owns no class or student — the server decides (lib/roleSwitch.ts).
+  const canChangeType = studentAccounts && user?.role === 'teacher';
+  const [typeOpen, setTypeOpen] = useState(false);
+  const [nextRole, setNextRole] = useState<'parent' | 'student' | null>(null);
+  const [switching, setSwitching] = useState(false);
+  const [typeError, setTypeError] = useState('');
+
+  const handleSwitchRole = async () => {
+    if (!nextRole || switching) return;
+    setSwitching(true);
+    setTypeError('');
+    try {
+      // On success the routing gate moves the account to /claim-required.
+      await switchRole(nextRole);
+    } catch (e) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setTypeError(t(e instanceof ApiError && e.code === 'role_locked_teaching' ? 'accountTypeLockedTeaching' : 'claimRequiredSwitchFailed'));
+      setSwitching(false);
+    }
+  };
 
   // Hidden unless there is a cap and a known spend: an older server, a failed
   // request or an unreadable ledger all leave the row out rather than show 0%.
@@ -174,6 +202,50 @@ export default function SettingsScreen() {
                   {t('aiUsageResets')} {new Date(usage.resetsAt).toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' })}
                 </Text>
               </View>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            </>
+          )}
+          {canChangeType && (
+            <>
+              <SettingRow
+                icon="person-circle-outline"
+                label={t('accountType')}
+                isRTL={isRTL}
+                colors={colors}
+                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{t('roleTeacher')}</Text>}
+                onPress={() => { setTypeOpen(o => !o); setNextRole(null); setTypeError(''); }}
+              />
+              {typeOpen && (
+                <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
+                  <PillSelector
+                    label={t('claimRequiredPickRole')}
+                    hint={t('accountTypeSwitchNote')}
+                    options={[
+                      { value: 'parent', label: t('roleParent') },
+                      { value: 'student', label: t('roleStudent') },
+                    ]}
+                    value={nextRole}
+                    onChange={setNextRole}
+                    colors={colors}
+                    isRTL={isRTL}
+                    accent={colors.primary}
+                    haptics
+                    containerStyle={{ marginBottom: 12 }}
+                  />
+                  {typeError ? (
+                    <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }}>
+                      {typeError}
+                    </Text>
+                  ) : null}
+                  <Button
+                    label={t('claimRequiredSwitchSubmit')}
+                    onPress={handleSwitchRole}
+                    loading={switching}
+                    disabled={!nextRole || switching}
+                    size="sm"
+                  />
+                </View>
+              )}
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
             </>
           )}
