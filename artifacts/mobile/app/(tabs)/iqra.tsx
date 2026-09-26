@@ -73,6 +73,7 @@ import {
   type TeachingAction,
 } from '@/services/ai/teachingAssistant';
 import { classifyChatIntent, leavesClarificationStanding } from '@/services/ai/intentRouter';
+import { useAuth } from '@/context/AuthContext';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
@@ -1350,6 +1351,7 @@ export default function IqraScreen() {
     openLessonPicker?: string;
   }>();
 
+  const { user } = useAuth();
   const mode: Mode = 'teacher';
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -1841,7 +1843,7 @@ export default function IqraScreen() {
       // 0. Intent Router — BEFORE curriculum context / Teaching Assistant.
       //    Greetings & small talk must never trigger lesson generation.
       const wasAwaitingClarify = awaitingClarifyRef.current;
-      const route = classifyChatIntent(q, lang as 'ar' | 'en', awaitingClarifyRef.current);
+      const route = classifyChatIntent(q, lang as 'ar' | 'en', awaitingClarifyRef.current, user?.firstName);
       awaitingClarifyRef.current = route.intent === 'ambiguous';
       if (route.intent === 'artifact') {
         setThinkingLabel(
