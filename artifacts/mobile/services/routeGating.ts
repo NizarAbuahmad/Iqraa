@@ -115,7 +115,7 @@ export const TEACHER_SETUP_ROUTE = '/setup-subjects';
 /**
  * A teacher account with no grades or subjects picked yet has never chosen
  * what the curriculum browser should default to — see `getVisibleGrades`/
- * `getSubjectsForGrade` callers in `app/(tabs)/curriculum.tsx`, which fall
+ * `getSubjectsForGrade` callers in `app/curriculum/browse.tsx`, which fall
  * back to the full catalog until this is set. Scoped to `role === 'teacher'`
  * only: a school/system admin is not teaching a grade, so there is nothing
  * for them to pick.
