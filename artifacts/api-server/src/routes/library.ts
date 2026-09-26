@@ -23,6 +23,7 @@ import { deletePublicObject, isPublicR2Configured, newLibraryKey, publicUrl, put
 import {
   LIBRARY_EXTENSION_BY_MIME,
   MAX_LIBRARY_FILE_BYTES,
+  isLibraryCategory,
   parseLibraryLink,
   parseLibraryMeta,
 } from "../lib/libraryResource.js";
@@ -169,6 +170,58 @@ router.delete("/library/:id", adminOnly, async (req, res) => {
     }
     logger.error({ err }, "library delete failed");
     res.status(500).json({ error: "Failed to delete" });
+  }
+});
+
+// PATCH /library/:id — update metadata only (title, description, category, thumbnailUrl, semester).
+// The file/URL itself is immutable; to change the content, delete and re-upload.
+router.patch("/library/:id", adminOnly, async (req: AuthenticatedRequest, res) => {
+  const id = req.params["id"] as string;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const body = req.body ?? {};
+  const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : null);
+  const titleAr = str(body.titleAr, 200);
+  const description = str(body.description, 1000) ?? "";
+  const thumbnailRaw = str(body.thumbnailUrl, 500);
+  const thumbnailUrl = thumbnailRaw || null;
+  if (thumbnailUrl && !/^https:\/\//.test(thumbnailUrl)) {
+    res.status(400).json({ error: "thumbnailUrl must be https" });
+    return;
+  }
+  const semesterRaw = Number(body.semester);
+  const semester = semesterRaw === 1 ? 1 : semesterRaw === 2 ? 2 : null;
+  if (!titleAr) {
+    res.status(400).json({ error: "titleAr is required" });
+    return;
+  }
+  if (body.category !== undefined && !isLibraryCategory(body.category)) {
+    res.status(400).json({ error: "invalid category" });
+    return;
+  }
+  try {
+    const [row] = await db
+      .update(libraryResources)
+      .set({
+        titleAr,
+        description,
+        thumbnailUrl,
+        semester,
+        ...(body.category ? { category: body.category as string } : {}),
+      })
+      .where(eq(libraryResources.id, id))
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    res.json(toClient(row));
+  } catch (err) {
+    if (isSchemaMissing(err)) return notSetUp(res);
+    logger.error({ err }, "library patch failed");
+    res.status(500).json({ error: "Failed to update" });
   }
 });
 
