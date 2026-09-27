@@ -207,8 +207,8 @@ export default function SubjectsScreen() {
 }
 
 const styles = StyleSheet.create({
-  hero: { paddingHorizontal: 20, paddingBottom: 28 },
-  backBtn: { marginBottom: 16, width: 40, height: 40, justifyContent: 'center' },
+  hero: { paddingHorizontal: 20, paddingBottom: 14 },
+  backBtn: { width: 40, height: 40, justifyContent: 'center' },
   heroContent: { gap: 4 },
   heroGrade: { fontSize: 13, lineHeight: 21 },
   heroTitle: { fontSize: 28 },
