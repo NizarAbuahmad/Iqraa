@@ -385,7 +385,9 @@ function ClassesList() {
               <Pressable
                 onPress={() => { void onDelete(item); }}
                 disabled={deletingId === item.id}
-                hitSlop={10}
+                hitSlop={15}
+                accessibilityRole="button"
+                accessibilityLabel={t('deleteClass')}
               >
                 {deletingId === item.id ? (
                   <ActivityIndicator size="small" color={colors.mutedForeground} />
