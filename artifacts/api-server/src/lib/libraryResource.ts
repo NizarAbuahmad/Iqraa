@@ -72,8 +72,10 @@ export function parseLibraryMeta(input: Record<string, unknown>): LibraryMeta | 
   const lessonId = str(input.lessonId, 120) || null;
   const titleAr = str(input.titleAr, 200);
   const description = str(input.description, 1000);
-  const thumbnailRaw = str(input.thumbnailUrl, 500);
-  const thumbnailUrl = thumbnailRaw || null;
+  // Not run through str()'s slice(): a signed Drive/Firebase download URL
+  // routinely runs past 500 chars, and silently truncating it saves a link
+  // that looks fine but 404s — reject it instead so the admin sees why.
+  const thumbnailUrl = typeof input.thumbnailUrl === "string" ? input.thumbnailUrl.trim() || null : null;
   const semesterRaw = Number(input.semester);
   const semester = semesterRaw === 1 ? 1 : semesterRaw === 2 ? 2 : null;
   if (!/^grade-\d{1,2}$/.test(gradeId)) return { error: "gradeId must look like grade-5" };
@@ -81,6 +83,7 @@ export function parseLibraryMeta(input: Record<string, unknown>): LibraryMeta | 
   if (lessonId && !lessonId.startsWith("kbl-")) return { error: "lessonId must be a kbl-* lesson id" };
   if (!isLibraryCategory(input.category)) return { error: `category must be one of ${LIBRARY_CATEGORIES.join(", ")}` };
   if (!titleAr) return { error: "titleAr is required" };
+  if (thumbnailUrl && thumbnailUrl.length > 2000) return { error: "thumbnailUrl is too long (max 2000 characters)" };
   if (thumbnailUrl && !/^https:\/\//.test(thumbnailUrl)) return { error: "thumbnailUrl must be https" };
   return { gradeId, subjectId, lessonId, semester, category: input.category, titleAr, description, thumbnailUrl };
 }
