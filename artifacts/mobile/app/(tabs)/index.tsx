@@ -41,7 +41,7 @@ import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { JordanFlag } from '@/components/ui/JordanFlag';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
-import { buildPrepBoard, prepSummary, withoutBoardTools, type PrepRow } from '@/services/lessonBoard';
+import { buildPrepBoard, prepLessonKey, prepSummary, withoutBoardTools, type PrepRow } from '@/services/lessonBoard';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { listClasses } from '@/services/roster';
@@ -50,7 +50,7 @@ import { className, classNameFor } from '@/services/materialClass';
 import { loadNextPeriod } from '@/services/schedule';
 import { formatNextPeriod, type NextPeriodLesson } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
-import { HomeLessonPick, loadLessonPick, subscribeLessonPick, timetableWins } from '@/services/lessonContext';
+import { HomeLessonPick, loadLessonPick, loadPrepSkips, setPrepSkip, subscribeLessonPick, timetableWins } from '@/services/lessonContext';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
 import { DEFAULT_ACTIVE_LESSON_ID } from '@/services/lessonCopilot';
@@ -164,9 +164,21 @@ function LessonWorkspace() {
     : '';
 
   const topic = active?.topic ?? '';
+  // «غير مطلوب» choices for this lesson; reloaded whenever the lesson changes.
+  const skipKey = prepLessonKey(topic, active?.lessonId);
+  const [skips, setSkips] = useState<string[]>([]);
+  useEffect(() => {
+    let live = true;
+    loadPrepSkips(skipKey).then(list => { if (live) setSkips(list); });
+    return () => { live = false; };
+  }, [skipKey]);
+  const toggleSkip = useCallback((row: PrepRow) => {
+    if (!skipKey) return;
+    void setPrepSkip(skipKey, row.type, !row.skipped).then(setSkips);
+  }, [skipKey]);
   const board = useMemo(
-    () => buildPrepBoard(materials, topic, active?.lessonId),
-    [materials, topic, active?.lessonId],
+    () => buildPrepBoard(materials, topic, active?.lessonId, skips),
+    [materials, topic, active?.lessonId, skips],
   );
   const summary = prepSummary(board);
 
@@ -346,6 +358,10 @@ function LessonWorkspace() {
                 doneLabel={t('homePrepDone')}
                 onOpen={(row) => row.material && router.push({ pathname: '/workspace/view', params: { id: row.material.id } })}
                 onMake={(row) => router.push({ pathname: row.route as never, params: toolParams as never })}
+                onToggleSkip={toggleSkip}
+                skipLabel={t('homePrepSkip')}
+                skippedLabel={t('homePrepSkipped')}
+                restoreLabel={t('homePrepRestore')}
               />
             </View>
           </View>
@@ -466,7 +482,7 @@ function LessonWorkspace() {
 /** Ask the assistant for whatever the board says is missing, in the board's order. */
 function suggestionsFor(board: PrepRow[], topic: string, isAr: boolean): string[] {
   if (!topic) return [];
-  const missing = board.filter(r => !r.done).slice(0, 2);
+  const missing = board.filter(r => !r.done && !r.skipped).slice(0, 2);
   const asks = missing.map(row =>
     isAr ? `جهّز ${row.labelAr} عن «${topic}»` : `Prepare a ${row.labelEn.toLowerCase()} for “${topic}”`,
   );

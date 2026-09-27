@@ -47,6 +47,12 @@ export type PrepRow = PrepRowMeta & {
   material: MaterialLike | null;
   /** How many of this type exist for the lesson (a teacher may keep two worksheets). */
   count: number;
+  /**
+   * The teacher marked it «غير مطلوب» for this lesson — not every lesson needs
+   * an activity or a quiz, and a bar that can never reach 5/5 gets ignored.
+   * Only ever true on a row that is not done: a material that exists counts.
+   */
+  skipped: boolean;
 };
 
 export const PREP_ROWS: PrepRowMeta[] = [
@@ -127,16 +133,33 @@ export function materialsForTopic<T extends MaterialLike>(materials: T[], topic:
 }
 
 /** The five rows, each saying whether the lesson already has that material. */
-export function buildPrepBoard(materials: MaterialLike[], topic: string, lessonId?: string | null): PrepRow[] {
+export function buildPrepBoard(
+  materials: MaterialLike[],
+  topic: string,
+  lessonId?: string | null,
+  skipped: readonly string[] = [],
+): PrepRow[] {
   const mine = materialsForTopic(materials, topic, lessonId);
   return PREP_ROWS.map(meta => {
     const hits = mine.filter(m => rowTypeOf(m.type) === meta.type);
-    return { ...meta, done: hits.length > 0, material: hits[0] ?? null, count: hits.length };
+    const done = hits.length > 0;
+    return { ...meta, done, material: hits[0] ?? null, count: hits.length, skipped: !done && skipped.includes(meta.type) };
   });
 }
 
+/** Rows marked not needed leave the total, so 3 of 3 can read as ready. */
 export function prepSummary(rows: PrepRow[]): { done: number; total: number } {
-  return { done: rows.filter(r => r.done).length, total: rows.length };
+  return { done: rows.filter(r => r.done).length, total: rows.filter(r => !r.skipped).length };
+}
+
+/**
+ * The key a lesson's «غير مطلوب» choices are stored under: its curriculum id,
+ * else its normalised topic (a free-typed lesson has no id). Null with neither.
+ */
+export function prepLessonKey(topic: string, lessonId?: string | null): string | null {
+  if (lessonId) return lessonId;
+  const t = normalizeTopic(topic);
+  return t ? `topic:${t}` : null;
 }
 
 /**

@@ -20,6 +20,7 @@ import {
   buildPrepBoard,
   materialsForTopic,
   normalizeTopic,
+  prepLessonKey,
   PREP_ROWS,
   prepSummary,
   sameTopic,
@@ -162,5 +163,27 @@ describe('withoutBoardTools', () => {
     // Explicit type argument: inferring it from a literal with no `route`
     // narrows T to `{ route?: string }`, which then rejects `id` as excess.
     assert.deepEqual(withoutBoardTools<{ id: string; route?: string }>([{ id: 'geogebra' }]), []);
+  });
+});
+
+describe('rows marked not needed', () => {
+  it('drops a skipped, missing row from the total', () => {
+    const rows = buildPrepBoard([material({ type: 'worksheet' })], TOPIC, null, ['activity', 'quiz']);
+    assert.equal(rows.find(r => r.type === 'activity')?.skipped, true);
+    assert.deepEqual(prepSummary(rows), { done: 1, total: 3 });
+  });
+
+  it('ignores the skip once the material exists — made is made', () => {
+    const rows = buildPrepBoard([material({ type: 'quiz' })], TOPIC, null, ['quiz']);
+    const quiz = rows.find(r => r.type === 'quiz');
+    assert.equal(quiz?.done, true);
+    assert.equal(quiz?.skipped, false);
+    assert.deepEqual(prepSummary(rows), { done: 1, total: 5 });
+  });
+
+  it('keys a lesson by its id, else by its normalised topic', () => {
+    assert.equal(prepLessonKey(TOPIC, 'L1'), 'L1');
+    assert.equal(prepLessonKey(' تَرْكِيبُ الاقترانات ', null), prepLessonKey('تركيب الاقترانات', undefined));
+    assert.equal(prepLessonKey('', null), null);
   });
 });

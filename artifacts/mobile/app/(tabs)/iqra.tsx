@@ -42,7 +42,7 @@ import {
 } from '@/services/knowledgeBase';
 import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
-import { loadLessonPick, saveLessonPick, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
+import { loadLessonPick, loadPrepSkips, saveLessonPick, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
   deduplicateByUnit,
@@ -81,7 +81,7 @@ import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { MaterialCanvas } from '@/components/ui/MaterialCanvas';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
-import { buildPrepBoard } from '@/services/lessonBoard';
+import { buildPrepBoard, prepLessonKey, type PrepRow } from '@/services/lessonBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { MathParagraph } from '@/components/ui/MathParagraph';
 import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
@@ -2895,6 +2895,20 @@ export default function IqraScreen() {
 
   const currentLessonView = buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en');
 
+  // «غير مطلوب» choices for the lesson on the empty-state board — the same
+  // store and key as the home board, so a row skipped on one is skipped on both.
+  const prepSkipKey = prepLessonKey(currentLessonView?.topic?.trim() ?? '', currentLessonView?.lessonId);
+  const [prepSkips, setPrepSkips] = useState<string[]>([]);
+  useEffect(() => {
+    let live = true;
+    loadPrepSkips(prepSkipKey).then(list => { if (live) setPrepSkips(list); });
+    return () => { live = false; };
+  }, [prepSkipKey]);
+  const togglePrepSkip = useCallback((row: PrepRow) => {
+    if (!prepSkipKey) return;
+    void setPrepSkip(prepSkipKey, row.type, !row.skipped).then(setPrepSkips);
+  }, [prepSkipKey]);
+
   /**
    * Class Mode entry, carried over from the retired home screen: build a deck
    * for the current lesson straight from the curriculum book and go to the
@@ -3027,7 +3041,7 @@ export default function IqraScreen() {
   const introPrepBoard = (() => {
     if (isDesktop || messages.length > 1) return null;
     const topic = currentLessonView?.topic?.trim() ?? '';
-    const rows = buildPrepBoard(prepMaterials, topic, currentLessonView?.lessonId);
+    const rows = buildPrepBoard(prepMaterials, topic, currentLessonView?.lessonId, prepSkips);
     // The lesson's own grade and subject, never the picker's index 0 — see the
     // subjectIdx trap in CLAUDE.md. `topicPickerParams` grounds a free-typed
     // topic; both return null when the lesson is unknown, and then the tool
@@ -3063,7 +3077,7 @@ export default function IqraScreen() {
           compact
           disabled={!topic}
           title={t('homePrepTitle')}
-          readyLabel={t('homeReady', rows.filter(r => r.done).length, rows.length)}
+          readyLabel={t('homeReady', rows.filter(r => r.done).length, rows.filter(r => !r.skipped).length)}
           openLabel={t('homeOpen')}
           makeLabel={t('homePrepMake')}
           createLabel={t('homePrepCreate')}
@@ -3073,6 +3087,10 @@ export default function IqraScreen() {
             row.material && router.push({ pathname: '/workspace/view', params: { id: row.material.id } })
           }
           onMake={(row) => router.push({ pathname: row.route as never, params: toolParams as never })}
+          onToggleSkip={togglePrepSkip}
+          skipLabel={t('homePrepSkip')}
+          skippedLabel={t('homePrepSkipped')}
+          restoreLabel={t('homePrepRestore')}
         />
       </View>
     );

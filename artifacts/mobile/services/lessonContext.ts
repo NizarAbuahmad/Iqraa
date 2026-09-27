@@ -101,6 +101,49 @@ export async function saveLessonPick(input: HomeLessonPick): Promise<void> {
   }
 }
 
+/*
+  «غير مطلوب» choices on the readiness board: lesson key (`prepLessonKey`) →
+  the prep row types the teacher said this lesson does not need. On the
+  device, per user, like the pick itself.
+  ponytail: device-local, so it does not follow the teacher to another
+  device; move it to the server if teachers switch devices mid-prep.
+*/
+const PREP_SKIPS_KEY = '@iqra_prep_skips_v1';
+
+async function readPrepSkips(): Promise<Record<string, string[]>> {
+  try {
+    const raw = await AsyncStorage.getItem(scopedKey(PREP_SKIPS_KEY));
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Row types marked not needed for this lesson. */
+export async function loadPrepSkips(lessonKey: string | null): Promise<string[]> {
+  if (!lessonKey) return [];
+  const list = (await readPrepSkips())[lessonKey];
+  return Array.isArray(list) ? list.filter(x => typeof x === 'string') : [];
+}
+
+/** Mark or unmark one row as not needed; returns the lesson's new list. */
+export async function setPrepSkip(lessonKey: string, rowType: string, skipped: boolean): Promise<string[]> {
+  const all = await readPrepSkips();
+  const current = new Set(Array.isArray(all[lessonKey]) ? all[lessonKey] : []);
+  if (skipped) current.add(rowType);
+  else current.delete(rowType);
+  const next = [...current];
+  if (next.length) all[lessonKey] = next;
+  else delete all[lessonKey];
+  try {
+    await AsyncStorage.setItem(scopedKey(PREP_SKIPS_KEY), JSON.stringify(all));
+  } catch {
+    // Non-fatal: the choice still applies on screen for this session.
+  }
+  return next;
+}
+
 export async function wasOnboarded(): Promise<boolean> {
   try {
     return (await AsyncStorage.getItem(scopedKey(ONBOARDED_KEY))) === '1';
