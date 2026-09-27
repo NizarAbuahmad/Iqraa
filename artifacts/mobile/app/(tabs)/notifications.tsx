@@ -31,6 +31,19 @@ import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { Avatar } from '@/components/ui/Avatar';
 
+function relativeTime(iso: string, lang: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return lang === 'ar' ? 'الآن' : 'now';
+  if (mins < 60) return lang === 'ar' ? `${mins}د` : `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return lang === 'ar' ? `${hrs}س` : `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return lang === 'ar' ? `${days}ي` : `${days}d`;
+  const wks = Math.floor(days / 7);
+  return lang === 'ar' ? `${wks}أ` : `${wks}w`;
+}
+
 interface Contact {
   userId: string;
   firstName: string;
@@ -179,8 +192,9 @@ export default function NotificationsScreen() {
         </View>
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 16, paddingBottom: 6 }]}>
           {isTeacherRole(user?.role) && (
-            <Pressable onPress={() => router.push('/messaging/new-group')} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('messagingNewGroup')}>
-              <Ionicons name="people-circle-outline" size={26} color={colors.primary} />
+            <Pressable onPress={() => router.push('/messaging/new-group')} hitSlop={10} accessibilityRole="button" style={[styles.headerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Ionicons name="people-circle-outline" size={22} color={colors.primary} />
+              <Text style={[styles.headerActionText, { color: colors.primary }]}>{t('messagingNewGroup')}</Text>
             </Pressable>
           )}
           {/*
@@ -189,8 +203,9 @@ export default function NotificationsScreen() {
             explaining why — indistinguishable from the feature being broken.
             The sheet now says what is missing and how to fix it.
           */}
-          <Pressable onPress={() => setNewChatOpen(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('messagingStartConversation')}>
-            <Ionicons name="create-outline" size={24} color={colors.primary} />
+          <Pressable onPress={() => setNewChatOpen(true)} hitSlop={10} accessibilityRole="button" style={[styles.headerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Ionicons name="create-outline" size={20} color={colors.primary} />
+            <Text style={[styles.headerActionText, { color: colors.primary }]}>{t('messagingNewMessage')}</Text>
           </Pressable>
         </View>
       </View>
@@ -211,6 +226,7 @@ export default function NotificationsScreen() {
             const isGroup = item.type !== 'direct';
             const name = isGroup ? (lang === 'ar' ? item.titleAr : item.title) || item.title : other ? `${other.firstName} ${other.lastName}` : '';
             const preview = item.lastMessage?.body ?? '';
+            const ts = item.updatedAt ? relativeTime(item.updatedAt, lang) : '';
             return (
               <Pressable
                 onPress={() => router.push(`/messaging/${item.id}`)}
@@ -232,12 +248,19 @@ export default function NotificationsScreen() {
                   <Avatar firstName={other?.firstName ?? '?'} lastName={other?.lastName} size={44} colors={colors} />
                 )}
                 <View style={{ flex: 1 }}>
-                  <Text
-                    style={[styles.threadName, { color: colors.foreground, fontFamily: item.unreadCount > 0 ? 'Cairo_600SemiBold' : 'Cairo_500Medium', textAlign: align }]}
-                    numberOfLines={1}
-                  >
-                    {name}
-                  </Text>
+                  <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                    <Text
+                      style={[styles.threadName, { color: colors.foreground, fontFamily: item.unreadCount > 0 ? 'Cairo_600SemiBold' : 'Cairo_500Medium', textAlign: align, flex: 1 }]}
+                      numberOfLines={1}
+                    >
+                      {name}
+                    </Text>
+                    {ts ? (
+                      <Text style={{ fontSize: 11, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', marginStart: 6 }}>
+                        {ts}
+                      </Text>
+                    ) : null}
+                  </View>
                   {/* Direct threads only — a group has no single "other party"
                       role to show, and otherParticipant is null for those
                       server-side. Tells a student thread apart from a parent
@@ -270,7 +293,7 @@ export default function NotificationsScreen() {
               {t('noNotifications')}
             </Text>
             <Text style={[styles.emptyDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-              {t('messagingEmptyDesc')}
+              {t(isTeacherRole(user?.role) ? 'messagingEmptyDescTeacher' : 'messagingEmptyDesc')}
             </Text>
           </View>
 
@@ -310,6 +333,8 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1 },
   title: { fontSize: 28 },
   unreadCount: { fontSize: 13, lineHeight: 21, marginTop: 2 },
+  headerAction: { alignItems: 'center', gap: 4 },
+  headerActionText: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   threadCard: { padding: 14, gap: 12, borderWidth: 1, alignItems: 'center' },
   groupIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

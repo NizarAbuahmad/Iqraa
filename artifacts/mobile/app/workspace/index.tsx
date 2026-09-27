@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import {
   FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View,
 } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -39,7 +39,10 @@ export default function WorkspaceScreen() {
 
   const [items, setItems] = useState<SavedMaterial[]>([]);
   const [activeTab, setActiveTab] = useState<MaterialType | 'all'>('all');
-  const [query, setQuery] = useState('');
+  // `q` pre-fills the search — the readiness board's «كل النسخ» opens the
+  // list on one lesson's topic.
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const [query, setQuery] = useState(typeof q === 'string' ? q : '');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [menuItem, setMenuItem] = useState<SavedMaterial | null>(null);
   /**

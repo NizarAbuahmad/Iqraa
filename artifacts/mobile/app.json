@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "IQRA | اقرأ",
+    "name": "Iqraa | اقرأ",
     "slug": "mobile",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
@@ -53,8 +53,8 @@
     "web": {
       "favicon": "./assets/images/favicon.png",
       "backgroundColor": "#081B3A",
-      "name": "IQRA | اقرأ",
-      "shortName": "IQRA",
+      "name": "Iqraa | اقرأ",
+      "shortName": "Iqraa",
       "themeColor": "#081B3A"
     },
     "plugins": [
@@ -82,8 +82,8 @@
       [
         "expo-audio",
         {
-          "microphonePermission": false,
-          "recordAudioAndroid": false
+          "microphonePermission": "Allow Iqraa to hear you practice speaking English.",
+          "recordAudioAndroid": true
         }
       ]
     ],

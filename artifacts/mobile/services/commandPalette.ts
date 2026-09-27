@@ -94,7 +94,7 @@ export function buildCommands(opts: {
     out.push({
       id: 'lesson:ask',
       kind: 'lesson',
-      label: isAr ? `اسأل اقرأ عن «${opts.lessonTopic}»` : `Ask IQRA about “${opts.lessonTopic}”`,
+      label: isAr ? `اسأل اقرأ عن «${opts.lessonTopic}»` : `Ask Iqraa about “${opts.lessonTopic}”`,
       hint: isAr ? 'يفتح المحادثة على الدرس الحالي' : 'Opens the chat on the current lesson',
       icon: 'chatbubble-ellipses-outline',
       action: 'ask-iqra',

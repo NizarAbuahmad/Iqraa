@@ -26,6 +26,10 @@ export type MaterialLike = {
   title: string;
   topic: string;
   savedAt: string;
+  /** The class the material is filed under, if any (`SavedMaterial['classGroupId']`). */
+  classGroupId?: string | null;
+  /** `SavedMaterial['formState']`; `lessonId` is stamped at save time by workspace.ts. */
+  formState?: { lessonId?: unknown } | null;
 };
 
 export type PrepRowMeta = {
@@ -45,6 +49,12 @@ export type PrepRow = PrepRowMeta & {
   material: MaterialLike | null;
   /** How many of this type exist for the lesson (a teacher may keep two worksheets). */
   count: number;
+  /**
+   * The teacher marked it «غير مطلوب» for this lesson — not every lesson needs
+   * an activity or a quiz, and a bar that can never reach 5/5 gets ignored.
+   * Only ever true on a row that is not done: a material that exists counts.
+   */
+  skipped: boolean;
 };
 
 export const PREP_ROWS: PrepRowMeta[] = [
@@ -102,24 +112,79 @@ export function sameTopic(a: string, b: string): boolean {
   return x.length > 0 && x === y;
 }
 
-/** Materials saved for this lesson's topic, newest first. */
-export function materialsForTopic<T extends MaterialLike>(materials: T[], topic: string): T[] {
+function lessonIdOf(m: MaterialLike): string | null {
+  const id = m.formState?.lessonId;
+  return typeof id === 'string' && id ? id : null;
+}
+
+/**
+ * Materials saved for this lesson, newest first.
+ *
+ * The lesson id decides when both sides carry one — a title does not identify
+ * a lesson (CLAUDE.md), and a teacher's free-typed topic that grounded to this
+ * lesson should still count. The topic is the fallback for materials saved
+ * before ids were stamped, and for a board that has no lesson id.
+ */
+export function materialsForTopic<T extends MaterialLike>(materials: T[], topic: string, lessonId?: string | null): T[] {
   return materials
-    .filter(m => sameTopic(m.topic, topic))
+    .filter(m => {
+      const id = lessonIdOf(m);
+      return lessonId && id ? id === lessonId : sameTopic(m.topic, topic);
+    })
     .sort((a, b) => b.savedAt.localeCompare(a.savedAt));
 }
 
 /** The five rows, each saying whether the lesson already has that material. */
-export function buildPrepBoard(materials: MaterialLike[], topic: string): PrepRow[] {
-  const mine = materialsForTopic(materials, topic);
+export function buildPrepBoard(
+  materials: MaterialLike[],
+  topic: string,
+  lessonId?: string | null,
+  skipped: readonly string[] = [],
+): PrepRow[] {
+  const mine = materialsForTopic(materials, topic, lessonId);
   return PREP_ROWS.map(meta => {
     const hits = mine.filter(m => rowTypeOf(m.type) === meta.type);
-    return { ...meta, done: hits.length > 0, material: hits[0] ?? null, count: hits.length };
+    const done = hits.length > 0;
+    return { ...meta, done, material: hits[0] ?? null, count: hits.length, skipped: !done && skipped.includes(meta.type) };
   });
 }
 
+/** Rows marked not needed leave the total, so 3 of 3 can read as ready. */
 export function prepSummary(rows: PrepRow[]): { done: number; total: number } {
-  return { done: rows.filter(r => r.done).length, total: rows.length };
+  return { done: rows.filter(r => r.done).length, total: rows.filter(r => !r.skipped).length };
+}
+
+/**
+ * When a material was saved, the way a teacher says it: «اليوم», «أمس»,
+ * «قبل 3 أيام», then a date past a week. Calendar days in local time, not
+ * 24-hour spans — last night at 23:30 is «أمس» at 10:00 this morning.
+ * Latin digits, like the board's «2 من 5» next to it. Empty for a bad stamp.
+ */
+export function savedAgo(savedAt: string, now: Date, lang: 'ar' | 'en'): string {
+  const saved = new Date(savedAt);
+  if (Number.isNaN(saved.getTime())) return '';
+  const day = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  const days = Math.round((day(now) - day(saved)) / 86_400_000);
+  const ar = lang === 'ar';
+  if (days <= 0) return ar ? 'اليوم' : 'today';
+  if (days === 1) return ar ? 'أمس' : 'yesterday';
+  if (days === 2) return ar ? 'قبل يومين' : '2 days ago';
+  if (days <= 7) return ar ? `قبل ${days} أيام` : `${days} days ago`;
+  try {
+    return saved.toLocaleDateString(ar ? 'ar-JO-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'short' });
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * The key a lesson's «غير مطلوب» choices are stored under: its curriculum id,
+ * else its normalised topic (a free-typed lesson has no id). Null with neither.
+ */
+export function prepLessonKey(topic: string, lessonId?: string | null): string | null {
+  if (lessonId) return lessonId;
+  const t = normalizeTopic(topic);
+  return t ? `topic:${t}` : null;
 }
 
 /**

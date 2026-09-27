@@ -7,7 +7,7 @@
  * codes), so create and edit share one modal instead of a separate detail
  * screen — `editingId` says which mode it's in.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -20,7 +20,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -289,6 +289,27 @@ export default function TeachingPlansScreen() {
     setShowForm(true);
   };
 
+  /*
+    `classId` — the home card's «أضف الخطة» for the class of the next
+    period. Opens that class's plan, or a new one already on the class, once
+    the list has loaded; handled once per id so closing the form sticks.
+  */
+  const { classId } = useLocalSearchParams<{ classId?: string }>();
+  const handledClassId = useRef<string | null>(null);
+  useEffect(() => {
+    if (loading || !classId || handledClassId.current === classId) return;
+    handledClassId.current = classId;
+    const existing = plans.find(p => p.classGroupId === classId);
+    if (existing) {
+      openEdit(existing);
+    } else {
+      openCreate();
+      setForm(f => ({ ...f, classGroupId: classId }));
+    }
+    // openCreate/openEdit are plain closures over setters; keyed on the data.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, classId, plans]);
+
   const classNameFor = (id: string | null): string => {
     if (!id) return '';
     const found = classes.find(c => c.id === id);
@@ -436,13 +457,20 @@ export default function TeachingPlansScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-        <Pressable
-          onPress={() => goBack()}
-          hitSlop={12}
-          style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
-        >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <View style={styles.heroNav}>
+          <Pressable
+            onPress={() => setShowForm(true)}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={t('newTeachingPlan')}
+            style={styles.heroAddBtn}
+          >
+            <Ionicons name="add" size={20} color="#fff" />
+          </Pressable>
+          <Pressable onPress={() => goBack()} hitSlop={12}>
+            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
+          </Pressable>
+        </View>
         <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
           {t('myTeachingPlans')}
         </Text>
@@ -804,7 +832,9 @@ export default function TeachingPlansScreen() {
 }
 
 const styles = StyleSheet.create({
-  hero: { paddingHorizontal: 20, paddingBottom: 20, gap: 12 },
+  hero: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
+  heroNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  heroAddBtn: { width: 32, height: 32, borderRadius: 9, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   heroTitle: { fontSize: 26, color: '#fff' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   card: {

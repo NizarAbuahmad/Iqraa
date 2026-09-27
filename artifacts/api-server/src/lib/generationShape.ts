@@ -35,6 +35,7 @@ export type GenerationKind =
   | "activity"
   | "classroom-activity"
   | "prompt-slides"
+  | "lesson-teaching"
   | "infographic";
 
 /**
@@ -58,6 +59,9 @@ export const REQUIRED_FIELDS: Record<GenerationKind, readonly string[]> = {
   activity: ["title", "objective", "materials", "steps"],
   "classroom-activity": ["activityName", "slides"],
   "prompt-slides": ["activityName", "slides"],
+  // The explanation is the whole point of the call. A missing hook, example or
+  // practice problem only costs the deck that one slide, so those are optional.
+  "lesson-teaching": ["concepts"],
   // `subtitle` is decoration and may legitimately be short or absent.
   infographic: ["title", "keyFacts", "sections", "takeaway"],
 };
@@ -161,7 +165,9 @@ export function deckShortfalls(parsed: unknown): string[] {
     out.push("no question or worked-example slide");
   }
   if (!objects.some(s => s.type === "divider")) out.push("no divider slide");
-  const thin = objects.filter(s => typeof s.content === "string" && !s.content.includes("\n")).length;
+  // A laid-out slide is meant to be one line (statement) or keeps its body
+  // outside `content` (stat, compare), so it is not a thin slide.
+  const thin = objects.filter(s => !s.layout && typeof s.content === "string" && !s.content.includes("\n")).length;
   if (thin > 0) out.push(`${thin}/${objects.length} slides are a single unbroken line`);
   return out;
 }

@@ -41,13 +41,19 @@ import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { JordanFlag } from '@/components/ui/JordanFlag';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
-import { buildPrepBoard, prepSummary, withoutBoardTools, type PrepRow } from '@/services/lessonBoard';
+import { buildPrepBoard, prepLessonKey, prepSummary, withoutBoardTools, type PrepRow } from '@/services/lessonBoard';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { listClasses } from '@/services/roster';
 import type { ClassGroup } from '@/services/roster';
-import { className } from '@/services/materialClass';
-import { HomeLessonPick, loadLessonPick, subscribeLessonPick } from '@/services/lessonContext';
+import { className, classNameFor } from '@/services/materialClass';
+import { loadTimetable } from '@/services/schedule';
+import { formatNextPeriod, type NextPeriodLesson, type TimetableSetupStep } from '@/services/scheduleCalendar';
+import { todayISO } from '@/services/planEntries';
+import {
+  HomeLessonPick, dismissSetupNudge, loadLessonPick, loadPrepSkips, setPrepSkip, subscribeLessonPick, timetableWins,
+  wasSetupNudgeDismissed,
+} from '@/services/lessonContext';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
 import { DEFAULT_ACTIVE_LESSON_ID } from '@/services/lessonCopilot';
@@ -88,6 +94,9 @@ function LessonWorkspace() {
   const params = useLocalSearchParams<{ startClass?: string }>();
 
   const [pick, setPick] = useState<HomeLessonPick | null>(null);
+  const [next, setNext] = useState<NextPeriodLesson | null>(null);
+  const [setup, setSetup] = useState<TimetableSetupStep | null>(null);
+  const [nudgeDismissed, setNudgeDismissed] = useState(true); // until read: never flash it
   const [materials, setMaterials] = useState<SavedMaterial[]>([]);
   const [classes, setClasses] = useState<ClassGroup[]>([]);
   const [ask, setAsk] = useState('');
@@ -109,6 +118,11 @@ function LessonWorkspace() {
   const reload = useCallback(() => {
     getAllItems().then(setMaterials).catch(() => {});
     listClasses().then(setClasses).catch(() => {});
+    loadTimetable().then(tt => {
+      setNext(tt?.next ?? null);
+      setSetup(tt?.setup ?? null);
+    });
+    wasSetupNudgeDismissed().then(setNudgeDismissed);
   }, []);
   useEffect(() => {
     reload();
@@ -128,14 +142,53 @@ function LessonWorkspace() {
     () => resolveLessonPrepContext(DEFAULT_ACTIVE_LESSON_ID, lang as 'ar' | 'en'),
     [lang],
   );
-  const active = pick?.topic?.trim()
-    ? { topic: pick.topic.trim(), lessonId: pick.lessonId ?? null, gradeId: pick.gradeId, subjectId: pick.subjectId }
-    : fallback
-      ? { topic: fallback.topic, lessonId: fallback.lessonId, gradeId: fallback.gradeId, subjectId: fallback.subjectId }
-      : null;
+  /*
+    The lesson the card is about, in order: a lesson the teacher picked by
+    hand today; else the one the pacing plan puts in front of the next class
+    on the timetable; else an older pick; else the chat's default. A pick from
+    last week is where they were, not where they are — the timetable knows
+    better — but a pick from this morning is a decision, and it wins.
+  */
+  const scheduled = useMemo(
+    () => (next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang as 'ar' | 'en') : null),
+    [next?.lessonId, lang],
+  );
+  const fromSchedule = timetableWins(pick, !!scheduled, todayISO());
+  const active = fromSchedule && scheduled
+    ? { topic: scheduled.topic, lessonId: scheduled.lessonId, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId }
+    : pick?.topic?.trim()
+      ? { topic: pick.topic.trim(), lessonId: pick.lessonId ?? null, gradeId: pick.gradeId, subjectId: pick.subjectId }
+      : fallback
+        ? { topic: fallback.topic, lessonId: fallback.lessonId, gradeId: fallback.gradeId, subjectId: fallback.subjectId }
+        : null;
+  // «الحصة القادمة · العاشر ب · 10:15» — only when the card is showing that period's lesson.
+  const periodLine = fromSchedule && next
+    ? formatNextPeriod(next, {
+        classLabel: classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'),
+        today: todayISO(),
+        lang: lang as 'ar' | 'en',
+        nowLabel: t('homePeriodNow'),
+        nextLabel: t('homePeriodNext'),
+      })
+    : '';
 
   const topic = active?.topic ?? '';
-  const board = useMemo(() => buildPrepBoard(materials, topic), [materials, topic]);
+  // «غير مطلوب» choices for this lesson; reloaded whenever the lesson changes.
+  const skipKey = prepLessonKey(topic, active?.lessonId);
+  const [skips, setSkips] = useState<string[]>([]);
+  useEffect(() => {
+    let live = true;
+    loadPrepSkips(skipKey).then(list => { if (live) setSkips(list); });
+    return () => { live = false; };
+  }, [skipKey]);
+  const toggleSkip = useCallback((row: PrepRow) => {
+    if (!skipKey) return;
+    void setPrepSkip(skipKey, row.type, !row.skipped).then(setSkips);
+  }, [skipKey]);
+  const board = useMemo(
+    () => buildPrepBoard(materials, topic, active?.lessonId, skips),
+    [materials, topic, active?.lessonId, skips],
+  );
   const summary = prepSummary(board);
 
   const grade = active?.gradeId ? getPickerGrades().find(g => g.id === active.gradeId) : undefined;
@@ -268,6 +321,12 @@ function LessonWorkspace() {
           <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[{ flexDirection: rowDir, alignItems: 'flex-start', gap: 16 }]}>
               <View style={{ flex: 1 }}>
+                {periodLine ? (
+                  <View style={[s.periodPill, { backgroundColor: colors.secondary, flexDirection: rowDir, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+                    <Ionicons name={next?.happeningNow ? 'radio-button-on' : 'time-outline'} size={13} color={colors.primary} />
+                    <Text style={[s.periodText, { color: colors.primary }]}>{periodLine}</Text>
+                  </View>
+                ) : null}
                 <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 7, marginBottom: 7 }]}>
                   <JordanFlag width={17} />
                   <Text style={[s.crumb, { color: colors.mutedForeground, textAlign: align }]}>
@@ -284,6 +343,48 @@ function LessonWorkspace() {
                 ) : null}
               </View>
             </View>
+
+            {/*
+              One next thing to set up so this card can follow the timetable —
+              production had bell times but not a single class in a period.
+              Not shown to a teacher with no classes yet (the «شُعَبي» section
+              below already asks for those), and closable for good.
+            */}
+            {setup && !nudgeDismissed && classes.length > 0 ? (
+              <View style={[s.nudge, { backgroundColor: colors.secondary, flexDirection: rowDir }]}>
+                <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+                <Text style={[s.nudgeText, { color: colors.foreground, textAlign: align }]}>
+                  {setup.step === 'timetable'
+                    ? t('homeSetupTimetable')
+                    : t('homeSetupPlan', classNameFor(classes, setup.classGroupId, lang as 'ar' | 'en') ?? '')}
+                </Text>
+                <Pressable
+                  onPress={() =>
+                    setup.step === 'timetable'
+                      ? router.push('/schedule' as never)
+                      : router.push({ pathname: '/teaching-plans', params: { classId: setup.classGroupId } } as never)
+                  }
+                  style={({ pressed }) => [s.nudgeBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                  accessibilityRole="button"
+                >
+                  <Text style={[s.nudgeBtnText, { color: colors.primaryForeground }]}>
+                    {t(setup.step === 'timetable' ? 'homeSetupTimetableCta' : 'homeSetupPlanCta')}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    setNudgeDismissed(true);
+                    void dismissSetupNudge();
+                  }}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('homeSetupDismiss')}
+                  style={s.nudgeClose}
+                >
+                  <Ionicons name="close" size={16} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
+            ) : null}
 
             {startClassError ? (
               <View style={[s.errorRow, { backgroundColor: START_CLASS_COLOR + '14', flexDirection: rowDir }]}>
@@ -308,6 +409,13 @@ function LessonWorkspace() {
                 doneLabel={t('homePrepDone')}
                 onOpen={(row) => row.material && router.push({ pathname: '/workspace/view', params: { id: row.material.id } })}
                 onMake={(row) => router.push({ pathname: row.route as never, params: toolParams as never })}
+                onToggleSkip={toggleSkip}
+                skipLabel={t('homePrepSkip')}
+                skippedLabel={t('homePrepSkipped')}
+                restoreLabel={t('homePrepRestore')}
+                classLabelFor={(id) => classNameFor(classes, id, lang as 'ar' | 'en')}
+                onOpenAll={() => router.push({ pathname: '/workspace', params: { q: topic } })}
+                allCopiesLabel={t('homePrepAllCopies')}
               />
             </View>
           </View>
@@ -428,7 +536,7 @@ function LessonWorkspace() {
 /** Ask the assistant for whatever the board says is missing, in the board's order. */
 function suggestionsFor(board: PrepRow[], topic: string, isAr: boolean): string[] {
   if (!topic) return [];
-  const missing = board.filter(r => !r.done).slice(0, 2);
+  const missing = board.filter(r => !r.done && !r.skipped).slice(0, 2);
   const asks = missing.map(row =>
     isAr ? `جهّز ${row.labelAr} عن «${topic}»` : `Prepare a ${row.labelEn.toLowerCase()} for “${topic}”`,
   );
@@ -465,11 +573,18 @@ const s = StyleSheet.create({
   mainCol: { gap: 16, paddingBottom: 40 },
   card: { borderWidth: 1, borderRadius: 18, padding: 22 },
   crumb: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular' },
+  periodPill: { alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 10 },
+  periodText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
   lessonTitle: { fontSize: 22, fontFamily: 'Cairo_700Bold', lineHeight: 34 },
   hint: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', marginTop: 6 },
 
 
   errorRow: { alignItems: 'center', gap: 7, borderRadius: 10, padding: 9, marginTop: 12 },
+  nudge: { alignItems: 'center', gap: 10, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, marginTop: 14 },
+  nudgeText: { flex: 1, fontSize: 13, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
+  nudgeBtn: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
+  nudgeBtnText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
+  nudgeClose: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   errorText: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular', flex: 1 },
 
   sectionTitle: { fontSize: 14.5, fontFamily: 'Cairo_600SemiBold', marginTop: 6 },

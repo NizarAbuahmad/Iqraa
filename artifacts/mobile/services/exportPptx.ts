@@ -218,7 +218,7 @@ export async function exportDeckAsPptx(
       const onPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl, slide.mediaCaption) : false;
       if (!onPhoto) addBlobs(s);
       const [meta, ...rest] = slide.content.split('\n\n');
-      s.addText('IQRA', {
+      s.addText('Iqraa', {
         x: 0, y: 0.5, w: '100%', h: 0.4, align: 'center',
         fontSize: 12, color: onPhoto ? 'FFFFFF' : DECK_ACCENT, bold: true, charSpacing: 4,
       });

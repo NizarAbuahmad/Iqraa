@@ -1,4 +1,4 @@
-# Publishing IQRA on Google Play
+# Publishing Iqraa on Google Play
 
 Everything needed for the Play listing, and the order to do it in.
 Written 2026-09-15 against `main` @ `7826c6d`.
@@ -72,7 +72,7 @@ clock.
 `iqraa-web.pages.dev` is another company's Qur'an app (see "Privacy policy URL"
 below), and it ships on Google Play under the name *Iqraa*. Search the store
 for your title before you commit to it — Play rejects listings likely to be
-confused with an existing app. `IQRA — مساعد المعلّم الذكي` is distinct enough
+confused with an existing app. `اقرأ — رفيقك في تحضير الحصص` is distinct enough
 to be defensible, but know what you are sitting next to.
 
 ### 1. ~~`privacy@iqraa.app` is a placeholder~~ — resolved

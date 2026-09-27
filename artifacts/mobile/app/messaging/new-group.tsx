@@ -42,7 +42,7 @@ export default function NewGroupScreen() {
       const thread = await createGroup(title, members.map(m => m.userId));
       router.replace(`/messaging/${thread.id}`);
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingLoadError'));
+      setError(e instanceof MessagingError ? e.message : t('messagingCreateGroupError'));
     } finally {
       setCreating(false);
     }
@@ -60,7 +60,12 @@ export default function NewGroupScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+        <View style={{ gap: 8 }}>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+          {t('messagingGroupNameLabel')}
+        </Text>
         <TextInput
+          accessibilityLabel={t('messagingGroupNameLabel')}
           value={name}
           onChangeText={setName}
           placeholder={t('messagingGroupNamePlaceholder')}
@@ -71,6 +76,7 @@ export default function NewGroupScreen() {
           ]}
           maxLength={80}
         />
+        </View>
 
         <View style={{ gap: 8 }}>
           <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>

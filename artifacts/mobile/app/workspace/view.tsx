@@ -294,7 +294,7 @@ export default function WorkspaceViewScreen() {
           >
             <Ionicons name="tv-outline" size={16} color="#4F46E5" />
             <Text style={[{ color: '#4F46E5', fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>
-              {lang === 'ar' ? 'الفصل' : 'Classroom'}
+              {lang === 'ar' ? 'الحصة' : 'Class screen'}
             </Text>
           </Pressable>
         )}
