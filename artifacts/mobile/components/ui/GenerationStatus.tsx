@@ -100,6 +100,7 @@ export function GenerationStatus({
               accessibilityLiveRegion="polite"
             >
               {t('genElapsed', countSeconds(elapsed, lang))}
+              {slow ? '' : ` · ${t('genTypicalHint')}`}
             </Text>
           </View>
           {onCancel ? (
