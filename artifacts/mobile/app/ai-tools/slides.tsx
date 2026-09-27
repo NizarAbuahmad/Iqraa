@@ -900,7 +900,11 @@ export default function SlidesScreen() {
                     }]}>
                       {v.anySymbolic
                         ? t('quizVerifiedCount', v.symbolic, examples.length)
-                        : t('quizVerifiedNone')}
+                        // "keys come from the reviewed bank" is false for a
+                        // model-written example, which nobody reviewed.
+                        : examples.some(s => s.aiWritten && !s.verified)
+                          ? t('examplesAiUnverified')
+                          : t('quizVerifiedNone')}
                     </Text>
                   </View>
                 );
