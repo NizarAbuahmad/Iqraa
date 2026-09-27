@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   problemWrap: { alignItems: 'center', paddingVertical: 12 },
   problem: { fontFamily: 'Cairo_700Bold', fontSize: 44, writingDirection: 'ltr', textAlign: 'center' },
   reveal: { fontFamily: 'Cairo_700Bold', fontSize: 22, marginTop: 4 },
-  padRow: { flexDirection: 'row', gap: 10, direction: 'ltr' },
+  padRow: { flexDirection: 'row', gap: 10, writingDirection: 'ltr' },
   padKey: { flexBasis: '30%', flexGrow: 1, height: 58, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   padText: { fontFamily: 'Cairo_700Bold', fontSize: 24 },
 });
