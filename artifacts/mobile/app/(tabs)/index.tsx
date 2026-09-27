@@ -362,6 +362,9 @@ function LessonWorkspace() {
                 skipLabel={t('homePrepSkip')}
                 skippedLabel={t('homePrepSkipped')}
                 restoreLabel={t('homePrepRestore')}
+                classLabelFor={(id) => classNameFor(classes, id, lang as 'ar' | 'en')}
+                onOpenAll={() => router.push({ pathname: '/workspace', params: { q: topic } })}
+                allCopiesLabel={t('homePrepAllCopies')}
               />
             </View>
           </View>

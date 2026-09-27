@@ -16,7 +16,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { prepSummary, type PrepRow } from '@/services/lessonBoard';
+import { prepSummary, savedAgo, type PrepRow } from '@/services/lessonBoard';
 
 type Colors = {
   card: string;
@@ -47,6 +47,9 @@ export function LessonPrepBoard({
   skipLabel,
   skippedLabel,
   restoreLabel,
+  classLabelFor,
+  onOpenAll,
+  allCopiesLabel,
   compact,
 }: {
   rows: PrepRow[];
@@ -78,6 +81,15 @@ export function LessonPrepBoard({
   skippedLabel?: string;
   /** The skipped row's action, e.g. «أعِده». */
   restoreLabel?: string;
+  /** Name of the class a material is filed under, for the done row's status line. */
+  classLabelFor?: (classGroupId: string) => string | null;
+  /**
+   * Every copy of this row's material for the lesson. Shown as a small count
+   * button when there are two or more; «افتح» itself opens the newest.
+   */
+  onOpenAll?: (row: PrepRow) => void;
+  /** Accessibility label of that button, e.g. «كل النسخ». */
+  allCopiesLabel?: string;
   /** Phone: tighter rows. */
   compact?: boolean;
 }) {
@@ -116,9 +128,19 @@ export function LessonPrepBoard({
       <View style={{ gap: compact ? 6 : 8, marginTop: 6 }}>
         {rows.map(row => {
           const label = isAr ? row.labelAr : row.labelEn;
+          // «جاهزة · أمس · العاشر أ» — when the newest copy was saved and the
+          // class it is filed under. The count moves to its own button when
+          // there is one to open them all; otherwise it stays in the line.
+          const classLabel = row.material?.classGroupId ? classLabelFor?.(row.material.classGroupId) ?? null : null;
           const status = row.done
-            ? (row.count > 1 ? `${doneLabel} · ${row.count}` : doneLabel)
+            ? [
+                doneLabel,
+                row.count > 1 && !onOpenAll ? String(row.count) : '',
+                row.material ? savedAgo(row.material.savedAt, new Date(), isAr ? 'ar' : 'en') : '',
+                classLabel ?? '',
+              ].filter(Boolean).join(' · ')
             : row.skipped ? (skippedLabel ?? notYetLabel) : notYetLabel;
+          const showAll = !!onOpenAll && row.done && row.count > 1;
           const canSkip = !!onToggleSkip && !disabled && !row.done;
           /*
             The row and its skip control are sibling buttons inside one
@@ -219,6 +241,22 @@ export function LessonPrepBoard({
                   <Ionicons name="eye-off-outline" size={16} color={colors.mutedForeground} />
                 </Pressable>
               ) : null}
+              {showAll ? (
+                <Pressable
+                  onPress={() => onOpenAll?.(row)}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${label} — ${allCopiesLabel ?? ''} (${row.count})`}
+                  style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+                    styles.skip,
+                    styles.copies,
+                    { flexDirection: rowDir, backgroundColor: pressed || hovered ? colors.border : colors.secondary },
+                  ]}
+                >
+                  <Ionicons name="layers-outline" size={14} color={colors.primary} />
+                  <Text style={[styles.copiesText, { color: colors.primary }]}>{row.count}</Text>
+                </Pressable>
+              ) : null}
             </View>
           );
         })}
@@ -261,5 +299,7 @@ const styles = StyleSheet.create({
   ctaMake: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   skip: { width: 36, height: 36, borderRadius: 18, marginHorizontal: 6, alignItems: 'center', justifyContent: 'center' },
   dim: { opacity: 0.5 },
+  copies: { width: undefined, paddingHorizontal: 9, gap: 3 },
+  copiesText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
   ctaText: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
 });
