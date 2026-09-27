@@ -304,6 +304,8 @@ const translations = {
     libraryAdminItemTitle: 'العنوان',
     libraryAdminDescription: 'وصف قصير (اختياري)',
     libraryAdminThumbnail: 'صورة الغلاف (اختياري)',
+    libraryAdminThumbnailBadUrl: 'رابط الصورة طويل جدًا أو لا يبدأ بـ https',
+    libraryAdminThumbnailPreviewFailed: 'تعذّر تحميل هذه الصورة — تأكد أنه رابط صورة مباشر',
     libraryAdminFile: 'رفع ملف',
     libraryAdminLink: 'رابط',
     libraryAdminPickFile: 'اختر ملفًا',
@@ -1033,6 +1035,7 @@ const translations = {
     quizVerifiedCount: (n: number, total: number) =>
       `تحقّق المُحقِّق الرمزي من ${n} من أصل ${total} إجابة`,
     quizVerifiedNone: 'لم يتحقّق المُحقِّق الرمزي من أي إجابة — الإجابات من بنك الأسئلة المُراجَع',
+    examplesAiUnverified: 'كتب الذكاء الاصطناعي المثال ولم يتحقّق أحد من إجابته — راجعها قبل العرض',
     allStudentsAnswer: 'ارفع يدك للإجابة!',
     activityEscapeTitle: 'تحدي الهروب',
     activityEscapeDesc: 'مجموعات تحل تحديات رياضية للهروب من المختبر بأكواد سرية',
@@ -2136,6 +2139,8 @@ const translations = {
     libraryAdminLesson: 'Lesson',
     libraryAdminAnyLesson: 'Whole subject',
     libraryAdminThumbnail: 'Cover image (optional)',
+    libraryAdminThumbnailBadUrl: 'Image link is too long or does not start with https',
+    libraryAdminThumbnailPreviewFailed: "Couldn't load this image — make sure it's a direct image link",
     libraryAdminCategory: 'Category',
     libraryAdminItemTitle: 'Title',
     libraryAdminDescription: 'Short description (optional)',
@@ -2831,6 +2836,7 @@ const translations = {
     quizVerifiedCount: (n: number, total: number) =>
       `${n} of ${total} answers symbolically verified`,
     quizVerifiedNone: 'No answer was symbolically verified — keys come from the reviewed bank',
+    examplesAiUnverified: "The example was written by AI and nobody has checked its answer — review it before class",
     allStudentsAnswer: 'Raise your hand to answer',
     activityEscapeTitle: 'Escape Challenge',
     activityEscapeDesc: 'Groups solve maths challenges to escape the lab using secret codes',
