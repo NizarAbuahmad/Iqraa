@@ -831,8 +831,8 @@ export default function PromptSlidesScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 22 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 4 },
+  header: { paddingHorizontal: 20, paddingBottom: 14 },
+  backBtn: { width: 40, height: 40, justifyContent: 'center' },
   heroIcon: {
     width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.18)',

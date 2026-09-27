@@ -612,7 +612,7 @@ function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 20, gap: 12 },
+  header: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   headerTitle: { fontSize: 22, color: '#fff' },
   label: { fontSize: 13, marginBottom: 6 },
   hint: { fontSize: 12, lineHeight: 19, marginBottom: 8, marginTop: -2 },

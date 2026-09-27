@@ -162,8 +162,8 @@ export default function EnglishHubScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
-  backBtn: { marginBottom: 12, width: 40, height: 40, justifyContent: 'center' },
+  header: { paddingHorizontal: 20, paddingBottom: 14 },
+  backBtn: { width: 40, height: 40, justifyContent: 'center' },
   title: { color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 24, marginBottom: 4 },
   sub: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 },
   streak: { color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 14, marginTop: 8 },

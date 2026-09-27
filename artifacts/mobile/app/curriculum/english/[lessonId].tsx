@@ -168,8 +168,8 @@ export default function EnglishHubLessonScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 20 },
-  backBtn: { marginBottom: 12, width: 40, height: 40, justifyContent: 'center' },
+  header: { paddingHorizontal: 20, paddingBottom: 14 },
+  backBtn: { width: 40, height: 40, justifyContent: 'center' },
   eyebrow: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 4 },
   title: { color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 22 },
   card: { alignItems: 'center', gap: 12, borderWidth: 1, padding: 14 },
