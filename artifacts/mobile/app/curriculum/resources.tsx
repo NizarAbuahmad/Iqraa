@@ -290,7 +290,12 @@ function ResourceRow({
   );
 }
 
-export default function ResourcesScreen() {
+/**
+ * `asTab`: rendered as the «المكتبة» tab (see `(tabs)/curriculum.tsx`) — no
+ * back arrow, and room under the list for the tab bar. Without it this is
+ * the same screen pushed from the Tools card and the chat «+» menu.
+ */
+export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
@@ -395,12 +400,14 @@ export default function ResourcesScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-        <Pressable
-          onPress={() => goBack()} hitSlop={10}
-          style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
-        >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        {asTab ? null : (
+          <Pressable
+            onPress={() => goBack()} hitSlop={10}
+            style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
+          >
+            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
+          </Pressable>
+        )}
         <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('resourcesTitle')}
         </Text>
@@ -423,7 +430,7 @@ export default function ResourcesScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 48, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
+        contentContainerStyle={{ paddingBottom: asTab ? 120 : 48, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
         showsVerticalScrollIndicator={false}
       >
         <Text
@@ -434,6 +441,33 @@ export default function ResourcesScreen() {
         >
           {t('resourcesIntro')}
         </Text>
+
+        {/* The curriculum itself — the books, by grade, subject, unit and
+            lesson — is the library's first shelf. */}
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push({ pathname: '/curriculum/browse' as never, params: { gradeId: grade } });
+          }}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            styles.curriculumCard,
+            { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.8 : 1 },
+          ]}
+        >
+          <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+            <Ionicons name="book" size={26} color={ACCENT} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('curriculumTitle')}
+            </Text>
+            <Text style={[styles.rowNote, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('libraryCurriculumDesc')}
+            </Text>
+          </View>
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+        </Pressable>
 
         {grades.length > 1 ? (
           <ChipRow
@@ -730,6 +764,7 @@ const styles = StyleSheet.create({
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
   chipText: { fontSize: 12.5 },
   section: { paddingTop: 14, gap: 8 },
+  curriculumCard: { alignItems: 'center', gap: 12, borderWidth: 1, padding: 14, marginHorizontal: 20, marginTop: 14, marginBottom: 4 },
   tiles: { flexWrap: 'wrap', gap: 12, paddingHorizontal: 20, paddingTop: 14 },
   tile: { flexGrow: 1, flexBasis: '30%', minWidth: 104, maxWidth: 220, alignItems: 'center', gap: 6, borderWidth: 1, paddingVertical: 16, paddingHorizontal: 8 },
   tileIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
@@ -772,3 +807,5 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', gap: 10, paddingTop: 48, paddingHorizontal: 40 },
   emptyText: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
 });
+
+export default LibraryScreen;

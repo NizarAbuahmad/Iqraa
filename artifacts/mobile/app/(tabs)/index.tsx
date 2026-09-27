@@ -47,11 +47,10 @@ import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { listClasses } from '@/services/roster';
 import type { ClassGroup } from '@/services/roster';
 import { className, classNameFor } from '@/services/materialClass';
-import { getSchedule } from '@/services/schedule';
-import { listTeachingPlans } from '@/services/teachingPlans';
-import { nextPeriodLesson, type NextPeriodLesson } from '@/services/scheduleCalendar';
+import { loadNextPeriod } from '@/services/schedule';
+import { formatNextPeriod, type NextPeriodLesson } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
-import { HomeLessonPick, loadLessonPick, subscribeLessonPick } from '@/services/lessonContext';
+import { HomeLessonPick, loadLessonPick, subscribeLessonPick, timetableWins } from '@/services/lessonContext';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
 import { DEFAULT_ACTIVE_LESSON_ID } from '@/services/lessonCopilot';
@@ -114,11 +113,7 @@ function LessonWorkspace() {
   const reload = useCallback(() => {
     getAllItems().then(setMaterials).catch(() => {});
     listClasses().then(setClasses).catch(() => {});
-    // Either may 503 on a server without the tables, or simply be empty; the
-    // card then keeps the picked lesson, as it did before the timetable existed.
-    Promise.all([getSchedule(), listTeachingPlans()])
-      .then(([schedule, plans]) => setNext(nextPeriodLesson(new Date(), schedule.periods, schedule.slots, plans)))
-      .catch(() => setNext(null));
+    loadNextPeriod().then(setNext);
   }, []);
   useEffect(() => {
     reload();
@@ -149,8 +144,7 @@ function LessonWorkspace() {
     () => (next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang as 'ar' | 'en') : null),
     [next?.lessonId, lang],
   );
-  const pickedToday = !!pick?.topic?.trim() && pick.pickedOn === todayISO();
-  const fromSchedule = !!scheduled && !pickedToday;
+  const fromSchedule = timetableWins(pick, !!scheduled, todayISO());
   const active = fromSchedule && scheduled
     ? { topic: scheduled.topic, lessonId: scheduled.lessonId, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId }
     : pick?.topic?.trim()
@@ -160,11 +154,13 @@ function LessonWorkspace() {
         : null;
   // «الحصة القادمة · العاشر ب · 10:15» — only when the card is showing that period's lesson.
   const periodLine = fromSchedule && next
-    ? [
-        t(next.happeningNow ? 'homePeriodNow' : 'homePeriodNext'),
-        classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'),
-        next.date === todayISO() ? next.startTime : `${dayName(next.date, lang as 'ar' | 'en')} ${next.startTime}`,
-      ].filter(Boolean).join(' · ')
+    ? formatNextPeriod(next, {
+        classLabel: classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'),
+        today: todayISO(),
+        lang: lang as 'ar' | 'en',
+        nowLabel: t('homePeriodNow'),
+        nextLabel: t('homePeriodNext'),
+      })
     : '';
 
   const topic = active?.topic ?? '';
@@ -478,15 +474,6 @@ function suggestionsFor(board: PrepRow[], topic: string, isAr: boolean): string[
     asks.push(isAr ? `اشرح لي أصعب فكرة في «${topic}»` : `Explain the hardest idea in “${topic}”`);
   }
   return asks.slice(0, 3);
-}
-
-/** Weekday name of an ISO date, for a next period that is not today. */
-function dayName(isoDate: string, lang: 'ar' | 'en'): string {
-  try {
-    return new Date(`${isoDate}T00:00:00`).toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-GB', { weekday: 'long' });
-  } catch {
-    return '';
-  }
 }
 
 function todayLabel(lang: 'ar' | 'en'): string {

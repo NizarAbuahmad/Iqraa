@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { subscribeLessonPick, saveLessonPick, type HomeLessonPick } from '../lessonContext.ts';
+import { subscribeLessonPick, saveLessonPick, timetableWins, type HomeLessonPick } from '../lessonContext.ts';
 import { todayISO } from '../planEntries.ts';
 
 const pick = (topic: string): HomeLessonPick => ({ topic, unitOrder: null, gradeId: 'grade-10' });
@@ -53,5 +53,22 @@ describe('saveLessonPick', () => {
     } finally {
       unsubscribe();
     }
+  });
+});
+
+describe('timetableWins', () => {
+  const today = '2026-09-27';
+  it('lets the timetable replace a pick from an earlier day, or no pick', () => {
+    assert.equal(timetableWins({ ...pick('Waves'), pickedOn: '2026-09-20' }, true, today), true);
+    assert.equal(timetableWins({ ...pick('Waves') }, true, today), true); // saved before pickedOn existed
+    assert.equal(timetableWins(null, true, today), true);
+  });
+
+  it('keeps a pick made today', () => {
+    assert.equal(timetableWins({ ...pick('Waves'), pickedOn: today }, true, today), false);
+  });
+
+  it('never wins without a scheduled lesson', () => {
+    assert.equal(timetableWins(null, false, today), false);
   });
 });

@@ -80,6 +80,16 @@ export async function loadLessonPick(): Promise<HomeLessonPick | null> {
   }
 }
 
+/**
+ * Whether the timetable's lesson should replace the teacher's pick. A pick
+ * made today is a decision and wins; an older one (or none) is where they
+ * were, and yields. Home and chat both ask this, so they show one lesson.
+ */
+export function timetableWins(pick: HomeLessonPick | null, hasScheduledLesson: boolean, today: string): boolean {
+  if (!hasScheduledLesson) return false;
+  return !(pick?.topic?.trim() && pick.pickedOn === today);
+}
+
 export async function saveLessonPick(input: HomeLessonPick): Promise<void> {
   const pick = { ...input, pickedOn: input.pickedOn ?? todayISO() };
   try {

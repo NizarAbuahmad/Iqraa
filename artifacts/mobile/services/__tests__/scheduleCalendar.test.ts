@@ -13,6 +13,7 @@ import {
   dayRows,
   defaultDay,
   endTime,
+  formatNextPeriod,
   isHappeningNow,
   isInMonth,
   monthGridDates,
@@ -254,5 +255,20 @@ describe('nextPeriodLesson', () => {
 
   it('is null with no timetable at all', () => {
     assert.equal(nextPeriodLesson(at('2026-09-20T07:00:00'), PERIODS, [], plans), null);
+  });
+});
+
+describe('formatNextPeriod', () => {
+  const base = { schoolName: '', periodNumber: 1, startTime: '10:15', durationMinutes: 45, classGroupId: 'c1', lessonId: null };
+  const opts = { classLabel: 'العاشر ب', today: '2026-09-20', lang: 'ar' as const, nowLabel: 'الحصة الآن', nextLabel: 'الحصة القادمة' };
+
+  it('says now or next, the class and the time', () => {
+    assert.equal(formatNextPeriod({ ...base, date: '2026-09-20', happeningNow: false }, opts), 'الحصة القادمة · العاشر ب · 10:15');
+    assert.equal(formatNextPeriod({ ...base, date: '2026-09-20', happeningNow: true }, opts), 'الحصة الآن · العاشر ب · 10:15');
+  });
+
+  it('adds the weekday when the period is not today, and drops an unknown class', () => {
+    const line = formatNextPeriod({ ...base, date: '2026-09-22', happeningNow: false }, { ...opts, classLabel: null, lang: 'en', nextLabel: 'Next period' });
+    assert.equal(line, 'Next period · Tuesday 10:15');
   });
 });
