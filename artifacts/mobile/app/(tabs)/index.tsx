@@ -47,10 +47,13 @@ import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { listClasses } from '@/services/roster';
 import type { ClassGroup } from '@/services/roster';
 import { className, classNameFor } from '@/services/materialClass';
-import { loadNextPeriod } from '@/services/schedule';
-import { formatNextPeriod, type NextPeriodLesson } from '@/services/scheduleCalendar';
+import { loadTimetable } from '@/services/schedule';
+import { formatNextPeriod, type NextPeriodLesson, type TimetableSetupStep } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
-import { HomeLessonPick, loadLessonPick, loadPrepSkips, setPrepSkip, subscribeLessonPick, timetableWins } from '@/services/lessonContext';
+import {
+  HomeLessonPick, dismissSetupNudge, loadLessonPick, loadPrepSkips, setPrepSkip, subscribeLessonPick, timetableWins,
+  wasSetupNudgeDismissed,
+} from '@/services/lessonContext';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
 import { DEFAULT_ACTIVE_LESSON_ID } from '@/services/lessonCopilot';
@@ -92,6 +95,8 @@ function LessonWorkspace() {
 
   const [pick, setPick] = useState<HomeLessonPick | null>(null);
   const [next, setNext] = useState<NextPeriodLesson | null>(null);
+  const [setup, setSetup] = useState<TimetableSetupStep | null>(null);
+  const [nudgeDismissed, setNudgeDismissed] = useState(true); // until read: never flash it
   const [materials, setMaterials] = useState<SavedMaterial[]>([]);
   const [classes, setClasses] = useState<ClassGroup[]>([]);
   const [ask, setAsk] = useState('');
@@ -113,7 +118,11 @@ function LessonWorkspace() {
   const reload = useCallback(() => {
     getAllItems().then(setMaterials).catch(() => {});
     listClasses().then(setClasses).catch(() => {});
-    loadNextPeriod().then(setNext);
+    loadTimetable().then(tt => {
+      setNext(tt?.next ?? null);
+      setSetup(tt?.setup ?? null);
+    });
+    wasSetupNudgeDismissed().then(setNudgeDismissed);
   }, []);
   useEffect(() => {
     reload();
@@ -335,6 +344,48 @@ function LessonWorkspace() {
               </View>
             </View>
 
+            {/*
+              One next thing to set up so this card can follow the timetable —
+              production had bell times but not a single class in a period.
+              Not shown to a teacher with no classes yet (the «شُعَبي» section
+              below already asks for those), and closable for good.
+            */}
+            {setup && !nudgeDismissed && classes.length > 0 ? (
+              <View style={[s.nudge, { backgroundColor: colors.secondary, flexDirection: rowDir }]}>
+                <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+                <Text style={[s.nudgeText, { color: colors.foreground, textAlign: align }]}>
+                  {setup.step === 'timetable'
+                    ? t('homeSetupTimetable')
+                    : t('homeSetupPlan', classNameFor(classes, setup.classGroupId, lang as 'ar' | 'en') ?? '')}
+                </Text>
+                <Pressable
+                  onPress={() =>
+                    setup.step === 'timetable'
+                      ? router.push('/schedule' as never)
+                      : router.push({ pathname: '/teaching-plans', params: { classId: setup.classGroupId } } as never)
+                  }
+                  style={({ pressed }) => [s.nudgeBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                  accessibilityRole="button"
+                >
+                  <Text style={[s.nudgeBtnText, { color: colors.primaryForeground }]}>
+                    {t(setup.step === 'timetable' ? 'homeSetupTimetableCta' : 'homeSetupPlanCta')}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    setNudgeDismissed(true);
+                    void dismissSetupNudge();
+                  }}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('homeSetupDismiss')}
+                  style={s.nudgeClose}
+                >
+                  <Ionicons name="close" size={16} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
+            ) : null}
+
             {startClassError ? (
               <View style={[s.errorRow, { backgroundColor: START_CLASS_COLOR + '14', flexDirection: rowDir }]}>
                 <Ionicons name="alert-circle-outline" size={14} color={START_CLASS_COLOR} />
@@ -529,6 +580,11 @@ const s = StyleSheet.create({
 
 
   errorRow: { alignItems: 'center', gap: 7, borderRadius: 10, padding: 9, marginTop: 12 },
+  nudge: { alignItems: 'center', gap: 10, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, marginTop: 14 },
+  nudgeText: { flex: 1, fontSize: 13, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
+  nudgeBtn: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
+  nudgeBtnText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
+  nudgeClose: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   errorText: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular', flex: 1 },
 
   sectionTitle: { fontSize: 14.5, fontFamily: 'Cairo_600SemiBold', marginTop: 6 },
