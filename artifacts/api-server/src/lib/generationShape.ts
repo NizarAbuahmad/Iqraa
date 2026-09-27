@@ -35,6 +35,7 @@ export type GenerationKind =
   | "activity"
   | "classroom-activity"
   | "prompt-slides"
+  | "lesson-teaching"
   | "infographic";
 
 /**
@@ -58,6 +59,9 @@ export const REQUIRED_FIELDS: Record<GenerationKind, readonly string[]> = {
   activity: ["title", "objective", "materials", "steps"],
   "classroom-activity": ["activityName", "slides"],
   "prompt-slides": ["activityName", "slides"],
+  // The explanation is the whole point of the call. A missing hook, example or
+  // practice problem only costs the deck that one slide, so those are optional.
+  "lesson-teaching": ["concepts"],
   // `subtitle` is decoration and may legitimately be short or absent.
   infographic: ["title", "keyFacts", "sections", "takeaway"],
 };

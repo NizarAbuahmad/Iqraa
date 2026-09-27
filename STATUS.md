@@ -26,6 +26,16 @@ students and parents stopped being purely notional on 2026-09-04, when
 messaging gave them real accounts. See «In-app messaging ships, and a group is
 an announcement by default» below.
 
+> **Two generators call live AI even with `DEMO_MODE` on (checked 2026-09-27).**
+> Both pass `demoMode: false` in `RemoteAIService` and have no offline twin, so
+> on the web build (which ships `DEMO_MODE` on) they spend real tokens:
+> `generatePromptSlides` (the free-text deck builder) and, since the Slides
+> Maker teaching-section PR, `generateLessonTeaching` — the hook, explanation,
+> worked example and practice problem that `buildLessonDeck` places where the
+> book data has none. The latter is curriculum-grounded, so the server pools it
+> per lesson; on any failure the deck is built from the book alone. Every
+> other AI button on web is still mocked.
+
 > **Verification is live on the hosted demo as of 2026-08-10.** Confirmed
 > end to end against `iqraa-api-dfxu.onrender.com`, both directions:
 > `3x^4 - 2x + 7 → 12x^3 - 2` returns `verified: true`, and the same question
