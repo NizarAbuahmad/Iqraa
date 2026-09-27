@@ -319,12 +319,14 @@ function SchoolNameModal({ title, initial, taken, onClose, onSubmit, isRTL, colo
   );
 }
 
-function SlotEditorModal({ title, classes, current, onClose, onSave, isRTL, lang, colors, t }: {
+function SlotEditorModal({ title, classes, current, period, onClose, onSave, onSavePeriod, isRTL, lang, colors, t }: {
   title: string;
   classes: ClassGroup[];
   current: ScheduleSlot | null;
+  period: SchedulePeriod;
   onClose: () => void;
   onSave: (patch: { classGroupId: string | null; notes: string }) => void;
+  onSavePeriod: (periodNumber: number, input: { startTime: string; durationMinutes: number }) => void;
   isRTL: boolean;
   lang: string;
   colors: Colors;
@@ -341,8 +343,8 @@ function SlotEditorModal({ title, classes, current, onClose, onSave, isRTL, lang
           <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
             {title}
           </Text>
-          <ScrollView style={{ maxHeight: 320 }} contentContainerStyle={{ gap: 12 }}>
-            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+          <ScrollView style={{ maxHeight: 380 }} contentContainerStyle={{ gap: 12 }}>
+            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               {[{ id: null as string | null, name: t('planNoClass'), nameAr: t('planNoClass') }, ...classes].map(c => (
                 <Chip
                   key={c.id ?? '__none'}
@@ -352,6 +354,15 @@ function SlotEditorModal({ title, classes, current, onClose, onSave, isRTL, lang
                   colors={colors}
                 />
               ))}
+              {selected ? (
+                <Pressable
+                  onPress={() => { onClose(); router.push(`/classes/${selected}`); }}
+                  hitSlop={8}
+                  accessibilityLabel={t('scheduleEditClassName')}
+                >
+                  <Ionicons name="create-outline" size={18} color={colors.mutedForeground} />
+                </Pressable>
+              ) : null}
             </View>
             <TextInput
               value={notes}
@@ -365,6 +376,7 @@ function SlotEditorModal({ title, classes, current, onClose, onSave, isRTL, lang
                 fontFamily: 'Almarai_400Regular', textAlign: align,
               }}
             />
+            <PeriodRow period={period} onSave={onSavePeriod} onDelete={() => {}} isRTL={isRTL} colors={colors} t={t} />
           </ScrollView>
           <View style={styles.modalActions}>
             <Pressable onPress={onClose} style={styles.modalBtn}>
@@ -711,6 +723,8 @@ export default function ScheduleScreen() {
   const shownDay = day !== null && weekdays.includes(day) ? day : defaultDay(today, weekdays);
 
   const schoolPeriods = periods.filter(p => p.schoolName === school).sort((a, b) => a.periodNumber - b.periodNumber);
+  const periodIn = (schoolName: string, periodNumber: number) =>
+    periods.find(p => p.schoolName === schoolName && p.periodNumber === periodNumber);
   const slotIn = (schoolName: string, dayOfWeek: number, periodNumber: number) =>
     slots.find(s => s.schoolName === schoolName && s.dayOfWeek === dayOfWeek && s.periodNumber === periodNumber);
   const slotAt = (dayOfWeek: number, periodNumber: number) => slotIn(school, dayOfWeek, periodNumber);
@@ -949,7 +963,7 @@ export default function ScheduleScreen() {
         />
       ) : null}
 
-      {editingCell ? (
+      {editingCell && periodIn(editingCell.schoolName, editingCell.periodNumber) ? (
         <SlotEditorModal
           title={[
             t('scheduleSlotTitle', t(WEEKDAY_KEYS[editingCell.dayOfWeek]!), editingCell.periodNumber),
@@ -957,8 +971,10 @@ export default function ScheduleScreen() {
           ].filter(Boolean).join(' · ')}
           classes={classes}
           current={slotIn(editingCell.schoolName, editingCell.dayOfWeek, editingCell.periodNumber) ?? null}
+          period={periodIn(editingCell.schoolName, editingCell.periodNumber)!}
           onClose={() => setEditingCell(null)}
           onSave={patch => { void onSaveSlot(editingCell, patch); }}
+          onSavePeriod={onSavePeriod}
           isRTL={isRTL}
           lang={lang}
           colors={colors}
