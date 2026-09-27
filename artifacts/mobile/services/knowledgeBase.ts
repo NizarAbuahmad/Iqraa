@@ -4622,6 +4622,14 @@ export function getUnitForLesson(lesson: KBLesson): KBUnit | undefined {
   return KB_UNITS.find(u => u.id === lesson.unitId);
 }
 
+/** Every visible lesson of one grade's subject, in book order. */
+export function getLessonsInScope(gradeId: string, subjectId: string): KBLesson[] {
+  return filterVisibleLessons(KB_LESSONS).filter(l => {
+    const book = getBookForLesson(l);
+    return book?.gradeId === gradeId && book.subjectId === subjectId;
+  });
+}
+
 export function getLessonsForBook(bookId: string): KBLesson[] {
   const unitIds = KB_UNITS.filter(u => u.bookId === bookId).map(u => u.id);
   return KB_LESSONS.filter(l => unitIds.includes(l.unitId));
