@@ -193,12 +193,12 @@ describe('hook / introduction', () => {
   // PLAN.introduction ('ابدأ بسؤال عن مساحة حديقة.') has no quoted or
   // colon-introduced question, so splitWarmup falls through — the same
   // "narration, not a class-facing line" case as guidedPractice above.
-  it('falls back to a generic prompt instead of the teacher narration when nothing can be lifted', () => {
+  // It used to project «لنبدأ بسؤال يهيّئنا لموضوع اليوم.» here: a slide
+  // announcing a question and then asking none.
+  it('drops the warm-up slide when there is no question to lift', () => {
     const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: PLAN });
-    const warmup = deck.slides.find(s => s.title.includes('تمهيد'));
-    assert.ok(warmup);
-    assert.equal(warmup!.content.includes(PLAN.introduction), false);
-    assert.ok(warmup!.teacher?.teachingTips?.includes(PLAN.introduction));
+    assert.equal(deck.slides.some(s => s.title.includes('تمهيد')), false);
+    assert.equal(deck.slides.some(s => s.content.includes(PLAN.introduction)), false);
   });
 
   it('still projects a lifted question directly, unchanged', () => {
@@ -250,7 +250,7 @@ describe('missing sections', () => {
 describe('language', () => {
   it('reads the English fields when building an English deck', () => {
     const deck = buildLessonDeck('Solving Quadratic Equations', false, { lesson: LESSON, plan: PLAN });
-    const concepts = deck.slides.filter(s => s.title.startsWith('Idea'));
+    const concepts = deck.slides.filter(s => s.title.includes('Key Ideas'));
     assert.ok(concepts.length > 0);
     assert.ok(concepts[0].content.includes('Standard form'));
     assert.equal(concepts.some(s => s.content.includes('الصيغة')), false);
@@ -258,8 +258,68 @@ describe('language', () => {
 
   it('reads the Arabic fields when building an Arabic deck', () => {
     const deck = buildLessonDeck('حل المعادلات التربيعية', true, { lesson: LESSON });
-    const concepts = deck.slides.filter(s => s.title.startsWith('الفكرة'));
+    const concepts = deck.slides.filter(s => s.title.includes('أفكار الدرس'));
     assert.ok(concepts[0].content.includes('الصيغة العامة'));
+  });
+});
+
+describe('concept slides', () => {
+  const withConcepts = (keyConceptsAr: string[], extra: Partial<KBLesson> = {}) =>
+    buildLessonDeck('معادلة الدائرة', true, { lesson: { ...LESSON, keyConceptsAr, ...extra } });
+
+  it('never titles a slide «الفكرة n»', () => {
+    const deck = withConcepts(['المركز (h, k) ونصف القطر r', 'إكمال المربع لإيجاد المركز']);
+    assert.equal(deck.slides.some(s => s.title.startsWith('الفكرة')), false);
+  });
+
+  it('groups bare one-line concepts onto one bulleted slide', () => {
+    const deck = withConcepts(['المركز (h, k) ونصف القطر r', 'إكمال المربع لإيجاد المركز']);
+    const ideas = deck.slides.filter(s => s.title.includes('أفكار الدرس'));
+    assert.equal(ideas.length, 1);
+    assert.equal(ideas[0]!.content, '• المركز (h, k) ونصف القطر r\n• إكمال المربع لإيجاد المركز');
+  });
+
+  it('keeps bare concepts together when a titled one falls between them', () => {
+    const deck = withConcepts(['المركز (h, k) ونصف القطر r', 'الصورة العامة: x²+y²+Dx+Ey+F=0', 'إكمال المربع لإيجاد المركز']);
+    const titles = deck.slides.map(s => s.title);
+    assert.equal(titles.filter(t => t.includes('أفكار الدرس')).length, 1);
+    assert.ok(titles.indexOf('💡 أفكار الدرس') < titles.indexOf('الصورة العامة'));
+  });
+
+  it('titles a labelled concept by its own label', () => {
+    const deck = withConcepts(['الصورة العامة: x²+y²+Dx+Ey+F=0']);
+    const slide = deck.slides.find(s => s.title === 'الصورة العامة');
+    assert.ok(slide);
+    assert.equal(slide!.content, 'x²+y²+Dx+Ey+F=0');
+  });
+
+  it('drops a concept the rule slide already states', () => {
+    const deck = withConcepts(['معادلة الدائرة: (x−h)²+(y−k)²=r²', 'إكمال المربع لإيجاد المركز'], {
+      rulesAr: ['معادلة الدائرة: (x−h)² + (y−k)² = r²'],
+    });
+    const formulaSlides = deck.slides.filter(s => s.content.replace(/\s+/g, '').includes('(x−h)²+(y−k)²=r²'));
+    assert.equal(formulaSlides.length, 1, formulaSlides.map(s => s.title).join(' | '));
+  });
+});
+
+describe('cover and summary', () => {
+  const twoSentences = { ...LESSON, summaryAr: 'المعادلة التربيعية لها جذران على الأكثر. نحلّها بالتحليل إلى عاملين.' };
+
+  it('keeps the book summary off the cover', () => {
+    const deck = buildLessonDeck('x', true, { lesson: twoSentences, subject: 'الرياضيات', grade: 'الصف العاشر' });
+    assert.equal(deck.slides[0]!.content, 'الرياضيات · الصف العاشر');
+  });
+
+  it('closes on the book summary as takeaways', () => {
+    const deck = buildLessonDeck('x', true, { lesson: twoSentences });
+    const summary = deck.slides.find(s => s.type === 'summary')!;
+    assert.equal(summary.content, '• المعادلة التربيعية لها جذران على الأكثر\n• نحلّها بالتحليل إلى عاملين');
+  });
+
+  it('falls back to the outcomes when the summary is a single sentence', () => {
+    const deck = buildLessonDeck('x', true, { lesson: LESSON });
+    const summary = deck.slides.find(s => s.type === 'summary')!;
+    assert.ok(summary.content.includes('حل المعادلة التربيعية بالتحليل'));
   });
 });
 
@@ -473,9 +533,8 @@ describe('formative checks in the lesson deck', () => {
     // section title, because "تذكرة الخروج 1" is the first exit-ticket
     // question and not the first question in the deck.
     assert.ok(deck.answerKey.some(k => k.startsWith('مثال 1:')));
-    // Titles are bilingual now ("✋ تحقّق سريع 1 · Quick Check 1") since the
-    // check's own question/options can come back in either language — match
-    // on the Arabic half plus the answer rather than the whole prefix.
+    // Match on the Arabic title plus the answer rather than the whole row:
+    // an English-subject deck appends « · Quick Check 1» to the same title.
     assert.ok(deck.answerKey.some(k => k.includes('✋ تحقّق سريع 1') && k.endsWith(': ب1')));
     assert.ok(deck.answerKey.some(k => k.includes('🎫 تذكرة الخروج 1') && k.endsWith(': ب3')));
   });
@@ -774,6 +833,16 @@ describe('bilingual chrome titles for the English subject', () => {
   // UI language), so both spellings must trigger it.
   const ENGLISH_PLAN: LessonPlanOutput = { ...PLAN, subject: 'English' };
 
+  // An English lesson's checks come back in English even in an Arabic deck,
+  // so its check titles must say both.
+  it('keeps the numbered check titles bilingual for the English subject', () => {
+    const deck = buildLessonDeck('Farm Equipment', true, {
+      plan: ENGLISH_PLAN, subject: 'English', checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
+    });
+    assert.ok(deck.slides.some(s => s.title === '✋ تحقّق سريع 1 · Quick Check 1'));
+    assert.ok(deck.slides.some(s => s.title === '🎫 تذكرة الخروج 1 · Exit Ticket 1'));
+  });
+
   it('shows every section heading in both languages when subject is English', () => {
     const deck = buildLessonDeck('Farm Equipment', true, {
       plan: ENGLISH_PLAN, subject: 'English',
@@ -822,11 +891,13 @@ describe('bilingual chrome titles for the English subject', () => {
     assert.equal(summary.title, '🎉 ملخص الدرس');
   });
 
-  it('still bilinguals the numbered check titles regardless of subject', () => {
+  it('leaves the numbered check titles single-language outside the English subject', () => {
     const deck = buildLessonDeck('حل المعادلات التربيعية', true, {
       lesson: LESSON, plan: PLAN, checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
     });
     const check = deck.slides.find(s => s.title.includes('تحقّق سريع 1'))!;
-    assert.match(check.title, /Quick Check 1/);
+    assert.equal(check.title, '✋ تحقّق سريع 1');
+    const exit = deck.slides.find(s => s.title.includes('تذكرة الخروج 1'))!;
+    assert.equal(exit.title, '🎫 تذكرة الخروج 1');
   });
 });
