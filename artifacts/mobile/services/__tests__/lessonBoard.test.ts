@@ -20,6 +20,8 @@ import {
   buildPrepBoard,
   materialsForTopic,
   normalizeTopic,
+  prepLessonKey,
+  savedAgo,
   PREP_ROWS,
   prepSummary,
   sameTopic,
@@ -162,5 +164,43 @@ describe('withoutBoardTools', () => {
     // Explicit type argument: inferring it from a literal with no `route`
     // narrows T to `{ route?: string }`, which then rejects `id` as excess.
     assert.deepEqual(withoutBoardTools<{ id: string; route?: string }>([{ id: 'geogebra' }]), []);
+  });
+});
+
+describe('rows marked not needed', () => {
+  it('drops a skipped, missing row from the total', () => {
+    const rows = buildPrepBoard([material({ type: 'worksheet' })], TOPIC, null, ['activity', 'quiz']);
+    assert.equal(rows.find(r => r.type === 'activity')?.skipped, true);
+    assert.deepEqual(prepSummary(rows), { done: 1, total: 3 });
+  });
+
+  it('ignores the skip once the material exists — made is made', () => {
+    const rows = buildPrepBoard([material({ type: 'quiz' })], TOPIC, null, ['quiz']);
+    const quiz = rows.find(r => r.type === 'quiz');
+    assert.equal(quiz?.done, true);
+    assert.equal(quiz?.skipped, false);
+    assert.deepEqual(prepSummary(rows), { done: 1, total: 5 });
+  });
+
+  it('keys a lesson by its id, else by its normalised topic', () => {
+    assert.equal(prepLessonKey(TOPIC, 'L1'), 'L1');
+    assert.equal(prepLessonKey(' تَرْكِيبُ الاقترانات ', null), prepLessonKey('تركيب الاقترانات', undefined));
+    assert.equal(prepLessonKey('', null), null);
+  });
+});
+
+describe('savedAgo', () => {
+  const now = new Date('2026-09-27T10:00:00');
+  it('says today, yesterday, or how many days ago in the local calendar', () => {
+    assert.equal(savedAgo('2026-09-27T07:00:00', now, 'ar'), 'اليوم');
+    assert.equal(savedAgo('2026-09-26T23:30:00', now, 'ar'), 'أمس');
+    assert.equal(savedAgo('2026-09-24T12:00:00', now, 'ar'), 'قبل 3 أيام');
+    assert.equal(savedAgo('2026-09-24T12:00:00', now, 'en'), '3 days ago');
+    assert.equal(savedAgo('2026-09-26T08:00:00', now, 'en'), 'yesterday');
+  });
+
+  it('gives a date past a week, and nothing for a bad timestamp', () => {
+    assert.match(savedAgo('2026-09-01T12:00:00', now, 'en'), /1/);
+    assert.equal(savedAgo('not a date', now, 'ar'), '');
   });
 });

@@ -43,7 +43,9 @@ export function slideTypeAccent(type: ActivitySlide['type']): string {
   if (type === 'scoreboard') return '#B45309';
   if (type === 'podium') return '#A16207';
   if (type === 'divider') return DECK_ACCENT;
-  return '#8B8CA4';
+  // Concept slides — most of the deck. Was #8B8CA4, ~3:1 on DECK_BG, and it
+  // colours the slide title: the one line the prompt works hardest on.
+  return '#5B5D78';
 }
 
 /** `#1E8E8E` → `1E8E8E`. pptxgenjs rejects the hash. */

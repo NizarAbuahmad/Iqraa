@@ -88,8 +88,10 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean): TabEntry[] {
         ),
     },
     {
+      // Route file kept as "curriculum"; it has shown the library since
+      // 2026-09-26, with the curriculum browser one tap inside it.
       name: 'curriculum',
-      titleKey: 'tabCurriculum',
+      titleKey: 'resourcesTitle',
       visible: true,
       icon: ({ color, focused, isIOS }) =>
         isIOS ? (

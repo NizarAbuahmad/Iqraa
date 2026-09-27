@@ -175,6 +175,15 @@ jobs:
       # plan lets one account spend everyone's month. They live here rather than
       # in the console so a deploy can't silently drop them; change them here.
       # A teacher's allowance also covers their students' exam recordings.
+      #
+      # `--min-instances 1` (added 2026-09-26): with the default of 0, the
+      # service scales to zero on idle and the first request after that pays a
+      # measured 5.97s cold start (STATUS.md, "Cost at ~500 teachers" table) —
+      # and `_layout.tsx` holds the splash screen up on exactly that request
+      # (`/auth/me`) on every cold app open. Keeping one instance warm trades
+      # the free-tier "likely $0" cost for a small always-on charge (a fraction
+      # of a vCPU/memory-second, billed continuously) to remove that stall.
+      # Revert this line if the cost isn't worth it — nothing else depends on it.
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy iqraa-api \
@@ -186,6 +195,7 @@ jobs:
             --cpu 1 \
             --concurrency 80 \
             --timeout 300 \
+            --min-instances 1 \
             --update-env-vars "GIT_SHA=${GITHUB_SHA::7},AI_USER_BUDGET_USD=1,AI_STUDENT_BUDGET_USD=0.20"
 
       # gcloud reporting success is not evidence the new code is serving. It

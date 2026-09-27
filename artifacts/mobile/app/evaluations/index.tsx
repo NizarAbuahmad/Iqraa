@@ -254,7 +254,7 @@ export default function EvaluationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  hero: { paddingHorizontal: 20, paddingBottom: 20, gap: 8 },
+  hero: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   heroTitle: { fontSize: 26, color: '#fff' },
   heroSub: { fontSize: 13, lineHeight: 21 },
   deskHeader: {

@@ -9,7 +9,7 @@
  *
  * Editing happens in place rather than behind an edit mode. Mode switches are
  * where people lose work: you forget which mode you are in, or you leave
- * without saving. Tap the text, change it, tap away.
+ * without saving. Tap the text, change it, tap the checkmark (or tap away).
  *
  * Every edit reports itself so the caller can record that a field is no longer
  * purely machine-written. What a teacher changes is also the most honest signal
@@ -76,26 +76,35 @@ export function EditableText({
 
   if (editing) {
     return (
-      <TextInput
-        ref={inputRef}
-        value={draft}
-        onChangeText={setDraft}
-        onBlur={commit}
-        autoFocus
-        multiline
-        placeholder={placeholder}
-        placeholderTextColor={colors.mutedForeground}
-        style={[
-          styles.input,
-          {
-            color: colors.foreground,
-            backgroundColor: colors.card,
-            borderColor: colors.primary,
-            fontFamily: 'Almarai_400Regular',
-            textAlign: align,
-          },
-        ]}
-      />
+      <View style={[styles.editingRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        <TextInput
+          ref={inputRef}
+          value={draft}
+          onChangeText={setDraft}
+          onBlur={commit}
+          autoFocus
+          multiline
+          placeholder={placeholder}
+          placeholderTextColor={colors.mutedForeground}
+          style={[
+            styles.input,
+            {
+              flex: 1,
+              color: colors.foreground,
+              backgroundColor: colors.card,
+              borderColor: colors.primary,
+              fontFamily: 'Almarai_400Regular',
+              textAlign: align,
+            },
+          ]}
+        />
+        {/* onBlur alone leaves no visible way out on a mobile keyboard —
+            a multiline input has no return-to-submit and tapping blank space
+            doesn't blur it. This button is that exit. */}
+        <Pressable onPress={commit} hitSlop={8} accessibilityRole="button" accessibilityLabel={placeholder}>
+          <Ionicons name="checkmark-circle" size={26} color={colors.primary} />
+        </Pressable>
+      </View>
     );
   }
 
@@ -235,6 +244,7 @@ function EditAffordance({ colors, edited }: { colors: Colors; edited?: boolean }
 
 const styles = StyleSheet.create({
   readRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  editingRow: { alignItems: 'flex-end', gap: 6 },
   body: { flex: 1, fontSize: 13.5, lineHeight: 22 },
   input: {
     fontSize: 13.5,
