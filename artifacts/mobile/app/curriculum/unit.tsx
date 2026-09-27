@@ -34,7 +34,7 @@ export default function UnitLessonsScreen() {
   const unit = unitId ? getUnitById(unitId) : undefined;
 
   useEffect(() => {
-    if (!bookAllowed || !unit) router.replace('/(tabs)/curriculum');
+    if (!bookAllowed || !unit) router.replace('/curriculum/browse' as never);
   }, [bookAllowed, unit]);
 
   if (!bookAllowed || !unit) {
