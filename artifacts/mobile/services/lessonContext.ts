@@ -14,6 +14,7 @@
  * the first-run onboarding picker.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { todayISO } from './planEntries.ts';
 
 const HOME_LESSON_KEY = '@iqra_home_lesson_v1';
 const ONBOARDED_KEY = '@iqra_onboarded_v1';
@@ -47,6 +48,13 @@ export type HomeLessonPick = {
    * back as a neighbouring lesson.
    */
   lessonId?: string | null;
+  /**
+   * Local date (`YYYY-MM-DD`) the teacher made this pick; set by
+   * `saveLessonPick`. The home card lets a pick made today override the
+   * lesson the timetable + pacing plan say is next, and lets an older one
+   * yield to it. Absent on picks saved before the field existed — read as old.
+   */
+  pickedOn?: string;
 };
 
 type LessonPickListener = (pick: HomeLessonPick | null) => void;
@@ -72,7 +80,18 @@ export async function loadLessonPick(): Promise<HomeLessonPick | null> {
   }
 }
 
-export async function saveLessonPick(pick: HomeLessonPick): Promise<void> {
+/**
+ * Whether the timetable's lesson should replace the teacher's pick. A pick
+ * made today is a decision and wins; an older one (or none) is where they
+ * were, and yields. Home and chat both ask this, so they show one lesson.
+ */
+export function timetableWins(pick: HomeLessonPick | null, hasScheduledLesson: boolean, today: string): boolean {
+  if (!hasScheduledLesson) return false;
+  return !(pick?.topic?.trim() && pick.pickedOn === today);
+}
+
+export async function saveLessonPick(input: HomeLessonPick): Promise<void> {
+  const pick = { ...input, pickedOn: input.pickedOn ?? todayISO() };
   try {
     await AsyncStorage.setItem(scopedKey(HOME_LESSON_KEY), JSON.stringify(pick));
   } catch {
