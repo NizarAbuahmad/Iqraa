@@ -19,7 +19,7 @@
  *   says so rather than going quiet — a student cannot tell a slow network
  *   from a lost answer, so the screen has to.
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -80,11 +80,12 @@ export default function TakeExamScreen() {
   const [lessonIds, setLessonIds] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<string, StudentResponse>>({});
   const [index, setIndex] = useState(0);
-  const [saveFailed, setSaveFailed] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
+  const openLink = useCallback(() => {
     if (!code) return;
+    setPhase('loading');
+    setError('');
     openExam(code)
       .then(data => {
         setExam(data.evaluation);
@@ -97,6 +98,8 @@ export default function TakeExamScreen() {
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
+
+  useEffect(() => { openLink(); }, [openLink]);
 
   const title = (lang === 'ar' ? exam?.titleAr : exam?.title) || exam?.titleAr || '';
 
@@ -131,16 +134,48 @@ export default function TakeExamScreen() {
     }
   }, [chosen, code, busy, t]);
 
+  /*
+    Answers the server has not confirmed. A failed save used to set a flag and
+    nothing else: the answer sat only in this screen's memory unless the student
+    happened to touch that question again, and hand-in went ahead without it.
+    Now each one is remembered, re-sent on «أعد المحاولة», and re-sent before
+    hand-in — which refuses while any is still unsaved.
+  */
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
+  const unsavedRef = useRef(new Set<string>());
+  const [unsavedCount, setUnsavedCount] = useState(0);
+
+  const save = useCallback(
+    async (questionId: string, response: StudentResponse) => {
+      try {
+        await saveStudentAnswer(token, questionId, response);
+        unsavedRef.current.delete(questionId);
+        return true;
+      } catch {
+        unsavedRef.current.add(questionId);
+        return false;
+      } finally {
+        setUnsavedCount(unsavedRef.current.size);
+      }
+    },
+    [token],
+  );
+
+  const retryUnsaved = useCallback(async () => {
+    const ids = [...unsavedRef.current];
+    const results = await Promise.all(ids.map(id => save(id, answersRef.current[id] ?? {})));
+    return results.every(Boolean);
+  }, [save]);
+
   const answer = useCallback(
     (questionId: string, response: StudentResponse) => {
       setAnswers(prev => ({ ...prev, [questionId]: response }));
-      saveStudentAnswer(token, questionId, response)
-        .then(() => setSaveFailed(false))
-        // Say it out loud. A student cannot tell a slow network from a lost
-        // answer, and finding out at the end is finding out too late.
-        .catch(() => setSaveFailed(true));
+      // Say it out loud. A student cannot tell a slow network from a lost
+      // answer, and finding out at the end is finding out too late.
+      void save(questionId, response);
     },
-    [token],
+    [save],
   );
 
   const unanswered = useMemo(
@@ -151,7 +186,12 @@ export default function TakeExamScreen() {
   const hand = useCallback(async () => {
     if (busy) return;
     setBusy(true);
+    setError('');
     try {
+      if (unsavedRef.current.size > 0 && !(await retryUnsaved())) {
+        setError(t('takeUnsavedBeforeHandIn'));
+        return;
+      }
       await submitStudentExam(token);
       setPhase('done');
     } catch (err) {
@@ -159,7 +199,7 @@ export default function TakeExamScreen() {
     } finally {
       setBusy(false);
     }
-  }, [token, busy, t]);
+  }, [token, busy, t, retryUnsaved]);
 
   if (phase === 'loading') {
     return (
@@ -179,6 +219,15 @@ export default function TakeExamScreen() {
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
           {t('takeAskTeacher')}
         </Text>
+        {/* A dropped connection looks exactly like a dead link from here. */}
+        <Pressable
+          onPress={openLink}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.retryBtn, { borderColor: ACCENT, opacity: pressed ? 0.7 : 1 }]}
+        >
+          <Ionicons name="refresh" size={16} color={ACCENT} />
+          <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>{t('retry')}</Text>
+        </Pressable>
       </View>
     );
   }
@@ -355,10 +404,17 @@ export default function TakeExamScreen() {
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
             {t('marksAbbrev', question?.marks ?? '')}
           </Text>
-          {saveFailed && (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
-              {t('takeSaveFailed')}
-            </Text>
+          {unsavedCount > 0 && (
+            <Pressable
+              onPress={() => void retryUnsaved()}
+              hitSlop={8}
+              accessibilityRole="button"
+              style={{ marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}
+            >
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+                {t('takeSaveFailed')} · <Text style={{ fontFamily: 'Cairo_600SemiBold', textDecorationLine: 'underline' }}>{t('retry')}</Text>
+              </Text>
+            </Pressable>
           )}
         </View>
 
@@ -627,6 +683,7 @@ const styles = StyleSheet.create({
   tf: { flex: 1, alignItems: 'center', borderWidth: 1, borderRadius: 10, paddingVertical: 14 },
   textArea: { borderWidth: 1, borderRadius: 10, padding: 12, minHeight: 120, marginTop: 16, fontSize: 15 },
   navBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10, paddingVertical: 14, paddingHorizontal: 18 },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8, marginTop: 4 },
   primaryBtn: { alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 16, paddingHorizontal: 24, minWidth: 200 },
   reviewDot: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10 },
 });

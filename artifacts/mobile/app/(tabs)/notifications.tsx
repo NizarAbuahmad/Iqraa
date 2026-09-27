@@ -30,6 +30,7 @@ import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { Avatar } from '@/components/ui/Avatar';
+import { LoadError } from '@/components/ui/LoadError';
 
 function relativeTime(iso: string, lang: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -210,10 +211,23 @@ export default function NotificationsScreen() {
         </View>
       </View>
 
+      {/*
+        Above the list, not after it: after it, the message sat below a
+        full-height empty state, behind the floating tab bar, and was never seen.
+      */}
+      {error ? (
+        <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+          <LoadError message={error} onRetry={() => void load()} />
+        </View>
+      ) : null}
+
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
         </View>
+      ) : error && threads.length === 0 ? (
+        // Nothing loaded: «لا توجد محادثات بعد» would be a claim we cannot make.
+        null
       ) : threads.length > 0 ? (
         <FlatList
           data={threads}
@@ -304,11 +318,6 @@ export default function NotificationsScreen() {
         </View>
       )}
 
-      {error ? (
-        <Text style={[styles.errorBanner, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-          {error}
-        </Text>
-      ) : null}
 
       {/* Reachable once threads already exist too — an auto-created class
           group thread means "no threads yet" stops being the only time a
@@ -350,7 +359,6 @@ const styles = StyleSheet.create({
   emptyDesc: { fontSize: 13, lineHeight: 21, textAlign: 'center' },
   contactCard: { padding: 12, gap: 12, borderWidth: 1, alignItems: 'center' },
   messageBtn: { paddingHorizontal: 14, paddingVertical: 8, minWidth: 72, alignItems: 'center' },
-  errorBanner: { fontSize: 12, lineHeight: 19, paddingHorizontal: 16, paddingVertical: 8 },
   newChatBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   newChatSheet: { maxHeight: '70%', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 16 },
   newChatHeader: { justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 14 },

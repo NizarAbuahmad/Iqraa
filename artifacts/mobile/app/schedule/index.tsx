@@ -45,6 +45,7 @@ import { confirm } from '@/services/confirm';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { LoadError } from '@/components/ui/LoadError';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -855,15 +856,7 @@ export default function ScheduleScreen() {
       ) : (
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60, gap: 16, width: '100%', maxWidth: 1100, alignSelf: 'center' }}>
           {error ? (
-            <View style={[styles.errorBox, { borderColor: colors.destructive, flexDirection: row }]}>
-              <Ionicons name="cloud-offline-outline" size={18} color={colors.destructive} />
-              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', flex: 1, textAlign: align }}>
-                {error}
-              </Text>
-              <Pressable onPress={() => setError('')} hitSlop={8}>
-                <Ionicons name="close" size={16} color={colors.destructive} />
-              </Pressable>
-            </View>
+            <LoadError message={error} onRetry={() => void load()} onDismiss={() => setError('')} />
           ) : null}
 
           {!hasAnyPeriod && draftSchools.length === 0 ? emptyState : (
@@ -990,7 +983,6 @@ const styles = StyleSheet.create({
   heroTitle: { fontSize: 26, color: '#fff' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', gap: 10, paddingTop: 60 },
-  errorBox: { alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1 },
   periodCol: { width: 92, paddingVertical: 8, paddingHorizontal: 6 },
   dayCol: { flex: 1, minWidth: 104 },
   timeField: {
