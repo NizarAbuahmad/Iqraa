@@ -28,7 +28,7 @@ import { Toast } from '@/components/ui/Toast';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { isolateForeignRuns } from '@/services/mathRender';
-import type { ActivitySlide, ClassroomActivity, LessonPlanOutput } from '@/services/ai/AIService';
+import type { ActivitySlide, ClassroomActivity, LessonPlanOutput, LessonTeachingOutput } from '@/services/ai/AIService';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey, withoutSlide } from '@/services/lessonSlides';
 import { bookFigureUri } from '@/services/bookFigureUri';
@@ -363,6 +363,23 @@ export default function SlidesScreen() {
         .then(a => a.slides)
         .catch((): ActivitySlide[] => []);
 
+      // The explanation section the book data does not carry — hook, concept
+      // slides, a worked example, a practice problem (`lessonSlides.ts`).
+      // Parallel and independent like the checks: on any failure the deck is
+      // built from the book and plan alone, exactly as before this existed.
+      const teachingPromise = aiService
+        .generateLessonTeaching({
+          grade: isAr ? grades[gradeIdx]!.nameAr : grades[gradeIdx]!.name,
+          subject: subjects[subjectIdx].name,
+          topic: trimmed,
+          language: isAr ? 'arabic' : 'english',
+          additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en'),
+          unitId: generatorUnitId(trimmed, lang as 'ar' | 'en'),
+          lessonId: generatorLessonId(trimmed, lang as 'ar' | 'en'),
+          contextSource: 'curriculum',
+        }, { signal: controller.signal })
+        .catch((): LessonTeachingOutput | null => null);
+
       let lessonPlan: LessonPlanOutput | null = null;
       // Kept so the failure can still be named if the deck turns out to be
       // unbuildable. The plan error is deliberately swallowed below — the book
@@ -402,7 +419,7 @@ export default function SlidesScreen() {
       }
 
       setPlan(lessonPlan);
-      const checks = await checksPromise;
+      const [checks, teaching] = await Promise.all([checksPromise, teachingPromise]);
       // A live graph slide when the lesson's own text carries plottable
       // functions — same conservative extractor Start Class already uses.
       //
@@ -441,6 +458,7 @@ export default function SlidesScreen() {
         includePractice,
         graphCommands,
         checks,
+        teaching,
         figureUri: bookFigureUri,
       });
       // The teacher's own resources go in before anything is shown, unlike
@@ -882,7 +900,11 @@ export default function SlidesScreen() {
                     }]}>
                       {v.anySymbolic
                         ? t('quizVerifiedCount', v.symbolic, examples.length)
-                        : t('quizVerifiedNone')}
+                        // "keys come from the reviewed bank" is false for a
+                        // model-written example, which nobody reviewed.
+                        : examples.some(s => s.aiWritten && !s.verified)
+                          ? t('examplesAiUnverified')
+                          : t('quizVerifiedNone')}
                     </Text>
                   </View>
                 );

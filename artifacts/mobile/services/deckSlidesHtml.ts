@@ -27,14 +27,6 @@ import {
   DECK_PINK, DECK_TEXT, slideTypeAccent as deckSlideAccent,
 } from './deckTheme.ts';
 
-function deckSlideEmoji(type: ActivitySlide['type']): string {
-  if (type === 'challenge') return '🔐';
-  if (type === 'summary') return '🎉';
-  if (type === 'graph') return '📈';
-  if (type === 'question') return '🙋';
-  return '🎯';
-}
-
 /** Escape only. For attribute values — above all the media and video URLs,
  *  which must not carry the directional isolates `esc` adds. */
 const escAttr = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -61,11 +53,14 @@ const escUrlText = (s: string) => `\u2066${escAttr(s)}\u2069`;
  * The glyph comes off the title itself when there is one. Every branch used to
  * hard-code an emoji AND print the untouched title next to it, so a heading
  * like "🎯 نتاجات التعلم" reached the PDF with its target twice.
+ *
+ * No glyph of our own when the title has none — the presenter draws none
+ * either, and a per-type fallback put the same 🎯 on every concept slide.
  */
-function deckHeader(title: string, accent: string, fallbackGlyph: string): string {
+function deckHeader(title: string, accent: string): string {
   const [glyph, heading] = splitEmoji(title);
   return `<div class="deck-header" style="border-color:${accent}44">
-        <span class="deck-emoji">${glyph || fallbackGlyph}</span>
+        ${glyph ? `<span class="deck-emoji">${glyph}</span>` : ''}
         <span class="deck-eyebrow" style="color:${accent}">${esc(heading)}</span>
       </div>`;
 }
@@ -202,7 +197,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       return visual ? visualToSvg(visual, 640, 320) : '';
     })();
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent, '📈')}
+      ${deckHeader(slide.title, accent)}
       <div class="deck-body deck-body-center">
         ${context ? `<div class="deck-line" style="text-align:center;margin-bottom:18px">${esc(context)}</div>` : ''}
         <div class="deck-chip-row">
@@ -226,7 +221,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         ${slide.verifiedBy === 'symbolic' && slide.computedAnswer ? `<div class="deck-evidence">${L('حسبها المُحقِّق مستقلًّا', 'Verifier computed independently')}: ${mathLineToHtml(prettifySymPy(slide.computedAnswer))}</div>` : ''}
       </div>` : '';
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent, '🔐')}
+      ${deckHeader(slide.title, accent)}
       <div class="deck-body deck-body-center">
         ${deckContentLine(slide.content, true)}
         ${slidePlot(slide)}
@@ -243,7 +238,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   const mediaSlide = (slide: ActivitySlide, num: number) => {
     const accent = deckSlideAccent(slide.type);
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent, '🖼️')}
+      ${deckHeader(slide.title, accent)}
       <div class="deck-body deck-body-center deck-body-media">
         <img class="deck-media-img" src="${escAttr(slide.mediaUrl ?? '')}" alt="${esc(slide.mediaCaption ?? '')}" />
         ${slide.mediaCaption ? `<div class="deck-media-caption">${esc(slide.mediaCaption)}</div>` : ''}
@@ -261,7 +256,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     const accent = '#B45309';
     const url = slide.mediaUrl ?? '';
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent, '🎬')}
+      ${deckHeader(slide.title, accent)}
       <div class="deck-body deck-body-center">
         ${slide.mediaCaption ? `<div class="deck-video-title">${esc(slide.mediaCaption)}</div>` : ''}
         <a class="deck-video-link" style="border-color:${accent}66;color:${accent}" href="${escAttr(url)}">▶ ${L('شاهد الفيديو', 'Watch the video')}</a>
@@ -279,7 +274,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     const accent = '#B45309';
     const url = slide.mediaUrl ?? '';
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent, '🎧')}
+      ${deckHeader(slide.title, accent)}
       <div class="deck-body deck-body-center">
         ${slide.mediaCaption ? `<div class="deck-video-title">${esc(slide.mediaCaption)}</div>` : ''}
         <a class="deck-video-link" style="border-color:${accent}66;color:${accent}" href="${escAttr(url)}">▶ ${L('استمع للتسجيل', 'Listen to the recording')}</a>
@@ -297,7 +292,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     const accent = '#B45309';
     const url = slide.mediaUrl ?? '';
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent, '📄')}
+      ${deckHeader(slide.title, accent)}
       <div class="deck-body deck-body-center">
         ${slide.mediaCaption ? `<div class="deck-video-title">${esc(slide.mediaCaption)}</div>` : ''}
         <a class="deck-video-link" style="border-color:${accent}66;color:${accent}" href="${escAttr(url)}">📄 ${L('افتح المستند', 'Open the document')}</a>
@@ -327,7 +322,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         ${slide.verifiedBy === 'symbolic' ? L('تم التحقق من الإجابة رياضيًا (SymPy)', 'Answer symbolically verified (SymPy)') : L('من بنك الأسئلة المُراجَع', 'From the reviewed question bank')}
       </div>` : '';
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent, '🙋')}
+      ${deckHeader(slide.title, accent)}
       <div class="deck-body deck-body-center">
         ${deckContentLine(slide.content, true)}
         ${slidePlot(slide)}
@@ -388,7 +383,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
           ${items.map(i => `<p class="deck-compare-item">${esc(i)}</p>`).join('')}
         </div>`;
       return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent, deckSlideEmoji(slide.type))}
+      ${deckHeader(slide.title, accent)}
       <div class="deck-body deck-compare">
         ${column(layout.leftTitle, layout.left, true)}
         ${column(layout.rightTitle, layout.right, false)}
@@ -397,7 +392,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     }
 
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent, deckSlideEmoji(slide.type))}
+      ${deckHeader(slide.title, accent)}
       <div class="deck-body deck-steps">
         ${layout.steps.map((step, i) => `
         <div class="deck-step">
@@ -422,7 +417,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     // the printed-page version of the same rule).
     if (slide.sideImageUrl) {
       return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent, deckSlideEmoji(slide.type))}
+      ${deckHeader(slide.title, accent)}
       <div class="deck-body split">
         <div class="split-text">${body}</div>
         <figure class="split-fig">
@@ -433,7 +428,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       ${footer(num)}</div>`;
     }
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent, deckSlideEmoji(slide.type))}
+      ${deckHeader(slide.title, accent)}
       <div class="deck-body">
         ${body}
       </div>
@@ -494,24 +489,26 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-statement-text, .deck-stat-value, .deck-stat-label, .deck-compare-head,
 .deck-step-num { font-family: 'Cairo','Arial','Tahoma',sans-serif; }
 /* ─── Layout shapes (services/slideLayout.ts) ───────────────────────────────
-   Sizes mirror the presenter's: a statement at cover-title size, a stat above
-   it, both centred in the body so the slide reads as one object rather than a
+   Sizes run above the presenter's: this page is a fixed 297mm projected
+   full-screen, where the presenter's 21pt body is sized for a phone that also
+   has to fit it. A statement sits at cover-title size, a stat above it, both
+   centred in the body so the slide reads as one object rather than a
    heading with something under it. text-align:start keeps these
    direction-agnostic — never row-reverse, per this file's own rule. */
-.deck-statement, .deck-stat { justify-content:center; gap:4px; }
+.deck-body.deck-statement, .deck-body.deck-stat { justify-content:center; gap:4px; }
 .deck-statement-text { font-size:40px; line-height:1.5; font-weight:700; text-align:start; }
-.deck-statement-sub { font-size:20px; line-height:1.6; color:${DECK_MUTED}; margin-top:12px; text-align:start; }
+.deck-statement-sub { font-size:24px; line-height:1.6; color:${DECK_MUTED}; margin-top:12px; text-align:start; }
 .deck-stat-value { font-size:96px; line-height:1.1; font-weight:700; text-align:start; }
 .deck-stat-label { font-size:26px; line-height:1.5; font-weight:600; text-align:start; }
 .deck-stat-source { font-size:14px; line-height:1.6; color:${DECK_MUTED}; margin-top:10px; text-align:start; }
-.deck-compare { display:flex; flex-direction:row; gap:18px; align-items:stretch; }
-.deck-compare-col { flex:1; border:2px solid ${DECK_BORDER}; border-radius:18px; padding:20px; background:${DECK_CARD_BG}; }
-.deck-compare-head { font-size:22px; line-height:1.4; font-weight:700; color:${DECK_MUTED}; margin-bottom:12px; text-align:start; }
-.deck-compare-item { font-size:19px; line-height:1.7; margin-bottom:8px; text-align:start; }
-.deck-steps { gap:14px; }
+.deck-body.deck-compare { display:flex; flex-direction:row; gap:18px; align-items:stretch; }
+.deck-compare-col { flex:1; border:2px solid ${DECK_BORDER}; border-radius:18px; padding:24px 28px; background:${DECK_CARD_BG}; }
+.deck-compare-head { font-size:30px; line-height:1.4; font-weight:700; color:${DECK_MUTED}; margin-bottom:12px; text-align:start; }
+.deck-compare-item { font-size:24px; line-height:1.7; margin-bottom:8px; text-align:start; }
+.deck-steps { gap:18px; }
 .deck-step { display:flex; flex-direction:row; align-items:center; gap:16px; }
-.deck-step-num { flex-shrink:0; width:44px; height:44px; border-radius:50%; color:#fff; font-size:22px; font-weight:700; display:flex; align-items:center; justify-content:center; }
-.deck-step-text { font-size:22px; line-height:1.6; text-align:start; }
+.deck-step-num { flex-shrink:0; width:56px; height:56px; border-radius:50%; color:#fff; font-size:28px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.deck-step-text { font-size:28px; line-height:1.6; text-align:start; }
 .deck-slide { width:297mm; height:210mm; background:${DECK_BG}; color:${DECK_TEXT}; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
 .deck-title-slide { background:radial-gradient(circle at 30% 20%, ${DECK_BLOB}, transparent 60%), ${DECK_BG}; }
 .deck-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
@@ -528,19 +525,19 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-slide:not(.deck-title-slide):not(.deck-divider-slide)::before { content:''; position:absolute; top:-95px; inset-inline-start:-70px; width:300px; height:300px; border-radius:50%; background:${DECK_BLOB}; z-index:0; }
 .deck-slide:not(.deck-title-slide):not(.deck-divider-slide)::after { content:''; position:absolute; bottom:-130px; inset-inline-end:-90px; width:340px; height:340px; border-radius:50%; background:${DECK_BLOB}; z-index:0; }
 .deck-divider-content { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px; text-align:center; }
-.deck-divider-title { font-size:44px; font-weight:700; color:#fff; line-height:1.35; max-width:640px; }
+.deck-divider-title { font-size:56px; font-weight:700; color:#fff; line-height:1.35; max-width:860px; }
 .deck-title-rule { width:74px; height:5px; border-radius:3px; background:${DECK_PINK}; margin:0 0 18px; }
 .deck-on-photo .deck-title-main, .deck-on-photo .deck-title-meta, .deck-on-photo .deck-title-summary { color:#fff; }
 .deck-on-photo .deck-title-badge { background:rgba(255,255,255,0.16); color:#fff; }
-.deck-divider-subtitle { font-size:16px; color:rgba(255,255,255,0.85); margin-top:14px; }
-.deck-title-badge { background:${DECK_ACCENT}1F; color:${DECK_ACCENT}; font-size:12px; letter-spacing:3px; font-weight:700; padding:5px 18px; border-radius:20px; margin-bottom:24px; }
-.deck-title-main { font-size:40px; font-weight:700; color:${DECK_TEXT}; line-height:1.35; margin-bottom:18px; max-width:560px; }
-.deck-title-meta { font-size:15px; color:${DECK_MUTED}; margin-bottom:12px; }
-.deck-title-summary { font-size:13px; color:${DECK_MUTED}; max-width:480px; line-height:1.7; }
-.deck-header { position:relative; z-index:2; display:flex; align-items:center; gap:10px; height:64px; flex-shrink:0; padding:0 32px; border-bottom:1.5px solid; }
-.deck-emoji { font-size:20px; }
-.deck-eyebrow { font-size:16px; font-weight:700; }
-.deck-body { position:relative; z-index:2; flex:1; padding:28px 40px; overflow:hidden; display:flex; flex-direction:column; justify-content:center; gap:10px; }
+.deck-divider-subtitle { font-size:24px; color:rgba(255,255,255,0.85); margin-top:14px; }
+.deck-title-badge { background:${DECK_ACCENT}1F; color:${DECK_ACCENT}; font-size:14px; letter-spacing:3px; font-weight:700; padding:5px 18px; border-radius:20px; margin-bottom:24px; }
+.deck-title-main { font-size:54px; font-weight:700; color:${DECK_TEXT}; line-height:1.3; margin-bottom:18px; max-width:860px; }
+.deck-title-meta { font-size:24px; line-height:1.6; max-width:760px; color:${DECK_MUTED}; margin-bottom:12px; }
+.deck-title-summary { font-size:18px; color:${DECK_MUTED}; max-width:720px; line-height:1.7; }
+.deck-header { position:relative; z-index:2; display:flex; align-items:center; gap:10px; min-height:96px; flex-shrink:0; padding:16px 48px; border-bottom:1.5px solid; }
+.deck-emoji { font-size:32px; }
+.deck-eyebrow { font-size:36px; line-height:1.35; font-weight:700; }
+.deck-body { position:relative; z-index:2; flex:1; padding:32px 48px; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-start; gap:14px; }
 /* Two columns when the slide carries its own figure. flex-direction:row
    only - the document's dir attribute already lays these right-to-left in
    Arabic, and row-reverse would reverse a reversal.
@@ -553,24 +550,24 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .split-fig { flex:0 1 42%; margin:0; display:flex; flex-direction:column; align-items:center; gap:8px; }
 .split-fig img { max-width:100%; max-height:120mm; object-fit:contain; border-radius:10px; }
 .split-fig figcaption { font-size:12px; color:#6b7280; text-align:center; }
-.deck-body-center { align-items:center; text-align:center; }
-.deck-line { font-size:17px; line-height:1.8; color:${DECK_TEXT}; }
-.deck-card { display:flex; align-items:center; gap:14px; background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:14px; padding:14px 18px; }
+.deck-body-center { align-items:center; justify-content:center; text-align:center; }
+.deck-line { font-size:26px; line-height:1.8; color:${DECK_TEXT}; }
+.deck-card { display:flex; align-items:center; gap:14px; background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:14px; padding:16px 22px; }
 .deck-card-bar { width:5px; align-self:stretch; border-radius:3px; flex-shrink:0; }
-.deck-card-text { flex:1; font-size:17px; line-height:1.7; }
-.deck-formula { background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:16px; padding:18px 20px; text-align:center; font-size:26px; font-weight:700; color:${DECK_TEXT}; font-family:'Cairo','Arial','Tahoma',sans-serif; }
-.deck-eq { font-size:26px; font-weight:700; color:${DECK_TEXT}; text-align:center; line-height:1.6; }
+.deck-card-text { flex:1; font-size:26px; line-height:1.7; }
+.deck-formula { background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:16px; padding:18px 20px; text-align:center; font-size:32px; font-weight:700; color:${DECK_TEXT}; font-family:'Cairo','Arial','Tahoma',sans-serif; }
+.deck-eq { font-size:32px; font-weight:700; color:${DECK_TEXT}; text-align:center; line-height:1.6; }
 .deck-answer { margin-top:22px; border:1.5px solid; border-radius:12px; padding:16px 24px; background:${DECK_CARD_BG}; min-width:320px; }
-.deck-answer-label { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+.deck-answer-label { font-size:14px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
 .deck-plot { margin:14px auto 0; max-width:660px; }
 .deck-verified { margin-top:12px; font-size:11px; font-weight:600; display:flex; flex-direction:column; align-items:center; gap:4px; }
 .deck-evidence { font-size:10px; color:${DECK_MUTED}; font-weight:400; }
-.deck-options { display:flex; flex-direction:column; gap:10px; margin-top:22px; min-width:420px; }
-.deck-option { display:flex; align-items:center; gap:12px; border:1.5px solid ${DECK_BORDER}; border-radius:12px; padding:12px 18px; font-size:16px; color:${DECK_TEXT}; background:${DECK_CARD_BG}; }
+.deck-options { display:flex; flex-direction:column; gap:10px; margin-top:22px; min-width:560px; }
+.deck-option { display:flex; align-items:center; gap:12px; border:1.5px solid ${DECK_BORDER}; border-radius:12px; padding:14px 22px; font-size:22px; color:${DECK_TEXT}; background:${DECK_CARD_BG}; }
 .deck-option-correct { background:${DECK_ACCENT}14; border-color:${DECK_ACCENT}; font-weight:700; }
-.deck-option-letter { font-size:14px; font-weight:700; min-width:20px; }
+.deck-option-letter { font-size:22px; font-weight:700; min-width:20px; }
 .deck-option-text { flex:1; }
-.deck-option-tick { font-size:16px; font-weight:700; }
+.deck-option-tick { font-size:22px; font-weight:700; }
 .deck-chip-row { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:18px; }
 .deck-chip { border:1.5px solid; border-radius:8px; padding:5px 12px; font-size:13px; font-weight:700; }
 .deck-graph-note { font-size:11px; color:${DECK_MUTED}; max-width:420px; line-height:1.7; }

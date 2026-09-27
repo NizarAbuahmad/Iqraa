@@ -262,12 +262,22 @@ export function shouldReuseActiveLesson(opts: {
   hasDocuments?: boolean;
   /** The active lesson's own grade — bail when the query names a different one. */
   activeLessonGradeId?: string | null;
+  /** The active lesson's own subject — bail when KB points at a different subject. */
+  activeLessonSubjectId?: string | null;
+  /** Subject of the top-ranked KB hit (only passed when score ≥ KB_SUGGEST_SCORE). */
+  topRankedSubjectId?: string | null;
 }): boolean {
-  const { memory, intent, query, hasConfidentKbHit, hasDocuments = false, activeLessonGradeId = null } = opts;
+  const {
+    memory, intent, query, hasConfidentKbHit,
+    hasDocuments = false, activeLessonGradeId = null,
+    activeLessonSubjectId = null, topRankedSubjectId = null,
+  } = opts;
   if (!memory.activeLessonId || memory.lessonPin === 'none') return false;
   if (topicSwitchTarget(query) !== null) return false;
   const queryGradeId = extractQueryGradeId(query);
   if (queryGradeId && activeLessonGradeId && queryGradeId !== activeLessonGradeId) return false;
+  // KB evidence for a different subject beats the hard pin
+  if (activeLessonSubjectId && topRankedSubjectId && topRankedSubjectId !== activeLessonSubjectId) return false;
 
   // Uploads are primary context until the teacher hard-pins a curriculum lesson
   if (hasDocuments && memory.lessonPin !== 'hard' && intent !== 'refinement') {

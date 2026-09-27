@@ -182,7 +182,8 @@ export function toVerifiablePair(
  * One outcome per slide, positionally aligned with the deck's slide array.
  *
  * Only worked-example slides ('challenge' with an answer) are verifiable —
- * every other slot is `undefined`, which downstream reads as "no badge",
+ * and an `aiWritten` one only when SymPy proves it. Every other slot is
+ * `undefined`, which downstream reads as "no badge",
  * not "unverified pending". Alignment is the contract here exactly as it is
  * for quizzes: never filter the result.
  */
@@ -195,12 +196,17 @@ export async function verifyDeckExamples(
       const rawAnswer = slide.answer?.trim();
       if (slide.type !== 'challenge' || !rawAnswer) return undefined;
       const { question, answer } = toVerifiablePair(slide.content, rawAnswer);
+      let outcome: VerifyOutcome;
       try {
-        return await verify(question, answer, []);
+        outcome = await verify(question, answer, []);
       } catch {
         // The verifier being down is not evidence about the answer.
-        return BANK_OUTCOME;
+        outcome = BANK_OUTCOME;
       }
+      // 'bank' vouches that a person reviewed the item. For a model-written
+      // example nobody did, so it gets no badge at all — only a proof counts.
+      if (slide.aiWritten && outcome.verifiedBy !== 'symbolic') return undefined;
+      return outcome;
     }),
   );
 }

@@ -315,6 +315,14 @@ export interface ActivitySlide {
   /** The answer SymPy computed on its own — the projected evidence. */
   computedAnswer?: string;
   /**
+   * The slide was written by a model, not taken from the curriculum book or
+   * the reviewed bank — Slides Maker's generated teaching section. Such a
+   * slide may still earn a 'symbolic' badge, but never 'bank': the first
+   * live deck labelled a generated chemistry example «إجابة من بنك الأسئلة
+   * المُراجَع», which nobody had reviewed.
+   */
+  aiWritten?: boolean;
+  /**
    * GeoGebra commands for type 'graph' — e.g. ['f(x)=x^2', 'g(x)=x+1'].
    * The class screen embeds them on web and opens GeoGebra on native, so
    * the teacher can drag/zoom the curve live in front of the class.
@@ -564,6 +572,21 @@ export interface LessonFlowOutput {
  * cancel that abandoned the UI while the request ran on would keep spending
  * against a cap the teacher thinks they just protected.
  */
+/**
+ * The explanation section of a Slides Maker deck, from
+ * `/generate/lesson-teaching` (api-server `lib/lessonTeachingPrompt.ts`).
+ *
+ * Model output, so every field is optional here even where the prompt asks
+ * for it: `buildLessonDeck` cleans it through `usableTeaching` and places only
+ * what survives.
+ */
+export interface LessonTeachingOutput {
+  hook?: { question?: string; teacherNote?: string };
+  concepts?: { title?: string; points?: string[]; teacherNote?: string; misconception?: string }[];
+  workedExample?: { problem?: string; steps?: string[]; answer?: string };
+  practice?: { problem?: string; hint?: string; answer?: string };
+}
+
 export interface GenerateOptions {
   signal?: AbortSignal;
 }

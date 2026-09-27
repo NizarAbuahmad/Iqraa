@@ -96,7 +96,7 @@ ${slideCountLine(b, true)}
 
 بنية (أ) — عرض تعليمي:
 1. شريحة غلاف (intro): العنوان + سطر واحد يقول ما الذي سيصبح الطالب قادرًا عليه في نهاية الحصة.
-2. شريحة تشويق (intro): سؤال أو موقف واقعي يجعل الموضوع يستحقّ الانتباه.
+2. شريحة تشويق (intro): سؤال أو موقف واقعي يجعل الموضوع يستحقّ الانتباه. إن كان التشويق سؤالًا واحدًا قويًّا فاجعلها "layout": "statement" والسؤال وحده في "content" — السؤال الكبير على الشاشة أقوى من قائمة.
 3. شريحة أهداف (intro): ثلاثة أسطر تبدأ بـ "• "، كل هدف سلوكي قابل للملاحظة (يحسب، يفسّر، يقارن) — لا تكتب "يفهم" أو "يعرف".
 4. شريحة فاصلة (divider) واحدة على الأقل بين الأقسام.
 5. شرائح الشرح (intro): معظم العرض. كل شريحة فكرة واحدة فقط.
@@ -195,7 +195,7 @@ ${slideCountLine(b, true)}
 
 قواعد إلزامية:
 - كل شريحة بلا استثناء تحمل كائن "teacher" غير فارغ. الشريحة بلا teacher تظهر للمعلّم بزرّ ملاحظات لا يفتح شيئًا.
-- "content" متعدّد الأسطر: افصل بـ \\n وابدأ أسطر القوائم بـ "• ". لا تكتب فقرة واحدة متّصلة، ولا تقلّ أي شريحة عن سطرين.
+- "content" متعدّد الأسطر: افصل بـ \\n وابدأ أسطر القوائم بـ "• ". لا تكتب فقرة واحدة متّصلة، ولا تقلّ أي شريحة عن سطرين — إلا شريحة "statement" وشريحة الغلاف، فهما سطر واحد عمدًا.
   الشريحة ذات السطر الواحد مرفوضة. إن لم تجد ما تقوله في سطرين فادمج الشريحة مع التي تليها واجعل العرض أقصر — ست شرائح ممتلئة أفضل من عشر أنصاف فارغة.
 - لا تضع "mediaPrompt" على شريحة تحمل "layout": تلك الشريحة تملأ الشاشة بشكلها الخاص ولا مكان فيها للصورة.
 - شريحة الشرح فكرة واحدة فقط. إن كان لديك فكرتان فاجعلهما شريحتين.
@@ -228,7 +228,7 @@ Use the words "lesson", "class" and "student" only when (A) is actually true.
 
 Structure for (A) — a teaching deck:
 1. Cover slide (intro): the title + one line naming what a student will be able to do by the end.
-2. Hook slide (intro): a question or real situation that makes the topic worth attention.
+2. Hook slide (intro): a question or real situation that makes the topic worth attention. When the hook is one strong question, make it "layout": "statement" with that question alone in "content" — one big question on screen beats a list.
 3. Objectives slide (intro): three lines starting "• ", each an observable outcome (calculates, explains, compares) — never "understands" or "knows".
 4. At least one divider slide between sections.
 5. Concept slides (intro): the bulk of the deck. Exactly one idea per slide.
@@ -327,7 +327,7 @@ Give a special shape to no more than half the concept slides — the point is va
 
 Mandatory rules:
 - Every slide without exception carries a non-empty "teacher" object. A slide without one shows the teacher a notes button that opens nothing.
-- "content" is multi-line: separate with \\n and start list lines with "• ". Never one unbroken paragraph, and never fewer than two lines on any slide.
+- "content" is multi-line: separate with \\n and start list lines with "• ". Never one unbroken paragraph, and never fewer than two lines on any slide — except a "statement" slide and the cover, which are one line on purpose.
   A one-line slide is rejected. If you cannot find two lines worth saying, merge that slide into the next one and make the deck shorter — six full slides beat ten half-empty ones.
 - Never put "mediaPrompt" on a slide that carries a "layout": that slide fills the screen with its own shape and has nowhere to put a picture.
 - A concept slide carries exactly one idea. If you have two ideas, make two slides.
