@@ -29,7 +29,7 @@
  * tells a student nothing about the one they are about to tap.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -216,7 +216,7 @@ function ResourceRow({
     <Pressable
       onPress={onPress}
       accessibilityRole={item.url ? 'link' : 'button'}
-      accessibilityLabel={`${t(KIND_LABEL[item.kind])} — ${title}`}
+      accessibilityLabel={`${t(KIND_LABEL[item.kind])} — ${page ? t('qrOnPage', page) : (title ?? '')}`}
       style={({ pressed }) => [
         styles.row,
         grid && styles.gridCell,
@@ -226,6 +226,7 @@ function ResourceRow({
           borderRadius: colors.radius,
           flexDirection: isRTL ? 'row-reverse' : 'row',
           opacity: pressed ? 0.75 : 1,
+          ...(Platform.OS === 'web' && ({ cursor: 'pointer' } as object)),
         },
       ]}
     >
@@ -284,7 +285,7 @@ function ResourceRow({
           </Text>
         </View>
       ) : trailingIcon ? (
-        <Ionicons name={trailingIcon} size={16} color={colors.mutedForeground} />
+        <Ionicons name={trailingIcon} size={16} color={colors.mutedForeground} accessibilityElementsHidden importantForAccessibility="no" />
       ) : null}
     </Pressable>
   );
