@@ -82,8 +82,8 @@
       [
         "expo-audio",
         {
-          "microphonePermission": false,
-          "recordAudioAndroid": false
+          "microphonePermission": "Allow Iqraa to hear you practice speaking English.",
+          "recordAudioAndroid": true
         }
       ]
     ],
