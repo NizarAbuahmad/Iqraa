@@ -20,6 +20,7 @@ import type {
   ActivitySlide,
   ClassroomActivity,
   LessonPlanOutput,
+  LessonTeachingOutput,
 } from './ai/AIService.ts';
 import { getBookForLesson, type KBLesson } from './knowledgeBase.ts';
 import { buildChartSlide, buildGraphSlide, referencesShownVisual, scanGraphCommands } from './classMedia.ts';
@@ -116,6 +117,73 @@ export interface LessonDeckOptions {
    * Omitted → no figure slides, exactly as before figures existed.
    */
   figureUri?: (figure: BookFigure) => string | null;
+  /**
+   * The AI-written explanation section (`/generate/lesson-teaching`). Fills
+   * what the book data does not carry: a hook question when the plan gave
+   * none, the explanation, a worked example when the book has none, and an
+   * on-screen practice problem. Omitted → the deck is built from the book
+   * and plan alone, exactly as before.
+   */
+  teaching?: LessonTeachingOutput | null;
+}
+
+/** A cleaned `LessonTeachingOutput`: every string trimmed, empties gone. */
+export interface UsableTeaching {
+  hook: { question: string; teacherNote: string } | null;
+  concepts: { title: string; points: string[]; teacherNote: string; misconception: string }[];
+  workedExample: { problem: string; steps: string[]; answer: string } | null;
+  practice: { problem: string; hint: string; answer: string } | null;
+}
+
+/** More than this and the explanation stops being a section of the lesson. */
+const TEACHING_CONCEPTS_MAX = 5;
+
+/**
+ * Keep only the parts of a generated explanation that can stand on a slide.
+ *
+ * Model output reaches this untyped in practice, so nothing is trusted: a
+ * concept without a title or without a single point is a heading over
+ * nothing, a worked example whose problem already contains its answer is the
+ * «…=25» slide this call exists to stop, and a bullet the model prefixed with
+ * its own "•" would print two. Each part that fails is dropped on its own —
+ * one bad field costs one slide, never the section.
+ */
+export function usableTeaching(raw: LessonTeachingOutput | null | undefined): UsableTeaching {
+  const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+  const lines = (v: unknown, max: number) =>
+    (Array.isArray(v) ? v : [])
+      .map(x => str(x).replace(/^[•\-*]\s*/u, '').trim())
+      .filter(Boolean)
+      .slice(0, max);
+  const hookQ = str(raw?.hook?.question);
+  const concepts = (Array.isArray(raw?.concepts) ? raw!.concepts! : [])
+    .map(c => ({
+      title: str(c?.title),
+      points: lines(c?.points, 4),
+      teacherNote: str(c?.teacherNote),
+      misconception: str(c?.misconception),
+    }))
+    .filter(c => c.title && c.points.length > 0)
+    .slice(0, TEACHING_CONCEPTS_MAX);
+  const problem = str(raw?.workedExample?.problem);
+  const answer = str(raw?.workedExample?.answer);
+  const steps = lines(raw?.workedExample?.steps, 6);
+  // Only an answer long enough to mean something: «4» appears in half the
+  // problems that have 4 as their answer, «(x−2)²+(y+3)²=25» in none of them.
+  const squashedAnswer = answer.replace(/\s+/g, '');
+  const answerShown = squashedAnswer.length >= 4
+    && problem.replace(/\s+/g, '').includes(squashedAnswer);
+  const practiceProblem = str(raw?.practice?.problem);
+  return {
+    hook: hookQ ? { question: hookQ, teacherNote: str(raw?.hook?.teacherNote) } : null,
+    concepts,
+    workedExample: problem && answer && steps.length > 0 && !answerShown
+      ? { problem, steps, answer }
+      : null,
+    practice: practiceProblem
+      ? { problem: practiceProblem, hint: str(raw?.practice?.hint), answer: str(raw?.practice?.answer) }
+      : null,
+  };
 }
 
 /** Mid-lesson checks, at most. Two interruptions in 45 minutes, not five. */
@@ -345,6 +413,10 @@ export function buildLessonDeck(
   opts: LessonDeckOptions = {},
 ): ClassroomActivity {
   const { lesson = null, plan = null } = opts;
+  const teaching = usableTeaching(opts.teaching);
+  // Whether any generated part reached the deck — the teacher is told which
+  // slides the book did not write (see teacherPreparation).
+  let aiWritten = false;
   const includeExamples = opts.includeExamples !== false;
   const includePractice = opts.includePractice !== false;
   const L = (ar: string, en: string) => (isAr ? ar : en);
@@ -443,18 +515,28 @@ export function buildLessonDeck(
   // With no question to lift there is no slide. It used to project «لنبدأ
   // بسؤال يهيّئنا لموضوع اليوم.» — announcing a question and then asking none,
   // on the one slide meant to catch the room's attention.
-  if (warm && warm.notes.length > 0) {
+  //
+  // The plan's own question wins when it has one — it belongs to the plan the
+  // teacher is following. The generated hook, written for the screen, covers
+  // the case that used to leave the deck without a warm-up at all.
+  const hook = warm && warm.notes.length > 0
+    ? { question: warm.projected, notes: warm.notes }
+    : teaching.hook
+      ? { question: teaching.hook.question, notes: teaching.hook.teacherNote }
+      : null;
+  if (hook) {
+    if (hook.question === teaching.hook?.question) aiWritten = true;
     const tip = L('اسأل ثم انتظر بصمت خمس ثوانٍ قبل استقبال أي إجابة.',
       'Ask, then wait five silent seconds before taking any answer.');
     push({
       type: 'intro',
       title: T('✨ تمهيد', '✨ Warm-up'),
-      content: warm.projected,
+      content: hook.question,
       durationSeconds: 0,
       teacher: {
         expectedAnswer: L('لا توجد إجابة واحدة — الهدف تفعيل المعرفة السابقة.',
           'No single answer — the point is to activate prior knowledge.'),
-        teachingTips: `${warm.notes}\n\n${tip}`,
+        teachingTips: [hook.notes, tip].filter(Boolean).join('\n\n'),
       },
     });
   }
@@ -489,7 +571,7 @@ export function buildLessonDeck(
       return !term || nonEmpty(isAr ? term.definitionAr : term.definitionEn);
     })
     .filter(concept => !ruleTexts.some(rule => rule.includes(squash(concept))));
-  if (concepts.length > 0) {
+  if (concepts.length > 0 || teaching.concepts.length > 0) {
     push({
       type: 'divider',
       title,
@@ -527,7 +609,28 @@ export function buildLessonDeck(
       bareConcepts.push(concept);
     }
   }
-  for (const slide of conceptSlides) {
+  //
+  // A generated explanation replaces these. The book's key concepts are terse
+  // index lines, and they were in the context the explanation was written
+  // from; the rule, figures, examples, outcomes and vocabulary — the parts
+  // that ARE the book's wording — are all still projected verbatim around it.
+  for (const c of teaching.concepts) {
+    aiWritten = true;
+    push({
+      type: 'intro',
+      title: c.title,
+      content: c.points.map(p => `• ${p}`).join('\n'),
+      durationSeconds: 0,
+      // The panel always prints the expected answer; for a concept slide that
+      // is the idea stated precisely, which is what its title is.
+      teacher: {
+        expectedAnswer: c.title,
+        ...(c.teacherNote ? { teachingTips: c.teacherNote } : {}),
+        ...(c.misconception ? { commonMisconceptions: c.misconception } : {}),
+      },
+    });
+  }
+  for (const slide of teaching.concepts.length > 0 ? [] : conceptSlides) {
     if (slide !== 'bare') {
       push(slide);
       continue;
@@ -673,6 +776,26 @@ export function buildLessonDeck(
     });
   });
 
+  // The generated example only when the book offers none — the book's own
+  // examples are the ones the students have in front of them. Same
+  // attempt-then-reveal slide; the steps go to the teacher, who works them.
+  const generatedExample = includeExamples && examples.length === 0 ? teaching.workedExample : null;
+  if (generatedExample) {
+    aiWritten = true;
+    push({
+      type: 'challenge',
+      title: T('مثال 1', 'Example 1'),
+      content: generatedExample.problem,
+      durationSeconds: EXAMPLE_THINK_SECONDS,
+      answer: generatedExample.answer,
+      teacher: {
+        expectedAnswer: generatedExample.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+        teachingTips: L('اتركهم يحاولون أولًا — اكشف الحل بعد انتهاء المؤقت.',
+          'Let them attempt it first — reveal only after the timer ends.'),
+      },
+    });
+  }
+
   // ── 7b. Second check — now that they have seen one done ─────────────────
   const laterChecks = midChecks.slice(firstCheckCount);
   laterChecks.forEach((check, i) => {
@@ -692,7 +815,26 @@ export function buildLessonDeck(
   // panel, same split already used for the hook and the worked examples.
   if (includePractice) {
     const guided = nonEmpty(plan?.guidedPractice);
-    if (guided) {
+    // A generated practice problem gives this slide something to project: the
+    // problem itself, worked together, with the plan's facilitation notes and
+    // the answer in the teacher panel. Not a reveal slide — the answer key
+    // numbers every revealed challenge as an example.
+    if (teaching.practice) {
+      const { problem, hint, answer } = teaching.practice;
+      aiWritten = true;
+      push({
+        type: 'intro',
+        title: T('🤝 تدريب موجّه', '🤝 Guided Practice'),
+        content: problem,
+        durationSeconds: 0,
+        teacher: {
+          expectedAnswer: answer || L('راجع حلول الطلبة خطوة بخطوة.', "Check the class's working step by step."),
+          teachingTips: [hint && L(`تلميح: ${hint}`, `Hint: ${hint}`), guided].filter(Boolean).join('\n\n')
+            || L('حلّوها معًا: اطلب الخطوة الأولى من الصف قبل أن تكتبها.',
+              'Solve it together: ask the class for the first step before you write it.'),
+        },
+      });
+    } else if (guided) {
       push({
         type: 'intro',
         title: T('🤝 تدريب موجّه', '🤝 Guided Practice'),
@@ -818,7 +960,10 @@ export function buildLessonDeck(
     materials: bullets(plan?.materials).length > 0
       ? bullets(plan?.materials)
       : [L('شاشة عرض', 'Projector')],
-    teacherPreparation: grounded
+    teacherPreparation: grounded && aiWritten
+      ? L('الشرائح مبنية على كتاب المنهاج، أما التمهيد والشرح والمثال والتدريب فكتبها الذكاء الاصطناعي من الكتاب — راجعها قبل الحصة وعدّل ما يلزم.',
+          'Slides are built from the curriculum book; the warm-up, explanation, example and practice were written by AI from it — review and adjust before class.')
+      : grounded
       ? L('الشرائح مبنية على كتاب المنهاج — راجعها قبل الحصة وعدّل ما يلزم.',
           'Slides are built from the curriculum book — review and adjust before class.')
       : L('الشرائح مولّدة وليست مأخوذة من كتاب المنهاج — راجع المحتوى قبل عرضه.',
