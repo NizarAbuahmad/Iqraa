@@ -218,6 +218,24 @@ export function nextPeriodLesson(
   return null;
 }
 
+export type TimetableSetupStep = { step: 'timetable' } | { step: 'plan'; classGroupId: string };
+
+/**
+ * What stops the home card from following the timetable, as the one next
+ * thing to set up: no class in any period yet → the timetable; the next
+ * period's class has no lesson in a plan → that class's plan. Null when the
+ * card already has a lesson, or when classes are timetabled but none meets
+ * within the week (nothing a nudge could fix).
+ */
+export function timetableSetupStep(
+  slots: readonly ScheduleSlotLike[],
+  next: NextPeriodLesson | null,
+): TimetableSetupStep | null {
+  if (!slots.some(s => s.classGroupId)) return { step: 'timetable' };
+  if (next && !next.lessonId) return { step: 'plan', classGroupId: next.classGroupId };
+  return null;
+}
+
 /**
  * «الحصة القادمة · العاشر ب · 10:15» — the line above a lesson card that came
  * from the timetable. The weekday joins the time when the period is not today.

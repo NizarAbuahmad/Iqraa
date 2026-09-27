@@ -118,8 +118,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
   },
+  // flex-start, not center: centering a flex:1 box whose content is taller
+  // than the space `brandPanelNarrow`'s capped height leaves it (English's
+  // longer eyebrow line pushes it over) grows the box symmetrically past its
+  // own bounds — upward into the language toggle's row above it, not just
+  // downward where `overflow: hidden` would catch it.
   brandContentNarrow: {
     flex: 1,
+    justifyContent: 'flex-start',
+    marginTop: 8,
   },
   brandContentWide: {
     flex: 1,

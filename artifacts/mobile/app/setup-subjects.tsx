@@ -18,7 +18,7 @@
  *    in routeGating.ts), for any teacher who has picked neither yet. No back
  *    button, no skip — same shape as `claim-required.tsx`'s gate, and for the
  *    same reason: `getVisibleGrades`/`getSubjectsForGrade` need something to
- *    default `app/(tabs)/curriculum.tsx` to.
+ *    default `app/curriculum/browse.tsx` to.
  *  - Optional, from the profile screen's "Grades & Subjects" row, to change
  *    or add more later. `editMode` distinguishes the two: a back arrow instead
  *    of nothing, "Save" instead of "Continue", and `goBack()` instead of
