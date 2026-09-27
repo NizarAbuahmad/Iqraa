@@ -264,18 +264,30 @@ function ClassesList() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-        <Pressable
-          onPress={() => goBack()}
-          hitSlop={12}
-          style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
-        >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
-        <Text
-          style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}
-        >
-          {t('myClasses')}
-        </Text>
+        <View style={styles.heroNav}>
+          <Pressable
+            onPress={() => setShowNew(true)}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={t('newClass')}
+            style={styles.heroAddBtn}
+          >
+            <Ionicons name="add" size={20} color="#fff" />
+          </Pressable>
+          <Pressable onPress={() => goBack()} hitSlop={12}>
+            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
+          </Pressable>
+        </View>
+        <View style={{ alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
+          <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold' }]}>
+            {t('myClasses')}
+          </Text>
+          {!loading && classes.length > 0 && (
+            <Text style={styles.heroSub}>
+              {lang === 'ar' ? `${classes.length} شعبة` : `${classes.length} classes`}
+            </Text>
+          )}
+        </View>
       </View>
 
       {loading ? (
@@ -506,8 +518,18 @@ function ClassesList() {
 }
 
 const styles = StyleSheet.create({
-  hero: { paddingHorizontal: 20, paddingBottom: 20, gap: 12 },
+  hero: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
+  heroNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  heroAddBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   heroTitle: { fontSize: 26, color: '#fff' },
+  heroSub: { fontSize: 13, color: 'rgba(255,255,255,0.70)', marginTop: 3, fontFamily: 'Almarai_400Regular' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   card: {
     flexDirection: 'row',

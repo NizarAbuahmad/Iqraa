@@ -61,8 +61,8 @@ export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = tr
 }
 
 const styles = StyleSheet.create({
-  band: { paddingHorizontal: 20, paddingBottom: 22, gap: 6 },
-  back: { paddingVertical: 4, marginBottom: 4 },
+  band: { paddingHorizontal: 20, paddingBottom: 14, gap: 6 },
+  back: { paddingVertical: 4 },
   eyebrow: {
     alignItems: 'center',
     gap: 5,
