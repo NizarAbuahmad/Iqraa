@@ -304,6 +304,8 @@ const translations = {
     libraryAdminItemTitle: 'العنوان',
     libraryAdminDescription: 'وصف قصير (اختياري)',
     libraryAdminThumbnail: 'صورة الغلاف (اختياري)',
+    libraryAdminThumbnailBadUrl: 'رابط الصورة طويل جدًا أو لا يبدأ بـ https',
+    libraryAdminThumbnailPreviewFailed: 'تعذّر تحميل هذه الصورة — تأكد أنه رابط صورة مباشر',
     libraryAdminFile: 'رفع ملف',
     libraryAdminLink: 'رابط',
     libraryAdminPickFile: 'اختر ملفًا',
@@ -961,6 +963,7 @@ const translations = {
     startClass: 'ابدأ الحصة',
     startClassFailed: 'تعذّر تجهيز العرض. اضغط «ابدأ الحصة» للمحاولة مرة أخرى.',
     genElapsed: (secs: string) => `مضى ${secs}`,
+    genTypicalHint: 'يستغرق التوليد عادةً من ١٠ إلى ٢٠ ثانية',
     genSlowHint: 'يستغرق هذا وقتًا أطول من المعتاد. يمكنك الانتظار أو الإيقاف.',
     genCancel: 'إيقاف',
     genCancelled: 'أوقفتَ التحضير — لم يُنشأ أي محتوى. بياناتك كما هي.',
@@ -1279,7 +1282,7 @@ const translations = {
     scheduleOpenCalendar: 'التقويم',
     scheduleDefaultSchool: 'مدرستي',
     scheduleAddSchool: 'مدرسة أخرى',
-    scheduleSchoolLabel: 'اسم المدرسة',
+    scheduleRenameSchool: 'تغيير الاسم',
     scheduleSchoolPlaceholder: 'مثال: مدرسة النور الثانوية',
     scheduleSchoolHint: 'لكل مدرسة أوقات حصصها الخاصة.',
     scheduleSchoolNameTaken: 'لديك مدرسة بهذا الاسم بالفعل.',
@@ -1290,6 +1293,7 @@ const translations = {
     scheduleShowWeekend: 'إظهار الجمعة والسبت',
     scheduleHideWeekend: 'إخفاء الجمعة والسبت',
     scheduleToday: 'اليوم',
+    scheduleEditClassName: 'تعديل اسم الشعبة',
 
     // Calendar — combines the weekly period timetable with each plan's own
     // dated lessons into one "what is my day" view.
@@ -2137,6 +2141,8 @@ const translations = {
     libraryAdminLesson: 'Lesson',
     libraryAdminAnyLesson: 'Whole subject',
     libraryAdminThumbnail: 'Cover image (optional)',
+    libraryAdminThumbnailBadUrl: 'Image link is too long or does not start with https',
+    libraryAdminThumbnailPreviewFailed: "Couldn't load this image — make sure it's a direct image link",
     libraryAdminCategory: 'Category',
     libraryAdminItemTitle: 'Title',
     libraryAdminDescription: 'Short description (optional)',
@@ -2763,6 +2769,7 @@ const translations = {
     startClass: 'Start class',
     startClassFailed: 'Could not build the slides. Tap "Start class" to try again.',
     genElapsed: (secs: string) => `${secs} elapsed`,
+    genTypicalHint: 'Generation usually takes 10–20 seconds',
     genSlowHint: 'This is taking longer than usual. You can keep waiting or stop it.',
     genCancel: 'Stop',
     genCancelled: 'You stopped it — nothing was generated. Your inputs are unchanged.',
@@ -3074,7 +3081,7 @@ const translations = {
     scheduleOpenCalendar: 'Calendar',
     scheduleDefaultSchool: 'My school',
     scheduleAddSchool: 'Another school',
-    scheduleSchoolLabel: 'School name',
+    scheduleRenameSchool: 'Rename',
     scheduleSchoolPlaceholder: 'e.g. Al-Noor Secondary School',
     scheduleSchoolHint: 'Each school has its own period times.',
     scheduleSchoolNameTaken: 'You already have a school with that name.',
@@ -3085,6 +3092,7 @@ const translations = {
     scheduleShowWeekend: 'Show Friday and Saturday',
     scheduleHideWeekend: 'Hide Friday and Saturday',
     scheduleToday: 'Today',
+    scheduleEditClassName: 'Edit class name',
 
     // Calendar — combines the weekly period timetable with each plan's own
     // dated lessons into one "what is my day" view.

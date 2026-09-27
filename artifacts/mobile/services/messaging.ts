@@ -47,6 +47,7 @@ export interface ChatMessage {
   id: string;
   threadId: string;
   senderId: string;
+  senderName: string | null;
   body: string;
   attachmentKind: ChatAttachmentKind | null;
   attachmentMime: string | null;

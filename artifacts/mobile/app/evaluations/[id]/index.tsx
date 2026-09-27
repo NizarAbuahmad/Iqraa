@@ -718,7 +718,7 @@ function ShareLinkCard({
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { paddingHorizontal: 20, paddingBottom: 20, gap: 10 },
+  header: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   headerTitle: { fontSize: 20, color: '#fff' },
   metaRow: { alignItems: 'center', gap: 12 },
   statusPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
