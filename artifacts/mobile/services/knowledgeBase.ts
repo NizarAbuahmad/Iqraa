@@ -4299,6 +4299,19 @@ export type KBScoredLesson = { lesson: KBLesson; score: number };
  * «التفاعلاتُ الكيميائيّةُ» outranks grade 10 chemistry's) and re-grounds the
  * generators — see chemPractice.test.ts before widening it.
  */
+/**
+ * Ranked results, remembered per (query, lang, grade).
+ *
+ * One scan tokenises ~10 fields of every one of 3,200+ lessons — 100–200 ms
+ * on a desktop V8, several times that on a phone — and the generator screens
+ * call it 4 (worksheet) to 8 (slides) times for the same topic on one tap,
+ * synchronously, before the request leaves. Nothing re-rendered until they
+ * all finished, so the tap looked dead. The KB is static bundled data, so the
+ * result for a query never changes within a session.
+ */
+const rankedCache = new Map<string, KBScoredLesson[]>();
+const RANKED_CACHE_MAX = 64;
+
 export function searchKBRanked(
   query: string,
   lang: 'ar' | 'en' = 'ar',
@@ -4306,7 +4319,21 @@ export function searchKBRanked(
 ): KBScoredLesson[] {
   const q = query.trim();
   if (!q) return [];
+  const cacheKey = `${lang}\u0000${opts.gradeId ?? ''}\u0000${q}`;
+  const hit = rankedCache.get(cacheKey);
+  if (hit) return hit;
+  const ranked = searchKBRankedUncached(q, lang, opts);
+  // ponytail: FIFO eviction; a teacher types a handful of topics per session.
+  if (rankedCache.size >= RANKED_CACHE_MAX) rankedCache.delete(rankedCache.keys().next().value!);
+  rankedCache.set(cacheKey, ranked);
+  return ranked;
+}
 
+function searchKBRankedUncached(
+  q: string,
+  lang: 'ar' | 'en',
+  opts: { gradeId?: string },
+): KBScoredLesson[] {
   const { gradeId } = opts;
   const scoreField = gradeId
     ? (qq: string, f: string, w: number) => scoreFieldRaw(qq.replace(TASHKEEL, ''), f.replace(TASHKEEL, ''), w)
