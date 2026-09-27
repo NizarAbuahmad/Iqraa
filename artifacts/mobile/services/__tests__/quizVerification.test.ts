@@ -169,6 +169,22 @@ describe('verifyDeckExamples', () => {
     assert.equal(out[2], undefined);
   });
 
+  // The first live AI example (a chemistry mole problem) came back labelled
+  // «إجابة من بنك الأسئلة المُراجَع». Nobody reviewed it; only a proof counts.
+  it('gives an AI-written example no bank badge, whether the verifier declines or is down', async () => {
+    const ai = { ...slide('challenge', '116 g'), aiWritten: true };
+    assert.deepEqual(await verifyDeckExamples([ai], async () => BANK_OUTCOME), [undefined]);
+    assert.deepEqual(
+      await verifyDeckExamples([ai], async () => { throw new Error('ECONNREFUSED'); }),
+      [undefined],
+    );
+  });
+
+  it('still badges an AI-written example the verifier proved', async () => {
+    const ai = { ...slide('challenge', '12x^3'), aiWritten: true };
+    assert.deepEqual(await verifyDeckExamples([ai], async () => proves), [proves]);
+  });
+
   it('skips a challenge slide with no answer — nothing to prove a key against', async () => {
     let called = false;
     const out = await verifyDeckExamples([slide('challenge')], async () => {

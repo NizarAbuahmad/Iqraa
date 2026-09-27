@@ -47,6 +47,19 @@ describe("lesson-teaching prompt", () => {
     assert.match(p, /لا تسمية/);
   });
 
+  // From the first live deck («المول والكتلة المولية», 2026-09-27): the
+  // solution wrote «2 x 58» with the letter x as a times sign, the «مثال:»
+  // lines named no value at all, and a step read only «نستنتج الكتلة النهائية».
+  for (const [lang, build] of [["ar", lessonTeachingPromptAr], ["en", lessonTeachingPromptEn]] as const) {
+    it(`${lang}: pins the fixes from the first live deck`, () => {
+      const p = build(BODY);
+      assert.ok(p.includes("×"), "multiplication sign");
+      assert.ok(p.includes("6.022×10²³"), "standard constants allowed");
+      assert.ok(p.includes("12 g"), "a concrete example to imitate");
+      assert.match(p, lang === "ar" ? /نستنتج الكتلة النهائية/ : /we conclude the final mass/);
+    });
+  }
+
   it("en: pins the rules each earlier deck broke", () => {
     const p = lessonTeachingPromptEn(BODY);
     assert.match(p, /Stay inside this lesson/);
