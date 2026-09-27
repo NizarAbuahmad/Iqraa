@@ -520,12 +520,12 @@ export function buildLessonDeck(
   // teacher is following. The generated hook, written for the screen, covers
   // the case that used to leave the deck without a warm-up at all.
   const hook = warm && warm.notes.length > 0
-    ? { question: warm.projected, notes: warm.notes }
+    ? { question: warm.projected, notes: warm.notes, generated: false }
     : teaching.hook
-      ? { question: teaching.hook.question, notes: teaching.hook.teacherNote }
+      ? { question: teaching.hook.question, notes: teaching.hook.teacherNote, generated: true }
       : null;
   if (hook) {
-    if (hook.question === teaching.hook?.question) aiWritten = true;
+    if (hook.generated) aiWritten = true;
     const tip = L('اسأل ثم انتظر بصمت خمس ثوانٍ قبل استقبال أي إجابة.',
       'Ask, then wait five silent seconds before taking any answer.');
     push({
@@ -533,6 +533,7 @@ export function buildLessonDeck(
       title: T('✨ تمهيد', '✨ Warm-up'),
       content: hook.question,
       durationSeconds: 0,
+      ...(hook.generated ? { aiWritten: true } : {}),
       teacher: {
         expectedAnswer: L('لا توجد إجابة واحدة — الهدف تفعيل المعرفة السابقة.',
           'No single answer — the point is to activate prior knowledge.'),
@@ -617,6 +618,7 @@ export function buildLessonDeck(
   for (const c of teaching.concepts) {
     aiWritten = true;
     push({
+      aiWritten: true,
       type: 'intro',
       title: c.title,
       content: c.points.map(p => `• ${p}`).join('\n'),
@@ -783,6 +785,7 @@ export function buildLessonDeck(
   if (generatedExample) {
     aiWritten = true;
     push({
+      aiWritten: true,
       type: 'challenge',
       title: T('مثال 1', 'Example 1'),
       content: generatedExample.problem,
@@ -823,6 +826,7 @@ export function buildLessonDeck(
       const { problem, hint, answer } = teaching.practice;
       aiWritten = true;
       push({
+        aiWritten: true,
         type: 'intro',
         title: T('🤝 تدريب موجّه', '🤝 Guided Practice'),
         content: problem,

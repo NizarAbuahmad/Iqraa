@@ -315,6 +315,14 @@ export interface ActivitySlide {
   /** The answer SymPy computed on its own — the projected evidence. */
   computedAnswer?: string;
   /**
+   * The slide was written by a model, not taken from the curriculum book or
+   * the reviewed bank — Slides Maker's generated teaching section. Such a
+   * slide may still earn a 'symbolic' badge, but never 'bank': the first
+   * live deck labelled a generated chemistry example «إجابة من بنك الأسئلة
+   * المُراجَع», which nobody had reviewed.
+   */
+  aiWritten?: boolean;
+  /**
    * GeoGebra commands for type 'graph' — e.g. ['f(x)=x^2', 'g(x)=x+1'].
    * The class screen embeds them on web and opens GeoGebra on native, so
    * the teacher can drag/zoom the curve live in front of the class.
