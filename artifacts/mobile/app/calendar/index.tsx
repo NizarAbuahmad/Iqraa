@@ -20,6 +20,7 @@ import { buildDayAgenda, dayHasAgenda, isInMonth, monthGridDates } from '@/servi
 import { todayISO } from '@/services/planEntries';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { LoadError } from '@/components/ui/LoadError';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -138,12 +139,7 @@ export default function CalendarScreen() {
       ) : (
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60, gap: 16 }}>
           {error ? (
-            <View style={[styles.errorBox, { borderColor: colors.destructive }]}>
-              <Ionicons name="cloud-offline-outline" size={18} color={colors.destructive} />
-              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', flex: 1, textAlign: align }}>
-                {error}
-              </Text>
-            </View>
+            <LoadError message={error} onRetry={() => void load()} />
           ) : null}
 
           {/* Month navigation */}
@@ -292,8 +288,4 @@ const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   heroTitle: { fontSize: 26, color: '#fff' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  errorBox: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12,
-    borderRadius: 12, borderWidth: 1,
-  },
 });

@@ -20,6 +20,7 @@ import { bookLabel, formatListDate } from '@/services/evaluationRow';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { LoadError } from '@/components/ui/LoadError';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -149,12 +150,7 @@ export default function EvaluationsScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             error ? (
-              <View style={[styles.errorBox, { borderColor: colors.destructive }]}>
-                <Ionicons name="cloud-offline-outline" size={18} color={colors.destructive} />
-                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', flex: 1, textAlign: align }}>
-                  {error}
-                </Text>
-              </View>
+              <LoadError message={error} onRetry={() => void load()} />
             ) : null
           }
           ListEmptyComponent={
@@ -284,6 +280,5 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17 },
   emptyText: { fontSize: 14, maxWidth: 280, lineHeight: 20 },
-  errorBox: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 12 },
   fab: { position: 'absolute', alignSelf: 'center', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
 });
