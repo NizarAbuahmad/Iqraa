@@ -348,13 +348,11 @@ export function buildLessonDeck(
   const includeExamples = opts.includeExamples !== false;
   const includePractice = opts.includePractice !== false;
   const L = (ar: string, en: string) => (isAr ? ar : en);
-  // Bilingual, unlike `L`: these are the numbered section titles that sit
-  // beside a check's own question — Quick Check / Exit Ticket. The check's
-  // question and options are AI-generated and can come back in either
-  // language regardless of `isAr` (an English-subject lesson's exit ticket is
-  // English even when the deck was built with the UI in Arabic), so a
-  // single-language title can end up naming the wrong language for what is
-  // actually projected under it. Showing both removes the guess.
+  // Both languages in one title, for `T` below. The check titles (Quick
+  // Check / Exit Ticket) used this unconditionally, because an English-subject
+  // lesson's checks come back in English even in an Arabic deck — but `T`
+  // already covers exactly that case, and every other Arabic deck projected
+  // «تحقّق سريع 1 · Quick Check 1» over an Arabic question.
   const BL = (ar: string, en: string) => `${ar} · ${en}`;
 
   // Whether this deck teaches the English subject itself — Grade 10's
@@ -387,13 +385,14 @@ export function buildLessonDeck(
   const { mid: midChecks, exit: exitChecks } = splitChecks(opts.checks);
 
   // ── 1. Title ────────────────────────────────────────────────────────────
+  // Subject and grade only. The book summary used to sit here too, which for
+  // a maths lesson put a paragraph of formulas on the cover — the whole lesson
+  // stated before it began. It closes the deck instead (§9).
   const summary = nonEmpty(pickLang(lesson?.summaryAr, lesson?.summaryEn, isAr));
   push({
     type: 'intro',
     title,
-    content: [subject && grade ? `${subject} · ${grade}` : subject || grade, summary]
-      .filter(Boolean)
-      .join('\n\n'),
+    content: subject && grade ? `${subject} · ${grade}` : subject || grade,
     durationSeconds: 0,
   });
 
@@ -435,26 +434,27 @@ export function buildLessonDeck(
 
   // ── 4. Hook / introduction ──────────────────────────────────────────────
   const intro = nonEmpty(plan?.introduction);
-  if (intro) {
-    const warm = splitWarmup(intro);
+  const warm = intro ? splitWarmup(intro) : null;
+  // splitWarmup only lifts a clean line when the model quoted a question or
+  // introduced one with a colon (notes non-empty then). Anything else — a
+  // narrated "ابدأ بسؤال عن…" — is the teacher's own planning text, same
+  // failure as guidedPractice/independentPractice below, so it never projects.
+  //
+  // With no question to lift there is no slide. It used to project «لنبدأ
+  // بسؤال يهيّئنا لموضوع اليوم.» — announcing a question and then asking none,
+  // on the one slide meant to catch the room's attention.
+  if (warm && warm.notes.length > 0) {
     const tip = L('اسأل ثم انتظر بصمت خمس ثوانٍ قبل استقبال أي إجابة.',
       'Ask, then wait five silent seconds before taking any answer.');
-    // splitWarmup only lifts a clean line when the model quoted a question or
-    // introduced one with a colon (notes non-empty then). Anything else — a
-    // narrated "ابدأ بسؤال عن…" — is the teacher's own planning text, same
-    // failure as guidedPractice/independentPractice below, so it goes to the
-    // teacher panel instead of standing in as the question itself.
-    const hasQuestion = warm.notes.length > 0;
     push({
       type: 'intro',
       title: T('✨ تمهيد', '✨ Warm-up'),
-      content: hasQuestion ? warm.projected
-        : L('لنبدأ بسؤال يهيّئنا لموضوع اليوم.', "Let's start with a question about today's topic."),
+      content: warm.projected,
       durationSeconds: 0,
       teacher: {
         expectedAnswer: L('لا توجد إجابة واحدة — الهدف تفعيل المعرفة السابقة.',
           'No single answer — the point is to activate prior knowledge.'),
-        teachingTips: hasQuestion ? `${warm.notes}\n\n${tip}` : `${intro}\n\n${tip}`,
+        teachingTips: `${warm.notes}\n\n${tip}`,
       },
     });
   }
@@ -477,11 +477,18 @@ export function buildLessonDeck(
   // as-is.
   const termFor = (concept: string) =>
     (lesson?.keyTerms ?? []).find(t => (isAr ? t.ar : t.en) === concept);
+  // A concept the rule slide (§6) already states word for word is dropped
+  // here: «معادلة الدائرة» projected the same formula as «الفكرة 1» and again
+  // two slides later as the rule. Compared without whitespace, since the book
+  // data spaces formulas inconsistently.
+  const squash = (s: string) => s.replace(/\s+/g, '');
+  const ruleTexts = bullets(pickLang(lesson?.rulesAr, lesson?.rulesEn, isAr), 5).map(squash);
   const concepts = bullets(pickLang(lesson?.keyConceptsAr, lesson?.keyConceptsEn, isAr), 8)
     .filter(concept => {
       const term = termFor(concept);
       return !term || nonEmpty(isAr ? term.definitionAr : term.definitionEn);
-    });
+    })
+    .filter(concept => !ruleTexts.some(rule => rule.includes(squash(concept))));
   if (concepts.length > 0) {
     push({
       type: 'divider',
@@ -491,20 +498,49 @@ export function buildLessonDeck(
     });
   }
 
-  // ── 5. The explanation, one concept per slide ───────────────────────────
-  // One concept per slide rather than a single dense slide: the deck is read
-  // from the back row, and it is also the teacher's pacing device — advancing
-  // is what marks "this idea is finished".
-  concepts.forEach((concept, i) => {
+  // ── 5. The explanation ──────────────────────────────────────────────────
+  // A concept that names itself gets its own slide, titled by that name: a
+  // defined term («الجذر» → its definition) or a labelled statement
+  // («الصورة العامة: x²+y²+Dx+Ey+F=0»). One per slide because advancing is
+  // the teacher's pacing device — it marks "this idea is finished".
+  //
+  // A bare one-liner has no name to title it with. Those used to get a slide
+  // each under «الفكرة 1», «الفكرة 2»… — a label that says nothing, over a
+  // single line, four times running. They now share one bulleted slide, at
+  // the first one's place — split around a titled slide they came out as two
+  // single-bullet slides, which is the thinness this replaced.
+  const LABEL_MAX = 40;
+  const bareConcepts: string[] = [];
+  const conceptSlides: (Omit<ActivitySlide, 'slideNumber'> | 'bare')[] = [];
+  for (const concept of concepts) {
     const term = termFor(concept);
     const definition = term ? nonEmpty(isAr ? term.definitionAr : term.definitionEn) : '';
-    push({
-      type: 'intro',
-      title: T(`الفكرة ${i + 1}`, `Idea ${i + 1}`),
-      content: definition ? `${concept}\n\n${definition}` : concept,
-      durationSeconds: 0,
-    });
-  });
+    const colon = concept.search(/[:：]/);
+    const label = colon > 0 ? concept.slice(0, colon).trim() : '';
+    const rest = colon > 0 ? concept.slice(colon + 1).trim() : '';
+    if (definition) {
+      conceptSlides.push({ type: 'intro', title: concept, content: definition, durationSeconds: 0 });
+    } else if (label && rest && label.length <= LABEL_MAX) {
+      conceptSlides.push({ type: 'intro', title: label, content: rest, durationSeconds: 0 });
+    } else {
+      if (bareConcepts.length === 0) conceptSlides.push('bare');
+      bareConcepts.push(concept);
+    }
+  }
+  for (const slide of conceptSlides) {
+    if (slide !== 'bare') {
+      push(slide);
+      continue;
+    }
+    for (let i = 0; i < bareConcepts.length; i += 4) {
+      push({
+        type: 'intro',
+        title: T('💡 أفكار الدرس', '💡 Key Ideas'),
+        content: bareConcepts.slice(i, i + 4).map(c => `• ${c}`).join('\n'),
+        durationSeconds: 0,
+      });
+    }
+  }
 
   // ── 6. Rules / formulas ─────────────────────────────────────────────────
   //
@@ -607,7 +643,7 @@ export function buildLessonDeck(
   // "did you follow me".
   const firstCheckCount = Math.floor(midChecks.length / 2);
   midChecks.slice(0, firstCheckCount).forEach((check, i) => {
-    push(asCheckSlide(check, BL(`✋ تحقّق سريع ${i + 1}`, `Quick Check ${i + 1}`)));
+    push(asCheckSlide(check, T(`✋ تحقّق سريع ${i + 1}`, `Quick Check ${i + 1}`)));
   });
 
   // ── 7. Worked examples — attempted before they are shown ────────────────
@@ -642,7 +678,7 @@ export function buildLessonDeck(
   laterChecks.forEach((check, i) => {
     push(asCheckSlide(
       check,
-      BL(`✋ تحقّق سريع ${firstCheckCount + i + 1}`, `Quick Check ${firstCheckCount + i + 1}`),
+      T(`✋ تحقّق سريع ${firstCheckCount + i + 1}`, `Quick Check ${firstCheckCount + i + 1}`),
     ));
   });
 
@@ -696,8 +732,20 @@ export function buildLessonDeck(
   // for a projector rather than a teacher's plan. The synthesized summary is
   // always safe to project; the model's own closing text — if any — goes to
   // the teacher panel instead of standing in for it.
+  //
+  // The book's own summary comes first when it says at least two things: it is
+  // what the lesson established, whereas the outcomes are what it set out to
+  // do — and the outcomes were already projected verbatim on slide 2. The
+  // split keeps "2.5" whole: a sentence break needs whitespace after the stop.
   const closure = nonEmpty(plan?.closure);
-  const closureSummary = objectives.length > 0
+  const takeaways = summary
+    .split(/(?<=[.!?؟])\s+/u)
+    .map(s => s.trim().replace(/[.。]$/u, '').trim())
+    .filter(Boolean)
+    .slice(0, 4);
+  const closureSummary = takeaways.length >= 2
+    ? takeaways.map(s => `• ${s}`).join('\n')
+    : objectives.length > 0
     ? L(`راجعنا اليوم:\n${objectives.map(o => `• ${o}`).join('\n')}`,
         `Today we covered:\n${objectives.map(o => `• ${o}`).join('\n')}`)
     : L(`أنهينا درس «${title}».`, `We finished “${title}”.`);
@@ -722,13 +770,13 @@ export function buildLessonDeck(
     push({
       type: 'divider',
       title,
-      content: BL('🎫 تذكرة الخروج', 'Exit Ticket'),
+      content: T('🎫 تذكرة الخروج', 'Exit Ticket'),
       durationSeconds: 0,
     });
     exitChecks.forEach((check, i) => {
       push(asCheckSlide(
         check,
-        BL(`🎫 تذكرة الخروج ${i + 1}`, `Exit Ticket ${i + 1}`),
+        T(`🎫 تذكرة الخروج ${i + 1}`, `Exit Ticket ${i + 1}`),
       ));
     });
   }
