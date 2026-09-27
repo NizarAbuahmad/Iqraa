@@ -422,7 +422,7 @@ function ClassGaps({
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { paddingHorizontal: 20, paddingBottom: 20, gap: 8 },
+  header: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   headerTitle: { fontSize: 22, color: '#fff' },
   headerSub: { fontSize: 13, lineHeight: 21 },
   errorBox: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1 },

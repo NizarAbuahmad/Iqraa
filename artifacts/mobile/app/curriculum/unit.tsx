@@ -144,8 +144,8 @@ export default function UnitLessonsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 24 },
-  backBtn: { marginBottom: 12, width: 40, height: 40, justifyContent: 'center' },
+  header: { paddingHorizontal: 20, paddingBottom: 14 },
+  backBtn: { width: 40, height: 40, justifyContent: 'center' },
   eyebrow: { fontSize: 13, lineHeight: 21, marginBottom: 4 },
   title: { fontSize: 22, marginBottom: 4 },
   sub: { fontSize: 13, lineHeight: 21 },

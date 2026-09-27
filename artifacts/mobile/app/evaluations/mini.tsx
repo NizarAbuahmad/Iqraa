@@ -324,7 +324,7 @@ export default function MiniEvalScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 18, gap: 6 },
+  header: { paddingHorizontal: 20, paddingBottom: 14, gap: 6 },
   headerTitle: { color: '#fff', fontSize: 20 },
   headerSub: { color: '#fff', opacity: 0.9, fontSize: 13, lineHeight: 21 },
   errorBox: {

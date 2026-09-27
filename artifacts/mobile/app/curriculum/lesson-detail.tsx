@@ -320,8 +320,8 @@ function Section({ title, icon, color, isRTL, children }: { title: string; icon:
 
 const styles = StyleSheet.create({
   hubLink: { alignItems: 'center', gap: 12, padding: 14, marginTop: 12 },
-  hero: { paddingHorizontal: 20, paddingBottom: 28 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 10 },
+  hero: { paddingHorizontal: 20, paddingBottom: 14 },
+  backBtn: { width: 40, height: 40, justifyContent: 'center' },
   heroTitle: { fontSize: 22, lineHeight: 30, marginBottom: 12 },
   heroMeta: { gap: 8 },
   heroPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
