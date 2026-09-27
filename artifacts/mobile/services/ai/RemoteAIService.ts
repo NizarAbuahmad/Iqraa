@@ -15,7 +15,7 @@ import {
   ActivityOutput, AIRequest, AIService,
   ClassroomActivity, ClassroomActivityRequest,
   GenerateOptions, InfographicOutput,
-  LessonPlanOutput, PromptSlidesQuestion, PromptSlidesRequest, QuizOutput, WorksheetOutput,
+  LessonPlanOutput, LessonTeachingOutput, PromptSlidesQuestion, PromptSlidesRequest, QuizOutput, WorksheetOutput,
 } from './AIService';
 import { DEMO_MODE } from './demoMode';
 import { MockAIService } from './generators';
@@ -196,6 +196,28 @@ export class RemoteAIService extends AIService {
       activity,
       req.classroomSetup ?? 'screen',
       req.language === 'arabic',
+    );
+  }
+
+  /**
+   * The explanation section of a Slides Maker deck — see
+   * `LessonTeachingOutput`.
+   *
+   * Same two overrides as `generatePromptSlides`, for the same reasons.
+   * `demoMode: false`: this is the part of the deck the curriculum data cannot
+   * supply, so a template standing in for it would be exactly the filler the
+   * call exists to replace — and the web build, which runs every other AI
+   * button in demo mode, is where most teachers first see a deck. The request
+   * is curriculum-grounded, so the server pools it per lesson. `strict: true`:
+   * with no offline twin there is nothing to fall back to, and the screen
+   * builds the deck without this section rather than showing an error.
+   */
+  async generateLessonTeaching(req: AIRequest, opts?: GenerateOptions): Promise<LessonTeachingOutput> {
+    return generateWithProvenance(
+      'lesson-teaching',
+      () => postJSON<LessonTeachingOutput>('/generate/lesson-teaching', req, opts),
+      () => { throw new Error('lesson-teaching has no offline fallback'); },
+      { demoMode: false, strict: true },
     );
   }
 

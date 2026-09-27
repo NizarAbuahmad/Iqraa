@@ -564,6 +564,21 @@ export interface LessonFlowOutput {
  * cancel that abandoned the UI while the request ran on would keep spending
  * against a cap the teacher thinks they just protected.
  */
+/**
+ * The explanation section of a Slides Maker deck, from
+ * `/generate/lesson-teaching` (api-server `lib/lessonTeachingPrompt.ts`).
+ *
+ * Model output, so every field is optional here even where the prompt asks
+ * for it: `buildLessonDeck` cleans it through `usableTeaching` and places only
+ * what survives.
+ */
+export interface LessonTeachingOutput {
+  hook?: { question?: string; teacherNote?: string };
+  concepts?: { title?: string; points?: string[]; teacherNote?: string; misconception?: string }[];
+  workedExample?: { problem?: string; steps?: string[]; answer?: string };
+  practice?: { problem?: string; hint?: string; answer?: string };
+}
+
 export interface GenerateOptions {
   signal?: AbortSignal;
 }

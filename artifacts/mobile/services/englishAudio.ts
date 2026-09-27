@@ -42,3 +42,25 @@ export async function playWord(word: string): Promise<void> {
     // Unplayable is the same as silent — see the header.
   }
 }
+
+/**
+ * Playing back a student's own recording (the Speaking activity). Shares the
+ * one player with `playWord`, on purpose: hearing the reference word and your
+ * own attempt at the same time is never useful, so one interrupting the other
+ * is the correct behaviour, not a bug to route around.
+ */
+export async function playLocalUri(uri: string): Promise<void> {
+  try {
+    if (!modeSet) {
+      modeSet = true;
+      await setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
+    }
+    const source = { uri };
+    if (player) player.replace(source);
+    else player = createAudioPlayer(source);
+    await player.seekTo(0);
+    player.play();
+  } catch {
+    // Same posture as playWord: silence over an error banner.
+  }
+}

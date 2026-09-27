@@ -179,8 +179,9 @@ export default function NotificationsScreen() {
         </View>
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 16, paddingBottom: 6 }]}>
           {isTeacherRole(user?.role) && (
-            <Pressable onPress={() => router.push('/messaging/new-group')} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('messagingNewGroup')}>
-              <Ionicons name="people-circle-outline" size={26} color={colors.primary} />
+            <Pressable onPress={() => router.push('/messaging/new-group')} hitSlop={10} accessibilityRole="button" style={[styles.headerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Ionicons name="people-circle-outline" size={22} color={colors.primary} />
+              <Text style={[styles.headerActionText, { color: colors.primary }]}>{t('messagingNewGroup')}</Text>
             </Pressable>
           )}
           {/*
@@ -189,8 +190,9 @@ export default function NotificationsScreen() {
             explaining why — indistinguishable from the feature being broken.
             The sheet now says what is missing and how to fix it.
           */}
-          <Pressable onPress={() => setNewChatOpen(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('messagingStartConversation')}>
-            <Ionicons name="create-outline" size={24} color={colors.primary} />
+          <Pressable onPress={() => setNewChatOpen(true)} hitSlop={10} accessibilityRole="button" style={[styles.headerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Ionicons name="create-outline" size={20} color={colors.primary} />
+            <Text style={[styles.headerActionText, { color: colors.primary }]}>{t('messagingNewMessage')}</Text>
           </Pressable>
         </View>
       </View>
@@ -270,7 +272,7 @@ export default function NotificationsScreen() {
               {t('noNotifications')}
             </Text>
             <Text style={[styles.emptyDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-              {t('messagingEmptyDesc')}
+              {t(isTeacherRole(user?.role) ? 'messagingEmptyDescTeacher' : 'messagingEmptyDesc')}
             </Text>
           </View>
 
@@ -310,6 +312,8 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1 },
   title: { fontSize: 28 },
   unreadCount: { fontSize: 13, lineHeight: 21, marginTop: 2 },
+  headerAction: { alignItems: 'center', gap: 4 },
+  headerActionText: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   threadCard: { padding: 14, gap: 12, borderWidth: 1, alignItems: 'center' },
   groupIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

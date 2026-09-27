@@ -31,6 +31,7 @@ import {
   promptSlidesPromptAr,
   promptSlidesPromptEn,
 } from "../lib/promptSlidesPrompt.ts";
+import { lessonTeachingPromptAr, lessonTeachingPromptEn } from "../lib/lessonTeachingPrompt.ts";
 import {
   QUESTIONS_TOKENS,
   parseQuestions,
@@ -669,6 +670,25 @@ generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedReq
   }
 });
 
+// ─── Lesson teaching (Slides Maker's explanation section) ─────────────────────
+// Grounded and pooled like every curriculum route: the client sends the book
+// context with `contextSource: 'curriculum'`, so one lesson's explanation is
+// generated once and served to every teacher who builds that deck. See
+// lib/lessonTeachingPrompt.ts for why this is its own call.
+generateRouter.post('/generate/lesson-teaching', async (req: AuthenticatedRequest, res) => {
+  const isAr = (req.body as Record<string, unknown>).language !== 'english';
+  const { body, grounding } = withGrounding(req.body as Record<string, unknown>, isAr);
+  try {
+    const prompt = isAr ? lessonTeachingPromptAr(body) : lessonTeachingPromptEn(body);
+    const result = await generateContent({
+      kind: "lesson-teaching", systemPrompt: systemPrompt(isAr), userPrompt: prompt,
+      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+    });
+    res.json(withMeta(result, grounding));
+  } catch (err) {
+    respondAiError(err, res, "generate lesson-teaching");
+  }
+});
 
 /**
  * Enforces the slide-count cap and decides what happens to `mediaPrompt`.
