@@ -16,7 +16,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import type { PrepRow } from '@/services/lessonBoard';
+import { prepSummary, savedAgo, type PrepRow } from '@/services/lessonBoard';
 
 type Colors = {
   card: string;
@@ -43,6 +43,13 @@ export function LessonPrepBoard({
   doneLabel,
   onOpen,
   onMake,
+  onToggleSkip,
+  skipLabel,
+  skippedLabel,
+  restoreLabel,
+  classLabelFor,
+  onOpenAll,
+  allCopiesLabel,
   compact,
 }: {
   rows: PrepRow[];
@@ -62,20 +69,41 @@ export function LessonPrepBoard({
   doneLabel: string;
   onOpen: (row: PrepRow) => void;
   onMake: (row: PrepRow) => void;
+  /**
+   * Mark a missing row «غير مطلوب» for this lesson, or bring it back. Without
+   * it the board has no skip control. A skipped row leaves the count, gets no
+   * «أنشئ», and tapping it restores it.
+   */
+  onToggleSkip?: (row: PrepRow) => void;
+  /** Accessibility label of the skip control, e.g. «غير مطلوب لهذا الدرس». */
+  skipLabel?: string;
+  /** Status line of a skipped row. */
+  skippedLabel?: string;
+  /** The skipped row's action, e.g. «أعِده». */
+  restoreLabel?: string;
+  /** Name of the class a material is filed under, for the done row's status line. */
+  classLabelFor?: (classGroupId: string) => string | null;
+  /**
+   * Every copy of this row's material for the lesson. Shown as a small count
+   * button when there are two or more; «افتح» itself opens the newest.
+   */
+  onOpenAll?: (row: PrepRow) => void;
+  /** Accessibility label of that button, e.g. «كل النسخ». */
+  allCopiesLabel?: string;
   /** Phone: tighter rows. */
   compact?: boolean;
 }) {
   const rowDir = isRTL ? ('row-reverse' as const) : ('row' as const);
   const align = isRTL ? ('right' as const) : ('left' as const);
-  const done = rows.filter(r => r.done).length;
-  const pct = rows.length ? done / rows.length : 0;
+  const { done, total } = prepSummary(rows);
+  const pct = total ? done / total : 0;
   /*
     Only the first missing row gets a filled button. Three identical outlined
     «أنشئ» pills read as three equal choices; one filled one says "this next",
     in the order a teacher prepares. The rest stay tappable (the whole row is
     the target) and show a quiet link.
   */
-  const nextType = disabled ? null : rows.find(r => !r.done)?.type ?? null;
+  const nextType = disabled ? null : rows.find(r => !r.done && !r.skipped)?.type ?? null;
 
   return (
     <View style={{ gap: compact ? 6 : 8, width: '100%' }}>
@@ -86,7 +114,7 @@ export function LessonPrepBoard({
       <View
         style={[styles.track, { backgroundColor: colors.border }]}
         accessibilityRole="progressbar"
-        accessibilityValue={{ min: 0, max: rows.length, now: done }}
+        accessibilityValue={{ min: 0, max: total, now: done }}
       >
         <View
           style={[
@@ -100,21 +128,42 @@ export function LessonPrepBoard({
       <View style={{ gap: compact ? 6 : 8, marginTop: 6 }}>
         {rows.map(row => {
           const label = isAr ? row.labelAr : row.labelEn;
-          const status = row.done ? (row.count > 1 ? `${doneLabel} · ${row.count}` : doneLabel) : notYetLabel;
+          // «جاهزة · أمس · العاشر أ» — when the newest copy was saved and the
+          // class it is filed under. The count moves to its own button when
+          // there is one to open them all; otherwise it stays in the line.
+          const classLabel = row.material?.classGroupId ? classLabelFor?.(row.material.classGroupId) ?? null : null;
+          const status = row.done
+            ? [
+                doneLabel,
+                row.count > 1 && !onOpenAll ? String(row.count) : '',
+                row.material ? savedAgo(row.material.savedAt, new Date(), isAr ? 'ar' : 'en') : '',
+                classLabel ?? '',
+              ].filter(Boolean).join(' · ')
+            : row.skipped ? (skippedLabel ?? notYetLabel) : notYetLabel;
+          const showAll = !!onOpenAll && row.done && row.count > 1;
+          const canSkip = !!onToggleSkip && !disabled && !row.done;
+          /*
+            The row and its skip control are sibling buttons inside one
+            bordered frame, not one inside the other: on web a Pressable is a
+            <button>, and a button inside a button is invalid HTML that screen
+            readers and keyboards handle badly.
+          */
           return (
-            <Pressable
+            <View
               key={row.type}
-              onPress={() => (row.done ? onOpen(row) : onMake(row))}
+              style={[styles.frame, { flexDirection: rowDir, borderColor: colors.border, backgroundColor: colors.card }]}
+            >
+            <Pressable
+              onPress={() => (row.done ? onOpen(row) : row.skipped ? onToggleSkip?.(row) : onMake(row))}
               disabled={!row.done && disabled}
               accessibilityRole="button"
-              accessibilityLabel={`${label} — ${row.done ? openLabel : makeLabel}`}
+              accessibilityLabel={`${label} — ${row.done ? openLabel : row.skipped ? restoreLabel ?? '' : makeLabel}`}
               style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
                 styles.row,
                 compact && styles.rowCompact,
                 {
                   flexDirection: rowDir,
-                  borderColor: colors.border,
-                  backgroundColor: pressed || hovered ? colors.secondary : colors.card,
+                  backgroundColor: pressed || hovered ? colors.secondary : 'transparent',
                 },
               ]}
             >
@@ -128,6 +177,7 @@ export function LessonPrepBoard({
                   styles.tile,
                   compact && styles.tileCompact,
                   { backgroundColor: row.done ? colors.primary : colors.secondary },
+                  row.skipped && styles.dim,
                 ]}
               >
                 <Ionicons
@@ -147,7 +197,7 @@ export function LessonPrepBoard({
                   </View>
                 ) : null}
               </View>
-              <View style={{ flex: 1, gap: 1 }}>
+              <View style={[{ flex: 1, gap: 1 }, row.skipped && styles.dim]}>
                 <Text numberOfLines={1} style={[styles.label, compact && styles.labelCompact, { color: colors.foreground, textAlign: align }]}>
                   {label}
                 </Text>
@@ -159,6 +209,11 @@ export function LessonPrepBoard({
                 <View style={[styles.cta, { flexDirection: rowDir }]}>
                   <Text style={[styles.ctaText, { color: colors.mutedForeground }]}>{openLabel}</Text>
                   <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={14} color={colors.mutedForeground} />
+                </View>
+              ) : row.skipped ? (
+                <View style={[styles.cta, { flexDirection: rowDir }]}>
+                  <Ionicons name="refresh" size={14} color={colors.mutedForeground} />
+                  <Text style={[styles.ctaText, { color: colors.mutedForeground }]}>{restoreLabel}</Text>
                 </View>
               ) : row.type === nextType ? (
                 <View style={[styles.cta, styles.ctaMake, { flexDirection: rowDir, backgroundColor: colors.primary }]}>
@@ -172,6 +227,37 @@ export function LessonPrepBoard({
                 </View>
               )}
             </Pressable>
+              {canSkip && !row.skipped ? (
+                <Pressable
+                  onPress={() => onToggleSkip?.(row)}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${label} — ${skipLabel ?? ''}`}
+                  style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+                    styles.skip,
+                    { backgroundColor: pressed || hovered ? colors.border : 'transparent' },
+                  ]}
+                >
+                  <Ionicons name="eye-off-outline" size={16} color={colors.mutedForeground} />
+                </Pressable>
+              ) : null}
+              {showAll ? (
+                <Pressable
+                  onPress={() => onOpenAll?.(row)}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${label} — ${allCopiesLabel ?? ''} (${row.count})`}
+                  style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+                    styles.skip,
+                    styles.copies,
+                    { flexDirection: rowDir, backgroundColor: pressed || hovered ? colors.border : colors.secondary },
+                  ]}
+                >
+                  <Ionicons name="layers-outline" size={14} color={colors.primary} />
+                  <Text style={[styles.copiesText, { color: colors.primary }]}>{row.count}</Text>
+                </Pressable>
+              ) : null}
+            </View>
           );
         })}
       </View>
@@ -185,15 +271,15 @@ const styles = StyleSheet.create({
   headCount: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
   track: { height: 6, borderRadius: 3, overflow: 'hidden' },
   fill: { position: 'absolute', top: 0, bottom: 0, borderRadius: 3 },
+  frame: { alignItems: 'center', borderWidth: 1, borderRadius: 14, overflow: 'hidden' },
   row: {
+    flex: 1,
     alignItems: 'center',
     gap: 12,
-    borderWidth: 1,
-    borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  rowCompact: { paddingVertical: 8, paddingHorizontal: 10, borderRadius: 12, gap: 10 },
+  rowCompact: { paddingVertical: 8, paddingHorizontal: 10, gap: 10 },
   tile: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   tileCompact: { width: 34, height: 34, borderRadius: 9 },
   badge: {
@@ -211,5 +297,9 @@ const styles = StyleSheet.create({
   status: { fontSize: 12.5, lineHeight: 19, fontFamily: 'Almarai_400Regular' },
   cta: { alignItems: 'center', gap: 3 },
   ctaMake: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
+  skip: { width: 36, height: 36, borderRadius: 18, marginHorizontal: 6, alignItems: 'center', justifyContent: 'center' },
+  dim: { opacity: 0.5 },
+  copies: { width: undefined, paddingHorizontal: 9, gap: 3 },
+  copiesText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
   ctaText: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
 });

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { subscribeLessonPick, saveLessonPick, timetableWins, type HomeLessonPick } from '../lessonContext.ts';
+import { loadPrepSkips, setPrepSkip, subscribeLessonPick, saveLessonPick, timetableWins, type HomeLessonPick } from '../lessonContext.ts';
 import { todayISO } from '../planEntries.ts';
 
 const pick = (topic: string): HomeLessonPick => ({ topic, unitOrder: null, gradeId: 'grade-10' });
@@ -70,5 +70,18 @@ describe('timetableWins', () => {
 
   it('never wins without a scheduled lesson', () => {
     assert.equal(timetableWins(null, false, today), false);
+  });
+});
+
+describe('prep skips', () => {
+  // AsyncStorage does not persist under the bare node runner, so a read-back
+  // cannot be asserted here — only the list each call hands back.
+  it('returns the lesson\'s list after marking and unmarking', async () => {
+    assert.deepEqual(await setPrepSkip('L-skip', 'activity', true), ['activity']);
+    assert.deepEqual(await setPrepSkip('L-skip', 'activity', false), []);
+  });
+
+  it('has nothing for a lesson with no key', async () => {
+    assert.deepEqual(await loadPrepSkips(null), []);
   });
 });

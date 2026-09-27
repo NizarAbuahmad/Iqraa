@@ -10,7 +10,7 @@
  * offline meaning.
  */
 import { apiFetch } from './apiClient.ts';
-import { nextPeriodLesson, type NextPeriodLesson } from './scheduleCalendar.ts';
+import { nextPeriodLesson, timetableSetupStep, type NextPeriodLesson, type TimetableSetupStep } from './scheduleCalendar.ts';
 import { listTeachingPlans } from './teachingPlans.ts';
 
 export interface SchedulePeriod {
@@ -88,9 +88,21 @@ export async function getSchedule(): Promise<{ periods: SchedulePeriod[]; slots:
  * lesson it would have shown anyway.
  */
 export async function loadNextPeriod(now: Date = new Date()): Promise<NextPeriodLesson | null> {
+  return (await loadTimetable(now))?.next ?? null;
+}
+
+/**
+ * `loadNextPeriod` plus what is still missing for it to work
+ * (`timetableSetupStep`) — the home card's setup nudge. Null on any failure:
+ * a nudge to set up a timetable the server cannot store would be a lie.
+ */
+export async function loadTimetable(
+  now: Date = new Date(),
+): Promise<{ next: NextPeriodLesson | null; setup: TimetableSetupStep | null } | null> {
   try {
     const [schedule, plans] = await Promise.all([getSchedule(), listTeachingPlans()]);
-    return nextPeriodLesson(now, schedule.periods, schedule.slots, plans);
+    const next = nextPeriodLesson(now, schedule.periods, schedule.slots, plans);
+    return { next, setup: timetableSetupStep(schedule.slots, next) };
   } catch {
     return null;
   }

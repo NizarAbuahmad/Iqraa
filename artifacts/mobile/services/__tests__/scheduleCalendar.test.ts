@@ -19,6 +19,7 @@ import {
   monthGridDates,
   nextPeriodLesson,
   schoolsOf,
+  timetableSetupStep,
   visibleWeekdays,
 } from '../scheduleCalendar.ts';
 
@@ -270,5 +271,26 @@ describe('formatNextPeriod', () => {
   it('adds the weekday when the period is not today, and drops an unknown class', () => {
     const line = formatNextPeriod({ ...base, date: '2026-09-22', happeningNow: false }, { ...opts, classLabel: null, lang: 'en', nextLabel: 'Next period' });
     assert.equal(line, 'Next period · Tuesday 10:15');
+  });
+});
+
+describe('timetableSetupStep', () => {
+  const next = { schoolName: '', periodNumber: 1, startTime: '08:00', durationMinutes: 45, classGroupId: 'c1', date: '2026-09-20', happeningNow: false };
+
+  it('asks for a timetable when no period has a class in it', () => {
+    assert.deepEqual(timetableSetupStep([{ dayOfWeek: 0, periodNumber: 1, classGroupId: null }], null), { step: 'timetable' });
+    assert.deepEqual(timetableSetupStep([], null), { step: 'timetable' });
+  });
+
+  it('asks for a plan for the next period\'s class when it has no lesson', () => {
+    assert.deepEqual(timetableSetupStep(SLOTS, { ...next, lessonId: null }), { step: 'plan', classGroupId: 'c1' });
+  });
+
+  it('asks for nothing once the next period has a lesson', () => {
+    assert.equal(timetableSetupStep(SLOTS, { ...next, lessonId: 'l1' }), null);
+  });
+
+  it('asks for nothing when classes are timetabled but none meets within a week', () => {
+    assert.equal(timetableSetupStep(SLOTS, null), null);
   });
 });
