@@ -201,6 +201,14 @@ describe("deckShortfalls — reported, never refused", () => {
     assert.ok(deckShortfalls(deck(slides)).some(s => /single unbroken line/.test(s)));
   });
 
+  it("does not count a statement slide, which is one line by design", () => {
+    const slides = [
+      slide({ type: "divider" }), slide({ layout: "statement", content: "Where did the tree's mass come from?" }),
+      slide(), slide({ type: "question" }), slide({ type: "summary" }),
+    ];
+    assert.deepEqual(deckShortfalls(deck(slides)), []);
+  });
+
   it("is silent on anything that is not a deck", () => {
     assert.deepEqual(deckShortfalls(null), []);
     assert.deepEqual(deckShortfalls({}), []);
