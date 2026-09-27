@@ -43,6 +43,7 @@ import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
 import { buildWorksheetHTML, exportAsPDF } from '@/services/share';
 import { qrResourcesForGrade } from '@/services/bookQrLinks';
+import { getVideoFrameThumbnail } from '@/services/videoThumbnail';
 import {
   buildResourceCatalog,
   filterResources,
@@ -163,11 +164,25 @@ function ResourceRow({
   grid?: boolean;
 }) {
   const thumb = itemThumbnail(item);
+  // A self-hosted (non-YouTube) video has no cover of its own — extract one
+  // from the file itself rather than leaving it on the icon tile forever.
+  const [generatedThumb, setGeneratedThumb] = useState<string | null>(null);
+  useEffect(() => {
+    if (thumb || item.kind !== 'video' || !item.url) return;
+    let cancelled = false;
+    void getVideoFrameThumbnail(item.url).then(uri => {
+      if (!cancelled) setGeneratedThumb(uri);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [thumb, item.kind, item.url]);
+  const effectiveThumb = thumb ?? generatedThumb;
   // A cover URL can be present but dead (wrong link, expired share, a page
   // instead of a direct image) — fall back to the icon tile rather than the
   // blank gap `<Image>` leaves behind when it fails to load.
   const [thumbFailed, setThumbFailed] = useState(false);
-  const showThumb = thumb && !thumbFailed;
+  const showThumb = effectiveThumb && !thumbFailed;
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const isAr = lang === 'ar';
@@ -244,7 +259,7 @@ function ResourceRow({
       </View>
       {showThumb ? (
         <Image
-          source={{ uri: thumb }}
+          source={{ uri: effectiveThumb }}
           style={styles.thumb}
           resizeMode="cover"
           accessibilityElementsHidden
