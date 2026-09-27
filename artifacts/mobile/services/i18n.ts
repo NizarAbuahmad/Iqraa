@@ -268,7 +268,7 @@ const translations = {
     resourcesTitle: 'المكتبة',
     resourcesIntro:
       'أوراق عمل وفيديوهات وصور وأنشطة ومصادر الكتب، جاهزة للاستخدام. اختر الصف والمادة والدرس ليظهر ما يخصّه.',
-    libraryCurriculumDesc: 'كتب المنهاج الأردني حسب الصف والمادة والوحدة والدرس.',
+    libraryCurriculumDesc: 'الكتب حسب الصف والمادة',
     resourcesAllSubjects: 'كل المواد',
     libraryCatInfographic: 'إنفوجرافيك',
     libraryAllShelves: 'كل التصنيفات',
@@ -2094,7 +2094,7 @@ const translations = {
     resourcesTitle: 'Library',
     resourcesIntro:
       'Worksheets, videos, photos, activities and book resources, ready to use. Pick a grade, subject and lesson to see what belongs to it.',
-    libraryCurriculumDesc: 'The Jordanian curriculum books by grade, subject, unit and lesson.',
+    libraryCurriculumDesc: 'Books by grade and subject',
     resourcesAllSubjects: 'All subjects',
     libraryCatInfographic: 'Infographic',
     libraryAllShelves: 'All categories',

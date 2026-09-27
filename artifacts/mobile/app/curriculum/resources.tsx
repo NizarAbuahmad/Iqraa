@@ -442,33 +442,6 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
           {t('resourcesIntro')}
         </Text>
 
-        {/* The curriculum itself — the books, by grade, subject, unit and
-            lesson — is the library's first shelf. */}
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push({ pathname: '/curriculum/browse' as never, params: { gradeId: grade } });
-          }}
-          accessibilityRole="button"
-          style={({ pressed }) => [
-            styles.curriculumCard,
-            { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.8 : 1 },
-          ]}
-        >
-          <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
-            <Ionicons name="book" size={26} color={ACCENT} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-              {t('curriculumTitle')}
-            </Text>
-            <Text style={[styles.rowNote, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-              {t('libraryCurriculumDesc')}
-            </Text>
-          </View>
-          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
-        </Pressable>
-
         {grades.length > 1 ? (
           <ChipRow
             isRTL={isRTL}
@@ -534,16 +507,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
           </ScrollView>
         ) : null}
 
-        {shelves.length === 0 ? (
-          <View style={styles.empty}>
-            <Ionicons name="library-outline" size={36} color={colors.mutedForeground} />
-            <Text
-              style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}
-            >
-              {t('resourcesEmpty')}
-            </Text>
-          </View>
-        ) : openShelf ? (
+        {openShelf ? (
           <View style={styles.section}>
             <View style={[styles.shelfHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Pressable
@@ -575,7 +539,33 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
             )}
           </View>
         ) : (
+          <>
           <View style={[styles.tiles, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            {/* The curriculum itself — the books, by grade, subject, unit and
+                lesson — is the library's first tile. It opens the browser
+                rather than a shelf, so it is not in `shelves`. */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push({ pathname: '/curriculum/browse' as never, params: { gradeId: grade } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('curriculumTitle')}, ${t('libraryCurriculumDesc')}`}
+              style={({ pressed }) => [
+                styles.tile,
+                { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+                <Ionicons name="book" size={26} color={ACCENT} />
+              </View>
+              <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+                {t('curriculumTitle')}
+              </Text>
+              <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+                {t('libraryCurriculumDesc')}
+              </Text>
+            </Pressable>
             {shelves.map(({ shelf: id, items: rows }) => (
               <Pressable
                 key={id}
@@ -600,6 +590,17 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
               </Pressable>
             ))}
           </View>
+          {shelves.length === 0 ? (
+            <View style={styles.empty}>
+              <Ionicons name="library-outline" size={36} color={colors.mutedForeground} />
+              <Text
+                style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}
+              >
+                {t('resourcesEmpty')}
+              </Text>
+            </View>
+          ) : null}
+          </>
         )}
       </ScrollView>
     </View>
@@ -764,7 +765,6 @@ const styles = StyleSheet.create({
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
   chipText: { fontSize: 12.5 },
   section: { paddingTop: 14, gap: 8 },
-  curriculumCard: { alignItems: 'center', gap: 12, borderWidth: 1, padding: 14, marginHorizontal: 20, marginTop: 14, marginBottom: 4 },
   tiles: { flexWrap: 'wrap', gap: 12, paddingHorizontal: 20, paddingTop: 14 },
   tile: { flexGrow: 1, flexBasis: '30%', minWidth: 104, maxWidth: 220, alignItems: 'center', gap: 6, borderWidth: 1, paddingVertical: 16, paddingHorizontal: 8 },
   tileIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
