@@ -1289,6 +1289,7 @@ const translations = {
     scheduleShowWeekend: 'إظهار الجمعة والسبت',
     scheduleHideWeekend: 'إخفاء الجمعة والسبت',
     scheduleToday: 'اليوم',
+    scheduleEditClassName: 'تعديل اسم الشعبة',
 
     // Calendar — combines the weekly period timetable with each plan's own
     // dated lessons into one "what is my day" view.
@@ -3083,6 +3084,7 @@ const translations = {
     scheduleShowWeekend: 'Show Friday and Saturday',
     scheduleHideWeekend: 'Hide Friday and Saturday',
     scheduleToday: 'Today',
+    scheduleEditClassName: 'Edit class name',
 
     // Calendar — combines the weekly period timetable with each plan's own
     // dated lessons into one "what is my day" view.
