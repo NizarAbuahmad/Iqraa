@@ -357,6 +357,16 @@ router.get("/messaging/threads", async (req: AuthenticatedRequest, res) => {
       .where(and(inArray(chatMessages.threadId, threadIds), isNull(chatMessages.archivedAt)))
       .orderBy(desc(chatMessages.createdAt));
 
+    // Resolve first-names for the senders of each thread's last message so the
+    // client can show "Ahmad: Hi" instead of just "Hi".
+    const lastSenderIds = [...new Set(
+      threadIds.map(tid => allMessages.find(m => m.threadId === tid)?.senderId).filter(Boolean) as string[]
+    )];
+    const senderRows = lastSenderIds.length
+      ? await db.select({ id: users.id, firstName: users.firstName }).from(users).where(inArray(users.id, lastSenderIds))
+      : [];
+    const senderNames = new Map(senderRows.map(u => [u.id, u.firstName]));
+
     // Teachers never filter blocked senders (see file header) — only worth
     // the extra query for a non-teacher viewer.
     const blocked = isTeacherRole(req.user!.role) ? null : await blockedSenderIds(req.user!.id);
@@ -366,7 +376,9 @@ router.get("/messaging/threads", async (req: AuthenticatedRequest, res) => {
       const messages = allMessages
         .filter(m => m.threadId === thread.id)
         .filter(m => !blocked || !blocked.has(m.senderId));
-      const lastMessage = messages[0] ? await toClientMessage(messages[0]) : null;
+      const lastMessage = messages[0]
+        ? { ...await toClientMessage(messages[0]), senderName: senderNames.get(messages[0].senderId) ?? null }
+        : null;
       const unreadCount = messages.filter(
         m => m.senderId !== req.user!.id && (!lastReadAt || m.createdAt > lastReadAt),
       ).length;
