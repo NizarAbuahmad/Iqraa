@@ -225,7 +225,10 @@ export default function NotificationsScreen() {
             const other = item.otherParticipant;
             const isGroup = item.type !== 'direct';
             const name = isGroup ? (lang === 'ar' ? item.titleAr : item.title) || item.title : other ? `${other.firstName} ${other.lastName}` : '';
-            const preview = item.lastMessage?.body ?? '';
+            const senderName = item.lastMessage?.senderName;
+            const preview = item.lastMessage
+              ? senderName ? `${senderName}: ${item.lastMessage.body}` : item.lastMessage.body
+              : '';
             const ts = item.updatedAt ? relativeTime(item.updatedAt, lang) : '';
             return (
               <Pressable
