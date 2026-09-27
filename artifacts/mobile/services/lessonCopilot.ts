@@ -247,6 +247,52 @@ export function extractQueryGradeId(query: string): string | null {
 }
 
 /**
+ * Subject names a teacher types, keyed by KB subject id. Arabic stems take an
+ * optional article and a one-letter preposition («للعلوم», «بالإنجليزي»).
+ * More specific subjects come first: «العلوم الحياتية» is biology, not science.
+ */
+const SUBJECT_PATTERNS: Array<[subjectId: string, en: string, ar: string]> = [
+  ['biology', 'biology', 'العلوم\\s*الحياتية|أحياء|احياء'],
+  ['earth-science', 'earth\\s*science|geology', 'علوم\\s*الأرض|علوم\\s*الارض'],
+  ['financial-literacy', 'financial\\s*(?:literacy|culture)', 'الثقافة\\s*المالية'],
+  ['english', 'english', 'إنجليزي[ةه]?|انجليزي[ةه]?|إنكليزي[ةه]?|انكليزي[ةه]?'],
+  ['arabic', 'arabic', 'عربي[ةه]?|لغتنا\\s*الجميلة'],
+  ['mathematics', 'maths?|mathematics', 'رياضيات'],
+  ['chemistry', 'chemistry', 'كيمياء'],
+  ['physics', 'physics', 'فيزياء'],
+  ['science', 'science', 'علوم'],
+  ['islamic', 'islamic(?:\\s*(?:studies|education))?|religion', 'تربية\\s*إسلامية|تربية\\s*اسلامية|إسلامية|اسلامية|دين'],
+  ['social', 'social\\s*studies', 'اجتماعيات|دراسات\\s*اجتماعية'],
+  ['history', 'history', 'تاريخ'],
+  ['geography', 'geography', 'جغرافيا'],
+  ['digital-literacy', 'computer|digital\\s*skills', 'حاسوب|مهارات\\s*رقمية'],
+  ['physical-education', 'p\\.?e\\.?|physical\\s*education|sports?', 'تربية\\s*رياضية|رياضة'],
+  ['creative-arts', 'art|arts|music', 'فنون|تربية\\s*فنية|موسيقى'],
+];
+
+// Arabic word edges by hand: JS `\b` is ASCII-only, so the old «\bالكيمياء\b»
+// never matched anything.
+const AR_BEFORE = '(?<![\\u0621-\\u064A])(?:[وبلف]|لل|بال|وال)?(?:ال)?';
+const AR_AFTER = '(?![\\u0621-\\u064A])';
+
+/**
+ * The KB subject id when the teacher names a subject — "english", «العلوم»,
+ * «للرياضيات» — or null. The chat only knew chemistry and maths (and not even
+ * those in Arabic), so "i need a study plan for english" was searched as free
+ * text, "need" matched «الحاجات» in grade 7 financial literacy, and that is
+ * what the teacher got.
+ */
+export function extractQuerySubjectId(query: string): string | null {
+  const q = query.trim();
+  if (!q) return null;
+  for (const [id, en, ar] of SUBJECT_PATTERNS) {
+    if (new RegExp(`\\b(?:${en})\\b`, 'i').test(q)) return id;
+    if (new RegExp(`${AR_BEFORE}(?:${ar})${AR_AFTER}`).test(q)) return id;
+  }
+  return null;
+}
+
+/**
  * Decide whether chat should force the session's active lesson into results.
  * Soft pins must not override a confident KB hit for a different topic.
  * Teacher-uploaded documents beat a soft-pinned default lesson.
@@ -262,7 +308,7 @@ export function shouldReuseActiveLesson(opts: {
   hasDocuments?: boolean;
   /** The active lesson's own grade — bail when the query names a different one. */
   activeLessonGradeId?: string | null;
-  /** The active lesson's own subject — bail when KB points at a different subject. */
+  /** The active lesson's own subject — bail when the query names, or KB points at, a different one. */
   activeLessonSubjectId?: string | null;
   /** Subject of the top-ranked KB hit (only passed when score ≥ KB_SUGGEST_SCORE). */
   topRankedSubjectId?: string | null;
@@ -278,6 +324,8 @@ export function shouldReuseActiveLesson(opts: {
   if (queryGradeId && activeLessonGradeId && queryGradeId !== activeLessonGradeId) return false;
   // KB evidence for a different subject beats the hard pin
   if (activeLessonSubjectId && topRankedSubjectId && topRankedSubjectId !== activeLessonSubjectId) return false;
+  const querySubjectId = extractQuerySubjectId(query);
+  if (querySubjectId && activeLessonSubjectId && querySubjectId !== activeLessonSubjectId) return false;
 
   // Uploads are primary context until the teacher hard-pins a curriculum lesson
   if (hasDocuments && memory.lessonPin !== 'hard' && intent !== 'refinement') {
