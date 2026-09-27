@@ -51,7 +51,7 @@ import {
   filterResultsBySubject,
   isConfidentSingleSubjectHit,
 } from '@/services/kbContext';
-import { shouldAskWhichLesson } from '@/services/kbSuggestion';
+import { KB_SUGGEST_SCORE, shouldAskWhichLesson } from '@/services/kbSuggestion';
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
@@ -2072,6 +2072,10 @@ export default function IqraScreen() {
         hasConfidentKbHit: confidentHit,
         hasDocuments: hasDocsEarly,
         activeLessonGradeId: activeLesson ? getBookForLesson(activeLesson)?.gradeId : null,
+        activeLessonSubjectId: activeLesson ? getBookForLesson(activeLesson)?.subjectId ?? null : null,
+        topRankedSubjectId: ranked[0] && ranked[0].score >= KB_SUGGEST_SCORE
+          ? getBookForLesson(ranked[0].lesson)?.subjectId ?? null
+          : null,
       });
       if (!pinnedLessonId && reuseActive && activeLesson) {
         results = [activeLesson, ...results.filter(r => r.id !== activeLesson.id)].slice(0, 3);

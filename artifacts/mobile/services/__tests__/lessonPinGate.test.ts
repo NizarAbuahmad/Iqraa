@@ -36,6 +36,22 @@ describe('shouldReuseActiveLesson with a lesson picked in chat', () => {
     );
   });
 
+  it('lets go when KB points at a different subject, even without a confident hit', () => {
+    // Hard-pinned maths lesson; KB found a chemistry lesson above KB_SUGGEST_SCORE.
+    // The maths lesson must not be forced back in.
+    assert.equal(
+      shouldReuseActiveLesson({
+        memory: hardPinned,
+        intent: 'teaching',
+        query: 'كيف تتكون الأيونات',
+        hasConfidentKbHit: false,
+        activeLessonSubjectId: 'mathematics',
+        topRankedSubjectId: 'chemistry',
+      }),
+      false,
+    );
+  });
+
   it('keeps the lesson for a refinement of the last answer', () => {
     assert.equal(
       shouldReuseActiveLesson({
