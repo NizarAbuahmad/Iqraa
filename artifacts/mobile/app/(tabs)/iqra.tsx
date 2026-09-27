@@ -35,6 +35,7 @@ import {
   KBLesson,
   getBookForLesson,
   getLessonById,
+  getLessonsInScope,
   getTopicSuggestions,
   KB_CONFIDENT_SCORE,
   searchKBRanked,
@@ -73,6 +74,7 @@ import {
   type PrepProgressView,
   type SessionArtifact,
   type TeachingAction,
+  resolveCurriculumContext,
 } from '@/services/ai/teachingAssistant';
 import { classifyChatIntent, leavesClarificationStanding } from '@/services/ai/intentRouter';
 import { IqraaMark } from '@/components/ui/IqraaMark';
@@ -127,6 +129,7 @@ import {
   buildCurrentLessonView,
   buildLessonSuggestions,
   extractQueryGradeId,
+  extractQuerySubjectId,
   isBareArtifactShortcut,
   pinLesson,
   resolvePickedLesson,
@@ -172,24 +175,6 @@ import {
   materialFormStateFor,
   materialTypeFor,
 } from '@/services/chatMaterialActions';
-
-/**
- * Returns the KB subject ID when the query explicitly names a curriculum
- * subject. Used to auto-scope KB results and skip the "which subject?" prompt.
- */
-function extractQuerySubjectId(q: string): 'chemistry' | 'mathematics' | null {
-  if (/\bالكيمياء\b|\bكيمياء\b/i.test(q)) return 'chemistry';
-  if (/\bالرياضيات\b|\bرياضيات\b/i.test(q)) return 'mathematics';
-  return null;
-}
-
-/**
- * True when the query names any recognisable subject (curriculum or otherwise).
- * Prevents the "which subject?" dialog when the teacher already stated the subject.
- */
-function queryNamesSubject(q: string): boolean {
-  return /\b(الكيمياء|كيمياء|الرياضيات|رياضيات|الأحياء|الاحياء|أحياء|احياء|الفيزياء|فيزياء|التاريخ|الجغرافيا|اللغة\s+العربية|اللغة\s+الإنجليزية|التربية\s+الإسلامية)\b/i.test(q);
-}
 
 function promptForTeachingAction(
   type: TeachingAction['type'],
@@ -2172,6 +2157,38 @@ export default function IqraScreen() {
         results = filterResultsByGrade(results, queryGradeId);
       }
 
+      // A named subject keeps the picked grade unless the message names
+      // another: with grade 3 picked, "a study plan for english" is grade 3
+      // English. `results` came from a whole-KB search capped at three, so
+      // it rarely holds that scope — search the scope itself, and keep only a
+      // confident match. None → `subjectScopeLessons` offers the lessons.
+      const subjectScopeGradeId = querySubjectId && !scopeSubjectId && !pinnedLessonId
+        ? queryGradeId
+          ?? (activeLesson ? getBookForLesson(activeLesson)?.gradeId : null)
+          ?? (ctxLesson ? getBookForLesson(ctxLesson)?.gradeId : null)
+          ?? null
+        : null;
+      let subjectScopeLessons: KBLesson[] = [];
+      if (subjectScopeGradeId && querySubjectId) {
+        const inScope = filterResultsBySubject(
+          filterResultsByGrade(results, subjectScopeGradeId),
+          querySubjectId,
+        );
+        if (inScope.length) {
+          results = inScope;
+        } else {
+          const scoped = searchKBRanked(topicFromQuery(q) || q, lang as 'ar' | 'en', {
+            gradeId: subjectScopeGradeId,
+          }).filter(r => getBookForLesson(r.lesson)?.subjectId === querySubjectId);
+          results = (scoped[0]?.score ?? 0) >= KB_CONFIDENT_SCORE
+            ? deduplicateByUnit(scoped.map(r => r.lesson), 3)
+            : [];
+          if (!results.length) {
+            subjectScopeLessons = getLessonsInScope(subjectScopeGradeId, querySubjectId);
+          }
+        }
+      }
+
       // 1b. Ambiguity check — only when nothing is pinned (soft default does not count).
       // Also skipped when the teacher named any recognisable subject in their query;
       // asking "which subject?" when they just said "الأحياء" is confusing.
@@ -2179,7 +2196,6 @@ export default function IqraScreen() {
         pinnedLessonId
         || scopeSubjectId
         || querySubjectId
-        || queryNamesSubject(q)
         || teachingCtx
         || sessionMemory.lessonPin === 'hard',
       );
@@ -2329,8 +2345,19 @@ export default function IqraScreen() {
       }
 
       if (!hasKBMatch && !hasDocs && !(softBareArtifact && artifactType)) {
-        // Artifact shortcuts like "خطة" must not die silently — ask for the lesson topic.
-        if (route.intent === 'artifact') {
+        if (subjectScopeLessons.length) {
+          // Subject and grade are known, the lesson is not: ask, with that
+          // scope's lessons as chips (a chip pins its lesson).
+          const scope = resolveCurriculumContext(subjectScopeLessons[0]!);
+          responseText = lang === 'ar'
+            ? `أي درس من ${scope.subjectAr} لـ${scope.gradeAr}؟ اختر درسًا أو اكتب عنوانه.`
+            : `Which ${scope.gradeEn} ${scope.subjectEn} lesson? Pick one or type its title.`;
+          outOfScopeSuggestions = subjectScopeLessons.slice(0, 4).map(l => ({
+            text: lang === 'ar' ? l.titleAr : l.titleEn,
+            lessonId: l.id,
+          }));
+        } else if (route.intent === 'artifact') {
+          // Artifact shortcuts like "خطة" must not die silently — ask for the lesson topic.
           responseText = t('iqraArtifactNeedTopic');
         } else if (wasAwaitingClarify) {
           // Short / vague reply to a clarifying question — keep the dialogue open

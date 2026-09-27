@@ -185,8 +185,13 @@ router.patch("/library/:id", adminOnly, async (req: AuthenticatedRequest, res) =
   const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : null);
   const titleAr = str(body.titleAr, 200);
   const description = str(body.description, 1000) ?? "";
-  const thumbnailRaw = str(body.thumbnailUrl, 500);
-  const thumbnailUrl = thumbnailRaw || null;
+  // Same reasoning as parseLibraryMeta: a slice(0,500) here would silently
+  // corrupt a long signed URL into a link that saves but never loads.
+  const thumbnailUrl = typeof body.thumbnailUrl === "string" ? body.thumbnailUrl.trim() || null : null;
+  if (thumbnailUrl && thumbnailUrl.length > 2000) {
+    res.status(400).json({ error: "thumbnailUrl is too long (max 2000 characters)" });
+    return;
+  }
   if (thumbnailUrl && !/^https:\/\//.test(thumbnailUrl)) {
     res.status(400).json({ error: "thumbnailUrl must be https" });
     return;
