@@ -5,17 +5,20 @@
  * (`services/routeGating.ts`). Grades 1–4 only for now — the books whose words
  * are glossed and voiced; see `@workspace/curriculum/englishHub`.
  */
-import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { ENGLISH_HUB_GRADES, hubLessonsForGrade } from '@workspace/curriculum/englishHub';
-import { currentStreak, dayOf, lessonStars } from '@/services/englishHub/games';
+import { BADGE_IDS, badgesEarned, currentStreak, dayOf, lessonStars } from '@/services/englishHub/games';
 import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
+import { BADGE_META } from '@/components/englishHub/badgeMeta';
+import { disableDailyReminder, enableDailyReminder, isReminderEnabled, syncDailyReminder } from '@/services/englishHub/dailyReminder';
 
 export default function EnglishHubScreen() {
   const colors = useColors();
@@ -27,10 +30,42 @@ export default function EnglishHubScreen() {
     return (ENGLISH_HUB_GRADES as readonly number[]).includes(g) ? g : 1;
   });
   const { progress } = useHubProgress();
-  const streak = currentStreak(progress, dayOf(new Date()));
+  const today = dayOf(new Date());
+  const streak = currentStreak(progress, today);
+  const practicedToday = progress.lastDay === today;
+  const earned = new Set(badgesEarned(progress));
   const lessons = hubLessonsForGrade(grade);
   const row = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';
+
+  const [reminderOn, setReminderOn] = useState(false);
+  const reminderTitle = t('hubTitle');
+  const reminderBody = t('hubDailyGoalTodo');
+
+  // Re-synced on every focus, not just toggle: the one thing that must stay
+  // true is "today's real progress decides whether a reminder is pending",
+  // and focus is the only reliable moment this screen learns that changed
+  // (see dailyReminder.ts's header for the trade-off this accepts).
+  useFocusEffect(
+    useCallback(() => {
+      isReminderEnabled().then(on => {
+        setReminderOn(on);
+        if (on) void syncDailyReminder(reminderTitle, reminderBody, practicedToday);
+      });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [practicedToday]),
+  );
+
+  const toggleReminder = async (value: boolean) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (value) {
+      const granted = await enableDailyReminder(reminderTitle, reminderBody, practicedToday);
+      setReminderOn(granted);
+    } else {
+      await disableDailyReminder();
+      setReminderOn(false);
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -44,7 +79,32 @@ export default function EnglishHubScreen() {
         <Text style={[styles.title, { textAlign: align }]}>{t('hubTitle')}</Text>
         <Text style={[styles.sub, { textAlign: align }]}>{t('hubIntro')}</Text>
         {streak > 0 ? <Text style={[styles.streak, { textAlign: align }]}>{t('hubStreak', streak)}</Text> : null}
+        <View style={[styles.goalRow, { flexDirection: row }]}>
+          <Ionicons name={practicedToday ? 'checkmark-circle' : 'ellipse-outline'} size={16} color="#fff" />
+          <Text style={{ color: '#fff', fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
+            {t(practicedToday ? 'hubDailyGoalDone' : 'hubDailyGoalTodo')}
+          </Text>
+        </View>
+        {Platform.OS !== 'web' ? (
+          <View style={[styles.goalRow, { flexDirection: row, marginTop: 10 }]}>
+            <Switch value={reminderOn} onValueChange={v => void toggleReminder(v)} trackColor={{ false: 'rgba(255,255,255,0.3)', true: '#fff' }} thumbColor={colors.hero} />
+            <Text style={{ color: '#fff', fontFamily: 'Almarai_400Regular', fontSize: 13, flexShrink: 1 }}>{t('hubRemindMe')}</Text>
+          </View>
+        ) : null}
       </View>
+
+      {/* Only badges already earned show — an empty row for a brand-new student
+          would read as "here are seven things you haven't done", not encouragement. */}
+      {earned.size > 0 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.badgeRow, { flexDirection: row }]}>
+          {BADGE_IDS.filter(b => earned.has(b)).map(b => (
+            <View key={b} style={[styles.badge, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Ionicons name={BADGE_META[b].icon} size={16} color={colors.primary} />
+              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>{t(BADGE_META[b].label)}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      ) : null}
 
       <View style={[styles.chips, { flexDirection: row }]}>
         {ENGLISH_HUB_GRADES.map(g => {
@@ -107,6 +167,9 @@ const styles = StyleSheet.create({
   title: { color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 24, marginBottom: 4 },
   sub: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 },
   streak: { color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 14, marginTop: 8 },
+  goalRow: { alignItems: 'center', gap: 6, marginTop: 8 },
+  badgeRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 10 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   chips: { flexWrap: 'wrap', gap: 8, paddingHorizontal: 20, paddingVertical: 14 },
   chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7 },
   unit: { fontFamily: 'Cairo_600SemiBold', fontSize: 12 },

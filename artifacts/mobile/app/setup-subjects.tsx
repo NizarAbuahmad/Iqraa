@@ -18,7 +18,7 @@
  *    in routeGating.ts), for any teacher who has picked neither yet. No back
  *    button, no skip — same shape as `claim-required.tsx`'s gate, and for the
  *    same reason: `getVisibleGrades`/`getSubjectsForGrade` need something to
- *    default `app/(tabs)/curriculum.tsx` to.
+ *    default `app/curriculum/browse.tsx` to.
  *  - Optional, from the profile screen's "Grades & Subjects" row, to change
  *    or add more later. `editMode` distinguishes the two: a back arrow instead
  *    of nothing, "Save" instead of "Continue", and `goBack()` instead of
@@ -56,10 +56,19 @@ function toggle(list: string[], id: string): string[] {
  * `gradeIds`/`subjectIds` — seed one assignment per picked grade, each
  * carrying every picked subject, so opening this screen shows exactly what
  * the old flat fields implied instead of an unexplained empty state.
+ *
+ * Either path may contain subject IDs that don't apply to a given grade
+ * (e.g. flat format copies ALL subjects to every grade, or saved data from
+ * an older curriculum version). Strip them so chips reflect reality and
+ * `hasEmptyAssignment` isn't fooled by phantom IDs.
  */
 function initialAssignments(user: { teachingAssignments?: TeachingAssignment[]; gradeIds?: string[]; subjectIds?: string[] } | null): TeachingAssignment[] {
-  if (user?.teachingAssignments?.length) return user.teachingAssignments;
-  if (user?.gradeIds?.length) return user.gradeIds.map(gradeId => ({ gradeId, subjectIds: user?.subjectIds ?? [] }));
+  const normalize = (a: TeachingAssignment): TeachingAssignment => {
+    const valid = new Set(getSubjectsForGrade(a.gradeId).map(s => s.id));
+    return { ...a, subjectIds: a.subjectIds.filter(id => valid.has(id)) };
+  };
+  if (user?.teachingAssignments?.length) return user.teachingAssignments.map(normalize);
+  if (user?.gradeIds?.length) return user.gradeIds.map(gradeId => normalize({ gradeId, subjectIds: user?.subjectIds ?? [] }));
   return [];
 }
 

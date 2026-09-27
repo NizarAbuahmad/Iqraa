@@ -44,7 +44,7 @@ export default function LessonsScreen() {
   const book = getBookById(bookId ?? '');
 
   useEffect(() => {
-    if (!bookAllowed) router.replace('/(tabs)/curriculum');
+    if (!bookAllowed) router.replace('/curriculum/browse' as never);
   }, [bookAllowed]);
 
   if (!bookAllowed) {

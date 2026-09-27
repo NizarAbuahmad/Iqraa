@@ -42,7 +42,7 @@ import {
 } from '@/services/knowledgeBase';
 import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
-import { loadLessonPick, saveLessonPick } from '@/services/lessonContext';
+import { loadLessonPick, loadPrepSkips, saveLessonPick, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
   deduplicateByUnit,
@@ -51,7 +51,7 @@ import {
   filterResultsBySubject,
   isConfidentSingleSubjectHit,
 } from '@/services/kbContext';
-import { shouldAskWhichLesson } from '@/services/kbSuggestion';
+import { KB_SUGGEST_SCORE, shouldAskWhichLesson } from '@/services/kbSuggestion';
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
@@ -81,7 +81,7 @@ import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { MaterialCanvas } from '@/components/ui/MaterialCanvas';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
-import { buildPrepBoard } from '@/services/lessonBoard';
+import { buildPrepBoard, prepLessonKey, type PrepRow } from '@/services/lessonBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { MathParagraph } from '@/components/ui/MathParagraph';
 import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
@@ -109,7 +109,12 @@ import {
   subscribeSessionDocuments,
   type SessionDocument,
 } from '@/services/documents';
-import { lessonPickerParams, subjectPickerLabels, topicPickerParams } from '@/services/lessonPrep';
+import { lessonPickerParams, resolveLessonPrepContext, subjectPickerLabels, topicPickerParams } from '@/services/lessonPrep';
+import { loadNextPeriod } from '@/services/schedule';
+import { formatNextPeriod } from '@/services/scheduleCalendar';
+import { todayISO } from '@/services/planEntries';
+import { listClasses, type ClassGroup } from '@/services/roster';
+import { classNameFor } from '@/services/materialClass';
 import { answerAppHelp } from '@/services/appHelp';
 import { TOOL_ASK_TARGETS, toolAskFromQuery, toolAskReply } from '@/services/chatToolAsk';
 import { formatInfographicText, isInfographicAsk } from '@/services/ai/infographic';
@@ -542,7 +547,7 @@ function ContextBanner({
           <View style={[ctxStyles.modalHeader, { borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Pressable onPress={handleCancel} hitSlop={10} style={ctxStyles.modalCancel}>
               <Text style={[ctxStyles.modalCancelText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                {t('cancel')}
               </Text>
             </Pressable>
             <Text style={[ctxStyles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
@@ -562,7 +567,7 @@ function ContextBanner({
             {CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).length > 1 ? (
               <>
                 <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-                  {lang === 'ar' ? 'الصف' : 'Grade'}
+                  {t('grade')}
                 </Text>
                 <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   {CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).map(g => (
@@ -596,7 +601,7 @@ function ContextBanner({
 
             {/* Subject pills */}
             <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).length > 1 ? 18 : 0 }]}>
-              {lang === 'ar' ? 'المادة' : 'Subject'}
+              {t('subject')}
             </Text>
             <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               {visibleSubjIdxs.map(i => CONTEXT_SUBJECTS[i]).map((s, vi) => {
@@ -663,7 +668,7 @@ function ContextBanner({
                 fontFamily: 'Cairo_700Bold',
               }]}>
                 {draftTopic.trim()
-                  ? (lang === 'ar' ? `ابدأ التحضير: ${draftTopic}` : `Ask IQRA about: ${draftTopic}`)
+                  ? (lang === 'ar' ? `ابدأ التحضير: ${draftTopic}` : `Ask Iqraa about: ${draftTopic}`)
                   : (lang === 'ar' ? 'اختر الدرس أولاً' : 'Select a lesson first')}
               </Text>
             </Pressable>
@@ -676,10 +681,10 @@ function ContextBanner({
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
 // Subject label map for clarification chips
-const SUBJECT_LABELS: Record<string, { ar: string; en: string; icon: string }> = {
-  mathematics: { ar: 'الرياضيات', en: 'Mathematics', icon: '📐' },
-  chemistry:   { ar: 'الكيمياء',  en: 'Chemistry',   icon: '🧪' },
-};
+const SUBJECT_ICONS: Record<string, string> = { mathematics: '📐', chemistry: '🧪' };
+const SUBJECT_LABELS: Record<string, { ar: string; en: string; icon: string }> = Object.fromEntries(
+  getPickerSubjects().map(s => [s.id, { ar: s.nameAr, en: s.name, icon: SUBJECT_ICONS[s.id] ?? '📘' }]),
+);
 
 /** Compact guided preparation checklist — Demo Mode, session-only. */
 function LessonPrepProgressCard({
@@ -1403,6 +1408,10 @@ export default function IqraScreen() {
    * the conversation and the workspace home owns the board.
    */
   const [prepMaterials, setPrepMaterials] = useState<SavedMaterial[]>([]);
+  /** For the board's «جاهزة · أمس · العاشر أ» — which class a material is filed under. */
+  const [prepClasses, setPrepClasses] = useState<ClassGroup[]>([]);
+  /** «الحصة القادمة · العاشر ب · 10:15» when the chat's lesson came from the timetable. */
+  const [periodLine, setPeriodLine] = useState('');
   const [exportText, setExportText] = useState('');
   const [exportVisible, setExportVisible] = useState(false);
   /**
@@ -1451,6 +1460,7 @@ export default function IqraScreen() {
   */
   const loadPrepMaterials = useCallback(() => {
     getAllItems().then(setPrepMaterials).catch(() => {});
+    listClasses().then(setPrepClasses).catch(() => {});
   }, []);
   useFocusEffect(useCallback(() => { loadPrepMaterials(); }, [loadPrepMaterials]));
 
@@ -1701,8 +1711,28 @@ export default function IqraScreen() {
   // starting context — overriding the demo seed above, so home, tools and
   // chat all agree on one lesson. Runs after the seed effect (declaration
   // order) and again on language change, which re-seeds.
+  //
+  // The timetable takes part the same way it does on home (`timetableWins`):
+  // the pacing-plan lesson of the period now or next replaces a pick that was
+  // not made today. It is shaped as a pick so everything below — the lesson
+  // id travelling with the topic, the soft pin — applies to it unchanged.
   useEffect(() => {
-    void loadLessonPick().then(pick => {
+    void Promise.all([loadLessonPick(), loadNextPeriod()]).then(([saved, next]) => {
+      const scheduled = next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang as 'ar' | 'en') : null;
+      const fromSchedule = timetableWins(saved, !!scheduled, todayISO());
+      setPeriodLine('');
+      if (fromSchedule && next) {
+        listClasses()
+          .then(classes => classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'))
+          .catch(() => null)
+          .then(classLabel => setPeriodLine(formatNextPeriod(next, {
+            classLabel, today: todayISO(), lang: lang as 'ar' | 'en',
+            nowLabel: t('homePeriodNow'), nextLabel: t('homePeriodNext'),
+          })));
+      }
+      const pick: HomeLessonPick | null = fromSchedule && scheduled
+        ? { topic: scheduled.topic, unitOrder: null, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId, lessonId: scheduled.lessonId }
+        : saved;
       if (!pick?.topic) return;
       // A pick made in the sheet while this read was in flight wins — but the
       // topic and its lesson id must move together, so both are guarded by
@@ -2072,6 +2102,10 @@ export default function IqraScreen() {
         hasConfidentKbHit: confidentHit,
         hasDocuments: hasDocsEarly,
         activeLessonGradeId: activeLesson ? getBookForLesson(activeLesson)?.gradeId : null,
+        activeLessonSubjectId: activeLesson ? getBookForLesson(activeLesson)?.subjectId ?? null : null,
+        topRankedSubjectId: ranked[0] && ranked[0].score >= KB_SUGGEST_SCORE
+          ? getBookForLesson(ranked[0].lesson)?.subjectId ?? null
+          : null,
       });
       if (!pinnedLessonId && reuseActive && activeLesson) {
         results = [activeLesson, ...results.filter(r => r.id !== activeLesson.id)].slice(0, 3);
@@ -2302,7 +2336,7 @@ export default function IqraScreen() {
           // Short / vague reply to a clarifying question — keep the dialogue open
           // rather than showing the generic out-of-scope message.
           responseText = lang === 'ar'
-            ? 'وضّح لي أكثر — أخبرني بالمادة والدرس الذي تريد التحضير له؟'
+            ? 'وضّح لي أكثر: ما المادة والدرس الذي تريد التحضير له؟'
             : 'Tell me more — which subject and lesson would you like to prepare for?';
         } else {
           responseText = t('iqraOutOfScope');
@@ -2868,6 +2902,20 @@ export default function IqraScreen() {
 
   const currentLessonView = buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en');
 
+  // «غير مطلوب» choices for the lesson on the empty-state board — the same
+  // store and key as the home board, so a row skipped on one is skipped on both.
+  const prepSkipKey = prepLessonKey(currentLessonView?.topic?.trim() ?? '', currentLessonView?.lessonId);
+  const [prepSkips, setPrepSkips] = useState<string[]>([]);
+  useEffect(() => {
+    let live = true;
+    loadPrepSkips(prepSkipKey).then(list => { if (live) setPrepSkips(list); });
+    return () => { live = false; };
+  }, [prepSkipKey]);
+  const togglePrepSkip = useCallback((row: PrepRow) => {
+    if (!prepSkipKey) return;
+    void setPrepSkip(prepSkipKey, row.type, !row.skipped).then(setPrepSkips);
+  }, [prepSkipKey]);
+
   /**
    * Class Mode entry, carried over from the retired home screen: build a deck
    * for the current lesson straight from the curriculum book and go to the
@@ -3000,7 +3048,7 @@ export default function IqraScreen() {
   const introPrepBoard = (() => {
     if (isDesktop || messages.length > 1) return null;
     const topic = currentLessonView?.topic?.trim() ?? '';
-    const rows = buildPrepBoard(prepMaterials, topic);
+    const rows = buildPrepBoard(prepMaterials, topic, currentLessonView?.lessonId, prepSkips);
     // The lesson's own grade and subject, never the picker's index 0 — see the
     // subjectIdx trap in CLAUDE.md. `topicPickerParams` grounds a free-typed
     // topic; both return null when the lesson is unknown, and then the tool
@@ -3011,6 +3059,23 @@ export default function IqraScreen() {
     const toolParams = { ...(topic ? { topic } : {}), ...(idx ?? {}) };
     return (
       <View style={{ width: '100%', marginTop: 14, gap: 8 }}>
+        {periodLine ? (
+          <View
+            style={{
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+              alignSelf: isRTL ? 'flex-end' : 'flex-start',
+              alignItems: 'center',
+              gap: 6,
+              borderRadius: 999,
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              backgroundColor: colors.secondary,
+            }}
+          >
+            <Ionicons name="time-outline" size={13} color={colors.primary} />
+            <Text style={{ fontSize: 12.5, fontFamily: 'Cairo_600SemiBold', color: colors.primary }}>{periodLine}</Text>
+          </View>
+        ) : null}
         <LessonPrepBoard
           rows={rows}
           colors={colors}
@@ -3019,7 +3084,7 @@ export default function IqraScreen() {
           compact
           disabled={!topic}
           title={t('homePrepTitle')}
-          readyLabel={t('homeReady', rows.filter(r => r.done).length, rows.length)}
+          readyLabel={t('homeReady', rows.filter(r => r.done).length, rows.filter(r => !r.skipped).length)}
           openLabel={t('homeOpen')}
           makeLabel={t('homePrepMake')}
           createLabel={t('homePrepCreate')}
@@ -3029,6 +3094,13 @@ export default function IqraScreen() {
             row.material && router.push({ pathname: '/workspace/view', params: { id: row.material.id } })
           }
           onMake={(row) => router.push({ pathname: row.route as never, params: toolParams as never })}
+          onToggleSkip={togglePrepSkip}
+          skipLabel={t('homePrepSkip')}
+          skippedLabel={t('homePrepSkipped')}
+          restoreLabel={t('homePrepRestore')}
+          classLabelFor={(id) => classNameFor(prepClasses, id, lang as 'ar' | 'en')}
+          onOpenAll={() => router.push({ pathname: '/workspace', params: { q: topic } })}
+          allCopiesLabel={t('homePrepAllCopies')}
         />
       </View>
     );
@@ -3198,6 +3270,7 @@ export default function IqraScreen() {
           onGlobalPick={(pick) => {
             // Changing the lesson in chat updates the app-wide context too —
             // home and the tools hub follow (one source of truth).
+            setPeriodLine(''); // no longer the timetable's lesson
             void saveLessonPick({
               topic: pick.topic,
               unitOrder: null,
@@ -3598,7 +3671,7 @@ export default function IqraScreen() {
         loadingWord={loadingWord}
         onShare={async () => {
           setExportVisible(false);
-          await shareAsText(exportText, currentLessonView?.topic ?? 'IQRA');
+          await shareAsText(exportText, currentLessonView?.topic ?? 'Iqraa');
         }}
         onCopy={async () => {
           setExportVisible(false);

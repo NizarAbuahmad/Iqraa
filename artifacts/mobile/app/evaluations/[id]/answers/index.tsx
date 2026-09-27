@@ -107,13 +107,14 @@ export default function PickStudentScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-        <Pressable
-          onPress={() => (classId ? setClassId(null) : goBack())}
-          hitSlop={12}
-          style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
-        >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <View style={styles.heroNav}>
+          <Pressable
+            onPress={() => (classId ? setClassId(null) : goBack())}
+            hitSlop={12}
+          >
+            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
+          </Pressable>
+        </View>
         <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
           {classId ? t('pickStudentTitle') : t('pickClassFirst')}
         </Text>
@@ -184,7 +185,8 @@ export default function PickStudentScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  hero: { paddingHorizontal: 20, paddingBottom: 20, gap: 12 },
+  hero: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
+  heroNav: { flexDirection: 'row', alignItems: 'center' },
   heroTitle: { fontSize: 22, color: '#fff' },
   card: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 14, borderWidth: 1 },
   statusPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },

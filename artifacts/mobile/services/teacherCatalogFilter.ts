@@ -1,6 +1,6 @@
 /**
  * Narrows a catalog list (GRADES or SUBJECTS from `@workspace/curriculum`) to
- * what a teacher picked on `/setup-subjects`, for `app/(tabs)/curriculum.tsx`.
+ * what a teacher picked on `/setup-subjects`, for `app/curriculum/browse.tsx`.
  *
  * Split out of that screen — same reason routeGating.ts is split out of
  * `_layout.tsx` — so this pure filter can be unit-tested without loading

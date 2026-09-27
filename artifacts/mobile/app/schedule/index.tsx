@@ -970,7 +970,7 @@ export default function ScheduleScreen() {
 }
 
 const styles = StyleSheet.create({
-  hero: { paddingHorizontal: 20, paddingBottom: 20, gap: 12 },
+  hero: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   heroTitle: { fontSize: 26, color: '#fff' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', gap: 10, paddingTop: 60 },

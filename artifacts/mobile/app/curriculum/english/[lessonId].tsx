@@ -10,10 +10,11 @@ import { hubLesson } from '@workspace/curriculum/englishHub';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import type { TranslationKey } from '@/services/i18n';
-import { HUB_ACTIVITIES, progressKey, starsFor, type HubActivity } from '@/services/englishHub/games';
+import { HUB_ACTIVITIES, dayOf, lessonHasPictureMatch, newlyEarnedBadges, progressKey, recordResult, starsFor, type BadgeId, type HubActivity } from '@/services/englishHub/games';
 import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
-import { Flashcards, ListenChoose, MatchMeaning, Scramble, SpellIt } from '@/components/englishHub/Activities';
+import { Flashcards, ListenChoose, MatchMeaning, PictureMatch, Scramble, Speaking, SpellIt } from '@/components/englishHub/Activities';
+import { BADGE_META } from '@/components/englishHub/badgeMeta';
 
 const META: Record<HubActivity, { icon: keyof typeof Ionicons.glyphMap; title: TranslationKey; desc: TranslationKey }> = {
   flashcards: { icon: 'albums-outline', title: 'hubFlashcards', desc: 'hubFlashcardsDesc' },
@@ -21,7 +22,15 @@ const META: Record<HubActivity, { icon: keyof typeof Ionicons.glyphMap; title: T
   match: { icon: 'git-compare-outline', title: 'hubMatch', desc: 'hubMatchDesc' },
   spell: { icon: 'create-outline', title: 'hubSpell', desc: 'hubSpellDesc' },
   scramble: { icon: 'shuffle-outline', title: 'hubScramble', desc: 'hubScrambleDesc' },
+  picture: { icon: 'image-outline', title: 'hubPicture', desc: 'hubPictureDesc' },
+  speaking: { icon: 'mic-outline', title: 'hubSpeaking', desc: 'hubSpeakingDesc' },
 };
+
+/** Never scored — no star count, no place in `lessonStars`. Kept separate from
+ *  `HUB_ACTIVITIES` filtering below rather than folded into it, since the two
+ *  reasons an activity might be hidden (never scored vs. this lesson lacks the
+ *  content it needs) are different facts about it. */
+const UNSCORED: HubActivity[] = ['flashcards', 'speaking'];
 
 export default function EnglishHubLessonScreen() {
   const colors = useColors();
@@ -34,6 +43,7 @@ export default function EnglishHubLessonScreen() {
   // Bumped to remount an activity for "play again" with a fresh shuffle.
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<{ correct: number; total: number; stars: number } | null>(null);
+  const [unlocked, setUnlocked] = useState<BadgeId[]>([]);
   const row = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';
 
@@ -47,7 +57,15 @@ export default function EnglishHubLessonScreen() {
 
   const finish = (correct: number, total: number) => {
     const stars = starsFor(correct, total);
-    if (activity) record(lesson.id, activity, stars);
+    if (activity) {
+      // `recordResult` here only PREVIEWS the next state, purely, to diff
+      // against — `record()` below is what actually persists it. Calling the
+      // pure function twice (progressStore does it again internally) is
+      // cheaper than plumbing a return value through the store just for this.
+      const after = recordResult(progress, lesson.id, activity, stars, dayOf(new Date()));
+      setUnlocked(newlyEarnedBadges(progress, after));
+      record(lesson.id, activity, stars);
+    }
     setResult({ correct, total, stars });
   };
 
@@ -55,6 +73,7 @@ export default function EnglishHubLessonScreen() {
     if (activity) {
       setActivity(null);
       setResult(null);
+      setUnlocked([]);
     // Public page: with no history, `goBack()` lands a visitor on login.
     } else if (router.canGoBack()) goBack();
     else router.replace('/curriculum/english' as never);
@@ -67,10 +86,20 @@ export default function EnglishHubLessonScreen() {
           <Text style={{ fontSize: 44 }}>{'⭐'.repeat(result.stars) || '🙂'}</Text>
           <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 22 }}>{t('hubDone')}</Text>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15 }}>
-            {activity === 'match' ? t('hubMoves', result.total) : t('hubScore', result.correct, result.total)}
+            {activity === 'match' || activity === 'picture' ? t('hubMoves', result.total) : t('hubScore', result.correct, result.total)}
           </Text>
+          {unlocked.length > 0 ? (
+            <View style={[styles.unlockRow, { flexDirection: row }]}>
+              {unlocked.map(b => (
+                <View key={b} style={[styles.unlockBadge, { backgroundColor: colors.primary + '14', borderColor: colors.primary }]}>
+                  <Ionicons name={BADGE_META[b].icon} size={16} color={colors.primary} />
+                  <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>{t(BADGE_META[b].label)}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
           <Pressable
-            onPress={() => { setResult(null); setRound(r => r + 1); }}
+            onPress={() => { setResult(null); setUnlocked([]); setRound(r => r + 1); }}
             style={[styles.primary, { backgroundColor: colors.primary }]}
           >
             <Text style={styles.primaryText}>{t('hubAgain')}</Text>
@@ -83,15 +112,17 @@ export default function EnglishHubLessonScreen() {
     }
     const props = { words: lesson.words, onFinish: finish };
     if (activity === 'flashcards') return <Flashcards key={round} words={lesson.words} />;
+    if (activity === 'speaking') return <Speaking key={round} words={lesson.words} />;
     if (activity === 'listen') return <ListenChoose key={round} {...props} />;
     if (activity === 'match') return <MatchMeaning key={round} {...props} />;
     if (activity === 'spell') return <SpellIt key={round} {...props} />;
     if (activity === 'scramble') return <Scramble key={round} {...props} />;
+    if (activity === 'picture') return <PictureMatch key={round} {...props} />;
 
     return (
       <View style={{ gap: 10 }}>
-        {HUB_ACTIVITIES.map(a => {
-          const best = progress.stars[progressKey(lesson.id, a)] ?? 0;
+        {HUB_ACTIVITIES.filter(a => a !== 'picture' || lessonHasPictureMatch(lesson.words)).map(a => {
+          const best = UNSCORED.includes(a) ? 0 : progress.stars[progressKey(lesson.id, a)] ?? 0;
           return (
             <Pressable
               key={a}
@@ -144,6 +175,8 @@ const styles = StyleSheet.create({
   card: { alignItems: 'center', gap: 12, borderWidth: 1, padding: 14 },
   icon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   done: { alignItems: 'center', gap: 12, paddingTop: 24 },
+  unlockRow: { flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
+  unlockBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   primary: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 32, marginTop: 8 },
   primaryText: { color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 16 },
 });
