@@ -43,6 +43,7 @@ import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
 import { buildWorksheetHTML, exportAsPDF } from '@/services/share';
 import { qrResourcesForGrade } from '@/services/bookQrLinks';
+import { getVideoFrameThumbnail } from '@/services/videoThumbnail';
 import {
   buildResourceCatalog,
   filterResources,
@@ -163,6 +164,25 @@ function ResourceRow({
   grid?: boolean;
 }) {
   const thumb = itemThumbnail(item);
+  // A self-hosted (non-YouTube) video has no cover of its own — extract one
+  // from the file itself rather than leaving it on the icon tile forever.
+  const [generatedThumb, setGeneratedThumb] = useState<string | null>(null);
+  useEffect(() => {
+    if (thumb || item.kind !== 'video' || !item.url) return;
+    let cancelled = false;
+    void getVideoFrameThumbnail(item.url).then(uri => {
+      if (!cancelled) setGeneratedThumb(uri);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [thumb, item.kind, item.url]);
+  const effectiveThumb = thumb ?? generatedThumb;
+  // A cover URL can be present but dead (wrong link, expired share, a page
+  // instead of a direct image) — fall back to the icon tile rather than the
+  // blank gap `<Image>` leaves behind when it fails to load.
+  const [thumbFailed, setThumbFailed] = useState(false);
+  const showThumb = effectiveThumb && !thumbFailed;
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const isAr = lang === 'ar';
@@ -238,14 +258,19 @@ function ResourceRow({
           </Text>
         ) : null}
       </View>
-      {thumb ? (
+      {showThumb ? (
         <Image
-          source={{ uri: thumb }}
+          source={{ uri: effectiveThumb }}
           style={styles.thumb}
           resizeMode="cover"
           accessibilityElementsHidden
+          onError={() => setThumbFailed(true)}
         />
-      ) : null}
+      ) : (
+        <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: accent + '15' }]}>
+          <Ionicons name={KIND_ICON[item.kind]} size={22} color={accent} />
+        </View>
+      )}
       <View style={{ flex: 1 }}>
         <Text
           numberOfLines={2}
@@ -784,6 +809,7 @@ const styles = StyleSheet.create({
   rowsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   row: { alignItems: 'center', gap: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
   thumb: { width: 64, height: 48, borderRadius: 6, flexShrink: 0 },
+  thumbFallback: { alignItems: 'center', justifyContent: 'center' },
   gridCell: { width: '48.5%', paddingVertical: 14 },
   actionPill: {
     alignItems: 'center',
