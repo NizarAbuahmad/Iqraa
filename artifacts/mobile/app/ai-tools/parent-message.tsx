@@ -43,6 +43,69 @@ const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
+// Defined at module scope so React sees stable component references across renders.
+// Defining them inside ParentMessageScreen would create new function references on
+// every state change, causing React to unmount/remount TextInput children and kill
+// focus after each keystroke on web.
+function Field({ label, children, colors, isRTL }: {
+  label: string; children: React.ReactNode;
+  colors: ReturnType<typeof useColors>; isRTL: boolean;
+}) {
+  return (
+    <View style={{ marginBottom: 16 }}>
+      <Text style={[styles.label, {
+        color: colors.foreground, fontFamily: 'Cairo_500Medium',
+        textAlign: isRTL ? 'right' : 'left',
+      }]}>
+        {label}
+      </Text>
+      {children}
+    </View>
+  );
+}
+
+function Segmented<T extends string>({ options, value, onChange, colors, isRTL }: {
+  options: { value: T; label: string }[]; value: T; onChange: (v: T) => void;
+  colors: ReturnType<typeof useColors>; isRTL: boolean;
+}) {
+  return (
+    <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+      {options.map(o => {
+        const active = o.value === value;
+        return (
+          <Pressable
+            key={o.value}
+            onPress={() => { onChange(o.value); Haptics.selectionAsync(); }}
+            style={[styles.pill, {
+              backgroundColor: active ? ACCENT : colors.card,
+              borderColor: active ? ACCENT : colors.border,
+              borderRadius: colors.radius,
+            }]}
+          >
+            <Text style={[styles.pillText, {
+              color: active ? palette.primaryForeground : colors.mutedForeground,
+              fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+            }]}>
+              {o.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+function inputStyle(colors: ReturnType<typeof useColors>, isRTL: boolean, extra?: object) {
+  return [styles.input, {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: colors.radius,
+    color: colors.foreground,
+    textAlign: isRTL ? 'right' : 'left',
+    fontFamily: 'Almarai_400Regular',
+  }, extra];
+}
+
 export default function ParentMessageScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -273,62 +336,13 @@ export default function ParentMessageScreen() {
     }
   };
 
-  const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <View style={{ marginBottom: 16 }}>
-      <Text style={[styles.label, {
-        color: colors.foreground, fontFamily: 'Cairo_500Medium',
-        textAlign: isRTL ? 'right' : 'left',
-      }]}>
-        {label}
-      </Text>
-      {children}
-    </View>
-  );
-
-  const Segmented = <T extends string>({ options, value, onChange }: {
-    options: { value: T; label: string }[]; value: T; onChange: (v: T) => void;
-  }) => (
-    <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-      {options.map(o => {
-        const active = o.value === value;
-        return (
-          <Pressable
-            key={o.value}
-            onPress={() => { onChange(o.value); Haptics.selectionAsync(); }}
-            style={[styles.pill, {
-              backgroundColor: active ? ACCENT : colors.card,
-              borderColor: active ? ACCENT : colors.border,
-              borderRadius: colors.radius,
-            }]}
-          >
-            <Text style={[styles.pillText, {
-              color: active ? palette.primaryForeground : colors.mutedForeground,
-              fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-            }]}>
-              {o.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-
-  const input = (extra?: object) => ([styles.input, {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
-    borderRadius: colors.radius,
-    color: colors.foreground,
-    textAlign: isRTL ? 'right' : 'left',
-    fontFamily: 'Almarai_400Regular',
-  }, extra]);
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }} keyboardShouldPersistTaps="handled">
         <ToolHeader topPad={topPad} isRTL={isRTL} title={t('parentMsgTitle')} subtitle={t('parentMsgSubtitle')} leading="✉️" sourceBadge={false} />
 
         <View style={{ padding: 20 }}>
-          <Field label={t('parentMsgStudentName')}>
+          <Field label={t('parentMsgStudentName')} colors={colors} isRTL={isRTL}>
             <TextInput
               value={studentName}
               // Editing the name by hand drops the picked student, and with it
@@ -338,7 +352,7 @@ export default function ParentMessageScreen() {
               onChangeText={(v) => { setStudentName(v); setPickedStudentId(null); }}
               placeholder={t('parentMsgStudentNamePlaceholder')}
               placeholderTextColor={colors.mutedForeground}
-              style={input()}
+              style={inputStyle(colors, isRTL)}
             />
             {/* Typing the name still works — this only saves the typing, and
                 spares the spelling mistake that reaches a parent. */}
@@ -373,10 +387,11 @@ export default function ParentMessageScreen() {
             ) : null}
           </Field>
 
-          <Field label={t('parentMsgStudentGender')}>
+          <Field label={t('parentMsgStudentGender')} colors={colors} isRTL={isRTL}>
             <Segmented
               value={studentGender}
               onChange={onStudentGender}
+              colors={colors} isRTL={isRTL}
               options={[
                 { value: 'male', label: t('parentMsgMale') },
                 { value: 'female', label: t('parentMsgFemale') },
@@ -384,7 +399,7 @@ export default function ParentMessageScreen() {
             />
           </Field>
 
-          <Field label={t('parentMsgKind')}>
+          <Field label={t('parentMsgKind')} colors={colors} isRTL={isRTL}>
             <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               {MESSAGE_KINDS.map(k => {
                 const active = k === kind;
@@ -427,7 +442,7 @@ export default function ParentMessageScreen() {
 
           {/* The tool states plainly that it will not invent the specifics —
               the teacher is the only source for what actually happened. */}
-          <Field label={needsDetails(kind) ? t('parentMsgDetailsRequired') : t('parentMsgDetails')}>
+          <Field label={needsDetails(kind) ? t('parentMsgDetailsRequired') : t('parentMsgDetails')} colors={colors} isRTL={isRTL}>
             <TextInput
               value={details}
               onChangeText={setDetails}
@@ -435,17 +450,18 @@ export default function ParentMessageScreen() {
               placeholderTextColor={colors.mutedForeground}
               multiline
               numberOfLines={3}
-              style={input({ minHeight: 84, textAlignVertical: 'top' })}
+              style={inputStyle(colors, isRTL, { minHeight: 84, textAlignVertical: 'top' })}
             />
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 17, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
               {t('parentMsgFactsNote')}
             </Text>
           </Field>
 
-          <Field label={t('parentMsgTone')}>
+          <Field label={t('parentMsgTone')} colors={colors} isRTL={isRTL}>
             <Segmented
               value={tone}
               onChange={setTone}
+              colors={colors} isRTL={isRTL}
               options={[
                 { value: 'formal', label: t('parentMsgFormal') },
                 { value: 'warm', label: t('parentMsgWarm') },
@@ -453,13 +469,13 @@ export default function ParentMessageScreen() {
             />
           </Field>
 
-          <Field label={t('parentMsgSignature')}>
+          <Field label={t('parentMsgSignature')} colors={colors} isRTL={isRTL}>
             <TextInput
               value={teacherName}
               onChangeText={setTeacherName}
               placeholder={t('parentMsgTeacherName')}
               placeholderTextColor={colors.mutedForeground}
-              style={input()}
+              style={inputStyle(colors, isRTL)}
             />
             <View style={{ height: 8 }} />
             <TextInput
@@ -467,12 +483,13 @@ export default function ParentMessageScreen() {
               onChangeText={setSubject}
               placeholder={t('parentMsgSubject')}
               placeholderTextColor={colors.mutedForeground}
-              style={input()}
+              style={inputStyle(colors, isRTL)}
             />
             <View style={{ height: 8 }} />
             <Segmented
               value={teacherGender}
               onChange={setTeacherGender}
+              colors={colors} isRTL={isRTL}
               options={[
                 { value: 'male', label: t('parentMsgTeacherMale') },
                 { value: 'female', label: t('parentMsgTeacherFemale') },
