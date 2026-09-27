@@ -31,6 +31,19 @@ import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { Avatar } from '@/components/ui/Avatar';
 
+function relativeTime(iso: string, lang: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return lang === 'ar' ? 'الآن' : 'now';
+  if (mins < 60) return lang === 'ar' ? `${mins}د` : `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return lang === 'ar' ? `${hrs}س` : `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return lang === 'ar' ? `${days}ي` : `${days}d`;
+  const wks = Math.floor(days / 7);
+  return lang === 'ar' ? `${wks}أ` : `${wks}w`;
+}
+
 interface Contact {
   userId: string;
   firstName: string;
@@ -213,6 +226,7 @@ export default function NotificationsScreen() {
             const isGroup = item.type !== 'direct';
             const name = isGroup ? (lang === 'ar' ? item.titleAr : item.title) || item.title : other ? `${other.firstName} ${other.lastName}` : '';
             const preview = item.lastMessage?.body ?? '';
+            const ts = item.updatedAt ? relativeTime(item.updatedAt, lang) : '';
             return (
               <Pressable
                 onPress={() => router.push(`/messaging/${item.id}`)}
@@ -234,12 +248,19 @@ export default function NotificationsScreen() {
                   <Avatar firstName={other?.firstName ?? '?'} lastName={other?.lastName} size={44} colors={colors} />
                 )}
                 <View style={{ flex: 1 }}>
-                  <Text
-                    style={[styles.threadName, { color: colors.foreground, fontFamily: item.unreadCount > 0 ? 'Cairo_600SemiBold' : 'Cairo_500Medium', textAlign: align }]}
-                    numberOfLines={1}
-                  >
-                    {name}
-                  </Text>
+                  <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                    <Text
+                      style={[styles.threadName, { color: colors.foreground, fontFamily: item.unreadCount > 0 ? 'Cairo_600SemiBold' : 'Cairo_500Medium', textAlign: align, flex: 1 }]}
+                      numberOfLines={1}
+                    >
+                      {name}
+                    </Text>
+                    {ts ? (
+                      <Text style={{ fontSize: 11, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', marginStart: 6 }}>
+                        {ts}
+                      </Text>
+                    ) : null}
+                  </View>
                   {/* Direct threads only — a group has no single "other party"
                       role to show, and otherParticipant is null for those
                       server-side. Tells a student thread apart from a parent

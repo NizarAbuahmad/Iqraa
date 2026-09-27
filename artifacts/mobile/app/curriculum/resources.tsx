@@ -29,7 +29,7 @@
  * tells a student nothing about the one they are about to tap.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,6 +43,7 @@ import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
 import { buildWorksheetHTML, exportAsPDF } from '@/services/share';
 import { qrResourcesForGrade } from '@/services/bookQrLinks';
+import { getVideoFrameThumbnail } from '@/services/videoThumbnail';
 import {
   buildResourceCatalog,
   filterResources,
@@ -163,6 +164,25 @@ function ResourceRow({
   grid?: boolean;
 }) {
   const thumb = itemThumbnail(item);
+  // A self-hosted (non-YouTube) video has no cover of its own — extract one
+  // from the file itself rather than leaving it on the icon tile forever.
+  const [generatedThumb, setGeneratedThumb] = useState<string | null>(null);
+  useEffect(() => {
+    if (thumb || item.kind !== 'video' || !item.url) return;
+    let cancelled = false;
+    void getVideoFrameThumbnail(item.url).then(uri => {
+      if (!cancelled) setGeneratedThumb(uri);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [thumb, item.kind, item.url]);
+  const effectiveThumb = thumb ?? generatedThumb;
+  // A cover URL can be present but dead (wrong link, expired share, a page
+  // instead of a direct image) — fall back to the icon tile rather than the
+  // blank gap `<Image>` leaves behind when it fails to load.
+  const [thumbFailed, setThumbFailed] = useState(false);
+  const showThumb = effectiveThumb && !thumbFailed;
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const isAr = lang === 'ar';
@@ -216,7 +236,7 @@ function ResourceRow({
     <Pressable
       onPress={onPress}
       accessibilityRole={item.url ? 'link' : 'button'}
-      accessibilityLabel={`${t(KIND_LABEL[item.kind])} — ${title}`}
+      accessibilityLabel={`${t(KIND_LABEL[item.kind])} — ${page ? t('qrOnPage', page) : (title ?? '')}`}
       style={({ pressed }) => [
         styles.row,
         grid && styles.gridCell,
@@ -226,6 +246,7 @@ function ResourceRow({
           borderRadius: colors.radius,
           flexDirection: isRTL ? 'row-reverse' : 'row',
           opacity: pressed ? 0.75 : 1,
+          ...(Platform.OS === 'web' && ({ cursor: 'pointer' } as object)),
         },
       ]}
     >
@@ -237,14 +258,19 @@ function ResourceRow({
           </Text>
         ) : null}
       </View>
-      {thumb ? (
+      {showThumb ? (
         <Image
-          source={{ uri: thumb }}
+          source={{ uri: effectiveThumb }}
           style={styles.thumb}
           resizeMode="cover"
           accessibilityElementsHidden
+          onError={() => setThumbFailed(true)}
         />
-      ) : null}
+      ) : (
+        <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: accent + '15' }]}>
+          <Ionicons name={KIND_ICON[item.kind]} size={22} color={accent} />
+        </View>
+      )}
       <View style={{ flex: 1 }}>
         <Text
           numberOfLines={2}
@@ -284,7 +310,7 @@ function ResourceRow({
           </Text>
         </View>
       ) : trailingIcon ? (
-        <Ionicons name={trailingIcon} size={16} color={colors.mutedForeground} />
+        <Ionicons name={trailingIcon} size={16} color={colors.mutedForeground} accessibilityElementsHidden importantForAccessibility="no" />
       ) : null}
     </Pressable>
   );
@@ -442,33 +468,6 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
           {t('resourcesIntro')}
         </Text>
 
-        {/* The curriculum itself — the books, by grade, subject, unit and
-            lesson — is the library's first shelf. */}
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push({ pathname: '/curriculum/browse' as never, params: { gradeId: grade } });
-          }}
-          accessibilityRole="button"
-          style={({ pressed }) => [
-            styles.curriculumCard,
-            { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.8 : 1 },
-          ]}
-        >
-          <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
-            <Ionicons name="book" size={26} color={ACCENT} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-              {t('curriculumTitle')}
-            </Text>
-            <Text style={[styles.rowNote, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-              {t('libraryCurriculumDesc')}
-            </Text>
-          </View>
-          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
-        </Pressable>
-
         {grades.length > 1 ? (
           <ChipRow
             isRTL={isRTL}
@@ -534,16 +533,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
           </ScrollView>
         ) : null}
 
-        {shelves.length === 0 ? (
-          <View style={styles.empty}>
-            <Ionicons name="library-outline" size={36} color={colors.mutedForeground} />
-            <Text
-              style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}
-            >
-              {t('resourcesEmpty')}
-            </Text>
-          </View>
-        ) : openShelf ? (
+        {openShelf ? (
           <View style={styles.section}>
             <View style={[styles.shelfHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Pressable
@@ -575,7 +565,33 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
             )}
           </View>
         ) : (
+          <>
           <View style={[styles.tiles, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            {/* The curriculum itself — the books, by grade, subject, unit and
+                lesson — is the library's first tile. It opens the browser
+                rather than a shelf, so it is not in `shelves`. */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push({ pathname: '/curriculum/browse' as never, params: { gradeId: grade } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('curriculumTitle')}, ${t('libraryCurriculumDesc')}`}
+              style={({ pressed }) => [
+                styles.tile,
+                { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+                <Ionicons name="book" size={26} color={ACCENT} />
+              </View>
+              <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+                {t('curriculumTitle')}
+              </Text>
+              <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+                {t('libraryCurriculumDesc')}
+              </Text>
+            </Pressable>
             {shelves.map(({ shelf: id, items: rows }) => (
               <Pressable
                 key={id}
@@ -600,6 +616,17 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
               </Pressable>
             ))}
           </View>
+          {shelves.length === 0 ? (
+            <View style={styles.empty}>
+              <Ionicons name="library-outline" size={36} color={colors.mutedForeground} />
+              <Text
+                style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}
+              >
+                {t('resourcesEmpty')}
+              </Text>
+            </View>
+          ) : null}
+          </>
         )}
       </ScrollView>
     </View>
@@ -745,8 +772,8 @@ function BookShelf({
 }
 
 const styles = StyleSheet.create({
-  hero: { paddingHorizontal: 20, paddingBottom: 18, gap: 6 },
-  backBtn: { padding: 4, marginBottom: 4 },
+  hero: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
+  backBtn: { padding: 4 },
   heroTitle: { color: '#fff', fontSize: 22 },
   heroMeta: { color: 'rgba(255,255,255,0.95)', fontSize: 13, lineHeight: 21 },
   addBtn: {
@@ -764,7 +791,6 @@ const styles = StyleSheet.create({
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
   chipText: { fontSize: 12.5 },
   section: { paddingTop: 14, gap: 8 },
-  curriculumCard: { alignItems: 'center', gap: 12, borderWidth: 1, padding: 14, marginHorizontal: 20, marginTop: 14, marginBottom: 4 },
   tiles: { flexWrap: 'wrap', gap: 12, paddingHorizontal: 20, paddingTop: 14 },
   tile: { flexGrow: 1, flexBasis: '30%', minWidth: 104, maxWidth: 220, alignItems: 'center', gap: 6, borderWidth: 1, paddingVertical: 16, paddingHorizontal: 8 },
   tileIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
@@ -783,6 +809,7 @@ const styles = StyleSheet.create({
   rowsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   row: { alignItems: 'center', gap: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
   thumb: { width: 64, height: 48, borderRadius: 6, flexShrink: 0 },
+  thumbFallback: { alignItems: 'center', justifyContent: 'center' },
   gridCell: { width: '48.5%', paddingVertical: 14 },
   actionPill: {
     alignItems: 'center',
