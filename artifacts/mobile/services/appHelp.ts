@@ -79,7 +79,7 @@ const SCREENS: AppPlace[] = [
     keywords: ['حسابي', 'الحساب', 'الملف الشخصي', 'تسجيل الخروج', 'account', 'profile', 'sign out', 'log out'],
   },
   {
-    id: 'curriculum', route: '/curriculum', labelKey: 'tabCurriculum', pathKeys: [], isTool: false,
+    id: 'curriculum', route: '/curriculum/browse', labelKey: 'tabCurriculum', pathKeys: [], isTool: false,
     keywords: ['المنهاج', 'المنهج', 'الكتب', 'الكتاب المدرسي', 'الدروس', 'curriculum', 'textbook', 'books'],
   },
   {

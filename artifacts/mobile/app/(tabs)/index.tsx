@@ -46,8 +46,11 @@ import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { listClasses } from '@/services/roster';
 import type { ClassGroup } from '@/services/roster';
-import { className } from '@/services/materialClass';
-import { HomeLessonPick, loadLessonPick, subscribeLessonPick } from '@/services/lessonContext';
+import { className, classNameFor } from '@/services/materialClass';
+import { loadNextPeriod } from '@/services/schedule';
+import { formatNextPeriod, type NextPeriodLesson } from '@/services/scheduleCalendar';
+import { todayISO } from '@/services/planEntries';
+import { HomeLessonPick, loadLessonPick, subscribeLessonPick, timetableWins } from '@/services/lessonContext';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
 import { DEFAULT_ACTIVE_LESSON_ID } from '@/services/lessonCopilot';
@@ -88,6 +91,7 @@ function LessonWorkspace() {
   const params = useLocalSearchParams<{ startClass?: string }>();
 
   const [pick, setPick] = useState<HomeLessonPick | null>(null);
+  const [next, setNext] = useState<NextPeriodLesson | null>(null);
   const [materials, setMaterials] = useState<SavedMaterial[]>([]);
   const [classes, setClasses] = useState<ClassGroup[]>([]);
   const [ask, setAsk] = useState('');
@@ -109,6 +113,7 @@ function LessonWorkspace() {
   const reload = useCallback(() => {
     getAllItems().then(setMaterials).catch(() => {});
     listClasses().then(setClasses).catch(() => {});
+    loadNextPeriod().then(setNext);
   }, []);
   useEffect(() => {
     reload();
@@ -128,14 +133,41 @@ function LessonWorkspace() {
     () => resolveLessonPrepContext(DEFAULT_ACTIVE_LESSON_ID, lang as 'ar' | 'en'),
     [lang],
   );
-  const active = pick?.topic?.trim()
-    ? { topic: pick.topic.trim(), lessonId: pick.lessonId ?? null, gradeId: pick.gradeId, subjectId: pick.subjectId }
-    : fallback
-      ? { topic: fallback.topic, lessonId: fallback.lessonId, gradeId: fallback.gradeId, subjectId: fallback.subjectId }
-      : null;
+  /*
+    The lesson the card is about, in order: a lesson the teacher picked by
+    hand today; else the one the pacing plan puts in front of the next class
+    on the timetable; else an older pick; else the chat's default. A pick from
+    last week is where they were, not where they are — the timetable knows
+    better — but a pick from this morning is a decision, and it wins.
+  */
+  const scheduled = useMemo(
+    () => (next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang as 'ar' | 'en') : null),
+    [next?.lessonId, lang],
+  );
+  const fromSchedule = timetableWins(pick, !!scheduled, todayISO());
+  const active = fromSchedule && scheduled
+    ? { topic: scheduled.topic, lessonId: scheduled.lessonId, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId }
+    : pick?.topic?.trim()
+      ? { topic: pick.topic.trim(), lessonId: pick.lessonId ?? null, gradeId: pick.gradeId, subjectId: pick.subjectId }
+      : fallback
+        ? { topic: fallback.topic, lessonId: fallback.lessonId, gradeId: fallback.gradeId, subjectId: fallback.subjectId }
+        : null;
+  // «الحصة القادمة · العاشر ب · 10:15» — only when the card is showing that period's lesson.
+  const periodLine = fromSchedule && next
+    ? formatNextPeriod(next, {
+        classLabel: classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'),
+        today: todayISO(),
+        lang: lang as 'ar' | 'en',
+        nowLabel: t('homePeriodNow'),
+        nextLabel: t('homePeriodNext'),
+      })
+    : '';
 
   const topic = active?.topic ?? '';
-  const board = useMemo(() => buildPrepBoard(materials, topic), [materials, topic]);
+  const board = useMemo(
+    () => buildPrepBoard(materials, topic, active?.lessonId),
+    [materials, topic, active?.lessonId],
+  );
   const summary = prepSummary(board);
 
   const grade = active?.gradeId ? getPickerGrades().find(g => g.id === active.gradeId) : undefined;
@@ -268,6 +300,12 @@ function LessonWorkspace() {
           <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[{ flexDirection: rowDir, alignItems: 'flex-start', gap: 16 }]}>
               <View style={{ flex: 1 }}>
+                {periodLine ? (
+                  <View style={[s.periodPill, { backgroundColor: colors.secondary, flexDirection: rowDir, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+                    <Ionicons name={next?.happeningNow ? 'radio-button-on' : 'time-outline'} size={13} color={colors.primary} />
+                    <Text style={[s.periodText, { color: colors.primary }]}>{periodLine}</Text>
+                  </View>
+                ) : null}
                 <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 7, marginBottom: 7 }]}>
                   <JordanFlag width={17} />
                   <Text style={[s.crumb, { color: colors.mutedForeground, textAlign: align }]}>
@@ -465,6 +503,8 @@ const s = StyleSheet.create({
   mainCol: { gap: 16, paddingBottom: 40 },
   card: { borderWidth: 1, borderRadius: 18, padding: 22 },
   crumb: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular' },
+  periodPill: { alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 10 },
+  periodText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
   lessonTitle: { fontSize: 22, fontFamily: 'Cairo_700Bold', lineHeight: 34 },
   hint: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', marginTop: 6 },
 

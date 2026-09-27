@@ -42,7 +42,7 @@ import {
 } from '@/services/knowledgeBase';
 import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
-import { loadLessonPick, saveLessonPick } from '@/services/lessonContext';
+import { loadLessonPick, saveLessonPick, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
   deduplicateByUnit,
@@ -109,7 +109,12 @@ import {
   subscribeSessionDocuments,
   type SessionDocument,
 } from '@/services/documents';
-import { lessonPickerParams, subjectPickerLabels, topicPickerParams } from '@/services/lessonPrep';
+import { lessonPickerParams, resolveLessonPrepContext, subjectPickerLabels, topicPickerParams } from '@/services/lessonPrep';
+import { loadNextPeriod } from '@/services/schedule';
+import { formatNextPeriod } from '@/services/scheduleCalendar';
+import { todayISO } from '@/services/planEntries';
+import { listClasses } from '@/services/roster';
+import { classNameFor } from '@/services/materialClass';
 import { answerAppHelp } from '@/services/appHelp';
 import { TOOL_ASK_TARGETS, toolAskFromQuery, toolAskReply } from '@/services/chatToolAsk';
 import { formatInfographicText, isInfographicAsk } from '@/services/ai/infographic';
@@ -1403,6 +1408,8 @@ export default function IqraScreen() {
    * the conversation and the workspace home owns the board.
    */
   const [prepMaterials, setPrepMaterials] = useState<SavedMaterial[]>([]);
+  /** «الحصة القادمة · العاشر ب · 10:15» when the chat's lesson came from the timetable. */
+  const [periodLine, setPeriodLine] = useState('');
   const [exportText, setExportText] = useState('');
   const [exportVisible, setExportVisible] = useState(false);
   /**
@@ -1701,8 +1708,28 @@ export default function IqraScreen() {
   // starting context — overriding the demo seed above, so home, tools and
   // chat all agree on one lesson. Runs after the seed effect (declaration
   // order) and again on language change, which re-seeds.
+  //
+  // The timetable takes part the same way it does on home (`timetableWins`):
+  // the pacing-plan lesson of the period now or next replaces a pick that was
+  // not made today. It is shaped as a pick so everything below — the lesson
+  // id travelling with the topic, the soft pin — applies to it unchanged.
   useEffect(() => {
-    void loadLessonPick().then(pick => {
+    void Promise.all([loadLessonPick(), loadNextPeriod()]).then(([saved, next]) => {
+      const scheduled = next?.lessonId ? resolveLessonPrepContext(next.lessonId, lang as 'ar' | 'en') : null;
+      const fromSchedule = timetableWins(saved, !!scheduled, todayISO());
+      setPeriodLine('');
+      if (fromSchedule && next) {
+        listClasses()
+          .then(classes => classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'))
+          .catch(() => null)
+          .then(classLabel => setPeriodLine(formatNextPeriod(next, {
+            classLabel, today: todayISO(), lang: lang as 'ar' | 'en',
+            nowLabel: t('homePeriodNow'), nextLabel: t('homePeriodNext'),
+          })));
+      }
+      const pick: HomeLessonPick | null = fromSchedule && scheduled
+        ? { topic: scheduled.topic, unitOrder: null, gradeId: scheduled.gradeId, subjectId: scheduled.subjectId, lessonId: scheduled.lessonId }
+        : saved;
       if (!pick?.topic) return;
       // A pick made in the sheet while this read was in flight wins — but the
       // topic and its lesson id must move together, so both are guarded by
@@ -3000,7 +3027,7 @@ export default function IqraScreen() {
   const introPrepBoard = (() => {
     if (isDesktop || messages.length > 1) return null;
     const topic = currentLessonView?.topic?.trim() ?? '';
-    const rows = buildPrepBoard(prepMaterials, topic);
+    const rows = buildPrepBoard(prepMaterials, topic, currentLessonView?.lessonId);
     // The lesson's own grade and subject, never the picker's index 0 — see the
     // subjectIdx trap in CLAUDE.md. `topicPickerParams` grounds a free-typed
     // topic; both return null when the lesson is unknown, and then the tool
@@ -3011,6 +3038,23 @@ export default function IqraScreen() {
     const toolParams = { ...(topic ? { topic } : {}), ...(idx ?? {}) };
     return (
       <View style={{ width: '100%', marginTop: 14, gap: 8 }}>
+        {periodLine ? (
+          <View
+            style={{
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+              alignSelf: isRTL ? 'flex-end' : 'flex-start',
+              alignItems: 'center',
+              gap: 6,
+              borderRadius: 999,
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              backgroundColor: colors.secondary,
+            }}
+          >
+            <Ionicons name="time-outline" size={13} color={colors.primary} />
+            <Text style={{ fontSize: 12.5, fontFamily: 'Cairo_600SemiBold', color: colors.primary }}>{periodLine}</Text>
+          </View>
+        ) : null}
         <LessonPrepBoard
           rows={rows}
           colors={colors}
@@ -3198,6 +3242,7 @@ export default function IqraScreen() {
           onGlobalPick={(pick) => {
             // Changing the lesson in chat updates the app-wide context too —
             // home and the tools hub follow (one source of truth).
+            setPeriodLine(''); // no longer the timetable's lesson
             void saveLessonPick({
               topic: pick.topic,
               unitOrder: null,

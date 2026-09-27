@@ -199,7 +199,7 @@ function ClassesList() {
     const ok = await confirm({
       title: t('deleteClass'),
       message: t('deleteClassConfirm', name),
-      confirmLabel: t('remove'),
+      confirmLabel: t('archive'),
       cancelLabel: t('cancel'),
       destructive: true,
     });
@@ -383,9 +383,11 @@ function ClassesList() {
 
       <Pressable
         onPress={() => setShowNew(true)}
-        style={[styles.fab, { backgroundColor: ACCENT_FILL, bottom: insets.bottom + 24 }]}
+        accessibilityRole="button"
+        style={[styles.fab, { backgroundColor: ACCENT_FILL, bottom: insets.bottom + 24, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
       >
-        <Ionicons name="add" size={26} color="#fff" />
+        <Ionicons name="add" size={22} color="#fff" />
+        <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 14 }}>{t('newClass')}</Text>
       </Pressable>
 
       <Modal visible={showNew} transparent animationType="fade" onRequestClose={() => setShowNew(false)}>
@@ -522,9 +524,10 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     alignSelf: 'center',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    height: 52,
+    paddingHorizontal: 20,
+    gap: 6,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
