@@ -26,6 +26,8 @@ export type MaterialLike = {
   title: string;
   topic: string;
   savedAt: string;
+  /** The class the material is filed under, if any (`SavedMaterial['classGroupId']`). */
+  classGroupId?: string | null;
   /** `SavedMaterial['formState']`; `lessonId` is stamped at save time by workspace.ts. */
   formState?: { lessonId?: unknown } | null;
 };
@@ -150,6 +152,29 @@ export function buildPrepBoard(
 /** Rows marked not needed leave the total, so 3 of 3 can read as ready. */
 export function prepSummary(rows: PrepRow[]): { done: number; total: number } {
   return { done: rows.filter(r => r.done).length, total: rows.filter(r => !r.skipped).length };
+}
+
+/**
+ * When a material was saved, the way a teacher says it: «اليوم», «أمس»,
+ * «قبل 3 أيام», then a date past a week. Calendar days in local time, not
+ * 24-hour spans — last night at 23:30 is «أمس» at 10:00 this morning.
+ * Latin digits, like the board's «2 من 5» next to it. Empty for a bad stamp.
+ */
+export function savedAgo(savedAt: string, now: Date, lang: 'ar' | 'en'): string {
+  const saved = new Date(savedAt);
+  if (Number.isNaN(saved.getTime())) return '';
+  const day = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  const days = Math.round((day(now) - day(saved)) / 86_400_000);
+  const ar = lang === 'ar';
+  if (days <= 0) return ar ? 'اليوم' : 'today';
+  if (days === 1) return ar ? 'أمس' : 'yesterday';
+  if (days === 2) return ar ? 'قبل يومين' : '2 days ago';
+  if (days <= 7) return ar ? `قبل ${days} أيام` : `${days} days ago`;
+  try {
+    return saved.toLocaleDateString(ar ? 'ar-JO-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'short' });
+  } catch {
+    return '';
+  }
 }
 
 /**

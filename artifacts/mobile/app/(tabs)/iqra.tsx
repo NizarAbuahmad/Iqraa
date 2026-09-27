@@ -113,7 +113,7 @@ import { lessonPickerParams, resolveLessonPrepContext, subjectPickerLabels, topi
 import { loadNextPeriod } from '@/services/schedule';
 import { formatNextPeriod } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
-import { listClasses } from '@/services/roster';
+import { listClasses, type ClassGroup } from '@/services/roster';
 import { classNameFor } from '@/services/materialClass';
 import { answerAppHelp } from '@/services/appHelp';
 import { TOOL_ASK_TARGETS, toolAskFromQuery, toolAskReply } from '@/services/chatToolAsk';
@@ -1408,6 +1408,8 @@ export default function IqraScreen() {
    * the conversation and the workspace home owns the board.
    */
   const [prepMaterials, setPrepMaterials] = useState<SavedMaterial[]>([]);
+  /** For the board's «جاهزة · أمس · العاشر أ» — which class a material is filed under. */
+  const [prepClasses, setPrepClasses] = useState<ClassGroup[]>([]);
   /** «الحصة القادمة · العاشر ب · 10:15» when the chat's lesson came from the timetable. */
   const [periodLine, setPeriodLine] = useState('');
   const [exportText, setExportText] = useState('');
@@ -1458,6 +1460,7 @@ export default function IqraScreen() {
   */
   const loadPrepMaterials = useCallback(() => {
     getAllItems().then(setPrepMaterials).catch(() => {});
+    listClasses().then(setPrepClasses).catch(() => {});
   }, []);
   useFocusEffect(useCallback(() => { loadPrepMaterials(); }, [loadPrepMaterials]));
 
@@ -3091,6 +3094,9 @@ export default function IqraScreen() {
           skipLabel={t('homePrepSkip')}
           skippedLabel={t('homePrepSkipped')}
           restoreLabel={t('homePrepRestore')}
+          classLabelFor={(id) => classNameFor(prepClasses, id, lang as 'ar' | 'en')}
+          onOpenAll={() => router.push({ pathname: '/workspace', params: { q: topic } })}
+          allCopiesLabel={t('homePrepAllCopies')}
         />
       </View>
     );

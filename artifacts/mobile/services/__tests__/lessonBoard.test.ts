@@ -21,6 +21,7 @@ import {
   materialsForTopic,
   normalizeTopic,
   prepLessonKey,
+  savedAgo,
   PREP_ROWS,
   prepSummary,
   sameTopic,
@@ -185,5 +186,21 @@ describe('rows marked not needed', () => {
     assert.equal(prepLessonKey(TOPIC, 'L1'), 'L1');
     assert.equal(prepLessonKey(' تَرْكِيبُ الاقترانات ', null), prepLessonKey('تركيب الاقترانات', undefined));
     assert.equal(prepLessonKey('', null), null);
+  });
+});
+
+describe('savedAgo', () => {
+  const now = new Date('2026-09-27T10:00:00');
+  it('says today, yesterday, or how many days ago in the local calendar', () => {
+    assert.equal(savedAgo('2026-09-27T07:00:00', now, 'ar'), 'اليوم');
+    assert.equal(savedAgo('2026-09-26T23:30:00', now, 'ar'), 'أمس');
+    assert.equal(savedAgo('2026-09-24T12:00:00', now, 'ar'), 'قبل 3 أيام');
+    assert.equal(savedAgo('2026-09-24T12:00:00', now, 'en'), '3 days ago');
+    assert.equal(savedAgo('2026-09-26T08:00:00', now, 'en'), 'yesterday');
+  });
+
+  it('gives a date past a week, and nothing for a bad timestamp', () => {
+    assert.match(savedAgo('2026-09-01T12:00:00', now, 'en'), /1/);
+    assert.equal(savedAgo('not a date', now, 'ar'), '');
   });
 });
