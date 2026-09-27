@@ -144,6 +144,25 @@ export async function setPrepSkip(lessonKey: string, rowType: string, skipped: b
   return next;
 }
 
+/** Set once the teacher closes the home card's "set up your timetable" nudge. */
+const SETUP_NUDGE_DISMISSED_KEY = '@iqra_setup_nudge_dismissed_v1';
+
+export async function wasSetupNudgeDismissed(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(scopedKey(SETUP_NUDGE_DISMISSED_KEY))) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function dismissSetupNudge(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(scopedKey(SETUP_NUDGE_DISMISSED_KEY), '1');
+  } catch {
+    // Non-fatal: it stays closed for this session.
+  }
+}
+
 export async function wasOnboarded(): Promise<boolean> {
   try {
     return (await AsyncStorage.getItem(scopedKey(ONBOARDED_KEY))) === '1';

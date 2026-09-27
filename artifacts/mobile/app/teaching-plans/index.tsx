@@ -7,7 +7,7 @@
  * codes), so create and edit share one modal instead of a separate detail
  * screen — `editingId` says which mode it's in.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -20,7 +20,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -288,6 +288,27 @@ export default function TeachingPlansScreen() {
     setScheduleDays([0, 1, 2, 3, 4]);
     setShowForm(true);
   };
+
+  /*
+    `classId` — the home card's «أضف الخطة» for the class of the next
+    period. Opens that class's plan, or a new one already on the class, once
+    the list has loaded; handled once per id so closing the form sticks.
+  */
+  const { classId } = useLocalSearchParams<{ classId?: string }>();
+  const handledClassId = useRef<string | null>(null);
+  useEffect(() => {
+    if (loading || !classId || handledClassId.current === classId) return;
+    handledClassId.current = classId;
+    const existing = plans.find(p => p.classGroupId === classId);
+    if (existing) {
+      openEdit(existing);
+    } else {
+      openCreate();
+      setForm(f => ({ ...f, classGroupId: classId }));
+    }
+    // openCreate/openEdit are plain closures over setters; keyed on the data.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, classId, plans]);
 
   const classNameFor = (id: string | null): string => {
     if (!id) return '';
