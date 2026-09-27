@@ -711,8 +711,8 @@ function BookShelf({
 }
 
 const styles = StyleSheet.create({
-  hero: { paddingHorizontal: 20, paddingBottom: 18, gap: 6 },
-  backBtn: { padding: 4, marginBottom: 4 },
+  hero: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
+  backBtn: { padding: 4 },
   heroTitle: { color: '#fff', fontSize: 22 },
   heroMeta: { color: 'rgba(255,255,255,0.95)', fontSize: 13, lineHeight: 21 },
   addBtn: {
