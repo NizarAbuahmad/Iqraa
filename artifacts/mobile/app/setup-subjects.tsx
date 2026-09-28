@@ -60,7 +60,8 @@ function toggle(list: string[], id: string): string[] {
  * Either path may contain subject IDs that don't apply to a given grade
  * (e.g. flat format copies ALL subjects to every grade, or saved data from
  * an older curriculum version). Strip them so chips reflect reality and
- * `hasEmptyAssignment` isn't fooled by phantom IDs.
+ * so a grade doesn't look empty (and get silently dropped on save) over
+ * phantom IDs.
  */
 function initialAssignments(user: { teachingAssignments?: TeachingAssignment[]; gradeIds?: string[]; subjectIds?: string[] } | null): TeachingAssignment[] {
   const normalize = (a: TeachingAssignment): TeachingAssignment => {
@@ -135,8 +136,9 @@ export default function SetupSubjectsScreen() {
   const grades = getPickerGrades();
   const addedGradeIds = new Set(assignments.map(a => a.gradeId));
   const remainingGrades = grades.filter(g => !addedGradeIds.has(g.id));
-  const hasEmptyAssignment = assignments.some(a => a.subjectIds.length === 0);
-  const canSubmit = assignments.length > 0 && !hasEmptyAssignment && !saving;
+  // A grade card with no subjects picked isn't a valid entry, so it's dropped
+  // at save time instead of blocking the whole form — see handleSubmit.
+  const canSubmit = assignments.some(a => a.subjectIds.length > 0) && !saving;
 
   const addGrade = (gradeId: string) => {
     Haptics.selectionAsync();
@@ -157,7 +159,7 @@ export default function SetupSubjectsScreen() {
     setSaving(true);
     setError('');
     try {
-      await updateProfile({ teachingAssignments: assignments });
+      await updateProfile({ teachingAssignments: assignments.filter(a => a.subjectIds.length > 0) });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (editMode) goBack();
       else router.replace('/(tabs)');
@@ -251,6 +253,11 @@ export default function SetupSubjectsScreen() {
                   />
                 ))}
               </View>
+              {a.subjectIds.length === 0 ? (
+                <Text style={[styles.gradeCardHint, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                  {t('teacherSetupGradeWillBeRemoved')}
+                </Text>
+              ) : null}
             </View>
           );
         })}
@@ -289,11 +296,6 @@ export default function SetupSubjectsScreen() {
             {t('teacherSetupNoGradesYet')}
           </Text>
         ) : null}
-        {!saving && assignments.length > 0 && hasEmptyAssignment ? (
-          <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-            {t('teacherSetupPickAtLeastOne')}
-          </Text>
-        ) : null}
 
         <Button
           label={editMode ? t('teacherSetupSave') : t('teacherSetupContinue')}
@@ -318,6 +320,7 @@ const styles = StyleSheet.create({
   gradeCard: { borderWidth: 1, padding: 14, marginBottom: 12 },
   gradeCardHeader: { alignItems: 'center', marginBottom: 12, gap: 8 },
   gradeCardTitle: { fontSize: 15 },
+  gradeCardHint: { fontSize: 12, lineHeight: 18, marginTop: 10 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 13 },
