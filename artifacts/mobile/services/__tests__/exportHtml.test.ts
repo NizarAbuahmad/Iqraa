@@ -217,6 +217,30 @@ describe('answer key', () => {
     const html = buildQuizHTML(quiz(), 'اختبار', meta, true);
     assert.ok(html.includes('مراقبة سير العمل وتصحيح الانحرافات'));
   });
+
+  // A teacher sharing a worksheet to print for students, not to keep for
+  // themselves, needs the paper without the key — `includeAnswers` gates it,
+  // defaulting true so every existing caller keeps getting the key it always got.
+  it('a worksheet drops the answer-key block when answers are excluded', () => {
+    const withKey = buildWorksheetHTML(worksheet(), 'ورقة عمل', meta, true, [], true);
+    const withoutKey = buildWorksheetHTML(worksheet(), 'ورقة عمل', meta, true, [], false);
+    assert.ok(withKey.includes('مفتاح الإجابات'));
+    assert.ok(withKey.includes('class="answer-key"'));
+    assert.ok(!withoutKey.includes('مفتاح الإجابات'));
+    assert.ok(!withoutKey.includes('class="answer-key"'), 'the answer-key block rendered even though answers were excluded');
+  });
+
+  it('a worksheet slide deck drops the answer-key slide when answers are excluded', () => {
+    const withKey = buildWorksheetSlidesHTML(worksheet(), 'ورقة عمل', meta, true, [], true);
+    const withoutKey = buildWorksheetSlidesHTML(worksheet(), 'ورقة عمل', meta, true, [], false);
+    assert.ok(withKey.includes('مفتاح الإجابات'));
+    assert.ok(!withoutKey.includes('مفتاح الإجابات'));
+  });
+
+  it('defaults to including the key, so existing callers are unaffected', () => {
+    const defaulted = buildWorksheetHTML(worksheet(), 'ورقة عمل', meta, true);
+    assert.ok(defaulted.includes('مفتاح الإجابات'));
+  });
 });
 
 describe('document shape', () => {

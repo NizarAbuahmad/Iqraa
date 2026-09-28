@@ -47,6 +47,7 @@ import {
   flatIndexOf,
   parsePoints,
   removeWorksheetQuestionAt } from '@/services/worksheetEdits';
+import { optionMarkerState } from '@/services/quizEdits';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -164,6 +165,7 @@ export default function WorksheetScreen() {
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
   const [showExport, setShowExport] = useState(false);
+  const [showAnswers, setShowAnswers] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
@@ -502,9 +504,9 @@ export default function WorksheetScreen() {
     lang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
-    formatText: formatWorksheetText,
-    buildHTML: buildWorksheetHTML,
-    buildSlidesHTML: buildWorksheetSlidesHTML,
+    formatText: (ws, title, meta, isAr) => formatWorksheetText(ws, title, meta, isAr, showAnswers),
+    buildHTML: (ws, title, meta, isAr, figures) => buildWorksheetHTML(ws, title, meta, isAr, figures, showAnswers),
+    buildSlidesHTML: (ws, title, meta, isAr, figures) => buildWorksheetSlidesHTML(ws, title, meta, isAr, figures, showAnswers),
     onError: key => showToast(t(key)),
     onCopied: key => showToast(t(key)),
   });
@@ -750,6 +752,16 @@ export default function WorksheetScreen() {
             </Text>
           </Pressable>
 
+          <Pressable
+            onPress={() => setShowAnswers(v => !v)}
+            style={[styles.toggleBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
+          >
+            <Ionicons name={showAnswers ? 'eye-off-outline' : 'eye-outline'} size={16} color={ACCENT} />
+            <Text style={[{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>
+              {showAnswers ? t('hideAnswers') : t('showAnswers')}
+            </Text>
+          </Pressable>
+
           {result.sections.map((sec, si) => (
             <View key={sec.title} style={{ marginBottom: 20 }}>
               <Text style={[styles.secTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{sec.title}</Text>
@@ -769,7 +781,8 @@ export default function WorksheetScreen() {
                       edited={editedFlatIndexes.has(flatIndex)}
                     />
                     {q.options?.map((o, oi) => {
-                      const isCorrect = o === correctAnswer;
+                      const marker = optionMarkerState(showAnswers, o, correctAnswer);
+                      const isCorrect = marker === 'selected';
                       return (
                         <View key={oi} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                           <Text style={[styles.optLabel, { color: isCorrect ? '#067647' : colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
@@ -787,20 +800,26 @@ export default function WorksheetScreen() {
                           {/* Marking the answer is a choice among the options, so
                               it is made by picking one rather than retyping it
                               into the key below — that also removes the way a
-                              retyped key could stop matching any option's text. */}
-                          <Pressable
-                            onPress={() => updateAnswer(si, i, o)}
-                            hitSlop={6}
-                            accessibilityRole="button"
-                            accessibilityState={{ selected: isCorrect }}
-                            accessibilityLabel={`${o} — ${t('answer')}`}
-                          >
-                            <Ionicons
-                              name={isCorrect ? 'checkmark-circle' : 'ellipse-outline'}
-                              size={16}
-                              color={isCorrect ? '#067647' : colors.mutedForeground}
-                            />
-                          </Pressable>
+                              retyped key could stop matching any option's text.
+                              It disappears with the rest of the key: it names
+                              the answer to a screen reader as well as drawing
+                              it, so leaving it up while "hide answers" is on
+                              shows the class the answer. */}
+                          {marker !== 'hidden' && (
+                            <Pressable
+                              onPress={() => updateAnswer(si, i, o)}
+                              hitSlop={6}
+                              accessibilityRole="button"
+                              accessibilityState={{ selected: isCorrect }}
+                              accessibilityLabel={`${o} — ${t('answer')}`}
+                            >
+                              <Ionicons
+                                name={isCorrect ? 'checkmark-circle' : 'ellipse-outline'}
+                                size={16}
+                                color={isCorrect ? '#067647' : colors.mutedForeground}
+                              />
+                            </Pressable>
+                          )}
                         </View>
                       );
                     })}
@@ -832,7 +851,7 @@ export default function WorksheetScreen() {
             </View>
           ))}
 
-          {result.answerKey.length > 0 && (
+          {showAnswers && result.answerKey.length > 0 && (
             <View style={{ marginBottom: 8 }}>
               <View style={[styles.akHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Ionicons name="key-outline" size={15} color={ACCENT} />
@@ -959,6 +978,7 @@ function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
 }
 
 const styles = StyleSheet.create({
+  toggleBtn: { alignItems: 'center', gap: 6, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
   verifyText: { fontFamily: 'Cairo_600SemiBold', fontSize: 12, flex: 1 },
   label: { fontSize: 13, marginBottom: 6 },
