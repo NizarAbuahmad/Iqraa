@@ -292,6 +292,23 @@ export function extractQuerySubjectId(query: string): string | null {
   return null;
 }
 
+/** `query` with every subject name removed — the subject is scope, not topic. */
+export function stripSubjectNames(query: string): string {
+  let out = query;
+  for (const [, en, ar] of SUBJECT_PATTERNS) {
+    out = out
+      .replace(new RegExp(`\\b(?:${en})\\b`, 'gi'), ' ')
+      .replace(new RegExp(`${AR_BEFORE}(?:${ar})${AR_AFTER}`, 'g'), ' ');
+  }
+  // What introduced the subject is left dangling at the edges once it goes:
+  // «للغة الإنجليزية» leaves «للغة», «في العلوم» leaves «في».
+  const words = out.split(/\s+/).filter(Boolean);
+  const dangling = /^(?:في|فى|لغة|اللغة|للغة|بلغة|مادة|المادة|لمادة|in|for|subject|the|class)$/i;
+  while (words.length && dangling.test(words[0]!)) words.shift();
+  while (words.length && dangling.test(words[words.length - 1]!)) words.pop();
+  return words.join(' ');
+}
+
 /**
  * Decide whether chat should force the session's active lesson into results.
  * Soft pins must not override a confident KB hit for a different topic.
