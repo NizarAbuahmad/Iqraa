@@ -12,7 +12,8 @@ import {
   type SessionArtifact,
 } from './ai/teachingAssistant.ts';
 import { DEMO_CONTINUE } from './continueTeaching.ts';
-import { topicFromQuery } from './ai/artifactTopic.ts';
+import { stripScopePhrases, topicFromQuery } from './ai/artifactTopic.ts';
+import { artifactFromAsk } from './ai/askVocabulary.ts';
 import {
   getBookForLesson,
   getLessonById,
@@ -307,6 +308,31 @@ export function stripSubjectNames(query: string): string {
   while (words.length && dangling.test(words[0]!)) words.shift();
   while (words.length && dangling.test(words[words.length - 1]!)) words.pop();
   return words.join(' ');
+}
+
+/**
+ * The message to act on when the teacher answers a question the chat asked.
+ *
+ * The chat asked «أي درس من اللغة العربية للصف الرابع؟» after «حضّر خطة
+ * الدرس للعربي»; the teacher answered «الصف العاشر», and that answer was read
+ * as a new message on its own — no ask, no subject — so the chat asked
+ * «وضّح لي أكثر» and the lesson plan was lost. A reply that only narrows the
+ * pending ask (a grade, a lesson title, the same subject) now joins it; one
+ * that makes a new ask with its own topic, switches topic, or names another
+ * subject stands alone.
+ */
+export function mergeScopeReply(pending: string | null, reply: string): string {
+  const r = reply.trim();
+  if (!pending?.trim() || !r) return r;
+  if (topicSwitchTarget(r) !== null) return r;
+  const replySubject = extractQuerySubjectId(r);
+  const pendingSubject = extractQuerySubjectId(pending);
+  if (replySubject && pendingSubject && replySubject !== pendingSubject) return r;
+  // A full new ask ("a quiz on fractions") is its own message.
+  if (artifactFromAsk(r) && stripSubjectNames(topicFromQuery(r)).length >= 3) return r;
+  // The reply's grade replaces the one the chat guessed.
+  const base = extractQueryGradeId(r) ? stripScopePhrases(pending) : pending.trim();
+  return `${base} ${r}`;
 }
 
 /**
