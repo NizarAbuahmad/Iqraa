@@ -132,6 +132,7 @@ import {
   extractQuerySubjectId,
   stripSubjectNames,
   mergeScopeReply,
+  ordinalChoice,
   isBareArtifactShortcut,
   pinLesson,
   resolvePickedLesson,
@@ -1440,6 +1441,8 @@ export default function IqraScreen() {
   // answer («الصف العاشر», a lesson title, a chip) joins it instead of
   // arriving as a message of its own — see `mergeScopeReply`.
   const pendingScopeAskRef = useRef<string | null>(null);
+  // The lessons that "which lesson?" offered, so «الثاني» picks the second.
+  const pendingScopeLessonIdsRef = useRef<string[]>([]);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
@@ -1829,13 +1832,23 @@ export default function IqraScreen() {
       pinnedResourceId?: string,
     ) => {
       const shown = text.trim();
-      const q = mergeScopeReply(pendingScopeAskRef.current, shown);
+      // «الثاني» after «أي درس…؟» picks the second lesson offered, and keeps
+      // the ask it was offered for.
+      const ordinal = !pinnedLessonId && pendingScopeLessonIdsRef.current.length
+        ? ordinalChoice(shown)
+        : null;
+      const ordinalLessonId = ordinal ? pendingScopeLessonIdsRef.current[ordinal - 1] : undefined;
+      if (ordinalLessonId) pinnedLessonId = ordinalLessonId;
+      const q = ordinalLessonId
+        ? (pendingScopeAskRef.current ?? shown)
+        : mergeScopeReply(pendingScopeAskRef.current, shown);
       if (!q && !(attachments && attachments.length)) return;
       if (thinkingRef.current) {
         showToast(t('iqraChatBusy'));
         return;
       }
       pendingScopeAskRef.current = null;
+      pendingScopeLessonIdsRef.current = [];
 
       setInput('');
       setEphemeralSuggestions([]);
@@ -1875,7 +1888,14 @@ export default function IqraScreen() {
       // 0. Intent Router — BEFORE curriculum context / Teaching Assistant.
       //    Greetings & small talk must never trigger lesson generation.
       const wasAwaitingClarify = awaitingClarifyRef.current;
-      const route = classifyChatIntent(q, lang as 'ar' | 'en', awaitingClarifyRef.current, user?.firstName);
+      // A reply that answers the chat's own question, or names a subject or a
+      // grade, is never "unclear": «العربي الثاني» got «وضّح لي أكثر».
+      const answersChat = awaitingClarifyRef.current
+        || q !== shown
+        || !!ordinalLessonId
+        || !!extractQuerySubjectId(q)
+        || !!extractQueryGradeId(q);
+      const route = classifyChatIntent(q, lang as 'ar' | 'en', answersChat, user?.firstName);
       awaitingClarifyRef.current = route.intent === 'ambiguous';
       if (route.intent === 'artifact') {
         setThinkingLabel(
@@ -2229,6 +2249,8 @@ export default function IqraScreen() {
             timestamp: new Date(),
           };
           awaitingClarifyRef.current = true;
+          // A typed subject («العربي») instead of a chip still joins this ask.
+          pendingScopeAskRef.current = q;
           setMessages(prev => [...prev, clarifyMsg]);
           return;
         }
@@ -2358,6 +2380,8 @@ export default function IqraScreen() {
         // The `finally` on the enclosing try clears the thinking state, the
         // same way the subject-clarification branch above relies on it.
         awaitingClarifyRef.current = true;
+        pendingScopeAskRef.current = q;
+        pendingScopeLessonIdsRef.current = lessonGuess.candidates.map(c => c.id);
         setMessages(prev => [...prev, clarifyMsg]);
         return;
       }
@@ -2371,6 +2395,7 @@ export default function IqraScreen() {
             ? `أي درس من ${scope.subjectAr} لـ${scope.gradeAr}؟ اختر درسًا أو اكتب عنوانه.`
             : `Which ${scope.gradeEn} ${scope.subjectEn} lesson? Pick one or type its title.`;
           pendingScopeAskRef.current = q;
+          pendingScopeLessonIdsRef.current = subjectScopeLessons.slice(0, 4).map(l => l.id);
           outOfScopeSuggestions = subjectScopeLessons.slice(0, 4).map(l => ({
             text: lang === 'ar' ? l.titleAr : l.titleEn,
             lessonId: l.id,
