@@ -58,7 +58,7 @@ import {
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
-import { sendExpoPush } from "../lib/pushNotifications.js";
+import { sendExpoPush, deadTokensFrom } from "../lib/pushNotifications.js";
 import { isR2Configured, newChatMediaKey, presignedGetUrl, putObject } from "../lib/r2.js";
 import { syncClassGroupThread } from "../lib/classThread.js";
 import { resolveReport } from "../lib/reportDecision.js";
@@ -177,6 +177,13 @@ async function blockedSenderIds(viewerId: string): Promise<Set<string>> {
 
 const PUSH_BODY_PREVIEW_LENGTH = 120;
 
+/** Delete tokens Expo confirmed are gone. Called after every send, chat or test. */
+async function pruneDeadTokens(results: Awaited<ReturnType<typeof sendExpoPush>>): Promise<void> {
+  const dead = deadTokensFrom(results);
+  if (dead.length === 0) return;
+  await db.delete(devicePushTokens).where(inArray(devicePushTokens.expoPushToken, dead));
+}
+
 /**
  * Fire-and-forget: routes/messaging.ts's send-message handler calls this
  * after responding, never before — a push failure must never turn into a
@@ -210,9 +217,10 @@ async function notifyThreadParticipants(threadId: string, senderId: string, body
   const senderName = sender ? `${sender.firstName} ${sender.lastName}` : "Iqraa";
   const preview = body.length > PUSH_BODY_PREVIEW_LENGTH ? `${body.slice(0, PUSH_BODY_PREVIEW_LENGTH - 1)}…` : body;
 
-  await sendExpoPush(
+  const results = await sendExpoPush(
     tokenRows.map(t => ({ to: t.expoPushToken, title: senderName, body: preview, data: { threadId } })),
   );
+  await pruneDeadTokens(results);
 }
 
 // ─── Contacts ────────────────────────────────────────────────────────────────
@@ -1054,6 +1062,49 @@ router.post("/messaging/device-tokens", async (req: AuthenticatedRequest, res) =
     res.status(201).json({ ok: true });
   } catch (err) {
     failMessaging(res, err, "register device token", "Failed to register device token");
+  }
+});
+
+// ponytail: per-user cap, not global — this only ever pushes to the caller's
+// own devices, so the only abuse it enables is spamming yourself.
+const testPushLimiter = createRateLimiter({
+  windowMs: 10 * 60_000,
+  max: 5,
+  name: "device-token-test-push",
+  key: req => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
+});
+
+/**
+ * Closes the "push was never verified end to end" gap: sends a real Expo
+ * push to every token the caller has registered, so a human with the app
+ * open can confirm delivery without needing another account to message them.
+ * Also prunes any of the caller's tokens Expo reports as dead, same as a
+ * real chat send does.
+ */
+router.post("/messaging/device-tokens/test", testPushLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    const tokenRows = await db
+      .select({ expoPushToken: devicePushTokens.expoPushToken })
+      .from(devicePushTokens)
+      .where(eq(devicePushTokens.userId, req.user!.id));
+    if (tokenRows.length === 0) {
+      res.status(404).json({ error: "No push tokens registered for this account" });
+      return;
+    }
+
+    const results = await sendExpoPush(
+      tokenRows.map(t => ({
+        to: t.expoPushToken,
+        title: "Iqraa",
+        body: "Test notification — if you see this, push works.",
+        data: { test: true },
+      })),
+    );
+    await pruneDeadTokens(results);
+
+    res.json({ sent: results.length, results });
+  } catch (err) {
+    failMessaging(res, err, "test push", "Failed to send test push");
   }
 });
 
