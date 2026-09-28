@@ -60,9 +60,10 @@ import {
   noteServed,
   readPool,
   readSeenArtifactIds,
-  retireVariant,
+  reportVariant,
   storeVariant,
 } from "../lib/artifactCache.ts";
+import { notifyAdminsOfArtifactReport } from "../lib/adminNotify.ts";
 import { decideServe } from "../lib/variantPolicy.ts";
 import { SingleFlight } from "../lib/singleFlight.ts";
 import {
@@ -869,41 +870,44 @@ generateRouter.post('/generate/prompt-slides/questions', async (req: Authenticat
 
 
 /**
- * Take a pooled artifact out of circulation.
+ * Report a pooled artifact as wrong.
  *
- * This is the safety valve for sharing. One bad worksheet used to cost one
- * teacher a regeneration; pooled, it reaches every teacher who asks for that
- * lesson until somebody notices. A retired row is never served again and its
- * slot is never reused, so the next request for that key generates into a
- * fresh one.
+ * Unlike a straight retirement, this does NOT pull the artifact out of the
+ * pool by itself — it queues a report for a `system_admin` to approve (see
+ * `routes/moderation.ts`'s `/moderation/artifact-reports*`), and every other
+ * teacher asking for the same key keeps being served it until then. Only the
+ * *reporting* teacher gets an immediate personal replacement, via the
+ * client's `onRegenerate()` call after this responds.
  *
- * Open to any authenticated teacher, not to admins only. The person holding
- * the bad paper is the person who knows it is bad, and routing that through an
- * operator means it stays in the pool for as long as the round trip takes. The
- * downside is bounded in a way the alternative is not: the worst a wrong call
- * does is spend one generation regenerating something that was fine.
+ * Open to any authenticated teacher — same reasoning as before: the person
+ * holding the bad paper is the one who knows it is bad. What changed is who
+ * acts on that claim, not who may raise it.
  *
- * Under /generate/* so it inherits the auth guard the classroom-activity route
- * once escaped by being mounted bare — see the note above that route.
+ * Under /generate/* so it inherits the auth guard the classroom-activity
+ * route once escaped by being mounted bare — see the note above that route.
  */
 generateRouter.post("/generate/variants/:id/retire", async (req: AuthenticatedRequest, res) => {
   // Express types this as `string | string[]`; a repeated :id would otherwise
   // reach a uuid comparison as an array.
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   if (typeof id !== "string" || !id) {
-    res.status(404).json({ error: "No pooled variant to retire." });
+    res.status(404).json({ error: "No pooled variant to report." });
     return;
   }
-  const retired = await retireVariant(id);
-  if (!retired) {
+  const outcome = await reportVariant({ artifactId: id, reporterUserId: req.user!.id });
+  if (!outcome.ok) {
     // 404 for "no such variant" and for "already retired" alike: both mean
-    // there is nothing in the pool under that id any more, which is what the
-    // caller wanted, and telling the two apart says which ids exist.
-    res.status(404).json({ error: "No pooled variant to retire." });
+    // there is nothing left in the pool to report, which is what the caller
+    // wanted, and telling the two apart says which ids exist.
+    res.status(404).json({ error: "No pooled variant to report.", alreadyRetired: true });
     return;
   }
-  logger.warn({ artifactId: id, userId: req.user?.id }, "pooled artifact retired by a teacher");
-  res.json({ retired: true });
+  logger.warn(
+    { artifactId: id, reportId: outcome.reportId, userId: req.user?.id },
+    "pooled artifact reported by a teacher",
+  );
+  await notifyAdminsOfArtifactReport({ kind: outcome.kind, lessonRef: outcome.lessonRef });
+  res.json({ reported: true });
 });
 
 export default generateRouter;
