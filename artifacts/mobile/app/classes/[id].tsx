@@ -170,6 +170,10 @@ export default function ClassDetailScreen() {
     [students, parentContacts],
   );
 
+  // Who has actually claimed their roster row, split out once here rather than
+  // filtered inline in JSX twice (the count line and the chip row both need it).
+  const unjoinedStudents = useMemo(() => students.filter(s => !s.linked), [students]);
+
   useFocusEffect(
     useCallback(() => {
       void load();
@@ -570,6 +574,17 @@ export default function ClassDetailScreen() {
           ListHeaderComponent={
             <View style={{ gap: 10 }}>
               {errorBanner}
+              {studentAccounts && students.length > 0 && (
+                <JoinStatusSection
+                  total={students.length}
+                  unjoined={unjoinedStudents}
+                  onShareCode={() => setShowJoinCode(true)}
+                  colors={colors}
+                  isRTL={isRTL}
+                  align={align}
+                  t={t}
+                />
+              )}
               {students.length > 0 && (
                 <ParentContactSection summary={contactSummary} colors={colors} isRTL={isRTL} align={align} t={t} />
               )}
@@ -1443,6 +1458,63 @@ function MasterySection({
             )}
           </View>
         ))
+      )}
+    </View>
+  );
+}
+
+/**
+ * Who has actually redeemed a join code, since a roster pasted in from a
+ * register otherwise gives no sign of that until a teacher scans every row
+ * for the small `rosterLinked` pill. Each unjoined name opens that student's
+ * own claim-code screen — the same route the per-row key icon opens — so
+ * re-sharing one straggler's code is one tap instead of a scroll-and-search.
+ */
+function JoinStatusSection({
+  total, unjoined, onShareCode, colors, isRTL, align, t,
+}: {
+  total: number;
+  unjoined: RosterStudent[];
+  onShareCode: () => void;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  align: 'left' | 'right';
+  t: (key: any, ...args: any[]) => string;
+}) {
+  const linked = total - unjoined.length;
+
+  return (
+    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10, flexDirection: 'column', alignItems: 'stretch' }]}>
+      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align, flex: 1 }}>
+          {t('joinedCount', linked, total)}
+        </Text>
+        <Pressable onPress={onShareCode} hitSlop={8}>
+          <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{t('joinStatusOpenCode')}</Text>
+        </Pressable>
+      </View>
+
+      {unjoined.length === 0 ? (
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+          {t('joinStatusAllJoined')}
+        </Text>
+      ) : (
+        <View style={{ gap: 6 }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+            {t('joinStatusNotJoinedLabel')}
+          </Text>
+          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6 }}>
+            {unjoined.map(s => (
+              <Pressable
+                key={s.id}
+                onPress={() => router.push(`/messaging/claim/${s.id}?studentName=${encodeURIComponent(s.displayName)}`)}
+                style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, borderWidth: 1, borderColor: colors.border }}
+              >
+                <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{s.displayName}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
       )}
     </View>
   );
