@@ -130,6 +130,7 @@ import {
   buildLessonSuggestions,
   extractQueryGradeId,
   extractQuerySubjectId,
+  stripSubjectNames,
   isBareArtifactShortcut,
   pinLesson,
   resolvePickedLesson,
@@ -2170,22 +2171,32 @@ export default function IqraScreen() {
         : null;
       let subjectScopeLessons: KBLesson[] = [];
       if (subjectScopeGradeId && querySubjectId) {
-        const inScope = filterResultsBySubject(
-          filterResultsByGrade(results, subjectScopeGradeId),
-          querySubjectId,
-        );
-        if (inScope.length) {
-          results = inScope;
-        } else {
-          const scoped = searchKBRanked(topicFromQuery(q) || q, lang as 'ar' | 'en', {
-            gradeId: subjectScopeGradeId,
-          }).filter(r => getBookForLesson(r.lesson)?.subjectId === querySubjectId);
-          results = (scoped[0]?.score ?? 0) >= KB_CONFIDENT_SCORE
-            ? deduplicateByUnit(scoped.map(r => r.lesson), 3)
-            : [];
-          if (!results.length) {
-            subjectScopeLessons = getLessonsInScope(subjectScopeGradeId, querySubjectId);
-          }
+        // Search the scope on what is left once the ask and the subject are
+        // stripped. "give me study plan for english" leaves nothing; the
+        // whole-KB `results` had kept grade 10 English "Event planning" on the
+        // word "plan", so nothing from `results` is trusted here.
+        const topic = stripSubjectNames(topicFromQuery(q));
+        const scoped = topic.length >= 3
+          ? searchKBRanked(topic, lang as 'ar' | 'en', { gradeId: subjectScopeGradeId })
+            .filter(r => getBookForLesson(r.lesson)?.subjectId === querySubjectId)
+          : [];
+        // Naming the picked lesson's own subject and nothing else ("a study
+        // plan for math" with a grade 10 maths lesson picked) is about that
+        // lesson. Another subject never falls back to it.
+        const pickedInScope = [activeLesson, ctxLesson].find(l => {
+          const book = l ? getBookForLesson(l) : undefined;
+          return book?.gradeId === subjectScopeGradeId && book.subjectId === querySubjectId;
+        }) ?? null;
+        results = (scoped[0]?.score ?? 0) >= KB_CONFIDENT_SCORE
+          ? deduplicateByUnit(scoped.map(r => r.lesson), 3)
+          : (topic.length < 3 && pickedInScope ? [pickedInScope] : []);
+        if (!results.length) {
+          subjectScopeLessons = getLessonsInScope(subjectScopeGradeId, querySubjectId);
+        }
+        // The whole-KB top hit is not this answer's lesson any more; pinning
+        // it moved the lesson card to "Event planning".
+        if (pendingHardPin && !results.some(r => r.id === pendingHardPin!.id)) {
+          pendingHardPin = null;
         }
       }
 

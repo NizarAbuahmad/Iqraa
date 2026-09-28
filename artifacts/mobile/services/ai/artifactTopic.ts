@@ -30,10 +30,12 @@ const VERBS = [
 
 /** What the ask is asking *for* — the artifact itself. */
 const NOUNS = [
-  `خطة${ACC}(?:\\s*درس)?`, `ورقة${ACC}(?:\\s*عمل)?`, `اختبار${ACC}`, `واجب${ACC}`,
+  // «خطة دراسية» / "study plan" name the kind of plan, never its topic: left
+  // in, "plan" matched "Event planning" and became the lesson.
+  `خطة${ACC}(?:\\s*(?:درس|دراسية|تدريس|فصلية|أسبوعية|اسبوعية|سنوية|علاجية))?`, `ورقة${ACC}(?:\\s*عمل)?`, `اختبار${ACC}`, `واجب${ACC}`,
   `نشاط${ACC}`, `درس${ACC}`, `بطاقة${ACC}(?:\\s*خروج)?`,
   '[اإ]نفو[جغك]رافي[كك]', 'ملخص\\s*بصري',
-  'lesson\\s*plan', 'worksheet', 'quiz', 'homework', 'activity', 'exit\\s*ticket',
+  '(?:lesson|study|teaching|unit|weekly|semester|term|yearly|annual)\\s*plan', 'worksheet', 'quiz', 'homework', 'activity', 'exit\\s*ticket',
   'infographic', 'visual\\s*summary',
 ];
 
