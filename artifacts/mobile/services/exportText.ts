@@ -186,8 +186,8 @@ export function formatAttemptResultText(
     if (result.isProvisional) {
       lines.push(
         isAr
-          ? 'نتيجة أولية — بعض الأسئلة تحتاج تصحيحًا يدويًا لم يُبنَ بعد.'
-          : "Provisional — some questions still need manual grading, which isn't built yet.",
+          ? 'نتيجة أولية — بعض الأسئلة ما زالت تحتاج تصحيحًا يدويًا من المعلم.'
+          : 'Provisional — some questions still need manual grading from the teacher.',
       );
     }
 
