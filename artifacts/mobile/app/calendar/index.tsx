@@ -26,6 +26,8 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
+/** Keeps day cells a normal calendar-app size instead of stretching to CONTENT_MAX_WIDTH / 7. */
+const CALENDAR_GRID_MAX_WIDTH = 480;
 const WEEKDAY_KEYS = [
   'planWeekdaySun', 'planWeekdayMon', 'planWeekdayTue', 'planWeekdayWed',
   'planWeekdayThu', 'planWeekdayFri', 'planWeekdaySat',
@@ -143,72 +145,78 @@ export default function CalendarScreen() {
             <LoadError message={error} onRetry={() => void load()} />
           ) : null}
 
-          {/* Month navigation */}
-          <View style={{ flexDirection: rowDir, alignItems: 'center', justifyContent: 'space-between' }}>
-            <Pressable onPress={isRTL ? goNextMonth : goPrevMonth} hitSlop={10}>
-              <Ionicons name="chevron-back" size={20} color={colors.foreground} style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined} />
-            </Pressable>
-            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>{monthLabel}</Text>
-            <Pressable onPress={isRTL ? goPrevMonth : goNextMonth} hitSlop={10}>
-              <Ionicons name="chevron-forward" size={20} color={colors.foreground} style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined} />
-            </Pressable>
-          </View>
+          {/* Month nav + weekday header + grid: capped narrower than the page
+              content — flex:1 cells sized off the full content width would
+              turn into 150px+ squares on a wide desktop window, pushing the
+              agenda below several screens' worth of scrolling. */}
+          <View style={{ width: '100%', maxWidth: CALENDAR_GRID_MAX_WIDTH, alignSelf: 'center', gap: 16 }}>
+            {/* Month navigation */}
+            <View style={{ flexDirection: rowDir, alignItems: 'center', justifyContent: 'space-between' }}>
+              <Pressable onPress={isRTL ? goNextMonth : goPrevMonth} hitSlop={10}>
+                <Ionicons name="chevron-back" size={20} color={colors.foreground} style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined} />
+              </Pressable>
+              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>{monthLabel}</Text>
+              <Pressable onPress={isRTL ? goPrevMonth : goNextMonth} hitSlop={10}>
+                <Ionicons name="chevron-forward" size={20} color={colors.foreground} style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined} />
+              </Pressable>
+            </View>
 
-          {/* Weekday header */}
-          <View style={{ flexDirection: rowDir }}>
-            {WEEKDAY_KEYS.map(key => (
-              <Text
-                key={key}
-                style={{ flex: 1, textAlign: 'center', color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}
-              >
-                {t(key)}
-              </Text>
-            ))}
-          </View>
+            {/* Weekday header */}
+            <View style={{ flexDirection: rowDir }}>
+              {WEEKDAY_KEYS.map(key => (
+                <Text
+                  key={key}
+                  style={{ flex: 1, textAlign: 'center', color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}
+                >
+                  {t(key)}
+                </Text>
+              ))}
+            </View>
 
-          {/* Month grid: 6 fixed rows of 7 days */}
-          <View style={{ gap: 4 }}>
-            {Array.from({ length: 6 }, (_, week) => (
-              <View key={week} style={{ flexDirection: rowDir, gap: 4 }}>
-                {gridDates.slice(week * 7, week * 7 + 7).map(date => {
-                  const inMonth = isInMonth(date, viewYear, viewMonth);
-                  const isToday = date === today;
-                  const isSelected = date === selectedDate;
-                  const hasAgenda = inMonth && dayHasAgenda(buildDayAgenda(date, periods, slots, plans));
-                  const dayNum = Number(date.slice(-2));
-                  return (
-                    <Pressable
-                      key={date}
-                      onPress={() => setSelectedDate(date)}
-                      style={{
-                        flex: 1, aspectRatio: 1, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
-                        backgroundColor: isSelected ? ACCENT : 'transparent',
-                        borderWidth: isToday && !isSelected ? 1.5 : 0,
-                        borderColor: ACCENT,
-                      }}
-                    >
-                      <Text
+            {/* Month grid: 6 fixed rows of 7 days */}
+            <View style={{ gap: 4 }}>
+              {Array.from({ length: 6 }, (_, week) => (
+                <View key={week} style={{ flexDirection: rowDir, gap: 4 }}>
+                  {gridDates.slice(week * 7, week * 7 + 7).map(date => {
+                    const inMonth = isInMonth(date, viewYear, viewMonth);
+                    const isToday = date === today;
+                    const isSelected = date === selectedDate;
+                    const hasAgenda = inMonth && dayHasAgenda(buildDayAgenda(date, periods, slots, plans));
+                    const dayNum = Number(date.slice(-2));
+                    return (
+                      <Pressable
+                        key={date}
+                        onPress={() => setSelectedDate(date)}
                         style={{
-                          color: isSelected ? palette.primaryForeground : inMonth ? colors.foreground : colors.mutedForeground,
-                          fontFamily: isToday || isSelected ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                          fontSize: 13, opacity: inMonth ? 1 : 0.4,
+                          flex: 1, aspectRatio: 1, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+                          backgroundColor: isSelected ? ACCENT : 'transparent',
+                          borderWidth: isToday && !isSelected ? 1.5 : 0,
+                          borderColor: ACCENT,
                         }}
                       >
-                        {dayNum}
-                      </Text>
-                      {hasAgenda ? (
-                        <View
+                        <Text
                           style={{
-                            width: 4, height: 4, borderRadius: 2, marginTop: 2,
-                            backgroundColor: isSelected ? '#fff' : ACCENT,
+                            color: isSelected ? palette.primaryForeground : inMonth ? colors.foreground : colors.mutedForeground,
+                            fontFamily: isToday || isSelected ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                            fontSize: 13, opacity: inMonth ? 1 : 0.4,
                           }}
-                        />
-                      ) : null}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ))}
+                        >
+                          {dayNum}
+                        </Text>
+                        {hasAgenda ? (
+                          <View
+                            style={{
+                              width: 4, height: 4, borderRadius: 2, marginTop: 2,
+                              backgroundColor: isSelected ? '#fff' : ACCENT,
+                            }}
+                          />
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
           </View>
 
           {/* Selected day's agenda */}
