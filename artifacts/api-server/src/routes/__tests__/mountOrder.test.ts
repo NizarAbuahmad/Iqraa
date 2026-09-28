@@ -333,6 +333,21 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
   });
 
+  it("mounts the artifact-report queue, and refuses it without a token", async () => {
+    // Same shape as the chat-moderation queue above, but for reported AI
+    // artifacts: a report has always been possible since this route
+    // existed as an immediate retire, so a 404 here would mean the new
+    // review surface silently isn't reachable.
+    const res = await fetch(`${base}/moderation/artifact-reports`);
+    assert.equal(res.status, 401, "the artifact-report queue must exist and require a token");
+
+    const resolve = await fetch(
+      `${base}/moderation/artifact-reports/00000000-0000-0000-0000-000000000000/resolve`,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" },
+    );
+    assert.equal(resolve.status, 401, "resolving an artifact report must require a token");
+  });
+
   it("guards roster, evaluation, attempt and workspace routes", async () => {
     for (const route of ["/students", "/classes", "/evaluations", "/attempts", "/workspace/items"]) {
       const res = await fetch(`${base}${route}`);
