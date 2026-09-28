@@ -239,6 +239,12 @@ jobs:
       # verifier takes ~4.6s against a client timeout of 8s (VERIFY_TIMEOUT_MS
       # in mathVerifierClient.ts). Whether that trade is worth making needs a
       # measurement, not a guess.
+      #
+      # `--min-instances 1` (added 2026-09-28, same reasoning as iqraa-api's
+      # in the job above): the verifier scaling to zero was the other half of
+      # the worst-case ~10.5s stall fetchWithTimeout.ts describes — app to API
+      # to verifier, two cold starts back to back. Same tradeoff: a small
+      # continuous charge instead of scale-to-zero $0.
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy iqraa-verifier \
@@ -249,7 +255,8 @@ jobs:
             --memory 512Mi \
             --cpu 1 \
             --concurrency 80 \
-            --timeout 300
+            --timeout 300 \
+            --min-instances 1
 
       - name: Verify it answers
         run: |

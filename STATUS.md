@@ -5041,12 +5041,15 @@ for less.
 | Verifier warm | 0.39s | 0.21-0.60s |
 | Cost at ~500 teachers | $14/mo (paid tier) | likely $0 (free tier: 2M req, 180k vCPU-s/mo) |
 
-_(Superseded 2026-09-26 for the API row only: `iqraa-api` now deploys with
+_(Superseded 2026-09-26 for the API row: `iqraa-api` now deploys with
 `--min-instances 1` — deploy.yml — to remove the 5.97s cold start that used to
 sit in front of every app open (`_layout.tsx` blocks its splash on `/auth/me`).
 That keeps one instance warm continuously, so the API no longer scales to
-zero and the "likely $0" free-tier cost no longer holds for it. The verifier
-row is untouched and still scales to zero.)_
+zero and the "likely $0" free-tier cost no longer holds for it.
+Superseded again 2026-09-28 for the verifier row: `iqraa-verifier` now also
+deploys with `--min-instances 1`, for the other half of the worst-case
+~10.5s two-cold-starts stall (`fetchWithTimeout.ts`). Neither service scales
+to zero any more, and "likely $0" holds for neither.)_
 
 Verified live: `GET /api/healthz` ok, `/api/healthz/ai-budget` reads the shared
 Neon database (same `spentUsd` as Render, so both point at one database),
