@@ -3594,6 +3594,39 @@ sufficient. `registerPushToken` swallows every failure by design
 from inside the app — check that a token row reaches `device_push_tokens`,
 then send one.
 
+## Push: dead tokens now pruned, a self-test endpoint exists, still unverified on a device, 2026-09-28
+
+Three gaps from the entry above closed, one still open. `sendExpoPush`
+(`lib/pushNotifications.ts`) used to read only the HTTP status of Expo's
+response and discard the body — Expo answers 200 OK with a per-message
+ticket even when a specific token is dead, so a `DeviceNotRegistered` error
+was invisible and `device_push_tokens` accumulated stale rows forever. It now
+parses each ticket and returns one `ExpoPushResult` per message;
+`notifyThreadParticipants` and the new test endpoint both delete any token
+Expo reports as `DeviceNotRegistered` right after sending.
+
+`registerPushToken`/`unregisterPushToken` (`services/pushTokens.ts`) still
+swallow every failure by design — a push-registration problem must never
+block sign-in — but now log it with `console.warn` instead of nothing, so a
+broken permission grant or missing FCM config stops looking identical to a
+working one from inside a debug session.
+
+New: `POST /messaging/device-tokens/test`, rate-limited to 5 per 10 minutes
+per user. Sends a real Expo push to every token the caller has registered and
+returns each token's ticket, so verifying delivery no longer needs a second
+account to message you — sign in on a real build, hit the endpoint, watch the
+device.
+
+**Still not verified: that a notification actually arrives on a device.** No
+device was available to test against from here. `sendExpoPush` is unit
+tested (5 cases: valid/invalid token filtering, ticket-to-token mapping,
+non-2xx response, thrown fetch, 100-message chunking —
+`pushNotifications.test.ts`) and the full api-server (970) and mobile (1979)
+suites pass, but that proves the code's logic, not that Expo's servers
+deliver to a phone. The next person with a build installed should hit the new
+endpoint and confirm the banner shows up. `schema-push:` none — no schema
+change.
+
 One rough edge shipped by PR #281, which made a student's claim code findable
 from the class roster: minting a code calls `POST /students/:id/claim-code`,
 which `studentAccountsEnabled()` refuses in v1 with

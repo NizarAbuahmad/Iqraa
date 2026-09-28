@@ -37,8 +37,10 @@ export async function registerPushToken(): Promise<void> {
       method: 'POST',
       body: JSON.stringify({ expoPushToken, platform: Platform.OS }),
     });
-  } catch {
-    // Best-effort — see file header.
+  } catch (err) {
+    // Best-effort — see file header. Logged, not silent: a broken permission
+    // grant or missing FCM config used to look identical to a working setup.
+    console.warn('[push] registerPushToken failed', err);
   }
 }
 
@@ -90,7 +92,8 @@ export async function unregisterPushToken(): Promise<void> {
   try {
     const { data: expoPushToken } = await Notifications.getExpoPushTokenAsync();
     await apiJson(`/messaging/device-tokens/${encodeURIComponent(expoPushToken)}`, { method: 'DELETE' });
-  } catch {
+  } catch (err) {
     // Best-effort — see file header.
+    console.warn('[push] unregisterPushToken failed', err);
   }
 }
