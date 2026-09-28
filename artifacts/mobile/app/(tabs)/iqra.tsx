@@ -131,6 +131,7 @@ import {
   extractQueryGradeId,
   extractQuerySubjectId,
   stripSubjectNames,
+  mergeScopeReply,
   isBareArtifactShortcut,
   pinLesson,
   resolvePickedLesson,
@@ -1435,6 +1436,10 @@ export default function IqraScreen() {
   // True while the last thing IQRA said was the clarify question. Answering it
   // with something the router still cannot classify must not re-ask it.
   const awaitingClarifyRef = useRef(false);
+  // The ask behind a "which lesson?" / "what topic?" reply, so the teacher's
+  // answer («الصف العاشر», a lesson title, a chip) joins it instead of
+  // arriving as a message of its own — see `mergeScopeReply`.
+  const pendingScopeAskRef = useRef<string | null>(null);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
@@ -1823,12 +1828,14 @@ export default function IqraScreen() {
       /** Shelf document the teacher tapped — named first in the support block. */
       pinnedResourceId?: string,
     ) => {
-      const q = text.trim();
+      const shown = text.trim();
+      const q = mergeScopeReply(pendingScopeAskRef.current, shown);
       if (!q && !(attachments && attachments.length)) return;
       if (thinkingRef.current) {
         showToast(t('iqraChatBusy'));
         return;
       }
+      pendingScopeAskRef.current = null;
 
       setInput('');
       setEphemeralSuggestions([]);
@@ -1843,7 +1850,7 @@ export default function IqraScreen() {
       const userMsg: Message = {
         id: Date.now().toString(),
         role: 'user',
-        text: q,
+        text: shown,
         attachments,
         timestamp: new Date(),
       };
@@ -2363,6 +2370,7 @@ export default function IqraScreen() {
           responseText = lang === 'ar'
             ? `أي درس من ${scope.subjectAr} لـ${scope.gradeAr}؟ اختر درسًا أو اكتب عنوانه.`
             : `Which ${scope.gradeEn} ${scope.subjectEn} lesson? Pick one or type its title.`;
+          pendingScopeAskRef.current = q;
           outOfScopeSuggestions = subjectScopeLessons.slice(0, 4).map(l => ({
             text: lang === 'ar' ? l.titleAr : l.titleEn,
             lessonId: l.id,
@@ -2370,6 +2378,7 @@ export default function IqraScreen() {
         } else if (route.intent === 'artifact') {
           // Artifact shortcuts like "خطة" must not die silently — ask for the lesson topic.
           responseText = t('iqraArtifactNeedTopic');
+          pendingScopeAskRef.current = q;
         } else if (wasAwaitingClarify) {
           // Short / vague reply to a clarifying question — keep the dialogue open
           // rather than showing the generic out-of-scope message.

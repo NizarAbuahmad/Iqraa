@@ -121,6 +121,11 @@ function trimEdgeFiller(s: string): string {
  * whole words, and one pass leaves «ورقة عمل صفية» as «صفية» — a qualifier
  * that only becomes a leading word once the noun in front of it is gone.
  */
+/** `query` without the grade (and audience) it names. */
+export function stripScopePhrases(query: string): string {
+  return query.replace(SCOPE_PHRASE_RE, '$1').replace(/\s+/g, ' ').trim();
+}
+
 export function topicFromQuery(query: string): string {
   // Trailing «؟» / "?" glued to the last word hid it from the whole-word strip
   // («خطة درس؟» left «درس؟»).
