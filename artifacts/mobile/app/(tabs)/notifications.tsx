@@ -191,11 +191,11 @@ export default function NotificationsScreen() {
             </Text>
           )}
         </View>
-        <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 16, paddingBottom: 6 }]}>
+        <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12, paddingBottom: 6, alignItems: 'center' }]}>
           {isTeacherRole(user?.role) && (
             <Pressable onPress={() => router.push('/messaging/new-group')} hitSlop={10} accessibilityRole="button" style={[styles.headerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Ionicons name="people-circle-outline" size={22} color={colors.primary} />
-              <Text style={[styles.headerActionText, { color: colors.primary }]}>{t('messagingNewGroup')}</Text>
+              <Ionicons name="people-circle-outline" size={20} color={colors.mutedForeground} />
+              <Text style={[styles.headerActionText, { color: colors.mutedForeground }]}>{t('messagingNewGroup')}</Text>
             </Pressable>
           )}
           {/*
@@ -204,9 +204,9 @@ export default function NotificationsScreen() {
             explaining why — indistinguishable from the feature being broken.
             The sheet now says what is missing and how to fix it.
           */}
-          <Pressable onPress={() => setNewChatOpen(true)} hitSlop={10} accessibilityRole="button" style={[styles.headerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="create-outline" size={20} color={colors.primary} />
-            <Text style={[styles.headerActionText, { color: colors.primary }]}>{t('messagingNewMessage')}</Text>
+          <Pressable onPress={() => setNewChatOpen(true)} hitSlop={10} accessibilityRole="button" style={[styles.headerActionPrimary, { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: colors.primary }]}>
+            <Ionicons name="create-outline" size={18} color="#fff" />
+            <Text style={[styles.headerActionText, { color: '#fff' }]}>{t('messagingNewMessage')}</Text>
           </Pressable>
         </View>
       </View>
@@ -278,16 +278,20 @@ export default function NotificationsScreen() {
                       </Text>
                     ) : null}
                   </View>
-                  {/* Direct threads only — a group has no single "other party"
-                      role to show, and otherParticipant is null for those
-                      server-side. Tells a student thread apart from a parent
-                      thread without opening either. */}
                   {item.type === 'direct' && other ? (
                     <Text
                       style={[styles.threadRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
                       numberOfLines={1}
                     >
                       {chatRoleLabel(other.role, t)}
+                    </Text>
+                  ) : item.type === 'class_group' ? (
+                    <Text style={[styles.threadRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]} numberOfLines={1}>
+                      {t('messagingThreadClassGroup')}
+                    </Text>
+                  ) : item.type === 'custom_group' ? (
+                    <Text style={[styles.threadRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]} numberOfLines={1}>
+                      {t('messagingThreadCustomGroup')}
                     </Text>
                   ) : null}
                   <Text
@@ -297,7 +301,13 @@ export default function NotificationsScreen() {
                     {preview}
                   </Text>
                 </View>
-                {item.unreadCount > 0 && <View style={[styles.dot, { backgroundColor: colors.primary }]} />}
+                {item.unreadCount > 0 && (
+                  <View style={[styles.badge, { backgroundColor: colors.primary }]}>
+                    <Text style={{ color: '#fff', fontSize: 11, fontFamily: 'Cairo_600SemiBold', lineHeight: 16 }}>
+                      {item.unreadCount > 9 ? '9+' : String(item.unreadCount)}
+                    </Text>
+                  </View>
+                )}
               </Pressable>
             );
           }}
@@ -346,6 +356,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28 },
   unreadCount: { fontSize: 13, lineHeight: 21, marginTop: 2 },
   headerAction: { alignItems: 'center', gap: 4 },
+  headerActionPrimary: { alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   headerActionText: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   threadCard: { padding: 14, gap: 12, borderWidth: 1, alignItems: 'center' },
@@ -353,7 +364,7 @@ const styles = StyleSheet.create({
   threadName: { fontSize: 15, marginBottom: 3 },
   threadRole: { fontSize: 12, marginBottom: 2 },
   threadPreview: { fontSize: 13, lineHeight: 21 },
-  dot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
+  badge: { minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   empty: { alignItems: 'center', paddingTop: 60, paddingBottom: 24, paddingHorizontal: 32, gap: 8 },
   emptyText: { fontSize: 15, fontFamily: 'Cairo_500Medium' as any },
   emptyDesc: { fontSize: 13, lineHeight: 21, textAlign: 'center' },
