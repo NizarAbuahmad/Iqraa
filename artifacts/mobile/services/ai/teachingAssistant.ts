@@ -3,6 +3,7 @@
  * Demo Mode: fully local KB grounding. No OpenAI / network.
  */
 
+import { artifactFromAsk } from './askVocabulary.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 import { getBookForLesson, getUnitForLesson } from '../knowledgeBase.ts';
 import { GRADES, SUBJECTS } from '../curriculumData.ts';
@@ -401,14 +402,11 @@ export function detectIntent(query: string): Intent {
   if (/مختصر|باختصار|فقط\s*الإجابة|short\s*answer|briefly|just\s*the\s*answer|اختصره|اجعله\s*أبسط|أجعله\s*أبسط|simplify|shorten/i.test(q)) {
     return 'short';
   }
-  // Bare "خطة" / "إعداد خطة" must map to lesson_plan (chip + short typed shortcuts)
-  if (/^(إعداد\s*)?خطة(\s*درس)?$/i.test(q) || /خطة\s*درس|lesson\s*plan|(^|[\s،,])خطة([\s،,]|$)/i.test(q)) {
-    return 'lesson_plan';
-  }
-  if (/واجب|homework/i.test(q)) return 'homework';
-  if (/ورقة(\s*عمل)?|worksheet/i.test(q)) return 'worksheet';
-  if (/اختبار|تقويم|quiz|assessment/i.test(q)) return 'quiz';
-  if (/نشاط|activity|تعاوني|جماعي|لعبة|game/i.test(q)) return 'activity';
+  // The material words live in one place, shared with the intent router.
+  const asked = artifactFromAsk(q);
+  if (asked === 'lesson-plan') return 'lesson_plan';
+  if (asked) return asked;
+  if (/ورقة|تعاوني|جماعي/i.test(q)) return /ورقة/.test(q) ? 'worksheet' : 'activity';
   if (/مثال|example|تمارين?\s*محلول|أضف\s*مثالاً?|اضف\s*مثال|add\s*an?\s*example/i.test(q)) {
     return 'example';
   }

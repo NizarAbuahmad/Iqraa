@@ -2,6 +2,7 @@
  * Intent Router — classifies chat messages BEFORE curriculum / Teaching Assistant.
  * Demo Mode only; fully local. Greetings & small talk never trigger lesson generation.
  */
+import { artifactFromAsk } from './askVocabulary.ts';
 import { isAppHelpQuery } from '../appHelp.ts';
 
 export type ChatRouteIntent =
@@ -124,6 +125,8 @@ function isRefinement(q: string): boolean {
 }
 
 function isArtifact(q: string): boolean {
+  // The shared vocabulary first; the patterns below are the older list.
+  if (artifactFromAsk(q)) return true;
   // Verb + artifact noun (e.g. "أنشئ خطة", "حضّر اختبار")
   if (
     /أنشئ|انشئ|ولّد|ولد|اعمل|أعمل|جهز|جهّز|حضّر|حضر|أعد|اعد|إعداد|اعداد|create|generate|make\s+(a|me)|build|prepare/i.test(q)
