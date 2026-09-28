@@ -21,6 +21,7 @@ import { todayISO } from '@/services/planEntries';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { LoadError } from '@/components/ui/LoadError';
+import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -137,7 +138,7 @@ export default function CalendarScreen() {
           <ActivityIndicator color={ACCENT} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60, gap: 16 }}>
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60, gap: 16, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}>
           {error ? (
             <LoadError message={error} onRetry={() => void load()} />
           ) : null}
