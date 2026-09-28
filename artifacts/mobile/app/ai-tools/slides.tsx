@@ -43,6 +43,7 @@ import type { LessonMediaItem as UploadedAttachment } from '@/services/lessonMed
 import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
+import { pooledVariantId } from '@/services/ai/regeneration';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { timerSecondsForSlide } from '@/services/presentationUtils';
 import { deleteItem, getAllItems, saveItem, updateItem } from '@/services/workspace';
@@ -139,6 +140,15 @@ export default function SlidesScreen() {
    */
   const lookedUpKeyRef = useRef<string | null>(null);
   const [plan, setPlan] = useState<LessonPlanOutput | null>(null);
+  /**
+   * The shared-pool id of the last `/generate/lesson-teaching` result, so
+   * "report a problem" (below) can withdraw exactly that cached explanation
+   * rather than the deck as a whole — the deck itself is never pooled, only
+   * the pieces the AI wrote into it. Cleared on every rebuild so a stale id
+   * can never be reported after the section it names is gone.
+   */
+  const [teachingVariantId, setTeachingVariantId] = useState<string | undefined>(undefined);
+  const [reportingTeaching, setReportingTeaching] = useState(false);
   const [grounded, setGrounded] = useState(false);
   const [groundedLesson, setGroundedLesson] = useState('');
   const [error, setError] = useState('');
@@ -326,7 +336,7 @@ export default function SlidesScreen() {
     setError(''); setCancelled(false);
     const controller = new AbortController();
     abortRef.current = controller;
-    setLoading(true); setDeck(null);
+    setLoading(true); setDeck(null); setTeachingVariantId(undefined);
     // A new deck is a different material: it is not the one that was saved.
     forgetSaved();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -420,6 +430,11 @@ export default function SlidesScreen() {
 
       setPlan(lessonPlan);
       const [checks, teaching] = await Promise.all([checksPromise, teachingPromise]);
+      // The server merges `variantId` into the JSON body (see `withMeta` in
+      // routes/generate.ts) — not part of `LessonTeachingOutput`'s own shape,
+      // same convention `pooledVariantId` already reads for every other
+      // generator's result.
+      setTeachingVariantId(pooledVariantId(teaching));
       // A live graph slide when the lesson's own text carries plottable
       // functions — same conservative extractor Start Class already uses.
       //
@@ -589,6 +604,39 @@ export default function SlidesScreen() {
     } finally {
       abortRef.current = null;
       setLoading(false);
+    }
+  };
+
+  /**
+   * Withdraw the AI-written explanation from the shared pool, then rebuild.
+   *
+   * Same shape as `GeneratorResultActions.reportProblem` (worksheet/quiz/
+   * lesson-plan/activity), but screen-owned per that component's own note:
+   * Slides has its own export formats and no in-place regenerate, so its
+   * action row was never forced through the shared one. Withdrawing without
+   * rebuilding would leave the teacher looking at the bad section with no
+   * replacement; rebuilding without withdrawing would leave it in the pool
+   * for every other teacher who asks for this lesson.
+   */
+  const reportTeachingProblem = async () => {
+    if (!teachingVariantId || reportingTeaching) return;
+    const ok = await confirm({
+      title: t('reportArtifactTitle'),
+      message: t('reportArtifactMsg'),
+      confirmLabel: t('reportArtifactConfirm'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    setReportingTeaching(true);
+    try {
+      const retired = await aiService.retireVariant(teachingVariantId);
+      showToast(retired ? t('reportArtifactDone') : t('reportArtifactGone'));
+      await generate();
+    } catch {
+      showToast(t('reportArtifactFailed'));
+    } finally {
+      setReportingTeaching(false);
     }
   };
 
@@ -900,11 +948,43 @@ export default function SlidesScreen() {
                     }]}>
                       {v.anySymbolic
                         ? t('quizVerifiedCount', v.symbolic, examples.length)
-                        : t('quizVerifiedNone')}
+                        // "keys come from the reviewed bank" is false for a
+                        // model-written example, which nobody reviewed.
+                        : examples.some(s => s.aiWritten && !s.verified)
+                          ? t('examplesAiUnverified')
+                          : t('quizVerifiedNone')}
                     </Text>
                   </View>
                 );
               })()}
+
+              {/* Only when there is a pooled AI-written section to withdraw —
+                  a book-only deck (`teachingVariantId` unset) has nothing this
+                  button could act on. Same shape as GeneratorResultActions'
+                  report button: bordered, destructive-coloured, icon + text —
+                  this screen owns its own action row (see that component's
+                  header comment), but a teacher who has used Worksheet or
+                  Quiz should still recognise this control. */}
+              {!!teachingVariantId && (
+                <Pressable
+                  onPress={reportTeachingProblem}
+                  disabled={reportingTeaching}
+                  style={({ pressed }) => [
+                    styles.reportBtn,
+                    {
+                      borderColor: colors.destructive,
+                      borderRadius: colors.radius,
+                      flexDirection: isRTL ? 'row-reverse' : 'row',
+                      opacity: reportingTeaching ? 0.5 : pressed ? 0.8 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons name="flag-outline" size={16} color={colors.destructive} />
+                  <Text style={{ fontSize: 14, color: colors.destructive, fontFamily: 'Cairo_600SemiBold' }}>
+                    {t('reportArtifactBtn')}
+                  </Text>
+                </Pressable>
+              )}
 
               {/* The outline is the product: a teacher decides whether to use
                   this deck by scanning slide titles, not by opening it. Each
@@ -1183,4 +1263,5 @@ const styles = StyleSheet.create({
   modalInputMultiline: { minHeight: 110, textAlignVertical: 'top' },
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
   verifyText: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular', flex: 1 },
+  reportBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, padding: 14, borderWidth: 1.5, marginTop: 8, alignSelf: 'flex-start' },
 });

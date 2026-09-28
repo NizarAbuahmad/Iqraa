@@ -1010,6 +1010,20 @@ describe('generated explanation in the deck', () => {
     assert.deepEqual(deck.answerKey, ['مثال 1: 2 mol']);
   });
 
+  it('flags every generated slide, and no book slide, as aiWritten', () => {
+    const deck = buildLessonDeck('المول', true, { lesson: BARE, plan: PLAN, teaching: TEACHING });
+    const flagged = deck.slides.filter(s => s.aiWritten).map(s => s.title);
+    assert.deepEqual(flagged, [
+      '✨ تمهيد',
+      'المول يربط عدد الجسيمات بكتلة المادة',
+      'الكتلة المولية كتلة مول واحد',
+      'مثال 1',
+      '🤝 تدريب موجّه',
+    ]);
+    const book = buildLessonDeck('x', true, { lesson: LESSON, plan: PLAN });
+    assert.equal(book.slides.some(s => s.aiWritten), false);
+  });
+
   it('tells the teacher which slides the AI wrote', () => {
     const deck = buildLessonDeck('x', true, { lesson: LESSON, teaching: TEACHING });
     assert.match(deck.teacherPreparation, /الذكاء الاصطناعي/);
