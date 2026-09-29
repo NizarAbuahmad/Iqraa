@@ -14,17 +14,68 @@
  * `isMathContext` keeps the three-argument shape its callers use.
  */
 import { getBookForLesson, type KBLesson } from '../knowledgeBase.ts';
-import { isMathContext as isMathContextWithSubject } from '@workspace/math-practice';
+import {
+  isMathContext as isMathContextWithSubject,
+  takeConcreteMath as takeBankMath,
+  takeElementaryMath,
+  type DiffTier,
+  type Lang,
+  type PracticeWQ,
+  type QType,
+} from '@workspace/math-practice';
 
 export {
   beginMathPracticeSession,
   lessonTextBlob,
   detectMathFamily,
-  takeConcreteMath,
-  takeConcreteMathBatch,
 } from '@workspace/math-practice';
 
 export type { Lang, QType, DiffTier, PracticeWQ, PracticeLesson } from '@workspace/math-practice';
+
+/** 1–6 for a primary-grade lesson, else null (the bank serves it). */
+function primaryGrade(kb: KBLesson | null): number | null {
+  const m = kb ? getBookForLesson(kb)?.gradeId?.match(/^grade-(\d+)$/) : null;
+  const n = m ? Number(m[1]) : NaN;
+  return n >= 1 && n <= 6 ? n : null;
+}
+
+/**
+ * The bank is Grade 10; a Grade 1–6 lesson gets arithmetic sized to its grade
+ * instead of the bank's `algebra` fallback («x² = 49» on a Grade 2 addition
+ * quiz). Same signature, so every caller — quiz, worksheet, activity, deck —
+ * picks it up without changing.
+ */
+export function takeConcreteMath(
+  type: QType,
+  topic: string,
+  kb: KBLesson | null,
+  diff: DiffTier,
+  lang: Lang,
+  points: number,
+  session?: Set<string>,
+  allowRepeat: boolean = true,
+): PracticeWQ | null {
+  const grade = primaryGrade(kb);
+  if (grade) return takeElementaryMath(type, topic, kb, grade, diff, lang, points, session);
+  return takeBankMath(type, topic, kb, diff, lang, points, session, allowRepeat);
+}
+
+/** Same as the bank's batch, through the grade-aware `takeConcreteMath`. */
+export function takeConcreteMathBatch(
+  count: number,
+  topic: string,
+  kb: KBLesson | null,
+  lang: Lang,
+  diff: DiffTier = 'medium',
+): PracticeWQ[] {
+  const out: PracticeWQ[] = [];
+  for (let i = 0; i < count; i++) {
+    const tier: DiffTier = i === 0 ? 'easy' : i === count - 1 ? 'hard' : diff;
+    const q = takeConcreteMath('short_answer', topic, kb, tier, lang, 4);
+    if (q) out.push(q);
+  }
+  return out;
+}
 
 /**
  * Unchanged behaviour: a resolved KB lesson's own subject decides, and only an
