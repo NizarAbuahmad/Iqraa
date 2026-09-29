@@ -77,6 +77,7 @@ export function formatWorksheetText(
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
+  includeAnswers = true,
 ): string {
   const SEP = '═══════════════════════════════';
   const lines: string[] = [];
@@ -97,7 +98,7 @@ export function formatWorksheetText(
     });
   });
 
-  if (ws.answerKey && ws.answerKey.length > 0) {
+  if (includeAnswers && ws.answerKey && ws.answerKey.length > 0) {
     lines.push(`\n${SEP}`);
     lines.push(isAr ? 'مفتاح الإجابات' : 'ANSWER KEY');
     ws.answerKey.forEach(item => lines.push(`${item.num}. ${item.answer}`));
