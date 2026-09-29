@@ -18,9 +18,10 @@
  * counting it here read 100%/`proficient` off a paper with six answers still
  * unmarked. Those are counted and named on their own line instead.
  */
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
@@ -86,6 +87,26 @@ const LEVEL_COLOR: Record<LevelKey, string> = {
   advanced: '#067647',
 };
 
+/** Keyed on the evaluation id: each evaluation's results are cached separately. */
+function evaluationResultsQueryKey(id: string) {
+  return ['evaluationResults', id] as const;
+}
+/**
+ * This screen is stack-pushed from the evaluation, so revisiting it (check
+ * results, go back, come back) used to re-earn all three calls over the
+ * network every time. A minute of cache lets a quick back-and-forth repaint
+ * instantly from the last fetch, same as `classes/index.tsx`.
+ */
+const EVALUATION_RESULTS_STALE_MS = 60_000;
+
+type EvaluationResultsData = {
+  evaluation: Evaluation;
+  attempts: AttemptListRow[];
+  insights: ClassInsights;
+  nextSteps: Recommendation[];
+  scope: { gradeId: string; subjectId: string; bookId: string };
+};
+
 export default function ResultsDashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -93,37 +114,38 @@ export default function ResultsDashboardScreen() {
   const align = isRTL ? 'right' : 'left';
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
-  const [attempts, setAttempts] = useState<AttemptListRow[]>([]);
-  const [insights, setInsights] = useState<ClassInsights | null>(null);
-  const [nextSteps, setNextSteps] = useState<Recommendation[]>([]);
-  const [scope, setScope] = useState<{ gradeId: string; subjectId: string } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  const load = useCallback(async () => {
-    if (!id) return;
-    setError('');
-    try {
+  const {
+    data,
+    isLoading: loading,
+    isError,
+    error: loadErrorRaw,
+  } = useQuery({
+    queryKey: evaluationResultsQueryKey(id ?? ''),
+    queryFn: async (): Promise<EvaluationResultsData> => {
       const [{ evaluation: ev }, rows, classView] = await Promise.all([
-        getEvaluation(id),
-        listAttempts(id),
-        getClassInsights(id),
+        getEvaluation(id as string),
+        listAttempts(id as string),
+        getClassInsights(id as string),
       ]);
-      setEvaluation(ev);
-      setAttempts(rows);
-      setInsights(classView.insights);
-      setNextSteps(classView.recommendations);
-      setScope(classView.scope);
-    } catch (err) {
-      setError(err instanceof EvaluationError ? err.message : t('evaluationLoadFailed'));
-    } finally {
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+      return {
+        evaluation: ev,
+        attempts: rows,
+        insights: classView.insights,
+        nextSteps: classView.recommendations,
+        scope: classView.scope,
+      };
+    },
+    enabled: !!id,
+    staleTime: EVALUATION_RESULTS_STALE_MS,
+  });
+  const evaluation = data?.evaluation ?? null;
+  const attempts = data?.attempts ?? [];
+  const insights = data?.insights ?? null;
+  const nextSteps = data?.nextSteps ?? [];
+  const scope = data?.scope ?? null;
+  const error = isError
+    ? (loadErrorRaw instanceof EvaluationError ? loadErrorRaw.message : t('evaluationLoadFailed'))
+    : '';
 
   const { gradedCount, provisionalCount, meanPercent, levelCounts } = useMemo(
     () => summariseAttempts(attempts),
