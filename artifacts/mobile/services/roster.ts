@@ -179,6 +179,26 @@ export async function getClassMastery(classId: string): Promise<ClassMastery> {
   return readJson<ClassMastery>(res, 'Loading class mastery');
 }
 
+export interface ClassEnglishPracticeStudent {
+  studentId: string;
+  displayName: string;
+  totalStars: number;
+  lessonsPlayed: number;
+  lastPlayedAt: string | null;
+}
+
+/**
+ * Who has used English Corner and how well — only students who signed in and
+ * claimed their roster row show up here; anonymous play is invisible by design.
+ * See lib/db/src/schema/englishPractice.ts.
+ */
+export async function getClassEnglishPractice(
+  classId: string,
+): Promise<{ students: ClassEnglishPracticeStudent[] }> {
+  const res = await apiFetch(`/classes/${classId}/english-practice`);
+  return readJson<{ students: ClassEnglishPracticeStudent[] }>(res, 'Loading English Corner practice');
+}
+
 /**
  * Add students to a class. Send the whole list in one call — a teacher entering
  * a register of thirty should not generate thirty round trips, each of which

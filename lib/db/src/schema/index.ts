@@ -47,3 +47,6 @@ export * from "./parentContacts";
 
 // Rate-limit counters, shared across instances — see lib/rateLimit.ts
 export * from "./rateLimits";
+
+// Teacher-visible English Corner summary — see routes/practice.ts, roster.ts
+export * from "./englishPractice";
