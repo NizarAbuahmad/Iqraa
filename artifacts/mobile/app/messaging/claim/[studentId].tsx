@@ -6,9 +6,10 @@
  * rather than a new one-student endpoint — a teacher's own roster is small
  * enough that filtering client-side isn't worth a new backend route.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -31,6 +32,16 @@ interface Guardian {
   role: ChatRole;
 }
 
+interface ClaimCodeData {
+  code: { value: string; expiresAt: string } | null;
+  guardians: Guardian[];
+}
+
+const CLAIM_CODE_STALE_MS = 60_000;
+function claimCodeQueryKey(studentId: string) {
+  return ['claimCode', studentId] as const;
+}
+
 export default function ClaimCodeScreen() {
   const { studentId, studentName } = useLocalSearchParams<{ studentId: string; studentName?: string }>();
   const colors = useColors();
@@ -40,48 +51,46 @@ export default function ClaimCodeScreen() {
   // deep link, a back gesture or a stale history entry can still land here.
   const studentAccounts = useStudentAccountsEnabled();
 
-  const [guardians, setGuardians] = useState<Guardian[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [generating, setGenerating] = useState(false);
-  const [code, setCode] = useState<{ value: string; expiresAt: string } | null>(null);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [startingUserId, setStartingUserId] = useState<string | null>(null);
   const [unlinkingUserId, setUnlinkingUserId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    if (!studentId) return;
-    // Nothing to fetch when no account can redeem a code — and asking would
-    // just 403. The screen renders its own explanation instead.
-    if (!studentAccounts) {
-      setLoading(false);
-      return;
-    }
-    try {
+  const {
+    data,
+    isLoading: loading,
+    isError: loadFailed,
+    error: loadErrorRaw,
+  } = useQuery({
+    queryKey: claimCodeQueryKey(studentId),
+    queryFn: async (): Promise<ClaimCodeData> => {
       // The code first: without it, re-opening this screen showed an empty
       // card whose only button silently replaced the code already shared.
       const [existing, byStudent] = await Promise.all([
         getClaimCode(studentId),
         getTeacherContacts(),
       ]);
-      setCode(
+      const code =
         existing.claimCode && existing.claimCodeExpiresAt
           ? { value: existing.claimCode, expiresAt: existing.claimCodeExpiresAt }
-          : null,
-      );
+          : null;
       const mine = byStudent.find(s => s.studentId === studentId);
-      setGuardians(mine?.contacts ?? []);
-      setError('');
-    } catch (e) {
-      setError(
-        e instanceof RosterError || e instanceof MessagingError ? e.message : t('messagingLoadError'),
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [studentId, studentAccounts, t]);
-
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+      return { code, guardians: mine?.contacts ?? [] };
+    },
+    // Nothing to fetch when no account can redeem a code — and asking would
+    // just 403. The screen renders its own explanation instead.
+    enabled: !!studentId && studentAccounts,
+    staleTime: CLAIM_CODE_STALE_MS,
+  });
+  const code = data?.code ?? null;
+  const guardians = data?.guardians ?? [];
+  const loadError = loadFailed
+    ? loadErrorRaw instanceof RosterError || loadErrorRaw instanceof MessagingError
+      ? loadErrorRaw.message
+      : t('messagingLoadError')
+    : '';
 
   const handleGenerate = async () => {
     if (!studentId) return;
@@ -101,7 +110,10 @@ export default function ClaimCodeScreen() {
     setGenerating(true);
     try {
       const result = await generateClaimCode(studentId);
-      setCode({ value: result.claimCode, expiresAt: result.claimCodeExpiresAt });
+      queryClient.setQueryData<ClaimCodeData>(claimCodeQueryKey(studentId), prev => ({
+        code: { value: result.claimCode, expiresAt: result.claimCodeExpiresAt },
+        guardians: prev?.guardians ?? [],
+      }));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
       setError(e instanceof RosterError ? e.message : t('messagingLoadError'));
@@ -146,7 +158,9 @@ export default function ClaimCodeScreen() {
     setUnlinkingUserId(guardian.userId);
     try {
       await unlinkAccount(studentId, guardian.userId);
-      setGuardians(prev => prev.filter(g => g.userId !== guardian.userId));
+      queryClient.setQueryData<ClaimCodeData>(claimCodeQueryKey(studentId), prev =>
+        prev ? { ...prev, guardians: prev.guardians.filter(g => g.userId !== guardian.userId) } : prev,
+      );
     } catch (e) {
       setError(e instanceof RosterError ? e.message : t('messagingLoadError'));
     } finally {
@@ -169,6 +183,9 @@ export default function ClaimCodeScreen() {
   const topPad = insets.top + (insets.top === 0 ? 12 : 0);
   const align = isRTL ? 'right' : 'left';
   const expiresLabel = code ? new Date(code.expiresAt).toLocaleDateString() : '';
+  // An action error (generate/unlink/message) takes priority over a stale
+  // load error — it's the more recent thing the teacher is looking at.
+  const displayError = error || loadError;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -329,8 +346,8 @@ export default function ClaimCodeScreen() {
           )}
         </View>
 
-        {error ? (
-          <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>{error}</Text>
+        {displayError ? (
+          <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>{displayError}</Text>
         ) : null}
       </View>
 
