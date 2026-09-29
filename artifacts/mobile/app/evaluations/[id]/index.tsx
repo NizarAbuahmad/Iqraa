@@ -5,9 +5,10 @@
  * add their own (`EditQuestionModal`). Once published it is read-only — the
  * server refuses question writes then, since students may be sitting it.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
@@ -42,6 +43,12 @@ import { palette } from '@/constants/colors';
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
+
+type EvaluationData = { evaluation: Evaluation; questions: EvaluationQuestion[] };
+const evaluationQueryKey = (id: string) => ['evaluation', id] as const;
+/** Matches the Classes list's cache window — a quick back-and-forth (check a
+ *  question, go back, reopen) paints from cache instead of a fresh spinner. */
+const EVALUATION_STALE_MS = 60_000;
 
 const STATUS_KEY: Record<Evaluation['status'], TranslationKey> = {
   draft: 'evalStatusDraft',
@@ -123,13 +130,42 @@ export default function EvaluationDetailScreen() {
   // route — the only way the create-time notes survive the redirect.
   const { id, warnings: warningsParam } = useLocalSearchParams<{ id: string; warnings?: string }>();
 
-  const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [pickingClass, setPickingClass] = useState(false);
   const [addingReadAloud, setAddingReadAloud] = useState(false);
   const [addingDictation, setAddingDictation] = useState(false);
   /** The question open in the editor; 'new' when writing one from scratch. */
   const [editing, setEditing] = useState<EvaluationQuestion | 'new' | null>(null);
-  const [questions, setQuestions] = useState<EvaluationQuestion[]>([]);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState<'generate' | 'publish' | null>(null);
+  // What the generator said while producing this paper ("2 questions removed:
+  // the verifier contradicted their key"). The questions cannot show a
+  // question that was dropped, so this is the only place the teacher hears it.
+  const [genWarnings, setGenWarnings] = useState<string[]>(
+    () => (warningsParam ?? '').split('\n').filter(Boolean),
+  );
+
+  const queryClient = useQueryClient();
+  const {
+    data,
+    isLoading: loading,
+    isError: loadFailed,
+    error: loadErrorRaw,
+    refetch,
+  } = useQuery({
+    queryKey: evaluationQueryKey(id),
+    queryFn: () => getEvaluation(id),
+    staleTime: EVALUATION_STALE_MS,
+    enabled: !!id,
+  });
+  const evaluation = data?.evaluation ?? null;
+  const questions = data?.questions ?? [];
+  const loadError = loadFailed
+    ? (loadErrorRaw instanceof EvaluationError ? loadErrorRaw.message : t('evaluationLoadFailed'))
+    : '';
+  // Action error (delete/generate/publish/...) takes priority over a stale
+  // load error — it's the more recent thing the teacher is looking at.
+  const displayError = error || loadError;
+
   // Silence used to be the answer for three different situations — keys
   // verified, verifier unreachable, nothing checkable — and a teacher cannot
   // act on silence. Derived from the questions so it survives a reload.
@@ -147,41 +183,14 @@ export default function EvaluationDetailScreen() {
       : (evaluation?.objectiveIds ?? []),
     lang === 'ar',
   );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState<'generate' | 'publish' | null>(null);
-  // What the generator said while producing this paper ("2 questions removed:
-  // the verifier contradicted their key"). The questions cannot show a
-  // question that was dropped, so this is the only place the teacher hears it.
-  const [genWarnings, setGenWarnings] = useState<string[]>(
-    () => (warningsParam ?? '').split('\n').filter(Boolean),
-  );
-
-  const load = useCallback(async () => {
-    if (!id) return;
-    setError('');
-    try {
-      const data = await getEvaluation(id);
-      setEvaluation(data.evaluation);
-      setQuestions(data.questions);
-    } catch (err) {
-      setError(err instanceof EvaluationError ? err.message : t('evaluationLoadFailed'));
-    } finally {
-      setLoading(false);
-    }
-  }, [id, t]);
-
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
 
   // `toFixed(2)` is not cosmetic: `evaluations.total_marks` is numeric(6,2) and
   // `recomputeTotal` writes `total.toFixed(2)`, so this is exactly the string a
   // reload would bring back.
   const setTotal = (totalMarks: number) =>
-    setEvaluation(prev => (prev ? { ...prev, totalMarks: totalMarks.toFixed(2) } : prev));
+    queryClient.setQueryData<EvaluationData>(evaluationQueryKey(id), prev =>
+      prev ? { ...prev, evaluation: { ...prev.evaluation, totalMarks: totalMarks.toFixed(2) } } : prev,
+    );
 
   const onDelete = async (q: EvaluationQuestion) => {
     if (!id || busy) return;
@@ -196,7 +205,9 @@ export default function EvaluationDetailScreen() {
     setError('');
     try {
       const { totalMarks } = await deleteEvaluationQuestion(id, q.id);
-      setQuestions(prev => prev.filter(x => x.id !== q.id));
+      queryClient.setQueryData<EvaluationData>(evaluationQueryKey(id), prev =>
+        prev ? { ...prev, questions: prev.questions.filter(x => x.id !== q.id) } : prev,
+      );
       setTotal(totalMarks);
     } catch (err) {
       setError(err instanceof EvaluationError ? err.message : t('questionSaveFailed'));
@@ -222,7 +233,7 @@ export default function EvaluationDetailScreen() {
       setGenWarnings([]);
       const gen = await generateEvaluation(id);
       setGenWarnings(gen.warnings ?? []);
-      await load();
+      await refetch();
     } catch (err) {
       setError(err instanceof EvaluationError ? err.message : t('evaluationGenerateFailed'));
     } finally {
@@ -243,7 +254,9 @@ export default function EvaluationDetailScreen() {
     setError('');
     try {
       const updated = await publishEvaluation(id);
-      setEvaluation(updated);
+      queryClient.setQueryData<EvaluationData>(evaluationQueryKey(id), prev =>
+        prev ? { ...prev, evaluation: updated } : prev,
+      );
     } catch (err) {
       if (err instanceof EvaluationError) {
         setError(err.details.length ? `${err.message}:\n${err.details.join('\n')}` : err.message);
@@ -289,11 +302,11 @@ export default function EvaluationDetailScreen() {
         )}
       </View>
 
-      {error ? (
+      {displayError ? (
         <View style={[styles.errorBox, { borderColor: colors.destructive, margin: 20, marginBottom: 0 }]}>
           <Ionicons name="alert-circle-outline" size={18} color={colors.destructive} />
           <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', flex: 1, textAlign: align }}>
-            {error}
+            {displayError}
           </Text>
         </View>
       ) : null}
@@ -328,7 +341,7 @@ export default function EvaluationDetailScreen() {
           if (!id || !classId) return;
           try {
             await setEvaluationClass(id, classId);
-            await load();
+            await refetch();
           } catch (err) {
             setError(err instanceof EvaluationError ? err.message : t('saveToClassFailed'));
           }
@@ -538,7 +551,9 @@ export default function EvaluationDetailScreen() {
         evaluationId={id}
         objectiveIds={evaluation?.objectiveIds ?? []}
         onAdded={(question, totalMarks) => {
-          setQuestions(prev => [...prev, question]);
+          queryClient.setQueryData<EvaluationData>(evaluationQueryKey(id), prev =>
+            prev ? { ...prev, questions: [...prev.questions, question] } : prev,
+          );
           setTotal(totalMarks);
         }}
       />
@@ -550,8 +565,15 @@ export default function EvaluationDetailScreen() {
           objectiveIds={evaluation?.objectiveIds ?? []}
           question={editing === 'new' ? undefined : editing}
           onSaved={(saved, totalMarks) => {
-            setQuestions(prev =>
-              prev.some(x => x.id === saved.id) ? prev.map(x => (x.id === saved.id ? saved : x)) : [...prev, saved],
+            queryClient.setQueryData<EvaluationData>(evaluationQueryKey(id), prev =>
+              prev
+                ? {
+                    ...prev,
+                    questions: prev.questions.some(x => x.id === saved.id)
+                      ? prev.questions.map(x => (x.id === saved.id ? saved : x))
+                      : [...prev.questions, saved],
+                  }
+                : prev,
             );
             setTotal(totalMarks);
           }}
@@ -565,7 +587,9 @@ export default function EvaluationDetailScreen() {
         gradeId={evaluation?.gradeId}
         objectiveIds={evaluation?.objectiveIds ?? []}
         onAdded={(added, totalMarks) => {
-          setQuestions(prev => [...prev, ...added]);
+          queryClient.setQueryData<EvaluationData>(evaluationQueryKey(id), prev =>
+            prev ? { ...prev, questions: [...prev.questions, ...added] } : prev,
+          );
           setTotal(totalMarks);
         }}
       />

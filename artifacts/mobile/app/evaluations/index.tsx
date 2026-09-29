@@ -2,13 +2,14 @@
  * Evaluations list — the entry point to authoring.
  *
  * Mirrors `app/classes/index.tsx`: the server is the only source of truth,
- * `useFocusEffect` refreshes on every return to the screen (e.g. right after
- * publishing), and a failed load says so rather than showing an empty list
- * that looks like "no evaluations yet".
+ * a `useQuery` cache paints instantly on a quick back-and-forth instead of
+ * blanking to a spinner on every focus, and a failed load says so rather
+ * than showing an empty list that looks like "no evaluations yet".
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
@@ -25,6 +26,10 @@ import { LoadError } from '@/components/ui/LoadError';
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
+
+const EVALUATIONS_QUERY_KEY = ['evaluations'] as const;
+/** Same minute-long cache as `app/classes/index.tsx`, for the same reason. */
+const EVALUATIONS_STALE_MS = 60_000;
 
 const STATUS_KEY: Record<Evaluation['status'], TranslationKey> = {
   draft: 'evalStatusDraft',
@@ -43,10 +48,6 @@ export default function EvaluationsScreen() {
   const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
 
-  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
   const describe = useCallback(
     (err: unknown): string => {
       if (err instanceof EvaluationError && err.status > 0 && err.status < 500) return err.message;
@@ -55,22 +56,18 @@ export default function EvaluationsScreen() {
     [t],
   );
 
-  const load = useCallback(async () => {
-    setError('');
-    try {
-      setEvaluations(await listEvaluations());
-    } catch (err) {
-      setError(describe(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [describe]);
-
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
+  const {
+    data: evaluations = [],
+    isLoading: loading,
+    isError: loadFailed,
+    error: loadErrorRaw,
+    refetch,
+  } = useQuery({
+    queryKey: EVALUATIONS_QUERY_KEY,
+    queryFn: () => listEvaluations(),
+    staleTime: EVALUATIONS_STALE_MS,
+  });
+  const error = loadFailed ? describe(loadErrorRaw) : '';
 
   // On a phone this list is the only thing on screen, so a full-bleed color
   // band and a thumb-reach floating button read as a normal app header and
@@ -150,7 +147,7 @@ export default function EvaluationsScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             error ? (
-              <LoadError message={error} onRetry={() => void load()} />
+              <LoadError message={error} onRetry={() => void refetch()} />
             ) : null
           }
           ListEmptyComponent={

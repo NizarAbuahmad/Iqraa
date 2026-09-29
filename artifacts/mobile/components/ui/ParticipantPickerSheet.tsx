@@ -162,6 +162,15 @@ export function ParticipantPickerSheet({
               </View>
 
               {classChips.length > 0 ? (
+                <>
+                <Text
+                  style={[
+                    styles.classHint,
+                    { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align, paddingHorizontal: 16 },
+                  ]}
+                >
+                  {t('messagingClassChipHint')}
+                </Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -201,6 +210,7 @@ export function ParticipantPickerSheet({
                     );
                   })}
                 </ScrollView>
+                </>
               ) : null}
             </View>
           ) : null}
@@ -315,6 +325,7 @@ const styles = StyleSheet.create({
   // No explicit height: the row sizes to the input, and a fixed one clips
   // Cairo's Arabic descenders.
   searchInput: { flex: 1, fontFamily: 'Almarai_400Regular', fontSize: 14, padding: 0 },
+  classHint: { fontSize: 11, lineHeight: 16 },
   chipRow: { gap: 6, paddingHorizontal: 16 },
   chip: { alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, borderWidth: 1 },
   row: { alignItems: 'center', gap: 10, paddingVertical: 11, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1 },

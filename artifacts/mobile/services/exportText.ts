@@ -77,6 +77,7 @@ export function formatWorksheetText(
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
+  includeAnswers = true,
 ): string {
   const SEP = '═══════════════════════════════';
   const lines: string[] = [];
@@ -97,7 +98,7 @@ export function formatWorksheetText(
     });
   });
 
-  if (ws.answerKey && ws.answerKey.length > 0) {
+  if (includeAnswers && ws.answerKey && ws.answerKey.length > 0) {
     lines.push(`\n${SEP}`);
     lines.push(isAr ? 'مفتاح الإجابات' : 'ANSWER KEY');
     ws.answerKey.forEach(item => lines.push(`${item.num}. ${item.answer}`));
@@ -186,8 +187,8 @@ export function formatAttemptResultText(
     if (result.isProvisional) {
       lines.push(
         isAr
-          ? 'نتيجة أولية — بعض الأسئلة تحتاج تصحيحًا يدويًا لم يُبنَ بعد.'
-          : "Provisional — some questions still need manual grading, which isn't built yet.",
+          ? 'نتيجة أولية — بعض الأسئلة ما زالت تحتاج تصحيحًا يدويًا من المعلم.'
+          : 'Provisional — some questions still need manual grading from the teacher.',
       );
     }
 
