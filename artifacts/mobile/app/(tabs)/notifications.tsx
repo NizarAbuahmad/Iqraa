@@ -29,6 +29,7 @@ import { chatRoleLabel } from '@/services/chatRoleLabel';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
+import { setUnreadMessages } from '@/services/unreadMessages';
 import { Avatar } from '@/components/ui/Avatar';
 import { LoadError } from '@/components/ui/LoadError';
 
@@ -95,6 +96,7 @@ export default function NotificationsScreen() {
             ),
       ]);
       setThreads(list);
+      setUnreadMessages(list.reduce((sum, th) => sum + th.unreadCount, 0));
       setContacts(myContacts);
       setError('');
     } catch (e) {
