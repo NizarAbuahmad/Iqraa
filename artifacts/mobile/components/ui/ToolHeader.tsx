@@ -33,22 +33,23 @@ export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = tr
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
   return (
     <View style={[styles.band, { backgroundColor: colors.hero, paddingTop: topPad + 12 }]}>
-      <Pressable
-        onPress={goBack}
-        hitSlop={10}
-        accessibilityRole="button"
-        accessibilityLabel={t('back')}
-        style={[styles.back, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
-      >
-        <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-      </Pressable>
+      <View style={styles.nav}>
+        <Pressable
+          onPress={goBack}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
+        >
+          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
+        </Pressable>
+        {sourceBadge ? <AiSourceBadge onDark isRTL={isRTL} /> : null}
+      </View>
       {eyebrow ? (
         <View style={[styles.eyebrow, row, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={eyebrow.icon} size={13} color="#fff" />
           <Text style={styles.eyebrowText}>{eyebrow.label}</Text>
         </View>
       ) : null}
-      {sourceBadge ? <AiSourceBadge onDark isRTL={isRTL} /> : null}
       <View style={[styles.titleRow, row]}>
         {typeof leading === 'string' ? <Text style={styles.emoji}>{leading}</Text> : null}
         {leading && typeof leading === 'object' ? <Ionicons name={leading.icon} size={22} color="#fff" /> : null}
@@ -61,8 +62,8 @@ export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = tr
 }
 
 const styles = StyleSheet.create({
-  band: { paddingHorizontal: 20, paddingBottom: 14, gap: 6 },
-  back: { paddingVertical: 4 },
+  band: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
+  nav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   eyebrow: {
     alignItems: 'center',
     gap: 5,
