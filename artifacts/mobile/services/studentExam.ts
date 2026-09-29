@@ -10,8 +10,12 @@
  *
  * The student's token lives in memory and in this module only. It is not put
  * in the shared token store, so it can never be mistaken for a session.
+ *
+ * `claimEvaluationAsSelf` below is the one deliberate exception: it uses
+ * `apiFetch` on purpose, because it *is* asking "who is signed in" rather than
+ * avoiding it. See its own comment.
  */
-import { getApiBaseUrl } from './apiClient.ts';
+import { apiFetch, getApiBaseUrl } from './apiClient.ts';
 import type { StudentResponse } from './studentAnswers.ts';
 import type { CompetencyKey, CompetencyScore, LevelKey } from './evaluations.ts';
 
@@ -86,10 +90,7 @@ export function openExam(code: string): Promise<{ evaluation: ExamSummary; stude
   return call(`/take/${encodeURIComponent(code)}`);
 }
 
-export function claimName(
-  code: string,
-  studentId: string,
-): Promise<{
+export interface ClaimedAttempt {
   token: string;
   student: { id: string; displayName: string };
   questions: StudentQuestion[];
@@ -100,11 +101,33 @@ export function claimName(
    * Optional so a client running against an older API simply shows none.
    */
   lessonIds?: string[];
-}> {
+}
+
+export function claimName(code: string, studentId: string): Promise<ClaimedAttempt> {
   return call(`/take/${encodeURIComponent(code)}/claim`, {
     method: 'POST',
     body: JSON.stringify({ studentId }),
   });
+}
+
+/**
+ * Claim this student's own roster row automatically, for a student who is
+ * signed into a real account already linked to it — no tap on a name.
+ *
+ * The one function in this file that uses `apiFetch`, and on purpose: every
+ * other export here avoids the shared session specifically so an anonymous
+ * exam sitting is never mistaken for a signed-in one, but this call *is*
+ * that signed-in session, used to answer "who is asking". `null` covers
+ * every reason it might not apply — signed out, signed in as a teacher or
+ * parent, or no roster row linked to this class — and all of them mean the
+ * same thing to the caller: fall back to the ordinary picker, silently. This
+ * is not an error case; most students opening a link still have neither an
+ * account nor a link.
+ */
+export async function claimEvaluationAsSelf(code: string): Promise<ClaimedAttempt | null> {
+  const res = await apiFetch(`/take/${encodeURIComponent(code)}/claim-self`, { method: 'POST' });
+  if (!res.ok) return null;
+  return (await res.json()) as ClaimedAttempt;
 }
 
 export function getExamState(token: string): Promise<{

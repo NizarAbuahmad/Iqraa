@@ -1,6 +1,6 @@
 /**
- * A student sitting an exam. The only screen in this app with no account
- * behind it — the link is the identity.
+ * A student sitting an exam. Usually the only screen in this app with no
+ * account behind it — the link is the identity.
  *
  * Five states in one route rather than five routes: a student on a phone in a
  * classroom must never be one stray back-gesture away from losing their place,
@@ -13,8 +13,13 @@
  *   "check" button. The key is not even in the payload (see `studentView.ts`
  *   on the server), and behaving as if it were would teach students to look
  *   for it.
- * - **Never sign anyone in.** The token stays in this component. It is not put
- *   in the shared token store, where it could be mistaken for a teacher.
+ * - **Never sign anyone in.** The exam-sitting token stays in this component.
+ *   It is not put in the shared token store, where it could be mistaken for a
+ *   teacher. The one exception is reading, never writing: if the device is
+ *   already signed in as a student (`useAuth`), this screen asks the server
+ *   once whether that account's own roster row is in this exam's class
+ *   (`claimEvaluationAsSelf`) and skips straight past the name picker if so —
+ *   a shortcut for an identity that already existed, not a new one.
  * - **Never lose an answer to a tap.** Every change saves, and a failed save
  *   says so rather than going quiet — a student cannot tell a slow network
  *   from a lost answer, so the screen has to.
@@ -34,10 +39,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { isStudentRole, useAuth } from '@/context/AuthContext';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookFigureRefsForLessons } from '@/services/bookFigureUri';
 import {
   StudentExamError,
+  claimEvaluationAsSelf,
   claimName,
   getExamResult,
   getExamState,
@@ -116,6 +123,26 @@ export default function TakeExamScreen() {
   }, [code]);
 
   useEffect(() => { openLink(); }, [openLink]);
+
+  // A signed-in student gets one silent shot at skipping the picker. Gated on
+  // `phase === 'pick'` (never 'confirm' or later) and a ref so it fires at
+  // most once per mount — this is an identity shortcut, not a retry loop, and
+  // firing it again after "ليس أنا" would defeat the point of that button.
+  const { user, isLoading: authLoading } = useAuth();
+  const autoClaimTried = useRef(false);
+  useEffect(() => {
+    if (phase !== 'pick' || authLoading || autoClaimTried.current) return;
+    if (!code || !isStudentRole(user?.role)) return;
+    autoClaimTried.current = true;
+    claimEvaluationAsSelf(code).then(claimed => {
+      if (!claimed) return;
+      setToken(claimed.token);
+      setQuestions(claimed.questions);
+      setLessonIds(claimed.lessonIds ?? []);
+      setChosen({ id: claimed.student.id, displayName: claimed.student.displayName, taken: true });
+      setPhase('answering');
+    });
+  }, [phase, authLoading, user?.role, code]);
 
   const title = (lang === 'ar' ? exam?.titleAr : exam?.title) || exam?.titleAr || '';
 

@@ -1,10 +1,15 @@
 /**
- * The student side of an exam. **This is the only unauthenticated write
- * surface in the API**, so everything here is deliberate.
+ * The student side of an exam. Almost every route here is the one
+ * unauthenticated write surface in the API, so everything in them is
+ * deliberate.
  *
  * A teacher publishes an exam and gets a short code. One link goes on the
- * board; each student opens it, taps their own name, and answers. There are no
- * student accounts — `students.ts` explains why — and the link is the identity.
+ * board; each student opens it, taps their own name, and answers — the link
+ * is the identity, not an account. `students.ts` explains why the roster
+ * itself carries no login. The one exception is `/take/:code/claim-self`,
+ * which *is* authenticated: since `STUDENT_ACCOUNTS` went live, a student who
+ * already has a real account and a linked roster row can skip the tap
+ * entirely. Everything else below still answers to nobody but the code.
  *
  * Four properties this file is responsible for:
  *
@@ -24,7 +29,7 @@
  * single-claim, by the teacher seeing who started — and, the real safety net,
  * by the teacher being able to move an attempt to the right student afterwards.
  */
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { db } from "@workspace/db";
 import {
   attemptAnswers,
@@ -34,6 +39,7 @@ import {
   evaluationQuestions,
   evaluations,
   levelBands,
+  rosterLinks,
   students,
 } from "@workspace/db";
 import type { EvaluationQuestion } from "@workspace/db";
@@ -51,6 +57,7 @@ import {
   recordAudioUsage,
 } from "../lib/aiBudget";
 import { MAX_DATA_URL_LENGTH, parseDataUrl } from "../lib/lessonMediaUpload";
+import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { newAttemptAudioKey, putObject } from "../lib/r2";
 import { MAX_TAKES_PER_QUESTION, checkRecording, isRejection } from "../lib/readAloudUpload";
 import {
@@ -190,12 +197,101 @@ router.get("/take/:code", async (req, res) => {
 });
 
 /**
+ * Insert the attempt and answer, once a caller has already resolved which
+ * roster row is being claimed and confirmed it belongs to this exam's class.
+ * Shared by the anonymous tap-a-name claim and the signed-in auto-claim below
+ * — the "someone already started" race, the frozen level-scale snapshot, and
+ * the per-student question ordering must not exist as two copies that could
+ * disagree.
+ */
+async function claimAttemptFor(
+  res: Response,
+  evaluation: NonNullable<Awaited<ReturnType<typeof evaluationByCode>>>,
+  member: { id: string; displayName: string },
+): Promise<void> {
+  const [existing] = await db
+    .select({ id: attempts.id })
+    .from(attempts)
+    .where(and(eq(attempts.evaluationId, evaluation.id), eq(attempts.studentId, member.id)))
+    .limit(1);
+  if (existing) {
+    res.status(409).json({
+      error: "Someone has already started with this name. Ask your teacher.",
+      code: "name_taken",
+    });
+    return;
+  }
+
+  const questions = await liveQuestions(evaluation.id);
+  if (questions.length === 0) {
+    res.status(409).json({ error: "This exam has no questions" });
+    return;
+  }
+
+  // Frozen at start, exactly as teacher entry does it: editing the exam
+  // mid-sitting must not change what this student is graded against.
+  const bands = evaluation.levelScaleId
+    ? await db
+        .select()
+        .from(levelBands)
+        .where(eq(levelBands.scaleId, evaluation.levelScaleId))
+        .orderBy(asc(levelBands.sortOrder))
+    : [];
+  if (bands.length === 0) {
+    res.status(409).json({ error: "This exam is not ready", code: "no_level_scale" });
+    return;
+  }
+
+  const { token, hash } = issueAccessToken();
+  let attemptId: string;
+  try {
+    // The id is wanted, not incidental: it seeds the per-student ordering of
+    // matching questions below, and the resume route reads the same id off
+    // the token — which is what keeps the two orderings identical.
+    const [created] = await db.insert(attempts).values({
+      evaluationId: evaluation.id,
+      studentId: member.id,
+      source: "student_link",
+      status: "in_progress",
+      startedAt: new Date(),
+      accessTokenHash: hash,
+      tokenExpiresAt: new Date(Date.now() + TOKEN_TTL_MS),
+      questionSnapshot: questions,
+      levelScaleSnapshot: { scaleId: evaluation.levelScaleId, bands },
+    }).returning({ id: attempts.id });
+    if (!created) throw new Error("attempt insert returned no row");
+    attemptId = created.id;
+  } catch (err) {
+    // The check above is the fast path; this is the one that is actually
+    // true. Thirty students press start at once, so two claiming the same
+    // name can both pass that query before either inserts — and the loser
+    // must be told the name is taken, not handed a second sitting.
+    if ((err as { code?: string })?.code === "23505") {
+      res.status(409).json({
+        error: "Someone has already started with this name. Ask your teacher.",
+        code: "name_taken",
+      });
+      return;
+    }
+    throw err;
+  }
+
+  res.status(201).json({
+    token,
+    student: { id: member.id, displayName: member.displayName },
+    questions: questions.map(q => sanitizeQuestionForStudent(q, attemptId)),
+    lessonIds: lessonIdsForPaper(questions),
+  });
+}
+
+/**
  * Claim a name and start.
  *
  * Refuses a name someone already took rather than resuming it: with no
  * accounts there is nothing to prove the second person is the same person, and
  * quietly handing over a half-finished paper is worse than making the teacher
- * release it.
+ * release it. A signed-in student with a linked roster row skips this
+ * entirely — see `/take/:code/claim-self` below.
  */
 router.post("/take/:code/claim", async (req, res) => {
   try {
@@ -229,84 +325,71 @@ router.post("/take/:code/claim", async (req, res) => {
       return;
     }
 
-    const [existing] = await db
-      .select({ id: attempts.id })
-      .from(attempts)
-      .where(and(eq(attempts.evaluationId, evaluation.id), eq(attempts.studentId, studentId)))
-      .limit(1);
-    if (existing) {
-      res.status(409).json({
-        error: "Someone has already started with this name. Ask your teacher.",
-        code: "name_taken",
-      });
-      return;
-    }
-
-    const questions = await liveQuestions(evaluation.id);
-    if (questions.length === 0) {
-      res.status(409).json({ error: "This exam has no questions" });
-      return;
-    }
-
-    // Frozen at start, exactly as teacher entry does it: editing the exam
-    // mid-sitting must not change what this student is graded against.
-    const bands = evaluation.levelScaleId
-      ? await db
-          .select()
-          .from(levelBands)
-          .where(eq(levelBands.scaleId, evaluation.levelScaleId))
-          .orderBy(asc(levelBands.sortOrder))
-      : [];
-    if (bands.length === 0) {
-      res.status(409).json({ error: "This exam is not ready", code: "no_level_scale" });
-      return;
-    }
-
-    const { token, hash } = issueAccessToken();
-    let attemptId: string;
-    try {
-      // The id is wanted, not incidental: it seeds the per-student ordering of
-      // matching questions below, and the resume route reads the same id off
-      // the token — which is what keeps the two orderings identical.
-      const [created] = await db.insert(attempts).values({
-        evaluationId: evaluation.id,
-        studentId,
-        source: "student_link",
-        status: "in_progress",
-        startedAt: new Date(),
-        accessTokenHash: hash,
-        tokenExpiresAt: new Date(Date.now() + TOKEN_TTL_MS),
-        questionSnapshot: questions,
-        levelScaleSnapshot: { scaleId: evaluation.levelScaleId, bands },
-      }).returning({ id: attempts.id });
-      if (!created) throw new Error("attempt insert returned no row");
-      attemptId = created.id;
-    } catch (err) {
-      // The check above is the fast path; this is the one that is actually
-      // true. Thirty students press start at once, so two claiming the same
-      // name can both pass that query before either inserts — and the loser
-      // must be told the name is taken, not handed a second sitting.
-      if ((err as { code?: string })?.code === "23505") {
-        res.status(409).json({
-          error: "Someone has already started with this name. Ask your teacher.",
-          code: "name_taken",
-        });
-        return;
-      }
-      throw err;
-    }
-
-    res.status(201).json({
-      token,
-      student: { id: member.id, displayName: member.displayName },
-      questions: questions.map(q => sanitizeQuestionForStudent(q, attemptId)),
-      lessonIds: lessonIdsForPaper(questions),
-    });
+    await claimAttemptFor(res, evaluation, member);
   } catch (err) {
     logger.error({ err }, "claim student attempt failed");
     res.status(500).json({ error: "Failed to start this exam" });
   }
 });
+
+/**
+ * The identity model above is a trade this file's header is explicit about:
+ * one link, tapped names, no accounts to check them against. Since
+ * `STUDENT_ACCOUNTS` went live (2026-09-07) a student CAN have a real,
+ * signed-in account — and when they do, this skips the tap entirely rather
+ * than asking them to pick their own name off a list.
+ *
+ * `authMiddleware`/`requireRole` are mounted on this one route only, not on
+ * `/take` as a whole — the file's other endpoints stay genuinely
+ * unauthenticated, which is the property `mountOrder.test.ts` exists to
+ * guard. A parent's `guardian`-relation link is deliberately not matched
+ * here: a parent is never the one sitting the exam.
+ *
+ * Zero or more than one match answers exactly like "not eligible" (404) —
+ * never a distinct status. A student account can hold `self` links across
+ * several teachers/classes (see `rosterLinks`), so more than one hit here
+ * means this exam's class isn't uniquely resolvable from this account, not
+ * that something is wrong; the caller falls back to the ordinary picker
+ * either way, silently.
+ */
+router.post(
+  "/take/:code/claim-self",
+  authMiddleware,
+  requireRole("student"),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const evaluation = await evaluationByCode(req.params["code"]);
+      if (!evaluation || !evaluation.classGroupId) {
+        res.status(404).json({ error: "This exam link is not available", code: "link_not_found" });
+        return;
+      }
+
+      const matches = await db
+        .select({ id: students.id, displayName: students.displayName })
+        .from(rosterLinks)
+        .innerJoin(students, eq(students.id, rosterLinks.studentId))
+        .innerJoin(classMemberships, eq(classMemberships.studentId, students.id))
+        .where(
+          and(
+            eq(rosterLinks.userId, req.user!.id),
+            eq(rosterLinks.relation, "self"),
+            eq(classMemberships.classGroupId, evaluation.classGroupId),
+          ),
+        )
+        .limit(2);
+
+      if (matches.length !== 1) {
+        res.status(404).json({ error: "No linked roster entry for this class", code: "no_self_link" });
+        return;
+      }
+
+      await claimAttemptFor(res, evaluation, matches[0]!);
+    } catch (err) {
+      logger.error({ err }, "self claim student attempt failed");
+      res.status(500).json({ error: "Failed to start this exam" });
+    }
+  },
+);
 
 /** Resolve the attempt a bearer token names, or nothing. */
 async function attemptForToken(header: string | undefined) {
