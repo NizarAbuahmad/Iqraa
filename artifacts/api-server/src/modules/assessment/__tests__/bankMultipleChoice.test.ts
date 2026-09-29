@@ -209,3 +209,46 @@ describe("mock generator — bank-backed multiple choice", () => {
     }
   });
 });
+
+// A Grade 2 maths evaluation drew «x² = 49» and systems of equations from the
+// Grade 10 bank. Grades 1–6 now get arithmetic sized to the grade — and it
+// must still validate and mark itself correctly.
+describe("mock generator — primary grades", () => {
+  const ADDITION = [objective("obj-add", "يجمع الطالب عددين ضمن 1000")];
+
+  it("gives a Grade 2 paper arithmetic, validated and self-marking", () => {
+    const res = generateMockEvaluation({
+      objectives: ADDITION,
+      assessmentTypes: ["multiple_choice"],
+      count: 4,
+      difficulty: "standard",
+      subjectId: "mathematics",
+      gradeId: "grade-2",
+      seed: 5,
+    });
+    assert.ok(res.questions.length > 0);
+    const grade = QUESTION_TYPES["multiple_choice"].grade!;
+    for (const q of res.questions) {
+      const text = JSON.stringify(q.body);
+      assert.doesNotMatch(text, /x\s*[=²^]|\^|√/, `algebra reached grade 2: ${text}`);
+      assert.match(text, /\d+ \+ \d+/, `expected addition: ${text}`);
+      const draft = { type: q.type, body: q.body, expectedAnswer: q.expectedAnswer, rubric: q.rubric } as never;
+      assert.deepEqual(QUESTION_TYPES["multiple_choice"].validate(draft), []);
+      const correctIds = q.expectedAnswer["optionIds"] as string[];
+      assert.equal(grade(draft, { optionIds: correctIds }).status, "correct");
+    }
+  });
+
+  it("leaves Grade 10 on the bank", () => {
+    const res = generateMockEvaluation({
+      objectives: MATHS,
+      assessmentTypes: ["multiple_choice"],
+      count: 2,
+      difficulty: "standard",
+      subjectId: "mathematics",
+      gradeId: "grade-10",
+      seed: 5,
+    });
+    assert.ok(res.questions.some(q => /\^|x/.test(JSON.stringify(q.body))));
+  });
+});
