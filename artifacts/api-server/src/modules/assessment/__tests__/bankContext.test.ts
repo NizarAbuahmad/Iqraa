@@ -71,7 +71,13 @@ describe("bankContextFor", () => {
   it("returns an empty context for a unit with nothing on file", () => {
     // Grade 8 science is in the hand-authored catalog and has no bank material
     // and no NCCD-shaped unit id. Empty is the right answer, not a crash.
-    const science = getAllObjectives().filter(o => o.subjectId === "science");
+    // Scoped to grade 8 specifically: grade 6 also carries subjectId
+    // "science" (see g6ScienceSem1.ts) and, since it gained real objectives,
+    // does have bank material — filtering on subjectId alone swept those in
+    // too and broke this assertion.
+    const science = getAllObjectives().filter(
+      o => o.subjectId === "science" && o.gradeId === "grade-8",
+    );
     if (!science.length) return;
     assert.equal(bankContextFor(science).total, 0);
   });
