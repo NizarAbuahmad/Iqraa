@@ -3520,7 +3520,7 @@ const translations = {
     // Sign-up role step + class code claim, and person-to-person messaging
     iAmA: 'I am a',
     pickRoleFirst: 'Choose your account type',
-    signupUnavailable: "Couldn't reach the server, so we can't tell which account types are available. Please try again.",
+    signupUnavailable: "Couldn't reach the server, so we can't tell which account types are available. Try again.",
     tryAgain: 'Try again',
     roleParent: 'Parent',
     roleStudent: 'Student',
