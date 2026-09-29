@@ -36,9 +36,11 @@ type Props = {
   topInset?: number;
   t: (k: TranslationKey) => string;
   onPress: () => void;
+  /** Bar only: sits after the pill (the notification bell). */
+  trailing?: React.ReactNode;
 };
 
-export function GlobalLessonBar({ layout, pick, lang, isRTL, colors, topInset = 0, t, onPress }: Props) {
+export function GlobalLessonBar({ layout, pick, lang, isRTL, colors, topInset = 0, t, onPress, trailing }: Props) {
   const isAr = lang === 'ar';
   const grade = pick?.gradeId ? getPickerGrades().find(g => g.id === pick.gradeId) : undefined;
   const subject = pick?.subjectId ? getPickerSubjects().find(s => s.id === pick.subjectId) : undefined;
@@ -98,11 +100,13 @@ export function GlobalLessonBar({ layout, pick, lang, isRTL, colors, topInset = 
         { paddingTop: topInset + 8, backgroundColor: colors.background, borderBottomColor: colors.border },
       ]}
     >
+      <View style={{ flexDirection: rowDir, alignItems: 'center', gap: 6 }}>
       <Pressable
         onPress={onPress}
         style={({ pressed }) => [
           styles.barPill,
           {
+            flex: 1,
             flexDirection: rowDir,
             backgroundColor: colors.card,
             borderColor: colors.border,
@@ -126,6 +130,8 @@ export function GlobalLessonBar({ layout, pick, lang, isRTL, colors, topInset = 
         </View>
         {changeButton}
       </Pressable>
+      {trailing}
+      </View>
     </View>
   );
 }
