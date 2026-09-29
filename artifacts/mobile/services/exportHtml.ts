@@ -449,6 +449,7 @@ export function buildWorksheetHTML(
   meta: { subject: string; grade: string },
   isAr: boolean,
   figures: readonly BookFigureRef[] = [],
+  includeAnswers = true,
 ): string {
   const L = (ar: string, en: string) => isAr ? ar : en;
   let qNum = 1;
@@ -475,9 +476,11 @@ export function buildWorksheetHTML(
     return `<div class="section">${sectionBand(sec.title, SECTION_GLYPHS[si % SECTION_GLYPHS.length]!, DOC_ACCENT.worksheet, isAr)}${questions}</div>`;
   }).join('');
 
-  const akRows = ws.answerKey?.map(item =>
-    `<div class="answer-row"><span class="answer-num">${item.num}.</span><span>${esc(item.answer)}</span></div>`
-  ).join('') ?? '';
+  const akRows = includeAnswers
+    ? ws.answerKey?.map(item =>
+      `<div class="answer-row"><span class="answer-num">${item.num}.</span><span>${esc(item.answer)}</span></div>`
+    ).join('') ?? ''
+    : '';
 
   const answerKey = akRows
     ? `<div class="answer-key"><div class="section-title">${L('مفتاح الإجابات', 'Answer Key')}</div>${akRows}</div>`
@@ -889,6 +892,7 @@ export function buildWorksheetSlidesHTML(
    * exactly what this builder rendered before.
    */
   figures: readonly BookFigureRef[] = [],
+  includeAnswers = true,
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = '#8B5CF6';
@@ -899,8 +903,9 @@ export function buildWorksheetSlidesHTML(
 
   // Total: title + (instructions if present: 1) + sections + answer key
   const hasInstructions = !!ws.instructions;
+  const showAnswerKey = includeAnswers && !!ws.answerKey && ws.answerKey.length > 0;
   const TOTAL = 1 + (hasInstructions ? 1 : 0) + ws.sections.length
-    + (ws.answerKey && ws.answerKey.length > 0 ? 1 : 0) + (figures.length ? 1 : 0);
+    + (showAnswerKey ? 1 : 0) + (figures.length ? 1 : 0);
 
   const footer = (num: number) => `
     <div class="slide-footer">
@@ -962,11 +967,11 @@ export function buildWorksheetSlidesHTML(
   });
 
   // Answer key slide
-  const akSlide = ws.answerKey && ws.answerKey.length > 0 ? `<div class="slide">
+  const akSlide = showAnswerKey ? `<div class="slide">
     ${header(L('مفتاح الإجابات', 'Answer Key'))}
     <div class="slide-body">
       <div class="ak-grid">
-        ${ws.answerKey.map(item => `<div class="ak-row"><span class="ak-num">${item.num}.</span><span class="ak-ans">${e(item.answer)}</span></div>`).join('')}
+        ${ws.answerKey!.map(item => `<div class="ak-row"><span class="ak-num">${item.num}.</span><span class="ak-ans">${e(item.answer)}</span></div>`).join('')}
       </div>
     </div>
     ${footer(slideNum++)}</div>` : '';
