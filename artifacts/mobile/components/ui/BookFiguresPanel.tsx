@@ -13,7 +13,8 @@
  * instead of only reaching a teacher after they export.
  */
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import type { BookFigureRef } from '@/services/exportHtml';
 import { EXPORT_FIGURE_MAX } from '@/services/exportHtml';
 

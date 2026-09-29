@@ -18,9 +18,10 @@
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Modal, Platform, Pressable,
+  ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable,
   StyleSheet, Text, TextInput, View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';

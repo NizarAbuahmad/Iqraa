@@ -10,7 +10,8 @@
  * the AI bubble: WhatsApp/ChatGPT convention, not a layout mirror.
  */
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Avatar } from './Avatar';
 
 interface Colors {
