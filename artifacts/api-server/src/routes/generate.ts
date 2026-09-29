@@ -906,7 +906,9 @@ generateRouter.post("/generate/variants/:id/retire", async (req: AuthenticatedRe
     { artifactId: id, reportId: outcome.reportId, userId: req.user?.id },
     "pooled artifact reported by a teacher",
   );
-  await notifyAdminsOfArtifactReport({ kind: outcome.kind, lessonRef: outcome.lessonRef });
+  notifyAdminsOfArtifactReport({ kind: outcome.kind, lessonRef: outcome.lessonRef }).catch((err) =>
+    logger.error({ err, artifactId: id }, "admin artifact-report notification failed"),
+  );
   res.json({ reported: true });
 });
 
