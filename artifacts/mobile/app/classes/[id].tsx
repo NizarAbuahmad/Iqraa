@@ -42,12 +42,14 @@ import {
   addStudents,
   generateJoinCode,
   getClass,
+  getClassEnglishPractice,
   getClassMastery,
   listClassParentContacts,
   parseStudentNames,
   removeStudentFromClass,
   updateClass,
   updateStudent,
+  type ClassEnglishPracticeStudent,
   type ClassGroup,
   type ClassMastery,
   type ClassParentContact,
@@ -110,6 +112,7 @@ export default function ClassDetailScreen() {
   const [attachingId, setAttachingId] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState(0);
   const [mastery, setMastery] = useState<ClassMastery | null>(null);
+  const [englishPractice, setEnglishPractice] = useState<ClassEnglishPracticeStudent[] | null>(null);
   /** Null until loaded, or when the log can't be read — the card then hides. */
   const [parentContacts, setParentContacts] = useState<ClassParentContact[] | null>(null);
   const [noteStudent, setNoteStudent] = useState<RosterStudent | null>(null);
@@ -163,6 +166,7 @@ export default function ClassDetailScreen() {
     setMastery(await getClassMastery(id).catch(() => null));
     // Same rule: the contact card is advice, never a reason to fail the roster.
     setParentContacts(await listClassParentContacts(id).catch(() => null));
+    setEnglishPractice(await getClassEnglishPractice(id).then(r => r.students).catch(() => null));
   }, [id, describe]);
 
   const contactSummary = useMemo(
@@ -587,6 +591,21 @@ export default function ClassDetailScreen() {
               )}
               {students.length > 0 && (
                 <ParentContactSection summary={contactSummary} colors={colors} isRTL={isRTL} align={align} t={t} />
+              )}
+              {students.length > 0 && (
+                <EnglishPracticeSection
+                  students={englishPractice}
+                  onShare={() => {
+                    void shareAsText(
+                      `${t('classEnglishTitle')}: https://app.iqrra.com/curriculum/english`,
+                      t('classEnglishTitle'),
+                    );
+                  }}
+                  colors={colors}
+                  isRTL={isRTL}
+                  align={align}
+                  t={t}
+                />
               )}
             </View>
           }
@@ -1514,6 +1533,57 @@ function JoinStatusSection({
               </Pressable>
             ))}
           </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
+/**
+ * Who has used English Corner and how well — only students signed in with
+ * their own claimed account show up (see services/roster.ts's
+ * getClassEnglishPractice); anonymous play stays invisible by design.
+ */
+function EnglishPracticeSection({
+  students, onShare, colors, isRTL, align, t,
+}: {
+  students: ClassEnglishPracticeStudent[] | null;
+  onShare: () => void;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  align: 'left' | 'right';
+  t: (key: any, ...args: any[]) => string;
+}) {
+  if (!students) return null;
+  const row = isRTL ? 'row-reverse' : 'row';
+
+  return (
+    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10, flexDirection: 'column', alignItems: 'stretch' }]}>
+      <View style={{ flexDirection: row, justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align, flex: 1 }}>
+          {t('classEnglishTitle')}
+        </Text>
+        <Pressable onPress={onShare} hitSlop={8}>
+          <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{t('classEnglishShare')}</Text>
+        </Pressable>
+      </View>
+
+      {students.length === 0 ? (
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+          {t('classEnglishEmpty')}
+        </Text>
+      ) : (
+        <View style={{ gap: 8 }}>
+          {students.map(s => (
+            <View key={s.studentId} style={{ flexDirection: row, justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align, flex: 1 }}>
+                {s.displayName}
+              </Text>
+              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                {t('classEnglishStars', s.totalStars)}
+              </Text>
+            </View>
+          ))}
         </View>
       )}
     </View>

@@ -22,6 +22,8 @@
 import { Router } from "express";
 import { getExternalResource } from "@workspace/curriculum";
 import { getPracticePassage } from "@workspace/curriculum/practice";
+import { db, englishPractice, rosterLinks } from "@workspace/db";
+import { and, eq, sql } from "drizzle-orm";
 
 import { logger } from "../lib/logger";
 import type { AuthenticatedRequest } from "../middlewares/auth";
@@ -40,6 +42,66 @@ import { scoreReading } from "../modules/assessment/readAloud";
 import { pgRateLimitStore } from "../lib/rateLimitStore";
 
 const router = Router();
+
+const ENGLISH_HUB_ACTIVITIES = ["listen", "match", "spell", "scramble", "picture"] as const;
+
+/**
+ * English Corner needs no account, so most calls here have no roster row to
+ * write against — that's the common case, not an error. Recorded only for a
+ * student who is signed in AND has claimed their own roster row (the same
+ * `rosterLinks` self-link `messaging.ts` uses to resolve "which student is
+ * this logged-in user"), so a teacher only ever sees students they rostered.
+ */
+router.post("/practice/english", async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: "Sign in required", code: "unauthenticated" });
+      return;
+    }
+
+    const lessonId = typeof req.body?.lessonId === "string" ? req.body.lessonId : "";
+    const activity = typeof req.body?.activity === "string" ? req.body.activity : "";
+    const stars = Number(req.body?.stars);
+    if (
+      !lessonId
+      || !(ENGLISH_HUB_ACTIVITIES as readonly string[]).includes(activity)
+      || !Number.isInteger(stars)
+      || stars < 0
+      || stars > 3
+    ) {
+      res.status(400).json({ error: "Invalid practice result", code: "bad_request" });
+      return;
+    }
+
+    const [link] = await db
+      .select({ studentId: rosterLinks.studentId })
+      .from(rosterLinks)
+      .where(and(eq(rosterLinks.userId, userId), eq(rosterLinks.relation, "self")))
+      .limit(1);
+    if (!link) {
+      // No claimed roster row — most English Corner players. Nothing to write to.
+      res.json({ recorded: false });
+      return;
+    }
+
+    await db
+      .insert(englishPractice)
+      .values({ studentId: link.studentId, lessonId, activity, bestStars: stars, timesPlayed: 1 })
+      .onConflictDoUpdate({
+        target: [englishPractice.studentId, englishPractice.lessonId, englishPractice.activity],
+        set: {
+          bestStars: sql`greatest(${englishPractice.bestStars}, ${stars})`,
+          timesPlayed: sql`${englishPractice.timesPlayed} + 1`,
+          lastPlayedAt: new Date(),
+        },
+      });
+    res.json({ recorded: true });
+  } catch (err) {
+    logger.error({ err }, "english practice record failed");
+    res.status(500).json({ error: "Could not record practice" });
+  }
+});
 
 /**
  * Transcriptions per user per day.

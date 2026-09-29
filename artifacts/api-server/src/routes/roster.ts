@@ -19,6 +19,7 @@ import {
   chatThreads,
   classGroups,
   classMemberships,
+  englishPractice,
   evaluations,
   parentContacts,
   rosterLinks,
@@ -294,6 +295,56 @@ router.get("/classes/:id/mastery", async (req: AuthenticatedRequest, res) => {
     });
   } catch (err) {
     failRoster(res, err, "class mastery", "Failed to load class mastery");
+  }
+});
+
+/** Per-student English Corner summary — see lib/db/src/schema/englishPractice.ts. */
+router.get("/classes/:id/english-practice", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    const [group] = await db
+      .select({ id: classGroups.id })
+      .from(classGroups)
+      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      .limit(1);
+    if (!group) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        studentId: classMemberships.studentId,
+        displayName: students.displayName,
+        lessonId: englishPractice.lessonId,
+        activity: englishPractice.activity,
+        bestStars: englishPractice.bestStars,
+        lastPlayedAt: englishPractice.lastPlayedAt,
+      })
+      .from(classMemberships)
+      .innerJoin(students, eq(students.id, classMemberships.studentId))
+      .leftJoin(englishPractice, eq(englishPractice.studentId, classMemberships.studentId))
+      .where(and(eq(classMemberships.classGroupId, classId), isNull(students.archivedAt)));
+
+    const byStudent = new Map<
+      string,
+      { studentId: string; displayName: string; totalStars: number; lessonsPlayed: number; lastPlayedAt: string | null }
+    >();
+    for (const row of rows) {
+      const entry = byStudent.get(row.studentId)
+        ?? { studentId: row.studentId, displayName: row.displayName, totalStars: 0, lessonsPlayed: 0, lastPlayedAt: null };
+      if (row.lessonId) {
+        entry.totalStars += row.bestStars ?? 0;
+        entry.lessonsPlayed += 1;
+        const playedAt = row.lastPlayedAt?.toISOString() ?? null;
+        if (playedAt && (!entry.lastPlayedAt || playedAt > entry.lastPlayedAt)) entry.lastPlayedAt = playedAt;
+      }
+      byStudent.set(row.studentId, entry);
+    }
+
+    res.json({ students: [...byStudent.values()].sort((a, b) => b.totalStars - a.totalStars) });
+  } catch (err) {
+    failRoster(res, err, "class english practice", "Failed to load English Corner practice");
   }
 });
 
