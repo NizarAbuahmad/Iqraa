@@ -25,10 +25,12 @@
  */
 import { CHEM_BANK, detectChemFamily, type ChemFamily } from './chemistry.ts';
 import { subjectIdFromName } from './subjects.ts';
+import { makeElementaryItem } from './elementary.ts';
 
 export { isChemContext, detectChemFamily, CHEM_BANK } from './chemistry.ts';
 export type { ChemFamily } from './chemistry.ts';
 export { subjectIdFromName } from './subjects.ts';
+export { detectElementaryOp } from './elementary.ts';
 
 export interface PracticeLesson {
   id: string;
@@ -74,7 +76,9 @@ type MathFamily =
   | 'derivative'
   | 'vectors'
   | 'stats'
-  | 'algebra';
+  | 'algebra'
+  /** Grades 1–6, generated per lesson — see `./elementary.ts`. */
+  | 'arith';
 
 /** A bank family: maths (below) or chemistry (`./chemistry.ts`). */
 export type Family = MathFamily | ChemFamily;
@@ -573,6 +577,27 @@ export function takeConcreteMath(
     session ?? usedIds,
     allowRepeat,
   );
+}
+
+/**
+ * A maths item for a Grade 1–6 lesson, sized to `grade`.
+ *
+ * The bank above is Grade 10; this is what any earlier grade gets instead of
+ * falling through to its `algebra` family. Same output shape, same formatting
+ * per question type, same session set for dedupe.
+ */
+export function takeElementaryMath(
+  type: QType,
+  topic: string,
+  kb: KBLesson | null,
+  grade: number,
+  diff: DiffTier,
+  lang: Lang,
+  points: number,
+  session?: Set<string>,
+): PracticeWQ {
+  const item = makeElementaryItem(lessonTextBlob(topic, kb), grade, diff, session ?? usedIds);
+  return { ...formatItem(item, lang, type), points };
 }
 
 /**
