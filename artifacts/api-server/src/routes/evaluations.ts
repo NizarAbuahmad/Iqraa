@@ -568,6 +568,8 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         // Unlocks the concrete maths bank, and with it the only self-marking
         // questions this generator can honestly produce.
         subjectId: evaluation.subjectId,
+        // Grades 1–6 get arithmetic sized to the grade, not the Grade 10 bank.
+        gradeId: evaluation.gradeId,
       });
       // The seed the template variation ran on — with it, this exact paper
       // can be regenerated; without it, "reproducible" would be a lie.

@@ -25,7 +25,8 @@
  * attribution fix.
  */
 import React, { useEffect, useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { externalResourcesForLesson, type ExternalResource } from '@workspace/curriculum';
 import { useColors } from '@/hooks/useColors';

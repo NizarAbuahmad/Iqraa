@@ -14,6 +14,7 @@
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -52,6 +53,12 @@ const ACCENT = palette.primary;
 const ACCENT_FILL = palette.hero;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const VIEW_KEY = 'schedule.view';
+
+const SCHEDULE_QUERY_KEY = ['schedule'] as const;
+/** Same reasoning as classes/index.tsx: this screen is reachable from several
+ *  places (calendar, home), so a minute of cache turns a quick back-and-forth
+ *  into an instant paint instead of a fresh spinner every time. */
+const SCHEDULE_STALE_MS = 60_000;
 /** Below this the timetable's five day columns no longer fit, so the day list is the better default. */
 const WIDE_MIN = 760;
 
@@ -65,6 +72,7 @@ type T = (key: TranslationKey, ...args: any[]) => string;
 type Colors = ReturnType<typeof useColors>;
 type ViewMode = 'table' | 'day' | 'cards';
 type Cell = { schoolName: string; dayOfWeek: number; periodNumber: number };
+type ScheduleData = Awaited<ReturnType<typeof getSchedule>>;
 
 const VIEW_MODES: { mode: ViewMode; label: TranslationKey; icon: keyof typeof Ionicons.glyphMap }[] = [
   { mode: 'table', label: 'scheduleViewTable', icon: 'grid-outline' },
@@ -656,10 +664,8 @@ export default function ScheduleScreen() {
   const width = useViewportWidth();
   const { t, isRTL, lang } = useLanguage();
 
-  const [periods, setPeriods] = useState<SchedulePeriod[]>([]);
-  const [slots, setSlots] = useState<ScheduleSlot[]>([]);
+  const queryClient = useQueryClient();
   const [classes, setClasses] = useState<ClassGroup[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [storedView, setStoredView] = useState<ViewMode | null>(null);
   const [selectedSchool, setSelectedSchool] = useState('');
@@ -682,35 +688,44 @@ export default function ScheduleScreen() {
     AsyncStorage.setItem(VIEW_KEY, v).catch(() => {});
   };
 
-  const load = useCallback(async () => {
-    setError('');
-    try {
-      const data = await getSchedule();
-      setPeriods(data.periods);
-      setSlots(data.slots);
-    } catch (err) {
-      setError(
-        err instanceof ScheduleError && err.isStorageUnavailable
-          ? t('scheduleStorageUnavailable')
-          : t('scheduleLoadFailed'),
-      );
-    } finally {
-      setLoading(false);
-    }
-    // Best-effort, same as teaching-plans: class names are a convenience for
-    // labelling filled slots, not the point of this screen.
+  const {
+    data: scheduleData,
+    isLoading: loading,
+    isError: loadFailed,
+    error: loadErrorRaw,
+    refetch,
+  } = useQuery({
+    queryKey: SCHEDULE_QUERY_KEY,
+    queryFn: getSchedule,
+    staleTime: SCHEDULE_STALE_MS,
+  });
+  const { periods = [], slots = [] } = scheduleData ?? {};
+  const loadError = loadFailed
+    ? loadErrorRaw instanceof ScheduleError && loadErrorRaw.isStorageUnavailable
+      ? t('scheduleStorageUnavailable')
+      : t('scheduleLoadFailed')
+    : '';
+
+  // Best-effort, same as teaching-plans: class names are a convenience for
+  // labelling filled slots, not the point of this screen. Kept outside the
+  // schedule query — a failure here never surfaces as `error`/`loadError`.
+  const loadClasses = useCallback(async () => {
     try {
       setClasses(await listClasses());
     } catch {
       /* slots still work by id; the label just won't resolve */
     }
-  }, [t]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      void load();
-    }, [load]),
+      void loadClasses();
+    }, [loadClasses]),
   );
+
+  // An action error (save/delete/rename) takes priority over a stale load
+  // error — it's the more recent thing the teacher is looking at.
+  const displayError = error || loadError;
 
   const savedSchools = schoolsOf(periods);
   const schools = [...savedSchools, ...draftSchools.filter(s => !savedSchools.includes(s))];
@@ -739,7 +754,13 @@ export default function ScheduleScreen() {
   const onSavePeriod = async (periodNumber: number, input: { startTime: string; durationMinutes: number }) => {
     try {
       const saved = await setSchedulePeriod(school, periodNumber, input);
-      setPeriods(prev => [...prev.filter(p => !(p.schoolName === school && p.periodNumber === periodNumber)), saved]);
+      queryClient.setQueryData<ScheduleData>(SCHEDULE_QUERY_KEY, prev => {
+        const base = prev ?? { periods: [], slots: [] };
+        return {
+          ...base,
+          periods: [...base.periods.filter(p => !(p.schoolName === school && p.periodNumber === periodNumber)), saved],
+        };
+      });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
       setError(t('scheduleSaveFailed'));
@@ -757,7 +778,13 @@ export default function ScheduleScreen() {
     if (!ok) return;
     try {
       await deleteSchedulePeriod(school, periodNumber);
-      setPeriods(prev => prev.filter(p => !(p.schoolName === school && p.periodNumber === periodNumber)));
+      queryClient.setQueryData<ScheduleData>(SCHEDULE_QUERY_KEY, prev => {
+        const base = prev ?? { periods: [], slots: [] };
+        return {
+          ...base,
+          periods: base.periods.filter(p => !(p.schoolName === school && p.periodNumber === periodNumber)),
+        };
+      });
     } catch {
       setError(t('scheduleSaveFailed'));
     }
@@ -782,8 +809,13 @@ export default function ScheduleScreen() {
     }
     try {
       await renameScheduleSchool(school, to);
-      setPeriods(prev => prev.map(p => (p.schoolName === school ? { ...p, schoolName: to } : p)));
-      setSlots(prev => prev.map(s => (s.schoolName === school ? { ...s, schoolName: to } : s)));
+      queryClient.setQueryData<ScheduleData>(SCHEDULE_QUERY_KEY, prev => {
+        const base = prev ?? { periods: [], slots: [] };
+        return {
+          periods: base.periods.map(p => (p.schoolName === school ? { ...p, schoolName: to } : p)),
+          slots: base.slots.map(s => (s.schoolName === school ? { ...s, schoolName: to } : s)),
+        };
+      });
       setSelectedSchool(to);
       setSchoolModal(null);
       return '';
@@ -795,10 +827,16 @@ export default function ScheduleScreen() {
   const onSaveSlot = async (cell: Cell, patch: { classGroupId: string | null; notes: string }) => {
     try {
       const saved = await setScheduleSlot(cell.schoolName, cell.dayOfWeek, cell.periodNumber, patch);
-      setSlots(prev => [
-        ...prev.filter(s => !(s.schoolName === cell.schoolName && s.dayOfWeek === cell.dayOfWeek && s.periodNumber === cell.periodNumber)),
-        saved,
-      ]);
+      queryClient.setQueryData<ScheduleData>(SCHEDULE_QUERY_KEY, prev => {
+        const base = prev ?? { periods: [], slots: [] };
+        return {
+          ...base,
+          slots: [
+            ...base.slots.filter(s => !(s.schoolName === cell.schoolName && s.dayOfWeek === cell.dayOfWeek && s.periodNumber === cell.periodNumber)),
+            saved,
+          ],
+        };
+      });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setEditingCell(null);
     } catch {
@@ -855,8 +893,8 @@ export default function ScheduleScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60, gap: 16, width: '100%', maxWidth: 1100, alignSelf: 'center' }}>
-          {error ? (
-            <LoadError message={error} onRetry={() => void load()} onDismiss={() => setError('')} />
+          {displayError ? (
+            <LoadError message={displayError} onRetry={() => { setError(''); void refetch(); }} onDismiss={() => setError('')} />
           ) : null}
 
           {!hasAnyPeriod && draftSchools.length === 0 ? emptyState : (

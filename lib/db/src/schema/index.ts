@@ -33,6 +33,8 @@ export * from "./feedback";
 export * from "./aiGenerations";
 // The shared variant pool those keys are looked up in (plan phase 1)
 export * from "./aiArtifacts";
+// A teacher's report against a pooled artifact — see aiArtifactReports.ts
+export * from "./aiArtifactReports";
 
 // Teacher-uploaded lesson attachments (R2-backed) — see routes/lessonMedia.ts
 export * from "./lessonMedia";

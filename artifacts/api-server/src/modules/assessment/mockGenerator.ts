@@ -40,7 +40,7 @@ import {
   type CompetencyKey,
 } from "./competency.ts";
 import type { AnswerKeyCheck } from "@workspace/math-verify";
-import { takeConcreteChem, takeConcreteMath, type DiffTier } from "@workspace/math-practice";
+import { takeConcreteChem, takeConcreteMath, takeElementaryMath, type DiffTier } from "@workspace/math-practice";
 import { mockableTypes, QUESTION_TYPES } from "./questionTypes.ts";
 
 export interface GeneratedQuestion {
@@ -84,6 +84,12 @@ export interface GenerationRequest {
    * actually knows.
    */
   subjectId?: string;
+  /**
+   * The evaluation's grade ("grade-1".."grade-12"). A Grade 1–6 maths paper
+   * draws generated arithmetic sized to the grade; the concrete bank is
+   * Grade 10 and used to hand a Grade 2 class «x² = 49».
+   */
+  gradeId?: string;
 }
 
 export interface GenerationResult {
@@ -396,22 +402,25 @@ function bankMultipleChoice(
   // before subjects were recorded has none, and that falls to the maths bank
   // exactly as it did before chemistry existed.
   subjectId: string | undefined,
+  gradeId: string | undefined,
 ): { body: Record<string, unknown>; expectedAnswer: Record<string, unknown> } | null {
   const topic = objective.descriptionAr || objective.description;
   // Which bank is decided by the evaluation's own subject, never by the
   // objective text: a chemistry objective mentioning «المعادلة الكيميائية»
   // would otherwise reach the maths bank's family detection and come back
   // with a quadratic.
-  const take = subjectId === "chemistry" ? takeConcreteChem : takeConcreteMath;
-  const item = take(
-    "multiple_choice",
-    topic,
-    null,
-    BANK_TIER[difficulty],
-    "ar",
-    marks,
-    session,
-  );
+  const primary = Number(gradeId?.match(/^grade-(\d+)$/)?.[1]);
+  const item = subjectId !== "chemistry" && primary >= 1 && primary <= 6
+    ? takeElementaryMath("multiple_choice", topic, null, primary, BANK_TIER[difficulty], "ar", marks, session)
+    : (subjectId === "chemistry" ? takeConcreteChem : takeConcreteMath)(
+      "multiple_choice",
+      topic,
+      null,
+      BANK_TIER[difficulty],
+      "ar",
+      marks,
+      session,
+    );
   if (!item?.options || item.options.length < 3) return null;
 
   const texts = item.options.map(o => o.trim()).filter(Boolean);
@@ -567,6 +576,7 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
           marks,
           bankSession,
           req.subjectId,
+          req.gradeId,
         );
         if (mcq) {
           questions.push({
