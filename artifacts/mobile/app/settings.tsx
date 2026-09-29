@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { Button } from '@/components/ui/Button';
+import { Toast } from '@/components/ui/Toast';
 
 type AiUsage = { spentUsd: number | null; limitUsd: number; resetsAt: string };
 
@@ -24,8 +25,6 @@ export default function SettingsScreen() {
   const { t, isRTL, lang, toggleLang } = useLanguage();
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
-  const [pushTesting, setPushTesting] = useState(false);
-  const [pushResult, setPushResult] = useState<'sent' | 'notoken' | 'error' | null>(null);
   const [usage, setUsage] = useState<AiUsage | null>(null);
   const { user, switchRole } = useAuth();
   const studentAccounts = useStudentAccountsEnabled();
@@ -37,6 +36,26 @@ export default function SettingsScreen() {
   const [nextRole, setNextRole] = useState<'parent' | 'student' | null>(null);
   const [switching, setSwitching] = useState(false);
   const [typeError, setTypeError] = useState('');
+  const [sendingTest, setSendingTest] = useState(false);
+  const [toast, setToast] = useState('');
+
+  // Verifies real Expo push delivery without a second account to message you
+  // — see POST /messaging/device-tokens/test. Native only: web never
+  // registers a token (services/pushTokens.ts), so there's nothing to send to.
+  const handleTestNotification = async () => {
+    if (sendingTest) return;
+    setSendingTest(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await apiJson('/messaging/device-tokens/test', { method: 'POST' });
+      setToast(t('testNotificationSent'));
+    } catch (e) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setToast(e instanceof ApiError ? e.message : t('testNotificationFailed'));
+    } finally {
+      setSendingTest(false);
+    }
+  };
 
   const handleSwitchRole = async () => {
     if (!nextRole || switching) return;
@@ -62,20 +81,6 @@ export default function SettingsScreen() {
     return () => { cancelled = true; };
   }, []);
   const usedPct = usage ? Math.min(100, Math.round(((usage.spentUsd ?? 0) / usage.limitUsd) * 100)) : 0;
-
-  const handleTestPush = async () => {
-    if (pushTesting) return;
-    setPushTesting(true);
-    setPushResult(null);
-    try {
-      const res = await apiJson<{ sent: number }>('/messaging/device-tokens/test', { method: 'POST' });
-      setPushResult(res.sent > 0 ? 'sent' : 'notoken');
-    } catch (e) {
-      setPushResult(e instanceof ApiError && e.status === 404 ? 'notoken' : 'error');
-    } finally {
-      setPushTesting(false);
-    }
-  };
 
   const handleToggleLanguage = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -162,21 +167,19 @@ export default function SettingsScreen() {
               />
             }
           />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <SettingRow
-            icon="send-outline"
-            label={pushTesting ? '…' : t('pushTestRow')}
-            isRTL={isRTL}
-            colors={colors}
-            onPress={handleTestPush}
-            right={
-              pushResult ? (
-                <Text style={{ fontSize: 12, fontFamily: 'Almarai_400Regular', color: pushResult === 'sent' ? colors.primary : colors.destructive }}>
-                  {t(pushResult === 'sent' ? 'pushTestSent' : pushResult === 'notoken' ? 'pushTestNoToken' : 'pushTestError')}
-                </Text>
-              ) : undefined
-            }
-          />
+          {Platform.OS !== 'web' && (
+            <>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <SettingRow
+                icon="paper-plane-outline"
+                label={t('sendTestNotification')}
+                isRTL={isRTL}
+                colors={colors}
+                onPress={handleTestNotification}
+                right={sendingTest ? <ActivityIndicator size="small" color={colors.primary} /> : undefined}
+              />
+            </>
+          )}
         </View>
 
         {/* About */}
@@ -290,6 +293,7 @@ export default function SettingsScreen() {
           />
         </View>
       </ScrollView>
+      <Toast visible={!!toast} message={toast} onHide={() => setToast('')} />
     </View>
   );
 }

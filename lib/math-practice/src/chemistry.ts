@@ -102,7 +102,18 @@ export function detectChemFamily(raw: string): ChemFamily {
   const blob = bare(raw);
   // Grade 10 S2 first: its families are the most specific, and «تفاعل» in a
   // stoichiometry lesson must not be caught by the general equations branch.
-  if (/(ال)?حسابات (ال)?كيميائية|المردود|الكاشف المحدد|stoichiometr|limiting reagent|mole ratio|نسب مولية/i.test(blob)) return 'stoichiometry';
+  //
+  // Only the unambiguous stoichiometry vocabulary goes here — limiting
+  // reagent, percent yield, mole ratio. The generic "حسابات كيميائية"
+  // ("chemical calculations") phrase used to sit in this same branch, and it
+  // is the unit's own name («التفاعلات والحسابات الكيميائية»): the mole
+  // lesson's own objectives close with «أوظف مفهوم المول في بعض الحسابات
+  // الكيميائية», so that one incidental mention routed every quick-check for
+  // the mole lesson into the NEXT lesson's stoichiometry bank — limiting
+  // reagent and % yield, never mole/Avogadro. That generic phrase is checked
+  // last below, only once every more specific family (mole included) has had
+  // its chance to claim the lesson first.
+  if (/المردود|الكاشف المحدد|stoichiometr|limiting reagent|mole ratio|نسب مولية/i.test(blob)) return 'stoichiometry';
   if (/المول|الكتلة المولية|أفوجادرو|molar mass|avogadro|\bmole\b/i.test(blob)) return 'mole';
   if (/طاقة.*تفاعل|تفاعل.*طاقة|ماص للطاقة|طارد للطاقة|المحتوى الحراري|إنثالبي|enthalpy|exotherm|endotherm|heat of reaction/i.test(blob)) return 'thermochem';
   if (/معادلة كيميائية|وزن المعادل|موازنة|التفاعلات الكيميائية|chemical equation|balanc|reaction type/i.test(blob)) return 'equations';
@@ -119,6 +130,12 @@ export function detectChemFamily(raw: string): ChemFamily {
   if (/نشاط الفلزات|سلسلة النشاط|تآكل|صدأ|activity series|corrosion|rust/i.test(blob)) return 'metal_activity';
   if (/حمض|حموض|قاعدة|قواعد|أملاح|تعادل|قلوي|acid|base|alkali|neutralis|neutraliz|\bpH\b/i.test(blob)) return 'acids_bases';
   if (/مكونات الذرة|العدد الذري|العدد الكتلي|نظائر|بروتون|نيوترون|atomic number|mass number|isotope|proton|neutron/i.test(blob)) return 'atom_basics';
+
+  // The generic "chemical calculations" phrase, last: it is the unit's own
+  // name and the weakest signal of the lot, so it only decides a lesson no
+  // sharper family above has already claimed — which is exactly the bare
+  // lesson title «الحسابات الكيميائية» itself.
+  if (/(ال)?حسابات (ال)?كيميائية/i.test(blob)) return 'stoichiometry';
 
   return 'general_chem';
 }

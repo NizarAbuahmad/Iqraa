@@ -108,6 +108,34 @@ describe('detectChemFamily', () => {
   it('falls back to general_chem rather than guessing', () => {
     assert.equal(detectChemFamily('موضوع لا يشبه أي درس'), 'general_chem');
   });
+
+  // Live bug (Slides Maker, 2026-09-27): the mole lesson's own last objective
+  // is «أوظف مفهوم المول في بعض الحسابات الكيميائية» — one incidental mention
+  // of the unit's own name routed every quick-check for the mole lesson into
+  // the NEXT lesson's stoichiometry bank (limiting reagent, % yield), never
+  // mole or Avogadro. `lessonTextBlob` (index.ts) feeds title + objectives +
+  // key concepts together, so the title-only cases above never caught this.
+  it('a passing mention of "حسابات كيميائية" in another family\'s objectives does not steal the lesson', () => {
+    const moleLessonBlob = [
+      'المول والكتلة المولية',
+      'أوضح مفهوم المول.',
+      'أربط بين المول وعدد أفوجادرو.',
+      'أتعرف الكتلة الذرية النسبية، والكتلة الجزيئية، والكتلة المولية وكتلة الصيغة.',
+      'أوظف مفهوم المول في بعض الحسابات الكيميائية.',
+    ].join(' ');
+    assert.equal(detectChemFamily(moleLessonBlob), 'mole');
+  });
+
+  it('still resolves the stoichiometry lesson itself by its own objectives', () => {
+    const stoichiometryLessonBlob = [
+      'الحسابات الكيميائية',
+      'أحسب النسبة المئوية لكتلة عنصر في مركب.',
+      'أحدد الصيغة الأولية والصيغة الجزيئية للمركب.',
+      'أحسب عدد مولات مركب وكتلته المتفاعلة أو الناتجة.',
+      'أحسب المردود المئوي للتفاعل.',
+    ].join(' ');
+    assert.equal(detectChemFamily(stoichiometryLessonBlob), 'stoichiometry');
+  });
 });
 
 describe('isChemContext', () => {

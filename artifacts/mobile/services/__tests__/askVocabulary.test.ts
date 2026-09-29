@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 
 import { classifyChatIntent } from '../ai/intentRouter.ts';
 import { artifactFromQuery } from '../ai/teachingAssistant.ts';
-import { mergeScopeReply } from '../lessonCopilot.ts';
+import { mergeScopeReply, ordinalChoice } from '../lessonCopilot.ts';
 
 const ASKS: Record<string, string[]> = {
   'lesson-plan': [
@@ -81,4 +81,17 @@ describe('an answer to "which lesson?" joins the ask', () => {
   it('nothing pending leaves the message alone', () => {
     assert.equal(mergeScopeReply(null, 'الصف العاشر'), 'الصف العاشر');
   });
+});
+
+// Reported 2026-09-28: «أي درس من اللغة العربية للصف العاشر؟» → «الثاني» →
+// «وضّح لي أكثر». A bare ordinal answers the question with the nth option.
+describe('an ordinal picks the offered lesson', () => {
+  const cases: Array<[string, number | null]> = [
+    ['الثاني', 2], ['الأول', 1], ['الاول', 1], ['الدرس الثالث', 3], ['رقم ٢', 2], ['2', 2],
+    ['second', 2], ['the second one', 2], ['2nd', 2], ['الرابع', 4],
+    ['الصف الثاني', null], ['الجملة الاسمية', null], ['خطة درس', null],
+  ];
+  for (const [reply, want] of cases) {
+    it(JSON.stringify(reply), () => assert.equal(ordinalChoice(reply), want));
+  }
 });

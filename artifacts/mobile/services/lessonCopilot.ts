@@ -310,6 +310,32 @@ export function stripSubjectNames(query: string): string {
   return words.join(' ');
 }
 
+const ORDINALS: Array<[n: number, words: string]> = [
+  [1, 'الأول|الاول|أول|اول|الأولى|الاولى|first|one|1|١'],
+  [2, 'الثاني|ثاني|الثانية|second|two|2|٢'],
+  [3, 'الثالث|ثالث|الثالثة|third|three|3|٣'],
+  [4, 'الرابع|رابع|الرابعة|fourth|four|4|٤'],
+  [5, 'الخامس|خامس|الخامسة|fifth|five|5|٥'],
+];
+
+/**
+ * Which offered option a bare ordinal picks — «الثاني», "the 2nd one", «٣» —
+ * or null. Answering «أي درس…؟» with «الثاني» meant the second lesson shown;
+ * it was read as a message of its own and got «وضّح لي أكثر».
+ */
+export function ordinalChoice(reply: string): number | null {
+  const q = reply.trim()
+    .replace(/[.!؟?]+$/, '')
+    .replace(/^(?:the|رقم|الدرس|درس|lesson|option)\s+/i, '')
+    .replace(/\s+(?:one|منهم|منها|please|لو\s*سمحت)$/i, '')
+    .replace(/(?<=\d)(?:st|nd|rd|th)$/i, '')
+    .trim();
+  for (const [n, words] of ORDINALS) {
+    if (new RegExp(`^(?:${words})$`, 'i').test(q)) return n;
+  }
+  return null;
+}
+
 /**
  * The message to act on when the teacher answers a question the chat asked.
  *
