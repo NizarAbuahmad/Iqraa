@@ -28,6 +28,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import {
   attemptAnswers,
+  attemptResults,
   attempts,
   classMemberships,
   evaluationQuestions,
@@ -57,6 +58,8 @@ import {
   issueAccessToken,
   normalizeShareCode,
   sanitizeQuestionForStudent,
+  sanitizeResultForStudent,
+  studentResultReady,
 } from "../modules/assessment/studentView";
 
 const router = Router();
@@ -607,6 +610,49 @@ router.post("/take/attempt/submit", async (req, res) => {
   } catch (err) {
     logger.error({ err }, "student submit failed");
     res.status(500).json({ error: "Failed to hand in this exam" });
+  }
+});
+
+/**
+ * Has the paper been marked, and may this student see it?
+ *
+ * `studentResultReady` is the one place that decides that, and it stays a
+ * closed "not yet" either way — the response never distinguishes "the teacher
+ * has not opted in" from "grading is still open", so a student cannot use this
+ * endpoint to learn how far along marking is.
+ */
+router.get("/take/attempt/result", async (req, res) => {
+  try {
+    const attempt = await attemptForToken(req.headers.authorization);
+    if (!attempt) {
+      res.status(401).json({ error: "This session has expired", code: "token_invalid" });
+      return;
+    }
+    if (!attempt.submittedAt) {
+      res.status(409).json({ error: "This exam has not been submitted yet", code: "not_submitted" });
+      return;
+    }
+
+    const [evaluation] = await db
+      .select({ releaseResultsToStudent: evaluations.releaseResultsToStudent })
+      .from(evaluations)
+      .where(eq(evaluations.id, attempt.evaluationId))
+      .limit(1);
+    const [result] = await db
+      .select()
+      .from(attemptResults)
+      .where(eq(attemptResults.attemptId, attempt.id))
+      .limit(1);
+
+    if (!studentResultReady({ released: evaluation?.releaseResultsToStudent ?? false, result })) {
+      res.json({ ready: false });
+      return;
+    }
+
+    res.json({ ready: true, result: sanitizeResultForStudent(result!) });
+  } catch (err) {
+    logger.error({ err }, "student result lookup failed");
+    res.status(500).json({ error: "Failed to load your result" });
   }
 });
 

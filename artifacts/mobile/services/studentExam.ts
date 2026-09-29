@@ -13,6 +13,7 @@
  */
 import { getApiBaseUrl } from './apiClient.ts';
 import type { StudentResponse } from './studentAnswers.ts';
+import type { CompetencyKey, CompetencyScore, LevelKey } from './evaluations.ts';
 
 export { isAnswered } from './studentAnswers.ts';
 export type { StudentResponse };
@@ -155,4 +156,22 @@ export function uploadReadAloud(
 
 export function submitStudentExam(token: string): Promise<{ submitted: boolean }> {
   return call('/take/attempt/submit', { method: 'POST', token });
+}
+
+/** What a student may see of their own mark. See `studentView.ts` on the server. */
+export interface StudentResult {
+  levelKey: LevelKey | null;
+  percent: number;
+  earnedMarks: number;
+  totalMarks: number;
+  competencyScores: Record<CompetencyKey, CompetencyScore>;
+}
+
+/**
+ * `ready: false` means "not yet" and nothing more — it covers both "the
+ * teacher has not opted this exam into student-visible results" and "grading
+ * isn't finished", on purpose. See `studentResultReady` on the server.
+ */
+export function getExamResult(token: string): Promise<{ ready: boolean; result?: StudentResult }> {
+  return call('/take/attempt/result', { token });
 }
