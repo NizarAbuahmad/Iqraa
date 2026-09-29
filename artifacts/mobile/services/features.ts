@@ -36,10 +36,10 @@ export const DOCUMENT_UPLOAD_ENABLED = false;
 
 import { useEffect, useState } from 'react';
 
-export type Features = { studentAccounts: boolean };
+export type Features = { studentAccounts: boolean; /** True only for the fail-closed answer: the server was never reached. */ failed?: true };
 
 /** Fails closed. Offering a signup door that answers 403 is worse than hiding one that works. */
-const CLOSED: Features = { studentAccounts: false };
+const CLOSED: Features = { studentAccounts: false, failed: true };
 
 /**
  * Failing closed has a cost: the role picker on /register and /setup-subjects
@@ -90,10 +90,11 @@ export function resetFeatureCache(): void {
  * this settles can silently register someone as the closed-state default
  * (teacher, no code) even though they meant to pick parent/student.
  */
-export function useStudentAccountsStatus(): { enabled: boolean; loading: boolean } {
-  const [state, setState] = useState(() =>
-    cached ? { enabled: cached.studentAccounts, loading: false } : { enabled: false, loading: true },
+export function useStudentAccountsStatus(): { enabled: boolean; loading: boolean; failed: boolean; retry: () => void } {
+  const [state, setState] = useState<{ enabled: boolean; loading: boolean; failed: boolean }>(() =>
+    cached ? { enabled: cached.studentAccounts, loading: false, failed: false } : { enabled: false, loading: true, failed: false },
   );
+  const [attempt, setAttempt] = useState(0);
 
   // Always ask, even if `cached` is set by now: another screen can fill the
   // cache between this one's first render and this effect (a full load of
@@ -103,14 +104,19 @@ export function useStudentAccountsStatus(): { enabled: boolean; loading: boolean
   useEffect(() => {
     let live = true;
     fetchFeatures().then(f => {
-      if (live) setState({ enabled: f.studentAccounts, loading: false });
+      if (live) setState({ enabled: f.studentAccounts, loading: false, failed: f.failed === true });
     });
     return () => {
       live = false;
     };
-  }, []);
+  }, [attempt]);
 
-  return state;
+  const retry = () => {
+    setState({ enabled: false, loading: true, failed: false });
+    setAttempt(n => n + 1);
+  };
+
+  return { ...state, retry };
 }
 
 export function useStudentAccountsEnabled(): boolean {

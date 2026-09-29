@@ -23,7 +23,7 @@ import { createRateLimiter } from "../lib/rateLimit.js";
 import { emailKey } from "../lib/rateLimitKeys.js";
 import { deleteObject, deletePublicObject, isPublicR2Configured, newAvatarKey, publicUrl, putPublicObject } from "../lib/r2.js";
 import { googleClientIds } from "../lib/googleClients.js";
-import { decideGoogleLink } from "../lib/googleLink.js";
+import { decideGoogleLink, googleRoleConflict } from "../lib/googleLink.js";
 import { decideRefresh, refreshTokenTtlMs } from "../lib/refreshPolicy.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import {
@@ -1121,6 +1121,23 @@ router.post("/google", googleLimiter, async (req, res) => {
     // have claimed one at any point in the past via /auth/claim, so those
     // still need to ask.
     let isNewAccount = false;
+
+    // An existing account of a different role than the one just asked for: say
+    // so, before anything links or signs in (see googleRoleConflict).
+    {
+      const [known] = user
+        ? [user]
+        : await db.select().from(users).where(eq(users.email, email)).limit(1);
+      const conflict = known ? googleRoleConflict(known, rawRole) : null;
+      if (conflict) {
+        res.status(409).json({
+          code: "role_mismatch",
+          existingRole: conflict,
+          error: `An account with this email already exists as a ${conflict}. Use Sign in instead.`,
+        });
+        return;
+      }
+    }
 
     if (!user) {
       // Link to an existing password account with the same email if one
