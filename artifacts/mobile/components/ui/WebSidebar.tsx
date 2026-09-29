@@ -4,6 +4,7 @@ import { router, usePathname } from 'expo-router';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { NotificationBell } from '@/components/ui/NotificationBell';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import type { TabEntry } from '@/app/(tabs)/_layout';
 
@@ -36,6 +37,11 @@ function SidebarRow({ entry, isIOS, active }: { entry: TabEntry; isIOS: boolean;
       >
         {t(entry.titleKey)}
       </Text>
+      {entry.badge ? (
+        <View style={[styles.badge, { backgroundColor: colors.destructive }]}>
+          <Text style={styles.badgeText}>{entry.badge}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -81,7 +87,8 @@ export function WebSidebar({
       */}
       <View style={styles.brand}>
         <IqraaMark size={30} tone="brand" />
-        <Text style={[styles.brandWord, { color: colors.foreground }]}>{t('appName')}</Text>
+        <Text style={[styles.brandWord, { color: colors.foreground, flex: 1 }]}>{t('appName')}</Text>
+        <NotificationBell />
       </View>
       {entries
         .filter((entry) => entry.visible)
@@ -117,5 +124,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 15,
+    flex: 1,
   },
+  badge: { minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
+  badgeText: { color: '#fff', fontSize: 11, fontFamily: 'Cairo_700Bold', lineHeight: 15 },
 });

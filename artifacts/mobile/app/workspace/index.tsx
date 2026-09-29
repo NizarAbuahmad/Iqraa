@@ -3,6 +3,7 @@ import {
   FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -31,13 +32,21 @@ const TABS: Array<{ key: MaterialType | 'all'; labelKey: string }> = [
   { key: 'quiz', labelKey: 'myQuizzes' },
 ];
 
+/**
+ * This screen is stack-pushed, same as `app/classes/index.tsx` — a minute of
+ * cache means flipping a tab and flipping back, or a quick back-and-forth
+ * through the stack, paints from the last fetch for that exact filter
+ * combination instead of blanking to empty while a fresh request runs.
+ */
+const WORKSPACE_STALE_MS = 60_000;
+
 export default function WorkspaceScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
-  const [items, setItems] = useState<SavedMaterial[]>([]);
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<MaterialType | 'all'>('all');
   // `q` pre-fills the search — the readiness board's «كل النسخ» opens the
   // list on one lesson's topic.
@@ -53,35 +62,47 @@ export default function WorkspaceScreen() {
    */
   const [classes, setClasses] = useState<ClassGroup[]>([]);
 
-  const reload = useCallback(async () => {
-    const type = activeTab === 'all' ? undefined : activeTab;
-    const loaded = await getItems({ type, query, favoritesFirst: favoritesOnly });
-    if (favoritesOnly) {
-      setItems(loaded.filter(i => i.isFavorite));
-    } else {
-      setItems(loaded);
-    }
-  }, [activeTab, query, favoritesOnly]);
+  // The filters are part of the key on purpose: a new combination is a new
+  // query to react-query, fetched and cached under its own entry, so it
+  // refetches on its own whenever activeTab/query/favoritesOnly change —
+  // no separate effect re-running `reload` on those same deps is needed.
+  const WORKSPACE_QUERY_KEY = ['workspaceItems', activeTab, query, favoritesOnly] as const;
+
+  const { data: items = [], refetch } = useQuery({
+    queryKey: WORKSPACE_QUERY_KEY,
+    queryFn: async () => {
+      const type = activeTab === 'all' ? undefined : activeTab;
+      const loaded = await getItems({ type, query, favoritesFirst: favoritesOnly });
+      return favoritesOnly ? loaded.filter(i => i.isFavorite) : loaded;
+    },
+    staleTime: WORKSPACE_STALE_MS,
+  });
 
   useFocusEffect(
     useCallback(() => {
-      reload();
       // Server-only, so offline this stays empty and the cards simply show no
       // class — never a wrong one.
       // `?? []` because listClasses returns `data.classes` unchecked: a
       // malformed body lands here as undefined and the cards read it directly.
       void listClasses().then(cs => setClasses(cs ?? [])).catch(() => setClasses([]));
-    }, [reload]),
+    }, []),
   );
 
-  // The list re-reads the store afterwards, so the star here always shows what
-  // persisted rather than what was intended. Passing `next` explicitly is what
-  // keeps a fast double-tap from racing itself: the read-then-flip form asked
-  // the server for the current value, and two taps could both read "off".
+  // Passing `next` explicitly is what keeps a fast double-tap from racing
+  // itself: the read-then-flip form asked the server for the current value,
+  // and two taps could both read "off". The cache write below only commits
+  // once the server confirms `ok`, so a failed toggle leaves the star as it
+  // was rather than showing a flip that never persisted.
   const handleToggleFavorite = async (item: SavedMaterial) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await toggleFavorite(item.id, !item.isFavorite);
-    reload();
+    const result = await toggleFavorite(item.id, !item.isFavorite);
+    if (!result.ok) return;
+    queryClient.setQueryData<SavedMaterial[]>(WORKSPACE_QUERY_KEY, prev => {
+      const updated = (prev ?? []).map(i =>
+        i.id === item.id ? { ...i, isFavorite: result.isFavorite } : i,
+      );
+      return favoritesOnly ? updated.filter(i => i.isFavorite) : updated;
+    });
   };
 
   const handleDelete = async (item: SavedMaterial) => {
@@ -95,13 +116,19 @@ export default function WorkspaceScreen() {
     if (!ok) return;
     await deleteItem(item.id);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    reload();
+    queryClient.setQueryData<SavedMaterial[]>(WORKSPACE_QUERY_KEY, prev =>
+      (prev ?? []).filter(i => i.id !== item.id),
+    );
   };
 
   const handleDuplicate = async (id: string) => {
-    await duplicateItem(id);
+    const created = await duplicateItem(id);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    reload();
+    if (!created) return;
+    queryClient.setQueryData<SavedMaterial[]>(WORKSPACE_QUERY_KEY, prev => {
+      const updated = [created, ...(prev ?? [])];
+      return favoritesOnly ? updated.filter(i => i.isFavorite) : updated;
+    });
   };
 
   /**
@@ -280,9 +307,7 @@ export default function WorkspaceScreen() {
             placeholderTextColor={colors.mutedForeground}
             value={query}
             onChangeText={q => { setQuery(q); }}
-            onEndEditing={() => reload()}
             returnKeyType="search"
-            onSubmitEditing={() => reload()}
           />
           {query.length > 0 && (
             <Pressable onPress={() => { setQuery(''); }}>
@@ -349,7 +374,7 @@ export default function WorkspaceScreen() {
         renderItem={renderItem}
         contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 10 }}
         showsVerticalScrollIndicator={false}
-        onRefresh={reload}
+        onRefresh={() => { void refetch(); }}
         refreshing={false}
         ListEmptyComponent={
           <View style={styles.empty}>

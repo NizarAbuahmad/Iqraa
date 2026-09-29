@@ -20,7 +20,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -194,6 +195,28 @@ function WeekdayToggle({ selected, onToggle, isRTL, colors, t }: {
   );
 }
 
+const TEACHING_PLANS_QUERY_KEY = ['teachingPlans'] as const;
+/** Same reasoning as CLASSES_STALE_MS in app/classes/index.tsx. */
+const TEACHING_PLANS_STALE_MS = 60_000;
+
+type TeachingPlansData = { plans: TeachingPlan[]; classes: ClassGroup[] };
+
+/**
+ * Plans are the primary fetch — a failure there fails the query. Classes are
+ * best-effort (own try/catch): the picker is a convenience, not the point of
+ * this screen, so a roster failure must not block the plans list.
+ */
+async function fetchTeachingPlansData(): Promise<TeachingPlansData> {
+  const plans = await listTeachingPlans();
+  let classes: ClassGroup[] = [];
+  try {
+    classes = await listClasses();
+  } catch {
+    /* the picker just falls back to "no class" options */
+  }
+  return { plans, classes };
+}
+
 const EMPTY_FORM = {
   title: '',
   schoolName: '',
@@ -210,10 +233,8 @@ export default function TeachingPlansScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  const queryClient = useQueryClient();
 
-  const [plans, setPlans] = useState<TeachingPlan[]>([]);
-  const [classes, setClasses] = useState<ClassGroup[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -239,29 +260,18 @@ export default function TeachingPlansScreen() {
     [t],
   );
 
-  const load = useCallback(async () => {
-    setError('');
-    try {
-      setPlans(await listTeachingPlans());
-    } catch (err) {
-      setError(describe(err, 'teachingPlansLoadFailed'));
-    } finally {
-      setLoading(false);
-    }
-    // Best-effort: the class picker is a convenience, not the point of this
-    // screen, so a roster failure here should not block the plans list.
-    try {
-      setClasses(await listClasses());
-    } catch {
-      /* the picker just falls back to "no class" options */
-    }
-  }, [describe]);
-
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
+  const {
+    data: { plans = [], classes = [] } = {},
+    isLoading: loading,
+    isError: loadFailed,
+    error: loadErrorRaw,
+    refetch,
+  } = useQuery({
+    queryKey: TEACHING_PLANS_QUERY_KEY,
+    queryFn: fetchTeachingPlansData,
+    staleTime: TEACHING_PLANS_STALE_MS,
+  });
+  const loadError = loadFailed ? describe(loadErrorRaw, 'teachingPlansLoadFailed') : '';
 
   const openCreate = () => {
     setEditingId(null);
@@ -408,10 +418,16 @@ export default function TeachingPlansScreen() {
     try {
       if (editingId) {
         const updated = await updateTeachingPlan(editingId, { ...form, title });
-        setPlans(prev => prev.map(p => (p.id === editingId ? updated : p)));
+        queryClient.setQueryData<TeachingPlansData>(TEACHING_PLANS_QUERY_KEY, prev => ({
+          plans: (prev?.plans ?? []).map(p => (p.id === editingId ? updated : p)),
+          classes: prev?.classes ?? [],
+        }));
       } else {
         const created = await createTeachingPlan({ ...form, title });
-        setPlans(prev => [...prev, created]);
+        queryClient.setQueryData<TeachingPlansData>(TEACHING_PLANS_QUERY_KEY, prev => ({
+          plans: [...(prev?.plans ?? []), created],
+          classes: prev?.classes ?? [],
+        }));
       }
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowForm(false);
@@ -435,7 +451,10 @@ export default function TeachingPlansScreen() {
     setError('');
     try {
       await archiveTeachingPlan(plan.id);
-      setPlans(prev => prev.filter(p => p.id !== plan.id));
+      queryClient.setQueryData<TeachingPlansData>(TEACHING_PLANS_QUERY_KEY, prev => ({
+        plans: (prev?.plans ?? []).filter(p => p.id !== plan.id),
+        classes: prev?.classes ?? [],
+      }));
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err) {
       setError(describe(err, 'teachingPlansLoadFailed'));
@@ -444,6 +463,9 @@ export default function TeachingPlansScreen() {
     }
   };
 
+  // An action error (create/update/delete) takes priority over a stale load
+  // error — it's the more recent thing the teacher is looking at.
+  const displayError = error || loadError;
   const align = isRTL ? 'right' : 'left';
   const viewportW = useViewportWidth();
   const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
@@ -491,12 +513,12 @@ export default function TeachingPlansScreen() {
           contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 12 }, centered]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            error ? (
-              <LoadError message={error} onRetry={() => void load()} />
+            displayError ? (
+              <LoadError message={displayError} onRetry={() => { setError(''); void refetch(); }} />
             ) : null
           }
           ListEmptyComponent={
-            error ? null : (
+            displayError ? null : (
               <View style={styles.empty}>
                 <Ionicons name="calendar-outline" size={40} color={colors.mutedForeground} />
                 <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>

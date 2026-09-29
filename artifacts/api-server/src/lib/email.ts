@@ -215,3 +215,76 @@ function renderPasswordResetEmailHtml(code: string): string {
     </div>
   `);
 }
+
+/**
+ * `reason`/`lessonRef` ultimately trace back to a teacher's report and a
+ * lesson id — neither is attacker-controlled today (no free-text field
+ * exists yet), but this is the one place in the file that interpolates
+ * anything other than a server-generated code, so it escapes rather than
+ * assuming that stays true.
+ */
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
+}
+
+/**
+ * Tells a `system_admin` a teacher flagged a shared AI artifact. Same
+ * transport and failure posture as every other email here: no key means no
+ * send, logged and swallowed — the report itself must not depend on mail
+ * being configured.
+ */
+export async function sendArtifactReportedEmail(
+  to: string,
+  info: { kind: string; lessonRef: string },
+): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    logger.warn({ to }, "RESEND_API_KEY not set — artifact-report notice not sent");
+    return false;
+  }
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: process.env.RESEND_FROM_EMAIL ?? "Iqraa <onboarding@resend.dev>",
+        to,
+        subject: "تقرير محتوى جديد بانتظار المراجعة / New content report awaiting review",
+        html: renderArtifactReportedEmailHtml(info),
+      }),
+    });
+    if (!res.ok) {
+      logger.error({ to, status: res.status, body: await res.text() }, "resend artifact-report notice send failed");
+      return false;
+    }
+    return true;
+  } catch (err) {
+    logger.error({ err, to }, "resend artifact-report notice send threw");
+    return false;
+  }
+}
+
+function renderArtifactReportedEmailHtml(info: { kind: string; lessonRef: string }): string {
+  const kind = escapeHtml(info.kind);
+  const lessonRef = escapeHtml(info.lessonRef || "—");
+  return renderEmailShell(`
+    <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">
+      <p>أبلغ معلّم عن مشكلة في مادة مولَّدة بالذكاء الاصطناعي، وهي بانتظار مراجعتك.</p>
+      <p><strong>النوع:</strong> ${kind}</p>
+      <p><strong>الدرس:</strong> ${lessonRef}</p>
+      <p>راجع البلاغ من لوحة الإدارة داخل التطبيق.</p>
+    </div>
+    <hr style="border:none;border-top:1px solid #E2E8F0;" />
+    <div dir="ltr" style="font-family:Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-top:24px;">
+      <p>A teacher reported a problem with an AI-generated ${kind}, awaiting your review.</p>
+      <p><strong>Lesson:</strong> ${lessonRef}</p>
+      <p>Review it from the admin dashboard in the app.</p>
+    </div>
+  `);
+}

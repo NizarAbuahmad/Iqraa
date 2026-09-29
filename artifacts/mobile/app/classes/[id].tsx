@@ -31,6 +31,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -80,6 +81,19 @@ const CENTERED = { width: '100%' as const, maxWidth: CONTENT_MAX_WIDTH, alignSel
 
 type Tab = 'students' | 'materials' | 'exams';
 
+type ClassQueryData = { group: ClassGroup; students: RosterStudent[] };
+
+/** Route-scoped key: each class id gets its own cache entry. */
+const CLASS_QUERY_KEY = (id: string) => ['class', id] as const;
+/**
+ * This screen is stack-pushed per class, so every visit used to be a fresh
+ * mount that re-earned the roster over the network before painting anything
+ * — see classes/index.tsx, which this mirrors. A minute of cache means
+ * flipping between two classes' rosters repaints instantly from the last
+ * fetch instead of blanking to a spinner again.
+ */
+const CLASS_STALE_MS = 60_000;
+
 export default function ClassDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -90,12 +104,10 @@ export default function ClassDetailScreen() {
   // see services/features.ts.
   const studentAccounts = useStudentAccountsEnabled();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const queryClient = useQueryClient();
 
   const [tab, setTab] = useState<Tab>('students');
-  const [group, setGroup] = useState<ClassGroup | null>(null);
-  const [students, setStudents] = useState<RosterStudent[]>([]);
   const [materials, setMaterials] = useState<SavedMaterial[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [namesText, setNamesText] = useState('');
@@ -122,6 +134,22 @@ export default function ClassDetailScreen() {
   const [editName, setEditName] = useState('');
   const [editGradeId, setEditGradeId] = useState('grade-10');
   const [savingEdit, setSavingEdit] = useState(false);
+
+  const {
+    data,
+    isLoading: loading,
+    isError: loadFailed,
+    error: loadErrorRaw,
+    refetch,
+  } = useQuery({
+    queryKey: CLASS_QUERY_KEY(id),
+    queryFn: () => getClass(id),
+    enabled: !!id,
+    staleTime: CLASS_STALE_MS,
+  });
+  const group = data?.group ?? null;
+  const students = data?.students ?? [];
+
   // The teacher's own grades (/setup-subjects), plus whatever grade this
   // class already has so editing never hides its current value.
   const teacherScope = useTeacherScope();
@@ -139,22 +167,13 @@ export default function ClassDetailScreen() {
     },
     [t],
   );
+  const loadError = loadFailed ? describe(loadErrorRaw) : '';
 
   const load = useCallback(async () => {
     if (!id) return;
     setError('');
-    try {
-      const { group: g, students: s } = await getClass(id);
-      setGroup(g);
-      setStudents(s);
-    } catch (err) {
-      setError(describe(err));
-    } finally {
-      setLoading(false);
-    }
     // Materials are a separate store with its own offline fallback, so a
-    // roster failure must not blank the materials tab and vice versa. Loaded
-    // outside the try above for exactly that reason.
+    // roster failure must not blank the materials tab and vice versa.
     setMaterials(await getItems({ classId: id }));
     setExams(await listEvaluations({ classId: id }));
     // Term mastery is a nice-to-have on this screen, not a reason to fail it.
@@ -163,7 +182,7 @@ export default function ClassDetailScreen() {
     setMastery(await getClassMastery(id).catch(() => null));
     // Same rule: the contact card is advice, never a reason to fail the roster.
     setParentContacts(await listClassParentContacts(id).catch(() => null));
-  }, [id, describe]);
+  }, [id]);
 
   const contactSummary = useMemo(
     () => (parentContacts ? summarizeClassContacts(students, parentContacts, new Date()) : null),
@@ -196,7 +215,9 @@ export default function ClassDetailScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowAdd(false);
       setNamesText('');
-      await load();
+      // addStudents only returns counts, not the created rows, so there is no
+      // local shape to write into the cache — refetch the roster instead.
+      await Promise.all([load(), refetch()]);
       // Say so when names were skipped. A teacher who pastes 30 and gets 27
       // needs to know the 3 were already on the roster, not lost.
       if (result.skipped.length > 0) {
@@ -232,8 +253,10 @@ export default function ClassDetailScreen() {
     setError('');
     try {
       const minted = await generateJoinCode(id);
-      setGroup(prev =>
-        prev ? { ...prev, joinCode: minted.joinCode, joinCodeExpiresAt: minted.joinCodeExpiresAt } : prev,
+      queryClient.setQueryData<ClassQueryData>(CLASS_QUERY_KEY(id), prev =>
+        prev
+          ? { ...prev, group: { ...prev.group, joinCode: minted.joinCode, joinCodeExpiresAt: minted.joinCodeExpiresAt } }
+          : prev,
       );
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err) {
@@ -259,7 +282,9 @@ export default function ClassDetailScreen() {
     setError('');
     try {
       const updated = await updateClass(id, { name, gradeId: editGradeId });
-      setGroup(prev => (prev ? { ...prev, ...updated } : updated));
+      queryClient.setQueryData<ClassQueryData>(CLASS_QUERY_KEY(id), prev =>
+        prev ? { ...prev, group: { ...prev.group, ...updated } } : prev,
+      );
       setShowEdit(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err) {
@@ -281,7 +306,9 @@ export default function ClassDetailScreen() {
     if (!ok) return;
     try {
       await removeStudentFromClass(id, student.id);
-      setStudents(prev => prev.filter(s => s.id !== student.id));
+      queryClient.setQueryData<ClassQueryData>(CLASS_QUERY_KEY(id), prev =>
+        prev ? { ...prev, students: prev.students.filter(s => s.id !== student.id) } : prev,
+      );
     } catch (err) {
       setError(describe(err));
     }
@@ -301,7 +328,9 @@ export default function ClassDetailScreen() {
       // Take the server's row rather than `noteText`: it trimmed the value, and
       // showing something the database does not hold is how a note that looks
       // saved turns out not to be.
-      setStudents(prev => prev.map(s => (s.id === updated.id ? updated : s)));
+      queryClient.setQueryData<ClassQueryData>(CLASS_QUERY_KEY(id), prev =>
+        prev ? { ...prev, students: prev.students.map(s => (s.id === updated.id ? updated : s)) } : prev,
+      );
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setNoteStudent(null);
     } catch (err) {
@@ -417,7 +446,11 @@ export default function ClassDetailScreen() {
   const align = isRTL ? 'right' : 'left';
   const title = group ? (lang === 'ar' && group.nameAr ? group.nameAr : group.name) : '';
 
-  const errorBanner = error ? (
+  // An action error (add/remove/edit) takes priority over a stale load error —
+  // it's the more recent thing the teacher is looking at.
+  const displayError = error || loadError;
+
+  const errorBanner = displayError ? (
     <View style={[styles.errorBox, { borderColor: colors.destructive }]}>
       <Ionicons name="alert-circle-outline" size={18} color={colors.destructive} />
       <Text
@@ -428,7 +461,7 @@ export default function ClassDetailScreen() {
           textAlign: align,
         }}
       >
-        {error}
+        {displayError}
       </Text>
     </View>
   ) : null;
@@ -591,7 +624,7 @@ export default function ClassDetailScreen() {
             </View>
           }
           ListEmptyComponent={
-            error ? null : empty('person-add-outline', 'noStudentsYet', 'noStudentsDesc')
+            displayError ? null : empty('person-add-outline', 'noStudentsYet', 'noStudentsDesc')
           }
           renderItem={({ item }) => (
             <Pressable

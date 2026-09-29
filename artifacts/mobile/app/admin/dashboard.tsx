@@ -175,6 +175,32 @@ export default function AdminDashboardScreen() {
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
             </Pressable>
 
+            {/* Content reports — same visibility tier as message moderation,
+                just for AI artifacts instead of chat messages. */}
+            <Pressable
+              onPress={() => router.push('/admin/artifact-reports' as any)}
+              style={({ pressed }) => [
+                styles.card,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  borderRadius: colors.radius,
+                  marginHorizontal: 20,
+                  marginBottom: 16,
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <Ionicons name="document-text-outline" size={20} color={ACCENT} />
+              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
+                {lang === 'ar' ? 'بلاغات المحتوى' : 'Content reports'}
+              </Text>
+              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
+            </Pressable>
+
             {/* Usage summary */}
             {summary && (
               <View style={{ marginHorizontal: 20, marginBottom: 16 }}>

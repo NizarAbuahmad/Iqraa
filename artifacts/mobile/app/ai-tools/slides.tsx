@@ -118,6 +118,12 @@ export default function SlidesScreen() {
   const [cancelled, setCancelled] = useState(false);
   const [deck, setDeck] = useState<ClassroomActivity | null>(null);
   /**
+   * The deck on screen is the book-only draft shown while the model calls
+   * are still running. Read-only: an edit made to it would be lost when the
+   * full deck replaces it.
+   */
+  const [preliminary, setPreliminary] = useState(false);
+  /**
    * The workspace item this deck is stored as, or null when it is not stored.
    * The save button is a toggle over exactly this: pressing it once saves and
    * lights the button up, pressing it again deletes that item and puts the
@@ -345,7 +351,36 @@ export default function SlidesScreen() {
     setGrounded(grounding.grounded);
     setGroundedLesson(grounding.lesson ? (isAr ? grounding.lesson.titleAr : grounding.lesson.titleEn) : '');
 
+    // The book alone makes a projectable deck (the plan-failure path below
+    // relies on exactly that), so it goes on screen now and the model calls
+    // fill it in. Ten seconds of spinner reads as a hang; ten seconds of
+    // spinner above a scannable outline reads as work in progress — and the
+    // outline the teacher reads first is book content either way.
+    let prelim: ClassroomActivity | null = null;
     try {
+      if (grounding.lesson) {
+        const base = buildLessonDeck(trimmed, isAr, {
+          lesson: grounding.lesson,
+          subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
+          grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
+          includeExamples,
+          includePractice,
+          graphCommands: extractGraphCommands([
+            trimmed,
+            ...(grounding.lesson.examplesAr ?? []),
+            ...(grounding.lesson.examplesEn ?? []),
+            ...(grounding.lesson.rulesAr ?? []),
+            ...(grounding.lesson.rulesEn ?? []),
+          ].join(' \n ')),
+          figureUri: bookFigureUri,
+        });
+        prelim = { ...base, slides: insertLessonResources(base.slides, attachedResources, isAr) };
+        setDeck(prelim);
+        setPreliminary(true);
+        setVerifyDone(false);
+        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+      }
+
       // The plan supplies only the connective tissue. If it fails we still have
       // a usable deck from the book, so a generation error must not throw away
       // curriculum content the teacher can already project.
@@ -484,6 +519,7 @@ export default function SlidesScreen() {
         slides: insertLessonResources(builtBase.slides, attachedResources, isAr),
       };
       setDeck(built);
+      setPreliminary(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
 
@@ -601,9 +637,14 @@ export default function SlidesScreen() {
       // where it happens, because a partial deck still has value.
       if (isAbortError(e)) setCancelled(true);
       else setError(t(aiErrorMessageKey(e)));
+      // The draft was a promise of the full deck, and the status box now
+      // says that promise was not kept («لم يُنشأ أي محتوى»). Leaving the
+      // draft under that message would contradict it.
+      if (prelim) setDeck(cur => (cur === prelim ? null : cur));
     } finally {
       abortRef.current = null;
       setLoading(false);
+      setPreliminary(false);
     }
   };
 
@@ -630,8 +671,8 @@ export default function SlidesScreen() {
     if (!ok) return;
     setReportingTeaching(true);
     try {
-      const retired = await aiService.retireVariant(teachingVariantId);
-      showToast(retired ? t('reportArtifactDone') : t('reportArtifactGone'));
+      const queued = await aiService.reportVariant(teachingVariantId);
+      showToast(queued ? t('reportArtifactDone') : t('reportArtifactGone'));
       await generate();
     } catch {
       showToast(t('reportArtifactFailed'));
@@ -888,7 +929,7 @@ export default function SlidesScreen() {
 
         <GenerationStatus
           phase={loading ? 'loading' : cancelled ? 'cancelled' : (error && topic.trim()) ? 'error' : 'idle'}
-          loadingLabel={t('slidesBuilding')}
+          loadingLabel={preliminary ? t('slidesBuildingRest') : t('slidesBuilding')}
           errorDetail={error}
           onCancel={cancelGenerate}
           onRetry={generate}
@@ -899,8 +940,14 @@ export default function SlidesScreen() {
           t={t}
         />
 
-        {deck && !loading && (
-          <View style={{ marginHorizontal: 20 }}>
+        {deck && (!loading || preliminary) && (
+          // One switch for the whole block: while the draft is on screen
+          // every control in it — edit, delete, present, save, export — acts
+          // on a deck about to be replaced, so none of them may fire.
+          <View
+            style={{ marginHorizontal: 20, opacity: preliminary ? 0.6 : 1 }}
+            pointerEvents={preliminary ? 'none' : 'auto'}
+          >
             <View style={{ marginBottom: 12 }}>
               <GroundingNotice
                 grounded={grounded}

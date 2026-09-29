@@ -78,20 +78,28 @@ export function GeneratorResultActions({
   const colors = useColors();
   const { t, isRTL } = useLanguage();
   const [reporting, setReporting] = React.useState(false);
+  const [reported, setReported] = React.useState(false);
+
+  // A new variantId means onRegenerate() already swapped in a fresh,
+  // unreported artifact — the button must not still say "reported" for it.
+  React.useEffect(() => {
+    setReported(false);
+  }, [variantId]);
 
   /**
-   * Withdraw this artifact from the shared pool, then regenerate.
+   * Queue a report against this artifact, then regenerate.
    *
-   * Both halves matter. Withdrawing alone would leave the teacher holding the
-   * paper they just reported and no replacement; regenerating alone would give
-   * them a good one and leave the bad one being served to everybody else.
+   * Reporting no longer retires anything itself — a `system_admin` approves
+   * that from the admin queue. Both halves still matter for the *reporting*
+   * teacher: reporting alone would leave them holding the paper they just
+   * flagged; regenerating alone would give them a good one while everyone
+   * else kept getting served the bad one until someone else noticed.
    *
-   * A failed withdrawal does NOT go on to regenerate. The teacher would get a
-   * fresh artifact and reasonably conclude the bad one was dealt with, when it
-   * is still in the pool — the report has to fail visibly or not at all.
+   * A failed report does NOT go on to regenerate — same reasoning as before:
+   * the report has to fail visibly or not at all.
    */
   const reportProblem = async () => {
-    if (!variantId || reporting) return;
+    if (!variantId || reporting || reported) return;
     const ok = await confirm({
       title: t('reportArtifactTitle'),
       message: t('reportArtifactMsg'),
@@ -102,11 +110,11 @@ export function GeneratorResultActions({
     if (!ok) return;
     setReporting(true);
     try {
-      const retired = await remoteAIService.retireVariant(variantId);
-      // Already gone counts as done — the teacher wanted it out of the pool
-      // and it is out of the pool. Said differently so a second report on the
-      // same artifact does not look like the first one silently failed.
-      onToast(retired ? t('reportArtifactDone') : t('reportArtifactGone'));
+      const queued = await remoteAIService.reportVariant(variantId);
+      // Already gone (retired by an earlier approval) counts as done — the
+      // teacher wanted it out of circulation and it already is.
+      onToast(queued ? t('reportArtifactDone') : t('reportArtifactGone'));
+      setReported(true);
       onRegenerate();
     } catch {
       onToast(t('reportArtifactFailed'));
@@ -191,20 +199,20 @@ export function GeneratorResultActions({
         {!!variantId && (
           <Pressable
             onPress={reportProblem}
-            disabled={reporting}
+            disabled={reporting || reported}
             style={({ pressed }) => [
               styles.actionBtn,
               {
                 borderColor: colors.destructive,
                 borderRadius: colors.radius,
                 flexDirection: isRTL ? 'row-reverse' : 'row',
-                opacity: reporting ? 0.5 : pressed ? 0.8 : 1,
+                opacity: reporting || reported ? 0.5 : pressed ? 0.8 : 1,
               },
             ]}
           >
             <Ionicons name="flag-outline" size={16} color={colors.destructive} />
             <Text style={[styles.actionText, { color: colors.destructive, fontFamily: 'Cairo_600SemiBold' }]}>
-              {t('reportArtifactBtn')}
+              {reported ? t('reportArtifactSent') : t('reportArtifactBtn')}
             </Text>
           </Pressable>
         )}

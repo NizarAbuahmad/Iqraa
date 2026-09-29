@@ -5,9 +5,9 @@
  * See services/scheduleCalendar.ts for why they're shown side by side rather
  * than merged into one interleaved timeline.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
@@ -33,6 +33,37 @@ const WEEKDAY_KEYS = [
   'planWeekdayThu', 'planWeekdayFri', 'planWeekdaySat',
 ] as const;
 
+const CALENDAR_QUERY_KEY = ['calendar'] as const;
+/** Same rationale as the classes list: a minute of cache means a quick
+ * back-and-forth to this screen paints instantly instead of blanking to a
+ * spinner on every focus. */
+const CALENDAR_STALE_MS = 60_000;
+
+type CalendarData = {
+  periods: SchedulePeriod[];
+  slots: ScheduleSlot[];
+  plans: TeachingPlan[];
+  classes: ClassGroup[];
+};
+
+/**
+ * One combined load for the screen: the periods/slots/plans fetch drives the
+ * error state shown in the UI, while the classes fetch stays best-effort —
+ * class names only label the agenda, they are not what the calendar itself
+ * depends on, so a failure there falls back to showing the id instead of
+ * failing the whole screen.
+ */
+async function loadCalendarData(): Promise<CalendarData> {
+  const [schedule, planList] = await Promise.all([getSchedule(), listTeachingPlans()]);
+  let classes: ClassGroup[] = [];
+  try {
+    classes = await listClasses();
+  } catch {
+    /* period rows fall back to showing the id */
+  }
+  return { periods: schedule.periods, slots: schedule.slots, plans: planList, classes };
+}
+
 export default function CalendarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -41,42 +72,22 @@ export default function CalendarScreen() {
   const today = todayISO();
   const todayDate = new Date(`${today}T00:00:00`);
 
-  const [periods, setPeriods] = useState<SchedulePeriod[]>([]);
-  const [slots, setSlots] = useState<ScheduleSlot[]>([]);
-  const [plans, setPlans] = useState<TeachingPlan[]>([]);
-  const [classes, setClasses] = useState<ClassGroup[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [viewYear, setViewYear] = useState(todayDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(todayDate.getMonth());
   const [selectedDate, setSelectedDate] = useState(today);
 
-  const load = useCallback(async () => {
-    setError('');
-    try {
-      const [schedule, planList] = await Promise.all([getSchedule(), listTeachingPlans()]);
-      setPeriods(schedule.periods);
-      setSlots(schedule.slots);
-      setPlans(planList);
-    } catch {
-      setError(t('calendarLoadFailed'));
-    } finally {
-      setLoading(false);
-    }
-    // Best-effort, same as the other schedule screens: class names label the
-    // agenda, they are not what the calendar itself depends on.
-    try {
-      setClasses(await listClasses());
-    } catch {
-      /* period rows fall back to showing the id */
-    }
-  }, [t]);
-
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
+  const {
+    data: calendarData,
+    isLoading: loading,
+    isError: loadFailed,
+    refetch,
+  } = useQuery({
+    queryKey: CALENDAR_QUERY_KEY,
+    queryFn: loadCalendarData,
+    staleTime: CALENDAR_STALE_MS,
+  });
+  const { periods = [], slots = [], plans = [], classes = [] } = calendarData ?? {};
+  const error = loadFailed ? t('calendarLoadFailed') : '';
 
   const classNameFor = (id: string): string => {
     const found = classes.find(c => c.id === id);
@@ -142,7 +153,7 @@ export default function CalendarScreen() {
       ) : (
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60, gap: 16, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}>
           {error ? (
-            <LoadError message={error} onRetry={() => void load()} />
+            <LoadError message={error} onRetry={() => void refetch()} />
           ) : null}
 
           {/* Month nav + weekday header + grid: capped narrower than the page
