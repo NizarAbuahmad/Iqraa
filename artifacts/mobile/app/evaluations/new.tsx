@@ -26,7 +26,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { getObjectivesForBook, type CurriculumObjective } from '@/services/curriculumData';
+import { getBookById, getObjectivesForBook, type CurriculumObjective } from '@/services/curriculumData';
+import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
 import {
   EvaluationError,
@@ -206,6 +207,19 @@ export default function NewEvaluationScreen() {
 
   const selectedBook = books.find(b => b.bookId === bookId) ?? null;
 
+  // The server lists every evaluable book (~140); a Grade 10 maths teacher
+  // should see their own few first. Same scope the generators use. "Show all"
+  // stays one tap away — covering another teacher's class is routine. A book
+  // the catalog doesn't know, or a teacher with no setup, stays visible.
+  const { isGradeShown, isSubjectShown } = useTeacherScope();
+  const [showAllBooks, setShowAllBooks] = useState(false);
+  const myBooks = books.filter(b => {
+    const book = getBookById(b.bookId);
+    return !book || (isGradeShown(book.gradeId) && isSubjectShown(book.subjectId, book.gradeId));
+  });
+  const narrowed = myBooks.length > 0 && myBooks.length < books.length;
+  const visibleBooks = narrowed && !showAllBooks ? myBooks : books;
+
   const onSubmit = async () => {
     if (creating) return;
     if (!bookId || !selectedBook?.evaluable) {
@@ -330,7 +344,7 @@ export default function NewEvaluationScreen() {
           <ActivityIndicator color={ACCENT} style={{ marginBottom: 16 }} />
         ) : (
           <View style={{ marginBottom: 8 }}>
-            {books.map(b => {
+            {visibleBooks.map(b => {
               const selected = b.bookId === bookId;
               return (
                 <Pressable
@@ -361,6 +375,13 @@ export default function NewEvaluationScreen() {
                 </Pressable>
               );
             })}
+            {narrowed && (
+              <Pressable onPress={() => setShowAllBooks(v => !v)} hitSlop={8} accessibilityRole="button" style={{ paddingVertical: 6 }}>
+                <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: align }}>
+                  {showAllBooks ? t('evalShowMyBooks') : t('evalShowAllBooks', String(books.length))}
+                </Text>
+              </Pressable>
+            )}
           </View>
         )}
 

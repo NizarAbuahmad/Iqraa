@@ -34,6 +34,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { addEvaluationQuestion, type CompetencyKey, type EvaluationQuestion } from '@/services/evaluations';
 import type { TranslationKey } from '@/services/i18n';
+import { objectiveLabel } from '@/services/curriculumData';
 import { palette } from '@/constants/colors';
 
 const ACCENT = palette.primary;
@@ -70,7 +71,7 @@ export function AddReadAloudModal({
   onAdded: (question: EvaluationQuestion, totalMarks: number) => void;
 }) {
   const colors = useColors();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
 
   const [passage, setPassage] = useState('');
   const [marks, setMarks] = useState('5');
@@ -204,10 +205,10 @@ export function AddReadAloudModal({
                         color={objectiveId === id ? ACCENT : colors.mutedForeground}
                       />
                       <Text
-                        numberOfLines={1}
-                        style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, flex: 1 }}
+                        numberOfLines={2}
+                        style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, flex: 1, textAlign: isRTL ? 'right' : 'left' }}
                       >
-                        {t('readAloudObjectiveN', String(i + 1))}
+                        {objectiveLabel(id, lang) ?? t('readAloudObjectiveN', String(i + 1))}
                       </Text>
                     </Pressable>
                   ))}

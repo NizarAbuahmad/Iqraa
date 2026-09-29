@@ -38,6 +38,7 @@ import {
   type QuestionForm,
 } from '@/services/questionDraft';
 import type { TranslationKey } from '@/services/i18n';
+import { objectiveLabel } from '@/services/curriculumData';
 import { COMPETENCIES } from '@/components/AddReadAloudModal';
 import { palette } from '@/constants/colors';
 
@@ -76,7 +77,7 @@ export function EditQuestionModal({
   onSaved: (question: EvaluationQuestion, totalMarks: number) => void;
 }) {
   const colors = useColors();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
 
   const [type, setType] = useState<EditableType>((question?.type as EditableType) ?? 'multiple_choice');
@@ -295,11 +296,23 @@ export function EditQuestionModal({
             {!question && objectiveIds.length > 1 && (
               <>
                 {label('readAloudObjectiveLabel')}
-                <View style={[row, styles.wrap]}>
-                  {objectiveIds.map((id, i) =>
-                    chip(id, t('readAloudObjectiveN', String(i + 1)), objectiveId === id, () => setObjectiveId(id)),
-                  )}
-                </View>
+                {objectiveIds.map((id, i) => {
+                  const on = objectiveId === id;
+                  return (
+                    <Pressable
+                      key={id}
+                      onPress={() => setObjectiveId(id)}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: on }}
+                      style={[row, styles.objectiveRow, { borderColor: on ? ACCENT : colors.border, backgroundColor: on ? ACCENT + '12' : colors.card }]}
+                    >
+                      <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={18} color={on ? ACCENT : colors.mutedForeground} />
+                      <Text numberOfLines={2} style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: align }}>
+                        {objectiveLabel(id, lang) ?? t('readAloudObjectiveN', String(i + 1))}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </>
             )}
 
@@ -342,5 +355,6 @@ const styles = StyleSheet.create({
   multiline: { minHeight: 80, textAlignVertical: 'top' },
   wrap: { flexWrap: 'wrap', gap: 8 },
   chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  objectiveRow: { alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 },
   saveBtn: { alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 16, marginTop: 10 },
 });
