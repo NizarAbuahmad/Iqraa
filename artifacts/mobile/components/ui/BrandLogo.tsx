@@ -1,5 +1,6 @@
 import React from 'react';
-import { Image, ImageStyle, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { ImageStyle, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Image } from 'expo-image';
 
 const LOGO_MARK_LIGHT = require('@/assets/images/logo-mark.png');
 const LOGO_MARK_DARK = require('@/assets/images/logo-mark-dark.png');

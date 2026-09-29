@@ -20,7 +20,8 @@
  * shuttles rather than pretending to fill.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { NATIVE_DRIVER } from '@/constants/animation';
 
 const LOGO_MARK = require('@/assets/images/logo-mark.png');
