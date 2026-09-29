@@ -630,8 +630,8 @@ export default function SlidesScreen() {
     if (!ok) return;
     setReportingTeaching(true);
     try {
-      const retired = await aiService.retireVariant(teachingVariantId);
-      showToast(retired ? t('reportArtifactDone') : t('reportArtifactGone'));
+      const queued = await aiService.reportVariant(teachingVariantId);
+      showToast(queued ? t('reportArtifactDone') : t('reportArtifactGone'));
       await generate();
     } catch {
       showToast(t('reportArtifactFailed'));

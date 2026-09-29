@@ -246,3 +246,45 @@ export async function retireVariant(artifactId: string): Promise<boolean> {
     return false;
   }
 }
+
+export type ReportOutcome =
+  | { ok: true; reportId: string; kind: string; lessonRef: string }
+  | { ok: false };
+
+/**
+ * Queue a report against a pooled artifact — does NOT retire it.
+ *
+ * Unlike `retireVariant`, this never touches `retiredAt`: the artifact keeps
+ * serving every other teacher asking for the same key until a `system_admin`
+ * approves the report (see `routes/moderation.ts`). Refuses (returns
+ * `{ ok: false }`) for an artifact that no longer exists or is already
+ * retired — reporting a dead variant is a no-op, not an error, matching
+ * `retireVariant`'s own "gone is not a failure" posture.
+ */
+export async function reportVariant(args: {
+  artifactId: string;
+  reporterUserId: string;
+}): Promise<ReportOutcome> {
+  try {
+    const { db, aiArtifacts, aiArtifactReports } = await import("@workspace/db");
+    const { eq, and, isNull } = await import("drizzle-orm");
+    const [artifact] = await db
+      .select({ id: aiArtifacts.id, kind: aiArtifacts.kind, lessonRef: aiArtifacts.lessonRef })
+      .from(aiArtifacts)
+      .where(and(eq(aiArtifacts.id, args.artifactId), isNull(aiArtifacts.retiredAt)))
+      .limit(1);
+    if (!artifact) {
+      lastFailure = null;
+      return { ok: false };
+    }
+    const [row] = await db
+      .insert(aiArtifactReports)
+      .values({ artifactId: args.artifactId, reporterUserId: args.reporterUserId })
+      .returning({ id: aiArtifactReports.id });
+    lastFailure = null;
+    return { ok: true, reportId: row.id, kind: artifact.kind, lessonRef: artifact.lessonRef };
+  } catch (err) {
+    note(err, "insert");
+    return { ok: false };
+  }
+}

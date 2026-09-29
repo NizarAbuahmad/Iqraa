@@ -23,21 +23,31 @@
  */
 import { Router } from "express";
 import {
+  aiArtifacts,
+  aiArtifactReports,
   chatMessages,
   chatReports,
   chatThreads,
   db,
   users,
+  type ArtifactReportStatus,
   type ChatReportStatus,
 } from "@workspace/db";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
+import { retireVariant } from "../lib/artifactCache.ts";
 
 const router = Router();
 const ADMIN_ROLES = ["school_admin", "system_admin"];
 const STATUSES: ChatReportStatus[] = ["open", "reviewed", "dismissed"];
+
+// Separate from the chat-moderation ADMIN_ROLES on purpose: artifact
+// quality is a curriculum/content concern, not a per-school one, so
+// school_admin is deliberately left out.
+const ARTIFACT_ADMIN_ROLES = ["system_admin"];
+const ARTIFACT_REPORT_STATUSES: ArtifactReportStatus[] = ["open", "approved", "dismissed"];
 
 // Two joins onto the same table need two names, or the query silently reads
 // one person's row for both sides of the report.
@@ -268,6 +278,124 @@ router.post(
     } catch (err) {
       logger.error({ err }, "unsuspend failed");
       res.status(500).json({ error: "Failed to lift the suspension" });
+    }
+  },
+);
+
+const artifactReporter = alias(users, "artifact_reporter");
+
+/**
+ * GET /moderation/artifact-reports?status=open&limit=&offset=
+ *
+ * Same shape as GET /moderation/reports: newest first, carries the
+ * artifact's own kind/lesson/language and the reporter's name so an admin
+ * can decide without leaving this screen.
+ */
+router.get(
+  "/moderation/artifact-reports",
+  authMiddleware,
+  requireRole(...ARTIFACT_ADMIN_ROLES),
+  async (req, res) => {
+    try {
+      const { status, limit, offset } = req.query as {
+        status?: string;
+        limit?: string;
+        offset?: string;
+      };
+
+      const pageSize = Math.min(Math.max(Number(limit) || 50, 1), 200);
+      const pageOffset = Math.max(Number(offset) || 0, 0);
+      const wanted = ARTIFACT_REPORT_STATUSES.includes(status as ArtifactReportStatus)
+        ? (status as ArtifactReportStatus)
+        : undefined;
+      const where = wanted ? eq(aiArtifactReports.status, wanted) : undefined;
+
+      const rows = await db
+        .select({
+          id: aiArtifactReports.id,
+          status: aiArtifactReports.status,
+          createdAt: aiArtifactReports.createdAt,
+          artifactId: aiArtifactReports.artifactId,
+          kind: aiArtifacts.kind,
+          lessonRef: aiArtifacts.lessonRef,
+          language: aiArtifacts.language,
+          artifactRetiredAt: aiArtifacts.retiredAt,
+          reporterId: artifactReporter.id,
+          reporterName: sql<string>`${artifactReporter.firstName} || ' ' || ${artifactReporter.lastName}`,
+        })
+        .from(aiArtifactReports)
+        .innerJoin(aiArtifacts, eq(aiArtifactReports.artifactId, aiArtifacts.id))
+        .innerJoin(artifactReporter, eq(aiArtifactReports.reporterUserId, artifactReporter.id))
+        .where(where)
+        .orderBy(desc(aiArtifactReports.createdAt))
+        .limit(pageSize)
+        .offset(pageOffset);
+
+      const [{ count: total }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(aiArtifactReports)
+        .where(where);
+      const [{ count: openCount }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(aiArtifactReports)
+        .where(eq(aiArtifactReports.status, "open"));
+
+      res.json({ reports: rows, total, openCount });
+    } catch (err) {
+      logger.error({ err }, "list artifact reports failed");
+      res.status(500).json({ error: "Failed to load reports" });
+    }
+  },
+);
+
+/**
+ * POST /moderation/artifact-reports/:id/resolve
+ *
+ * Body: { outcome: 'approved' | 'dismissed' }
+ *
+ * `approved` calls the SAME `retireVariant` the teacher-facing route used to
+ * call directly — approving a report is now the only path to that function.
+ * `dismissed` only closes the report; the artifact was never touched.
+ */
+router.post(
+  "/moderation/artifact-reports/:id/resolve",
+  authMiddleware,
+  requireRole(...ARTIFACT_ADMIN_ROLES),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const { outcome } = req.body as { outcome?: string };
+      if (outcome !== "approved" && outcome !== "dismissed") {
+        res.status(400).json({ error: "outcome must be 'approved' or 'dismissed'" });
+        return;
+      }
+
+      const [report] = await db
+        .select()
+        .from(aiArtifactReports)
+        .where(eq(aiArtifactReports.id, req.params["id"] as string))
+        .limit(1);
+      if (!report) {
+        res.status(404).json({ error: "Report not found" });
+        return;
+      }
+
+      const retired = outcome === "approved" ? await retireVariant(report.artifactId) : false;
+
+      const [saved] = await db
+        .update(aiArtifactReports)
+        .set({ status: outcome })
+        .where(eq(aiArtifactReports.id, report.id))
+        .returning();
+
+      logger.info(
+        { reportId: report.id, moderatorId: req.user!.id, outcome, retired },
+        "artifact-report moderation action",
+      );
+
+      res.json({ report: saved, retired });
+    } catch (err) {
+      logger.error({ err }, "resolve artifact report failed");
+      res.status(500).json({ error: "Failed to resolve report" });
     }
   },
 );
