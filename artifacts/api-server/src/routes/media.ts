@@ -9,6 +9,7 @@
 import { Router } from "express";
 import { getExternalResource } from "@workspace/curriculum";
 import { logger } from "../lib/logger";
+import { getChannelVideos, matchChannelVideos } from "../lib/teacherChannel";
 import { isR2Configured, presignedGetUrl } from "../lib/r2";
 
 const mediaRouter = Router();
@@ -120,6 +121,15 @@ mediaRouter.get("/media/youtube-video", async (req, res) => {
   const lang = req.query.lang === "ar" ? "ar" : "en";
 
   try {
+    // A lesson from the curriculum-aligned teacher channel beats a generic
+    // search: right dialect, right syllabus, and no search quota spent.
+    if (lang === "ar") {
+      const own = matchChannelVideos(query, await getChannelVideos(apiKey)).slice(0, 5);
+      if (own.length > 0) {
+        res.json({ video: own[0], videos: own });
+        return;
+      }
+    }
     // Five, not one. A search costs 100 quota units whatever maxResults is,
     // so asking for alternatives here is free — and it is the difference
     // between a teacher who dislikes the pick having to leave the app and
