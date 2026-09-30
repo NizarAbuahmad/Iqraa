@@ -90,6 +90,7 @@ import g7SciS1 from '../../../knowledge-base/grade-7-science/figures/g7-science-
 import g7SciS2 from '../../../knowledge-base/grade-7-science/figures/g7-science-s2-student-book/index.json' with { type: 'json' };
 import g7SocialS1 from '../../../knowledge-base/grade-7-social/figures/g7-social-s1-student-book/index.json' with { type: 'json' };
 import g7SocialS2 from '../../../knowledge-base/grade-7-social/figures/g7-social-s2-student-book/index.json' with { type: 'json' };
+import pageLinks from '../../../knowledge-base/book-page-links.json' with { type: 'json' };
 
 export type BookFigure = {
   /** File name inside the book's figure directory, e.g. `p021.png`. */
@@ -226,6 +227,39 @@ const BY_LESSON: Map<string, BookFigure[]> = (() => {
 export function figuresForLesson(kbLessonId: string | null | undefined): BookFigure[] {
   if (!kbLessonId) return [];
   return BY_LESSON.get(kbLessonId) ?? [];
+}
+
+/** Each lesson's pages of the student book, as JPEGs in the public R2 bucket. */
+export const BOOK_PAGES_BASE_URL = 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/book-pages';
+
+export type BookPages = {
+  /** One image per page, in book order. */
+  urls: string[];
+  /** Printed page the lesson starts on, for the caption. */
+  page: number;
+  /** Page width / height. */
+  aspect: number;
+};
+
+/**
+ * This lesson's pages of the student book, to project.
+ *
+ * `scripts/verify_book_pages.py` renders them and lists the lesson in
+ * `book-page-links.json` only after comparing the live book with the copy our
+ * page numbers came from — a book re-issued with different pagination gets no
+ * pages rather than the wrong ones. Null for every lesson not listed.
+ */
+export function bookPagesForLesson(kbLessonId: string | null | undefined): BookPages | null {
+  if (!kbLessonId) return null;
+  const entry = (pageLinks as { lessons: Record<string, { startPage: number; endPage: number; aspect: number }> })
+    .lessons[kbLessonId];
+  if (!entry) return null;
+  const count = entry.endPage - entry.startPage + 1;
+  return {
+    urls: Array.from({ length: count }, (_, n) => `${BOOK_PAGES_BASE_URL}/${kbLessonId}/${n + 1}.jpg`),
+    page: entry.startPage,
+    aspect: entry.aspect,
+  };
 }
 
 /** Every lesson that has at least one figure. Used by tooling and tests. */

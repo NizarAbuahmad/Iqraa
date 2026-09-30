@@ -62,6 +62,18 @@ two-step job now:** regenerate the key list with
 the list, nothing checks the bucket, so a skipped upload shows up as a figure
 silently missing from a slide.
 
+**`iqraa-public` also holds each lesson's book pages, from 2026-09-30.** Under
+`book-pages/<kbLessonId>/<n>.jpg`, shown by the lesson screen's «صفحة الكتاب»
+(`bookPagesForLesson` in `services/bookFigures.ts`). Also two steps:
+`python scripts/verify_book_pages.py <dir>` downloads each live book, checks its
+pagination against our extracted copy, renders the lesson pages into `<dir>`
+and lists them in `knowledge-base/book-page-links.json`; then
+`pnpm --filter @workspace/curriculum run upload-book-pages-r2 -- <dir>`. A book
+gets pages only if it has figures (they carry the lesson start pages), extracted
+text, and a catalog `pdfUrl`, and only if the check passes — so re-run it when
+NCCD re-issues a book. The uploader got through with the local `.env` token on
+2026-09-30, so its scope covers `iqraa-public` now.
+
 Note the scope caveat above is not hypothetical: the token in the local `.env`
 reads `iqraa-media` fine and answers **403 AccessDenied** on `iqraa-public`
 (checked 2026-09-22), so the uploader needs a token with Object Read & Write on

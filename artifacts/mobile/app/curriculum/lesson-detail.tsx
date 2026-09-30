@@ -17,6 +17,7 @@ import { ReadAloudPracticePanel } from '@/components/ui/ReadAloudPracticePanel';
 import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
 import { askAboutLessonHandoff } from '@/services/lessonShelf';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
+import { bookPagesForLesson } from '@/services/bookFigures';
 import { VocabularyPracticePanel } from '@/components/ui/VocabularyPracticePanel';
 import { hubLesson } from '@workspace/curriculum/englishHub';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
@@ -49,6 +50,7 @@ export default function LessonDetailScreen() {
   const colorFill = readableOn(subjectColor ?? colors.hero, '#FFFFFF');
   const color = readableOn(subjectColor ?? colors.primary, colors.card);
   const showTitleOnly = lesson ? isBrowserLessonTitleOnly(lesson.id) : false;
+  const hasBookPages = lesson ? bookPagesForLesson(lesson.id) !== null : false;
   /**
    * Preparation happens on this page. Opening it is one tap and it generates
    * straight away — the teacher has already told us the lesson by getting here.
@@ -166,6 +168,22 @@ export default function LessonDetailScreen() {
               {t('askIqra')}
             </Text>
           </Pressable>
+          {/* The lesson's pages of the student book, to project with the pen. */}
+          {hasBookPages ? (
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push({ pathname: '/ai-tools/classroom/book-page', params: { lessonId: lesson.id } } as never);
+              }}
+              accessibilityRole="button"
+              style={[styles.askIqraBtn, { backgroundColor: colors.card, borderColor: color, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="book-outline" size={16} color={color} />
+              <Text style={[styles.askIqraBtnText, { color, fontFamily: 'Cairo_600SemiBold' }]}>
+                {t('bookPageButton')}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
         ) : null}
 
