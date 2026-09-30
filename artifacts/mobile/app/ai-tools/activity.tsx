@@ -34,6 +34,8 @@ import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { buildActivityHTML, buildActivitySlidesHTML, formatActivityText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
+import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { nextFrame } from '@/services/nextFrame';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -72,6 +74,7 @@ export default function ActivityScreen() {
   const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   const [topic, setTopic] = useState(params.topic ?? '');
+  useWarmGrounding(topic, lang);
   const [activityTypeIdx, setActivityTypeIdx] = useState(params.activityTypeIdx ? parseInt(params.activityTypeIdx, 10) : 1);
   const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 1);
   const [objective, setObjective] = useState(params.objective ?? '');
@@ -137,6 +140,7 @@ export default function ActivityScreen() {
     if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setLoading(true); setResult(null); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await nextFrame();
     try {
       const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
       setCurriculumGrounded(grounding.grounded);
