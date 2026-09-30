@@ -35,7 +35,7 @@ export default function JoinClassScreen() {
   const { t, isRTL } = useLanguage();
   const { user } = useAuth();
 
-  const { code, setCode, roster, className, studentId, setStudentId, state, canSubmit: canSubmitCode } = useJoinCodeLookup();
+  const { code, setCode, roster, className, studentId, setStudentId, state, canSubmit: canSubmitCode, needsConfirm, confirmed, setConfirmed, pickedName } = useJoinCodeLookup();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [joined, setJoined] = useState(false);
@@ -46,6 +46,8 @@ export default function JoinClassScreen() {
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
+    // A class code is shared: ask once whether the picked name is really theirs.
+    if (needsConfirm) { setConfirmed(true); return; }
     setSubmitting(true);
     setError('');
     try {
@@ -113,6 +115,9 @@ export default function JoinClassScreen() {
           onSelectStudent={setStudentId}
           state={state}
           userRole={user?.role}
+          confirming={confirmed}
+          pickedName={pickedName}
+          onChangeMind={() => setConfirmed(false)}
           colors={colors}
           isRTL={isRTL}
           t={t}
@@ -128,7 +133,7 @@ export default function JoinClassScreen() {
         ) : null}
 
         <Button
-          label={t('joinAnotherClassSubmit')}
+          label={confirmed ? t('joinConfirmYes') : t('joinAnotherClassSubmit')}
           onPress={handleSubmit}
           loading={submitting}
           disabled={!canSubmit}

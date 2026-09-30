@@ -44,6 +44,16 @@ export function canSubmitClaim(state: JoinCodeState, studentId: string): boolean
   return false;
 }
 
+/**
+ * A class code is shared with the whole class, so a wrong tap (or a classmate's
+ * name) links the account to the wrong child. Before sending, the joiner is
+ * asked once to confirm the name they picked. A per-student code names its own
+ * student, so there is nothing to confirm.
+ */
+export function needsNameConfirm(state: JoinCodeState, studentId: string, confirmed: boolean): boolean {
+  return state === 'class' && studentId !== '' && !confirmed;
+}
+
 /** Every rejection `decideClaim` can return, keyed by the server's `code`. */
 const CLAIM_ERROR_KEYS: Record<string, TranslationKey> = {
   claim_code_invalid: 'claimCodeInvalid',
