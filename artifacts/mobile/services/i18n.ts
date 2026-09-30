@@ -1728,6 +1728,8 @@ const translations = {
     // Sign-up role step + class code claim, and person-to-person messaging
     iAmA: 'أنا',
     pickRoleFirst: 'اختر نوع حسابك للمتابعة',
+    signupUnavailable: 'تعذّر الاتصال بالخادم، ولا يمكننا معرفة أنواع الحسابات المتاحة. حاول مرة أخرى.',
+    tryAgain: 'حاول مرة أخرى',
     roleParent: 'وليّ أمر',
     roleStudent: 'طالب/ة',
     classCode: 'رمز الربط',
@@ -3532,6 +3534,8 @@ const translations = {
     // Sign-up role step + class code claim, and person-to-person messaging
     iAmA: 'I am a',
     pickRoleFirst: 'Choose your account type',
+    signupUnavailable: "Couldn't reach the server, so we can't tell which account types are available. Try again.",
+    tryAgain: 'Try again',
     roleParent: 'Parent',
     roleStudent: 'Student',
     classCode: 'Link code',

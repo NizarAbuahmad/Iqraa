@@ -20,7 +20,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { decideGoogleLink } from "../googleLink.ts";
+import { decideGoogleLink, googleRoleConflict } from "../googleLink.ts";
 
 describe("decideGoogleLink", () => {
   it("clears the password when linking to a row that never proved its address", () => {
@@ -54,4 +54,12 @@ describe("decideGoogleLink", () => {
     assert.equal(decision.update.passwordHash, null);
     assert.equal(decision.revokeExistingCredentials, true);
   });
+});
+
+describe("googleRoleConflict", () => {
+  const teacher = { role: "teacher", emailVerified: true };
+  it("flags a different explicit role", () => assert.equal(googleRoleConflict(teacher, "student"), "teacher"));
+  it("allows the same role", () => assert.equal(googleRoleConflict(teacher, "teacher"), null));
+  it("ignores a missing role (login screen)", () => assert.equal(googleRoleConflict(teacher, undefined), null));
+  it("exempts unverified rows", () => assert.equal(googleRoleConflict({ role: "teacher", emailVerified: false }, "student"), null));
 });
