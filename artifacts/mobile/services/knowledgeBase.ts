@@ -4329,6 +4329,12 @@ export function searchKBRanked(
   return ranked;
 }
 
+// Static bundled data, so the visible set never changes within a session.
+let visibleIdsCache: Set<string> | null = null;
+function visibleLessonIds(): Set<string> {
+  return (visibleIdsCache ??= new Set(filterVisibleLessons(KB_LESSONS).map(l => l.id)));
+}
+
 function searchKBRankedUncached(
   q: string,
   lang: 'ar' | 'en',
@@ -4338,9 +4344,10 @@ function searchKBRankedUncached(
   const scoreField = gradeId
     ? (qq: string, f: string, w: number) => scoreFieldRaw(qq.replace(TASHKEEL, ''), f.replace(TASHKEEL, ''), w)
     : scoreFieldRaw;
-  const pool = gradeId
-    ? KB_LESSONS.filter(l => getBookForLesson(l)?.gradeId === gradeId)
-    : KB_LESSONS;
+  // Invisible lessons were scored and then dropped; skip them up front.
+  const visibleIds = visibleLessonIds();
+  const pool = KB_LESSONS.filter(l =>
+    visibleIds.has(l.id) && (!gradeId || getBookForLesson(l)?.gradeId === gradeId));
 
   const scored = pool.map(lesson => {
     let score = 0;
@@ -4373,9 +4380,8 @@ function searchKBRankedUncached(
     return { lesson, score };
   });
 
-  const visibleIds = new Set(filterVisibleLessons(KB_LESSONS).map(l => l.id));
   return scored
-    .filter(s => s.score > 0 && visibleIds.has(s.lesson.id))
+    .filter(s => s.score > 0)
     .sort((a, b) => b.score - a.score);
 }
 
