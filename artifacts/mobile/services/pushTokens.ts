@@ -8,7 +8,7 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { apiJson } from '@/services/apiClient';
-import { threadIdFromNotificationData } from '@/services/notificationDeepLink';
+import { routeFromNotificationData } from '@/services/notificationDeepLink';
 
 // Without a handler, a notification that arrives while the app is
 // foregrounded is silently swallowed rather than shown. Skipped on web —
@@ -45,8 +45,8 @@ export async function registerPushToken(): Promise<void> {
 }
 
 function navigateFromNotificationResponse(response: Notifications.NotificationResponse): void {
-  const threadId = threadIdFromNotificationData(response.notification.request.content.data);
-  if (threadId) router.push(`/messaging/${threadId}`);
+  const route = routeFromNotificationData(response.notification.request.content.data);
+  if (route) router.push(route as never);
 }
 
 /**
