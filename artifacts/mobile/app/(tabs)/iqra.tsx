@@ -89,6 +89,7 @@ import { MathParagraph } from '@/components/ui/MathParagraph';
 import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
+import { NotificationBell } from '@/components/ui/NotificationBell';
 import { DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
 import { DOCUMENT_UPLOAD_ENABLED } from '@/services/features';
 import { ExportMenu } from '@/components/ui/ExportMenu';
@@ -3293,7 +3294,10 @@ export default function IqraScreen() {
               {t('appName')}
             </Text>
           </View>
-          <AiSourceBadge isRTL={isRTL} />
+          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}>
+            <AiSourceBadge isRTL={isRTL} />
+            <NotificationBell />
+          </View>
         </View>
       </View>
       )}
