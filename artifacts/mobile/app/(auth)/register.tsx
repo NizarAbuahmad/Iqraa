@@ -31,13 +31,15 @@ export default function RegisterScreen() {
   // v1 is teacher-only; the server refuses a student or parent registration
   // outright (see lib/features.ts there). Asked of the server rather than
   // mirrored into a build-time constant so the two cannot disagree.
-  const { enabled: studentAccounts, loading: featuresLoading } = useStudentAccountsStatus();
+  const { enabled: studentAccounts, loading: featuresLoading, failed: featuresFailed, retry: retryFeatures } = useStudentAccountsStatus();
 
   // No default. A pre-selected "teacher" meant a parent or student who scrolled
   // past the picker became a teacher without ever being asked.
   const [role, setRole] = useState<SignupRole | null>(null);
   // With student accounts off there is only one answer, so nothing to ask.
-  const chosenRole: SignupRole | null = studentAccounts ? role : 'teacher';
+  // If the check itself failed we do NOT know it is teacher-only: defaulting
+  // would silently turn an intended student/parent into a teacher.
+  const chosenRole: SignupRole | null = featuresFailed ? null : studentAccounts ? role : 'teacher';
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -158,6 +160,15 @@ export default function RegisterScreen() {
             <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text>
+            </View>
+          ) : null}
+
+          {featuresFailed ? (
+            <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{t('signupUnavailable')}</Text>
+              <Pressable onPress={retryFeatures} accessibilityRole="button">
+                <Text style={{ color: colors.primary, fontFamily: 'Almarai_700Bold' }}>{t('tryAgain')}</Text>
+              </Pressable>
             </View>
           ) : null}
 

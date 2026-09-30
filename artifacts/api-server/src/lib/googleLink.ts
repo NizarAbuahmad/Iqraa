@@ -58,3 +58,22 @@ export function decideGoogleLink(
     revokeExistingCredentials: wasUnverified,
   };
 }
+
+/**
+ * The role the register screen asked for, when it contradicts the account that
+ * already sits on this Google address. Google sign-in used to ignore the
+ * mismatch and sign the caller into the old account, so picking "student" with
+ * an address that was once a teacher silently opened the teacher journey.
+ *
+ * Only a role the caller explicitly sent counts (the login screen sends none),
+ * and an unverified row is exempt: linking it is Google proving ownership, and
+ * that row's role was chosen by whoever pre-created it.
+ */
+export function googleRoleConflict(
+  existing: { role: string; emailVerified: boolean | null },
+  requestedRole: unknown,
+): string | null {
+  if (existing.emailVerified !== true) return null;
+  if (requestedRole !== "teacher" && requestedRole !== "student" && requestedRole !== "parent") return null;
+  return requestedRole === existing.role ? null : existing.role;
+}
