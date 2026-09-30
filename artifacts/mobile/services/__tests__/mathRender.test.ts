@@ -244,6 +244,56 @@ describe('isolateForeignRuns', () => {
     assert.equal(isolateForeignRuns('حيث x₁ ≤ 5'), 'حيث ⁦x₁ ≤ 5⁩');
   });
 
+  // The chemistry export bug. «N₂ + H₂ → NH₃» used to become TWO isolates with
+  // the arrow stranded between them in the RTL flow, so the three pieces laid
+  // out right to left and the page printed «NH₃ → N₂ + H₂» — the reverse
+  // reaction. Verified in a browser: the stored string was right, the display
+  // was mirrored. One isolate keeps the whole equation in reading order.
+  it('keeps a reaction equation in ONE isolate, arrow inside it', () => {
+    assert.equal(
+      isolateForeignRuns('وازن المعادلة الآتية: N₂ + H₂ → NH₃'),
+      'وازن المعادلة الآتية: ⁦N₂ + H₂ → NH₃⁩',
+    );
+  });
+
+  it('never leaves an arrow stranded between two isolates', () => {
+    const out = isolateForeignRuns('CH₄ + 2O₂ → CO₂ + 2H₂O');
+    assert.ok(!/⁩\s*[→←↔⇒⇌]\s*⁦/.test(out), `arrow stranded: ${out}`);
+    assert.equal(out, '⁦CH₄ + 2O₂ → CO₂ + 2H₂O⁩');
+  });
+
+  it('handles every arrow style a reaction can use, including two-way', () => {
+    for (const arrow of ['→', '⇌', '↔', '⇒', '⟶']) {
+      const out = isolateForeignRuns(`تفاعل: N₂ + 3H₂ ${arrow} 2NH₃`);
+      assert.equal(out, `تفاعل: ⁦N₂ + 3H₂ ${arrow} 2NH₃⁩`, `arrow ${arrow}`);
+    }
+  });
+
+  it('keeps a multi-step chain whole', () => {
+    assert.equal(isolateForeignRuns('S → SO₂ → SO₃'), '⁦S → SO₂ → SO₃⁩');
+  });
+
+  it('stripping the isolates still recovers the original for a reaction', () => {
+    const original = 'ما نوع التفاعل الآتي: CaO + CO₂ → CaCO₃؟';
+    assert.equal(isolateForeignRuns(original).replace(/[⁦⁩]/g, ''), original);
+  });
+
+  // The arrow is interior-only on purpose. At the edge of a Latin word and
+  // Arabic prose it was already laid out correctly, so absorbing it would
+  // change output that had nothing wrong with it.
+  it('does not pull an edge arrow into the isolate', () => {
+    assert.equal(isolateForeignRuns('Wi-Fi → الإعدادات'), '⁦Wi-Fi⁩ → الإعدادات');
+  });
+
+  it('leaves an arrow in pure Arabic prose alone', () => {
+    const line = 'الخطوة الأولى → الخطوة الثانية';
+    assert.equal(isolateForeignRuns(line), line);
+  });
+
+  it('leaves a bare-number arrow alone — no Latin, no operator', () => {
+    assert.equal(isolateForeignRuns('من 2 → 3'), 'من 2 → 3');
+  });
+
   // A run only earns an isolate when it could actually be reordered. These
   // three were caught by the export suite: isolating them split «أ.» into
   // «أ⁦.⁩» and cut the page out of a «ص 45» citation.

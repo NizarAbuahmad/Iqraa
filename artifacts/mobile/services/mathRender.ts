@@ -228,7 +228,21 @@ export function hasRenderableMath(line: string): boolean {
 // uses the latin comma), and `*` / `_` (markdown emphasis, which would change
 // already-shipped chat rendering to no benefit here).
 const FOREIGN_CHAR = "A-Za-z0-9()=+\\-./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞";
-const FOREIGN_RUN_RE = new RegExp(`[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR} ]*[${FOREIGN_CHAR}])?`, 'g');
+
+// Reaction and implication arrows. They may sit INSIDE a run but never at its
+// edge. Left out of the run, «N₂ + H₂ → NH₃» became two isolates with the arrow
+// stranded between them in the page's RTL flow, and the three pieces laid out
+// right to left — the printed equation read «NH₃ → N₂ + H₂», the reverse
+// reaction, on every chemistry paper the HTML export produced. Keeping the
+// arrow interior-only is deliberate: «Wi-Fi → الإعدادات» has an arrow at the
+// edge of a Latin word and Arabic prose, and pulling it into the isolate would
+// change layout that was already right.
+const FOREIGN_ARROW = '→←↔⇒⇐⇔⇌⇄⟶⟵⟷';
+
+const FOREIGN_RUN_RE = new RegExp(
+  `[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR}${FOREIGN_ARROW} ]*[${FOREIGN_CHAR}])?`,
+  'g',
+);
 
 /**
  * A run only earns an isolate if it could actually be reordered against the
