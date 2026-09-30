@@ -114,6 +114,18 @@ async function main() {
     const t0 = Date.now();
     let r = await send();
     if (r.status === 401) { token = await login(); r = await send(); }
+    // Two different 429s. The API allows 15 requests a minute per account, and a
+    // pool hit answers in ~0.5 s, so a re-run trips it: wait as told and go on.
+    // A quota/budget refusal carries a `code` and is final.
+    let waits = 0;
+    while (r.status === 429 && waits < 5) {
+      const body = await r.clone().json().catch(() => ({})) as { code?: string };
+      if (body.code === 'user_quota_exceeded' || body.code === 'budget_exceeded') break;
+      const wait = Number(r.headers.get('retry-after') ?? 30) + 1;
+      console.log(`rate limited — waiting ${wait}s`);
+      await new Promise(res => setTimeout(res, wait * 1000));
+      r = await send(); waits++;
+    }
     const ms = Date.now() - t0;
     if (r.status === 429) { console.log(`429 (quota/budget) on ${c.kind} — stopping.`); break; }
     if (!r.ok) { failed++; console.log(`FAIL ${r.status} ${c.kind} ${c.lesson}`); continue; }
