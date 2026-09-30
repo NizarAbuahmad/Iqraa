@@ -1154,6 +1154,9 @@ const translations = {
     // Presentation mode
     revealHint: 'أظهر التلميح',
     hideHint: 'أخفِ التلميح',
+    penTool: 'القلم',
+    penUndo: 'تراجع',
+    penClear: 'امسح الرسم',
     revealAnswer: 'أظهر الإجابة',
     hideAnswer: 'أخفِ الإجابة',
     teacherPanelTitle: 'ملاحظات المعلم',
@@ -2989,6 +2992,9 @@ const translations = {
     // Presentation mode
     revealHint: 'Reveal hint',
     hideHint: 'Hide hint',
+    penTool: 'Pen',
+    penUndo: 'Undo',
+    penClear: 'Clear drawing',
     revealAnswer: 'Reveal answer',
     hideAnswer: 'Hide answer',
     teacherPanelTitle: 'Teacher notes',

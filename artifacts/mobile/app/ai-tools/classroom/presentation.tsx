@@ -41,6 +41,7 @@ import {
 } from '@/services/classGame';
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
 import { MathText } from '@/components/classroom/MathText';
+import { PEN_COLORS, PenCanvas, PenPalette, type Stroke } from '@/components/classroom/PenLayer';
 import { hasRenderableMath, isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { goBack } from '@/services/navigation';
 
@@ -887,6 +888,10 @@ export default function PresentationScreen() {
   const [timerTotal, setTimerTotal] = useState(0);
   const [celebrationVisible, setCelebrationVisible] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Ink is kept per slide so stepping back shows what was drawn there.
+  const [penOn, setPenOn] = useState(false);
+  const [penColor, setPenColor] = useState(PEN_COLORS[0]!);
+  const [ink, setInk] = useState<Record<number, Stroke[]>>({});
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const celebrationAnim = useRef(new Animated.Value(0)).current;
   const celebrationScale = useRef(new Animated.Value(0.5)).current;
@@ -1099,6 +1104,8 @@ export default function PresentationScreen() {
   const tColor = timerColor(timerPct);
   const hasTeacherNotes = !!slide.teacher;
   const challengeSlides = activity.slides.filter(s => s.type === 'challenge').length;
+  const slideInk = ink[slideIndex] ?? [];
+  const setSlideInk = (next: Stroke[]) => setInk(all => ({ ...all, [slideIndex]: next }));
 
   // Format timer MM:SS
   const mm = Math.floor(timerSec / 60).toString().padStart(2, '0');
@@ -1354,7 +1361,22 @@ export default function PresentationScreen() {
               )}
             </View>
           )}
+
+          {/* Last child, absolute over the whole content: ink scrolls with the
+              slide it marks. While the pen is on it takes every touch, so the
+              slide cannot scroll — turning the pen off gives scrolling back. */}
+          <PenCanvas strokes={slideInk} color={penColor} active={penOn} onChange={setSlideInk} />
         </ScrollView>
+        {penOn && (
+          <PenPalette
+            color={penColor}
+            onColor={setPenColor}
+            canUndo={slideInk.length > 0}
+            onUndo={() => setSlideInk(slideInk.slice(0, -1))}
+            onClear={() => setSlideInk([])}
+            labels={{ undo: t('penUndo'), clear: t('penClear') }}
+          />
+        )}
       </Animated.View>
 
       {/* ── Bottom Controls ── */}
@@ -1380,6 +1402,21 @@ export default function PresentationScreen() {
 
         {/* Action row */}
         <View style={[styles.actionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Pressable
+            onPress={() => setPenOn(v => !v)}
+            style={[styles.actionBtn, penOn && { borderColor: ACCENT + '50', backgroundColor: ACCENT + '12' }]}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityState={{ selected: penOn }}
+            accessibilityLabel={t('penTool')}
+          >
+            <Ionicons name={penOn ? 'brush' : 'brush-outline'} size={18} color={penOn ? ACCENT : TEXT_MUTED} />
+            {compactBar ? null : (
+              <Text numberOfLines={1} style={[styles.actionLabel, penOn && { color: ACCENT }, { fontFamily: 'Almarai_400Regular' }]}>
+                {t('penTool')}
+              </Text>
+            )}
+          </Pressable>
           {hasTimer && (
             <Pressable
               onPress={restartTimer}
