@@ -1374,7 +1374,7 @@ export default function PresentationScreen() {
             canUndo={slideInk.length > 0}
             onUndo={() => setSlideInk(slideInk.slice(0, -1))}
             onClear={() => setSlideInk([])}
-            labels={{ undo: t('penUndo'), clear: t('penClear') }}
+            labels={{ undo: t('penUndo'), clear: t('penClear'), colors: [t('penRed'), t('penTeal'), t('penBlack')] }}
           />
         )}
       </Animated.View>

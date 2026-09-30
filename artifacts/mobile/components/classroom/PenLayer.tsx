@@ -80,16 +80,17 @@ export function PenPalette({ color, onColor, onUndo, onClear, canUndo, labels }:
   onUndo: () => void;
   onClear: () => void;
   canUndo: boolean;
-  labels: { undo: string; clear: string };
+  labels: { undo: string; clear: string; colors: string[] };
 }) {
   return (
     <View style={styles.palette}>
-      {PEN_COLORS.map(c => (
+      {PEN_COLORS.map((c, i) => (
         <Pressable
           key={c}
           onPress={() => onColor(c)}
           hitSlop={6}
           accessibilityRole="button"
+          accessibilityLabel={labels.colors[i]}
           accessibilityState={{ selected: c === color }}
           style={[styles.swatch, { backgroundColor: c }, c === color && styles.swatchOn]}
         />
