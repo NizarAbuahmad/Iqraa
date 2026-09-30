@@ -47,6 +47,46 @@
    "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Vocational%20Education/G6/%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%20%D8%B3%D8%A7%D8%AF%D8%B3%20%D9%811%202026%20S%20.pdf",
    "pages": 104
   },
+  "g9-biology-s1-student-book": {
+   "bookId": "book-biology-9-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G9/1/%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D9%84%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%811.pdf",
+   "pages": 72
+  },
+  "g9-biology-s2-student-book": {
+   "bookId": "book-biology-9-s2",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20(2)/%D8%B9%D9%84%D9%88%D9%85%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%20%D8%B5%D9%81%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D8%AC2%20.pdf",
+   "pages": 86
+  },
+  "g9-chemistry-s1-student-book": {
+   "bookId": "book-chem-9-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G9/1/%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%811.pdf",
+   "pages": 64
+  },
+  "g9-chemistry-s2-student-book": {
+   "bookId": "book-chem-9-s2",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20(2)/%D8%B9%D9%84%D9%88%D9%85%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%209%20%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A%20%20.pdf",
+   "pages": 76
+  },
+  "g9-earth-science-s1-student-book": {
+   "bookId": "book-earth-science-9-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G9/1/%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D9%84%D8%A3%D8%B1%D8%B6%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%811.pdf",
+   "pages": 64
+  },
+  "g9-earth-science-s2-student-book": {
+   "bookId": "book-earth-science-9-s2",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20(2)/%D8%B9%D9%84%D9%88%D9%85%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A3%D8%B1%D8%B6%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D9%84%D8%A3%D8%B1%D8%B6%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D8%B7%D8%A7%D9%84%D8%A8%20%D8%AC%D9%A2%20.pdf",
+   "pages": 80
+  },
+  "g9-math-s1-student-book": {
+   "bookId": "book-math-9-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Math/G9/1/ST/2026_MT09_SE1.pdf",
+   "pages": 151
+  },
+  "g9-math-s2-student-book": {
+   "bookId": "book-math-9-s2",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G09/2/MT09/SE/MT09_SE2_WEB.pdf",
+   "pages": 174
+  },
   "g9-physics-s1-student-book": {
    "bookId": "book-phys-9-s1",
    "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G9/1/%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1%D8%AA%D8%A7%D8%B3%D8%B9%20%D8%AC%D8%B2%D8%A1%20%D8%A3%D9%88%D9%84.pdf",
@@ -473,6 +513,330 @@
    "sourceId": "g6-voc-s1-student-book",
    "startPage": 97,
    "endPage": 104,
+   "aspect": 0.75
+  },
+  "kbl-g9-biology-s1-nccd-u1_l2": {
+   "sourceId": "g9-biology-s1-student-book",
+   "startPage": 17,
+   "endPage": 31,
+   "aspect": 0.75
+  },
+  "kbl-g9-biology-s1-nccd-u2_l1": {
+   "sourceId": "g9-biology-s1-student-book",
+   "startPage": 32,
+   "endPage": 48,
+   "aspect": 0.75
+  },
+  "kbl-g9-biology-s1-nccd-u2_l2": {
+   "sourceId": "g9-biology-s1-student-book",
+   "startPage": 49,
+   "endPage": 56,
+   "aspect": 0.75
+  },
+  "kbl-g9-biology-s1-nccd-u2_l3": {
+   "sourceId": "g9-biology-s1-student-book",
+   "startPage": 57,
+   "endPage": 72,
+   "aspect": 0.75
+  },
+  "kbl-g9-biology-s2-nccd-u3_l1": {
+   "sourceId": "g9-biology-s2-student-book",
+   "startPage": 10,
+   "endPage": 20,
+   "aspect": 0.7586
+  },
+  "kbl-g9-biology-s2-nccd-u3_l2": {
+   "sourceId": "g9-biology-s2-student-book",
+   "startPage": 21,
+   "endPage": 37,
+   "aspect": 0.7586
+  },
+  "kbl-g9-biology-s2-nccd-u4_l1": {
+   "sourceId": "g9-biology-s2-student-book",
+   "startPage": 38,
+   "endPage": 54,
+   "aspect": 0.7586
+  },
+  "kbl-g9-biology-s2-nccd-u4_l3": {
+   "sourceId": "g9-biology-s2-student-book",
+   "startPage": 55,
+   "endPage": 74,
+   "aspect": 0.7586
+  },
+  "kbl-g9-chem-s1-nccd-u1_l1": {
+   "sourceId": "g9-chemistry-s1-student-book",
+   "startPage": 10,
+   "endPage": 18,
+   "aspect": 0.75
+  },
+  "kbl-g9-chem-s1-nccd-u1_l2": {
+   "sourceId": "g9-chemistry-s1-student-book",
+   "startPage": 19,
+   "endPage": 35,
+   "aspect": 0.75
+  },
+  "kbl-g9-chem-s1-nccd-u2_l1": {
+   "sourceId": "g9-chemistry-s1-student-book",
+   "startPage": 36,
+   "endPage": 48,
+   "aspect": 0.75
+  },
+  "kbl-g9-chem-s1-nccd-u2_l2": {
+   "sourceId": "g9-chemistry-s1-student-book",
+   "startPage": 49,
+   "endPage": 64,
+   "aspect": 0.75
+  },
+  "kbl-g9-chem-s2-nccd-u3_l1": {
+   "sourceId": "g9-chemistry-s2-student-book",
+   "startPage": 10,
+   "endPage": 20,
+   "aspect": 0.7586
+  },
+  "kbl-g9-chem-s2-nccd-u3_l2": {
+   "sourceId": "g9-chemistry-s2-student-book",
+   "startPage": 21,
+   "endPage": 39,
+   "aspect": 0.7586
+  },
+  "kbl-g9-chem-s2-nccd-u4_l1": {
+   "sourceId": "g9-chemistry-s2-student-book",
+   "startPage": 40,
+   "endPage": 58,
+   "aspect": 0.7586
+  },
+  "kbl-g9-chem-s2-nccd-u4_l2": {
+   "sourceId": "g9-chemistry-s2-student-book",
+   "startPage": 59,
+   "endPage": 76,
+   "aspect": 0.7586
+  },
+  "kbl-g9-earth-science-s1-nccd-u1_l1": {
+   "sourceId": "g9-earth-science-s1-student-book",
+   "startPage": 10,
+   "endPage": 24,
+   "aspect": 0.75
+  },
+  "kbl-g9-earth-science-s1-nccd-u1_l2": {
+   "sourceId": "g9-earth-science-s1-student-book",
+   "startPage": 25,
+   "endPage": 39,
+   "aspect": 0.75
+  },
+  "kbl-g9-earth-science-s1-nccd-u2_l1": {
+   "sourceId": "g9-earth-science-s1-student-book",
+   "startPage": 40,
+   "endPage": 46,
+   "aspect": 0.75
+  },
+  "kbl-g9-earth-science-s1-nccd-u2_l2": {
+   "sourceId": "g9-earth-science-s1-student-book",
+   "startPage": 47,
+   "endPage": 64,
+   "aspect": 0.75
+  },
+  "kbl-g9-earth-science-s2-nccd-u3_l1": {
+   "sourceId": "g9-earth-science-s2-student-book",
+   "startPage": 10,
+   "endPage": 14,
+   "aspect": 0.7586
+  },
+  "kbl-g9-earth-science-s2-nccd-u3_l2": {
+   "sourceId": "g9-earth-science-s2-student-book",
+   "startPage": 15,
+   "endPage": 33,
+   "aspect": 0.7586
+  },
+  "kbl-g9-earth-science-s2-nccd-u4_l1": {
+   "sourceId": "g9-earth-science-s2-student-book",
+   "startPage": 34,
+   "endPage": 40,
+   "aspect": 0.7586
+  },
+  "kbl-g9-earth-science-s2-nccd-u4_l2": {
+   "sourceId": "g9-earth-science-s2-student-book",
+   "startPage": 41,
+   "endPage": 57,
+   "aspect": 0.7586
+  },
+  "kbl-g9-earth-science-s2-nccd-u5_l1": {
+   "sourceId": "g9-earth-science-s2-student-book",
+   "startPage": 58,
+   "endPage": 63,
+   "aspect": 0.7586
+  },
+  "kbl-g9-earth-science-s2-nccd-u5_l2": {
+   "sourceId": "g9-earth-science-s2-student-book",
+   "startPage": 64,
+   "endPage": 80,
+   "aspect": 0.7586
+  },
+  "kbl-g9-math-s1-nccd-u1_l1": {
+   "sourceId": "g9-math-s1-student-book",
+   "startPage": 8,
+   "endPage": 25,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s1-nccd-u1_l3": {
+   "sourceId": "g9-math-s1-student-book",
+   "startPage": 26,
+   "endPage": 41,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s1-nccd-u2_l1": {
+   "sourceId": "g9-math-s1-student-book",
+   "startPage": 42,
+   "endPage": 53,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s1-nccd-u2_l2": {
+   "sourceId": "g9-math-s1-student-book",
+   "startPage": 54,
+   "endPage": 63,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s1-nccd-u2_l3": {
+   "sourceId": "g9-math-s1-student-book",
+   "startPage": 64,
+   "endPage": 76,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s1-nccd-u2_l4": {
+   "sourceId": "g9-math-s1-student-book",
+   "startPage": 77,
+   "endPage": 91,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s1-nccd-u3_l1": {
+   "sourceId": "g9-math-s1-student-book",
+   "startPage": 92,
+   "endPage": 98,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s1-nccd-u3_l2": {
+   "sourceId": "g9-math-s1-student-book",
+   "startPage": 99,
+   "endPage": 107,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s1-nccd-u3_l3": {
+   "sourceId": "g9-math-s1-student-book",
+   "startPage": 108,
+   "endPage": 115,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s1-nccd-u3_l4": {
+   "sourceId": "g9-math-s1-student-book",
+   "startPage": 116,
+   "endPage": 131,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s1-nccd-u4_l1": {
+   "sourceId": "g9-math-s1-student-book",
+   "startPage": 132,
+   "endPage": 141,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s1-nccd-u4_l2": {
+   "sourceId": "g9-math-s1-student-book",
+   "startPage": 142,
+   "endPage": 151,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u5_l1": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 8,
+   "endPage": 18,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u5_l2": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 19,
+   "endPage": 30,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u5_l3": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 31,
+   "endPage": 39,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u5_l4": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 40,
+   "endPage": 48,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u5_l5": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 49,
+   "endPage": 61,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u6_l1": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 62,
+   "endPage": 68,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u6_l2": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 69,
+   "endPage": 78,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u6_l3": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 79,
+   "endPage": 91,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u7_l1": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 92,
+   "endPage": 100,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u7_l2": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 101,
+   "endPage": 107,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u7_l3": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 108,
+   "endPage": 119,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u8_l1": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 120,
+   "endPage": 134,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u8_l2": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 135,
+   "endPage": 143,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u8_l3": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 144,
+   "endPage": 152,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u8_l4": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 153,
+   "endPage": 164,
+   "aspect": 0.75
+  },
+  "kbl-g9-math-s2-nccd-u8_l5": {
+   "sourceId": "g9-math-s2-student-book",
+   "startPage": 165,
+   "endPage": 174,
    "aspect": 0.75
   },
   "kbl-g9-phys-s1-nccd-u1_l1": {
