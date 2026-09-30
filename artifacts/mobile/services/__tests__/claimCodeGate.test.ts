@@ -12,7 +12,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { canSubmitClaim, claimErrorKey } from '../claimCodeGate.ts';
+import { canSubmitClaim, claimErrorKey, needsNameConfirm } from '../claimCodeGate.ts';
 
 describe('canSubmitClaim', () => {
   it('blocks a code too short to have been looked up', () => {
@@ -74,5 +74,17 @@ describe('claimErrorKey', () => {
 
   it('falls back when the server sent no code at all', () => {
     assert.equal(claimErrorKey(undefined), 'joinAnotherClassFailed');
+  });
+});
+
+describe('needsNameConfirm', () => {
+  it('asks once for a class code with a picked name', () => {
+    assert.equal(needsNameConfirm('class', 'abc', false), true);
+    assert.equal(needsNameConfirm('class', 'abc', true), false);
+  });
+
+  it('never asks for a per-student code, or before a name is picked', () => {
+    assert.equal(needsNameConfirm('student-code', '', false), false);
+    assert.equal(needsNameConfirm('class', '', false), false);
   });
 });
