@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildMinistryPlanHTML, ministryDayAndDate, type MinistryLessonPage } from '../ministryPlanHtml.ts';
+import { buildMinistryPlanHTML, ministryDayAndDate, stagesFromLessonPlan, type MinistryLessonPage } from '../ministryPlanHtml.ts';
 
 const page: MinistryLessonPage = {
   subject: 'الرياضيات',
@@ -49,5 +49,20 @@ describe('buildMinistryPlanHTML', () => {
 
   it('falls back to the raw string for an unreal date', () => {
     assert.equal(ministryDayAndDate('nope'), 'nope');
+  });
+
+  it('prints generated stage text in the teacher column', () => {
+    const html = buildMinistryPlanHTML([{ ...page, stages: ['تمهيد', 'شرح', '', 'ختام'] }], 'خطة');
+    for (const s of ['تمهيد', 'شرح', 'ختام']) assert.ok(html.includes(s), s);
+  });
+});
+
+describe('stagesFromLessonPlan', () => {
+  it('folds the nine phases into four stages, skipping blanks', () => {
+    const st = stagesFromLessonPlan({
+      introduction: 'a', mainActivity: 'b', guidedPractice: 'c',
+      independentPractice: ' ', differentiation: 'd', closure: 'e', assessment: '',
+    });
+    assert.deepEqual(st, ['a', 'b\nc', 'd', 'e']);
   });
 });

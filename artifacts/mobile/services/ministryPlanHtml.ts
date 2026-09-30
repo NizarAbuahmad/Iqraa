@@ -11,10 +11,11 @@
  * no English variant of a Ministry document.
  *
  * What is filled: everything the app knows (subject, grade, unit, lesson,
- * period count, official outcomes, class, date). What is deliberately left
- * ruled and empty: the teacher-role / learner-role cells. Those are the
- * teacher's own pedagogy, and inventing them would put words in the mouth of
- * a document a supervisor signs.
+ * period count, official outcomes, class, date). The teacher-role cells are
+ * filled only when the caller passes `stages` (from the lesson-plan
+ * generator, see `stagesFromLessonPlan`); otherwise they stay ruled and empty
+ * for the teacher to write. The learner-role cells are always left empty — the
+ * generator writes one text per phase, not a learner half.
  */
 import { isolateForeignRuns } from './mathRender.ts';
 
@@ -34,6 +35,31 @@ export interface MinistryLessonPage {
   /** ISO `YYYY-MM-DD`, the day the plan schedules this lesson. */
   date: string;
   teacher: string;
+  /** Teacher-role text for each of the four stages, in order. */
+  stages?: readonly string[];
+}
+
+/**
+ * Fold a generated lesson plan's phases into the form's four stages:
+ * intro → تهيئة; main + guided → شرح; independent + differentiation → توسع;
+ * closure + assessment → تأكيد.
+ */
+export function stagesFromLessonPlan(plan: {
+  introduction: string;
+  mainActivity: string;
+  guidedPractice: string;
+  independentPractice: string;
+  differentiation: string;
+  closure: string;
+  assessment: string;
+}): string[] {
+  const join = (...xs: string[]) => xs.map(x => (x ?? '').trim()).filter(Boolean).join('\n');
+  return [
+    join(plan.introduction),
+    join(plan.mainActivity, plan.guidedPractice),
+    join(plan.independentPractice, plan.differentiation),
+    join(plan.closure, plan.assessment),
+  ];
 }
 
 /** The form's four stages, with the minutes it prints beside each (a 45-minute period). */
@@ -72,9 +98,9 @@ function pageHTML(p: MinistryLessonPage, last: boolean): string {
   }).join('');
 
   const rows = MINISTRY_STAGES.map(
-    s => `<tr style="height:${s.height}px">
+    (s, i) => `<tr style="min-height:${s.height}px;height:${s.height}px">
       <td class="stage"><span>${esc(s.label)}</span></td>
-      <td></td><td></td>
+      <td class="role">${esc(p.stages?.[i] ?? '')}</td><td class="role"></td>
       <td class="time">${s.minutes}د</td>
     </tr>`,
   ).join('');
@@ -149,6 +175,7 @@ export function buildMinistryPlanHTML(pages: readonly MinistryLessonPage[], titl
     td.stage { background: ${BLUE}; text-align: center; vertical-align: middle; width: 52px; }
     td.stage span { display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg);
       font: 700 12px 'Cairo', Arial, sans-serif; }
+    td.role { white-space: pre-line; font-size: 10.5px; line-height: 1.5; }
     td.time { text-align: right; font-weight: 700; width: 56px; }
     .foot { display: flex; gap: 24px; margin-top: 14px; align-items: flex-start; }
     .reflect { flex: 1; min-height: 100px; font-weight: 700; }

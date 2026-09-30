@@ -49,9 +49,11 @@ import {
   type PlanEntry,
 } from '@/services/planEntries';
 import { getLessonById, getLessonsForUnit, getUnitForLesson, getUnitsForSubjectGrade } from '@/services/knowledgeBase';
-import { buildMinistryPlanHTML, type MinistryLessonPage } from '@/services/ministryPlanHtml';
+import { buildMinistryPlanHTML, stagesFromLessonPlan, type MinistryLessonPage } from '@/services/ministryPlanHtml';
 import { exportAsPDF } from '@/services/share';
 import { useAuth } from '@/context/AuthContext';
+import { remoteAIService } from '@/services/ai/RemoteAIService';
+import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { confirm } from '@/services/confirm';
 import type { TranslationKey } from '@/services/i18n';
@@ -245,6 +247,7 @@ export default function TeachingPlansScreen() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   // Auto-schedule inputs — a one-time recipe for generating dates, not saved
   // to the plan itself (only the dates it produces are). Reset per plan so a
@@ -457,10 +460,12 @@ export default function TeachingPlansScreen() {
       ? getUnitsForSubjectGrade(cls.subjectId, cls.gradeId).flatMap(u => getLessonsForUnit(u.id))
       : [];
     const pages: MinistryLessonPage[] = [];
+    const lessons: NonNullable<ReturnType<typeof getLessonById>>[] = [];
     for (const entry of entries) {
       const lesson = getLessonById(entry.lessonId);
       if (!lesson) continue;
       const idx = ordered.findIndex(l => l.id === lesson.id);
+      lessons.push(lesson);
       pages.push({
         subject: SUBJECTS.find(x => x.id === cls?.subjectId)?.nameAr ?? '',
         grade: GRADES.find(x => x.id === cls?.gradeId)?.nameAr ?? '',
@@ -479,6 +484,41 @@ export default function TeachingPlansScreen() {
       return;
     }
     setError('');
+    const fillWithAI = await confirm({
+      title: t('planExportAiTitle'),
+      message: t('planExportAiMessage', pages.length),
+      confirmLabel: t('planExportAiYes'),
+      cancelLabel: t('planExportAiNo'),
+    });
+    if (fillWithAI) {
+      setExportingId(plan.id);
+      // Three at a time: gentle on the API, and one lesson failing only
+      // leaves its own stages blank. The lesson id is passed directly — a
+      // title does not identify a lesson (CLAUDE.md).
+      for (let i = 0; i < pages.length; i += 3) {
+        await Promise.all(pages.slice(i, i + 3).map(async (page, k) => {
+          const lesson = lessons[i + k];
+          if (!cls) return;
+          try {
+            const g = resolveGeneratorGrounding(lesson.titleAr, 'ar');
+            const out = await remoteAIService.generateLessonPlan({
+              grade: page.grade,
+              subject: SUBJECTS.find(x => x.id === cls.subjectId)?.name ?? '',
+              topic: lesson.titleAr,
+              duration: 45,
+              language: 'arabic',
+              lessonId: lesson.id,
+              additionalContext: g.lesson?.id === lesson.id ? g.context : undefined,
+              contextSource: 'curriculum',
+            });
+            page.stages = stagesFromLessonPlan(out);
+          } catch {
+            /* this lesson's stages stay blank */
+          }
+        }));
+      }
+      setExportingId(null);
+    }
     try {
       await exportAsPDF(buildMinistryPlanHTML(pages, plan.title), plan.title);
     } catch {
@@ -622,11 +662,16 @@ export default function TeachingPlansScreen() {
               </View>
               <Pressable
                 onPress={() => { void onExportMinistry(item); }}
+                disabled={exportingId === item.id}
                 hitSlop={10}
                 accessibilityRole="button"
                 accessibilityLabel={t('planExportMinistry')}
               >
-                <Ionicons name="document-text-outline" size={18} color={ACCENT} />
+                {exportingId === item.id ? (
+                  <ActivityIndicator size="small" color={ACCENT} />
+                ) : (
+                  <Ionicons name="document-text-outline" size={18} color={ACCENT} />
+                )}
               </Pressable>
               <Pressable onPress={() => { void onDelete(item); }} disabled={deletingId === item.id} hitSlop={10}>
                 {deletingId === item.id ? (
