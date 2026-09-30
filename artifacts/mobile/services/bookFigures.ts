@@ -90,6 +90,7 @@ import g7SciS1 from '../../../knowledge-base/grade-7-science/figures/g7-science-
 import g7SciS2 from '../../../knowledge-base/grade-7-science/figures/g7-science-s2-student-book/index.json' with { type: 'json' };
 import g7SocialS1 from '../../../knowledge-base/grade-7-social/figures/g7-social-s1-student-book/index.json' with { type: 'json' };
 import g7SocialS2 from '../../../knowledge-base/grade-7-social/figures/g7-social-s2-student-book/index.json' with { type: 'json' };
+import pageLinks from '../../../knowledge-base/book-page-links.json' with { type: 'json' };
 
 export type BookFigure = {
   /** File name inside the book's figure directory, e.g. `p021.png`. */
@@ -108,6 +109,8 @@ export type BookFigure = {
   unit: number | null;
   lesson: number | null;
   lessonTitleEn: string | null;
+  /** 1-based PDF page where the figure's book lesson begins. */
+  lessonStartPage?: number | null;
 };
 
 type MapEntry = {
@@ -226,6 +229,28 @@ const BY_LESSON: Map<string, BookFigure[]> = (() => {
 export function figuresForLesson(kbLessonId: string | null | undefined): BookFigure[] {
   if (!kbLessonId) return [];
   return BY_LESSON.get(kbLessonId) ?? [];
+}
+
+/**
+ * Where this lesson begins in the book's public PDF.
+ *
+ * The page comes from OUR copy of the book (the figure extractor recorded it);
+ * the link goes to the published one. Only books that
+ * `scripts/verify_book_pages.py` compared page by page are listed in
+ * `book-page-links.json`, so a book re-issued with different pagination gets
+ * no link rather than the wrong page. Null for any lesson without figures or
+ * from an unverified book. The earliest start wins: the curriculum sometimes
+ * merges two book lessons into one.
+ */
+export function bookPageForLesson(kbLessonId: string | null | undefined): { pdfUrl: string; page: number } | null {
+  const links = (pageLinks as { books: Record<string, { pdfUrl: string }> }).books;
+  let best: { pdfUrl: string; page: number } | null = null;
+  for (const f of figuresForLesson(kbLessonId)) {
+    const link = links[f.sourceId];
+    if (!link || !f.lessonStartPage) continue;
+    if (!best || f.lessonStartPage < best.page) best = { pdfUrl: link.pdfUrl, page: f.lessonStartPage };
+  }
+  return best;
 }
 
 /** Every lesson that has at least one figure. Used by tooling and tests. */
