@@ -45,6 +45,7 @@ const STRICT_ONLY_FIELDS = [
   "includePriorReview",
   "priorKnowledge",
   "priorTopicsNotes",
+  "ministryRoles",
   "homework",
 ] as const;
 

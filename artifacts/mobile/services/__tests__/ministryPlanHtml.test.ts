@@ -51,18 +51,38 @@ describe('buildMinistryPlanHTML', () => {
     assert.equal(ministryDayAndDate('nope'), 'nope');
   });
 
-  it('prints generated stage text in the teacher column', () => {
-    const html = buildMinistryPlanHTML([{ ...page, stages: ['تمهيد', 'شرح', '', 'ختام'] }], 'خطة');
-    for (const s of ['تمهيد', 'شرح', 'ختام']) assert.ok(html.includes(s), s);
+  it('prints generated stage text in both role columns', () => {
+    const stages = [
+      { teacher: 'يسأل', learner: 'يجيب' },
+      { teacher: 'يشرح', learner: 'يدوّن' },
+      { teacher: '', learner: '' },
+      { teacher: 'يلخص', learner: 'يراجع' },
+    ];
+    const html = buildMinistryPlanHTML([{ ...page, stages }], 'خطة');
+    for (const s of ['يسأل', 'يجيب', 'يشرح', 'يدوّن', 'يلخص', 'يراجع']) assert.ok(html.includes(s), s);
   });
 });
 
 describe('stagesFromLessonPlan', () => {
-  it('folds the nine phases into four stages, skipping blanks', () => {
-    const st = stagesFromLessonPlan({
-      introduction: 'a', mainActivity: 'b', guidedPractice: 'c',
-      independentPractice: ' ', differentiation: 'd', closure: 'e', assessment: '',
-    });
-    assert.deepEqual(st, ['a', 'b\nc', 'd', 'e']);
+  const base = {
+    introduction: 'a', mainActivity: 'b', guidedPractice: 'c',
+    independentPractice: ' ', differentiation: 'd', closure: 'e', assessment: '',
+  };
+
+  it('folds the phases into the teacher column, skipping blanks', () => {
+    const st = stagesFromLessonPlan(base);
+    assert.deepEqual(st.map(s => s.teacher), ['a', 'b\nc', 'd', 'e']);
+    assert.ok(st.every(s => s.learner === ''));
+  });
+
+  it("prefers the model's teacher/learner split when it is whole", () => {
+    const roles = [1, 2, 3, 4].map(i => ({ teacher: `m${i}`, learner: `l${i}` }));
+    assert.deepEqual(stagesFromLessonPlan({ ...base, ministryRoles: roles }), roles);
+  });
+
+  it('falls back to the folded phases when the split is short or empty', () => {
+    assert.equal(stagesFromLessonPlan({ ...base, ministryRoles: [{ teacher: 'x', learner: 'y' }] })[0].teacher, 'a');
+    const blank = [1, 2, 3, 4].map(() => ({ teacher: ' ', learner: '' }));
+    assert.equal(stagesFromLessonPlan({ ...base, ministryRoles: blank })[1].teacher, 'b\nc');
   });
 });
