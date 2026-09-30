@@ -45,6 +45,8 @@ import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { buildQuizHTML, buildQuizSlidesHTML, formatQuizText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
+import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { nextFrame } from '@/services/nextFrame';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -103,6 +105,7 @@ export default function QuizScreen() {
   const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   const [topic, setTopic] = useState(params.topic ?? '');
+  useWarmGrounding(topic, lang);
   const [diffIdx, setDiffIdx] = useState(0);
 
   // Reset topic when grade or subject changes
@@ -270,6 +273,7 @@ export default function QuizScreen() {
     abortRef.current = controller;
     setLoading(true); setResult(null); setOutcomes(null); setEditedQuestions(new Set()); setShowAnswers(false); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await nextFrame();
     try {
       const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
       setCurriculumGrounded(grounding.grounded);

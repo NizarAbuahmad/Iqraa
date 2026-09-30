@@ -32,6 +32,8 @@ import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, formatLessonPlanText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
+import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { nextFrame } from '@/services/nextFrame';
 
 const ACCENT = palette.primary;
 
@@ -71,6 +73,7 @@ export default function LessonPlanScreen() {
   const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   const [topic, setTopic] = useState(params.topic ?? '');
+  useWarmGrounding(topic, lang);
 
   // Reset topic when grade or subject changes so stale KB selections are cleared
   const prevGradeRef = React.useRef(gradeIdx);
@@ -191,6 +194,7 @@ export default function LessonPlanScreen() {
     setEditedFields(new Set());
     setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await nextFrame();
     try {
       const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', {
         teacherObjectives: objectives.trim() || undefined,

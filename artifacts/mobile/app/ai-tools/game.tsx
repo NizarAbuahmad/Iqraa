@@ -43,6 +43,8 @@ import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { readableOn } from '@/services/readableColor';
 import { palette } from '@/constants/colors';
+import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { nextFrame } from '@/services/nextFrame';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -81,6 +83,7 @@ export default function ClassGameScreen() {
   const subjectNames = subjectPickerLabels(grades[gradeIdx].id, isAr ? 'ar' : 'en');
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   const [topic, setTopic] = useState(params.topic ?? '');
+  useWarmGrounding(topic, lang);
   const [teamCount, setTeamCount] = useState(4);
   const [questionCount, setQuestionCount] = useState(8);
   const [loading, setLoading] = useState(false);
@@ -126,6 +129,7 @@ export default function ClassGameScreen() {
     if (conflict) { setError(t('subjectTopicMismatch', isAr ? conflict.nameAr : conflict.name)); return; }
     setError(''); setLoading(true); setDeck(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await nextFrame();
     const controller = new AbortController();
     abortRef.current = controller;
 

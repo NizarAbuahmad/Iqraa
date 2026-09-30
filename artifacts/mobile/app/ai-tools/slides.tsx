@@ -55,6 +55,8 @@ import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels, t
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
+import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { nextFrame } from '@/services/nextFrame';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -92,6 +94,7 @@ export default function SlidesScreen() {
   const subjectNames = subjectPickerLabels(grades[gradeIdx].id, isAr ? 'ar' : 'en');
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   const [topic, setTopic] = useState(params.topic ?? '');
+  useWarmGrounding(topic, lang);
   // Live as the teacher types, not gated behind pressing Generate — same
   // timing as `LessonResources`' own `topic` prop just below it.
   const groundedLessonId = useMemo(
@@ -346,6 +349,7 @@ export default function SlidesScreen() {
     // A new deck is a different material: it is not the one that was saved.
     forgetSaved();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await nextFrame();
 
     const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en');
     setGrounded(grounding.grounded);

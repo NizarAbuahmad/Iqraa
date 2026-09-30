@@ -48,6 +48,8 @@ import {
   parsePoints,
   removeWorksheetQuestionAt } from '@/services/worksheetEdits';
 import { optionMarkerState } from '@/services/quizEdits';
+import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { nextFrame } from '@/services/nextFrame';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -114,6 +116,7 @@ export default function WorksheetScreen() {
   const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   const [topic, setTopic] = useState(params.topic ?? '');
+  useWarmGrounding(topic, lang);
   const [diffIdx, setDiffIdx] = useState(params.diffIdx ? parseInt(params.diffIdx, 10) : 0);
 
   // Reset topic when grade or subject changes
@@ -296,6 +299,7 @@ export default function WorksheetScreen() {
     setLevels(null);
     setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await nextFrame();
     try {
       const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
       const unitPrior = grounding.lesson ? getUnitPriorKnowledge(grounding.lesson.id) : [];
