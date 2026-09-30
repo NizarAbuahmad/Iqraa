@@ -11,13 +11,17 @@
  * no English variant of a Ministry document.
  *
  * What is filled: everything the app knows (subject, grade, unit, lesson,
- * period count, official outcomes, class, date). The teacher-role cells are
- * filled only when the caller passes `stages` (from the lesson-plan
- * generator, see `stagesFromLessonPlan`); otherwise they stay ruled and empty
- * for the teacher to write. The learner-role cells are always left empty — the
- * generator writes one text per phase, not a learner half.
+ * period count, official outcomes, class, date). The teacher- and
+ * learner-role cells are filled only when the caller passes `stages` (from the
+ * lesson-plan generator, see `stagesFromLessonPlan`); otherwise they stay
+ * ruled and empty for the teacher to write.
  */
 import { isolateForeignRuns } from './mathRender.ts';
+
+export interface MinistryStage {
+  teacher: string;
+  learner: string;
+}
 
 export interface MinistryLessonPage {
   subject: string;
@@ -35,16 +39,19 @@ export interface MinistryLessonPage {
   /** ISO `YYYY-MM-DD`, the day the plan schedules this lesson. */
   date: string;
   teacher: string;
-  /** Teacher-role text for each of the four stages, in order. */
-  stages?: readonly string[];
+  /** Teacher- and learner-role text for each of the four stages, in order. */
+  stages?: readonly MinistryStage[];
 }
 
 /**
- * Fold a generated lesson plan's phases into the form's four stages:
- * intro → تهيئة; main + guided → شرح; independent + differentiation → توسع;
- * closure + assessment → تأكيد.
+ * A generated lesson plan as the form's four stages. Uses the model's own
+ * teacher/learner split (`ministryRoles`) when it came back whole; otherwise
+ * folds the phases into the teacher column and leaves the learner column
+ * empty: intro → تهيئة; main + guided → شرح; independent + differentiation →
+ * توسع; closure + assessment → تأكيد.
  */
 export function stagesFromLessonPlan(plan: {
+  ministryRoles?: ReadonlyArray<{ teacher?: unknown; learner?: unknown }>;
   introduction: string;
   mainActivity: string;
   guidedPractice: string;
@@ -52,14 +59,20 @@ export function stagesFromLessonPlan(plan: {
   differentiation: string;
   closure: string;
   assessment: string;
-}): string[] {
+}): MinistryStage[] {
+  const roles = plan.ministryRoles;
+  if (Array.isArray(roles) && roles.length === MINISTRY_STAGES.length) {
+    const text = (x: unknown) => (typeof x === 'string' ? x.trim() : '');
+    const stages = roles.map(r => ({ teacher: text(r?.teacher), learner: text(r?.learner) }));
+    if (stages.every(s => s.teacher || s.learner)) return stages;
+  }
   const join = (...xs: string[]) => xs.map(x => (x ?? '').trim()).filter(Boolean).join('\n');
   return [
     join(plan.introduction),
     join(plan.mainActivity, plan.guidedPractice),
     join(plan.independentPractice, plan.differentiation),
     join(plan.closure, plan.assessment),
-  ];
+  ].map(teacher => ({ teacher, learner: '' }));
 }
 
 /** The form's four stages, with the minutes it prints beside each (a 45-minute period). */
@@ -100,7 +113,7 @@ function pageHTML(p: MinistryLessonPage, last: boolean): string {
   const rows = MINISTRY_STAGES.map(
     (s, i) => `<tr style="min-height:${s.height}px;height:${s.height}px">
       <td class="stage"><span>${esc(s.label)}</span></td>
-      <td class="role">${esc(p.stages?.[i] ?? '')}</td><td class="role"></td>
+      <td class="role">${esc(p.stages?.[i]?.teacher ?? '')}</td><td class="role">${esc(p.stages?.[i]?.learner ?? '')}</td>
       <td class="time">${s.minutes}د</td>
     </tr>`,
   ).join('');

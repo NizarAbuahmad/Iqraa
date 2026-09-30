@@ -510,6 +510,7 @@ export default function TeachingPlansScreen() {
               lessonId: lesson.id,
               additionalContext: g.lesson?.id === lesson.id ? g.context : undefined,
               contextSource: 'curriculum',
+              ministryRoles: true,
             });
             page.stages = stagesFromLessonPlan(out);
           } catch {

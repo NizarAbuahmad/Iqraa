@@ -88,6 +88,12 @@ export interface AIRequest {
    * instructions).
    */
   priorTopicsNotes?: string;
+  /**
+   * Lesson-plan only: also return `ministryRoles` — the teacher's and the
+   * learner's role for each of the Ministry form's four stages. Set by the
+   * Ministry-template export; part of the strict cache key.
+   */
+  ministryRoles?: boolean;
   // Worksheet extras
   difficulty?: 'easy' | 'medium' | 'hard' | 'mixed';
   numQuestions?: number;
@@ -151,6 +157,8 @@ export interface LessonPlanOutput {
   assessment: string;
   differentiation: string;
   homework: string;
+  /** Only when the request set `ministryRoles`: four stages, in form order. */
+  ministryRoles?: Array<{ teacher: string; learner: string }>;
   sources?: GroundedSource[];
   variantId?: string;
   /** Present when a spending cap turned this into a saved copy — see

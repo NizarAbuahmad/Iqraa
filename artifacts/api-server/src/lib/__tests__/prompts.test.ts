@@ -87,3 +87,14 @@ describe("lessonPlanPromptEn — prior-knowledge review", () => {
     assert.ok(prompt.includes('"priorReview"'));
   });
 });
+
+describe("lesson plan prompts — ministryRoles", () => {
+  it("asks for four teacher/learner stages only when requested", () => {
+    for (const build of [lessonPlanPromptAr, lessonPlanPromptEn]) {
+      assert.ok(!build(BASE).includes("ministryRoles"));
+      const p = build({ ...BASE, ministryRoles: true });
+      assert.ok(p.includes('"ministryRoles"'));
+      assert.equal((p.match(/"learner"/g) ?? []).length, 4);
+    }
+  });
+});
