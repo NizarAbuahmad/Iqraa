@@ -1,6 +1,6 @@
 /**
- * A student sitting an exam. The only screen in this app with no account
- * behind it — the link is the identity.
+ * A student sitting an exam. Usually the only screen in this app with no
+ * account behind it — the link is the identity.
  *
  * Five states in one route rather than five routes: a student on a phone in a
  * classroom must never be one stray back-gesture away from losing their place,
@@ -13,8 +13,13 @@
  *   "check" button. The key is not even in the payload (see `studentView.ts`
  *   on the server), and behaving as if it were would teach students to look
  *   for it.
- * - **Never sign anyone in.** The token stays in this component. It is not put
- *   in the shared token store, where it could be mistaken for a teacher.
+ * - **Never sign anyone in.** The exam-sitting token stays in this component.
+ *   It is not put in the shared token store, where it could be mistaken for a
+ *   teacher. The one exception is reading, never writing: if the device is
+ *   already signed in as a student (`useAuth`), this screen asks the server
+ *   once whether that account's own roster row is in this exam's class
+ *   (`claimEvaluationAsSelf`) and skips straight past the name picker if so —
+ *   a shortcut for an identity that already existed, not a new one.
  * - **Never lose an answer to a tap.** Every change saves, and a failed save
  *   says so rather than going quiet — a student cannot tell a slow network
  *   from a lost answer, so the screen has to.
@@ -34,11 +39,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { isStudentRole, useAuth } from '@/context/AuthContext';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookFigureRefsForLessons } from '@/services/bookFigureUri';
 import {
   StudentExamError,
+  claimEvaluationAsSelf,
   claimName,
+  getExamResult,
   getExamState,
   isAnswered,
   openExam,
@@ -48,6 +56,7 @@ import {
   type RosterName,
   type StudentQuestion,
   type StudentResponse,
+  type StudentResult,
 } from '@/services/studentExam';
 import { DictationInput, FillBlankInput, MatchingInput, ReadAloudInput } from '@/components/QuestionInputs';
 import { isolateForeignRuns } from '@/services/mathRender';
@@ -59,6 +68,20 @@ const ACCENT = palette.primary;
 const ACCENT_FILL = palette.hero;
 
 type Phase = 'loading' | 'pick' | 'confirm' | 'answering' | 'review' | 'done' | 'error';
+
+const LEVEL_LABEL_KEY: Record<string, TranslationKey> = {
+  beginner: 'levelBeginner',
+  developing: 'levelDeveloping',
+  proficient: 'levelProficient',
+  advanced: 'levelAdvanced',
+};
+const COMPETENCY_ORDER = ['knowledge', 'understanding', 'application', 'critical_thinking'] as const;
+const COMPETENCY_LABEL_KEY: Record<(typeof COMPETENCY_ORDER)[number], TranslationKey> = {
+  knowledge: 'competencyKnowledge',
+  understanding: 'competencyUnderstanding',
+  application: 'competencyApplication',
+  critical_thinking: 'competencyCriticalThinking',
+};
 
 export default function TakeExamScreen() {
   const colors = useColors();
@@ -100,6 +123,26 @@ export default function TakeExamScreen() {
   }, [code]);
 
   useEffect(() => { openLink(); }, [openLink]);
+
+  // A signed-in student gets one silent shot at skipping the picker. Gated on
+  // `phase === 'pick'` (never 'confirm' or later) and a ref so it fires at
+  // most once per mount — this is an identity shortcut, not a retry loop, and
+  // firing it again after "ليس أنا" would defeat the point of that button.
+  const { user, isLoading: authLoading } = useAuth();
+  const autoClaimTried = useRef(false);
+  useEffect(() => {
+    if (phase !== 'pick' || authLoading || autoClaimTried.current) return;
+    if (!code || !isStudentRole(user?.role)) return;
+    autoClaimTried.current = true;
+    claimEvaluationAsSelf(code).then(claimed => {
+      if (!claimed) return;
+      setToken(claimed.token);
+      setQuestions(claimed.questions);
+      setLessonIds(claimed.lessonIds ?? []);
+      setChosen({ id: claimed.student.id, displayName: claimed.student.displayName, taken: true });
+      setPhase('answering');
+    });
+  }, [phase, authLoading, user?.role, code]);
 
   const title = (lang === 'ar' ? exam?.titleAr : exam?.title) || exam?.titleAr || '';
 
@@ -183,6 +226,26 @@ export default function TakeExamScreen() {
     [questions, answers],
   );
 
+  const [checkingResult, setCheckingResult] = useState(false);
+  const [resultChecked, setResultChecked] = useState(false);
+  const [studentResult, setStudentResult] = useState<StudentResult | null>(null);
+
+  const checkResult = useCallback(async () => {
+    if (!token || checkingResult) return;
+    setCheckingResult(true);
+    try {
+      const data = await getExamResult(token);
+      setResultChecked(true);
+      setStudentResult(data.ready ? data.result ?? null : null);
+    } catch {
+      // A network hiccup here is not worth a dedicated error state — the
+      // button stays and the student just taps it again.
+      setResultChecked(false);
+    } finally {
+      setCheckingResult(false);
+    }
+  }, [token, checkingResult]);
+
   const hand = useCallback(async () => {
     if (busy) return;
     setBusy(true);
@@ -239,11 +302,67 @@ export default function TakeExamScreen() {
         <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 20 }}>
           {t('takeHandedIn')}
         </Text>
-        {/* No score. Releasing a result is the teacher's decision, and showing
-            correctness here would leak the key to everyone still sitting. */}
+        {/* Never a score by default. Releasing one is the teacher's decision
+            (`releaseResultsToStudent`) and requires the paper to be fully
+            marked — this only ever checks, on request, whether both are true
+            yet; see `studentResultReady` on the server. */}
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
           {t('takeTeacherWillReview')}
         </Text>
+
+        {studentResult ? (
+          <View style={{ marginTop: 12, gap: 10, alignItems: 'center', width: '100%', maxWidth: 340 }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16 }}>
+              {t('takeResultTitle')}
+            </Text>
+            {studentResult.levelKey && (
+              <Text style={{ color: ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 22 }}>
+                {t(LEVEL_LABEL_KEY[studentResult.levelKey])}
+              </Text>
+            )}
+            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>
+              {t('marksLabel')}: {studentResult.earnedMarks} / {studentResult.totalMarks}
+              {' '}({studentResult.percent}%)
+            </Text>
+            <View style={{ width: '100%', borderTopWidth: 1, borderColor: colors.border, marginTop: 4, paddingTop: 10, gap: 6 }}>
+              {COMPETENCY_ORDER.map(key => {
+                const c = studentResult.competencyScores[key];
+                return (
+                  <View key={key} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
+                      {t(COMPETENCY_LABEL_KEY[key])}
+                    </Text>
+                    <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                      {c?.sufficient ? `${c.percent}%` : t('insufficientEvidence')}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        ) : (
+          <View style={{ marginTop: 8, alignItems: 'center', gap: 8 }}>
+            {resultChecked && (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: 'center' }}>
+                {t('takeResultNotReady')}
+              </Text>
+            )}
+            <Pressable
+              onPress={checkResult}
+              disabled={checkingResult}
+              style={[styles.retryBtn, { borderColor: ACCENT, opacity: checkingResult ? 0.7 : 1 }]}
+            >
+              {checkingResult ? (
+                <ActivityIndicator color={ACCENT} size="small" />
+              ) : (
+                <Ionicons name="refresh" size={16} color={ACCENT} />
+              )}
+              <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+                {checkingResult ? t('takeCheckingResult') : t('takeCheckResult')}
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     );
   }

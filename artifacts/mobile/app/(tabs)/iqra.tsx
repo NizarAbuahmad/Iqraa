@@ -1877,6 +1877,9 @@ export default function IqraScreen() {
 
       thinkingRef.current = true;
       setIsThinking(true);
+      // Let the user bubble and thinking indicator paint before the KB scans
+      // below run synchronously on the JS thread; otherwise the tap looks dead.
+      await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
 
       // Demo-mode replies are near-instant, which makes the thinking bubble
       // flash imperceptibly. A short dwell keeps the "اقرأ يكتب…" moment

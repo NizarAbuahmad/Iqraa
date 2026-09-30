@@ -189,3 +189,45 @@ export function sanitizeQuestionForStudent(
     body,
   };
 }
+
+/** A result a student may see: level, marks, competency breakdown — never
+ *  the objective-level detail, which is a diagnostic for the teacher. */
+export interface StudentResult {
+  levelKey: string | null;
+  percent: number;
+  earnedMarks: number;
+  totalMarks: number;
+  competencyScores: Record<string, unknown>;
+}
+
+/**
+ * Both gates must be open before a student may see a mark: the teacher opted
+ * the whole exam into student-visible results at publish time
+ * (`releaseResultsToStudent`), and this specific paper has no question left
+ * ungraded (`!isProvisional`). Neither alone is enough — a released exam with
+ * an open-ended question still unmarked would show a score nobody has
+ * confirmed, and a fully marked paper the teacher never opted in should stay
+ * as quiet as "submitted" always has.
+ */
+export function studentResultReady(opts: {
+  released: boolean;
+  result: { isProvisional: boolean } | undefined;
+}): boolean {
+  return opts.released && opts.result !== undefined && !opts.result.isProvisional;
+}
+
+export function sanitizeResultForStudent(result: {
+  levelKey: string | null;
+  percent: unknown;
+  earnedMarks: unknown;
+  totalMarks: unknown;
+  competencyScores: unknown;
+}): StudentResult {
+  return {
+    levelKey: result.levelKey,
+    percent: Number(result.percent),
+    earnedMarks: Number(result.earnedMarks),
+    totalMarks: Number(result.totalMarks),
+    competencyScores: (result.competencyScores as Record<string, unknown>) ?? {},
+  };
+}

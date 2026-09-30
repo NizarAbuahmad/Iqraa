@@ -380,6 +380,16 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     );
   });
 
+  it("guards the signed-in auto-claim, unlike every other /take route", async () => {
+    // The one authenticated route on an otherwise-public router. A regression
+    // here is either direction: leaking `router.use(authMiddleware, …)` onto
+    // the whole file would fail the test above; forgetting the guard on this
+    // one route specifically would let an anonymous request claim an
+    // attempt without the self-link check ever running.
+    const res = await fetch(`${base}/take/ZZZZZZ/claim-self`, { method: "POST" });
+    assert.equal(res.status, 401, "claim-self must require a token");
+  });
+
   it("keeps the class join-code lookup public, and closed while student accounts are off", async () => {
     // The trap this guards: roster.ts mounts
     // `router.use(["/classes","/students"], authMiddleware, …)`, and Express
