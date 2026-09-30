@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import {
   hasRenderableMath,
   isolateForeignRuns,
+  normalizeExponents,
   mathLineToHtml,
   mathLineToUnicode,
   parseMathLine,
@@ -307,5 +308,64 @@ describe('isolateForeignRuns', () => {
 
   it('still isolates a number once an operator joins it', () => {
     assert.equal(isolateForeignRuns('احسب 2 + 3'), 'احسب ⁦2 + 3⁩');
+  });
+});
+
+// The bank stores maths canonically (`5^{10}`, `3^6 = 729`) and its promptAr
+// carries the display form (`5⁷ ÷ 5³`). A printed worksheet mixed the two:
+// stems in real superscripts, options and the whole answer key in raw caret
+// notation, with LaTeX braces leaking into a distractor.
+describe('normalizeExponents', () => {
+  it('turns a braced exponent into real superscripts — no braces printed', () => {
+    assert.equal(normalizeExponents('2^{12}'), '2¹²');
+    assert.equal(normalizeExponents('5^{10}'), '5¹⁰');
+  });
+
+  it('turns a bare exponent into superscripts', () => {
+    assert.equal(normalizeExponents('5^4 = 625'), '5⁴ = 625');
+    assert.equal(normalizeExponents('a^2'), 'a²');
+    assert.equal(normalizeExponents('3^6 = 729'), '3⁶ = 729');
+  });
+
+  it('handles negative, signed and symbolic exponents', () => {
+    assert.equal(normalizeExponents('a^{-2}'), 'a⁻²');
+    assert.equal(normalizeExponents('10^-3'), '10⁻³');
+    assert.equal(normalizeExponents('2^n'), '2ⁿ');
+    assert.equal(normalizeExponents('a^{n+1}'), 'aⁿ⁺¹');
+  });
+
+  it('keeps a fractional exponent as ^(p/q) — no Unicode superscript has a slash', () => {
+    // Same convention the stems already use («27^(2/3)»), so stem and option
+    // agree on the one shape that cannot be a superscript.
+    assert.equal(normalizeExponents('8^{2/3}'), '8^(2/3)');
+    assert.equal(normalizeExponents('16^{-3/4}'), '16^(-3/4)');
+    assert.equal(normalizeExponents('27^(2/3)'), '27^(2/3)');
+  });
+
+  it('does not touch fractions — «1/2» must not become «(1)/(2)»', () => {
+    // This is why it is not mathLineToUnicode, which does rewrite fractions.
+    assert.equal(normalizeExponents('1/2'), '1/2');
+    assert.equal(normalizeExponents('√3/2'), '√3/2');
+    assert.equal(normalizeExponents('cos 60° = 1/2'), 'cos 60° = 1/2');
+  });
+
+  it('is idempotent, and a no-op on text with no caret', () => {
+    for (const s of ['2^{12}', '8^{2/3}', 'a^{-2}', '2³ · 2⁴', 'اشرح الفكرة', '']) {
+      const once = normalizeExponents(s);
+      assert.equal(normalizeExponents(once), once, s);
+    }
+    assert.equal(normalizeExponents('2³ · 2⁴'), '2³ · 2⁴');
+    assert.equal(normalizeExponents('اشرح الفكرة'), 'اشرح الفكرة');
+  });
+
+  it('is null-safe, like the escape helper that calls it', () => {
+    assert.equal(normalizeExponents(undefined as never), '');
+    assert.equal(normalizeExponents(null as never), '');
+  });
+
+  it('agrees with the display-form stems the bank already ships', () => {
+    // promptAr for se-e1 is «2³ · 2⁴»; its canonical eq is «2^3 · 2^4».
+    assert.equal(normalizeExponents('2^3 · 2^4'), '2³ · 2⁴');
+    assert.equal(normalizeExponents('(2^3 · 2^{-1}) / 2'), '(2³ · 2⁻¹) / 2');
   });
 });

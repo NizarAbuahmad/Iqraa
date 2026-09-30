@@ -351,3 +351,33 @@ function nodeToUnicode(node: MathNode): string {
   }
   return `√(${node.body.map(nodeToUnicode).join('')})`;
 }
+
+/**
+ * Print exponents the way the question stems already do.
+ *
+ * The bank keeps maths in a canonical, computer-friendly form — `2^7 = 128`,
+ * `5^{10}`, `a^{-2}`, `8^{2/3}` — and its `promptAr` carries the display form,
+ * `2³ · 2⁴`. The convention is to convert at display time, and the app does
+ * (`parseMathLine`). The HTML export did not, so one printed worksheet mixed
+ * both: stems in real superscripts, options and the whole answer key in raw
+ * `5^{10}` and `3^6 = 729`, with LaTeX braces leaking into a distractor.
+ *
+ * Deliberately NOT `mathLineToUnicode`, which also rewrites fractions and would
+ * turn a key entry «1/2» into «(1)/(2)». This touches exponents and nothing
+ * else. A numeric, `n`, `+` or `-` exponent becomes real superscripts; one that
+ * cannot (`2/3`) keeps a plain `^(2/3)` — the same convention the stems use,
+ * since no Unicode superscript exists for a slash.
+ *
+ * Idempotent, and a no-op on text with no caret.
+ */
+export function normalizeExponents(line: string): string {
+  const toSup = (e: string): string | null => {
+    const sup = [...e].map(c => SUP_MAP[c]);
+    return sup.every(Boolean) ? sup.join('') : null;
+  };
+  return (line ?? '')
+    // ^{...} — braces are LaTeX, never something to print.
+    .replace(/\^\{([^{}]+)\}/g, (_m, e: string) => toSup(e) ?? `^(${e})`)
+    // ^12, ^-2, ^n — bare exponents. `^(` is left for the fractional case.
+    .replace(/\^([+-]?[0-9]+|n)/g, (m, e: string) => toSup(e) ?? m);
+}
