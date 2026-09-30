@@ -21,7 +21,7 @@ export function NotificationBell({ size = 22 }: { size?: number }) {
       accessibilityRole="button"
       accessibilityLabel={unread > 0 ? `${t('tabAlerts')}: ${t('unread', unread)}` : t('tabAlerts')}
     >
-      <Ionicons name={unread > 0 ? 'notifications' : 'notifications-outline'} size={size} color={colors.foreground} />
+      <Ionicons name={unread > 0 ? 'notifications' : 'notifications-outline'} size={size} color={unread > 0 ? colors.primary : colors.foreground} />
       {label ? (
         <View style={[styles.badge, { backgroundColor: colors.destructive }]}>
           <Text style={styles.badgeText}>{label}</Text>

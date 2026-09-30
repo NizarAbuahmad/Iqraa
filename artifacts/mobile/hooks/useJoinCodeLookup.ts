@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { RosterError, lookupJoinCode, type JoinRosterEntry } from '@/services/roster';
-import { canSubmitClaim, type JoinCodeState } from '@/services/claimCodeGate';
+import { canSubmitClaim, needsNameConfirm, type JoinCodeState } from '@/services/claimCodeGate';
 
 /**
  * The code-lookup-and-name-picker logic shared by every screen that claims a
@@ -23,6 +23,11 @@ export function useJoinCodeLookup() {
   const [className, setClassName] = useState('');
   const [studentId, setStudentId] = useState('');
   const [state, setState] = useState<JoinCodeState>('short');
+  /** The joiner has been shown the picked name and said "yes, that's me". */
+  const [confirmed, setConfirmed] = useState(false);
+
+  // Any change of code or name voids the confirmation: it was for that name.
+  useEffect(() => setConfirmed(false), [code, studentId]);
 
   // Codes are a fixed six characters, so "long enough to be a code" is the
   // whole trigger — no debounce timer to get wrong.
@@ -76,5 +81,10 @@ export function useJoinCodeLookup() {
     setStudentId,
     state,
     canSubmit: canSubmitClaim(state, studentId),
+    confirmed,
+    setConfirmed,
+    /** True when Continue should ask "is this you?" instead of submitting. */
+    needsConfirm: needsNameConfirm(state, studentId, confirmed),
+    pickedName: roster?.find(r => r.id === studentId)?.displayName ?? '',
   };
 }
