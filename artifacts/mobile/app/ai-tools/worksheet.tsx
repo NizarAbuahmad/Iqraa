@@ -8,8 +8,8 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { generatorFigureCount, generatorLessonId, generatorUnitId, getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
-import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
+import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
+import { pooledVariantId } from '@/services/ai/regeneration';
 import { WorksheetOutput } from '@/services/ai/AIService';
 import { buildDeckFromWorksheet } from '@/services/classDeck';
 import { bookFigureUri } from '@/services/bookFigureUri';
@@ -50,6 +50,7 @@ import {
 import { optionMarkerState } from '@/services/quizEdits';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
 import { nextFrame } from '@/services/nextFrame';
+import { buildWorksheetRequest } from '@/services/generatorRequests';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -302,33 +303,18 @@ export default function WorksheetScreen() {
     await nextFrame();
     try {
       const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
-      const unitPrior = grounding.lesson ? getUnitPriorKnowledge(grounding.lesson.id) : [];
-      const usePrior = includePriorReview && unitPrior.length > 0;
-      const additionalContext = (
-        grounding.grounded ? grounding.context : grounding.ungroundedNote
-      ) || undefined;
-      const baseReq = {
-        // Localised: this string is carried into generated content verbatim —
-        // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
-        // compared anywhere, only displayed and passed through, so translating it
-        // is safe. `subject` is deliberately left in English: it feeds
-        // isMathContext and ~30 other call sites.
-        grade: gradeNames[gradeIdx]!,
-        subject: subjects[subjectIdx].name,
-        topic: topic.trim(),
-        language: (lang === 'ar' ? 'arabic' : 'english') as 'arabic' | 'english',
+      const baseReq = buildWorksheetRequest({
+        gradeName: gradeNames[gradeIdx]!,
+        subjectName: subjects[subjectIdx].name,
+        topic,
+        lang: lang as 'ar' | 'en',
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         numQuestions: NUM_Q_OPTIONS[numQIdx],
         questionTypes: Array.from(selectedTypes),
-        additionalContext,
-        unitId: generatorUnitId(topic.trim(), lang as 'ar' | 'en'),
-        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
-        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
-        contextSource: 'curriculum' as const,
-        ...regenerationFields(opts?.regenerate === true, previous),
-        includePriorReview: usePrior,
-        priorKnowledge: usePrior ? unitPrior : undefined,
-      };
+        includePriorReview,
+        regenerate: opts?.regenerate === true,
+        previous,
+      }, grounding);
       // Homework uses a distinct generator — not a worksheet clone.
       const call = (req: typeof baseReq) => isHomework
         ? aiService.generateHomework(req, { signal: controller.signal })

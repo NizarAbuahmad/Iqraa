@@ -8,8 +8,8 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildAdaptationsDirective, generatorFigureCount, generatorLessonId, generatorUnitId, getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
-import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
+import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
+import { pooledVariantId } from '@/services/ai/regeneration';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
@@ -34,6 +34,7 @@ import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
 import { nextFrame } from '@/services/nextFrame';
+import { buildLessonPlanRequest, groundLessonPlanTopic } from '@/services/generatorRequests';
 
 const ACCENT = palette.primary;
 
@@ -196,44 +197,22 @@ export default function LessonPlanScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
     try {
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', {
-        teacherObjectives: objectives.trim() || undefined,
-      });
-      const additionalContext = [
-        grounding.grounded ? grounding.context : grounding.ungroundedNote,
-        buildAdaptationsDirective(adaptations, lang as 'ar' | 'en'),
-      ].filter(Boolean).join('\n') || undefined;
-      const unitPrior = grounding.lesson ? getUnitPriorKnowledge(grounding.lesson.id) : [];
-      const usePrior = includePriorReview && unitPrior.length > 0;
-      const out = await aiService.generateLessonPlan({
-        // Localised: this string is carried into generated content verbatim —
-        // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
-        // compared anywhere, only displayed and passed through, so translating it
-        // is safe. `subject` is deliberately left in English: it feeds
-        // isMathContext and ~30 other call sites.
-        grade: gradeNames[gradeIdx]!,
-        subject: subjects[subjectIdx].name,
-        topic: topic.trim(),
-        duration: DURATION_VALUES[durationIdx],
-        language: lang === 'ar' ? 'arabic' : 'english',
+      const form = {
+        gradeName: gradeNames[gradeIdx]!,
+        subjectName: subjects[subjectIdx].name,
+        topic,
+        lang: lang as 'ar' | 'en',
+        durationMinutes: DURATION_VALUES[durationIdx],
         teachingStyle: STYLE_IDS[styleIdx],
-        objectives: objectives.trim() || undefined,
-        additionalContext,
-        unitId: generatorUnitId(topic.trim(), lang as 'ar' | 'en'),
-        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
-        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
-        // Objectives, adaptations and prior-topic notes are all free text the
-        // teacher typed, and all three are carried into the plan verbatim. A
-        // plan built from any of them is that teacher's and is never pooled;
-        // a plan built from the lesson alone is everybody's.
-        contextSource: (objectives.trim() || adaptations.trim() || priorTopicsNotes.trim())
-          ? 'teacher' as const
-          : 'curriculum' as const,
-        ...regenerationFields(opts?.regenerate === true, previous),
-        includePriorReview: usePrior || undefined,
-        priorKnowledge: usePrior ? unitPrior : undefined,
-        priorTopicsNotes: priorTopicsNotes.trim() || undefined,
-      }, { signal: controller.signal });
+        objectives, adaptations, priorTopicsNotes, includePriorReview,
+        regenerate: opts?.regenerate === true,
+        previous,
+      };
+      const grounding = groundLessonPlanTopic(form);
+      const out = await aiService.generateLessonPlan(
+        buildLessonPlanRequest(form, grounding),
+        { signal: controller.signal },
+      );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setCurriculumGrounded(grounding.grounded);
       setGroundedLesson(
