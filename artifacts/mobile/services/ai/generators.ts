@@ -642,30 +642,39 @@ function sectionTitleEn(type: QType, pts: number): string {
 // `takeConcreteMath`, which filters the bank by `item.diff`, so an "easy" quiz
 // and a "difficult" quiz drew from the identical medium slice.
 
+// Every quiz factory below passes `allowRepeat: false`, for the reason the
+// worksheet generator does: a quiz is one paper read top to bottom, so an item
+// served twice is the same question printed twice, not a fresh draw. Once a
+// lesson's concrete-bank family is spent, `takeFromBank` returns null and the
+// factory falls through to its own topic-templated question instead. Left at
+// the default `true`, 84% of chemistry quizzes and 10% of maths quizzes carried
+// a repeated stem (measured across every maths/chemistry lesson, 3 runs each) —
+// 100% for the small families (trig_apps, functions, vectors), worst case three
+// distinct questions out of six. The same measurement gave worksheets 0 in 1,530.
 function makeQuizMCQ_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
-  const q = makeMCQ_ar(topic, kb, diff, subject);
+  const q = makeMCQ_ar(topic, kb, diff, subject, false);
   return { id, type: 'multiple_choice', text: q.text, options: q.options, correctAnswer: q.answer, points: pts, explanation: `${q.answer} — راجع ${kb?.titleAr ?? topic} في الكتاب المدرسي.` };
 }
 function makeQuizMCQ_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
-  const q = makeMCQ_en(topic, kb, diff, subject);
+  const q = makeMCQ_en(topic, kb, diff, subject, false);
   return { id, type: 'multiple_choice', text: q.text, options: q.options, correctAnswer: q.answer, points: pts, explanation: `${q.answer} — See ${kb?.titleEn ?? topic} in the textbook.` };
 }
 
 function makeQuizTF_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
-  const q = makeTFQ_ar(topic, kb, diff, subject);
+  const q = makeTFQ_ar(topic, kb, diff, subject, false);
   return { id, type: 'true_false', text: q.text, options: ['صح', 'خطأ'], correctAnswer: q.answer, points: pts, explanation: `الإجابة "${q.answer}" — ${q.text}` };
 }
 function makeQuizTF_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
-  const q = makeTFQ_en(topic, kb, diff, subject);
+  const q = makeTFQ_en(topic, kb, diff, subject, false);
   return { id, type: 'true_false', text: q.text, options: ['True', 'False'], correctAnswer: q.answer, points: pts, explanation: `The answer is "${q.answer}" — ${q.text}` };
 }
 
 function makeQuizSA_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
-  const q = makeSAQ_ar(topic, kb, diff, subject);
+  const q = makeSAQ_ar(topic, kb, diff, subject, false);
   return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `إجابة كاملة: ${q.answer}` };
 }
 function makeQuizSA_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
-  const q = makeSAQ_en(topic, kb, diff, subject);
+  const q = makeSAQ_en(topic, kb, diff, subject, false);
   return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `Full answer: ${q.answer}` };
 }
 
