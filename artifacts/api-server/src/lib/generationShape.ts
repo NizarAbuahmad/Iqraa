@@ -191,10 +191,35 @@ export function extractJSON(raw: string): unknown {
     .replace(/\s*```$/i, "")
     .trim();
   try {
-    return JSON.parse(cleaned);
+    return parseRepairing(cleaned);
   } catch {
     const match = cleaned.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
+    if (match) return parseRepairing(match[0]);
     throw new Error("Could not parse JSON from AI response");
+  }
+}
+
+/**
+ * A maths lesson makes the model write LaTeX, and a lone backslash in a JSON
+ * string («\(x^2\)», «\sqrt») is an illegal escape: `JSON.parse` throws and
+ * the teacher got a 500 for a reply that was otherwise fine (seen in
+ * production 2026-09-30, one lesson plan of 32). Strict parse first, so a valid
+ * reply is never touched; only on failure are the illegal escapes doubled.
+ *
+ * ponytail: \b \f \t \n \r are legal JSON escapes, so a LaTeX «\frac» or
+ * «\theta» parses without error as a form feed / tab. That is a different
+ * failure, silent, and not repaired here.
+ */
+function parseRepairing(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    // Valid escapes are consumed as pairs, so «\\alpha» keeps its one literal backslash.
+    const repaired = text.replace(
+      /\\(["\\/bfnrt]|u[0-9a-fA-F]{4})|\\/g,
+      (m, ok) => (ok ? m : "\\\\"),
+    );
+    if (repaired === text) throw err;
+    return JSON.parse(repaired);
   }
 }
