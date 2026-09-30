@@ -48,7 +48,10 @@ import {
   todayISO,
   type PlanEntry,
 } from '@/services/planEntries';
-import { getLessonById, getLessonsForUnit, getUnitsForSubjectGrade } from '@/services/knowledgeBase';
+import { getLessonById, getLessonsForUnit, getUnitForLesson, getUnitsForSubjectGrade } from '@/services/knowledgeBase';
+import { buildMinistryPlanHTML, type MinistryLessonPage } from '@/services/ministryPlanHtml';
+import { exportAsPDF } from '@/services/share';
+import { useAuth } from '@/context/AuthContext';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { confirm } from '@/services/confirm';
 import type { TranslationKey } from '@/services/i18n';
@@ -233,6 +236,7 @@ export default function TeachingPlansScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const [error, setError] = useState('');
@@ -438,6 +442,50 @@ export default function TeachingPlansScreen() {
     }
   };
 
+  /**
+   * One Ministry lesson-plan form per scheduled lesson, in date order. The
+   * form is Arabic-only, so names come from the Arabic fields regardless of
+   * the UI language. A lesson the catalog can no longer resolve is skipped
+   * rather than printed blank.
+   */
+  const onExportMinistry = async (plan: TeachingPlan) => {
+    const cls = classes.find(c => c.id === plan.classGroupId);
+    const entries = normalizePlanEntries(plan.entries).slice().sort((a, b) => a.date.localeCompare(b.date));
+    // Curriculum order of the class's own lessons: the previous one is the
+    // lesson's «التعلم القبلي».
+    const ordered = cls
+      ? getUnitsForSubjectGrade(cls.subjectId, cls.gradeId).flatMap(u => getLessonsForUnit(u.id))
+      : [];
+    const pages: MinistryLessonPage[] = [];
+    for (const entry of entries) {
+      const lesson = getLessonById(entry.lessonId);
+      if (!lesson) continue;
+      const idx = ordered.findIndex(l => l.id === lesson.id);
+      pages.push({
+        subject: SUBJECTS.find(x => x.id === cls?.subjectId)?.nameAr ?? '',
+        grade: GRADES.find(x => x.id === cls?.gradeId)?.nameAr ?? '',
+        unit: getUnitForLesson(lesson)?.titleAr ?? '',
+        lesson: lesson.titleAr,
+        periods: lesson.periods,
+        priorLearning: idx > 0 ? ordered[idx - 1].titleAr : '',
+        outcomes: lesson.objectives,
+        section: cls ? cls.nameAr || cls.name : '',
+        date: entry.date,
+        teacher: user?.name ?? '',
+      });
+    }
+    if (pages.length === 0) {
+      setError(t('planExportEmpty'));
+      return;
+    }
+    setError('');
+    try {
+      await exportAsPDF(buildMinistryPlanHTML(pages, plan.title), plan.title);
+    } catch {
+      setError(t('teachingPlansLoadFailed'));
+    }
+  };
+
   const onDelete = async (plan: TeachingPlan) => {
     const ok = await confirm({
       title: t('deleteTeachingPlan'),
@@ -572,6 +620,14 @@ export default function TeachingPlansScreen() {
                   ) : null;
                 })()}
               </View>
+              <Pressable
+                onPress={() => { void onExportMinistry(item); }}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={t('planExportMinistry')}
+              >
+                <Ionicons name="document-text-outline" size={18} color={ACCENT} />
+              </Pressable>
               <Pressable onPress={() => { void onDelete(item); }} disabled={deletingId === item.id} hitSlop={10}>
                 {deletingId === item.id ? (
                   <ActivityIndicator size="small" color={colors.mutedForeground} />
