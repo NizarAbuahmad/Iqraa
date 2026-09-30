@@ -1,5 +1,5 @@
 /**
- * bookPageForLesson — the lesson's page in the book's public PDF.
+ * bookPagesForLesson — the lesson's pages of the student book.
  *
  * Asserts invariants over the REAL data rather than a snapshot of which books
  * passed, because `scripts/verify_book_pages.py` rewrites that list whenever
@@ -9,43 +9,49 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import pageLinks from '../../../../knowledge-base/book-page-links.json' with { type: 'json' };
-import { bookPageForLesson, figuresForLesson, lessonsWithFigures } from '../bookFigures.ts';
+import { BOOK_PAGES_BASE_URL, bookPagesForLesson, lessonsWithFigures } from '../bookFigures.ts';
 
-const books = (pageLinks as { books: Record<string, { pdfUrl: string; pages: number }> }).books;
+const { books, lessons } = pageLinks as {
+  books: Record<string, { pages: number }>;
+  lessons: Record<string, { sourceId: string; startPage: number; endPage: number; aspect: number }>;
+};
 
-describe('bookPageForLesson', () => {
-  it('only ever links a verified book, at a page that book has', () => {
-    let linked = 0;
-    for (const lessonId of lessonsWithFigures()) {
-      const link = bookPageForLesson(lessonId);
-      if (!link) continue;
-      linked++;
-      const book = Object.values(books).find(b => b.pdfUrl === link.pdfUrl);
-      assert.ok(book, `${lessonId} links an unverified PDF`);
-      assert.ok(link.page >= 1 && link.page <= book.pages, `${lessonId} page ${link.page} of ${book.pages}`);
-    }
-    assert.ok(linked > 0, 'at least one lesson has a book page');
+describe('book-page-links.json', () => {
+  it('lists at least one lesson', () => {
+    assert.ok(Object.keys(lessons).length > 0);
   });
 
-  it('opens at the earliest start among the lesson\'s book lessons', () => {
-    for (const lessonId of lessonsWithFigures()) {
-      const link = bookPageForLesson(lessonId);
-      if (!link) continue;
-      const starts = figuresForLesson(lessonId)
-        .filter(f => books[f.sourceId] && f.lessonStartPage)
-        .map(f => f.lessonStartPage!);
-      assert.equal(link.page, Math.min(...starts), lessonId);
+  it('only cuts verified books, inside their pages, at most 20 pages long', () => {
+    for (const [id, l] of Object.entries(lessons)) {
+      const book = books[l.sourceId];
+      assert.ok(book, `${id} is cut from an unverified book`);
+      assert.ok(l.startPage >= 1 && l.startPage <= l.endPage && l.endPage <= book.pages, id);
+      assert.ok(l.endPage - l.startPage < 20, `${id} is ${l.endPage - l.startPage + 1} pages`);
     }
   });
 
-  it('gives no link for a lesson from a book nobody verified', () => {
-    const unverified = lessonsWithFigures().find(id => figuresForLesson(id).every(f => !books[f.sourceId]));
-    assert.ok(unverified, 'some lesson comes from an unverified book');
-    assert.equal(bookPageForLesson(unverified), null);
+  it('only names lessons the figure map knows', () => {
+    const known = new Set(lessonsWithFigures());
+    for (const id of Object.keys(lessons)) assert.ok(known.has(id), id);
+  });
+});
+
+describe('bookPagesForLesson', () => {
+  it('lists one image per page of the lesson, numbered from 1', () => {
+    const [id, entry] = Object.entries(lessons)[0]!;
+    const pages = bookPagesForLesson(id)!;
+    assert.equal(pages.urls.length, entry.endPage - entry.startPage + 1);
+    assert.equal(pages.urls[0], `${BOOK_PAGES_BASE_URL}/${id}/1.jpg`);
+    assert.equal(pages.urls.at(-1), `${BOOK_PAGES_BASE_URL}/${id}/${pages.urls.length}.jpg`);
+    assert.equal(pages.page, entry.startPage);
+    assert.ok(pages.aspect > 0.5 && pages.aspect < 1, 'a portrait page');
   });
 
-  it('gives no link for an unknown or missing lesson', () => {
-    assert.equal(bookPageForLesson('kbl-does-not-exist'), null);
-    assert.equal(bookPageForLesson(undefined), null);
+  it('gives nothing for a lesson without pages, or no lesson', () => {
+    const without = lessonsWithFigures().find(id => !lessons[id]);
+    assert.ok(without, 'some lesson has figures but no pages');
+    assert.equal(bookPagesForLesson(without), null);
+    assert.equal(bookPagesForLesson('kbl-does-not-exist'), null);
+    assert.equal(bookPagesForLesson(undefined), null);
   });
 });

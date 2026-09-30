@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,8 +17,7 @@ import { ReadAloudPracticePanel } from '@/components/ui/ReadAloudPracticePanel';
 import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
 import { askAboutLessonHandoff } from '@/services/lessonShelf';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
-import { bookPageForLesson } from '@/services/bookFigures';
-import { openExternal } from '@/services/externalLinks';
+import { bookPagesForLesson } from '@/services/bookFigures';
 import { VocabularyPracticePanel } from '@/components/ui/VocabularyPracticePanel';
 import { hubLesson } from '@workspace/curriculum/englishHub';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
@@ -51,7 +50,7 @@ export default function LessonDetailScreen() {
   const colorFill = readableOn(subjectColor ?? colors.hero, '#FFFFFF');
   const color = readableOn(subjectColor ?? colors.primary, colors.card);
   const showTitleOnly = lesson ? isBrowserLessonTitleOnly(lesson.id) : false;
-  const bookPage = lesson ? bookPageForLesson(lesson.id) : null;
+  const hasBookPages = lesson ? bookPagesForLesson(lesson.id) !== null : false;
   /**
    * Preparation happens on this page. Opening it is one tap and it generates
    * straight away — the teacher has already told us the lesson by getting here.
@@ -169,18 +168,12 @@ export default function LessonDetailScreen() {
               {t('askIqra')}
             </Text>
           </Pressable>
-          {/* The lesson's page in the student book. Web projects it with the
-              pen on top; the phone has no PDF view, so it hands the PDF to the
-              system (which ignores the page, but still opens the right book). */}
-          {bookPage ? (
+          {/* The lesson's pages of the student book, to project with the pen. */}
+          {hasBookPages ? (
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                if (Platform.OS === 'web') {
-                  router.push({ pathname: '/ai-tools/classroom/book-page', params: { lessonId: lesson.id } } as never);
-                } else {
-                  openExternal(`${bookPage.pdfUrl}#page=${bookPage.page}`).catch(() => {});
-                }
+                router.push({ pathname: '/ai-tools/classroom/book-page', params: { lessonId: lesson.id } } as never);
               }}
               accessibilityRole="button"
               style={[styles.askIqraBtn, { backgroundColor: colors.card, borderColor: color, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}

@@ -109,8 +109,6 @@ export type BookFigure = {
   unit: number | null;
   lesson: number | null;
   lessonTitleEn: string | null;
-  /** 1-based PDF page where the figure's book lesson begins. */
-  lessonStartPage?: number | null;
 };
 
 type MapEntry = {
@@ -231,26 +229,37 @@ export function figuresForLesson(kbLessonId: string | null | undefined): BookFig
   return BY_LESSON.get(kbLessonId) ?? [];
 }
 
+/** Each lesson's pages of the student book, as JPEGs in the public R2 bucket. */
+export const BOOK_PAGES_BASE_URL = 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/book-pages';
+
+export type BookPages = {
+  /** One image per page, in book order. */
+  urls: string[];
+  /** Printed page the lesson starts on, for the caption. */
+  page: number;
+  /** Page width / height. */
+  aspect: number;
+};
+
 /**
- * Where this lesson begins in the book's public PDF.
+ * This lesson's pages of the student book, to project.
  *
- * The page comes from OUR copy of the book (the figure extractor recorded it);
- * the link goes to the published one. Only books that
- * `scripts/verify_book_pages.py` compared page by page are listed in
- * `book-page-links.json`, so a book re-issued with different pagination gets
- * no link rather than the wrong page. Null for any lesson without figures or
- * from an unverified book. The earliest start wins: the curriculum sometimes
- * merges two book lessons into one.
+ * `scripts/verify_book_pages.py` renders them and lists the lesson in
+ * `book-page-links.json` only after comparing the live book with the copy our
+ * page numbers came from — a book re-issued with different pagination gets no
+ * pages rather than the wrong ones. Null for every lesson not listed.
  */
-export function bookPageForLesson(kbLessonId: string | null | undefined): { pdfUrl: string; page: number } | null {
-  const links = (pageLinks as { books: Record<string, { pdfUrl: string }> }).books;
-  let best: { pdfUrl: string; page: number } | null = null;
-  for (const f of figuresForLesson(kbLessonId)) {
-    const link = links[f.sourceId];
-    if (!link || !f.lessonStartPage) continue;
-    if (!best || f.lessonStartPage < best.page) best = { pdfUrl: link.pdfUrl, page: f.lessonStartPage };
-  }
-  return best;
+export function bookPagesForLesson(kbLessonId: string | null | undefined): BookPages | null {
+  if (!kbLessonId) return null;
+  const entry = (pageLinks as { lessons: Record<string, { startPage: number; endPage: number; aspect: number }> })
+    .lessons[kbLessonId];
+  if (!entry) return null;
+  const count = entry.endPage - entry.startPage + 1;
+  return {
+    urls: Array.from({ length: count }, (_, n) => `${BOOK_PAGES_BASE_URL}/${kbLessonId}/${n + 1}.jpg`),
+    page: entry.startPage,
+    aspect: entry.aspect,
+  };
 }
 
 /** Every lesson that has at least one figure. Used by tooling and tests. */
