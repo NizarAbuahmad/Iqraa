@@ -4498,9 +4498,27 @@ function titleOnlyFallback(query: string, lang: 'ar' | 'en'): KBLesson | null {
  * Returns null when there is no exact / high-confidence title-aligned match.
  * Callers must treat null as ungrounded — never substitute a weak fuzzy hit.
  */
+// Static bundled data, like rankedCache: one answer per (query, lang) a session.
+// Generators resolve the same topic 4+ times per tap (conflict check, unit id,
+// lesson id, figure count) and each resolve re-ran the title fallbacks.
+const groundedCache = new Map<string, KBLesson | null>();
+
 export function resolveGroundedKbLesson(
   query: string,
   lang: 'ar' | 'en' = 'ar',
+): KBLesson | null {
+  const key = `${lang} ${query.trim()}`;
+  if (groundedCache.has(key)) return groundedCache.get(key)!;
+  const lesson = resolveGroundedKbLessonUncached(query, lang);
+  // ponytail: FIFO eviction, same ceiling as rankedCache.
+  if (groundedCache.size >= RANKED_CACHE_MAX) groundedCache.delete(groundedCache.keys().next().value!);
+  groundedCache.set(key, lesson);
+  return lesson;
+}
+
+function resolveGroundedKbLessonUncached(
+  query: string,
+  lang: 'ar' | 'en',
 ): KBLesson | null {
   const q = query.trim();
   if (!q) return null;

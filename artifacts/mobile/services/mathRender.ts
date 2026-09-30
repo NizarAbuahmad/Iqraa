@@ -228,7 +228,21 @@ export function hasRenderableMath(line: string): boolean {
 // uses the latin comma), and `*` / `_` (markdown emphasis, which would change
 // already-shipped chat rendering to no benefit here).
 const FOREIGN_CHAR = "A-Za-z0-9()=+\\-./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞";
-const FOREIGN_RUN_RE = new RegExp(`[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR} ]*[${FOREIGN_CHAR}])?`, 'g');
+
+// Reaction and implication arrows. They may sit INSIDE a run but never at its
+// edge. Left out of the run, «N₂ + H₂ → NH₃» became two isolates with the arrow
+// stranded between them in the page's RTL flow, and the three pieces laid out
+// right to left — the printed equation read «NH₃ → N₂ + H₂», the reverse
+// reaction, on every chemistry paper the HTML export produced. Keeping the
+// arrow interior-only is deliberate: «Wi-Fi → الإعدادات» has an arrow at the
+// edge of a Latin word and Arabic prose, and pulling it into the isolate would
+// change layout that was already right.
+const FOREIGN_ARROW = '→←↔⇒⇐⇔⇌⇄⟶⟵⟷';
+
+const FOREIGN_RUN_RE = new RegExp(
+  `[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR}${FOREIGN_ARROW} ]*[${FOREIGN_CHAR}])?`,
+  'g',
+);
 
 /**
  * A run only earns an isolate if it could actually be reordered against the
@@ -336,4 +350,34 @@ function nodeToUnicode(node: MathNode): string {
     return `(${node.num.map(nodeToUnicode).join('')})/(${node.den.map(nodeToUnicode).join('')})`;
   }
   return `√(${node.body.map(nodeToUnicode).join('')})`;
+}
+
+/**
+ * Print exponents the way the question stems already do.
+ *
+ * The bank keeps maths in a canonical, computer-friendly form — `2^7 = 128`,
+ * `5^{10}`, `a^{-2}`, `8^{2/3}` — and its `promptAr` carries the display form,
+ * `2³ · 2⁴`. The convention is to convert at display time, and the app does
+ * (`parseMathLine`). The HTML export did not, so one printed worksheet mixed
+ * both: stems in real superscripts, options and the whole answer key in raw
+ * `5^{10}` and `3^6 = 729`, with LaTeX braces leaking into a distractor.
+ *
+ * Deliberately NOT `mathLineToUnicode`, which also rewrites fractions and would
+ * turn a key entry «1/2» into «(1)/(2)». This touches exponents and nothing
+ * else. A numeric, `n`, `+` or `-` exponent becomes real superscripts; one that
+ * cannot (`2/3`) keeps a plain `^(2/3)` — the same convention the stems use,
+ * since no Unicode superscript exists for a slash.
+ *
+ * Idempotent, and a no-op on text with no caret.
+ */
+export function normalizeExponents(line: string): string {
+  const toSup = (e: string): string | null => {
+    const sup = [...e].map(c => SUP_MAP[c]);
+    return sup.every(Boolean) ? sup.join('') : null;
+  };
+  return (line ?? '')
+    // ^{...} — braces are LaTeX, never something to print.
+    .replace(/\^\{([^{}]+)\}/g, (_m, e: string) => toSup(e) ?? `^(${e})`)
+    // ^12, ^-2, ^n — bare exponents. `^(` is left for the fractional case.
+    .replace(/\^([+-]?[0-9]+|n)/g, (m, e: string) => toSup(e) ?? m);
 }

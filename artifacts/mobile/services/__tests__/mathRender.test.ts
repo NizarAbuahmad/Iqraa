@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import {
   hasRenderableMath,
   isolateForeignRuns,
+  normalizeExponents,
   mathLineToHtml,
   mathLineToUnicode,
   parseMathLine,
@@ -244,6 +245,56 @@ describe('isolateForeignRuns', () => {
     assert.equal(isolateForeignRuns('حيث x₁ ≤ 5'), 'حيث ⁦x₁ ≤ 5⁩');
   });
 
+  // The chemistry export bug. «N₂ + H₂ → NH₃» used to become TWO isolates with
+  // the arrow stranded between them in the RTL flow, so the three pieces laid
+  // out right to left and the page printed «NH₃ → N₂ + H₂» — the reverse
+  // reaction. Verified in a browser: the stored string was right, the display
+  // was mirrored. One isolate keeps the whole equation in reading order.
+  it('keeps a reaction equation in ONE isolate, arrow inside it', () => {
+    assert.equal(
+      isolateForeignRuns('وازن المعادلة الآتية: N₂ + H₂ → NH₃'),
+      'وازن المعادلة الآتية: ⁦N₂ + H₂ → NH₃⁩',
+    );
+  });
+
+  it('never leaves an arrow stranded between two isolates', () => {
+    const out = isolateForeignRuns('CH₄ + 2O₂ → CO₂ + 2H₂O');
+    assert.ok(!/⁩\s*[→←↔⇒⇌]\s*⁦/.test(out), `arrow stranded: ${out}`);
+    assert.equal(out, '⁦CH₄ + 2O₂ → CO₂ + 2H₂O⁩');
+  });
+
+  it('handles every arrow style a reaction can use, including two-way', () => {
+    for (const arrow of ['→', '⇌', '↔', '⇒', '⟶']) {
+      const out = isolateForeignRuns(`تفاعل: N₂ + 3H₂ ${arrow} 2NH₃`);
+      assert.equal(out, `تفاعل: ⁦N₂ + 3H₂ ${arrow} 2NH₃⁩`, `arrow ${arrow}`);
+    }
+  });
+
+  it('keeps a multi-step chain whole', () => {
+    assert.equal(isolateForeignRuns('S → SO₂ → SO₃'), '⁦S → SO₂ → SO₃⁩');
+  });
+
+  it('stripping the isolates still recovers the original for a reaction', () => {
+    const original = 'ما نوع التفاعل الآتي: CaO + CO₂ → CaCO₃؟';
+    assert.equal(isolateForeignRuns(original).replace(/[⁦⁩]/g, ''), original);
+  });
+
+  // The arrow is interior-only on purpose. At the edge of a Latin word and
+  // Arabic prose it was already laid out correctly, so absorbing it would
+  // change output that had nothing wrong with it.
+  it('does not pull an edge arrow into the isolate', () => {
+    assert.equal(isolateForeignRuns('Wi-Fi → الإعدادات'), '⁦Wi-Fi⁩ → الإعدادات');
+  });
+
+  it('leaves an arrow in pure Arabic prose alone', () => {
+    const line = 'الخطوة الأولى → الخطوة الثانية';
+    assert.equal(isolateForeignRuns(line), line);
+  });
+
+  it('leaves a bare-number arrow alone — no Latin, no operator', () => {
+    assert.equal(isolateForeignRuns('من 2 → 3'), 'من 2 → 3');
+  });
+
   // A run only earns an isolate when it could actually be reordered. These
   // three were caught by the export suite: isolating them split «أ.» into
   // «أ⁦.⁩» and cut the page out of a «ص 45» citation.
@@ -257,5 +308,64 @@ describe('isolateForeignRuns', () => {
 
   it('still isolates a number once an operator joins it', () => {
     assert.equal(isolateForeignRuns('احسب 2 + 3'), 'احسب ⁦2 + 3⁩');
+  });
+});
+
+// The bank stores maths canonically (`5^{10}`, `3^6 = 729`) and its promptAr
+// carries the display form (`5⁷ ÷ 5³`). A printed worksheet mixed the two:
+// stems in real superscripts, options and the whole answer key in raw caret
+// notation, with LaTeX braces leaking into a distractor.
+describe('normalizeExponents', () => {
+  it('turns a braced exponent into real superscripts — no braces printed', () => {
+    assert.equal(normalizeExponents('2^{12}'), '2¹²');
+    assert.equal(normalizeExponents('5^{10}'), '5¹⁰');
+  });
+
+  it('turns a bare exponent into superscripts', () => {
+    assert.equal(normalizeExponents('5^4 = 625'), '5⁴ = 625');
+    assert.equal(normalizeExponents('a^2'), 'a²');
+    assert.equal(normalizeExponents('3^6 = 729'), '3⁶ = 729');
+  });
+
+  it('handles negative, signed and symbolic exponents', () => {
+    assert.equal(normalizeExponents('a^{-2}'), 'a⁻²');
+    assert.equal(normalizeExponents('10^-3'), '10⁻³');
+    assert.equal(normalizeExponents('2^n'), '2ⁿ');
+    assert.equal(normalizeExponents('a^{n+1}'), 'aⁿ⁺¹');
+  });
+
+  it('keeps a fractional exponent as ^(p/q) — no Unicode superscript has a slash', () => {
+    // Same convention the stems already use («27^(2/3)»), so stem and option
+    // agree on the one shape that cannot be a superscript.
+    assert.equal(normalizeExponents('8^{2/3}'), '8^(2/3)');
+    assert.equal(normalizeExponents('16^{-3/4}'), '16^(-3/4)');
+    assert.equal(normalizeExponents('27^(2/3)'), '27^(2/3)');
+  });
+
+  it('does not touch fractions — «1/2» must not become «(1)/(2)»', () => {
+    // This is why it is not mathLineToUnicode, which does rewrite fractions.
+    assert.equal(normalizeExponents('1/2'), '1/2');
+    assert.equal(normalizeExponents('√3/2'), '√3/2');
+    assert.equal(normalizeExponents('cos 60° = 1/2'), 'cos 60° = 1/2');
+  });
+
+  it('is idempotent, and a no-op on text with no caret', () => {
+    for (const s of ['2^{12}', '8^{2/3}', 'a^{-2}', '2³ · 2⁴', 'اشرح الفكرة', '']) {
+      const once = normalizeExponents(s);
+      assert.equal(normalizeExponents(once), once, s);
+    }
+    assert.equal(normalizeExponents('2³ · 2⁴'), '2³ · 2⁴');
+    assert.equal(normalizeExponents('اشرح الفكرة'), 'اشرح الفكرة');
+  });
+
+  it('is null-safe, like the escape helper that calls it', () => {
+    assert.equal(normalizeExponents(undefined as never), '');
+    assert.equal(normalizeExponents(null as never), '');
+  });
+
+  it('agrees with the display-form stems the bank already ships', () => {
+    // promptAr for se-e1 is «2³ · 2⁴»; its canonical eq is «2^3 · 2^4».
+    assert.equal(normalizeExponents('2^3 · 2^4'), '2³ · 2⁴');
+    assert.equal(normalizeExponents('(2^3 · 2^{-1}) / 2'), '(2³ · 2⁻¹) / 2');
   });
 });

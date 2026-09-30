@@ -518,3 +518,63 @@ describe('printed document design', () => {
     }
   });
 });
+
+// One printed worksheet used to mix two notations: stems in real superscripts
+// («5⁷ ÷ 5³»), options and the whole key in the bank's canonical caret form
+// («5^{10}», «3^6 = 729») — with LaTeX braces leaking into a distractor. These
+// are the exact strings the concrete bank produces for the simplify_exp family.
+describe('exponent notation on the printed page', () => {
+  const powers = (): WorksheetOutput => ({
+    instructions: 'أجب عن جميع الأسئلة.',
+    sections: [{
+      title: 'تمارين',
+      questions: [
+        { text: 'بسّط: 5⁷ ÷ 5³', options: ['625', '5^{10}', '5^2', '1'], points: 2 },
+        { text: 'بسّط: 8^(2/3)', options: ['2', '4', '16', '8'], points: 2 },
+      ],
+    }],
+    answerKey: [
+      { num: 1, answer: '5^4 = 625' },
+      { num: 2, answer: '2^{-1}' },
+    ],
+  }) as unknown as WorksheetOutput;
+
+  it('prints the options in real superscripts, with no LaTeX braces', () => {
+    const html = buildWorksheetHTML(powers(), 'ورقة', meta, true);
+    assert.ok(html.includes('5¹⁰'), 'the braced distractor was not converted');
+    assert.ok(html.includes('5²'), 'the bare-exponent distractor was not converted');
+    assert.ok(!/\^\{/.test(html), 'a LaTeX brace leaked onto the page');
+  });
+
+  it('prints the answer key in the same notation as the stems', () => {
+    const html = buildWorksheetHTML(powers(), 'ورقة', meta, true);
+    assert.ok(html.includes('5⁴ = 625'), 'key still in caret form');
+    assert.ok(html.includes('2⁻¹'), 'negative exponent in the key not converted');
+    assert.ok(!/5\^4|5\^\{|2\^\{-1\}/.test(html), 'raw caret notation survived');
+  });
+
+  it('leaves a fractional exponent readable rather than guessing a shape', () => {
+    const html = buildWorksheetHTML(powers(), 'ورقة', meta, true);
+    assert.ok(html.includes('8^(2/3)'), 'the stem lost its fractional exponent');
+  });
+
+  it('does not rewrite a plain fraction in the key', () => {
+    const ws = powers();
+    (ws as unknown as { answerKey: { num: number; answer: string }[] }).answerKey =
+      [{ num: 1, answer: '1/2' }, { num: 2, answer: '√3/2' }];
+    const html = buildWorksheetHTML(ws, 'ورقة', meta, true);
+    assert.ok(html.includes('1/2') && html.includes('√3/2'));
+    assert.ok(!html.includes('(1)/(2)'), 'a fraction was rewritten');
+  });
+
+  it('applies to quizzes too — same esc() path', () => {
+    const q = {
+      title: 'اختبار', duration: 10, totalPoints: 2,
+      questions: [{ id: 'q1', type: 'multiple_choice', text: 'بسّط: 2³ · 2⁴',
+        options: ['2^{12}', '2^7', '8^4', '2^1'], correctAnswer: '2^7', points: 2 }],
+    } as unknown as QuizOutput;
+    const html = buildQuizHTML(q, 'اختبار', meta, true);
+    assert.ok(html.includes('2¹²') && html.includes('2⁷'));
+    assert.ok(!/\^\{/.test(html) && !/2\^7/.test(html));
+  });
+});
