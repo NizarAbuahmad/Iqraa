@@ -70,7 +70,7 @@ export function composeClaimCodeMessage(input: ClaimCodeMessageInput, isAr: bool
 
   return paragraphs([
     'Hello,',
-    `You can follow ${studentName}'s progress and message me inside the Iqraa app.`,
+    `You can follow ${studentName}'s progress and message me inside the Iqrra app.`,
     `${fieldLabel}:\n${code}`,
     `Expires: ${expiresOn}`,
     origin ? `Open ${origin}, choose "Create account", pick "Parent", and enter the code above.` : null,

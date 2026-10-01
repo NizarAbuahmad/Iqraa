@@ -1,7 +1,7 @@
 /**
  * Whether this install has seen the product-intro onboarding carousel.
  *
- * Global, not per-user — the carousel explains what Iqraa is before a
+ * Global, not per-user — the carousel explains what Iqrra is before a
  * teacher ever signs in, so scoping it to a signed-in user (the way
  * lessonContext.ts's "onboarded" flag is scoped) would never fire. That
  * flag is a different concept anyway: has this teacher picked a lesson,

@@ -10,7 +10,7 @@
  * to zero, which made AI_BUDGET_USD a per-wake allowance rather than a cap.
  *
  * It still is not the last line of defence, and is not meant to be. The
- * OpenAI project spend limit is (checked 2026-08-22: $50/month on the Iqraa
+ * OpenAI project spend limit is (checked 2026-08-22: $50/month on the Iqrra
  * project, $100/month on the organization, with only gpt-5.4-mini and
  * gpt-5.4-nano permitted). This guard exists so the *app* can see its own
  * spend, refuse work before the provider has to, and later enforce per-user

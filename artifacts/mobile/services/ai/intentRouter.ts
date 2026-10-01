@@ -67,7 +67,7 @@ function isSmallTalk(q: string): boolean {
 }
 
 /**
- * Subjects Iqraa does not answer at all — news, politics, sport, markets,
+ * Subjects Iqrra does not answer at all — news, politics, sport, markets,
  * entertainment, travel, health, and the rest of the open web.
  *
  * A general question used to fall through `isTeaching` (any message ending in
@@ -159,7 +159,7 @@ function isTeaching(q: string): boolean {
   );
 }
 
-/** The one list of what Iqraa does — greeting and off-topic must not drift apart. */
+/** The one list of what Iqrra does — greeting and off-topic must not drift apart. */
 function capabilityLines(isAr: boolean): string[] {
   return isAr
     ? [
@@ -196,7 +196,7 @@ function greetingReply(isAr: boolean, name?: string): string {
   return [
     salutation,
     '',
-    "I'm Iqraa, your lesson-prep companion.",
+    "I'm Iqrra, your lesson-prep companion.",
     '',
     'I can help you with:',
     ...capabilityLines(false),
@@ -218,7 +218,7 @@ function offTopicReply(isAr: boolean): string {
     ].join('\n');
   }
   return [
-    "I'm Iqraa, a teaching assistant for the Jordanian national curriculum.",
+    "I'm Iqrra, a teaching assistant for the Jordanian national curriculum.",
     "That question is outside what I do, so I don't cover news or general topics.",
     '',
     'I would be glad to help you with:',
@@ -315,7 +315,7 @@ export function classifyChatIntent(
     return { intent: 'app_help', useTeachingPipeline: false };
   }
 
-  // Off-topic subjects — answered with what Iqraa *is* for, never generated over.
+  // Off-topic subjects — answered with what Iqrra *is* for, never generated over.
   // Checked before the teaching heuristics because those treat any question mark
   // as a teaching ask.
   if (isOffTopic(q)) {

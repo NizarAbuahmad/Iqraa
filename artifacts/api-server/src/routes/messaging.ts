@@ -214,7 +214,7 @@ async function notifyThreadParticipants(threadId: string, senderId: string, body
     .from(users)
     .where(eq(users.id, senderId))
     .limit(1);
-  const senderName = sender ? `${sender.firstName} ${sender.lastName}` : "Iqraa";
+  const senderName = sender ? `${sender.firstName} ${sender.lastName}` : "Iqrra";
   const preview = body.length > PUSH_BODY_PREVIEW_LENGTH ? `${body.slice(0, PUSH_BODY_PREVIEW_LENGTH - 1)}…` : body;
 
   const results = await sendExpoPush(
@@ -1095,7 +1095,7 @@ router.post("/messaging/device-tokens/test", testPushLimiter, async (req: Authen
     const results = await sendExpoPush(
       tokenRows.map(t => ({
         to: t.expoPushToken,
-        title: "Iqraa",
+        title: "Iqrra",
         body: "Test notification — if you see this, push works.",
         data: { test: true },
       })),

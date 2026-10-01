@@ -38,7 +38,7 @@ export function BrandLogo({
   height,
   style,
   containerStyle,
-  accessibilityLabel = 'Iqraa',
+  accessibilityLabel = 'Iqrra',
 }: Props) {
   const defaults =
     variant === 'lockup'
