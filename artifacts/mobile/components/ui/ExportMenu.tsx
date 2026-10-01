@@ -32,6 +32,8 @@ interface ExportMenuProps {
   onPDF: () => void;
   onWord: () => void;
   onSlides?: () => void;
+  /** The Ministry lesson-plan form — only the lesson-plan page offers it. */
+  onMinistry?: () => void;
   isRTL: boolean;
   loadingPDF?: boolean;
   loadingWord?: boolean;
@@ -49,6 +51,8 @@ interface ExportMenuProps {
     wordSub: string;
     slidesLabel?: string;
     slidesSub?: string;
+    ministryLabel?: string;
+    ministrySub?: string;
     cancel: string;
   };
 }
@@ -61,6 +65,7 @@ export function ExportMenu({
   onPDF,
   onWord,
   onSlides,
+  onMinistry,
   isRTL,
   loadingPDF,
   loadingWord,
@@ -113,6 +118,14 @@ export function ExportMenu({
       color: '#7C3AED',
       loading: loadingSlides,
       onPress: onSlides,
+    }] : []),
+    ...(onMinistry && labels.ministryLabel ? [{
+      id: 'ministry',
+      icon: 'ribbon-outline' as keyof typeof Ionicons.glyphMap,
+      label: labels.ministryLabel,
+      sublabel: labels.ministrySub ?? '',
+      color: '#0F766E',
+      onPress: onMinistry,
     }] : []),
   ];
 
