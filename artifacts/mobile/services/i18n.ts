@@ -932,6 +932,8 @@ const translations = {
     // Slides export
     exportSlides: 'تصدير شرائح',
     exportSlidesSub: 'ملف PDF بشرائح جاهزة للعرض — وليس ملف PowerPoint',
+    exportMinistry: 'نموذج الوزارة',
+    exportMinistrySub: 'خطة الدرس على نموذج وزارة التربية والتعليم (PDF)',
     // The NotebookLM hand-off row in ExportMenu. Added here because the feature
     // shipped calling t() for keys that were never defined, which broke
     // `pnpm run typecheck` on main.
@@ -2781,6 +2783,8 @@ const translations = {
     // Slides export
     exportSlides: 'Export slides',
     exportSlidesSub: 'PDF slides (not PowerPoint)',
+    exportMinistry: 'Ministry template',
+    exportMinistrySub: 'Lesson plan on the Ministry of Education form (PDF)',
     exportNotebook: 'Open NotebookLM',
     exportNotebookSub: 'Upload the PDF there for an audio overview',
 
