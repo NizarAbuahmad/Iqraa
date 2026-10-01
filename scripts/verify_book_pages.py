@@ -12,10 +12,14 @@ The page numbers come from OUR copy of each book (the figure extractor records
 where every book lesson starts); the slices are cut from the LIVE copy in the
 catalog's `pdfUrl`. NCCD re-issues books every school year, and one edition's
 page 47 is another's page 51, so a book is only sliced after the two copies
-are compared lesson by lesson: for every lesson start page, the live page
-within +-6 that reads most like ours must be the same page for at least 80% of
-comparable lessons, and the page counts must agree. Books with no extracted
-text of our own cannot be compared and are skipped.
+are compared figure by figure: each figure crop we cut is looked for on its
+recorded page and the six either side of the live book, and at least 80% of
+them must look most like their own page.
+
+Pictures, not text: this used to compare page text, and on the social-studies
+books it failed books whose pages were in fact identical — NCCD's text layer is
+scrambled Arabic and ours is noisy OCR, so the same page read as different.
+Pictures have no such problem and need no extracted text at all.
 
 A curriculum lesson runs from its earliest book-lesson start to the page
 before the next book lesson begins, capped at MAX_PAGES — the book prints a
@@ -25,12 +29,13 @@ lesson's start only where it has a figure, so "next start" can overshoot.
     pnpm --filter @workspace/curriculum run upload-book-pages-r2 -- <out_dir>
 
 Re-run at the start of each school year or when a catalog `pdfUrl` changes.
-Resumable: a book already in the JSON with the same URL and all its pages in
-out_dir is not downloaded again. Needs PyMuPDF, curl and node >= 22.6.
+Resumable: a book already in the JSON with the same URL is kept as it is (its
+pages are in the bucket already). Needs PyMuPDF, Pillow, curl and node >= 22.6.
 """
-import datetime, difflib, glob, json, os, re, subprocess, sys, tempfile
+import datetime, glob, io, json, os, re, subprocess, sys, tempfile
 
 import fitz  # PyMuPDF
+from PIL import Image, ImageOps
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'knowledge-base', 'book-page-links.json')
@@ -69,9 +74,6 @@ def parse_source_id(source_id):
     return (grade, subject, int(m.group(3))) if subject else None
 
 
-norm = lambda s: re.sub(r'\s+', '', s)[:400]
-
-
 def lesson_ranges(figures, kb_of, pages):
     """kbLessonId -> (first, last) 1-based pages, from the book-lesson starts."""
     start_of = {}  # (unit, lesson) -> start page
@@ -92,23 +94,30 @@ def lesson_ranges(figures, kb_of, pages):
     return ranges
 
 
-def aligned(source_id, start_pages, doc):
-    ext_path = os.path.join(ROOT, 'lib', 'curriculum', 'src', 'data', 'extracted', f'{source_id}.json')
-    ours = {p['page']: p['text'] for p in json.load(open(ext_path, encoding='utf-8'))['text']}
-    theirs = [norm(doc[i].get_text()) for i in range(doc.page_count)]
-    if len(theirs) != len(ours):
-        return False, f'page count differs: ours {len(ours)}, live {len(theirs)}'
+def thumb(img):
+    """A 24x24 greyscale fingerprint: coarse enough to ignore re-encoding."""
+    return ImageOps.grayscale(img).resize((24, 24)).tobytes()
+
+
+def aligned(figure_dir, figures, doc):
+    """Does each of our figure crops sit on its recorded page of the live book?"""
     same = compared = 0
-    for p in start_pages:
-        a = norm(ours.get(p, ''))
-        if len(a) < 40:
-            continue  # an image-only page tells us nothing
+    for f in figures:
+        png = os.path.join(figure_dir, f['file'])
+        if not os.path.exists(png) or not f.get('rect'):
+            continue
+        ours = thumb(Image.open(png))
+        p, best = f['pdfPage'], None
+        for q in range(max(1, p - 6), min(doc.page_count, p + 6) + 1):
+            pix = doc[q - 1].get_pixmap(clip=fitz.Rect(*f['rect']), dpi=40)
+            live = thumb(Image.open(io.BytesIO(pix.tobytes('png'))))
+            d = sum(abs(a - b) for a, b in zip(ours, live))
+            if best is None or d < best[0]:
+                best = (d, q)
         compared += 1
-        window = range(max(1, p - 6), min(len(theirs), p + 6) + 1)
-        best = max(window, key=lambda q: difflib.SequenceMatcher(None, a, theirs[q - 1]).ratio())
-        same += best == p
+        same += best[1] == p
     ok = compared >= 3 and same / compared >= 0.8
-    return ok, f'{same}/{compared} lessons on the same page'
+    return ok, f'{same}/{compared} figures on their own page'
 
 
 def main():
@@ -133,24 +142,20 @@ def main():
             continue
         book = matches[0]
         mine = {kb: v for kb, v in lessons_out.items() if v['sourceId'] == source_id}
-        done = books_out.get(source_id, {}).get('pdfUrl') == book['pdfUrl'] and mine and all(
-            os.path.exists(os.path.join(out_dir, kb, f"{v['endPage'] - v['startPage'] + 1}.jpg")) for kb, v in mine.items())
-        if done:
+        if books_out.get(source_id, {}).get('pdfUrl') == book['pdfUrl'] and mine:
             print(f'KEEP {source_id}: already sliced ({len(mine)} lessons)')
             continue
         # Drop any stale entries for this book before deciding afresh.
         books_out.pop(source_id, None)
         for kb in mine:
             lessons_out.pop(kb, None)
-        if not os.path.exists(os.path.join(ROOT, 'lib', 'curriculum', 'src', 'data', 'extracted', f'{source_id}.json')):
-            print(f'FAIL {source_id}: no extracted text for our copy')
-            continue
-
         pdf = os.path.join(tempfile.gettempdir(), f'bookpage-{source_id}.pdf')
         try:
             # curl, not urllib: nccd.gov.jo answers Python's client with 451.
-            subprocess.run(['curl', '-sSfL', '--retry', '10', '--retry-all-errors', '--retry-delay', '30',
-                            '--max-time', '1800', '-o', pdf, book['pdfUrl']], check=True, capture_output=True)
+            # A copy already in the temp dir is reused (a run that died keeps it).
+            if not os.path.exists(pdf):
+                subprocess.run(['curl', '-sSfL', '--retry', '10', '--retry-all-errors', '--retry-delay', '30',
+                               '--max-time', '1800', '-o', pdf, book['pdfUrl']], check=True, capture_output=True)
             doc = fitz.open(pdf)
         except Exception as e:  # noqa: BLE001 — a dead link fails the book, not the run
             print(f'FAIL {source_id}: download/open failed: {e}', flush=True)
@@ -158,8 +163,7 @@ def main():
                 os.remove(pdf)
             continue
         try:
-            starts = sorted({f['lessonStartPage'] for f in data['figures'] if f.get('lessonStartPage')})
-            ok, why = aligned(source_id, starts, doc)
+            ok, why = aligned(os.path.dirname(index), data['figures'], doc)
             print(f"{'PASS' if ok else 'FAIL'} {source_id} -> {book['id']}: {why}", flush=True)
             if not ok:
                 continue
@@ -189,7 +193,7 @@ def write(books_out, lessons_out):
     json.dump({
         'note': 'Written by scripts/verify_book_pages.py. Each lesson below has its pages at '
                 'book-pages/<kbLessonId>/<n>.jpg in the public R2 bucket, cut from a book whose live '
-                'PDF was compared page-by-page with the copy our start pages came from. '
+                'PDF was compared figure-by-figure with the copy our start pages came from. '
                 'Do not add entries by hand.',
         'verifiedAt': datetime.date.today().isoformat(),
         'books': dict(sorted(books_out.items())),

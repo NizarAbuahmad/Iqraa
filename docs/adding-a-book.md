@@ -66,12 +66,15 @@ silently missing from a slide.
 `book-pages/<kbLessonId>/<n>.jpg`, shown by the lesson screen's «صفحة الكتاب»
 (`bookPagesForLesson` in `services/bookFigures.ts`). Also two steps:
 `python scripts/verify_book_pages.py <dir>` downloads each live book, checks its
-pagination against our extracted copy, renders the lesson pages into `<dir>`
-and lists them in `knowledge-base/book-page-links.json`; then
+pagination against our copy by finding our figure crops on their recorded pages,
+renders the lesson pages into `<dir>` and lists them in
+`knowledge-base/book-page-links.json`; then
 `pnpm --filter @workspace/curriculum run upload-book-pages-r2 -- <dir>`. A book
-gets pages only if it has figures (they carry the lesson start pages), extracted
-text, and a catalog `pdfUrl`, and only if the check passes — so re-run it when
-NCCD re-issues a book. The uploader got through with the local `.env` token on
+gets pages only if it has figures (they carry the lesson start pages and are
+what the check compares) and a catalog `pdfUrl`, and only if the check passes —
+so re-run it when NCCD re-issues a book. It once compared page text instead,
+and failed grade 10 geography and history whose pages were identical: NCCD's
+text layer is scrambled Arabic and our copies are OCR. The uploader got through with the local `.env` token on
 2026-09-30, so its scope covers `iqraa-public` now.
 
 Note the scope caveat above is not hypothetical: the token in the local `.env`
