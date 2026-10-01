@@ -62,6 +62,9 @@ export const aiGenerations = pgTable(
     completionTokens: integer("completion_tokens").notNull().default(0),
     /** Estimated, from aiBudget's pricing table — not billing-accurate. */
     costUsd: numeric("cost_usd", { precision: 12, scale: 6 }).notNull().default("0"),
+    /** Wall time of the model call. Null for cache hits and for callers that
+     *  don't time the call — the admin dashboard's p50/p95 skip nulls. */
+    durationMs: integer("duration_ms"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [

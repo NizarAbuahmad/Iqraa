@@ -380,6 +380,8 @@ export type GenerationDetail = {
   userId?: string | null;
   cacheStatus?: "hit" | "miss";
   artifactId?: string | null;
+  /** Wall time of the model call — feeds the admin dashboard's latency p50/p95. */
+  durationMs?: number | null;
 };
 
 /**
@@ -428,6 +430,7 @@ export function recordUsage(
     promptTokens,
     completionTokens,
     costUsd: cost,
+    durationMs: detail.durationMs ?? null,
   });
 }
 
