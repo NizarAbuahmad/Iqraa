@@ -77,14 +77,20 @@ export default function Index() {
   // Rendering nothing here is invisible; the splash is still up until auth
   // resolves (see _layout.tsx).
   if (isLoading) return null;
-  if (isTeacherRole(user?.role)) {
+  // Signed out, the boot effect in _layout.tsx is already replacing this whole
+  // stack with /onboarding or /login. Redirecting here too switches the active
+  // tab inside the outgoing screen in the same frame, and on Android Fabric
+  // that crashes the app on launch ("addViewAt: ... View already has a
+  // parent", react-native-screens#4677). One navigation, not two.
+  if (!user) return null;
+  if (isTeacherRole(user.role)) {
     return isDesktop ? <LessonWorkspace /> : <Redirect href="/iqra" />;
   }
   // Ordered teacher → student → everyone else, so an unknown or absent role
   // still lands on Messages. Same fail-closed reasoning as the `isLoading`
   // guard above: guessing "student" for a null role would send a cold-booting
   // parent to a curriculum browser.
-  return <Redirect href={isStudentRole(user?.role) ? '/(tabs)/curriculum' : '/notifications'} />;
+  return <Redirect href={isStudentRole(user.role) ? '/(tabs)/curriculum' : '/notifications'} />;
 }
 
 function LessonWorkspace() {
