@@ -54,7 +54,9 @@ import {
   type ClassParentContact,
   type RosterStudent,
 } from '@/services/roster';
-import { getPickerGrades } from '@/services/curriculumData';
+import { SUBJECTS, getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { narrowSubjectsForGrade } from '@/services/teacherCatalogFilter';
+import { useAuth } from '@/context/AuthContext';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { copyToClipboard, shareAsText } from '@/services/share';
 import { Toast } from '@/components/ui/Toast';
@@ -133,6 +135,7 @@ export default function ClassDetailScreen() {
   const [showEdit, setShowEdit] = useState(false);
   const [editName, setEditName] = useState('');
   const [editGradeId, setEditGradeId] = useState('grade-10');
+  const [editSubjectId, setEditSubjectId] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
   const {
@@ -154,6 +157,22 @@ export default function ClassDetailScreen() {
   // class already has so editing never hides its current value.
   const teacherScope = useTeacherScope();
   const pickerGrades = getPickerGrades().filter(g => teacherScope.isGradeShown(g.id) || g.id === group?.gradeId);
+
+  /**
+   * Subject choices for the edit sheet: what this teacher teaches to the
+   * chosen grade (same narrowing as class creation), plus the class's current
+   * subject so editing never hides it. A class made before subjects were
+   * stored has none — this is how it gets one, which the teaching-plan
+   * schedule needs to list any lessons.
+   */
+  const { user } = useAuth();
+  const pickerSubjects = (() => {
+    const narrowed = narrowSubjectsForGrade(
+      getPickerSubjects(editGradeId), editGradeId, user?.teachingAssignments, user?.subjectIds,
+    );
+    const current = SUBJECTS.find(x => x.id === group?.subjectId);
+    return current && !narrowed.some(x => x.id === current.id) ? [...narrowed, current] : narrowed;
+  })();
 
   /** Server errors arrive in English; this screen is Arabic-first. */
   const describe = useCallback(
@@ -271,6 +290,7 @@ export default function ClassDetailScreen() {
     if (!group) return;
     setEditName(group.name);
     setEditGradeId(group.gradeId || 'grade-10');
+    setEditSubjectId(group.subjectId || '');
     setError('');
     setShowEdit(true);
   };
@@ -281,7 +301,11 @@ export default function ClassDetailScreen() {
     setSavingEdit(true);
     setError('');
     try {
-      const updated = await updateClass(id, { name, gradeId: editGradeId });
+      const updated = await updateClass(id, {
+        name,
+        gradeId: editGradeId,
+        ...(editSubjectId ? { subjectId: editSubjectId } : {}),
+      });
       queryClient.setQueryData<ClassQueryData>(CLASS_QUERY_KEY(id), prev =>
         prev ? { ...prev, group: { ...prev.group, ...updated } } : prev,
       );
@@ -953,39 +977,45 @@ export default function ClassDetailScreen() {
                 { color: colors.foreground, borderColor: colors.border, fontFamily: 'Almarai_400Regular', textAlign: align },
               ]}
             />
-            {/* Same grade pills as class creation (classes/index.tsx) — only
-                worth showing once there is a real choice. */}
-            {pickerGrades.length > 1 ? (
-              <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
-                {pickerGrades.map(g => {
-                  const active = editGradeId === g.id;
-                  return (
-                    <Pressable
-                      key={g.id}
-                      onPress={() => setEditGradeId(g.id)}
-                      style={{
-                        paddingHorizontal: 14,
-                        paddingVertical: 7,
-                        borderRadius: 18,
-                        borderWidth: 1.5,
-                        borderColor: active ? ACCENT : colors.border,
-                        backgroundColor: active ? ACCENT + '16' : colors.card,
-                      }}
-                    >
-                      <Text
+            {/* Same grade and subject pills as class creation
+                (classes/index.tsx) — only worth showing once there is a real
+                choice. */}
+            {([
+              [pickerGrades, editGradeId, setEditGradeId],
+              [pickerSubjects, editSubjectId, setEditSubjectId],
+            ] as const).map(([options, selected, onSelect], row) =>
+              options.length > 1 ? (
+                <View key={row} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+                  {options.map(o => {
+                    const active = selected === o.id;
+                    return (
+                      <Pressable
+                        key={o.id}
+                        onPress={() => onSelect(o.id)}
                         style={{
-                          color: active ? ACCENT : colors.mutedForeground,
-                          fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                          fontSize: 13,
+                          paddingHorizontal: 14,
+                          paddingVertical: 7,
+                          borderRadius: 18,
+                          borderWidth: 1.5,
+                          borderColor: active ? ACCENT : colors.border,
+                          backgroundColor: active ? ACCENT + '16' : colors.card,
                         }}
                       >
-                        {lang === 'ar' ? g.nameAr : g.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : null}
+                        <Text
+                          style={{
+                            color: active ? ACCENT : colors.mutedForeground,
+                            fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                            fontSize: 13,
+                          }}
+                        >
+                          {lang === 'ar' ? o.nameAr : o.name}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : null,
+            )}
             {error ? (
               <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: align }}>
                 {error}
