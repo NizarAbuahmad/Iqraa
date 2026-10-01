@@ -242,6 +242,9 @@ export default function TeachingPlansScreen() {
   const queryClient = useQueryClient();
 
   const [error, setError] = useState('');
+  // Not an error: nothing failed, there is just nothing to export yet. Kept apart
+  // from `error` so it does not get the red banner and its retry button.
+  const [notice, setNotice] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -480,10 +483,12 @@ export default function TeachingPlansScreen() {
       });
     }
     if (pages.length === 0) {
-      setError(t('planExportEmpty'));
+      setError('');
+      setNotice(t('planExportEmpty'));
       return;
     }
     setError('');
+    setNotice('');
     const fillWithAI = await confirm({
       title: t('planExportAiTitle'),
       message: t('planExportAiMessage', pages.length),
@@ -604,6 +609,27 @@ export default function TeachingPlansScreen() {
           ListHeaderComponent={
             displayError ? (
               <LoadError message={displayError} onRetry={() => { setError(''); void refetch(); }} />
+            ) : notice ? (
+              <View
+                style={{
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: 14,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: ACCENT + '55',
+                  backgroundColor: ACCENT + '12',
+                }}
+              >
+                <Ionicons name="information-circle-outline" size={20} color={ACCENT} />
+                <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
+                  {notice}
+                </Text>
+                <Pressable onPress={() => setNotice('')} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('cancel')}>
+                  <Ionicons name="close" size={18} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
             ) : null
           }
           ListEmptyComponent={
