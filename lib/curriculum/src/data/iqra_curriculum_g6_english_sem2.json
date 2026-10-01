@@ -22,7 +22,7 @@
     {
       "id": "u5",
       "number": 5,
-      "title_ar": "Favourite clothes",
+      "title_ar": "الملابس المفضّلة",
       "title_en": "Favourite clothes",
       "general_idea_ar": "",
       "total_periods": null,
@@ -32,7 +32,7 @@
         {
           "id": "u5_l1",
           "order": 1,
-          "title_ar": "Lesson 1: World of Wonder! Magazine and Vocabulary",
+          "title_ar": "الدرس 1: مجلة «World of Wonder!» والمفردات",
           "title_en": "Lesson 1: World of Wonder! Magazine and Vocabulary",
           "main_idea_ar": "",
           "periods": null,
@@ -42,7 +42,7 @@
         {
           "id": "u5_l2",
           "order": 2,
-          "title_ar": "Lesson 2: Fun Talk",
+          "title_ar": "الدرس 2: «Fun Talk»",
           "title_en": "Lesson 2: Fun Talk",
           "main_idea_ar": "",
           "periods": null,
@@ -52,7 +52,7 @@
         {
           "id": "u5_l3",
           "order": 3,
-          "title_ar": "Lesson 3: Grammar",
+          "title_ar": "الدرس 3: القواعد",
           "title_en": "Lesson 3: Grammar",
           "main_idea_ar": "",
           "periods": null,
@@ -62,7 +62,7 @@
         {
           "id": "u5_l4",
           "order": 4,
-          "title_ar": "Lesson 4: Activity Book (accompanying Lesson 3)",
+          "title_ar": "الدرس 4: كتاب الأنشطة (مرافق للدرس 3)",
           "title_en": "Lesson 4: Activity Book (accompanying Lesson 3)",
           "main_idea_ar": "",
           "periods": null,
@@ -72,7 +72,7 @@
         {
           "id": "u5_l5",
           "order": 5,
-          "title_ar": "Lesson 5: Book Club",
+          "title_ar": "الدرس 5: نادي الكتاب",
           "title_en": "Lesson 5: Book Club",
           "main_idea_ar": "",
           "periods": null,
@@ -82,7 +82,7 @@
         {
           "id": "u5_l6",
           "order": 6,
-          "title_ar": "Lesson 6: Vocabulary and Grammar",
+          "title_ar": "الدرس 6: المفردات والقواعد",
           "title_en": "Lesson 6: Vocabulary and Grammar",
           "main_idea_ar": "",
           "periods": null,
@@ -92,7 +92,7 @@
         {
           "id": "u5_l7",
           "order": 7,
-          "title_ar": "Lesson 7: Activity Book (accompanying Lesson 6)",
+          "title_ar": "الدرس 7: كتاب الأنشطة (مرافق للدرس 6)",
           "title_en": "Lesson 7: Activity Book (accompanying Lesson 6)",
           "main_idea_ar": "",
           "periods": null,
@@ -102,7 +102,7 @@
         {
           "id": "u5_l8",
           "order": 8,
-          "title_ar": "Lesson 8: Culture and Project",
+          "title_ar": "الدرس 8: الثقافة والمشروع",
           "title_en": "Lesson 8: Culture and Project",
           "main_idea_ar": "",
           "periods": null,
@@ -112,7 +112,7 @@
         {
           "id": "u5_l9",
           "order": 9,
-          "title_ar": "Lesson 9: English in action",
+          "title_ar": "الدرس 9: الإنجليزية في التطبيق",
           "title_en": "Lesson 9: English in action",
           "main_idea_ar": "",
           "periods": null,
@@ -124,7 +124,7 @@
     {
       "id": "u6",
       "number": 6,
-      "title_ar": "Adventures",
+      "title_ar": "مغامرات",
       "title_en": "Adventures",
       "general_idea_ar": "",
       "total_periods": null,
@@ -134,7 +134,7 @@
         {
           "id": "u6_l1",
           "order": 1,
-          "title_ar": "Lesson 1: World of Wonder! Magazine and Vocabulary",
+          "title_ar": "الدرس 1: مجلة «World of Wonder!» والمفردات",
           "title_en": "Lesson 1: World of Wonder! Magazine and Vocabulary",
           "main_idea_ar": "",
           "periods": null,
@@ -144,7 +144,7 @@
         {
           "id": "u6_l2",
           "order": 2,
-          "title_ar": "Lesson 2: Fun Talk",
+          "title_ar": "الدرس 2: «Fun Talk»",
           "title_en": "Lesson 2: Fun Talk",
           "main_idea_ar": "",
           "periods": null,
@@ -154,7 +154,7 @@
         {
           "id": "u6_l3",
           "order": 3,
-          "title_ar": "Lesson 3: Grammar",
+          "title_ar": "الدرس 3: القواعد",
           "title_en": "Lesson 3: Grammar",
           "main_idea_ar": "",
           "periods": null,
@@ -164,7 +164,7 @@
         {
           "id": "u6_l4",
           "order": 4,
-          "title_ar": "Lesson 4: Activity Book (accompanying Lesson 3)",
+          "title_ar": "الدرس 4: كتاب الأنشطة (مرافق للدرس 3)",
           "title_en": "Lesson 4: Activity Book (accompanying Lesson 3)",
           "main_idea_ar": "",
           "periods": null,
@@ -174,7 +174,7 @@
         {
           "id": "u6_l5",
           "order": 5,
-          "title_ar": "Lesson 5: Book Club",
+          "title_ar": "الدرس 5: نادي الكتاب",
           "title_en": "Lesson 5: Book Club",
           "main_idea_ar": "",
           "periods": null,
@@ -184,7 +184,7 @@
         {
           "id": "u6_l6",
           "order": 6,
-          "title_ar": "Lesson 6: Vocabulary and Grammar",
+          "title_ar": "الدرس 6: المفردات والقواعد",
           "title_en": "Lesson 6: Vocabulary and Grammar",
           "main_idea_ar": "",
           "periods": null,
@@ -194,7 +194,7 @@
         {
           "id": "u6_l7",
           "order": 7,
-          "title_ar": "Lesson 7: Activity Book (accompanying Lesson 6)",
+          "title_ar": "الدرس 7: كتاب الأنشطة (مرافق للدرس 6)",
           "title_en": "Lesson 7: Activity Book (accompanying Lesson 6)",
           "main_idea_ar": "",
           "periods": null,
@@ -204,7 +204,7 @@
         {
           "id": "u6_l8",
           "order": 8,
-          "title_ar": "Lesson 8: Culture and Project",
+          "title_ar": "الدرس 8: الثقافة والمشروع",
           "title_en": "Lesson 8: Culture and Project",
           "main_idea_ar": "",
           "periods": null,
@@ -214,7 +214,7 @@
         {
           "id": "u6_l9",
           "order": 9,
-          "title_ar": "Lesson 9: English in action",
+          "title_ar": "الدرس 9: الإنجليزية في التطبيق",
           "title_en": "Lesson 9: English in action",
           "main_idea_ar": "",
           "periods": null,
@@ -226,7 +226,7 @@
     {
       "id": "u7",
       "number": 7,
-      "title_ar": "Entertainment",
+      "title_ar": "الترفيه",
       "title_en": "Entertainment",
       "general_idea_ar": "",
       "total_periods": null,
@@ -236,7 +236,7 @@
         {
           "id": "u7_l1",
           "order": 1,
-          "title_ar": "Lesson 1: World of Wonder! Magazine and Vocabulary",
+          "title_ar": "الدرس 1: مجلة «World of Wonder!» والمفردات",
           "title_en": "Lesson 1: World of Wonder! Magazine and Vocabulary",
           "main_idea_ar": "",
           "periods": null,
@@ -246,7 +246,7 @@
         {
           "id": "u7_l2",
           "order": 2,
-          "title_ar": "Lesson 2: Fun Talk",
+          "title_ar": "الدرس 2: «Fun Talk»",
           "title_en": "Lesson 2: Fun Talk",
           "main_idea_ar": "",
           "periods": null,
@@ -256,7 +256,7 @@
         {
           "id": "u7_l3",
           "order": 3,
-          "title_ar": "Lesson 3: Grammar",
+          "title_ar": "الدرس 3: القواعد",
           "title_en": "Lesson 3: Grammar",
           "main_idea_ar": "",
           "periods": null,
@@ -266,7 +266,7 @@
         {
           "id": "u7_l4",
           "order": 4,
-          "title_ar": "Lesson 4: Activity Book (accompanying Lesson 3)",
+          "title_ar": "الدرس 4: كتاب الأنشطة (مرافق للدرس 3)",
           "title_en": "Lesson 4: Activity Book (accompanying Lesson 3)",
           "main_idea_ar": "",
           "periods": null,
@@ -276,7 +276,7 @@
         {
           "id": "u7_l5",
           "order": 5,
-          "title_ar": "Lesson 5: Book Club",
+          "title_ar": "الدرس 5: نادي الكتاب",
           "title_en": "Lesson 5: Book Club",
           "main_idea_ar": "",
           "periods": null,
@@ -286,7 +286,7 @@
         {
           "id": "u7_l6",
           "order": 6,
-          "title_ar": "Lesson 6: Vocabulary and Grammar",
+          "title_ar": "الدرس 6: المفردات والقواعد",
           "title_en": "Lesson 6: Vocabulary and Grammar",
           "main_idea_ar": "",
           "periods": null,
@@ -296,7 +296,7 @@
         {
           "id": "u7_l7",
           "order": 7,
-          "title_ar": "Lesson 7: Activity Book (accompanying Lesson 6)",
+          "title_ar": "الدرس 7: كتاب الأنشطة (مرافق للدرس 6)",
           "title_en": "Lesson 7: Activity Book (accompanying Lesson 6)",
           "main_idea_ar": "",
           "periods": null,
@@ -306,7 +306,7 @@
         {
           "id": "u7_l8",
           "order": 8,
-          "title_ar": "Lesson 8: Culture and Project",
+          "title_ar": "الدرس 8: الثقافة والمشروع",
           "title_en": "Lesson 8: Culture and Project",
           "main_idea_ar": "",
           "periods": null,
@@ -316,7 +316,7 @@
         {
           "id": "u7_l9",
           "order": 9,
-          "title_ar": "Lesson 9: English in action",
+          "title_ar": "الدرس 9: الإنجليزية في التطبيق",
           "title_en": "Lesson 9: English in action",
           "main_idea_ar": "",
           "periods": null,
@@ -328,7 +328,7 @@
     {
       "id": "u8",
       "number": 8,
-      "title_ar": "Awesome animals",
+      "title_ar": "حيوانات رائعة",
       "title_en": "Awesome animals",
       "general_idea_ar": "",
       "total_periods": null,
@@ -338,7 +338,7 @@
         {
           "id": "u8_l1",
           "order": 1,
-          "title_ar": "Lesson 1: World of Wonder! Magazine and Vocabulary",
+          "title_ar": "الدرس 1: مجلة «World of Wonder!» والمفردات",
           "title_en": "Lesson 1: World of Wonder! Magazine and Vocabulary",
           "main_idea_ar": "",
           "periods": null,
@@ -348,7 +348,7 @@
         {
           "id": "u8_l2",
           "order": 2,
-          "title_ar": "Lesson 2: Fun Talk",
+          "title_ar": "الدرس 2: «Fun Talk»",
           "title_en": "Lesson 2: Fun Talk",
           "main_idea_ar": "",
           "periods": null,
@@ -358,7 +358,7 @@
         {
           "id": "u8_l3",
           "order": 3,
-          "title_ar": "Lesson 3: Grammar",
+          "title_ar": "الدرس 3: القواعد",
           "title_en": "Lesson 3: Grammar",
           "main_idea_ar": "",
           "periods": null,
@@ -368,7 +368,7 @@
         {
           "id": "u8_l4",
           "order": 4,
-          "title_ar": "Lesson 4: Activity Book (accompanying Lesson 3)",
+          "title_ar": "الدرس 4: كتاب الأنشطة (مرافق للدرس 3)",
           "title_en": "Lesson 4: Activity Book (accompanying Lesson 3)",
           "main_idea_ar": "",
           "periods": null,
@@ -378,7 +378,7 @@
         {
           "id": "u8_l5",
           "order": 5,
-          "title_ar": "Lesson 5: Book Club",
+          "title_ar": "الدرس 5: نادي الكتاب",
           "title_en": "Lesson 5: Book Club",
           "main_idea_ar": "",
           "periods": null,
@@ -388,7 +388,7 @@
         {
           "id": "u8_l6",
           "order": 6,
-          "title_ar": "Lesson 6: Vocabulary and Grammar",
+          "title_ar": "الدرس 6: المفردات والقواعد",
           "title_en": "Lesson 6: Vocabulary and Grammar",
           "main_idea_ar": "",
           "periods": null,
@@ -398,7 +398,7 @@
         {
           "id": "u8_l7",
           "order": 7,
-          "title_ar": "Lesson 7: Activity Book (accompanying Lesson 6)",
+          "title_ar": "الدرس 7: كتاب الأنشطة (مرافق للدرس 6)",
           "title_en": "Lesson 7: Activity Book (accompanying Lesson 6)",
           "main_idea_ar": "",
           "periods": null,
@@ -408,7 +408,7 @@
         {
           "id": "u8_l8",
           "order": 8,
-          "title_ar": "Lesson 8: Culture and Project",
+          "title_ar": "الدرس 8: الثقافة والمشروع",
           "title_en": "Lesson 8: Culture and Project",
           "main_idea_ar": "",
           "periods": null,
@@ -418,7 +418,7 @@
         {
           "id": "u8_l9",
           "order": 9,
-          "title_ar": "Lesson 9: English in action",
+          "title_ar": "الدرس 9: الإنجليزية في التطبيق",
           "title_en": "Lesson 9: English in action",
           "main_idea_ar": "",
           "periods": null,
