@@ -12,6 +12,10 @@ import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbC
 import { pooledVariantId } from '@/services/ai/regeneration';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { getLessonById, getLessonsForUnit, getUnitForLesson } from '@/services/knowledgeBase';
+import { buildMinistryPlanHTML, stagesFromLessonPlan } from '@/services/ministryPlanHtml';
+import { todayISO } from '@/services/planEntries';
+import { useAuth } from '@/context/AuthContext';
 import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { TopicSelector } from '@/components/ui/TopicSelector';
@@ -29,7 +33,7 @@ import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
-import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, formatLessonPlanText } from '@/services/share';
+import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, exportAsPDF, formatLessonPlanText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
@@ -45,6 +49,7 @@ export default function LessonPlanScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  const { user } = useAuth();
   const params = useLocalSearchParams<{
     topic?: string; savedId?: string;
     gradeIdx?: string; subjectIdx?: string; durationIdx?: string; styleIdx?: string; objectives?: string;
@@ -106,6 +111,9 @@ export default function LessonPlanScreen() {
   const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
   /** Title of the curriculum lesson the output was anchored to, when grounded. */
   const [groundedLesson, setGroundedLesson] = useState<string | null>(null);
+  /** KB id of that lesson — the Ministry form needs its unit and period count. */
+  const [groundedLessonId, setGroundedLessonId] = useState<string | null>(null);
+  const [loadingMinistry, setLoadingMinistry] = useState(false);
   /**
    * Fields the teacher has changed. Kept so provenance stays honest — a plan
    * that has been edited is no longer purely machine-written, and the save
@@ -192,6 +200,7 @@ export default function LessonPlanScreen() {
     setResult(null);
     setCurriculumGrounded(null);
     setGroundedLesson(null);
+    setGroundedLessonId(null);
     setEditedFields(new Set());
     setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -218,6 +227,7 @@ export default function LessonPlanScreen() {
       setGroundedLesson(
         grounding.lesson ? (lang === 'ar' ? grounding.lesson.titleAr : grounding.lesson.titleEn) : null,
       );
+      setGroundedLessonId(grounding.lesson?.id ?? null);
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (e) {
@@ -327,6 +337,43 @@ export default function LessonPlanScreen() {
     onCopied: key => showToast(t(key)),
   });
 
+  /**
+   * The plan on screen, on the Ministry's «خطة الدرس» form. The form is
+   * Arabic-only, so names come from the Arabic fields whatever the UI
+   * language. Teacher-role text is this plan's own phases folded into the four
+   * stages; the learner column is left for the teacher — the plan on screen
+   * has no learner half, and a second generation would no longer match what
+   * the teacher has read and edited.
+   */
+  const handleMinistry = async () => {
+    if (!result) return;
+    setLoadingMinistry(true);
+    try {
+      const lesson = groundedLessonId ? getLessonById(groundedLessonId) : undefined;
+      const siblings = lesson ? getLessonsForUnit(lesson.unitId) : [];
+      const at = lesson ? siblings.findIndex(l => l.id === lesson.id) : -1;
+      const page = {
+        subject: subjects[subjectIdx].nameAr,
+        grade: grades[gradeIdx].nameAr,
+        unit: lesson ? (getUnitForLesson(lesson)?.titleAr ?? '') : '',
+        lesson: lesson?.titleAr ?? topic.trim(),
+        periods: lesson?.periods ?? null,
+        priorLearning: at > 0 ? siblings[at - 1].titleAr : '',
+        outcomes: result.objectives,
+        section: '',
+        date: todayISO(),
+        teacher: user?.name ?? '',
+        stages: stagesFromLessonPlan(result),
+      };
+      const title = getExportTitle();
+      await exportAsPDF(buildMinistryPlanHTML([page], title), title);
+    } catch {
+      showToast(t('generationFailed'));
+    } finally {
+      setLoadingMinistry(false);
+    }
+  };
+
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const exportLabels = {
@@ -336,6 +383,7 @@ export default function LessonPlanScreen() {
     pdfLabel: t('exportPDF'), pdfSub: t('exportPDFSub'),
     wordLabel: t('exportWord'), wordSub: t('exportWordSub'),
     slidesLabel: t('exportSlides'), slidesSub: t('exportSlidesSub'),
+    ministryLabel: t('exportMinistry'), ministrySub: t('exportMinistrySub'),
     cancel: t('cancel'),
   };
 
@@ -565,6 +613,7 @@ export default function LessonPlanScreen() {
       onPDF={handlePDF}
       onWord={handleWord}
       onSlides={handleSlides}
+      onMinistry={handleMinistry}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}
