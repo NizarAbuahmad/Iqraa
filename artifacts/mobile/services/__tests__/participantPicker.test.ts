@@ -164,3 +164,15 @@ describe('toggleClassSelection', () => {
     assert.deepEqual([...next.keys()], ['u1']);
   });
 });
+
+describe('buildPickerContacts tolerates rows without contacts', () => {
+  it('skips a row that carries no contacts instead of throwing', () => {
+    const rows = [
+      { studentId: 's1', studentName: 'سارة', classes: [CLASS_A] } as unknown as ContactStudent,
+      { studentId: 's2', studentName: 'ليان', contacts: [parent('p1', 'هدى')], classes: [CLASS_B] },
+    ];
+    const { contacts, classes } = buildPickerContacts(rows);
+    assert.deepEqual(contacts.map(c => c.userId), ['p1']);
+    assert.deepEqual(classes.map(c => c.id), ['c-a', 'c-b']);
+  });
+});

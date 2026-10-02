@@ -50,7 +50,7 @@ import {
   devicePushTokens,
   type DevicePushPlatform,
 } from "@workspace/db";
-import { and, asc, count, desc, eq, inArray, isNull, lt, ne, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull, lt, ne, notInArray, or } from "drizzle-orm";
 import {
   authMiddleware,
   TEACHER_ROLES,
@@ -442,14 +442,14 @@ router.post("/messaging/threads", async (req: AuthenticatedRequest, res) => {
     const meIsTeacher = isTeacherRole(req.user!.role);
     const counterpartIsTeacher = isTeacherRole(counterpart.role);
     if (meIsTeacher === counterpartIsTeacher) {
-      res.status(403).json({ error: "Direct messages are only between a teacher and a parent or student" });
+      res.status(403).json({ error: "Direct messages are only between a teacher and a parent or student", code: "same_side" });
       return;
     }
 
     const teacherId = meIsTeacher ? req.user!.id : counterpart.id;
     const otherId = meIsTeacher ? counterpart.id : req.user!.id;
     if (!(await isConnected(teacherId, otherId))) {
-      res.status(403).json({ error: "You are not connected to this person" });
+      res.status(403).json({ error: "You are not connected to this person", code: "not_connected" });
       return;
     }
 
@@ -464,7 +464,7 @@ router.post("/messaging/threads", async (req: AuthenticatedRequest, res) => {
       )
       .limit(1);
     if (existingBlock) {
-      res.status(403).json({ error: "Cannot start a conversation with this person" });
+      res.status(403).json({ error: "Cannot start a conversation with this person", code: "blocked" });
       return;
     }
 
@@ -793,7 +793,12 @@ router.get("/messaging/threads/:id/messages", async (req: AuthenticatedRequest, 
       ? Math.min(requestedLimit, MAX_MESSAGE_LIMIT)
       : DEFAULT_MESSAGE_LIMIT;
 
-    const rows = await db
+    // Teachers never filter blocked senders — see the file header on why.
+    // The exclusion is in the query, before `limit`: filtering the page in
+    // JS afterwards returned a short or empty page while older messages
+    // still existed, and the client reads an empty page as the end.
+    const blocked = isTeacherRole(req.user!.role) ? new Set<string>() : await blockedSenderIds(req.user!.id);
+    const messages = await db
       .select()
       .from(chatMessages)
       .where(
@@ -801,18 +806,11 @@ router.get("/messaging/threads/:id/messages", async (req: AuthenticatedRequest, 
           eq(chatMessages.threadId, threadId),
           isNull(chatMessages.archivedAt),
           beforeDate ? lt(chatMessages.createdAt, beforeDate) : undefined,
+          blocked.size > 0 ? notInArray(chatMessages.senderId, [...blocked]) : undefined,
         ),
       )
       .orderBy(desc(chatMessages.createdAt))
       .limit(limit);
-
-    // Teachers never filter blocked senders — see the file header on why.
-    const messages = isTeacherRole(req.user!.role)
-      ? rows
-      : await (async () => {
-          const blocked = await blockedSenderIds(req.user!.id);
-          return blocked.size === 0 ? rows : rows.filter(m => !blocked.has(m.senderId));
-        })();
 
     await db
       .update(chatParticipants)
@@ -1002,6 +1000,22 @@ router.post("/messaging/blocks", async (req: AuthenticatedRequest, res) => {
     if (blockedUserId === req.user!.id) {
       res.status(400).json({ error: "Cannot block yourself" });
       return;
+    }
+    // Blocking exists so a parent or student can stop an adult reaching
+    // them — never the reverse. A student's block filters that sender out of
+    // *every* thread, the class announcement group included, so blocking the
+    // teacher silently muted the class and left the teacher with an
+    // unexplained 403. Report a teacher instead; that reaches someone.
+    if (!isTeacherRole(req.user!.role)) {
+      const [target] = await db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.id, blockedUserId))
+        .limit(1);
+      if (target && isTeacherRole(target.role)) {
+        res.status(403).json({ error: "A teacher cannot be blocked. Report the message instead.", code: "cannot_block_teacher" });
+        return;
+      }
     }
 
     await db

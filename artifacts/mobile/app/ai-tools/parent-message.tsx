@@ -8,7 +8,7 @@
  * rather than writing its own.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,13 +28,15 @@ import {
   type ClassGroup, type ParentContact, type RosterStudent,
 } from '@/services/roster';
 import {
-  MessagingError, getTeacherContacts, sendMessage, startThread,
+  MessagingError, getTeacherContacts, pickChatImage, sendMessage, startThread,
   type ContactStudent,
 } from '@/services/messaging';
+import { pickOnePdf } from '@/services/lessonMediaPick';
 import {
-  composeParentMessage, guardiansForStudent, kindEmoji, kindLabel, MESSAGE_KINDS, needsDetails, parentMessageReady,
-  parseSavedSignature, rosterGender, seedDetailsFromNote, SIGNATURE_STORAGE_KEY, suggestMeeting, summarizeContacts,
-  type Gender, type MessageKind, type Tone,
+  attachmentKind, attachmentProblem, composeParentMessage, guardiansForStudent, kindEmoji, kindLabel,
+  MAX_LETTER_LENGTH, MESSAGE_KINDS, needsDetails, outgoingLetter, parentMessageReady, parseSavedSignature,
+  rosterGender, seedDetailsFromNote, SIGNATURE_STORAGE_KEY, suggestMeeting, summarizeContacts,
+  type Gender, type ManualEdit, type MessageKind, type Tone,
 } from '@/services/parentMessage';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
@@ -142,6 +144,12 @@ export default function ParentMessageScreen() {
   const [sending, setSending] = useState(false);
   /** Past letters about the picked student, newest first. Null = none picked, or the fetch failed. */
   const [history, setHistory] = useState<ParentContact[] | null>(null);
+  /** The teacher's own wording, once they edit the preview. Null = send the composed letter. */
+  const [edit, setEdit] = useState<ManualEdit | null>(null);
+  /** One photo or PDF as a `data:` URL. Travels only with the in-app send. */
+  const [attachment, setAttachment] = useState<string | null>(null);
+  /** The letter box grows with its text — a multiline TextInput on web doesn't on its own. */
+  const [letterHeight, setLetterHeight] = useState(120);
   const pickedRef = useRef<string | null>(null);
   pickedRef.current = pickedStudentId;
   const showToast = (m: string) => { setToastMsg(m); setToastVisible(true); };
@@ -317,16 +325,44 @@ export default function ParentMessageScreen() {
     [studentName, studentGender, kind, details, teacherName, teacherGender, subject, tone, isAr],
   );
 
+  const letter = outgoingLetter(message, edit, studentName);
   // A concern letter is not ready without its details — the same rule the
-  // «required» label states, applied to Send, Share and Copy.
-  const ready = parentMessageReady(kind, details, message);
+  // «required» label states, applied to Send, Share and Copy. It holds for a
+  // hand-edited letter too: fixing one typo must not wave an empty concern
+  // through. And a stale edit is a letter about another child — nothing may
+  // send it.
+  const ready = parentMessageReady(kind, details, letter.text.trim()) && !letter.stale;
   // Names joined with the comma of the letter's language — an English letter
   // listed its recipients with «،».
   const nameSeparator = isAr ? '، ' : ', ';
+  /** Show the editable preview once there is a letter to edit, or the teacher already wrote one. */
+  const hasLetter = message.length > 0 || edit !== null;
+
+  const onEditLetter = (v: string) => {
+    // Typing back to exactly the composed text is the same as not editing:
+    // let the fields drive the letter again.
+    setEdit(v === message ? null : { text: v, studentName });
+  };
+
+  const onAttach = async (pick: () => Promise<string | null>) => {
+    try {
+      const dataUrl = await pick();
+      if (!dataUrl) return;
+      const problem = attachmentProblem(dataUrl);
+      if (problem) {
+        showToast(t(problem === 'too_large' ? 'parentMsgAttachTooLarge' : 'parentMsgAttachUnsupported'));
+        return;
+      }
+      setAttachment(dataUrl);
+      Haptics.selectionAsync();
+    } catch {
+      showToast(t('parentMsgAttachUnsupported'));
+    }
+  };
 
   const onCopy = async () => {
     if (!ready) return;
-    await copyToClipboard(message);
+    await copyToClipboard(letter.text);
     recordContact('copy');
     rememberSignature();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -338,7 +374,7 @@ export default function ParentMessageScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     // shareAsText falls back to the clipboard where the OS share sheet is
     // unavailable (desktop web), and says which happened so the toast is honest.
-    const how = await shareAsText(message, t('parentMsgTitle'));
+    const how = await shareAsText(letter.text, t('parentMsgTitle'));
     recordContact(how === 'shared' ? 'share' : 'copy');
     rememberSignature();
     showToast(how === 'shared' ? t('parentMsgSent') : t('copiedToClipboard'));
@@ -377,6 +413,7 @@ export default function ParentMessageScreen() {
         const thread = await startThread(g.userId);
         const sent = await sendMessage(thread.id, message);
         sentIds.push(sent.id);
+        await sendMessage(thread.id, letter.text, attachment ?? undefined);
         reached.push(names[i]);
       }
       recordContact('in_app', sentIds);
@@ -569,19 +606,96 @@ export default function ParentMessageScreen() {
             {t('parentMsgPreview')}
           </Text>
           <View style={[styles.preview, {
-            backgroundColor: colors.card, borderColor: ready ? ACCENT + '40' : colors.border,
+            backgroundColor: colors.card, borderColor: letter.stale ? palette.warning : ready ? ACCENT + '40' : colors.border,
             borderRadius: colors.radius,
           }]}>
-            {ready ? (
-              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 26, textAlign: isRTL ? 'right' : 'left' }}>
-                {message}
-              </Text>
+            {hasLetter ? (
+              // Editable in place. Until the teacher types here the fields
+              // drive the letter; after, their wording is what gets sent.
+              <TextInput
+                value={letter.text}
+                onChangeText={onEditLetter}
+                multiline
+                maxLength={MAX_LETTER_LENGTH}
+                accessibilityHint={t('parentMsgPreviewHint')}
+                scrollEnabled={false}
+                onContentSizeChange={e => setLetterHeight(Math.max(120, e.nativeEvent.contentSize.height))}
+                style={{
+                  color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 26,
+                  textAlign: isRTL ? 'right' : 'left', textAlignVertical: 'top', height: letterHeight, padding: 0,
+                  outlineStyle: 'none' as never,
+                }}
+              />
             ) : (
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center', paddingVertical: 20 }}>
                 {t('parentMsgNeedsName')}
               </Text>
             )}
           </View>
+
+          {hasLetter ? (
+            <View style={[styles.editRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Text style={[styles.historyText, {
+                flex: 1,
+                color: letter.stale ? palette.warning : colors.mutedForeground,
+                textAlign: isRTL ? 'right' : 'left',
+              }]}>
+                {letter.stale ? t('parentMsgEditedStale') : letter.edited ? t('parentMsgEdited') : t('parentMsgPreviewHint')}
+              </Text>
+              {letter.edited ? (
+                <Pressable onPress={() => { setEdit(null); Haptics.selectionAsync(); }} hitSlop={6}>
+                  <Text style={[styles.pickLinkText, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>
+                    {t('parentMsgRestore')}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
+
+          {/* Attachment. Only the in-app send can carry a file — the OS share
+              path here is text-only — so the note says so rather than letting
+              a teacher believe WhatsApp got the photo too. */}
+          {hasLetter ? (
+            attachment ? (
+              <View style={[styles.attachChip, {
+                borderColor: colors.border, borderRadius: colors.radius,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+              }]}>
+                {attachmentKind(attachment) === 'image'
+                  ? <Image source={{ uri: attachment }} style={styles.attachThumb} resizeMode="cover" />
+                  : <Ionicons name="document-text-outline" size={22} color={ACCENT} />}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
+                    {t(attachmentKind(attachment) === 'image' ? 'parentMsgAttachedPhoto' : 'parentMsgAttachedPdf')}
+                  </Text>
+                  <Text style={[styles.historyText, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>
+                    {t('parentMsgAttachInAppOnly')}
+                  </Text>
+                </View>
+                <Pressable onPress={() => setAttachment(null)} hitSlop={8} accessibilityLabel={t('parentMsgRemoveAttachment')}>
+                  <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
+            ) : (
+              <View style={[styles.attachRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Ionicons name="attach-outline" size={16} color={colors.mutedForeground} />
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{t('parentMsgAttach')}</Text>
+                {([['image-outline', 'parentMsgAttachPhoto', pickChatImage], ['document-outline', 'parentMsgAttachPdf', pickOnePdf]] as const).map(([icon, label, pick]) => (
+                  <Pressable
+                    key={label}
+                    onPress={() => onAttach(pick)}
+                    style={[styles.pill, {
+                      backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius,
+                      flexDirection: isRTL ? 'row-reverse' : 'row', gap: 5,
+                    }]}
+                  >
+                    <Ionicons name={icon} size={15} color={ACCENT} />
+                    <Text style={[styles.pillText, { color: colors.foreground, fontFamily: 'Almarai_400Regular' }]}>{t(label)}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )
+          ) : null}
 
           {/* Two ways out, labelled for the difference. In-app delivery is the
               real send; sharing hands the text to the OS and is what teachers
@@ -664,6 +778,10 @@ const styles = StyleSheet.create({
   pillText: { fontSize: 13 },
   input: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },
   preview: { borderWidth: 1.5, padding: 16, marginTop: 4 },
+  editRow: { alignItems: 'flex-start', gap: 10, marginTop: 8 },
+  attachRow: { alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' },
+  attachChip: { alignItems: 'center', gap: 10, marginTop: 12, padding: 10, borderWidth: 1 },
+  attachThumb: { width: 44, height: 44, borderRadius: 6 },
   primaryBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 15 },
   secondaryBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 15, paddingHorizontal: 18, borderWidth: 1.5 },
 });
