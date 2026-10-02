@@ -159,6 +159,37 @@ function isTeaching(q: string): boolean {
   );
 }
 
+/**
+ * Is this message a turn of its own, whatever question the chat has pending?
+ *
+ * `mergeScopeReply` joins a reply onto a standing «أي درس؟» ask so that «الصف
+ * العاشر» narrows the ask instead of arriving alone. It joined everything that
+ * was not a topic switch, another subject or a new artifact ask — so «اشرح لي
+ * المشتقات» became «جهّز اختباراً قصيراً اشرح لي المشتقات», classified as an
+ * artifact, and the teacher who asked for an explanation got a quiz. A reply
+ * that carries its own ask (a question, an explain verb, a refinement) or that
+ * is social (thanks, hello, off-topic) answers nothing and must stand alone.
+ *
+ * Deliberately NOT `classifyChatIntent(...).intent !== 'ambiguous'`: that
+ * classifier reads three or more words with no marker as a teaching ask, and
+ * a lesson title («تطبيقات على قانون الجيوب») is exactly that. Only explicit
+ * markers count here, so a title still joins the ask.
+ */
+export function isStandaloneTurn(query: string): boolean {
+  const q = normalizeQuery(query);
+  if (!q) return false;
+  if (isGreeting(q) || isSmallTalk(q)) return true;
+  return (
+    isAppHelpQuery(q)
+    || isOffTopic(q)
+    || isRefinement(q)
+    || isTeaching(q)
+    // `normalizeQuery` strips a trailing «؟», which is the one place a
+    // question usually carries it — read it off the raw text.
+    || /[؟?]/.test(query)
+  );
+}
+
 /** The one list of what Iqraa does — greeting and off-topic must not drift apart. */
 function capabilityLines(isAr: boolean): string[] {
   return isAr
