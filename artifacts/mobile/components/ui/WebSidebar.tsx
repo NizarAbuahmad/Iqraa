@@ -6,6 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { IqraaMark } from '@/components/ui/IqraaMark';
+import { isTabActive, tabHref } from '@/services/tabRoute';
 import type { TabEntry } from '@/app/(tabs)/_layout';
 
 const SIDEBAR_WIDTH = 240;
@@ -17,7 +18,9 @@ function SidebarRow({ entry, isIOS, active }: { entry: TabEntry; isIOS: boolean;
 
   return (
     <Pressable
-      onPress={() => router.push(`/${entry.name === 'index' ? '' : entry.name}` as never)}
+      onPress={() => router.push(tabHref(entry.name) as never)}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       style={[
@@ -93,7 +96,7 @@ export function WebSidebar({
       {entries
         .filter((entry) => entry.visible)
         .map((entry) => (
-          <SidebarRow key={entry.name} entry={entry} isIOS={isIOS} active={pathname.startsWith(`/${entry.name}`)} />
+          <SidebarRow key={entry.name} entry={entry} isIOS={isIOS} active={isTabActive(pathname, entry.name)} />
         ))}
       {/* Brand and nav first, the lesson being prepared last: it is context, not navigation. */}
       {lessonCard ? <View style={styles.lessonSlot}>{lessonCard}</View> : null}
