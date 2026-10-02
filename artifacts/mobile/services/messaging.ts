@@ -300,6 +300,22 @@ export async function sendMessage(
 }
 
 /**
+ * Report the messages the thread screen has actually shown. Per message, so a
+ * parent letter's «مقروءة» means the parent saw the letter, not that they
+ * opened the thread (`services/readReceipts.ts` picks which ids to send).
+ * Fire-and-forget at the call site: a failed receipt must never show as an
+ * error in a thread someone is reading.
+ */
+export async function markMessagesRead(threadId: string, messageIds: string[]): Promise<void> {
+  if (messageIds.length === 0) return;
+  const res = await apiFetch(`/messaging/threads/${threadId}/read`, {
+    method: 'POST',
+    body: JSON.stringify({ messageIds }),
+  });
+  await readJson<{ marked: number }>(res, 'Marking messages read');
+}
+
+/**
  * Hides, does not remove — a block only filters the blocked user's messages
  * from my own view and stops a new direct thread forming between us. See
  * the server's file header for the full reasoning.

@@ -347,7 +347,11 @@ export interface ParentContact {
   kind: string;
   channel: 'in_app' | 'share' | 'copy';
   createdAt: string;
-  /** In-app only: has a linked guardian opened the thread since? Null for shared/copied letters. */
+  /**
+   * In-app only: has a linked guardian's screen shown this letter? Null for
+   * shared/copied letters. Letters logged before 2026-10-02 fall back to
+   * "opened the thread since", which is what this used to mean for all of them.
+   */
   read?: boolean | null;
 }
 
@@ -369,14 +373,20 @@ export async function listClassParentContacts(
   return data.contacts;
 }
 
+/**
+ * `messageIds`: for an in-app send, the chat messages the letter became (one
+ * per guardian). They are what `read` is decided from, so leaving them out
+ * leaves the letter on the old thread-level answer.
+ */
 export async function logParentContact(
   studentId: string,
   kind: string,
   channel: ParentContact['channel'],
+  messageIds?: string[],
 ): Promise<ParentContact> {
   const res = await apiFetch(`/students/${studentId}/parent-contacts`, {
     method: 'POST',
-    body: JSON.stringify({ kind, channel }),
+    body: JSON.stringify({ kind, channel, ...(messageIds && messageIds.length > 0 ? { messageIds } : {}) }),
   });
   const data = await readJson<{ contact: ParentContact }>(res, 'Logging parent contact');
   return data.contact;

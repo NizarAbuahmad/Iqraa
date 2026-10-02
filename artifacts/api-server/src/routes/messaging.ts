@@ -39,6 +39,7 @@ import {
   chatThreads,
   chatParticipants,
   chatMessages,
+  chatMessageReads,
   chatBlocks,
   chatReports,
   rosterLinks,
@@ -852,6 +853,51 @@ const sendMessageLimiter = createRateLimiter({
  * mime allowlist from lib/lessonMediaUpload.ts wholesale — a chat photo has
  * the same size/type constraints a lesson photo does.
  */
+/** Caps one report; a screen shows a few dozen messages at most, and a list is re-reported only as it scrolls. */
+const MAX_READ_REPORT = 100;
+
+/**
+ * The reader's screen says which messages it actually rendered. Per message,
+ * unlike `lastReadAt` above, which is per thread and stays the unread-count
+ * mechanism: this exists so a parent *letter* can be called read when the
+ * parent saw it, not when they opened the thread for anything (see
+ * lib/parentContactRead.ts). Ids outside this thread, or sent by the caller,
+ * are dropped silently — a client that reports its own messages is not an
+ * error worth failing the batch over.
+ */
+router.post("/messaging/threads/:id/read", async (req: AuthenticatedRequest, res) => {
+  try {
+    const threadId = req.params["id"] as string;
+    if (!(await participantOf(threadId, req.user!.id))) {
+      res.status(404).json({ error: "Thread not found" });
+      return;
+    }
+    const raw: unknown = req.body?.messageIds;
+    const ids = Array.isArray(raw)
+      ? [...new Set(raw.filter((x): x is string => typeof x === "string" && x.length > 0 && x.length <= 64))].slice(0, MAX_READ_REPORT)
+      : [];
+    if (ids.length === 0) {
+      res.json({ marked: 0 });
+      return;
+    }
+    const mine = await db
+      .select({ id: chatMessages.id })
+      .from(chatMessages)
+      .where(and(eq(chatMessages.threadId, threadId), inArray(chatMessages.id, ids), ne(chatMessages.senderId, req.user!.id)));
+    if (mine.length === 0) {
+      res.json({ marked: 0 });
+      return;
+    }
+    await db
+      .insert(chatMessageReads)
+      .values(mine.map(m => ({ messageId: m.id, userId: req.user!.id })))
+      .onConflictDoNothing();
+    res.json({ marked: mine.length });
+  } catch (err) {
+    failMessaging(res, err, "mark messages read", "Failed to mark messages read");
+  }
+});
+
 router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: AuthenticatedRequest, res) => {
   try {
     const threadId = req.params["id"] as string;

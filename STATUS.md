@@ -532,6 +532,51 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A letter is read when the parent saw it, and one self-link is now a constraint, 2026-10-02
+
+Follow-up to the parent-side review below. Two changes, one schema push.
+
+**«مقروءة» on a parent letter meant the thread had been opened.** `read` was
+derived from the guardian's thread-level `chat_participants.lastReadAt`. A
+parent with two children on one teacher's roster has one direct thread with
+that teacher, and the thread screen sets `lastReadAt` on open and on every
+ten-second poll while it is open — so opening the thread for a one-line reply
+about child A marked a pending letter about child B read, and the class
+screen's «لم تُقرأ» list dropped it.
+
+Now per message. The reader's thread screen reports the messages its list
+actually rendered (`FlatList` viewability, 60% visible for 400ms, own messages
+never) to `POST /messaging/threads/:id/read`, which records them in
+`chat_message_reads`. An in-app letter logs the chat message ids it became
+(`parent_contacts.message_ids`, one per guardian), and `read` is "any of
+those has a receipt" — the rule is `letterReadState` in
+`api-server/src/lib/parentContactRead.ts`, pure and tested. Letters logged
+before this carry no ids and keep the old thread-level answer, so history does
+not flip to unread overnight. `lastReadAt` itself is untouched: it is still
+the unread-count mechanism, and the receipts do not feed it.
+
+**One self-link per student is a database constraint.** The claim route's
+check-then-insert (and the compensating re-read added below) now has the
+backstop the previous entry asked for: `roster_links_one_self_idx`, a partial
+unique index on `student_id WHERE relation = 'self'`. `verify-schema` checks
+unique indexes by name, so a push that skips it will be caught.
+
+**Schema push: done, 2026-10-02.** Applied by hand in the Neon SQL editor on
+the production branch, because the session that wrote this had no
+`DATABASE_URL`. The SQL mirrors the Drizzle schema exactly, constraint and
+index names included, so a later `drizzle-kit push` sees no drift. Checked
+before: no student held two self-links, so the partial unique index could
+build. Checked after: `to_regclass` found `chat_message_reads` and
+`roster_links_one_self_idx`, and `information_schema.columns` found
+`parent_contacts.message_ids`.
+
+**Verified:** typecheck clean; mobile and api-server suites green with the two
+new pure tests (watched failing first). **Not verified:** the receipt round
+trip end to end — the route and the viewability wiring are SQL- and
+FlatList-bound, and neither runner can load them. React Native Web's FlatList
+does support `viewabilityConfig`; whether the 60% threshold fires for a long
+letter that fills more than one screen is the thing to watch on the web build.
+
 ## «من انت» and «ماذا تستطيع أن تفعل» are answered, not clarified, 2026-10-02
 
 Two screenshots from the chat: «من انت» got «وضّح لي أكثر: هل تريد شرح مفهوم،
@@ -558,6 +603,7 @@ them apart is where the message ends. `intentRouter.test.ts` pins 28 positive
 cases and the negatives («ما هو الاقتران», «من اكتشف الذرة؟», «how can you help
 me teach vectors» all stay `teaching`). As with `off_topic`, this is the
 demo-mode / local path; the live prompt already knows what Iqraa is.
+
 ## The parent message can be edited by hand and carry a file, 2026-10-02
 
 `ai-tools/parent-message` showed its letter as read-only text: the only way to
@@ -636,11 +682,11 @@ screens the gate rejects, and both rows are teacher-only now.
   (the thread was re-derived on unlink but not on claim). The claim route now
   calls `resyncClassGroupThreadIfExists`, the same helper roster edits use.
 
-**Left as decisions, not bugs:** any holder of a class code can link as a
+**Left as a decision, not a bug:** any holder of a class code can link as a
 guardian of any child on it with no notice to the teacher
-(`claimDecision.ts`, deliberate per its comment), and a letter's `read` state
-is the guardian's thread-level `lastReadAt`, so one open marks every pending
-letter about every child read.
+(`claimDecision.ts`, deliberate per its comment). The second concern raised
+here — a letter's `read` state being the guardian's thread-level `lastReadAt`
+— is fixed in the entry above this one.
 
 `pnpm run typecheck` clean; mobile 2135 passed, 0 failed, 10 skipped;
 api-server 1000 passed.
