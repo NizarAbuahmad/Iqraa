@@ -499,6 +499,33 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## «من انت» and «ماذا تستطيع أن تفعل» are answered, not clarified, 2026-10-02
+
+Two screenshots from the chat: «من انت» got «وضّح لي أكثر: هل تريد شرح مفهوم،
+أم تحضير مادة…؟», and «ماذا تستطيع ان تفعل» got «سؤالك قد يخص أكثر من مادة.
+أيّ مادة تقصد؟» with subject chips. Neither is a bug in those two replies —
+both did what they are for. The router in `services/ai/intentRouter.ts` simply
+had no intent for a question about the assistant itself, so each fell to
+whichever fallback its length picked: two short words → the generic clarify;
+four words → "a substantive topic", into the KB, where a whole-curriculum
+search spans several subjects and `detectSubjectAmbiguity` asks which.
+
+There is now an `about` intent, checked right after greeting/small talk and
+before app-help, off-topic and the teaching heuristics. It answers from the
+same `capabilityLines()` the greeting and the off-topic reply use, with an
+identity opener («أنا اقرأ 🌿 مساعد تدريس بالذكاء الاصطناعي…») for *who/what
+are you*, and a capabilities opener for *what can you do / how can you help*.
+Both languages. It is also checked ahead of the `afterClarify` short-circuit,
+so asking it as a reply to a clarify still gets the answer instead of being
+forwarded to teaching.
+
+The patterns are **anchored** on purpose. «كيف تساعدني» is about the assistant;
+«كيف تساعدني في شرح المشتقات» is about derivatives, and the only thing telling
+them apart is where the message ends. `intentRouter.test.ts` pins 28 positive
+cases and the negatives («ما هو الاقتران», «من اكتشف الذرة؟», «how can you help
+me teach vectors» all stay `teaching`). As with `off_topic`, this is the
+demo-mode / local path; the live prompt already knows what Iqraa is.
+
 ## An English corner for Grades 1–4, 2026-09-25
 
 Anyone can practise the Grade 1–4 English lesson words at
