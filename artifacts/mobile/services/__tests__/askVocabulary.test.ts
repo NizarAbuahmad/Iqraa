@@ -96,6 +96,10 @@ describe('an answer to "which lesson?" joins the ask', () => {
       'explain derivatives',
       'شكراً',
       'اجعله أبسط',
+      // A question about the assistant itself is never a scope fragment.
+      'من انت',
+      'ماذا تستطيع ان تفعل',
+      'what can you do',
     ]) {
       assert.equal(mergeScopeReply(pending, r), r);
     }
