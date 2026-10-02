@@ -116,6 +116,9 @@ describe('isNonTeacherRoute', () => {
       // pinned here so converting it to exact matching fails loudly instead of
       // quietly ejecting a student to /notifications.
       '/curriculum/resources',
+      '/settings',
+      '/faq',
+      '/delete-account',
       '/profile',
       '/join-class',
       '/claim-required',
@@ -148,6 +151,7 @@ describe('isNonTeacherRoute', () => {
     // despite the prefix that would otherwise let it through.
     assert.equal(isNonTeacherRoute('/messaging/claim'), false);
     assert.equal(isNonTeacherRoute('/messaging/claim/abc-123'), false);
+    assert.equal(isNonTeacherRoute('/messaging/new-group'), false);
   });
 
   it('does not match a route that merely starts with the same letters', () => {

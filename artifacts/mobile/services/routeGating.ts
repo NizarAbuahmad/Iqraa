@@ -60,13 +60,32 @@ export function isPublicRoute(pathname: string | null | undefined): boolean {
  * the tab bar — a bookmark, a typed URL, a shared link — so the app stops
  * rendering a screen whose every call is going to come back 403.
  */
-const NON_TEACHER_ROUTES = ['/notifications', '/messaging', '/curriculum', '/profile', '/join-class', '/claim-required'];
+/**
+ * `/settings`, `/faq` and `/delete-account` are the rows the profile tab
+ * already offered every role; they were missing here, so a student tapping
+ * الإعدادات landed on الرسائل — and had no language toggle, no legal pages
+ * and no in-app account deletion, which both store listings require.
+ */
+const NON_TEACHER_ROUTES = [
+  '/notifications',
+  '/messaging',
+  '/curriculum',
+  '/profile',
+  '/join-class',
+  '/claim-required',
+  '/settings',
+  '/faq',
+  '/delete-account',
+];
 
 /**
- * Teacher-only despite sitting under an allowed prefix: this is the screen
- * that mints a student's claim code, and it reads and writes the roster.
+ * Teacher-only despite sitting under an allowed prefix: `/messaging/claim`
+ * mints a student's claim code and reads and writes the roster;
+ * `/messaging/new-group` creates a group, which the server refuses for a
+ * non-teacher — and its picker loads a teacher-shaped contact list, so the
+ * screen died with a "no connection" message instead of the refusal.
  */
-const NON_TEACHER_EXCEPTIONS = ['/messaging/claim'];
+const NON_TEACHER_EXCEPTIONS = ['/messaging/claim', '/messaging/new-group'];
 
 function matchesPrefix(pathname: string, prefixes: string[]): boolean {
   return prefixes.some(p => pathname === p || pathname.startsWith(`${p}/`));

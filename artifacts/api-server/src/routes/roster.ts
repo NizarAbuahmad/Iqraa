@@ -41,7 +41,7 @@ import { generateShareCode } from "../modules/assessment/studentView.ts";
 import { isCodeLive } from "../lib/claimDecision.ts";
 import { requireRosterConsent } from "../lib/rosterConsent.js";
 import { studentAccountsEnabled } from "../lib/features.js";
-import { syncClassGroupThread } from "../lib/classThread.js";
+import { archiveClassThread, syncClassGroupThread, syncClassThreadFor } from "../lib/classThread.js";
 
 const router = Router();
 
@@ -343,6 +343,7 @@ router.delete("/classes/:id", async (req: AuthenticatedRequest, res) => {
       res.status(404).json({ error: "Class not found" });
       return;
     }
+    await archiveClassThread(row.id);
     res.json({ archived: row.id });
   } catch (err) {
     failRoster(res, err, "archive class", "Failed to archive class");
@@ -527,6 +528,9 @@ router.post("/classes/:id/students", async (req: AuthenticatedRequest, res) => {
         .onConflictDoNothing()
         .returning({ studentId: classMemberships.studentId });
     }
+    // A member with a linked account belongs in the class chat from now, not
+    // from the next time the teacher opens it.
+    if (joined.length > 0) await syncClassThreadFor(classId);
 
     // `added` counts memberships actually created, so a duplicate tap reports 0
     // rather than claiming an add that did not happen. `skipped` names the
@@ -574,6 +578,10 @@ router.delete("/classes/:id/students/:studentId", async (req: AuthenticatedReque
       res.status(404).json({ error: "Student is not in this class" });
       return;
     }
+    // And out of the class chat with the same request — a removed student
+    // used to keep reading (and posting, if enabled) until the teacher next
+    // opened the thread.
+    await syncClassThreadFor(classId);
     res.json({ removed: studentId });
   } catch (err) {
     failRoster(res, err, "remove student", "Failed to remove student");

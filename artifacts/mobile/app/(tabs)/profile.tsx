@@ -347,9 +347,11 @@ export default function ProfileScreen() {
           {t('settingsSection')}
         </Text>
         <View style={{ gap: 8 }}>
-          <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
-          {isTeacherRole(user?.role) ? null : (
-            <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
+          {/* مساحة عملي and شُعَبي are teacher screens: the root guard bounces
+              a parent or student to الرسائل and the API 403s. They used to be
+              offered here anyway — شُعَبي *specifically* to non-teachers. */}
+          {isTeacherRole(user?.role) && (
+            <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
           )}
           {/* خطط التدريس was here unconditionally — a parent/student saw it
               too, leading to a teacher-only screen the middleware would 403

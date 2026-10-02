@@ -1201,6 +1201,40 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
   }
 });
 
+/**
+ * Close an exam: the link stops admitting new sittings and new answers.
+ *
+ * `EvaluationStatus` carried `'closed'` from the start and nothing ever set
+ * it, so a published paper stayed open until its share code expired a week
+ * later. The student route treats a closed exam exactly as an unknown code
+ * (`evaluationByCode`) and refuses further answers on a sitting already under
+ * way (`writeGate`); handing in what was already written stays allowed.
+ *
+ * Re-publishing reopens it, with a fresh share-code expiry and the same code.
+ */
+router.post("/evaluations/:id/close", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    if (evaluation.status !== "published") {
+      res.status(409).json({ error: "Only a published evaluation can be closed", code: "not_published" });
+      return;
+    }
+    const [updated] = await db
+      .update(evaluations)
+      .set({ status: "closed", updatedAt: new Date() })
+      .where(eq(evaluations.id, evaluation.id))
+      .returning();
+    res.json({ evaluation: updated });
+  } catch (err) {
+    logger.error({ err }, "close failed");
+    res.status(500).json({ error: "Failed to close" });
+  }
+});
+
 // ─── Attempts (teacher answer entry) ────────────────────────────────────────
 // Creation lives here, under /evaluations, because starting an attempt needs
 // the evaluation's live questions and level scale. Everything after creation

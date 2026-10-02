@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -16,7 +16,7 @@ import {
   emailVerificationTokens,
   passwordResetTokens,
 } from "@workspace/db";
-import { eq, and, asc, desc, gt, inArray, isNotNull, isNull, lt } from "drizzle-orm";
+import { eq, and, asc, desc, gt, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
@@ -26,6 +26,7 @@ import { googleClientIds } from "../lib/googleClients.js";
 import { decideGoogleLink, googleRoleConflict } from "../lib/googleLink.js";
 import { decideRefresh, refreshTokenTtlMs } from "../lib/refreshPolicy.js";
 import { studentAccountsEnabled } from "../lib/features.js";
+import { syncClassThreadsForStudent } from "../lib/classThread.js";
 import {
   ROSTER_CONSENT_STATEMENT_EN,
   ROSTER_CONSENT_VERSION,
@@ -103,7 +104,13 @@ const changeEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 30
 // than register because a parent with three children legitimately claims three
 // times in a sitting. Dormant while STUDENT_ACCOUNTS is off — the route 403s
 // before reaching the handler — so this is insurance for the day it flips.
-const claimLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "claim" });
+//
+// Keyed per user and mounted *after* authMiddleware, unlike the signup
+// limiters above: a classroom claiming codes together is one NAT address, and
+// an IP key here meant the eleventh child in the room was told "too many
+// attempts" for something ten classmates had just done.
+const perUser = (req: Request) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown";
+const claimLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "claim", key: perUser });
 // Same reasoning as resend-verification: asking costs someone else an email.
 const forgotPasswordLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "forgot-password" });
 /**
@@ -752,7 +759,7 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
   }
 });
 
-router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedRequest, res) => {
+router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedRequest, res) => {
   try {
     // Closed for the same reason /register is. No such account can exist
     // while the flag is off, so this is unreachable in v1 — but leaving it
@@ -788,10 +795,55 @@ router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedReq
       return;
     }
 
-    await db
-      .insert(rosterLinks)
-      .values({ studentId: resolved.studentId, userId: req.user!.id, relation: resolved.relation })
-      .onConflictDoNothing();
+    /*
+     * Check-then-insert, serialised on the student row.
+     *
+     * `decideClaim` already asked "does this child have a self link?", but
+     * two students submitting the same code in the same second both got
+     * "no" and both became that child. The roster row is the thing being
+     * claimed, so it is the thing locked: the second transaction waits on the
+     * first and then sees its link. A partial unique index would say the same
+     * thing in the schema; this says it without a manual schema push.
+     */
+    const userId = req.user!.id;
+    const outcome = await db.transaction(async tx => {
+      await tx.execute(sql`select id from ${students} where id = ${resolved.studentId} for update`);
+      if (resolved.relation === "self") {
+        const [taken] = await tx
+          .select({ id: rosterLinks.id })
+          .from(rosterLinks)
+          .where(
+            and(
+              eq(rosterLinks.studentId, resolved.studentId),
+              eq(rosterLinks.relation, "self"),
+              ne(rosterLinks.userId, userId),
+            ),
+          )
+          .limit(1);
+        if (taken) return "taken" as const;
+      }
+      await tx
+        .insert(rosterLinks)
+        .values({ studentId: resolved.studentId, userId, relation: resolved.relation })
+        .onConflictDoNothing();
+      return "linked" as const;
+    });
+    if (outcome === "taken") {
+      res.status(409).json({
+        error: "This student is already linked to another account",
+        code: "claim_already_linked",
+      });
+      return;
+    }
+
+    // Into the class chat now, not the next time the teacher opens it.
+    if (resolved.relation === "self") {
+      try {
+        await syncClassThreadsForStudent(resolved.studentId);
+      } catch (err) {
+        logger.warn({ err, studentId: resolved.studentId }, "class thread sync after claim failed");
+      }
+    }
 
     res.status(201).json({ studentId: resolved.studentId, relation: resolved.relation });
   } catch (err) {
@@ -807,7 +859,7 @@ router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedReq
  * parent who burned ten wrong codes could no longer get off the screen those
  * codes are asked for, which is the opposite of what this route is for.
  */
-const roleSwitchLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "role-switch" });
+const roleSwitchLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "role-switch", key: perUser });
 
 /**
  * `POST /auth/role` — the way back from a role picked wrong at signup. Who may
@@ -817,7 +869,7 @@ const roleSwitchLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10,
  * every request, so the role inside an access token never decides anything and
  * the change is live on the caller's next call.
  */
-router.post("/role", roleSwitchLimiter, authMiddleware, async (req: AuthenticatedRequest, res) => {
+router.post("/role", authMiddleware, roleSwitchLimiter, async (req: AuthenticatedRequest, res) => {
   try {
     const decision = await decideRoleSwitch({
       currentRole: req.user!.role,

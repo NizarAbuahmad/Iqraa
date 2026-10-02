@@ -14118,3 +14118,77 @@ contact form, CSV export).
 - Blocking does not revoke refresh tokens on purpose: a suspended account keeps
   `GET /auth/me` and account deletion (`lib/suspension.ts`), and every other route
   403s on the next request anyway.
+
+## Student-side review: the exam link, accounts, chat and the lesson page, 2026-10-02
+
+A read-through of everything a student touches found eight things worth
+calling bugs and a dozen smaller ones; this PR fixes the eight and the
+cheap half of the rest. Full list in the PR body. What changed, and why it
+mattered:
+
+- **A student could write their own read-aloud transcript.** `PUT
+  /take/attempt/answers/:questionId` stored any JSON object for any question,
+  so `{ transcript: "<the passage>", takes: 0 }` on a read-aloud question was
+  full marks and unlimited paid transcriptions. Writes now go through
+  `acceptStudentResponse` (`modules/assessment/studentResponse.ts`): read-aloud
+  is not writable at all, every other type is projected onto the keys its
+  grader reads. Tested, and the exam screen no longer echoes the upload's
+  placeholder `audioKey: 'saved'` back through autosave, which had been
+  replacing the real storage key on every recording made so far.
+- **Autosave was one PUT per keystroke through a per-classroom limiter.**
+  `services/answerSaveQueue.ts` debounces typing (600 ms), saves taps at once,
+  and keeps one request in flight per question so a slow early save can no
+  longer land after a later one. Server side, `/take/attempt/*` is now keyed
+  on the attempt token (hashed) with a loose per-IP ceiling, while
+  `/take/:code` keeps its per-IP bucket — a junk bearer header must not buy a
+  fresh bucket for walking codes.
+- **A reload mid-exam locked the student out.** The token lives in
+  `services/examSession.ts` (AsyncStorage, keyed by share code) and a reload
+  resumes through `/take/attempt/state`. A signed-in student with an existing
+  sitting is resumed by `claim-self` (`resumeAttemptFor`) with a fresh token
+  instead of answered «بدأ أحدهم بهذا الاسم». The comment in
+  `studentAttempt.ts` saying reload resumed was untrue until now.
+- **Time limits are enforced, and an exam can be closed.** `writeGate`
+  refuses answers after `startedAt + timeLimitMin` (60 s grace) or once the
+  evaluation is `closed`; hand-in stays allowed. The screen shows a countdown
+  and hands in at zero. `POST /evaluations/:id/close` exists at last
+  (`'closed'` was in the type since day one and nothing set it); «أغلق
+  الاختبار» sits beside the results button, re-publish reopens.
+- **Student submit now grades.** `gradeSubmission` in
+  `modules/assessment/attemptGrading.ts` is shared by the teacher's and the
+  student's submit routes, so thirty papers no longer need thirty taps on
+  «تصحيح». Result release is unchanged: still gated on the teacher's opt-in
+  and on no question left unmarked.
+- **Students could not reach Settings, FAQ or Delete Account** — the routes
+  were missing from `NON_TEACHER_ROUTES`, so the profile rows bounced them to
+  Messages (and the store-required in-app deletion was unreachable). Added and
+  pinned; `/messaging/new-group` is now an exception alongside `/messaging/
+  claim`. `/claim-required` has a sign-out link: it was a mandatory screen
+  with the back gesture off and no exit for an expired code on a shared
+  device.
+- **Class chat membership reconciled only when the teacher opened the chat.**
+  `syncClassThreadFor` / `syncClassThreadsForStudent` / `archiveClassThread`
+  (`lib/classThread.ts`) now run from adding and removing a member, from
+  `POST /auth/claim`, and from archiving a class — a removed student kept
+  reading and posting until then; a newly claimed one got no announcements.
+- Smaller: the claim and role-switch limiters are per user and mounted after
+  auth (a classroom claiming codes is one NAT address); two students can no
+  longer self-claim the same roster name concurrently (the row is locked in a
+  transaction, no schema change); a student can no longer block their teacher
+  (which muted class announcements); blocked senders are excluded inside the
+  paginated query, not after `limit`; «ملاحظات المعلم» is teacher-only on the
+  lesson page; the profile no longer offers students «مساحة عملي»/«شُعَبي»;
+  the exam screen translates server error codes instead of printing the
+  English body; «10.00 علامة» prints as «10».
+
+**Not done, from the same review:** the terms checkbox is bypassed by Google
+sign-up and acceptance is never stored (needs a schema column, so a
+`schema-push`); English server errors still print raw on the messaging and
+register/verify screens; a signed-in student has nowhere to list their exams
+or results — the share link is the only door; `GET /curriculum/books` serves
+`guidePdfUrl` unauthenticated; deleting an attempt leaves its audio in R2.
+
+Not seen in a browser — same reason as the 2026-09-13 entry. Covered by 25
+new unit tests (`studentResponse`, `answerSaveQueue`, `takeErrorKey`,
+`formatMarks`, routeGating and participantPicker pins); api-server 1014/1014
+and mobile 2152/2152 pass, typecheck clean.

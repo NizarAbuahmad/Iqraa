@@ -12,6 +12,7 @@ import { db } from "@workspace/db";
 import {
   chatThreads,
   chatParticipants,
+  classGroups,
   classMemberships,
   students,
   rosterLinks,
@@ -83,4 +84,59 @@ export async function syncClassGroupThread(
   }
 
   return thread;
+}
+
+/**
+ * Rebuild one class's thread from its current roster, looking the class up
+ * by id. For the roster routes that add or remove a member: membership used
+ * to reconcile only when the teacher next opened the class chat, so a
+ * student removed from «10-أ» kept reading — and posting, if enabled — until
+ * then, and one added saw no class chat at all.
+ */
+export async function syncClassThreadFor(classGroupId: string): Promise<void> {
+  const [group] = await db
+    .select({
+      id: classGroups.id,
+      teacherId: classGroups.teacherId,
+      name: classGroups.name,
+      nameAr: classGroups.nameAr,
+    })
+    .from(classGroups)
+    .where(and(eq(classGroups.id, classGroupId), isNull(classGroups.archivedAt)))
+    .limit(1);
+  if (!group) return;
+  await syncClassGroupThread(group.id, group.teacherId, group.name, group.nameAr);
+}
+
+/**
+ * Rebuild every live class thread a student sits in. For the claim route:
+ * a freshly linked account belongs in its class chat from the moment the
+ * link exists, not from the next time the teacher happens to open it.
+ */
+export async function syncClassThreadsForStudent(studentId: string): Promise<void> {
+  const memberships = await db
+    .select({
+      classGroupId: classMemberships.classGroupId,
+      teacherId: classGroups.teacherId,
+      name: classGroups.name,
+      nameAr: classGroups.nameAr,
+    })
+    .from(classMemberships)
+    .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
+    .where(and(eq(classMemberships.studentId, studentId), isNull(classGroups.archivedAt)));
+  for (const m of memberships) {
+    await syncClassGroupThread(m.classGroupId, m.teacherId, m.name, m.nameAr);
+  }
+}
+
+/**
+ * An archived class's thread goes with it. `chatThreads.archivedAt` existed
+ * and the inbox already filtered on it; nothing ever set it, so archiving a
+ * class left its chat live for every member.
+ */
+export async function archiveClassThread(classGroupId: string): Promise<void> {
+  await db
+    .update(chatThreads)
+    .set({ archivedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(chatThreads.classGroupId, classGroupId), isNull(chatThreads.archivedAt)));
 }

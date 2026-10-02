@@ -66,3 +66,15 @@ export function setBlankAt(
   next[index] = value;
   return next;
 }
+
+/**
+ * «10.00 علامة» is the database talking. The column is numeric and arrives as
+ * a string with two decimals; the intro line shows what a teacher would
+ * write, which is `10`, or `7.5` when it really is.
+ */
+export function formatMarks(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string' && value.trim() === '') return '';
+  const n = Number(value);
+  return Number.isFinite(n) ? String(n) : String(value);
+}
