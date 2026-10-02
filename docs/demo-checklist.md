@@ -125,11 +125,15 @@ one line of output, and it runs locally with no deployment required.
 
 ## Before a real class uses a student link
 
-- [ ] **Move `iqraa-api` and `iqraa-verifier` off Render's free tier.** Free
-      instances sleep after ~15 minutes and take 30–60s to wake. Thirty
-      students opening a link at the start of a lesson would each wait on a
-      blank screen. Fine for testing, fatal in a classroom.
-- [ ] Set `AI_USER_BUDGET_USD` — the AI budget is otherwise one shared total,
-      and the teacher who generates on the 20th is refused with no way to tell
-      it from a bug.
+- [x] ~~Move `iqraa-api` and `iqraa-verifier` off Render's free tier.~~ Both
+      run on Cloud Run since 2026-09-05, and the API keeps `--min-instances 1`
+      since 2026-09-26 (`deploy.yml`), so nothing sleeps.
+- [x] ~~Set `AI_USER_BUDGET_USD`.~~ Set in `deploy.yml` since #632 (2026-09-25),
+      $1 per teacher and $0.20 per student a month; present on the service
+      (checked by name 2026-10-01).
 - [ ] Load-test 30 concurrent submits, and re-check Neon's connection headroom.
+      Partial (2026-10-01): 30 concurrent database-backed requests
+      (`GET /auth/join/:code`) against production all answered, p95 0.65 s,
+      max 0.79 s. Not a submit test — that needs 30 student sessions. The pool
+      is `pg`'s default of 10 per instance against Cloud Run concurrency 80, so
+      requests queue inside an instance before Neon's pooler ever sees them.
