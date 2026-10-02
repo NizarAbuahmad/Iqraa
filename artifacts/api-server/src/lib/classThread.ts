@@ -55,6 +55,47 @@ export async function syncClassGroupThread(
   }
   if (!thread) throw new Error("Failed to create class thread");
 
+  await reconcileClassThreadMembers(thread.id, classGroupId, teacherId);
+  return thread;
+}
+
+/**
+ * Rebuild an existing class thread's membership after the roster changed —
+ * a student removed from the class, or an already-linked student added to it.
+ *
+ * Without this, membership was only reconciled when somebody next opened the
+ * class thread (GET /messaging/threads/class/:id), so a child taken off the
+ * roster kept reading and posting in that class's chat until then. Posting
+ * checks `chat_participants` alone, not current membership.
+ *
+ * Deliberately a no-op when the class has no thread yet: `syncClassGroupThread`
+ * get-or-creates, and a roster edit should not conjure an empty chat into a
+ * teacher's inbox.
+ */
+export async function resyncClassGroupThreadIfExists(classGroupId: string, teacherId: string): Promise<void> {
+  const [thread] = await db
+    .select({ id: chatThreads.id })
+    .from(chatThreads)
+    .where(eq(chatThreads.classGroupId, classGroupId))
+    .limit(1);
+  if (!thread) return;
+  await reconcileClassThreadMembers(thread.id, classGroupId, teacherId);
+}
+
+/**
+ * Keep the thread's display name in step with a class rename. Same no-op rule
+ * as above when there is no thread. `syncClassGroupThread` also does this on
+ * open, so until this existed a renamed class showed its old name in the
+ * inbox until somebody happened to open the chat.
+ */
+export async function renameClassGroupThread(classGroupId: string, name: string, nameAr: string): Promise<void> {
+  await db
+    .update(chatThreads)
+    .set({ title: name, titleAr: nameAr, updatedAt: new Date() })
+    .where(eq(chatThreads.classGroupId, classGroupId));
+}
+
+async function reconcileClassThreadMembers(threadId: string, classGroupId: string, teacherId: string): Promise<void> {
   const studentUserRows = await db
     .select({ userId: rosterLinks.userId })
     .from(classMemberships)
@@ -69,18 +110,16 @@ export async function syncClassGroupThread(
 
   await db
     .insert(chatParticipants)
-    .values([...desired].map(userId => ({ threadId: thread.id, userId })))
+    .values([...desired].map(userId => ({ threadId, userId })))
     .onConflictDoNothing();
 
-  const current = await db.select().from(chatParticipants).where(eq(chatParticipants.threadId, thread.id));
+  const current = await db.select().from(chatParticipants).where(eq(chatParticipants.threadId, threadId));
   const toRemove = current
     .map(p => p.userId)
     .filter(userId => userId !== teacherId && !desired.has(userId));
   if (toRemove.length > 0) {
     await db
       .delete(chatParticipants)
-      .where(and(eq(chatParticipants.threadId, thread.id), inArray(chatParticipants.userId, toRemove)));
+      .where(and(eq(chatParticipants.threadId, threadId), inArray(chatParticipants.userId, toRemove)));
   }
-
-  return thread;
 }

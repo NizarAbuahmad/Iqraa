@@ -17,7 +17,6 @@ import {
   evaluationQuestions,
   levelBands,
   levelScales,
-  classGroups,
   students,
 } from "@workspace/db";
 import type { Difficulty, QuestionType } from "@workspace/db";
@@ -36,6 +35,7 @@ import {
   type AuthenticatedRequest,
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
+import { findLiveClass } from "../lib/classOwnership.js";
 import {
   bankContextFor,
   generateMockEvaluation,
@@ -375,16 +375,11 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
       return;
     }
     const classGroupId = raw === null ? null : trimmed(raw);
-    if (classGroupId) {
-      const [group] = await db
-        .select({ id: classGroups.id })
-        .from(classGroups)
-        .where(and(eq(classGroups.id, classGroupId), eq(classGroups.teacherId, req.user!.id)))
-        .limit(1);
-      if (!group) {
-        res.status(404).json({ error: "Class not found" });
-        return;
-      }
+    // Owned and not archived — the same lookup the roster routes use, so an
+    // exam cannot be attached to a class the teacher has already removed.
+    if (classGroupId && !(await findLiveClass(classGroupId, req.user!.id))) {
+      res.status(404).json({ error: "Class not found" });
+      return;
     }
 
     const [updated] = await db
