@@ -44,6 +44,8 @@ export type GenerationRecord = {
   promptTokens: number;
   completionTokens: number;
   costUsd: number;
+  /** Wall time of the model call, when the caller timed it. */
+  durationMs?: number | null;
 };
 
 export type PersistenceOperation = "read" | "insert";
@@ -94,6 +96,7 @@ export async function recordGeneration(row: GenerationRecord): Promise<void> {
       promptTokens: row.promptTokens,
       completionTokens: row.completionTokens,
       costUsd: row.costUsd.toFixed(6),
+      durationMs: row.durationMs ?? null,
     });
     lastFailure = null;
   } catch (err) {

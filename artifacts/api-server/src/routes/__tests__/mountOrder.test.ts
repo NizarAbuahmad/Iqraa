@@ -478,10 +478,25 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     });
     assert.equal(postRes.status, 401, "POST /feedback must require a token");
 
-    for (const route of ["/feedback", "/admin/usage-summary"]) {
+    for (const route of ["/feedback", "/admin/usage-summary", "/admin/users", "/admin/metrics", "/admin/signups"]) {
       const res = await fetch(`${base}${route}`);
       assert.equal(res.status, 401, `${route} must require a token`);
     }
+    for (const route of ["/admin/metrics", `/admin/users/${crypto.randomUUID()}/suspend`]) {
+      const res = await fetch(`${base}${route}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      assert.equal(res.status, 401, `POST ${route} must require a token`);
+    }
+  });
+
+  it("hides the site-signup ingest without the shared key", async () => {
+    // Server-to-server only (iqrra.com's Vercel functions). Without the key
+    // it must look like no route at all, not like a guarded one.
+    const res = await fetch(`${base}/site/signups`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-site-key": "wrong" },
+      body: JSON.stringify({ kind: "waitlist", email: "a@b.co" }),
+    });
+    assert.equal(res.status, 404);
   });
 
   it("answers unknown paths with 404, not with another router's 401", async () => {
