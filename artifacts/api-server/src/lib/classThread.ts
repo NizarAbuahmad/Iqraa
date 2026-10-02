@@ -12,6 +12,7 @@ import { db } from "@workspace/db";
 import {
   chatThreads,
   chatParticipants,
+  classGroups,
   classMemberships,
   students,
   rosterLinks,
@@ -122,4 +123,34 @@ async function reconcileClassThreadMembers(threadId: string, classGroupId: strin
       .delete(chatParticipants)
       .where(and(eq(chatParticipants.threadId, threadId), inArray(chatParticipants.userId, toRemove)));
   }
+}
+
+/**
+ * Rebuild every existing class thread a student sits in. For the claim
+ * route: a freshly linked account belongs in its class chat from the moment
+ * the link exists, not from the next time the teacher happens to open it.
+ * Same no-op rule as `resyncClassGroupThreadIfExists`: a claim should not
+ * conjure an empty chat into a teacher's inbox.
+ */
+export async function syncClassThreadsForStudent(studentId: string): Promise<void> {
+  const memberships = await db
+    .select({ classGroupId: classMemberships.classGroupId, teacherId: classGroups.teacherId })
+    .from(classMemberships)
+    .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
+    .where(and(eq(classMemberships.studentId, studentId), isNull(classGroups.archivedAt)));
+  for (const m of memberships) {
+    await resyncClassGroupThreadIfExists(m.classGroupId, m.teacherId);
+  }
+}
+
+/**
+ * An archived class's thread goes with it. `chatThreads.archivedAt` existed
+ * and the inbox already filtered on it; nothing ever set it, so archiving a
+ * class left its chat live for every member.
+ */
+export async function archiveClassThread(classGroupId: string): Promise<void> {
+  await db
+    .update(chatThreads)
+    .set({ archivedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(chatThreads.classGroupId, classGroupId), isNull(chatThreads.archivedAt)));
 }
