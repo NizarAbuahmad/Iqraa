@@ -20,6 +20,7 @@ import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 
 import { classifyDocLines, docLineText } from './docxOutline.ts';
+import { buildMinistryPlanDocx, type MinistryLessonPage } from './ministryPlan.ts';
 import { trackEvent } from '@/services/analytics';
 
 // Re-exported here so existing callers (`import { buildDeckSlidesHTML } from
@@ -207,7 +208,7 @@ export async function exportAsWord(
 ): Promise<void> {
   trackEvent('material_exported', { format: 'word' });
   // Dynamic import to avoid startup cost
-  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = await import('docx');
+  const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType } = await import('docx');
 
   const align = isAr ? AlignmentType.RIGHT : AlignmentType.LEFT;
   const lines = text.split('\n');
@@ -256,7 +257,22 @@ export async function exportAsWord(
       children,
     }],
   });
+  await saveDocx(doc, filename);
+}
 
+/**
+ * The Ministry lesson-plan form as an editable Word file — see
+ * `ministryPlan.ts`. Word because teachers fill the form in after exporting.
+ */
+export async function exportMinistryPlanWord(pages: readonly MinistryLessonPage[], filename: string): Promise<void> {
+  trackEvent('material_exported', { format: 'word' });
+  const docx = await import('docx');
+  await saveDocx(buildMinistryPlanDocx(pages, docx), filename);
+}
+
+/** Download (web) or write-and-share (native) a built Word document. */
+async function saveDocx(doc: import('docx').Document, filename: string): Promise<void> {
+  const { Packer } = await import('docx');
   const MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
   if (Platform.OS === 'web') {
