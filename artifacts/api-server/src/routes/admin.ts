@@ -21,11 +21,11 @@ import {
   students,
   users,
 } from "@workspace/db";
-import { and, asc, desc, eq, gte, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import { getBudgetStatus, getUserBudgetLimitUsd } from "../lib/aiBudget.js";
 import { currentPeriodStart } from "../lib/aiUsageLog.js";
 import { RATE_LIMITS } from "../lib/rateLimit.js";
-import { parseMetricInput, parseSiteSignup, siteKeyMatches, toCsv } from "../lib/adminMetrics.js";
+import { parseDateRange, parseMetricInput, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
 import {
   authMiddleware,
   requireRole,
@@ -42,8 +42,6 @@ import {
 const router = Router();
 const ADMIN_ROLES = ["school_admin", "system_admin"];
 
-/** Postgres rejects a malformed uuid with 22P02, which would surface as a 500. */
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 router.get("/admin/usage-summary", authMiddleware, requireRole(...ADMIN_ROLES), async (_req, res) => {
   try {
@@ -178,9 +176,16 @@ router.get("/admin/usage-summary", authMiddleware, requireRole(...ADMIN_ROLES), 
         .from(siteSignups),
     ]);
 
+    const signupPlatforms = await db
+      .select({ platform: sql<string>`coalesce(${users.signupPlatform}, 'unknown')`, count: sql<number>`count(*)::int` })
+      .from(users)
+      .groupBy(sql`1`)
+      .orderBy(desc(sql`2`));
+
     res.json({
       totalUsers,
       totalEvaluations,
+      signupPlatforms,
       usersWithoutRecovery,
       materialsByType: Object.fromEntries(materialsByType.map((r) => [r.type, r.count])),
       feedbackByRating: Object.fromEntries(feedbackByRating.map((r) => [r.rating, r.count])),
@@ -309,9 +314,16 @@ router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (r
   try {
     const q = typeof req.query["q"] === "string" ? req.query["q"].trim().slice(0, 100) : "";
     const like = `%${q.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+    const range = parseDateRange(req.query as Record<string, unknown>);
+    if ("error" in range) {
+      res.status(400).json({ error: range.error });
+      return;
+    }
     const where = and(
       q ? or(ilike(users.email, like), ilike(users.firstName, like), ilike(users.lastName, like)) : undefined,
       req.query["status"] === "suspended" ? isNotNull(users.suspendedAt) : undefined,
+      range.from ? gte(users.createdAt, range.from) : undefined,
+      range.to ? lt(users.createdAt, range.to) : undefined,
     );
     const spend = sql<number>`coalesce((
       select sum(${aiGenerations.costUsd}) from ${aiGenerations}
@@ -326,6 +338,8 @@ router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (r
           email: users.email,
           role: users.role,
           google: sql<boolean>`${users.googleId} is not null`,
+          signupPlatform: users.signupPlatform,
+          signupReferrer: users.signupReferrer,
           createdAt: users.createdAt,
           lastLogin: users.lastLogin,
           suspendedAt: users.suspendedAt,
@@ -427,7 +441,16 @@ router.post("/admin/metrics", authMiddleware, requireRole(...ADMIN_ROLES), async
 router.get("/admin/signups", authMiddleware, requireRole(...ADMIN_ROLES), async (req, res) => {
   try {
     const kind = req.query["kind"];
-    const where = kind === "waitlist" || kind === "contact" ? eq(siteSignups.kind, kind) : undefined;
+    const range = parseDateRange(req.query as Record<string, unknown>);
+    if ("error" in range) {
+      res.status(400).json({ error: range.error });
+      return;
+    }
+    const where = and(
+      kind === "waitlist" || kind === "contact" ? eq(siteSignups.kind, kind) : undefined,
+      range.from ? gte(siteSignups.createdAt, range.from) : undefined,
+      range.to ? lt(siteSignups.createdAt, range.to) : undefined,
+    );
     const base = db.select().from(siteSignups).where(where).orderBy(desc(siteSignups.createdAt));
     if (req.query["format"] === "csv") {
       const rows = await base;
@@ -448,6 +471,77 @@ router.get("/admin/signups", authMiddleware, requireRole(...ADMIN_ROLES), async 
   } catch (err) {
     logger.error({ err }, "admin signups list failed");
     res.status(500).json({ error: "Failed to list signups" });
+  }
+});
+
+/**
+ * GET /admin/ai-costs?from=&to= — the AI spend page. Defaults to the current
+ * UTC month, which is the budget period. Every breakdown reads the same rows
+ * with the same filter, so the tables agree with the totals.
+ */
+router.get("/admin/ai-costs", authMiddleware, requireRole(...ADMIN_ROLES), async (req, res) => {
+  const range = parseDateRange(req.query as Record<string, unknown>);
+  if ("error" in range) {
+    res.status(400).json({ error: range.error });
+    return;
+  }
+  const from = range.from ?? currentPeriodStart();
+  const where = and(gte(aiGenerations.createdAt, from), range.to ? lt(aiGenerations.createdAt, range.to) : undefined);
+  const calls = sql<number>`count(*)::int`;
+  const hits = sql<number>`count(*) filter (where ${aiGenerations.cacheStatus} = 'hit')::int`;
+  const costUsd = sql<number>`coalesce(sum(${aiGenerations.costUsd}), 0)::float`;
+  const promptTokens = sql<number>`coalesce(sum(${aiGenerations.promptTokens}), 0)::int`;
+  const completionTokens = sql<number>`coalesce(sum(${aiGenerations.completionTokens}), 0)::int`;
+  try {
+    const [[totals], byDay, byKind, byModel, byUser] = await Promise.all([
+      db.select({ calls, hits, costUsd, promptTokens, completionTokens }).from(aiGenerations).where(where),
+      db
+        .select({ day: sql<string>`to_char(${aiGenerations.createdAt} at time zone 'UTC', 'YYYY-MM-DD')`, calls, costUsd })
+        .from(aiGenerations)
+        .where(where)
+        .groupBy(sql`1`)
+        .orderBy(sql`1`),
+      db
+        .select({
+          kind: aiGenerations.kind,
+          calls,
+          hits,
+          costUsd,
+          p50Ms: sql<number | null>`percentile_cont(0.5) within group (order by ${aiGenerations.durationMs})::int`,
+          p95Ms: sql<number | null>`percentile_cont(0.95) within group (order by ${aiGenerations.durationMs})::int`,
+        })
+        .from(aiGenerations)
+        .where(where)
+        .groupBy(aiGenerations.kind)
+        .orderBy(desc(sql`4`)),
+      db
+        .select({ model: aiGenerations.model, calls, costUsd, promptTokens, completionTokens })
+        .from(aiGenerations)
+        .where(where)
+        .groupBy(aiGenerations.model)
+        .orderBy(desc(sql`3`)),
+      db
+        .select({ userId: aiGenerations.userId, email: users.email, role: users.role, calls, costUsd })
+        .from(aiGenerations)
+        .innerJoin(users, eq(users.id, aiGenerations.userId))
+        .where(where)
+        .groupBy(aiGenerations.userId, users.email, users.role)
+        .orderBy(desc(sql`5`))
+        .limit(50),
+    ]);
+    res.json({
+      from: from.toISOString(),
+      to: (range.to ?? new Date()).toISOString(),
+      totals,
+      byDay,
+      byKind,
+      byModel,
+      byUser,
+      budget: getBudgetStatus(),
+    });
+  } catch (err) {
+    logger.error({ err }, "admin ai-costs failed");
+    res.status(500).json({ error: "Failed to load AI costs" });
   }
 });
 

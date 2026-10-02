@@ -4,6 +4,7 @@
  */
 import * as storage from './secureStorage';
 import { fetchWithTimeout } from './fetchWithTimeout';
+import { originHeaders } from './clientPlatform';
 
 const ACCESS_TOKEN_KEY = 'iqra_access_token';
 const REFRESH_TOKEN_KEY = 'iqra_refresh_token';
@@ -168,6 +169,7 @@ export async function apiFetch(
   const accessToken = await getAccessToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...originHeaders(),
     ...(init.headers as Record<string, string> ?? {}),
   };
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;

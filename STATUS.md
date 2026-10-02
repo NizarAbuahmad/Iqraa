@@ -14118,3 +14118,19 @@ contact form, CSV export).
 - Blocking does not revoke refresh tokens on purpose: a suspended account keeps
   `GET /auth/me` and account deletion (`lib/suspension.ts`), and every other route
   403s on the next request anyway.
+
+**Round 2, 2026-10-02:** `/admin/ai-costs` (spend over any date range: per day,
+by tool, by model, by user; defaults to the budget month); `from`/`to` filters
+on users, feedback and collected emails (`parseDateRange`, inclusive days,
+UTC); `DELETE /feedback/:id` so a read note disappears — the list is a to-do,
+not an archive, and the dashboard's feedback count drops with it; and
+**where an account was created**: the client sends `X-Iqraa-Platform`
+(android/ios/web) and, on web, `X-Iqraa-Landing` (first `?utm_source` or
+referrer the tab saw, `services/clientPlatform.ts`), stored at registration in
+`users.signup_platform/signup_referrer` and shown per user + as "joined via"
+on the overview. Accounts from before this show `unknown` — nothing recorded
+it. Schema: `docs/schema-push-2026-10-02-signup-source.sql`. Follower counts
+stay manual: the Meta connector available here is the Ads API (ad accounts,
+campaigns) and cannot read page/profile follower counts; Instagram Graph needs
+a Business account + app review, so a number typed in weekly is the honest
+option until that is worth doing.
