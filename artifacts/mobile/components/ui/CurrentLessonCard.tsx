@@ -58,6 +58,8 @@ type Props = {
   containerStyle?: ViewStyle;
   /** Remove the current lesson (un-pin). */
   onClear?: () => void;
+  /** Accessibility label of that control, e.g. «إلغاء تثبيت الدرس». */
+  clearLabel?: string;
   /**
    * Drop the «٣/٥» pill.
    *
@@ -86,6 +88,7 @@ export function CurrentLessonCard({
   onToggleCollapse,
   containerStyle,
   onClear,
+  clearLabel,
   hideCount = false,
 }: Props) {
   const align = isRTL ? 'right' : 'left' as const;
@@ -219,16 +222,27 @@ export function CurrentLessonCard({
             ) : null}
             <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
           </Pressable>
+          {/*
+            The × un-pins the lesson, and it used to sit 8px from the chevron
+            that opens the picker — same grey, same size, no text on either. A
+            thumb aiming for "show me more" could drop the lesson, and with it
+            the readiness board under it. A hairline and a gap on each side of
+            it make it a separate control, and its own hit area no longer
+            overlaps the chevron's.
+          */}
           {onClear ? (
-            <Pressable
-              onPress={onClear}
-              hitSlop={8}
-              style={({ pressed }) => [styles.clearBtn, { opacity: pressed ? 0.7 : 1 }]}
-              accessibilityRole="button"
-              accessibilityLabel="إلغاء تثبيت الدرس"
-            >
-              <Ionicons name="close" size={14} color={colors.mutedForeground} />
-            </Pressable>
+            <View style={[styles.clearGroup, { flexDirection: rowDir }]}>
+              <View style={[styles.clearDivider, { backgroundColor: colors.border }]} />
+              <Pressable
+                onPress={onClear}
+                hitSlop={4}
+                style={({ pressed }) => [styles.clearBtn, { backgroundColor: pressed ? colors.muted : 'transparent' }]}
+                accessibilityRole="button"
+                accessibilityLabel={clearLabel}
+              >
+                <Ionicons name="close" size={14} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
           ) : null}
         </View>
         {errorStrip}
@@ -333,7 +347,7 @@ export function CurrentLessonCard({
               hitSlop={8}
               style={({ pressed }) => [styles.clearBtnExpanded, { opacity: pressed ? 0.7 : 1 }]}
               accessibilityRole="button"
-              accessibilityLabel="إلغاء تثبيت الدرس"
+              accessibilityLabel={clearLabel}
             >
               <Ionicons name="close" size={14} color={colors.mutedForeground} />
             </Pressable>
@@ -488,10 +502,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Cairo_600SemiBold',
     fontSize: 12,
   },
+  clearGroup: { alignItems: 'center', gap: 10, flexShrink: 0 },
+  clearDivider: { width: StyleSheet.hairlineWidth, height: 18 },
   clearBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
