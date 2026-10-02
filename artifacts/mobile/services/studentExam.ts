@@ -101,6 +101,11 @@ export interface ClaimedAttempt {
    * Optional so a client running against an older API simply shows none.
    */
   lessonIds?: string[];
+  /** Minutes allowed, and when they run out — null means untimed. */
+  timeLimitMin?: number | null;
+  deadlineAt?: string | null;
+  /** Set when `claim-self` handed back a sitting this account already held. */
+  resumed?: boolean;
 }
 
 export function claimName(code: string, studentId: string): Promise<ClaimedAttempt> {
@@ -137,6 +142,8 @@ export function getExamState(token: string): Promise<{
   answers: { questionId: string; response: StudentResponse }[];
   /** See `claimName` — present on resume too, so a reload keeps the panel. */
   lessonIds?: string[];
+  timeLimitMin?: number | null;
+  deadlineAt?: string | null;
 }> {
   return call('/take/attempt/state', { token });
 }

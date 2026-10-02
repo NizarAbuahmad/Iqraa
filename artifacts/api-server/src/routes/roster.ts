@@ -46,6 +46,7 @@ import { isCodeLive } from "../lib/claimDecision.ts";
 import { requireRosterConsent } from "../lib/rosterConsent.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import {
+  archiveClassThread,
   renameClassGroupThread,
   resyncClassGroupThreadIfExists,
   syncClassGroupThread,
@@ -352,6 +353,7 @@ router.delete("/classes/:id", async (req: AuthenticatedRequest, res) => {
       res.status(404).json({ error: "Class not found" });
       return;
     }
+    await archiveClassThread(row.id);
     res.json({ archived: row.id });
   } catch (err) {
     failRoster(res, err, "archive class", "Failed to archive class");
