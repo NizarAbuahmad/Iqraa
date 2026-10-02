@@ -60,7 +60,24 @@ export function isPublicRoute(pathname: string | null | undefined): boolean {
  * the tab bar — a bookmark, a typed URL, a shared link — so the app stops
  * rendering a screen whose every call is going to come back 403.
  */
-const NON_TEACHER_ROUTES = ['/notifications', '/messaging', '/curriculum', '/profile', '/join-class', '/claim-required'];
+/**
+ * `/settings`, `/faq` and `/delete-account` are here because the profile tab
+ * links every role to them, and the bounce in app/_layout.tsx runs on every
+ * path change — not only at boot. Without them a parent tapping «الإعدادات»
+ * landed back in Messages, and account deletion was unreachable for anyone
+ * who was not a teacher. `routeGating.test.ts` pins each one.
+ */
+const NON_TEACHER_ROUTES = [
+  '/notifications',
+  '/messaging',
+  '/curriculum',
+  '/profile',
+  '/join-class',
+  '/claim-required',
+  '/settings',
+  '/faq',
+  '/delete-account',
+];
 
 /**
  * Teacher-only despite sitting under an allowed prefix: this is the screen

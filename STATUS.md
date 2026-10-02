@@ -499,6 +499,64 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A parent could not reach Settings, and six smaller parent-side bugs, 2026-10-02
+
+A code review of the parent-facing surface — claim flow, routing, messaging,
+and the teacher's letter tool — against the running code. Eight bugs, seven
+fixed here, one left out with its reason.
+
+**The profile tab linked a parent to screens the routing gate bounced them
+off.** `NON_TEACHER_ROUTES` had no `/settings`, `/faq` or `/delete-account`,
+and the bounce in `app/_layout.tsx` runs on every path change, not only at
+boot — so «الإعدادات» sent a parent straight back to Messages, and account
+deletion was unreachable for anyone who was not a teacher, which the store
+listings require. The three are allowlisted now, pinned in
+`routeGating.test.ts`. The same profile section also offered «شُعَبي» to
+non-teachers (the roster screen) and «مساحتي» to everyone; both are teacher
+screens the gate rejects, and both rows are teacher-only now.
+
+**Smaller fixes in the same pass:**
+
+- `register.tsx` accepted an empty confirm-password field while the server
+  refused any sent value that differed from the password, so skipping the
+  field produced an English "Passwords do not match". The field is required.
+- The share message for a link code (`claimCodeMessage.ts`) said to enter the
+  code at «إنشاء حساب» and to pick «وليّ أمر». Registration stopped taking a
+  code; it is asked on `/claim-required` after email verification, and the
+  same code goes to students. The message now says so, and names both roles.
+- The claim form counted a dash as a character: `YHFM-8` fired the lookup,
+  the server normalised it to five characters, the 404 read as "per-student
+  code", and Continue appeared on an unfinished code. `normalizeClaimCode`
+  (`claimCodeGate.ts`, tested) applies the server's normalisation as typed.
+- `ai-tools/parent-message` opened from a class's contact card with a
+  `studentId` param never read the roster row, so a girl recorded «أنثى»
+  got a letter saying «ابنكم». It now reads the row once on arrival
+  (`listStudents()`, new in `services/roster.ts`) and takes the class's
+  subject from a `subjectId` param the card passes.
+- The same screen swallowed `roster_consent_required` on its two roster
+  writes, so an un-attested teacher silently lost letter history and the
+  gender save. That one 403 now shows `parentMsgConsentNeeded`; every other
+  failure stays quiet, because a failed log must never delay the letter.
+- `POST /auth/claim` was check-then-insert for the one-self-link rule, and
+  the unique index is on student+user, so two student accounts claiming the
+  same name at once both got in. The route now re-reads after inserting and
+  the later racer withdraws with the same 409. A partial unique index would
+  be the real backstop — **not added here**, because a schema change needs
+  the manual production push this checkout cannot do, and `schema-push:
+  done` would have been the false claim the 2026-09-16 entry warns about.
+- A student claiming via a class code was never added to the class chat
+  (the thread was re-derived on unlink but not on claim). The claim route now
+  calls `resyncClassGroupThreadIfExists`, the same helper roster edits use.
+
+**Left as decisions, not bugs:** any holder of a class code can link as a
+guardian of any child on it with no notice to the teacher
+(`claimDecision.ts`, deliberate per its comment), and a letter's `read` state
+is the guardian's thread-level `lastReadAt`, so one open marks every pending
+letter about every child read.
+
+`pnpm run typecheck` clean; mobile 2135 passed, 0 failed, 10 skipped;
+api-server 1000 passed.
+
 ## The roster now tells the class chat, and an archived class stays archived, 2026-10-02
 
 A review of the classes feature (roster router, schema, list and detail
