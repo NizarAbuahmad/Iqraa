@@ -24,7 +24,7 @@ import { StudentPickerSheet } from '@/components/ui/StudentPickerSheet';
 import { confirm } from '@/services/confirm';
 import { SUBJECTS } from '@/services/curriculumData';
 import {
-  getClass, listParentContacts, logParentContact, updateStudent,
+  RosterError, listParentContacts, listStudents, logParentContact, updateStudent,
   type ClassGroup, type ParentContact, type RosterStudent,
 } from '@/services/roster';
 import {
@@ -116,7 +116,7 @@ export default function ParentMessageScreen() {
 
   // Arriving from a class's parent-contact card: the student is already chosen,
   // and for a concern-only family the card asks for the missing praise letter.
-  const params = useLocalSearchParams<{ studentId?: string; studentName?: string; kind?: string; classId?: string }>();
+  const params = useLocalSearchParams<{ studentId?: string; studentName?: string; kind?: string; subjectId?: string }>();
   const paramKind = MESSAGE_KINDS.find(k => k === params.kind);
 
   const [studentName, setStudentName] = useState(params.studentName ?? '');
@@ -181,29 +181,6 @@ export default function ParentMessageScreen() {
   };
 
   /**
-   * Opened from a class card with the student already chosen: load that
-   * roster row and treat it exactly like a pick. Without this, the recorded
-   * gender was never read — the letter defaulted to male for every child a
-   * teacher reached this way, and the note was never offered. The name param
-   * already fills the field, so a failed load costs only the seeding.
-   */
-  useEffect(() => {
-    const studentId = params.studentId;
-    const classId = params.classId;
-    if (!studentId || !classId) return;
-    let cancelled = false;
-    getClass(classId)
-      .then(({ group, students }) => {
-        if (cancelled) return;
-        const student = students.find(s => s.id === studentId);
-        if (student) adoptStudent(student, group);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-    // Once, for the student the route named.
-  }, [params.studentId, params.classId]);
-
-  /**
    * Picking a gender for a roster student saves it on the roster, so the next
    * letter about this child doesn't ask again. Fire-and-forget: a failed save
    * costs one repeated question next time, not this letter.
@@ -213,8 +190,56 @@ export default function ParentMessageScreen() {
     const id = pickedStudentId;
     if (!id || pickedGender === g) return;
     setPickedGender(g);
-    updateStudent(id, { gender: g }).catch(() => {});
+    updateStudent(id, { gender: g }).catch(explainRosterWrite);
   };
+
+  /**
+   * The one roster failure worth interrupting the letter for. Every roster
+   * write is refused until the teacher confirms their school holds parental
+   * consent (`requireRosterConsent`); only `/classes` shows the statement.
+   * Swallowing that 403 here meant history and gender silently never saved,
+   * and nothing on screen said why. Everything else stays quiet: a failed
+   * save must never undo or delay the letter.
+   */
+  const explainRosterWrite = (e: unknown) => {
+    if (e instanceof RosterError && e.code === 'roster_consent_required') showToast(t('parentMsgConsentNeeded'));
+  };
+
+  /**
+   * Arriving with only a `studentId` (the class screen's contact card): the
+   * roster row has not been read, so its recorded gender has not either, and
+   * the letter opened as «ابنكم» for a girl the teacher had marked «أنثى» —
+   * the misgendering the stored gender exists to prevent. Read the row once
+   * and seed what `onPickStudent` would have. A failed read leaves the picker
+   * at its default, which is no worse than before.
+   */
+  useEffect(() => {
+    const id = params.studentId;
+    if (!id) return;
+    let cancelled = false;
+    listStudents()
+      .then(rows => {
+        if (cancelled) return;
+        const row = rows.find(r => r.id === id);
+        if (!row) return;
+        const known = rosterGender(row.gender);
+        setPickedGender(known);
+        if (known) setStudentGender(known);
+        setDetails(d => seedDetailsFromNote(d, row.teacherNote));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // Once, for the id the screen opened with — picking another student goes
+    // through onPickStudent, which already carries the row.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // The class the card was on names the subject, unless one was already typed.
+  useEffect(() => {
+    const classSubject = SUBJECTS.find(s => s.id === params.subjectId);
+    if (classSubject) setSubject(prev => (prev.trim() ? prev : isAr ? classSubject.nameAr : classSubject.name));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // The last signature used on this device. Read once; a missing or broken
   // value leaves the account name and the default in place.
@@ -279,7 +304,7 @@ export default function ParentMessageScreen() {
     logParentContact(studentId, kind, channel)
       // The teacher may have picked another student while this was in flight.
       .then(row => { if (pickedRef.current === studentId) setHistory(prev => (prev ? [row, ...prev] : prev)); })
-      .catch(() => {});
+      .catch(explainRosterWrite);
   };
 
   const summary = useMemo(() => (history ? summarizeContacts(history, new Date()) : null), [history]);

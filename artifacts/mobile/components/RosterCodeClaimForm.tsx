@@ -7,7 +7,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Input } from '@/components/ui/Input';
 import type { JoinRosterEntry } from '@/services/roster';
-import type { JoinCodeState } from '@/services/claimCodeGate';
+import { normalizeClaimCode, type JoinCodeState } from '@/services/claimCodeGate';
 import type { TranslationKey } from '@/services/i18n';
 
 export interface RosterCodeClaimFormProps {
@@ -54,7 +54,10 @@ export function RosterCodeClaimForm({
         placeholder={t('classCodePlaceholder')}
         hint={t(userRole === 'student' ? 'classCodeHintStudent' : 'classCodeHint')}
         value={code}
-        onChangeText={text => onChangeCode(text.toUpperCase())}
+        // Normalised as typed, not just uppercased: a dash or space off the
+        // whiteboard counted as a character, so the lookup fired on five real
+        // ones — see normalizeClaimCode.
+        onChangeText={text => onChangeCode(normalizeClaimCode(text))}
         leftIcon="key-outline"
         autoCapitalize="characters"
         isRTL={isRTL}
