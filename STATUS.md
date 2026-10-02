@@ -561,14 +561,14 @@ backstop the previous entry asked for: `roster_links_one_self_idx`, a partial
 unique index on `student_id WHERE relation = 'self'`. `verify-schema` checks
 unique indexes by name, so a push that skips it will be caught.
 
-**Schema push: pending at time of writing.** This checkout has no
-`DATABASE_URL`, so the push was not run from here. Until someone runs
-`pnpm --filter @workspace/db run push` and flips the PR's `schema-push:` line
-to `done`, production is missing one table (`chat_message_reads`), one column
-(`parent_contacts.message_ids`) and one index — and the two parent-contacts
-routes will 503 with `roster_storage_unavailable` on the missing column, the
-same way every other unpushed schema change has. If the index push fails,
-production already holds a duplicate self-link, which is itself worth knowing.
+**Schema push: done, 2026-10-02.** Applied by hand in the Neon SQL editor on
+the production branch, because the session that wrote this had no
+`DATABASE_URL`. The SQL mirrors the Drizzle schema exactly, constraint and
+index names included, so a later `drizzle-kit push` sees no drift. Checked
+before: no student held two self-links, so the partial unique index could
+build. Checked after: `to_regclass` found `chat_message_reads` and
+`roster_links_one_self_idx`, and `information_schema.columns` found
+`parent_contacts.message_ids`.
 
 **Verified:** typecheck clean; mobile and api-server suites green with the two
 new pure tests (watched failing first). **Not verified:** the receipt round
@@ -576,6 +576,34 @@ trip end to end — the route and the viewability wiring are SQL- and
 FlatList-bound, and neither runner can load them. React Native Web's FlatList
 does support `viewabilityConfig`; whether the 60% threshold fires for a long
 letter that fills more than one screen is the thing to watch on the web build.
+
+## «من انت» and «ماذا تستطيع أن تفعل» are answered, not clarified, 2026-10-02
+
+Two screenshots from the chat: «من انت» got «وضّح لي أكثر: هل تريد شرح مفهوم،
+أم تحضير مادة…؟», and «ماذا تستطيع ان تفعل» got «سؤالك قد يخص أكثر من مادة.
+أيّ مادة تقصد؟» with subject chips. Neither is a bug in those two replies —
+both did what they are for. The router in `services/ai/intentRouter.ts` simply
+had no intent for a question about the assistant itself, so each fell to
+whichever fallback its length picked: two short words → the generic clarify;
+four words → "a substantive topic", into the KB, where a whole-curriculum
+search spans several subjects and `detectSubjectAmbiguity` asks which.
+
+There is now an `about` intent, checked right after greeting/small talk and
+before app-help, off-topic and the teaching heuristics. It answers from the
+same `capabilityLines()` the greeting and the off-topic reply use, with an
+identity opener («أنا اقرأ 🌿 مساعد تدريس بالذكاء الاصطناعي…») for *who/what
+are you*, and a capabilities opener for *what can you do / how can you help*.
+Both languages. It is also checked ahead of the `afterClarify` short-circuit,
+so asking it as a reply to a clarify still gets the answer instead of being
+forwarded to teaching.
+
+The patterns are **anchored** on purpose. «كيف تساعدني» is about the assistant;
+«كيف تساعدني في شرح المشتقات» is about derivatives, and the only thing telling
+them apart is where the message ends. `intentRouter.test.ts` pins 28 positive
+cases and the negatives («ما هو الاقتران», «من اكتشف الذرة؟», «how can you help
+me teach vectors» all stay `teaching`). As with `off_topic`, this is the
+demo-mode / local path; the live prompt already knows what Iqraa is.
+
 ## The parent message can be edited by hand and carry a file, 2026-10-02
 
 `ai-tools/parent-message` showed its letter as read-only text: the only way to
