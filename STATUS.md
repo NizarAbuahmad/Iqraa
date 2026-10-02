@@ -14212,3 +14212,55 @@ contact form, CSV export).
 - Blocking does not revoke refresh tokens on purpose: a suspended account keeps
   `GET /auth/me` and account deletion (`lib/suspension.ts`), and every other route
   403s on the next request anyway.
+
+## Chat review: five bugs in the «اقرأ» tab, 2026-10-02
+
+A read-through of `app/(tabs)/iqra.tsx`, `services/ai/chatArtifacts.ts` and
+the `/chat` route, looking for bugs. Five fixed in one PR; the rest are listed
+below as open improvements.
+
+- **A pending «أي درس؟» swallowed the next message.** `mergeScopeReply` glued
+  any follow-up that was not a topic switch, another subject or a new artifact
+  ask onto the standing ask — «اشرح لي المشتقات» became «جهّز اختباراً قصيراً
+  اشرح لي المشتقات», classified as an artifact, and a teacher who asked for an
+  explanation got a quiz (reproduced under `node --test`; even «شكراً» merged).
+  `isStandaloneTurn` (`intentRouter.ts`) now keeps a question, an explain
+  verb, a refinement or small talk as its own turn; a grade, a subject, a
+  lesson title and an ordinal still join. Pinned in `askVocabulary.test.ts`.
+- **Quota and live-mode refusals were papered over.** The generators rethrow
+  `user_quota_exceeded` / `budget_exceeded` / `live_mode_off` on purpose
+  (`generateWithProvenance`), but chat caught them and showed a local
+  knowledge-base reply under «تحقق من الإنترنت». Chat now says
+  `aiQuotaSpent` / `aiUnavailable` and generates nothing, the same policy as
+  every generator screen.
+- **Chat materials defaulted to الرياضيات / الصف العاشر without a lesson.** The
+  upload path and every ungrounded topic hit `buildRequest` with no lesson, so
+  the request said `subject: 'Mathematics'` — and generators branch on that
+  name (CLAUDE.md), so a chemistry teacher's uploaded worksheet came back as a
+  maths quiz headed الرياضيات. `resolveArtifactScope` (`artifactScope.ts`)
+  labels the request with the lesson's book, else the picked subject and grade
+  (`teachingCtxScope`, set from the sheet, the home pick and a deep link), and
+  only with nothing known keeps the old default. Chat still does not run
+  `groundedSubjectConflict`; the `/ai-tools` screens do.
+- **Enter did not send on desktop web.** The composer is `multiline` without
+  `blurOnSubmit`, and react-native-web only fires `onSubmitEditing` when
+  `blurOnSubmit || !multiline`, so Enter inserted a newline. `shouldSendOnEnter`
+  (`composerKeys.ts`) decides in `onKeyPress` on web: Enter sends, Shift+Enter
+  breaks the line, Enter mid-IME-composition is left alone.
+- **The change-lesson sheet reopened on a stale draft.** It kept its own copy
+  of the last confirmed topic, so the card's clear button (which resets the
+  screen, not the sheet) left the next open pre-filled with the lesson just
+  cleared. The sheet now opens on the screen's `teachingCtx`.
+
+**Still open, found in the same pass** (not fixed, in rough priority order):
+`CHAT_MAX_TOKENS` is 1200 and `finish_reason` is never read, so a plan asked in
+chat ends mid-sentence with no signal; confirming the sheet auto-sends a paid
+«نظرة شاملة» turn on every lesson change; history forwards each message's
+`text`, which for a generated worksheet is the whole document (clamped
+server-side mid-document — send `artifactProse` instead); model output is not
+normalised client-side, so a `##` heading or `1)` list prints literally;
+`onContentSizeChange` always scrolls to the end, so an inline plan edit above
+the fold jumps away; `context` is injected into the system prompt rather than a
+delimited user block; `/chat` has no route test and the OpenAPI spec still
+calls it an SSE stream; the composer caps at 800 chars against the server's
+2,000; no `KeyboardAvoidingView` (matters once iOS ships).
