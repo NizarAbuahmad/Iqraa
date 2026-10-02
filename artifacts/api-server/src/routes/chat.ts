@@ -80,11 +80,13 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     await assertUserQuotaAvailable(req.user?.id, req.user?.role);
     assertBudgetAvailable();
 
+    const startedAt = Date.now();
     const completion = await openai.chat.completions.create({
       model: getChatModel(),
       max_completion_tokens: CHAT_MAX_TOKENS,
       messages: chatMessages,
     });
+    const durationMs = Date.now() - startedAt;
     // No cache keys on purpose. A chat turn never repeats, so any key computed
     // here would be the same for every turn and would show up in the repeat-rate
     // analysis as a workload with a perfect hit rate — the opposite of the truth.
@@ -95,6 +97,7 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
       kind: isTeacher ? "chat-teacher" : "chat-student",
       promptVersion: PROMPT_VERSION,
       userId: req.user?.id,
+      durationMs,
     });
 
     const answer = completion.choices[0]?.message?.content ?? "";
