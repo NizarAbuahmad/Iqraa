@@ -81,6 +81,29 @@ describe('an answer to "which lesson?" joins the ask', () => {
   it('nothing pending leaves the message alone', () => {
     assert.equal(mergeScopeReply(null, 'الصف العاشر'), 'الصف العاشر');
   });
+
+  // Found 2026-10-02: with «جهّز اختباراً قصيراً» pending, «اشرح لي المشتقات»
+  // was glued onto it and classified as an artifact — the teacher asked for an
+  // explanation and got a quiz. Only a scope fragment (a grade, a subject, a
+  // lesson title, an ordinal) answers the question; a question of its own,
+  // an explain ask, or small talk is a new turn.
+  it('a question, an explain ask, or small talk stands alone', () => {
+    const pending = 'جهّز اختباراً قصيراً';
+    for (const r of [
+      'اشرح لي المشتقات',
+      'ما هو الاقتران العكسي؟',
+      'كيف أدير صفاً مزعجاً؟',
+      'explain derivatives',
+      'شكراً',
+      'اجعله أبسط',
+      // A question about the assistant itself is never a scope fragment.
+      'من انت',
+      'ماذا تستطيع ان تفعل',
+      'what can you do',
+    ]) {
+      assert.equal(mergeScopeReply(pending, r), r);
+    }
+  });
 });
 
 // Reported 2026-09-28: «أي درس من اللغة العربية للصف العاشر؟» → «الثاني» →
