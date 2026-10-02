@@ -174,7 +174,7 @@ export default function ActivityScreen() {
     // claims the picked subject. Refuse and name the real subject instead.
     const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
     if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
+    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setCancelled(false);
     const controller = new AbortController();
@@ -183,7 +183,7 @@ export default function ActivityScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
     try {
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
       // The body comes from generatorRequests, like the worksheet's and the
       // plan's, so the pregenerate script and this screen hash the same
       // artifact. It also carries the localised grade name — this screen
@@ -287,6 +287,7 @@ export default function ActivityScreen() {
   } = useGeneratorExport({
     result,
     topic: scope.topic,
+    lessonId: scope.lesson?.id,
     lang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,

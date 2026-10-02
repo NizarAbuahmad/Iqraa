@@ -125,7 +125,10 @@ export async function verifyWorksheetAnswers(
  * Deliberately narrow: bracket-style labels only. Accepting `1.` as a label
  * would let a decimal key like `2. 5` be mangled into `5`.
  */
-const OPTION_LABEL = /^\s*(?:[\u0621-\u064A]|[A-Za-z]|\d{1,2})\s*[)\]]\s*(?=\S)/u;
+// `[0-9٠-٩]`, not `\d`: a model that labels options «١) 2x» left the label
+// on, SymPy then failed to parse every key and distractor, and each
+// Arabic-numbered item quietly lost its badge (optionLabels.ts accepts both).
+const OPTION_LABEL = /^\s*(?:[\u0621-\u064A]|[A-Za-z]|[0-9٠-٩]{1,2})\s*[)\]]\s*(?=\S)/u;
 
 export function stripOptionLabel(value: string): string {
   return value.replace(OPTION_LABEL, '').trim();

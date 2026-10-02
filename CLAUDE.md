@@ -95,6 +95,12 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   and re-derives it later can silently swap it. Carry the KB id. Note
   `resolveGeneratorGrounding` is exact on exact titles (63/63) — it is the
   semantic search that drifts, so "grounding is fine" does not mean the pin is.
+  **And an exact title is not unique either (found 2026-10-02):** 107 Arabic
+  titles repeat across the grade 1–10 books, so an exact match can still be
+  another grade's lesson. When you know the picked grade/subject, pass it as
+  the `scope` option (`KbScope`) — the generator screens, the reopened-material
+  scope and `groundedSubjectConflict` do — and derive `lessonId`/`unitId` from
+  the grounding you already resolved, never by re-grounding the title.
 - **Generators branch on the subject NAME.** `isMathContext` tests the string,
   so passing `subject: 'Mathematics'` for a chemistry lesson serves it maths
   questions from the concrete bank, titled with the chemistry lesson. Anything

@@ -278,19 +278,19 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
         role?: string;
       };
 
-    if (!firstName?.trim()) {
+    if (typeof firstName !== "string" || !firstName.trim()) {
       res.status(400).json({ error: "First name is required" });
       return;
     }
-    if (!lastName?.trim()) {
+    if (typeof lastName !== "string" || !lastName.trim()) {
       res.status(400).json({ error: "Last name is required" });
       return;
     }
-    if (!email?.includes("@")) {
+    if (typeof email !== "string" || !email.includes("@")) {
       res.status(400).json({ error: "Valid email is required" });
       return;
     }
-    if (!password || !isStrongPassword(password)) {
+    if (typeof password !== "string" || !password || !isStrongPassword(password)) {
       res.status(400).json({ error: PASSWORD_POLICY_MESSAGE });
       return;
     }
@@ -1043,9 +1043,12 @@ router.get("/join/:code", joinLookupLimiter, async (req, res) => {
 // POST /auth/login
 router.post("/login", loginLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body as { email?: string; password?: string };
+    const { email, password } = req.body as { email?: unknown; password?: unknown };
 
-    if (!email || !password) {
+    // Type-checked, not just truthy: `email: ["@"]` or a numeric password
+    // used to pass the guard and throw inside `.toLowerCase()` / bcrypt,
+    // which answered 500 "Login failed" for what is a malformed request.
+    if (typeof email !== "string" || typeof password !== "string" || !email || !password) {
       res.status(400).json({ error: "Email and password are required" });
       return;
     }
@@ -1387,8 +1390,8 @@ router.post("/google", googleLimiter, async (req, res) => {
 // POST /auth/logout
 router.post("/logout", authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
-    const { refreshToken } = req.body as { refreshToken?: string };
-    if (refreshToken) {
+    const { refreshToken } = req.body as { refreshToken?: unknown };
+    if (typeof refreshToken === "string" && refreshToken) {
       /*
        * The whole family, not just the row presented.
        *
@@ -1399,13 +1402,22 @@ router.post("/logout", authMiddleware, async (req: AuthenticatedRequest, res) =>
        * turn up later and revoke a family the user had already abandoned.
        * Ending the chain is also what "log out" means.
        */
+      // Scoped to the caller: a token value that belongs to someone else must
+      // not let this account end that user's sessions.
       const [row] = await db
         .select({ familyId: refreshTokens.familyId })
         .from(refreshTokens)
-        .where(eq(refreshTokens.tokenHash, hashRefreshToken(refreshToken)))
+        .where(
+          and(
+            eq(refreshTokens.tokenHash, hashRefreshToken(refreshToken)),
+            eq(refreshTokens.userId, req.user!.id),
+          ),
+        )
         .limit(1);
       if (row) {
-        await db.delete(refreshTokens).where(eq(refreshTokens.familyId, row.familyId));
+        await db
+          .delete(refreshTokens)
+          .where(and(eq(refreshTokens.familyId, row.familyId), eq(refreshTokens.userId, req.user!.id)));
       }
     }
     res.json({ ok: true });
@@ -1597,9 +1609,17 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
     };
 
     const updates: Record<string, unknown> = {};
-    if (preferredLanguage) updates.preferredLanguage = preferredLanguage;
-    if (firstName?.trim()) updates.firstName = firstName.trim();
-    if (lastName?.trim()) updates.lastName = lastName.trim();
+    // Allow-listed: this string is stored verbatim and echoed on every
+    // `/auth/me`, so it must not be free text.
+    if (preferredLanguage !== undefined) {
+      if (preferredLanguage !== "ar" && preferredLanguage !== "en") {
+        res.status(400).json({ error: "preferredLanguage must be 'ar' or 'en'" });
+        return;
+      }
+      updates.preferredLanguage = preferredLanguage;
+    }
+    if (typeof firstName === "string" && firstName.trim()) updates.firstName = firstName.trim();
+    if (typeof lastName === "string" && lastName.trim()) updates.lastName = lastName.trim();
 
     const sanitizedAssignments = sanitizeTeachingAssignments(teachingAssignments, VALID_GRADE_IDS, VALID_SUBJECT_IDS);
     if (sanitizedAssignments) {

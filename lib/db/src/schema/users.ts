@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, uuid, integer, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp, uuid, integer, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -82,7 +82,9 @@ export const users = pgTable("users", {
   lastLogin: timestamp("last_login", { withTimezone: true }),
 });
 
-export const refreshTokens = pgTable("refresh_tokens", {
+export const refreshTokens = pgTable(
+  "refresh_tokens",
+  {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   tokenHash: text("token_hash").unique().notNull(),
@@ -116,7 +118,15 @@ export const refreshTokens = pgTable("refresh_tokens", {
    */
   rotatedAt: timestamp("rotated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+  },
+  // `token_hash` is unique, so the refresh itself was always indexed; the
+  // family revocation on replay, logout, and the per-user prune were full
+  // scans of a table that grows by one row per rotation.
+  t => [
+    index("refresh_tokens_user_idx").on(t.userId),
+    index("refresh_tokens_family_idx").on(t.familyId),
+  ],
+);
 
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: uuid("id").primaryKey().defaultRandom(),

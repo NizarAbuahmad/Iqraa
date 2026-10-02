@@ -299,7 +299,11 @@ router.post(
 );
 
 const PAGE = 30;
-const offsetOf = (v: unknown) => Math.max(0, Math.floor(Number(v)) || 0);
+const offsetOf = (v: unknown) => {
+  const n = Math.floor(Number(v));
+  // `?offset=1e400` is Infinity, which `|| 0` lets through to Postgres.
+  return Number.isFinite(n) && n > 0 ? n : 0;
+};
 
 /**
  * GET /admin/users?q=&status=all|suspended&offset=

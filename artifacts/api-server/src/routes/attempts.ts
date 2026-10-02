@@ -14,13 +14,14 @@ import {
   attemptQuestionGrades,
   attemptResults,
   attempts,
+  classMemberships,
   evaluations,
   gradeOverrides,
   recommendations,
   students,
 } from "@workspace/db";
 import type { EvaluationQuestion } from "@workspace/db";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 import {
   authMiddleware,
   requireRole,
@@ -491,6 +492,33 @@ router.patch("/attempts/:id", async (req: AuthenticatedRequest, res) => {
       const studentId = req.body.studentId.trim();
       const student = await ownedStudent(studentId, req.user!.id);
       if (!student) {
+        res.status(404).json({ error: "Student not found" });
+        return;
+      }
+      // The sitting must land on a current member of the exam's own class:
+      // ownership alone let a paper be moved onto an archived student, or
+      // one in a different class, where no roster would ever show it. An
+      // evaluation whose class was deleted (`classGroupId` set null) keeps
+      // the ownership rule only.
+      const classId = owned.evaluation.classGroupId;
+      const eligibleQuery = classId
+        ? db
+            .select({ id: students.id })
+            .from(students)
+            .innerJoin(classMemberships, eq(classMemberships.studentId, students.id))
+            .where(
+              and(
+                eq(students.id, studentId),
+                isNull(students.archivedAt),
+                eq(classMemberships.classGroupId, classId),
+              ),
+            )
+        : db
+            .select({ id: students.id })
+            .from(students)
+            .where(and(eq(students.id, studentId), isNull(students.archivedAt)));
+      const [eligible] = await eligibleQuery.limit(1);
+      if (!eligible) {
         res.status(404).json({ error: "Student not found" });
         return;
       }

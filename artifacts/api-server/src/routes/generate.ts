@@ -646,7 +646,9 @@ generateRouter.post("/generate/infographic", async (req: AuthenticatedRequest, r
 // unauthenticated, unlimited proxy onto the OpenAI account. Same failure
 // shape as the roster/evaluations mount-order incident; see routes/index.ts.
 generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedRequest, res) => {
-  const isAr = (req.body as Record<string, unknown>).language === 'arabic';
+  // `!== 'english'`, like every other route: a request with no language is
+  // Arabic, not English — Arabic is the product language.
+  const isAr = (req.body as Record<string, unknown>).language !== 'english';
   const { body, grounding } = withGrounding(req.body as Record<string, unknown>, isAr);
   try {
     const prompt = (isAr ? classroomPromptAr(body) : classroomPromptEn(body))
@@ -777,7 +779,7 @@ async function finalizePromptSlides(content: unknown): Promise<unknown> {
 // being in that pool at all.
 generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest, res) => {
   const reqBody = req.body as Record<string, unknown>;
-  const isAr = reqBody.language === 'arabic';
+  const isAr = reqBody.language !== 'english';
   const prompt = typeof reqBody.prompt === 'string' ? reqBody.prompt.trim() : '';
   if (!prompt) {
     res.status(400).json({ error: 'prompt is required' });
@@ -832,7 +834,7 @@ generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest,
  */
 generateRouter.post('/generate/prompt-slides/questions', async (req: AuthenticatedRequest, res) => {
   const reqBody = req.body as Record<string, unknown>;
-  const isAr = reqBody.language === 'arabic';
+  const isAr = reqBody.language !== 'english';
   const prompt = typeof reqBody.prompt === 'string' ? reqBody.prompt.trim() : '';
   if (!prompt) {
     res.status(400).json({ error: 'prompt is required' });
@@ -903,6 +905,11 @@ generateRouter.post("/generate/variants/:id/retire", async (req: AuthenticatedRe
     // there is nothing left in the pool to report, which is what the caller
     // wanted, and telling the two apart says which ids exist.
     res.status(404).json({ error: "No pooled variant to report.", alreadyRetired: true });
+    return;
+  }
+  if (outcome.duplicate) {
+    // Already on the admins' queue from this teacher — nothing new to tell them.
+    res.json({ reported: true });
     return;
   }
   logger.warn(

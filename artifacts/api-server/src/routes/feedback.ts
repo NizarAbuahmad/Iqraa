@@ -59,7 +59,8 @@ router.get("/feedback", authMiddleware, requireRole(...ADMIN_ROLES), async (req,
     };
 
     const pageSize = Math.min(Math.max(Number(limit) || 50, 1), 200);
-    const pageOffset = Math.max(Number(offset) || 0, 0);
+    const parsedOffset = Math.floor(Number(offset));
+    const pageOffset = Number.isFinite(parsedOffset) && parsedOffset > 0 ? parsedOffset : 0;
 
     const conditions = [
       rating && VALID_RATINGS.includes(rating) ? eq(feedback.rating, rating) : undefined,

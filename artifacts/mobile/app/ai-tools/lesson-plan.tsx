@@ -157,7 +157,7 @@ export default function LessonPlanScreen() {
   // Prior-knowledge availability for the currently selected lesson (no fabrication)
   const priorKnowledge = (() => {
     if (!topic.trim()) return [] as string[];
-    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
     if (!g.lesson) return [] as string[];
     return getUnitPriorKnowledge(g.lesson.id);
   })();
@@ -217,7 +217,7 @@ export default function LessonPlanScreen() {
     // the picked subject. Refuse and name the real subject instead.
     const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
     if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
+    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError('');
     setCancelled(false);
@@ -241,7 +241,7 @@ export default function LessonPlanScreen() {
         regenerate: opts?.regenerate === true,
         previous,
       };
-      const grounding = groundLessonPlanTopic(form);
+      const grounding = groundLessonPlanTopic(form, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
       const out = await aiService.generateLessonPlan(
         buildLessonPlanRequest(form, grounding),
         { signal: controller.signal },
@@ -343,6 +343,7 @@ export default function LessonPlanScreen() {
   } = useGeneratorExport({
     result,
     topic: scope.topic,
+    lessonId: scope.lesson?.id,
     lang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,

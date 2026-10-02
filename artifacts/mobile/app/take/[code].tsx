@@ -129,6 +129,12 @@ export default function TakeExamScreen() {
   const [index, setIndex] = useState(0);
   const [busy, setBusy] = useState(false);
   const [deadlineAt, setDeadlineAt] = useState<string | null>(null);
+  // Server time minus device time, measured when the paper is entered. The
+  // countdown used to run on the device clock alone: a phone a few minutes
+  // fast hit zero early and force-handed the paper in while the server's
+  // deadline still stood. A slow clock was always harmless (the server
+  // refuses late writes and that refusal hands in).
+  const clockOffsetMs = useRef(0);
   const [notice, setNotice] = useState('');
 
   /**
@@ -145,6 +151,10 @@ export default function TakeExamScreen() {
     // simply stays empty, which is what this screen did before figures.
     setLessonIds(state.lessonIds ?? claimed.lessonIds ?? []);
     setDeadlineAt(state.deadlineAt ?? claimed.deadlineAt ?? null);
+    if (state.serverNow) {
+      const serverMs = new Date(state.serverNow).getTime();
+      if (Number.isFinite(serverMs)) clockOffsetMs.current = serverMs - Date.now();
+    }
     setChosen({ id: claimed.student.id, displayName: claimed.student.displayName, taken: true });
     if (code) await saveExamSession(code, { token: claimed.token, studentName: claimed.student.displayName });
     setNotice(resumed ? t('takeResumed') : '');
@@ -356,7 +366,7 @@ export default function TakeExamScreen() {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [deadlineAt, inPaper]);
-  const remainingMs = deadlineAt ? new Date(deadlineAt).getTime() - now : null;
+  const remainingMs = deadlineAt ? new Date(deadlineAt).getTime() - (now + clockOffsetMs.current) : null;
   const autoHanded = useRef(false);
   useEffect(() => {
     const timeUp = (remainingMs !== null && remainingMs <= 0) || writeRefusal !== null;

@@ -37,10 +37,13 @@ DEFAULT_TOPIC = "derivative_polynomial"
 app = FastAPI(title="Iqraa Math Verifier", version="0.2.0")
 
 
+# Caps match MAX_EXPR_LENGTH in verify_core: an unbounded string is pickled
+# to the worker, times out, and tears the whole pool down — a free DoS from
+# any signed-in account before the input gate ever ran.
 class VerifyRequest(BaseModel):
-    question: str = Field(..., min_length=1)
-    answer: str = Field(..., min_length=1)
-    topic: str | None = None
+    question: str = Field(..., min_length=1, max_length=400)
+    answer: str = Field(..., min_length=1, max_length=400)
+    topic: str | None = Field(default=None, max_length=64)
     distractors: list[dict[str, Any]] | None = None
 
 
@@ -52,9 +55,9 @@ class VerifyResponse(BaseModel):
 
 
 class KeyRequest(BaseModel):
-    topic: str = Field(..., min_length=1)
-    question: str = Field(..., min_length=1)
-    answer: str = Field(..., min_length=1)
+    topic: str = Field(..., min_length=1, max_length=64)
+    question: str = Field(..., min_length=1, max_length=400)
+    answer: str = Field(..., min_length=1, max_length=400)
 
 
 class KeyResponse(BaseModel):

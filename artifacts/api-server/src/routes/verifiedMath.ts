@@ -44,8 +44,14 @@ verifiedMathRouter.post("/generate/verified-derivative/ai", async (req: Authenti
  */
 verifiedMathRouter.post("/generate/verified-derivative/batch", async (req: AuthenticatedRequest, res) => {
   try {
-    const template = Math.min(20, Math.max(0, Number(req.query.template ?? 10)));
-    const ai = Math.min(5, Math.max(0, Number(req.query.ai ?? 10)));
+    // `Number("x")` is NaN, which Math.max lets through: both loops then ran
+    // zero times and the route answered `pass: true` over nothing.
+    const countOf = (raw: unknown, fallback: number, cap: number) => {
+      const n = Math.floor(Number(raw ?? fallback));
+      return Number.isFinite(n) ? Math.min(cap, Math.max(0, n)) : Math.min(cap, fallback);
+    };
+    const template = countOf(req.query.template, 10, 20);
+    const ai = countOf(req.query.ai, 10, 5);
     const { items, wrong, unverified, attempts_per_ai_item, avg_ai_attempts } =
       await generateBatch({ template, ai, userId: req.user?.id });
     res.json({
@@ -74,6 +80,13 @@ verifiedMathRouter.post("/verify/derivative", async (req, res) => {
     const { question, answer, topic, distractors } = req.body ?? {};
     if (!question || !answer) {
       res.status(400).json({ error: "question and answer required" });
+      return;
+    }
+    // The verifier caps its fields at 400 characters (app.py); refusing here
+    // keeps an oversized string from costing a 2s worker timeout and a pool
+    // respawn over there.
+    if (String(question).length > 400 || String(answer).length > 400) {
+      res.status(400).json({ error: "question and answer must be at most 400 characters" });
       return;
     }
     const result = await verifyDerivative(

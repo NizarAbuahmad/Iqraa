@@ -1308,16 +1308,15 @@ router.post("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) 
       return;
     }
 
+    // Any source, not just teacher entry: the schema allows one attempt per
+    // student per evaluation, so a student who already sat via the link has
+    // the only paper there will be. Filtering on source made the insert below
+    // hit that constraint and answer 500, with no way for the teacher to open
+    // the paper from here.
     const [existing] = await db
       .select()
       .from(attempts)
-      .where(
-        and(
-          eq(attempts.evaluationId, evaluation.id),
-          eq(attempts.studentId, studentId),
-          eq(attempts.source, "teacher_entry"),
-        ),
-      )
+      .where(and(eq(attempts.evaluationId, evaluation.id), eq(attempts.studentId, studentId)))
       .limit(1);
     if (existing) {
       res.json({ attempt: existing, created: false });

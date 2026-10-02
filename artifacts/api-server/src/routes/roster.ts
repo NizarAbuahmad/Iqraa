@@ -454,7 +454,9 @@ router.post("/classes/:id/students", async (req: AuthenticatedRequest, res) => {
     for (const entry of raw) {
       const id = trimmed(entry?.id);
       if (id) {
-        existingIds.push(id);
+        // Deduplicated: the ownership check below compares row count to id
+        // count, and the same id listed twice used to read as "not found".
+        if (!existingIds.includes(id)) existingIds.push(id);
         continue;
       }
       const displayName = trimmed(entry?.displayName);

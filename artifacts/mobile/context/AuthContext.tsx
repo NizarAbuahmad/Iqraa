@@ -5,6 +5,8 @@ import {
   storeTokens,
   clearTokens,
   apiJson,
+  ApiError,
+  isNetworkError,
   setOnRefreshFailed,
   getApiBaseUrl,
 } from '@/services/apiClient';
@@ -12,6 +14,8 @@ import { trackEvent } from '@/services/analytics';
 import { fetchWithTimeout } from '@/services/fetchWithTimeout';
 import { setActiveLessonContextUser } from '@/services/lessonContext';
 import { setActiveMediaUser } from '@/services/lessonMedia';
+import { setActiveWorkspaceUser } from '@/services/workspace';
+import { readUserSnapshot, saveUserSnapshot } from '@/services/userSnapshot';
 import { warmUpVerifier } from '@/services/ai/verifyMath';
 import { registerNotificationTapHandler, registerPushToken, unregisterPushToken } from '@/services/pushTokens';
 // Same package GoogleSignInButton uses — safe to import on web too, it ships
@@ -228,6 +232,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // are plain assignments, so repeating them on every render is harmless.
   setActiveLessonContextUser(user?.id ?? null);
   setActiveMediaUser(user?.id ?? null);
+  setActiveWorkspaceUser(user?.id ?? null);
   useEffect(() => {
     // Signed in → the teacher will likely generate materials shortly. Wake
     // the sleeping verifier now so the symbolic badge is available when they
@@ -284,7 +289,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const apiUser = await apiJson<ApiUser>('/auth/me');
           setUser(toUser(apiUser));
-        } catch {
+        } catch (err) {
+          // Unreachable, not refused: a timeout, an offline device, or a
+          // 5xx says nothing about the token. Keep it, open on the last
+          // known user if there is one, and let the next request refresh.
+          // Clearing here is what sent a teacher back to the login screen
+          // from a basement, with credentials nothing could check.
+          const serverAnswered = err instanceof ApiError && err.status !== undefined && err.status < 500;
+          if (!serverAnswered) {
+            const snapshot = await readUserSnapshot<User>();
+            if (snapshot) setUser(snapshot);
+            return;
+          }
           // Token invalid — try refresh
           const refreshToken = await getRefreshToken();
           if (!refreshToken) {
@@ -307,20 +323,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               await storeTokens(data.accessToken, data.refreshToken);
               const apiUser = await apiJson<ApiUser>('/auth/me');
               setUser(toUser(apiUser));
-            } else {
+            } else if (res.status === 400 || res.status === 401 || res.status === 403) {
               await clearTokens();
             }
-          } catch {
-            await clearTokens();
+          } catch (refreshErr) {
+            if (!isNetworkError(refreshErr)) await clearTokens();
           }
         }
       } catch {
+        // Storage itself failed; there is no session to keep.
         await clearTokens();
       } finally {
         setIsLoading(false);
       }
     })();
   }, []);
+
+  // Whatever the signed-in user is now is what an offline boot opens on;
+  // null (sign-out, account deletion) removes it.
+  useEffect(() => {
+    void saveUserSnapshot(user);
+  }, [user]);
 
   const login = useCallback(async (email: string, password: string) => {
     if (!email || !password) throw new Error('Email and password are required');
