@@ -56,6 +56,47 @@ export async function syncClassGroupThread(
   }
   if (!thread) throw new Error("Failed to create class thread");
 
+  await reconcileClassThreadMembers(thread.id, classGroupId, teacherId);
+  return thread;
+}
+
+/**
+ * Rebuild an existing class thread's membership after the roster changed —
+ * a student removed from the class, or an already-linked student added to it.
+ *
+ * Without this, membership was only reconciled when somebody next opened the
+ * class thread (GET /messaging/threads/class/:id), so a child taken off the
+ * roster kept reading and posting in that class's chat until then. Posting
+ * checks `chat_participants` alone, not current membership.
+ *
+ * Deliberately a no-op when the class has no thread yet: `syncClassGroupThread`
+ * get-or-creates, and a roster edit should not conjure an empty chat into a
+ * teacher's inbox.
+ */
+export async function resyncClassGroupThreadIfExists(classGroupId: string, teacherId: string): Promise<void> {
+  const [thread] = await db
+    .select({ id: chatThreads.id })
+    .from(chatThreads)
+    .where(eq(chatThreads.classGroupId, classGroupId))
+    .limit(1);
+  if (!thread) return;
+  await reconcileClassThreadMembers(thread.id, classGroupId, teacherId);
+}
+
+/**
+ * Keep the thread's display name in step with a class rename. Same no-op rule
+ * as above when there is no thread. `syncClassGroupThread` also does this on
+ * open, so until this existed a renamed class showed its old name in the
+ * inbox until somebody happened to open the chat.
+ */
+export async function renameClassGroupThread(classGroupId: string, name: string, nameAr: string): Promise<void> {
+  await db
+    .update(chatThreads)
+    .set({ title: name, titleAr: nameAr, updatedAt: new Date() })
+    .where(eq(chatThreads.classGroupId, classGroupId));
+}
+
+async function reconcileClassThreadMembers(threadId: string, classGroupId: string, teacherId: string): Promise<void> {
   const studentUserRows = await db
     .select({ userId: rosterLinks.userId })
     .from(classMemberships)
@@ -70,62 +111,35 @@ export async function syncClassGroupThread(
 
   await db
     .insert(chatParticipants)
-    .values([...desired].map(userId => ({ threadId: thread.id, userId })))
+    .values([...desired].map(userId => ({ threadId, userId })))
     .onConflictDoNothing();
 
-  const current = await db.select().from(chatParticipants).where(eq(chatParticipants.threadId, thread.id));
+  const current = await db.select().from(chatParticipants).where(eq(chatParticipants.threadId, threadId));
   const toRemove = current
     .map(p => p.userId)
     .filter(userId => userId !== teacherId && !desired.has(userId));
   if (toRemove.length > 0) {
     await db
       .delete(chatParticipants)
-      .where(and(eq(chatParticipants.threadId, thread.id), inArray(chatParticipants.userId, toRemove)));
+      .where(and(eq(chatParticipants.threadId, threadId), inArray(chatParticipants.userId, toRemove)));
   }
-
-  return thread;
 }
 
 /**
- * Rebuild one class's thread from its current roster, looking the class up
- * by id. For the roster routes that add or remove a member: membership used
- * to reconcile only when the teacher next opened the class chat, so a
- * student removed from «10-أ» kept reading — and posting, if enabled — until
- * then, and one added saw no class chat at all.
- */
-export async function syncClassThreadFor(classGroupId: string): Promise<void> {
-  const [group] = await db
-    .select({
-      id: classGroups.id,
-      teacherId: classGroups.teacherId,
-      name: classGroups.name,
-      nameAr: classGroups.nameAr,
-    })
-    .from(classGroups)
-    .where(and(eq(classGroups.id, classGroupId), isNull(classGroups.archivedAt)))
-    .limit(1);
-  if (!group) return;
-  await syncClassGroupThread(group.id, group.teacherId, group.name, group.nameAr);
-}
-
-/**
- * Rebuild every live class thread a student sits in. For the claim route:
- * a freshly linked account belongs in its class chat from the moment the
- * link exists, not from the next time the teacher happens to open it.
+ * Rebuild every existing class thread a student sits in. For the claim
+ * route: a freshly linked account belongs in its class chat from the moment
+ * the link exists, not from the next time the teacher happens to open it.
+ * Same no-op rule as `resyncClassGroupThreadIfExists`: a claim should not
+ * conjure an empty chat into a teacher's inbox.
  */
 export async function syncClassThreadsForStudent(studentId: string): Promise<void> {
   const memberships = await db
-    .select({
-      classGroupId: classMemberships.classGroupId,
-      teacherId: classGroups.teacherId,
-      name: classGroups.name,
-      nameAr: classGroups.nameAr,
-    })
+    .select({ classGroupId: classMemberships.classGroupId, teacherId: classGroups.teacherId })
     .from(classMemberships)
     .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
     .where(and(eq(classMemberships.studentId, studentId), isNull(classGroups.archivedAt)));
   for (const m of memberships) {
-    await syncClassGroupThread(m.classGroupId, m.teacherId, m.name, m.nameAr);
+    await resyncClassGroupThreadIfExists(m.classGroupId, m.teacherId);
   }
 }
 
