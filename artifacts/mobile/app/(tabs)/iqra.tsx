@@ -56,6 +56,9 @@ import { KB_SUGGEST_SCORE, shouldAskWhichLesson } from '@/services/kbSuggestion'
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
+import { aiErrorMessageKey, isCapError } from '@/services/ai/aiProvenance';
+import { shouldSendOnEnter } from '@/services/composerKeys';
+import type { ArtifactScope } from '@/services/ai/artifactScope';
 import {
   generateChatArtifact,
   generateChatInfographic,
@@ -359,10 +362,17 @@ const SUGGESTIONS: Record<Mode, Record<'ar' | 'en', Suggestion[]>> = {
 type ChatLessonPick = { topic: string; subjectId: string; gradeId: string; lessonId: string | null };
 
 function ContextBanner({
-  colors, isRTL, lang, t, onContextChange, onAsk, hidePill, externalOpen, onExternalOpenChange, onGlobalPick,
+  colors, isRTL, lang, t, currentTopic, onContextChange, onAsk, hidePill, externalOpen, onExternalOpenChange, onGlobalPick,
 }: {
   colors: any; isRTL: boolean; lang: 'ar' | 'en';
   t: (k: any) => string;
+  /**
+   * The lesson the screen is on, which the sheet opens on. This used to be
+   * the sheet's own copy of its last confirmed pick, so the card's clear
+   * button — which resets the screen, not the sheet — left the next open
+   * pre-filled with the lesson just cleared, and «ابدأ التحضير: …» named it.
+   */
+  currentTopic: string;
   onContextChange: (ctx: string, pick?: ChatLessonPick) => void;
   onAsk: (topic: string, pick?: ChatLessonPick) => void;
   /** When true, only the change-lesson modal is rendered (card owns the chrome). */
@@ -377,7 +387,7 @@ function ContextBanner({
   const teacherScope = useTeacherScope();
   const [subjIdx, setSubjIdx] = useState(teacherScope.defaultScope.subjectIdx);
   const [gradeId, setGradeId] = useState(teacherScope.defaultIds.gradeId);
-  const [topic, setTopicInternal] = useState('');
+  const topic = currentTopic;
   // Draft topic while modal is open; only committed on confirm
   const [draftTopic, setDraftTopic] = useState('');
   const [draftSubjIdx, setDraftSubjIdx] = useState(subjIdx);
@@ -454,12 +464,12 @@ function ContextBanner({
       setDraftGradeId(gradeId);
       setDraftLessonId(null);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- drafts are seeded on open only
   }, [externalOpen]);
 
   const handleConfirm = () => {
     setSubjIdx(draftSubjIdx);
     setGradeId(draftGradeId);
-    setTopicInternal(draftTopic);
     const pick: ChatLessonPick = {
       topic: draftTopic.trim(),
       subjectId: subj.subjectId,
@@ -479,7 +489,6 @@ function ContextBanner({
   };
 
   const handleClear = () => {
-    setTopicInternal('');
     setSubjIdx(teacherScope.defaultScope.subjectIdx);
     setGradeId(teacherScope.defaultIds.gradeId);
     setDraftLessonId(null);
@@ -1362,6 +1371,13 @@ export default function IqraScreen() {
   // Without it the retrieval below re-derived the lesson from the topic
   // string and could seat a neighbouring lesson at the top of the results.
   const [teachingCtxLessonId, setTeachingCtxLessonId] = useState<string | null>(null);
+  /**
+   * The subject and grade behind `teachingCtx`, when the pick carried them.
+   * A free-typed topic and an uploaded document have no KB lesson to name a
+   * book, and chat's generator used to fall back to الرياضيات for both; this
+   * is what names the request instead. See `resolveArtifactScope`.
+   */
+  const [teachingCtxScope, setTeachingCtxScope] = useState<ArtifactScope | null>(null);
   /** Latest `teachingCtx`, readable from async callbacks without a re-render. */
   const teachingCtxRef = useRef(teachingCtx);
   /** Session memory for collaborative Demo Mode chat (active lesson + prior asks). */
@@ -1735,6 +1751,7 @@ export default function IqraScreen() {
       if (!teachingCtxRef.current.trim()) {
         setTeachingCtx(pick.topic);
         setTeachingCtxLessonId(pick.lessonId ?? null);
+        setTeachingCtxScope({ subjectId: pick.subjectId, gradeId: pick.gradeId });
       }
       // Restore the exact lesson that was picked. Re-deriving it from the
       // saved title put the teacher on a neighbouring lesson often enough
@@ -1949,7 +1966,16 @@ export default function IqraScreen() {
           : (namesNothing
             ? ((lang === 'ar' ? sessionMemory.activeTopicAr : sessionMemory.activeTopicEn) ?? named)
             : named);
-        const generated = await generateChatInfographic({ topic: topic || q, lesson, lang: lang as 'ar' | 'en' });
+        // No lesson behind the ask: label it with the lesson the chat is on,
+        // else the sheet's pick — not the generator's maths default.
+        const scopeLesson = ctxId ? getLessonById(ctxId) : null;
+        const scopeBook = scopeLesson ? getBookForLesson(scopeLesson) : undefined;
+        const generated = await generateChatInfographic({
+          topic: topic || q,
+          lesson,
+          lang: lang as 'ar' | 'en',
+          scope: scopeBook ? { subjectId: scopeBook.subjectId, gradeId: scopeBook.gradeId } : teachingCtxScope,
+        });
         setMessages(prev => [...prev, {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
@@ -2055,6 +2081,7 @@ export default function IqraScreen() {
         setSessionMemory(prev => ({ ...prev, lessonPin: 'none' }));
         setTeachingCtx('');
         setTeachingCtxLessonId(null);
+        setTeachingCtxScope(null);
       }
 
       // A grade the teacher names explicitly ("grade one", «الصف الأول») beats
@@ -2442,7 +2469,20 @@ export default function IqraScreen() {
         // not whichever grade's lesson scored highest.
         const artGradeId = queryGradeId
           ?? (activeLesson ? getBookForLesson(activeLesson)?.gradeId : null)
-          ?? (ctxLesson ? getBookForLesson(ctxLesson)?.gradeId : null);
+          ?? (ctxLesson ? getBookForLesson(ctxLesson)?.gradeId : null)
+          ?? teachingCtxScope?.gradeId
+          ?? null;
+        // What labels the request when no lesson grounds it (an upload, a
+        // free-typed topic): the subject the message names, else the lesson
+        // the chat is on, else the sheet's pick. Never a bare maths default.
+        const artScope: ArtifactScope = {
+          subjectId: querySubjectId
+            ?? (activeLesson ? getBookForLesson(activeLesson)?.subjectId : null)
+            ?? (ctxLesson ? getBookForLesson(ctxLesson)?.subjectId : null)
+            ?? teachingCtxScope?.subjectId
+            ?? null,
+          gradeId: artGradeId,
+        };
         const topicRankedAll = searchKBRanked(topicForArt, lang as 'ar' | 'en');
         const topicRankedInGrade = artGradeId
           ? searchKBRanked(topicForArt, lang as 'ar' | 'en', { gradeId: artGradeId })
@@ -2491,6 +2531,7 @@ export default function IqraScreen() {
             lang: lang as 'ar' | 'en',
             documentContext: hasDocs ? docBundle.promptBlock : null,
             fromSoftPin: softBareArtifact && !topicStrong,
+            scope: artScope,
           });
           // Name the file the teacher opened, and say plainly that the
           // material above is not drawn from it. This branch emits no support
@@ -2521,14 +2562,24 @@ export default function IqraScreen() {
           });
         } catch (genErr) {
           console.error('[iqra chat] artifact generation failed', genErr);
-          const ta = runTeachingAssistant();
-          responseText = ta.text || t('iqraChatError');
-          teachingActions = ta.actions;
-          if (ta.activeLesson) {
-            lessonTopic = lang === 'ar' ? ta.activeLesson.titleAr : ta.activeLesson.titleEn;
-            quickTopic = lessonTopic;
+          if (isCapError(genErr)) {
+            // A cap is a refusal, not a failure to paper over — the same rule
+            // `generateWithProvenance` applies, and the reason it rethrows
+            // rather than falling back to mock content. Answering "this month's
+            // allowance is spent" with a local lesson outline would be the
+            // substitution that module exists to prevent, with nothing on
+            // screen to say the AI never ran.
+            responseText = t(aiErrorMessageKey(genErr));
+          } else {
+            const ta = runTeachingAssistant();
+            responseText = ta.text || t('iqraChatError');
+            teachingActions = ta.actions;
+            if (ta.activeLesson) {
+              lessonTopic = lang === 'ar' ? ta.activeLesson.titleAr : ta.activeLesson.titleEn;
+              quickTopic = lessonTopic;
+            }
+            setSessionMemory(prev => ({ ...prev, ...ta.memoryPatch }));
           }
-          setSessionMemory(prev => ({ ...prev, ...ta.memoryPatch }));
         }
       } else if (DEMO_MODE) {
         const ta = runTeachingAssistant();
@@ -2597,21 +2648,29 @@ export default function IqraScreen() {
           }
         } catch (remoteErr) {
           console.error('[iqra chat] remote AI failed', remoteErr);
-          const ta = runTeachingAssistant();
-          responseText = ta.text || t('iqraOfflineFallback');
-          teachingActions = ta.actions;
-          if (ta.activeLesson) {
-            lessonTopic = lang === 'ar' ? ta.activeLesson.titleAr : ta.activeLesson.titleEn;
-            quickTopic = lessonTopic;
-          } else if (hasDocs) {
-            quickTopic = primaryTopicFromDocuments(docBundle.documents, docNames[0] || q);
-            lessonTopic = quickTopic;
+          if (isCapError(remoteErr)) {
+            // Quota spent or live mode off: say so. This used to fall through
+            // to the local knowledge-base reply below under «تحقق من
+            // الإنترنت», so a teacher whose allowance was gone got an answer
+            // that read like the AI's, with a message blaming their network.
+            responseText = t(aiErrorMessageKey(remoteErr));
+          } else {
+            const ta = runTeachingAssistant();
+            responseText = ta.text || t('iqraOfflineFallback');
+            teachingActions = ta.actions;
+            if (ta.activeLesson) {
+              lessonTopic = lang === 'ar' ? ta.activeLesson.titleAr : ta.activeLesson.titleEn;
+              quickTopic = lessonTopic;
+            } else if (hasDocs) {
+              quickTopic = primaryTopicFromDocuments(docBundle.documents, docNames[0] || q);
+              lessonTopic = quickTopic;
+            }
+            setSessionMemory(prev => {
+              let next = { ...prev, ...ta.memoryPatch };
+              if (pendingHardPin) next = pinLesson(next, pendingHardPin, 'hard');
+              return next;
+            });
           }
-          setSessionMemory(prev => {
-            let next = { ...prev, ...ta.memoryPatch };
-            if (pendingHardPin) next = pinLesson(next, pendingHardPin, 'hard');
-            return next;
-          });
         }
       }
 
@@ -2706,7 +2765,7 @@ export default function IqraScreen() {
         setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
       }
     },
-    [deepLinkColor, deepLinkLessonId, lang, messages, mode, sessionMemory, t, teachingCtx, teachingCtxLessonId],
+    [deepLinkColor, deepLinkLessonId, lang, messages, mode, sessionMemory, t, teachingCtx, teachingCtxLessonId, teachingCtxScope],
   );
 
   /**
@@ -2758,6 +2817,8 @@ export default function IqraScreen() {
     setSessionMemory(prev => pinLesson(prev, lesson, 'hard'));
     setTeachingCtx(lang === 'ar' ? lesson.titleAr : lesson.titleEn);
     setTeachingCtxLessonId(lesson.id);
+    const book = getBookForLesson(lesson);
+    setTeachingCtxScope(book ? { subjectId: book.subjectId, gradeId: book.gradeId } : null);
   }, [autoSendPending, lang]);
 
   // Handle subject-clarification chip taps (ambiguous query flow)
@@ -3323,6 +3384,7 @@ export default function IqraScreen() {
             setSessionMemory(prev => ({ ...prev, lessonPin: 'none' }));
             setTeachingCtx('');
             setTeachingCtxLessonId(null);
+            setTeachingCtxScope(null);
           }}
           // The board right below it is already counting, from better data.
           hideCount={Boolean(introPrepBoard)}
@@ -3343,6 +3405,7 @@ export default function IqraScreen() {
           isRTL={isRTL}
           lang={lang as 'ar' | 'en'}
           t={t}
+          currentTopic={teachingCtx}
           hidePill
           externalOpen={changeLessonOpen}
           onExternalOpenChange={setChangeLessonOpen}
@@ -3361,6 +3424,7 @@ export default function IqraScreen() {
           onContextChange={(ctx, pick) => {
             setTeachingCtx(ctx);
             setTeachingCtxLessonId(pick?.lessonId ?? null);
+            setTeachingCtxScope(pick ? { subjectId: pick.subjectId, gradeId: pick.gradeId } : null);
             if (!ctx.trim()) return;
             const picked = resolvePickedLesson(ctx, pick, lang as 'ar' | 'en');
             if (picked) {
@@ -3647,6 +3711,21 @@ export default function IqraScreen() {
             multiline
             maxLength={800}
             onSubmitEditing={() => sendMessage(input)}
+            // Web: a multiline input never reaches `onSubmitEditing` without
+            // `blurOnSubmit`, which would also drop focus after every send. So
+            // Enter is decided here (Shift+Enter still breaks the line), and
+            // the default is prevented so no newline lands in the field.
+            onKeyPress={
+              Platform.OS === 'web'
+                ? (e) => {
+                    const ne = e.nativeEvent as { key?: string; shiftKey?: boolean; isComposing?: boolean };
+                    if (shouldSendOnEnter({ key: ne.key, shiftKey: !!ne.shiftKey, isComposing: !!ne.isComposing })) {
+                      e.preventDefault();
+                      sendMessage(input);
+                    }
+                  }
+                : undefined
+            }
           />
           <Pressable
             onPress={() => sendMessage(input)}

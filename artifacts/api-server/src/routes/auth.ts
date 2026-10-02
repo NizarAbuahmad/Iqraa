@@ -46,6 +46,7 @@ import {
   RESET_CODE_TTL_MS,
 } from "../lib/passwordReset.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
+import { resyncClassGroupThreadIfExists } from "../lib/classThread.js";
 import { decideRoleSwitch } from "../lib/roleSwitch.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 import { extensionForAvatarMime, MAX_AVATAR_DATA_URL_LENGTH } from "../lib/avatarUpload.js";
@@ -792,6 +793,42 @@ router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedReq
       .insert(rosterLinks)
       .values({ studentId: resolved.studentId, userId: req.user!.id, relation: resolved.relation })
       .onConflictDoNothing();
+
+    if (resolved.relation === "self") {
+      // One student, one self-link — decideClaim checked, but check-then-insert
+      // has no database backstop (the unique index is on student+user), so two
+      // student accounts claiming the same name in the same moment both got
+      // through. Re-read after the insert: if more than one self-link now
+      // exists, the earliest stays and this one withdraws with the same 409 the
+      // rule would have given it a moment later. Both racers run this, both
+      // see two rows, and only the later one deletes its own.
+      const selfLinks = await db
+        .select({ id: rosterLinks.id, userId: rosterLinks.userId, createdAt: rosterLinks.createdAt })
+        .from(rosterLinks)
+        .where(and(eq(rosterLinks.studentId, resolved.studentId), eq(rosterLinks.relation, "self")))
+        .orderBy(asc(rosterLinks.createdAt), asc(rosterLinks.id));
+      if (selfLinks.length > 1 && selfLinks[0]!.userId !== req.user!.id) {
+        await db
+          .delete(rosterLinks)
+          .where(and(eq(rosterLinks.studentId, resolved.studentId), eq(rosterLinks.userId, req.user!.id)));
+        res.status(409).json({ error: "This student is already linked to an account", code: "claim_already_linked" });
+        return;
+      }
+
+      // A student who joins is a member of every class thread their roster row
+      // sits in — the same rule roster edits apply (routes/roster.ts), applied
+      // here on the way in. Without it the new account saw no class group
+      // until the teacher happened to reopen it. "If exists", like those
+      // edits: a claim must not conjure an empty chat into a teacher's inbox.
+      const memberships = await db
+        .select({ classGroupId: classMemberships.classGroupId, teacherId: classGroups.teacherId })
+        .from(classMemberships)
+        .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
+        .where(and(eq(classMemberships.studentId, resolved.studentId), isNull(classGroups.archivedAt)));
+      for (const m of memberships) {
+        await resyncClassGroupThreadIfExists(m.classGroupId, m.teacherId);
+      }
+    }
 
     res.status(201).json({ studentId: resolved.studentId, relation: resolved.relation });
   } catch (err) {

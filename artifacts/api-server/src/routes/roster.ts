@@ -9,6 +9,10 @@
  * Students are personal data about minors. Names are never logged, and the
  * error paths deliberately say "not found" rather than distinguishing "exists
  * but belongs to another teacher" — the latter leaks the roster of a colleague.
+ *
+ * An archived class is "not found" on every per-id route too, via
+ * `findLiveClass` (lib/classOwnership.ts). Archiving is this module's delete,
+ * and for a while only the list honoured it — see that helper for the bug.
  */
 import { Router } from "express";
 import { db } from "@workspace/db";
@@ -41,7 +45,12 @@ import { generateShareCode } from "../modules/assessment/studentView.ts";
 import { isCodeLive } from "../lib/claimDecision.ts";
 import { requireRosterConsent } from "../lib/rosterConsent.js";
 import { studentAccountsEnabled } from "../lib/features.js";
-import { syncClassGroupThread } from "../lib/classThread.js";
+import {
+  renameClassGroupThread,
+  resyncClassGroupThreadIfExists,
+  syncClassGroupThread,
+} from "../lib/classThread.js";
+import { findLiveClass } from "../lib/classOwnership.js";
 
 const router = Router();
 
@@ -150,12 +159,7 @@ router.post("/classes", async (req: AuthenticatedRequest, res) => {
 router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = req.params["id"] as string;
-    const [group] = await db
-      .select()
-      .from(classGroups)
-      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
-      .limit(1);
-
+    const group = await findLiveClass(classId, req.user!.id);
     if (!group) {
       res.status(404).json({ error: "Class not found" });
       return;
@@ -218,13 +222,7 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
 router.get("/classes/:id/mastery", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = req.params["id"] as string;
-    const [group] = await db
-      .select({ id: classGroups.id })
-      .from(classGroups)
-      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
-      .limit(1);
-
-    if (!group) {
+    if (!(await findLiveClass(classId, req.user!.id))) {
       res.status(404).json({ error: "Class not found" });
       return;
     }
@@ -312,12 +310,23 @@ router.patch("/classes/:id", async (req: AuthenticatedRequest, res) => {
     const [row] = await db
       .update(classGroups)
       .set(patch)
-      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      .where(
+        and(
+          eq(classGroups.id, classId),
+          eq(classGroups.teacherId, req.user!.id),
+          isNull(classGroups.archivedAt),
+        ),
+      )
       .returning();
 
     if (!row) {
       res.status(404).json({ error: "Class not found" });
       return;
+    }
+    // The class chat is titled after the class; a rename used to reach it only
+    // when somebody next opened the thread.
+    if ("name" in patch || "nameAr" in patch) {
+      await renameClassGroupThread(row.id, row.name, row.nameAr);
     }
     res.json({ class: row });
   } catch (err) {
@@ -414,12 +423,7 @@ router.get("/students", async (req: AuthenticatedRequest, res) => {
 router.post("/classes/:id/students", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = req.params["id"] as string;
-    const [group] = await db
-      .select()
-      .from(classGroups)
-      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
-      .limit(1);
-
+    const group = await findLiveClass(classId, req.user!.id);
     if (!group) {
       res.status(404).json({ error: "Class not found" });
       return;
@@ -528,6 +532,15 @@ router.post("/classes/:id/students", async (req: AuthenticatedRequest, res) => {
         .returning({ studentId: classMemberships.studentId });
     }
 
+    // A student brought in from another class may already hold a linked
+    // account, and class-chat membership is derived from the roster — so the
+    // thread has to learn about them now, not when somebody next opens it.
+    // Freshly created rows have no account yet, so only the attach path can
+    // change membership.
+    if (joined.length > 0 && ownedExisting.length > 0) {
+      await resyncClassGroupThreadIfExists(classId, req.user!.id);
+    }
+
     // `added` counts memberships actually created, so a duplicate tap reports 0
     // rather than claiming an add that did not happen. `skipped` names the
     // students who were already on the roster, so the teacher can see that the
@@ -549,13 +562,7 @@ router.delete("/classes/:id/students/:studentId", async (req: AuthenticatedReque
     const classId = req.params["id"] as string;
     const studentId = req.params["studentId"] as string;
 
-    const [group] = await db
-      .select({ id: classGroups.id })
-      .from(classGroups)
-      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
-      .limit(1);
-
-    if (!group) {
+    if (!(await findLiveClass(classId, req.user!.id))) {
       res.status(404).json({ error: "Class not found" });
       return;
     }
@@ -574,6 +581,12 @@ router.delete("/classes/:id/students/:studentId", async (req: AuthenticatedReque
       res.status(404).json({ error: "Student is not in this class" });
       return;
     }
+
+    // Class-chat membership is derived from the roster. Until this call, a
+    // linked student taken off the class kept their seat in its chat until
+    // someone next opened the thread — reading, and able to post.
+    await resyncClassGroupThreadIfExists(classId, req.user!.id);
+
     res.json({ removed: studentId });
   } catch (err) {
     failRoster(res, err, "remove student", "Failed to remove student");
@@ -739,12 +752,7 @@ router.get("/students/:id/parent-contacts", async (req: AuthenticatedRequest, re
 router.get("/classes/:id/parent-contacts", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = req.params["id"] as string;
-    const [group] = await db
-      .select({ id: classGroups.id })
-      .from(classGroups)
-      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
-      .limit(1);
-    if (!group) {
+    if (!(await findLiveClass(classId, req.user!.id))) {
       res.status(404).json({ error: "Class not found" });
       return;
     }
@@ -897,7 +905,15 @@ router.post("/classes/:id/join-code", async (req: AuthenticatedRequest, res) => 
     const [row] = await db
       .update(classGroups)
       .set({ joinCode, joinCodeExpiresAt, updatedAt: new Date() })
-      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      // GET /auth/join/:code already refuses an archived class, so a code
+      // minted here would be one nothing can redeem — refuse to mint it.
+      .where(
+        and(
+          eq(classGroups.id, classId),
+          eq(classGroups.teacherId, req.user!.id),
+          isNull(classGroups.archivedAt),
+        ),
+      )
       .returning({ id: classGroups.id });
 
     if (!row) {
