@@ -74,6 +74,7 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
 import { summarizeClassContacts, type ClassContactSummary } from '@/services/parentMessage';
 import { palette } from '@/constants/colors';
+import { CLASSES_QUERY_KEY, classQueryKey as CLASS_QUERY_KEY } from '@/services/rosterQueryKeys';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -85,8 +86,6 @@ type Tab = 'students' | 'materials' | 'exams';
 
 type ClassQueryData = { group: ClassGroup; students: RosterStudent[] };
 
-/** Route-scoped key: each class id gets its own cache entry. */
-const CLASS_QUERY_KEY = (id: string) => ['class', id] as const;
 /**
  * This screen is stack-pushed per class, so every visit used to be a fresh
  * mount that re-earned the roster over the network before painting anything
@@ -188,20 +187,34 @@ export default function ClassDetailScreen() {
   );
   const loadError = loadFailed ? describe(loadErrorRaw) : '';
 
+  /**
+   * Everything on this screen that is not the roster itself. Never throws:
+   * it runs from `useFocusEffect` as a fire-and-forget, where a rejection is
+   * an unhandled promise and nothing on screen, and from `onAdd` inside the
+   * try block, where a failed *exams* fetch used to be reported as a failed
+   * *add* — after the students had in fact been saved — and swallowed the
+   * skipped-names message in the process.
+   */
   const load = useCallback(async () => {
     if (!id) return;
     setError('');
     // Materials are a separate store with its own offline fallback, so a
     // roster failure must not blank the materials tab and vice versa.
     setMaterials(await getItems({ classId: id }));
-    setExams(await listEvaluations({ classId: id }));
+    // The exams list has no fallback and throws on any non-2xx. Say so in the
+    // banner and keep whatever was shown before rather than blanking the tab.
+    try {
+      setExams(await listEvaluations({ classId: id }));
+    } catch (err) {
+      setError(describe(err));
+    }
     // Term mastery is a nice-to-have on this screen, not a reason to fail it.
     // A class with no marked attempts yet answers with empty objectives, which
     // the section renders as "nothing yet" rather than as an error.
     setMastery(await getClassMastery(id).catch(() => null));
     // Same rule: the contact card is advice, never a reason to fail the roster.
     setParentContacts(await listClassParentContacts(id).catch(() => null));
-  }, [id]);
+  }, [id, describe]);
 
   const contactSummary = useMemo(
     () => (parentContacts ? summarizeClassContacts(students, parentContacts, new Date()) : null),
@@ -237,6 +250,9 @@ export default function ClassDetailScreen() {
       // addStudents only returns counts, not the created rows, so there is no
       // local shape to write into the cache — refetch the roster instead.
       await Promise.all([load(), refetch()]);
+      // The class list shows a student count and caches for a minute; without
+      // this, going back showed the old number until the cache aged out.
+      void queryClient.invalidateQueries({ queryKey: CLASSES_QUERY_KEY });
       // Say so when names were skipped. A teacher who pastes 30 and gets 27
       // needs to know the 3 were already on the roster, not lost.
       if (result.skipped.length > 0) {
@@ -333,6 +349,7 @@ export default function ClassDetailScreen() {
       queryClient.setQueryData<ClassQueryData>(CLASS_QUERY_KEY(id), prev =>
         prev ? { ...prev, students: prev.students.filter(s => s.id !== student.id) } : prev,
       );
+      void queryClient.invalidateQueries({ queryKey: CLASSES_QUERY_KEY });
     } catch (err) {
       setError(describe(err));
     }

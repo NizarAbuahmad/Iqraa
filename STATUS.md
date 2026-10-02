@@ -532,6 +532,67 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The roster now tells the class chat, and an archived class stays archived, 2026-10-02
+
+A review of the classes feature (roster router, schema, list and detail
+screens) found no security hole and four things worth fixing. All four are in
+one PR; the rest of the review is in that PR's description.
+
+**A student removed from a class kept their seat in its chat.** Class-group
+thread membership is *derived* from the roster, but `DELETE
+/classes/:id/students/:studentId` never re-derived it — only opening the class
+thread (`GET /messaging/threads/class/:id`) did, and posting checks
+`chat_participants` alone. So a linked child taken off the roster could go on
+reading and posting until somebody happened to open the thread. Now the remove
+route, and the add route when it attaches an *existing* student (the only add
+that can carry an account), call `resyncClassGroupThreadIfExists`
+(`api-server/src/lib/classThread.ts`). "If exists" is deliberate: the sync used
+on open get-or-creates, and a roster edit must not conjure an empty chat into
+a teacher's inbox. A rename (`PATCH /classes/:id`) now retitles the thread
+through `renameClassGroupThread` for the same reason — it used to show the old
+name until the next open. The membership rule itself did not move; it is the
+same `reconcileClassThreadMembers` body `syncClassGroupThread` always ran.
+
+**Archiving a class only hid it from the list.** Every per-id route accepted
+an archived class — detail, patch, add students, join code, mastery, parent
+contacts — and so did `resolveClassGroupId` (plans, schedule slots) and the
+evaluation attach route. A stale deep link or a saved material's `classGroupId`
+could keep feeding a class the teacher had deleted, and a join code could be
+minted that `GET /auth/join/:code` (which *does* filter archived) would never
+redeem. One lookup now answers "owned and live" for all of them:
+`findLiveClass` in `api-server/src/lib/classOwnership.ts`, 404 on miss, with
+the same "not found either way" rule the router header states. `DELETE
+/classes/:id` itself is left without the filter so a double tap stays
+idempotent. Not changed: the messaging routes still open an archived class's
+thread — that is chat history, and hiding it is a product call, not a cleanup.
+
+**The class screen's secondary loads could throw.** `load()` in
+`app/classes/[id].tsx` awaited `listEvaluations` unguarded. From
+`useFocusEffect` that was an unhandled rejection with nothing on screen; from
+`onAdd`, inside its try block, a transient exams failure was reported as a
+failed *add* after the students had been saved, and ate the skipped-names
+message. The exams fetch is now caught into the banner; materials, mastery and
+contacts already had fallbacks.
+
+**The class list showed a stale student count** for up to a minute after
+adding or removing students — the detail screen never invalidated the list's
+query. Both keys now live in `services/rosterQueryKeys.ts` and the detail
+screen invalidates `['classes']` on both writes.
+
+**Verified:** typecheck clean, api-server 1000/1000 (built bundle), mobile
+2130/2130 with the 10 pre-existing skips. **Not verified:** none of the four
+is exercised by a test — the three server changes are SQL-bound and this repo
+has no DB-backed tests (see `lib/claimDecision.ts` on why), and the two screen
+changes live under `app/`, which the mobile runner cannot load. The thread
+resync and the archived 404s were read, not driven against a database.
+
+**Left for later, from the same review:** bulk add is not transactional
+(students then memberships, orphans on a mid-way failure); a malformed uuid is
+a 500, not a 404; the edit sheet's `'grade-10'` fallback is hardcoded and a
+grade change can keep a subject the new grade does not offer; class mastery
+joins by the evaluation's class, so a student removed from the roster still
+appears in it; the within-class name dedup rule is inline and untestable.
+
 ## An English corner for Grades 1–4, 2026-09-25
 
 Anyone can practise the Grade 1–4 English lesson words at
