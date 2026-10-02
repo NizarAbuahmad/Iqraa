@@ -16,6 +16,7 @@ import {
   applyClassroomSetup,
   buildBuilderRoute,
   resolveActivityType,
+  visibleActivityCards,
 } from '../classroomRouting.ts';
 import translations, { getT } from '../i18n.ts';
 
@@ -332,5 +333,36 @@ describe('applyClassroomSetup', () => {
       teacherPreparation: '',
     };
     assert.deepEqual(applyClassroomSetup(quick, 'screen', true).materials, quick.materials);
+  });
+});
+
+describe('visibleActivityCards — the hero card is dropped only while the hero shows', () => {
+  const titleOf = (c: { id: string }) => c.id;
+  const featured = ACTIVITY_CARDS.find(c => c.isFeatured)!;
+
+  it('leaves the featured card to the hero when the list is unfiltered', () => {
+    const list = visibleActivityCards(ACTIVITY_CARDS, 'all', '', titleOf);
+    assert.ok(!list.some(c => c.id === featured.id));
+  });
+
+  it('shows the featured card when a search matches it, since the hero is hidden then', () => {
+    const list = visibleActivityCards(ACTIVITY_CARDS, 'all', featured.id, titleOf);
+    assert.ok(list.some(c => c.id === featured.id));
+  });
+
+  it('shows the featured card under a filter it satisfies', () => {
+    // The escape challenge is a team activity; the hero is hidden under the
+    // team filter, so the list must carry it or it is reachable from nowhere.
+    assert.equal(featured.isTeam, true);
+    const list = visibleActivityCards(ACTIVITY_CARDS, 'team', '', titleOf);
+    assert.ok(list.some(c => c.id === featured.id));
+    for (const c of list) assert.equal(c.isTeam, true);
+  });
+
+  it('still applies the quick filter and the search to every card', () => {
+    const quick = visibleActivityCards(ACTIVITY_CARDS, 'quick', '', titleOf);
+    for (const c of quick) assert.ok(c.durationMin <= 15);
+    const none = visibleActivityCards(ACTIVITY_CARDS, 'all', 'no-such-card', titleOf);
+    assert.deepEqual(none, []);
   });
 });
