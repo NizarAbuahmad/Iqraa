@@ -1130,12 +1130,33 @@ router.post("/google", googleLimiter, async (req, res) => {
         : await db.select().from(users).where(eq(users.email, email)).limit(1);
       const conflict = known ? googleRoleConflict(known, rawRole) : null;
       if (conflict) {
-        res.status(409).json({
-          code: "role_mismatch",
-          existingRole: conflict,
-          error: `An account with this email already exists as a ${conflict}. Use Sign in instead.`,
+        // The register screen's role pill is the same question POST /auth/role
+        // answers, and Google proving the address is the same authority as a
+        // session on it — so apply the switch under the same rules, instead of
+        // refusing. A parent who picked wrong at signup used to tap Google again
+        // with "teacher" selected, get this 409, and sign in as a parent anyway,
+        // back onto the claim screen asking for a code they don't have.
+        const decision = await decideRoleSwitch({
+          currentRole: known!.role,
+          requestedRole: rawRole,
+          studentAccountsEnabled: studentAccountsEnabled(),
+          hasRosterLink: () => hasAnyRosterLink(known!.id),
+          hasTeachingData: () => hasAnyTeachingData(known!.id),
         });
-        return;
+        if (!decision.ok) {
+          res.status(409).json({
+            // The screen showing this is Arabic; it branches on `code`.
+            code: decision.code,
+            existingRole: conflict,
+            error: `An account with this email already exists as a ${conflict}. Use Sign in instead.`,
+          });
+          return;
+        }
+        await db.update(users).set({ role: decision.role }).where(eq(users.id, known!.id));
+        logger.info({ userId: known!.id, from: known!.role, to: decision.role }, "role switched via google signup");
+        // `user` is this same row when matched by googleId; the email-linked
+        // branch below re-reads it from the database after the update.
+        known!.role = decision.role;
       }
     }
 
