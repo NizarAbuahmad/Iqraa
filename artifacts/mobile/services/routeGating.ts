@@ -61,10 +61,11 @@ export function isPublicRoute(pathname: string | null | undefined): boolean {
  * rendering a screen whose every call is going to come back 403.
  */
 /**
- * `/settings`, `/faq` and `/delete-account` are the rows the profile tab
- * already offered every role; they were missing here, so a student tapping
- * الإعدادات landed on الرسائل — and had no language toggle, no legal pages
- * and no in-app account deletion, which both store listings require.
+ * `/settings`, `/faq` and `/delete-account` are here because the profile tab
+ * links every role to them, and the bounce in app/_layout.tsx runs on every
+ * path change — not only at boot. Without them a parent tapping «الإعدادات»
+ * landed back in Messages, and account deletion was unreachable for anyone
+ * who was not a teacher. `routeGating.test.ts` pins each one.
  */
 const NON_TEACHER_ROUTES = [
   '/notifications',

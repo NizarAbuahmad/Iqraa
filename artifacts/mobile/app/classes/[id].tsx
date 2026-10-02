@@ -660,7 +660,7 @@ export default function ClassDetailScreen() {
                 />
               )}
               {students.length > 0 && (
-                <ParentContactSection summary={contactSummary} colors={colors} isRTL={isRTL} align={align} t={t} />
+                <ParentContactSection summary={contactSummary} subjectId={group?.subjectId} colors={colors} isRTL={isRTL} align={align} t={t} />
               )}
             </View>
           }
@@ -1607,9 +1607,11 @@ function JoinStatusSection({
  * family it starts on «إشادة وتقدير», because that is the letter that's missing.
  */
 function ParentContactSection({
-  summary, colors, isRTL, align, t,
+  summary, subjectId, colors, isRTL, align, t,
 }: {
   summary: ClassContactSummary | null;
+  /** The class's subject, so the letter opens naming it — the picker path seeds this from the class too. */
+  subjectId?: string;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   align: 'left' | 'right';
@@ -1625,7 +1627,7 @@ function ParentContactSection({
           key={s.id}
           onPress={() => router.push({
             pathname: '/ai-tools/parent-message',
-            params: { studentId: s.id, studentName: s.displayName, ...(kind ? { kind } : {}) },
+            params: { studentId: s.id, studentName: s.displayName, ...(subjectId ? { subjectId } : {}), ...(kind ? { kind } : {}) },
           })}
           style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, borderWidth: 1, borderColor: colors.border }}
         >

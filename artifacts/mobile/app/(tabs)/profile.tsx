@@ -351,9 +351,9 @@ export default function ProfileScreen() {
           {t('moreSection')}
         </Text>
         <View style={{ gap: 8 }}>
-          {/* مساحة عملي and شُعَبي are teacher screens: the root guard bounces
-              a parent or student to الرسائل and the API 403s. They used to be
-              offered here anyway — شُعَبي *specifically* to non-teachers. */}
+          {/* مساحتي and شُعَبي are teacher screens: the routing gate
+              (services/routeGating.ts) bounces anyone else off them, so to a
+              parent these rows were doors straight back to Messages. */}
           {isTeacherRole(user?.role) && (
             <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
           )}

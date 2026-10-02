@@ -127,6 +127,16 @@ describe('isNonTeacherRoute', () => {
     }
   });
 
+  it('lets a parent reach the account screens the profile tab links to', () => {
+    // The profile screen offers Settings, FAQ and Delete account to every role,
+    // and the bounce in app/_layout.tsx runs on every path change — so a parent
+    // tapping «الإعدادات» was sent straight back to Messages, and could never
+    // reach account deletion at all.
+    for (const p of ['/settings', '/faq', '/delete-account']) {
+      assert.equal(isNonTeacherRoute(p), true, p);
+    }
+  });
+
   it('keeps every teacher screen out — this is the deep-link hole it closes', () => {
     // Each of these rendered for a parent who typed the URL, then answered 403
     // on every call it made.

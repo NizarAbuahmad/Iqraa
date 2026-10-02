@@ -499,6 +499,64 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A parent could not reach Settings, and six smaller parent-side bugs, 2026-10-02
+
+A code review of the parent-facing surface — claim flow, routing, messaging,
+and the teacher's letter tool — against the running code. Eight bugs, seven
+fixed here, one left out with its reason.
+
+**The profile tab linked a parent to screens the routing gate bounced them
+off.** `NON_TEACHER_ROUTES` had no `/settings`, `/faq` or `/delete-account`,
+and the bounce in `app/_layout.tsx` runs on every path change, not only at
+boot — so «الإعدادات» sent a parent straight back to Messages, and account
+deletion was unreachable for anyone who was not a teacher, which the store
+listings require. The three are allowlisted now, pinned in
+`routeGating.test.ts`. The same profile section also offered «شُعَبي» to
+non-teachers (the roster screen) and «مساحتي» to everyone; both are teacher
+screens the gate rejects, and both rows are teacher-only now.
+
+**Smaller fixes in the same pass:**
+
+- `register.tsx` accepted an empty confirm-password field while the server
+  refused any sent value that differed from the password, so skipping the
+  field produced an English "Passwords do not match". The field is required.
+- The share message for a link code (`claimCodeMessage.ts`) said to enter the
+  code at «إنشاء حساب» and to pick «وليّ أمر». Registration stopped taking a
+  code; it is asked on `/claim-required` after email verification, and the
+  same code goes to students. The message now says so, and names both roles.
+- The claim form counted a dash as a character: `YHFM-8` fired the lookup,
+  the server normalised it to five characters, the 404 read as "per-student
+  code", and Continue appeared on an unfinished code. `normalizeClaimCode`
+  (`claimCodeGate.ts`, tested) applies the server's normalisation as typed.
+- `ai-tools/parent-message` opened from a class's contact card with a
+  `studentId` param never read the roster row, so a girl recorded «أنثى»
+  got a letter saying «ابنكم». It now reads the row once on arrival
+  (`listStudents()`, new in `services/roster.ts`) and takes the class's
+  subject from a `subjectId` param the card passes.
+- The same screen swallowed `roster_consent_required` on its two roster
+  writes, so an un-attested teacher silently lost letter history and the
+  gender save. That one 403 now shows `parentMsgConsentNeeded`; every other
+  failure stays quiet, because a failed log must never delay the letter.
+- `POST /auth/claim` was check-then-insert for the one-self-link rule, and
+  the unique index is on student+user, so two student accounts claiming the
+  same name at once both got in. The route now re-reads after inserting and
+  the later racer withdraws with the same 409. A partial unique index would
+  be the real backstop — **not added here**, because a schema change needs
+  the manual production push this checkout cannot do, and `schema-push:
+  done` would have been the false claim the 2026-09-16 entry warns about.
+- A student claiming via a class code was never added to the class chat
+  (the thread was re-derived on unlink but not on claim). The claim route now
+  calls `resyncClassGroupThreadIfExists`, the same helper roster edits use.
+
+**Left as decisions, not bugs:** any holder of a class code can link as a
+guardian of any child on it with no notice to the teacher
+(`claimDecision.ts`, deliberate per its comment), and a letter's `read` state
+is the guardian's thread-level `lastReadAt`, so one open marks every pending
+letter about every child read.
+
+`pnpm run typecheck` clean; mobile 2135 passed, 0 failed, 10 skipped;
+api-server 1000 passed.
+
 ## The roster now tells the class chat, and an archived class stays archived, 2026-10-02
 
 A review of the classes feature (roster router, schema, list and detail
@@ -14180,6 +14238,58 @@ contact form, CSV export).
   `GET /auth/me` and account deletion (`lib/suspension.ts`), and every other route
   403s on the next request anyway.
 
+## Chat review: five bugs in the «اقرأ» tab, 2026-10-02
+
+A read-through of `app/(tabs)/iqra.tsx`, `services/ai/chatArtifacts.ts` and
+the `/chat` route, looking for bugs. Five fixed in one PR; the rest are listed
+below as open improvements.
+
+- **A pending «أي درس؟» swallowed the next message.** `mergeScopeReply` glued
+  any follow-up that was not a topic switch, another subject or a new artifact
+  ask onto the standing ask — «اشرح لي المشتقات» became «جهّز اختباراً قصيراً
+  اشرح لي المشتقات», classified as an artifact, and a teacher who asked for an
+  explanation got a quiz (reproduced under `node --test`; even «شكراً» merged).
+  `isStandaloneTurn` (`intentRouter.ts`) now keeps a question, an explain
+  verb, a refinement or small talk as its own turn; a grade, a subject, a
+  lesson title and an ordinal still join. Pinned in `askVocabulary.test.ts`.
+- **Quota and live-mode refusals were papered over.** The generators rethrow
+  `user_quota_exceeded` / `budget_exceeded` / `live_mode_off` on purpose
+  (`generateWithProvenance`), but chat caught them and showed a local
+  knowledge-base reply under «تحقق من الإنترنت». Chat now says
+  `aiQuotaSpent` / `aiUnavailable` and generates nothing, the same policy as
+  every generator screen.
+- **Chat materials defaulted to الرياضيات / الصف العاشر without a lesson.** The
+  upload path and every ungrounded topic hit `buildRequest` with no lesson, so
+  the request said `subject: 'Mathematics'` — and generators branch on that
+  name (CLAUDE.md), so a chemistry teacher's uploaded worksheet came back as a
+  maths quiz headed الرياضيات. `resolveArtifactScope` (`artifactScope.ts`)
+  labels the request with the lesson's book, else the picked subject and grade
+  (`teachingCtxScope`, set from the sheet, the home pick and a deep link), and
+  only with nothing known keeps the old default. Chat still does not run
+  `groundedSubjectConflict`; the `/ai-tools` screens do.
+- **Enter did not send on desktop web.** The composer is `multiline` without
+  `blurOnSubmit`, and react-native-web only fires `onSubmitEditing` when
+  `blurOnSubmit || !multiline`, so Enter inserted a newline. `shouldSendOnEnter`
+  (`composerKeys.ts`) decides in `onKeyPress` on web: Enter sends, Shift+Enter
+  breaks the line, Enter mid-IME-composition is left alone.
+- **The change-lesson sheet reopened on a stale draft.** It kept its own copy
+  of the last confirmed topic, so the card's clear button (which resets the
+  screen, not the sheet) left the next open pre-filled with the lesson just
+  cleared. The sheet now opens on the screen's `teachingCtx`.
+
+**Still open, found in the same pass** (not fixed, in rough priority order):
+`CHAT_MAX_TOKENS` is 1200 and `finish_reason` is never read, so a plan asked in
+chat ends mid-sentence with no signal; confirming the sheet auto-sends a paid
+«نظرة شاملة» turn on every lesson change; history forwards each message's
+`text`, which for a generated worksheet is the whole document (clamped
+server-side mid-document — send `artifactProse` instead); model output is not
+normalised client-side, so a `##` heading or `1)` list prints literally;
+`onContentSizeChange` always scrolls to the end, so an inline plan edit above
+the fold jumps away; `context` is injected into the system prompt rather than a
+delimited user block; `/chat` has no route test and the OpenAPI spec still
+calls it an SSE stream; the composer caps at 800 chars against the server's
+2,000; no `KeyboardAvoidingView` (matters once iOS ships).
+
 ## Student-side review: the exam link, accounts, chat and the lesson page, 2026-10-02
 
 A read-through of everything a student touches found eight things worth
@@ -14222,9 +14332,10 @@ mattered:
   and on no question left unmarked.
 - **Students could not reach Settings, FAQ or Delete Account** — the routes
   were missing from `NON_TEACHER_ROUTES`, so the profile rows bounced them to
-  Messages (and the store-required in-app deletion was unreachable). Added and
-  pinned; `/messaging/new-group` is now an exception alongside `/messaging/
-  claim`. `/claim-required` has a sign-out link: it was a mandatory screen
+  Messages (and the store-required in-app deletion was unreachable). #775
+  found the same from the parent's side and landed first; this PR keeps its
+  version and adds `/messaging/new-group` as an exception alongside
+  `/messaging/claim`. `/claim-required` has a sign-out link: it was a mandatory screen
   with the back gesture off and no exit for an expired code on a shared
   device.
 - **Class chat membership reconciled only when the teacher opened the chat.**
