@@ -3233,6 +3233,7 @@ export default function IqraScreen() {
           onMake={(row) => router.push({ pathname: row.route as never, params: toolParams as never })}
           onToggleSkip={togglePrepSkip}
           skipLabel={t('homePrepSkip')}
+          skipShortLabel={t('homePrepSkipShort')}
           skippedLabel={t('homePrepSkipped')}
           restoreLabel={t('homePrepRestore')}
           classLabelFor={(id) => classNameFor(prepClasses, id, lang as 'ar' | 'en')}
@@ -3377,6 +3378,7 @@ export default function IqraScreen() {
           startClassError={startClassError}
           onStartClass={handleStartClass}
           changeLabel={t('changeLesson')}
+          clearLabel={t('unpinLesson')}
           uploadedLabel={(n) => t('lessonUploadedFiles', n)}
           onChangeLesson={() => setChangeLessonOpen(true)}
           onToggleCollapse={() => setLessonCardCollapsed(c => !c)}
