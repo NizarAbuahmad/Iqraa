@@ -88,6 +88,17 @@ async function readJson<T>(res: Response, action: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+/**
+ * Every student on this teacher's roster, across classes. The per-class list
+ * (`getClass`) omits `gender` and `teacherNote`; this one carries both, which is
+ * what a screen arriving with only a `studentId` needs.
+ */
+export async function listStudents(): Promise<RosterStudent[]> {
+  const res = await apiFetch('/students');
+  const data = await readJson<{ students: RosterStudent[] }>(res, 'Loading students');
+  return data.students;
+}
+
 export async function listClasses(): Promise<ClassGroup[]> {
   const res = await apiFetch('/classes');
   const data = await readJson<{ classes: ClassGroup[] }>(res, 'Loading classes');

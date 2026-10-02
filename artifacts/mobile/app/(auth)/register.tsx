@@ -115,7 +115,10 @@ export default function RegisterScreen() {
     lastName.trim().length > 0 &&
     email.includes('@') &&
     password.length >= 8 &&
-    (confirmPassword === '' || confirmPassword === password) &&
+    // Required, not optional: the server treats any sent value as meaningful,
+    // so an empty confirm field was accepted here and refused there with an
+    // English "Passwords do not match".
+    confirmPassword === password &&
     termsAccepted;
 
   const formPanel = (
