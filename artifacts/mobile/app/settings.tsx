@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,8 +23,6 @@ export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang, toggleLang } = useLanguage();
-  const [notifications, setNotifications] = useState(true);
-  const [emailUpdates, setEmailUpdates] = useState(false);
   const [usage, setUsage] = useState<AiUsage | null>(null);
   const { user, switchRole } = useAuth();
   const studentAccounts = useStudentAccountsEnabled();
@@ -135,41 +133,18 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* Notifications */}
-        <SectionLabel label={t('notificationsSection')} isRTL={isRTL} colors={colors} top />
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          <SettingRow
-            icon="notifications-outline"
-            label={t('inAppNotifications')}
-            isRTL={isRTL}
-            colors={colors}
-            right={
-              <Switch
-                value={notifications}
-                onValueChange={v => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNotifications(v); }}
-                trackColor={{ false: colors.muted, true: colors.primary }}
-                thumbColor={colors.card}
-              />
-            }
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <SettingRow
-            icon="mail-outline"
-            label={t('emailUpdates')}
-            isRTL={isRTL}
-            colors={colors}
-            right={
-              <Switch
-                value={emailUpdates}
-                onValueChange={v => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEmailUpdates(v); }}
-                trackColor={{ false: colors.muted, true: colors.primary }}
-                thumbColor={colors.card}
-              />
-            }
-          />
-          {Platform.OS !== 'web' && (
-            <>
-              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+        {/* Notifications. Two switches used to sit above the test row —
+            «تنبيهات داخل التطبيق» and «تحديثات البريد» — and were local
+            component state wired to nothing: no server preference, no email
+            digest to opt out of, and the unread badge ignored them. They reset
+            on every visit. A control that lies is worse than none, so the
+            section now holds only the row that does something, and that row is
+            native-only (web never registers a push token), so web has no
+            section at all. */}
+        {Platform.OS !== 'web' && (
+          <>
+            <SectionLabel label={t('notificationsSection')} isRTL={isRTL} colors={colors} top />
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
               <SettingRow
                 icon="paper-plane-outline"
                 label={t('sendTestNotification')}
@@ -178,9 +153,9 @@ export default function SettingsScreen() {
                 onPress={handleTestNotification}
                 right={sendingTest ? <ActivityIndicator size="small" color={colors.primary} /> : undefined}
               />
-            </>
-          )}
-        </View>
+            </View>
+          </>
+        )}
 
         {/* About */}
         <SectionLabel label={t('aboutSection')} isRTL={isRTL} colors={colors} top />
@@ -325,7 +300,7 @@ function SettingRow({ icon, label, colors, isRTL, right, onPress, destructive }:
       </View>
     </View>
   );
-  if (onPress) return <Pressable onPress={onPress} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}>{inner}</Pressable>;
+  if (onPress) return <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}>{inner}</Pressable>;
   return inner;
 }
 
