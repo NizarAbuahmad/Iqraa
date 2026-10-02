@@ -1,12 +1,10 @@
-import { pgTable, text, boolean, timestamp, uuid, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp, uuid, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { users } from "./users";
 import { classGroups } from "./students";
 
-export const savedMaterials = pgTable(
-  "saved_materials",
-  {
+export const savedMaterials = pgTable("saved_materials", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   type: text("type").notNull(), // 'lesson' | 'worksheet' | 'quiz'
@@ -34,10 +32,7 @@ export const savedMaterials = pgTable(
   }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-  },
-  // Every موادي read filters by the owning teacher.
-  t => [index("saved_materials_user_idx").on(t.userId)],
-);
+});
 
 export const insertSavedMaterialSchema = createInsertSchema(savedMaterials).omit({
   id: true,

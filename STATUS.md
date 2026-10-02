@@ -627,11 +627,21 @@ verifier 75/75, monorepo typecheck clean, web export builds.
   edits off, «بن» had no harakat and a grade-4 sentence quoted the grade-5
   word «الله». Words added (with harakat and near-miss misspellings), and
   the package runs in `ci.yml`.
-- **Schema: two indexes added**, `refresh_tokens(user_id)`,
-  `refresh_tokens(family_id)` and `saved_materials(user_id)`. Additive only;
-  the API runs unchanged without them. **`schema-push: pending`** — run
-  `pnpm --filter @workspace/db run push` (or create the three indexes by
-  SQL) when convenient; `verify-schema` does not check indexes.
+- **Schema: three indexes are missing and were NOT added here.** Every
+  refresh/logout filters `refresh_tokens` by `user_id`/`family_id`
+  (only `token_hash` is indexed) and every موادي read filters
+  `saved_materials` by `user_id`. They were drafted in this PR and then
+  pulled out: a schema edit needs the manual production push, and this PR
+  must not block on a step only a human can run. Add them in their own PR
+  (`index("refresh_tokens_user_idx").on(t.userId)`,
+  `index("refresh_tokens_family_idx").on(t.familyId)`,
+  `index("saved_materials_user_idx").on(t.userId)`), push, and answer
+  `schema-push: done`. The API runs correctly without them; they are speed,
+  not correctness. `verify-schema` does not check indexes either way.
+  (The audit also claimed `class_memberships.class_group_id`,
+  `attempt_answers.attempt_id` and `chat_blocks.blocker_user_id` lacked
+  indexes — they do not: each is the leading column of an existing unique
+  constraint.)
 - **Not verified in a browser or on a device** — none of the screen wiring
   is machine-testable here. The 67 `pnpm audit` findings are all transitive
   build-time dependencies of the Expo/React Native toolchain (none in the
