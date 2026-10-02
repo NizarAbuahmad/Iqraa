@@ -47,7 +47,7 @@ import {
   type Recommendation,
   type RecommendationKind,
 } from '@/services/evaluations';
-import { isolateForeignRuns } from '@/services/mathRender';
+import { MathParagraph } from '@/components/ui/MathParagraph';
 import { FillBlankInput, MatchingInput } from '@/components/QuestionInputs';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
@@ -792,16 +792,7 @@ function MultipleChoiceInput({
 
   return (
     <View>
-      <Text style={[
-          styles.qText,
-          {
-            color: colors.foreground,
-            fontFamily: 'Almarai_400Regular',
-            textAlign: align,
-            writingDirection: align === 'right' ? 'rtl' : 'ltr',
-            marginBottom: 10,
-          },
-        ]}>{isolateForeignRuns(stem)}</Text>
+      <QuestionText text={stem} colors={colors} align={align} />
       <View style={{ gap: 8 }}>
         {options.map(o => {
           const selected = picked.has(o.id);
@@ -812,23 +803,42 @@ function MultipleChoiceInput({
               style={[styles.optRow, { borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? ACCENT + '12' : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name={selected ? (multi ? 'checkbox' : 'radio-button-on') : (multi ? 'square-outline' : 'radio-button-off')} size={18} color={selected ? ACCENT : colors.mutedForeground} />
-              <Text
+              <MathParagraph
+                text={o.text}
+                isRTL={align === 'right'}
+                containerStyle={{ flex: 1 }}
                 style={{
                   color: colors.foreground,
                   fontFamily: 'Almarai_400Regular',
                   fontSize: 14, lineHeight: 22,
-                  flex: 1,
                   textAlign: align,
                   writingDirection: align === 'right' ? 'rtl' : 'ltr',
                 }}
-              >
-                {isolateForeignRuns(o.text)}
-              </Text>
+              />
             </Pressable>
           );
         })}
       </View>
     </View>
+  );
+}
+
+/** A question's own text: exponents drawn raised, the rest bidi-isolated. */
+function QuestionText({ text, colors, align }: { text: string; colors: ReturnType<typeof useColors>; align: 'left' | 'right' }) {
+  return (
+    <MathParagraph
+      text={text}
+      isRTL={align === 'right'}
+      containerStyle={{ marginBottom: 10 }}
+      style={{
+        fontSize: 14,
+        lineHeight: 20,
+        color: colors.foreground,
+        fontFamily: 'Almarai_400Regular',
+        textAlign: align,
+        writingDirection: align === 'right' ? 'rtl' : 'ltr',
+      }}
+    />
   );
 }
 
@@ -843,16 +853,7 @@ function TrueFalseInput({
 
   return (
     <View>
-      <Text style={[
-          styles.qText,
-          {
-            color: colors.foreground,
-            fontFamily: 'Almarai_400Regular',
-            textAlign: align,
-            writingDirection: align === 'right' ? 'rtl' : 'ltr',
-            marginBottom: 10,
-          },
-        ]}>{isolateForeignRuns(statement)}</Text>
+      <QuestionText text={statement} colors={colors} align={align} />
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10 }}>
         {[{ v: true, key: 'trueLabel' as TranslationKey }, { v: false, key: 'falseLabel' as TranslationKey }].map(opt => {
           const selected = value === opt.v;
@@ -882,16 +883,7 @@ function OpenTextInput({
 
   return (
     <View>
-      <Text style={[
-          styles.qText,
-          {
-            color: colors.foreground,
-            fontFamily: 'Almarai_400Regular',
-            textAlign: align,
-            writingDirection: align === 'right' ? 'rtl' : 'ltr',
-            marginBottom: 10,
-          },
-        ]}>{isolateForeignRuns(prompt)}</Text>
+      <QuestionText text={prompt} colors={colors} align={align} />
       <TextInput
         value={text}
         onChangeText={v => onChange({ text: v })}

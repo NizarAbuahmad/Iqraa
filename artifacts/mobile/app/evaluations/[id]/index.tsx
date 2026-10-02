@@ -33,6 +33,7 @@ import { copyToClipboard } from '@/services/share';
 import { AddReadAloudModal } from '@/components/AddReadAloudModal';
 import { AddDictationModal } from '@/components/AddDictationModal';
 import { EditQuestionModal } from '@/components/EditQuestionModal';
+import { MathParagraph } from '@/components/ui/MathParagraph';
 import { isEditableQuestion } from '@/services/questionDraft';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
@@ -77,15 +78,16 @@ const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
 /**
  * The one field worth showing per type, regardless of shape.
  *
- * Isolated here rather than at the render site because every branch below
- * returns model-written Arabic that can carry an equation, and an unisolated
- * «f(x) = 2x⁴ - x² + 3» comes out of the bidi algorithm reordered against the
- * Arabic around it — a wrong question, not just an ugly one.
+ * Raw: the card renders it through MathParagraph, which draws `2^{x+1}` as a
+ * real exponent and isolates the rest against the bidi algorithm — an
+ * unisolated «f(x) = 2x⁴ - x² + 3» comes out reordered against the Arabic
+ * around it, a wrong question, not just an ugly one. Plain-text sinks (the
+ * delete confirmation) isolate it themselves.
  */
 function questionText(q: EvaluationQuestion): string {
   const body = q.body;
   const template = body['template'] as string | undefined;
-  return isolateForeignRuns(
+  return (
     (body['stem'] as string | undefined)
     ?? (body['statement'] as string | undefined)
     ?? (template === undefined ? undefined : showBlanks(template))
@@ -101,7 +103,7 @@ function questionText(q: EvaluationQuestion): string {
     // aloud to the class when there is no audio (which is the normal case, and
     // the only one that works on a native device).
     ?? dictationText(q)
-    ?? '',
+    ?? ''
   );
 }
 
@@ -197,7 +199,7 @@ export default function EvaluationDetailScreen() {
     if (!id || busy) return;
     const ok = await confirm({
       title: t('questionDeleteConfirm'),
-      message: questionText(q) || undefined,
+      message: isolateForeignRuns(questionText(q)) || undefined,
       confirmLabel: t('questionDeleteBtn'),
       cancelLabel: t('cancel'),
       destructive: true,
@@ -500,19 +502,18 @@ export default function EvaluationDetailScreen() {
                 {isolateForeignRuns(t('verifiedComputed', prettifySymPy(q.verification.computedAnswer)))}
               </Text>
             ) : null}
-            <Text
-              style={[
-                styles.qText,
-                {
-                  color: colors.foreground,
-                  fontFamily: 'Almarai_400Regular',
-                  textAlign: align,
-                  writingDirection: isRTL ? 'rtl' : 'ltr',
-                },
-              ]}
-            >
-              {questionText(q) || '—'}
-            </Text>
+            <MathParagraph
+              text={questionText(q) || '—'}
+              isRTL={isRTL}
+              style={{
+                fontSize: 14,
+                lineHeight: 20,
+                color: colors.foreground,
+                fontFamily: 'Almarai_400Regular',
+                textAlign: align,
+                writingDirection: isRTL ? 'rtl' : 'ltr',
+              }}
+            />
           </View>
         ))}
       </View>
@@ -813,7 +814,6 @@ const styles = StyleSheet.create({
   qTop: { alignItems: 'center', gap: 8, marginBottom: 8 },
   qNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  qText: { fontSize: 14, lineHeight: 20 },
   verifiedRow: { alignItems: 'center', gap: 5, marginBottom: 6 },
   verifySummary: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
   actionBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 15, borderRadius: 10 },
