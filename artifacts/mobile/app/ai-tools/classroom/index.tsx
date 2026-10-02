@@ -9,7 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
-import { ACTIVITY_CARDS, ActivityCard, buildBuilderRoute, cardMetaLabel } from '@/services/classroomRouting';
+import { ACTIVITY_CARDS, ActivityCard, type ActivityFilter, buildBuilderRoute, cardMetaLabel, visibleActivityCards } from '@/services/classroomRouting';
 import { arCountPhrase } from '@/services/arCount';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { readableOn } from '@/services/readableColor';
@@ -17,7 +17,7 @@ import { palette } from '@/constants/colors';
 
 const ACCENT = palette.primary;
 
-type FilterKey = 'all' | 'quick' | 'team' | 'solo';
+type FilterKey = ActivityFilter;
 
 const FILTERS: Array<{ key: FilterKey; labelKey: string }> = [
   { key: 'all',   labelKey: 'marketplaceAll' },
@@ -51,20 +51,12 @@ export default function ClassroomHubScreen() {
 
   const featured = ACTIVITY_CARDS.find(c => c.isFeatured)!;
 
-  const filtered = useMemo(() => {
-    let list = ACTIVITY_CARDS.filter(c => !c.isFeatured);
-    if (filter === 'quick') list = list.filter(c => c.durationMin <= 15);
-    if (filter === 'team')  list = list.filter(c => c.isTeam);
-    if (filter === 'solo')  list = list.filter(c => c.isSolo);
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      list = list.filter(c =>
-        t(c.titleKey as any).toLowerCase().includes(q) ||
-        t(c.descKey as any).toLowerCase().includes(q),
-      );
-    }
-    return list;
-  }, [filter, query, lang]);
+  // The featured card is left to the hero only while the hero is on screen
+  // (unfiltered, unsearched); otherwise it is listed like any other card.
+  const filtered = useMemo(
+    () => visibleActivityCards(ACTIVITY_CARDS, filter, query, c => `${t(c.titleKey as any)} ${t(c.descKey as any)}`),
+    [filter, query, lang],
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
