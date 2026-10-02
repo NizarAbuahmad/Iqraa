@@ -631,6 +631,7 @@ const translations = {
     iqraChatError: 'تعذّر إتمام العملية. حاول مرة أخرى أو أعد صياغة الطلب.',
     iqraArtifactNeedTopic: 'حاضر — عن أي درس نجهّز هذه المادة؟ اكتب اسم الدرس أو اختر من الاقتراحات.',
     changeLesson: 'تغيير الدرس',
+    unpinLesson: 'إلغاء تثبيت الدرس',
 
     // ── Workspace home (desktop web) ──────────────────────────────
     tabToday: 'اليوم',
@@ -643,6 +644,7 @@ const translations = {
     homePrepCreate: 'أنشئ',
     homePrepNotYet: 'لم تُنشأ بعد',
     homePrepSkip: 'غير مطلوب لهذا الدرس',
+    homePrepSkipShort: 'تخطّي',
     homePrepSkipped: 'غير مطلوب',
     homePrepRestore: 'أعِده',
     homePrepAllCopies: 'كل النسخ',
@@ -2508,6 +2510,7 @@ const translations = {
     iqraChatError: 'Something went wrong while handling your request. Try again or rephrase.',
     iqraArtifactNeedTopic: 'Sure — which lesson should this material cover? Type the lesson name or pick a topic below.',
     changeLesson: 'Change lesson',
+    unpinLesson: 'Unpin lesson',
 
     // ── Workspace home (desktop web) ──────────────────────────────
     tabToday: 'Today',
@@ -2520,6 +2523,7 @@ const translations = {
     homePrepCreate: 'Create',
     homePrepNotYet: 'Not created yet',
     homePrepSkip: 'Not needed for this lesson',
+    homePrepSkipShort: 'Skip',
     homePrepSkipped: 'Not needed',
     homePrepRestore: 'Restore',
     homePrepAllCopies: 'All copies',
