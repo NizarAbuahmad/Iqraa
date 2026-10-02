@@ -163,7 +163,7 @@ export default function QuizScreen() {
   }, [params.savedId]);
 
   useEffect(() => {
-    if (result) setSaveLabel(savedId ? 'updated' : 'save');
+    if (result) setSaveLabel('save');
   }, [result]);
 
   const toggleType = (type: QType) => {
@@ -208,7 +208,7 @@ export default function QuizScreen() {
   /** Marks the paper dirty and records which question was touched. */
   const markEdited = (id: string) => {
     setEditedQuestions(prev => new Set(prev).add(id));
-    setSaveLabel(savedId ? 'updated' : 'save');
+    setSaveLabel('save');
   };
 
   const updateQuestion = (index: number, patch: Partial<QuizQuestion>) => {
@@ -244,7 +244,7 @@ export default function QuizScreen() {
     // outcomes is index-aligned to result.questions — drop the same slot so
     // verification badges don't shift onto the wrong question after a delete.
     setOutcomes(prev => (prev ? prev.filter((_, i) => i !== index) : prev));
-    setSaveLabel(savedId ? 'updated' : 'save');
+    setSaveLabel('save');
   };
 
   /**

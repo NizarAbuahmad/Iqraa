@@ -885,6 +885,8 @@ export default function PresentationScreen() {
   const [teacherPanelOpen, setTeacherPanelOpen] = useState(false);
   const [timerSec, setTimerSec] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
+  /** Counts (re)starts, so a restart on an already-running clock still re-arms the interval. */
+  const [timerRun, setTimerRun] = useState(0);
   const [timerTotal, setTimerTotal] = useState(0);
   const [celebrationVisible, setCelebrationVisible] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -946,6 +948,7 @@ export default function PresentationScreen() {
       setTimerSec(seconds);
       setTimerTotal(seconds);
       setTimerRunning(true);
+      setTimerRun(n => n + 1);
     } else {
       clearIntervalIfRunning();
       setTimerSec(0);
@@ -954,7 +957,12 @@ export default function PresentationScreen() {
     }
   };
 
-  // Timer tick
+  // Timer tick. `timerRun` is part of the key: moving from one timed slide
+  // straight to the next (every Class Challenge question is timed) cleared
+  // the interval and set `timerRunning` to the `true` it already was, so this
+  // effect never re-ran and the new slide's clock sat at its full time.
+  // Restart-while-running did the same. Bumping the run counter restarts the
+  // interval even when the flag does not change.
   useEffect(() => {
     if (timerRunning && timerSec > 0) {
       timerRef.current = setInterval(() => {
@@ -969,7 +977,7 @@ export default function PresentationScreen() {
       }, 1000);
     }
     return clearIntervalIfRunning;
-  }, [timerRunning]);
+  }, [timerRunning, timerRun]);
 
   const showCelebration = () => {
     setCelebrationVisible(true);
@@ -1088,6 +1096,7 @@ export default function PresentationScreen() {
       setTimerSec(seconds);
       setTimerTotal(seconds);
       setTimerRunning(true);
+      setTimerRun(n => n + 1);
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };

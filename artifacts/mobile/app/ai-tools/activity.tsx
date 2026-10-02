@@ -114,7 +114,7 @@ export default function ActivityScreen() {
   }, [params.savedId]);
 
   useEffect(() => {
-    if (result) setSaveLabel(savedId ? 'updated' : 'save');
+    if (result) setSaveLabel('save');
   }, [result]);
 
   /**

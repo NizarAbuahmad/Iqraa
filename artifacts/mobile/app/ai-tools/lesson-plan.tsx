@@ -161,14 +161,14 @@ export default function LessonPlanScreen() {
 
   // Reset save label when result changes (new generation)
   useEffect(() => {
-    if (result) setSaveLabel(savedId ? 'updated' : 'save');
+    if (result) setSaveLabel('save');
   }, [result]);
 
   const applyEdit = <K extends keyof LessonPlanOutput>(field: K, value: LessonPlanOutput[K]) => {
     setResult(prev => (prev ? { ...prev, [field]: value } : prev));
     setEditedFields(prev => new Set(prev).add(field as string));
     // Something changed since the last save, so offer to save it again.
-    setSaveLabel(savedId ? 'updated' : 'save');
+    setSaveLabel('save');
   };
 
   /**

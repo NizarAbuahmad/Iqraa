@@ -19,6 +19,7 @@ import assert from 'node:assert/strict';
 
 import {
   composeParentMessage,
+  parentMessageReady,
   guardiansForStudent,
   kindLabel,
   MESSAGE_KINDS,
@@ -414,5 +415,29 @@ describe('remembered answers', () => {
     assert.equal(rosterGender('male'), 'male');
     assert.equal(rosterGender(''), null);
     assert.equal(rosterGender(undefined), null);
+  });
+});
+
+describe('parentMessageReady — a concern letter needs its details', () => {
+  // The details label already says "required" for concern kinds; the Send,
+  // Share and Copy buttons used to ignore it and let an empty concern reach a
+  // real parent.
+  it('is false for a concern kind with no details, whatever the message says', () => {
+    assert.equal(parentMessageReady('absence', '', 'some composed text'), false);
+    assert.equal(parentMessageReady('absence', '   ', 'some composed text'), false);
+  });
+
+  it('is true for a concern kind once details are typed', () => {
+    assert.equal(parentMessageReady('absence', 'غاب ثلاثة أيام', 'some composed text'), true);
+  });
+
+  it('does not need details for praise or progress', () => {
+    assert.equal(parentMessageReady('praise', '', 'some composed text'), true);
+    assert.equal(parentMessageReady('progress', '', 'some composed text'), true);
+  });
+
+  it('is never true without a composed message', () => {
+    assert.equal(parentMessageReady('praise', '', ''), false);
+    assert.equal(parentMessageReady('absence', 'details', ''), false);
   });
 });

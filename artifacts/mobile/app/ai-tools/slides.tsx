@@ -21,7 +21,7 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorMessageKey, isAbortError, throwIfAborted } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
@@ -469,6 +469,10 @@ export default function SlidesScreen() {
 
       setPlan(lessonPlan);
       const [checks, teaching] = await Promise.all([checksPromise, teachingPromise]);
+      // Both promises above absorb their own failures, the abort included, so
+      // a Cancel that lands after the plan returned would otherwise finish as
+      // a deck. Re-raise it here; the catch below reports it as a stop.
+      throwIfAborted(controller.signal);
       // The server merges `variantId` into the JSON body (see `withMeta` in
       // routes/generate.ts) — not part of `LessonTeachingOutput`'s own shape,
       // same convention `pooledVariantId` already reads for every other
@@ -920,7 +924,9 @@ export default function SlidesScreen() {
           {/* The free-prompt deck used to be its own card beside this one, with a
               near-identical name. It is the same output from a different start. */}
           <Pressable
-            onPress={() => router.push('/ai-tools/prompt-slides')}
+            // Carry the typed topic across: the prompt screen reads it as its
+            // opening prompt, so the teacher does not retype what they just wrote.
+            onPress={() => router.push({ pathname: '/ai-tools/prompt-slides', params: topic.trim() ? { prompt: topic.trim() } : {} })}
             accessibilityRole="link"
             hitSlop={8}
             style={{ alignSelf: 'center', marginTop: 14 }}

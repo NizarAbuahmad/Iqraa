@@ -51,6 +51,7 @@ import { optionMarkerState } from '@/services/quizEdits';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
 import { nextFrame } from '@/services/nextFrame';
 import { buildWorksheetRequest } from '@/services/generatorRequests';
+import { readHomeworkParam } from '@/services/materialParams';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -201,7 +202,7 @@ export default function WorksheetScreen() {
   }, [params.savedId]);
 
   useEffect(() => {
-    if (result) setSaveLabel(savedId ? 'updated' : 'save');
+    if (result) setSaveLabel('save');
   }, [result]);
 
   const toggleType = (type: QType) => {
@@ -217,7 +218,7 @@ export default function WorksheetScreen() {
     });
   };
 
-  const isHomework = params.isHomework === '1';
+  const isHomework = readHomeworkParam(params.isHomework);
 
   /**
    * A hand-edit invalidates whatever the verifier proved about that question
@@ -402,7 +403,7 @@ export default function WorksheetScreen() {
   const markEdited = (flatIndex: number) => {
     if (flatIndex < 0) return;
     setEditedFlatIndexes(prev => new Set(prev).add(flatIndex));
-    setSaveLabel(savedId ? 'updated' : 'save');
+    setSaveLabel('save');
   };
 
   const updateQuestionText = (sectionIndex: number, questionIndex: number, text: string) => {
@@ -459,7 +460,7 @@ export default function WorksheetScreen() {
       });
       return next;
     });
-    setSaveLabel(savedId ? 'updated' : 'save');
+    setSaveLabel('save');
   };
 
   const typeLabels: Record<QType, string> = {
@@ -760,7 +761,10 @@ export default function WorksheetScreen() {
                 const flatIndex = flatIndexOf(result, si, i);
                 return (
                 <View key={i} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                  <Text style={[styles.qNum, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{i + 1}.</Text>
+                  {/* Numbered straight through, as the answer key and both
+                      exports are — per-section numbering made «٣» in the key
+                      point at a different question on screen. */}
+                  <Text style={[styles.qNum, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{flatIndex + 1}.</Text>
                   <View style={{ flex: 1 }}>
                     <EditableText
                       value={q.text}

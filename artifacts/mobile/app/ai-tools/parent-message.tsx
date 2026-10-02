@@ -24,7 +24,7 @@ import { StudentPickerSheet } from '@/components/ui/StudentPickerSheet';
 import { confirm } from '@/services/confirm';
 import { SUBJECTS } from '@/services/curriculumData';
 import {
-  listParentContacts, logParentContact, updateStudent,
+  getClass, listParentContacts, logParentContact, updateStudent,
   type ClassGroup, type ParentContact, type RosterStudent,
 } from '@/services/roster';
 import {
@@ -32,7 +32,7 @@ import {
   type ContactStudent,
 } from '@/services/messaging';
 import {
-  composeParentMessage, guardiansForStudent, kindEmoji, kindLabel, MESSAGE_KINDS, needsDetails,
+  composeParentMessage, guardiansForStudent, kindEmoji, kindLabel, MESSAGE_KINDS, needsDetails, parentMessageReady,
   parseSavedSignature, rosterGender, seedDetailsFromNote, SIGNATURE_STORAGE_KEY, suggestMeeting, summarizeContacts,
   type Gender, type MessageKind, type Tone,
 } from '@/services/parentMessage';
@@ -116,7 +116,7 @@ export default function ParentMessageScreen() {
 
   // Arriving from a class's parent-contact card: the student is already chosen,
   // and for a concern-only family the card asks for the missing praise letter.
-  const params = useLocalSearchParams<{ studentId?: string; studentName?: string; kind?: string }>();
+  const params = useLocalSearchParams<{ studentId?: string; studentName?: string; kind?: string; classId?: string }>();
   const paramKind = MESSAGE_KINDS.find(k => k === params.kind);
 
   const [studentName, setStudentName] = useState(params.studentName ?? '');
@@ -164,17 +164,44 @@ export default function ParentMessageScreen() {
    * child in Arabic, which inflects for it in almost every clause. The subject
    * comes from the class the student was picked from, unless already typed.
    */
-  const onPickStudent = (student: RosterStudent, fromClass: ClassGroup) => {
-    setPickingStudent(false);
+  const adoptStudent = (student: RosterStudent, fromClass: ClassGroup) => {
     setStudentName(student.displayName);
     setPickedStudentId(student.id);
     setPickedGender(rosterGender(student.gender));
     const known = rosterGender(student.gender);
     if (known) setStudentGender(known);
-    setDetails(seedDetailsFromNote(details, student.teacherNote));
+    setDetails(prev => seedDetailsFromNote(prev, student.teacherNote));
     const classSubject = SUBJECTS.find(s => s.id === fromClass.subjectId);
     if (classSubject && !subject.trim()) setSubject(isAr ? classSubject.nameAr : classSubject.name);
   };
+
+  const onPickStudent = (student: RosterStudent, fromClass: ClassGroup) => {
+    setPickingStudent(false);
+    adoptStudent(student, fromClass);
+  };
+
+  /**
+   * Opened from a class card with the student already chosen: load that
+   * roster row and treat it exactly like a pick. Without this, the recorded
+   * gender was never read — the letter defaulted to male for every child a
+   * teacher reached this way, and the note was never offered. The name param
+   * already fills the field, so a failed load costs only the seeding.
+   */
+  useEffect(() => {
+    const studentId = params.studentId;
+    const classId = params.classId;
+    if (!studentId || !classId) return;
+    let cancelled = false;
+    getClass(classId)
+      .then(({ group, students }) => {
+        if (cancelled) return;
+        const student = students.find(s => s.id === studentId);
+        if (student) adoptStudent(student, group);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // Once, for the student the route named.
+  }, [params.studentId, params.classId]);
 
   /**
    * Picking a gender for a roster student saves it on the roster, so the next
@@ -225,6 +252,10 @@ export default function ParentMessageScreen() {
       return;
     }
     let cancelled = false;
+    // Drop the previous student's guardians at once. They used to stay in
+    // place until the fetch below returned, and in that window the recipient
+    // line and the in-app send still named the other child's parents.
+    setGuardians([]);
     getTeacherContacts()
       .then(contacts => { if (!cancelled) setGuardians(guardiansForStudent(contacts, pickedStudentId)); })
       .catch(() => { if (!cancelled) setGuardians([]); });
@@ -261,7 +292,9 @@ export default function ParentMessageScreen() {
     [studentName, studentGender, kind, details, teacherName, teacherGender, subject, tone, isAr],
   );
 
-  const ready = message.length > 0;
+  // A concern letter is not ready without its details — the same rule the
+  // «required» label states, applied to Send, Share and Copy.
+  const ready = parentMessageReady(kind, details, message);
 
   const onCopy = async () => {
     if (!ready) return;

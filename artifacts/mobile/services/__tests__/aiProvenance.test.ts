@@ -6,6 +6,7 @@ import {
   describeAiError,
   generateWithProvenance,
   isAbortError,
+  throwIfAborted,
   isCapError,
   getGenerationHistory,
   getLastGeneration,
@@ -382,4 +383,18 @@ test('the badge follows the last generation, not the worst one', async () => {
   // The teacher is now looking at a real answer; saying otherwise would be
   // its own kind of dishonesty.
   assert.equal(aiSourceBadgeState(false, getLastGeneration())!.labelKey, 'aiLiveBadge');
+});
+
+test('throwIfAborted rejects a cancelled signal the way fetch would', () => {
+  // The slides screen joins two promises whose own catches swallow the abort.
+  // A late Cancel must still surface as the AbortError the screen already
+  // reports as "stopped", not as a finished deck.
+  const controller = new AbortController();
+  controller.abort();
+  assert.throws(() => throwIfAborted(controller.signal), (e: unknown) => isAbortError(e));
+});
+
+test('throwIfAborted is a no-op on a live signal', () => {
+  const controller = new AbortController();
+  assert.doesNotThrow(() => throwIfAborted(controller.signal));
 });
