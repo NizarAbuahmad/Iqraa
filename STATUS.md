@@ -499,6 +499,31 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The parent message can be edited by hand and carry a file, 2026-10-02
+
+`ai-tools/parent-message` showed its letter as read-only text: the only way to
+change a word was through the fields, and nothing could be attached. The
+preview is now the editable letter, and a teacher can attach one photo or PDF.
+
+- **An edit wins over the fields.** Once the teacher types in the preview, that
+  text is what is sent; changing tone or kind no longer rewrites it. A note
+  under the box says so, with «استعادة النص المقترح» to go back. Typing back to
+  exactly the composed text drops the edit.
+- **An edit is pinned to the student it was written for.** It names the child
+  in free text, so if the student name changes afterwards the edit is *stale*:
+  send, share and copy are all disabled, the box turns amber, and the teacher
+  must restore or touch the letter again. Otherwise picking Basel after
+  editing Sara's letter would send Sara's letter to Basel's parent.
+  `outgoingLetter()` in `services/parentMessage.ts`, tested.
+- **The attachment only travels in-app.** It rides `sendMessage`'s existing
+  `attachmentDataUrl` to each guardian — no endpoint, schema or dependency
+  change. Share and copy are text-only, and the chip says so. Photos and PDFs
+  only (audio is allowed by the server but not offered); the 8 MB data-URL
+  ceiling is checked before the send, not discovered by it.
+
+Checked in the web build against a mocked API: edit, stale lock, and a picked
+photo. Not checked on a device or against the real messaging API.
+
 ## An English corner for Grades 1–4, 2026-09-25
 
 Anyone can practise the Grade 1–4 English lesson words at
