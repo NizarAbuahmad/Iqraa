@@ -104,6 +104,19 @@ export function needsDetails(kind: MessageKind): boolean {
   return kind !== 'praise' && kind !== 'progress';
 }
 
+/**
+ * May this letter leave the screen — be sent, shared or copied?
+ *
+ * The details box is labelled "required" for every concern kind, and the
+ * buttons used to check only that a message had been composed, so a concern
+ * letter with nothing specific in it could reach a real parent. Same rule as
+ * the label, in one place, so the two cannot disagree again.
+ */
+export function parentMessageReady(kind: MessageKind, details: string, message: string): boolean {
+  if (message.length === 0) return false;
+  return !needsDetails(kind) || details.trim().length > 0;
+}
+
 // ─── Arabic ───────────────────────────────────────────────────────────────────
 
 function arChild(g: Gender): string {
