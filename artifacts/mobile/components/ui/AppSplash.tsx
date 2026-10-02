@@ -21,10 +21,8 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
-import { Image } from 'expo-image';
 import { NATIVE_DRIVER } from '@/constants/animation';
-
-const LOGO_MARK = require('@/assets/images/logo-mark.png');
+import { BrandLogo } from '@/components/ui/BrandLogo';
 
 const NAVY = '#081B3A';
 const TEAL = '#00A99D';
@@ -120,7 +118,7 @@ export function AppSplash({ visible, onLayout }: Props) {
           ],
         }}
       >
-        <Image source={LOGO_MARK} style={styles.logo} resizeMode="contain" />
+        <BrandLogo onDark width={176} height={176} />
       </Animated.View>
 
       {/* The strapline trails the mark slightly — the lockup assembles rather
@@ -162,10 +160,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
-  },
-  logo: {
-    width: 176,
-    height: 176,
   },
   latin: {
     color: TEAL,
