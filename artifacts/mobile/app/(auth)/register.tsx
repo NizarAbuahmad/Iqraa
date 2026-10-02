@@ -16,6 +16,7 @@ import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/Goo
 import { Input } from '@/components/ui/Input';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { useStudentAccountsStatus } from '@/services/features';
+import { ApiError } from '@/services/apiClient';
 import { Ionicons } from '@expo/vector-icons';
 import { goBack } from '@/services/navigation';
 
@@ -65,6 +66,12 @@ export default function RegisterScreen() {
       await loginWithGoogle(credential, chosenRole ? { role: chosenRole } : undefined);
       router.replace('/(tabs)');
     } catch (e: any) {
+      // The server only refuses the pill's role when the existing account can
+      // no longer change it (lib/roleSwitch.ts); otherwise it applies it.
+      if (e instanceof ApiError && (e.code === 'role_locked_teaching' || e.code === 'role_locked_linked')) {
+        setError(t(e.code === 'role_locked_teaching' ? 'accountTypeLockedTeaching' : 'accountTypeLockedLinked'));
+        return;
+      }
       setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول عبر Google' : 'Google sign-in failed'));
     } finally {
       setGoogleLoading(false);
