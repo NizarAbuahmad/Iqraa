@@ -53,28 +53,61 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
-- **A free, no-login games hub and a Smart Whiteboard tool shipped** (2026-09-18),
-  a competitive response to hasaadx.com/teacher. `/play` (added to
-  `routeGating.ts`'s `PUBLIC_ROUTES`, same no-account pattern as
-  `app/take/[code].tsx`) offers four client-only games — flags and capitals
-  trivia (`components/publicGames/TriviaGame.tsx`, flag images from
-  flagcdn.com, no key/bundle needed), memory-match, and spot-the-odd-square —
-  each ending in a "create a free teacher account" CTA
-  (`components/publicGames/GameShell.tsx`); no backend, no persisted scores,
-  by design. `/ai-tools/whiteboard.tsx` is a new during-class tool (added to
-  `DURING_CLASS_ALL` and the `toolCatalog.test.ts` offered-tools list — a
-  deliberate, tracked un-parking, not an accidental one): type a prompt,
-  display it full-screen in large type. Not a drawing canvas — confirmed with
-  the user against Hasaad's actual description before building. The
-  projector fullscreen helper moved out of `presentation.tsx` into the
-  already-shared `presentationUtils.ts` so both screens use one copy.
-  Verified: full mobile suite 1494/1494 (10 pre-existing skips), monorepo
-  typecheck clean, and all four games plus the routing gate exercised live in
-  a browser (flags scoring/next, memory flip/match, colour round-advance,
-  `/ai-tools/whiteboard` correctly bounces a signed-out visitor to
-  onboarding — `/play` does not). Not yet verified: the whiteboard's
-  authenticated UI (no test teacher account in this session) and capitals
+- **The tool screens share one rule per failure mode** (2026-10-02, PR #772).
+  A review of every `/ai-tools` screen found ~40 issues, most of them one
+  pattern repeated per screen. Each pattern now has one helper, used by
+  quiz, worksheet, lesson plan, activity, game, slides and prompt-slides:
+  - Save, export and present read the scope the material was *generated*
+    under (`services/generationScope.ts`), never the live pickers — changing
+    the subject cleared the topic but kept the result, so Save stored it
+    under the new subject as «اختبار: » and «اعرض على الشاشة» re-grounded the
+    deck from an empty topic (the lesson-title trap in CLAUDE.md). A
+    reopened material re-grounds its saved topic, which is what gives it
+    its grounding notice, figures and the Ministry form's unit back.
+  - A failed or cancelled regenerate hands back what was on screen.
+  - Every generator aborts on unmount (`hooks/useAbortOnUnmount.ts`);
+    activity and the classroom builder gained Cancel.
+  - Background verification is tied to the exact output it ran for
+    (`services/verificationTracker.ts`), so a late result cannot badge the
+    next paper or land one slot off after a delete.
+  - Saved picker positions are range-checked (`readIndexParam`); the
+    homework flag accepts the `'true'` موادي spreads back into the route
+    (`readHomeworkParam`) — a reopened homework used to become a worksheet.
+  - Slides and prompt-slides share `hooks/useDeckWorkspace.ts`,
+    `hooks/useSlideEditor.ts` and `components/slides/` (~540 net lines
+    removed). Auto-sync to موادي is a property of the link, not of having an
+    id (`services/deckSaveLink.ts`): a regenerated deck no longer silently
+    overwrites a saved, edited one.
+  - Classroom presentation: the countdown re-arms between timed slides
+    (it froze on Q1 → Q2), hint/answer follow the slide's direction, Esc
+    closes a zoomed figure instead of leaving the deck, the keyboard
+    handler is the pure `keyboardAction` in `presentationUtils.ts`.
+  Verified by typecheck and the mobile suite (2204 pass, 0 fail, 10
+  skipped). **Not verified in a browser** — none of the screen wiring is
+  machine-testable (the runner cannot load react-native). Still open from
+  the same review: a reopened deck is not loaded from موادي on either slides
+  screen (only the form is prefilled); pen ink drifts off the content on
+  resize; the timer has no pause; `homeAiTools.ts` still disables
+  `activity`/`game` for the related-tools panel, deliberately.
+- **A free, no-login games hub shipped** (2026-09-18), a competitive response
+  to hasaadx.com/teacher. `/play` (added to `routeGating.ts`'s
+  `PUBLIC_ROUTES`, same no-account pattern as `app/take/[code].tsx`) offers
+  four client-only games — flags and capitals trivia
+  (`components/publicGames/TriviaGame.tsx`, flag images from flagcdn.com, no
+  key/bundle needed), memory-match, and spot-the-odd-square — each ending in
+  a "create a free teacher account" CTA (`components/publicGames/GameShell.tsx`);
+  no backend, no persisted scores, by design. Linked from the Tools tab as the
+  `games` card since 2026-09-19 (#536). Verified at the time: full mobile
+  suite green, monorepo typecheck clean, and all four games plus the routing
+  gate exercised live in a browser (flags scoring/next, memory flip/match,
+  colour round-advance, `/play` loads signed-out). Not verified: capitals
   trivia specifically (same component as flags, lower risk).
+  - **The Smart Whiteboard that shipped beside it is gone** — removed on
+    2026-09-25 (#624): a text box shown full-screen, no AI, no drawing,
+    nothing saved, and the classroom board already did the job. It is not in
+    `toolCatalog.ts`, `toolCatalog.test.ts` or `app/ai-tools/` any more. This
+    entry went on describing it as a live during-class tool for a week after
+    the delete — checked against the tree on 2026-10-02.
 - **A teacher can set, replace and remove their own profile picture**
   (2026-09-09): `app/(tabs)/profile.tsx`, `POST`/`DELETE /auth/users/avatar`.
   Uploads into the `iqraa-public` R2 bucket (anonymous-read, non-expiring
@@ -525,6 +558,35 @@ them apart is where the message ends. `intentRouter.test.ts` pins 28 positive
 cases and the negatives («ما هو الاقتران», «من اكتشف الذرة؟», «how can you help
 me teach vectors» all stay `teaching`). As with `off_topic`, this is the
 demo-mode / local path; the live prompt already knows what Iqraa is.
+## The parent message can be edited by hand and carry a file, 2026-10-02
+
+`ai-tools/parent-message` showed its letter as read-only text: the only way to
+change a word was through the fields, and nothing could be attached. The
+preview is now the editable letter, and a teacher can attach one photo or PDF.
+
+- **An edit wins over the fields.** Once the teacher types in the preview, that
+  text is what is sent; changing tone or kind no longer rewrites it. A note
+  under the box says so, with «استعادة النص المقترح» to go back. Typing back to
+  exactly the composed text drops the edit.
+- **An edit is pinned to the student it was written for.** It names the child
+  in free text, so if the student name changes afterwards the edit is *stale*:
+  send, share and copy are all disabled, the box turns amber, and the teacher
+  must restore or touch the letter again. Otherwise picking Basel after
+  editing Sara's letter would send Sara's letter to Basel's parent.
+  `outgoingLetter()` in `services/parentMessage.ts`, tested.
+- **A hand edit doesn't skip «required» details.** #772's
+  `parentMessageReady` (a concern letter needs its details) is applied to the
+  outgoing text, edited or not, so fixing one typo can't wave an empty
+  concern letter through.
+- **The attachment only travels in-app.** It rides `sendMessage`'s existing
+  `attachmentDataUrl` to each guardian — no endpoint, schema or dependency
+  change. Share and copy are text-only, and the chip says so. Photos and PDFs
+  only (audio is allowed by the server but not offered); the 8 MB data-URL
+  ceiling is checked before the send, not discovered by it.
+
+Checked in the web build against a mocked API: edit, stale lock, and a picked
+photo. Not checked on a device or against the real messaging API.
+
 ## A parent could not reach Settings, and six smaller parent-side bugs, 2026-10-02
 
 A code review of the parent-facing surface — claim flow, routing, messaging,
@@ -14315,3 +14377,80 @@ the fold jumps away; `context` is injected into the system prompt rather than a
 delimited user block; `/chat` has no route test and the OpenAPI spec still
 calls it an SSE stream; the composer caps at 800 chars against the server's
 2,000; no `KeyboardAvoidingView` (matters once iOS ships).
+
+## Student-side review: the exam link, accounts, chat and the lesson page, 2026-10-02
+
+A read-through of everything a student touches found eight things worth
+calling bugs and a dozen smaller ones; this PR fixes the eight and the
+cheap half of the rest. Full list in the PR body. What changed, and why it
+mattered:
+
+- **A student could write their own read-aloud transcript.** `PUT
+  /take/attempt/answers/:questionId` stored any JSON object for any question,
+  so `{ transcript: "<the passage>", takes: 0 }` on a read-aloud question was
+  full marks and unlimited paid transcriptions. Writes now go through
+  `acceptStudentResponse` (`modules/assessment/studentResponse.ts`): read-aloud
+  is not writable at all, every other type is projected onto the keys its
+  grader reads. Tested, and the exam screen no longer echoes the upload's
+  placeholder `audioKey: 'saved'` back through autosave, which had been
+  replacing the real storage key on every recording made so far.
+- **Autosave was one PUT per keystroke through a per-classroom limiter.**
+  `services/answerSaveQueue.ts` debounces typing (600 ms), saves taps at once,
+  and keeps one request in flight per question so a slow early save can no
+  longer land after a later one. Server side, `/take/attempt/*` is now keyed
+  on the attempt token (hashed) with a loose per-IP ceiling, while
+  `/take/:code` keeps its per-IP bucket — a junk bearer header must not buy a
+  fresh bucket for walking codes.
+- **A reload mid-exam locked the student out.** The token lives in
+  `services/examSession.ts` (AsyncStorage, keyed by share code) and a reload
+  resumes through `/take/attempt/state`. A signed-in student with an existing
+  sitting is resumed by `claim-self` (`resumeAttemptFor`) with a fresh token
+  instead of answered «بدأ أحدهم بهذا الاسم». The comment in
+  `studentAttempt.ts` saying reload resumed was untrue until now.
+- **Time limits are enforced, and an exam can be closed.** `writeGate`
+  refuses answers after `startedAt + timeLimitMin` (60 s grace) or once the
+  evaluation is `closed`; hand-in stays allowed. The screen shows a countdown
+  and hands in at zero. `POST /evaluations/:id/close` exists at last
+  (`'closed'` was in the type since day one and nothing set it); «أغلق
+  الاختبار» sits beside the results button, re-publish reopens.
+- **Student submit now grades.** `gradeSubmission` in
+  `modules/assessment/attemptGrading.ts` is shared by the teacher's and the
+  student's submit routes, so thirty papers no longer need thirty taps on
+  «تصحيح». Result release is unchanged: still gated on the teacher's opt-in
+  and on no question left unmarked.
+- **Students could not reach Settings, FAQ or Delete Account** — the routes
+  were missing from `NON_TEACHER_ROUTES`, so the profile rows bounced them to
+  Messages (and the store-required in-app deletion was unreachable). #775
+  found the same from the parent's side and landed first; this PR keeps its
+  version and adds `/messaging/new-group` as an exception alongside
+  `/messaging/claim`. `/claim-required` has a sign-out link: it was a mandatory screen
+  with the back gesture off and no exit for an expired code on a shared
+  device.
+- **Class chat membership reconciled only when the teacher opened the chat.**
+  #771 landed the same afternoon with `resyncClassGroupThreadIfExists` for
+  adding and removing a member; this PR adds `syncClassThreadsForStudent`
+  for `POST /auth/claim` and `archiveClassThread` for archiving a class
+  (`lib/classThread.ts`), under #771's rule that a roster edit never conjures
+  an empty chat — a newly claimed student got no announcements until then,
+  and an archived class's chat stayed live.
+- Smaller: the claim and role-switch limiters are per user and mounted after
+  auth (a classroom claiming codes is one NAT address); two students can no
+  longer self-claim the same roster name concurrently (the row is locked in a
+  transaction, no schema change); a student can no longer block their teacher
+  (which muted class announcements); blocked senders are excluded inside the
+  paginated query, not after `limit`; «ملاحظات المعلم» is teacher-only on the
+  lesson page; the profile no longer offers students «مساحة عملي»/«شُعَبي»;
+  the exam screen translates server error codes instead of printing the
+  English body; «10.00 علامة» prints as «10».
+
+**Not done, from the same review:** the terms checkbox is bypassed by Google
+sign-up and acceptance is never stored (needs a schema column, so a
+`schema-push`); English server errors still print raw on the messaging and
+register/verify screens; a signed-in student has nowhere to list their exams
+or results — the share link is the only door; `GET /curriculum/books` serves
+`guidePdfUrl` unauthenticated; deleting an attempt leaves its audio in R2.
+
+Not seen in a browser — same reason as the 2026-09-13 entry. Covered by 25
+new unit tests (`studentResponse`, `answerSaveQueue`, `takeErrorKey`,
+`formatMarks`, routeGating and participantPicker pins); api-server 1014/1014
+and mobile 2152/2152 pass, typecheck clean.

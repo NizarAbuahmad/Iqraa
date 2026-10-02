@@ -299,6 +299,13 @@ export async function publishEvaluation(id: string): Promise<Evaluation> {
   return data.evaluation;
 }
 
+/** Stop the link admitting new sittings and new answers. Re-publishing reopens it. */
+export async function closeEvaluation(id: string): Promise<Evaluation> {
+  const res = await apiFetch(`/evaluations/${id}/close`, { method: 'POST' });
+  const data = await readJson<{ evaluation: Evaluation }>(res, 'Closing evaluation');
+  return data.evaluation;
+}
+
 // ─── Attempts (teacher answer entry) ────────────────────────────────────────
 
 export type AttemptStatus =

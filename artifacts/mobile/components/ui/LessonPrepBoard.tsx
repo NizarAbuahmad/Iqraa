@@ -45,6 +45,7 @@ export function LessonPrepBoard({
   onMake,
   onToggleSkip,
   skipLabel,
+  skipShortLabel,
   skippedLabel,
   restoreLabel,
   classLabelFor,
@@ -77,6 +78,14 @@ export function LessonPrepBoard({
   onToggleSkip?: (row: PrepRow) => void;
   /** Accessibility label of the skip control, e.g. «غير مطلوب لهذا الدرس». */
   skipLabel?: string;
+  /**
+   * The word printed on the skip control, e.g. «تخطّي». Without it the control
+   * is a bare eye-off icon — which five rows in a column turned into five
+   * identical grey glyphs that nobody read as a button, let alone as "not
+   * needed for this lesson". A word is the affordance; `skipLabel` stays the
+   * full sentence for screen readers.
+   */
+  skipShortLabel?: string;
   /** Status line of a skipped row. */
   skippedLabel?: string;
   /** The skipped row's action, e.g. «أعِده». */
@@ -235,10 +244,14 @@ export function LessonPrepBoard({
                   accessibilityLabel={`${label} — ${skipLabel ?? ''}`}
                   style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
                     styles.skip,
+                    skipShortLabel ? [styles.skipWide, { flexDirection: rowDir }] : null,
                     { backgroundColor: pressed || hovered ? colors.border : 'transparent' },
                   ]}
                 >
-                  <Ionicons name="eye-off-outline" size={16} color={colors.mutedForeground} />
+                  <Ionicons name="eye-off-outline" size={skipShortLabel ? 14 : 16} color={colors.mutedForeground} />
+                  {skipShortLabel ? (
+                    <Text numberOfLines={1} style={[styles.skipText, { color: colors.mutedForeground }]}>{skipShortLabel}</Text>
+                  ) : null}
                 </Pressable>
               ) : null}
               {showAll ? (
@@ -298,6 +311,8 @@ const styles = StyleSheet.create({
   cta: { alignItems: 'center', gap: 3 },
   ctaMake: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   skip: { width: 36, height: 36, borderRadius: 18, marginHorizontal: 6, alignItems: 'center', justifyContent: 'center' },
+  skipWide: { width: 'auto', height: 30, borderRadius: 15, paddingHorizontal: 9, gap: 4 },
+  skipText: { fontSize: 12, fontFamily: 'Cairo_600SemiBold' },
   dim: { opacity: 0.5 },
   copies: { width: undefined, paddingHorizontal: 9, gap: 3 },
   copiesText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },

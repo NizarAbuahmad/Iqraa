@@ -418,6 +418,7 @@ function LessonWorkspace() {
                 onMake={(row) => router.push({ pathname: row.route as never, params: toolParams as never })}
                 onToggleSkip={toggleSkip}
                 skipLabel={t('homePrepSkip')}
+                skipShortLabel={t('homePrepSkipShort')}
                 skippedLabel={t('homePrepSkipped')}
                 restoreLabel={t('homePrepRestore')}
                 classLabelFor={(id) => classNameFor(classes, id, lang as 'ar' | 'en')}

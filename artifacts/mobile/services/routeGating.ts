@@ -80,10 +80,13 @@ const NON_TEACHER_ROUTES = [
 ];
 
 /**
- * Teacher-only despite sitting under an allowed prefix: this is the screen
- * that mints a student's claim code, and it reads and writes the roster.
+ * Teacher-only despite sitting under an allowed prefix: `/messaging/claim`
+ * mints a student's claim code and reads and writes the roster;
+ * `/messaging/new-group` creates a group, which the server refuses for a
+ * non-teacher — and its picker loads a teacher-shaped contact list, so the
+ * screen died with a "no connection" message instead of the refusal.
  */
-const NON_TEACHER_EXCEPTIONS = ['/messaging/claim'];
+const NON_TEACHER_EXCEPTIONS = ['/messaging/claim', '/messaging/new-group'];
 
 function matchesPrefix(pathname: string, prefixes: string[]): boolean {
   return prefixes.some(p => pathname === p || pathname.startsWith(`${p}/`));
