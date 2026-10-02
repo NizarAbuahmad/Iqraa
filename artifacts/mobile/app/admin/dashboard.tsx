@@ -89,7 +89,7 @@ const PAGE_SIZE = 30;
 export default function AdminDashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { isRTL, lang } = useLanguage();
+  const { isRTL, lang, t } = useLanguage();
   const { user, isLoading: authLoading } = useAuth();
   const isAdmin = !!user && ADMIN_ROLES.includes(user.role);
   const topPad = insets.top + (insets.top === 0 ? 20 : 0);
@@ -176,7 +176,7 @@ export default function AdminDashboardScreen() {
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
-            {lang === 'ar' ? 'لوحة الإدارة' : 'Admin dashboard'}
+            {t('adminDashboard')}
           </Text>
         </View>
 

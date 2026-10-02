@@ -37,12 +37,12 @@ import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { LoadError } from '@/components/ui/LoadError';
+import { CLASSES_QUERY_KEY } from '@/services/rosterQueryKeys';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
-const CLASSES_QUERY_KEY = ['classes'] as const;
 /**
  * This screen is stack-pushed (Profile → Classes, Teaching Plans → Classes),
  * so every visit used to be a fresh mount that re-earned the roster over the

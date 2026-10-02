@@ -35,6 +35,7 @@ function SettingRow({ icon, label, onPress, destructive, isRTL, colors }: {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
       style={({ pressed }) => [
         styles.settingRow,
         { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.7 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' },
@@ -342,9 +343,12 @@ export default function ProfileScreen() {
           </>
         ) : null}
 
-        {/* Settings */}
+        {/* «المزيد», not «الإعدادات»: the list holds materials, classes, the
+            admin dashboard, FAQ and sign-out, and a row inside it is itself
+            called الإعدادات — under the old heading the teacher read
+            "Settings → Settings". */}
         <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('settingsSection')}
+          {t('moreSection')}
         </Text>
         <View style={{ gap: 8 }}>
           {/* مساحتي and شُعَبي are teacher screens: the routing gate
@@ -370,7 +374,7 @@ export default function ProfileScreen() {
           {(user?.role === 'school_admin' || user?.role === 'system_admin') && (
             <SettingRow
               icon="bar-chart-outline"
-              label={isRTL ? 'لوحة الإدارة' : 'Admin dashboard'}
+              label={t('adminDashboard')}
               onPress={() => router.push('/admin/dashboard' as any)}
               isRTL={isRTL}
               colors={colors}

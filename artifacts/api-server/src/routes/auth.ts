@@ -46,7 +46,7 @@ import {
   RESET_CODE_TTL_MS,
 } from "../lib/passwordReset.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
-import { syncClassGroupThread } from "../lib/classThread.js";
+import { resyncClassGroupThreadIfExists } from "../lib/classThread.js";
 import { decideRoleSwitch } from "../lib/roleSwitch.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 import { extensionForAvatarMime, MAX_AVATAR_DATA_URL_LENGTH } from "../lib/avatarUpload.js";
@@ -816,21 +816,17 @@ router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedReq
       }
 
       // A student who joins is a member of every class thread their roster row
-      // sits in — the same rule unlinking applies (routes/roster.ts), applied
+      // sits in — the same rule roster edits apply (routes/roster.ts), applied
       // here on the way in. Without it the new account saw no class group
-      // until the teacher happened to reopen it.
+      // until the teacher happened to reopen it. "If exists", like those
+      // edits: a claim must not conjure an empty chat into a teacher's inbox.
       const memberships = await db
-        .select({
-          classGroupId: classMemberships.classGroupId,
-          teacherId: classGroups.teacherId,
-          name: classGroups.name,
-          nameAr: classGroups.nameAr,
-        })
+        .select({ classGroupId: classMemberships.classGroupId, teacherId: classGroups.teacherId })
         .from(classMemberships)
         .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
         .where(and(eq(classMemberships.studentId, resolved.studentId), isNull(classGroups.archivedAt)));
       for (const m of memberships) {
-        await syncClassGroupThread(m.classGroupId, m.teacherId, m.name, m.nameAr);
+        await resyncClassGroupThreadIfExists(m.classGroupId, m.teacherId);
       }
     }
 
