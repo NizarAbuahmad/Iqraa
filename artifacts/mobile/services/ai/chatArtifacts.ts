@@ -12,10 +12,7 @@ import type {
   WorksheetOutput,
 } from '@/services/ai/AIService';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
-import {
-  resolveCurriculumContext,
-  type SessionArtifact,
-} from '@/services/ai/teachingAssistant';
+import type { SessionArtifact } from '@/services/ai/teachingAssistant';
 import { buildGeneratorContext, nccdUnitId } from '@/services/kbContext';
 import type { KBLesson } from '@/services/knowledgeBase';
 import {
@@ -25,6 +22,7 @@ import {
   formatWorksheetText,
 } from '@/services/share';
 import { formatInfographicText } from './infographic.ts';
+import { resolveArtifactScope, type ArtifactScope } from './artifactScope.ts';
 
 /**
  * The structured output, kept alongside the text.
@@ -97,14 +95,11 @@ function buildRequest(
   lesson: KBLesson | null,
   lang: 'ar' | 'en',
   documentContext?: string | null,
+  scope?: ArtifactScope | null,
 ): AIRequest {
-  const ctx = lesson ? resolveCurriculumContext(lesson) : null;
-  const grade = lang === 'ar'
-    ? (ctx?.gradeAr ?? 'الصف العاشر')
-    : (ctx?.gradeEn ?? 'Grade 10');
-  const subject = lang === 'ar'
-    ? (ctx?.subjectAr ?? 'الرياضيات')
-    : (ctx?.subjectEn ?? 'Mathematics');
+  // The lesson's own book, else the picked scope — never a bare maths default
+  // for a chemistry teacher's upload. See `resolveArtifactScope`.
+  const { subject, grade } = resolveArtifactScope(lesson, scope, lang);
 
   return {
     grade,
@@ -167,6 +162,8 @@ export async function generateChatArtifact(opts: {
   documentContext?: string | null;
   /** Soft-pin default lesson was used without an explicit topic. */
   fromSoftPin?: boolean;
+  /** The picked subject and grade, for when no lesson grounds the request. */
+  scope?: ArtifactScope | null;
 }): Promise<ChatArtifactResult> {
   const {
     artifact,
@@ -175,12 +172,13 @@ export async function generateChatArtifact(opts: {
     lang,
     documentContext,
     fromSoftPin = false,
+    scope = null,
   } = opts;
   const isAr = lang === 'ar';
   const fromDocuments = !!documentContext?.trim();
   // When docs are the primary context, don't let a soft curriculum lesson override generators
   const lessonForGen = fromDocuments && fromSoftPin ? null : lesson;
-  const req = buildRequest(topic, lessonForGen, lang, documentContext);
+  const req = buildRequest(topic, lessonForGen, lang, documentContext, scope);
   const meta = { subject: req.subject, grade: req.grade, duration: req.duration };
   const titleBase = topic.trim();
 
@@ -282,10 +280,11 @@ export async function generateChatInfographic(opts: {
   topic: string;
   lesson?: KBLesson | null;
   lang: 'ar' | 'en';
+  scope?: ArtifactScope | null;
 }): Promise<Omit<ChatArtifactResult, 'artifact'> & { data: ChatArtifactData }> {
-  const { topic, lesson = null, lang } = opts;
+  const { topic, lesson = null, lang, scope = null } = opts;
   const isAr = lang === 'ar';
-  const req = buildRequest(topic, lesson, lang);
+  const req = buildRequest(topic, lesson, lang, undefined, scope);
   const out = await remoteAIService.generateInfographic(req);
   const prose = isAr
     ? `جهّزت إنفوجرافيك لدرس «${topic}». انسخه أو صدّره للطباعة من الأزرار بالأسفل.`
