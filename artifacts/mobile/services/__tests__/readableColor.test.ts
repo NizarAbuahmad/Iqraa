@@ -14,6 +14,16 @@ test('a colour that already passes is left alone', () => {
   assert.equal(readableOn('#006D65', '#FFFFFF'), '#006D65');
 });
 
+// Pinned hexes, not the palette: colors.ts touches react-native at module
+// scope and this runner has no RN transform. Keep them in step with colors.ts.
+test('the live accent and the disabled-button tints are AA in both schemes', () => {
+  assert.ok(contrast('#FFFFFF', '#B45309') >= 4.5, 'white on live');
+  assert.ok(contrast('#006A63', '#E3F2EF') >= 4.5, 'disabled primary, light');
+  assert.ok(contrast('#5C6675', '#EFEDE7') >= 4.5, 'disabled other, light');
+  assert.ok(contrast('#5EEAD4', '#12302F') >= 4.5, 'disabled primary, dark');
+  assert.ok(contrast('#9AA9BC', '#16243B') >= 4.5, 'disabled other, dark');
+});
+
 test('textOn picks the label that reads on a fill', () => {
   assert.equal(textOn('#006D65'), '#FFFFFF');
   assert.equal(textOn('#2DD4BF'), '#0B1B33');
