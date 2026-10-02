@@ -20,19 +20,22 @@ import * as Haptics from 'expo-haptics';
 import {
   DECK_BG as BG, DECK_BLOB as BLOB, DECK_BORDER as BORDER, DECK_CARD_BG as CARD_BG,
   DECK_MUTED as TEXT_MUTED, DECK_PINK as PINK, DECK_TEXT as TEXT_PRIMARY,
-  DECK_ACCENT as ACCENT, slideTypeAccent, TIMER_AMBER, TIMER_GREEN, TIMER_RED,
+  DECK_ACCENT as ACCENT, slideTypeAccent, TIMER_AMBER, TIMER_GREEN,
 } from '@/services/deckTheme';
 import { NATIVE_DRIVER } from '@/constants/animation';
 import { useLanguage } from '@/context/LanguageContext';
 import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/classroomStore';
-import { canFullscreen, timerColor, timerSecondsForSlide, toggleFullscreen } from '@/services/presentationUtils';
+import {
+  calcTimerPct, canFullscreen, describeKeyTarget, isFullscreen, keyboardAction, onFullscreenChange,
+  slideIsRTL, tickTimer, timerColor, timerSecondsForSlide, toggleFullscreen,
+} from '@/services/presentationUtils';
 import { openExternal } from '@/services/externalLinks';
 import Svg, { Line, Polyline, Rect } from 'react-native-svg';
 import { plotGeometry, visualForSlide } from '@/services/deckVisuals';
 // Shared with both exports so the projected slide and the exported one cannot
 // disagree about what a bullet, an equation or a section glyph is.
-import { isBulletLine, isEnglishSlideContent, looksLikeEquation, splitEmoji, stripBullet } from '@/services/deckText';
+import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet } from '@/services/deckText';
 import { resolveSlideLayout } from '@/services/slideLayout';
 import { openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
@@ -41,8 +44,9 @@ import {
 } from '@/services/classGame';
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
 import { MathText } from '@/components/classroom/MathText';
+import { VerifiedBadge } from '@/components/classroom/VerifiedBadge';
 import { PEN_COLORS, PenCanvas, PenPalette, type Stroke } from '@/components/classroom/PenLayer';
-import { hasRenderableMath, isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
+import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
 import { goBack } from '@/services/navigation';
 
 /** Open a media URL outside the app (native fallback — no WebView dep). */
@@ -187,10 +191,22 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
 }
 
 // ─── Media slide (image / YouTube / audio / document) ─────────────────────────
-function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; t: (k: any, arg?: any) => string }) {
+function MediaView({
+  slide, isRTL, t, zoomed, setZoomed,
+}: {
+  slide: ActivitySlide;
+  isRTL: boolean;
+  t: (k: any, arg?: any) => string;
+  /**
+   * Owned by the screen, not here. The screen's Escape handler has to know a
+   * figure is zoomed: while this lived in local state, Esc closed the zoom
+   * (the Modal's own handling) and the same key press then left the deck.
+   */
+  zoomed: boolean;
+  setZoomed: (zoomed: boolean) => void;
+}) {
   const url = slide.mediaUrl ?? '';
   const embed = slide.mediaKind === 'video' ? youtubeEmbedUrl(url) : null;
-  const [zoomed, setZoomed] = useState(false);
 
   return (
     <View style={mediaStyles.wrap}>
@@ -416,9 +432,10 @@ function TeacherPanel({
 
 // ─── Question Slide (whole-class ABCD response) ──────────────────────────────
 function QuestionOptions({
-  slide, isRTL: appIsRTL, t, revealed, onToggleReveal,
+  slide, isRTL, t, revealed, onToggleReveal,
 }: {
   slide: ActivitySlide;
+  /** The slide's own direction (`slideIsRTL`), not the app's. */
   isRTL: boolean;
   t: (k: any, arg?: any) => string;
   revealed: boolean;
@@ -426,11 +443,10 @@ function QuestionOptions({
 }) {
   const options = slide.options ?? [];
   if (options.length === 0) return null;
-  // Same reasoning as SlideView: an English-subject check's own options can
-  // be English regardless of the app's UI language, and calling out "ج" over
-  // an English option nobody printed أبجد cards for is not the letter a
+  // `isRTL` is the slide's direction: an English-subject check's own options
+  // can be English regardless of the app's UI language, and calling out "ج"
+  // over an English option nobody printed أبجد cards for is not the letter a
   // student reading it in English would say.
-  const isRTL = isEnglishSlideContent(slide.content, ...options) ? false : appIsRTL;
   // Response letters — students raise a hand and call out the letter
   // (أ = 1, ب = 2, …). No printed cards — the app never had a way to make them.
   const letters = isRTL ? ['أ', 'ب', 'ج', 'د', 'هـ'] : ['A', 'B', 'C', 'D', 'E'];
@@ -503,57 +519,28 @@ function QuestionOptions({
         </Text>
       </Pressable>
 
-      {/* The trust moment — but the badge states only what actually happened.
-          'symbolic' means SymPy re-derived and compared; 'bank' means a
-          hand-authored reviewed item, which is NOT machine verification. */}
+      {/* The trust moment — see VerifiedBadge for what each claim means. */}
       {revealed && slide.verified && (
-        <View style={{ gap: 6 }}>
-          <View style={[qStyles.verifiedBadge, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons
-              name={slide.verifiedBy === 'symbolic' ? 'shield-checkmark' : 'library-outline'}
-              size={16}
-              color={slide.verifiedBy === 'symbolic' ? TIMER_GREEN : TEXT_MUTED}
-            />
-            <Text
-              style={[
-                qStyles.verifiedText,
-                {
-                  fontFamily: 'Cairo_600SemiBold',
-                  color: slide.verifiedBy === 'symbolic' ? TIMER_GREEN : TEXT_MUTED,
-                },
-              ]}
-            >
-              {slide.verifiedBy === 'symbolic' ? t('verifiedBySymbolic') : t('verifiedByBank')}
-            </Text>
-          </View>
-          {slide.verifiedBy === 'symbolic' && slide.computedAnswer && (
-            <Text
-              style={[
-                qStyles.verifiedText,
-                { fontFamily: 'Almarai_400Regular', color: TEXT_MUTED, textAlign: 'center' },
-              ]}
-            >
-              {isolateForeignRuns(t('verifiedComputed', prettifySymPy(slide.computedAnswer)))}
-            </Text>
-          )}
-        </View>
+        <VerifiedBadge
+          verifiedBy={slide.verifiedBy}
+          computedAnswer={slide.computedAnswer}
+          isRTL={isRTL}
+          t={t}
+        />
       )}
     </View>
   );
 }
 
 // ─── Slide Content ────────────────────────────────────────────────────────────
-function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: boolean }) {
-  // A slide's own question/options can be in English regardless of the app's
-  // UI language: the deck's chrome is picked once at build time from that UI
-  // language, but an English-subject check comes back from the model in
-  // English no matter what. Laying an English question out right-to-left with
-  // the reading edge on the right is asking the class to read it backwards —
-  // so direction here follows the slide's actual payload (its body, not its
-  // title, which is deliberately bilingual and would always read as Arabic).
-  const isRTL = isEnglishSlideContent(slide.content, ...(slide.options ?? [])) ? false : appIsRTL;
-  // Only for the teacher-led cue below. `isRTL` stays the prop-derived one
-  // above: it follows the slide's own payload, not the app's UI language.
+/**
+ * `isRTL` is the slide's own direction (`slideIsRTL`, computed once by the
+ * screen), not the app's — an English-subject check reads left-to-right even
+ * in the Arabic app. See `slideIsRTL` for why.
+ */
+function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
+  // Only for the teacher-led cue below. `isRTL` stays the prop: it follows
+  // the slide's own payload, not the app's UI language.
   const { t } = useLanguage();
   const accent = slideTypeAccent(slide.type);
   const align = isRTL ? ('right' as const) : ('left' as const);
@@ -889,7 +876,9 @@ export default function PresentationScreen() {
   const [timerRun, setTimerRun] = useState(0);
   const [timerTotal, setTimerTotal] = useState(0);
   const [celebrationVisible, setCelebrationVisible] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  /** The media slide's enlarged figure — here so the key handler can see it. */
+  const [zoomed, setZoomed] = useState(false);
   // Ink is kept per slide so stepping back shows what was drawn there.
   const [penOn, setPenOn] = useState(false);
   const [penColor, setPenColor] = useState(PEN_COLORS[0]!);
@@ -940,6 +929,7 @@ export default function PresentationScreen() {
     setHintVisible(false);
     setAnswerVisible(false);
     setTeacherPanelOpen(false);
+    setZoomed(false);
     // Not `slide.durationSeconds` — an intro, a reveal or a summary is read to
     // the class, so a duration on one is model noise rather than a task to time.
     const seconds = timerSecondsForSlide(slide);
@@ -967,12 +957,12 @@ export default function PresentationScreen() {
     if (timerRunning && timerSec > 0) {
       timerRef.current = setInterval(() => {
         setTimerSec(s => {
-          if (s <= 1) {
+          const next = tickTimer(s);
+          if (next === 0) {
             clearIntervalIfRunning();
             setTimerRunning(false);
-            return 0;
           }
-          return s - 1;
+          return next;
         });
       }, 1000);
     }
@@ -1039,54 +1029,45 @@ export default function PresentationScreen() {
   };
 
   // The browser can leave fullscreen without us (Esc, F11), so read the state
-  // back rather than tracking our own toggles.
+  // back rather than tracking our own toggles — under both the standard and
+  // the webkit-prefixed API, which `toggleFullscreen` already drove.
   useEffect(() => {
     if (!canFullscreen) return;
-    const sync = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', sync);
-    return () => document.removeEventListener('fullscreenchange', sync);
+    const sync = () => setFullscreen(isFullscreen());
+    sync();
+    return onFullscreenChange(sync);
   }, []);
 
   // Keyboard + presentation-clicker control (web/projector). A teacher runs
   // the class from the front of the room, not from the laptop: clickers send
-  // PageDown/PageUp or arrows, and Space is the universal "advance".
-  // Arrow direction follows the on-screen buttons, which mirror in RTL.
+  // PageDown/PageUp or arrows, and Space is the universal "advance". Which key
+  // means what — and which to leave to the browser, a focused control or an
+  // open modal — is `keyboardAction`'s call, tested in presentation.test.ts.
+  //
+  // Stepping goes through `goToSlide`, the same path as the buttons. It used to
+  // go through a setState updater that ran `initSlide` and a haptic from inside
+  // itself — side effects React may run twice — and skipped the fade.
+  // No deps on purpose: re-subscribing each render keeps `slideIndex` fresh.
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     const onKey = (e: KeyboardEvent) => {
-      const forwardKeys = ['PageDown', ' ', 'Spacebar', 'Enter', isRTL ? 'ArrowLeft' : 'ArrowRight'];
-      const backKeys = ['PageUp', isRTL ? 'ArrowRight' : 'ArrowLeft'];
-      if (forwardKeys.includes(e.key)) {
-        e.preventDefault();
-        setSlideIndexSafely(1);
-      } else if (backKeys.includes(e.key)) {
-        e.preventDefault();
-        setSlideIndexSafely(-1);
-      } else if (e.code === 'KeyF') {
-        // e.code, not e.key — an Arabic layout reports 'ب' for this key.
-        e.preventDefault();
-        toggleFullscreen();
-      } else if (e.key === 'Escape') {
-        // Esc mid-class must not dump the deck just because the teacher wanted
-        // the browser chrome back.
-        if (document.fullscreenElement) toggleFullscreen();
-        else goBack();
-      }
+      const action = keyboardAction(
+        {
+          key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey,
+          ...describeKeyTarget(e.target),
+        },
+        { isRTL, fullscreen: isFullscreen(), modalOpen: zoomed },
+      );
+      if (!action) return;
+      e.preventDefault();
+      if (action === 'next') goToSlide(slideIndex + 1);
+      else if (action === 'prev') goToSlide(slideIndex - 1);
+      else if (action === 'toggleFullscreen' || action === 'exitFullscreen') toggleFullscreen();
+      else goBack();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
-
-  /** Step relative to the CURRENT slide (read from state at call time). */
-  const setSlideIndexSafely = (delta: number) => {
-    setSlideIndex(current => {
-      const next = current + delta;
-      if (!activity || next < 0 || next >= activity.slides.length) return current;
-      initSlide(activity.slides[next]!);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      return next;
-    });
-  };
 
   const restartTimer = () => {
     if (!activity) return;
@@ -1109,10 +1090,12 @@ export default function PresentationScreen() {
   const isFirst = slideIndex === 0;
   const isLast = slideIndex === totalSlides - 1;
   const hasTimer = timerTotal > 0;
-  const timerPct = hasTimer ? timerSec / timerTotal : 0;
+  const timerPct = calcTimerPct(timerSec, timerTotal);
   const tColor = timerColor(timerPct);
   const hasTeacherNotes = !!slide.teacher;
-  const challengeSlides = activity.slides.filter(s => s.type === 'challenge').length;
+  // The slide's own reading direction, for every block that shows its
+  // content — the body, the options, and the hint and answer beneath them.
+  const slideRTL = slideIsRTL(slide, isRTL);
   const slideInk = ink[slideIndex] ?? [];
   const setSlideInk = (next: Stroke[]) => setInk(all => ({ ...all, [slideIndex]: next }));
 
@@ -1141,7 +1124,7 @@ export default function PresentationScreen() {
         {canFullscreen && (
           <Pressable onPress={toggleFullscreen} style={styles.exitBtn} hitSlop={12}>
             <Ionicons
-              name={isFullscreen ? 'contract-outline' : 'expand-outline'}
+              name={fullscreen ? 'contract-outline' : 'expand-outline'}
               size={20}
               color={TEXT_MUTED}
             />
@@ -1202,7 +1185,7 @@ export default function PresentationScreen() {
         >
           {slide.type === 'divider' || (isFirst && slide.mediaUrl)
             ? <HeroSlideView slide={slide} accent={slideTypeAccent(slide.type)} />
-            : <SlideView slide={slide} isRTL={isRTL} />}
+            : <SlideView slide={slide} isRTL={slideRTL} />}
 
           {/* Graph and media (image / YouTube) slides */}
           {slide.type === 'graph' && <GraphView slide={slide} isRTL={isRTL} t={t} />}
@@ -1210,13 +1193,15 @@ export default function PresentationScreen() {
               excluded because GraphView draws the same VisualView itself, under
               the command pills; rendering it here too would double the plot. */}
           {slide.type !== 'graph' && <VisualView slide={slide} />}
-          {slide.type === 'media' && <MediaView slide={slide} isRTL={isRTL} t={t} />}
+          {slide.type === 'media' && (
+            <MediaView slide={slide} isRTL={isRTL} t={t} zoomed={zoomed} setZoomed={setZoomed} />
+          )}
 
           {/* Whole-class ABCD options (question slides own their reveal) */}
           {slide.type === 'question' && (
             <QuestionOptions
               slide={slide}
-              isRTL={isRTL}
+              isRTL={slideRTL}
               t={t}
               revealed={answerVisible}
               onToggleReveal={() => {
@@ -1282,14 +1267,18 @@ export default function PresentationScreen() {
                   {hintVisible ? t('hideHint') : t('revealHint')}
                 </Text>
               </Pressable>
+              {/* The button is app chrome and follows the app; the hint is the
+                  slide's own text and follows the slide (`slideRTL`). On the
+                  app's direction, an English slide's hint sat right-aligned
+                  under its left-aligned question. */}
               {hintVisible && (
                 <View style={[styles.revealContent, { borderColor: TIMER_AMBER + '40', backgroundColor: TIMER_AMBER + '10' }]}>
                   <Text
                     style={[
                       styles.revealText,
                       {
-                        textAlign: isRTL ? 'right' : 'left',
-                        writingDirection: isRTL ? 'rtl' : 'ltr',
+                        textAlign: slideRTL ? 'right' : 'left',
+                        writingDirection: slideRTL ? 'rtl' : 'ltr',
                         fontFamily: 'Almarai_400Regular',
                       },
                     ]}
@@ -1313,6 +1302,7 @@ export default function PresentationScreen() {
                   {answerVisible ? t('hideAnswer') : t('revealAnswer')}
                 </Text>
               </Pressable>
+              {/* Same split as the hint: chrome above, the slide's text here. */}
               {answerVisible && (
                 <View style={[styles.revealContent, { borderColor: TIMER_GREEN + '40', backgroundColor: TIMER_GREEN + '10' }]}>
                   {hasRenderableMath(slide.answer) ? (
@@ -1321,15 +1311,15 @@ export default function PresentationScreen() {
                       fontSize={18}
                       color={TEXT_PRIMARY}
                       fontFamily="Cairo_700Bold"
-                      isRTL={isRTL}
+                      isRTL={slideRTL}
                     />
                   ) : (
                     <Text
                       style={[
                         styles.revealText,
                         {
-                          textAlign: isRTL ? 'right' : 'left',
-                          writingDirection: isRTL ? 'rtl' : 'ltr',
+                          textAlign: slideRTL ? 'right' : 'left',
+                          writingDirection: slideRTL ? 'rtl' : 'ltr',
                           fontFamily: 'Cairo_700Bold',
                         },
                       ]}
@@ -1337,34 +1327,15 @@ export default function PresentationScreen() {
                       {isolateForeignRuns(slide.answer)}
                     </Text>
                   )}
-                  {/* Same trust moment as question slides: state only what
-                      actually happened. 'symbolic' = SymPy re-derived and
-                      agreed; 'bank' = reviewed by a human, not a machine. */}
+                  {/* Same trust moment as question slides — one component. */}
                   {slide.verified && (
-                    <View style={{ gap: 4, marginTop: 10 }}>
-                      <View style={[qStyles.verifiedBadge, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                        <Ionicons
-                          name={slide.verifiedBy === 'symbolic' ? 'shield-checkmark' : 'library-outline'}
-                          size={15}
-                          color={slide.verifiedBy === 'symbolic' ? TIMER_GREEN : TEXT_MUTED}
-                        />
-                        <Text style={[qStyles.verifiedText, {
-                          fontFamily: 'Cairo_600SemiBold',
-                          color: slide.verifiedBy === 'symbolic' ? TIMER_GREEN : TEXT_MUTED,
-                        }]}>
-                          {slide.verifiedBy === 'symbolic' ? t('verifiedBySymbolic') : t('verifiedByBank')}
-                        </Text>
-                      </View>
-                      {slide.verifiedBy === 'symbolic' && slide.computedAnswer && (
-                        <Text style={[qStyles.verifiedText, {
-                          fontFamily: 'Almarai_400Regular', color: TEXT_MUTED, textAlign: 'center',
-                        }]}>
-                          {isolateForeignRuns(
-                            t('verifiedComputed', prettifySymPy(slide.computedAnswer)),
-                          )}
-                        </Text>
-                      )}
-                    </View>
+                    <VerifiedBadge
+                      verifiedBy={slide.verifiedBy}
+                      computedAnswer={slide.computedAnswer}
+                      isRTL={slideRTL}
+                      t={t}
+                      inline
+                    />
                   )}
                 </View>
               )}
@@ -1512,8 +1483,6 @@ export default function PresentationScreen() {
 const styles = StyleSheet.create({
   visualWrap: { width: '100%', maxWidth: 900, alignSelf: 'center', marginTop: 12 },
   container: { flex: 1, backgroundColor: BG },
-  centered: { alignItems: 'center', justifyContent: 'center' },
-  noActivity: { color: TEXT_MUTED, fontSize: 14, marginBottom: 16 },
   celebrationOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', zIndex: 20, pointerEvents: 'none' },
   celebrationCard: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 24, paddingHorizontal: 40, paddingVertical: 32, borderWidth: 1, borderColor: TIMER_GREEN + '60', gap: 12 },
   celebrationEmoji: { fontSize: 64 },
@@ -1539,7 +1508,6 @@ const styles = StyleSheet.create({
   revealContent: { padding: 14, borderRadius: 10, borderWidth: 1 },
   revealText: { fontSize: 14, color: TEXT_PRIMARY, lineHeight: 22 },
   bottomBar: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: BORDER, backgroundColor: CARD_BG },
-  navBtn: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 23 },
   navBtnWide: { alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 110, height: 46, borderRadius: 23, paddingHorizontal: 16 },
   // 92 fits «التالي»/«السابق» plus the chevron at 360dp with the two
   // icon-only action buttons still on the same row.
@@ -1710,8 +1678,6 @@ const qStyles = StyleSheet.create({
   optionText: { flex: 1, fontSize: 22, color: TEXT_PRIMARY, lineHeight: 32 },
   revealBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 12, borderWidth: 1 },
   revealBtnText: { fontSize: 15 },
-  verifiedBadge: { alignItems: 'center', justifyContent: 'center', gap: 8, alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: CARD_BG, borderWidth: 1, borderColor: BORDER },
-  verifiedText: { fontSize: 13.5, color: TIMER_GREEN },
 });
 
 const panelStyles = StyleSheet.create({

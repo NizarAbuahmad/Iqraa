@@ -17,3 +17,19 @@
 export function readHomeworkParam(value: string | undefined): boolean {
   return value === '1' || value === 'true';
 }
+
+/**
+ * A saved picker position, read back from the route.
+ *
+ * Positions arrive from موادي form state and from hand-written URLs. One the
+ * option list cannot honour (absent, not a number, negative, past the end)
+ * must fall back to the screen's default rather than become `NaN` or index
+ * past the array — the same trap CLAUDE.md describes for grade/subject
+ * indices, applied to the smaller pickers.
+ */
+export function readIndexParam(value: string | undefined, length: number, fallback: number): number {
+  if (value === undefined) return fallback;
+  const n = Number.parseInt(value, 10);
+  if (!Number.isInteger(n) || n < 0 || n >= length) return fallback;
+  return n;
+}

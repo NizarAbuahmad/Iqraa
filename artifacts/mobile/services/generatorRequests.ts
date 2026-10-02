@@ -1,5 +1,5 @@
 /**
- * The request bodies the worksheet and lesson-plan screens send.
+ * The request bodies the worksheet, lesson-plan and activity screens send.
  *
  * They live here, not in the screens, so that `scripts/pregenerate.ts` can
  * build the exact same body a teacher's phone builds. The server reuses a
@@ -117,5 +117,43 @@ export function buildLessonPlanRequest(form: LessonPlanForm, grounding: Generato
     includePriorReview: usePrior || undefined,
     priorKnowledge: usePrior ? unitPrior : undefined,
     priorTopicsNotes: form.priorTopicsNotes.trim() || undefined,
+  };
+}
+
+export type ActivityForm = {
+  /** Localised grade name — display-only, carried into the content verbatim. */
+  gradeName: string;
+  /** English subject name — the string the generators branch on. */
+  subjectName: string;
+  topic: string;
+  lang: Lang;
+  activityType: NonNullable<AIRequest['activityType']>;
+  durationMinutes: number;
+  /** The teacher's own objective, free text; empty when none was typed. */
+  objective: string;
+  regenerate?: boolean;
+  previous?: unknown;
+};
+
+export function buildActivityRequest(form: ActivityForm, grounding: GeneratorGrounding): AIRequest {
+  const topic = form.topic.trim();
+  const objective = form.objective.trim();
+  return {
+    grade: form.gradeName,
+    subject: form.subjectName,
+    topic,
+    language: form.lang === 'ar' ? 'arabic' : 'english',
+    activityType: form.activityType,
+    duration: form.durationMinutes,
+    objectives: objective || undefined,
+    additionalContext: (grounding.grounded ? grounding.context : grounding.ungroundedNote) || undefined,
+    unitId: generatorUnitId(topic, form.lang),
+    lessonId: generatorLessonId(topic, form.lang),
+    bookFigureCount: generatorFigureCount(topic, form.lang),
+    // A typed objective is the teacher's own words, and they end up inside
+    // the generated activity — so that request is theirs alone and never
+    // enters the shared pool. Picking a lesson and generating does.
+    contextSource: objective ? 'teacher' as const : 'curriculum' as const,
+    ...regenerationFields(form.regenerate === true, form.previous),
   };
 }

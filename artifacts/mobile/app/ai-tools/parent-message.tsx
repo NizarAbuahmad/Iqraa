@@ -295,6 +295,9 @@ export default function ParentMessageScreen() {
   // A concern letter is not ready without its details — the same rule the
   // «required» label states, applied to Send, Share and Copy.
   const ready = parentMessageReady(kind, details, message);
+  // Names joined with the comma of the letter's language — an English letter
+  // listed its recipients with «،».
+  const nameSeparator = isAr ? '، ' : ', ';
 
   const onCopy = async () => {
     if (!ready) return;
@@ -332,7 +335,7 @@ export default function ParentMessageScreen() {
     // A letter to a parent can't be unsent, so say who it reaches before it goes.
     const ok = await confirm({
       title: t('parentMsgConfirmTitle'),
-      message: t('parentMsgRecipients', names.join('، ')),
+      message: t('parentMsgRecipients', names.join(nameSeparator)),
       confirmLabel: t('parentMsgConfirmSend'),
       cancelLabel: t('cancel'),
     });
@@ -355,7 +358,7 @@ export default function ParentMessageScreen() {
       if (reached.length > 0) {
         recordContact('in_app');
         rememberSignature();
-        showToast(t('parentMsgPartialSend', reached.join('، '), names.slice(reached.length).join('، ')));
+        showToast(t('parentMsgPartialSend', reached.join(nameSeparator), names.slice(reached.length).join(nameSeparator)));
         // Only the ones still waiting stay as recipients, so a retry can't
         // hand the same letter twice to a parent who already has it.
         setGuardians(guardians.slice(reached.length));
@@ -561,7 +564,7 @@ export default function ParentMessageScreen() {
           {ready ? (
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 12, textAlign: isRTL ? 'right' : 'left' }}>
               {guardians.length > 0
-                ? t('parentMsgRecipients', guardians.map(g => `${g.firstName} ${g.lastName}`).join('، '))
+                ? t('parentMsgRecipients', guardians.map(g => `${g.firstName} ${g.lastName}`).join(nameSeparator))
                 : pickedStudentId ? t('parentMsgNoGuardian') : t('parentMsgPickForSend')}
             </Text>
           ) : null}
