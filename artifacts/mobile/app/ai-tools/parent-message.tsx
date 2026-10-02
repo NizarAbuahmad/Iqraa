@@ -298,10 +298,10 @@ export default function ParentMessageScreen() {
    * students — a typed name has no row to hang history on. Fire-and-forget: a
    * failed log must never undo or delay the send the teacher just made.
    */
-  const recordContact = (channel: ParentContact['channel']) => {
+  const recordContact = (channel: ParentContact['channel'], messageIds?: string[]) => {
     const studentId = pickedStudentId;
     if (!studentId) return;
-    logParentContact(studentId, kind, channel)
+    logParentContact(studentId, kind, channel, messageIds)
       // The teacher may have picked another student while this was in flight.
       .then(row => { if (pickedRef.current === studentId) setHistory(prev => (prev ? [row, ...prev] : prev)); })
       .catch(explainRosterWrite);
@@ -369,19 +369,23 @@ export default function ParentMessageScreen() {
     // Each guardian is a separate send, so a failure can land halfway. Track
     // who actually got it: those letters did go, and must be logged and said.
     const reached: string[] = [];
+    // The messages the letter became — logged with it, so «مقروءة» can mean
+    // the parent saw this letter rather than opened the thread for anything.
+    const sentIds: string[] = [];
     try {
       for (const [i, g] of guardians.entries()) {
         const thread = await startThread(g.userId);
-        await sendMessage(thread.id, message);
+        const sent = await sendMessage(thread.id, message);
+        sentIds.push(sent.id);
         reached.push(names[i]);
       }
-      recordContact('in_app');
+      recordContact('in_app', sentIds);
       rememberSignature();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast(t('parentMsgSentInApp'));
     } catch (e) {
       if (reached.length > 0) {
-        recordContact('in_app');
+        recordContact('in_app', sentIds);
         rememberSignature();
         showToast(t('parentMsgPartialSend', reached.join(nameSeparator), names.slice(reached.length).join(nameSeparator)));
         // Only the ones still waiting stay as recipients, so a retry can't

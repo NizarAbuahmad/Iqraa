@@ -27,6 +27,7 @@ import {
   parentContacts,
   rosterLinks,
   students,
+  chatMessageReads,
   type ParentContactChannel,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
@@ -43,6 +44,7 @@ import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { generateShareCode } from "../modules/assessment/studentView.ts";
 import { isCodeLive } from "../lib/claimDecision.ts";
+import { letterReadState } from "../lib/parentContactRead.ts";
 import { requireRosterConsent } from "../lib/rosterConsent.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import {
@@ -670,11 +672,20 @@ router.post("/students/:id/parent-contacts", async (req: AuthenticatedRequest, r
       res.status(404).json({ error: "Student not found" });
       return;
     }
+    // In-app only: which chat messages the letter became, so `read` can be
+    // decided from them (lib/parentContactRead.ts). Not verified against
+    // chat_messages here — a wrong id just leaves that letter looking unread.
+    const rawIds: unknown = req.body?.messageIds;
+    const messageIds = channel === "in_app" && Array.isArray(rawIds)
+      ? [...new Set(rawIds.filter((x): x is string => typeof x === "string" && x.length > 0 && x.length <= 64))].slice(0, 50)
+      : [];
     const [row] = await db
       .insert(parentContacts)
-      .values({ teacherId: req.user!.id, studentId, kind, channel })
+      .values({ teacherId: req.user!.id, studentId, kind, channel, messageIds: messageIds.length > 0 ? messageIds : null })
       .returning({ kind: parentContacts.kind, channel: parentContacts.channel, createdAt: parentContacts.createdAt });
-    res.status(201).json({ contact: row });
+    // A letter just sent has not been read: say so, rather than leave the
+    // history strip without an answer until the next load.
+    res.status(201).json({ contact: { ...row, read: channel === "in_app" ? false : null } });
   } catch (err) {
     failRoster(res, err, "log parent contact", "Failed to log parent contact");
   }
@@ -683,8 +694,10 @@ router.post("/students/:id/parent-contacts", async (req: AuthenticatedRequest, r
 /**
  * Per student: the latest time any linked guardian opened their direct thread
  * with this teacher (`chat_participants.lastReadAt`, set on open and on reply —
- * see routes/messaging.ts). An in-app letter counts as read when this is at or
- * after the letter. The thread key is built exactly like messaging.ts builds it
+ * see routes/messaging.ts). This was how every in-app letter's `read` was
+ * decided until 2026-10-02, and it is wrong for the reason
+ * lib/parentContactRead.ts gives; it now answers only for letters logged
+ * before message ids were recorded with them. The thread key is built exactly like messaging.ts builds it
  * (sorted ids joined with ':'), in JS rather than SQL so uuid ordering can't
  * differ by collation.
  */
@@ -711,16 +724,29 @@ async function guardianLastRead(teacherId: string, studentIds: string[]): Promis
   return out;
 }
 
-/** `read` only means something for in-app letters; shared/copied text left the app. */
-function withReadState<T extends { studentId: string; channel: string; createdAt: Date }>(
+/**
+ * `read` for each letter, decided by lib/parentContactRead.ts: from the
+ * letter's own messages' receipts (chat_message_reads) where it has them, and
+ * from `guardianLastRead` above for letters logged before those existed. The
+ * legacy map is only fetched when some row still needs it.
+ */
+async function withReadState<T extends { studentId: string; channel: string; createdAt: Date; messageIds: string[] | null }>(
+  teacherId: string,
   rows: T[],
-  lastRead: Map<string, Date>,
-): (T & { read: boolean | null })[] {
-  return rows.map(r => {
-    if (r.channel !== "in_app") return { ...r, read: null };
-    const at = lastRead.get(r.studentId);
-    return { ...r, read: Boolean(at && at >= r.createdAt) };
-  });
+): Promise<(Omit<T, "messageIds"> & { read: boolean | null })[]> {
+  const inApp = rows.filter(r => r.channel === "in_app");
+  const allIds = [...new Set(inApp.flatMap(r => r.messageIds ?? []))];
+  const readRows = allIds.length > 0
+    ? await db
+        .select({ messageId: chatMessageReads.messageId })
+        .from(chatMessageReads)
+        .where(inArray(chatMessageReads.messageId, allIds))
+    : [];
+  const legacyStudents = [...new Set(inApp.filter(r => !r.messageIds?.length).map(r => r.studentId))];
+  const legacy = await guardianLastRead(teacherId, legacyStudents);
+  return letterReadState(rows, new Set(readRows.map(r => r.messageId)), legacy)
+    // The ids are the mechanism, not something the history strip shows.
+    .map(({ messageIds: _ids, ...c }) => c);
 }
 
 router.get("/students/:id/parent-contacts", async (req: AuthenticatedRequest, res) => {
@@ -731,13 +757,18 @@ router.get("/students/:id/parent-contacts", async (req: AuthenticatedRequest, re
       return;
     }
     const rows = await db
-      .select({ studentId: parentContacts.studentId, kind: parentContacts.kind, channel: parentContacts.channel, createdAt: parentContacts.createdAt })
+      .select({
+        studentId: parentContacts.studentId,
+        kind: parentContacts.kind,
+        channel: parentContacts.channel,
+        createdAt: parentContacts.createdAt,
+        messageIds: parentContacts.messageIds,
+      })
       .from(parentContacts)
       .where(and(eq(parentContacts.studentId, studentId), eq(parentContacts.teacherId, req.user!.id)))
       .orderBy(desc(parentContacts.createdAt))
       .limit(50);
-    const contacts = withReadState(rows, await guardianLastRead(req.user!.id, [studentId]))
-      .map(({ studentId: _s, ...c }) => c);
+    const contacts = (await withReadState(req.user!.id, rows)).map(({ studentId: _s, ...c }) => c);
     res.json({ contacts });
   } catch (err) {
     failRoster(res, err, "load parent contacts", "Failed to load parent contacts");
@@ -757,15 +788,20 @@ router.get("/classes/:id/parent-contacts", async (req: AuthenticatedRequest, res
       return;
     }
     const rows = await db
-      .select({ studentId: parentContacts.studentId, kind: parentContacts.kind, channel: parentContacts.channel, createdAt: parentContacts.createdAt })
+      .select({
+        studentId: parentContacts.studentId,
+        kind: parentContacts.kind,
+        channel: parentContacts.channel,
+        createdAt: parentContacts.createdAt,
+        messageIds: parentContacts.messageIds,
+      })
       .from(parentContacts)
       .innerJoin(classMemberships, eq(classMemberships.studentId, parentContacts.studentId))
       .where(and(eq(classMemberships.classGroupId, classId), eq(parentContacts.teacherId, req.user!.id)))
       .orderBy(desc(parentContacts.createdAt))
       // ponytail: flat cap — ~30 students × a year of letters fits; paginate if a class ever outgrows it.
       .limit(2000);
-    const inApp = [...new Set(rows.filter(r => r.channel === "in_app").map(r => r.studentId))];
-    res.json({ contacts: withReadState(rows, await guardianLastRead(req.user!.id, inApp)) });
+    res.json({ contacts: await withReadState(req.user!.id, rows) });
   } catch (err) {
     failRoster(res, err, "load class parent contacts", "Failed to load parent contacts");
   }

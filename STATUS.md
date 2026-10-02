@@ -532,6 +532,51 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A letter is read when the parent saw it, and one self-link is now a constraint, 2026-10-02
+
+Follow-up to the parent-side review below. Two changes, one schema push.
+
+**«مقروءة» on a parent letter meant the thread had been opened.** `read` was
+derived from the guardian's thread-level `chat_participants.lastReadAt`. A
+parent with two children on one teacher's roster has one direct thread with
+that teacher, and the thread screen sets `lastReadAt` on open and on every
+ten-second poll while it is open — so opening the thread for a one-line reply
+about child A marked a pending letter about child B read, and the class
+screen's «لم تُقرأ» list dropped it.
+
+Now per message. The reader's thread screen reports the messages its list
+actually rendered (`FlatList` viewability, 60% visible for 400ms, own messages
+never) to `POST /messaging/threads/:id/read`, which records them in
+`chat_message_reads`. An in-app letter logs the chat message ids it became
+(`parent_contacts.message_ids`, one per guardian), and `read` is "any of
+those has a receipt" — the rule is `letterReadState` in
+`api-server/src/lib/parentContactRead.ts`, pure and tested. Letters logged
+before this carry no ids and keep the old thread-level answer, so history does
+not flip to unread overnight. `lastReadAt` itself is untouched: it is still
+the unread-count mechanism, and the receipts do not feed it.
+
+**One self-link per student is a database constraint.** The claim route's
+check-then-insert (and the compensating re-read added below) now has the
+backstop the previous entry asked for: `roster_links_one_self_idx`, a partial
+unique index on `student_id WHERE relation = 'self'`. `verify-schema` checks
+unique indexes by name, so a push that skips it will be caught.
+
+**Schema push: pending at time of writing.** This checkout has no
+`DATABASE_URL`, so the push was not run from here. Until someone runs
+`pnpm --filter @workspace/db run push` and flips the PR's `schema-push:` line
+to `done`, production is missing one table (`chat_message_reads`), one column
+(`parent_contacts.message_ids`) and one index — and the two parent-contacts
+routes will 503 with `roster_storage_unavailable` on the missing column, the
+same way every other unpushed schema change has. If the index push fails,
+production already holds a duplicate self-link, which is itself worth knowing.
+
+**Verified:** typecheck clean; mobile and api-server suites green with the two
+new pure tests (watched failing first). **Not verified:** the receipt round
+trip end to end — the route and the viewability wiring are SQL- and
+FlatList-bound, and neither runner can load them. React Native Web's FlatList
+does support `viewabilityConfig`; whether the 60% threshold fires for a long
+letter that fills more than one screen is the thing to watch on the web build.
+
 ## A parent could not reach Settings, and six smaller parent-side bugs, 2026-10-02
 
 A code review of the parent-facing surface — claim flow, routing, messaging,
@@ -581,11 +626,11 @@ screens the gate rejects, and both rows are teacher-only now.
   (the thread was re-derived on unlink but not on claim). The claim route now
   calls `resyncClassGroupThreadIfExists`, the same helper roster edits use.
 
-**Left as decisions, not bugs:** any holder of a class code can link as a
+**Left as a decision, not a bug:** any holder of a class code can link as a
 guardian of any child on it with no notice to the teacher
-(`claimDecision.ts`, deliberate per its comment), and a letter's `read` state
-is the guardian's thread-level `lastReadAt`, so one open marks every pending
-letter about every child read.
+(`claimDecision.ts`, deliberate per its comment). The second concern raised
+here — a letter's `read` state being the guardian's thread-level `lastReadAt`
+— is fixed in the entry above this one.
 
 `pnpm run typecheck` clean; mobile 2135 passed, 0 failed, 10 skipped;
 api-server 1000 passed.
