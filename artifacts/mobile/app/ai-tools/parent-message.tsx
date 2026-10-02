@@ -34,8 +34,8 @@ import {
 import { pickOnePdf } from '@/services/lessonMediaPick';
 import {
   attachmentKind, attachmentProblem, composeParentMessage, guardiansForStudent, kindEmoji, kindLabel,
-  MAX_LETTER_LENGTH, MESSAGE_KINDS, needsDetails, outgoingLetter, parseSavedSignature, rosterGender,
-  seedDetailsFromNote, SIGNATURE_STORAGE_KEY, suggestMeeting, summarizeContacts,
+  MAX_LETTER_LENGTH, MESSAGE_KINDS, needsDetails, outgoingLetter, parentMessageReady, parseSavedSignature,
+  rosterGender, seedDetailsFromNote, SIGNATURE_STORAGE_KEY, suggestMeeting, summarizeContacts,
   type Gender, type ManualEdit, type MessageKind, type Tone,
 } from '@/services/parentMessage';
 import { ToolHeader } from '@/components/ui/ToolHeader';
@@ -172,16 +172,20 @@ export default function ParentMessageScreen() {
    * child in Arabic, which inflects for it in almost every clause. The subject
    * comes from the class the student was picked from, unless already typed.
    */
-  const onPickStudent = (student: RosterStudent, fromClass: ClassGroup) => {
-    setPickingStudent(false);
+  const adoptStudent = (student: RosterStudent, fromClass: ClassGroup) => {
     setStudentName(student.displayName);
     setPickedStudentId(student.id);
     setPickedGender(rosterGender(student.gender));
     const known = rosterGender(student.gender);
     if (known) setStudentGender(known);
-    setDetails(seedDetailsFromNote(details, student.teacherNote));
+    setDetails(prev => seedDetailsFromNote(prev, student.teacherNote));
     const classSubject = SUBJECTS.find(s => s.id === fromClass.subjectId);
     if (classSubject && !subject.trim()) setSubject(isAr ? classSubject.nameAr : classSubject.name);
+  };
+
+  const onPickStudent = (student: RosterStudent, fromClass: ClassGroup) => {
+    setPickingStudent(false);
+    adoptStudent(student, fromClass);
   };
 
   /**
@@ -281,6 +285,10 @@ export default function ParentMessageScreen() {
       return;
     }
     let cancelled = false;
+    // Drop the previous student's guardians at once. They used to stay in
+    // place until the fetch below returned, and in that window the recipient
+    // line and the in-app send still named the other child's parents.
+    setGuardians([]);
     getTeacherContacts()
       .then(contacts => { if (!cancelled) setGuardians(guardiansForStudent(contacts, pickedStudentId)); })
       .catch(() => { if (!cancelled) setGuardians([]); });
@@ -318,8 +326,15 @@ export default function ParentMessageScreen() {
   );
 
   const letter = outgoingLetter(message, edit, studentName);
-  // A stale edit is a letter about another child — nothing may send it.
-  const ready = letter.text.trim().length > 0 && !letter.stale;
+  // A concern letter is not ready without its details — the same rule the
+  // «required» label states, applied to Send, Share and Copy. It holds for a
+  // hand-edited letter too: fixing one typo must not wave an empty concern
+  // through. And a stale edit is a letter about another child — nothing may
+  // send it.
+  const ready = parentMessageReady(kind, details, letter.text.trim()) && !letter.stale;
+  // Names joined with the comma of the letter's language — an English letter
+  // listed its recipients with «،».
+  const nameSeparator = isAr ? '، ' : ', ';
   /** Show the editable preview once there is a letter to edit, or the teacher already wrote one. */
   const hasLetter = message.length > 0 || edit !== null;
 
@@ -381,7 +396,7 @@ export default function ParentMessageScreen() {
     // A letter to a parent can't be unsent, so say who it reaches before it goes.
     const ok = await confirm({
       title: t('parentMsgConfirmTitle'),
-      message: t('parentMsgRecipients', names.join('، ')),
+      message: t('parentMsgRecipients', names.join(nameSeparator)),
       confirmLabel: t('parentMsgConfirmSend'),
       cancelLabel: t('cancel'),
     });
@@ -404,7 +419,7 @@ export default function ParentMessageScreen() {
       if (reached.length > 0) {
         recordContact('in_app');
         rememberSignature();
-        showToast(t('parentMsgPartialSend', reached.join('، '), names.slice(reached.length).join('، ')));
+        showToast(t('parentMsgPartialSend', reached.join(nameSeparator), names.slice(reached.length).join(nameSeparator)));
         // Only the ones still waiting stay as recipients, so a retry can't
         // hand the same letter twice to a parent who already has it.
         setGuardians(guardians.slice(reached.length));
@@ -687,7 +702,7 @@ export default function ParentMessageScreen() {
           {ready ? (
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 12, textAlign: isRTL ? 'right' : 'left' }}>
               {guardians.length > 0
-                ? t('parentMsgRecipients', guardians.map(g => `${g.firstName} ${g.lastName}`).join('، '))
+                ? t('parentMsgRecipients', guardians.map(g => `${g.firstName} ${g.lastName}`).join(nameSeparator))
                 : pickedStudentId ? t('parentMsgNoGuardian') : t('parentMsgPickForSend')}
             </Text>
           ) : null}

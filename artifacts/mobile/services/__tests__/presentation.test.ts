@@ -23,7 +23,13 @@ import {
   tickTimer,
   slideHasTimer,
   timerSecondsForSlide,
+  isFullscreen,
+  onFullscreenChange,
+  keyboardAction,
+  describeKeyTarget,
+  slideIsRTL,
 } from '../presentationUtils.ts';
+import { TIMER_AMBER, TIMER_GREEN, TIMER_RED } from '../deckTheme.ts';
 
 import {
   setPendingClassroomActivity,
@@ -491,5 +497,147 @@ describe('builder → store → presentation — end-to-end handoff', () => {
     const second = { ...makeMockActivity(), activityName: 'Second Session' };
     setPendingClassroomActivity(second);
     assert.equal(getPendingClassroomActivity()?.activityName, 'Second Session');
+  });
+});
+
+// ─── Projector chrome: fullscreen state, keyboard, slide direction ──────────
+
+/** A stand-in `document` that records listeners, so both APIs can be driven. */
+function fakeDocument(init: { fullscreenElement?: unknown; webkitFullscreenElement?: unknown } = {}) {
+  const listeners = new Map<string, Set<() => void>>();
+  return {
+    ...init,
+    addEventListener(type: string, fn: () => void) {
+      if (!listeners.has(type)) listeners.set(type, new Set());
+      listeners.get(type)!.add(fn);
+    },
+    removeEventListener(type: string, fn: () => void) { listeners.get(type)?.delete(fn); },
+    fire(type: string) { for (const fn of listeners.get(type) ?? []) fn(); },
+    count(type: string) { return listeners.get(type)?.size ?? 0; },
+  };
+}
+
+describe('timerColor() — shares the deck palette', () => {
+  it('returns the deckTheme colours, not a private copy', () => {
+    assert.equal(timerColor(0.9), TIMER_GREEN);
+    assert.equal(timerColor(0.3), TIMER_AMBER);
+    assert.equal(timerColor(0.1), TIMER_RED);
+  });
+});
+
+describe('isFullscreen()', () => {
+  it('is false with no document (native)', () => {
+    assert.equal(isFullscreen(undefined), false);
+  });
+  it('reads the standard API', () => {
+    assert.equal(isFullscreen(fakeDocument({ fullscreenElement: {} }) as any), true);
+    assert.equal(isFullscreen(fakeDocument({ fullscreenElement: null }) as any), false);
+  });
+  it('reads the webkit-prefixed API (older Safari)', () => {
+    assert.equal(isFullscreen(fakeDocument({ webkitFullscreenElement: {} }) as any), true);
+  });
+});
+
+describe('onFullscreenChange()', () => {
+  it('fires on both the standard and the webkit event', () => {
+    const doc = fakeDocument();
+    let calls = 0;
+    onFullscreenChange(() => { calls++; }, doc as any);
+    doc.fire('fullscreenchange');
+    doc.fire('webkitfullscreenchange');
+    assert.equal(calls, 2);
+  });
+  it('the returned function removes both listeners', () => {
+    const doc = fakeDocument();
+    const off = onFullscreenChange(() => {}, doc as any);
+    off();
+    assert.equal(doc.count('fullscreenchange'), 0);
+    assert.equal(doc.count('webkitfullscreenchange'), 0);
+  });
+  it('is a no-op without a document', () => {
+    const off = onFullscreenChange(() => {}, undefined);
+    assert.equal(typeof off, 'function');
+    off();
+  });
+});
+
+describe('keyboardAction()', () => {
+  const ltr = { isRTL: false, fullscreen: false, modalOpen: false };
+  const rtl = { isRTL: true, fullscreen: false, modalOpen: false };
+  const k = (key: string, extra: Record<string, unknown> = {}) => ({ key, code: '', ...extra });
+
+  it('clicker keys step the deck', () => {
+    for (const key of ['PageDown', ' ', 'Spacebar', 'Enter']) assert.equal(keyboardAction(k(key), ltr), 'next', key);
+    assert.equal(keyboardAction(k('PageUp'), ltr), 'prev');
+  });
+  it('arrows mirror in RTL, like the on-screen buttons', () => {
+    assert.equal(keyboardAction(k('ArrowRight'), ltr), 'next');
+    assert.equal(keyboardAction(k('ArrowLeft'), ltr), 'prev');
+    assert.equal(keyboardAction(k('ArrowLeft'), rtl), 'next');
+    assert.equal(keyboardAction(k('ArrowRight'), rtl), 'prev');
+  });
+  it('F toggles fullscreen by physical key, whatever the layout prints', () => {
+    assert.equal(keyboardAction({ key: 'ب', code: 'KeyF' }, rtl), 'toggleFullscreen');
+  });
+  it('leaves Ctrl/Cmd/Alt chords to the browser', () => {
+    assert.equal(keyboardAction(k('f', { code: 'KeyF', ctrlKey: true }), ltr), null);
+    assert.equal(keyboardAction(k('f', { code: 'KeyF', metaKey: true }), ltr), null);
+    assert.equal(keyboardAction(k('ArrowLeft', { altKey: true }), ltr), null);
+    assert.equal(keyboardAction(k('ArrowRight', { metaKey: true }), ltr), null);
+  });
+  it('Enter/Space on a focused control press the control, not the deck', () => {
+    assert.equal(keyboardAction(k('Enter', { targetTag: 'DIV', targetRole: 'button' }), ltr), null);
+    assert.equal(keyboardAction(k(' ', { targetTag: 'BUTTON' }), ltr), null);
+    assert.equal(keyboardAction(k(' ', { targetTag: 'AUDIO' }), ltr), null);
+    // …but a clicker's PageDown still advances from there.
+    assert.equal(keyboardAction(k('PageDown', { targetTag: 'DIV', targetRole: 'button' }), ltr), 'next');
+  });
+  it('arrows on a media player seek it rather than change slide', () => {
+    assert.equal(keyboardAction(k('ArrowRight', { targetTag: 'AUDIO' }), ltr), null);
+    assert.equal(keyboardAction(k('ArrowLeft', { targetTag: 'VIDEO' }), ltr), null);
+  });
+  it('typing into a field is never a deck command', () => {
+    assert.equal(keyboardAction(k('f', { code: 'KeyF', targetTag: 'INPUT' }), ltr), null);
+    assert.equal(keyboardAction(k('ArrowLeft', { targetTag: 'TEXTAREA' }), ltr), null);
+    assert.equal(keyboardAction(k(' ', { targetTag: 'DIV', targetEditable: true }), ltr), null);
+  });
+  it('Escape leaves fullscreen first, and only then the deck', () => {
+    assert.equal(keyboardAction(k('Escape'), { ...ltr, fullscreen: true }), 'exitFullscreen');
+    assert.equal(keyboardAction(k('Escape'), ltr), 'back');
+  });
+  it('while a modal (the zoomed figure) is open, no key reaches the deck', () => {
+    const open = { ...ltr, modalOpen: true };
+    assert.equal(keyboardAction(k('Escape'), open), null);
+    assert.equal(keyboardAction(k('ArrowRight'), open), null);
+    assert.equal(keyboardAction(k('f', { code: 'KeyF' }), open), null);
+  });
+  it('ignores keys it does not own', () => {
+    assert.equal(keyboardAction(k('a', { code: 'KeyA' }), ltr), null);
+  });
+});
+
+describe('describeKeyTarget()', () => {
+  it('reads tag, role and editability off an element', () => {
+    const el = { tagName: 'DIV', getAttribute: (n: string) => (n === 'role' ? 'button' : null), isContentEditable: false };
+    assert.deepEqual(describeKeyTarget(el as any), { targetTag: 'DIV', targetRole: 'button', targetEditable: false });
+  });
+  it('tolerates a non-element target', () => {
+    assert.deepEqual(describeKeyTarget(null), { targetTag: undefined, targetRole: undefined, targetEditable: false });
+    assert.deepEqual(describeKeyTarget({} as any), { targetTag: undefined, targetRole: undefined, targetEditable: false });
+  });
+});
+
+describe('slideIsRTL()', () => {
+  it('an English slide reads left-to-right in the Arabic app', () => {
+    assert.equal(slideIsRTL({ content: 'Choose the correct word.', options: ['went', 'go'] }, true), false);
+  });
+  it('an Arabic slide follows the app', () => {
+    assert.equal(slideIsRTL({ content: 'أوجد قيمة س' }, true), true);
+  });
+  it('the options count: English options under bare maths are English', () => {
+    assert.equal(slideIsRTL({ content: '2 + 2', options: ['four', 'five'] }, true), false);
+  });
+  it('never forces RTL on an English app', () => {
+    assert.equal(slideIsRTL({ content: 'أوجد قيمة س' }, false), false);
   });
 });

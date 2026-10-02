@@ -21,6 +21,7 @@ import {
   attachmentProblem,
   attachmentKind,
   composeParentMessage,
+  parentMessageReady,
   guardiansForStudent,
   MAX_LETTER_LENGTH,
   outgoingLetter,
@@ -462,5 +463,29 @@ describe('attachment', () => {
     assert.equal(attachmentProblem(pdf), null);
     assert.equal(attachmentProblem('data:application/zip;base64,AA=='), 'unsupported');
     assert.equal(attachmentProblem('data:image/png;base64,' + 'A'.repeat(8_000_000)), 'too_large');
+  });
+});
+
+describe('parentMessageReady — a concern letter needs its details', () => {
+  // The details label already says "required" for concern kinds; the Send,
+  // Share and Copy buttons used to ignore it and let an empty concern reach a
+  // real parent.
+  it('is false for a concern kind with no details, whatever the message says', () => {
+    assert.equal(parentMessageReady('absence', '', 'some composed text'), false);
+    assert.equal(parentMessageReady('absence', '   ', 'some composed text'), false);
+  });
+
+  it('is true for a concern kind once details are typed', () => {
+    assert.equal(parentMessageReady('absence', 'غاب ثلاثة أيام', 'some composed text'), true);
+  });
+
+  it('does not need details for praise or progress', () => {
+    assert.equal(parentMessageReady('praise', '', 'some composed text'), true);
+    assert.equal(parentMessageReady('progress', '', 'some composed text'), true);
+  });
+
+  it('is never true without a composed message', () => {
+    assert.equal(parentMessageReady('praise', '', ''), false);
+    assert.equal(parentMessageReady('absence', 'details', ''), false);
   });
 });
