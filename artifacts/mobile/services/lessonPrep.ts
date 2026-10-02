@@ -242,10 +242,16 @@ export function groundedSubjectConflict(
   topic: string,
   lang: 'ar' | 'en',
   pickedSubjectId: string,
+  pickedGradeId?: string,
 ): Subject | null {
   const trimmed = topic.trim();
   if (!trimmed) return null;
-  const lesson = resolveGeneratorGrounding(trimmed, lang).lesson;
+  // Resolved inside the picked scope first: a title that exists in both the
+  // picked subject and another («جمع المتجهات وطرحها», maths and physics)
+  // is only a conflict when the picked subject has no such lesson.
+  const lesson = resolveGeneratorGrounding(trimmed, lang, {
+    scope: { subjectId: pickedSubjectId, gradeId: pickedGradeId },
+  }).lesson;
   if (!lesson) return null;
   const book = getBookForLesson(lesson);
   if (!book || book.subjectId === pickedSubjectId) return null;

@@ -14,6 +14,7 @@
  */
 import { resolveGeneratorGrounding, type GeneratorGrounding } from './kbContext.ts';
 import type { KBLesson } from './knowledgeBase.ts';
+import { getPickerGrades, getPickerSubjects } from './curriculumData.ts';
 
 export type GenerationScope = {
   gradeIdx: number;
@@ -55,9 +56,16 @@ export function reopenedGenerationScope(
 ): GenerationScope | null {
   const trimmed = topic?.trim();
   if (!trimmed) return null;
+  // The saved pickers say which book this title meant — without them a
+  // reopened Grade 9 «النسب المثلثية» worksheet came back with Grade 10
+  // figures and unit.
+  const scope = {
+    gradeId: getPickerGrades()[saved.gradeIdx]?.id,
+    subjectId: getPickerSubjects()[saved.subjectIdx]?.id,
+  };
   return captureGenerationScope(
     { gradeIdx: saved.gradeIdx, subjectIdx: saved.subjectIdx, topic: trimmed },
-    resolveGeneratorGrounding(trimmed, lang),
+    resolveGeneratorGrounding(trimmed, lang, { scope }),
   );
 }
 

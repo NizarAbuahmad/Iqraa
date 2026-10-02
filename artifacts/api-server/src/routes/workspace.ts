@@ -11,6 +11,7 @@ import {
 import { logger } from "../lib/logger.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { pickDefined } from "../lib/pickDefined.js";
+import { resolveClassGroupId } from "../lib/classOwnership.js";
 
 const router = Router();
 
@@ -152,6 +153,18 @@ router.post("/items", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
+    // Verified against this teacher's live classes, as schedule and teaching
+    // plans already do: an unknown id used to hit the FK and answer 500, and
+    // another teacher's id was accepted as-is.
+    let verifiedClassGroupId: string | null | undefined;
+    try {
+      verifiedClassGroupId = await resolveClassGroupId(classGroupId, req.user!.id);
+    } catch (msg) {
+      if (typeof msg !== "string") throw msg;
+      res.status(400).json({ error: msg });
+      return;
+    }
+
     const [item] = await db
       .insert(savedMaterials)
       .values({
@@ -165,7 +178,7 @@ router.post("/items", async (req: AuthenticatedRequest, res) => {
         content: content ?? {},
         formState: formState ?? {},
         isFavorite: false,
-        classGroupId: classGroupId ?? null,
+        classGroupId: verifiedClassGroupId ?? null,
       })
       .returning();
 
@@ -195,6 +208,16 @@ router.patch("/items/:id", async (req: AuthenticatedRequest, res) => {
     // whole to `.set()` would let a client write `userId` and hand its
     // materials to another teacher. `classGroupId` is nullable, and `null` is
     // the detach — see pickDefined for why that is not a truthiness check.
+    if (updates.classGroupId !== undefined) {
+      try {
+        updates.classGroupId = await resolveClassGroupId(updates.classGroupId, req.user!.id);
+      } catch (msg) {
+        if (typeof msg !== "string") throw msg;
+        res.status(400).json({ error: msg });
+        return;
+      }
+    }
+
     const allowedFields: Record<string, unknown> = {
       ...pickDefined(updates, [
         "title",

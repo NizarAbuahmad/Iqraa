@@ -40,6 +40,7 @@ import { bookFigureRefsForObjectives } from '@/services/bookFigureUri';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { PROD_ORIGIN } from '@/services/siteOrigin';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -739,10 +740,13 @@ function ShareLinkCard({
   // Built from where the app is actually being served, so a local build hands
   // out a local link and production hands out a production one. Hardcoding it
   // is how a pilot ends up telling thirty students to visit localhost.
+  // On the native app there is no window, and the card used to show and copy
+  // a bare `/take/ABC123` — a link that opens nothing when pasted into
+  // WhatsApp. Fall back to the production site, as the drill share does.
   const origin =
     typeof window !== 'undefined' && window.location?.origin
       ? window.location.origin
-      : '';
+      : PROD_ORIGIN;
   const url = `${origin}/take/${shareCode}`;
 
   return (

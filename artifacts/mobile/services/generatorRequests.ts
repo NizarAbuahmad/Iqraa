@@ -12,13 +12,13 @@ import type { AIRequest } from './ai/AIService.ts';
 import { regenerationFields } from './ai/regeneration.ts';
 import {
   buildAdaptationsDirective,
-  generatorFigureCount,
-  generatorLessonId,
-  generatorUnitId,
+  figureCountForLesson,
   getUnitPriorKnowledge,
+  nccdUnitId,
   resolveGeneratorGrounding,
   type GeneratorGrounding,
 } from './kbContext.ts';
+import type { KbScope } from './knowledgeBase.ts';
 
 type Lang = 'ar' | 'en';
 
@@ -54,9 +54,12 @@ export function buildWorksheetRequest(form: WorksheetForm, grounding: GeneratorG
     numQuestions: form.numQuestions,
     questionTypes: form.questionTypes,
     additionalContext: (grounding.grounded ? grounding.context : grounding.ungroundedNote) || undefined,
-    unitId: generatorUnitId(topic, form.lang),
-    lessonId: generatorLessonId(topic, form.lang),
-    bookFigureCount: generatorFigureCount(topic, form.lang),
+    // From the grounding the screen resolved (in its picked scope), not
+    // re-derived from the title — a title shared across books resolved to
+    // another grade's lesson id here while the context above was right.
+    unitId: nccdUnitId(grounding.lesson?.unitId),
+    lessonId: grounding.lesson?.id,
+    bookFigureCount: figureCountForLesson(grounding.lesson?.id),
     contextSource: 'curriculum' as const,
     ...regenerationFields(form.regenerate === true, form.previous),
     includePriorReview: usePrior,
@@ -80,9 +83,13 @@ export type LessonPlanForm = {
 };
 
 /** Grounds the topic itself; the screen needs the grounding back for its notice. */
-export function groundLessonPlanTopic(form: Pick<LessonPlanForm, 'topic' | 'lang' | 'objectives'>) {
+export function groundLessonPlanTopic(
+  form: Pick<LessonPlanForm, 'topic' | 'lang' | 'objectives'>,
+  scope?: KbScope,
+) {
   return resolveGeneratorGrounding(form.topic.trim(), form.lang, {
     teacherObjectives: form.objectives.trim() || undefined,
+    scope,
   });
 }
 
@@ -103,9 +110,12 @@ export function buildLessonPlanRequest(form: LessonPlanForm, grounding: Generato
     teachingStyle: form.teachingStyle,
     objectives: form.objectives.trim() || undefined,
     additionalContext,
-    unitId: generatorUnitId(topic, form.lang),
-    lessonId: generatorLessonId(topic, form.lang),
-    bookFigureCount: generatorFigureCount(topic, form.lang),
+    // From the grounding the screen resolved (in its picked scope), not
+    // re-derived from the title — a title shared across books resolved to
+    // another grade's lesson id here while the context above was right.
+    unitId: nccdUnitId(grounding.lesson?.unitId),
+    lessonId: grounding.lesson?.id,
+    bookFigureCount: figureCountForLesson(grounding.lesson?.id),
     // Objectives, adaptations and prior-topic notes are all free text the
     // teacher typed, and all three are carried into the plan verbatim. A
     // plan built from any of them is that teacher's and is never pooled;
@@ -147,9 +157,12 @@ export function buildActivityRequest(form: ActivityForm, grounding: GeneratorGro
     duration: form.durationMinutes,
     objectives: objective || undefined,
     additionalContext: (grounding.grounded ? grounding.context : grounding.ungroundedNote) || undefined,
-    unitId: generatorUnitId(topic, form.lang),
-    lessonId: generatorLessonId(topic, form.lang),
-    bookFigureCount: generatorFigureCount(topic, form.lang),
+    // From the grounding the screen resolved (in its picked scope), not
+    // re-derived from the title — a title shared across books resolved to
+    // another grade's lesson id here while the context above was right.
+    unitId: nccdUnitId(grounding.lesson?.unitId),
+    lessonId: grounding.lesson?.id,
+    bookFigureCount: figureCountForLesson(grounding.lesson?.id),
     // A typed objective is the teacher's own words, and they end up inside
     // the generated activity — so that request is theirs alone and never
     // enters the shared pool. Picking a lesson and generating does.

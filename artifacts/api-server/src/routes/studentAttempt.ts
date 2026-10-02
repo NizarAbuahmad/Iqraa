@@ -555,6 +555,12 @@ router.get("/take/attempt/state", async (req, res) => {
       lessonIds: lessonIdsForPaper(snapshot),
       timeLimitMin: gate.timeLimitMin,
       deadlineAt: gate.deadlineAt,
+      // The client's countdown runs on the device clock; a phone set a few
+      // minutes fast reached zero early and force-handed the paper in,
+      // irrevocably, while this server's deadline had not passed. With the
+      // server's own time beside the deadline the client can measure its
+      // offset once and count down in server time.
+      serverNow: new Date().toISOString(),
     });
   } catch (err) {
     logger.error({ err }, "student attempt state failed");

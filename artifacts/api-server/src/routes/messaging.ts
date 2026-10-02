@@ -119,13 +119,33 @@ async function isConnected(teacherId: string, otherUserId: string): Promise<bool
 }
 
 /** A participant's own row in a thread, or null if they aren't in it. */
-async function participantOf(threadId: string, userId: string) {
+/**
+ * Membership in a *live* thread. Archiving a class archives its thread
+ * (lib/classThread.ts) but removes nobody from it, and until this filter
+ * existed only the inbox honoured `archivedAt`: a student whose app still
+ * held the thread id could keep reading and posting after the teacher had
+ * archived the class and stopped seeing it — the unsupervised channel the
+ * file header says cannot exist. Reporting passes `includeArchived` because
+ * a report about an archived thread must still reach moderation.
+ */
+async function participantOf(
+  threadId: string,
+  userId: string,
+  opts: { includeArchived?: boolean } = {},
+) {
   const [row] = await db
-    .select()
+    .select({ participant: chatParticipants })
     .from(chatParticipants)
-    .where(and(eq(chatParticipants.threadId, threadId), eq(chatParticipants.userId, userId)))
+    .innerJoin(chatThreads, eq(chatThreads.id, chatParticipants.threadId))
+    .where(
+      and(
+        eq(chatParticipants.threadId, threadId),
+        eq(chatParticipants.userId, userId),
+        ...(opts.includeArchived ? [] : [isNull(chatThreads.archivedAt)]),
+      ),
+    )
     .limit(1);
-  return row ?? null;
+  return row?.participant ?? null;
 }
 
 /**
@@ -508,7 +528,14 @@ router.post("/messaging/threads", async (req: AuthenticatedRequest, res) => {
 router.get("/messaging/threads/class/:classGroupId", async (req: AuthenticatedRequest, res) => {
   try {
     const classGroupId = req.params["classGroupId"] as string;
-    const [group] = await db.select().from(classGroups).where(eq(classGroups.id, classGroupId)).limit(1);
+    // An archived class has no live thread to get or create — without this
+    // filter a student could re-fetch the archived thread's id from the
+    // class id and keep using it.
+    const [group] = await db
+      .select()
+      .from(classGroups)
+      .where(and(eq(classGroups.id, classGroupId), isNull(classGroups.archivedAt)))
+      .limit(1);
     if (!group) {
       res.status(404).json({ error: "Class not found" });
       return;
@@ -1067,7 +1094,8 @@ router.post("/messaging/reports", async (req: AuthenticatedRequest, res) => {
       reporterUserId: req.user!.id,
       reportedUserId,
       messageId,
-      isParticipant: async (userId) => (await participantOf(threadId, userId)) !== null,
+      isParticipant: async (userId) =>
+        (await participantOf(threadId, userId, { includeArchived: true })) !== null,
       threadIdOfMessage: async (id) => {
         const [row] = await db
           .select({ threadId: chatMessages.threadId })

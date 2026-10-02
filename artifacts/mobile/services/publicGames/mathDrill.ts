@@ -9,6 +9,7 @@
  * drill.
  */
 
+import { PROD_ORIGIN } from '../siteOrigin.ts';
 import type { TranslationKey } from '../i18n.ts';
 
 export type DrillOp = 'mul' | 'div' | 'add' | 'sub';
@@ -21,7 +22,6 @@ export const DEFAULT_ADD_MAX = 20;
 const MIN_TABLE = 1;
 const MAX_TABLE = 10;
 const ALL_TABLES = Array.from({ length: MAX_TABLE }, (_, i) => i + MIN_TABLE);
-const PROD_ORIGIN = 'https://app.iqrra.com';
 const ZERO_ANSWER_SHARE = 0.1;
 
 /** Route per operation. /play/multiply shipped first and its links are out there — never rename it. */

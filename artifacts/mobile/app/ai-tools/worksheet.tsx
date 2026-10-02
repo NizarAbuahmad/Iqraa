@@ -199,7 +199,7 @@ export default function WorksheetScreen() {
   // Prior-knowledge availability for the currently selected lesson (no fabrication)
   const priorKnowledge = (() => {
     if (!topic.trim()) return [] as string[];
-    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
     if (!g.lesson) return [] as string[];
     return getUnitPriorKnowledge(g.lesson.id);
   })();
@@ -312,7 +312,7 @@ export default function WorksheetScreen() {
     // the picked subject. Refuse and name the real subject instead.
     const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
     if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
+    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setCancelled(false);
     const controller = new AbortController();
@@ -328,7 +328,7 @@ export default function WorksheetScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
     try {
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
       const baseReq = buildWorksheetRequest({
         gradeName: gradeNames[gradeIdx]!,
         subjectName: subjects[subjectIdx].name,
@@ -549,6 +549,7 @@ export default function WorksheetScreen() {
   } = useGeneratorExport({
     result,
     topic: scope.topic,
+    lessonId: scope.lesson?.id,
     lang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,

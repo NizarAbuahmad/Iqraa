@@ -100,7 +100,10 @@ export function isNonTeacherRoute(pathname: string | null | undefined): boolean 
 }
 
 /** Routes whose whole purpose is to lead somewhere else once you're signed in. */
-const ENTRY_ROUTES = ['/login', '/register', '/onboarding', '/forgot-password'];
+// `/verify-email` too: it is reached signed-out (register answers with no
+// tokens), so a reload there used to bounce to login and drop the `email`
+// param the code screen needs.
+const ENTRY_ROUTES = ['/login', '/register', '/onboarding', '/forgot-password', '/verify-email'];
 
 export function isEntryRoute(pathname: string | null | undefined): boolean {
   // No path yet (first paint) is treated as an entry: there is no destination

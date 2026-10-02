@@ -21,7 +21,7 @@ import { createHash } from "node:crypto";
  * artifacts wrong or stale. It is part of both keys, so a bump partitions new
  * traffic from old rather than silently mixing them.
  */
-export const PROMPT_VERSION = "2026-09-06.1";
+export const PROMPT_VERSION = "2026-10-02.1";
 
 /** Parameters the plan proposes to serve by slicing one superset artifact,
  *  rather than by generating a separate artifact per combination. They are in
@@ -47,6 +47,10 @@ const STRICT_ONLY_FIELDS = [
   "priorTopicsNotes",
   "ministryRoles",
   "homework",
+  // The classroom builder's prompt changes on it (board → "printed handouts,
+  // no projector"; screen → "do not print the slides"), so a board deck must
+  // not be served to a projector request from the pool.
+  "classroomSetup",
 ] as const;
 
 const ARABIC_DIACRITICS = /[ً-ْٰـ]/g;

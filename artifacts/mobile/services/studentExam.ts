@@ -16,6 +16,7 @@
  * avoiding it. See its own comment.
  */
 import { apiFetch, getApiBaseUrl } from './apiClient.ts';
+import { fetchWithTimeout } from './fetchWithTimeout.ts';
 import type { StudentResponse } from './studentAnswers.ts';
 import type { CompetencyKey, CompetencyScore, LevelKey } from './evaluations.ts';
 
@@ -63,7 +64,11 @@ async function call<T>(
   init: RequestInit & { token?: string } = {},
 ): Promise<T> {
   const { token, ...rest } = init;
-  const res = await fetch(`${getApiBaseUrl()}${path}`, {
+  // With a deadline, like every other call in the app. A socket that died
+  // silently mid-paper left one `saveStudentAnswer` pending forever; the
+  // save queue returns that same promise for later edits to the question,
+  // so they were never sent, and «إرسال» awaited a flush that never settled.
+  const res = await fetchWithTimeout(`${getApiBaseUrl()}${path}`, {
     ...rest,
     headers: {
       'Content-Type': 'application/json',
@@ -144,6 +149,8 @@ export function getExamState(token: string): Promise<{
   lessonIds?: string[];
   timeLimitMin?: number | null;
   deadlineAt?: string | null;
+  /** The server's clock when it answered, so the countdown can correct for a fast or slow device. */
+  serverNow?: string;
 }> {
   return call('/take/attempt/state', { token });
 }

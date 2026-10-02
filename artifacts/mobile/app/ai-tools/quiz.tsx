@@ -320,7 +320,7 @@ export default function QuizScreen() {
     // the picked subject. Refuse and name the real subject instead.
     const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
     if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
+    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setCancelled(false);
     const controller = new AbortController();
@@ -330,9 +330,10 @@ export default function QuizScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
     try {
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
-      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en');
-      const unitId = generatorUnitId(topic.trim(), lang as 'ar' | 'en');
+      const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: kbScope });
+      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en', { scope: kbScope });
+      const unitId = generatorUnitId(topic.trim(), lang as 'ar' | 'en', kbScope);
       const out = await aiService.generateQuiz({
         // Localised: this string is carried into generated content verbatim —
         // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
@@ -350,8 +351,8 @@ export default function QuizScreen() {
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         additionalContext,
         unitId,
-        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
-        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
+        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en', kbScope),
+        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en', kbScope),
         // Curriculum-derived, so the artifact may be shared with any teacher
         // who asks the same question — see AIRequest.contextSource.
         contextSource: 'curriculum',
@@ -451,6 +452,7 @@ export default function QuizScreen() {
   } = useGeneratorExport({
     result,
     topic: scope.topic,
+    lessonId: scope.lesson?.id,
     lang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,

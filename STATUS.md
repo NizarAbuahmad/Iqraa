@@ -532,6 +532,128 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A whole-app audit: the verifier ran request text as code, and 30 smaller bugs, 2026-10-02
+
+A read-only audit of every package (API routes, mobile services and
+screens, the SymPy verifier, the shared libs, the schema and CI), each
+finding re-verified by hand before it was fixed. Everything below is in one
+PR; the test counts after it: mobile 2290 → 2296 (0 fail, 10 skipped), API
+1019, curriculum 243, math-verify 6, arabic-spelling 226 (new in CI),
+verifier 75/75, monorepo typecheck clean, web export builds.
+
+- **The math verifier executed request text.** `parse_expr` is eval-based,
+  and `verify_core.py` handed it raw strings from `/verify/*` — reachable
+  by any signed-in account through the API proxy and, with the service
+  deployed `--allow-unauthenticated`, from the internet. Reproduced:
+  `verify_item('derivative_polynomial', "__import__('os').getpid()", '0')`
+  ran and answered `verified: true`. Every parse now goes through
+  `safe_parse_expr`, which refuses anything outside a maths character set,
+  any `__`, any attribute access and any identifier that is not a known
+  function or a one/two-letter variable — and raises, so the existing
+  fail-closed paths report `verify_error`/`error`, never "wrong".
+  `test_equations.py` pins three injection cases. Request fields are capped
+  at 400 chars (`app.py`, and the API proxy), because an oversized string
+  used to cost a 2s worker timeout and a pool respawn. **Still to do by a
+  human:** deploy the verifier without `--allow-unauthenticated` (API →
+  verifier via Cloud Run service auth). The input gate closes the hole; the
+  auth change is defence in depth.
+- **Archived class threads stayed live for students.** Archiving a class
+  archived the thread but removed nobody; only the inbox honoured
+  `archivedAt`, so a student holding the thread id could keep reading and
+  posting after the teacher stopped seeing it. `participantOf` now joins the
+  thread and requires it live (reports pass `includeArchived`), and the
+  class-thread lookup refuses an archived class.
+- **A network blip signed the teacher out.** Boot cleared both tokens on
+  *any* `/auth/me` failure (a 15s cold-API timeout, a basement, a 502 page),
+  and `refreshAccessToken` did the same on a timeout. Both now clear only on
+  a 400/401/403 *answer*; a boot that cannot reach the server opens on a
+  cached profile snapshot (`services/userSnapshot.ts`, not a credential).
+  `apiJson` reads text before parsing, so an HTML 502 page becomes an
+  `ApiError` with a status instead of a `SyntaxError`.
+- **A title shared across books grounded to the wrong grade.** 107 Arabic
+  titles repeat across books («النسب المثلثية» is Grade 10 S1 and Grade 9
+  S2); the resolver took whichever ranked first, so a Grade 10 quiz was
+  built from Grade 9 objectives and sent with the Grade 9 lesson id, and a
+  maths title physics also uses was refused as "belongs to physics".
+  `resolveGroundedKbLesson` takes an optional `KbScope` (grade/subject) as
+  a tie-break among exact-title matches; the four generator screens, the
+  reopened-material scope, the subject-conflict check and the request
+  builders (which re-derived the lesson id from the title, ignoring the
+  grounding they were handed) all pass it. `groundingScope.test.ts`.
+- **Shared-pool key omitted `classroomSetup`**, so a no-projector deck was
+  served to a projector request. Added to the strict key; `PROMPT_VERSION`
+  bumped to `2026-10-02.1`, which retires every pooled artifact once.
+- **Global AI budget was per Cloud Run instance** after boot: N instances
+  allowed N× the cap. `assertBudgetAvailable` now re-reads the store every
+  60s (fire-and-forget; the in-memory increment stays the fast path).
+- **The exam countdown ran on the device clock**: a phone a few minutes
+  fast force-handed the paper in early, irrevocably. `/take/attempt/state`
+  returns `serverNow`; the client counts down in server time.
+- **Arabic-Indic digits were rejected** by every numeric box except two:
+  paper-mode marks, the three question modals, the marking screen, the
+  schedule time/duration and both six-digit code screens. One
+  `toLatinDigits()` (`services/latinDigits.ts`) folds them before validation.
+- **API 500s that were really 400s**: Express 5 leaves `req.body` undefined
+  with no JSON body and most handlers destructured it; malformed JSON fell
+  to the generic handler; non-string `email`/`password` threw inside
+  bcrypt. A `req.body ??= {}` middleware, a body-parser status pass-through
+  and type guards on login/register/logout/profile. `preferredLanguage` is
+  now allow-listed to `ar`/`en`.
+- Smaller, each confirmed: the lesson-media rate limiter counted GETs so
+  attachments vanished after ~20 lesson opens an hour (writes only now);
+  logout revoked a token family without checking it was the caller's;
+  teacher answer-entry 500'd for a student who had sat via the link (unique
+  constraint — any existing attempt is returned now); `POST
+  /classes/:id/students` false-404'd on a duplicated id; the schedule
+  route turned driver errors into 400s carrying the raw query; workspace
+  items accepted an unverified `classGroupId`; `?offset=1e400` reached
+  Postgres; `/generate/variants/:id/retire` re-filed and re-emailed the
+  same report on every tap; the batch route reported `pass: true` on a NaN
+  count; attempt reassignment ignored class membership and archival; three
+  routes read `language === 'arabic'` where every other reads `!==
+  'english'`; موادي's local store was one key for every account on the
+  device (now per user, and device-only saves show beside the server's
+  instead of vanishing once online); student exam calls had no timeout, so
+  a dead socket wedged the autosave queue and «إرسال» forever; the
+  option-label stripper missed «١)»; language restore had no `.catch`;
+  image fetches for PPTX/share had no deadline; the native share link was
+  a bare `/take/CODE`; «ابدأ الحصة» defaulted a subject-less topic to
+  maths (now the grounded lesson's book decides); the admin CSV export
+  called `document` on Android; `/verify-email` was not an entry route so
+  a reload lost the code screen; two matching games and memory-match fired
+  timers after unmount.
+- **`lib/arabic-spelling` had 11 failing tests and was not in CI.** Eight
+  rules sat under the suite's eight-word floor, one misspelling was three
+  edits off, «بن» had no harakat and a grade-4 sentence quoted the grade-5
+  word «الله». Words added (with harakat and near-miss misspellings), and
+  the package runs in `ci.yml`.
+- **Schema: three indexes are missing and were NOT added here.** Every
+  refresh/logout filters `refresh_tokens` by `user_id`/`family_id`
+  (only `token_hash` is indexed) and every موادي read filters
+  `saved_materials` by `user_id`. They were drafted in this PR and then
+  pulled out: a schema edit needs the manual production push, and this PR
+  must not block on a step only a human can run. Add them in their own PR
+  (`index("refresh_tokens_user_idx").on(t.userId)`,
+  `index("refresh_tokens_family_idx").on(t.familyId)`,
+  `index("saved_materials_user_idx").on(t.userId)`), push, and answer
+  `schema-push: done`. The API runs correctly without them; they are speed,
+  not correctness. `verify-schema` does not check indexes either way.
+  (The audit also claimed `class_memberships.class_group_id`,
+  `attempt_answers.attempt_id` and `chat_blocks.blocker_user_id` lacked
+  indexes — they do not: each is the leading column of an existing unique
+  constraint.)
+- **Not verified in a browser or on a device** — none of the screen wiring
+  is machine-testable here. The 67 `pnpm audit` findings are all transitive
+  build-time dependencies of the Expo/React Native toolchain (none in the
+  API runtime) and need an Expo SDK bump, which is a native-surface change
+  and was left out on purpose.
+- Audit findings checked and found sound, so nobody re-audits them: every
+  per-id route scopes by owner; refresh rotation is race-safe; `verified`
+  is only ever the verifier's word; the prompt-slides route never touches
+  the pool; grading normalises Arabic digits; push sends survive one bad
+  token; `PUBLIC_ROUTES` all exist; all 191 curriculum files parse with
+  unique ids; `EXPO_PUBLIC_*` keys are declared in all three places.
+
 ## A letter is read when the parent saw it, and one self-link is now a constraint, 2026-10-02
 
 Follow-up to the parent-side review below. Two changes, one schema push.

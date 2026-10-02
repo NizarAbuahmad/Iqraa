@@ -6,6 +6,7 @@
  */
 
 import type { KBLesson, KBScoredLesson } from './knowledgeBase.ts';
+import type { KbScope } from './knowledgeBase.ts';
 import {
   getBookForLesson,
   getUnitForLesson,
@@ -36,6 +37,11 @@ export type BuildGeneratorContextOptions = {
    * When non-empty, these replace curriculum نتاجات in the context block.
    */
   teacherObjectives?: string;
+  /**
+   * The grade/subject the screen's pickers hold, so a title shared across
+   * books resolves to the lesson in *this* scope — see `KbScope`.
+   */
+  scope?: KbScope;
 };
 
 export type GeneratorGrounding = {
@@ -206,7 +212,7 @@ export function resolveGeneratorGrounding(
   lang: 'ar' | 'en',
   options?: BuildGeneratorContextOptions,
 ): GeneratorGrounding {
-  const lesson = resolveGroundedKbLesson(topic, lang);
+  const lesson = resolveGroundedKbLesson(topic, lang, options?.scope);
   if (!lesson) {
     const isAr = lang === 'ar';
     return {
@@ -267,8 +273,8 @@ export function buildGeneratorContext(
  * lesson is one of the legacy hardcoded rows whose unit ids (`kbu-chem-1`) are
  * not in the NCCD namespace the bank indexes by.
  */
-export function generatorUnitId(topic: string, lang: 'ar' | 'en'): string | undefined {
-  return nccdUnitId(resolveGeneratorGrounding(topic, lang).lesson?.unitId);
+export function generatorUnitId(topic: string, lang: 'ar' | 'en', scope?: KbScope): string | undefined {
+  return nccdUnitId(resolveGeneratorGrounding(topic, lang, { scope }).lesson?.unitId);
 }
 
 /**
@@ -286,8 +292,8 @@ export function generatorUnitId(topic: string, lang: 'ar' | 'en'): string | unde
  * falls back to the normalised topic, which is a correct key for a lesson that
  * exists nowhere in the curriculum.
  */
-export function generatorLessonId(topic: string, lang: 'ar' | 'en'): string | undefined {
-  return resolveGeneratorGrounding(topic, lang).lesson?.id;
+export function generatorLessonId(topic: string, lang: 'ar' | 'en', scope?: KbScope): string | undefined {
+  return resolveGeneratorGrounding(topic, lang, { scope }).lesson?.id;
 }
 
 /**
@@ -308,8 +314,13 @@ export function generatorLessonId(topic: string, lang: 'ar' | 'en'): string | un
  * not honour, so the drift test on `bookFigureAssets.ts` is what keeps the two
  * in step; there is no cheap way to ask the bundler from here.
  */
-export function generatorFigureCount(topic: string, lang: 'ar' | 'en'): number {
-  return figuresForLesson(generatorLessonId(topic, lang)).length;
+export function generatorFigureCount(topic: string, lang: 'ar' | 'en', scope?: KbScope): number {
+  return figureCountForLesson(generatorLessonId(topic, lang, scope));
+}
+
+/** The same count, from a lesson id already in hand. */
+export function figureCountForLesson(lessonId: string | undefined): number {
+  return figuresForLesson(lessonId).length;
 }
 
 /**
