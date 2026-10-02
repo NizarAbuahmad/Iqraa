@@ -446,3 +446,63 @@ export function parseSavedSignature(raw: string | null): SavedSignature | null {
 export function rosterGender(value: string | undefined): Gender | null {
   return value === 'male' || value === 'female' ? value : null;
 }
+
+// ─── Hand edits and attachments ──────────────────────────────────────────────
+
+/**
+ * The server's `MAX_BODY_LENGTH` for a chat message (routes/messaging.ts). A
+ * hand-edited letter can grow past what the composer ever produces, and an
+ * over-long one would fail the send with nothing on screen to say why.
+ */
+export const MAX_LETTER_LENGTH = 4000;
+
+/**
+ * A letter the teacher edited by hand in the preview. `studentName` is who the
+ * letter was about when they edited it — the edit names the child in free
+ * text, so it cannot follow the form to another student the way the generated
+ * letter does.
+ */
+export interface ManualEdit {
+  text: string;
+  studentName: string;
+}
+
+/**
+ * What actually leaves the app. Once the teacher has edited the preview, their
+ * text wins over the regenerated one — re-composing on every field change
+ * would silently throw their edit away.
+ *
+ * `stale` means the student changed after the edit was made. The caller must
+ * not send a stale edit: it is a letter about one child addressed to another
+ * child's parent. Editing the preview again re-pins it to the current student.
+ */
+export function outgoingLetter(
+  generated: string,
+  edit: ManualEdit | null,
+  studentName: string,
+): { text: string; edited: boolean; stale: boolean } {
+  if (!edit) return { text: generated, edited: false, stale: false };
+  return { text: edit.text, edited: true, stale: edit.studentName.trim() !== studentName.trim() };
+}
+
+/** Same ceiling as the server's `MAX_DATA_URL_LENGTH` (lib/lessonMediaUpload.ts). */
+const MAX_ATTACHMENT_DATA_URL_LENGTH = 8_000_000;
+
+/**
+ * Photos and PDFs only. The server would also take audio, but a voice note to
+ * a parent belongs in the chat itself, not stapled to a written letter.
+ */
+export function attachmentKind(dataUrl: string): 'image' | 'pdf' | null {
+  const mime = /^data:([^;,]+)[;,]/.exec(dataUrl)?.[1]?.toLowerCase();
+  if (!mime) return null;
+  if (mime.startsWith('image/')) return 'image';
+  if (mime === 'application/pdf') return 'pdf';
+  return null;
+}
+
+/** Why a picked file can't go, checked before the send rather than discovered by it. */
+export function attachmentProblem(dataUrl: string): 'unsupported' | 'too_large' | null {
+  if (!attachmentKind(dataUrl)) return 'unsupported';
+  if (dataUrl.length > MAX_ATTACHMENT_DATA_URL_LENGTH) return 'too_large';
+  return null;
+}
