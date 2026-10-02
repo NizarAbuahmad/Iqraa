@@ -71,3 +71,17 @@ const CLAIM_ERROR_KEYS: Record<string, TranslationKey> = {
 export function claimErrorKey(code: string | undefined): TranslationKey {
   return (code && CLAIM_ERROR_KEYS[code]) || 'joinAnotherClassFailed';
 }
+
+/**
+ * What the server's `normalizeShareCode` does, done before the screen counts
+ * characters: uppercase, and drop anything that is not a letter or digit.
+ *
+ * The lookup fires at six characters. A code read off a whiteboard arrives as
+ * `YHFM-8Y`, so at `YHFM-8` the screen had six characters and five of code:
+ * the server normalised it, found nothing, and the 404 was taken for a
+ * per-student code — Continue appeared on a code that was not finished.
+ * Counting what the server will actually see closes that.
+ */
+export function normalizeClaimCode(raw: string): string {
+  return raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
