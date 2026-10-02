@@ -14090,3 +14090,31 @@ production rotation. Until a fresh token is minted and `audit-r2` reports
 zero sources with "no bytes in R2 or on disk", the only copies of any PDF
 not yet uploaded are the local checkouts and git history. Do that before
 extracting anything on a machine that is not this one.
+
+## Admin dashboard v2 — growth, emails, users & blocking, AI cost, limits, 2026-10-01
+
+`/admin/dashboard` now has: overview (accounts by role, active users 7d/30d =
+generated or saved something, waitlist/contact counts, blocked count), hand-entered
+**downloads & followers** (Play, Instagram, Facebook, YouTube, LinkedIn, X —
+`manual_metrics`, one value per key per day; no platform APIs on purpose), signups
+per day for 30 days, **AI this month** (spend vs `AI_BUDGET_USD`, calls/cache hits/
+cost/p50/p95 per kind, top spenders), classes/students/parent letters, and **limits**
+(per-user AI caps + every rate limiter, read from `RATE_LIMITS` in `lib/rateLimit.ts`
+so it cannot drift). New screens: `/admin/users` (search, block with a message the
+user sees, unblock — block is the existing `suspendedAt`, unblock reuses
+`/moderation/users/:id/unsuspend`) and `/admin/signups` (iqrra.com waitlist +
+contact form, CSV export).
+
+- Latency (`ai_generations.duration_ms`) is recorded only from this release on, and
+  only for generate + chat; cache hits and other callers stay null. Server request
+  latency/error rate stay in Cloud Run — linked, not copied.
+- iqrra.com submissions reach the DB only once `SITE_INGEST_KEY` is set on **both**
+  Cloud Run (`iqraa-api`) and the Vercel project, and the Site_Iqra change is
+  deployed. Without the key `POST /api/site/signups` answers 404. Earlier signups
+  stay in Resend / the `FEEDBACK_TO` inbox and are not backfilled.
+- Schema: `docs/schema-push-2026-10-01-admin-dashboard.sql` (additive). Must be run on
+  Neon **before** merging — `usage-summary` reads `duration_ms`, and a missing column
+  would also make every `ai_generations` insert fail soft (spend tracking degrades).
+- Blocking does not revoke refresh tokens on purpose: a suspended account keeps
+  `GET /auth/me` and account deletion (`lib/suspension.ts`), and every other route
+  403s on the next request anyway.

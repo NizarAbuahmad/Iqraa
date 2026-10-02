@@ -741,6 +741,7 @@ const translations = {
     accountType: 'نوع الحساب',
     accountTypeSwitchNote: 'متاح فقط قبل إنشاء أي شعبة أو إضافة طلبة. بعد التغيير سيُطلب منك رمز الربط.',
     accountTypeLockedTeaching: 'لا يمكن تغيير نوع الحساب بعد إنشاء شعب أو إضافة طلبة.',
+    accountTypeLockedLinked: 'لا يمكن تغيير نوع الحساب بعد ربطه بشعبة. سجّل الدخول بحسابك الحالي.',
     aiUsage: 'استخدام الذكاء الاصطناعي هذا الشهر',
     aiUsageResets: 'يتجدد في',
     deleteAccountTitle: 'حذف الحساب',
@@ -932,6 +933,8 @@ const translations = {
     // Slides export
     exportSlides: 'تصدير شرائح',
     exportSlidesSub: 'ملف PDF بشرائح جاهزة للعرض — وليس ملف PowerPoint',
+    exportMinistry: 'نموذج الوزارة',
+    exportMinistrySub: 'خطة الدرس على نموذج وزارة التربية والتعليم (PDF)',
     // The NotebookLM hand-off row in ExportMenu. Added here because the feature
     // shipped calling t() for keys that were never defined, which broke
     // `pnpm run typecheck` on main.
@@ -2597,6 +2600,7 @@ const translations = {
     accountType: 'Account type',
     accountTypeSwitchNote: "Only possible before you create a class or add students. You'll be asked for a link code next.",
     accountTypeLockedTeaching: "The account type can't be changed once you have classes or students.",
+    accountTypeLockedLinked: "The account type can't be changed once it's linked to a class. Sign in with your existing account.",
     aiUsage: 'AI use this month',
     aiUsageResets: 'Resets',
     deleteAccountTitle: 'Delete account',
@@ -2785,6 +2789,8 @@ const translations = {
     // Slides export
     exportSlides: 'Export slides',
     exportSlidesSub: 'PDF slides (not PowerPoint)',
+    exportMinistry: 'Ministry template',
+    exportMinistrySub: 'Lesson plan on the Ministry of Education form (PDF)',
     exportNotebook: 'Open NotebookLM',
     exportNotebookSub: 'Upload the PDF there for an audio overview',
 
