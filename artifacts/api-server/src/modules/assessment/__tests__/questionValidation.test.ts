@@ -9,7 +9,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 import { QUESTION_TYPES, type QuestionDraft } from "../questionTypes.ts";
-import { buildGenerationPrompt, gradeClause } from "../llmGenerator.ts";
+import { buildGenerationPrompt, gradeClause, type LlmGenerationRequest } from "../llmGenerator.ts";
 
 const mcq = QUESTION_TYPES.multiple_choice;
 const matching = QUESTION_TYPES.matching;
@@ -78,9 +78,9 @@ describe("matching validation", () => {
 });
 
 describe("the grade in the generation prompt", () => {
-  const REQ = {
-    objectives: [], assessmentTypes: ["multiple_choice" as const], count: 5,
-    difficulty: "medium" as const, language: "ar",
+  const REQ: LlmGenerationRequest = {
+    objectives: [], assessmentTypes: ["multiple_choice"], count: 5,
+    difficulty: "standard", language: "ar",
   };
 
   it("names the evaluation's grade, not Grade 10", () => {
