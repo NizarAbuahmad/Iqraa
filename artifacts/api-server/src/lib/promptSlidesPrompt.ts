@@ -203,6 +203,7 @@ ${slideCountLine(b, true)}
 - "deckPhotoQueries" مصفوفة من أربع عبارات بحث بالإنجليزية (٢-٥ كلمات لكل واحدة) تصف موضوع العرض نفسه، كلها مختلفة عن بعضها: الأولى لخلفية الغلاف، والثانية للشريحة الفاصلة، والثالثة والرابعة احتياط لشرائح المحتوى. الأربع مطلوبة. بالإنجليزية دائمًا مهما كانت لغة العرض — فهرس الصور إنجليزي، والبحث بالعربية يعود فارغًا. صِفْ الموضوع لا المادة الدراسية: عرض عن يوم الأم عبارته "mother and child hands" لا "mathematics classroom".
 - "type" واحد من: intro, divider, challenge, question, summary. لا تستخدم أي نوع آخر.
 - "mediaPrompt" مطلوب على ثلاث شرائح بالضبط — هذا شرط لا خيار. اخترها من شرائح الشرح/المحتوى التي تستفيد فعلًا من صورة، واكتب في كل واحدة عبارة بحث **بالإنجليزية** (2-5 كلمات) تصف ما يجب أن تُظهره الصورة. لأن هذه هي الطريقة الوحيدة لوصول صورة إلى شريحة محتوى: الغلاف والشريحة الفاصلة تأخذان خلفيتيهما من "deckPhotoQueries"، وكل شريحة أخرى تبقى نصًا خالصًا ما لم تحمل "mediaPrompt". عرض بلا واحدة منها هو عرض بصورتين فقط من عشر شرائح. لا تكتب "mediaUrl" إطلاقًا.
+- لا تستعمل LaTeX ولا شرطة مائلة عكسية (\frac، \theta، \times) في أي حقل؛ اكتب x^2 و3/4 و×.
 - اكتب المعادلات بالحرفين اللاتينيين x و y حتى داخل النص العربي، فالتطبيق يرسم المنحنى من المعادلة الواردة في النص.
 - "durationSeconds": صفر لشرائح الشرح، و45-60 لشرائح السؤال.
 - لا تُضِف حقل "verified" أو "verifiedBy" إطلاقًا.`;
@@ -335,6 +336,7 @@ Mandatory rules:
 - "deckPhotoQueries" is FOUR English search phrases (2-5 words each) describing the deck's own subject, all different from each other: the first backs the cover, the second the section break, and the third and fourth are spares for content slides. All four are required. Always English whatever language the deck is in — the photo index is English and an Arabic query comes back empty. Describe the TOPIC, not the school subject: a Mother's Day deck wants "mother and child hands", never "mathematics classroom".
 - "type" is one of: intro, divider, challenge, question, summary. Never any other type.
 - "mediaPrompt" is REQUIRED on exactly three slides — a requirement, not an option. Choose the three concept/content slides that genuinely gain from a picture, and give each one an **English** search phrase (2-5 words) describing what the picture should show. This is the only way a picture ever reaches a content slide: the cover and the section break take their backgrounds from "deckPhotoQueries", and every other slide stays pure text unless it carries a "mediaPrompt". A deck with none is a deck with two pictures in ten slides. Never write "mediaUrl".
+- Never write LaTeX or a backslash (\frac, \theta, \times) in any field: write x^2, 3/4 and ×.
 - Write equations with latin x and y even inside other prose — the app plots the curve from the equation stated in the text.
 - "durationSeconds": zero for teaching slides, 45-60 for question slides.
 - Never add a "verified" or "verifiedBy" field.`;
