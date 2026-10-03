@@ -102,8 +102,11 @@ an announcement by default» below.
   machine-testable (the runner cannot load react-native). Still open from
   the same review: a reopened deck is not loaded from موادي on either slides
   screen (only the form is prefilled); pen ink drifts off the content on
-  resize; the timer has no pause; `homeAiTools.ts` still disables
-  `activity`/`game` for the related-tools panel, deliberately.
+  resize; `homeAiTools.ts` still disables `activity`/`game` for the
+  related-tools panel, deliberately. (The timer pause that was listed here
+  landed 2026-10-03: tap the clock, press P, or use the bottom-bar button on
+  wide screens. Pausing holds the second; a new slide or a restart clears it.
+  Not looked at in a browser.)
 - **A free, no-login games hub shipped** (2026-09-18), a competitive response
   to hasaadx.com/teacher. `/play` (added to `routeGating.ts`'s
   `PUBLIC_ROUTES`, same no-account pattern as `app/take/[code].tsx`) offers
