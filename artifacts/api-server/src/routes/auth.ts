@@ -1,5 +1,6 @@
 import { Router, type Request } from "express";
 import { signupSource } from "../lib/adminMetrics.js";
+import { termsAcceptance } from "../lib/termsAcceptance.ts";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -321,6 +322,13 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
       return;
     }
 
+    // A new account must have accepted the terms; see lib/termsAcceptance.ts.
+    const terms = termsAcceptance(req.body);
+    if (!terms.ok) {
+      res.status(terms.status).json({ error: terms.error, code: terms.code });
+      return;
+    }
+
     // Check duplicate email
     const [existing] = await db
       .select({ id: users.id })
@@ -343,6 +351,8 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
         passwordHash,
         role,
         preferredLanguage: "en",
+        termsAcceptedAt: terms.termsAcceptedAt,
+        termsVersion: terms.termsVersion,
         ...signupSource(req.headers),
       })
       .returning();
@@ -1336,6 +1346,16 @@ router.post("/google", googleLimiter, async (req, res) => {
           return;
         }
 
+        // Only here, on the branch that creates an account: someone signing
+        // back in with Google is not asked again. The register screen's
+        // checkbox used to gate its password form only — this button
+        // skipped it, and nothing was recorded either way.
+        const terms = termsAcceptance(req.body);
+        if (!terms.ok) {
+          res.status(terms.status).json({ error: terms.error, code: terms.code });
+          return;
+        }
+
         isNewAccount = true;
         [user] = await db
           .insert(users)
@@ -1347,6 +1367,8 @@ router.post("/google", googleLimiter, async (req, res) => {
             role,
             preferredLanguage: "en",
             emailVerified: true,
+            termsAcceptedAt: terms.termsAcceptedAt,
+            termsVersion: terms.termsVersion,
             ...signupSource(req.headers),
           })
           .returning();
