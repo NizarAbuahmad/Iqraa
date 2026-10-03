@@ -64,7 +64,7 @@ import { takeErrorKey } from '@/services/takeErrorKey';
 import { clearExamSession, loadExamSession, saveExamSession } from '@/services/examSession';
 import { formatMarks } from '@/services/studentAnswers';
 import { DictationInput, FillBlankInput, MatchingInput, ReadAloudInput } from '@/components/QuestionInputs';
-import { isolateForeignRuns } from '@/services/mathRender';
+import { MathParagraph } from '@/components/ui/MathParagraph';
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 
@@ -762,12 +762,12 @@ function QuestionCard({
   // Matching and fill-blank are absent here on purpose: neither body carries a
   // prompt field, and their inputs below render their own text. Falling back to
   // an empty string used to leave a matching question as a blank card.
-  const prompt = isolateForeignRuns(
+  // Raw — MathParagraph below draws exponents and isolates the rest.
+  const prompt =
     (body['stem'] as string) ??
     (body['statement'] as string) ??
     (body['prompt'] as string) ??
-    '',
-  );
+    '';
 
   const options = Array.isArray(body['options']) ? (body['options'] as { id: string; text: string }[]) : [];
   const picked = new Set(Array.isArray(response['optionIds']) ? (response['optionIds'] as string[]) : []);
@@ -778,7 +778,9 @@ function QuestionCard({
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       {prompt ? (
-        <Text
+        <MathParagraph
+          text={prompt}
+          isRTL={isRTL}
           style={{
             color: colors.foreground,
             fontFamily: 'Almarai_400Regular',
@@ -787,9 +789,7 @@ function QuestionCard({
             textAlign: align,
             writingDirection: isRTL ? 'rtl' : 'ltr',
           }}
-        >
-          {prompt}
-        </Text>
+        />
       ) : null}
 
       {question.type === 'multiple_choice' && (
@@ -820,18 +820,18 @@ function QuestionCard({
                   size={20}
                   color={on ? ACCENT : colors.mutedForeground}
                 />
-                <Text
+                <MathParagraph
+                  text={o.text}
+                  isRTL={isRTL}
+                  containerStyle={{ flex: 1 }}
                   style={{
                     color: colors.foreground,
                     fontFamily: 'Almarai_400Regular',
                     fontSize: 15, lineHeight: 24,
-                    flex: 1,
                     textAlign: align,
                     writingDirection: isRTL ? 'rtl' : 'ltr',
                   }}
-                >
-                  {isolateForeignRuns(o.text)}
-                </Text>
+                />
               </Pressable>
             );
           })}

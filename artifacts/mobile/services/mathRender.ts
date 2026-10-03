@@ -29,13 +29,13 @@ const DIGIT = '0-9٠-٩';
 const SIMPLE_TOKEN = new RegExp(`^(?:[${DIGIT}]+(?:[.,][${DIGIT}]+)?|[${VAR}])$`, 'u');
 const EXP_TOKEN = new RegExp(`^[+-]?[${DIGIT}${VAR}]+$`, 'u');
 
-/** Match a balanced parenthesized group starting at `i` (must be '('). */
-function matchParen(s: string, i: number): string | null {
-  if (s[i] !== '(') return null;
+/** Match a balanced group starting at `i` (must be `open`, '(' by default). */
+function matchParen(s: string, i: number, open = '(', close = ')'): string | null {
+  if (s[i] !== open) return null;
   let depth = 0;
   for (let j = i; j < s.length; j++) {
-    if (s[j] === '(') depth++;
-    else if (s[j] === ')') {
+    if (s[j] === open) depth++;
+    else if (s[j] === close) {
       depth--;
       if (depth === 0) return s.slice(i + 1, j);
     }
@@ -181,9 +181,12 @@ export function parseMathLine(line: string): MathNode[] {
   return nodes;
 }
 
-/** Read an exponent after '^': signed token or parenthesized expression. */
+/**
+ * Read an exponent after '^': signed token, or a parenthesized or LaTeX-style
+ * braced expression — `lib/math-practice` writes `2^{x+1}`.
+ */
 function readExponent(s: string, i: number): { text: string; end: number } | null {
-  const paren = matchParen(s, i);
+  const paren = matchParen(s, i) ?? matchParen(s, i, '{', '}');
   if (paren !== null) return { text: paren, end: i + paren.length + 2 };
   let k = i;
   if (s[k] === '+' || s[k] === '-') k++;

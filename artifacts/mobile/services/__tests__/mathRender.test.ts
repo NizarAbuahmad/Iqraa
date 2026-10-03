@@ -63,6 +63,25 @@ describe('parseMathLine — superscripts', () => {
   it('parses a parenthesized base', () => {
     assert.deepEqual(parseMathLine('(x+1)^2'), [{ kind: 'sup', base: '(x+1)', exp: '2' }]);
   });
+
+  // lib/math-practice writes exponents LaTeX-style. Unparsed, the braces are
+  // bidi-neutral and «أوجد حل المعادلة: 2^{x+1} = 32» came out scrambled.
+  it('parses a braced exponent', () => {
+    assert.deepEqual(parseMathLine('أوجد حل المعادلة: 2^{x+1} = 32'), [
+      { kind: 'text', text: 'أوجد حل المعادلة: ' },
+      { kind: 'sup', base: '2', exp: 'x+1' },
+      { kind: 'text', text: ' = 32' },
+    ]);
+    assert.deepEqual(parseMathLine('4^{x} = 8^{x-1}'), [
+      { kind: 'sup', base: '4', exp: 'x' },
+      { kind: 'text', text: ' = ' },
+      { kind: 'sup', base: '8', exp: 'x-1' },
+    ]);
+  });
+
+  it('leaves an unclosed brace as text', () => {
+    assert.deepEqual(parseMathLine('2^{x+1 = 32'), [{ kind: 'text', text: '2^{x+1 = 32' }]);
+  });
 });
 
 describe('parseMathLine — fractions', () => {
