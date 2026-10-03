@@ -29,6 +29,9 @@ import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
+import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
+import { createVerificationTracker } from '@/services/verificationTracker';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
@@ -51,6 +54,7 @@ import { optionMarkerState } from '@/services/quizEdits';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
 import { nextFrame } from '@/services/nextFrame';
 import { buildWorksheetRequest } from '@/services/generatorRequests';
+import { readHomeworkParam, readIndexParam } from '@/services/materialParams';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -118,7 +122,7 @@ export default function WorksheetScreen() {
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   const [topic, setTopic] = useState(params.topic ?? '');
   useWarmGrounding(topic, lang);
-  const [diffIdx, setDiffIdx] = useState(params.diffIdx ? parseInt(params.diffIdx, 10) : 0);
+  const [diffIdx, setDiffIdx] = useState(readIndexParam(params.diffIdx, DIFFICULTY_IDS.length, 0));
 
   // Reset topic when grade or subject changes
   const prevGradeRef = React.useRef(gradeIdx);
@@ -126,11 +130,14 @@ export default function WorksheetScreen() {
   useEffect(() => {
     if (prevGradeRef.current !== gradeIdx || prevSubjectRef.current !== subjectIdx) {
       setTopic('');
+      // A «subject mismatch» refusal is about the old pairing; it used to
+      // stay on screen in red under the now-empty topic field.
+      setError('');
       prevGradeRef.current = gradeIdx;
       prevSubjectRef.current = subjectIdx;
     }
   }, [gradeIdx, subjectIdx]);
-  const [numQIdx, setNumQIdx] = useState(params.numQIdx ? parseInt(params.numQIdx, 10) : 2);
+  const [numQIdx, setNumQIdx] = useState(readIndexParam(params.numQIdx, NUM_Q_OPTIONS.length, 2));
   const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
   const [includePriorReview, setIncludePriorReview] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -141,6 +148,7 @@ export default function WorksheetScreen() {
    * waiting, not the spending.
    */
   const abortRef = useRef<AbortController | null>(null);
+  useAbortOnUnmount(abortRef);
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<WorksheetOutput | null>(null);
   /** null = not checked yet (or the check failed); [] onwards = per question. */
@@ -161,10 +169,22 @@ export default function WorksheetScreen() {
    * this only holds the two the teacher is not looking at.
    */
   const [levels, setLevels] = useState<Partial<Record<Level, LevelEntry>> | null>(null);
-  /** null until first generate; then whether the worksheet used a confident KB lesson. */
-  const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
-  /** Title of the curriculum lesson the output was anchored to, when grounded. */
-  const [groundedLesson, setGroundedLesson] = useState<string | null>(null);
+  /**
+   * The scope the paper on screen was generated under — pickers, topic and
+   * the grounded lesson, frozen at generation time (or re-derived from the
+   * saved form state on reopen). Save, export and present read this, never
+   * the live pickers: changing the subject clears the topic but keeps the
+   * paper, and reading the form at that point stored it under the new
+   * subject as «ورقة عمل: » and re-grounded the deck from an empty topic.
+   */
+  const [generated, setGenerated] = useState<GenerationScope | null>(
+    () => (params.savedId ? reopenedGenerationScope(initialScope, params.topic, lang as 'ar' | 'en') : null),
+  );
+  const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
+  const curriculumGrounded: boolean | null = generated ? generated.grounded : null;
+  const groundedLesson: string | null = generated?.lesson
+    ? (lang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
+    : null;
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
@@ -179,7 +199,7 @@ export default function WorksheetScreen() {
   // Prior-knowledge availability for the currently selected lesson (no fabrication)
   const priorKnowledge = (() => {
     if (!topic.trim()) return [] as string[];
-    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
     if (!g.lesson) return [] as string[];
     return getUnitPriorKnowledge(g.lesson.id);
   })();
@@ -201,7 +221,7 @@ export default function WorksheetScreen() {
   }, [params.savedId]);
 
   useEffect(() => {
-    if (result) setSaveLabel(savedId ? 'updated' : 'save');
+    if (result) setSaveLabel('save');
   }, [result]);
 
   const toggleType = (type: QType) => {
@@ -217,7 +237,7 @@ export default function WorksheetScreen() {
     });
   };
 
-  const isHomework = params.isHomework === '1';
+  const isHomework = readHomeworkParam(params.isHomework);
 
   /**
    * A hand-edit invalidates whatever the verifier proved about that question
@@ -239,16 +259,16 @@ export default function WorksheetScreen() {
    * drops a result that arrives after the teacher has switched to another
    * level — it would otherwise badge the wrong paper.
    */
-  const verifyForRef = useRef<WorksheetOutput | null>(null);
+  const verifyRef = useRef(createVerificationTracker<WorksheetOutput>());
   const verifyKeys = (out: WorksheetOutput) => {
-    verifyForRef.current = out;
+    verifyRef.current.begin(out);
     setOutcomes(null);
     void (async () => {
       const { verifyWorksheetAnswers } = await import('@/services/quizVerification');
       const { verifyMathItem } = await import('@/services/ai/verifyMath');
       const checked = await verifyWorksheetAnswers(out, verifyMathItem);
-      if (verifyForRef.current === out) setOutcomes(checked);
-    })().catch(() => { if (verifyForRef.current === out) setOutcomes(null); });
+      if (verifyRef.current.accepts(out)) setOutcomes(checked);
+    })().catch(() => { if (verifyRef.current.accepts(out)) setOutcomes(null); });
   };
 
   /** Swap the paper on screen; everything below reads `result` + `diffIdx`. */
@@ -264,7 +284,7 @@ export default function WorksheetScreen() {
     setSavedId(entry.savedId);
     setEditedFlatIndexes(entry.editedFlatIndexes);
     // null = never checked, or the check failed — ask again rather than show nothing.
-    if (entry.outcomes) { verifyForRef.current = entry.result; setOutcomes(entry.outcomes); }
+    if (entry.outcomes) { verifyRef.current.begin(entry.result); setOutcomes(entry.outcomes); }
     else verifyKeys(entry.result);
   };
 
@@ -281,18 +301,24 @@ export default function WorksheetScreen() {
     // Read before any setState clears it — this is what the teacher is
     // looking at, and what a regeneration must not hand back.
     const previous = result;
+    // Everything a failed or cancelled run must hand back: the paper, its
+    // badges, edits and levels, and the scope it was generated under. It
+    // used to be cleared up front and never restored, so Cancel on a
+    // regenerate threw away the unsaved paper the teacher was looking at.
+    const held = { result, outcomes, editedFlatIndexes, levels, savedId, generated };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // paper — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
-    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
-    if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
+    const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
+    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setCancelled(false);
     const controller = new AbortController();
     abortRef.current = controller;
-    setLoading(true); setResult(null); setOutcomes(null); setCurriculumGrounded(null); setGroundedLesson(null);
+    setLoading(true); setResult(null); setOutcomes(null);
+    verifyRef.current.drop();
     setEditedFlatIndexes(new Set());
     // ponytail: Regenerate inside three-level mode regenerates the active
     // level only and drops back to a single paper. Regenerating all three at
@@ -302,7 +328,7 @@ export default function WorksheetScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
     try {
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
       const baseReq = buildWorksheetRequest({
         gradeName: gradeNames[gradeIdx]!,
         subjectName: subjects[subjectIdx].name,
@@ -324,22 +350,28 @@ export default function WorksheetScreen() {
         // Difficulty is part of the server's strict cache key, so these are
         // three independent pool slots — fanned out, not queued. One abort
         // signal covers all three.
-        const outs = await Promise.all(LEVELS.map(d => call({ ...baseReq, difficulty: d })));
-        const entries = Object.fromEntries(
-          LEVELS.map((d, i) => [d, { result: outs[i]!, outcomes: null, editedFlatIndexes: new Set<number>() }]),
-        ) as Record<Level, LevelEntry>;
+        // Settled, not `all`: one failed level used to throw away the two
+        // that had already come back and been paid for. A cancel still
+        // cancels the lot; a plain failure keeps whatever finished.
+        const settled = await Promise.allSettled(LEVELS.map(d => call({ ...baseReq, difficulty: d })));
+        const aborted = settled.find((s): s is PromiseRejectedResult => s.status === 'rejected' && isAbortError(s.reason));
+        if (aborted) throw aborted.reason;
+        const entries: Partial<Record<Level, LevelEntry>> = {};
+        settled.forEach((s, i) => {
+          if (s.status === 'fulfilled') entries[LEVELS[i]!] = { result: s.value, outcomes: null, editedFlatIndexes: new Set<number>() };
+        });
+        const first = LEVELS.find(d => entries[d]);
+        if (!first) throw (settled[0] as PromiseRejectedResult).reason;
+        if (LEVELS.some(d => !entries[d])) showToast(t('levelsPartial'));
         setLevels(entries);
-        setDiffIdx(0);
+        setDiffIdx(LEVELS.indexOf(first));
         setSavedId(undefined);
-        out = entries.easy.result;
+        out = entries[first]!.result;
       } else {
         out = await call(baseReq);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setCurriculumGrounded(grounding.grounded);
-      setGroundedLesson(
-        grounding.lesson ? (lang === 'ar' ? grounding.lesson.titleAr : grounding.lesson.titleEn) : null,
-      );
+      setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
       verifyKeys(out);
@@ -350,6 +382,18 @@ export default function WorksheetScreen() {
       // a teacher reads, and aiProvenance already records it for the badge.
       if (isAbortError(e)) setCancelled(true);
       else setError(t(aiErrorMessageKey(e)));
+      // Hand back what was on screen; a stop or a failure is not a reason to
+      // lose it. The scope goes back with it so the badges and the grounding
+      // notice describe the restored paper, not the one that never came.
+      if (held.result) {
+        setResult(held.result);
+        setOutcomes(held.outcomes);
+        setEditedFlatIndexes(held.editedFlatIndexes);
+        setLevels(held.levels);
+        setSavedId(held.savedId);
+        setGenerated(held.generated);
+        if (held.outcomes) verifyRef.current.begin(held.result);
+      }
     } finally {
       abortRef.current = null;
       setLoading(false);
@@ -364,16 +408,28 @@ export default function WorksheetScreen() {
   // Three papers on one topic need three titles in موادي and in the export.
   const levelSuffix = levels ? ` — ${diffLabels[diffIdx]}` : '';
 
+  /**
+   * One title for موادي and for every export. The export used to keep its
+   * own copy, which never learnt about homework — a saved «واجب بيتي» left
+   * the app as «ورقة عمل».
+   */
+  const materialTitle = () => (isHomework
+    ? (lang === 'ar' ? `واجب بيتي: ${scope.topic}` : `Homework: ${scope.topic}`)
+    : (lang === 'ar' ? `ورقة عمل: ${scope.topic}` : `Worksheet: ${scope.topic}`)) + levelSuffix;
+
   const handleSave = async () => {
     if (!result) return;
-    const title = (isHomework
-      ? (lang === 'ar' ? `واجب بيتي: ${topic.trim()}` : `Homework: ${topic.trim()}`)
-      : (lang === 'ar' ? `ورقة عمل: ${topic.trim()}` : `Worksheet: ${topic.trim()}`)) + levelSuffix;
+    const title = materialTitle();
     const formState = {
-      gradeIdx, subjectIdx, topic: topic.trim(),
+      gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic,
       diffIdx, numQIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
       materialKind: isHomework ? 'homework' : 'worksheet',
       isHomework,
+    };
+    // Built once: the two branches below used to each spell out the payload.
+    const payload = {
+      title, subject: subjects[scope.subjectIdx].name, grade: grades[scope.gradeIdx].name,
+      topic: scope.topic, language: lang, content: JSON.stringify(result), formState,
     };
     // `updateItem` answers false when the material is no longer there — the
     // teacher deleted it from موادي while this screen still held its id. The
@@ -381,17 +437,10 @@ export default function WorksheetScreen() {
     // over a material that no longer existed and the work was never saved
     // again. Folding the call into the condition makes a failed update fall
     // through to creating a fresh one, which is what pressing Save meant.
-    if (savedId && (await updateItem(savedId, {
-        title, subject: subjects[subjectIdx].name, grade: grades[gradeIdx].name,
-        topic: topic.trim(), language: lang, content: JSON.stringify(result), formState,
-      }))) {
+    if (savedId && (await updateItem(savedId, payload))) {
       setSaveLabel('updated');
     } else {
-      const saved = await saveItem({
-        type: 'worksheet', title,
-        subject: subjects[subjectIdx].name, grade: grades[gradeIdx].name,
-        topic: topic.trim(), language: lang, content: JSON.stringify(result), formState,
-      });
+      const saved = await saveItem({ type: 'worksheet', ...payload });
       setSavedId(saved.id);
       setSaveLabel('saved');
     }
@@ -402,7 +451,7 @@ export default function WorksheetScreen() {
   const markEdited = (flatIndex: number) => {
     if (flatIndex < 0) return;
     setEditedFlatIndexes(prev => new Set(prev).add(flatIndex));
-    setSaveLabel(savedId ? 'updated' : 'save');
+    setSaveLabel('save');
   };
 
   const updateQuestionText = (sectionIndex: number, questionIndex: number, text: string) => {
@@ -446,11 +495,16 @@ export default function WorksheetScreen() {
     });
     if (!ok) return;
     const flatIndex = flatIndexOf(result, sectionIndex, questionIndex);
-    setResult(prev => (prev ? removeWorksheetQuestionAt(prev, sectionIndex, questionIndex) : prev));
+    const next = removeWorksheetQuestionAt(result, sectionIndex, questionIndex);
+    setResult(next);
     // `outcomes` and `editedFlatIndexes` are positional against the old flat
     // list — a delete shifts every later position down by one, not just this
     // question's slot, or the badges after it would land on the wrong item.
-    setOutcomes(prev => (prev ? prev.filter((_, i) => i !== flatIndex) : prev));
+    // A check still in flight is for the old list and would land one slot
+    // off — it is dropped and run again for the new one.
+    verifyRef.current.drop();
+    if (outcomes) setOutcomes(outcomes.filter((_, i) => i !== flatIndex));
+    else verifyKeys(next);
     setEditedFlatIndexes(prev => {
       const next = new Set<number>();
       prev.forEach(i => {
@@ -459,7 +513,7 @@ export default function WorksheetScreen() {
       });
       return next;
     });
-    setSaveLabel(savedId ? 'updated' : 'save');
+    setSaveLabel('save');
   };
 
   const typeLabels: Record<QType, string> = {
@@ -472,11 +526,15 @@ export default function WorksheetScreen() {
 
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
-  const getExportTitle = () => (lang === 'ar' ? `ورقة عمل: ${topic.trim()}` : `Worksheet: ${topic.trim()}`) + levelSuffix;
+  const getExportTitle = materialTitle;
   // Localised, like the picker above it. Taking `.name` straight off the
   // catalog put "Mathematics | Grade 10" at the top of an otherwise Arabic
   // material — the screen showed الرياضيات and the exported file disagreed.
-  const getExportMeta = () => ({ subject: subjectNames[subjectIdx]!, grade: gradeNames[gradeIdx]! });
+  // Labels are per grade, so they are read against the generated grade.
+  const getExportMeta = () => ({
+    subject: subjectPickerLabels(grades[scope.gradeIdx].id, lang as 'ar' | 'en')[scope.subjectIdx]!,
+    grade: gradeNames[scope.gradeIdx]!,
+  });
 
   const {
     getExportFigures,
@@ -490,7 +548,8 @@ export default function WorksheetScreen() {
     loadingSlides,
   } = useGeneratorExport({
     result,
-    topic,
+    topic: scope.topic,
+    lessonId: scope.lesson?.id,
     lang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
@@ -542,7 +601,10 @@ export default function WorksheetScreen() {
           t={t}
         />
 
-        <PickerField label={t('difficultyLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={setDiffIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        {/* In three-level mode the difficulty IS the active tab, so the picker
+            switches papers instead of relabelling the one on screen — which
+            filed it under the wrong level on the next tab tap. */}
+        <PickerField label={t('difficultyLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={i => (levels ? showLevel(i) : setDiffIdx(i))} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('numQuestionsLabel')} value={numQLabels[numQIdx]} options={numQLabels} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
@@ -711,10 +773,11 @@ export default function WorksheetScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
               setPendingClassroomActivity(
-                buildDeckFromWorksheet(result, topic.trim(), lang === 'ar', {
-                  lesson: grounding.lesson,
+                buildDeckFromWorksheet(result, scope.topic, lang === 'ar', {
+                  // The lesson this paper was generated for — not one re-derived
+                  // from whatever the topic box says now.
+                  lesson: scope.lesson,
                   // Was a blanket verified: false, which hid the keys the
                   // verifier had actually proved. Per question now, so the
                   // projector badges exactly what was checked — and not a
@@ -761,7 +824,10 @@ export default function WorksheetScreen() {
                 const flatIndex = flatIndexOf(result, si, i);
                 return (
                 <View key={i} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                  <Text style={[styles.qNum, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{i + 1}.</Text>
+                  {/* Numbered straight through, as the answer key and both
+                      exports are — per-section numbering made «٣» in the key
+                      point at a different question on screen. */}
+                  <Text style={[styles.qNum, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{flatIndex + 1}.</Text>
                   <View style={{ flex: 1 }}>
                     <EditableText
                       value={q.text}
@@ -909,7 +975,7 @@ export default function WorksheetScreen() {
           variantId={pooledVariantId(result)}
           materialType="worksheet"
           toolId={isHomework ? 'homework' : 'worksheet'}
-          topic={topic.trim()}
+          topic={scope.topic}
           marginTop={8}
         />
       )}

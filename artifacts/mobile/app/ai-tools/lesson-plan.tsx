@@ -12,6 +12,10 @@ import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbC
 import { pooledVariantId } from '@/services/ai/regeneration';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { getLessonById, getLessonsForUnit, getUnitForLesson } from '@/services/knowledgeBase';
+import { buildMinistryPlanHTML, stagesFromLessonPlan } from '@/services/ministryPlanHtml';
+import { todayISO } from '@/services/planEntries';
+import { useAuth } from '@/context/AuthContext';
 import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { TopicSelector } from '@/components/ui/TopicSelector';
@@ -25,11 +29,14 @@ import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
+import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
+import { readIndexParam } from '@/services/materialParams';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
-import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, formatLessonPlanText } from '@/services/share';
+import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, exportAsPDF, formatLessonPlanText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
@@ -45,11 +52,13 @@ export default function LessonPlanScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  const { user } = useAuth();
   const params = useLocalSearchParams<{
     topic?: string; savedId?: string;
     gradeIdx?: string; subjectIdx?: string; durationIdx?: string; styleIdx?: string; objectives?: string;
     adaptations?: string;
     priorTopicsNotes?: string;
+   includePriorReview?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -82,6 +91,9 @@ export default function LessonPlanScreen() {
   useEffect(() => {
     if (prevGradeRef.current !== gradeIdx || prevSubjectRef.current !== subjectIdx) {
       setTopic('');
+      // A «subject mismatch» refusal is about the old pairing; it used to
+      // stay on screen in red under the now-empty topic field.
+      setError('');
       prevGradeRef.current = gradeIdx;
       prevSubjectRef.current = subjectIdx;
     }
@@ -89,9 +101,11 @@ export default function LessonPlanScreen() {
   const [objectives, setObjectives] = useState(params.objectives ?? '');
   const [adaptations, setAdaptations] = useState(params.adaptations ?? '');
   const [priorTopicsNotes, setPriorTopicsNotes] = useState(params.priorTopicsNotes ?? '');
-  const [includePriorReview, setIncludePriorReview] = useState(false);
-  const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 1);
-  const [styleIdx, setStyleIdx] = useState(params.styleIdx ? parseInt(params.styleIdx, 10) : 0);
+  // Persisted with the plan (it was not: a reopened plan silently dropped
+  // «راجع المعرفة السابقة»), and the positions range-checked like the rest.
+  const [includePriorReview, setIncludePriorReview] = useState(params.includePriorReview === '1');
+  const [durationIdx, setDurationIdx] = useState(readIndexParam(params.durationIdx, DURATION_VALUES.length, 1));
+  const [styleIdx, setStyleIdx] = useState(readIndexParam(params.styleIdx, STYLE_IDS.length, 0));
   const [loading, setLoading] = useState(false);
   /**
    * Held across renders so Cancel can reach the in-flight request. A cancel
@@ -100,12 +114,29 @@ export default function LessonPlanScreen() {
    * waiting, not the spending.
    */
   const abortRef = useRef<AbortController | null>(null);
+  useAbortOnUnmount(abortRef);
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<LessonPlanOutput | null>(null);
-  /** null until first generate; then whether the plan used a confident KB lesson. */
-  const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
-  /** Title of the curriculum lesson the output was anchored to, when grounded. */
-  const [groundedLesson, setGroundedLesson] = useState<string | null>(null);
+  /**
+   * The scope the plan on screen was generated under — pickers, topic and
+   * the grounded lesson, frozen at generation time (or re-derived from the
+   * saved form state on reopen, which is what gives a reopened plan its
+   * grounding notice and the Ministry form its unit back). Save, export and
+   * the Ministry form read this, never the live pickers: changing the
+   * subject clears the topic but keeps the plan, and reading the form at
+   * that point stored it under the new subject as «خطة درس: ».
+   */
+  const [generated, setGenerated] = useState<GenerationScope | null>(
+    () => (params.savedId ? reopenedGenerationScope(initialScope, params.topic, lang as 'ar' | 'en') : null),
+  );
+  const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
+  const curriculumGrounded: boolean | null = generated ? generated.grounded : null;
+  const groundedLesson: string | null = generated?.lesson
+    ? (lang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
+    : null;
+  /** KB id of that lesson — the Ministry form needs its unit and period count. */
+  const groundedLessonId: string | null = generated?.lesson?.id ?? null;
+  const [loadingMinistry, setLoadingMinistry] = useState(false);
   /**
    * Fields the teacher has changed. Kept so provenance stays honest — a plan
    * that has been edited is no longer purely machine-written, and the save
@@ -126,7 +157,7 @@ export default function LessonPlanScreen() {
   // Prior-knowledge availability for the currently selected lesson (no fabrication)
   const priorKnowledge = (() => {
     if (!topic.trim()) return [] as string[];
-    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
     if (!g.lesson) return [] as string[];
     return getUnitPriorKnowledge(g.lesson.id);
   })();
@@ -153,14 +184,14 @@ export default function LessonPlanScreen() {
 
   // Reset save label when result changes (new generation)
   useEffect(() => {
-    if (result) setSaveLabel(savedId ? 'updated' : 'save');
+    if (result) setSaveLabel('save');
   }, [result]);
 
   const applyEdit = <K extends keyof LessonPlanOutput>(field: K, value: LessonPlanOutput[K]) => {
     setResult(prev => (prev ? { ...prev, [field]: value } : prev));
     setEditedFields(prev => new Set(prev).add(field as string));
     // Something changed since the last save, so offer to save it again.
-    setSaveLabel(savedId ? 'updated' : 'save');
+    setSaveLabel('save');
   };
 
   /**
@@ -176,13 +207,17 @@ export default function LessonPlanScreen() {
     // Read before any setState clears it — this is what the teacher is
     // looking at, and what a regeneration must not hand back.
     const previous = result;
+    // What a failed or cancelled run must hand back. It used to be cleared
+    // up front and never restored, so Cancel on a regenerate threw away the
+    // unsaved plan the teacher was looking at.
+    const held = { result, editedFields, generated };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // plan — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
-    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
-    if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
+    const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
+    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError('');
     setCancelled(false);
@@ -190,8 +225,6 @@ export default function LessonPlanScreen() {
     abortRef.current = controller;
     setLoading(true);
     setResult(null);
-    setCurriculumGrounded(null);
-    setGroundedLesson(null);
     setEditedFields(new Set());
     setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -208,16 +241,13 @@ export default function LessonPlanScreen() {
         regenerate: opts?.regenerate === true,
         previous,
       };
-      const grounding = groundLessonPlanTopic(form);
+      const grounding = groundLessonPlanTopic(form, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
       const out = await aiService.generateLessonPlan(
         buildLessonPlanRequest(form, grounding),
         { signal: controller.signal },
       );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setCurriculumGrounded(grounding.grounded);
-      setGroundedLesson(
-        grounding.lesson ? (lang === 'ar' ? grounding.lesson.titleAr : grounding.lesson.titleEn) : null,
-      );
+      setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (e) {
@@ -228,6 +258,13 @@ export default function LessonPlanScreen() {
       // language a teacher reads. The technical text is already recorded in
       // aiProvenance, where the badge carries it for support.
       else setError(t(aiErrorMessageKey(e)));
+      // Hand back what was on screen; a stop or a failure is not a reason to
+      // lose it.
+      if (held.result) {
+        setResult(held.result);
+        setEditedFields(held.editedFields);
+        setGenerated(held.generated);
+      }
     } finally {
       abortRef.current = null;
       setLoading(false);
@@ -241,12 +278,27 @@ export default function LessonPlanScreen() {
 
   const handleSave = async () => {
     if (!result) return;
-    const title = lang === 'ar'
-      ? `خطة درس: ${topic.trim()}`
-      : `Lesson Plan: ${topic.trim()}`;
+    const title = getExportTitle();
     const formState = {
-      gradeIdx, subjectIdx, topic: topic.trim(), durationIdx, styleIdx, objectives, adaptations,
-      priorTopicsNotes,
+      gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic,
+      durationIdx, styleIdx, objectives, adaptations, priorTopicsNotes,
+      includePriorReview: includePriorReview ? '1' : '0',
+    };
+    // Built once: the two branches below used to each spell out the payload
+    // and its five-line comment.
+    const payload = {
+      title,
+      subject: subjects[scope.subjectIdx].name,
+      // Localised: this string is carried into generated content verbatim —
+      // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
+      // compared anywhere, only displayed and passed through, so translating it
+      // is safe. `subject` is deliberately left in English: it feeds
+      // isMathContext and ~30 other call sites.
+      grade: gradeNames[scope.gradeIdx]!,
+      topic: scope.topic,
+      language: lang,
+      content: JSON.stringify(result),
+      formState,
     };
 
     // `updateItem` answers false when the material is no longer there — the
@@ -255,37 +307,10 @@ export default function LessonPlanScreen() {
     // over a material that no longer existed and the work was never saved
     // again. Folding the call into the condition makes a failed update fall
     // through to creating a fresh one, which is what pressing Save meant.
-    if (savedId && (await updateItem(savedId, {
-        title,
-        subject: subjects[subjectIdx].name,
-        // Localised: this string is carried into generated content verbatim —
-        // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
-        // compared anywhere, only displayed and passed through, so translating it
-        // is safe. `subject` is deliberately left in English: it feeds
-        // isMathContext and ~30 other call sites.
-        grade: gradeNames[gradeIdx]!,
-        topic: topic.trim(),
-        language: lang,
-        content: JSON.stringify(result),
-        formState,
-      }))) {
+    if (savedId && (await updateItem(savedId, payload))) {
       setSaveLabel('updated');
     } else {
-      const saved = await saveItem({
-        type: 'lesson',
-        title,
-        subject: subjects[subjectIdx].name,
-        // Localised: this string is carried into generated content verbatim —
-        // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
-        // compared anywhere, only displayed and passed through, so translating it
-        // is safe. `subject` is deliberately left in English: it feeds
-        // isMathContext and ~30 other call sites.
-        grade: gradeNames[gradeIdx]!,
-        topic: topic.trim(),
-        language: lang,
-        content: JSON.stringify(result),
-        formState,
-      });
+      const saved = await saveItem({ type: 'lesson', ...payload });
       setSavedId(saved.id);
       setSaveLabel('saved');
     }
@@ -297,12 +322,13 @@ export default function LessonPlanScreen() {
     // Localised, like the picker above it. Taking `.name` straight off the
     // catalog put "Mathematics | Grade 10" at the top of an otherwise Arabic
     // plan — the screen showed الرياضيات and the exported file disagreed.
-    subject: subjectNames[subjectIdx]!,
-    grade: gradeNames[gradeIdx]!,
+    // Labels are per grade, so they are read against the generated grade.
+    subject: subjectPickerLabels(grades[scope.gradeIdx].id, lang as 'ar' | 'en')[scope.subjectIdx]!,
+    grade: gradeNames[scope.gradeIdx]!,
     duration: DURATION_VALUES[durationIdx],
   });
 
-  const getExportTitle = () => lang === 'ar' ? `خطة درس: ${topic.trim()}` : `Lesson Plan: ${topic.trim()}`;
+  const getExportTitle = () => lang === 'ar' ? `خطة درس: ${scope.topic}` : `Lesson Plan: ${scope.topic}`;
 
   const {
     getExportFigures,
@@ -316,7 +342,8 @@ export default function LessonPlanScreen() {
     loadingSlides,
   } = useGeneratorExport({
     result,
-    topic,
+    topic: scope.topic,
+    lessonId: scope.lesson?.id,
     lang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
@@ -327,6 +354,43 @@ export default function LessonPlanScreen() {
     onCopied: key => showToast(t(key)),
   });
 
+  /**
+   * The plan on screen, on the Ministry's «خطة الدرس» form. The form is
+   * Arabic-only, so names come from the Arabic fields whatever the UI
+   * language. Teacher-role text is this plan's own phases folded into the four
+   * stages; the learner column is left for the teacher — the plan on screen
+   * has no learner half, and a second generation would no longer match what
+   * the teacher has read and edited.
+   */
+  const handleMinistry = async () => {
+    if (!result) return;
+    setLoadingMinistry(true);
+    try {
+      const lesson = groundedLessonId ? getLessonById(groundedLessonId) : undefined;
+      const siblings = lesson ? getLessonsForUnit(lesson.unitId) : [];
+      const at = lesson ? siblings.findIndex(l => l.id === lesson.id) : -1;
+      const page = {
+        subject: subjects[scope.subjectIdx].nameAr,
+        grade: grades[scope.gradeIdx].nameAr,
+        unit: lesson ? (getUnitForLesson(lesson)?.titleAr ?? '') : '',
+        lesson: lesson?.titleAr ?? scope.topic,
+        periods: lesson?.periods ?? null,
+        priorLearning: at > 0 ? siblings[at - 1].titleAr : '',
+        outcomes: result.objectives,
+        section: '',
+        date: todayISO(),
+        teacher: user?.name ?? '',
+        stages: stagesFromLessonPlan(result),
+      };
+      const title = getExportTitle();
+      await exportAsPDF(buildMinistryPlanHTML([page], title), title);
+    } catch {
+      showToast(t('generationFailed'));
+    } finally {
+      setLoadingMinistry(false);
+    }
+  };
+
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const exportLabels = {
@@ -336,6 +400,7 @@ export default function LessonPlanScreen() {
     pdfLabel: t('exportPDF'), pdfSub: t('exportPDFSub'),
     wordLabel: t('exportWord'), wordSub: t('exportWordSub'),
     slidesLabel: t('exportSlides'), slidesSub: t('exportSlidesSub'),
+    ministryLabel: t('exportMinistry'), ministrySub: t('exportMinistrySub'),
     cancel: t('cancel'),
   };
 
@@ -552,7 +617,7 @@ export default function LessonPlanScreen() {
           variantId={pooledVariantId(result)}
           materialType="lesson"
           toolId="lesson-plan"
-          topic={topic.trim()}
+          topic={scope.topic}
         />
       )}
     </ScrollView>
@@ -565,6 +630,7 @@ export default function LessonPlanScreen() {
       onPDF={handlePDF}
       onWord={handleWord}
       onSlides={handleSlides}
+      onMinistry={handleMinistry}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}

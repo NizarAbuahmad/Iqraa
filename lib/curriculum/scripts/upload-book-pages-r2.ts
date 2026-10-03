@@ -5,8 +5,10 @@
  *
  * The pages are rendered by `scripts/verify_book_pages.py`, which also writes
  * the list of lessons to `knowledge-base/book-page-links.json`. That list is
- * the contract: every page of every lesson in it must exist, or the upload
- * refuses — otherwise the app would show a lesson with a hole in it.
+ * the contract: every page of every lesson in it must exist — on disk or
+ * already in the bucket — or the upload refuses, since otherwise the app would
+ * show a lesson with a hole in it. Pages only in the bucket are left alone, so
+ * the render dir only has to hold what the latest run cut.
  *
  * Unlike figures, a page CAN change under its key: a re-issued edition is
  * re-cut to the same names. So a file is re-sent whenever its size differs
@@ -40,13 +42,6 @@ const links = JSON.parse(readFileSync(path.join(ROOT, 'knowledge-base/book-page-
 };
 const files = Object.entries(links.lessons).flatMap(([id, l]) =>
   Array.from({ length: l.endPage - l.startPage + 1 }, (_, n) => `${id}/${n + 1}.jpg`));
-const missing = files.filter(f => !existsSync(path.join(dir, f)));
-if (missing.length > 0) {
-  console.error(`${missing.length} page(s) listed but not in ${dir}, e.g. ${missing.slice(0, 3).join(', ')}`);
-  console.error('re-run scripts/verify_book_pages.py with this directory');
-  process.exit(1);
-}
-
 const { R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY } = process.env;
 if (!R2_ENDPOINT || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
   console.error('R2 is not configured — set R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY in .env.');
@@ -67,7 +62,15 @@ do {
   token = page.NextContinuationToken;
 } while (token);
 
-const todo = files.filter(f => remote.get(f) !== statSync(path.join(dir, f)).size);
+const local = (f: string) => existsSync(path.join(dir, f));
+const missing = files.filter(f => !local(f) && !remote.has(f));
+if (missing.length > 0) {
+  console.error(`${missing.length} page(s) listed but neither in ${dir} nor in ${BUCKET}, e.g. ${missing.slice(0, 3).join(', ')}`);
+  console.error('re-run scripts/verify_book_pages.py with this directory');
+  process.exit(1);
+}
+
+const todo = files.filter(f => local(f) && remote.get(f) !== statSync(path.join(dir, f)).size);
 console.log(`${files.length} pages, ${files.length - todo.length} already current in ${BUCKET}/${PREFIX}, ${todo.length} to upload`);
 
 let bytes = 0;

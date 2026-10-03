@@ -14,6 +14,7 @@ import {
 import { DEMO_CONTINUE } from './continueTeaching.ts';
 import { stripScopePhrases, topicFromQuery } from './ai/artifactTopic.ts';
 import { artifactFromAsk } from './ai/askVocabulary.ts';
+import { isStandaloneTurn } from './ai/intentRouter.ts';
 import {
   getBookForLesson,
   getLessonById,
@@ -351,6 +352,9 @@ export function mergeScopeReply(pending: string | null, reply: string): string {
   const r = reply.trim();
   if (!pending?.trim() || !r) return r;
   if (topicSwitchTarget(r) !== null) return r;
+  // A question, an explain ask, a refinement or small talk is a turn of its
+  // own — see `isStandaloneTurn` for the quiz that was built from «اشرح لي».
+  if (isStandaloneTurn(r)) return r;
   const replySubject = extractQuerySubjectId(r);
   const pendingSubject = extractQuerySubjectId(pending);
   if (replySubject && pendingSubject && replySubject !== pendingSubject) return r;

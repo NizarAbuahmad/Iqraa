@@ -7,8 +7,25 @@
  */
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, evaluations, feedback, refreshTokens, savedMaterials, users } from "@workspace/db";
-import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import {
+  aiGenerations,
+  classGroups,
+  db,
+  evaluations,
+  feedback,
+  manualMetrics,
+  parentContacts,
+  refreshTokens,
+  savedMaterials,
+  siteSignups,
+  students,
+  users,
+} from "@workspace/db";
+import { and, asc, desc, eq, gte, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { getBudgetStatus, getUserBudgetLimitUsd } from "../lib/aiBudget.js";
+import { currentPeriodStart } from "../lib/aiUsageLog.js";
+import { RATE_LIMITS } from "../lib/rateLimit.js";
+import { parseMetricInput, parseSiteSignup, siteKeyMatches, toCsv } from "../lib/adminMetrics.js";
 import {
   authMiddleware,
   requireRole,
@@ -61,12 +78,127 @@ router.get("/admin/usage-summary", authMiddleware, requireRole(...ADMIN_ROLES), 
         .where(and(isNotNull(users.passwordHash), isNull(users.googleId))),
     ]);
 
+    const since30 = sql`now() - interval '30 days'`;
+    const periodStart = currentPeriodStart();
+    const [
+      usersByRole,
+      signupsByDay,
+      [authSplit],
+      [active],
+      aiByKind,
+      topSpenders,
+      [classCounts],
+      parentLettersByChannel,
+      [emailCounts],
+    ] = await Promise.all([
+      db
+        .select({
+          role: users.role,
+          count: sql<number>`count(*)::int`,
+          suspended: sql<number>`count(${users.suspendedAt})::int`,
+        })
+        .from(users)
+        .groupBy(users.role),
+      db
+        .select({
+          day: sql<string>`to_char(${users.createdAt} at time zone 'UTC', 'YYYY-MM-DD')`,
+          role: users.role,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(users)
+        .where(gte(users.createdAt, since30))
+        .groupBy(sql`1`, users.role)
+        .orderBy(sql`1`),
+      db
+        .select({
+          google: sql<number>`count(${users.googleId})::int`,
+          password: sql<number>`count(*) filter (where ${users.googleId} is null)::int`,
+        })
+        .from(users),
+      // "Active" = generated something with AI or saved a material. Logging in
+      // alone doesn't count — the question is whether the tool is being used.
+      db.execute<{ d7: number; d30: number }>(sql`
+        select
+          count(distinct user_id) filter (where created_at >= now() - interval '7 days')::int as d7,
+          count(distinct user_id)::int as d30
+        from (
+          select user_id, created_at from ai_generations
+            where created_at >= now() - interval '30 days' and user_id is not null
+          union all
+          select user_id, created_at from saved_materials
+            where created_at >= now() - interval '30 days'
+        ) a`).then((r) => r.rows),
+      db
+        .select({
+          kind: aiGenerations.kind,
+          count: sql<number>`count(*)::int`,
+          hits: sql<number>`count(*) filter (where ${aiGenerations.cacheStatus} = 'hit')::int`,
+          costUsd: sql<number>`coalesce(sum(${aiGenerations.costUsd}), 0)::float`,
+          p50Ms: sql<number | null>`percentile_cont(0.5) within group (order by ${aiGenerations.durationMs})::int`,
+          p95Ms: sql<number | null>`percentile_cont(0.95) within group (order by ${aiGenerations.durationMs})::int`,
+        })
+        .from(aiGenerations)
+        .where(gte(aiGenerations.createdAt, periodStart))
+        .groupBy(aiGenerations.kind)
+        .orderBy(desc(sql`4`)),
+      db
+        .select({
+          userId: aiGenerations.userId,
+          email: users.email,
+          role: users.role,
+          costUsd: sql<number>`sum(${aiGenerations.costUsd})::float`,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(aiGenerations)
+        .innerJoin(users, eq(users.id, aiGenerations.userId))
+        .where(gte(aiGenerations.createdAt, periodStart))
+        .groupBy(aiGenerations.userId, users.email, users.role)
+        .orderBy(desc(sql`4`))
+        .limit(10),
+      db
+        .execute<{ classes: number; students: number; students30d: number }>(sql`
+          select
+            (select count(*)::int from ${classGroups}) as classes,
+            (select count(*)::int from ${students}) as students,
+            (select count(*)::int from ${students} where ${students.createdAt} >= now() - interval '30 days') as "students30d"`)
+        .then((r) => r.rows),
+      db
+        .select({
+          channel: parentContacts.channel,
+          total: sql<number>`count(*)::int`,
+          last30d: sql<number>`count(*) filter (where ${parentContacts.createdAt} >= now() - interval '30 days')::int`,
+        })
+        .from(parentContacts)
+        .groupBy(parentContacts.channel),
+      db
+        .select({
+          waitlist: sql<number>`count(*) filter (where ${siteSignups.kind} = 'waitlist')::int`,
+          contact: sql<number>`count(*) filter (where ${siteSignups.kind} = 'contact')::int`,
+        })
+        .from(siteSignups),
+    ]);
+
     res.json({
       totalUsers,
       totalEvaluations,
       usersWithoutRecovery,
       materialsByType: Object.fromEntries(materialsByType.map((r) => [r.type, r.count])),
       feedbackByRating: Object.fromEntries(feedbackByRating.map((r) => [r.rating, r.count])),
+      usersByRole,
+      suspendedCount: usersByRole.reduce((n, r) => n + r.suspended, 0),
+      signupsByDay,
+      authSplit,
+      activeUsers7d: active?.d7 ?? 0,
+      activeUsers30d: active?.d30 ?? 0,
+      ai: { budget: getBudgetStatus(), byKind: aiByKind, topSpenders },
+      classes: classCounts,
+      parentLetters: parentLettersByChannel,
+      siteSignups: emailCounts,
+      limits: {
+        userBudgetUsd: getUserBudgetLimitUsd("teacher"),
+        studentBudgetUsd: getUserBudgetLimitUsd("student"),
+        rateLimits: [...RATE_LIMITS].map(([name, l]) => ({ name, ...l })).sort((a, b) => a.name.localeCompare(b.name)),
+      },
     });
   } catch (err) {
     logger.error({ err }, "admin usage summary failed");
@@ -165,5 +297,190 @@ router.post(
     }
   },
 );
+
+const PAGE = 30;
+const offsetOf = (v: unknown) => {
+  const n = Math.floor(Number(v));
+  // `?offset=1e400` is Infinity, which `|| 0` lets through to Postgres.
+  return Number.isFinite(n) && n > 0 ? n : 0;
+};
+
+/**
+ * GET /admin/users?q=&status=all|suspended&offset=
+ * Newest first, with this month's AI spend so a heavy user stands out.
+ */
+router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (req, res) => {
+  try {
+    const q = typeof req.query["q"] === "string" ? req.query["q"].trim().slice(0, 100) : "";
+    const like = `%${q.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+    const where = and(
+      q ? or(ilike(users.email, like), ilike(users.firstName, like), ilike(users.lastName, like)) : undefined,
+      req.query["status"] === "suspended" ? isNotNull(users.suspendedAt) : undefined,
+    );
+    const spend = sql<number>`coalesce((
+      select sum(${aiGenerations.costUsd}) from ${aiGenerations}
+      where ${aiGenerations.userId} = ${users.id} and ${aiGenerations.createdAt} >= ${currentPeriodStart()}
+    ), 0)::float`;
+    const [items, [{ total }]] = await Promise.all([
+      db
+        .select({
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email,
+          role: users.role,
+          google: sql<boolean>`${users.googleId} is not null`,
+          createdAt: users.createdAt,
+          lastLogin: users.lastLogin,
+          suspendedAt: users.suspendedAt,
+          suspendedReason: users.suspendedReason,
+          monthSpendUsd: spend,
+        })
+        .from(users)
+        .where(where)
+        .orderBy(desc(users.createdAt))
+        .limit(PAGE)
+        .offset(offsetOf(req.query["offset"])),
+      db.select({ total: sql<number>`count(*)::int` }).from(users).where(where),
+    ]);
+    res.json({ items, total });
+  } catch (err) {
+    logger.error({ err }, "admin users list failed");
+    res.status(500).json({ error: "Failed to list users" });
+  }
+});
+
+/**
+ * POST /admin/users/:id/suspend { reason }
+ *
+ * Blocking from the users list, rather than only from a chat report. The
+ * suspension itself is the existing one (auth middleware 403s every route but
+ * /auth/me and account deletion); unblocking is the existing
+ * POST /moderation/users/:id/unsuspend. Never onto an admin, for the same
+ * reason moderation refuses it: an admin could lock every other admin out.
+ */
+router.post(
+  "/admin/users/:id/suspend",
+  authMiddleware,
+  requireRole(...ADMIN_ROLES),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const targetId = req.params["id"] as string;
+      if (!UUID.test(targetId)) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      const [target] = await db.select({ role: users.role }).from(users).where(eq(users.id, targetId)).limit(1);
+      if (!target) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      if (ADMIN_ROLES.includes(target.role)) {
+        res.status(403).json({ error: "An administrator cannot be suspended" });
+        return;
+      }
+      const reason = typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 500) : "";
+      await db.update(users).set({ suspendedAt: new Date(), suspendedReason: reason }).where(eq(users.id, targetId));
+      // ponytail: the log line is the audit trail, as for set-password above.
+      logger.info({ actorId: req.user!.id, targetId }, "admin suspended user");
+      res.json({ ok: true });
+    } catch (err) {
+      logger.error({ err }, "admin suspend failed");
+      res.status(500).json({ error: "Failed to suspend user" });
+    }
+  },
+);
+
+/** GET /admin/metrics — every hand-entered growth number, oldest first per key. */
+router.get("/admin/metrics", authMiddleware, requireRole(...ADMIN_ROLES), async (_req, res) => {
+  try {
+    const rows = await db
+      .select({ key: manualMetrics.key, value: manualMetrics.value, date: manualMetrics.recordedOn })
+      .from(manualMetrics)
+      .orderBy(asc(manualMetrics.key), asc(manualMetrics.recordedOn));
+    res.json({ items: rows });
+  } catch (err) {
+    logger.error({ err }, "admin metrics read failed");
+    res.status(500).json({ error: "Failed to read metrics" });
+  }
+});
+
+/** POST /admin/metrics { key, value, date? } — one number per key per day; re-entering a day replaces it. */
+router.post("/admin/metrics", authMiddleware, requireRole(...ADMIN_ROLES), async (req: AuthenticatedRequest, res) => {
+  const parsed = parseMetricInput(req.body);
+  if ("error" in parsed) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+  try {
+    await db
+      .insert(manualMetrics)
+      .values({ ...parsed, recordedBy: req.user!.id })
+      .onConflictDoUpdate({
+        target: [manualMetrics.key, manualMetrics.recordedOn],
+        set: { value: parsed.value, recordedBy: req.user!.id },
+      });
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "admin metric write failed");
+    res.status(500).json({ error: "Failed to save metric" });
+  }
+});
+
+/** GET /admin/signups?kind=waitlist|contact&offset= — or &format=csv for all of them. */
+router.get("/admin/signups", authMiddleware, requireRole(...ADMIN_ROLES), async (req, res) => {
+  try {
+    const kind = req.query["kind"];
+    const where = kind === "waitlist" || kind === "contact" ? eq(siteSignups.kind, kind) : undefined;
+    const base = db.select().from(siteSignups).where(where).orderBy(desc(siteSignups.createdAt));
+    if (req.query["format"] === "csv") {
+      const rows = await base;
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="iqraa-signups.csv"`);
+      // BOM so Excel reads the Arabic as UTF-8.
+      res.send("﻿" + toCsv(
+        ["date", "kind", "email", "name", "message", "context"],
+        rows.map((r) => [r.createdAt, r.kind, r.email, r.name, r.message, r.context]),
+      ));
+      return;
+    }
+    const [items, [{ total }]] = await Promise.all([
+      base.limit(PAGE).offset(offsetOf(req.query["offset"])),
+      db.select({ total: sql<number>`count(*)::int` }).from(siteSignups).where(where),
+    ]);
+    res.json({ items, total });
+  } catch (err) {
+    logger.error({ err }, "admin signups list failed");
+    res.status(500).json({ error: "Failed to list signups" });
+  }
+});
+
+/**
+ * POST /site/signups — called server-to-server by iqrra.com's Vercel functions
+ * (Site_Iqra/api/waitlist.mjs, feedback.mjs) with `x-site-key: SITE_INGEST_KEY`.
+ * Not a browser endpoint: without the key it is 404, so it doesn't exist as far
+ * as anyone probing is concerned. Resend stays the site's own path; this is a
+ * copy the dashboard can count.
+ */
+const siteSignupLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 60, name: "site-signups" });
+
+router.post("/site/signups", siteSignupLimiter, async (req, res) => {
+  if (!siteKeyMatches(process.env.SITE_INGEST_KEY, req.headers["x-site-key"])) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const parsed = parseSiteSignup(req.body);
+  if ("error" in parsed) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+  try {
+    await db.insert(siteSignups).values(parsed);
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "site signup insert failed");
+    res.status(500).json({ error: "Failed to store signup" });
+  }
+});
 
 export default router;

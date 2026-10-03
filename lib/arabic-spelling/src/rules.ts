@@ -280,6 +280,8 @@ const hathaHathihi: SpellingRule = {
     { grade: 3, correct: "ذَلِك", wrong: ["زلك", "دلك"] },
     { grade: 3, correct: "أُولَئِك", wrong: ["أولائك", "أولأئك"] },
     { grade: 3, correct: "لَكِن", wrong: ["لاكن", "لكنن"] },
+    { grade: 3, correct: "هَذَانِ", wrong: ["هاذان", "هذن"], sentenceAr: "هَذَانِ طَالِبَانِ" },
+    { grade: 3, correct: "هَكَذَا", wrong: ["هاكذا", "هكذه"] },
   ],
 };
 
@@ -347,7 +349,10 @@ const hurufTuntaqLaTuktab: SpellingRule = {
   words: [
     // "الرحمن" bare = "الرحمن" = same as correct bare; remove it, keep "الرحمان".
     // Add "الرحمون" as second distractor.
-    { grade: 4, correct: "الرَّحْمَن", wrong: ["الرحمان", "الرحمون"], sentenceAr: "بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيمِ" },
+    // The sentence must not quote «الله», a grade-5 word of this same rule:
+    // the grade filter is on the word pool, and a grade-4 dictation sentence
+    // carrying a grade-5 word served it to grade 4 anyway.
+    { grade: 4, correct: "الرَّحْمَن", wrong: ["الرحمان", "الرحمون"], sentenceAr: "الرَّحْمَنُ عَلَّمَ القُرْآنَ" },
     { grade: 4, correct: "لَكِن", wrong: ["لاكن", "لكنن"] },
     { grade: 4, correct: "ذَلِك", wrong: ["ذالك", "زلك"] },
     // "هذا" has only 1 listed wrong. Add "هده" as a second distractor.
@@ -442,6 +447,7 @@ const tanwinAlFath: SpellingRule = {
     // ء after ا: bare("سَمَاءً") = "سماء". Wrong: "سماءا" → bare = "سماءا" ≠ "سماء" ✓
     { grade: 5, correct: "سَمَاءً", wrong: ["سماءا", "سمائا"] },
     { grade: 5, correct: "مَاءً", wrong: ["ماءا", "مائا"] },
+    { grade: 5, correct: "رَجُلًا", wrong: ["رَجُلً", "رَجُلًى"], sentenceAr: "رَأَيْتُ رَجُلًا كَرِيمًا" },
   ],
 };
 
@@ -487,6 +493,8 @@ const ittisalHurufBiAl: SpellingRule = {
     { grade: 5, correct: "فَالعِلْم", wrong: ["ف العلم", "فألعلم"] },
     { grade: 5, correct: "كَالبَدْر", wrong: ["ك البدر", "كألبدر"] },
     { grade: 5, correct: "لِلطَّالِب", wrong: ["ل الطالب", "لألطالب"] },
+    { grade: 5, correct: "وَالقَمَر", wrong: ["و القمر", "وألقمر"], sentenceAr: "طَلَعَتِ الشَّمْسُ وَالقَمَرُ" },
+    { grade: 5, correct: "بِالقَلَم", wrong: ["ب القلم", "بألقلم"] },
   ],
 };
 
@@ -536,6 +544,8 @@ const hamzaMutarrrafaTanwinFath: SpellingRule = {
     { grade: 6, correct: "جُزْءًا", wrong: ["جزء", "جزئا"] },
     { grade: 6, correct: "دُفْئًا", wrong: ["دفء", "دفأ"] },
     { grade: 6, correct: "ضَوْءًا", wrong: ["ضوء", "ضوئا"] },
+    { grade: 6, correct: "عِبْئًا", wrong: ["عبء", "عبئ"] },
+    { grade: 6, correct: "بَدْءًا", wrong: ["بدء", "بدئا"] },
   ],
 };
 
@@ -553,9 +563,14 @@ const alifTathniyaBaadHamza: SpellingRule = {
     { grade: 6, correct: "جُزْءَان", wrong: ["جزآن", "جزيان"] },
     { grade: 6, correct: "شَيْآن", wrong: ["شيئان", "شيان"] },
     { grade: 6, correct: "هَوَاآن", wrong: ["هواءان", "هواءين"] },
-    { grade: 6, correct: "ضَوْآن", wrong: ["ضوءان", "ضواءان"] },
+    // "ضواءان" was three edits away — a typo in the bank, not a slip a pupil
+    // makes; "ضوئان" (hamza on ya) is the one they actually write.
+    { grade: 6, correct: "ضَوْآن", wrong: ["ضوءان", "ضوئان"] },
     // "داءان" bare == bare(correct); replaced with "دائان" (ئ instead of ء).
     { grade: 6, correct: "دَاءَان", wrong: ["داءآن", "دائان"] },
+    { grade: 6, correct: "بَدْءَان", wrong: ["بدآن", "بديان"] },
+    { grade: 6, correct: "عِبْءَان", wrong: ["عبآن", "عبيان"] },
+    { grade: 6, correct: "كُفْءَان", wrong: ["كفآن", "كفيان"] },
   ],
 };
 
@@ -582,7 +597,9 @@ const hathfHamzatIbn: SpellingRule = {
     { grade: 7, correct: "اِبنَهُمَا", wrong: ["أبنهما", "إبنهما"] },
     // "محمد بن علي" phrase gave partial credit (2/3 words ok). Single word instead.
     // bare("إبن") = "إبن" ≠ bare("بن") = "بن" ✓; not in taken (taken has "ابن" not "إبن")
-    { grade: 6, correct: "بن", wrong: ["إبن"], sentenceAr: "مُحَمَّد بن عَلِي" },
+    { grade: 6, correct: "بْن", wrong: ["إبن"], sentenceAr: "مُحَمَّد بْن عَلِي" },
+    { grade: 6, correct: "اِبنِي", wrong: ["أبني", "إبني"], sentenceAr: "اِبْنِي يُحِبُّ القِرَاءَةَ" },
+    { grade: 6, correct: "اِبنَكَ", wrong: ["أبنك", "إبنك"] },
   ],
 };
 
@@ -607,6 +624,9 @@ const asmaMabduaBiAl: SpellingRule = {
     { grade: 7, correct: "بِالصِّدْق", wrong: ["بإلصدق", "ب الصدق"] },
     // "للنجاح" bare = same as correct bare → use "لإلنجاح" + "ل النجاح" instead.
     { grade: 7, correct: "لِلنَّجَاح", wrong: ["لإلنجاح", "ل النجاح"] },
+    { grade: 7, correct: "كَالقَمَر", wrong: ["كإلقمر", "ك القمر"] },
+    { grade: 7, correct: "لِلْمُعَلِّم", wrong: ["لإلمعلم", "ل المعلم"] },
+    { grade: 7, correct: "بِالقَلَم", wrong: ["بإلقلم", "ب القلم"] },
   ],
 };
 
@@ -627,6 +647,9 @@ const hamzatIstifhamAlaWasl: SpellingRule = {
     { grade: 7, correct: "آنْقَطَعَ", wrong: ["أأنقطع", "اأنقطع"] },
     { grade: 7, correct: "آتَّفَقَ", wrong: ["أأتفق", "اأتفق"] },
     { grade: 7, correct: "آصْطَفَّ", wrong: ["أأصطف", "اأصطف"] },
+    { grade: 7, correct: "آنْتَصَرَ", wrong: ["أأنتصر", "اأنتصر"] },
+    { grade: 7, correct: "آجْتَمَعَ", wrong: ["أأجتمع", "اأجتمع"] },
+    { grade: 7, correct: "آسْتَمَعَ", wrong: ["أأستمع", "اأستمع"], sentenceAr: "آسْتَمَعَ الطَّالِبُ إِلَى المُعَلِّمِ؟" },
   ],
 };
 

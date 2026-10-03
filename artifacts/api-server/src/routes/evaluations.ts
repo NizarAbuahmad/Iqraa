@@ -17,7 +17,6 @@ import {
   evaluationQuestions,
   levelBands,
   levelScales,
-  classGroups,
   students,
 } from "@workspace/db";
 import type { Difficulty, QuestionType } from "@workspace/db";
@@ -36,6 +35,7 @@ import {
   type AuthenticatedRequest,
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
+import { findLiveClass } from "../lib/classOwnership.js";
 import {
   bankContextFor,
   generateMockEvaluation,
@@ -375,16 +375,11 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
       return;
     }
     const classGroupId = raw === null ? null : trimmed(raw);
-    if (classGroupId) {
-      const [group] = await db
-        .select({ id: classGroups.id })
-        .from(classGroups)
-        .where(and(eq(classGroups.id, classGroupId), eq(classGroups.teacherId, req.user!.id)))
-        .limit(1);
-      if (!group) {
-        res.status(404).json({ error: "Class not found" });
-        return;
-      }
+    // Owned and not archived — the same lookup the roster routes use, so an
+    // exam cannot be attached to a class the teacher has already removed.
+    if (classGroupId && !(await findLiveClass(classGroupId, req.user!.id))) {
+      res.status(404).json({ error: "Class not found" });
+      return;
     }
 
     const [updated] = await db
@@ -1201,6 +1196,40 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
   }
 });
 
+/**
+ * Close an exam: the link stops admitting new sittings and new answers.
+ *
+ * `EvaluationStatus` carried `'closed'` from the start and nothing ever set
+ * it, so a published paper stayed open until its share code expired a week
+ * later. The student route treats a closed exam exactly as an unknown code
+ * (`evaluationByCode`) and refuses further answers on a sitting already under
+ * way (`writeGate`); handing in what was already written stays allowed.
+ *
+ * Re-publishing reopens it, with a fresh share-code expiry and the same code.
+ */
+router.post("/evaluations/:id/close", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    if (evaluation.status !== "published") {
+      res.status(409).json({ error: "Only a published evaluation can be closed", code: "not_published" });
+      return;
+    }
+    const [updated] = await db
+      .update(evaluations)
+      .set({ status: "closed", updatedAt: new Date() })
+      .where(eq(evaluations.id, evaluation.id))
+      .returning();
+    res.json({ evaluation: updated });
+  } catch (err) {
+    logger.error({ err }, "close failed");
+    res.status(500).json({ error: "Failed to close" });
+  }
+});
+
 // ─── Attempts (teacher answer entry) ────────────────────────────────────────
 // Creation lives here, under /evaluations, because starting an attempt needs
 // the evaluation's live questions and level scale. Everything after creation
@@ -1279,16 +1308,15 @@ router.post("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) 
       return;
     }
 
+    // Any source, not just teacher entry: the schema allows one attempt per
+    // student per evaluation, so a student who already sat via the link has
+    // the only paper there will be. Filtering on source made the insert below
+    // hit that constraint and answer 500, with no way for the teacher to open
+    // the paper from here.
     const [existing] = await db
       .select()
       .from(attempts)
-      .where(
-        and(
-          eq(attempts.evaluationId, evaluation.id),
-          eq(attempts.studentId, studentId),
-          eq(attempts.source, "teacher_entry"),
-        ),
-      )
+      .where(and(eq(attempts.evaluationId, evaluation.id), eq(attempts.studentId, studentId)))
       .limit(1);
     if (existing) {
       res.json({ attempt: existing, created: false });

@@ -67,3 +67,15 @@ export async function pickLessonFiles(): Promise<string[]> {
   }
   return out;
 }
+
+/** A single PDF, for a letter attachment. Null on cancel. */
+export async function pickOnePdf(): Promise<string | null> {
+  const result = await DocumentPicker.getDocumentAsync({
+    multiple: false,
+    copyToCacheDirectory: true,
+    type: 'application/pdf',
+  });
+  const asset = result.canceled ? null : result.assets?.[0];
+  if (!asset) return null;
+  return uriToDataUrl(asset.uri, asset.mimeType || 'application/pdf');
+}

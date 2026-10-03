@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,7 +21,9 @@ import { regenerationFields } from '@/services/ai/regeneration';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId } from '@/services/kbContext';
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
-import { aiErrorMessageKey } from '@/services/ai/aiProvenance';
+import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { GenerationStatus } from '@/components/ui/GenerationStatus';
+import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ACTIVITY_CARDS, cardMetaLabel, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
 import { ToolHeader } from '@/components/ui/ToolHeader';
@@ -70,6 +72,16 @@ export default function ClassroomBuilderScreen() {
   // a board-only room is the choice that changes what gets printed.
   const [classroomSetup, setClassroomSetup] = useState<ClassroomSetup>('screen');
   const [loading, setLoading] = useState(false);
+  /**
+   * Held across renders so Cancel can reach the in-flight request. This
+   * screen had no Cancel and passed no signal, so a teacher who picked the
+   * wrong lesson could only wait the generation out — and leaving the screen
+   * did not stop it either, still billing against AI_BUDGET_USD for a deck
+   * nobody would open. Same pattern as quiz.tsx and slides.tsx.
+   */
+  const abortRef = useRef<AbortController | null>(null);
+  useAbortOnUnmount(abortRef);
+  const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<ClassroomActivity | null>(null);
   const [error, setError] = useState('');
 
@@ -97,7 +109,10 @@ export default function ClassroomBuilderScreen() {
     if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
     const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
-    setError(''); setLoading(true); setResult(null);
+    setError(''); setCancelled(false);
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLoading(true); setResult(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en');
@@ -118,15 +133,24 @@ export default function ClassroomBuilderScreen() {
         bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
         contextSource: 'curriculum',
         ...regenerationFields(opts?.regenerate === true, previous),
-      });
+      }, { signal: controller.signal });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (e) {
-      setError(t(aiErrorMessageKey(e)));
+      // A cancel is the teacher's own doing, so it is reported as a stop, not
+      // as a failure to diagnose or retry out of.
+      if (isAbortError(e)) setCancelled(true);
+      else setError(t(aiErrorMessageKey(e)));
     } finally {
+      abortRef.current = null;
       setLoading(false);
     }
+  };
+
+  /** Stop the in-flight request and hand the teacher their form back. */
+  const cancelGenerate = () => {
+    abortRef.current?.abort();
   };
 
   const handleStartPresentation = () => {
@@ -247,21 +271,26 @@ export default function ClassroomBuilderScreen() {
 
         <Button
           label={loading ? t('generatingClassroom') : t('generateClassroomBtn')}
-          onPress={generate}
+          onPress={() => generate()}
           loading={loading}
           fullWidth
         />
       </View>
 
-      {/* Loading */}
-      {loading && (
-        <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <ActivityIndicator color={ACCENT} />
-          <Text style={[styles.loadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-            {t('generatingClassroom')}
-          </Text>
-        </View>
-      )}
+      {/* Running / stopped. Failures keep rendering beside the form's button,
+          as they did before Cancel existed, so `error` is not passed here and
+          no state shows the same message twice. */}
+      <GenerationStatus
+        phase={loading ? 'loading' : cancelled ? 'cancelled' : 'idle'}
+        loadingLabel={t('generatingClassroom')}
+        onCancel={cancelGenerate}
+        onRetry={() => generate()}
+        colors={colors}
+        isRTL={isRTL}
+        lang={lang as 'ar' | 'en'}
+        accent={ACCENT}
+        t={t}
+      />
 
       {/* Preview */}
       {result && !loading && (
@@ -371,8 +400,6 @@ function StatItem({ icon, label, accent }: { icon: keyof typeof Ionicons.glyphMa
 
 const styles = StyleSheet.create({
   form: { padding: 20 },
-  loadingBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginBottom: 16 },
-  loadingText: { fontSize: 14, lineHeight: 22 },
   readyBanner: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1, marginBottom: 14 },
   readyText: { fontSize: 14 },
   previewCard: { borderWidth: 1, padding: 16, marginBottom: 12 },

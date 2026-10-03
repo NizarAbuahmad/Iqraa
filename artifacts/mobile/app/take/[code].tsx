@@ -52,12 +52,17 @@ import {
   openExam,
   saveStudentAnswer,
   submitStudentExam,
+  type ClaimedAttempt,
   type ExamSummary,
   type RosterName,
   type StudentQuestion,
   type StudentResponse,
   type StudentResult,
 } from '@/services/studentExam';
+import { createSaveQueue, type SaveQueue, type SaveQueueState } from '@/services/answerSaveQueue';
+import { takeErrorKey } from '@/services/takeErrorKey';
+import { clearExamSession, loadExamSession, saveExamSession } from '@/services/examSession';
+import { formatMarks } from '@/services/studentAnswers';
 import { DictationInput, FillBlankInput, MatchingInput, ReadAloudInput } from '@/components/QuestionInputs';
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { TranslationKey } from '@/services/i18n';
@@ -76,6 +81,25 @@ const LEVEL_LABEL_KEY: Record<string, TranslationKey> = {
   advanced: 'levelAdvanced',
 };
 const COMPETENCY_ORDER = ['knowledge', 'understanding', 'application', 'critical_thinking'] as const;
+
+/**
+ * How long a keystroke waits before it is saved. A tap (an option, a
+ * true/false, a matching pair) goes at once; typing is coalesced so a class
+ * writing short answers is not a class hammering the `/take` limiter.
+ */
+const TYPING_SAVE_DELAY_MS = 600;
+
+/** A typed answer: debounce. Everything else is a tap: save now. */
+function isTypedResponse(response: StudentResponse): boolean {
+  return typeof response['text'] === 'string' || Array.isArray(response['blanks']);
+}
+
+function formatCountdown(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(total / 60);
+  const sec = total % 60;
+  return `${m}:${sec < 10 ? '0' : ''}${sec}`;
+}
 const COMPETENCY_LABEL_KEY: Record<(typeof COMPETENCY_ORDER)[number], TranslationKey> = {
   knowledge: 'competencyKnowledge',
   understanding: 'competencyUnderstanding',
@@ -104,25 +128,75 @@ export default function TakeExamScreen() {
   const [answers, setAnswers] = useState<Record<string, StudentResponse>>({});
   const [index, setIndex] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [deadlineAt, setDeadlineAt] = useState<string | null>(null);
+  // Server time minus device time, measured when the paper is entered. The
+  // countdown used to run on the device clock alone: a phone a few minutes
+  // fast hit zero early and force-handed the paper in while the server's
+  // deadline still stood. A slow clock was always harmless (the server
+  // refuses late writes and that refusal hands in).
+  const clockOffsetMs = useRef(0);
+  const [notice, setNotice] = useState('');
 
-  const openLink = useCallback(() => {
-    if (!code) return;
-    setPhase('loading');
-    setError('');
-    openExam(code)
-      .then(data => {
-        setExam(data.evaluation);
-        setRoster(data.students);
-        setPhase('pick');
-      })
-      .catch(err => {
-        setError(err instanceof StudentExamError ? err.message : t('takeLinkFailed'));
-        setPhase('error');
-      });
+  /**
+   * Enter the paper with a sitting the server just handed over — a fresh
+   * claim, a signed-in resume, or a stored token after a reload. One path,
+   * so the three cannot drift on what gets restored.
+   */
+  const enterWith = useCallback(async (claimed: ClaimedAttempt, resumed: boolean) => {
+    const state = await getExamState(claimed.token);
+    setToken(claimed.token);
+    setQuestions(state.questions.length ? state.questions : claimed.questions);
+    setAnswers(Object.fromEntries(state.answers.map(a => [a.questionId, a.response])));
+    // Resume wins over claim: an older API answers neither and the panel
+    // simply stays empty, which is what this screen did before figures.
+    setLessonIds(state.lessonIds ?? claimed.lessonIds ?? []);
+    setDeadlineAt(state.deadlineAt ?? claimed.deadlineAt ?? null);
+    if (state.serverNow) {
+      const serverMs = new Date(state.serverNow).getTime();
+      if (Number.isFinite(serverMs)) clockOffsetMs.current = serverMs - Date.now();
+    }
+    setChosen({ id: claimed.student.id, displayName: claimed.student.displayName, taken: true });
+    if (code) await saveExamSession(code, { token: claimed.token, studentName: claimed.student.displayName });
+    setNotice(resumed ? t('takeResumed') : '');
+    setPhase(state.submittedAt ? 'done' : 'answering');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
-  useEffect(() => { openLink(); }, [openLink]);
+  const openLink = useCallback(async () => {
+    if (!code) return;
+    setPhase('loading');
+    setError('');
+    try {
+      const data = await openExam(code);
+      setExam(data.evaluation);
+      setRoster(data.students);
+
+      // A reload is a cold boot on web. A token stored by an earlier sitting
+      // of this very code resumes it; without this the student came back to
+      // the picker with their own name greyed out as taken.
+      const stored = await loadExamSession(code);
+      if (stored) {
+        try {
+          await enterWith(
+            { token: stored.token, student: { id: '', displayName: stored.studentName }, questions: [] },
+            true,
+          );
+          return;
+        } catch (err) {
+          // An expired or revoked token is the one case the store is wrong
+          // about; anything else (a dropped connection) keeps it for next time.
+          if (err instanceof StudentExamError && err.status === 401) await clearExamSession(code);
+        }
+      }
+      setPhase('pick');
+    } catch (err) {
+      setError(t(takeErrorKey(err, 'takeLinkFailed')));
+      setPhase('error');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, enterWith]);
+
+  useEffect(() => { void openLink(); }, [openLink]);
 
   // A signed-in student gets one silent shot at skipping the picker. Gated on
   // `phase === 'pick'` (never 'confirm' or later) and a ref so it fires at
@@ -136,13 +210,11 @@ export default function TakeExamScreen() {
     autoClaimTried.current = true;
     claimEvaluationAsSelf(code).then(claimed => {
       if (!claimed) return;
-      setToken(claimed.token);
-      setQuestions(claimed.questions);
-      setLessonIds(claimed.lessonIds ?? []);
-      setChosen({ id: claimed.student.id, displayName: claimed.student.displayName, taken: true });
-      setPhase('answering');
+      return enterWith(claimed, claimed.resumed === true);
+    }).catch(() => {
+      /* the picker is already showing; the shortcut simply did not apply */
     });
-  }, [phase, authLoading, user?.role, code]);
+  }, [phase, authLoading, user?.role, code, enterWith]);
 
   const title = (lang === 'ar' ? exam?.titleAr : exam?.title) || exam?.titleAr || '';
 
@@ -152,20 +224,12 @@ export default function TakeExamScreen() {
     setError('');
     try {
       const claimed = await claimName(code, chosen.id);
-      setToken(claimed.token);
-      setQuestions(claimed.questions);
-      setLessonIds(claimed.lessonIds ?? []);
-      // A claim can only happen once, so there is nothing saved yet — but read
-      // the state back anyway rather than assuming, so resume and first-start
-      // share one code path.
-      const state = await getExamState(claimed.token);
-      setAnswers(Object.fromEntries(state.answers.map(a => [a.questionId, a.response])));
-      // Resume wins over claim: an older API answers neither and the panel
-      // simply stays empty, which is what this screen did before figures.
-      if (state.lessonIds) setLessonIds(state.lessonIds);
-      setPhase('answering');
+      // A claim can only happen once, so there is nothing saved yet — but
+      // `enterWith` reads the state back anyway rather than assuming, so
+      // resume and first-start share one code path.
+      await enterWith(claimed, false);
     } catch (err) {
-      setError(err instanceof StudentExamError ? err.message : t('takeStartFailed'));
+      setError(t(takeErrorKey(err, 'takeStartFailed')));
       // A taken name sends them back to the list rather than stranding them:
       // the usual cause is tapping the wrong name, and the fix is to pick again.
       setPhase(err instanceof StudentExamError && err.code === 'name_taken' ? 'pick' : 'error');
@@ -175,51 +239,72 @@ export default function TakeExamScreen() {
     } finally {
       setBusy(false);
     }
-  }, [chosen, code, busy, t]);
+  }, [chosen, code, busy, t, enterWith]);
 
   /*
     Answers the server has not confirmed. A failed save used to set a flag and
     nothing else: the answer sat only in this screen's memory unless the student
     happened to touch that question again, and hand-in went ahead without it.
     Now each one is remembered, re-sent on «أعد المحاولة», and re-sent before
-    hand-in — which refuses while any is still unsaved.
+    hand-in — which refuses while any is still unsaved. The queue also
+    coalesces typing and keeps one request per question in flight; see
+    `answerSaveQueue.ts` for the two failures that made it necessary.
   */
-  const answersRef = useRef(answers);
-  answersRef.current = answers;
-  const unsavedRef = useRef(new Set<string>());
-  const [unsavedCount, setUnsavedCount] = useState(0);
-
-  const save = useCallback(
-    async (questionId: string, response: StudentResponse) => {
-      try {
-        await saveStudentAnswer(token, questionId, response);
-        unsavedRef.current.delete(questionId);
-        return true;
-      } catch {
-        unsavedRef.current.add(questionId);
-        return false;
-      } finally {
-        setUnsavedCount(unsavedRef.current.size);
-      }
-    },
-    [token],
-  );
+  const queueRef = useRef<SaveQueue | null>(null);
+  const [saveState, setSaveState] = useState<SaveQueueState>({ pending: [], failed: [] });
+  // The one refusal that ends the sitting from the server's side: time up, or
+  // the teacher closed the exam. Shown once, and hand-in follows.
+  const [writeRefusal, setWriteRefusal] = useState<string | null>(null);
+  useEffect(() => {
+    if (!token) return;
+    const queue = createSaveQueue({
+      delayMs: TYPING_SAVE_DELAY_MS,
+      onChange: setSaveState,
+      save: async (questionId, response) => {
+        try {
+          await saveStudentAnswer(token, questionId, response);
+        } catch (err) {
+          if (err instanceof StudentExamError && (err.code === 'time_up' || err.code === 'exam_closed')) {
+            setWriteRefusal(err.code);
+          }
+          throw err;
+        }
+      },
+    });
+    queueRef.current = queue;
+    return () => {
+      queue.dispose();
+      queueRef.current = null;
+    };
+  }, [token]);
+  const unsavedCount = saveState.failed.length;
 
   const retryUnsaved = useCallback(async () => {
-    const ids = [...unsavedRef.current];
-    const results = await Promise.all(ids.map(id => save(id, answersRef.current[id] ?? {})));
-    return results.every(Boolean);
-  }, [save]);
+    return queueRef.current ? queueRef.current.flush() : true;
+  }, []);
 
   const answer = useCallback(
-    (questionId: string, response: StudentResponse) => {
+    (questionId: string, response: StudentResponse, opts?: { immediate?: boolean }) => {
       setAnswers(prev => ({ ...prev, [questionId]: response }));
       // Say it out loud. A student cannot tell a slow network from a lost
       // answer, and finding out at the end is finding out too late.
-      void save(questionId, response);
+      queueRef.current?.set(questionId, response, {
+        immediate: opts?.immediate ?? !isTypedResponse(response),
+      });
     },
-    [save],
+    [],
   );
+
+  /**
+   * Update what the screen shows without saving. For the read-aloud answer,
+   * which the server composes on upload: echoing it back through the save
+   * path used to overwrite the stored recording key with the placeholder
+   * this screen holds, and would let the client write a transcript at all —
+   * which the server now refuses.
+   */
+  const answerLocal = useCallback((questionId: string, response: StudentResponse) => {
+    setAnswers(prev => ({ ...prev, [questionId]: response }));
+  }, []);
 
   const unanswered = useMemo(
     () => questions.filter(q => !isAnswered(answers[q.id])).length,
@@ -246,23 +331,50 @@ export default function TakeExamScreen() {
     }
   }, [token, checkingResult]);
 
-  const hand = useCallback(async () => {
+  const hand = useCallback(async (opts?: { force?: boolean }) => {
     if (busy) return;
     setBusy(true);
     setError('');
     try {
-      if (unsavedRef.current.size > 0 && !(await retryUnsaved())) {
+      // Flush first: a keystroke still debouncing is an answer the student
+      // gave. When the clock ran out a save may now be refused; what reached
+      // the server in time is what gets handed in.
+      const saved = await retryUnsaved();
+      if (!saved && !opts?.force) {
         setError(t('takeUnsavedBeforeHandIn'));
         return;
       }
       await submitStudentExam(token);
       setPhase('done');
     } catch (err) {
-      setError(err instanceof StudentExamError ? err.message : t('takeSubmitFailed'));
+      if (err instanceof StudentExamError && err.code === 'already_submitted') {
+        setPhase('done');
+        return;
+      }
+      setError(t(takeErrorKey(err, 'takeSubmitFailed')));
     } finally {
       setBusy(false);
     }
   }, [token, busy, t, retryUnsaved]);
+
+  // The clock. `timeLimitMin` used to be shown to the teacher and enforced
+  // nowhere; now the server refuses late answers and this hands in at zero.
+  const [now, setNow] = useState(() => Date.now());
+  const inPaper = phase === 'answering' || phase === 'review';
+  useEffect(() => {
+    if (!deadlineAt || !inPaper) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [deadlineAt, inPaper]);
+  const remainingMs = deadlineAt ? new Date(deadlineAt).getTime() - (now + clockOffsetMs.current) : null;
+  const autoHanded = useRef(false);
+  useEffect(() => {
+    const timeUp = (remainingMs !== null && remainingMs <= 0) || writeRefusal !== null;
+    if (!timeUp || !inPaper || autoHanded.current) return;
+    autoHanded.current = true;
+    setNotice(t(writeRefusal === 'exam_closed' ? 'takeExamClosed' : 'takeTimeUp'));
+    void hand({ force: true });
+  }, [remainingMs, writeRefusal, inPaper, hand, t]);
 
   if (phase === 'loading') {
     return (
@@ -302,6 +414,11 @@ export default function TakeExamScreen() {
         <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 20 }}>
           {t('takeHandedIn')}
         </Text>
+        {notice ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
+            {notice}
+          </Text>
+        ) : null}
         {/* Never a score by default. Releasing one is the teacher's decision
             (`releaseResultsToStudent`) and requires the paper to be fully
             marked — this only ever checks, on request, whether both are true
@@ -377,6 +494,17 @@ export default function TakeExamScreen() {
           {chosen.displayName}
         </Text>
       )}
+      {remainingMs !== null && inPaper && (
+        <Text
+          accessibilityLiveRegion="polite"
+          style={[
+            styles.headerSub,
+            { fontFamily: 'Cairo_600SemiBold', textAlign: align, color: remainingMs < 60_000 ? '#FDE68A' : 'rgba(255,255,255,0.95)' },
+          ]}
+        >
+          {t('takeTimeLeft', formatCountdown(remainingMs))}
+        </Text>
+      )}
     </View>
   );
 
@@ -386,7 +514,7 @@ export default function TakeExamScreen() {
         {header}
         <ScrollView contentContainerStyle={{ padding: 20, gap: 10, paddingBottom: 40 }}>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
-            {t('takeQuestionsAndMarks', String(exam?.questionCount ?? 0), String(exam?.totalMarks ?? ''))}
+            {t('takeQuestionsAndMarks', String(exam?.questionCount ?? 0), formatMarks(exam?.totalMarks))}
           </Text>
 
           {phase === 'confirm' && chosen ? (
@@ -495,7 +623,7 @@ export default function TakeExamScreen() {
             <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>{error}</Text>
           ) : null}
 
-          <Pressable onPress={hand} disabled={busy} style={[styles.primaryBtn, { backgroundColor: ACCENT_FILL, opacity: busy ? 0.7 : 1 }]}>
+          <Pressable onPress={() => void hand()} disabled={busy} style={[styles.primaryBtn, { backgroundColor: ACCENT_FILL, opacity: busy ? 0.7 : 1 }]}>
             {busy ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
@@ -537,11 +665,18 @@ export default function TakeExamScreen() {
           )}
         </View>
 
+        {notice ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+            {notice}
+          </Text>
+        ) : null}
+
         {question ? (
           <QuestionCard
             question={question}
             response={answers[question.id] ?? {}}
-            onAnswer={r => answer(question.id, r)}
+            onAnswer={(r, o) => answer(question.id, r, o)}
+            onLocal={r => answerLocal(question.id, r)}
             colors={colors}
             isRTL={isRTL}
             align={align}
@@ -600,11 +735,14 @@ export default function TakeExamScreen() {
  * press one will not.
  */
 function QuestionCard({
-  question, response, onAnswer, colors, isRTL, align, t, token,
+  question, response, onAnswer, onLocal, colors, isRTL, align, t, token,
 }: {
   question: StudentQuestion;
   response: StudentResponse;
-  onAnswer: (r: StudentResponse) => void;
+  /** Save this answer; `immediate` forces a tap-style save for a typed shape. */
+  onAnswer: (r: StudentResponse, opts?: { immediate?: boolean }) => void;
+  /** Show this answer without saving — the server already holds it. */
+  onLocal: (r: StudentResponse) => void;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   align: 'left' | 'right';
@@ -742,7 +880,7 @@ function QuestionCard({
             body={body}
             response={response}
             onChange={onAnswer}
-            onCommit={onAnswer}
+            onCommit={r => onAnswer(r, { immediate: true })}
             colors={colors}
             align={align}
             t={t}
@@ -756,7 +894,7 @@ function QuestionCard({
           response={response}
           questionId={question.id}
           token={token}
-          onSaved={onAnswer}
+          onSaved={onLocal}
           colors={colors}
           t={t}
         />
@@ -767,7 +905,7 @@ function QuestionCard({
           body={body}
           response={response}
           onChange={onAnswer}
-          onCommit={onAnswer}
+          onCommit={r => onAnswer(r, { immediate: true })}
           colors={colors}
           align={align}
           t={t}

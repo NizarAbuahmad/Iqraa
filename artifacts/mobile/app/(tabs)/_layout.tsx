@@ -280,9 +280,6 @@ function ClassicTabLayout() {
     </Tabs>
   );
 
-  // Not shown to a parent/student: they have no lesson context to switch, and
-  // the two tabs it would drive them toward (iQra, AI Tools) are hidden for
-  // them anyway.
   // The fallback-aware lesson, not the raw pick: with no pick saved yet the bar
   // said «اختر الدرس الحالي» while the chat card beside it showed the default
   // lesson it seeds — the same teacher told two different things.
@@ -295,6 +292,8 @@ function ClassicTabLayout() {
     t,
     onPress: () => router.push({ pathname: '/iqra', params: { openLessonPicker: String(Date.now()) } }),
   };
+  // Not shown to a parent/student: they have no lesson context to switch, and
+  // the two tabs it would drive them toward (iQra, AI Tools) are hidden for
   // them anyway. Not shown on iQra itself either — CurrentLessonCard already
   // does this job there, full-width and with the Start Class action; a second
   // copy stacked above it would just be the same line twice.

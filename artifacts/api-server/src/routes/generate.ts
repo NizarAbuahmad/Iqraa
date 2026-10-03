@@ -157,6 +157,7 @@ type GenerateResult = {
 type Completion = {
   parsed: unknown;
   usage: { prompt_tokens?: number; completion_tokens?: number } | undefined | null;
+  durationMs: number;
 };
 
 /**
@@ -177,6 +178,7 @@ async function completeOnce(args: {
   maxCompletionTokens: number;
   detail: Omit<GenerationDetail, "artifactId">;
 }): Promise<Completion> {
+  const startedAt = Date.now();
   const completion = await openai.chat.completions.create({
     model: args.model,
     max_completion_tokens: args.maxCompletionTokens,
@@ -185,6 +187,7 @@ async function completeOnce(args: {
       { role: "user", content: args.userPrompt },
     ],
   });
+  const durationMs = Date.now() - startedAt;
   try {
     const raw = completion.choices[0]?.message?.content ?? "{}";
     const parsed = extractJSON(raw);
@@ -193,9 +196,9 @@ async function completeOnce(args: {
     // also guards the pool: an unusable artifact stored here would be served
     // to every teacher who asks for that lesson.
     assertUsableGeneration(args.kind, parsed);
-    return { parsed, usage: completion.usage };
+    return { parsed, usage: completion.usage, durationMs };
   } catch (err) {
-    recordUsage(completion.usage, args.model, { ...args.detail, artifactId: null });
+    recordUsage(completion.usage, args.model, { ...args.detail, artifactId: null, durationMs });
     throw err;
   }
 }
@@ -380,7 +383,7 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
       );
       // The rejected attempt was still billed, and it is not the artifact that
       // gets stored, so it is recorded here with no artifact to its name.
-      recordUsage(chosen.usage, model, { ...detail, artifactId: null });
+      recordUsage(chosen.usage, model, { ...detail, artifactId: null, durationMs: chosen.durationMs });
       // One retry, not a loop: a second failure means the model has nothing
       // else to say about this lesson, and a third call would spend the
       // teacher's time to prove it. Whatever comes back is what is served.
@@ -414,7 +417,7 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
       content: chosen.parsed,
     }) : null;
 
-    recordUsage(chosen.usage, model, { ...detail, artifactId });
+    recordUsage(chosen.usage, model, { ...detail, artifactId, durationMs: chosen.durationMs });
     return { content: chosen.parsed, variantId: artifactId ?? undefined };
   };
 
@@ -643,7 +646,9 @@ generateRouter.post("/generate/infographic", async (req: AuthenticatedRequest, r
 // unauthenticated, unlimited proxy onto the OpenAI account. Same failure
 // shape as the roster/evaluations mount-order incident; see routes/index.ts.
 generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedRequest, res) => {
-  const isAr = (req.body as Record<string, unknown>).language === 'arabic';
+  // `!== 'english'`, like every other route: a request with no language is
+  // Arabic, not English — Arabic is the product language.
+  const isAr = (req.body as Record<string, unknown>).language !== 'english';
   const { body, grounding } = withGrounding(req.body as Record<string, unknown>, isAr);
   try {
     const prompt = (isAr ? classroomPromptAr(body) : classroomPromptEn(body))
@@ -774,7 +779,7 @@ async function finalizePromptSlides(content: unknown): Promise<unknown> {
 // being in that pool at all.
 generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest, res) => {
   const reqBody = req.body as Record<string, unknown>;
-  const isAr = reqBody.language === 'arabic';
+  const isAr = reqBody.language !== 'english';
   const prompt = typeof reqBody.prompt === 'string' ? reqBody.prompt.trim() : '';
   if (!prompt) {
     res.status(400).json({ error: 'prompt is required' });
@@ -829,7 +834,7 @@ generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest,
  */
 generateRouter.post('/generate/prompt-slides/questions', async (req: AuthenticatedRequest, res) => {
   const reqBody = req.body as Record<string, unknown>;
-  const isAr = reqBody.language === 'arabic';
+  const isAr = reqBody.language !== 'english';
   const prompt = typeof reqBody.prompt === 'string' ? reqBody.prompt.trim() : '';
   if (!prompt) {
     res.status(400).json({ error: 'prompt is required' });
@@ -900,6 +905,11 @@ generateRouter.post("/generate/variants/:id/retire", async (req: AuthenticatedRe
     // there is nothing left in the pool to report, which is what the caller
     // wanted, and telling the two apart says which ids exist.
     res.status(404).json({ error: "No pooled variant to report.", alreadyRetired: true });
+    return;
+  }
+  if (outcome.duplicate) {
+    // Already on the admins' queue from this teacher — nothing new to tell them.
+    res.json({ reported: true });
     return;
   }
   logger.warn(

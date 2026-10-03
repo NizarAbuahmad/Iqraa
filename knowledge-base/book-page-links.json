@@ -1,6 +1,6 @@
 {
- "note": "Written by scripts/verify_book_pages.py. Each lesson below has its pages at book-pages/<kbLessonId>/<n>.jpg in the public R2 bucket, cut from a book whose live PDF was compared page-by-page with the copy our start pages came from. Do not add entries by hand.",
- "verifiedAt": "2026-09-30",
+ "note": "Written by scripts/verify_book_pages.py. Each lesson below has its pages at book-pages/<kbLessonId>/<n>.jpg in the public R2 bucket, cut from a book whose live PDF was compared figure-by-figure with the copy our start pages came from. Do not add entries by hand.",
+ "verifiedAt": "2026-10-01",
  "books": {
   "bio-s1-student-book": {
    "bookId": "book-bio-10-s1",
@@ -32,6 +32,21 @@
    "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A3%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A%20.pdf",
    "pages": 92
   },
+  "eng-s1-student-book": {
+   "bookId": "book-english-10-s1",
+   "pdfUrl": "https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/%D9%83%D8%AA%D8%A7%D8%A8%20%D8%A7%D9%84%D8%B7%D8%A7%D9%84%D8%A8%20%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%A7%D9%84%D9%84%D8%BA%D8%A9%20%D8%A7%D9%84%D8%A5%D9%86%D8%AC%D9%84%D9%8A%D8%B2%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%A3%D9%88%D9%84.pdf",
+   "pages": 78
+  },
+  "eng-s2-student-book": {
+   "bookId": "book-english-10-s2",
+   "pdfUrl": "https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/%D9%83%D8%AA%D8%A7%D8%A8%20%D8%A7%D9%84%D8%B7%D8%A7%D9%84%D8%A8%20%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%A7%D9%84%D9%84%D8%BA%D8%A9%20%D8%A7%D9%84%D8%A5%D9%86%D8%AC%D9%84%D9%8A%D8%B2%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf",
+   "pages": 80
+  },
+  "finlit-s1-student-book": {
+   "bookId": "book-finlit-10",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Financial%20culture/G10/1/%D8%A7%D9%84%D8%AB%D9%82%D8%A7%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9%2010%20%D9%811%20small%20.pdf",
+   "pages": 80
+  },
   "g6-science-s1-student-book": {
    "bookId": "book-science-6-s1",
    "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G6/1/StBook6.pdf",
@@ -46,6 +61,101 @@
    "bookId": "book-vocational-6-s1",
    "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Vocational%20Education/G6/%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%20%D8%B3%D8%A7%D8%AF%D8%B3%20%D9%811%202026%20S%20.pdf",
    "pages": 104
+  },
+  "g7-english-s1-student-book": {
+   "bookId": "book-eng-7-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G7/JOR-TT-G7-S1-PB-Reprint-2026-Combined.pdf",
+   "pages": 64
+  },
+  "g7-english-s2-student-book": {
+   "bookId": "book-eng-7-s2",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G7/2/JOR-TT-G7-S2-Reprints-2025-Pupils-Book-Updated.pdf",
+   "pages": 64
+  },
+  "g7-finlit-s1-student-book": {
+   "bookId": "book-finlit-7-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Financial%20culture/G7/1/%D8%A7%D9%84%D8%AB%D9%82%D8%A7%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9%207%20%D9%811%20%20small%20.pdf",
+   "pages": 90
+  },
+  "g7-finlit-s2-student-book": {
+   "bookId": "book-finlit-7-s2",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B3%D8%A7%D8%A8%D8%B9/%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%AF%D8%B1%D8%A7%D8%B3%D9%8A%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A/Financial_7_S2.pdf",
+   "pages": 92
+  },
+  "g7-science-s1-student-book": {
+   "bookId": "book-science-7-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G7/1/StBook7.pdf",
+   "pages": 132
+  },
+  "g7-science-s2-student-book": {
+   "bookId": "book-science-7-s2",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B3%D8%A7%D8%A8%D8%B9%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%B3%D8%A7%D8%A8%D8%B9%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf",
+   "pages": 146
+  },
+  "g7-social-s1-student-book": {
+   "bookId": "book-social-7-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G7/1/%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9%20%D8%B3%D8%A7%D8%A8%D8%B9%20%D9%811%202026.pdf",
+   "pages": 132
+  },
+  "g7-social-s2-student-book": {
+   "bookId": "book-social-7-s2",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G7/2/%D8%A7%D9%84%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9-%D8%A7%D9%84%D8%B3%D8%A7%D8%A8%D8%B9%20%20%D9%812.pdf",
+   "pages": 140
+  },
+  "g7-voc-s1-student-book": {
+   "bookId": "book-voc-7-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Vocational%20Education/G7/%D9%85%D9%87%D9%86%D9%8A%D8%A9%20%D8%B3%D8%A7%D8%A8%D8%B9%20%D9%811%202026%20.pdf",
+   "pages": 110
+  },
+  "g8-english-s1-student-book": {
+   "bookId": "book-eng-8-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G8/Jordan-High%20Note-G8-S1-SB.pdf",
+   "pages": 80
+  },
+  "g8-english-s2-student-book": {
+   "bookId": "book-eng-8-s2",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G8/2/Jordan%20High%20Note%20G8%20SB%20S2.pdf",
+   "pages": 80
+  },
+  "g8-finlit-s1-student-book": {
+   "bookId": "book-finlit-8-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Financial%20culture/G8/1/%D8%A7%D9%84%D8%AB%D9%82%D8%A7%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9%208%20%D9%811%20small%20.pdf",
+   "pages": 54
+  },
+  "g8-math-s1-student-book": {
+   "bookId": "book-math-8-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Math/G8/1/ST/2026_MT08_SE1.pdf",
+   "pages": 147
+  },
+  "g8-science-s1-student-book": {
+   "bookId": "book-science-8-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G8/1/StBook8.pdf",
+   "pages": 140
+  },
+  "g8-science-s2-student-book": {
+   "bookId": "book-science-8-s2",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20(2)/%D8%B9%D9%84%D9%88%D9%85%20%D8%AB%D8%A7%D9%85%D9%86%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%AB%D8%A7%D9%85%D9%86%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf",
+   "pages": 168
+  },
+  "g8-social-s1-student-book": {
+   "bookId": "book-social-8-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G8/1/%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9%20%D8%AB%D8%A7%D9%85%D9%86%20%D9%811%202026%20.pdf",
+   "pages": 130
+  },
+  "g8-social-s2-student-book": {
+   "bookId": "book-social-8-s2",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G8/2/%D8%A7%D9%84%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9-%D8%A7%D9%84%D8%AB%D8%A7%D9%85%D9%86%20%20%D9%812%20(1).pdf",
+   "pages": 148
+  },
+  "g8-voc-s1-student-book": {
+   "bookId": "book-voc-8-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Vocational%20Education/G8/%D9%85%D9%87%D9%86%D9%8A%20%D8%AB%D8%A7%D9%85%D9%86%20%D9%811%202026%20S%20.pdf",
+   "pages": 110
+  },
+  "g8-voc-s2-student-book": {
+   "bookId": "book-voc-8-s2",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%D8%A9/8/2/%D9%85%D9%87%D9%86%D9%8A%20%D8%AB%D8%A7%D9%85%D9%86%20%D9%812%202025%20.pdf",
+   "pages": 130
   },
   "g9-biology-s1-student-book": {
    "bookId": "book-biology-9-s1",
@@ -77,6 +187,26 @@
    "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20(2)/%D8%B9%D9%84%D9%88%D9%85%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A3%D8%B1%D8%B6%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D9%84%D8%A3%D8%B1%D8%B6%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D8%B7%D8%A7%D9%84%D8%A8%20%D8%AC%D9%A2%20.pdf",
    "pages": 80
   },
+  "g9-english-s1-student-book": {
+   "bookId": "book-eng-9-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G9/JOR-HN-G9-S1-SB-Reprint-2026%20.pdf",
+   "pages": 76
+  },
+  "g9-english-s2-student-book": {
+   "bookId": "book-eng-9-s2",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G9/2/JOR-HN-G9-S2-Reprints-2025-Students-Book-Updated.pdf",
+   "pages": 80
+  },
+  "g9-geography-s1-student-book": {
+   "bookId": "book-geo-9-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G9/1/%D8%AC%D8%BA%D8%B1%D8%A7%D9%81%D9%8A%D8%A7%20%D8%A7%D9%84%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%811%202026%20.pdf",
+   "pages": 76
+  },
+  "g9-history-s1-student-book": {
+   "bookId": "book-hist-9-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G9/1/%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%811%202026%20.pdf",
+   "pages": 76
+  },
   "g9-math-s1-student-book": {
    "bookId": "book-math-9-s1",
    "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Math/G9/1/ST/2026_MT09_SE1.pdf",
@@ -96,6 +226,16 @@
    "bookId": "book-phys-9-s2",
    "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20(2)/%D8%B9%D9%84%D9%88%D9%85%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D8%B7%D8%A7%D9%84%D8%A8%20%D8%AC2%20.pdf",
    "pages": 80
+  },
+  "geo-s1-student-book": {
+   "bookId": "book-geo-10-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G10/1/%D8%A7%D9%84%D8%AC%D8%BA%D8%B1%D8%A7%D9%81%D9%8A%D8%A7%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%811%202026%20.pdf",
+   "pages": 76
+  },
+  "history-s1-student-book": {
+   "bookId": "book-hist-10-s1",
+   "pdfUrl": "https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G10/1/%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%811%202026%20.pdf",
+   "pages": 76
   },
   "math-s1-student-book": {
    "bookId": "book-math-10",
@@ -341,6 +481,30 @@
    "endPage": 92,
    "aspect": 0.7586
   },
+  "kbl-finlit-s1-nccd-u1_l3": {
+   "sourceId": "finlit-s1-student-book",
+   "startPage": 16,
+   "endPage": 35,
+   "aspect": 0.75
+  },
+  "kbl-finlit-s1-nccd-u2_l1": {
+   "sourceId": "finlit-s1-student-book",
+   "startPage": 40,
+   "endPage": 51,
+   "aspect": 0.75
+  },
+  "kbl-finlit-s1-nccd-u2_l3": {
+   "sourceId": "finlit-s1-student-book",
+   "startPage": 52,
+   "endPage": 56,
+   "aspect": 0.75
+  },
+  "kbl-finlit-s1-nccd-u2_l4": {
+   "sourceId": "finlit-s1-student-book",
+   "startPage": 57,
+   "endPage": 76,
+   "aspect": 0.75
+  },
   "kbl-g6-science-s1-nccd-u1_l1": {
    "sourceId": "g6-science-s1-student-book",
    "startPage": 10,
@@ -515,6 +679,954 @@
    "endPage": 104,
    "aspect": 0.75
   },
+  "kbl-g7-finlit-s1-nccd-u1_l1": {
+   "sourceId": "g7-finlit-s1-student-book",
+   "startPage": 8,
+   "endPage": 18,
+   "aspect": 0.75
+  },
+  "kbl-g7-finlit-s1-nccd-u1_l3": {
+   "sourceId": "g7-finlit-s1-student-book",
+   "startPage": 19,
+   "endPage": 33,
+   "aspect": 0.75
+  },
+  "kbl-g7-finlit-s1-nccd-u2_l1": {
+   "sourceId": "g7-finlit-s1-student-book",
+   "startPage": 34,
+   "endPage": 40,
+   "aspect": 0.75
+  },
+  "kbl-g7-finlit-s1-nccd-u2_l2": {
+   "sourceId": "g7-finlit-s1-student-book",
+   "startPage": 41,
+   "endPage": 46,
+   "aspect": 0.75
+  },
+  "kbl-g7-finlit-s1-nccd-u2_l3": {
+   "sourceId": "g7-finlit-s1-student-book",
+   "startPage": 47,
+   "endPage": 66,
+   "aspect": 0.75
+  },
+  "kbl-g7-finlit-s1-nccd-u3_l3": {
+   "sourceId": "g7-finlit-s1-student-book",
+   "startPage": 74,
+   "endPage": 90,
+   "aspect": 0.75
+  },
+  "kbl-g7-finlit-s2-nccd-u4_l1": {
+   "sourceId": "g7-finlit-s2-student-book",
+   "startPage": 8,
+   "endPage": 13,
+   "aspect": 0.75
+  },
+  "kbl-g7-finlit-s2-nccd-u4_l2": {
+   "sourceId": "g7-finlit-s2-student-book",
+   "startPage": 14,
+   "endPage": 33,
+   "aspect": 0.75
+  },
+  "kbl-g7-finlit-s2-nccd-u5_l1": {
+   "sourceId": "g7-finlit-s2-student-book",
+   "startPage": 34,
+   "endPage": 40,
+   "aspect": 0.75
+  },
+  "kbl-g7-finlit-s2-nccd-u5_l2": {
+   "sourceId": "g7-finlit-s2-student-book",
+   "startPage": 41,
+   "endPage": 60,
+   "aspect": 0.75
+  },
+  "kbl-g7-finlit-s2-nccd-u6_l3": {
+   "sourceId": "g7-finlit-s2-student-book",
+   "startPage": 79,
+   "endPage": 92,
+   "aspect": 0.75
+  },
+  "kbl-g7-science-s1-nccd-u1_l1": {
+   "sourceId": "g7-science-s1-student-book",
+   "startPage": 10,
+   "endPage": 15,
+   "aspect": 0.75
+  },
+  "kbl-g7-science-s1-nccd-u1_l2": {
+   "sourceId": "g7-science-s1-student-book",
+   "startPage": 16,
+   "endPage": 29,
+   "aspect": 0.75
+  },
+  "kbl-g7-science-s1-nccd-u2_l1": {
+   "sourceId": "g7-science-s1-student-book",
+   "startPage": 30,
+   "endPage": 35,
+   "aspect": 0.75
+  },
+  "kbl-g7-science-s1-nccd-u2_l2": {
+   "sourceId": "g7-science-s1-student-book",
+   "startPage": 36,
+   "endPage": 51,
+   "aspect": 0.75
+  },
+  "kbl-g7-science-s1-nccd-u3_l1": {
+   "sourceId": "g7-science-s1-student-book",
+   "startPage": 52,
+   "endPage": 56,
+   "aspect": 0.75
+  },
+  "kbl-g7-science-s1-nccd-u3_l2": {
+   "sourceId": "g7-science-s1-student-book",
+   "startPage": 57,
+   "endPage": 65,
+   "aspect": 0.75
+  },
+  "kbl-g7-science-s1-nccd-u3_l3": {
+   "sourceId": "g7-science-s1-student-book",
+   "startPage": 66,
+   "endPage": 70,
+   "aspect": 0.75
+  },
+  "kbl-g7-science-s1-nccd-u3_l4": {
+   "sourceId": "g7-science-s1-student-book",
+   "startPage": 71,
+   "endPage": 85,
+   "aspect": 0.75
+  },
+  "kbl-g7-science-s1-nccd-u4_l1": {
+   "sourceId": "g7-science-s1-student-book",
+   "startPage": 86,
+   "endPage": 90,
+   "aspect": 0.75
+  },
+  "kbl-g7-science-s1-nccd-u4_l2": {
+   "sourceId": "g7-science-s1-student-book",
+   "startPage": 91,
+   "endPage": 109,
+   "aspect": 0.75
+  },
+  "kbl-g7-science-s1-nccd-u5_l1": {
+   "sourceId": "g7-science-s1-student-book",
+   "startPage": 110,
+   "endPage": 116,
+   "aspect": 0.75
+  },
+  "kbl-g7-science-s1-nccd-u5_l2": {
+   "sourceId": "g7-science-s1-student-book",
+   "startPage": 117,
+   "endPage": 132,
+   "aspect": 0.75
+  },
+  "kbl-g7-science-s2-nccd-u10_l1": {
+   "sourceId": "g7-science-s2-student-book",
+   "startPage": 116,
+   "endPage": 125,
+   "aspect": 0.7586
+  },
+  "kbl-g7-science-s2-nccd-u10_l2": {
+   "sourceId": "g7-science-s2-student-book",
+   "startPage": 126,
+   "endPage": 145,
+   "aspect": 0.7586
+  },
+  "kbl-g7-science-s2-nccd-u6_l1": {
+   "sourceId": "g7-science-s2-student-book",
+   "startPage": 10,
+   "endPage": 16,
+   "aspect": 0.7586
+  },
+  "kbl-g7-science-s2-nccd-u6_l2": {
+   "sourceId": "g7-science-s2-student-book",
+   "startPage": 17,
+   "endPage": 33,
+   "aspect": 0.7586
+  },
+  "kbl-g7-science-s2-nccd-u7_l1": {
+   "sourceId": "g7-science-s2-student-book",
+   "startPage": 34,
+   "endPage": 40,
+   "aspect": 0.7586
+  },
+  "kbl-g7-science-s2-nccd-u7_l2": {
+   "sourceId": "g7-science-s2-student-book",
+   "startPage": 41,
+   "endPage": 60,
+   "aspect": 0.7586
+  },
+  "kbl-g7-science-s2-nccd-u8_l1": {
+   "sourceId": "g7-science-s2-student-book",
+   "startPage": 62,
+   "endPage": 68,
+   "aspect": 0.7586
+  },
+  "kbl-g7-science-s2-nccd-u8_l2": {
+   "sourceId": "g7-science-s2-student-book",
+   "startPage": 69,
+   "endPage": 88,
+   "aspect": 0.7586
+  },
+  "kbl-g7-science-s2-nccd-u9_l3": {
+   "sourceId": "g7-science-s2-student-book",
+   "startPage": 101,
+   "endPage": 115,
+   "aspect": 0.7586
+  },
+  "kbl-g7-social-s1-nccd-u1_l2": {
+   "sourceId": "g7-social-s1-student-book",
+   "startPage": 13,
+   "endPage": 25,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s1-nccd-u2_l1": {
+   "sourceId": "g7-social-s1-student-book",
+   "startPage": 26,
+   "endPage": 34,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s1-nccd-u2_l3": {
+   "sourceId": "g7-social-s1-student-book",
+   "startPage": 35,
+   "endPage": 45,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s1-nccd-u3_l1": {
+   "sourceId": "g7-social-s1-student-book",
+   "startPage": 46,
+   "endPage": 56,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s1-nccd-u3_l3": {
+   "sourceId": "g7-social-s1-student-book",
+   "startPage": 57,
+   "endPage": 65,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s1-nccd-u3_l5": {
+   "sourceId": "g7-social-s1-student-book",
+   "startPage": 66,
+   "endPage": 73,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s1-nccd-u4_l1": {
+   "sourceId": "g7-social-s1-student-book",
+   "startPage": 74,
+   "endPage": 78,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s1-nccd-u4_l2": {
+   "sourceId": "g7-social-s1-student-book",
+   "startPage": 79,
+   "endPage": 83,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s1-nccd-u4_l3": {
+   "sourceId": "g7-social-s1-student-book",
+   "startPage": 84,
+   "endPage": 90,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s1-nccd-u4_l4": {
+   "sourceId": "g7-social-s1-student-book",
+   "startPage": 91,
+   "endPage": 99,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s1-nccd-u5_l1": {
+   "sourceId": "g7-social-s1-student-book",
+   "startPage": 100,
+   "endPage": 106,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s1-nccd-u5_l2": {
+   "sourceId": "g7-social-s1-student-book",
+   "startPage": 107,
+   "endPage": 119,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s1-nccd-u6_l2": {
+   "sourceId": "g7-social-s1-student-book",
+   "startPage": 120,
+   "endPage": 123,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s1-nccd-u6_l3": {
+   "sourceId": "g7-social-s1-student-book",
+   "startPage": 124,
+   "endPage": 132,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s2-nccd-u10_l1": {
+   "sourceId": "g7-social-s2-student-book",
+   "startPage": 68,
+   "endPage": 73,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s2-nccd-u10_l2": {
+   "sourceId": "g7-social-s2-student-book",
+   "startPage": 74,
+   "endPage": 79,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s2-nccd-u10_l3": {
+   "sourceId": "g7-social-s2-student-book",
+   "startPage": 80,
+   "endPage": 89,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s2-nccd-u11_l1": {
+   "sourceId": "g7-social-s2-student-book",
+   "startPage": 90,
+   "endPage": 97,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s2-nccd-u11_l2": {
+   "sourceId": "g7-social-s2-student-book",
+   "startPage": 98,
+   "endPage": 102,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s2-nccd-u11_l3": {
+   "sourceId": "g7-social-s2-student-book",
+   "startPage": 103,
+   "endPage": 112,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s2-nccd-u11_l5": {
+   "sourceId": "g7-social-s2-student-book",
+   "startPage": 113,
+   "endPage": 129,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s2-nccd-u12_l2": {
+   "sourceId": "g7-social-s2-student-book",
+   "startPage": 130,
+   "endPage": 140,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s2-nccd-u7_l3": {
+   "sourceId": "g7-social-s2-student-book",
+   "startPage": 18,
+   "endPage": 37,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s2-nccd-u8_l2": {
+   "sourceId": "g7-social-s2-student-book",
+   "startPage": 39,
+   "endPage": 42,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s2-nccd-u8_l3": {
+   "sourceId": "g7-social-s2-student-book",
+   "startPage": 43,
+   "endPage": 49,
+   "aspect": 0.75
+  },
+  "kbl-g7-social-s2-nccd-u9_l1": {
+   "sourceId": "g7-social-s2-student-book",
+   "startPage": 50,
+   "endPage": 67,
+   "aspect": 0.75
+  },
+  "kbl-g7-voc-s1-nccd-u1_l1": {
+   "sourceId": "g7-voc-s1-student-book",
+   "startPage": 6,
+   "endPage": 12,
+   "aspect": 0.75
+  },
+  "kbl-g7-voc-s1-nccd-u1_l2": {
+   "sourceId": "g7-voc-s1-student-book",
+   "startPage": 13,
+   "endPage": 19,
+   "aspect": 0.75
+  },
+  "kbl-g7-voc-s1-nccd-u2_l1": {
+   "sourceId": "g7-voc-s1-student-book",
+   "startPage": 20,
+   "endPage": 29,
+   "aspect": 0.75
+  },
+  "kbl-g7-voc-s1-nccd-u2_l2": {
+   "sourceId": "g7-voc-s1-student-book",
+   "startPage": 30,
+   "endPage": 37,
+   "aspect": 0.75
+  },
+  "kbl-g7-voc-s1-nccd-u3_l1": {
+   "sourceId": "g7-voc-s1-student-book",
+   "startPage": 38,
+   "endPage": 47,
+   "aspect": 0.75
+  },
+  "kbl-g7-voc-s1-nccd-u4_l1": {
+   "sourceId": "g7-voc-s1-student-book",
+   "startPage": 48,
+   "endPage": 55,
+   "aspect": 0.75
+  },
+  "kbl-g7-voc-s1-nccd-u4_l2": {
+   "sourceId": "g7-voc-s1-student-book",
+   "startPage": 56,
+   "endPage": 65,
+   "aspect": 0.75
+  },
+  "kbl-g7-voc-s1-nccd-u5_l1": {
+   "sourceId": "g7-voc-s1-student-book",
+   "startPage": 66,
+   "endPage": 74,
+   "aspect": 0.75
+  },
+  "kbl-g7-voc-s1-nccd-u5_l2": {
+   "sourceId": "g7-voc-s1-student-book",
+   "startPage": 75,
+   "endPage": 82,
+   "aspect": 0.75
+  },
+  "kbl-g7-voc-s1-nccd-u5_l3": {
+   "sourceId": "g7-voc-s1-student-book",
+   "startPage": 83,
+   "endPage": 89,
+   "aspect": 0.75
+  },
+  "kbl-g7-voc-s1-nccd-u6_l1": {
+   "sourceId": "g7-voc-s1-student-book",
+   "startPage": 90,
+   "endPage": 103,
+   "aspect": 0.75
+  },
+  "kbl-g7-voc-s1-nccd-u7_l1": {
+   "sourceId": "g7-voc-s1-student-book",
+   "startPage": 104,
+   "endPage": 110,
+   "aspect": 0.75
+  },
+  "kbl-g8-finlit-s1-nccd-u1_l4": {
+   "sourceId": "g8-finlit-s1-student-book",
+   "startPage": 20,
+   "endPage": 23,
+   "aspect": 0.75
+  },
+  "kbl-g8-finlit-s1-nccd-u1_l5": {
+   "sourceId": "g8-finlit-s1-student-book",
+   "startPage": 24,
+   "endPage": 33,
+   "aspect": 0.75
+  },
+  "kbl-g8-finlit-s1-nccd-u2_l1": {
+   "sourceId": "g8-finlit-s1-student-book",
+   "startPage": 34,
+   "endPage": 53,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u1_l2": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 13,
+   "endPage": 21,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u1_l3": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 22,
+   "endPage": 28,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u1_l4": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 29,
+   "endPage": 36,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u1_l5": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 37,
+   "endPage": 48,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u2_l1": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 49,
+   "endPage": 56,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u2_l2": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 57,
+   "endPage": 70,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u2_l4": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 71,
+   "endPage": 81,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u3_l1": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 82,
+   "endPage": 89,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u3_l2": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 90,
+   "endPage": 96,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u3_l3": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 97,
+   "endPage": 105,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u3_l4": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 106,
+   "endPage": 112,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u3_l5": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 113,
+   "endPage": 123,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u4_l1": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 124,
+   "endPage": 131,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u4_l2": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 132,
+   "endPage": 137,
+   "aspect": 0.75
+  },
+  "kbl-g8-math-s1-nccd-u4_l3": {
+   "sourceId": "g8-math-s1-student-book",
+   "startPage": 138,
+   "endPage": 147,
+   "aspect": 0.75
+  },
+  "kbl-g8-science-s1-nccd-u1_l1": {
+   "sourceId": "g8-science-s1-student-book",
+   "startPage": 10,
+   "endPage": 18,
+   "aspect": 0.75
+  },
+  "kbl-g8-science-s1-nccd-u1_l2": {
+   "sourceId": "g8-science-s1-student-book",
+   "startPage": 19,
+   "endPage": 25,
+   "aspect": 0.75
+  },
+  "kbl-g8-science-s1-nccd-u1_l3": {
+   "sourceId": "g8-science-s1-student-book",
+   "startPage": 26,
+   "endPage": 43,
+   "aspect": 0.75
+  },
+  "kbl-g8-science-s1-nccd-u2_l1": {
+   "sourceId": "g8-science-s1-student-book",
+   "startPage": 44,
+   "endPage": 53,
+   "aspect": 0.75
+  },
+  "kbl-g8-science-s1-nccd-u2_l2": {
+   "sourceId": "g8-science-s1-student-book",
+   "startPage": 54,
+   "endPage": 73,
+   "aspect": 0.75
+  },
+  "kbl-g8-science-s1-nccd-u3_l1": {
+   "sourceId": "g8-science-s1-student-book",
+   "startPage": 76,
+   "endPage": 85,
+   "aspect": 0.75
+  },
+  "kbl-g8-science-s1-nccd-u3_l2": {
+   "sourceId": "g8-science-s1-student-book",
+   "startPage": 86,
+   "endPage": 103,
+   "aspect": 0.75
+  },
+  "kbl-g8-science-s1-nccd-u4_l1": {
+   "sourceId": "g8-science-s1-student-book",
+   "startPage": 104,
+   "endPage": 110,
+   "aspect": 0.75
+  },
+  "kbl-g8-science-s1-nccd-u4_l2": {
+   "sourceId": "g8-science-s1-student-book",
+   "startPage": 111,
+   "endPage": 117,
+   "aspect": 0.75
+  },
+  "kbl-g8-science-s1-nccd-u4_l3": {
+   "sourceId": "g8-science-s1-student-book",
+   "startPage": 118,
+   "endPage": 137,
+   "aspect": 0.75
+  },
+  "kbl-g8-science-s2-nccd-u5_l1": {
+   "sourceId": "g8-science-s2-student-book",
+   "startPage": 10,
+   "endPage": 24,
+   "aspect": 0.7586
+  },
+  "kbl-g8-science-s2-nccd-u5_l2": {
+   "sourceId": "g8-science-s2-student-book",
+   "startPage": 25,
+   "endPage": 30,
+   "aspect": 0.7586
+  },
+  "kbl-g8-science-s2-nccd-u5_l3": {
+   "sourceId": "g8-science-s2-student-book",
+   "startPage": 31,
+   "endPage": 45,
+   "aspect": 0.7586
+  },
+  "kbl-g8-science-s2-nccd-u6_l1": {
+   "sourceId": "g8-science-s2-student-book",
+   "startPage": 46,
+   "endPage": 53,
+   "aspect": 0.7586
+  },
+  "kbl-g8-science-s2-nccd-u6_l2": {
+   "sourceId": "g8-science-s2-student-book",
+   "startPage": 54,
+   "endPage": 71,
+   "aspect": 0.7586
+  },
+  "kbl-g8-science-s2-nccd-u7_l1": {
+   "sourceId": "g8-science-s2-student-book",
+   "startPage": 72,
+   "endPage": 85,
+   "aspect": 0.7586
+  },
+  "kbl-g8-science-s2-nccd-u7_l2": {
+   "sourceId": "g8-science-s2-student-book",
+   "startPage": 86,
+   "endPage": 105,
+   "aspect": 0.7586
+  },
+  "kbl-g8-science-s2-nccd-u8_l1": {
+   "sourceId": "g8-science-s2-student-book",
+   "startPage": 110,
+   "endPage": 115,
+   "aspect": 0.7586
+  },
+  "kbl-g8-science-s2-nccd-u8_l2": {
+   "sourceId": "g8-science-s2-student-book",
+   "startPage": 116,
+   "endPage": 131,
+   "aspect": 0.7586
+  },
+  "kbl-g8-science-s2-nccd-u9_l1": {
+   "sourceId": "g8-science-s2-student-book",
+   "startPage": 132,
+   "endPage": 140,
+   "aspect": 0.7586
+  },
+  "kbl-g8-science-s2-nccd-u9_l2": {
+   "sourceId": "g8-science-s2-student-book",
+   "startPage": 141,
+   "endPage": 160,
+   "aspect": 0.7586
+  },
+  "kbl-g8-social-s1-nccd-u2_l1": {
+   "sourceId": "g8-social-s1-student-book",
+   "startPage": 28,
+   "endPage": 35,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s1-nccd-u2_l2": {
+   "sourceId": "g8-social-s1-student-book",
+   "startPage": 36,
+   "endPage": 55,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s1-nccd-u3_l1": {
+   "sourceId": "g8-social-s1-student-book",
+   "startPage": 56,
+   "endPage": 70,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s1-nccd-u3_l5": {
+   "sourceId": "g8-social-s1-student-book",
+   "startPage": 71,
+   "endPage": 83,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s1-nccd-u4_l2": {
+   "sourceId": "g8-social-s1-student-book",
+   "startPage": 84,
+   "endPage": 88,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s1-nccd-u4_l3": {
+   "sourceId": "g8-social-s1-student-book",
+   "startPage": 89,
+   "endPage": 108,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u10_l2": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 86,
+   "endPage": 89,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u10_l3": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 90,
+   "endPage": 97,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u10_l4": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 98,
+   "endPage": 105,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u11_l1": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 106,
+   "endPage": 110,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u11_l2": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 111,
+   "endPage": 114,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u11_l3": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 115,
+   "endPage": 117,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u11_l4": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 118,
+   "endPage": 125,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u12_l1": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 126,
+   "endPage": 132,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u12_l2": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 133,
+   "endPage": 138,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u12_l3": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 139,
+   "endPage": 148,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u7_l2": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 11,
+   "endPage": 14,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u7_l3": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 15,
+   "endPage": 27,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u8_l1": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 28,
+   "endPage": 33,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u8_l2": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 34,
+   "endPage": 38,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u8_l3": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 39,
+   "endPage": 51,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u9_l1": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 52,
+   "endPage": 62,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u9_l2": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 63,
+   "endPage": 69,
+   "aspect": 0.75
+  },
+  "kbl-g8-social-s2-nccd-u9_l3": {
+   "sourceId": "g8-social-s2-student-book",
+   "startPage": 70,
+   "endPage": 85,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s1-nccd-u1_l1": {
+   "sourceId": "g8-voc-s1-student-book",
+   "startPage": 6,
+   "endPage": 19,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s1-nccd-u2_l1": {
+   "sourceId": "g8-voc-s1-student-book",
+   "startPage": 20,
+   "endPage": 26,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s1-nccd-u2_l2": {
+   "sourceId": "g8-voc-s1-student-book",
+   "startPage": 27,
+   "endPage": 33,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s1-nccd-u3_l1": {
+   "sourceId": "g8-voc-s1-student-book",
+   "startPage": 34,
+   "endPage": 46,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s1-nccd-u3_l2": {
+   "sourceId": "g8-voc-s1-student-book",
+   "startPage": 47,
+   "endPage": 55,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s1-nccd-u4_l1": {
+   "sourceId": "g8-voc-s1-student-book",
+   "startPage": 56,
+   "endPage": 62,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s1-nccd-u4_l2": {
+   "sourceId": "g8-voc-s1-student-book",
+   "startPage": 63,
+   "endPage": 71,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s1-nccd-u5_l1": {
+   "sourceId": "g8-voc-s1-student-book",
+   "startPage": 72,
+   "endPage": 83,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s1-nccd-u6_l1": {
+   "sourceId": "g8-voc-s1-student-book",
+   "startPage": 84,
+   "endPage": 90,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s1-nccd-u6_l2": {
+   "sourceId": "g8-voc-s1-student-book",
+   "startPage": 91,
+   "endPage": 99,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s1-nccd-u7_l1": {
+   "sourceId": "g8-voc-s1-student-book",
+   "startPage": 100,
+   "endPage": 110,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s2-nccd-u10_l1": {
+   "sourceId": "g8-voc-s2-student-book",
+   "startPage": 112,
+   "endPage": 119,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s2-nccd-u10_l2": {
+   "sourceId": "g8-voc-s2-student-book",
+   "startPage": 120,
+   "endPage": 130,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s2-nccd-u1_l1": {
+   "sourceId": "g8-voc-s2-student-book",
+   "startPage": 6,
+   "endPage": 15,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s2-nccd-u2_l1": {
+   "sourceId": "g8-voc-s2-student-book",
+   "startPage": 16,
+   "endPage": 25,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s2-nccd-u3_l1": {
+   "sourceId": "g8-voc-s2-student-book",
+   "startPage": 26,
+   "endPage": 33,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s2-nccd-u3_l2": {
+   "sourceId": "g8-voc-s2-student-book",
+   "startPage": 34,
+   "endPage": 41,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s2-nccd-u4_l1": {
+   "sourceId": "g8-voc-s2-student-book",
+   "startPage": 42,
+   "endPage": 48,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s2-nccd-u4_l2": {
+   "sourceId": "g8-voc-s2-student-book",
+   "startPage": 49,
+   "endPage": 57,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s2-nccd-u5_l1": {
+   "sourceId": "g8-voc-s2-student-book",
+   "startPage": 58,
+   "endPage": 63,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s2-nccd-u5_l2": {
+   "sourceId": "g8-voc-s2-student-book",
+   "startPage": 64,
+   "endPage": 71,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s2-nccd-u6_l1": {
+   "sourceId": "g8-voc-s2-student-book",
+   "startPage": 72,
+   "endPage": 79,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s2-nccd-u7_l1": {
+   "sourceId": "g8-voc-s2-student-book",
+   "startPage": 80,
+   "endPage": 91,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s2-nccd-u8_l1": {
+   "sourceId": "g8-voc-s2-student-book",
+   "startPage": 92,
+   "endPage": 101,
+   "aspect": 0.75
+  },
+  "kbl-g8-voc-s2-nccd-u9_l1": {
+   "sourceId": "g8-voc-s2-student-book",
+   "startPage": 102,
+   "endPage": 111,
+   "aspect": 0.75
+  },
   "kbl-g9-biology-s1-nccd-u1_l2": {
    "sourceId": "g9-biology-s1-student-book",
    "startPage": 17,
@@ -670,6 +1782,102 @@
    "startPage": 64,
    "endPage": 80,
    "aspect": 0.7586
+  },
+  "kbl-g9-geo-s1-nccd-u1_l1": {
+   "sourceId": "g9-geography-s1-student-book",
+   "startPage": 8,
+   "endPage": 19,
+   "aspect": 0.75
+  },
+  "kbl-g9-geo-s1-nccd-u1_l3": {
+   "sourceId": "g9-geography-s1-student-book",
+   "startPage": 20,
+   "endPage": 31,
+   "aspect": 0.75
+  },
+  "kbl-g9-geo-s1-nccd-u2_l1": {
+   "sourceId": "g9-geography-s1-student-book",
+   "startPage": 32,
+   "endPage": 39,
+   "aspect": 0.75
+  },
+  "kbl-g9-geo-s1-nccd-u2_l2": {
+   "sourceId": "g9-geography-s1-student-book",
+   "startPage": 40,
+   "endPage": 46,
+   "aspect": 0.75
+  },
+  "kbl-g9-geo-s1-nccd-u2_l3": {
+   "sourceId": "g9-geography-s1-student-book",
+   "startPage": 47,
+   "endPage": 55,
+   "aspect": 0.75
+  },
+  "kbl-g9-geo-s1-nccd-u3_l1": {
+   "sourceId": "g9-geography-s1-student-book",
+   "startPage": 56,
+   "endPage": 64,
+   "aspect": 0.75
+  },
+  "kbl-g9-geo-s1-nccd-u3_l2": {
+   "sourceId": "g9-geography-s1-student-book",
+   "startPage": 65,
+   "endPage": 69,
+   "aspect": 0.75
+  },
+  "kbl-g9-geo-s1-nccd-u3_l3": {
+   "sourceId": "g9-geography-s1-student-book",
+   "startPage": 70,
+   "endPage": 76,
+   "aspect": 0.75
+  },
+  "kbl-g9-hist-s1-nccd-u1_l1": {
+   "sourceId": "g9-history-s1-student-book",
+   "startPage": 8,
+   "endPage": 17,
+   "aspect": 0.75
+  },
+  "kbl-g9-hist-s1-nccd-u1_l3": {
+   "sourceId": "g9-history-s1-student-book",
+   "startPage": 18,
+   "endPage": 21,
+   "aspect": 0.75
+  },
+  "kbl-g9-hist-s1-nccd-u1_l4": {
+   "sourceId": "g9-history-s1-student-book",
+   "startPage": 22,
+   "endPage": 35,
+   "aspect": 0.75
+  },
+  "kbl-g9-hist-s1-nccd-u2_l1": {
+   "sourceId": "g9-history-s1-student-book",
+   "startPage": 36,
+   "endPage": 38,
+   "aspect": 0.75
+  },
+  "kbl-g9-hist-s1-nccd-u2_l2": {
+   "sourceId": "g9-history-s1-student-book",
+   "startPage": 39,
+   "endPage": 46,
+   "aspect": 0.75
+  },
+  "kbl-g9-hist-s1-nccd-u2_l3": {
+   "sourceId": "g9-history-s1-student-book",
+   "startPage": 47,
+   "endPage": 63,
+   "aspect": 0.75
+  },
+  "kbl-g9-hist-s1-nccd-u3_l1": {
+   "sourceId": "g9-history-s1-student-book",
+   "startPage": 64,
+   "endPage": 69,
+   "aspect": 0.75
+  },
+  "kbl-g9-hist-s1-nccd-u3_l2": {
+   "sourceId": "g9-history-s1-student-book",
+   "startPage": 70,
+   "endPage": 76,
+   "aspect": 0.75
   },
   "kbl-g9-math-s1-nccd-u1_l1": {
    "sourceId": "g9-math-s1-student-book",
@@ -904,6 +2112,114 @@
    "startPage": 56,
    "endPage": 75,
    "aspect": 0.7586
+  },
+  "kbl-geo-s1-nccd-u1_l1": {
+   "sourceId": "geo-s1-student-book",
+   "startPage": 8,
+   "endPage": 13,
+   "aspect": 0.75
+  },
+  "kbl-geo-s1-nccd-u1_l2": {
+   "sourceId": "geo-s1-student-book",
+   "startPage": 14,
+   "endPage": 27,
+   "aspect": 0.75
+  },
+  "kbl-geo-s1-nccd-u2_l1": {
+   "sourceId": "geo-s1-student-book",
+   "startPage": 28,
+   "endPage": 43,
+   "aspect": 0.75
+  },
+  "kbl-geo-s1-nccd-u2_l3": {
+   "sourceId": "geo-s1-student-book",
+   "startPage": 44,
+   "endPage": 53,
+   "aspect": 0.75
+  },
+  "kbl-geo-s1-nccd-u3_l1": {
+   "sourceId": "geo-s1-student-book",
+   "startPage": 54,
+   "endPage": 61,
+   "aspect": 0.75
+  },
+  "kbl-geo-s1-nccd-u3_l2": {
+   "sourceId": "geo-s1-student-book",
+   "startPage": 62,
+   "endPage": 68,
+   "aspect": 0.75
+  },
+  "kbl-geo-s1-nccd-u3_l3": {
+   "sourceId": "geo-s1-student-book",
+   "startPage": 69,
+   "endPage": 76,
+   "aspect": 0.75
+  },
+  "kbl-hist-s1-nccd-u1_l1": {
+   "sourceId": "history-s1-student-book",
+   "startPage": 8,
+   "endPage": 13,
+   "aspect": 0.75
+  },
+  "kbl-hist-s1-nccd-u1_l2": {
+   "sourceId": "history-s1-student-book",
+   "startPage": 14,
+   "endPage": 17,
+   "aspect": 0.75
+  },
+  "kbl-hist-s1-nccd-u1_l3": {
+   "sourceId": "history-s1-student-book",
+   "startPage": 18,
+   "endPage": 27,
+   "aspect": 0.75
+  },
+  "kbl-hist-s1-nccd-u1_l5": {
+   "sourceId": "history-s1-student-book",
+   "startPage": 28,
+   "endPage": 31,
+   "aspect": 0.75
+  },
+  "kbl-hist-s1-nccd-u1_l6": {
+   "sourceId": "history-s1-student-book",
+   "startPage": 32,
+   "endPage": 39,
+   "aspect": 0.75
+  },
+  "kbl-hist-s1-nccd-u2_l1": {
+   "sourceId": "history-s1-student-book",
+   "startPage": 40,
+   "endPage": 44,
+   "aspect": 0.75
+  },
+  "kbl-hist-s1-nccd-u2_l2": {
+   "sourceId": "history-s1-student-book",
+   "startPage": 45,
+   "endPage": 48,
+   "aspect": 0.75
+  },
+  "kbl-hist-s1-nccd-u2_l3": {
+   "sourceId": "history-s1-student-book",
+   "startPage": 49,
+   "endPage": 55,
+   "aspect": 0.75
+  },
+  "kbl-hist-s1-nccd-u2_l4": {
+   "sourceId": "history-s1-student-book",
+   "startPage": 56,
+   "endPage": 61,
+   "aspect": 0.75
+  },
+  "kbl-hist-s1-nccd-u2_l5": {
+   "sourceId": "history-s1-student-book",
+   "startPage": 62,
+   "endPage": 66,
+   "aspect": 0.75
+  },
+  "kbl-hist-s1-nccd-u2_l6": {
+   "sourceId": "history-s1-student-book",
+   "startPage": 67,
+   "endPage": 76,
+   "aspect": 0.75
   },
   "kbl-math-s1-nccd-u1_l1": {
    "sourceId": "math-s1-student-book",
