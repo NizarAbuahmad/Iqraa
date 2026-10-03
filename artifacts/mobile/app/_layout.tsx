@@ -197,6 +197,7 @@ function RootLayoutNav() {
       <Stack.Screen name="dev" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="faq" options={{ headerShown: false }} />
+      <Stack.Screen name="suggest-feature" options={{ headerShown: false }} />
       <Stack.Screen name="join-class" options={{ headerShown: false }} />
       <Stack.Screen name="claim-required" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="setup-subjects" options={{ headerShown: false, gestureEnabled: false }} />
