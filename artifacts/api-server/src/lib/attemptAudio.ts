@@ -18,9 +18,9 @@ import { db, attemptAnswers, attempts, evaluations } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { deleteObject } from "./r2.js";
 import { logger } from "./logger.ts";
-import { attemptAudioKey, attemptAudioKeys } from "./attemptAudioKeys.ts";
+import { attemptAudioKey, attemptAudioKeys, withRecordingUrls } from "./attemptAudioKeys.ts";
 
-export { attemptAudioKey, attemptAudioKeys };
+export { attemptAudioKey, attemptAudioKeys, withRecordingUrls };
 
 /** Recording keys on one attempt's answers. Read before the delete. */
 export async function audioKeysForAttempt(attemptId: string): Promise<string[]> {

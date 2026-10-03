@@ -38,9 +38,9 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
-import { getMyExams } from '@/services/studentExam';
+import { getMyExams, getMyGradeIds } from '@/services/studentExam';
 import { actionableCount } from '@/services/myExams';
-import { narrowSubjectsForGrade, narrowToSelection } from '@/services/teacherCatalogFilter';
+import { narrowSubjectsForGrade, narrowToSelection, preferredGrade } from '@/services/teacherCatalogFilter';
 import { listLibrary, type LibraryItem } from '@/services/libraryApi';
 import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
@@ -355,6 +355,21 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     [isTeacher, user?.gradeIds],
   );
   const [grade, setGrade] = useState<string>(gradeId || grades[0]?.id || '');
+  // A student has no grade picker of their own, so with no grade param the
+  // library opened on the catalog's first grade — Grade 10 for a Grade 9
+  // student. Start on the grade their class is in, unless they (or a param)
+  // already chose one.
+  useEffect(() => {
+    if (!isStudent || gradeId) return;
+    const initial = grades[0]?.id || '';
+    let cancelled = false;
+    void getMyGradeIds().then(ids => {
+      const own = preferredGrade(grades, ids);
+      if (!cancelled && own) setGrade(prev => (prev === initial ? own.id : prev));
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStudent, gradeId]);
   const [subjectId, setSubjectId] = useState<string | null>(null);
   const [shelf, setShelf] = useState<Shelf | null>(null);
   const [lessonId, setLessonId] = useState<string | null>(null);

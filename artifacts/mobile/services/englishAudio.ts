@@ -50,6 +50,15 @@ export async function playWord(word: string): Promise<void> {
  * is the correct behaviour, not a bug to route around.
  */
 export async function playLocalUri(uri: string): Promise<void> {
+  return playUri(uri);
+}
+
+/**
+ * Any recording by URI — a local file or a signed link. The teacher's
+ * marking screen plays a student's read-aloud answer through this; same
+ * player, same never-rejects posture.
+ */
+export async function playUri(uri: string): Promise<void> {
   try {
     if (!modeSet) {
       modeSet = true;

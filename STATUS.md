@@ -14839,12 +14839,60 @@ minors'. Now:
   acceptance — the notice is the acceptance there. That is a deliberate
   choice: refusing and redirecting to register was the stricter alternative.
 
-**Schema: `docs/schema-push-2026-10-03-terms-acceptance.sql` must run on Neon
-before this merges.** Both sign-up routes write the new columns, so without
-them every new account fails to insert. `verify-schema` checks the columns.
+**Schema: `docs/schema-push-2026-10-03-terms-acceptance.sql` was run on Neon
+before the merge (#800, 2026-10-03), by the owner — not re-checked from the
+session that wrote this.** Both sign-up routes write the new columns, so if
+they are missing every new account fails to insert. `pnpm --filter
+@workspace/db run verify-schema` checks them.
 
 **Not done:** accounts created before this have no record (`terms_accepted_at`
 null) and are not asked to accept; re-acceptance when the wording changes is
 a separate flow. Apps that have not relaunched since the merge still send no
 acceptance and are refused with a generic error until the over-the-air update
 reaches them (published on every merge to main).
+
+## A teacher can hear a read-aloud answer, and the review's small items, 2026-10-03
+
+**A read-aloud answer kept the child's voice and nobody could play it.** The
+mark is transcript accuracy against the passage, so a microphone that clipped
+or an accent the transcriber missed reads as a weak reader, and the one thing
+that would settle it — the recording — had no screen. Now:
+
+- **`GET /attempts/:id` carries a signed, expiring `audioUrl`** on each answer
+  with a stored recording (`withRecordingUrls`, `lib/attemptAudioKeys.ts`,
+  tested). Teacher-only, like the rest of that route; the key never becomes a
+  public link.
+- **The marking screen shows a read-aloud answer**: the passage, «ما
+  سمعناه», and «استمع إلى تسجيل الطالب», through the `expo-audio` player the
+  English hub already ships (no native change, no `version` bump). Before
+  this it labelled read-aloud as a paper question and showed nothing at all.
+
+From the 2026-10-02 review's low list:
+
+- **L3** — the claim gate counted a link to an archived roster row, so a
+  student whose only link was archived got into an empty app. The gate now
+  asks `hasLiveRosterLink`; the role-switch lock keeps counting archived
+  links, as its teacher-side twin counts archived classes.
+- **L5** — malformed ids on `/messaging/blocks` and `/messaging/reports` came
+  back 500 from a Postgres cast; now `400 invalid_input`.
+- **L6** — the empty inbox told parents and students they could message "a
+  linked parent". A direct thread needs exactly one teacher; the line now
+  says a teacher.
+- **L7** — an announcement-only class group flashed a message box while the
+  thread loaded. Nothing shows until it has.
+- **L11** — a student has no grade picker, so the library and the
+  curriculum browser opened on the catalog's first grade (Grade 10 for a
+  Grade 9 student). `GET /student/grades` returns the grades of their live
+  roster rows (the row's own grade, else its class's; `lib/studentGrades.ts`,
+  tested) and both screens start there.
+- **L15** — re-entering your own claim code said the name belonged to
+  another account: `decideClaim`'s self-link check counted the caller's own
+  link, though the claim transaction after it did not.
+- **L10** was already fixed on main (the sitting-move checks class
+  membership).
+
+**Still open from that list:** L2 (a profile edit drops `hasRosterLink` from
+the cached user — latent: the gate reads only `=== false`), L4 (whether
+students may use `/chat` at all — a product decision), L8, L13, L14, and the
+two messaging privacy items (every member's name and role sent to every
+member of an announcement group; report reasons stored as i18n keys).
