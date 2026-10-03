@@ -232,6 +232,9 @@ export default function ClassGameScreen() {
       lesson: groundingRef.current?.lesson ?? null,
       verified: false,
       figureUri: bookFigureUri,
+      // The deck's own, not the pickers': they may have moved since it was built.
+      grade: deck.grade,
+      subject: deck.subject,
     }));
     // Only the pill drives this; the deck it rebuilds is read, not watched.
   }, [teamCount]);
