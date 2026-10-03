@@ -386,10 +386,10 @@ function makeMCQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const pts = mcPts(diff);
   const math = tryMathPractice('multiple_choice', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
-  const t0 = kb?.keyTerms?.[0];
-  const t1 = kb?.keyTerms?.[1];
-  const c0 = kb?.keyConceptsAr?.[0] ?? topic;
-  const c1 = kb?.keyConceptsAr?.[1] ?? `تطبيق ${topic}`;
+  const t0 = kb?.keyTerms?.filter(t => t.ar?.trim())[0];
+  const t1 = kb?.keyTerms?.filter(t => t.ar?.trim())[1];
+  const c0 = kb?.keyConceptsAr?.[0]?.trim() || topic;
+  const c1 = kb?.keyConceptsAr?.[1]?.trim() || `تطبيق ${topic}`;
 
   const correct0 = defWords(t0?.definitionAr, 9) ?? `الوصف الصحيح لـ${topic}`;
   const templates: TieredTemplate[] = [
@@ -409,10 +409,10 @@ function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const pts = saPts(diff);
   const math = tryMathPractice('short_answer', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
-  const t0 = kb?.keyTerms?.[0];
-  const t1 = kb?.keyTerms?.[1];
-  const c0 = kb?.keyConceptsAr?.[0] ?? topic;
-  const c1 = kb?.keyConceptsAr?.[1] ?? `تطبيق ${topic}`;
+  const t0 = kb?.keyTerms?.filter(t => t.ar?.trim())[0];
+  const t1 = kb?.keyTerms?.filter(t => t.ar?.trim())[1];
+  const c0 = kb?.keyConceptsAr?.[0]?.trim() || topic;
+  const c1 = kb?.keyConceptsAr?.[1]?.trim() || `تطبيق ${topic}`;
   const templates: TieredTemplate[] = [
     { tier: 'easy', make: () => ({ text: `اشرح بأسلوبك الخاص مفهوم ${t0?.ar ?? topic} مع إعطاء مثال تطبيقي.`, answer: defWords(t0?.definitionAr, 10) ? `التعريف: ${defWords(t0?.definitionAr, 10)}... + مثال حياتي.` : `التعريف الدقيق + مثال واضح.`, points: pts }) },
     { tier: 'easy', make: () => ({ text: `صِف الخطوات المنهجية التي تتبعها لحل مسألة تتعلق بـ${topic}. استخدم قائمة مرقّمة.`, answer: 'الخطوات: 1. تحديد المعطيات 2. اختيار الأسلوب 3. التنفيذ 4. التحقق.', points: pts }) },
@@ -429,9 +429,9 @@ function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const pts = fbPts(diff);
   const math = tryMathPractice('fill_blank', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
-  const t0 = kb?.keyTerms?.[0];
-  const t1 = kb?.keyTerms?.[1];
-  const c0 = kb?.keyConceptsAr?.[0] ?? topic;
+  const t0 = kb?.keyTerms?.filter(t => t.ar?.trim())[0];
+  const t1 = kb?.keyTerms?.filter(t => t.ar?.trim())[1];
+  const c0 = kb?.keyConceptsAr?.[0]?.trim() || topic;
   const templates: TieredTemplate[] = [
     { tier: 'easy', make: () => ({ text: `أكمل: ${t0?.ar ?? topic} يُعرَّف بأنه __________.`, answer: defWords(t0?.definitionAr, 6) ?? 'راجع تعريف الكتاب المدرسي', points: pts }) },
     { tier: 'medium', make: () => ({ text: `عند تطبيق ${topic}، فإن __________ يتغير نتيجة __________.`, answer: 'المتغير / السبب (راجع الكتاب المدرسي)', points: pts }) },
@@ -447,14 +447,13 @@ function makeTFQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const pts = tfPts(diff);
   const math = tryMathPractice('true_false', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
-  const c0 = kb?.keyConceptsAr?.[0] ?? topic;
-  const c1 = kb?.keyConceptsAr?.[1] ?? `تطبيق ${topic}`;
+  const c0 = kb?.keyConceptsAr?.[0]?.trim() || topic;
+  const c1 = kb?.keyConceptsAr?.[1]?.trim() || `تطبيق ${topic}`;
   const templates: TieredTemplate[] = [
     { tier: 'easy', make: () => ({ text: `${c0} يُعدّ من الأسس الجوهرية في ${topic}.`, options: ['صح', 'خطأ'], answer: 'صح', points: pts }) },
     { tier: 'medium', make: () => ({ text: `يمكن إتقان ${topic} دون فهم ${c1}.`, options: ['صح', 'خطأ'], answer: 'خطأ', points: pts }) },
     { tier: 'easy', make: () => ({ text: `${topic} له تطبيقات واسعة في الحياة اليومية خارج الفصل الدراسي.`, options: ['صح', 'خطأ'], answer: 'صح', points: pts }) },
     { tier: 'easy', make: () => ({ text: `المعرفة السابقة غير ضرورية لفهم ${topic}.`, options: ['صح', 'خطأ'], answer: 'خطأ', points: pts }) },
-    { tier: 'medium', make: () => ({ text: `إتقان ${topic} يتطلب الفهم العميق قبل الحفظ.`, options: ['صح', 'خطأ'], answer: 'صح', points: pts }) },
     { tier: 'medium', make: () => ({ text: `${topic} مستقل تمامًا ولا يرتبط بمواضيع الوحدات الأخرى.`, options: ['صح', 'خطأ'], answer: 'خطأ', points: pts }) },
     { tier: 'hard', make: () => ({ text: `تطبيق ${topic} في مسائل جديدة يُعدّ دليلًا على الإتقان الحقيقي.`, options: ['صح', 'خطأ'], answer: 'صح', points: pts }) },
     { tier: 'hard', make: () => ({ text: `جميع مسائل ${topic} لها أسلوب حل واحد فقط.`, options: ['صح', 'خطأ'], answer: 'خطأ', points: pts }) },
@@ -467,7 +466,7 @@ function makeWPQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const pts = saPts(diff);
   const math = tryMathPractice('word_problem', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
-  const c0 = kb?.keyConceptsAr?.[0] ?? topic;
+  const c0 = kb?.keyConceptsAr?.[0]?.trim() || topic;
   const obj = kb?.objectives?.find(o => /حياتي|مسألة|نمذج/.test(o));
   const templates: TieredTemplate[] = [
     { tier: 'easy', make: () => ({
@@ -505,10 +504,10 @@ function makeMCQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const pts = mcPts(diff);
   const math = tryMathPractice('multiple_choice', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
-  const t0 = kb?.keyTerms?.[0];
-  const t1 = kb?.keyTerms?.[1];
-  const c0 = kb?.keyConceptsEn?.[0] ?? topic;
-  const c1 = kb?.keyConceptsEn?.[1] ?? `application of ${topic}`;
+  const t0 = kb?.keyTerms?.filter(t => t.en?.trim())[0];
+  const t1 = kb?.keyTerms?.filter(t => t.en?.trim())[1];
+  const c0 = kb?.keyConceptsEn?.[0]?.trim() || topic;
+  const c1 = kb?.keyConceptsEn?.[1]?.trim() || `application of ${topic}`;
   const correct0 = defChars(t0?.definitionEn, 60) ?? `The correct description of ${topic}`;
   const templates: TieredTemplate[] = [
     { tier: 'easy', make: () => ({ text: `Which of the following correctly defines ${t0?.en ?? topic}?`, options: placeCorrect(correct0, [`An unrelated concept`, 'A description of a different phenomenon', 'None of the above']), answer: correct0, points: pts }) },
@@ -527,10 +526,10 @@ function makeSAQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const pts = saPts(diff);
   const math = tryMathPractice('short_answer', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
-  const t0 = kb?.keyTerms?.[0];
-  const t1 = kb?.keyTerms?.[1];
-  const c0 = kb?.keyConceptsEn?.[0] ?? topic;
-  const c1 = kb?.keyConceptsEn?.[1] ?? `application of ${topic}`;
+  const t0 = kb?.keyTerms?.filter(t => t.en?.trim())[0];
+  const t1 = kb?.keyTerms?.filter(t => t.en?.trim())[1];
+  const c0 = kb?.keyConceptsEn?.[0]?.trim() || topic;
+  const c1 = kb?.keyConceptsEn?.[1]?.trim() || `application of ${topic}`;
   const templates: TieredTemplate[] = [
     { tier: 'easy', make: () => ({ text: `Explain in your own words what ${t0?.en ?? topic} means and give one real-world example.`, answer: defChars(t0?.definitionEn, 60) ? `Definition: ${defChars(t0?.definitionEn, 60)}... + real example.` : 'Accurate definition + concrete example.', points: pts }) },
     { tier: 'easy', make: () => ({ text: `Describe the systematic steps you would follow to solve a problem involving ${topic}. Use a numbered list.`, answer: 'Steps: 1. Identify given/asked 2. Choose method 3. Execute 4. Verify.', points: pts }) },
@@ -547,9 +546,9 @@ function makeFBQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const pts = fbPts(diff);
   const math = tryMathPractice('fill_blank', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
-  const t0 = kb?.keyTerms?.[0];
-  const t1 = kb?.keyTerms?.[1];
-  const c0 = kb?.keyConceptsEn?.[0] ?? topic;
+  const t0 = kb?.keyTerms?.filter(t => t.en?.trim())[0];
+  const t1 = kb?.keyTerms?.filter(t => t.en?.trim())[1];
+  const c0 = kb?.keyConceptsEn?.[0]?.trim() || topic;
   const templates: TieredTemplate[] = [
     { tier: 'easy', make: () => ({ text: `${t0?.en ?? topic} is __________ characterised by __________.`, answer: `${t0?.en ?? topic} / ${defWords(t0?.definitionEn, 4) ?? 'see textbook'}`, points: pts }) },
     { tier: 'medium', make: () => ({ text: `When applying ${topic}, __________ changes as a result of __________.`, answer: 'The dependent variable / the cause (see textbook)', points: pts }) },
@@ -565,14 +564,13 @@ function makeTFQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const pts = tfPts(diff);
   const math = tryMathPractice('true_false', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
-  const c0 = kb?.keyConceptsEn?.[0] ?? topic;
-  const c1 = kb?.keyConceptsEn?.[1] ?? `application of ${topic}`;
+  const c0 = kb?.keyConceptsEn?.[0]?.trim() || topic;
+  const c1 = kb?.keyConceptsEn?.[1]?.trim() || `application of ${topic}`;
   const templates: TieredTemplate[] = [
     { tier: 'easy', make: () => ({ text: `${c0} is one of the core foundations of ${topic}.`, options: ['True', 'False'], answer: 'True', points: pts }) },
     { tier: 'medium', make: () => ({ text: `${topic} can be mastered without understanding ${c1}.`, options: ['True', 'False'], answer: 'False', points: pts }) },
     { tier: 'easy', make: () => ({ text: `${topic} has broad applications in daily life beyond the classroom.`, options: ['True', 'False'], answer: 'True', points: pts }) },
     { tier: 'easy', make: () => ({ text: `Prior knowledge is unnecessary for understanding ${topic}.`, options: ['True', 'False'], answer: 'False', points: pts }) },
-    { tier: 'medium', make: () => ({ text: `Mastering ${topic} requires deep understanding before memorisation.`, options: ['True', 'False'], answer: 'True', points: pts }) },
     { tier: 'medium', make: () => ({ text: `${topic} is completely independent and unrelated to other topics in this unit.`, options: ['True', 'False'], answer: 'False', points: pts }) },
     { tier: 'hard', make: () => ({ text: `Successfully applying ${topic} to unfamiliar problems demonstrates genuine mastery.`, options: ['True', 'False'], answer: 'True', points: pts }) },
     { tier: 'hard', make: () => ({ text: `All problems involving ${topic} can be solved using only one fixed method.`, options: ['True', 'False'], answer: 'False', points: pts }) },
@@ -585,7 +583,7 @@ function makeWPQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const pts = saPts(diff);
   const math = tryMathPractice('word_problem', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
-  const c0 = kb?.keyConceptsEn?.[0] ?? topic;
+  const c0 = kb?.keyConceptsEn?.[0]?.trim() || topic;
   const templates: TieredTemplate[] = [
     { tier: 'easy', make: () => ({
       text: `Real-life problem: A shop needs to apply “${topic}” to price a promotion. List the given information, then solve step by step.`,
