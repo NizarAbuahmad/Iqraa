@@ -2,7 +2,7 @@ import React from 'react';
 import { ImageStyle, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 
-// The PNGs hold only the Arabic إقرأ glyph (the Latin line was cropped off
+// The PNGs hold only the Arabic اقرأ glyph (the Latin line was cropped off
 // 2026-10-02). The wordmark under it is text, so it always carries the
 // brand's spelling — Iqrra, as the domain — and never needs a new export.
 const MARK_LIGHT = require('@/assets/images/logo-mark.png');
