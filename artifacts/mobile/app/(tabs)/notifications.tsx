@@ -17,7 +17,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
-  MessagingError,
   getMyContacts,
   getTeacherContacts,
   listThreads,
@@ -25,6 +24,7 @@ import {
   type ChatThreadSummary,
   type ChatRole,
 } from '@/services/messaging';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 import { chatRoleLabel } from '@/services/chatRoleLabel';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
@@ -102,7 +102,7 @@ export default function NotificationsScreen() {
       setContacts(myContacts);
       setError('');
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingLoadError'));
+      setError(apiErrorMessage(e, 'messagingLoadError', t));
     } finally {
       setLoading(false);
     }
@@ -119,7 +119,7 @@ export default function NotificationsScreen() {
       setNewChatOpen(false);
       router.push(`/messaging/${thread.id}`);
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingSendError'));
+      setError(apiErrorMessage(e, 'messagingSendError', t));
     } finally {
       setStartingUserId(null);
     }

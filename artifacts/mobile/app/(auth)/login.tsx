@@ -16,6 +16,7 @@ import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/Goo
 import { Input } from '@/components/ui/Input';
 import { AccountRow } from '@/components/ui/AccountRow';
 import { ApiError } from '@/services/apiClient';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 import { getLastGoogleEmail } from '@/services/savedAccounts';
 
 export default function LoginScreen() {
@@ -77,7 +78,7 @@ export default function LoginScreen() {
         router.push({ pathname: '/(auth)/verify-email', params: { email: email.trim() } });
         return;
       }
-      setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول' : 'Login failed'));
+      setError(apiErrorMessage(e, 'errLoginFailed', t));
     } finally {
       setLoading(false);
     }
@@ -89,7 +90,7 @@ export default function LoginScreen() {
     try {
       await loginWithGoogle(credential);
     } catch (e: any) {
-      setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول عبر Google' : 'Google sign-in failed'));
+      setError(apiErrorMessage(e, 'errGoogleFailed', t));
     } finally {
       setGoogleLoading(false);
     }

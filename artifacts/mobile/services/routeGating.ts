@@ -77,6 +77,9 @@ const NON_TEACHER_ROUTES = [
   '/settings',
   '/faq',
   '/delete-account',
+  // «اختباراتي». The API behind it answers students only; a parent who types
+  // the URL gets the screen's translated refusal, not a teacher login.
+  '/my-exams',
 ];
 
 /**

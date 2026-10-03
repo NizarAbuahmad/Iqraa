@@ -2,33 +2,25 @@
  * Iqrra's identity mark — the assistant's face in chat.
  *
  * Separate from `BrandLogo` because they solve different problems. BrandLogo is
- * the full lockup: the Arabic اقرأ stacked over the IQRA wordmark, two lines of
- * type in a 1024px square. It was being rendered at 22–26px in message avatars
- * and the header chip, where each line of type lands about ten pixels tall and
- * dissolves into a grey smudge — which is why the avatars read as empty circles.
- *
- * A mark that has to work at 20px can carry one shape, not a wordmark. This
- * takes the leaf from above the أ — the one element of the logo that is a
- * silhouette rather than a letterform — and draws it as vector so it stays crisp
- * at any size. Use BrandLogo where there is room for the real thing (headers,
- * splash, export headers); use this everywhere the mark is small or repeated.
+ * the full lockup (mark + اقرأ wordmark); at 22–26px the wordmark dissolves into
+ * a smudge, which is why message avatars read as empty circles. A mark that has
+ * to work at 20px carries one shape, so this draws just the leaf mark of the
+ * logo, as vector, crisp at any size. Use BrandLogo where there is room for the
+ * lockup (headers, splash, login); use this where the mark is small or repeated.
  */
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View, type ViewStyle } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import React, { useEffect, useId, useRef } from 'react';
+import { Animated, Easing, StyleSheet, type ViewStyle } from 'react-native';
+import Svg, { Circle, Defs, Mask, Path, Rect } from 'react-native-svg';
 import { NATIVE_DRIVER } from '@/constants/animation';
-
-const TEAL = '#00A99D';
-const AQUA = '#34D6C6';
-const NAVY = '#081B3A';
+import { BRAND_TEAL, DOT, LEAF_PATH, MARK_RADIUS, STEM_PATH } from '@/constants/brandMark';
 
 type Props = {
   /** Outer size in px. The glyph scales with it. */
   size?: number;
   /**
-   * 'brand' — teal ground, light glyph. For the header chip.
-   * 'soft'  — tinted ground, teal glyph. For message avatars on a light surface.
-   * 'bare'  — glyph only, no ground.
+   * 'brand' — the logo's teal square, white leaf. For the header chip.
+   * 'soft'  — tinted ground, teal leaf. For message avatars on a light surface.
+   * 'bare'  — leaf only, no ground.
    */
   tone?: 'brand' | 'soft' | 'bare';
   /** Breathe while the assistant is composing. State, not decoration. */
@@ -38,6 +30,8 @@ type Props = {
 
 export function IqraaMark({ size = 34, tone = 'soft', thinking = false, style }: Props) {
   const pulse = useRef(new Animated.Value(0)).current;
+  // The stem is cut out of the leaf, so it shows whatever is behind the mark.
+  const maskId = `iqmark${useId().replace(/:/g, '')}`;
 
   useEffect(() => {
     if (!thinking) {
@@ -66,50 +60,31 @@ export function IqraaMark({ size = 34, tone = 'soft', thinking = false, style }:
   }, [thinking, pulse]);
 
   const ground =
-    tone === 'brand' ? TEAL : tone === 'soft' ? 'rgba(0,169,157,0.12)' : 'transparent';
-  const leaf = tone === 'brand' ? '#FFFFFF' : TEAL;
-  const dot = tone === 'brand' ? AQUA : AQUA;
-
-  // The glyph sits at ~62% of the ground so it has room to breathe.
-  const glyph = Math.round(size * 0.62);
+    tone === 'brand' ? BRAND_TEAL : tone === 'soft' ? 'rgba(0,169,157,0.12)' : 'transparent';
+  const leaf = tone === 'brand' ? '#FFFFFF' : BRAND_TEAL;
 
   const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.09] });
 
   return (
     <Animated.View
-      style={[
-        styles.ground,
-        {
-          width: size,
-          height: size,
-          borderRadius: tone === 'bare' ? 0 : Math.round(size * 0.32),
-          backgroundColor: ground,
-          transform: [{ scale }],
-        },
-        style,
-      ]}
+      style={[styles.ground, { width: size, height: size, transform: [{ scale }] }, style]}
       accessibilityRole="image"
       accessibilityLabel="اقرأ"
     >
-      <Svg width={glyph} height={glyph} viewBox="0 0 24 24">
-        {/*
-          The leaf: a tapered stroke, point at lower-left, swelling to the upper
-          right. Traced from the mark above the أ in the logo rather than
-          invented, so it still reads as Iqrra at a glance.
-        */}
-        <Path
-          d="M4.6 20.2c-.6-6.6 2.2-12.2 8.4-15.6 2.1-1.2 4.3-1.9 6.4-2.1.5 6.9-2.2 12.4-8 16.1-2.1 1.3-4.4 2-6.8 1.6z"
-          fill={leaf}
-        />
-        {/* The two ق dots, kept as the second brand cue. */}
-        <Circle cx="17.8" cy="20.4" r="2.05" fill={dot} />
+      <Svg width={size} height={size} viewBox="0 0 48 48">
+        <Defs>
+          <Mask id={maskId} maskUnits="userSpaceOnUse" x={0} y={0} width={48} height={48}>
+            <Rect width={48} height={48} fill="#FFFFFF" />
+            <Path d={STEM_PATH} stroke="#000000" strokeWidth={1.8} strokeLinecap="round" fill="none" />
+          </Mask>
+        </Defs>
+        {tone !== 'bare' ? <Rect width={48} height={48} rx={48 * MARK_RADIUS} fill={ground} /> : null}
+        <Path d={LEAF_PATH} fill={leaf} mask={`url(#${maskId})`} />
+        <Circle cx={DOT.cx} cy={DOT.cy} r={DOT.r} fill={leaf} />
       </Svg>
     </Animated.View>
   );
 }
-
-/** Flat navy variant for places that need the mark on a light chip. */
-export const IQRAA_MARK_NAVY = NAVY;
 
 const styles = StyleSheet.create({
   ground: { alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
