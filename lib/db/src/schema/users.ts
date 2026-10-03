@@ -64,6 +64,16 @@ export const users = pgTable("users", {
    */
   rosterConsentVersion: text("roster_consent_version").notNull().default(""),
   /**
+   * When this account accepted the terms of use and privacy policy, and which
+   * wording (the date-shaped version `constants/legal.ts` shows). Required of
+   * every account created from 2026-10-03 on — see
+   * `api-server/src/lib/termsAcceptance.ts`. Null on older accounts: the
+   * register checkbox existed but nothing recorded it, and «متابعة عبر
+   * Google» never asked at all.
+   */
+  termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+  termsVersion: text("terms_version").notNull().default(""),
+  /**
    * Grade and subject catalog ids (`@workspace/curriculum`'s GRADES/SUBJECTS)
    * this teacher picked at signup. Empty on every non-teacher account, and on
    * a teacher who hasn't completed setup yet — that emptiness is the signal
