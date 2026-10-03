@@ -631,6 +631,7 @@ export default function QuizScreen() {
                   // projector badges exactly what was checked.
                   outcomes: effectiveOutcomes,
                   figureUri: bookFigureUri,
+                  ...getExportMeta(),
                 }),
               );
               router.push('/ai-tools/classroom/presentation' as any);
