@@ -28,7 +28,7 @@ import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/classroomStore';
 import {
   calcTimerPct, canFullscreen, describeKeyTarget, isFullscreen, keyboardAction, onFullscreenChange,
-  slideIsRTL, tickTimer, timerColor, timerSecondsForSlide, toggleFullscreen,
+  canTogglePause, slideIsRTL, tickTimer, timerColor, timerSecondsForSlide, timerShouldTick, toggleFullscreen,
 } from '@/services/presentationUtils';
 import { openExternal } from '@/services/externalLinks';
 import Svg, { Line, Polyline, Rect } from 'react-native-svg';
@@ -872,6 +872,12 @@ export default function PresentationScreen() {
   const [teacherPanelOpen, setTeacherPanelOpen] = useState(false);
   const [timerSec, setTimerSec] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
+  /**
+   * Holds the countdown where it is. `timerRunning` stays true while paused —
+   * the interval is what is disarmed, not the slide's timer — so resuming
+   * continues from `timerSec` rather than from the slide's full time.
+   */
+  const [timerPaused, setTimerPaused] = useState(false);
   /** Counts (re)starts, so a restart on an already-running clock still re-arms the interval. */
   const [timerRun, setTimerRun] = useState(0);
   const [timerTotal, setTimerTotal] = useState(0);
@@ -938,12 +944,14 @@ export default function PresentationScreen() {
       setTimerSec(seconds);
       setTimerTotal(seconds);
       setTimerRunning(true);
+      setTimerPaused(false);
       setTimerRun(n => n + 1);
     } else {
       clearIntervalIfRunning();
       setTimerSec(0);
       setTimerTotal(0);
       setTimerRunning(false);
+      setTimerPaused(false);
     }
   };
 
@@ -953,8 +961,11 @@ export default function PresentationScreen() {
   // effect never re-ran and the new slide's clock sat at its full time.
   // Restart-while-running did the same. Bumping the run counter restarts the
   // interval even when the flag does not change.
+  //
+  // A pause disarms the interval and leaves `timerSec` alone; resuming re-arms it
+  // from the same second. A new slide or a restart clears the pause.
   useEffect(() => {
-    if (timerRunning && timerSec > 0) {
+    if (timerShouldTick({ running: timerRunning, paused: timerPaused, sec: timerSec })) {
       timerRef.current = setInterval(() => {
         setTimerSec(s => {
           const next = tickTimer(s);
@@ -967,7 +978,7 @@ export default function PresentationScreen() {
       }, 1000);
     }
     return clearIntervalIfRunning;
-  }, [timerRunning, timerRun]);
+  }, [timerRunning, timerRun, timerPaused]);
 
   const showCelebration = () => {
     setCelebrationVisible(true);
@@ -1062,6 +1073,7 @@ export default function PresentationScreen() {
       e.preventDefault();
       if (action === 'next') goToSlide(slideIndex + 1);
       else if (action === 'prev') goToSlide(slideIndex - 1);
+      else if (action === 'togglePause') togglePauseTimer();
       else if (action === 'toggleFullscreen' || action === 'exitFullscreen') toggleFullscreen();
       else goBack();
     };
@@ -1077,9 +1089,17 @@ export default function PresentationScreen() {
       setTimerSec(seconds);
       setTimerTotal(seconds);
       setTimerRunning(true);
+      setTimerPaused(false);
       setTimerRun(n => n + 1);
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  /** Hold or resume the countdown mid-question. No-op once the time is up. */
+  const togglePauseTimer = () => {
+    if (!canTogglePause({ running: timerRunning, sec: timerSec })) return;
+    setTimerPaused(p => !p);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   // While redirecting (activity is null), render nothing
@@ -1157,10 +1177,20 @@ export default function PresentationScreen() {
 
         {/* Timer */}
         {hasTimer ? (
-          <View style={[styles.timerBox, { borderColor: tColor + '44', backgroundColor: tColor + '15' }]}>
-            <Ionicons name="timer-outline" size={13} color={tColor} />
+          // The clock is the pause control on every screen size: a phone's bottom
+          // bar has no room for another icon, and tapping the clock you are
+          // watching is where a hand goes. P does the same from the keyboard.
+          <Pressable
+            onPress={togglePauseTimer}
+            disabled={!canTogglePause({ running: timerRunning, sec: timerSec })}
+            hitSlop={10}
+            style={[styles.timerBox, { borderColor: tColor + '44', backgroundColor: tColor + '15', opacity: timerPaused ? 0.6 : 1 }]}
+            accessibilityRole="button"
+            accessibilityLabel={timerPaused ? t('resumeTimer') : t('pauseTimer')}
+          >
+            <Ionicons name={timerPaused ? 'pause-circle-outline' : 'timer-outline'} size={13} color={tColor} />
             <Text style={[styles.timerText, { color: tColor, fontFamily: 'ReadexPro_700Bold' }]}>{mm}:{ss}</Text>
-          </View>
+          </Pressable>
         ) : (
           <View style={{ width: 76 }} />
         )}
@@ -1397,6 +1427,21 @@ export default function PresentationScreen() {
               </Text>
             )}
           </Pressable>
+          {hasTimer && !compactBar && canTogglePause({ running: timerRunning, sec: timerSec }) && (
+            <Pressable
+              onPress={togglePauseTimer}
+              style={[styles.actionBtn, timerPaused && { borderColor: ACCENT + '50', backgroundColor: ACCENT + '12' }]}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={timerPaused ? t('resumeTimer') : t('pauseTimer')}
+              accessibilityState={{ selected: timerPaused }}
+            >
+              <Ionicons name={timerPaused ? 'play-outline' : 'pause-outline'} size={18} color={timerPaused ? ACCENT : TEXT_MUTED} />
+              <Text numberOfLines={1} style={[styles.actionLabel, timerPaused && { color: ACCENT }, { fontFamily: 'Almarai_400Regular' }]}>
+                {timerPaused ? t('resumeTimer') : t('pauseTimer')}
+              </Text>
+            </Pressable>
+          )}
           {hasTimer && (
             <Pressable
               onPress={restartTimer}

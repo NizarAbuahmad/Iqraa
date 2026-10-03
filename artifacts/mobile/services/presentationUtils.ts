@@ -43,6 +43,26 @@ export function tickTimer(currentSec: number): number {
 }
 
 /**
+ * Should the one-second interval be armed?
+ *
+ * Pausing only disarms it: the seconds left stay in the screen's state, so
+ * resuming picks up at the same second instead of restarting the slide's full
+ * time — which is what «أعد المؤقت» is for. A running clock with nothing left
+ * does not tick either; that is how the countdown stops itself at zero.
+ */
+export function timerShouldTick(s: { running: boolean; paused: boolean; sec: number }): boolean {
+  return s.running && !s.paused && s.sec > 0;
+}
+
+/**
+ * Whether the pause control has anything to act on: a clock that is counting
+ * down, or paused part-way. Out of time, or an untimed slide, it is hidden.
+ */
+export function canTogglePause(s: { running: boolean; sec: number }): boolean {
+  return s.running && s.sec > 0;
+}
+
+/**
  * Whether a slide should show a timer at all.
  *
  * Type-aware: a duration on a read-out slide type is not a timer.
@@ -136,7 +156,7 @@ export function toggleFullscreen(): void {
 
 // ─── Keyboard / presentation clicker ───────────────────────────────────────
 
-export type DeckKeyAction = 'next' | 'prev' | 'toggleFullscreen' | 'exitFullscreen' | 'back';
+export type DeckKeyAction = 'next' | 'prev' | 'toggleFullscreen' | 'exitFullscreen' | 'back' | 'togglePause';
 
 export interface DeckKeyEvent {
   key: string;
@@ -201,6 +221,9 @@ export function keyboardAction(e: DeckKeyEvent, ctx: DeckKeyContext): DeckKeyAct
   if (e.key === 'PageDown' || activates || forward) return 'next';
   if (e.key === 'PageUp' || backward) return 'prev';
   if (e.code === 'KeyF') return 'toggleFullscreen';
+  // P holds the countdown mid-question — a student asks something, the room
+  // gets noisy — and a second press resumes it. By physical key, like F.
+  if (e.code === 'KeyP') return 'togglePause';
   // Esc mid-class must not dump the deck just because the teacher wanted the
   // browser chrome back.
   if (e.key === 'Escape') return ctx.fullscreen ? 'exitFullscreen' : 'back';

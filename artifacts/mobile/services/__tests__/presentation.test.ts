@@ -28,6 +28,8 @@ import {
   keyboardAction,
   describeKeyTarget,
   slideIsRTL,
+  timerShouldTick,
+  canTogglePause,
 } from '../presentationUtils.ts';
 import { TIMER_AMBER, TIMER_GREEN, TIMER_RED } from '../deckTheme.ts';
 
@@ -611,8 +613,49 @@ describe('keyboardAction()', () => {
     assert.equal(keyboardAction(k('ArrowRight'), open), null);
     assert.equal(keyboardAction(k('f', { code: 'KeyF' }), open), null);
   });
+  it('P pauses and resumes the countdown, by physical key like F', () => {
+    assert.equal(keyboardAction(k('p', { code: 'KeyP' }), ltr), 'togglePause');
+    assert.equal(keyboardAction({ key: 'ح', code: 'KeyP' }, rtl), 'togglePause');
+  });
+  it('P is left alone when it is a chord, typing, or behind a modal', () => {
+    assert.equal(keyboardAction(k('p', { code: 'KeyP', ctrlKey: true }), ltr), null);
+    assert.equal(keyboardAction(k('p', { code: 'KeyP', metaKey: true }), ltr), null);
+    assert.equal(keyboardAction(k('p', { code: 'KeyP', targetTag: 'INPUT' }), ltr), null);
+    assert.equal(keyboardAction(k('p', { code: 'KeyP' }), { ...ltr, modalOpen: true }), null);
+  });
   it('ignores keys it does not own', () => {
     assert.equal(keyboardAction(k('a', { code: 'KeyA' }), ltr), null);
+  });
+});
+
+describe('timerShouldTick() — a paused clock holds its second', () => {
+  it('ticks only while running, not paused, with time left', () => {
+    assert.equal(timerShouldTick({ running: true, paused: false, sec: 30 }), true);
+  });
+  it('does not tick while paused, however much time is left', () => {
+    assert.equal(timerShouldTick({ running: true, paused: true, sec: 30 }), false);
+  });
+  it('does not tick when stopped or out of time', () => {
+    assert.equal(timerShouldTick({ running: false, paused: false, sec: 30 }), false);
+    assert.equal(timerShouldTick({ running: true, paused: false, sec: 0 }), false);
+  });
+  it('resuming picks up at the same second, not at the full time', () => {
+    // The screen keeps `sec` in state and only arms or disarms the interval, so
+    // pause → resume must leave it untouched: the rule reads it, never resets it.
+    const held = { running: true, paused: true, sec: 17 };
+    assert.equal(timerShouldTick(held), false);
+    assert.equal(timerShouldTick({ ...held, paused: false }), true);
+    assert.equal(held.sec, 17);
+  });
+});
+
+describe('canTogglePause() — the control only does something on a live clock', () => {
+  it('is available while the clock is running and while it is paused', () => {
+    assert.equal(canTogglePause({ running: true, sec: 30 }), true);
+  });
+  it('is not available once the time is up or on an untimed slide', () => {
+    assert.equal(canTogglePause({ running: false, sec: 0 }), false);
+    assert.equal(canTogglePause({ running: true, sec: 0 }), false);
   });
 });
 
