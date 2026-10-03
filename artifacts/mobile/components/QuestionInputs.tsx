@@ -75,14 +75,14 @@ export function MatchingInput({
         return (
           <View key={l.id}>
             <View style={[styles.matchRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, flex: 1, textAlign: align }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: align }}>
                 {isolateForeignRuns(l.text ?? l.id)}
               </Text>
               <Pressable
                 onPress={() => setOpenFor(openFor === l.id ? null : l.id)}
                 style={[styles.matchPicker, { borderColor: chosen ? ACCENT : colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
-                <Text style={{ color: chosen ? ACCENT : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+                <Text style={{ color: chosen ? ACCENT : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                   {chosenText ? isolateForeignRuns(chosenText) : t('matchingPickPlaceholder')}
                 </Text>
                 <Ionicons name={openFor === l.id ? 'chevron-up' : 'chevron-down'} size={14} color={colors.mutedForeground} />
@@ -99,7 +99,7 @@ export function MatchingInput({
                     }}
                     style={{ paddingVertical: 8, paddingHorizontal: 10 }}
                   >
-                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
                       {isolateForeignRuns(r.text ?? r.id)}
                     </Text>
                   </Pressable>
@@ -136,8 +136,8 @@ export function FillBlankInput({
         style={{
           color: colors.foreground,
           fontFamily: 'Almarai_400Regular',
-          fontSize: 14,
-          lineHeight: 22,
+          fontSize: 15,
+          lineHeight: 24,
           textAlign: align,
           writingDirection: align === 'right' ? 'rtl' : 'ltr',
           marginBottom: 10,

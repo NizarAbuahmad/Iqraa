@@ -109,8 +109,8 @@ const styles = StyleSheet.create({
   },
   body: {
     fontFamily: 'Almarai_400Regular',
-    fontSize: 14,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 26,
     maxWidth: 340,
   },
   actions: {

@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   infoRow: { alignItems: 'center', padding: 14, gap: 12 },
   infoIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   infoLabel: { fontSize: 11, lineHeight: 18, marginBottom: 2, fontFamily: 'Almarai_400Regular' },
-  infoValue: { fontSize: 14, lineHeight: 22, fontFamily: 'Almarai_400Regular' },
+  infoValue: { fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular' },
   divider: { height: 1, marginHorizontal: 14 },
   tagSection: { padding: 14, gap: 8 },
   tagLabel: { fontSize: 13 },

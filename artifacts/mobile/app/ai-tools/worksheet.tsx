@@ -628,7 +628,7 @@ export default function WorksheetScreen() {
             <Text style={{
               color: colors.mutedForeground,
               fontFamily: 'Almarai_400Regular',
-              fontSize: 12, lineHeight: 19,
+              fontSize: 13, lineHeight: 21,
               marginTop: 2,
               textAlign: isRTL ? 'right' : 'left',
             }}>
@@ -643,7 +643,7 @@ export default function WorksheetScreen() {
           beside the spinner they replace — they used to render above the form,
           out of sight of the button that had just been pressed.
         */}
-        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button label={loading ? t('generating') : t('createWorksheetBtn')} onPress={() => generate()} loading={loading} disabled={!topic.trim()} fullWidth />
         {/* The same paper at every difficulty, for a class that is not one
             level. Costs three generations the first time a lesson is asked
@@ -662,7 +662,7 @@ export default function WorksheetScreen() {
           product rather than an unmet precondition. It says which one.
         */}
         {!topic.trim() ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
             {t('needTopicHint')}
           </Text>
         ) : null}
@@ -763,7 +763,7 @@ export default function WorksheetScreen() {
             <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
           </View>
 
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginBottom: 16, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 16, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
             {result.instructions}
           </Text>
 

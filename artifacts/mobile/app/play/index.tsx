@@ -60,7 +60,7 @@ export default function PlayHubScreen() {
           <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 24, textAlign: 'center' }}>
             {t('playHubTitle')}
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center', marginTop: 6 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center', marginTop: 6 }}>
             {t('playHubSubtitle')}
           </Text>
         </View>
@@ -78,7 +78,7 @@ export default function PlayHubScreen() {
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
                 {t(g.titleKey)}
               </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: 'center' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
                 {t(g.descKey)}
               </Text>
             </Pressable>
@@ -90,7 +90,7 @@ export default function PlayHubScreen() {
             <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
               {t('playCtaHeading')}
             </Text>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: 'center', lineHeight: 23 }}>
               {t('playCtaBody')}
             </Text>
             <Button

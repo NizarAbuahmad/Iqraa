@@ -76,5 +76,5 @@ const styles = StyleSheet.create({
   titleRow: { alignItems: 'center', gap: 8 },
   emoji: { fontSize: 22 },
   title: { flexShrink: 1, color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 22 },
-  subtitle: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22 },
+  subtitle: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 },
 });

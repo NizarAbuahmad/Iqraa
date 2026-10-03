@@ -164,7 +164,7 @@ export function StudentPickerSheet({
                       style={{
                         color: colors.mutedForeground,
                         fontFamily: 'Almarai_400Regular',
-                        fontSize: 12, lineHeight: 19,
+                        fontSize: 13, lineHeight: 21,
                         textAlign: align,
                       }}
                     >
@@ -206,7 +206,7 @@ export function StudentPickerSheet({
                         style={{
                           color: colors.mutedForeground,
                           fontFamily: 'Almarai_400Regular',
-                          fontSize: 12, lineHeight: 19,
+                          fontSize: 13, lineHeight: 21,
                           textAlign: align,
                         }}
                         numberOfLines={1}
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   card: { width: '100%', maxWidth: 440, borderRadius: 16, padding: 20, gap: 12 },
   head: { alignItems: 'center', gap: 10 },
   title: { fontSize: 18 },
-  hint: { fontSize: 13, lineHeight: 21 },
+  hint: { fontSize: 15, lineHeight: 24 },
   row: {
     alignItems: 'center',
     gap: 10,

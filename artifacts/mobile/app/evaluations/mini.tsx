@@ -281,7 +281,7 @@ export default function MiniEvalScreen() {
                     size={18}
                     color={selected ? ACCENT : colors.mutedForeground}
                   />
-                  <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, flex: 1, textAlign: align }}>
+                  <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: align }}>
                     {(lang === 'ar' ? o.descriptionAr : o.description) || o.description}
                   </Text>
                 </Pressable>
@@ -326,7 +326,7 @@ export default function MiniEvalScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14, gap: 6 },
   headerTitle: { color: '#fff', fontSize: 20 },
-  headerSub: { color: '#fff', opacity: 0.9, fontSize: 13, lineHeight: 21 },
+  headerSub: { color: '#fff', opacity: 0.9, fontSize: 15, lineHeight: 24 },
   errorBox: {
     margin: 20,
     marginBottom: 0,
@@ -337,8 +337,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   label: { fontSize: 14, marginBottom: 4 },
-  hint: { fontSize: 12, lineHeight: 19 },
-  empty: { padding: 20, fontSize: 13, lineHeight: 21 },
+  hint: { fontSize: 13, lineHeight: 21 },
+  empty: { padding: 20, fontSize: 15, lineHeight: 24 },
   row: { borderWidth: 1, borderRadius: 12, padding: 12 },
   cta: {
     borderRadius: 14,

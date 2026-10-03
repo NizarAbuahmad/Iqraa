@@ -318,10 +318,10 @@ export default function EvaluationDetailScreen() {
                 {t(STATUS_KEY[evaluation.status])}
               </Text>
             </View>
-            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
               {t('evalQuestionCount', questions.length)}
             </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
               {t('evalTotalMarks', evaluation.totalMarks)}
             </Text>
           </View>
@@ -409,7 +409,7 @@ export default function EvaluationDetailScreen() {
 
       {evaluation?.status === 'closed' && (
         <View style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
             {t('evaluationClosedNote')}
           </Text>
           <Pressable
@@ -446,7 +446,7 @@ export default function EvaluationDetailScreen() {
             <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
             <View style={{ flex: 1, gap: 4 }}>
               {genWarnings.map((w, i) => (
-                <Text key={i} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+                <Text key={i} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                   {`• ${w}`}
                 </Text>
               ))}
@@ -467,7 +467,7 @@ export default function EvaluationDetailScreen() {
                   {t(TYPE_LABEL_KEY[q.type])}
                 </Text>
               </View>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
                 {t('marksAbbrev', q.marks)}
               </Text>
               {evaluation?.status === 'draft' && (
@@ -716,7 +716,7 @@ function KeyCheckNotice({
           {title}
         </Text>
       </View>
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 4, textAlign: align, lineHeight: 18 }}>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 4, textAlign: align, lineHeight: 20 }}>
         {note}
       </Text>
     </View>
@@ -751,7 +751,7 @@ function ShareLinkCard({
 
         {!attachedToClass ? (
           <>
-            <Text style={{ color: '#B54708', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 8, textAlign: align }}>
+            <Text style={{ color: '#B54708', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginTop: 8, textAlign: align }}>
               {t('shareExamNeedsClass')}
             </Text>
             {/* Naming the problem without offering the fix is what made this a
@@ -768,7 +768,7 @@ function ShareLinkCard({
           </>
         ) : (
           <>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 4, textAlign: align }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 4, textAlign: align }}>
               {t('shareExamHint')}
             </Text>
             <Text
@@ -777,7 +777,7 @@ function ShareLinkCard({
             >
               {shareCode}
             </Text>
-            <Text selectable style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: 'center' }}>
+            <Text selectable style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
               {url}
             </Text>
             <Pressable
@@ -810,7 +810,7 @@ const styles = StyleSheet.create({
   qTop: { alignItems: 'center', gap: 8, marginBottom: 8 },
   qNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  qText: { fontSize: 14, lineHeight: 20 },
+  qText: { fontSize: 15, lineHeight: 21 },
   verifiedRow: { alignItems: 'center', gap: 5, marginBottom: 6 },
   verifySummary: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
   actionBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 15, borderRadius: 10 },
