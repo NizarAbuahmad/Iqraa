@@ -113,6 +113,13 @@ function NativeGoogleButton({
       GoogleSignin.configure({ webClientId });
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
+      // Forget the last Google account first. The native SDK otherwise answers
+      // signIn() with the cached one and no chooser, which is how a person with
+      // two Google addresses (a teacher who is also a parent) could never pick
+      // the other one unless they had signed out by hand. Throws if nothing is
+      // cached, which is exactly the case where there is nothing to forget.
+      try { await GoogleSignin.signOut(); } catch { /* nothing cached */ }
+
       const response = await GoogleSignin.signIn();
       // Cancelling is not an error and must not show one — the user chose it.
       if (!isSuccessResponse(response)) return;
