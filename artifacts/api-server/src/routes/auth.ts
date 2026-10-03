@@ -51,6 +51,7 @@ import {
 } from "../lib/passwordReset.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
 import { resyncClassGroupThreadIfExists } from "../lib/classThread.js";
+import { notifyTeacherOfLink } from "../lib/linkNotify.js";
 import { decideRoleSwitch } from "../lib/roleSwitch.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 import { extensionForAvatarMime, MAX_AVATAR_DATA_URL_LENGTH } from "../lib/avatarUpload.js";
@@ -836,11 +837,13 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
           .limit(1);
         if (taken) return "taken" as const;
       }
-      await tx
+      const [inserted] = await tx
         .insert(rosterLinks)
         .values({ studentId: resolved.studentId, userId, relation: resolved.relation })
-        .onConflictDoNothing();
-      return "linked" as const;
+        .onConflictDoNothing()
+        .returning({ id: rosterLinks.id });
+      // "existing" = this account was already linked; nothing new to tell anyone.
+      return inserted ? ("linked" as const) : ("existing" as const);
     });
     if (outcome === "taken") {
       res.status(409).json({
@@ -893,6 +896,10 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
       for (const m of memberships) {
         await resyncClassGroupThreadIfExists(m.classGroupId, m.teacherId);
       }
+    }
+
+    if (outcome === "linked") {
+      void notifyTeacherOfLink({ studentId: resolved.studentId, userId, relation: resolved.relation });
     }
 
     res.status(201).json({ studentId: resolved.studentId, relation: resolved.relation });
