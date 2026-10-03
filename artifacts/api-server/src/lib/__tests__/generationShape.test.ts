@@ -255,3 +255,33 @@ describe("extractJSON with LaTeX in the reply", () => {
     assert.throws(() => extractJSON("sorry, I cannot help with that"));
   });
 });
+
+describe("LaTeX in a JSON reply", () => {
+  const BS = String.fromCharCode(92); // one backslash
+  const json = (body: string) => `{"a":"${body}"}`;
+
+  // `\frac` is a legal JSON escape (form feed + "rac"), so it used to parse
+  // cleanly into garbage that no later check could tell from real text.
+  it("keeps a lone-backslash LaTeX command literal instead of a control character", () => {
+    const body = ["frac{1}{2}", "theta", "times", "neq", "right)", "beta"].map(w => BS + w).join(" و ");
+    const out = extractJSON(json(body)) as { a: string };
+    assert.equal(out.a, body);
+    assert.ok(!/[\f\t\b\r]/.test(out.a));
+  });
+
+  it("leaves a properly escaped backslash alone", () => {
+    const out = extractJSON(json(BS + BS + "frac{1}{2}")) as { a: string };
+    assert.equal(out.a, BS + "frac{1}{2}");
+  });
+
+  it("does not touch an ordinary newline or tab before a word", () => {
+    const out = extractJSON(json(`سطر${BS}nتالٍ${BS}tوفاصل${BS}nequal line`)) as { a: string };
+    assert.equal(out.a, "سطر\nتالٍ\tوفاصل\nequal line");
+  });
+
+  it("still repairs an illegal escape", () => {
+    const body = `${BS}sqrt{x} and ${BS}(x^2${BS})`;
+    const out = extractJSON(json(body)) as { a: string };
+    assert.equal(out.a, body);
+  });
+});

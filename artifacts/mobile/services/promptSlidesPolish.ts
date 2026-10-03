@@ -28,6 +28,7 @@
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { isBulletLine, looksLikeEquation, stripBullet } from './deckText.ts';
 import { MAX_STATEMENT_CHARS, resolveSlideLayout } from './slideLayout.ts';
+import { rebuildAnswerKey } from './lessonSlides.ts';
 
 /**
  * Below this a slide body is not short, it is absent — a heading with a
@@ -112,6 +113,34 @@ function isHollow(slide: ActivitySlide): boolean {
 }
 
 /**
+ * A question slide whose answer the class would be shown must point at a real
+ * option. The model's `correctIndex` arrives unchecked: a 1-based count, a
+ * string, or an index past the end highlights the wrong option — or none — when
+ * the teacher reveals it, in front of the class. Only a whole number inside the
+ * option list survives (a numeric string is read as that number).
+ *
+ * Anything else is turned into an open check: the stem and its options stay on
+ * the wall, but nothing claims to know which one is right. We do not guess a
+ * 0-based index from a 1-based one — a wrong guess is the bug.
+ */
+function repairQuestion(slide: ActivitySlide): ActivitySlide {
+  if (slide.type !== 'question') return slide;
+  const options = (Array.isArray(slide.options) ? slide.options : [])
+    .map(o => (typeof o === 'string' ? o.trim() : ''));
+  const raw: unknown = slide.correctIndex;
+  const index = typeof raw === 'string' && /^\d+$/.test(raw.trim()) ? Number(raw) : raw;
+  const sound = options.length >= 2
+    && options.every(Boolean)
+    && new Set(options).size === options.length
+    && typeof index === 'number' && Number.isInteger(index) && index >= 0 && index < options.length;
+  if (sound) return { ...slide, options, correctIndex: index as number };
+
+  const { options: _o, correctIndex: _c, verified: _v, verifiedBy: _b, computedAnswer: _a, ...rest } = slide;
+  const listed = options.filter(Boolean).map(o => `• ${o}`);
+  return { ...rest, type: 'challenge', content: [slide.content, ...listed].filter(Boolean).join('\n') };
+}
+
+/**
  * Drop the slides that say nothing, then draw the rest in the shape their own
  * content asks for.
  *
@@ -122,7 +151,7 @@ function isHollow(slide: ActivitySlide): boolean {
  * teacher can see them and delete them, which beats handing back a deck
  * shorter than the one the server certified.
  */
-export function polishDeck(deck: ClassroomActivity): ClassroomActivity {
+export function polishDeck(deck: ClassroomActivity, isAr = true): ClassroomActivity {
   const hollow = new Set<number>();
   deck.slides.forEach((slide, index) => {
     if (index === 0 || slide.type === 'summary') return;
@@ -135,7 +164,7 @@ export function polishDeck(deck: ClassroomActivity): ClassroomActivity {
     if (isHollow(slide)) hollow.add(index);
   });
 
-  const kept = deck.slides.filter((_, index) => !hollow.has(index));
+  const kept = deck.slides.filter((_, index) => !hollow.has(index)).map(repairQuestion);
   const slides = kept.map((slide, index) => {
     const layout = inferLayout(slide, index);
     if (!layout) return { ...slide, slideNumber: index + 1 };
@@ -145,5 +174,9 @@ export function polishDeck(deck: ClassroomActivity): ClassroomActivity {
     return resolveSlideLayout(withLayout) ? withLayout : { ...slide, slideNumber: index + 1 };
   });
 
-  return { ...deck, slides };
+  // The printed key is derived from the slides that will be projected, so the
+  // two cannot disagree. The model's own list stays only when no slide carries
+  // an answer to derive one from.
+  const answerKey = rebuildAnswerKey(slides, isAr);
+  return { ...deck, slides, answerKey: answerKey.length > 0 ? answerKey : deck.answerKey };
 }

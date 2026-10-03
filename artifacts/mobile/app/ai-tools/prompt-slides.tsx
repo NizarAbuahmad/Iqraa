@@ -258,7 +258,7 @@ export default function PromptSlidesScreen() {
       // deck rather than after it. Polish runs first: it drops the slides that
       // say nothing, and a dropped slide should not have had a graph inserted
       // after it.
-      const built = attachDrawnVisuals(polishDeck(out), isAr);
+      const built = attachDrawnVisuals(polishDeck(out, isAr), isAr);
       setAsking([]); setAnswers({});
       setBuiltFrom(form);
       setDeck(built);
