@@ -16,6 +16,15 @@ import { setActiveLessonContextUser } from '@/services/lessonContext';
 import { setActiveMediaUser } from '@/services/lessonMedia';
 import { setActiveWorkspaceUser } from '@/services/workspace';
 import { readUserSnapshot, saveUserSnapshot } from '@/services/userSnapshot';
+import { queryClient } from '@/services/queryClient';
+import { isSavedFull, sortSavedAccounts, type SavedAccountMeta } from '@/services/accountList';
+import {
+  getSavedRefreshToken,
+  loadSavedAccounts,
+  removeSavedAccount,
+  saveAccount,
+  setLastGoogleEmail,
+} from '@/services/savedAccounts';
 import { warmUpVerifier } from '@/services/ai/verifyMath';
 import { registerNotificationTapHandler, registerPushToken, unregisterPushToken } from '@/services/pushTokens';
 // Same package GoogleSignInButton uses — safe to import on web too, it ships
@@ -175,6 +184,25 @@ interface AuthContextType {
    * offers it. Throws with the server's own `code` in `message` otherwise.
    */
   switchRole: (role: 'teacher' | 'parent' | 'student') => Promise<void>;
+  /**
+   * The other accounts signed in on this device, most recently used first.
+   * Never includes the open one, and carries no credentials.
+   */
+  savedAccounts: SavedAccountMeta[];
+  /**
+   * Makes a saved account the open one. Works signed out too (from the login
+   * screen). Throws an ApiError with code `session_expired` when that account's
+   * saved session is no longer valid — the entry is removed — and
+   * `switch_failed` for anything transient, where the entry is kept.
+   */
+  switchAccount: (userId: string) => Promise<void>;
+  /**
+   * Sets the open account aside, still signed in, and goes to the login screen
+   * to sign in as another. Throws `too_many_accounts` at the cap.
+   */
+  addAccount: () => Promise<void>;
+  /** Signs a saved account out of this device and ends its session on the server. */
+  forgetAccount: (userId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -279,10 +307,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const accessToken = await getAccessToken();
+        const [accessToken, snapshot] = await Promise.all([
+          getAccessToken(),
+          readUserSnapshot<User>(),
+        ]);
         if (!accessToken) {
           setIsLoading(false);
           return;
+        }
+
+        // The access token lives 15 minutes, so nearly every cold start is
+        // /auth/me -> 401 -> /auth/refresh -> /auth/me: three round trips with
+        // the splash held behind them. A token plus a saved profile is enough to
+        // open the app now; the checks below still run and replace or clear it.
+        if (snapshot) {
+          setUser(snapshot);
+          setIsLoading(false);
         }
 
         // Verify token is still valid by fetching /auth/me
@@ -297,14 +337,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // from a basement, with credentials nothing could check.
           const serverAnswered = err instanceof ApiError && err.status !== undefined && err.status < 500;
           if (!serverAnswered) {
-            const snapshot = await readUserSnapshot<User>();
-            if (snapshot) setUser(snapshot);
+            // Already shown above; this covers a snapshot that was unreadable then.
+            if (!snapshot) setUser(await readUserSnapshot<User>());
             return;
           }
           // Token invalid — try refresh
           const refreshToken = await getRefreshToken();
           if (!refreshToken) {
             await clearTokens();
+            setUser(null);
             setIsLoading(false);
             return;
           }
@@ -325,14 +366,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setUser(toUser(apiUser));
             } else if (res.status === 400 || res.status === 401 || res.status === 403) {
               await clearTokens();
+              setUser(null);
             }
           } catch (refreshErr) {
-            if (!isNetworkError(refreshErr)) await clearTokens();
+            if (!isNetworkError(refreshErr)) {
+              await clearTokens();
+              setUser(null);
+            }
           }
         }
       } catch {
         // Storage itself failed; there is no session to keep.
         await clearTokens();
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -341,9 +387,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Whatever the signed-in user is now is what an offline boot opens on;
   // null (sign-out, account deletion) removes it.
+  // Not while booting: the first render's null user would delete the snapshot
+  // before the boot effect above has read it.
   useEffect(() => {
-    void saveUserSnapshot(user);
-  }, [user]);
+    if (!isLoading) void saveUserSnapshot(user);
+  }, [user, isLoading]);
+
+  // Other accounts on this device. Loaded once; every change below re-reads it.
+  const [savedAccounts, setSavedAccounts] = useState<SavedAccountMeta[]>([]);
+  const refreshSavedAccounts = useCallback(async () => {
+    setSavedAccounts(sortSavedAccounts(await loadSavedAccounts()));
+  }, []);
+  useEffect(() => {
+    void refreshSavedAccounts();
+  }, [refreshSavedAccounts]);
+
+  // An account is never both open and saved: its refresh token would exist in
+  // two places, and the copy left behind is revoked-on-reuse the first time the
+  // open session rotates. This also repairs the one way it could happen — a
+  // crash between the two writes of a switch — on the next launch.
+  useEffect(() => {
+    if (!user?.id) return;
+    void removeSavedAccount(user.id).then(had => { if (had) void refreshSavedAccounts(); });
+  }, [user?.id, refreshSavedAccounts]);
+
+  // The one place a session is adopted. Everything that signs someone in —
+  // password, Google, e-mail verification, a switch — comes through here, so the
+  // previous account's cached screens can never be shown to the next one.
+  const adoptSession = useCallback(async (accessToken: string, refreshToken: string, apiUser: ApiUser) => {
+    await storeTokens(accessToken, refreshToken);
+    queryClient.clear();
+    setUser(toUser(apiUser));
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     if (!email || !password) throw new Error('Email and password are required');
@@ -357,9 +432,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     );
 
-    await storeTokens(data.accessToken, data.refreshToken);
-    setUser(toUser(data.user));
-  }, []);
+    await adoptSession(data.accessToken, data.refreshToken, data.user);
+  }, [adoptSession]);
 
   const loginWithGoogle = useCallback(async (
     credential: string,
@@ -385,12 +459,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     );
 
-    await storeTokens(data.accessToken, data.refreshToken);
-    setUser(toUser(data.user));
+    await adoptSession(data.accessToken, data.refreshToken, data.user);
+    // The hint the login screen shows beside the Google button next time.
+    void setLastGoogleEmail(data.user.email);
     if (data.isNewAccount) {
       trackEvent('signup_completed', { method: 'google', role: data.user.role });
     }
-  }, []);
+  }, [adoptSession]);
 
   const register = useCallback(async (payload: RegisterData) => {
     if (!payload.firstName?.trim()) throw new Error('First name is required');
@@ -429,13 +504,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     );
 
-    await storeTokens(data.accessToken, data.refreshToken);
-    setUser(toUser(data.user));
+    await adoptSession(data.accessToken, data.refreshToken, data.user);
     // The account only becomes usable here — /auth/register returns no session.
     // Pairing this with signup_started is what makes the verification drop-off
     // visible at all.
     trackEvent('signup_completed', { method: 'email', role: data.user.role });
-  }, []);
+  }, [adoptSession]);
 
   const resendVerification = useCallback(async (email: string) => {
     await apiJson('/auth/resend-verification', {
@@ -503,6 +577,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore — device may never have used Google sign-in.
     }
     await clearTokens();
+    queryClient.clear();
     setUser(null);
   }, []);
 
@@ -583,6 +658,133 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // A switch or an add runs one at a time: two taps would each read the open
+  // session's refresh token and each try to set it aside.
+  const accountOpBusy = useRef(false);
+
+  /** The open account, as the list shows it, stamped as having just been used. */
+  const metaForOpenAccount = (u: User): SavedAccountMeta => ({
+    userId: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    avatarUrl: u.avatarUrl ?? null,
+    lastUsedAt: Date.now(),
+  });
+
+  const switchAccount = useCallback(async (targetId: string) => {
+    if (user && targetId === user.id) return;
+    if (accountOpBusy.current) return;
+    accountOpBusy.current = true;
+    try {
+      const meta = (await loadSavedAccounts()).find(a => a.userId === targetId);
+      const savedRefresh = await getSavedRefreshToken(targetId);
+      if (!meta || !savedRefresh) {
+        await removeSavedAccount(targetId);
+        await refreshSavedAccounts();
+        throw new ApiError('This account is no longer saved on this device', 'session_expired');
+      }
+
+      // 1. Trade the saved refresh token for a live session. This retires the
+      //    saved token, so from here on that account's only credential is the
+      //    pair in `pair` — it must be stored somewhere before this function
+      //    ends, whichever way it ends.
+      const res = await fetchWithTimeout(`${getApiBaseUrl()}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: savedRefresh }),
+      });
+      if (!res.ok) {
+        if (res.status === 400 || res.status === 401 || res.status === 403) {
+          await removeSavedAccount(targetId);
+          await refreshSavedAccounts();
+          throw new ApiError("This account's session has expired", 'session_expired');
+        }
+        throw new ApiError('Could not switch accounts', 'switch_failed');
+      }
+      const pair = await res.json() as { accessToken: string; refreshToken: string };
+
+      // 2. Read the profile with the new token before committing anything, so a
+      //    dropped connection here leaves the open account exactly as it was.
+      let apiUser: ApiUser;
+      try {
+        const me = await fetchWithTimeout(`${getApiBaseUrl()}/auth/me`, {
+          headers: { Authorization: `Bearer ${pair.accessToken}` },
+        });
+        if (!me.ok) throw new ApiError('Could not switch accounts', 'switch_failed');
+        apiUser = await me.json() as ApiUser;
+      } catch (err) {
+        // The saved token is spent; keep the new one so the account survives.
+        await saveAccount(meta, pair.refreshToken).catch(() => {});
+        await refreshSavedAccounts();
+        throw err instanceof ApiError ? err : new ApiError('Could not switch accounts', 'switch_failed');
+      }
+
+      // 3. Commit, new session first. Between the two writes the old session's
+      //    token is in the active slot and nowhere else, or the new one's is —
+      //    never one token in both places.
+      const leavingRefresh = user ? await getRefreshToken() : null;
+      await adoptSession(pair.accessToken, pair.refreshToken, apiUser);
+      await removeSavedAccount(targetId);
+      if (user && leavingRefresh) {
+        await saveAccount(metaForOpenAccount(user), leavingRefresh).catch(() => {});
+      }
+      await refreshSavedAccounts();
+    } finally {
+      accountOpBusy.current = false;
+    }
+  }, [user, adoptSession, refreshSavedAccounts]);
+
+  const addAccount = useCallback(async () => {
+    if (!user || accountOpBusy.current) return;
+    accountOpBusy.current = true;
+    try {
+      if (isSavedFull(await loadSavedAccounts(), user.id)) throw new Error('too_many_accounts');
+      const refreshToken = await getRefreshToken();
+      if (!refreshToken) throw new Error('no_session');
+      // No server sign-out: that would end the very session being kept.
+      await saveAccount(metaForOpenAccount(user), refreshToken);
+      await clearTokens();
+      try {
+        // So the Google chooser appears for the next sign-in instead of the
+        // native SDK silently handing back this account again.
+        await GoogleSignin.signOut();
+      } catch {
+        // Google was never configured on this device.
+      }
+      queryClient.clear();
+      setUser(null);
+      await refreshSavedAccounts();
+    } finally {
+      accountOpBusy.current = false;
+    }
+  }, [user, refreshSavedAccounts]);
+
+  const forgetAccount = useCallback(async (targetId: string) => {
+    const savedRefresh = await getSavedRefreshToken(targetId);
+    await removeSavedAccount(targetId);
+    await refreshSavedAccounts();
+    if (!savedRefresh) return;
+    // Ending the session on the server is best effort: the device has already
+    // let go of it, which is the part the person asked for.
+    try {
+      const res = await fetchWithTimeout(`${getApiBaseUrl()}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: savedRefresh }),
+      });
+      if (!res.ok) return;
+      const pair = await res.json() as { accessToken: string; refreshToken: string };
+      await fetchWithTimeout(`${getApiBaseUrl()}/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pair.accessToken}` },
+        body: JSON.stringify({ refreshToken: pair.refreshToken }),
+      });
+    } catch {
+      // Offline: the session simply expires on its own.
+    }
+  }, [refreshSavedAccounts]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -603,6 +805,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         deleteAccount,
         markRosterClaimed,
         switchRole,
+        savedAccounts,
+        switchAccount,
+        addAccount,
+        forgetAccount,
       }}
     >
       {children}

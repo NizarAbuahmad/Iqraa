@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/services/queryClient';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AppSplash } from '@/components/ui/AppSplash';
+import { ConfirmHost } from '@/components/ui/ConfirmDialog';
 /**
  * Arabic type. Inter has no Arabic glyphs, so every Arabic string — which is
  * nearly the whole product — was being drawn by whatever fallback each device
@@ -34,8 +36,6 @@ import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackEvent, trackS
 import { subscribeToGenerations } from '@/services/ai/aiProvenance';
 
 SplashScreen.preventAutoHideAsync();
-
-const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
@@ -201,6 +201,7 @@ function RootLayoutNav() {
       <Stack.Screen name="setup-subjects" options={{ headerShown: false, gestureEnabled: false }} />
     </Stack>
     <AppSplash visible={isLoading} onLayout={() => SplashScreen.hideAsync().catch(() => {})} />
+    <ConfirmHost />
     </>
   );
 }

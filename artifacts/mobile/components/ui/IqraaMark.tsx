@@ -1,5 +1,5 @@
 /**
- * Iqraa's identity mark — the assistant's face in chat.
+ * Iqrra's identity mark — the assistant's face in chat.
  *
  * Separate from `BrandLogo` because they solve different problems. BrandLogo is
  * the full lockup: the Arabic اقرأ stacked over the IQRA wordmark, two lines of
@@ -95,7 +95,7 @@ export function IqraaMark({ size = 34, tone = 'soft', thinking = false, style }:
         {/*
           The leaf: a tapered stroke, point at lower-left, swelling to the upper
           right. Traced from the mark above the أ in the logo rather than
-          invented, so it still reads as Iqraa at a glance.
+          invented, so it still reads as Iqrra at a glance.
         */}
         <Path
           d="M4.6 20.2c-.6-6.6 2.2-12.2 8.4-15.6 2.1-1.2 4.3-1.9 6.4-2.1.5 6.9-2.2 12.4-8 16.1-2.1 1.3-4.4 2-6.8 1.6z"

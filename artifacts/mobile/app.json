@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Iqraa | اقرأ",
+    "name": "Iqrra | اقرأ",
     "slug": "mobile",
     "version": "1.2.0",
     "orientation": "portrait",
@@ -53,8 +53,8 @@
     "web": {
       "favicon": "./assets/images/favicon.png",
       "backgroundColor": "#081B3A",
-      "name": "Iqraa | اقرأ",
-      "shortName": "Iqraa",
+      "name": "Iqrra | اقرأ",
+      "shortName": "Iqrra",
       "themeColor": "#081B3A"
     },
     "plugins": [
@@ -71,7 +71,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "IQRA needs access to your photos so you can attach an image to a message or to a lesson's materials.",
+          "photosPermission": "Iqrra needs access to your photos so you can attach an image to a message or to a lesson's materials.",
           "cameraPermission": false,
           "microphonePermission": false
         }
@@ -82,7 +82,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Allow Iqraa to hear you practice speaking English.",
+          "microphonePermission": "Allow Iqrra to hear you practice speaking English.",
           "recordAudioAndroid": true
         }
       ]

@@ -21,11 +21,26 @@ export type ConfirmOptions = {
   destructive?: boolean;
 };
 
+/**
+ * On web the dialog is drawn in-app by `ConfirmHost` (components/ui/ConfirmDialog),
+ * not by the browser. `window.confirm` cannot be styled, always prints the site
+ * name ("app.iqrra.com says"), ignores our RTL layout and font, and shows a bare
+ * OK/Cancel instead of the action's own label. The host registers itself here.
+ */
+type WebConfirmHandler = (options: ConfirmOptions) => Promise<boolean>;
+let webHandler: WebConfirmHandler | null = null;
+
+export function registerWebConfirmHandler(handler: WebConfirmHandler | null) {
+  webHandler = handler;
+}
+
 /** Resolves true when the user confirms, false on cancel or dismissal. */
 export function confirm(options: ConfirmOptions): Promise<boolean> {
   const { title, message, confirmLabel, cancelLabel, destructive } = options;
 
   if (Platform.OS === 'web') {
+    if (webHandler) return webHandler(options);
+    // Host not mounted yet (very early boot) — the native prompt still works.
     const text = message ? `${title}\n\n${message}` : title;
     const ok = typeof window !== 'undefined' && window.confirm(text);
     return Promise.resolve(!!ok);
