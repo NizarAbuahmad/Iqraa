@@ -343,7 +343,7 @@ export default function PromptSlidesScreen() {
               <Ionicons name="sparkles" size={22} color="#fff" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
                 {t('promptSlidesTitle')}
               </Text>
               <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }}>
@@ -369,7 +369,7 @@ export default function PromptSlidesScreen() {
         </LinearGradient>
 
         <View style={styles.form}>
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: 0 }]}>
+          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: 0 }]}>
             {t('promptSlidesFieldLabel')}
           </Text>
           <TextInput
@@ -408,7 +408,7 @@ export default function PromptSlidesScreen() {
               size={16}
               color={colors.primary}
             />
-            <Text style={{ color: colors.primary, fontFamily: 'Cairo_500Medium', fontSize: 14 }}>
+            <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>
               {t('promptSlidesSourceToggle')}
             </Text>
             {!sourceOpen && source.trim() ? (
@@ -442,7 +442,7 @@ export default function PromptSlidesScreen() {
             </>
           )}
 
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('promptSlidesSlideCountLabel')}
           </Text>
           <TextInput
@@ -468,7 +468,7 @@ export default function PromptSlidesScreen() {
                   style={[styles.questionCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}
                 >
                   <Text style={{
-                    color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13,
+                    color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13,
                     textAlign: isRTL ? 'right' : 'left', marginBottom: 10,
                   }}>
                     {q.question}
@@ -493,7 +493,7 @@ export default function PromptSlidesScreen() {
                         >
                           <Text style={{
                             color: on ? palette.primaryForeground : colors.mutedForeground,
-                            fontFamily: 'Cairo_500Medium', fontSize: 12,
+                            fontFamily: 'ReadexPro_500Medium', fontSize: 12,
                           }}>
                             {opt.label}
                           </Text>
@@ -520,7 +520,7 @@ export default function PromptSlidesScreen() {
 
           {asking.length > 0 && !loading && (
             <Pressable onPress={() => { void generate({ withAnswers: false }); }} style={styles.skipBtn}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                 {t('promptSlidesSkipQuestions')}
               </Text>
             </Pressable>
@@ -549,7 +549,7 @@ export default function PromptSlidesScreen() {
             <View style={[styles.emptyIcon, { backgroundColor: ACCENT_FILL }]}>
               <Ionicons name="sparkles" size={26} color="#fff" />
             </View>
-            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
+            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold' }]}>
               {t('promptSlidesEmptyTitle')}
             </Text>
             <Text style={[styles.emptyHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
@@ -562,11 +562,11 @@ export default function PromptSlidesScreen() {
           <View style={{ marginHorizontal: 20 }}>
             <View style={[styles.previewCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
               <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <Text style={[styles.previewTitle, { flex: 1, color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[styles.previewTitle, { flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
                   {deck.activityName}
                 </Text>
               </View>
-              <Text style={[styles.previewMeta, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.previewMeta, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('slideCount', deck.slides.length)}
               </Text>
 
@@ -606,7 +606,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5,
     borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.14)',
   },
-  heroPillText: { color: 'rgba(255,255,255,0.9)', fontFamily: 'Cairo_500Medium', fontSize: 11 },
+  heroPillText: { color: 'rgba(255,255,255,0.9)', fontFamily: 'ReadexPro_500Medium', fontSize: 11 },
   questionCard: { padding: 14, borderWidth: 1 },
   answerChip: { paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1.5 },
   skipBtn: { alignItems: 'center', paddingVertical: 12 },

@@ -298,7 +298,7 @@ export default function ClassroomBuilderScreen() {
           {/* Ready banner */}
           <View style={[styles.readyBanner, { backgroundColor: ACCENT + '12', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="checkmark-circle" size={20} color={ACCENT} />
-            <Text style={[styles.readyText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('classroomReady')}</Text>
+            <Text style={[styles.readyText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{t('classroomReady')}</Text>
           </View>
 
           {/* Activity overview */}
@@ -308,7 +308,7 @@ export default function ClassroomBuilderScreen() {
                 styles.previewTitle,
                 {
                   color: colors.foreground,
-                  fontFamily: 'Cairo_700Bold',
+                  fontFamily: 'ReadexPro_700Bold',
                   textAlign: isRTL ? 'right' : 'left',
                   writingDirection: isRTL ? 'rtl' : 'ltr',
                 },
@@ -340,7 +340,7 @@ export default function ClassroomBuilderScreen() {
 
           {/* Materials */}
           <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-            <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
               {lang === 'ar' ? 'المواد اللازمة' : 'Materials'}
             </Text>
             {result.materials.map((m, i) => (
@@ -357,7 +357,7 @@ export default function ClassroomBuilderScreen() {
               concluded the setting did nothing. */}
           {result.teacherPreparation ? (
             <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-              <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
                 {lang === 'ar' ? 'تحضير المعلّم' : 'Teacher prep'}
               </Text>
               <Text style={[styles.prepText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -372,7 +372,7 @@ export default function ClassroomBuilderScreen() {
             style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT_FILL, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
           >
             <Ionicons name="play-circle" size={22} color="#fff" />
-            <Text style={[styles.ctaText, { fontFamily: 'Cairo_700Bold' }]}>{t('startPresentation')}</Text>
+            <Text style={[styles.ctaText, { fontFamily: 'ReadexPro_700Bold' }]}>{t('startPresentation')}</Text>
           </Pressable>
 
           <Pressable
@@ -380,7 +380,7 @@ export default function ClassroomBuilderScreen() {
             style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
+            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{t('regenerateBtn')}</Text>
           </Pressable>
         </View>
       )}
@@ -393,7 +393,7 @@ function StatItem({ icon, label, accent }: { icon: keyof typeof Ionicons.glyphMa
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       <Ionicons name={icon} size={13} color={accent} />
-      <Text style={{ fontSize: 12, color: accent, fontFamily: 'Cairo_500Medium' }}>{label}</Text>
+      <Text style={{ fontSize: 12, color: accent, fontFamily: 'ReadexPro_500Medium' }}>{label}</Text>
     </View>
   );
 }

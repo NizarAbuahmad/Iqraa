@@ -139,14 +139,14 @@ export default function FaqScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   headerRow: { alignItems: 'center', gap: 12 },
-  title: { fontFamily: 'Cairo_700Bold', fontSize: 20 },
-  subtitle: { fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, marginTop: 6 },
+  title: { fontFamily: 'ReadexPro_700Bold', fontSize: 20 },
+  subtitle: { fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 6 },
   body: { padding: 16 },
   // Matches the chat column so the page does not sprawl on a desktop browser.
   column: { width: '100%', maxWidth: 760, alignSelf: 'center', gap: 10 },
   card: { borderWidth: 1, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 4 },
   qRow: { alignItems: 'center', gap: 10, paddingVertical: 12 },
-  question: { fontFamily: 'Cairo_600SemiBold', fontSize: 14 },
+  question: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 },
   answer: {
     fontFamily: 'Almarai_400Regular',
     fontSize: 13,

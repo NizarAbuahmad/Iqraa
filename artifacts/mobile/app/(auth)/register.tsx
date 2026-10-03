@@ -16,7 +16,7 @@ import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/Goo
 import { Input } from '@/components/ui/Input';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { useStudentAccountsStatus } from '@/services/features';
-import { ApiError } from '@/services/apiClient';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 import { Ionicons } from '@expo/vector-icons';
 import { goBack } from '@/services/navigation';
 
@@ -68,11 +68,9 @@ export default function RegisterScreen() {
     } catch (e: any) {
       // The server only refuses the pill's role when the existing account can
       // no longer change it (lib/roleSwitch.ts); otherwise it applies it.
-      if (e instanceof ApiError && (e.code === 'role_locked_teaching' || e.code === 'role_locked_linked')) {
-        setError(t(e.code === 'role_locked_teaching' ? 'accountTypeLockedTeaching' : 'accountTypeLockedLinked'));
-        return;
-      }
-      setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول عبر Google' : 'Google sign-in failed'));
+      // The role-locked refusals (lib/roleSwitch.ts) are among the codes
+      // apiErrorKey translates, alongside every other sign-up refusal.
+      setError(apiErrorMessage(e, 'errGoogleFailed', t));
     } finally {
       setGoogleLoading(false);
     }
@@ -102,7 +100,7 @@ export default function RegisterScreen() {
       router.replace({ pathname: '/(auth)/verify-email', params: { email: registeredEmail } });
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(e.message ?? 'Registration failed. Please try again.');
+      setError(apiErrorMessage(e, 'errRegisterFailed', t));
     } finally {
       setLoading(false);
     }
@@ -158,7 +156,7 @@ export default function RegisterScreen() {
           isRTL={isRTL}
         />
 
-        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('createYourAccount')}
         </Text>
         <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>

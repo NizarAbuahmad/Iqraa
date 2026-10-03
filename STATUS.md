@@ -53,6 +53,21 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Interface dates and times are written in Latin digits** (2026-10-03).
+  Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
+  «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
+  screens disagreed with each other. Every date or time an interface screen or
+  export prints now goes through `dateLocale(lang)` / `AR_LATIN`
+  (`services/dateLabels.ts`): the Arabic weekday and month names stay, only the
+  numbering changes, and English is untouched. `dateLabels.test.ts` scans
+  `app/`, `components/`, `services/` and `hooks/` and fails on a plain `'ar-JO'`
+  or a locale-less `toLocaleDateString()`, so a new screen cannot bring it back.
+  **Deliberately still Arabic-Indic:** book citations («صفحة ٣٥»), the page and
+  count labels in the resources screen, exercise numbers, game scores and
+  maths, which are content rather than interface text. **Not covered:**
+  `app/admin` and `app/dev`, which print the device's own format. Typed input
+  is already folded to Latin by `toLatinDigits`. Checked by tests and typecheck;
+  not looked at in a browser.
 - **The tool screens share one rule per failure mode** (2026-10-02, PR #772).
   A review of every `/ai-tools` screen found ~40 issues, most of them one
   pattern repeated per screen. Each pattern now has one helper, used by
@@ -14538,6 +14553,22 @@ contact form, CSV export).
   `GET /auth/me` and account deletion (`lib/suspension.ts`), and every other route
   403s on the next request anyway.
 
+**Round 2, 2026-10-02:** `/admin/ai-costs` (spend over any date range: per day,
+by tool, by model, by user; defaults to the budget month); `from`/`to` filters
+on users, feedback and collected emails (`parseDateRange`, inclusive days,
+UTC); `DELETE /feedback/:id` so a read note disappears — the list is a to-do,
+not an archive, and the dashboard's feedback count drops with it; and
+**where an account was created**: the client sends `X-Iqraa-Platform`
+(android/ios/web) and, on web, `X-Iqraa-Landing` (first `?utm_source` or
+referrer the tab saw, `services/clientPlatform.ts`), stored at registration in
+`users.signup_platform/signup_referrer` and shown per user + as "joined via"
+on the overview. Accounts from before this show `unknown` — nothing recorded
+it. Schema: `docs/schema-push-2026-10-02-signup-source.sql`. Follower counts
+stay manual: the Meta connector available here is the Ads API (ad accounts,
+campaigns) and cannot read page/profile follower counts; Instagram Graph needs
+a Business account + app review, so a number typed in weekly is the honest
+option until that is worth doing.
+
 ## Chat review: five bugs in the «اقرأ» tab, 2026-10-02
 
 A read-through of `app/(tabs)/iqra.tsx`, `services/ai/chatArtifacts.ts` and
@@ -14666,3 +14697,74 @@ Not seen in a browser — same reason as the 2026-09-13 entry. Covered by 25
 new unit tests (`studentResponse`, `answerSaveQueue`, `takeErrorKey`,
 `formatMarks`, routeGating and participantPicker pins); api-server 1014/1014
 and mobile 2152/2152 pass, typecheck clean.
+
+## Cleanup after the student-side review, 2026-10-03
+
+Three of the five items the 2026-10-02 student review left open.
+
+- **A student's voice recording outlived every row that pointed at it.** Four
+  paths, not one: a teacher releasing a sitting (`DELETE /attempts/:id`), a
+  teacher deleting their account (the answers cascade from the user), a
+  student's re-take (the new key overwrote the old one and the earlier take's
+  file stayed), and an upload whose transcription then failed. All four now
+  delete the object, best-effort and after the database change, the rule
+  account deletion already followed (`lib/attemptAudio.ts`). The key rule is
+  `attemptAudioKeys`, tested, which ignores the placeholder `'saved'` that
+  rows written before #776 carry. Recordings already orphaned before this
+  are **not** swept — that needs a one-off listing of `attempt-audio/` against
+  `attempt_answers`, which nothing here does.
+- **The public books endpoint handed out teacher-guide links.**
+  `GET /curriculum/books` has no session and asked the catalog for the
+  teacher view, so every `guidePdfUrl` came back. It now answers as a student
+  would (`lib/publicBooks.ts`, tested). Defence in depth, not a closed door:
+  most guide links are the ministry's own public NCCD URLs, and the catalog
+  ships in the app bundle. Four are Google Drive copies of a commercial
+  York Press teacher's book, which the bundle still carries.
+- **Raw English server errors on the Arabic sign-in and messaging screens.**
+  The server now sends a `code` on every refusal a user can actually hit
+  (auth, messaging, and the shared 429 as `rate_limited`), the client's own
+  validation throws coded errors too, and `services/apiErrorKey.ts` turns a
+  code into a sentence in both languages — never the English body. One
+  exception, on purpose: a suspension shows the reason an administrator
+  wrote, unless it is the server's English default. Covers login, register,
+  verify-email, forgot-password, the inbox, threads, class chat, new group
+  and the claim-code screen. A missing translation for any code fails the
+  typecheck (checked by adding a bogus key: 25 errors).
+
+**Still open from the review:** terms acceptance for Google sign-up (needs a
+schema column and a manual push), and a «اختباراتي» screen so a signed-in
+student can find their exams and results without the share link.
+
+## «اختباراتي» — a student can find their exams and results, 2026-10-03
+
+**The share link was the only door into an exam, and the hand-in screen the
+only place a result appeared.** A student who closed that tab had no way back
+to either. A signed-in student now has «اختباراتي»: a tile on the library tab
+(their landing page, with a count of exams waiting) and a row on the profile.
+
+- **`GET /student/exams`** (`routes/studentExams.ts`, student-only, guard
+  path-scoped to `/student` and pinned in `mountOrder.test.ts` along with the
+  roster's `/students` it must not shadow). It lists every published or
+  closed exam set to a class the account is `self`-linked into, plus any exam
+  the student already holds a sitting on.
+- **What each row says is decided in `modules/assessment/studentExams.ts`,
+  tested (15 cases).** A link only while `/take/:code` would admit the
+  student — never for a closed or expired exam, which that route answers as
+  an unknown code. A result only when `/take/attempt/result` would release it
+  (`studentResultReady`, same projection), so an unreleased mark never leaves
+  the server. A paper the teacher is typing in for the student is never
+  offered to continue, because `claim-self` refuses to resume one.
+- **Opening an exam goes through `/take/:code`**, which already recognises a
+  signed-in student and resumes their sitting (#776). Released results expand
+  in place, through `components/StudentResultCard.tsx` — lifted out of the
+  hand-in screen so the two show a mark identically.
+- `POST /evaluations/:id/close` now stamps `closedAt`, and re-publishing
+  clears it. The column existed and nothing wrote it.
+
+**Not seen in a browser.** It needs a signed-in student account with a
+roster link and a published exam against a real database, which this
+session's environment does not have.
+
+**Not in scope:** parents see nothing here. The endpoint answers students
+only, and a parent who types `/my-exams` gets the translated refusal. A
+parent view of their child's results is a separate decision.

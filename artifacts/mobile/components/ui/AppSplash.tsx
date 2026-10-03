@@ -12,7 +12,7 @@
  *
  * Here the same two lines are real text in the brand faces, so they are crisp at
  * any density and can never lose a stroke. The native splash keeps only the
- * mark, which is all a bitmap can carry safely.
+ * lockup, which is all a bitmap can carry safely.
  *
  * It also answers the other half: a static image cannot say "still working".
  * The bar below the lockup is indeterminate on purpose — the boot is one
@@ -24,9 +24,11 @@ import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { NATIVE_DRIVER } from '@/constants/animation';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 
-const NAVY = '#081B3A';
+// Teal ground, white lockup — the same as the native splash it hands over from.
 const TEAL = '#00A99D';
-const INK = '#DFE7E9';
+const WHITE = '#FFFFFF';
+// White on this teal is 2.9:1; the small strapline needs the ink (5:1).
+const INK = '#0B2A33';
 
 const BAR_W = 168;
 const BAR_FILL_W = 58;
@@ -118,7 +120,7 @@ export function AppSplash({ visible, onLayout }: Props) {
           ],
         }}
       >
-        <BrandLogo onDark width={176} height={176} />
+        <BrandLogo onDark width={220} style={{ marginBottom: 14 }} />
       </Animated.View>
 
       {/* The strapline trails the mark slightly — the lockup assembles rather
@@ -156,14 +158,14 @@ export function AppSplash({ visible, onLayout }: Props) {
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: NAVY,
+    backgroundColor: TEAL,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
   },
   latin: {
-    color: TEAL,
-    fontFamily: 'Cairo_600SemiBold',
+    color: INK,
+    fontFamily: 'ReadexPro_600SemiBold',
     fontSize: 12,
     letterSpacing: 3,
     textAlign: 'center',
@@ -180,13 +182,13 @@ const styles = StyleSheet.create({
     height: 3,
     borderRadius: 2,
     marginTop: 40,
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: 'rgba(255,255,255,0.28)',
     overflow: 'hidden',
   },
   fill: {
     width: BAR_FILL_W,
     height: 3,
     borderRadius: 2,
-    backgroundColor: TEAL,
+    backgroundColor: WHITE,
   },
 });

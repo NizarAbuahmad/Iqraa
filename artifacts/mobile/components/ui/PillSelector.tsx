@@ -61,7 +61,7 @@ export function PillSelector<T extends string | number>({
 }: Props<T>) {
   return (
     <View style={[{ marginBottom: 18 }, containerStyle]}>
-      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
         {label}
       </Text>
       <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -118,7 +118,7 @@ function Pill<T extends string | number>({
     >
       <Text style={[styles.pillText, {
         color: active ? textOn(accent) : colors.mutedForeground,
-        fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+        fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
       }]}>
         {option.label}
       </Text>

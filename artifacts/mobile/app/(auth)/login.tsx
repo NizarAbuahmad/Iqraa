@@ -16,6 +16,7 @@ import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/Goo
 import { Input } from '@/components/ui/Input';
 import { AccountRow } from '@/components/ui/AccountRow';
 import { ApiError } from '@/services/apiClient';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 import { getLastGoogleEmail } from '@/services/savedAccounts';
 
 export default function LoginScreen() {
@@ -77,7 +78,7 @@ export default function LoginScreen() {
         router.push({ pathname: '/(auth)/verify-email', params: { email: email.trim() } });
         return;
       }
-      setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول' : 'Login failed'));
+      setError(apiErrorMessage(e, 'errLoginFailed', t));
     } finally {
       setLoading(false);
     }
@@ -89,7 +90,7 @@ export default function LoginScreen() {
     try {
       await loginWithGoogle(credential);
     } catch (e: any) {
-      setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول عبر Google' : 'Google sign-in failed'));
+      setError(apiErrorMessage(e, 'errGoogleFailed', t));
     } finally {
       setGoogleLoading(false);
     }
@@ -127,7 +128,7 @@ export default function LoginScreen() {
               styles.cardTitle,
               {
                 color: colors.foreground,
-                fontFamily: 'Cairo_700Bold',
+                fontFamily: 'ReadexPro_700Bold',
                 textAlign: isRTL ? 'right' : 'left',
                 writingDirection: isRTL ? 'rtl' : 'ltr',
               },
@@ -179,7 +180,7 @@ export default function LoginScreen() {
 
         {savedAccounts.length > 0 && (
           <View>
-            <Text style={[styles.savedTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.savedTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
               {t('loginSavedTitle')}
             </Text>
             <View style={[styles.savedCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -221,11 +222,11 @@ export default function LoginScreen() {
                 </Text>
                 <View style={[styles.lastGoogle, { backgroundColor: colors.primary + '14', borderColor: colors.primary + '33', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <Ionicons name="logo-google" size={14} color={colors.primary} />
-                  <Text numberOfLines={1} style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, flexShrink: 1 }}>
+                  <Text numberOfLines={1} style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, flexShrink: 1 }}>
                     {lastGoogleEmail}
                   </Text>
                   <View style={[styles.lastGoogleBadge, { backgroundColor: colors.primary + '1F' }]}>
-                    <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 11 }}>{t('accountsLastUsed')}</Text>
+                    <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 }}>{t('accountsLastUsed')}</Text>
                   </View>
                 </View>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
@@ -278,7 +279,7 @@ export default function LoginScreen() {
           style={{ alignSelf: isRTL ? 'flex-start' : 'flex-end', paddingVertical: 4, marginTop: -24 }}
           accessibilityRole="link"
         >
-          <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+          <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
             {t('forgotPasswordLink')}
           </Text>
         </Pressable>

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Ionicons } from '@expo/vector-icons';
 import { toLatinDigits } from '@/services/latinDigits';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 
 /** Cooldown between resend taps — enough for the email to plausibly arrive before offering another one. */
 const RESEND_COOLDOWN_S = 30;
@@ -21,7 +22,7 @@ export default function VerifyEmailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { verifyEmail, resendVerification, changeUnverifiedEmail } = useAuth();
-  const { t, lang, isRTL } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const params = useLocalSearchParams<{ email: string }>();
 
   // Held in state, not read from the route param directly: changing the
@@ -58,7 +59,7 @@ export default function VerifyEmailScreen() {
       await verifyEmail(email, code);
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(e.message ?? t('invalidVerificationCode'));
+      setError(apiErrorMessage(e, 'invalidVerificationCode', t));
     } finally {
       setLoading(false);
     }
@@ -73,7 +74,7 @@ export default function VerifyEmailScreen() {
       setNotice(t('codeResent'));
       setCooldown(RESEND_COOLDOWN_S);
     } catch (e: any) {
-      setError(e.message ?? (lang === 'ar' ? 'تعذّر إرسال الرمز' : 'Failed to resend code'));
+      setError(apiErrorMessage(e, 'errResendFailed', t));
     } finally {
       setResending(false);
     }
@@ -96,7 +97,7 @@ export default function VerifyEmailScreen() {
       setCooldown(RESEND_COOLDOWN_S);
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(e.message ?? (lang === 'ar' ? 'تعذّر تغيير البريد الإلكتروني' : 'Failed to change email'));
+      setError(apiErrorMessage(e, 'errChangeEmailFailed', t));
     } finally {
       setChanging(false);
     }
@@ -125,7 +126,7 @@ export default function VerifyEmailScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
 
-        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('verifyEmailTitle')}
         </Text>
         <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -168,7 +169,7 @@ export default function VerifyEmailScreen() {
           />
 
           <Pressable onPress={handleResend} disabled={resending || cooldown > 0} style={styles.resendRow}>
-            <Text style={[styles.resendText, { color: cooldown > 0 ? colors.mutedForeground : colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.resendText, { color: cooldown > 0 ? colors.mutedForeground : colors.primary, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {cooldown > 0 ? `${t('resendCode')} (${cooldown}s)` : t('resendCode')}
             </Text>
           </Pressable>
@@ -182,7 +183,7 @@ export default function VerifyEmailScreen() {
         */}
         {editingEmail ? (
           <View style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius * 1.5, borderColor: colors.border }]}>
-            <Text style={[styles.changeTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.changeTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
               {t('changeEmailTitle')}
             </Text>
 
@@ -220,14 +221,14 @@ export default function VerifyEmailScreen() {
               onPress={() => { setEditingEmail(false); setNewEmail(''); setPassword(''); }}
               style={styles.resendRow}
             >
-              <Text style={[styles.resendText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text style={[styles.resendText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('cancel')}
               </Text>
             </Pressable>
           </View>
         ) : (
           <Pressable onPress={() => { setEditingEmail(true); setError(''); setNotice(''); }} style={styles.resendRow}>
-            <Text style={[styles.resendText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.resendText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {t('wrongEmail')}
             </Text>
           </Pressable>

@@ -159,7 +159,7 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
         <View style={mediaStyles.cmdRow}>
           {commands.map((c, i) => (
             <View key={i} style={mediaStyles.cmdPill}>
-              <Text style={[mediaStyles.cmdText, { fontFamily: 'Cairo_700Bold' }]}>{c}</Text>
+              <Text style={[mediaStyles.cmdText, { fontFamily: 'ReadexPro_700Bold' }]}>{c}</Text>
             </View>
           ))}
         </View>
@@ -182,7 +182,7 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
         style={[mediaStyles.openBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
       >
         <Ionicons name="stats-chart" size={20} color="#fff" />
-        <Text style={[mediaStyles.openBtnText, { fontFamily: 'Cairo_700Bold' }]}>
+        <Text style={[mediaStyles.openBtnText, { fontFamily: 'ReadexPro_700Bold' }]}>
           {t('openGraph')}
         </Text>
       </Pressable>
@@ -261,7 +261,7 @@ function MediaView({
           style={[mediaStyles.openBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           <Ionicons name={slide.mediaKind === 'document' ? 'document-text' : 'play-circle'} size={20} color="#fff" />
-          <Text style={[mediaStyles.openBtnText, { fontFamily: 'Cairo_700Bold' }]}>
+          <Text style={[mediaStyles.openBtnText, { fontFamily: 'ReadexPro_700Bold' }]}>
             {slide.mediaKind === 'document' ? t('openDocument') : t('openMedia')}
           </Text>
         </Pressable>
@@ -314,7 +314,7 @@ function HeroSlideView({ slide, accent }: { slide: ActivitySlide; accent: string
   const hasPhoto = !!slide.mediaUrl;
   const body = (
     <View style={heroStyles.textWrap}>
-      <Text style={[heroStyles.title, { fontFamily: 'Cairo_700Bold' }]}>
+      <Text style={[heroStyles.title, { fontFamily: 'ReadexPro_700Bold' }]}>
         {isolateForeignRuns(slide.title)}
       </Text>
       {!!slide.content && (
@@ -397,7 +397,7 @@ function TeacherPanel({
         {/* Header */}
         <View style={[panelStyles.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name="school-outline" size={18} color={ACCENT} />
-          <Text style={[panelStyles.headerText, { fontFamily: 'Cairo_700Bold' }]}>{t('teacherPanelTitle')}</Text>
+          <Text style={[panelStyles.headerText, { fontFamily: 'ReadexPro_700Bold' }]}>{t('teacherPanelTitle')}</Text>
           <Pressable onPress={close} style={panelStyles.closeBtn} hitSlop={12}>
             <Ionicons name="close" size={20} color={TEXT_MUTED} />
           </Pressable>
@@ -456,7 +456,7 @@ function QuestionOptions({
       {/* Routine reminder — projected so students see the rule, not just hear it */}
       <View style={[qStyles.respondBanner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name="hand-left-outline" size={16} color="#1D4ED8" />
-        <Text style={[qStyles.respondText, { fontFamily: 'Cairo_600SemiBold' }]}>
+        <Text style={[qStyles.respondText, { fontFamily: 'ReadexPro_600SemiBold' }]}>
           {t('allStudentsAnswer')}
         </Text>
       </View>
@@ -479,7 +479,7 @@ function QuestionOptions({
               ]}
             >
               <View style={[qStyles.letterBadge, { backgroundColor: isCorrect ? TIMER_GREEN : '#1D4ED8' + '30' }]}>
-                <Text style={[qStyles.letterText, { color: isCorrect ? '#fff' : '#1D4ED8', fontFamily: 'Cairo_700Bold' }]}>
+                <Text style={[qStyles.letterText, { color: isCorrect ? '#fff' : '#1D4ED8', fontFamily: 'ReadexPro_700Bold' }]}>
                   {letters[i] ?? '•'}
                 </Text>
               </View>
@@ -489,7 +489,7 @@ function QuestionOptions({
                   {
                     textAlign: isRTL ? 'right' : 'left',
                     writingDirection: isRTL ? 'rtl' : 'ltr',
-                    fontFamily: isCorrect ? 'Cairo_700Bold' : 'Cairo_500Medium',
+                    fontFamily: isCorrect ? 'ReadexPro_700Bold' : 'ReadexPro_500Medium',
                   },
                 ]}
               >
@@ -514,7 +514,7 @@ function QuestionOptions({
         ]}
       >
         <Ionicons name={revealed ? 'eye-off-outline' : 'checkmark-circle-outline'} size={18} color={revealed ? TEXT_MUTED : TIMER_GREEN} />
-        <Text style={[qStyles.revealBtnText, { color: revealed ? TEXT_MUTED : TIMER_GREEN, fontFamily: 'Cairo_600SemiBold' }]}>
+        <Text style={[qStyles.revealBtnText, { color: revealed ? TEXT_MUTED : TIMER_GREEN, fontFamily: 'ReadexPro_600SemiBold' }]}>
           {revealed ? t('hideAnswer') : t('revealAnswer')}
         </Text>
       </Pressable>
@@ -662,7 +662,7 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
         <Text
           style={[
             slideStyles.coverTitle,
-            { textAlign: align, writingDirection: dir, fontFamily: 'Cairo_700Bold' },
+            { textAlign: align, writingDirection: dir, fontFamily: 'ReadexPro_700Bold' },
           ]}
         >
           {isolateForeignRuns(heading)}
@@ -696,7 +696,7 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
         <Text
           style={[
             slideStyles.title,
-            { color: accent, textAlign: align, writingDirection: dir, fontFamily: 'Cairo_700Bold' },
+            { color: accent, textAlign: align, writingDirection: dir, fontFamily: 'ReadexPro_700Bold' },
           ]}
         >
           {isolateForeignRuns(heading)}
@@ -742,7 +742,7 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
                   text={text}
                   fontSize={30}
                   color={TEXT_PRIMARY}
-                  fontFamily="Cairo_700Bold"
+                  fontFamily="ReadexPro_700Bold"
                   isRTL={isRTL}
                   centered
                 />
@@ -761,7 +761,7 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
                 <Text
                   style={[
                     slideStyles.formula,
-                    { writingDirection: dir, fontFamily: 'Cairo_700Bold' },
+                    { writingDirection: dir, fontFamily: 'ReadexPro_700Bold' },
                   ]}
                 >
                   {isolateForeignRuns(text)}
@@ -836,8 +836,8 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
       {/* Unlock code badge */}
       {slide.unlockCode && slide.type === 'reveal' && (
         <View style={slideStyles.codeBadge}>
-          <Text style={[slideStyles.codeLabel, { fontFamily: 'Cairo_500Medium' }]}>🔑</Text>
-          <Text style={[slideStyles.codeValue, { fontFamily: 'Cairo_700Bold' }]}>{slide.unlockCode}</Text>
+          <Text style={[slideStyles.codeLabel, { fontFamily: 'ReadexPro_500Medium' }]}>🔑</Text>
+          <Text style={[slideStyles.codeValue, { fontFamily: 'ReadexPro_700Bold' }]}>{slide.unlockCode}</Text>
         </View>
       )}
     </View>
@@ -1150,7 +1150,7 @@ export default function PresentationScreen() {
 
         {/* Position + what this slide is — orientation at a glance */}
         <View style={styles.counterBox}>
-          <Text style={[styles.counterText, { fontFamily: 'Cairo_700Bold' }]}>
+          <Text style={[styles.counterText, { fontFamily: 'ReadexPro_700Bold' }]}>
             {slideIndex + 1}/{totalSlides}
           </Text>
         </View>
@@ -1159,7 +1159,7 @@ export default function PresentationScreen() {
         {hasTimer ? (
           <View style={[styles.timerBox, { borderColor: tColor + '44', backgroundColor: tColor + '15' }]}>
             <Ionicons name="timer-outline" size={13} color={tColor} />
-            <Text style={[styles.timerText, { color: tColor, fontFamily: 'Cairo_700Bold' }]}>{mm}:{ss}</Text>
+            <Text style={[styles.timerText, { color: tColor, fontFamily: 'ReadexPro_700Bold' }]}>{mm}:{ss}</Text>
           </View>
         ) : (
           <View style={{ width: 76 }} />
@@ -1263,7 +1263,7 @@ export default function PresentationScreen() {
                 style={[styles.revealBtn, { borderColor: TIMER_AMBER + '60', backgroundColor: TIMER_AMBER + '12', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
                 <Ionicons name="bulb-outline" size={16} color={TIMER_AMBER} />
-                <Text style={[styles.revealBtnText, { color: TIMER_AMBER, fontFamily: 'Cairo_600SemiBold' }]}>
+                <Text style={[styles.revealBtnText, { color: TIMER_AMBER, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {hintVisible ? t('hideHint') : t('revealHint')}
                 </Text>
               </Pressable>
@@ -1298,7 +1298,7 @@ export default function PresentationScreen() {
                 style={[styles.revealBtn, { borderColor: TIMER_GREEN + '60', backgroundColor: TIMER_GREEN + '12', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
                 <Ionicons name="checkmark-circle-outline" size={16} color={TIMER_GREEN} />
-                <Text style={[styles.revealBtnText, { color: TIMER_GREEN, fontFamily: 'Cairo_600SemiBold' }]}>
+                <Text style={[styles.revealBtnText, { color: TIMER_GREEN, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {answerVisible ? t('hideAnswer') : t('revealAnswer')}
                 </Text>
               </Pressable>
@@ -1310,7 +1310,7 @@ export default function PresentationScreen() {
                       text={slide.answer}
                       fontSize={18}
                       color={TEXT_PRIMARY}
-                      fontFamily="Cairo_700Bold"
+                      fontFamily="ReadexPro_700Bold"
                       isRTL={slideRTL}
                     />
                   ) : (
@@ -1320,7 +1320,7 @@ export default function PresentationScreen() {
                         {
                           textAlign: slideRTL ? 'right' : 'left',
                           writingDirection: slideRTL ? 'rtl' : 'ltr',
-                          fontFamily: 'Cairo_700Bold',
+                          fontFamily: 'ReadexPro_700Bold',
                         },
                       ]}
                     >
@@ -1375,7 +1375,7 @@ export default function PresentationScreen() {
           accessibilityLabel={t('prevSlide')}
         >
           <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={20} color={TEXT_PRIMARY} />
-          <Text numberOfLines={1} style={[styles.navLabel, { color: TEXT_PRIMARY, fontFamily: 'Cairo_500Medium' }]}>
+          <Text numberOfLines={1} style={[styles.navLabel, { color: TEXT_PRIMARY, fontFamily: 'ReadexPro_500Medium' }]}>
             {t('prevSlide')}
           </Text>
         </Pressable>
@@ -1423,7 +1423,7 @@ export default function PresentationScreen() {
             >
               <Ionicons name="school-outline" size={18} color={ACCENT} />
               {compactBar ? null : (
-                <Text numberOfLines={1} style={[styles.actionLabel, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>
+                <Text numberOfLines={1} style={[styles.actionLabel, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>
                   {t('teacherPanelTitle')}
                 </Text>
               )}
@@ -1447,7 +1447,7 @@ export default function PresentationScreen() {
           accessibilityRole="button"
           accessibilityLabel={t('nextSlide')}
         >
-          <Text numberOfLines={1} style={[styles.navLabel, { color: isLast ? TEXT_MUTED : '#fff', fontFamily: 'Cairo_700Bold' }]}>
+          <Text numberOfLines={1} style={[styles.navLabel, { color: isLast ? TEXT_MUTED : '#fff', fontFamily: 'ReadexPro_700Bold' }]}>
             {t('nextSlide')}
           </Text>
           <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={isLast ? TEXT_MUTED : '#fff'} />
@@ -1469,7 +1469,7 @@ export default function PresentationScreen() {
         >
           <Animated.View style={[styles.celebrationCard, { transform: [{ scale: celebrationScale }] }]}>
             <Text style={styles.celebrationEmoji}>🎉</Text>
-            <Text style={[styles.celebrationTitle, { fontFamily: 'Cairo_700Bold' }]}>
+            <Text style={[styles.celebrationTitle, { fontFamily: 'ReadexPro_700Bold' }]}>
               {t('activityComplete' as any)}
             </Text>
           </Animated.View>
@@ -1536,19 +1536,19 @@ const slideStyles = StyleSheet.create({
   // Sized against the existing display type: `codeValue` is 48pt and is the
   // deck's precedent for a number meant to be read from the back of a room,
   // so a stat goes larger still and its caption sits at cover-subtitle size.
-  statValue: { fontSize: 96, lineHeight: 120, fontFamily: 'Cairo_700Bold' },
-  statLabel: { fontSize: 26, lineHeight: 42, color: TEXT_PRIMARY, fontFamily: 'Cairo_600SemiBold' },
+  statValue: { fontSize: 96, lineHeight: 120, fontFamily: 'ReadexPro_700Bold' },
+  statLabel: { fontSize: 26, lineHeight: 42, color: TEXT_PRIMARY, fontFamily: 'ReadexPro_600SemiBold' },
   statSource: { fontSize: 15, lineHeight: 26, color: TEXT_MUTED, fontFamily: 'Almarai_400Regular', marginTop: 10 },
   compareRow: { gap: 18, alignSelf: 'stretch' },
   compareCol: {
     flex: 1, borderWidth: 2, borderRadius: 18, padding: 20, gap: 12,
     backgroundColor: CARD_BG,
   },
-  compareHead: { fontSize: 24, lineHeight: 36, fontFamily: 'Cairo_700Bold' },
+  compareHead: { fontSize: 24, lineHeight: 36, fontFamily: 'ReadexPro_700Bold' },
   compareItem: { fontSize: 21, lineHeight: 34, color: TEXT_PRIMARY, fontFamily: 'Almarai_400Regular' },
   stepRow: { alignItems: 'center', gap: 16 },
   stepNum: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  stepNumText: { fontSize: 22, color: '#fff', fontFamily: 'Cairo_700Bold' },
+  stepNumText: { fontSize: 22, color: '#fff', fontFamily: 'ReadexPro_700Bold' },
   stepText: { flex: 1, fontSize: 22, lineHeight: 36, color: TEXT_PRIMARY, fontFamily: 'Almarai_400Regular' },
   headRow: { alignItems: 'center', gap: 12 },
   glyphChip: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
@@ -1688,7 +1688,7 @@ const panelStyles = StyleSheet.create({
   headerText: { flex: 1, fontSize: 16, color: TEXT_PRIMARY },
   closeBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   section: { marginBottom: 16 },
-  sectionLabel: { fontSize: 11, color: ACCENT, fontFamily: 'Cairo_600SemiBold', textTransform: 'uppercase', marginBottom: 6 },
+  sectionLabel: { fontSize: 11, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textTransform: 'uppercase', marginBottom: 6 },
   sectionText: { fontSize: 13, color: TEXT_PRIMARY, lineHeight: 20 },
   bulletQ: { fontSize: 13, color: TEXT_PRIMARY, lineHeight: 20, marginBottom: 4 },
 });

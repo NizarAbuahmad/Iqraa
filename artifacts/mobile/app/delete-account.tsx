@@ -112,7 +112,7 @@ export default function DeleteAccountScreen() {
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('deleteAccountTitle')}
         </Text>
       </View>
@@ -134,7 +134,7 @@ export default function DeleteAccountScreen() {
           </Text>
         ) : null}
 
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
           {hasPassword === false ? t('deleteAccountEmailLabel') : t('deleteAccountPasswordLabel')}
         </Text>
         <TextInput
@@ -184,7 +184,7 @@ export default function DeleteAccountScreen() {
             <Text
               style={[
                 styles.deleteBtnText,
-                { color: colors.destructiveForeground, fontFamily: 'Cairo_700Bold' },
+                { color: colors.destructiveForeground, fontFamily: 'ReadexPro_700Bold' },
               ]}
             >
               {t('deleteAccountSubmit')}
@@ -193,7 +193,7 @@ export default function DeleteAccountScreen() {
         </Pressable>
 
         <Pressable onPress={() => goBack()} hitSlop={10} disabled={busy} style={styles.cancelBtn}>
-          <Text style={[styles.cancelText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+          <Text style={[styles.cancelText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
             {t('deleteAccountCancel')}
           </Text>
         </Pressable>

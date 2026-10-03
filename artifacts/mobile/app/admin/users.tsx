@@ -19,6 +19,7 @@ import { confirm } from '@/services/confirm';
 import { goBack } from '@/services/navigation';
 import { LEGAL_CONTACT_EMAIL } from '@/constants/legal';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -30,6 +31,8 @@ type UserRow = {
   email: string;
   role: string;
   google: boolean;
+  signupPlatform: string | null;
+  signupReferrer: string | null;
   createdAt: string;
   lastLogin: string | null;
   suspendedAt: string | null;
@@ -51,6 +54,7 @@ export default function AdminUsersScreen() {
 
   const [q, setQ] = useState('');
   const [onlySuspended, setOnlySuspended] = useState(false);
+  const [range, setRange] = useState<Range>(EMPTY_RANGE);
   const [items, setItems] = useState<UserRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -59,11 +63,11 @@ export default function AdminUsersScreen() {
   const [blocking, setBlocking] = useState<{ id: string; reason: string } | null>(null);
 
   const load = useCallback(async (offset: number) => {
-    const params = `q=${encodeURIComponent(q)}&status=${onlySuspended ? 'suspended' : 'all'}&offset=${offset}`;
+    const params = `q=${encodeURIComponent(q)}&status=${onlySuspended ? 'suspended' : 'all'}&offset=${offset}${rangeQuery(range)}`;
     const res = await apiJson<{ items: UserRow[]; total: number }>(`/admin/users?${params}`);
     setItems(cur => (offset === 0 ? res.items : [...cur, ...res.items]));
     setTotal(res.total);
-  }, [q, onlySuspended]);
+  }, [q, onlySuspended, range]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -120,7 +124,7 @@ export default function AdminUsersScreen() {
   if (!isAdmin) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }}>{ar ? 'هذه الصفحة للإدارة فقط' : 'This page is for admins only'}</Text>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }}>{ar ? 'هذه الصفحة للإدارة فقط' : 'This page is for admins only'}</Text>
       </View>
     );
   }
@@ -135,7 +139,7 @@ export default function AdminUsersScreen() {
           <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginBottom: 8 }}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
-          <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: align }}>
+          <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: align }}>
             {ar ? 'المستخدمون والحظر' : 'Users & blocking'}
           </Text>
         </View>
@@ -153,11 +157,12 @@ export default function AdminUsersScreen() {
               onPress={() => setOnlySuspended(v => !v)}
               style={[styles.chip, { borderRadius: colors.radius, backgroundColor: onlySuspended ? ACCENT : colors.card, borderColor: onlySuspended ? ACCENT : colors.border }]}
             >
-              <Text style={{ color: onlySuspended ? '#fff' : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>
+              <Text style={{ color: onlySuspended ? '#fff' : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                 {ar ? 'المحظورون فقط' : 'Blocked only'}
               </Text>
             </Pressable>
           </View>
+          <DateRange value={range} onChange={setRange} ar={ar} isRTL={isRTL} colors={colors} />
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
             {ar ? `${total} حساب` : `${total} accounts`}
           </Text>
@@ -169,28 +174,32 @@ export default function AdminUsersScreen() {
               <View key={u.id} style={[styles.card, { backgroundColor: colors.card, borderColor: u.suspendedAt ? colors.destructive : colors.border, borderRadius: colors.radius }]}>
                 <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
                       {`${u.firstName} ${u.lastName}`.trim() || '—'} · <Text style={{ color: colors.mutedForeground }}>{u.role}</Text>
                     </Text>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
                       {u.email} · {u.google ? 'Google' : (ar ? 'كلمة مرور' : 'password')}
                     </Text>
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, textAlign: align }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
                       {ar ? 'انضم' : 'Joined'} {date(u.createdAt)} · {ar ? 'آخر دخول' : 'Last login'} {date(u.lastLogin)} · AI ${u.monthSpendUsd.toFixed(3)}
                     </Text>
+                    <Text numberOfLines={1} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
+                      {ar ? 'انضم عبر' : 'Joined via'} {u.signupPlatform ?? (ar ? 'غير معروف (قبل ٢ تشرين الأول)' : 'unknown (before 2 Oct)')}
+                      {u.signupReferrer ? ` ← ${u.signupReferrer}` : ''}
+                    </Text>
                     {!!u.suspendedAt && (
-                      <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, textAlign: align }}>
+                      <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
                         {ar ? 'محظور منذ' : 'Blocked since'} {date(u.suspendedAt)}{u.suspendedReason ? ` — ${u.suspendedReason}` : ''}
                       </Text>
                     )}
                   </View>
                   {busyId === u.id ? <ActivityIndicator color={ACCENT} /> : isAdminRow ? null : u.suspendedAt ? (
                     <Pressable onPress={() => unblock(u)} style={[styles.chip, { borderRadius: colors.radius, borderColor: ACCENT }]}>
-                      <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>{ar ? 'رفع الحظر' : 'Unblock'}</Text>
+                      <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{ar ? 'رفع الحظر' : 'Unblock'}</Text>
                     </Pressable>
                   ) : (
                     <Pressable onPress={() => setBlocking({ id: u.id, reason: DEFAULT_REASON })} style={[styles.chip, { borderRadius: colors.radius, borderColor: colors.destructive }]}>
-                      <Text style={{ color: colors.destructive, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>{ar ? 'حظر' : 'Block'}</Text>
+                      <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{ar ? 'حظر' : 'Block'}</Text>
                     </Pressable>
                   )}
                 </View>
@@ -207,10 +216,10 @@ export default function AdminUsersScreen() {
                     />
                     <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8 }}>
                       <Pressable onPress={() => block(u, blocking.reason)} style={[styles.chip, { borderRadius: colors.radius, backgroundColor: colors.destructive, borderColor: colors.destructive }]}>
-                        <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>{ar ? 'تأكيد الحظر' : 'Block'}</Text>
+                        <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{ar ? 'تأكيد الحظر' : 'Block'}</Text>
                       </Pressable>
                       <Pressable onPress={() => setBlocking(null)} style={[styles.chip, { borderRadius: colors.radius, borderColor: colors.border }]}>
-                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>{ar ? 'إلغاء' : 'Cancel'}</Text>
+                        <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{ar ? 'إلغاء' : 'Cancel'}</Text>
                       </Pressable>
                     </View>
                   </View>
@@ -221,7 +230,7 @@ export default function AdminUsersScreen() {
 
           {!loading && items.length < total && (
             <Pressable onPress={() => { void load(items.length).catch(() => {}); }} style={{ alignItems: 'center', padding: 14 }}>
-              <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{ar ? 'تحميل المزيد' : 'Load more'}</Text>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{ar ? 'تحميل المزيد' : 'Load more'}</Text>
             </Pressable>
           )}
         </View>

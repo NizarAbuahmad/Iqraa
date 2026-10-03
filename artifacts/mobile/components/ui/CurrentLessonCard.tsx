@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     maxWidth: 132,
   },
   startCompactText: {
-    fontFamily: 'Cairo_600SemiBold',
+    fontFamily: 'ReadexPro_600SemiBold',
     fontSize: 12,
   },
   countPill: {
@@ -425,11 +425,11 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   countPillText: {
-    fontFamily: 'Cairo_600SemiBold',
+    fontFamily: 'ReadexPro_600SemiBold',
     fontSize: 11,
   },
   collapsedTitle: {
-    fontFamily: 'Cairo_600SemiBold',
+    fontFamily: 'ReadexPro_600SemiBold',
     fontSize: 13,
   },
   errorRow: {
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   errorText: {
-    fontFamily: 'Cairo_500Medium',
+    fontFamily: 'ReadexPro_500Medium',
     fontSize: 12,
     lineHeight: 18,
   },
@@ -465,11 +465,11 @@ const styles = StyleSheet.create({
     fontSize: 11, lineHeight: 18,
   },
   subject: {
-    fontFamily: 'Cairo_500Medium',
+    fontFamily: 'ReadexPro_500Medium',
     fontSize: 12,
   },
   unit: {
-    fontFamily: 'Cairo_700Bold',
+    fontFamily: 'ReadexPro_700Bold',
     fontSize: 14,
     lineHeight: 20,
   },
@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   changeBtnText: {
-    fontFamily: 'Cairo_600SemiBold',
+    fontFamily: 'ReadexPro_600SemiBold',
     fontSize: 12,
   },
   clearGroup: { alignItems: 'center', gap: 10, flexShrink: 0 },

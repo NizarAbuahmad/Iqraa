@@ -80,7 +80,7 @@ function ChipRow({ label, options, selectedId, onSelect, isRTL, lang, colors }: 
       <Text
         style={{
           color: colors.mutedForeground,
-          fontFamily: 'Cairo_500Medium',
+          fontFamily: 'ReadexPro_500Medium',
           fontSize: 12,
           textAlign: isRTL ? 'right' : 'left',
         }}
@@ -106,7 +106,7 @@ function ChipRow({ label, options, selectedId, onSelect, isRTL, lang, colors }: 
               <Text
                 style={{
                   color: active ? ACCENT : colors.mutedForeground,
-                  fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                  fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                   fontSize: 13,
                 }}
               >
@@ -281,7 +281,7 @@ function ClassesList() {
           </Pressable>
         </View>
         <View style={{ alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
-          <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold' }]}>
+          <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold' }]}>
             {t('myClasses')}
           </Text>
           {!loading && classes.length > 0 && (
@@ -317,7 +317,7 @@ function ClassesList() {
                 <Text
                   style={[
                     styles.emptyTitle,
-                    { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' },
+                    { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' },
                   ]}
                 >
                   {t('noClassesYet')}
@@ -346,7 +346,7 @@ function ClassesList() {
                 <Text
                   style={[
                     styles.cardTitle,
-                    { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
+                    { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align },
                   ]}
                 >
                   {lang === 'ar' && item.nameAr ? item.nameAr : item.name}
@@ -401,7 +401,7 @@ function ClassesList() {
         style={[styles.fab, { backgroundColor: ACCENT_FILL, bottom: insets.bottom + 24, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
       >
         <Ionicons name="add" size={22} color="#fff" />
-        <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 14 }}>{t('newClass')}</Text>
+        <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>{t('newClass')}</Text>
       </Pressable>
 
       <Modal visible={showNew} transparent animationType="fade" onRequestClose={() => setShowNew(false)}>
@@ -410,7 +410,7 @@ function ClassesList() {
             <Text
               style={[
                 styles.modalTitle,
-                { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
+                { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align },
               ]}
             >
               {t('newClass')}
@@ -461,7 +461,7 @@ function ClassesList() {
                   style={{
                     color: colors.destructive,
                     fontFamily: 'Almarai_400Regular',
-                    fontSize: 12.5,
+                    fontSize: 13,
                     lineHeight: 19,
                     flex: 1,
                     textAlign: align,
@@ -480,7 +480,7 @@ function ClassesList() {
                 }}
                 style={styles.modalBtn}
               >
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
                   {t('cancel')}
                 </Text>
               </Pressable>
@@ -496,7 +496,7 @@ function ClassesList() {
                 {creating ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>
+                  <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>
                     {t('createClass')}
                   </Text>
                 )}

@@ -12,6 +12,7 @@ import { confirm } from '@/services/confirm';
 import { pickAvatarPhoto } from '@/services/avatarPick';
 import { Toast } from '@/components/ui/Toast';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
+import { AR_LATIN } from '@/services/dateLabels';
 
 function InfoRow({ icon, label, value, color, isRTL }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; color: string; isRTL: boolean }) {
   const colors = useColors();
@@ -42,7 +43,7 @@ function SettingRow({ icon, label, onPress, destructive, isRTL, colors }: {
       ]}
     >
       <Ionicons name={icon} size={20} color={destructive ? colors.destructive : colors.primary} />
-      <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'Cairo_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
+      <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'ReadexPro_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
         {label}
       </Text>
       {!destructive && <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />}
@@ -81,7 +82,7 @@ export default function ProfileScreen() {
             : t('roleTeacher');
 
   const memberSince = user?.createdAt
-    ? new Date(user.createdAt).toLocaleDateString(isRTL ? 'ar-JO' : 'en-US', {
+    ? new Date(user.createdAt).toLocaleDateString(isRTL ? AR_LATIN : 'en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -169,7 +170,7 @@ export default function ProfileScreen() {
               {user?.avatarUrl ? (
                 <Image source={{ uri: user.avatarUrl }} style={styles.avatarPhoto} />
               ) : (
-                <Text style={[styles.initials, { color: '#FFFFFF', fontFamily: 'Cairo_700Bold' }]}>
+                <Text style={[styles.initials, { color: '#FFFFFF', fontFamily: 'ReadexPro_700Bold' }]}>
                   {initials}
                 </Text>
               )}
@@ -201,11 +202,11 @@ export default function ProfileScreen() {
               </Pressable>
             ) : null}
           </View>
-          <Text style={[styles.userName, { color: '#FFFFFF', fontFamily: 'Cairo_700Bold' }]}>
+          <Text style={[styles.userName, { color: '#FFFFFF', fontFamily: 'ReadexPro_700Bold' }]}>
             {user ? `${user.firstName} ${user.lastName}` : t('roleTeacher')}
           </Text>
           <View style={[styles.roleBadge, { backgroundColor: 'rgba(0,0,0,0.2)' }]}>
-            <Text style={[styles.roleText, { color: '#FFFFFF', fontFamily: 'Cairo_500Medium' }]}>
+            <Text style={[styles.roleText, { color: '#FFFFFF', fontFamily: 'ReadexPro_500Medium' }]}>
               {roleLabel}
             </Text>
           </View>
@@ -214,7 +215,7 @@ export default function ProfileScreen() {
 
       <View style={{ paddingHorizontal: 20, paddingTop: 24 }}>
         {/* Info card */}
-        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('profileInfo')}
         </Text>
         <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -244,7 +245,7 @@ export default function ProfileScreen() {
             no other role is ever asked to pick these (see needsTeacherSetup). */}
         {isTeacherRole(user?.role) ? (
           <>
-            <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
               {t('teaching')}
             </Text>
             <Pressable
@@ -260,7 +261,7 @@ export default function ProfileScreen() {
                   const grade = GRADES.find(g => g.id === a.gradeId);
                   return (
                     <View key={a.gradeId} style={styles.tagSection}>
-                      <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                      <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                         {grade ? (isRTL ? grade.nameAr : grade.name) : a.gradeId}
                       </Text>
                       <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -268,7 +269,7 @@ export default function ProfileScreen() {
                           const subject = SUBJECTS.find(s => s.id === id);
                           return (
                             <View key={id} style={[styles.tag, { backgroundColor: colors.secondary }]}>
-                              <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
+                              <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'ReadexPro_500Medium' }]}>
                                 {subject ? (isRTL ? subject.nameAr : subject.name) : id}
                               </Text>
                             </View>
@@ -282,13 +283,13 @@ export default function ProfileScreen() {
                 <>
                   {(user?.subjectIds?.length ?? 0) > 0 ? (
                     <View style={styles.tagSection}>
-                      <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('mySubjects')}</Text>
+                      <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('mySubjects')}</Text>
                       <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                         {user?.subjectIds?.map(id => {
                           const subject = SUBJECTS.find(s => s.id === id);
                           return (
                             <View key={id} style={[styles.tag, { backgroundColor: colors.secondary }]}>
-                              <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
+                              <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'ReadexPro_500Medium' }]}>
                                 {subject ? (isRTL ? subject.nameAr : subject.name) : id}
                               </Text>
                             </View>
@@ -299,13 +300,13 @@ export default function ProfileScreen() {
                   ) : null}
                   {(user?.gradeIds?.length ?? 0) > 0 ? (
                     <View style={styles.tagSection}>
-                      <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('myGrades')}</Text>
+                      <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('myGrades')}</Text>
                       <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                         {user?.gradeIds?.map(id => {
                           const grade = GRADES.find(g => g.id === id);
                           return (
                             <View key={id} style={[styles.tag, { backgroundColor: colors.muted }]}>
-                              <Text style={[styles.tagText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+                              <Text style={[styles.tagText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
                                 {grade ? (isRTL ? grade.nameAr : grade.name) : id}
                               </Text>
                             </View>
@@ -318,7 +319,7 @@ export default function ProfileScreen() {
               )}
               <View style={[styles.tagSection, { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 0 }]}>
                 <Ionicons name="create-outline" size={14} color={colors.primary} />
-                <Text style={[styles.tagLabel, { color: colors.primary, fontFamily: 'Cairo_500Medium', marginBottom: 0 }]}>
+                <Text style={[styles.tagLabel, { color: colors.primary, fontFamily: 'ReadexPro_500Medium', marginBottom: 0 }]}>
                   {t('editTeachingTitle')}
                 </Text>
               </View>
@@ -347,7 +348,7 @@ export default function ProfileScreen() {
             admin dashboard, FAQ and sign-out, and a row inside it is itself
             called الإعدادات — under the old heading the teacher read
             "Settings → Settings". */}
-        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
           {t('moreSection')}
         </Text>
         <View style={{ gap: 8 }}>
@@ -362,6 +363,15 @@ export default function ProfileScreen() {
               (the exact door-to-nowhere pattern the iQra/AI-tools tabs are
               already hidden from these roles to avoid). It now lives only in
               the TEACHING block above, alongside جدول الحصص. */}
+          {user?.role === 'student' && (
+            <SettingRow
+              icon="document-text-outline"
+              label={t('myExamsTitle')}
+              onPress={() => router.push('/my-exams' as any)}
+              isRTL={isRTL}
+              colors={colors}
+            />
+          )}
           {(user?.role === 'parent' || user?.role === 'student') && (
             <SettingRow
               icon="key-outline"

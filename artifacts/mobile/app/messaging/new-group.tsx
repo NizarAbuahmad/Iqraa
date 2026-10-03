@@ -12,7 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { MessagingError, createGroup } from '@/services/messaging';
+import { createGroup } from '@/services/messaging';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 import { Avatar } from '@/components/ui/Avatar';
 import { goBack } from '@/services/navigation';
@@ -42,7 +43,7 @@ export default function NewGroupScreen() {
       const thread = await createGroup(title, members.map(m => m.userId));
       router.replace(`/messaging/${thread.id}`);
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingCreateGroupError'));
+      setError(apiErrorMessage(e, 'messagingCreateGroupError', t));
     } finally {
       setCreating(false);
     }
@@ -54,7 +55,7 @@ export default function NewGroupScreen() {
         <Pressable onPress={() => goBack()} hitSlop={10}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', flex: 1, textAlign: align }]}>
+        <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', flex: 1, textAlign: align }]}>
           {t('messagingNewGroup')}
         </Text>
       </View>
@@ -72,7 +73,7 @@ export default function NewGroupScreen() {
           placeholderTextColor={colors.mutedForeground}
           style={[
             styles.nameInput,
-            { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.border, fontFamily: 'Cairo_500Medium', textAlign: align },
+            { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.border, fontFamily: 'ReadexPro_500Medium', textAlign: align },
           ]}
           maxLength={80}
         />
@@ -86,7 +87,7 @@ export default function NewGroupScreen() {
           {members.map(m => (
             <View key={m.userId} style={[styles.memberRow, { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Avatar firstName={m.firstName} lastName={m.lastName} size={32} colors={colors} />
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }} numberOfLines={1}>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }} numberOfLines={1}>
                 {m.firstName} {m.lastName}
               </Text>
               <Pressable onPress={() => setMembers(prev => prev.filter(x => x.userId !== m.userId))} hitSlop={10}>
@@ -100,7 +101,7 @@ export default function NewGroupScreen() {
             style={[styles.addMembersBtn, { borderColor: colors.primary, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="person-add-outline" size={18} color={colors.primary} />
-            <Text style={{ color: colors.primary, fontFamily: 'Cairo_500Medium' }}>{t('messagingPickMembers')}</Text>
+            <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium' }}>{t('messagingPickMembers')}</Text>
           </Pressable>
         </View>
 
@@ -121,7 +122,7 @@ export default function NewGroupScreen() {
           {creating ? (
             <ActivityIndicator color={colors.primaryForeground} />
           ) : (
-            <Text style={{ color: name.trim() && members.length > 0 ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+            <Text style={{ color: name.trim() && members.length > 0 ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
               {t('messagingCreateGroup')}
             </Text>
           )}

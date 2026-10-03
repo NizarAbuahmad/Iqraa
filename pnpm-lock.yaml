@@ -147,6 +147,9 @@ importers:
 
   artifacts/mobile:
     dependencies:
+      '@expo-google-fonts/readex-pro':
+        specifier: ^0.4.1
+        version: 0.4.1
       '@react-native-google-signin/google-signin':
         specifier: ^16.1.5
         version: 16.1.5(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.1.17)(react@19.1.0)(supports-color@8.1.1))(react@19.1.0)
@@ -208,9 +211,6 @@ importers:
       '@expo-google-fonts/almarai':
         specifier: 0.4.1
         version: 0.4.1
-      '@expo-google-fonts/cairo':
-        specifier: 0.4.2
-        version: 0.4.2
       '@expo-google-fonts/inter':
         specifier: ^0.4.0
         version: 0.4.2
@@ -1219,11 +1219,11 @@ packages:
   '@expo-google-fonts/almarai@0.4.1':
     resolution: {integrity: sha512-mbFizbbS8JapmhR6/pWYLq5YAR+CX8VFIUjPC5Z0YIYy3rKz1X10DnU4WijgRASUniCyf10V84W3ws+NvtvqCA==}
 
-  '@expo-google-fonts/cairo@0.4.2':
-    resolution: {integrity: sha512-iWXHgE4MH6BfFqs8IxhbjNphAboUsb8NSEVIf1kWVGkiwCkAXDHxotgASabuPhhM1SQQXrgOPdmjT9VyeakM3Q==}
-
   '@expo-google-fonts/inter@0.4.2':
     resolution: {integrity: sha512-syfiImMaDmq7cFi0of+waE2M4uSCyd16zgyWxdPOY7fN2VBmSLKEzkfbZgeOjJq61kSqPBNNtXjggiQiSD6gMQ==}
+
+  '@expo-google-fonts/readex-pro@0.4.1':
+    resolution: {integrity: sha512-BADsKySd3E/KIHvm5rHNvaRGTM2WmJ6EgnLAaj3ksgV+wyBbRaOSvqik2gYh00vb74AUSZGmvei/YeAv3Korsw==}
 
   '@expo/cli@54.0.23':
     resolution: {integrity: sha512-km0h72SFfQCmVycH/JtPFTVy69w6Lx1cHNDmfLfQqgKFYeeHTjx7LVDP4POHCtNxFP2UeRazrygJhlh4zz498g==}
@@ -6455,9 +6455,9 @@ snapshots:
 
   '@expo-google-fonts/almarai@0.4.1': {}
 
-  '@expo-google-fonts/cairo@0.4.2': {}
-
   '@expo-google-fonts/inter@0.4.2': {}
+
+  '@expo-google-fonts/readex-pro@0.4.1': {}
 
   '@expo/cli@54.0.23(expo-router@6.0.24)(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.1.17)(react@19.1.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3)':
     dependencies:

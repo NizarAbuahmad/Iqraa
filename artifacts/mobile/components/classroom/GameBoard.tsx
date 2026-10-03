@@ -60,7 +60,7 @@ export function ScoreStrip({
           ]}
         >
           <Text style={strip.emoji}>{team.emoji}</Text>
-          <Text style={[strip.score, { color: team.color, fontFamily: 'Cairo_700Bold' }]}>
+          <Text style={[strip.score, { color: team.color, fontFamily: 'ReadexPro_700Bold' }]}>
             {num(team.score, isAr)}
           </Text>
           {/* A live streak is the thing that makes the room react — it earns
@@ -94,7 +94,7 @@ export function AwardRow({
 
   return (
     <View style={award.wrap}>
-      <Text style={[award.prompt, { fontFamily: 'Cairo_600SemiBold' }]}>{labels.prompt}</Text>
+      <Text style={[award.prompt, { fontFamily: 'ReadexPro_600SemiBold' }]}>{labels.prompt}</Text>
 
       <View style={[award.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {state.teams.map(team => {
@@ -119,7 +119,7 @@ export function AwardRow({
             >
               <Text style={award.teamEmoji}>{team.emoji}</Text>
               <Text
-                style={[award.teamName, { color: on ? team.color : TEXT_MUTED, fontFamily: 'Cairo_600SemiBold' }]}
+                style={[award.teamName, { color: on ? team.color : TEXT_MUTED, fontFamily: 'ReadexPro_600SemiBold' }]}
                 numberOfLines={1}
               >
                 {team.name}
@@ -145,7 +145,7 @@ export function AwardRow({
         ]}
       >
         <Ionicons name="people-outline" size={16} color={allAwarded ? GREEN : TEXT_MUTED} />
-        <Text style={[award.allText, { color: allAwarded ? GREEN : TEXT_MUTED, fontFamily: 'Cairo_500Medium' }]}>
+        <Text style={[award.allText, { color: allAwarded ? GREEN : TEXT_MUTED, fontFamily: 'ReadexPro_500Medium' }]}>
           {labels.all}
         </Text>
       </Pressable>
@@ -179,13 +179,13 @@ export function ScoreboardView({
             },
           ]}
         >
-          <Text style={[board.rank, { color: team.color, fontFamily: 'Cairo_700Bold' }]}>
+          <Text style={[board.rank, { color: team.color, fontFamily: 'ReadexPro_700Bold' }]}>
             {team.rank <= 3 ? MEDALS[team.rank - 1] : num(team.rank, isAr)}
           </Text>
           <Text style={board.emoji}>{team.emoji}</Text>
           <View style={{ flex: 1, marginHorizontal: 12 }}>
             <Text
-              style={[board.name, { fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}
+              style={[board.name, { fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}
               numberOfLines={1}
             >
               {team.name}
@@ -205,7 +205,7 @@ export function ScoreboardView({
             </View>
           </View>
           <View style={{ alignItems: isRTL ? 'flex-start' : 'flex-end' }}>
-            <Text style={[board.score, { color: team.color, fontFamily: 'Cairo_700Bold' }]}>
+            <Text style={[board.score, { color: team.color, fontFamily: 'ReadexPro_700Bold' }]}>
               {num(team.score, isAr)}
             </Text>
             <Text style={[board.scoreLabel, { fontFamily: 'Almarai_400Regular' }]}>
@@ -239,7 +239,7 @@ export function PodiumView({
       style={[podium.againBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
       <Ionicons name="refresh" size={18} color={TEXT_MUTED} />
-      <Text style={[podium.againText, { fontFamily: 'Cairo_600SemiBold' }]}>{labels.playAgain}</Text>
+      <Text style={[podium.againText, { fontFamily: 'ReadexPro_600SemiBold' }]}>{labels.playAgain}</Text>
     </Pressable>
   );
 
@@ -274,7 +274,7 @@ export function PodiumView({
                 <Text
                   style={[
                     podium.name,
-                    { fontSize: gi === 0 ? 32 : 24, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' },
+                    { fontSize: gi === 0 ? 32 : 24, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' },
                   ]}
                   numberOfLines={1}
                 >
@@ -283,7 +283,7 @@ export function PodiumView({
               </View>
               <View style={{ alignItems: 'center' }}>
                 <Text
-                  style={[podium.score, { color: team.color, fontSize: gi === 0 ? 40 : 28, fontFamily: 'Cairo_700Bold' }]}
+                  style={[podium.score, { color: team.color, fontSize: gi === 0 ? 40 : 28, fontFamily: 'ReadexPro_700Bold' }]}
                 >
                   {num(team.score, isAr)}
                 </Text>
