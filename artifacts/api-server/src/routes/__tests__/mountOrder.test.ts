@@ -478,10 +478,12 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     });
     assert.equal(postRes.status, 401, "POST /feedback must require a token");
 
-    for (const route of ["/feedback", "/admin/usage-summary", "/admin/users", "/admin/metrics", "/admin/signups"]) {
+    for (const route of ["/feedback", "/admin/usage-summary", "/admin/users", "/admin/metrics", "/admin/signups", "/admin/ai-costs"]) {
       const res = await fetch(`${base}${route}`);
       assert.equal(res.status, 401, `${route} must require a token`);
     }
+    const del = await fetch(`${base}/feedback/${crypto.randomUUID()}`, { method: "DELETE" });
+    assert.equal(del.status, 401, "DELETE /feedback/:id must require a token");
     for (const route of ["/admin/metrics", `/admin/users/${crypto.randomUUID()}/suspend`]) {
       const res = await fetch(`${base}${route}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
       assert.equal(res.status, 401, `POST ${route} must require a token`);
