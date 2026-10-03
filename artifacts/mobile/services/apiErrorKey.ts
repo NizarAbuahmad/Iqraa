@@ -25,6 +25,7 @@ const BY_CODE = {
   same_email: 'errSameEmail',
   invalid_google_credential: 'errGoogleFailed',
   student_accounts_disabled: 'errStudentAccountsDisabled',
+  terms_required: 'errTermsRequired',
   role_locked_teaching: 'accountTypeLockedTeaching',
   role_locked_linked: 'accountTypeLockedLinked',
   password_incorrect: 'errPasswordIncorrect',
