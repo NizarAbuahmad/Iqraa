@@ -109,7 +109,7 @@ export function AppSplash({ visible, onLayout }: Props) {
       style={[styles.root, { opacity: exit, pointerEvents: visible ? 'auto' : 'none' }]}
       onLayout={onLayout}
       accessibilityRole="progressbar"
-      accessibilityLabel="Iqraa"
+      accessibilityLabel="Iqrra"
       accessibilityHint="جارٍ التحميل"
     >
       <Animated.View

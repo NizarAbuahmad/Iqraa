@@ -141,7 +141,7 @@ const PRIVACY_AR: LegalDoc = {
 const PRIVACY_EN: LegalDoc = {
   title: 'Privacy Policy',
   intro:
-    'This policy explains what data Iqraa collects, why, who it is shared with, and how you can delete it. It covers the mobile app, the web version, and the services behind them.',
+    'This policy explains what data Iqrra collects, why, who it is shared with, and how you can delete it. It covers the mobile app, the web version, and the services behind them.',
   sections: [
     {
       heading: '1) What we collect',
@@ -306,7 +306,7 @@ const TERMS_AR: LegalDoc = {
 const TERMS_EN: LegalDoc = {
   title: 'Terms of Service',
   intro:
-    'By using Iqraa you agree to these terms. Read them before creating an account; if you do not agree to them, do not use the app.',
+    'By using Iqrra you agree to these terms. Read them before creating an account; if you do not agree to them, do not use the app.',
   sections: [
     {
       heading: '1) Who may use the app',

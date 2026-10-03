@@ -3,7 +3,7 @@
  *
  * Phase 1 of `docs/ai-cost-savings-plan.md`. What it buys, and why the shape:
  *
- * - **A teacher's first request for a standard lesson may cost nothing.** Iqraa
+ * - **A teacher's first request for a standard lesson may cost nothing.** Iqrra
  *   serves a fixed curriculum; the same eighteen math lessons are asked for by
  *   everybody. One paid generation per (lesson × kind × parameters) serves
  *   every teacher after it.
