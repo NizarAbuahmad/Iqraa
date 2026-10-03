@@ -390,6 +390,17 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401, "claim-self must require a token");
   });
 
+  it("guards «اختباراتي», and keeps it from shadowing the roster's /students", async () => {
+    // Two traps in one place. The list is a student's own exams and results,
+    // so an anonymous request must be refused. And Express prefix-matches by
+    // segment: "/student" must not swallow "/students/…", which roster.ts
+    // guards for teachers — the tell would be a different 401 or 403 there.
+    const mine = await fetch(`${base}/student/exams`);
+    assert.equal(mine.status, 401, "/student/exams must require a token");
+    const roster = await fetch(`${base}/students/00000000-0000-0000-0000-000000000000`);
+    assert.equal(roster.status, 401, "the roster route keeps its own guard");
+  });
+
   it("keeps the class join-code lookup public, and closed while student accounts are off", async () => {
     // The trap this guards: roster.ts mounts
     // `router.use(["/classes","/students"], authMiddleware, …)`, and Express
