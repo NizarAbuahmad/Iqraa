@@ -9,7 +9,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { markAppIntroSeen } from '@/services/appIntro';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { Button } from '@/components/ui/Button';
-import type { Palette } from '@/constants/colors';
+import { scheme, type Palette } from '@/constants/colors';
 import type { TranslationKey } from '@/services/i18n';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -114,7 +114,7 @@ export default function OnboardingScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 20 }]}>
       <View style={[styles.topBar, { flexDirection: row }]}>
-        <BrandLogo width={24} height={22} />
+        <BrandLogo onDark={scheme === 'dark'} width={84} />
         <View style={[styles.topBarActions, { flexDirection: row }]}>
           <Pressable
             onPress={() => { Haptics.selectionAsync(); toggleLang(); }}
