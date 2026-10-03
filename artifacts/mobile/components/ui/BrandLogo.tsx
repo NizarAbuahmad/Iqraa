@@ -1,75 +1,51 @@
 import React from 'react';
-import { ImageStyle, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { Image } from 'expo-image';
-
-// The PNGs hold only the Arabic اقرأ glyph (the Latin line was cropped off
-// 2026-10-02). The wordmark under it is text, so it always carries the
-// brand's spelling — Iqrra, as the domain — and never needs a new export.
-const MARK_LIGHT = require('@/assets/images/logo-mark.png');
-const MARK_DARK = require('@/assets/images/logo-mark-dark.png');
-
-const NAVY = '#081B3A';
-const TEAL = '#00A99D';
-
-/** Below this box height the wordmark would be under 7px tall: glyph only. */
-const WORDMARK_MIN_HEIGHT = 40;
+import { StyleProp, View, ViewStyle } from 'react-native';
+import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
+import {
+  BRAND_INK,
+  BRAND_TEAL,
+  DOT,
+  LEAF_PATH,
+  LOCKUP_ASPECT,
+  LOCKUP_MARK_OFFSET,
+  LOCKUP_VIEWBOX,
+  MARK_RADIUS,
+  STEM_PATH,
+  WORDMARK_PATH,
+} from '@/constants/brandMark';
 
 type Props = {
   /**
-   * true  → light glyphs (for dark / teal backgrounds)
-   * false → dark Midnight Navy glyphs (for light backgrounds)
+   * true  → white lockup (for teal / navy / dark backgrounds)
+   * false → teal mark with ink wordmark (for light backgrounds)
    */
   onDark?: boolean;
-  /** Box for the glyph; the wordmark sits under it and adds its own height. */
+  /** Width of the whole lockup; height follows its aspect. */
   width?: number;
-  height?: number;
-  style?: StyleProp<ImageStyle>;
-  containerStyle?: StyleProp<ViewStyle>;
+  style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
 };
 
 /**
- * Iqrra brand mark: the Arabic glyph with the IQRRA wordmark under it, glyph
- * colour picked for the background.
+ * The Iqrra lockup: the leaf mark beside the اقرأ wordmark. Drawn as vector, so
+ * it is crisp at any size and needs no font.
  */
-export function BrandLogo({
-  onDark = false,
-  width = 26,
-  height = 24,
-  style,
-  containerStyle,
-  accessibilityLabel = 'Iqrra',
-}: Props) {
-  const fontSize = Math.round(width * 0.17);
+export function BrandLogo({ onDark = false, width = 96, style, accessibilityLabel = 'Iqrra' }: Props) {
+  const ground = onDark ? '#FFFFFF' : BRAND_TEAL;
+  const leaf = onDark ? BRAND_TEAL : '#FFFFFF';
+  const ink = onDark ? '#FFFFFF' : BRAND_INK;
 
   return (
-    <View
-      style={[styles.column, containerStyle]}
-      accessibilityRole="image"
-      accessibilityLabel={accessibilityLabel}
-    >
-      <Image source={onDark ? MARK_LIGHT : MARK_DARK} style={[{ width, height }, style]} resizeMode="contain" />
-      {height >= WORDMARK_MIN_HEIGHT ? (
-        <Text
-          style={[
-            styles.wordmark,
-            { color: onDark ? '#FFFFFF' : NAVY, fontSize, letterSpacing: fontSize * 0.4, marginTop: Math.round(height * 0.04) },
-          ]}
-        >
-          I<Text style={styles.q}>Q</Text>RRA
-        </Text>
-      ) : null}
+    <View style={style} accessibilityRole="image" accessibilityLabel={accessibilityLabel}>
+      <Svg width={width} height={width / LOCKUP_ASPECT} viewBox={LOCKUP_VIEWBOX}>
+        <G transform={`translate(${LOCKUP_MARK_OFFSET.x} ${LOCKUP_MARK_OFFSET.y})`}>
+          <Rect width={48} height={48} rx={48 * MARK_RADIUS} fill={ground} />
+          <Path d={LEAF_PATH} fill={leaf} />
+          <Path d={STEM_PATH} stroke={ground} strokeWidth={1.8} strokeLinecap="round" fill="none" />
+          <Circle cx={DOT.cx} cy={DOT.cy} r={DOT.r} fill={leaf} />
+        </G>
+        <Path d={WORDMARK_PATH} fill={ink} />
+      </Svg>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  column: { alignItems: 'center' },
-  wordmark: {
-    fontFamily: 'Cairo_500Medium',
-    textAlign: 'center',
-    // Centre the glyph run: letterSpacing trails the last letter too.
-    paddingLeft: 4,
-  },
-  q: { color: TEAL },
-});
