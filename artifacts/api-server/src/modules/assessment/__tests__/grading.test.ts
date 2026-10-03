@@ -55,6 +55,17 @@ describe("Arabic normalisation", () => {
     assert.ok(!answersMatch("", ""));
   });
 
+  it("ignores typing differences that don't change the answer", () => {
+    assert.ok(answersMatch("-٥", "−5"));
+    assert.ok(!answersMatch("5", "−5"));
+    assert.ok(answersMatch("x=4", "x = 4"));
+    assert.ok(!answersMatch("x=5", "x = 4"));
+    assert.ok(answersMatch("5.", "5"));
+    assert.ok(answersMatch("الماء.", "الماء"));
+    assert.ok(answersMatch("علی", "على"));
+    assert.ok(answersMatch("کتاب", "كتاب"));
+  });
+
   it("never accepts a neighbouring whole number, however large", () => {
     // The old 1% relative tolerance passed every one of these: 1% of 360 is
     // 3.6, so 357 marked correct, unattended. The tolerance scaled with the

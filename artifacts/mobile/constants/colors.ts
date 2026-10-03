@@ -37,6 +37,8 @@ const colors = {
     accentForeground:    '#0B1B33',
     brand:               '#00A99D',   // logo teal — decoration only
     hero:                '#006D65',   // solid header bands; white text on it
+    ink:                 '#0B1B33',   // the logo's navy as a SURFACE: header bands, splash, login
+    live:                '#B45309',   // the one warm accent — «ابدأ الحصة», the class happening now; white on it 5.0:1
     destructive:         '#C4281C',
     destructiveForeground: '#FFFFFF',
     border:              '#E6E3DB',
@@ -62,6 +64,8 @@ const colors = {
     accentForeground:    '#081B3A',
     brand:               '#00A99D',
     hero:                '#0F766E',   // white on it is 5.5:1; primary here is too light for that
+    ink:                 '#111F36',   // a band must still read as a band on the navy page
+    live:                '#B45309',   // the lighter ambers fail white text; this one holds in both schemes
     destructive:         '#F87171',
     destructiveForeground: '#2A0A0A',
     border:              '#1F3050',

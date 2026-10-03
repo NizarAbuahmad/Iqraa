@@ -9,6 +9,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Sharing from 'expo-sharing';
+import { File, Paths } from 'expo-file-system';
 
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -61,10 +63,20 @@ export default function AdminSignupsScreen() {
     try {
       const res = await apiFetch(`/admin/signups?${kindParam}format=csv`);
       if (!res.ok) throw new Error(`Export failed (${res.status})`);
+      const name = `iqraa-${kind}-${new Date().toISOString().slice(0, 10)}.csv`;
+      if (Platform.OS !== 'web') {
+        // No DOM here: the anchor-click path below threw `document is not
+        // defined` into the error banner on Android. Write to cache and hand
+        // the file to the share sheet, as the other exports do.
+        const file = new File(Paths.cache, name);
+        file.write(await res.text());
+        await Sharing.shareAsync(file.uri, { mimeType: 'text/csv', dialogTitle: name });
+        return;
+      }
       const url = URL.createObjectURL(await res.blob());
       const a = document.createElement('a');
       a.href = url;
-      a.download = `iqraa-${kind}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = name;
       document.body.appendChild(a);
       a.click();
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);

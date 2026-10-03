@@ -24,8 +24,8 @@
  * of "edit this text" placeholders, which teachers read as a broken feature, so
  * a failed generation now shows an error instead of fabricating a deck.
  */
-import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,32 +38,31 @@ import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
-import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
-import type {
-  ActivitySlide, ClassroomActivity, PromptSlidesQuestion, PromptSlidesRequest,
-} from '@/services/ai/AIService';
-import { isolateForeignRuns } from '@/services/mathRender';
-import { rebuildAnswerKey, withoutSlide } from '@/services/lessonSlides';
+import type { ClassroomActivity, PromptSlidesQuestion, PromptSlidesRequest } from '@/services/ai/AIService';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { narrowToSelection } from '@/services/teacherCatalogFilter';
 import { MAX_SOURCE_CHARS, foldAnswersIntoPrompt, foldSourceIntoPrompt } from '@/services/promptSlidesAnswers';
 import { attachDrawnVisuals, attachSearchedMedia, deckSearchQueries } from '@/services/promptSlidesMedia';
 import { polishDeck } from '@/services/promptSlidesPolish';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
-import { deleteItem, getAllItems, saveItem, updateItem } from '@/services/workspace';
-import { findMatchingItem } from '@/services/savedMaterialMatch';
-import { confirm } from '@/services/confirm';
-import { timerSecondsForSlide } from '@/services/presentationUtils';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
+import { normalizeSlideCountText, slideCountFromText } from '@/services/slideCountInput';
+import { useDeckWorkspace } from '@/hooks/useDeckWorkspace';
+import { useSlideEditor } from '@/hooks/useSlideEditor';
+import { DeckOutline } from '@/components/slides/DeckOutline';
+import { DeckActions } from '@/components/slides/DeckActions';
+import { SlideEditModal } from '@/components/slides/SlideEditModal';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
-const MAX_SLIDE_COUNT = 20;
+
+/** What a deck was built from — saved as its form state. */
+type PromptForm = { prompt: string; slideCountText: string; source: string };
 
 export default function PromptSlidesScreen() {
   const colors = useColors();
@@ -99,35 +98,65 @@ export default function PromptSlidesScreen() {
   const [sourceOpen, setSourceOpen] = useState(!!params.source);
 
   const [loading, setLoading] = useState(false);
+  /**
+   * One controller for whichever request is in flight — the clarifying
+   * questions or the deck. The questions call used to take no signal at all,
+   * so neither Cancel nor leaving the screen could stop it.
+   */
   const abortRef = useRef<AbortController | null>(null);
+  useAbortOnUnmount(abortRef);
   const [cancelled, setCancelled] = useState(false);
   const [error, setError] = useState('');
   const [deck, setDeck] = useState<ClassroomActivity | null>(null);
+  /** Freshest deck, edits included, for the snapshot a regenerate restores on failure. */
+  const deckRef = useRef<ClassroomActivity | null>(null);
+  deckRef.current = deck;
+  /**
+   * The prompt, count and source the deck on screen was built from. Save
+   * reads these rather than the live fields, which stay editable after a deck
+   * is built — see `generationScope.ts` for the same rule on Slides.
+   */
+  const [builtFrom, setBuiltFrom] = useState<PromptForm | null>(null);
 
   /**
    * The one clarifying round. `asking` holds the questions the server sent
    * back; `answers` is question id → the option label the teacher tapped.
-   * Both clear the moment generation starts, so a second Build never shows a
-   * stale question from the previous prompt.
+   * Both clear once a deck is built from them — not when generation starts:
+   * clearing them first meant a failed or cancelled build sent the teacher
+   * back through the questions with their answers gone.
    */
   const [asking, setAsking] = useState<PromptSlidesQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [askingBusy, setAskingBusy] = useState(false);
 
-  const [savedId, setSavedId] = useState<string | null>(null);
-  const [savingBusy, setSavingBusy] = useState(false);
-  const savedContentRef = useRef('');
-  const lookedUpKeyRef = useRef<string | null>(null);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
-  const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editContent, setEditContent] = useState('');
-  const [editAnswer, setEditAnswer] = useState('');
+  const deckIdentity = (built: ClassroomActivity) => ({
+    type: 'prompt-slides' as const,
+    title: built.activityName,
+    subject: subjectLabel,
+    grade: gradeLabel,
+    // The model's own title, not the raw prompt — nothing downstream (e.g. a
+    // curriculum lookup keyed on `topic`) should mistake this for a lesson name.
+    topic: built.activityName,
+    language: (isAr ? 'ar' : 'en') as 'ar' | 'en',
+  });
 
-  const forgetSaved = () => { setSavedId(null); savedContentRef.current = ''; };
+  const workspace = useDeckWorkspace({
+    deck,
+    identity: deckIdentity,
+    // What the deck was built from, not what the fields say now.
+    formState: () => builtFrom ?? { prompt: prompt.trim(), slideCountText, source: source.trim() },
+    exportName: d => d.activityName,
+    isAr,
+    t,
+    showToast,
+    logTag: 'prompt-slides',
+  });
+  const forgetSaved = workspace.forget;
+  const editor = useSlideEditor({ deck, setDeck, isAr, t, showToast });
 
   /**
    * Build pressed. Ask first, unless there is nothing worth asking.
@@ -142,6 +171,8 @@ export default function PromptSlidesScreen() {
     if (asking.length > 0) { void generate(); return; }
 
     setError(''); setCancelled(false);
+    const controller = new AbortController();
+    abortRef.current = controller;
     setAskingBusy(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
@@ -156,7 +187,10 @@ export default function PromptSlidesScreen() {
         grade: gradeLabel || undefined,
         subject: subjectLabel || undefined,
         language: isAr ? 'arabic' : 'english',
-      });
+      }, { signal: controller.signal });
+      // The call swallows every failure into `[]`, the abort included, so a
+      // Cancel would otherwise read as "nothing to ask" and build the deck.
+      if (controller.signal.aborted) { setCancelled(true); return; }
       if (questions.length > 0) {
         setAsking(questions);
         setAnswers({});
@@ -167,18 +201,24 @@ export default function PromptSlidesScreen() {
       // Questions are an enhancement; a failure here is not the teacher's
       // problem and must not surface as an error on the way to a deck.
     } finally {
+      if (abortRef.current === controller) abortRef.current = null;
       setAskingBusy(false);
     }
     void generate();
   };
 
-  const generate = async () => {
+  /**
+   * `withAnswers: false` is "skip the questions". It used to clear `answers`
+   * and then call this, which still read the answers from its own closure —
+   * so skipping sent them anyway.
+   */
+  const generate = async ({ withAnswers = true }: { withAnswers?: boolean } = {}) => {
     const trimmed = prompt.trim();
     if (!trimmed) { setError(t('promptRequired')); return; }
 
     // Whatever the teacher tapped rides along inside the description itself,
     // so the server contract and the pooling exclusion stay untouched.
-    const answered = asking
+    const answered = (withAnswers ? asking : [])
       .map(q => ({ question: q.question, answer: answers[q.id] ?? '' }))
       .filter(a => a.answer);
     // The pasted source rides along the same way, and last: the description
@@ -189,20 +229,27 @@ export default function PromptSlidesScreen() {
     );
 
     setError(''); setCancelled(false);
-    setAsking([]); setAnswers({});
     const controller = new AbortController();
     abortRef.current = controller;
+    // The deck on screen and everything tied to it, so a failed or cancelled
+    // regenerate puts it back instead of leaving the teacher with nothing.
+    const previous = deckRef.current ? {
+      deck: deckRef.current,
+      workspace: workspace.snapshot(),
+      builtFrom,
+    } : null;
     setLoading(true); setDeck(null);
     forgetSaved();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    const slideCount = Math.max(0, Math.min(MAX_SLIDE_COUNT, Math.floor(Number(slideCountText) || 0)));
+    const form: PromptForm = { prompt: trimmed, slideCountText, source: source.trim() };
     const req: PromptSlidesRequest = {
       prompt: fullPrompt,
       grade: gradeLabel,
       subject: subjectLabel,
       language: isAr ? 'arabic' : 'english',
-      slideCount: slideCount > 0 ? slideCount : undefined,
+      // «١٠» is ten: the field used to keep only latin digits.
+      slideCount: slideCountFromText(slideCountText),
       classroomSetup: 'screen',
     };
     try {
@@ -212,6 +259,8 @@ export default function PromptSlidesScreen() {
       // say nothing, and a dropped slide should not have had a graph inserted
       // after it.
       const built = attachDrawnVisuals(polishDeck(out), isAr);
+      setAsking([]); setAnswers({});
+      setBuiltFrom(form);
       setDeck(built);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
@@ -252,8 +301,13 @@ export default function PromptSlidesScreen() {
     } catch (e) {
       if (isAbortError(e)) setCancelled(true);
       else setError(t(aiErrorMessageKey(e)));
+      if (previous) {
+        setDeck(previous.deck);
+        workspace.restore(previous.workspace);
+        setBuiltFrom(previous.builtFrom);
+      }
     } finally {
-      abortRef.current = null;
+      if (abortRef.current === controller) abortRef.current = null;
       setLoading(false);
     }
   };
@@ -265,150 +319,6 @@ export default function PromptSlidesScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPendingClassroomActivity(deck);
     router.push('/ai-tools/classroom/presentation' as any);
-  };
-
-  const deckIdentity = (built: ClassroomActivity) => ({
-    type: 'prompt-slides' as const,
-    title: built.activityName,
-    subject: subjectLabel,
-    grade: gradeLabel,
-    // The model's own title, not the raw prompt — nothing downstream (e.g. a
-    // curriculum lookup keyed on `topic`) should mistake this for a lesson name.
-    topic: built.activityName,
-    language: (isAr ? 'ar' : 'en') as 'ar' | 'en',
-  });
-
-  const toggleSave = async () => {
-    if (!deck || savingBusy) return;
-    setSavingBusy(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      if (savedId) {
-        await deleteItem(savedId);
-        forgetSaved();
-        showToast(t('slidesUnsaved'));
-        return;
-      }
-      const content = JSON.stringify(deck);
-      const item = await saveItem({
-        ...deckIdentity(deck),
-        content,
-        formState: { prompt: prompt.trim(), slideCountText, source: source.trim() },
-      });
-      savedContentRef.current = content;
-      setSavedId(item.id);
-      showToast(t('slidesSaved'));
-    } finally {
-      setSavingBusy(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!deck || savedId) return;
-    const identity = deckIdentity(deck);
-    const key = JSON.stringify(identity);
-    if (lookedUpKeyRef.current === key) return;
-    lookedUpKeyRef.current = key;
-    let cancelledLookup = false;
-    void (async () => {
-      try {
-        const existing = findMatchingItem(await getAllItems(), identity);
-        if (cancelledLookup || !existing) return;
-        savedContentRef.current = existing.content;
-        setSavedId(existing.id);
-      } catch {
-        // Offline, or the workspace is unreachable — stays on "save".
-      }
-    })();
-    return () => { cancelledLookup = true; };
-  }, [deck, savedId]);
-
-  useEffect(() => {
-    if (!savedId || !deck) return;
-    const content = JSON.stringify(deck);
-    if (content === savedContentRef.current) return;
-    savedContentRef.current = content;
-    void updateItem(savedId, { title: deck.activityName, content }).catch(() => {});
-  }, [deck, savedId]);
-
-  const exportPdf = async () => {
-    if (!deck) return;
-    try {
-      await exportAsPDF(buildDeckSlidesHTML(deck, isAr), `${deck.activityName || 'slides'}.pdf`);
-    } catch (e) {
-      // Logged, not just toasted. A bare `catch {}` here meant a teacher
-      // reporting "the export doesn't work" gave us nothing to act on and
-      // nothing to reproduce from — the failure was thrown away at the one
-      // point where it was still legible.
-      console.error('[prompt-slides] PDF export failed', e);
-      showToast(t('generationFailed'));
-    }
-  };
-
-  const [exportingPptx, setExportingPptx] = useState(false);
-  const exportPptx = async () => {
-    if (!deck || exportingPptx) return;
-    setExportingPptx(true);
-    try {
-      const { exportDeckAsPptx } = await import('@/services/exportPptx');
-      await exportDeckAsPptx(deck, isAr, deck.activityName || 'slides');
-    } catch (e) {
-      console.error('[prompt-slides] PPTX export failed', e);
-      showToast(t('generationFailed'));
-    } finally {
-      setExportingPptx(false);
-    }
-  };
-
-  const openEdit = (i: number) => {
-    if (!deck) return;
-    const s = deck.slides[i];
-    setEditTitle(s.title);
-    setEditContent(s.content);
-    setEditAnswer(s.answer ?? '');
-    setEditIdx(i);
-  };
-
-  const applyEdit = () => {
-    if (editIdx === null || !deck) return;
-    const editing = deck.slides[editIdx];
-    const applyToSlide = (s: ActivitySlide): ActivitySlide => {
-      const answer = editAnswer.trim();
-      const next = { ...s, title: editTitle.trim() || s.title, content: editContent };
-      if (s.type === 'question') {
-        // Nothing to do — the answer for a question slide lives in
-        // options/correctIndex, not `answer`, and this screen does not offer
-        // editing those (see prompt-slides.tsx's own note on scope).
-      } else if (s.answer !== undefined || answer) {
-        if (answer) next.answer = answer; else delete next.answer;
-      }
-      return next;
-    };
-    setDeck(cur => {
-      if (!cur) return cur;
-      const slides = cur.slides.map(s => (s === editing ? applyToSlide(s) : s));
-      return { ...cur, slides, answerKey: rebuildAnswerKey(slides, isAr) };
-    });
-    setEditIdx(null);
-    showToast(t('slideUpdated'));
-  };
-
-  const removeSlide = async (i: number) => {
-    if (!deck) return;
-    const target = deck.slides[i];
-    const ok = await confirm({
-      title: t('deleteSlideTitle'),
-      message: target.title,
-      confirmLabel: t('deleteLabel'),
-      cancelLabel: t('cancel'),
-      destructive: true,
-    });
-    if (!ok) return;
-    setDeck(cur => {
-      if (!cur) return cur;
-      const slides = withoutSlide(cur.slides, target);
-      return { ...cur, slides, answerKey: rebuildAnswerKey(slides, isAr) };
-    });
   };
 
   return (
@@ -537,7 +447,7 @@ export default function PromptSlidesScreen() {
           </Text>
           <TextInput
             value={slideCountText}
-            onChangeText={v => setSlideCountText(v.replace(/[^0-9]/g, '').slice(0, 2))}
+            onChangeText={v => setSlideCountText(normalizeSlideCountText(v))}
             keyboardType="number-pad"
             placeholder={isAr ? 'تلقائي' : 'Auto'}
             placeholderTextColor={colors.mutedForeground}
@@ -609,7 +519,7 @@ export default function PromptSlidesScreen() {
           />
 
           {asking.length > 0 && !loading && (
-            <Pressable onPress={() => { setAnswers({}); void generate(); }} style={styles.skipBtn}>
+            <Pressable onPress={() => { void generate({ withAnswers: false }); }} style={styles.skipBtn}>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
                 {t('promptSlidesSkipQuestions')}
               </Text>
@@ -618,11 +528,13 @@ export default function PromptSlidesScreen() {
         </View>
 
         <GenerationStatus
-          phase={loading ? 'loading' : cancelled ? 'cancelled' : (error && prompt.trim()) ? 'error' : 'idle'}
-          loadingLabel={t('promptSlidesBuilding')}
+          phase={loading || askingBusy ? 'loading' : cancelled ? 'cancelled' : (error && prompt.trim()) ? 'error' : 'idle'}
+          loadingLabel={askingBusy ? t('promptSlidesAsking') : t('promptSlidesBuilding')}
           errorDetail={error}
           onCancel={cancelGenerate}
-          onRetry={onBuild}
+          // Straight to the deck with the answers the teacher already gave:
+          // `onBuild` would ask the questions again.
+          onRetry={() => { void generate(); }}
           colors={colors}
           isRTL={isRTL}
           lang={lang as 'ar' | 'en'}
@@ -658,172 +570,24 @@ export default function PromptSlidesScreen() {
                 {t('slideCount', deck.slides.length)}
               </Text>
 
-              <View style={{ marginTop: 12, gap: 6 }}>
-                {deck.slides.map((s, i) => (
-                  <View key={i} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10 }}>
-                    <Pressable
-                      onPress={() => { Haptics.selectionAsync(); openEdit(i); }}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${t('editSlide')}: ${s.title}`}
-                      style={({ pressed }) => [
-                        { flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, opacity: pressed ? 0.7 : 1 },
-                      ]}
-                    >
-                      <View style={[styles.slideNum, { backgroundColor: ACCENT + '18' }]}>
-                        <Text style={{ color: ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 11 }}>{i + 1}</Text>
-                      </View>
-                      <Text
-                        style={{
-                          flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21,
-                          textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr',
-                        }}
-                        numberOfLines={1}
-                      >
-                        {isolateForeignRuns(s.title)}
-                      </Text>
-                      {timerSecondsForSlide(s) > 0 && (
-                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
-                          {timerSecondsForSlide(s)}s
-                        </Text>
-                      )}
-                      <Ionicons name="create-outline" size={16} color={colors.mutedForeground} />
-                    </Pressable>
-                    <Pressable
-                      onPress={() => { Haptics.selectionAsync(); void removeSlide(i); }}
-                      hitSlop={8}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${t('deleteLabel')}: ${s.title}`}
-                    >
-                      <Ionicons name="trash-outline" size={16} color={colors.mutedForeground} />
-                    </Pressable>
-                  </View>
-                ))}
-              </View>
+              <DeckOutline
+                slides={deck.slides}
+                onEdit={editor.openEdit}
+                onRemove={i => { void editor.removeSlide(i); }}
+                isRTL={isRTL}
+                colors={colors}
+                t={t}
+              />
             </View>
 
-            <Pressable
-              onPress={present}
-              style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT_FILL, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
-            >
-              <Ionicons name="tv-outline" size={20} color="#fff" />
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 15 }}>{t('presentOnScreen')}</Text>
-            </Pressable>
-
-            <MaterialClassField materialId={savedId} onToast={showToast} />
-
-            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10 }}>
-              <Pressable
-                onPress={toggleSave}
-                disabled={savingBusy}
-                accessibilityRole="button"
-                accessibilityState={{ selected: !!savedId, disabled: savingBusy }}
-                accessibilityLabel={savedId ? t('savedLabel') : t('save')}
-                style={({ pressed }) => [
-                  styles.secondaryBtn,
-                  {
-                    backgroundColor: savedId ? ACCENT : 'transparent',
-                    borderColor: ACCENT, borderRadius: colors.radius,
-                    flexDirection: isRTL ? 'row-reverse' : 'row',
-                    opacity: pressed || savingBusy ? 0.75 : 1,
-                  },
-                ]}
-              >
-                <Ionicons name={savedId ? 'bookmark' : 'bookmark-outline'} size={16} color={savedId ? palette.primaryForeground : ACCENT} />
-                <Text style={{ color: savedId ? palette.primaryForeground : ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
-                  {savedId ? t('savedLabel') : t('save')}
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={exportPdf}
-                style={[styles.secondaryBtn, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-              >
-                <Ionicons name="document-outline" size={16} color={colors.mutedForeground} />
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>PDF</Text>
-              </Pressable>
-              <Pressable
-                onPress={exportPptx}
-                disabled={exportingPptx}
-                style={[styles.secondaryBtn, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: exportingPptx ? 0.6 : 1 }]}
-              >
-                {exportingPptx
-                  ? <ActivityIndicator size="small" color={colors.mutedForeground} />
-                  : <Ionicons name="easel-outline" size={16} color={colors.mutedForeground} />}
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>PPTX</Text>
-              </Pressable>
-            </View>
+            <DeckActions workspace={workspace} onPresent={present} showToast={showToast} isRTL={isRTL} colors={colors} t={t} />
           </View>
         )}
 
         {deck && !loading && <FeedbackWidget materialType="prompt-slides" toolId="prompt-slides" />}
       </ScrollView>
 
-      <Modal visible={editIdx !== null} transparent animationType="fade" onRequestClose={() => setEditIdx(null)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.card, borderRadius: colors.radius }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-              {t('editSlide')}
-            </Text>
-
-            <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled">
-              <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-                {t('slideTitleField')}
-              </Text>
-              <TextInput
-                value={editTitle}
-                onChangeText={setEditTitle}
-                style={[styles.modalInput, {
-                  color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius,
-                  fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left',
-                }]}
-              />
-
-              <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-                {t('slideContentField')}
-              </Text>
-              <TextInput
-                value={editContent}
-                onChangeText={setEditContent}
-                multiline
-                style={[styles.modalInput, styles.modalInputMultiline, {
-                  color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius,
-                  fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left',
-                }]}
-              />
-
-              {editIdx !== null && deck?.slides[editIdx]?.type === 'challenge' && (
-                <>
-                  <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-                    {t('slideAnswerField')}
-                  </Text>
-                  <TextInput
-                    value={editAnswer}
-                    onChangeText={setEditAnswer}
-                    style={[styles.modalInput, {
-                      color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius,
-                      fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left',
-                    }]}
-                  />
-                </>
-              )}
-            </ScrollView>
-
-            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10, marginTop: 16 }}>
-              <Pressable
-                onPress={() => setEditIdx(null)}
-                style={[styles.secondaryBtn, { borderColor: colors.border, borderRadius: colors.radius }]}
-              >
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('cancel')}</Text>
-              </Pressable>
-              <Pressable
-                onPress={applyEdit}
-                style={[styles.secondaryBtn, { borderColor: ACCENT, backgroundColor: ACCENT_FILL, borderRadius: colors.radius }]}
-              >
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('save')}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <SlideEditModal editor={editor} isRTL={isRTL} colors={colors} t={t} />
 
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
@@ -866,13 +630,4 @@ const styles = StyleSheet.create({
   previewCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
   previewTitle: { fontSize: 17 },
   previewMeta: { fontSize: 12 },
-  slideNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  ctaBtn: { alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16, marginBottom: 10 },
-  secondaryBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 13, borderWidth: 1.5 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 24 },
-  modalCard: { padding: 20, maxHeight: '85%' },
-  modalTitle: { fontSize: 17, marginBottom: 12 },
-  modalLabel: { fontSize: 12, marginBottom: 6, marginTop: 8 },
-  modalInput: { borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
-  modalInputMultiline: { minHeight: 110, textAlignVertical: 'top' },
 });

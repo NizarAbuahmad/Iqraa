@@ -44,7 +44,11 @@ const ARABIC = /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/;
  */
 export function isLatinMath(text: string): boolean {
   const value = text.trim();
-  return value.length > 0 && value.length <= 200 && !ARABIC.test(value);
+  if (value.length === 0 || value.length > 200 || ARABIC.test(value)) return false;
+  // Nothing a maths key needs and everything an injection does: the verifier
+  // parses with an eval-based parser behind its own gate, and a `check` the
+  // model wrote with quotes, brackets or `__name__` in it is not a key.
+  return !/[`'"\[\]{}#$;:\\]|__/.test(value);
 }
 
 /**

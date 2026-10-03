@@ -31,7 +31,8 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { ClassroomActivity, QuizOutput } from '@/services/ai/AIService';
-import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
+import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { regenerationFields } from '@/services/ai/regeneration';
 import { buildGameDeckFromQuiz } from '@/services/classDeck';
 import { bookFigureUri } from '@/services/bookFigureUri';
@@ -92,10 +93,14 @@ export default function ClassGameScreen() {
   const [groundedLesson, setGroundedLesson] = useState('');
   const [error, setError] = useState('');
   const abortRef = useRef<AbortController | null>(null);
+  useAbortOnUnmount(abortRef);
+  const [cancelled, setCancelled] = useState(false);
   // The raw quiz behind the current deck — `deck` is a projector-ready
   // transform (slide `content`, no `variantId`) and can't tell a regeneration
   // what to avoid, so the source quiz is kept separately for that.
   const previousQuizRef = useRef<QuizOutput | null>(null);
+  /** The grounding the current deck was built with, so it can be rebuilt. */
+  const groundingRef = useRef<GeneratorGrounding | null>(null);
 
   // Preview teams with the same factory the game uses, so the names, emojis and
   // colours a teacher sees here are exactly the ones that appear on the board.
@@ -106,6 +111,9 @@ export default function ClassGameScreen() {
   useEffect(() => {
     if (prevGradeRef.current !== gradeIdx || prevSubjectRef.current !== subjectIdx) {
       setTopic('');
+      // A «subject mismatch» refusal is about the old pairing; it used to
+      // stay on screen in red under the now-empty topic field.
+      setError('');
       setDeck(null);
       previousQuizRef.current = null;
       prevGradeRef.current = gradeIdx;
@@ -118,6 +126,9 @@ export default function ClassGameScreen() {
   const generate = async (opts?: { regenerate?: boolean }) => {
     // Read before this run's result can replace it.
     const previous = previousQuizRef.current;
+    // What a failed or cancelled run must hand back — the deck was cleared
+    // up front and never restored.
+    const held = { deck, quiz: previousQuizRef.current, grounding: groundingRef.current };
     const trimmed = topic.trim();
     if (!trimmed) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
@@ -127,7 +138,7 @@ export default function ClassGameScreen() {
     if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
     const conflict = groundedSubjectConflict(trimmed, lang as 'ar' | 'en', subjects[subjectIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', isAr ? conflict.nameAr : conflict.name)); return; }
-    setError(''); setLoading(true); setDeck(null);
+    setError(''); setCancelled(false); setLoading(true); setDeck(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
     const controller = new AbortController();
@@ -136,6 +147,14 @@ export default function ClassGameScreen() {
     const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en');
     setGrounded(grounding.grounded);
     setGroundedLesson(grounding.lesson ? (isAr ? grounding.lesson.titleAr : grounding.lesson.titleEn) : '');
+    const restore = () => {
+      if (!held.deck) return;
+      setDeck(held.deck);
+      previousQuizRef.current = held.quiz;
+      groundingRef.current = held.grounding;
+      setGrounded(held.grounding?.grounded ?? false);
+      setGroundedLesson(held.grounding?.lesson ? (isAr ? held.grounding.lesson.titleAr : held.grounding.lesson.titleEn) : '');
+    };
 
     try {
       const quiz = await aiService.generateQuiz({
@@ -152,18 +171,24 @@ export default function ClassGameScreen() {
         additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en'),
         unitId: generatorUnitId(trimmed, lang as 'ar' | 'en'),
         lessonId: generatorLessonId(trimmed, lang as 'ar' | 'en'),
+        // The quiz screen asks for the book's figures; this one did not, so
+        // a game on a figure-heavy lesson had none to show.
+        bookFigureCount: generatorFigureCount(trimmed, lang as 'ar' | 'en'),
         // Nothing here but the lesson the teacher picked, so the quiz behind
         // the deck can be shared with every other teacher who picks it.
         contextSource: 'curriculum',
         ...regenerationFields(opts?.regenerate === true, previous),
       }, { signal: controller.signal });
       previousQuizRef.current = quiz;
+      groundingRef.current = grounding;
 
       const built = buildGameDeckFromQuiz(quiz, trimmed, isAr, {
         teamCount,
         lesson: grounding.lesson,
         verified: false,
         figureUri: bookFigureUri,
+        grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
+        subject: subjectNames[subjectIdx],
       });
 
       // A deck with no scoreable questions is a game that cannot be played —
@@ -171,6 +196,7 @@ export default function ClassGameScreen() {
       // podium showing zeros.
       if ((built.game?.questionCount ?? 0) === 0) {
         setError(t('gameNoQuestions'));
+        restore();
         return;
       }
 
@@ -179,7 +205,9 @@ export default function ClassGameScreen() {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (e) {
       // A cancel is the teacher's own action, not a failure to report.
-      if (!isAbortError(e)) setError(t(aiErrorMessageKey(e)));
+      if (isAbortError(e)) setCancelled(true);
+      else setError(t(aiErrorMessageKey(e)));
+      restore();
     } finally {
       abortRef.current = null;
       setLoading(false);
@@ -189,6 +217,24 @@ export default function ClassGameScreen() {
   const cancelGenerate = () => {
     abortRef.current?.abort();
   };
+
+  /**
+   * The team pill stays live after the deck is built, and the preview
+   * follows it — but the deck did not: Start played the count the deck was
+   * built with. Rebuild from the source quiz when the pill moves, so the
+   * board shows the teams the teacher is looking at.
+   */
+  useEffect(() => {
+    const quiz = previousQuizRef.current;
+    if (!deck || !quiz || deck.game?.teamCount === teamCount) return;
+    setDeck(buildGameDeckFromQuiz(quiz, topic.trim(), isAr, {
+      teamCount,
+      lesson: groundingRef.current?.lesson ?? null,
+      verified: false,
+      figureUri: bookFigureUri,
+    }));
+    // Only the pill drives this; the deck it rebuilds is read, not watched.
+  }, [teamCount]);
 
   const start = () => {
     if (!deck) return;
@@ -315,11 +361,23 @@ export default function ClassGameScreen() {
 
           <Button
             label={loading ? t('gameBuilding') : t('gameBuild')}
-            onPress={generate}
+            onPress={() => generate()}
             loading={loading}
+            disabled={!topic.trim()}
             fullWidth
           />
+          {!topic.trim() ? (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('needTopicHint')}
+            </Text>
+          ) : null}
         </View>
+
+        {cancelled && !loading && !deck && (
+          <Text style={{ marginHorizontal: 20, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('genCancelled')}
+          </Text>
+        )}
 
         {loading && (
           <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>

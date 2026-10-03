@@ -231,7 +231,25 @@ def main() -> int:
         failures += 1
         print(f"FAIL  an unparseable key was reported as a wrong key: {unparseable}")
 
-    total = len(CASES) + len(KEY_CASES) + 10
+    # `parse_expr` is eval-based. Before the input gate, this string ran
+    # `os.getpid()` on the service and came back `verified: True`. It must
+    # now be refused before SymPy sees it — and refused as a parse failure,
+    # never executed and never reported as a *wrong* key.
+    injected = "__import__('os').getpid()"
+    executed = verify_item("derivative_polynomial", injected, "0")
+    if executed["verified"] or "verify_error" not in (executed["error"] or ""):
+        failures += 1
+        print(f"FAIL  injected code was not refused: {executed}")
+    injected_key = relate_answer_key("derivative_polynomial", "x**2", injected)
+    if injected_key["relation"] != "error":
+        failures += 1
+        print(f"FAIL  injected key was not refused as an error: {injected_key}")
+    attribute = verify_item("equation_linear", "x.real = 3", "x = 3")
+    if attribute["verified"]:
+        failures += 1
+        print(f"FAIL  attribute access reached the parser: {attribute}")
+
+    total = len(CASES) + len(KEY_CASES) + 13
     print(f"{total - failures}/{total} checks passed")
     return 1 if failures else 0
 

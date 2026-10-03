@@ -349,8 +349,44 @@ export async function assertUserQuotaAvailable(
   if (spent >= limit) throw new AiUserQuotaExceededError(spent, limit, role);
 }
 
+/**
+ * How stale the in-memory total may get before the store is consulted again.
+ *
+ * The counter is per process, and Cloud Run runs more than one: each instance
+ * enforced its own copy of the cap, so N live instances allowed up to N× the
+ * budget before any refused, and one that booted before the spend never
+ * learned of it. The re-read is kicked off from the sync hot path and lands
+ * for the next call; the local increment stays the fast path between reads.
+ */
+const SPEND_REFRESH_MS = 60_000;
+let lastSpendRefreshAt = 0;
+let spendRefreshInFlight = false;
+
+function refreshSpendFromStoreIfStale(): void {
+  const now = Date.now();
+  if (spendRefreshInFlight || now - lastSpendRefreshAt < SPEND_REFRESH_MS) return;
+  spendRefreshInFlight = true;
+  lastSpendRefreshAt = now;
+  void readPeriodSpendUsd()
+    .then(total => {
+      if (total === null) return;
+      rollPeriodIfNeeded();
+      // The store carries every instance's writes; this process's counter
+      // carries its own not-yet-stored ones. Neither may lower the other.
+      spentUsd = Math.max(spentUsd, total);
+      hydrated = true;
+    })
+    .catch(err => {
+      logger.warn({ err }, "ai spend total could not be refreshed from the store");
+    })
+    .finally(() => {
+      spendRefreshInFlight = false;
+    });
+}
+
 export function assertBudgetAvailable(): void {
   rollPeriodIfNeeded();
+  refreshSpendFromStoreIfStale();
   const limit = getBudgetLimitUsd();
   if (spentUsd >= limit) throw new AiBudgetExceededError(spentUsd, limit);
 }

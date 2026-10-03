@@ -56,6 +56,22 @@ describe('composeClaimCodeMessage', () => {
     assert.match(named, /وتفضّلوا بقبول فائق الاحترام،\nأ\. نزار$/);
   });
 
+  it('describes where the code is actually asked for', () => {
+    // Registration stopped taking a code: it is asked only on /claim-required,
+    // after the email is verified. The message used to say "create an account,
+    // pick Parent, and enter the code" — a field that no longer exists — and
+    // was handed to students too, whom it told to sign up as a parent.
+    const ar = composeClaimCodeMessage({ ...BASE, origin: 'https://iqraa.example' }, true);
+    assert.match(ar, /بعد تأكيد/);
+    assert.match(ar, /طالب/);
+    assert.doesNotMatch(ar, /«إنشاء حساب»، واختر «وليّ أمر»، وأدخل/);
+
+    const en = composeClaimCodeMessage({ ...BASE, fieldLabel: 'Link code', origin: 'https://iqraa.example' }, false);
+    assert.match(en, /[Aa]fter verifying your email/);
+    assert.match(en, /Student/);
+    assert.doesNotMatch(en, /pick "Parent", and enter the code/);
+  });
+
   it('names the field the recipient will actually see', () => {
     // The teacher's screen said «رمز الربط» while the sign-up field said
     // «رمز الصف», so the instruction sent parents hunting for a label that did

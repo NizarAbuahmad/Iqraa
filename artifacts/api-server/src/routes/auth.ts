@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 import { signupSource } from "../lib/adminMetrics.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -17,7 +17,7 @@ import {
   emailVerificationTokens,
   passwordResetTokens,
 } from "@workspace/db";
-import { eq, and, asc, desc, gt, inArray, isNotNull, isNull, lt } from "drizzle-orm";
+import { eq, and, asc, desc, gt, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
@@ -27,6 +27,7 @@ import { googleClientIds } from "../lib/googleClients.js";
 import { decideGoogleLink, googleRoleConflict } from "../lib/googleLink.js";
 import { decideRefresh, refreshTokenTtlMs } from "../lib/refreshPolicy.js";
 import { studentAccountsEnabled } from "../lib/features.js";
+import { syncClassThreadsForStudent } from "../lib/classThread.js";
 import {
   ROSTER_CONSENT_STATEMENT_EN,
   ROSTER_CONSENT_VERSION,
@@ -47,6 +48,7 @@ import {
   RESET_CODE_TTL_MS,
 } from "../lib/passwordReset.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
+import { resyncClassGroupThreadIfExists } from "../lib/classThread.js";
 import { decideRoleSwitch } from "../lib/roleSwitch.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 import { extensionForAvatarMime, MAX_AVATAR_DATA_URL_LENGTH } from "../lib/avatarUpload.js";
@@ -104,7 +106,13 @@ const changeEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 30
 // than register because a parent with three children legitimately claims three
 // times in a sitting. Dormant while STUDENT_ACCOUNTS is off — the route 403s
 // before reaching the handler — so this is insurance for the day it flips.
-const claimLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "claim" });
+//
+// Keyed per user and mounted *after* authMiddleware, unlike the signup
+// limiters above: a classroom claiming codes together is one NAT address, and
+// an IP key here meant the eleventh child in the room was told "too many
+// attempts" for something ten classmates had just done.
+const perUser = (req: Request) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown";
+const claimLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "claim", key: perUser });
 // Same reasoning as resend-verification: asking costs someone else an email.
 const forgotPasswordLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "forgot-password" });
 /**
@@ -271,19 +279,19 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
         role?: string;
       };
 
-    if (!firstName?.trim()) {
+    if (typeof firstName !== "string" || !firstName.trim()) {
       res.status(400).json({ error: "First name is required" });
       return;
     }
-    if (!lastName?.trim()) {
+    if (typeof lastName !== "string" || !lastName.trim()) {
       res.status(400).json({ error: "Last name is required" });
       return;
     }
-    if (!email?.includes("@")) {
+    if (typeof email !== "string" || !email.includes("@")) {
       res.status(400).json({ error: "Valid email is required" });
       return;
     }
-    if (!password || !isStrongPassword(password)) {
+    if (typeof password !== "string" || !password || !isStrongPassword(password)) {
       res.status(400).json({ error: PASSWORD_POLICY_MESSAGE });
       return;
     }
@@ -754,7 +762,7 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
   }
 });
 
-router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedRequest, res) => {
+router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedRequest, res) => {
   try {
     // Closed for the same reason /register is. No such account can exist
     // while the flag is off, so this is unreachable in v1 — but leaving it
@@ -790,10 +798,91 @@ router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedReq
       return;
     }
 
-    await db
-      .insert(rosterLinks)
-      .values({ studentId: resolved.studentId, userId: req.user!.id, relation: resolved.relation })
-      .onConflictDoNothing();
+    /*
+     * Check-then-insert, serialised on the student row.
+     *
+     * `decideClaim` already asked "does this child have a self link?", but
+     * two students submitting the same code in the same second both got
+     * "no" and both became that child. The roster row is the thing being
+     * claimed, so it is the thing locked: the second transaction waits on the
+     * first and then sees its link. A partial unique index would say the same
+     * thing in the schema; this says it without a manual schema push.
+     */
+    const userId = req.user!.id;
+    const outcome = await db.transaction(async tx => {
+      await tx.execute(sql`select id from ${students} where id = ${resolved.studentId} for update`);
+      if (resolved.relation === "self") {
+        const [taken] = await tx
+          .select({ id: rosterLinks.id })
+          .from(rosterLinks)
+          .where(
+            and(
+              eq(rosterLinks.studentId, resolved.studentId),
+              eq(rosterLinks.relation, "self"),
+              ne(rosterLinks.userId, userId),
+            ),
+          )
+          .limit(1);
+        if (taken) return "taken" as const;
+      }
+      await tx
+        .insert(rosterLinks)
+        .values({ studentId: resolved.studentId, userId, relation: resolved.relation })
+        .onConflictDoNothing();
+      return "linked" as const;
+    });
+    if (outcome === "taken") {
+      res.status(409).json({
+        error: "This student is already linked to another account",
+        code: "claim_already_linked",
+      });
+      return;
+    }
+
+    // Into the class chat now, not the next time the teacher opens it.
+    if (resolved.relation === "self") {
+      try {
+        await syncClassThreadsForStudent(resolved.studentId);
+      } catch (err) {
+        logger.warn({ err, studentId: resolved.studentId }, "class thread sync after claim failed");
+      }
+    }
+
+    if (resolved.relation === "self") {
+      // One student, one self-link — decideClaim checked, but check-then-insert
+      // has no database backstop (the unique index is on student+user), so two
+      // student accounts claiming the same name in the same moment both got
+      // through. Re-read after the insert: if more than one self-link now
+      // exists, the earliest stays and this one withdraws with the same 409 the
+      // rule would have given it a moment later. Both racers run this, both
+      // see two rows, and only the later one deletes its own.
+      const selfLinks = await db
+        .select({ id: rosterLinks.id, userId: rosterLinks.userId, createdAt: rosterLinks.createdAt })
+        .from(rosterLinks)
+        .where(and(eq(rosterLinks.studentId, resolved.studentId), eq(rosterLinks.relation, "self")))
+        .orderBy(asc(rosterLinks.createdAt), asc(rosterLinks.id));
+      if (selfLinks.length > 1 && selfLinks[0]!.userId !== req.user!.id) {
+        await db
+          .delete(rosterLinks)
+          .where(and(eq(rosterLinks.studentId, resolved.studentId), eq(rosterLinks.userId, req.user!.id)));
+        res.status(409).json({ error: "This student is already linked to an account", code: "claim_already_linked" });
+        return;
+      }
+
+      // A student who joins is a member of every class thread their roster row
+      // sits in — the same rule roster edits apply (routes/roster.ts), applied
+      // here on the way in. Without it the new account saw no class group
+      // until the teacher happened to reopen it. "If exists", like those
+      // edits: a claim must not conjure an empty chat into a teacher's inbox.
+      const memberships = await db
+        .select({ classGroupId: classMemberships.classGroupId, teacherId: classGroups.teacherId })
+        .from(classMemberships)
+        .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
+        .where(and(eq(classMemberships.studentId, resolved.studentId), isNull(classGroups.archivedAt)));
+      for (const m of memberships) {
+        await resyncClassGroupThreadIfExists(m.classGroupId, m.teacherId);
+      }
+    }
 
     res.status(201).json({ studentId: resolved.studentId, relation: resolved.relation });
   } catch (err) {
@@ -809,7 +898,7 @@ router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedReq
  * parent who burned ten wrong codes could no longer get off the screen those
  * codes are asked for, which is the opposite of what this route is for.
  */
-const roleSwitchLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "role-switch" });
+const roleSwitchLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "role-switch", key: perUser });
 
 /**
  * `POST /auth/role` — the way back from a role picked wrong at signup. Who may
@@ -819,7 +908,7 @@ const roleSwitchLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10,
  * every request, so the role inside an access token never decides anything and
  * the change is live on the caller's next call.
  */
-router.post("/role", roleSwitchLimiter, authMiddleware, async (req: AuthenticatedRequest, res) => {
+router.post("/role", authMiddleware, roleSwitchLimiter, async (req: AuthenticatedRequest, res) => {
   try {
     const decision = await decideRoleSwitch({
       currentRole: req.user!.role,
@@ -956,9 +1045,12 @@ router.get("/join/:code", joinLookupLimiter, async (req, res) => {
 // POST /auth/login
 router.post("/login", loginLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body as { email?: string; password?: string };
+    const { email, password } = req.body as { email?: unknown; password?: unknown };
 
-    if (!email || !password) {
+    // Type-checked, not just truthy: `email: ["@"]` or a numeric password
+    // used to pass the guard and throw inside `.toLowerCase()` / bcrypt,
+    // which answered 500 "Login failed" for what is a malformed request.
+    if (typeof email !== "string" || typeof password !== "string" || !email || !password) {
       res.status(400).json({ error: "Email and password are required" });
       return;
     }
@@ -1132,12 +1224,33 @@ router.post("/google", googleLimiter, async (req, res) => {
         : await db.select().from(users).where(eq(users.email, email)).limit(1);
       const conflict = known ? googleRoleConflict(known, rawRole) : null;
       if (conflict) {
-        res.status(409).json({
-          code: "role_mismatch",
-          existingRole: conflict,
-          error: `An account with this email already exists as a ${conflict}. Use Sign in instead.`,
+        // The register screen's role pill is the same question POST /auth/role
+        // answers, and Google proving the address is the same authority as a
+        // session on it — so apply the switch under the same rules, instead of
+        // refusing. A parent who picked wrong at signup used to tap Google again
+        // with "teacher" selected, get this 409, and sign in as a parent anyway,
+        // back onto the claim screen asking for a code they don't have.
+        const decision = await decideRoleSwitch({
+          currentRole: known!.role,
+          requestedRole: rawRole,
+          studentAccountsEnabled: studentAccountsEnabled(),
+          hasRosterLink: () => hasAnyRosterLink(known!.id),
+          hasTeachingData: () => hasAnyTeachingData(known!.id),
         });
-        return;
+        if (!decision.ok) {
+          res.status(409).json({
+            // The screen showing this is Arabic; it branches on `code`.
+            code: decision.code,
+            existingRole: conflict,
+            error: `An account with this email already exists as a ${conflict}. Use Sign in instead.`,
+          });
+          return;
+        }
+        await db.update(users).set({ role: decision.role }).where(eq(users.id, known!.id));
+        logger.info({ userId: known!.id, from: known!.role, to: decision.role }, "role switched via google signup");
+        // `user` is this same row when matched by googleId; the email-linked
+        // branch below re-reads it from the database after the update.
+        known!.role = decision.role;
       }
     }
 
@@ -1280,8 +1393,8 @@ router.post("/google", googleLimiter, async (req, res) => {
 // POST /auth/logout
 router.post("/logout", authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
-    const { refreshToken } = req.body as { refreshToken?: string };
-    if (refreshToken) {
+    const { refreshToken } = req.body as { refreshToken?: unknown };
+    if (typeof refreshToken === "string" && refreshToken) {
       /*
        * The whole family, not just the row presented.
        *
@@ -1292,13 +1405,22 @@ router.post("/logout", authMiddleware, async (req: AuthenticatedRequest, res) =>
        * turn up later and revoke a family the user had already abandoned.
        * Ending the chain is also what "log out" means.
        */
+      // Scoped to the caller: a token value that belongs to someone else must
+      // not let this account end that user's sessions.
       const [row] = await db
         .select({ familyId: refreshTokens.familyId })
         .from(refreshTokens)
-        .where(eq(refreshTokens.tokenHash, hashRefreshToken(refreshToken)))
+        .where(
+          and(
+            eq(refreshTokens.tokenHash, hashRefreshToken(refreshToken)),
+            eq(refreshTokens.userId, req.user!.id),
+          ),
+        )
         .limit(1);
       if (row) {
-        await db.delete(refreshTokens).where(eq(refreshTokens.familyId, row.familyId));
+        await db
+          .delete(refreshTokens)
+          .where(and(eq(refreshTokens.familyId, row.familyId), eq(refreshTokens.userId, req.user!.id)));
       }
     }
     res.json({ ok: true });
@@ -1490,9 +1612,17 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
     };
 
     const updates: Record<string, unknown> = {};
-    if (preferredLanguage) updates.preferredLanguage = preferredLanguage;
-    if (firstName?.trim()) updates.firstName = firstName.trim();
-    if (lastName?.trim()) updates.lastName = lastName.trim();
+    // Allow-listed: this string is stored verbatim and echoed on every
+    // `/auth/me`, so it must not be free text.
+    if (preferredLanguage !== undefined) {
+      if (preferredLanguage !== "ar" && preferredLanguage !== "en") {
+        res.status(400).json({ error: "preferredLanguage must be 'ar' or 'en'" });
+        return;
+      }
+      updates.preferredLanguage = preferredLanguage;
+    }
+    if (typeof firstName === "string" && firstName.trim()) updates.firstName = firstName.trim();
+    if (typeof lastName === "string" && lastName.trim()) updates.lastName = lastName.trim();
 
     const sanitizedAssignments = sanitizeTeachingAssignments(teachingAssignments, VALID_GRADE_IDS, VALID_SUBJECT_IDS);
     if (sanitizedAssignments) {

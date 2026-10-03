@@ -158,6 +158,10 @@ export function buildDeckFromQuiz(
      * figure slides, exactly as before.
      */
     figureUri?: (figure: BookFigure) => string | null;
+    /** Localised grade and subject for the deck header. Omitted leaves them
+     *  blank — it used to stamp «الصف العاشر» on every deck, grade 1 included. */
+    grade?: string;
+    subject?: string;
   },
 ): ClassroomActivity {
   const slides: ActivitySlide[] = [introSlide(quiz.title, lessonTitle, isAr)];
@@ -200,8 +204,8 @@ export function buildDeckFromQuiz(
   return {
     activityName: quiz.title,
     activityType: 'class-mode-quiz',
-    grade: isAr ? 'الصف العاشر' : 'Grade 10',
-    subject: '',
+    grade: opts?.grade?.trim() ?? '',
+    subject: opts?.subject?.trim() ?? '',
     lesson: lessonTitle,
     duration: quiz.duration || 15,
     difficulty: 'standard',
@@ -252,6 +256,10 @@ export function buildDeckFromWorksheet(
     )[];
     /** See `buildDeckFromQuiz`. */
     figureUri?: (figure: BookFigure) => string | null;
+    /** Localised grade and subject for the deck header. Omitted leaves them
+     *  blank — it used to stamp «الصف العاشر» on every deck, grade 1 included. */
+    grade?: string;
+    subject?: string;
   },
 ): ClassroomActivity {
   const slides: ActivitySlide[] = [introSlide(ws.title, lessonTitle, isAr)];
@@ -312,8 +320,8 @@ export function buildDeckFromWorksheet(
   return {
     activityName: ws.title,
     activityType: 'class-mode-worksheet',
-    grade: isAr ? 'الصف العاشر' : 'Grade 10',
-    subject: '',
+    grade: opts?.grade?.trim() ?? '',
+    subject: opts?.subject?.trim() ?? '',
     lesson: lessonTitle,
     duration: 15,
     difficulty: 'standard',
@@ -406,6 +414,10 @@ export function buildGameDeckFromQuiz(
     verified?: boolean;
     /** See `buildDeckFromQuiz`. */
     figureUri?: (figure: BookFigure) => string | null;
+    /** Localised grade and subject for the deck header. Omitted leaves them
+     *  blank — it used to stamp «الصف العاشر» on every deck, grade 1 included. */
+    grade?: string;
+    subject?: string;
   },
 ): ClassroomActivity {
   const teamCount = Math.max(2, Math.min(6, Math.floor(opts.teamCount) || 2));
@@ -472,8 +484,8 @@ export function buildGameDeckFromQuiz(
   return {
     activityName: isAr ? `تحدي الصف — ${quiz.title}` : `Class Challenge — ${quiz.title}`,
     activityType: 'class-game',
-    grade: isAr ? 'الصف العاشر' : 'Grade 10',
-    subject: '',
+    grade: opts?.grade?.trim() ?? '',
+    subject: opts?.subject?.trim() ?? '',
     lesson: lessonTitle,
     duration: Math.max(10, scoreable.length * 2),
     difficulty: 'standard',

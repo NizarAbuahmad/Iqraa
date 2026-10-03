@@ -134,17 +134,32 @@ async function refreshAccessToken(): Promise<string | null> {
       });
 
       if (!res.ok) {
-        await clearTokens();
-        _onRefreshFailed?.();
+        // Only the server saying "that token is no good" ends the session. A
+        // 502 from the edge or a 503 from a cold API says nothing about the
+        // token, and clearing on it logged a teacher out of a working
+        // session because the network blinked.
+        if (res.status === 400 || res.status === 401 || res.status === 403) {
+          await clearTokens();
+          _onRefreshFailed?.();
+        }
         return null;
       }
 
-      const data = await res.json() as { accessToken: string; refreshToken: string };
+      let data: { accessToken?: unknown; refreshToken?: unknown };
+      try {
+        data = await res.json() as typeof data;
+      } catch {
+        return null;
+      }
+      if (typeof data.accessToken !== 'string' || typeof data.refreshToken !== 'string') return null;
       await storeTokens(data.accessToken, data.refreshToken);
       return data.accessToken;
     } catch {
-      await clearTokens();
-      _onRefreshFailed?.();
+      // A timeout or an offline device, not a verdict on the token: keep it
+      // and let the next request try again. Reproducible before this by
+      // toggling airplane mode once the access token had expired — the
+      // first 401 refreshed, the refresh timed out, and the teacher landed
+      // on the login screen mid-worksheet.
       return null;
     } finally {
       _refreshInFlight = null;
@@ -191,10 +206,25 @@ export async function apiFetch(
  * caller can branch on it instead of pattern-matching error text. */
 export class ApiError extends Error {
   code?: string;
-  constructor(message: string, code?: string) {
+  /** The HTTP status, so a caller can tell "the server refused" from
+   *  "the server is down" — absent when the request never got an answer. */
+  status?: number;
+  constructor(message: string, code?: string, status?: number) {
     super(message);
     this.code = code;
+    this.status = status;
   }
+}
+
+/**
+ * Whether an error means the request never reached the server (offline,
+ * DNS, the fetchWithTimeout deadline) as opposed to the server answering.
+ */
+export function isNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  if (err.name === 'AbortError') return true;
+  // `fetch` rejects with a bare TypeError when the network is unreachable.
+  return err instanceof TypeError && !(err instanceof ApiError);
 }
 
 export async function apiJson<T>(
@@ -202,10 +232,25 @@ export async function apiJson<T>(
   options: ApiOptions = {},
 ): Promise<T> {
   const res = await apiFetch(path, options);
-  const data = await res.json();
+  // Text first, then parse: a 502 HTML page from the edge, a 413 with a
+  // plain-text body or an empty 204 used to throw SyntaxError out of
+  // `res.json()` before `res.ok` was ever looked at, so callers saw a parse
+  // failure instead of the status and `code` they branch on.
+  const text = await res.text();
+  let data: unknown = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = null;
+    }
+  }
   if (!res.ok) {
-    const body = data as { error?: string; code?: string };
-    throw new ApiError(body.error ?? `Request failed: ${res.status}`, body.code);
+    const body = (data && typeof data === 'object' ? data : {}) as { error?: string; code?: string };
+    throw new ApiError(body.error ?? `Request failed: ${res.status}`, body.code, res.status);
+  }
+  if (text && data === null) {
+    throw new ApiError('Unexpected response from the server', 'bad_response', res.status);
   }
   return data as T;
 }
