@@ -48,12 +48,12 @@ export function StudentResultCard({
   return (
     <View style={{ gap: 10, alignItems: 'center', width: '100%', maxWidth: 340, alignSelf: 'center' }}>
       {showTitle && (
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16 }}>
           {t('takeResultTitle')}
         </Text>
       )}
       {levelKey && (
-        <Text style={{ color: ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 22 }}>
+        <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_700Bold', fontSize: 22 }}>
           {t(levelKey)}
         </Text>
       )}
@@ -69,7 +69,7 @@ export function StudentResultCard({
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
                 {t(COMPETENCY_LABEL_KEY[key])}
               </Text>
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                 {c?.sufficient ? `${c.percent}%` : t('insufficientEvidence')}
               </Text>
             </View>

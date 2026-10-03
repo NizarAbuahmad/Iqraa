@@ -39,7 +39,7 @@ export function DateRange({ value, onChange, ar, isRTL, colors }: {
     paddingVertical: 7,
     color: colors.foreground,
     fontFamily: 'Almarai_400Regular',
-    fontSize: 12.5,
+    fontSize: 13,
     width: 130,
   };
   const web = Platform.OS === 'web' ? ({ type: 'date' } as object) : {};

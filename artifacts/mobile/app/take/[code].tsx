@@ -376,7 +376,7 @@ export default function TakeExamScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, padding: 32, gap: 12 }]}>
         <Ionicons name="alert-circle-outline" size={40} color={colors.destructive} />
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, textAlign: 'center' }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
           {error || t('takeLinkFailed')}
         </Text>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
@@ -389,7 +389,7 @@ export default function TakeExamScreen() {
           style={({ pressed }) => [styles.retryBtn, { borderColor: ACCENT, opacity: pressed ? 0.7 : 1 }]}
         >
           <Ionicons name="refresh" size={16} color={ACCENT} />
-          <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>{t('retry')}</Text>
+          <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('retry')}</Text>
         </Pressable>
       </View>
     );
@@ -399,7 +399,7 @@ export default function TakeExamScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, padding: 32, gap: 12 }]}>
         <Ionicons name="checkmark-circle" size={56} color={ACCENT} />
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 20 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20 }}>
           {t('takeHandedIn')}
         </Text>
         {notice ? (
@@ -436,7 +436,7 @@ export default function TakeExamScreen() {
               ) : (
                 <Ionicons name="refresh" size={16} color={ACCENT} />
               )}
-              <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
                 {checkingResult ? t('takeCheckingResult') : t('takeCheckResult')}
               </Text>
             </Pressable>
@@ -448,7 +448,7 @@ export default function TakeExamScreen() {
 
   const header = (
     <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 14 }]}>
-      <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]} numberOfLines={2}>
+      <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]} numberOfLines={2}>
         {title}
       </Text>
       {chosen && (
@@ -461,7 +461,7 @@ export default function TakeExamScreen() {
           accessibilityLiveRegion="polite"
           style={[
             styles.headerSub,
-            { fontFamily: 'Cairo_600SemiBold', textAlign: align, color: remainingMs < 60_000 ? '#FDE68A' : 'rgba(255,255,255,0.95)' },
+            { fontFamily: 'ReadexPro_600SemiBold', textAlign: align, color: remainingMs < 60_000 ? '#FDE68A' : 'rgba(255,255,255,0.95)' },
           ]}
         >
           {t('takeTimeLeft', formatCountdown(remainingMs))}
@@ -483,7 +483,7 @@ export default function TakeExamScreen() {
             <View style={{ gap: 14, marginTop: 20, alignItems: 'center' }}>
               {/* The confirm step is the cheapest guard against a level landing
                   on the wrong child. It is not decoration. */}
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 22, textAlign: 'center' }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 22, textAlign: 'center' }}>
                 {chosen.displayName}
               </Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
@@ -498,18 +498,18 @@ export default function TakeExamScreen() {
                 {busy ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 16 }}>{t('takeYesStart')}</Text>
+                  <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 16 }}>{t('takeYesStart')}</Text>
                 )}
               </Pressable>
               <Pressable onPress={() => { setChosen(null); setPhase('pick'); }} hitSlop={8}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 14 }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>
                   {t('takeNotMe')}
                 </Text>
               </Pressable>
             </View>
           ) : (
             <>
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: align, marginTop: 6 }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align, marginTop: 6 }}>
                 {t('takePickYourName')}
               </Text>
               {error ? (
@@ -532,7 +532,7 @@ export default function TakeExamScreen() {
                     },
                   ]}
                 >
-                  <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 16, flex: 1, textAlign: align }}>
+                  <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 16, flex: 1, textAlign: align }}>
                     {s.displayName}
                   </Text>
                   {s.taken && (
@@ -554,7 +554,7 @@ export default function TakeExamScreen() {
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         {header}
         <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 40 }}>
-          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, textAlign: align }}>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: align }}>
             {t('takeReviewTitle')}
           </Text>
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -569,7 +569,7 @@ export default function TakeExamScreen() {
                     { borderColor: done ? ACCENT : colors.border, backgroundColor: done ? ACCENT + '18' : 'transparent' },
                   ]}
                 >
-                  <Text style={{ color: done ? ACCENT : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+                  <Text style={{ color: done ? ACCENT : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
                     {i + 1}
                   </Text>
                 </Pressable>
@@ -589,11 +589,11 @@ export default function TakeExamScreen() {
             {busy ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 16 }}>{t('takeHandIn')}</Text>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 16 }}>{t('takeHandIn')}</Text>
             )}
           </Pressable>
           <Pressable onPress={() => setPhase('answering')} hitSlop={8} style={{ alignSelf: 'center' }}>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 14 }}>{t('takeBackToQuestions')}</Text>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>{t('takeBackToQuestions')}</Text>
           </Pressable>
         </ScrollView>
       </View>
@@ -607,7 +607,7 @@ export default function TakeExamScreen() {
       {header}
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 16 }} keyboardShouldPersistTaps="handled">
         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
             {t('takeProgress', String(index + 1), String(questions.length))}
           </Text>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
@@ -621,7 +621,7 @@ export default function TakeExamScreen() {
               style={{ marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}
             >
               <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
-                {t('takeSaveFailed')} · <Text style={{ fontFamily: 'Cairo_600SemiBold', textDecorationLine: 'underline' }}>{t('retry')}</Text>
+                {t('takeSaveFailed')} · <Text style={{ fontFamily: 'ReadexPro_600SemiBold', textDecorationLine: 'underline' }}>{t('retry')}</Text>
               </Text>
             </Pressable>
           )}
@@ -672,15 +672,15 @@ export default function TakeExamScreen() {
             disabled={index === 0}
             style={[styles.navBtn, { borderColor: colors.border, opacity: index === 0 ? 0.4 : 1 }]}
           >
-            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 14 }}>{t('takePrevious')}</Text>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>{t('takePrevious')}</Text>
           </Pressable>
           {index < questions.length - 1 ? (
             <Pressable onPress={() => setIndex(i => i + 1)} style={[styles.navBtn, { borderColor: ACCENT, backgroundColor: ACCENT_FILL, flex: 1 }]}>
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>{t('takeNext')}</Text>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('takeNext')}</Text>
             </Pressable>
           ) : (
             <Pressable onPress={() => setPhase('review')} style={[styles.navBtn, { borderColor: ACCENT, backgroundColor: ACCENT_FILL, flex: 1 }]}>
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>{t('takeReview')}</Text>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('takeReview')}</Text>
             </Pressable>
           )}
         </View>
@@ -810,7 +810,7 @@ function QuestionCard({
                 onPress={() => onAnswer({ value: opt.v })}
                 style={[styles.tf, { borderColor: on ? ACCENT : colors.border, backgroundColor: on ? ACCENT : 'transparent' }]}
               >
-                <Text style={{ color: on ? palette.primaryForeground : colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+                <Text style={{ color: on ? palette.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
                   {t(opt.key)}
                 </Text>
               </Pressable>

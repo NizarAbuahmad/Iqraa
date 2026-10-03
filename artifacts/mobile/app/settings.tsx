@@ -163,7 +163,7 @@ export default function SettingsScreen() {
         <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('settingsTitle')}
         </Text>
       </View>
@@ -239,7 +239,7 @@ export default function SettingsScreen() {
                 onPress={handleToggleLanguage}
                 style={[styles.langToggle, { backgroundColor: lang === 'ar' ? colors.primary : colors.muted, borderRadius: 20 }]}
               >
-                <Text style={[{ color: lang === 'ar' ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 12 }]}>
+                <Text style={[{ color: lang === 'ar' ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }]}>
                   {lang === 'ar' ? 'عربي' : 'English'}
                 </Text>
               </Pressable>
@@ -311,7 +311,7 @@ export default function SettingsScreen() {
                 label={t('aiUsage')}
                 isRTL={isRTL}
                 colors={colors}
-                right={<Text style={{ color: usedPct >= 100 ? colors.destructive : colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{usedPct}%</Text>}
+                right={<Text style={{ color: usedPct >= 100 ? colors.destructive : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{usedPct}%</Text>}
               />
               <View style={{ paddingHorizontal: 16, paddingBottom: 14, gap: 6 }}>
                 <View
@@ -335,7 +335,7 @@ export default function SettingsScreen() {
                 label={t('accountType')}
                 isRTL={isRTL}
                 colors={colors}
-                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{t('roleTeacher')}</Text>}
+                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('roleTeacher')}</Text>}
                 onPress={() => { setTypeOpen(o => !o); setNextRole(null); setTypeError(''); }}
               />
               {typeOpen && (
@@ -389,7 +389,7 @@ export default function SettingsScreen() {
 
 function SectionLabel({ label, isRTL, colors, top }: { label: string; isRTL: boolean; colors: ReturnType<typeof useColors>; top?: boolean }) {
   return (
-    <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', marginTop: top ? 20 : 0, textAlign: isRTL ? 'right' : 'left' }]}>
+    <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', marginTop: top ? 20 : 0, textAlign: isRTL ? 'right' : 'left' }]}>
       {label}
     </Text>
   );
@@ -406,7 +406,7 @@ function SettingRow({ icon, label, colors, isRTL, right, onPress, destructive }:
   const inner = (
     <View style={[styles.settingRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <Ionicons name={icon} size={20} color={tint} />
-      <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'Cairo_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
+      <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'ReadexPro_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
         {label}
       </Text>
       <View style={{ marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>

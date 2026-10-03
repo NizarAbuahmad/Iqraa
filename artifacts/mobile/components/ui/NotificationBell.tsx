@@ -44,5 +44,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { color: '#fff', fontSize: 10, fontFamily: 'Cairo_700Bold', lineHeight: 14 },
+  badgeText: { color: '#fff', fontSize: 10, fontFamily: 'ReadexPro_700Bold', lineHeight: 14 },
 });

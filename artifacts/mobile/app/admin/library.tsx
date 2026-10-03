@@ -261,7 +261,7 @@ export default function LibraryAdminScreen() {
             accessibilityState={{ selected: s === scope }}
             style={[styles.chip, { backgroundColor: s === scope ? ACCENT : colors.muted }]}
           >
-            <Text style={{ color: s === scope ? palette.primaryForeground : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+            <Text style={{ color: s === scope ? palette.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
               {s === 'all' ? t('libraryAdminScopeAll') : s === 'semester-1' ? t('libraryAdminScopeS1') : s === 'semester-2' ? t('libraryAdminScopeS2') : t('libraryAdminScopeLesson')}
             </Text>
           </Pressable>
@@ -290,7 +290,7 @@ export default function LibraryAdminScreen() {
             accessibilityState={{ selected: c === category }}
             style={[styles.chip, { backgroundColor: c === category ? ACCENT : colors.muted }]}
           >
-            <Text style={{ color: c === category ? palette.primaryForeground : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+            <Text style={{ color: c === category ? palette.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
               {t(CATEGORY_LABEL[c])}
             </Text>
           </Pressable>
@@ -332,7 +332,7 @@ export default function LibraryAdminScreen() {
             onPress={() => setMode(m)}
             style={[styles.chip, { backgroundColor: m === mode ? ACCENT : colors.muted }]}
           >
-            <Text style={{ color: m === mode ? palette.primaryForeground : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+            <Text style={{ color: m === mode ? palette.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
               {t(m === 'file' ? 'libraryAdminFile' : 'libraryAdminLink')}
             </Text>
           </Pressable>
@@ -343,7 +343,7 @@ export default function LibraryAdminScreen() {
         <View style={{ gap: 6 }}>
           <Pressable onPress={pickFile} style={[styles.pickBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="cloud-upload-outline" size={20} color={ACCENT} />
-            <Text numberOfLines={1} style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', flexShrink: 1 }}>
+            <Text numberOfLines={1} style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', flexShrink: 1 }}>
               {picked ? `${picked.name} · ${(picked.size / 1024 / 1024).toFixed(1)} MB` : t('libraryAdminPickFile')}
             </Text>
           </Pressable>
@@ -368,7 +368,7 @@ export default function LibraryAdminScreen() {
             style={[styles.saveBtn, { flex: 1, margin: 0, backgroundColor: palette.hero, borderRadius: colors.radius, opacity: busy ? 0.7 : 1 }]}
           >
             {busy ? <ActivityIndicator color="#fff" /> : null}
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 15 }}>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 15 }}>
               {busy ? t('libraryAdminSaving') : t('libraryAdminEditSave')}
             </Text>
           </Pressable>
@@ -376,7 +376,7 @@ export default function LibraryAdminScreen() {
             onPress={cancelEdit}
             style={[styles.saveBtn, { margin: 0, backgroundColor: colors.muted, borderRadius: colors.radius }]}
           >
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_700Bold', fontSize: 15 }}>{t('cancel')}</Text>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_700Bold', fontSize: 15 }}>{t('cancel')}</Text>
           </Pressable>
         </View>
       ) : (
@@ -386,7 +386,7 @@ export default function LibraryAdminScreen() {
           style={[styles.saveBtn, { backgroundColor: palette.hero, borderRadius: colors.radius, opacity: busy ? 0.7 : 1 }]}
         >
           {busy ? <ActivityIndicator color="#fff" /> : null}
-          <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 15 }}>
+          <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 15 }}>
             {busy ? t('libraryAdminSaving') : t('libraryAdminSave')}
           </Text>
         </Pressable>
@@ -401,7 +401,7 @@ export default function LibraryAdminScreen() {
           style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }}>{item.titleAr}</Text>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }}>{item.titleAr}</Text>
             <Text style={[styles.hint, { color: colors.mutedForeground, textAlign: align }]}>
               {t(CATEGORY_LABEL[item.category] ?? 'libraryCatDocument')} · {item.subjectId}
               {item.lessonId ? ` · ${item.lessonId}` : ''}
@@ -422,8 +422,8 @@ export default function LibraryAdminScreen() {
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   header: { alignItems: 'center', gap: 12, marginBottom: 18 },
-  title: { flex: 1, fontSize: 20, fontFamily: 'Cairo_700Bold' },
-  label: { fontSize: 14, fontFamily: 'Cairo_500Medium', marginBottom: 6, marginTop: 6 },
+  title: { flex: 1, fontSize: 20, fontFamily: 'ReadexPro_700Bold' },
+  label: { fontSize: 14, fontFamily: 'ReadexPro_500Medium', marginBottom: 6, marginTop: 6 },
   input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, fontFamily: 'Almarai_400Regular', marginBottom: 8 },
   thumbPreview: { width: 120, height: 90, borderWidth: 1, marginBottom: 8 },
   chips: { flexWrap: 'wrap', gap: 8, marginBottom: 10 },
@@ -431,6 +431,6 @@ const styles = StyleSheet.create({
   pickBtn: { alignItems: 'center', gap: 10, borderWidth: 1.5, borderStyle: 'dashed', padding: 16 },
   hint: { fontSize: 12, lineHeight: 18, fontFamily: 'Almarai_400Regular' },
   saveBtn: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, marginTop: 16, marginBottom: 28 },
-  sectionTitle: { fontSize: 15, fontFamily: 'Cairo_700Bold', marginBottom: 10 },
+  sectionTitle: { fontSize: 15, fontFamily: 'ReadexPro_700Bold', marginBottom: 10 },
   row: { alignItems: 'center', gap: 10, borderWidth: 1, padding: 12, marginBottom: 8 },
 });

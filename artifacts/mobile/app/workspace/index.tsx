@@ -221,14 +221,14 @@ export default function WorkspaceScreen() {
         {/* Body */}
         <View style={{ flex: 1 }}>
           <Text
-            style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}
+            style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}
             numberOfLines={2}
           >
             {item.title}
           </Text>
           <View style={[styles.cardMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <View style={[styles.typePill, { backgroundColor: color + '18', borderRadius: 8 }]}>
-              <Text style={[styles.typeText, { color, fontFamily: 'Cairo_500Medium' }]}>
+              <Text style={[styles.typeText, { color, fontFamily: 'ReadexPro_500Medium' }]}>
                 {typeLabel(item.type)}
               </Text>
             </View>
@@ -292,7 +292,7 @@ export default function WorkspaceScreen() {
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('myWorkspace')}
         </Text>
         <Text style={[styles.headerSub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -335,7 +335,7 @@ export default function WorkspaceScreen() {
                 styles.tabText,
                 {
                   color: activeTab === tab.key ? colors.primary : colors.mutedForeground,
-                  fontFamily: activeTab === tab.key ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                  fontFamily: activeTab === tab.key ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                 },
               ]}>
                 {t(tab.labelKey as any)}
@@ -359,7 +359,7 @@ export default function WorkspaceScreen() {
           ]}
         >
           <Ionicons name={favoritesOnly ? 'star' : 'star-outline'} size={14} color={favoritesOnly ? '#B54708' : colors.mutedForeground} />
-          <Text style={[styles.filterText, { color: favoritesOnly ? '#B54708' : colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+          <Text style={[styles.filterText, { color: favoritesOnly ? '#B54708' : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
             {t('favoritesFilter')}
           </Text>
         </Pressable>
@@ -380,7 +380,7 @@ export default function WorkspaceScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="folder-open-outline" size={64} color={colors.mutedForeground} style={{ opacity: 0.4 }} />
-            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: 'center' }]}>
+            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: 'center' }]}>
               {t('noSavedItems')}
             </Text>
             <Text style={[styles.emptyDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
@@ -390,7 +390,7 @@ export default function WorkspaceScreen() {
               onPress={() => router.push('/(tabs)/ai-tools')}
               style={[styles.emptyBtn, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
             >
-              <Text style={[{ color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }]}>
+              <Text style={[{ color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }]}>
                 {t('aiTools')}
               </Text>
             </Pressable>
@@ -414,7 +414,7 @@ export default function WorkspaceScreen() {
                 styles.menuTitle,
                 {
                   color: colors.foreground,
-                  fontFamily: 'Cairo_600SemiBold',
+                  fontFamily: 'ReadexPro_600SemiBold',
                   textAlign: isRTL ? 'right' : 'left',
                 },
               ]}
@@ -444,7 +444,7 @@ export default function WorkspaceScreen() {
                 <Text
                   style={{
                     color: action.destructive ? colors.destructive : colors.foreground,
-                    fontFamily: 'Cairo_500Medium',
+                    fontFamily: 'ReadexPro_500Medium',
                     flex: 1,
                     textAlign: isRTL ? 'right' : 'left',
                   }}
@@ -454,7 +454,7 @@ export default function WorkspaceScreen() {
               </Pressable>
             ))}
             <Pressable onPress={() => setMenuItem(null)} style={styles.menuCancel}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
                 {t('cancel')}
               </Text>
             </Pressable>

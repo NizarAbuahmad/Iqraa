@@ -60,7 +60,7 @@ export function GameShell({
         {gameOver ? (
           <View style={styles.overlay}>
             <Ionicons name="trophy" size={48} color={accent} />
-            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 22, textAlign: 'center' }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 22, textAlign: 'center' }}>
               {t('playGameOverTitle')}
             </Text>
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 16, lineHeight: 26, textAlign: 'center' }}>
@@ -71,7 +71,7 @@ export function GameShell({
 
             {!user && (
               <View style={[styles.ctaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: 'center' }}>
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }}>
                   {t('playCtaHeading')}
                 </Text>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
@@ -92,9 +92,9 @@ export function GameShell({
 const styles = StyleSheet.create({
   header: { alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingBottom: 14 },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 17 },
+  title: { flex: 1, color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 17 },
   scoreBadge: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
-  scoreText: { color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 },
+  scoreText: { color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 },
   overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
   ctaCard: { width: '100%', borderWidth: 1, borderRadius: 14, padding: 18, gap: 10, marginTop: 24 },
 });
