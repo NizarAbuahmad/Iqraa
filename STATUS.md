@@ -14753,3 +14753,39 @@ session's environment does not have.
 **Not in scope:** parents see nothing here. The endpoint answers students
 only, and a parent who types `/my-exams` gets the translated refusal. A
 parent view of their child's results is a separate decision.
+
+## Every new account records that it accepted the terms, 2026-10-03
+
+**The terms checkbox on the register screen gated the password form only.**
+«متابعة عبر Google» sat above it and created accounts without asking, and the
+server stored nothing on either path — for an app whose accounts include
+minors'. Now:
+
+- **The server refuses a new account without acceptance** (`400
+  terms_required`, `api-server/src/lib/termsAcceptance.ts`, tested) on both
+  `POST /auth/register` and the account-creating branch of `POST
+  /auth/google`. Someone signing back in with Google is not asked again.
+- **It records when and which wording**: `users.terms_accepted_at` and
+  `users.terms_version`, the same shape as the teacher's roster attestation.
+  The version is the date the app's documents show (`LEGAL_VERSION` beside
+  `LEGAL_LAST_UPDATED` in `constants/legal.ts`; `legalVersion.test.ts` fails
+  if the two disagree), validated as date-shaped — anything else is stored as
+  `unspecified` rather than trusted.
+- **The register screen's checkbox moved above both sign-up paths**, and the
+  Google button is blocked until it is ticked (a non-interactive wrapper:
+  Google draws its own button on web and it has no disabled state). A hint
+  says why under both buttons.
+- **The login screen's Google button can also create an account**, so it now
+  carries a «by continuing… you agree to» notice with both links, and sends
+  acceptance — the notice is the acceptance there. That is a deliberate
+  choice: refusing and redirecting to register was the stricter alternative.
+
+**Schema: `docs/schema-push-2026-10-03-terms-acceptance.sql` must run on Neon
+before this merges.** Both sign-up routes write the new columns, so without
+them every new account fails to insert. `verify-schema` checks the columns.
+
+**Not done:** accounts created before this have no record (`terms_accepted_at`
+null) and are not asked to accept; re-acceptance when the wording changes is
+a separate flow. Apps that have not relaunched since the merge still send no
+acceptance and are refused with a generic error until the over-the-air update
+reaches them (published on every merge to main).

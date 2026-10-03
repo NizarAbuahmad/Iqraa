@@ -88,7 +88,10 @@ export default function LoginScreen() {
     setError('');
     setGoogleLoading(true);
     try {
-      await loginWithGoogle(credential);
+      // Google on this screen can create an account for someone who has none,
+      // and the server refuses that without acceptance — so the notice under
+      // the button is the acceptance, and it is sent as such.
+      await loginWithGoogle(credential, { acceptedTerms: true });
     } catch (e: any) {
       setError(apiErrorMessage(e, 'errGoogleFailed', t));
     } finally {
@@ -210,6 +213,16 @@ export default function LoginScreen() {
         {isGoogleSignInAvailable() && (
           <>
             <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('loginGoogleTermsNotice')}{' '}
+              <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/terms')}>
+                {t('termsOfService')}
+              </Text>
+              {lang === 'ar' ? ' و' : ' and '}
+              <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/privacy')}>
+                {t('privacyPolicy')}
+              </Text>
+            </Text>
             {googleLoading ? (
               <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
                 {lang === 'ar' ? 'جارٍ تسجيل الدخول…' : 'Signing in…'}

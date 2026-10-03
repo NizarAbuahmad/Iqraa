@@ -44,6 +44,15 @@ export const LEGAL_CONTACT_EMAIL = 'info@iqrra.com';
 /** Shown on both documents. Bump when the text below changes materially. */
 export const LEGAL_LAST_UPDATED = { ar: '6 أيلول 2026', en: '6 September 2026' };
 
+/**
+ * The same date, as the version a new account records it accepted
+ * (`users.termsVersion`, see `api-server/src/lib/termsAcceptance.ts`). Bump
+ * the two together — `legalVersion.test.ts` fails if they disagree, because
+ * an acceptance record naming a version the documents never carried is a
+ * record of nothing.
+ */
+export const LEGAL_VERSION = '2026-09-06';
+
 export type LegalSection = { heading: string; body: string[] };
 export type LegalDoc = { title: string; intro: string; sections: LegalSection[] };
 export type LegalDocId = 'privacy' | 'terms';

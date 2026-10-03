@@ -10,6 +10,7 @@ import {
   setOnRefreshFailed,
   getApiBaseUrl,
 } from '@/services/apiClient';
+import { LEGAL_VERSION } from '@/constants/legal';
 import { trackEvent } from '@/services/analytics';
 import { fetchWithTimeout } from '@/services/fetchWithTimeout';
 import { setActiveLessonContextUser } from '@/services/lessonContext';
@@ -115,6 +116,12 @@ export interface RegisterData {
   confirmPassword?: string;
   /** Defaults to 'teacher' server-side when omitted. */
   role?: 'teacher' | 'student' | 'parent';
+  /**
+   * The person ticked «أوافق على شروط الاستخدام وسياسة الخصوصية». The server
+   * refuses a new account without it and records the version shown
+   * (`LEGAL_VERSION`) — see `api-server/src/lib/termsAcceptance.ts`.
+   */
+  acceptedTerms?: boolean;
 }
 
 interface AuthContextType {
@@ -127,7 +134,7 @@ interface AuthContextType {
    * "Continue with Google" button, which used to ignore the role pill
    * entirely and silently create a teacher.
    */
-  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role'>) => Promise<void>;
+  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role' | 'acceptedTerms'>) => Promise<void>;
   /**
    * Creates the account but does NOT sign in — a password account starts
    * unverified and the server refuses login until `verifyEmail` succeeds.
@@ -437,7 +444,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = useCallback(async (
     credential: string,
-    signup?: Pick<RegisterData, 'role'>,
+    signup?: Pick<RegisterData, 'role' | 'acceptedTerms'>,
   ) => {
     // `isNewAccount` is optional on purpose: an app build can outlive the API
     // revision that answers it (and predates it during a rollout). Absent is
@@ -455,6 +462,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           credential,
           role: signup?.role,
+          // Read only when this credential creates an account; someone
+          // signing back in is not asked again.
+          acceptedTerms: signup?.acceptedTerms === true,
+          termsVersion: LEGAL_VERSION,
         }),
       },
     );
@@ -487,6 +498,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           password: payload.password,
           confirmPassword: payload.confirmPassword,
           role: payload.role,
+          acceptedTerms: payload.acceptedTerms === true,
+          termsVersion: LEGAL_VERSION,
         }),
       },
     );
