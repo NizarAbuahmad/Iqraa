@@ -1,5 +1,5 @@
 /**
- * Library upload — where Iqraa staff publish ready-made resources.
+ * Library upload — where Iqrra staff publish ready-made resources.
  *
  * Grade → subject → lesson (optional) → category → title, then a file (up to
  * 25 MB, straight to storage) or a link (long videos, online games). Below the

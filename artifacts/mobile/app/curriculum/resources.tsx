@@ -1,7 +1,7 @@
 /**
  * The library (المكتبة) — ready-made resources per grade, in one place.
  *
- * Three shelves: what Iqraa staff upload per grade/subject/lesson, grouped by
+ * Three shelves: what Iqrra staff upload per grade/subject/lesson, grouped by
  * category (infographics, videos, audio, games, worksheets, templates…); the
  * ready-made practice sheets; and the QR codes printed in the NCCD books.
  * Filterable by grade, subject, category and lesson, because a teacher is

@@ -13,7 +13,7 @@ import { pooledVariantId } from '@/services/ai/regeneration';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { getLessonById, getLessonsForUnit, getUnitForLesson } from '@/services/knowledgeBase';
-import { buildMinistryPlanHTML, stagesFromLessonPlan } from '@/services/ministryPlanHtml';
+import { stagesFromLessonPlan } from '@/services/ministryPlan';
 import { todayISO } from '@/services/planEntries';
 import { useAuth } from '@/context/AuthContext';
 import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
@@ -36,7 +36,7 @@ import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
-import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, exportAsPDF, formatLessonPlanText } from '@/services/share';
+import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, exportMinistryPlanWord, formatLessonPlanText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
@@ -383,7 +383,7 @@ export default function LessonPlanScreen() {
         stages: stagesFromLessonPlan(result),
       };
       const title = getExportTitle();
-      await exportAsPDF(buildMinistryPlanHTML([page], title), title);
+      await exportMinistryPlanWord([page], title);
     } catch {
       showToast(t('generationFailed'));
     } finally {
