@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
 import { AccountRow } from '@/components/ui/AccountRow';
 import { confirm } from '@/services/confirm';
+import { dateLocale } from '@/services/dateLabels';
 
 type AiUsage = { spentUsd: number | null; limitUsd: number; resetsAt: string };
 
@@ -321,7 +322,7 @@ export default function SettingsScreen() {
                   <View style={{ width: `${usedPct}%`, backgroundColor: usedPct >= 100 ? colors.destructive : colors.primary, borderRadius: 3 }} />
                 </View>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
-                  {t('aiUsageResets')} {new Date(usage.resetsAt).toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' })}
+                  {t('aiUsageResets')} {new Date(usage.resetsAt).toLocaleDateString(dateLocale(lang === 'ar' ? 'ar' : 'en'), { day: 'numeric', month: 'long', timeZone: 'UTC' })}
                 </Text>
               </View>
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
