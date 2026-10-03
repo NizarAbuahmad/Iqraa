@@ -91,7 +91,7 @@ export default function AdminSignupsScreen() {
   if (!isAdmin) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }}>{ar ? 'هذه الصفحة للإدارة فقط' : 'This page is for admins only'}</Text>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }}>{ar ? 'هذه الصفحة للإدارة فقط' : 'This page is for admins only'}</Text>
       </View>
     );
   }
@@ -106,7 +106,7 @@ export default function AdminSignupsScreen() {
           <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginBottom: 8 }}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
-          <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: align }}>
+          <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: align }}>
             {ar ? 'البريد المجمّع من iqrra.com' : 'Emails collected on iqrra.com'}
           </Text>
         </View>
@@ -119,14 +119,14 @@ export default function AdminSignupsScreen() {
                 onPress={() => setKind(k)}
                 style={[styles.chip, { borderRadius: colors.radius, backgroundColor: kind === k ? ACCENT : colors.card, borderColor: kind === k ? ACCENT : colors.border }]}
               >
-                <Text style={{ color: kind === k ? '#fff' : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>{ar ? a : e}</Text>
+                <Text style={{ color: kind === k ? '#fff' : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{ar ? a : e}</Text>
               </Pressable>
             ))}
             <View style={{ flex: 1 }} />
             {Platform.OS === 'web' && (
               <Pressable onPress={exportCsv} style={[styles.chip, { borderRadius: colors.radius, borderColor: ACCENT, flexDirection: 'row', gap: 6, alignItems: 'center' }]}>
                 <Ionicons name="download-outline" size={15} color={ACCENT} />
-                <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>{ar ? 'تصدير CSV' : 'Export CSV'}</Text>
+                <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{ar ? 'تصدير CSV' : 'Export CSV'}</Text>
               </Pressable>
             )}
           </View>
@@ -144,7 +144,7 @@ export default function AdminSignupsScreen() {
             <View key={s.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
               <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name={s.kind === 'waitlist' ? 'mail-outline' : 'chatbubble-outline'} size={15} color={ACCENT} />
-                <Text selectable style={{ flex: 1, color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13.5, textAlign: align }}>
+                <Text selectable style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
                   {s.email || s.name || '—'}
                 </Text>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>{new Date(s.createdAt).toLocaleString()}</Text>
@@ -157,7 +157,7 @@ export default function AdminSignupsScreen() {
 
           {!loading && items.length < total && (
             <Pressable onPress={() => { void load(items.length).catch(() => {}); }} style={{ alignItems: 'center', padding: 14 }}>
-              <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{ar ? 'تحميل المزيد' : 'Load more'}</Text>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{ar ? 'تحميل المزيد' : 'Load more'}</Text>
             </Pressable>
           )}
         </View>

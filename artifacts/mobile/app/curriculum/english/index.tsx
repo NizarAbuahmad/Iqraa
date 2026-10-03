@@ -100,7 +100,7 @@ export default function EnglishHubScreen() {
           {BADGE_IDS.filter(b => earned.has(b)).map(b => (
             <View key={b} style={[styles.badge, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Ionicons name={BADGE_META[b].icon} size={16} color={colors.primary} />
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>{t(BADGE_META[b].label)}</Text>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>{t(BADGE_META[b].label)}</Text>
             </View>
           ))}
         </ScrollView>
@@ -117,7 +117,7 @@ export default function EnglishHubScreen() {
               accessibilityState={{ selected: on }}
               style={[styles.chip, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primary : colors.card }]}
             >
-              <Text style={{ color: on ? '#fff' : colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+              <Text style={{ color: on ? '#fff' : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                 {t('hubGrade', g)}
               </Text>
             </Pressable>
@@ -142,7 +142,7 @@ export default function EnglishHubScreen() {
               >
                 <View style={{ flex: 1, gap: 4 }}>
                   <Text style={[styles.unit, { color: colors.mutedForeground, textAlign: align }]}>{t('hubUnit', l.unitNumber)}</Text>
-                  <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: align }} numberOfLines={2}>
+                  <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }} numberOfLines={2}>
                     {lang === 'ar' ? l.unitTitleAr || l.unitTitle : l.unitTitle}
                   </Text>
                   <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
@@ -150,7 +150,7 @@ export default function EnglishHubScreen() {
                   </Text>
                 </View>
                 {stars > 0 ? (
-                  <Text style={{ fontSize: 13, color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }}>⭐ {stars}</Text>
+                  <Text style={{ fontSize: 13, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }}>⭐ {stars}</Text>
                 ) : null}
                 <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
               </Pressable>
@@ -164,14 +164,14 @@ export default function EnglishHubScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14 },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
-  title: { color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 24, marginBottom: 4 },
+  title: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 24, marginBottom: 4 },
   sub: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 },
-  streak: { color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 14, marginTop: 8 },
+  streak: { color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, marginTop: 8 },
   goalRow: { alignItems: 'center', gap: 6, marginTop: 8 },
   badgeRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 10 },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   chips: { flexWrap: 'wrap', gap: 8, paddingHorizontal: 20, paddingVertical: 14 },
   chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7 },
-  unit: { fontFamily: 'Cairo_600SemiBold', fontSize: 12 },
+  unit: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 },
   card: { alignItems: 'center', gap: 10, borderWidth: 1, padding: 14 },
 });

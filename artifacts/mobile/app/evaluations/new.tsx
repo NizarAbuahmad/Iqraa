@@ -298,13 +298,13 @@ export default function NewEvaluationScreen() {
         <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('newEvaluation')}
         </Text>
       </View>
 
       <View style={{ padding: 20 }}>
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
           {t('evalTitleLabel')}
         </Text>
         <TextInput
@@ -327,7 +327,7 @@ export default function NewEvaluationScreen() {
                 onPress={() => setMode(m)}
                 style={[styles.modeChip, { borderColor: active ? ACCENT : colors.border, backgroundColor: active ? ACCENT : colors.card }]}
               >
-                <Text style={{ color: active ? palette.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+                <Text style={{ color: active ? palette.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                   {t(m === 'generate' ? 'evalModeGenerate' : 'evalModePaper')}
                 </Text>
               </Pressable>
@@ -338,7 +338,7 @@ export default function NewEvaluationScreen() {
           {t(mode === 'generate' ? 'evalModeGenerateHint' : 'evalModePaperHint')}
         </Text>
 
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
           {t('selectBookLabel')}
         </Text>
         {loadingBooks ? (
@@ -363,7 +363,7 @@ export default function NewEvaluationScreen() {
                   ]}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 14, textAlign: align }]}>
+                    <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 14, textAlign: align }]}>
                       {b.titleAr}
                     </Text>
                     {!b.evaluable && (
@@ -378,7 +378,7 @@ export default function NewEvaluationScreen() {
             })}
             {narrowed && (
               <Pressable onPress={() => setShowAllBooks(v => !v)} hitSlop={8} accessibilityRole="button" style={{ paddingVertical: 6 }}>
-                <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: align }}>
+                <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
                   {showAllBooks ? t('evalShowMyBooks') : t('evalShowAllBooks', String(books.length))}
                 </Text>
               </Pressable>
@@ -388,7 +388,7 @@ export default function NewEvaluationScreen() {
 
         {bookId && (
           <>
-            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
               {t('selectObjectivesLabel')}
             </Text>
             <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -412,7 +412,7 @@ export default function NewEvaluationScreen() {
 
         {mode === 'generate' && (
           <>
-            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
               {t('assessmentTypesLabel')}
             </Text>
             <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -452,7 +452,7 @@ export default function NewEvaluationScreen() {
 
         {mode === 'paper' && (
           <>
-            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
               {t('paperGridLabel')}
             </Text>
             <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -495,7 +495,7 @@ export default function NewEvaluationScreen() {
           {creating ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t(mode === 'paper' ? 'createPaperExamBtn' : 'generateAndCreateBtn')}
             </Text>
           )}
@@ -539,9 +539,9 @@ function PaperRowEditor({
     <View style={[styles.paperRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
         <View style={[styles.paperNum, { backgroundColor: ACCENT_FILL }]}>
-          <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 12 }}>{index + 1}</Text>
+          <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 12 }}>{index + 1}</Text>
         </View>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
           {t('paperMarksLabel')}
         </Text>
         <TextInput
@@ -601,7 +601,7 @@ function CheckboxRow({
         {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
       </View>
       <Text
-        style={{ color: colors.foreground, fontFamily: checked ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }}
+        style={{ color: colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }}
       >
         {label}
       </Text>

@@ -43,7 +43,7 @@ export function BookFiguresPanel({ figures, isRTL, colors, labels }: Props) {
       <Text
         style={[
           styles.title,
-          { color: colors.foreground, textAlign: align, fontFamily: 'Cairo_600SemiBold' },
+          { color: colors.foreground, textAlign: align, fontFamily: 'ReadexPro_600SemiBold' },
         ]}
       >
         {labels.title}
@@ -77,7 +77,7 @@ export function BookFiguresPanel({ figures, isRTL, colors, labels }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { marginTop: 4, marginBottom: 12 },
-  title: { fontSize: 12.5, fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
+  title: { fontSize: 13, fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
   note: { fontSize: 11, fontStyle: 'italic', marginBottom: 8, lineHeight: 16 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   card: {
@@ -88,5 +88,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   image: { width: '100%', height: 130, marginBottom: 6 },
-  caption: { fontSize: 10.5, textAlign: 'center', lineHeight: 15 },
+  caption: { fontSize: 11, textAlign: 'center', lineHeight: 15 },
 });

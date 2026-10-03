@@ -259,7 +259,7 @@ export function ReadAloudInput({
             size={20}
             color="#fff"
           />
-          <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+          <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
             {phase === 'recording'
               ? t('readAloudStop', formatDuration(elapsedMs))
               : phase === 'working'
@@ -353,7 +353,7 @@ export function DictationInput({
             style={[styles.recordBtn, { backgroundColor: ACCENT_FILL, opacity: playing || left <= 0 ? 0.6 : 1 }]}
           >
             <Ionicons name={playing ? 'volume-high' : 'play'} size={20} color="#fff" />
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {playing ? t('dictationPlaying') : t('dictationPlay')}
             </Text>
           </Pressable>

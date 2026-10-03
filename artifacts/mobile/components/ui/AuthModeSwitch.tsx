@@ -68,7 +68,7 @@ export function AuthModeSwitch({ mode, loginLabel, registerLabel, onSwitch, colo
                 styles.label,
                 {
                   color: active ? colors.primaryForeground : colors.mutedForeground,
-                  fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                  fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                 },
               ]}
             >

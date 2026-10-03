@@ -56,7 +56,7 @@ function HearButton({ word, big }: { word: string; big?: boolean }) {
 
 function Progress({ i, n }: { i: number; n: number }) {
   const { colors, t } = useUi();
-  return <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13, textAlign: 'center' }}>{t('hubQuestion', i + 1, n)}</Text>;
+  return <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: 'center' }}>{t('hubQuestion', i + 1, n)}</Text>;
 }
 
 // ─── Flashcards ─────────────────────────────────────────────────────────────
@@ -91,11 +91,11 @@ export function Flashcards({ words }: { words: HubWord[] }) {
       </Pressable>
       <View style={{ flexDirection: row, alignItems: 'center', gap: 20 }}>
         <Pressable onPress={() => go(i - 1)} style={[styles.navBtn, { borderColor: colors.border }]}>
-          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }}>{t('hubPrev')}</Text>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }}>{t('hubPrev')}</Text>
         </Pressable>
         <HearButton word={w.en} big />
         <Pressable onPress={() => go(i + 1)} style={[styles.navBtn, { borderColor: colors.border }]}>
-          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }}>{t('hubNext')}</Text>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }}>{t('hubNext')}</Text>
         </Pressable>
       </View>
     </View>
@@ -148,7 +148,7 @@ export function ListenChoose({ words, onFinish }: { words: HubWord[]; onFinish: 
       </View>
       {picked !== null ? (
         <>
-          <Text style={{ color: picked === q.answerIndex ? RIGHT : WRONG, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+          <Text style={{ color: picked === q.answerIndex ? RIGHT : WRONG, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
             {picked === q.answerIndex ? t('hubCorrect') : t('hubWrong', q.word.en)} · {q.word.ar}
           </Text>
           <Pressable onPress={next} style={[styles.primary, { backgroundColor: colors.primary }]}>
@@ -210,7 +210,7 @@ export function MatchMeaning({ words, onFinish }: { words: HubWord[]; onFinish: 
 
   return (
     <View style={{ gap: 12 }}>
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13, textAlign: 'center' }}>{t('hubMoves', moves)}</Text>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: 'center' }}>{t('hubMoves', moves)}</Text>
       <View style={styles.grid}>
         {deck.map(c => {
           const done = matched.has(c.pairId);
@@ -226,7 +226,7 @@ export function MatchMeaning({ words, onFinish }: { words: HubWord[]; onFinish: 
               <Text
                 style={{
                   color: colors.foreground,
-                  fontFamily: c.lang === 'ar' ? 'Almarai_400Regular' : 'Cairo_600SemiBold',
+                  fontFamily: c.lang === 'ar' ? 'Almarai_400Regular' : 'ReadexPro_600SemiBold',
                   fontSize: 15,
                   textAlign: 'center',
                   writingDirection: c.lang === 'ar' ? 'rtl' : 'ltr',
@@ -303,7 +303,7 @@ export function SpellIt({ words, onFinish }: { words: HubWord[]; onFinish: Finis
         </Pressable>
       ) : (
         <>
-          <Text style={{ color: result ? RIGHT : WRONG, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+          <Text style={{ color: result ? RIGHT : WRONG, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
             {result ? t('hubCorrect') : t('hubWrong', w.en)}
           </Text>
           <Pressable onPress={next} style={[styles.primary, { backgroundColor: colors.primary }]}>
@@ -405,7 +405,7 @@ export function Scramble({ words, onFinish }: { words: HubWord[]; onFinish: Fini
 
       {result !== null ? (
         <>
-          <Text style={{ color: result ? RIGHT : WRONG, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+          <Text style={{ color: result ? RIGHT : WRONG, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
             {result ? t('hubCorrect') : t('hubWrong', q.word.en)}
           </Text>
           <Pressable onPress={next} style={[styles.primary, { backgroundColor: colors.primary }]}>
@@ -449,7 +449,7 @@ export function PictureMatch({ words, onFinish }: { words: HubWord[]; onFinish: 
 
   return (
     <View style={{ gap: 12 }}>
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13, textAlign: 'center' }}>{t('hubMoves', moves)}</Text>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: 'center' }}>{t('hubMoves', moves)}</Text>
       <View style={styles.grid}>
         {deck.map(c => {
           const done = matched.has(c.pairId);
@@ -465,7 +465,7 @@ export function PictureMatch({ words, onFinish }: { words: HubWord[]; onFinish: 
               {c.kind === 'emoji' ? (
                 <Text style={{ fontSize: 32 }}>{c.text}</Text>
               ) : (
-                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: 'center' }}>{c.text}</Text>
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }}>{c.text}</Text>
               )}
             </Pressable>
           );
@@ -530,10 +530,10 @@ export function Speaking({ words }: { words: HubWord[] }) {
       </Text>
       <View style={{ flexDirection: row, alignItems: 'center', gap: 20 }}>
         <Pressable onPress={() => go(i - 1)} style={[styles.navBtn, { borderColor: colors.border }]}>
-          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }}>{t('hubPrev')}</Text>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }}>{t('hubPrev')}</Text>
         </Pressable>
         <Pressable onPress={() => go(i + 1)} style={[styles.navBtn, { borderColor: colors.border }]}>
-          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }}>{t('hubNext')}</Text>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }}>{t('hubNext')}</Text>
         </Pressable>
       </View>
     </View>
@@ -543,18 +543,18 @@ export function Speaking({ words }: { words: HubWord[] }) {
 const styles = StyleSheet.create({
   hear: { borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   flash: { width: '100%', minHeight: 200, borderWidth: 1.5, borderRadius: 20, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
-  flashEn: { fontFamily: 'Cairo_700Bold', fontSize: 40, textAlign: 'center' },
-  flashAr: { fontFamily: 'Cairo_700Bold', fontSize: 34, lineHeight: 56, textAlign: 'center', writingDirection: 'rtl' },
+  flashEn: { fontFamily: 'ReadexPro_700Bold', fontSize: 40, textAlign: 'center' },
+  flashAr: { fontFamily: 'ReadexPro_700Bold', fontSize: 34, lineHeight: 56, textAlign: 'center', writingDirection: 'rtl' },
   navBtn: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
   mic: { width: 64, height: 64, borderRadius: 32, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   option: { borderWidth: 1.5, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 16 },
-  optionText: { fontFamily: 'Cairo_600SemiBold', fontSize: 20, textAlign: 'center' },
+  optionText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 20, textAlign: 'center' },
   primary: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 32 },
-  primaryText: { color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 16 },
+  primaryText: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 16 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
   matchCard: { width: '47%', minHeight: 64, borderWidth: 1.5, borderRadius: 14, alignItems: 'center', justifyContent: 'center', padding: 10 },
-  input: { width: '100%', borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 24, fontFamily: 'Cairo_600SemiBold', textAlign: 'center', writingDirection: 'ltr' },
+  input: { width: '100%', borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 24, fontFamily: 'ReadexPro_600SemiBold', textAlign: 'center', writingDirection: 'ltr' },
   tileRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   tile: { width: 44, height: 44, borderWidth: 1.5, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  tileText: { fontFamily: 'Cairo_700Bold', fontSize: 22, textTransform: 'uppercase' },
+  tileText: { fontFamily: 'ReadexPro_700Bold', fontSize: 22, textTransform: 'uppercase' },
 });

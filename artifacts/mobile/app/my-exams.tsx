@@ -122,7 +122,7 @@ export default function MyExamsScreen() {
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('myExamsTitle')}
         </Text>
         <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -148,7 +148,7 @@ export default function MyExamsScreen() {
               {error}
             </Text>
             <Pressable onPress={() => void load()} hitSlop={8} accessibilityRole="button">
-              <Text style={{ color: colors.destructive, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textDecorationLine: 'underline' }}>
+              <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textDecorationLine: 'underline' }}>
                 {t('retry')}
               </Text>
             </Pressable>
@@ -164,7 +164,7 @@ export default function MyExamsScreen() {
             <View style={[styles.emptyIcon, { backgroundColor: ACCENT + '1F' }]}>
               <Ionicons name="document-text-outline" size={30} color={ACCENT} />
             </View>
-            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 17, textAlign: 'center' }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17, textAlign: 'center' }}>
               {t('myExamsEmptyTitle')}
             </Text>
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
@@ -234,7 +234,7 @@ function ExamRow({
           <Ionicons name={STATE_ICON[exam.state]} size={20} color={stateColor} />
         </View>
         <View style={{ flex: 1, gap: 4 }}>
-          <Text numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, lineHeight: 23, textAlign: align }}>
+          <Text numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, lineHeight: 23, textAlign: align }}>
             {myExamTitle(exam, lang)}
           </Text>
           {meta ? (
@@ -244,12 +244,12 @@ function ExamRow({
           ) : null}
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
             <View style={[styles.chip, { backgroundColor: stateColor + '1A' }]}>
-              <Text style={{ color: stateColor, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>
+              <Text style={{ color: stateColor, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
                 {t(MY_EXAM_STATE_KEY[exam.state])}
               </Text>
             </View>
             {exam.result ? (
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                 {levelKey ? `${t(levelKey)} · ` : ''}{exam.result.percent}%
               </Text>
             ) : null}
@@ -258,7 +258,7 @@ function ExamRow({
 
         {action === 'start' || action === 'continue' ? (
           <View style={[styles.cta, { backgroundColor: ACCENT_FILL }]}>
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
               {t(action === 'start' ? 'myExamsStart' : 'myExamsContinue')}
             </Text>
           </View>

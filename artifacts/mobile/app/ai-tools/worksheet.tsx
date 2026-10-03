@@ -607,7 +607,7 @@ export default function WorksheetScreen() {
         <PickerField label={t('difficultyLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={i => (levels ? showLevel(i) : setDiffIdx(i))} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('numQuestionsLabel')} value={numQLabels[numQIdx]} options={numQLabels} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           {ALL_Q_TYPES.map(type => (
             <CheckboxRow key={type} label={typeLabels[type]} checked={selectedTypes.has(type)} onToggle={() => toggleType(type)} accent={ACCENT} colors={colors} isRTL={isRTL} />
@@ -752,7 +752,7 @@ export default function WorksheetScreen() {
                     accessibilityState={{ selected: active }}
                     style={[styles.levelTab, { backgroundColor: active ? ACCENT : 'transparent', borderRadius: colors.radius }]}
                   >
-                    <Text style={{ color: active ? palette.primaryForeground : ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{label}</Text>
+                    <Text style={{ color: active ? palette.primaryForeground : ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{label}</Text>
                   </Pressable>
                 );
               })}
@@ -760,7 +760,7 @@ export default function WorksheetScreen() {
           ) : null}
           <View style={[styles.successBanner, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="document-text" size={18} color={ACCENT} />
-            <Text style={[{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
+            <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
           </View>
 
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginBottom: 16, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }]}>
@@ -801,7 +801,7 @@ export default function WorksheetScreen() {
             accessibilityRole="button"
           >
             <Ionicons name="tv-outline" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 14 }}>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>
               {t('presentOnScreen')}
             </Text>
           </Pressable>
@@ -811,14 +811,14 @@ export default function WorksheetScreen() {
             style={[styles.toggleBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
           >
             <Ionicons name={showAnswers ? 'eye-off-outline' : 'eye-outline'} size={16} color={ACCENT} />
-            <Text style={[{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>
+            <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>
               {showAnswers ? t('hideAnswers') : t('showAnswers')}
             </Text>
           </Pressable>
 
           {result.sections.map((sec, si) => (
             <View key={sec.title} style={{ marginBottom: 20 }}>
-              <Text style={[styles.secTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{sec.title}</Text>
+              <Text style={[styles.secTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{sec.title}</Text>
               {sec.questions.map((q, i) => {
                 const correctAnswer = answerFor(result, si, i);
                 const flatIndex = flatIndexOf(result, si, i);
@@ -827,7 +827,7 @@ export default function WorksheetScreen() {
                   {/* Numbered straight through, as the answer key and both
                       exports are — per-section numbering made «٣» in the key
                       point at a different question on screen. */}
-                  <Text style={[styles.qNum, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{flatIndex + 1}.</Text>
+                  <Text style={[styles.qNum, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{flatIndex + 1}.</Text>
                   <View style={{ flex: 1 }}>
                     <EditableText
                       value={q.text}
@@ -842,7 +842,7 @@ export default function WorksheetScreen() {
                       const isCorrect = marker === 'selected';
                       return (
                         <View key={oi} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                          <Text style={[styles.optLabel, { color: isCorrect ? '#067647' : colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+                          <Text style={[styles.optLabel, { color: isCorrect ? '#067647' : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
                             {optionLetter(oi, lang === 'ar')}.
                           </Text>
                           <View style={{ flex: 1 }}>
@@ -890,7 +890,7 @@ export default function WorksheetScreen() {
                           placeholder={t('pts')}
                         />
                       </View>
-                      <Text style={[styles.pts, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>{t('pts')}</Text>
+                      <Text style={[styles.pts, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>{t('pts')}</Text>
                       <Pressable
                         onPress={() => { void removeQuestion(si, i); }}
                         hitSlop={8}
@@ -912,7 +912,7 @@ export default function WorksheetScreen() {
             <View style={{ marginBottom: 8 }}>
               <View style={[styles.akHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Ionicons name="key-outline" size={15} color={ACCENT} />
-                <Text style={[styles.akTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{t('answerKeyTitle')}</Text>
+                <Text style={[styles.akTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{t('answerKeyTitle')}</Text>
               </View>
               <View style={[styles.akBody, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
                 {/* `item.num` is the same 1-based flat position as `sections[].questions[]`
@@ -929,7 +929,7 @@ export default function WorksheetScreen() {
                   const pos = flatPositions[item.num - 1];
                   return (
                   <View key={item.num} style={[styles.akRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <Text style={[styles.akNum, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{item.num}.</Text>
+                    <Text style={[styles.akNum, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{item.num}.</Text>
                     <View style={{ flex: 1 }}>
                       <EditableText
                         value={item.answer}
@@ -1014,7 +1014,7 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
         {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
       </View>
-      <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -1037,7 +1037,7 @@ function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
 const styles = StyleSheet.create({
   toggleBtn: { alignItems: 'center', gap: 6, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
-  verifyText: { fontFamily: 'Cairo_600SemiBold', fontSize: 12, flex: 1 },
+  verifyText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12, flex: 1 },
   label: { fontSize: 13, marginBottom: 6 },
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },

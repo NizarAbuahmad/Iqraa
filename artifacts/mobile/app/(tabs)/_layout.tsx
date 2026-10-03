@@ -251,7 +251,7 @@ function ClassicTabLayout() {
               style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]}
             />
           ) : null,
-        tabBarLabelStyle: { fontFamily: 'Cairo_600SemiBold', fontSize: 11 },
+        tabBarLabelStyle: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 },
       }}
     >
       {/*
@@ -333,7 +333,7 @@ function ClassicTabLayout() {
           backgroundColor: colors.background,
         }}
       >
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 18 }}>{t('appName')}</Text>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 18 }}>{t('appName')}</Text>
         {bell}
       </View>
     );

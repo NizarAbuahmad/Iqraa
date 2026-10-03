@@ -182,7 +182,7 @@ export default function MiniEvalScreen() {
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('miniEvalTitle')}
         </Text>
         <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -227,7 +227,7 @@ export default function MiniEvalScreen() {
                       },
                     ]}
                   >
-                    <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 14, textAlign: align }}>
+                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 14, textAlign: align }}>
                       {lang === 'ar' ? b.titleAr : b.title}
                     </Text>
                   </Pressable>
@@ -236,7 +236,7 @@ export default function MiniEvalScreen() {
             </View>
           )}
 
-          <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+          <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
             {t('miniEvalPickObjective')}
           </Text>
 
@@ -310,7 +310,7 @@ export default function MiniEvalScreen() {
             ) : (
               <Ionicons name="flash-outline" size={18} color="#fff" />
             )}
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {working ? t('miniEvalGenerating') : t('miniEvalGenerate')}
             </Text>
           </Pressable>

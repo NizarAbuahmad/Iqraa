@@ -35,7 +35,7 @@ function SidebarRow({ entry, isIOS, active }: { entry: TabEntry; isIOS: boolean;
       <Text
         style={[
           styles.label,
-          { color: active ? colors.primary : colors.foreground, fontFamily: active ? 'Cairo_600SemiBold' : 'Cairo_500Medium' },
+          { color: active ? colors.primary : colors.foreground, fontFamily: active ? 'ReadexPro_600SemiBold' : 'ReadexPro_500Medium' },
         ]}
       >
         {t(entry.titleKey)}
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
   },
   lessonSlot: { marginTop: 'auto' },
-  brandWord: { fontFamily: 'Cairo_700Bold', fontSize: 19 },
+  brandWord: { fontFamily: 'ReadexPro_700Bold', fontSize: 19 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -130,5 +130,5 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   badge: { minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
-  badgeText: { color: '#fff', fontSize: 11, fontFamily: 'Cairo_700Bold', lineHeight: 15 },
+  badgeText: { color: '#fff', fontSize: 11, fontFamily: 'ReadexPro_700Bold', lineHeight: 15 },
 });

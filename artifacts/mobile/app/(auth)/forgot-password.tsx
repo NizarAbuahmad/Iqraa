@@ -99,7 +99,7 @@ export default function ForgotPasswordScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
 
-        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {step === 'email' ? t('forgotPasswordTitle') : t('resetPasswordTitle')}
         </Text>
         <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -174,7 +174,7 @@ export default function ForgotPasswordScreen() {
                 style={styles.resendRow}
                 accessibilityRole="link"
               >
-                <Text style={[styles.resendText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
+                <Text style={[styles.resendText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {t('resendCode')}
                 </Text>
               </Pressable>

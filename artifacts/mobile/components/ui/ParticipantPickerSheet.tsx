@@ -127,7 +127,7 @@ export function ParticipantPickerSheet({
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={[styles.sheet, { backgroundColor: colors.background }]} onPress={e => e.stopPropagation()}>
           <View style={[styles.head, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', flex: 1, textAlign: align }]}>
+            <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', flex: 1, textAlign: align }]}>
               {t('messagingPickMembers')}
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
@@ -199,7 +199,7 @@ export function ParticipantPickerSheet({
                         <Text
                           style={{
                             color: allPicked ? ACCENT : colors.foreground,
-                            fontFamily: 'Cairo_500Medium',
+                            fontFamily: 'ReadexPro_500Medium',
                             fontSize: 12,
                           }}
                           numberOfLines={1}
@@ -253,7 +253,7 @@ export function ParticipantPickerSheet({
                   </View>
                 ) : (
                   <View style={{ paddingVertical: 24, paddingHorizontal: 16, gap: 6 }}>
-                    <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
+                    <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }]}>
                       {t('messagingNoContactsTitle')}
                     </Text>
                     <Text
@@ -281,7 +281,7 @@ export function ParticipantPickerSheet({
                   >
                     <Ionicons name={checked ? 'checkbox' : 'square-outline'} size={20} color={checked ? ACCENT : colors.mutedForeground} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }} numberOfLines={1}>
+                      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }} numberOfLines={1}>
                         {item.firstName} {item.lastName}
                       </Text>
                       <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }} numberOfLines={1}>
@@ -296,14 +296,14 @@ export function ParticipantPickerSheet({
 
           <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Pressable onPress={onClose} style={styles.btn}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>{t('cancel')}</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>{t('cancel')}</Text>
             </Pressable>
             <Pressable
               onPress={() => onConfirm([...selected.values()])}
               disabled={selected.size === 0}
               style={[styles.btn, styles.confirmBtn, { backgroundColor: selected.size > 0 ? colors.primary : colors.muted }]}
             >
-              <Text style={{ color: selected.size > 0 ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+              <Text style={{ color: selected.size > 0 ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
                 {t('messagingAddSelected')} {selected.size > 0 ? `(${selected.size})` : ''}
               </Text>
             </Pressable>
