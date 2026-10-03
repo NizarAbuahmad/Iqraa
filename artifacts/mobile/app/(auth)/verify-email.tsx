@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Ionicons } from '@expo/vector-icons';
 import { toLatinDigits } from '@/services/latinDigits';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 
 /** Cooldown between resend taps — enough for the email to plausibly arrive before offering another one. */
 const RESEND_COOLDOWN_S = 30;
@@ -21,7 +22,7 @@ export default function VerifyEmailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { verifyEmail, resendVerification, changeUnverifiedEmail } = useAuth();
-  const { t, lang, isRTL } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const params = useLocalSearchParams<{ email: string }>();
 
   // Held in state, not read from the route param directly: changing the
@@ -58,7 +59,7 @@ export default function VerifyEmailScreen() {
       await verifyEmail(email, code);
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(e.message ?? t('invalidVerificationCode'));
+      setError(apiErrorMessage(e, 'invalidVerificationCode', t));
     } finally {
       setLoading(false);
     }
@@ -73,7 +74,7 @@ export default function VerifyEmailScreen() {
       setNotice(t('codeResent'));
       setCooldown(RESEND_COOLDOWN_S);
     } catch (e: any) {
-      setError(e.message ?? (lang === 'ar' ? 'تعذّر إرسال الرمز' : 'Failed to resend code'));
+      setError(apiErrorMessage(e, 'errResendFailed', t));
     } finally {
       setResending(false);
     }
@@ -96,7 +97,7 @@ export default function VerifyEmailScreen() {
       setCooldown(RESEND_COOLDOWN_S);
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(e.message ?? (lang === 'ar' ? 'تعذّر تغيير البريد الإلكتروني' : 'Failed to change email'));
+      setError(apiErrorMessage(e, 'errChangeEmailFailed', t));
     } finally {
       setChanging(false);
     }

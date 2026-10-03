@@ -15,8 +15,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { generateClaimCode, getClaimCode, unlinkAccount, RosterError } from '@/services/roster';
-import { MessagingError, getTeacherContacts, startThread, type ChatRole } from '@/services/messaging';
+import { generateClaimCode, getClaimCode, unlinkAccount } from '@/services/roster';
+import { getTeacherContacts, startThread, type ChatRole } from '@/services/messaging';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 import { copyToClipboard, shareAsText } from '@/services/share.ts';
 import { composeClaimCodeMessage } from '@/services/claimCodeMessage.ts';
 import { PROD_ORIGIN } from '@/services/siteOrigin.ts';
@@ -87,11 +88,7 @@ export default function ClaimCodeScreen() {
   });
   const code = data?.code ?? null;
   const guardians = data?.guardians ?? [];
-  const loadError = loadFailed
-    ? loadErrorRaw instanceof RosterError || loadErrorRaw instanceof MessagingError
-      ? loadErrorRaw.message
-      : t('messagingLoadError')
-    : '';
+  const loadError = loadFailed ? apiErrorMessage(loadErrorRaw, 'messagingLoadError', t) : '';
 
   const handleGenerate = async () => {
     if (!studentId) return;
@@ -117,7 +114,7 @@ export default function ClaimCodeScreen() {
       }));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
-      setError(e instanceof RosterError ? e.message : t('messagingLoadError'));
+      setError(apiErrorMessage(e, 'messagingLoadError', t));
     } finally {
       setGenerating(false);
     }
@@ -163,7 +160,7 @@ export default function ClaimCodeScreen() {
         prev ? { ...prev, guardians: prev.guardians.filter(g => g.userId !== guardian.userId) } : prev,
       );
     } catch (e) {
-      setError(e instanceof RosterError ? e.message : t('messagingLoadError'));
+      setError(apiErrorMessage(e, 'messagingLoadError', t));
     } finally {
       setUnlinkingUserId(null);
     }
@@ -175,7 +172,7 @@ export default function ClaimCodeScreen() {
       const thread = await startThread(userId);
       router.push(`/messaging/${thread.id}`);
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingSendError'));
+      setError(apiErrorMessage(e, 'messagingSendError', t));
     } finally {
       setStartingUserId(null);
     }

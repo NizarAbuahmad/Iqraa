@@ -63,6 +63,7 @@ import { createSaveQueue, type SaveQueue, type SaveQueueState } from '@/services
 import { takeErrorKey } from '@/services/takeErrorKey';
 import { clearExamSession, loadExamSession, saveExamSession } from '@/services/examSession';
 import { formatMarks } from '@/services/studentAnswers';
+import { StudentResultCard } from '@/components/StudentResultCard';
 import { DictationInput, FillBlankInput, MatchingInput, ReadAloudInput } from '@/components/QuestionInputs';
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { TranslationKey } from '@/services/i18n';
@@ -73,14 +74,6 @@ const ACCENT = palette.primary;
 const ACCENT_FILL = palette.hero;
 
 type Phase = 'loading' | 'pick' | 'confirm' | 'answering' | 'review' | 'done' | 'error';
-
-const LEVEL_LABEL_KEY: Record<string, TranslationKey> = {
-  beginner: 'levelBeginner',
-  developing: 'levelDeveloping',
-  proficient: 'levelProficient',
-  advanced: 'levelAdvanced',
-};
-const COMPETENCY_ORDER = ['knowledge', 'understanding', 'application', 'critical_thinking'] as const;
 
 /**
  * How long a keystroke waits before it is saved. A tap (an option, a
@@ -100,12 +93,7 @@ function formatCountdown(ms: number): string {
   const sec = total % 60;
   return `${m}:${sec < 10 ? '0' : ''}${sec}`;
 }
-const COMPETENCY_LABEL_KEY: Record<(typeof COMPETENCY_ORDER)[number], TranslationKey> = {
-  knowledge: 'competencyKnowledge',
-  understanding: 'competencyUnderstanding',
-  application: 'competencyApplication',
-  critical_thinking: 'competencyCriticalThinking',
-};
+
 
 export default function TakeExamScreen() {
   const colors = useColors();
@@ -428,34 +416,8 @@ export default function TakeExamScreen() {
         </Text>
 
         {studentResult ? (
-          <View style={{ marginTop: 12, gap: 10, alignItems: 'center', width: '100%', maxWidth: 340 }}>
-            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16 }}>
-              {t('takeResultTitle')}
-            </Text>
-            {studentResult.levelKey && (
-              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_700Bold', fontSize: 22 }}>
-                {t(LEVEL_LABEL_KEY[studentResult.levelKey])}
-              </Text>
-            )}
-            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>
-              {t('marksLabel')}: {studentResult.earnedMarks} / {studentResult.totalMarks}
-              {' '}({studentResult.percent}%)
-            </Text>
-            <View style={{ width: '100%', borderTopWidth: 1, borderColor: colors.border, marginTop: 4, paddingTop: 10, gap: 6 }}>
-              {COMPETENCY_ORDER.map(key => {
-                const c = studentResult.competencyScores[key];
-                return (
-                  <View key={key} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
-                      {t(COMPETENCY_LABEL_KEY[key])}
-                    </Text>
-                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
-                      {c?.sufficient ? `${c.percent}%` : t('insufficientEvidence')}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
+          <View style={{ marginTop: 12, width: '100%' }}>
+            <StudentResultCard result={studentResult} colors={colors} isRTL={isRTL} t={t} />
           </View>
         ) : (
           <View style={{ marginTop: 8, alignItems: 'center', gap: 8 }}>

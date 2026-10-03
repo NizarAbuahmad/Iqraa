@@ -1165,6 +1165,8 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
           .set({
             status: "published",
             publishedAt: new Date(),
+            // Re-publishing reopens a closed exam; it is no longer closed.
+            closedAt: null,
             updatedAt: new Date(),
             totalMarks: total.toFixed(2),
             shareCode: evaluation.shareCode ?? generateShareCode(),
@@ -1220,7 +1222,7 @@ router.post("/evaluations/:id/close", async (req: AuthenticatedRequest, res) => 
     }
     const [updated] = await db
       .update(evaluations)
-      .set({ status: "closed", updatedAt: new Date() })
+      .set({ status: "closed", closedAt: new Date(), updatedAt: new Date() })
       .where(eq(evaluations.id, evaluation.id))
       .returning();
     res.json({ evaluation: updated });

@@ -12,7 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { MessagingError, createGroup } from '@/services/messaging';
+import { createGroup } from '@/services/messaging';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 import { Avatar } from '@/components/ui/Avatar';
 import { goBack } from '@/services/navigation';
@@ -42,7 +43,7 @@ export default function NewGroupScreen() {
       const thread = await createGroup(title, members.map(m => m.userId));
       router.replace(`/messaging/${thread.id}`);
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingCreateGroupError'));
+      setError(apiErrorMessage(e, 'messagingCreateGroupError', t));
     } finally {
       setCreating(false);
     }

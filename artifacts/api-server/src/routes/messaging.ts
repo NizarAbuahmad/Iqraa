@@ -445,7 +445,7 @@ router.post("/messaging/threads", async (req: AuthenticatedRequest, res) => {
       return;
     }
     if (counterpartUserId === req.user!.id) {
-      res.status(400).json({ error: "Cannot start a thread with yourself" });
+      res.status(400).json({ error: "Cannot start a thread with yourself", code: "invalid_input" });
       return;
     }
 
@@ -455,7 +455,7 @@ router.post("/messaging/threads", async (req: AuthenticatedRequest, res) => {
       .where(eq(users.id, counterpartUserId))
       .limit(1);
     if (!counterpart) {
-      res.status(404).json({ error: "User not found" });
+      res.status(404).json({ error: "User not found", code: "not_found" });
       return;
     }
 
@@ -537,7 +537,7 @@ router.get("/messaging/threads/class/:classGroupId", async (req: AuthenticatedRe
       .where(and(eq(classGroups.id, classGroupId), isNull(classGroups.archivedAt)))
       .limit(1);
     if (!group) {
-      res.status(404).json({ error: "Class not found" });
+      res.status(404).json({ error: "Class not found", code: "not_found" });
       return;
     }
 
@@ -558,7 +558,7 @@ router.get("/messaging/threads/class/:classGroupId", async (req: AuthenticatedRe
       isMember = !!link;
     }
     if (!isMember) {
-      res.status(404).json({ error: "Class not found" });
+      res.status(404).json({ error: "Class not found", code: "not_found" });
       return;
     }
 
@@ -582,7 +582,7 @@ const MAX_CUSTOM_GROUP_MEMBERS = 100;
 router.post("/messaging/threads/custom", async (req: AuthenticatedRequest, res) => {
   try {
     if (!isTeacherRole(req.user!.role)) {
-      res.status(403).json({ error: "Only a teacher can create a group" });
+      res.status(403).json({ error: "Only a teacher can create a group", code: "teacher_only" });
       return;
     }
 
@@ -592,21 +592,21 @@ router.post("/messaging/threads/custom", async (req: AuthenticatedRequest, res) 
       .filter((id): id is string => typeof id === "string" && id !== req.user!.id);
 
     if (!title) {
-      res.status(400).json({ error: "title is required" });
+      res.status(400).json({ error: "title is required", code: "missing_fields" });
       return;
     }
     if (memberIds.length === 0) {
-      res.status(400).json({ error: "At least one other member is required" });
+      res.status(400).json({ error: "At least one other member is required", code: "missing_fields" });
       return;
     }
     if (memberIds.length > MAX_CUSTOM_GROUP_MEMBERS) {
-      res.status(400).json({ error: `A group can have at most ${MAX_CUSTOM_GROUP_MEMBERS} other members` });
+      res.status(400).json({ error: `A group can have at most ${MAX_CUSTOM_GROUP_MEMBERS} other members`, code: "group_too_large" });
       return;
     }
 
     const connected = await Promise.all(memberIds.map(id => isConnected(req.user!.id, id)));
     if (connected.some(ok => !ok)) {
-      res.status(403).json({ error: "You are not connected to every person in this list" });
+      res.status(403).json({ error: "You are not connected to every person in this list", code: "not_connected" });
       return;
     }
 
@@ -632,14 +632,14 @@ router.post("/messaging/threads/:id/participants", async (req: AuthenticatedRequ
     const threadId = req.params["id"] as string;
     const [thread] = await db.select().from(chatThreads).where(eq(chatThreads.id, threadId)).limit(1);
     if (!thread || thread.type !== "custom_group" || thread.createdBy !== req.user!.id) {
-      res.status(404).json({ error: "Group not found" });
+      res.status(404).json({ error: "Group not found", code: "not_found" });
       return;
     }
 
     const memberIds = [...new Set(Array.isArray(req.body?.participantUserIds) ? req.body.participantUserIds : [])]
       .filter((id): id is string => typeof id === "string" && id !== req.user!.id);
     if (memberIds.length === 0) {
-      res.status(400).json({ error: "At least one member id is required" });
+      res.status(400).json({ error: "At least one member id is required", code: "missing_fields" });
       return;
     }
 
@@ -655,13 +655,13 @@ router.post("/messaging/threads/:id/participants", async (req: AuthenticatedRequ
       .from(chatParticipants)
       .where(eq(chatParticipants.threadId, threadId));
     if (currentMembers + memberIds.length > MAX_CUSTOM_GROUP_MEMBERS) {
-      res.status(400).json({ error: `A group can hold at most ${MAX_CUSTOM_GROUP_MEMBERS} members` });
+      res.status(400).json({ error: `A group can hold at most ${MAX_CUSTOM_GROUP_MEMBERS} members`, code: "group_too_large" });
       return;
     }
 
     const connected = await Promise.all(memberIds.map(id => isConnected(req.user!.id, id)));
     if (connected.some(ok => !ok)) {
-      res.status(403).json({ error: "You are not connected to every person in this list" });
+      res.status(403).json({ error: "You are not connected to every person in this list", code: "not_connected" });
       return;
     }
 
@@ -688,16 +688,16 @@ router.delete("/messaging/threads/:id/participants/:userId", async (req: Authent
     const targetUserId = req.params["userId"] as string;
     const [thread] = await db.select().from(chatThreads).where(eq(chatThreads.id, threadId)).limit(1);
     if (!thread || thread.type !== "custom_group" || !(await participantOf(threadId, req.user!.id))) {
-      res.status(404).json({ error: "Group not found" });
+      res.status(404).json({ error: "Group not found", code: "not_found" });
       return;
     }
 
     if (targetUserId === thread.createdBy) {
-      res.status(400).json({ error: "The group owner cannot be removed" });
+      res.status(400).json({ error: "The group owner cannot be removed", code: "cannot_remove_owner" });
       return;
     }
     if (targetUserId !== req.user!.id && thread.createdBy !== req.user!.id) {
-      res.status(403).json({ error: "Only the group owner can remove another member" });
+      res.status(403).json({ error: "Only the group owner can remove another member", code: "owner_only" });
       return;
     }
 
@@ -722,13 +722,13 @@ router.patch("/messaging/threads/:id", async (req: AuthenticatedRequest, res) =>
     const threadId = req.params["id"] as string;
     const [thread] = await db.select().from(chatThreads).where(eq(chatThreads.id, threadId)).limit(1);
     if (!thread || thread.type === "direct") {
-      res.status(404).json({ error: "Group not found" });
+      res.status(404).json({ error: "Group not found", code: "not_found" });
       return;
     }
 
     const ownerId = await groupOwnerId(thread);
     if (!ownerId || ownerId !== req.user!.id) {
-      res.status(404).json({ error: "Group not found" });
+      res.status(404).json({ error: "Group not found", code: "not_found" });
       return;
     }
 
@@ -753,13 +753,13 @@ router.get("/messaging/threads/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const threadId = req.params["id"] as string;
     if (!(await participantOf(threadId, req.user!.id))) {
-      res.status(404).json({ error: "Thread not found" });
+      res.status(404).json({ error: "Thread not found", code: "not_found" });
       return;
     }
 
     const [thread] = await db.select().from(chatThreads).where(eq(chatThreads.id, threadId)).limit(1);
     if (!thread) {
-      res.status(404).json({ error: "Thread not found" });
+      res.status(404).json({ error: "Thread not found", code: "not_found" });
       return;
     }
 
@@ -804,7 +804,7 @@ router.get("/messaging/threads/:id/messages", async (req: AuthenticatedRequest, 
   try {
     const threadId = req.params["id"] as string;
     if (!(await participantOf(threadId, req.user!.id))) {
-      res.status(404).json({ error: "Thread not found" });
+      res.status(404).json({ error: "Thread not found", code: "not_found" });
       return;
     }
 
@@ -896,7 +896,7 @@ router.post("/messaging/threads/:id/read", async (req: AuthenticatedRequest, res
   try {
     const threadId = req.params["id"] as string;
     if (!(await participantOf(threadId, req.user!.id))) {
-      res.status(404).json({ error: "Thread not found" });
+      res.status(404).json({ error: "Thread not found", code: "not_found" });
       return;
     }
     const raw: unknown = req.body?.messageIds;
@@ -929,7 +929,7 @@ router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: A
   try {
     const threadId = req.params["id"] as string;
     if (!(await participantOf(threadId, req.user!.id))) {
-      res.status(404).json({ error: "Thread not found" });
+      res.status(404).json({ error: "Thread not found", code: "not_found" });
       return;
     }
 
@@ -950,11 +950,11 @@ router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: A
     const body = trimmed(req.body?.body);
     const dataUrl = typeof req.body?.attachmentDataUrl === "string" ? req.body.attachmentDataUrl : "";
     if (!body && !dataUrl) {
-      res.status(400).json({ error: "body or an attachment is required" });
+      res.status(400).json({ error: "body or an attachment is required", code: "missing_fields" });
       return;
     }
     if (body.length > MAX_BODY_LENGTH) {
-      res.status(400).json({ error: `body must be at most ${MAX_BODY_LENGTH} characters` });
+      res.status(400).json({ error: `body must be at most ${MAX_BODY_LENGTH} characters`, code: "too_long" });
       return;
     }
 
@@ -1025,7 +1025,7 @@ router.post("/messaging/blocks", async (req: AuthenticatedRequest, res) => {
       return;
     }
     if (blockedUserId === req.user!.id) {
-      res.status(400).json({ error: "Cannot block yourself" });
+      res.status(400).json({ error: "Cannot block yourself", code: "invalid_input" });
       return;
     }
     // Blocking exists so a parent or student can stop an adult reaching
