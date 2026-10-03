@@ -26,6 +26,7 @@ import { useStudentAccountsEnabled } from '@/services/features';
 import { Avatar } from '@/components/ui/Avatar';
 import { Toast } from '@/components/ui/Toast';
 import { goBack } from '@/services/navigation';
+import { AR_LATIN } from '@/services/dateLabels';
 
 interface Guardian {
   userId: string;
@@ -180,7 +181,7 @@ export default function ClaimCodeScreen() {
 
   const topPad = insets.top + (insets.top === 0 ? 12 : 0);
   const align = isRTL ? 'right' : 'left';
-  const expiresLabel = code ? new Date(code.expiresAt).toLocaleDateString() : '';
+  const expiresLabel = code ? new Date(code.expiresAt).toLocaleDateString(lang === 'ar' ? AR_LATIN : undefined) : '';
   // An action error (generate/unlink/message) takes priority over a stale
   // load error — it's the more recent thing the teacher is looking at.
   const displayError = error || loadError;

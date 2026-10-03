@@ -12,6 +12,7 @@ import { confirm } from '@/services/confirm';
 import { pickAvatarPhoto } from '@/services/avatarPick';
 import { Toast } from '@/components/ui/Toast';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
+import { AR_LATIN } from '@/services/dateLabels';
 
 function InfoRow({ icon, label, value, color, isRTL }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; color: string; isRTL: boolean }) {
   const colors = useColors();
@@ -81,7 +82,7 @@ export default function ProfileScreen() {
             : t('roleTeacher');
 
   const memberSince = user?.createdAt
-    ? new Date(user.createdAt).toLocaleDateString(isRTL ? 'ar-JO' : 'en-US', {
+    ? new Date(user.createdAt).toLocaleDateString(isRTL ? AR_LATIN : 'en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',

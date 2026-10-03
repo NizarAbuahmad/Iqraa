@@ -13,6 +13,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Avatar } from './Avatar';
+import { AR_LATIN } from '@/services/dateLabels';
 
 interface Colors {
   primary: string;
@@ -41,7 +42,7 @@ interface Props {
 export function MessageBubble({
   body, createdAt, isOwn, isRTL, colors, senderFirstName, senderLastName, attachmentUrl, attachmentKind,
 }: Props) {
-  const timeLabel = new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const timeLabel = new Date(createdAt).toLocaleTimeString(isRTL ? AR_LATIN : undefined, { hour: '2-digit', minute: '2-digit' });
   const image = attachmentKind === 'image' && attachmentUrl ? (
     <Image source={{ uri: attachmentUrl }} style={styles.attachment} resizeMode="cover" />
   ) : null;

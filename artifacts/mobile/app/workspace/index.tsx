@@ -24,6 +24,7 @@ import {
   MATERIAL_LABEL_KEY,
 } from '@/constants/materialKind';
 import { goBack } from '@/services/navigation';
+import { AR_LATIN } from '@/services/dateLabels';
 
 const TABS: Array<{ key: MaterialType | 'all'; labelKey: string }> = [
   { key: 'all', labelKey: 'allFilter' },
@@ -184,7 +185,7 @@ export default function WorkspaceScreen() {
     try {
       const d = new Date(iso);
       if (lang === 'ar') {
-        return d.toLocaleDateString('ar-JO', { day: 'numeric', month: 'short', year: 'numeric' });
+        return d.toLocaleDateString(AR_LATIN, { day: 'numeric', month: 'short', year: 'numeric' });
       }
       return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     } catch {

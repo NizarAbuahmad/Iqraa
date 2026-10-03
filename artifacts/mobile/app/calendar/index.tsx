@@ -22,6 +22,7 @@ import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { LoadError } from '@/components/ui/LoadError';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { dateLocale } from '@/services/dateLabels';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -117,11 +118,11 @@ export default function CalendarScreen() {
     setSelectedDate(today);
   };
 
-  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-GB', {
+  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString(dateLocale(lang === 'ar' ? 'ar' : 'en'), {
     month: 'long',
     year: 'numeric',
   });
-  const dateHeading = new Date(`${selectedDate}T00:00:00`).toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-GB', {
+  const dateHeading = new Date(`${selectedDate}T00:00:00`).toLocaleDateString(dateLocale(lang === 'ar' ? 'ar' : 'en'), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

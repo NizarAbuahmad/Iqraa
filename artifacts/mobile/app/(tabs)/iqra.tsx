@@ -42,6 +42,7 @@ import {
   searchKBSemantic,
 } from '@/services/knowledgeBase';
 import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
+import { AR_LATIN } from '@/services/dateLabels';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { loadLessonPick, loadPrepSkips, saveLessonPick, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
 import {
@@ -887,7 +888,7 @@ function MessageBubble({
   t: (k: any, ...a: any[]) => string;
 }) {
   const isUser = message.role === 'user';
-  const timeLabel = message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const timeLabel = message.timestamp.toLocaleTimeString(isRTL ? AR_LATIN : undefined, { hour: '2-digit', minute: '2-digit' });
   // Only the intro reads this: at 64px with 14px copy it sat in a desktop
   // window like a phone screenshot dropped into the middle of the page.
   const isWide = useViewportWidth() >= DESKTOP_BREAKPOINT;

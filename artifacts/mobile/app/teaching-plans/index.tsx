@@ -62,6 +62,7 @@ import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { LoadError } from '@/components/ui/LoadError';
+import { dateLocale } from '@/services/dateLabels';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -78,11 +79,11 @@ const WEEKDAY_KEYS = [
   'planWeekdayThu', 'planWeekdayFri', 'planWeekdaySat',
 ] as const;
 
-/** Human date for display — "20 Sep" / "٢٠ سبتمبر", never the raw ISO string. */
+/** Human date for display — "20 Sep" / "20 أيلول", never the raw ISO string. */
 function formatPlanDate(date: string, lang: string): string {
   const d = new Date(`${date}T00:00:00`);
   if (Number.isNaN(d.getTime())) return date;
-  return d.toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-GB', { day: 'numeric', month: 'short' });
+  return d.toLocaleDateString(dateLocale(lang === 'ar' ? 'ar' : 'en'), { day: 'numeric', month: 'short' });
 }
 
 /**

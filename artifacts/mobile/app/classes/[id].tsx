@@ -75,6 +75,7 @@ import { goBack } from '@/services/navigation';
 import { summarizeClassContacts, type ClassContactSummary } from '@/services/parentMessage';
 import { palette } from '@/constants/colors';
 import { CLASSES_QUERY_KEY, classQueryKey as CLASS_QUERY_KEY } from '@/services/rosterQueryKeys';
+import { AR_LATIN } from '@/services/dateLabels';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -916,7 +917,7 @@ export default function ClassDetailScreen() {
                 </Text>
                 {group.joinCodeExpiresAt ? (
                   <Text style={[styles.modalHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
-                    {t('messagingCodeExpires')}: {new Date(group.joinCodeExpiresAt).toLocaleDateString()}
+                    {t('messagingCodeExpires')}: {new Date(group.joinCodeExpiresAt).toLocaleDateString(lang === 'ar' ? AR_LATIN : undefined)}
                   </Text>
                 ) : null}
                 <View style={[styles.codeActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
