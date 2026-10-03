@@ -1,0 +1,165 @@
+/**
+ * «اختباراتي»: the exams a signed-in student has, and what each one says.
+ *
+ * Until this route the share link was the only way into an exam, and a
+ * result was visible only on the hand-in screen of that one sitting. A
+ * student who closed the tab had no way back to either.
+ *
+ * Which exams: every published or closed exam set to a class the student
+ * sits in, plus any exam the student already holds a sitting on — a paper
+ * the teacher typed in for them, or one from a class they have since left.
+ * "The student" is every roster row this account is `self`-linked to; an
+ * account can be linked in more than one teacher's class.
+ *
+ * What each row says is decided by `studentExamRow`, which is the part that
+ * is tested: links only while `/take/:code` would admit them, results only
+ * when `/take/attempt/result` would release them.
+ *
+ * Path-scoped guard, like every other router here — see `mountOrder.test.ts`.
+ */
+import { Router } from "express";
+import {
+  db,
+  attemptResults,
+  attempts,
+  classGroups,
+  classMemberships,
+  evaluations,
+  rosterLinks,
+  students,
+} from "@workspace/db";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
+import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
+import { studentAccountsEnabled } from "../lib/features.js";
+import { logger } from "../lib/logger";
+import {
+  sortStudentExams,
+  studentExamRow,
+  type ResultForStudent,
+  type SittingForStudent,
+} from "../modules/assessment/studentExams.ts";
+
+const router = Router();
+
+router.use("/student", authMiddleware, requireRole("student"));
+
+/** How far a sitting has got, so a duplicate keeps the more advanced one. */
+function progress(s: { submittedAt: Date | null }): number {
+  return s.submittedAt ? 1 : 0;
+}
+
+router.get("/student/exams", async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not available yet.",
+      });
+      return;
+    }
+
+    const linked = await db
+      .select({ studentId: rosterLinks.studentId })
+      .from(rosterLinks)
+      .innerJoin(students, eq(students.id, rosterLinks.studentId))
+      .where(
+        and(
+          eq(rosterLinks.userId, req.user!.id),
+          eq(rosterLinks.relation, "self"),
+          isNull(students.archivedAt),
+        ),
+      );
+    const studentIds = [...new Set(linked.map(l => l.studentId))];
+    if (studentIds.length === 0) {
+      res.json({ exams: [] });
+      return;
+    }
+
+    // Live classes only: an archived class's exams are over, and any sitting
+    // the student holds on one still comes back through `held` below.
+    const memberships = await db
+      .select({ classGroupId: classMemberships.classGroupId })
+      .from(classMemberships)
+      .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
+      .where(and(inArray(classMemberships.studentId, studentIds), isNull(classGroups.archivedAt)));
+    const classIds = [...new Set(memberships.map(m => m.classGroupId))];
+
+    const held = await db
+      .select({
+        id: attempts.id,
+        evaluationId: attempts.evaluationId,
+        status: attempts.status,
+        source: attempts.source,
+        startedAt: attempts.startedAt,
+        submittedAt: attempts.submittedAt,
+      })
+      .from(attempts)
+      .where(inArray(attempts.studentId, studentIds));
+    const heldEvaluationIds = [...new Set(held.map(a => a.evaluationId))];
+
+    const setForClass = classIds.length
+      ? and(inArray(evaluations.classGroupId, classIds), inArray(evaluations.status, ["published", "closed"]))
+      : undefined;
+    const alreadyHeld = heldEvaluationIds.length ? inArray(evaluations.id, heldEvaluationIds) : undefined;
+    const where = setForClass && alreadyHeld ? or(setForClass, alreadyHeld) : (setForClass ?? alreadyHeld);
+    if (!where) {
+      res.json({ exams: [] });
+      return;
+    }
+
+    const exams = await db
+      .select({
+        id: evaluations.id,
+        title: evaluations.title,
+        titleAr: evaluations.titleAr,
+        subjectId: evaluations.subjectId,
+        gradeId: evaluations.gradeId,
+        status: evaluations.status,
+        shareCode: evaluations.shareCode,
+        shareCodeExpiresAt: evaluations.shareCodeExpiresAt,
+        timeLimitMin: evaluations.timeLimitMin,
+        totalMarks: evaluations.totalMarks,
+        releaseResultsToStudent: evaluations.releaseResultsToStudent,
+        publishedAt: evaluations.publishedAt,
+        closedAt: evaluations.closedAt,
+      })
+      .from(evaluations)
+      .where(where);
+
+    // One sitting per student per exam is a database rule, but an account
+    // linked to two roster rows could in principle hold one through each.
+    // Keep the one that got further.
+    const sittingByExam = new Map<string, (typeof held)[number]>();
+    for (const a of held) {
+      const prev = sittingByExam.get(a.evaluationId);
+      if (!prev || progress(a) > progress(prev)) sittingByExam.set(a.evaluationId, a);
+    }
+
+    const attemptIds = [...sittingByExam.values()].filter(a => a.submittedAt).map(a => a.id);
+    const results = attemptIds.length
+      ? await db.select().from(attemptResults).where(inArray(attemptResults.attemptId, attemptIds))
+      : [];
+    const resultByAttempt = new Map(results.map(r => [r.attemptId, r]));
+
+    const now = new Date();
+    const rows = exams
+      .map(exam => {
+        const sitting = sittingByExam.get(exam.id) ?? null;
+        const result = sitting ? (resultByAttempt.get(sitting.id) ?? null) : null;
+        return studentExamRow(
+          exam,
+          sitting as SittingForStudent | null,
+          result as ResultForStudent | null,
+          now,
+        );
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null);
+
+    res.json({ exams: sortStudentExams(rows) });
+  } catch (err) {
+    logger.error({ err }, "student exam list failed");
+    res.status(500).json({ error: "Failed to load your exams" });
+  }
+});
+
+export default router;

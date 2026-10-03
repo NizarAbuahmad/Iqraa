@@ -37,7 +37,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { isTeacherRole, useAuth } from '@/context/AuthContext';
+import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
+import { getMyExams } from '@/services/studentExam';
+import { actionableCount } from '@/services/myExams';
 import { narrowSubjectsForGrade, narrowToSelection } from '@/services/teacherCatalogFilter';
 import { listLibrary, type LibraryItem } from '@/services/libraryApi';
 import { getLessonById } from '@/services/knowledgeBase';
@@ -329,6 +331,21 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   const { user } = useAuth();
   const grid = useWindowDimensions().width >= GRID_MIN_WIDTH;
   const isTeacher = isTeacherRole(user?.role);
+  // «اختباراتي» is a student's way back to their exams; the tile says how many
+  // are waiting. Best-effort: a failed count shows the plain description, and
+  // the screen behind the tile reports its own errors.
+  const isStudent = isStudentRole(user?.role);
+  const [waitingExams, setWaitingExams] = useState<number | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      if (!isStudent) return;
+      let cancelled = false;
+      getMyExams()
+        .then(list => { if (!cancelled) setWaitingExams(actionableCount(list)); })
+        .catch(() => { if (!cancelled) setWaitingExams(null); });
+      return () => { cancelled = true; };
+    }, [isStudent]),
+  );
   const isStaff = user?.role === 'system_admin';
   const { gradeId } = useLocalSearchParams<{ gradeId?: string; gradeName?: string }>();
   // Opened from the Tools card there is no grade param: start on the
@@ -593,6 +610,40 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 {t('libraryCurriculumDesc')}
               </Text>
             </Pressable>
+            {isStudent ? (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/my-exams' as never);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`${t('myExamsTitle')}, ${waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}`}
+                style={({ pressed }) => [
+                  styles.tile,
+                  { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+                  <Ionicons name="document-text" size={26} color={ACCENT} />
+                </View>
+                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+                  {t('myExamsTitle')}
+                </Text>
+                <Text
+                  numberOfLines={2}
+                  style={[
+                    styles.tileCount,
+                    {
+                      color: waitingExams ? ACCENT : colors.mutedForeground,
+                      fontFamily: waitingExams ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                      textAlign: 'center',
+                    },
+                  ]}
+                >
+                  {waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}
+                </Text>
+              </Pressable>
+            ) : null}
             {shelves.map(({ shelf: id, items: rows }) => (
               <Pressable
                 key={id}

@@ -14719,3 +14719,37 @@ Three of the five items the 2026-10-02 student review left open.
 **Still open from the review:** terms acceptance for Google sign-up (needs a
 schema column and a manual push), and a «اختباراتي» screen so a signed-in
 student can find their exams and results without the share link.
+
+## «اختباراتي» — a student can find their exams and results, 2026-10-03
+
+**The share link was the only door into an exam, and the hand-in screen the
+only place a result appeared.** A student who closed that tab had no way back
+to either. A signed-in student now has «اختباراتي»: a tile on the library tab
+(their landing page, with a count of exams waiting) and a row on the profile.
+
+- **`GET /student/exams`** (`routes/studentExams.ts`, student-only, guard
+  path-scoped to `/student` and pinned in `mountOrder.test.ts` along with the
+  roster's `/students` it must not shadow). It lists every published or
+  closed exam set to a class the account is `self`-linked into, plus any exam
+  the student already holds a sitting on.
+- **What each row says is decided in `modules/assessment/studentExams.ts`,
+  tested (15 cases).** A link only while `/take/:code` would admit the
+  student — never for a closed or expired exam, which that route answers as
+  an unknown code. A result only when `/take/attempt/result` would release it
+  (`studentResultReady`, same projection), so an unreleased mark never leaves
+  the server. A paper the teacher is typing in for the student is never
+  offered to continue, because `claim-self` refuses to resume one.
+- **Opening an exam goes through `/take/:code`**, which already recognises a
+  signed-in student and resumes their sitting (#776). Released results expand
+  in place, through `components/StudentResultCard.tsx` — lifted out of the
+  hand-in screen so the two show a mark identically.
+- `POST /evaluations/:id/close` now stamps `closedAt`, and re-publishing
+  clears it. The column existed and nothing wrote it.
+
+**Not seen in a browser.** It needs a signed-in student account with a
+roster link and a published exam against a real database, which this
+session's environment does not have.
+
+**Not in scope:** parents see nothing here. The endpoint answers students
+only, and a parent who types `/my-exams` gets the translated refusal. A
+parent view of their child's results is a separate decision.
