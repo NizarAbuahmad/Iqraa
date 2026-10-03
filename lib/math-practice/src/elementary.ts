@@ -76,7 +76,13 @@ function numericWrongs(answer: number, rng: Rng, spread: number[]): string[] {
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
 const frac = (n: number, d: number) => {
   const g = gcd(n, d);
-  return `${n / g}/${d / g}`;
+  return d / g === 1 ? `${n / g}` : `${n / g}/${d / g}`;
+};
+/** Value of an "n/d" or whole-number string — distractors are deduped on this,
+ *  not on text, or 4/12 sits beside the answer 1/3 as a second right option. */
+const fracValue = (s: string) => {
+  const [n, d] = s.split('/').map(Number);
+  return d === undefined ? n : n / d;
 };
 
 /**
@@ -185,12 +191,16 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       }
       const a = int(rng, 1, d - 2);
       const b = int(rng, 1, d - a - 1);
-      return {
-        ...base, eq: `${a}/${d} + ${b}/${d}`, answer: frac(a + b, d),
-        wrongs: [`${a + b}/${2 * d}`, frac(a + b + 1, d), `${a * b}/${d}`]
-          .filter((w, i, arr) => w !== frac(a + b, d) && arr.indexOf(w) === i)
-          .concat([`${a + b}/${d + 1}`]).slice(0, 3),
-      };
+      const answer = frac(a + b, d);
+      const seen = [fracValue(answer)];
+      const wrongs = [`${a + b}/${2 * d}`, frac(a + b + 1, d), `${a * b}/${d}`, `${a + b}/${d + 1}`, `${a + b + 2}/${d}`]
+        .filter(w => {
+          const v = fracValue(w);
+          if (seen.some(x => Math.abs(x - v) < 1e-9)) return false;
+          seen.push(v);
+          return true;
+        });
+      return { ...base, eq: `${a}/${d} + ${b}/${d}`, answer, wrongs: wrongs.slice(0, 3) };
     }
     case 'frac_compare': {
       // Different denominators, compared by cross-multiplying.

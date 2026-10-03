@@ -784,6 +784,7 @@ export default function WorksheetScreen() {
                   // key the teacher has since hand-edited on this screen.
                   outcomes: effectiveOutcomes,
                   figureUri: bookFigureUri,
+                  ...getExportMeta(),
                 }),
               );
               router.push('/ai-tools/classroom/presentation' as any);
