@@ -532,6 +532,50 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## One phone, several accounts, and a Google chooser that always appears, 2026-10-03
+
+A teacher who is also a parent had two e-mail addresses and one login slot, so
+every change of hat was a sign-out and a password. Settings now has «الحسابات
+على هذا الجهاز»: the open account (ticked), the others saved on this phone, a tap
+to switch, ✕ to remove one, and «إضافة حساب آخر».
+
+**The rule everything rests on: a refresh token lives in exactly one place.**
+The open account's is in the active slot; every other account's is in its own
+SecureStore key (`iqra_saved_rt_<userId>`), with a display-only index in
+AsyncStorage (`services/savedAccounts.ts`, pure logic in `accountList.ts`). The
+server retires a refresh token when it is exchanged and revokes the whole
+session if a retired one comes back, so a copy left in two places would sign
+that account out for good. A switch therefore exchanges the saved token first,
+reads `/auth/me` with the result before committing anything, writes the new
+session to the active slot, and only then files the old one away. An effect
+enforces "never open and saved at once" on every launch, which repairs the one
+crash window. Add-account does not call `/auth/logout`, which would end the
+session being kept; removing one does, best effort.
+
+**The login screen lists the saved accounts**, the most recent badged
+«آخر استخدام», one tap and no password. So does `/claim-required`, because a
+parent account made while waiting for a class code would otherwise strand the
+person on a screen with no way back to their teacher account. Beside the Google
+button it shows the last Google address used, unless that address is already a
+saved account. The native button now calls `GoogleSignin.signOut()` before
+`signIn()`, because the SDK otherwise answers with the cached account and no
+chooser; the web button always opened one.
+
+**Every sign-in path now clears react-query's cache** (`services/queryClient.ts`,
+`adoptSession` in `AuthContext`). Ten screens share that cache, so before this a
+second person signing in on the same phone saw the first one's lists until they
+refetched.
+
+Checked in the web build against a local API with a teacher and a linked parent:
+add, switch both ways three times (four refreshes, none rejected, no reuse
+detected), a corrupted saved token (reported, entry removed), signed-out switch
+from the login screen, remove with confirm (entry gone, server logout 200). Not
+checked on a device: the native Google chooser, and push, which is a gap by
+design — a device token belongs to one user at a time, so notifications go to the
+open account only. Five accounts at most (the open one plus four). On web the
+saved tokens sit in `localStorage` like the open one, which widens the exposure
+already described in `secureStorage.ts`.
+
 ## A whole-app audit: the verifier ran request text as code, and 30 smaller bugs, 2026-10-02
 
 A read-only audit of every package (API routes, mobile services and
