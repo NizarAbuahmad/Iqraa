@@ -137,24 +137,29 @@ export function classifyBlooms(text: string): BloomsLevel | null {
   if (!text) return null;
 
   const ar = normalizeArabic(text);
-  for (const { level, terms } of MARKERS) {
-    for (const term of terms) {
-      // Match at a word boundary so "حل" does not fire inside "محلول".
-      if (new RegExp(`(^|\\s|["'«(])${escapeRegExp(term)}(\\s|$|["'»),.:])`).test(ar)) {
-        return level;
-      }
-    }
-  }
+  for (const { level, re } of AR_RULES) if (re.test(ar)) return level;
 
   const en = text.toLowerCase();
-  for (const { level, terms } of EN_MARKERS) {
-    for (const term of terms) {
-      if (new RegExp(`\\b${escapeRegExp(term)}\\b`).test(en)) return level;
-    }
-  }
+  for (const { level, re } of EN_RULES) if (re.test(en)) return level;
 
   return null;
 }
+
+/**
+ * Compiled once, in table order. These used to be built inside
+ * `classifyBlooms` — up to ~200 `new RegExp` per call, for every objective in
+ * the catalog at module load — which on a phone's Hermes was seconds of the
+ * app's cold start. None are global, so `.test` carries no state between calls.
+ */
+function compile(markers: Marker[], pattern: (term: string) => string) {
+  return markers.flatMap(({ level, terms }) =>
+    terms.map(term => ({ level, re: new RegExp(pattern(escapeRegExp(term))) })),
+  );
+}
+
+// Match at a word boundary so "حل" does not fire inside "محلول".
+const AR_RULES = compile(MARKERS, t => `(^|\\s|["'«(])${t}(\\s|$|["'»),.:])`);
+const EN_RULES = compile(EN_MARKERS, t => `\\b${t}\\b`);
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
