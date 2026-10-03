@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 15 },
   countPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   countText: { fontSize: 12 },
-  intro: { fontSize: 12, lineHeight: 20, paddingHorizontal: 20, fontFamily: 'Almarai_400Regular' },
+  intro: { fontSize: 13, lineHeight: 22, paddingHorizontal: 20, fontFamily: 'Almarai_400Regular' },
   card: { borderWidth: 1, borderRadius: 14, padding: 16, gap: 12 },
   kind: { fontSize: 11, lineHeight: 18, fontFamily: 'Almarai_400Regular' },
   prompt: { fontSize: 16, lineHeight: 26, textAlign: 'left', writingDirection: 'ltr' },

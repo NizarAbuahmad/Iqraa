@@ -213,7 +213,7 @@ export default function LoginScreen() {
         {isGoogleSignInAvailable() && (
           <>
             <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
               {t('loginGoogleTermsNotice')}{' '}
               <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/terms')}>
                 {t('termsOfService')}
@@ -230,7 +230,7 @@ export default function LoginScreen() {
             ) : null}
             {showLastGoogle ? (
               <View style={{ gap: 6, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                   {t('loginGoogleLast')}
                 </Text>
                 <View style={[styles.lastGoogle, { backgroundColor: colors.primary + '14', borderColor: colors.primary + '33', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -242,7 +242,7 @@ export default function LoginScreen() {
                     <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 }}>{t('accountsLastUsed')}</Text>
                   </View>
                 </View>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                   {t('loginGoogleChoose')}
                 </Text>
               </View>
@@ -342,15 +342,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-  errorText: { flex: 1, fontSize: 13, lineHeight: 21 },
+  errorText: { flex: 1, fontSize: 15, lineHeight: 24 },
   dividerRow: { alignItems: 'center', gap: 10, marginVertical: 2 },
   dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 12, lineHeight: 19 },
+  dividerText: { fontSize: 13, lineHeight: 21 },
   savedTitle: { fontSize: 14, marginBottom: 8 },
   savedCard: { borderWidth: 1, overflow: 'hidden' },
-  savedHint: { fontSize: 12, lineHeight: 19, marginTop: 6 },
+  savedHint: { fontSize: 13, lineHeight: 21, marginTop: 6 },
   lastGoogle: { alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, maxWidth: '100%' },
   lastGoogleBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-  googleLoadingText: { fontSize: 12, lineHeight: 19, textAlign: 'center', marginTop: -6 },
+  googleLoadingText: { fontSize: 13, lineHeight: 21, textAlign: 'center', marginTop: -6 },
   signInBtn: { marginTop: 12 },
 });

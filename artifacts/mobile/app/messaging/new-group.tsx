@@ -106,7 +106,7 @@ export default function NewGroupScreen() {
         </View>
 
         {error ? (
-          <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+          <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
             {error}
           </Text>
         ) : null}
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingBottom: 12, alignItems: 'center', gap: 10, borderBottomWidth: 1 },
   headerTitle: { fontSize: 17 },
   nameInput: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
-  sectionLabel: { fontSize: 13, lineHeight: 21 },
+  sectionLabel: { fontSize: 15, lineHeight: 24 },
   memberRow: { alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 10, borderWidth: 1, borderRadius: 10 },
   addMembersBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderWidth: 1, borderRadius: 10, borderStyle: 'dashed' },
   createBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 12, marginTop: 8 },

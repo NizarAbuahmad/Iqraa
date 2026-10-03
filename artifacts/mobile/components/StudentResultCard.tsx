@@ -57,7 +57,7 @@ export function StudentResultCard({
           {t(levelKey)}
         </Text>
       )}
-      <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>
+      <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15 }}>
         {t('marksLabel')}: {result.earnedMarks} / {result.totalMarks}
         {' '}({result.percent}%)
       </Text>
@@ -66,7 +66,7 @@ export function StudentResultCard({
           const c = result.competencyScores[key];
           return (
             <View key={key} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15 }}>
                 {t(COMPETENCY_LABEL_KEY[key])}
               </Text>
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>

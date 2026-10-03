@@ -272,7 +272,7 @@ export default function ClaimCodeScreen() {
                 <Text
                   style={
                     code
-                      ? { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }
+                      ? { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }
                       : { color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }
                   }
                 >
@@ -360,17 +360,17 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 16, flex: 1 },
   card: { padding: 18, borderWidth: 1, gap: 6 },
   cardTitle: { fontSize: 15 },
-  cardDesc: { fontSize: 13, lineHeight: 18, marginBottom: 4 },
+  cardDesc: { fontSize: 15, lineHeight: 21, marginBottom: 4 },
   codeRow: { alignItems: 'center', gap: 10, marginTop: 8 },
   codeText: { fontSize: 24, letterSpacing: 3 },
-  expiresText: { fontSize: 12, lineHeight: 19 },
+  expiresText: { fontSize: 13, lineHeight: 21 },
   regenerateBtn: { marginTop: 4, paddingVertical: 8 },
   generateBtn: { marginTop: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
   sectionTitle: { fontSize: 15 },
-  emptyGuardians: { fontSize: 13, lineHeight: 21, marginTop: 8 },
+  emptyGuardians: { fontSize: 15, lineHeight: 24, marginTop: 8 },
   guardianRow: { padding: 12, gap: 10, borderWidth: 1, alignItems: 'center' },
   guardianName: { fontSize: 14 },
   guardianRole: { fontSize: 11, lineHeight: 18, marginTop: 1 },
   messageBtn: { paddingHorizontal: 12, paddingVertical: 7, minWidth: 64, alignItems: 'center' },
-  errorText: { fontSize: 12, lineHeight: 19 },
+  errorText: { fontSize: 13, lineHeight: 21 },
 });

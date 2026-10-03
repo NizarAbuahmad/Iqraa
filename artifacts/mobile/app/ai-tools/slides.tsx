@@ -852,7 +852,7 @@ export default function SlidesScreen() {
             replace — its Retry would only fail a validation the same way.
           */}
           {validationError ? (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
               {validationError}
             </Text>
           ) : null}
@@ -1024,6 +1024,6 @@ const styles = StyleSheet.create({
   previewTitle: { fontSize: 17, marginBottom: 4 },
   previewMeta: { fontSize: 12 },
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
-  verifyText: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular', flex: 1 },
+  verifyText: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', flex: 1 },
   reportBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, padding: 14, borderWidth: 1.5, marginTop: 8, alignSelf: 'flex-start' },
 });

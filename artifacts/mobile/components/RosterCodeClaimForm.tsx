@@ -152,7 +152,7 @@ export function RosterCodeClaimForm({
 
 const styles = StyleSheet.create({
   notice: { borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 12 },
-  noticeText: { fontSize: 13, lineHeight: 21 },
+  noticeText: { fontSize: 15, lineHeight: 24 },
   pickLabel: { fontSize: 13 },
   nameChips: { flexWrap: 'wrap', gap: 8 },
   nameChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1, alignItems: 'center' },

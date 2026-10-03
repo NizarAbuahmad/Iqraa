@@ -207,7 +207,7 @@ export function AddReadAloudModal({
                       />
                       <Text
                         numberOfLines={2}
-                        style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, flex: 1, textAlign: isRTL ? 'right' : 'left' }}
+                        style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: isRTL ? 'right' : 'left' }}
                       >
                         {objectiveLabel(id, lang) ?? t('readAloudObjectiveN', String(i + 1))}
                       </Text>
@@ -240,7 +240,7 @@ export function AddReadAloudModal({
                       size={18}
                       color={competency === c.key ? ACCENT : colors.mutedForeground}
                     />
-                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22 }}>
+                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
                       {t(c.label)}
                     </Text>
                   </Pressable>
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   label: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 },
-  hint: { fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 20 },
+  hint: { fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 22 },
   passageInput: {
     borderWidth: 1,
     borderRadius: 12,

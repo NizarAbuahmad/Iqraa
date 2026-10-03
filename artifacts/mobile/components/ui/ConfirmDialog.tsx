@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   title: { fontSize: 18, textAlign: 'center', lineHeight: 28 },
-  message: { fontSize: 14, textAlign: 'center', lineHeight: 22 },
+  message: { fontSize: 15, textAlign: 'center', lineHeight: 24 },
   actions: { width: '100%', gap: 10, marginTop: 16 },
   btn: {
     flex: 1,

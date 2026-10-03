@@ -474,7 +474,7 @@ export default function LessonFlowScreen() {
             </View>
 
             {error ? (
-              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 12, textAlign: isRTL ? 'right' : 'left' }}>{error}</Text>
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginTop: 12, textAlign: isRTL ? 'right' : 'left' }}>{error}</Text>
             ) : null}
 
             <View style={{ marginTop: 24 }}>
@@ -488,7 +488,7 @@ export default function LessonFlowScreen() {
                 broken product rather than an unmet precondition. It says which.
               */}
               {!topic.trim() ? (
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
                   {t('needTopicHint')}
                 </Text>
               ) : null}
@@ -539,7 +539,7 @@ export default function LessonFlowScreen() {
         {isBuilding && error && failedStep && (
           <View style={[styles.errorBanner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="alert-circle-outline" size={16} color="#D92D20" style={{ marginTop: 1 }} />
-            <Text style={{ flex: 1, color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ flex: 1, color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
             <Pressable
@@ -668,12 +668,12 @@ function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, co
             {label}
           </Text>
           {status === 'loading' && (
-            <Text style={{ color: color, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: color, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
               Generating…
             </Text>
           )}
           {status === 'error' && (
-            <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
               {lang === 'ar' ? 'تعذّر إكمال الخطوة — أعد المحاولة' : 'Failed — tap Retry below'}
             </Text>
           )}
@@ -718,7 +718,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
           {(objectives ?? []).map((obj, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start' }]}>
               <View style={[styles.bullet, { backgroundColor: palette.foreground }]} />
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(obj)}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(obj)}</Text>
             </View>
           ))}
         </View>
@@ -738,7 +738,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(step.title)}</Text>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2, lineHeight: 19, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(step.description)}</Text>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 2, lineHeight: 21, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(step.description)}</Text>
               </View>
             </View>
           ))}
@@ -750,7 +750,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
       return (
         <View style={{ paddingHorizontal: 14, paddingBottom: 8 }}>
           <View style={[styles.guidedBox, { backgroundColor: ACCENT + '10', borderColor: ACCENT + '30' }]}>
-            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
               {guidedPractice}
             </Text>
           </View>
@@ -767,7 +767,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
               <View style={[styles.qNum, { backgroundColor: '#6D28D9' }]}>
                 <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>{q.points}pt</Text>
             </View>
           ))}
@@ -785,7 +785,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
               <View style={[styles.qNum, { backgroundColor: '#B54708' }]}>
                 <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>{q.points}pt</Text>
             </View>
           ))}
@@ -817,7 +817,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
   },
   headerSub: {
-    fontSize: 12, lineHeight: 18,
+    fontSize: 13, lineHeight: 20,
     marginTop: 2,
   },
   progressContainer: {

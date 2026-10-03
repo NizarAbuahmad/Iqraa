@@ -1035,7 +1035,7 @@ export default function ClassDetailScreen() {
               ) : null,
             )}
             {error ? (
-              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: align }}>
                 {error}
               </Text>
             ) : null}
@@ -1403,7 +1403,7 @@ export default function ClassDetailScreen() {
                     style={{
                       color: colors.foreground,
                       fontFamily: 'Almarai_400Regular',
-                      fontSize: 14, lineHeight: 22,
+                      fontSize: 15, lineHeight: 24,
                       flex: 1,
                       textAlign: align,
                     }}
@@ -1502,7 +1502,7 @@ function MasterySection({
 
       {gaps.length === 0 ? (
         <View style={{ gap: 2 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
             {t('masteryEmpty')}
           </Text>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
@@ -1513,7 +1513,7 @@ function MasterySection({
         gaps.map(o => (
           <View key={o.objectiveId} style={{ gap: 3 }}>
             <Text
-              style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}
+              style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}
               numberOfLines={2}
             >
               {(lang === 'ar' ? o.titleAr : o.title) || o.objectiveId}
@@ -1576,12 +1576,12 @@ function JoinStatusSection({
       </View>
 
       {unjoined.length === 0 ? (
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
           {t('joinStatusAllJoined')}
         </Text>
       ) : (
         <View style={{ gap: 6 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
             {t('joinStatusNotJoinedLabel')}
           </Text>
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6 }}>
@@ -1636,7 +1636,7 @@ function ParentContactSection({
         </Pressable>
       ))}
       {list.length > MAX_NAMES && (
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, alignSelf: 'center' }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, alignSelf: 'center' }}>
           {`+${list.length - MAX_NAMES}`}
         </Text>
       )}
@@ -1644,7 +1644,7 @@ function ParentContactSection({
   );
 
   const label = (text: string) => (
-    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
       {text}
     </Text>
   );
@@ -1720,10 +1720,10 @@ const styles = StyleSheet.create({
   },
   matIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   rowName: { fontSize: 15 },
-  rowRef: { fontSize: 12, lineHeight: 19, marginTop: 2 },
+  rowRef: { fontSize: 13, lineHeight: 21, marginTop: 2 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17 },
-  emptyText: { fontSize: 14, maxWidth: 280, lineHeight: 20 },
+  emptyText: { fontSize: 15, maxWidth: 280, lineHeight: 21 },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1751,7 +1751,7 @@ const styles = StyleSheet.create({
   },
   modalCard: { width: '100%', maxWidth: 460, borderRadius: 16, padding: 20, gap: 12 },
   modalTitle: { fontSize: 18 },
-  modalHint: { fontSize: 13, lineHeight: 21 },
+  modalHint: { fontSize: 15, lineHeight: 24 },
   pickRow: {
     alignItems: 'center',
     gap: 10,
@@ -1779,7 +1779,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
-  count: { fontSize: 13, lineHeight: 21 },
+  count: { fontSize: 15, lineHeight: 24 },
   codeText: { fontSize: 28, letterSpacing: 4, textAlign: 'center', marginTop: 4 },
   codeActions: { gap: 8 },
   linkedPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },

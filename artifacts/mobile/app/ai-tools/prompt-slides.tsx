@@ -346,7 +346,7 @@ export default function PromptSlidesScreen() {
               <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
                 {t('promptSlidesTitle')}
               </Text>
-              <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }}>
+              <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }}>
                 {t('promptSlidesSubtitle')}
               </Text>
             </View>
@@ -389,7 +389,7 @@ export default function PromptSlidesScreen() {
             }]}
           />
           {error && !prompt.trim() ? (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
           ) : null}
@@ -619,14 +619,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptyTitle: { fontSize: 16, textAlign: 'center' },
-  emptyHint: { fontSize: 12, lineHeight: 19, textAlign: 'center' },
+  emptyHint: { fontSize: 13, lineHeight: 21, textAlign: 'center' },
   form: { padding: 20 },
-  promptInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 96, textAlignVertical: 'top', marginBottom: 8 },
+  promptInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, minHeight: 96, textAlignVertical: 'top', marginBottom: 8 },
   fieldLabel: { fontSize: 13, marginBottom: 6, marginTop: 4 },
   sourceToggle: { alignItems: 'center', gap: 6, paddingVertical: 8, marginBottom: 2 },
-  sourceInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 120, textAlignVertical: 'top', marginBottom: 6 },
-  sourceHint: { fontSize: 12, marginBottom: 12, lineHeight: 18, fontFamily: 'Almarai_400Regular' },
-  slideCountInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, marginBottom: 16, width: 100 },
+  sourceInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, minHeight: 120, textAlignVertical: 'top', marginBottom: 6 },
+  sourceHint: { fontSize: 13, marginBottom: 12, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
+  slideCountInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, marginBottom: 16, width: 100 },
   previewCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
   previewTitle: { fontSize: 17 },
   previewMeta: { fontSize: 12 },

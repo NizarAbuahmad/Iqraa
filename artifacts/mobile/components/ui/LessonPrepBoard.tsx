@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   },
   label: { fontSize: 14, fontFamily: 'ReadexPro_600SemiBold' },
   labelCompact: { fontSize: 14 },
-  status: { fontSize: 13, lineHeight: 19, fontFamily: 'Almarai_400Regular' },
+  status: { fontSize: 15, lineHeight: 22, fontFamily: 'Almarai_400Regular' },
   cta: { alignItems: 'center', gap: 3 },
   ctaMake: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   skip: { width: 36, height: 36, borderRadius: 18, marginHorizontal: 6, alignItems: 'center', justifyContent: 'center' },

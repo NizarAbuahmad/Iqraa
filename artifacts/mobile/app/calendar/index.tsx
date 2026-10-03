@@ -238,14 +238,14 @@ export default function CalendarScreen() {
             </Text>
 
             {selectedAgenda.periods.length === 0 && selectedAgenda.lessons.length === 0 ? (
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
                 {t('calendarNoActivity')}
               </Text>
             ) : (
               <>
                 {selectedAgenda.periods.length > 0 ? (
                   <View style={{ gap: 6 }}>
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
                       {t('calendarPeriodsSection')}
                     </Text>
                     {selectedAgenda.periods.map(p => (
@@ -259,11 +259,11 @@ export default function CalendarScreen() {
                         <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                           {p.startTime || t('schedulePeriodNumber', p.periodNumber)}
                         </Text>
-                        <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+                        <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
                           {classNameFor(p.classGroupId)}
                         </Text>
                         {p.schoolName ? (
-                          <Text numberOfLines={1} style={{ maxWidth: 140, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
+                          <Text numberOfLines={1} style={{ maxWidth: 140, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
                             {p.schoolName}
                           </Text>
                         ) : null}
@@ -274,7 +274,7 @@ export default function CalendarScreen() {
 
                 {selectedAgenda.lessons.length > 0 ? (
                   <View style={{ gap: 6 }}>
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
                       {t('calendarLessonsSection')}
                     </Text>
                     {selectedAgenda.lessons.map(l => {
@@ -288,7 +288,7 @@ export default function CalendarScreen() {
                           <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
                             {title}
                           </Text>
-                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
                             {t('calendarLessonFrom', l.planTitle)}
                           </Text>
                         </View>

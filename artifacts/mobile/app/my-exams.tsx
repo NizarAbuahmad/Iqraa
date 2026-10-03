@@ -167,7 +167,7 @@ export default function MyExamsScreen() {
             <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17, textAlign: 'center' }}>
               {t('myExamsEmptyTitle')}
             </Text>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
               {t('myExamsEmptyDesc')}
             </Text>
           </View>
@@ -238,7 +238,7 @@ function ExamRow({
             {myExamTitle(exam, lang)}
           </Text>
           {meta ? (
-            <Text numberOfLines={2} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+            <Text numberOfLines={2} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
               {meta}
             </Text>
           ) : null}
@@ -280,9 +280,9 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth },
   backBtn: { padding: 4, marginBottom: 8 },
   title: { fontSize: 22 },
-  desc: { fontSize: 13, lineHeight: 21, marginTop: 4 },
+  desc: { fontSize: 15, lineHeight: 24, marginTop: 4 },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
-  errorText: { flex: 1, fontSize: 13, lineHeight: 21 },
+  errorText: { flex: 1, fontSize: 15, lineHeight: 24 },
   empty: { alignItems: 'center', gap: 10, paddingHorizontal: 24, paddingTop: 48 },
   emptyIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   card: { borderWidth: 1, padding: 14 },

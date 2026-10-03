@@ -238,7 +238,7 @@ function PeriodsEditorModal({ visible, schoolName, schoolLabel, periods, onClose
             <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('schedulePeriodsTitle')}
             </Text>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: align }}>
               {`${schoolLabel} · ${t('scheduleSchoolHint')}`}
             </Text>
           </View>
@@ -308,7 +308,7 @@ function SchoolNameModal({ title, initial, taken, onClose, onSubmit, isRTL, colo
             maxLength={80}
             style={[styles.smallInput, { borderColor: colors.border, color: colors.foreground, textAlign: align, paddingVertical: 10 }]}
           />
-          <Text style={{ color: error || isTaken ? colors.destructive : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+          <Text style={{ color: error || isTaken ? colors.destructive : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
             {error || (isTaken ? t('scheduleSchoolNameTaken') : t('scheduleSchoolHint'))}
           </Text>
           <View style={styles.modalActions}>
@@ -382,7 +382,7 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
               multiline
               style={{
                 borderWidth: 1, borderRadius: 10, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12,
-                fontSize: 14, minHeight: 64, textAlignVertical: 'top', color: colors.foreground,
+                fontSize: 15, minHeight: 64, textAlignVertical: 'top', color: colors.foreground,
                 fontFamily: 'Almarai_400Regular', textAlign: align,
               }}
             />
@@ -580,7 +580,7 @@ function DayView({ day, setDay, weekdays, today, periods, slots, classNameFor, m
                     </View>
                   ) : null}
                 </View>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
                   {[
                     t('schedulePeriodNumber', r.periodNumber),
                     multiSchool ? schoolLabel(r.schoolName) : '',
@@ -590,7 +590,7 @@ function DayView({ day, setDay, weekdays, today, periods, slots, classNameFor, m
                 {r.notes ? (
                   <View style={{ flexDirection: row, alignItems: 'center', gap: 5 }}>
                     <Ionicons name="document-text-outline" size={13} color={colors.mutedForeground} />
-                    <Text numberOfLines={2} style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+                    <Text numberOfLines={2} style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
                       {r.notes}
                     </Text>
                   </View>
@@ -1028,10 +1028,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2,
     width: 92, paddingVertical: 3, borderRadius: 8, borderWidth: 1.5,
   },
-  timeBox: { width: 30, paddingVertical: 4, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: 'center' },
+  timeBox: { width: 30, paddingVertical: 4, fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: 'center' },
   smallInput: {
     paddingVertical: 7, paddingHorizontal: 8, borderRadius: 8, borderWidth: 1.5,
-    fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center',
+    fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: 'center',
   },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   modalCard: { width: '100%', maxWidth: 420, borderRadius: 16, padding: 20, gap: 14 },

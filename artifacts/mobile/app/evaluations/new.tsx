@@ -482,7 +482,7 @@ export default function NewEvaluationScreen() {
         )}
 
         {error ? (
-          <Text style={{ color: colors.destructive, fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', marginBottom: 12, textAlign: align }}>
+          <Text style={{ color: colors.destructive, fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular', marginBottom: 12, textAlign: align }}>
             {error}
           </Text>
         ) : null}
@@ -561,7 +561,7 @@ function PaperRowEditor({
               onPress={() => onChange({ competencyKey: key })}
               style={[styles.compChip, { borderColor: active ? ACCENT : colors.border, backgroundColor: active ? ACCENT + '18' : 'transparent' }]}
             >
-              <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+              <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                 {t(COMPETENCY_KEY[key])}
               </Text>
             </Pressable>
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   headerTitle: { fontSize: 22, color: '#fff' },
   label: { fontSize: 13, marginBottom: 6 },
-  hint: { fontSize: 12, lineHeight: 19, marginBottom: 8, marginTop: -2 },
+  hint: { fontSize: 13, lineHeight: 21, marginBottom: 8, marginTop: -2 },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, marginBottom: 16 },
   bookRow: { alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 8 },
   modeRow: { gap: 8, marginBottom: 8 },

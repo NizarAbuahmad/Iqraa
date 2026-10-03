@@ -237,7 +237,7 @@ export default function CurriculumBrowseScreen() {
                 <Text style={{ fontSize: 28 }}>🎧</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 16, textAlign: isRTL ? 'right' : 'left' }}>{t('hubTitle')}</Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
+                  <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
                     {t('hubListenDesc')} · {t('hubSpell')} · {t('hubMatch')}
                   </Text>
                 </View>
@@ -283,10 +283,10 @@ const styles = StyleSheet.create({
   hubBanner: { alignItems: 'center', gap: 12, padding: 14, marginBottom: 12 },
   backBtn: { padding: 4, marginBottom: 4 },
   title: { fontSize: 28, marginBottom: 4 },
-  subtitle: { fontSize: 13, lineHeight: 21, marginBottom: 6 },
-  intro: { fontSize: 13, lineHeight: 19, marginBottom: 14 },
+  subtitle: { fontSize: 15, lineHeight: 24, marginBottom: 6 },
+  intro: { fontSize: 15, lineHeight: 22, marginBottom: 14 },
   searchRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
-  searchInput: { flex: 1, fontSize: 14, paddingVertical: 0 },
+  searchInput: { flex: 1, fontSize: 15, paddingVertical: 0 },
   gradeBar: { borderBottomWidth: 1 },
   gradeFixed: { paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row' },
   gradeScroll: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
@@ -299,5 +299,5 @@ const styles = StyleSheet.create({
   subjectIcon: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' },
   subjectName: { fontSize: 13 },
   empty: { alignItems: 'center', paddingTop: 48, gap: 10 },
-  emptyText: { fontSize: 14, lineHeight: 22 },
+  emptyText: { fontSize: 15, lineHeight: 24 },
 });

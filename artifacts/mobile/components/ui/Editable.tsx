@@ -221,7 +221,7 @@ export function EditableList({
             style={{
               color: colors.mutedForeground,
               fontFamily: 'Almarai_400Regular',
-              fontSize: 13, lineHeight: 20,
+              fontSize: 15, lineHeight: 23,
             }}
           >
             {addLabel}
@@ -247,8 +247,8 @@ const styles = StyleSheet.create({
   editingRow: { alignItems: 'flex-end', gap: 6 },
   body: { flex: 1, fontSize: 14, lineHeight: 22 },
   input: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 24,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 10,

@@ -87,7 +87,7 @@ export function Flashcards({ words }: { words: HubWord[] }) {
         ) : (
           <Text style={[styles.flashEn, { color: colors.foreground }]}>{w.en}</Text>
         )}
-        <Text style={{ color: colors.mutedForeground, fontSize: 12, fontFamily: 'Almarai_400Regular' }}>{t('hubTapToFlip')}</Text>
+        <Text style={{ color: colors.mutedForeground, fontSize: 13, fontFamily: 'Almarai_400Regular' }}>{t('hubTapToFlip')}</Text>
       </Pressable>
       <View style={{ flexDirection: row, alignItems: 'center', gap: 20 }}>
         <Pressable onPress={() => go(i - 1)} style={[styles.navBtn, { borderColor: colors.border }]}>
@@ -525,7 +525,7 @@ export function Speaking({ words }: { words: HubWord[] }) {
           </Pressable>
         ) : null}
       </View>
-      <Text style={{ color: colors.mutedForeground, fontSize: 13, fontFamily: 'Almarai_400Regular', textAlign: 'center' }}>
+      <Text style={{ color: colors.mutedForeground, fontSize: 15, fontFamily: 'Almarai_400Regular', textAlign: 'center' }}>
         {rec.phase === 'denied' ? t('hubMicDenied') : rec.phase === 'recording' ? t('hubRecording') : rec.uri ? t('hubHearYourself') : t('hubTapMicToRecord')}
       </Text>
       <View style={{ flexDirection: row, alignItems: 'center', gap: 20 }}>

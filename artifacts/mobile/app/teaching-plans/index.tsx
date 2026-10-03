@@ -158,7 +158,7 @@ function LessonDateRow({ title, periods, date, onChangeDate, isRTL, colors, peri
           borderColor: scheduled ? ACCENT : colors.border,
           color: colors.foreground,
           fontFamily: 'Almarai_400Regular',
-          fontSize: 13,
+          fontSize: 15,
           textAlign: 'center',
         }}
       />
@@ -624,7 +624,7 @@ export default function TeachingPlansScreen() {
                 }}
               >
                 <Ionicons name="information-circle-outline" size={20} color={ACCENT} />
-                <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
+                <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: align }}>
                   {notice}
                 </Text>
                 <Pressable onPress={() => setNotice('')} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('cancel')}>
@@ -747,7 +747,7 @@ export default function TeachingPlansScreen() {
                   a plan that can hold nothing the app can read. */}
               {classes.length === 0 ? (
                 <View style={{ gap: 8 }}>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align, lineHeight: 20 }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: align, lineHeight: 23 }}>
                     {t('planNeedsClass')}
                   </Text>
                   <Pressable
@@ -761,7 +761,7 @@ export default function TeachingPlansScreen() {
                 </View>
               ) : (
                 <View style={{ gap: 6 }}>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: align }}>
                     {t('planClass')}
                   </Text>
                   <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
@@ -804,7 +804,7 @@ export default function TeachingPlansScreen() {
                       typed, so they can pick the class that matches it. The
                       stored text is left alone either way. */}
                   {!form.classGroupId && form.grades ? (
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                       {t('planLegacyGrades', form.grades)}
                     </Text>
                   ) : null}
@@ -819,16 +819,16 @@ export default function TeachingPlansScreen() {
                 // Keyed by the plan being edited so the rows' drafts do not
                 // survive into the next plan opened from this same modal.
                 <View key={`${editingId ?? 'new'}:${form.classGroupId}`} style={{ gap: 6 }}>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: align }}>
                     {t('planSchedule')}
                   </Text>
                   {scheduleUnits.length === 0 ? (
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                       {t('planNoLessons')}
                     </Text>
                   ) : (
                     <>
-                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
                         {t('planScheduleHint')}
                       </Text>
                       {/* Bulk generation: pick a start date and which days
@@ -838,7 +838,7 @@ export default function TeachingPlansScreen() {
                           by hand for forty lessons. */}
                       <View style={{ gap: 8, marginTop: 4, marginBottom: 2 }}>
                         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'center' }}>
-                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                             {t('planStartDate')}
                           </Text>
                           <TextInput
@@ -856,13 +856,13 @@ export default function TeachingPlansScreen() {
                               borderColor: colors.border,
                               color: colors.foreground,
                               fontFamily: 'Almarai_400Regular',
-                              fontSize: 13,
+                              fontSize: 15,
                               textAlign: align,
                             }}
                           />
                         </View>
                         <View style={{ gap: 4 }}>
-                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                             {t('planMeetingDays')}
                           </Text>
                           <WeekdayToggle
@@ -920,7 +920,7 @@ export default function TeachingPlansScreen() {
               {/* Legacy topics, read-only: plans written before the schedule
                   existed keep theirs visible, but nothing new writes here. */}
               {form.topics ? (
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                   {`${t('planTopics')}: ${form.topics}`}
                 </Text>
               ) : null}
@@ -950,7 +950,7 @@ export default function TeachingPlansScreen() {
             {error ? (
               <View style={[styles.modalError, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
-                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 19, flex: 1, textAlign: align }}>
+                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 22, flex: 1, textAlign: align }}>
                   {error}
                 </Text>
               </View>
@@ -993,10 +993,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cardTitle: { fontSize: 16 },
-  cardMeta: { fontSize: 13, lineHeight: 21, marginTop: 4 },
+  cardMeta: { fontSize: 15, lineHeight: 24, marginTop: 4 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17 },
-  emptyText: { fontSize: 14, maxWidth: 280, lineHeight: 20 },
+  emptyText: { fontSize: 15, maxWidth: 280, lineHeight: 21 },
   fab: {
     position: 'absolute',
     alignSelf: 'center',

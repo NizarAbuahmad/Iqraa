@@ -267,7 +267,7 @@ export default function ClassGameScreen() {
               <View style={[styles.stepNum, { backgroundColor: ACCENT_FILL }]}>
                 <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }}>
                 {line}
               </Text>
             </View>
@@ -357,7 +357,7 @@ export default function ClassGameScreen() {
           />
 
           {error ? (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
           ) : null}
@@ -370,14 +370,14 @@ export default function ClassGameScreen() {
             fullWidth
           />
           {!topic.trim() ? (
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
               {t('needTopicHint')}
             </Text>
           ) : null}
         </View>
 
         {cancelled && !loading && !deck && (
-          <Text style={{ marginHorizontal: 20, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ marginHorizontal: 20, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
             {t('genCancelled')}
           </Text>
         )}
@@ -385,7 +385,7 @@ export default function ClassGameScreen() {
         {loading && (
           <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <ActivityIndicator color={ACCENT} />
-            <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
               {t('gameBuilding')}
             </Text>
             <Pressable onPress={cancelGenerate} hitSlop={8}>
@@ -437,8 +437,8 @@ export default function ClassGameScreen() {
                       flex: 1,
                       color: colors.foreground,
                       fontFamily: 'Almarai_400Regular',
-                      fontSize: 13,
-                      lineHeight: 20,
+                      fontSize: 15,
+                      lineHeight: 23,
                       textAlign: isRTL ? 'right' : 'left',
                       writingDirection: isRTL ? 'rtl' : 'ltr',
                     }}

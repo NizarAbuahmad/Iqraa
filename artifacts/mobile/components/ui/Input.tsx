@@ -99,6 +99,6 @@ const styles = StyleSheet.create({
   rightIcon: { marginRight: 12 },
   rightIconBtn: { paddingRight: 12, padding: 4 },
   leftIconBtn: { paddingLeft: 12, padding: 4 },
-  error: { fontSize: 12, lineHeight: 19, marginTop: 4 },
-  hint: { fontSize: 12, lineHeight: 19, marginTop: 4 },
+  error: { fontSize: 13, lineHeight: 21, marginTop: 4 },
+  hint: { fontSize: 13, lineHeight: 21, marginTop: 4 },
 });

@@ -81,14 +81,14 @@ export default function EnglishHubScreen() {
         {streak > 0 ? <Text style={[styles.streak, { textAlign: align }]}>{t('hubStreak', streak)}</Text> : null}
         <View style={[styles.goalRow, { flexDirection: row }]}>
           <Ionicons name={practicedToday ? 'checkmark-circle' : 'ellipse-outline'} size={16} color="#fff" />
-          <Text style={{ color: '#fff', fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
+          <Text style={{ color: '#fff', fontFamily: 'Almarai_400Regular', fontSize: 15 }}>
             {t(practicedToday ? 'hubDailyGoalDone' : 'hubDailyGoalTodo')}
           </Text>
         </View>
         {Platform.OS !== 'web' ? (
           <View style={[styles.goalRow, { flexDirection: row, marginTop: 10 }]}>
             <Switch value={reminderOn} onValueChange={v => void toggleReminder(v)} trackColor={{ false: 'rgba(255,255,255,0.3)', true: '#fff' }} thumbColor={colors.hero} />
-            <Text style={{ color: '#fff', fontFamily: 'Almarai_400Regular', fontSize: 13, flexShrink: 1 }}>{t('hubRemindMe')}</Text>
+            <Text style={{ color: '#fff', fontFamily: 'Almarai_400Regular', fontSize: 15, flexShrink: 1 }}>{t('hubRemindMe')}</Text>
           </View>
         ) : null}
       </View>
@@ -145,7 +145,7 @@ export default function EnglishHubScreen() {
                   <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }} numberOfLines={2}>
                     {lang === 'ar' ? l.unitTitleAr || l.unitTitle : l.unitTitle}
                   </Text>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
                     {t('hubWords', l.words.length)} · {l.words.slice(0, 4).map(w => w.en).join(', ')}…
                   </Text>
                 </View>
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14 },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
   title: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 24, marginBottom: 4 },
-  sub: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 },
+  sub: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 },
   streak: { color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, marginTop: 8 },
   goalRow: { alignItems: 'center', gap: 6, marginTop: 8 },
   badgeRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 10 },
