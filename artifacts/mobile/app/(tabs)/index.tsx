@@ -47,6 +47,7 @@ import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { listClasses } from '@/services/roster';
 import type { ClassGroup } from '@/services/roster';
 import { className, classNameFor } from '@/services/materialClass';
+import { todayLabel } from '@/services/dateLabels';
 import { loadTimetable } from '@/services/schedule';
 import { formatNextPeriod, type NextPeriodLesson, type TimetableSetupStep } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
@@ -552,16 +553,6 @@ function suggestionsFor(board: PrepRow[], topic: string, isAr: boolean): string[
     asks.push(isAr ? `اشرح لي أصعب فكرة في «${topic}»` : `Explain the hardest idea in “${topic}”`);
   }
   return asks.slice(0, 3);
-}
-
-function todayLabel(lang: 'ar' | 'en'): string {
-  try {
-    return new Date().toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-GB', {
-      weekday: 'long', day: 'numeric', month: 'long',
-    });
-  } catch {
-    return '';
-  }
 }
 
 const s = StyleSheet.create({
