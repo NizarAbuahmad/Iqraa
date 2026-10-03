@@ -250,11 +250,32 @@ function trimmedOrUndefined(value: unknown): string | undefined {
  * queried for those two roles — a teacher never has rosterLinks, and running
  * this on every teacher request would be a wasted query on the common path.
  */
+/**
+ * Any roster link at all, archived rows included — the role-switch lock, which
+ * counts archived data the same way `hasAnyTeachingData` does below. A link
+ * stays a link while its row is archived, and the row can be restored.
+ */
 async function hasAnyRosterLink(userId: string): Promise<boolean> {
   const [row] = await db
     .select({ id: rosterLinks.id })
     .from(rosterLinks)
     .where(eq(rosterLinks.userId, userId))
+    .limit(1);
+  return !!row;
+}
+
+/**
+ * A link to a live roster row — what the claim gate (`hasRosterLink` on the
+ * user) asks. A student whose only link is to an archived row used to pass
+ * the gate into an app with no class, no teacher and no contacts;
+ * `/messaging/contacts` already drops archived rows, and this is that rule.
+ */
+async function hasLiveRosterLink(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: rosterLinks.id })
+    .from(rosterLinks)
+    .innerJoin(students, eq(students.id, rosterLinks.studentId))
+    .where(and(eq(rosterLinks.userId, userId), isNull(students.archivedAt)))
     .limit(1);
   return !!row;
 }
@@ -313,7 +334,7 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
     // No roster code is asked for or resolved at this point anymore: a
     // parent/student account is created bare, and links to a roster row
     // afterwards through the one claiming path, POST /auth/claim — see
-    // hasAnyRosterLink and the client-side gate that gets them there.
+    // hasLiveRosterLink and the client-side gate that gets them there.
     if (role !== "teacher" && !studentAccountsEnabled()) {
       res.status(403).json({
         code: "student_accounts_disabled",
@@ -1150,7 +1171,7 @@ router.post("/login", loginLimiter, async (req, res) => {
     // cares about — a teacher never has (or needs) a rosterLinks row.
     const hasRosterLink =
       user.role === "student" || user.role === "parent"
-        ? await hasAnyRosterLink(user.id)
+        ? await hasLiveRosterLink(user.id)
         : undefined;
 
     res.json({
@@ -1398,7 +1419,7 @@ router.post("/google", googleLimiter, async (req, res) => {
         ? undefined
         : isNewAccount
           ? false
-          : await hasAnyRosterLink(user.id);
+          : await hasLiveRosterLink(user.id);
 
     res.json({
       accessToken,
@@ -1587,7 +1608,7 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
     // login/register/google.
     const hasRosterLink =
       user.role === "student" || user.role === "parent"
-        ? await hasAnyRosterLink(user.id)
+        ? await hasLiveRosterLink(user.id)
         : undefined;
 
     res.json({

@@ -66,6 +66,13 @@ export interface ClaimInput {
   /** The `class_groups` row whose joinCode matched, if any. */
   classGroup: { id: string; expiresAt: Date | null } | null;
   isMember: (studentId: string, classGroupId: string) => Promise<boolean>;
+  /**
+   * Whether some account OTHER than the caller already holds this student's
+   * self link. Same rule as `hasGuardianLink`: counting the caller's own link
+   * told a student re-entering their own code that the name belonged to
+   * another account. The claim transaction in `auth.ts` already excluded the
+   * caller; this answer, given first, did not.
+   */
   hasSelfLink: (studentId: string) => Promise<boolean>;
   /**
    * Whether some account OTHER than the caller already holds a guardian link to

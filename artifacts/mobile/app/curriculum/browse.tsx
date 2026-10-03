@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FlatList, Platform, Pressable, ScrollView, StyleSheet, Text,
   TextInput, View,
@@ -10,14 +10,15 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { isTeacherRole, useAuth } from '@/context/AuthContext';
+import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   Grade, Subject,
   getVisibleGrades, getSubjectsForGrade,
 } from '@/services/curriculumData';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
-import { narrowSubjectsForGrade, narrowToSelection } from '@/services/teacherCatalogFilter';
+import { narrowSubjectsForGrade, narrowToSelection, preferredGrade } from '@/services/teacherCatalogFilter';
+import { getMyGradeIds } from '@/services/studentExam';
 
 const SUBJECT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   arabic:      'text',
@@ -82,6 +83,20 @@ export default function CurriculumBrowseScreen() {
   const [selectedGrade, setSelectedGrade] = useState<Grade>(
     visibleGrades.find(g => g.id === gradeId) ?? visibleGrades[0],
   );
+  // Same as the library: a student opened here with no grade param starts on
+  // their own class's grade, not the catalog's first.
+  const isStudent = isStudentRole(user?.role);
+  useEffect(() => {
+    if (!isStudent || gradeId) return;
+    const initialId = visibleGrades[0]?.id;
+    let cancelled = false;
+    void getMyGradeIds().then(ids => {
+      const own = preferredGrade(visibleGrades, ids);
+      if (!cancelled && own) setSelectedGrade(prev => (prev.id === initialId ? own : prev));
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStudent, gradeId]);
   const [search, setSearch] = useState('');
 
   const subjects = (isTeacherRole(user?.role)

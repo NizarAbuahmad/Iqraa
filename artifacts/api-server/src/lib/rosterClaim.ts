@@ -89,7 +89,7 @@ export async function resolveClaimCode(
       const [row] = await db
         .select({ id: rosterLinks.id })
         .from(rosterLinks)
-        .where(and(eq(rosterLinks.studentId, studentId), eq(rosterLinks.relation, "self")))
+        .where(and(eq(rosterLinks.studentId, studentId), eq(rosterLinks.relation, "self"), ne(rosterLinks.userId, userId)))
         .limit(1);
       return !!row;
     },

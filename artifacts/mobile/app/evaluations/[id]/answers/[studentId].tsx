@@ -53,6 +53,7 @@ import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { toLatinDigits } from '@/services/latinDigits';
+import { playUri } from '@/services/englishAudio';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -86,6 +87,9 @@ type Response = Record<string, unknown>;
  * graded question that *does* carry its own text still renders it.
  */
 function isPaperQuestion(question: EvaluationQuestion): boolean {
+  // A read-aloud question has a passage, not a prompt — it was being
+  // labelled as a paper question it never was.
+  if (question.type === 'read_aloud') return false;
   return !((question.body?.['prompt'] as string) ?? '').trim();
 }
 
@@ -128,6 +132,7 @@ export default function AnswerEntryScreen() {
   const [studentName, setStudentName] = useState('');
   const [evaluationTitle, setEvaluationTitle] = useState('');
   const [answers, setAnswers] = useState<Record<string, Response>>({});
+  const [recordings, setRecordings] = useState<Record<string, string>>({});
   const [grades, setGrades] = useState<Record<string, GradeDraft>>({});
   const [comment, setComment] = useState('');
   const [result, setResult] = useState<AttemptResult | null>(null);
@@ -155,6 +160,7 @@ export default function AnswerEntryScreen() {
         setScope(data.evaluation);
         setNextSteps(data.recommendations ?? []);
         setAnswers(Object.fromEntries(data.answers.map(a => [a.questionId, a.response])));
+        setRecordings(Object.fromEntries(data.answers.flatMap(a => (a.audioUrl ? [[a.questionId, a.audioUrl]] : []))));
         setGrades(gradeDrafts(data.grades));
         setComment(data.attempt.teacherComment ?? '');
         setResult(data.result);
@@ -409,6 +415,7 @@ export default function AnswerEntryScreen() {
               index={i}
               question={q}
               response={answers[q.id] ?? {}}
+              recordingUrl={recordings[q.id]}
               onChange={r => setAnswer(q.id, r)}
               onCommit={r => persist(q.id, r)}
               grade={grades[q.id]}
@@ -634,11 +641,12 @@ function NextStepsCard({
 }
 
 function QuestionInput({
-  index, question, response, onChange, onCommit, grade, onGradeChange, onGradeCommit, colors, isRTL, align, t,
+  index, question, response, recordingUrl, onChange, onCommit, grade, onGradeChange, onGradeCommit, colors, isRTL, align, t,
 }: {
   index: number;
   question: EvaluationQuestion;
   response: Response;
+  recordingUrl?: string;
   onChange: (r: Response) => void;
   onCommit: (r: Response) => void;
   grade: GradeDraft | undefined;
@@ -684,6 +692,9 @@ function QuestionInput({
         ) : (
           <OpenTextInput body={body} response={response} onChange={onChange} onCommit={onCommit} colors={colors} align={align} t={t} />
         )
+      )}
+      {question.type === 'read_aloud' && (
+        <ReadAloudReview body={body} response={response} recordingUrl={recordingUrl} colors={colors} isRTL={isRTL} align={align} t={t} />
       )}
       {isPaperQuestion(question) ? (
         // A paper exam holds no question text and no answer to transcribe —
@@ -868,6 +879,51 @@ function TrueFalseInput({
           );
         })}
       </View>
+    </View>
+  );
+}
+
+/**
+ * A read-aloud answer, for marking. The automatic mark is how many of the
+ * passage's words the transcriber heard, so the teacher gets the passage,
+ * what was heard, and the child's own voice to check it against. Read-only:
+ * the recording is the answer, and only the student can make one.
+ */
+function ReadAloudReview({
+  body, response, recordingUrl, colors, isRTL, align, t,
+}: {
+  body: Record<string, unknown>; response: Response; recordingUrl?: string;
+  colors: ReturnType<typeof useColors>; isRTL: boolean; align: 'left' | 'right'; t: (key: TranslationKey) => string;
+}) {
+  const passage = typeof body['passage'] === 'string' ? body['passage'] : '';
+  const transcript = typeof response['transcript'] === 'string' ? response['transcript'].trim() : '';
+  const recorded = typeof response['audioKey'] === 'string' && response['audioKey'].length > 0;
+  const textStyle = { fontFamily: 'Almarai_400Regular', textAlign: align, writingDirection: align === 'right' ? 'rtl' : 'ltr' } as const;
+
+  return (
+    <View style={{ gap: 8 }}>
+      <Text style={[styles.qText, textStyle, { color: colors.foreground }]}>{isolateForeignRuns(passage)}</Text>
+      {!recorded ? (
+        <Text style={[textStyle, { color: colors.mutedForeground, fontSize: 13 }]}>{t('readAloudNoRecording')}</Text>
+      ) : (
+        <>
+          <Text style={[textStyle, { color: colors.mutedForeground, fontSize: 13 }]}>
+            {t('readAloudHeard')} {transcript ? isolateForeignRuns(transcript) : '—'}
+          </Text>
+          {recordingUrl ? (
+            <Pressable
+              onPress={() => { void playUri(recordingUrl); }}
+              accessibilityRole="button"
+              style={[styles.scanBtn, { paddingHorizontal: 16, borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
+            >
+              <Ionicons name="play-circle-outline" size={18} color={ACCENT} />
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('readAloudListen')}</Text>
+            </Pressable>
+          ) : (
+            <Text style={[textStyle, { color: colors.mutedForeground, fontSize: 12 }]}>{t('readAloudRecordingUnavailable')}</Text>
+          )}
+        </>
+      )}
     </View>
   );
 }

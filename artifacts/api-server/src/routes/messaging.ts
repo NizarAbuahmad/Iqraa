@@ -60,6 +60,7 @@ import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { sendExpoPush, deadTokensFrom } from "../lib/pushNotifications.js";
+import { UUID } from "../lib/adminMetrics.js";
 import { isR2Configured, newChatMediaKey, presignedGetUrl, putObject } from "../lib/r2.js";
 import { syncClassGroupThread } from "../lib/classThread.js";
 import { resolveReport } from "../lib/reportDecision.js";
@@ -1024,6 +1025,11 @@ router.post("/messaging/blocks", async (req: AuthenticatedRequest, res) => {
       res.status(400).json({ error: "blockedUserId is required" });
       return;
     }
+    // A non-uuid reaches Postgres as a cast error and came back a 500.
+    if (!UUID.test(blockedUserId)) {
+      res.status(400).json({ error: "blockedUserId is not a valid id", code: "invalid_input" });
+      return;
+    }
     if (blockedUserId === req.user!.id) {
       res.status(400).json({ error: "Cannot block yourself", code: "invalid_input" });
       return;
@@ -1059,6 +1065,10 @@ router.post("/messaging/blocks", async (req: AuthenticatedRequest, res) => {
 router.delete("/messaging/blocks/:blockedUserId", async (req: AuthenticatedRequest, res) => {
   try {
     const blockedUserId = req.params["blockedUserId"] as string;
+    if (!UUID.test(blockedUserId)) {
+      res.status(400).json({ error: "blockedUserId is not a valid id", code: "invalid_input" });
+      return;
+    }
     await db
       .delete(chatBlocks)
       .where(and(eq(chatBlocks.blockerUserId, req.user!.id), eq(chatBlocks.blockedUserId, blockedUserId)));
@@ -1082,6 +1092,10 @@ router.post("/messaging/reports", async (req: AuthenticatedRequest, res) => {
 
     if (!threadId || !reportedUserId) {
       res.status(400).json({ error: "threadId and reportedUserId are required" });
+      return;
+    }
+    if (![threadId, reportedUserId, ...(messageId ? [messageId] : [])].every(id => UUID.test(id))) {
+      res.status(400).json({ error: "threadId, reportedUserId and messageId must be valid ids", code: "invalid_input" });
       return;
     }
 

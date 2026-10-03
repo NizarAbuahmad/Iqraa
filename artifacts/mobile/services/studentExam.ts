@@ -223,3 +223,17 @@ export async function getMyExams(): Promise<import('./myExams.ts').MyExam[]> {
   const data = await apiJson<{ exams: import('./myExams.ts').MyExam[] }>('/student/exams');
   return data.exams ?? [];
 }
+
+/**
+ * The grades the signed-in student's classes are in, first one first. The
+ * library and the curriculum browser open on it instead of the catalog's
+ * first grade. Never throws: on any failure the screen keeps its old default.
+ */
+export async function getMyGradeIds(): Promise<string[]> {
+  try {
+    const data = await apiJson<{ gradeIds?: string[] }>('/student/grades');
+    return Array.isArray(data.gradeIds) ? data.gradeIds : [];
+  } catch {
+    return [];
+  }
+}

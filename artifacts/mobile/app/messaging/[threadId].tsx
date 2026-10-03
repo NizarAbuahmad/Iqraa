@@ -307,8 +307,10 @@ export default function ThreadScreen() {
   const headerTitle = isGroup ? (lang === 'ar' ? thread?.titleAr : thread?.title) || thread?.title : '';
   const isTeacher = isTeacherRole(user?.role);
   // The server enforces this too (see routes/messaging.ts) — hiding the
-  // composer is the courtesy, not the rule.
-  const canPost = !thread || !isGroup || isTeacher || thread.studentPostingEnabled;
+  // composer is the courtesy, not the rule. Nothing is shown until the thread
+  // has loaded: assuming "can post" meanwhile flashed a composer in every
+  // announcement-only class group before swapping it for the notice.
+  const canPost = !!thread && (!isGroup || isTeacher || thread.studentPostingEnabled);
 
   return (
     <KeyboardAvoidingView
@@ -449,7 +451,7 @@ export default function ThreadScreen() {
         </Text>
       ) : null}
 
-      {!canPost ? (
+      {!thread ? null : !canPost ? (
         <View style={[styles.inputBar, { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 8) }]}>
           <View style={[styles.readOnlyNotice, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="megaphone-outline" size={16} color={colors.mutedForeground} />
