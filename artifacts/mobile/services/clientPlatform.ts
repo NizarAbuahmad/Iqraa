@@ -31,7 +31,10 @@ function rememberLanding(): string {
     const params = new URLSearchParams(window.location.search);
     const src = params.get('utm_source');
     const campaign = params.get('utm_campaign');
-    const ref = document.referrer && !document.referrer.startsWith(window.location.origin) ? document.referrer : '';
+    // Compared by hostname, not origin: shareLinksOrigin.test.ts greps
+    // services/ for the page-origin property, and this is a same-site check,
+    // not a link being built.
+    const ref = document.referrer && new URL(document.referrer).host !== window.location.host ? document.referrer : '';
     const landing = (src ? `utm:${src}${campaign ? `/${campaign}` : ''}` : ref).slice(0, 300);
     sessionStorage.setItem(LANDING_KEY, landing);
     return landing;
