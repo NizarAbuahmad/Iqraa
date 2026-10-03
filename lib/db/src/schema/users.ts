@@ -21,6 +21,13 @@ export const users = pgTable("users", {
    */
   avatarKey: text("avatar_key"),
   emailVerified: boolean("email_verified").notNull().default(false),
+  /** 'android' | 'ios' | 'web' — what the client said at registration
+   *  (X-Iqraa-Platform, see mobile services/clientPlatform.ts). Null for
+   *  accounts created before 2026-10-02. */
+  signupPlatform: text("signup_platform"),
+  /** Web only: the page or ?utm_source that brought the visitor to the app,
+   *  captured on first load of the tab and sent at registration. */
+  signupReferrer: text("signup_referrer"),
   /**
    * Set by a moderator acting on a report — see `routes/moderation.ts`.
    *
