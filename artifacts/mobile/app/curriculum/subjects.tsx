@@ -88,7 +88,7 @@ export default function SubjectsScreen() {
           <Text style={[styles.heroGrade, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('jordanCurriculum')} · {gradeName}
           </Text>
-          <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
             {subjectName}
           </Text>
           <Text style={[styles.heroSub, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -105,7 +105,7 @@ export default function SubjectsScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="calendar-outline" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {t('noSemesters')}
             </Text>
             <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
@@ -160,12 +160,12 @@ export default function SubjectsScreen() {
               ]}
             >
               <View style={[styles.semesterBadge, { backgroundColor: colorFill }]}>
-                <Text style={[styles.semesterBadgeText, { fontFamily: 'Cairo_700Bold' }]}>
+                <Text style={[styles.semesterBadgeText, { fontFamily: 'ReadexPro_700Bold' }]}>
                   {semesterNum ?? '•'}
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.semesterTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[styles.semesterTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
                   {cardTitle}
                 </Text>
                 <Text style={[styles.semesterMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>

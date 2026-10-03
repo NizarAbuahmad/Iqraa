@@ -56,7 +56,7 @@ function SubjectCard({ subject, onPress, isRTL }: { subject: Subject; onPress: (
       <View style={[styles.subjectIcon, { backgroundColor: subject.color + '22', borderRadius: 14 }]}>
         <Ionicons name={SUBJECT_ICONS[subject.id] ?? 'book-outline'} size={26} color={subject.color} />
       </View>
-      <Text style={[styles.subjectName, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }]} numberOfLines={2}>
+      <Text style={[styles.subjectName, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }]} numberOfLines={2}>
         {name}
       </Text>
       <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={14} color={colors.mutedForeground} style={{ marginTop: 4 }} />
@@ -115,7 +115,7 @@ export default function CurriculumBrowseScreen() {
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('curriculumTitle')}
         </Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -176,7 +176,7 @@ export default function CurriculumBrowseScreen() {
                     styles.gradeChipText,
                     {
                       color: isActive ? colors.primaryForeground : colors.mutedForeground,
-                      fontFamily: isActive ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                      fontFamily: isActive ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                     },
                   ]}
                 >
@@ -190,7 +190,7 @@ export default function CurriculumBrowseScreen() {
       ) : (
         <View style={[styles.gradeBar, styles.gradeFixed, { borderBottomColor: colors.border, backgroundColor: colors.card }, isRTL && { flexDirection: 'row-reverse' }]}>
           <View style={[styles.gradeChip, { backgroundColor: colors.primary, borderRadius: 20 }]}>
-            <Text style={[styles.gradeChipText, { color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.gradeChipText, { color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {lang === 'ar' ? selectedGrade.nameAr : selectedGrade.name}
             </Text>
           </View>
@@ -220,7 +220,7 @@ export default function CurriculumBrowseScreen() {
                   }}
                   hitSlop={8}
                 >
-                  <Text style={[styles.gradeLabel, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
+                  <Text style={[styles.gradeLabel, { color: colors.primary, fontFamily: 'ReadexPro_500Medium' }]}>
                     {t('editTeachingTitle')}
                   </Text>
                 </Pressable>
@@ -236,7 +236,7 @@ export default function CurriculumBrowseScreen() {
               >
                 <Text style={{ fontSize: 28 }}>🎧</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 16, textAlign: isRTL ? 'right' : 'left' }}>{t('hubTitle')}</Text>
+                  <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 16, textAlign: isRTL ? 'right' : 'left' }}>{t('hubTitle')}</Text>
                   <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
                     {t('hubListenDesc')} · {t('hubSpell')} · {t('hubMatch')}
                   </Text>
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   backBtn: { padding: 4, marginBottom: 4 },
   title: { fontSize: 28, marginBottom: 4 },
   subtitle: { fontSize: 13, lineHeight: 21, marginBottom: 6 },
-  intro: { fontSize: 12.5, lineHeight: 19, marginBottom: 14 },
+  intro: { fontSize: 13, lineHeight: 19, marginBottom: 14 },
   searchRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
   searchInput: { flex: 1, fontSize: 14, paddingVertical: 0 },
   gradeBar: { borderBottomWidth: 1 },

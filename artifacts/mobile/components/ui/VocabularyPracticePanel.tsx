@@ -77,14 +77,14 @@ function DrillCard({ drill, accent }: { drill: VocabularyDrill; accent: string }
 
       {picked !== null ? (
         <View style={[styles.result, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Text style={{ color: correct ? RIGHT : WRONG, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+          <Text style={{ color: correct ? RIGHT : WRONG, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
             {t(correct ? 'vocabRight' : 'vocabWrong')}
           </Text>
           {/* The pronunciation is the part of the Word List a student cannot get
               from the sentence, so it is shown once the answer is settled. */}
           <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>{drill.ipa}</Text>
           <Pressable onPress={() => setPicked(null)} style={{ marginInlineStart: 'auto' }}>
-            <Text style={{ color: accent, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+            <Text style={{ color: accent, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
               {t('practiceTryAgain')}
             </Text>
           </Pressable>
@@ -107,11 +107,11 @@ export function VocabularyPracticePanel({ lessonId, accent }: { lessonId: string
     <View style={styles.section}>
       <View style={[styles.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name="book-outline" size={16} color={accent} />
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
           {t('vocabTitle')}
         </Text>
         <View style={[styles.countPill, { backgroundColor: accent + '15' }]}>
-          <Text style={[styles.countText, { color: accent, fontFamily: 'Cairo_600SemiBold' }]}>
+          <Text style={[styles.countText, { color: accent, fontFamily: 'ReadexPro_600SemiBold' }]}>
             {t('vocabWordCount', words.length)}
           </Text>
         </View>
@@ -134,7 +134,7 @@ export function VocabularyPracticePanel({ lessonId, accent }: { lessonId: string
             size={14}
             color={colors.mutedForeground}
           />
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
             {t(showList ? 'vocabHideList' : 'vocabShowList')}
           </Text>
         </Pressable>
@@ -146,7 +146,7 @@ export function VocabularyPracticePanel({ lessonId, accent }: { lessonId: string
                   {w.word}
                   {w.pos ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{`  (${w.pos})`}</Text> : null}
                 </Text>
-                <Text style={{ color: colors.mutedForeground, fontSize: 12.5 }}>{w.ipa}</Text>
+                <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>{w.ipa}</Text>
               </View>
             ))}
           </View>
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', gap: 8, paddingHorizontal: 20 },
   title: { fontSize: 15 },
   countPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-  countText: { fontSize: 11.5 },
+  countText: { fontSize: 12 },
   intro: { fontSize: 12, lineHeight: 20, paddingHorizontal: 20, fontFamily: 'Almarai_400Regular' },
   card: { borderWidth: 1, borderRadius: 14, padding: 16, gap: 12 },
   kind: { fontSize: 11, lineHeight: 18, fontFamily: 'Almarai_400Regular' },

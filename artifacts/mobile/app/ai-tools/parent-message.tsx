@@ -40,6 +40,7 @@ import {
 } from '@/services/parentMessage';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
+import { dateLocale } from '@/services/dateLabels';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -56,7 +57,7 @@ function Field({ label, children, colors, isRTL }: {
   return (
     <View style={{ marginBottom: 16 }}>
       <Text style={[styles.label, {
-        color: colors.foreground, fontFamily: 'Cairo_500Medium',
+        color: colors.foreground, fontFamily: 'ReadexPro_500Medium',
         textAlign: isRTL ? 'right' : 'left',
       }]}>
         {label}
@@ -86,7 +87,7 @@ function Segmented<T extends string>({ options, value, onChange, colors, isRTL }
           >
             <Text style={[styles.pillText, {
               color: active ? palette.primaryForeground : colors.mutedForeground,
-              fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+              fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
             }]}>
               {o.label}
             </Text>
@@ -464,7 +465,7 @@ export default function ParentMessageScreen() {
               hitSlop={6}
             >
               <Ionicons name="people-outline" size={15} color={ACCENT} />
-              <Text style={[styles.pickLinkText, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>
+              <Text style={[styles.pickLinkText, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>
                 {t('pickFromMyClasses')}
               </Text>
             </Pressable>
@@ -472,7 +473,7 @@ export default function ParentMessageScreen() {
               <View style={[styles.history, { backgroundColor: ACCENT + '10', borderRadius: colors.radius }]}>
                 <Text style={[styles.historyText, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }]}>
                   {summary.last
-                    ? `${t('parentMsgHistoryLast')} ${kindEmoji(summary.last.kind)} ${kindLabel(summary.last.kind, isAr)} · ${new Date(summary.last.createdAt).toLocaleDateString(isAr ? 'ar-JO' : 'en-GB', { day: 'numeric', month: 'short' })}${
+                    ? `${t('parentMsgHistoryLast')} ${kindEmoji(summary.last.kind)} ${kindLabel(summary.last.kind, isAr)} · ${new Date(summary.last.createdAt).toLocaleDateString(dateLocale(isAr ? 'ar' : 'en'), { day: 'numeric', month: 'short' })}${
                       // Only in-app letters can be tracked; shared/copied ones carry read: null.
                       summary.last.read == null ? '' : ` · ${t(summary.last.read ? 'parentMsgHistoryRead' : 'parentMsgHistoryUnread')}`}`
                     : t('parentMsgHistoryNone')}
@@ -519,7 +520,7 @@ export default function ParentMessageScreen() {
                     <Text style={{ fontSize: 13 }}>{kindEmoji(k)}</Text>
                     <Text style={[styles.pillText, {
                       color: active ? palette.primaryForeground : colors.mutedForeground,
-                      fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                      fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                       marginHorizontal: 5,
                     }]}>
                       {kindLabel(k, isAr)}
@@ -602,7 +603,7 @@ export default function ParentMessageScreen() {
 
         {/* Preview */}
         <View style={{ paddingHorizontal: 20 }}>
-          <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('parentMsgPreview')}
           </Text>
           <View style={[styles.preview, {
@@ -644,7 +645,7 @@ export default function ParentMessageScreen() {
               </Text>
               {letter.edited ? (
                 <Pressable onPress={() => { setEdit(null); Haptics.selectionAsync(); }} hitSlop={6}>
-                  <Text style={[styles.pickLinkText, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>
+                  <Text style={[styles.pickLinkText, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>
                     {t('parentMsgRestore')}
                   </Text>
                 </Pressable>
@@ -665,7 +666,7 @@ export default function ParentMessageScreen() {
                   ? <Image source={{ uri: attachment }} style={styles.attachThumb} resizeMode="cover" />
                   : <Ionicons name="document-text-outline" size={22} color={ACCENT} />}
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
+                  <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
                     {t(attachmentKind(attachment) === 'image' ? 'parentMsgAttachedPhoto' : 'parentMsgAttachedPdf')}
                   </Text>
                   <Text style={[styles.historyText, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>
@@ -679,7 +680,7 @@ export default function ParentMessageScreen() {
             ) : (
               <View style={[styles.attachRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Ionicons name="attach-outline" size={16} color={colors.mutedForeground} />
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{t('parentMsgAttach')}</Text>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('parentMsgAttach')}</Text>
                 {([['image-outline', 'parentMsgAttachPhoto', pickChatImage], ['document-outline', 'parentMsgAttachPdf', pickOnePdf]] as const).map(([icon, label, pick]) => (
                   <Pressable
                     key={label}
@@ -724,7 +725,7 @@ export default function ParentMessageScreen() {
             {sending
               ? <ActivityIndicator size="small" color="#fff" />
               : <Ionicons name="paper-plane-outline" size={18} color="#fff" />}
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 14 }}>{t('parentMsgSendInApp')}</Text>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>{t('parentMsgSendInApp')}</Text>
           </Pressable>
 
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10, marginTop: 10 }}>
@@ -739,7 +740,7 @@ export default function ParentMessageScreen() {
               }]}
             >
               <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('parentMsgShare')}</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('parentMsgShare')}</Text>
             </Pressable>
             <Pressable
               onPress={onCopy}
@@ -751,7 +752,7 @@ export default function ParentMessageScreen() {
               }]}
             >
               <Ionicons name="copy-outline" size={16} color={colors.mutedForeground} />
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('copy')}</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('copy')}</Text>
             </Pressable>
           </View>
         </View>

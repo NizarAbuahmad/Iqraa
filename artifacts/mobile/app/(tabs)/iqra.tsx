@@ -42,6 +42,7 @@ import {
   searchKBSemantic,
 } from '@/services/knowledgeBase';
 import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
+import { AR_LATIN } from '@/services/dateLabels';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { loadLessonPick, loadPrepSkips, saveLessonPick, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
 import {
@@ -515,7 +516,7 @@ function ContextBanner({
               numberOfLines={1}
               style={[ctxStyles.pillText, {
                 color: topic ? colors.primary : colors.mutedForeground,
-                fontFamily: topic ? 'Cairo_500Medium' : 'Almarai_400Regular',
+                fontFamily: topic ? 'ReadexPro_500Medium' : 'Almarai_400Regular',
                 textAlign: isRTL ? 'right' : 'left',
                 flex: 1,
               }]}
@@ -548,7 +549,7 @@ function ContextBanner({
                 {t('cancel')}
               </Text>
             </Pressable>
-            <Text style={[ctxStyles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
+            <Text style={[ctxStyles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold' }]}>
               {t('setTeachingContext')}
             </Text>
             <View style={{ width: 60 }} />
@@ -564,7 +565,7 @@ function ContextBanner({
             {/* Grade pills — only worth showing once there is a real choice. */}
             {CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).length > 1 ? (
               <>
-                <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                   {t('grade')}
                 </Text>
                 <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -587,7 +588,7 @@ function ContextBanner({
                     >
                       <Text style={[ctxStyles.subjText, {
                         color: draftGradeId === g.id ? colors.primaryForeground : colors.mutedForeground,
-                        fontFamily: draftGradeId === g.id ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                        fontFamily: draftGradeId === g.id ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                       }]}>
                         {lang === 'ar' ? g.nameAr : g.name}
                       </Text>
@@ -598,7 +599,7 @@ function ContextBanner({
             ) : null}
 
             {/* Subject pills */}
-            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).length > 1 ? 18 : 0 }]}>
+            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).length > 1 ? 18 : 0 }]}>
               {t('subject')}
             </Text>
             <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -617,7 +618,7 @@ function ContextBanner({
                 >
                   <Text style={[ctxStyles.subjText, {
                     color: draftSubjIdx === i ? colors.primaryForeground : colors.mutedForeground,
-                    fontFamily: draftSubjIdx === i ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                    fontFamily: draftSubjIdx === i ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                   }]}>
                     {subjectNames[i]}
                   </Text>
@@ -663,7 +664,7 @@ function ContextBanner({
               <Ionicons name="chatbubble-ellipses-outline" size={18} color={draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground} />
               <Text style={[ctxStyles.askBtnText, {
                 color: draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground,
-                fontFamily: 'Cairo_700Bold',
+                fontFamily: 'ReadexPro_700Bold',
               }]}>
                 {draftTopic.trim()
                   ? (lang === 'ar' ? `ابدأ التحضير: ${draftTopic}` : `Ask Iqrra about: ${draftTopic}`)
@@ -802,7 +803,7 @@ const prepStyles = StyleSheet.create({
     gap: 2,
   },
   heading: {
-    fontFamily: 'Cairo_600SemiBold',
+    fontFamily: 'ReadexPro_600SemiBold',
     fontSize: 12,
     marginBottom: 2,
   },
@@ -812,13 +813,13 @@ const prepStyles = StyleSheet.create({
     lineHeight: 18,
   },
   recommend: {
-    fontFamily: 'Cairo_500Medium',
+    fontFamily: 'ReadexPro_500Medium',
     fontSize: 12,
     lineHeight: 18,
     marginTop: 8,
   },
   readyText: {
-    fontFamily: 'Cairo_700Bold',
+    fontFamily: 'ReadexPro_700Bold',
     fontSize: 13,
     color: '#047857',
     lineHeight: 20,
@@ -887,7 +888,7 @@ function MessageBubble({
   t: (k: any, ...a: any[]) => string;
 }) {
   const isUser = message.role === 'user';
-  const timeLabel = message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const timeLabel = message.timestamp.toLocaleTimeString(isRTL ? AR_LATIN : undefined, { hour: '2-digit', minute: '2-digit' });
   // Only the intro reads this: at 64px with 14px copy it sat in a desktop
   // window like a phone screenshot dropped into the middle of the page.
   const isWide = useViewportWidth() >= DESKTOP_BREAKPOINT;
@@ -912,7 +913,7 @@ function MessageBubble({
                   />
                   <Text
                     numberOfLines={1}
-                    style={{ color: colors.primaryForeground, fontFamily: 'Cairo_500Medium', fontSize: 12, maxWidth: 180 }}
+                    style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12, maxWidth: 180 }}
                   >
                     {a.name}
                   </Text>
@@ -957,7 +958,7 @@ function MessageBubble({
             styles.introCompactText,
             {
               color: colors.foreground,
-              fontFamily: 'Cairo_600SemiBold',
+              fontFamily: 'ReadexPro_600SemiBold',
               textAlign: isRTL ? 'right' : 'left',
               writingDirection: isRTL ? 'rtl' : 'ltr',
             },
@@ -975,7 +976,7 @@ function MessageBubble({
     return (
       <View style={[styles.intro, isWide && styles.introWide]}>
         <IqraaMark size={isWide ? 84 : 64} tone="soft" />
-        <Text style={[styles.introName, isWide && styles.introNameWide, { color: colors.primary, fontFamily: 'Cairo_700Bold' }]}>
+        <Text style={[styles.introName, isWide && styles.introNameWide, { color: colors.primary, fontFamily: 'ReadexPro_700Bold' }]}>
           {introName}
         </Text>
         <Text
@@ -1165,7 +1166,7 @@ function MessageBubble({
                   <Text style={[styles.bubbleText, { color: colors.foreground, flex: 1, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
                     {parts.map((p, pi) =>
                       pi % 2 === 1
-                        ? <Text key={pi} style={{ fontFamily: 'Cairo_600SemiBold' }}>{isolateForeignRuns(p)}</Text>
+                        ? <Text key={pi} style={{ fontFamily: 'ReadexPro_600SemiBold' }}>{isolateForeignRuns(p)}</Text>
                         : isolateForeignRuns(p)
                     )}
                   </Text>
@@ -1240,7 +1241,7 @@ function MessageBubble({
                     },
                   ]}
                 >
-                  <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }]}>
+                  <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }]}>
                     {label}
                   </Text>
                 </Pressable>
@@ -1265,7 +1266,7 @@ function MessageBubble({
                   },
                 ]}
               >
-                <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }]}>
+                <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }]}>
                   {candidate.title}
                 </Text>
               </Pressable>
@@ -1295,7 +1296,7 @@ function MessageBubble({
                   },
                 ]}
               >
-                <Text style={[styles.suggestionChipText, { color: colors.primaryForeground || '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 }]}>
+                <Text style={[styles.suggestionChipText, { color: colors.primaryForeground || '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }]}>
                   {place.label}
                 </Text>
                 <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={14} color={colors.primaryForeground || '#fff'} />
@@ -1320,7 +1321,7 @@ function MessageBubble({
                   },
                 ]}
               >
-                <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }]}>
+                <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }]}>
                   {isRTL ? option.labelAr : option.labelEn}
                 </Text>
               </Pressable>
@@ -3163,7 +3164,7 @@ export default function IqraScreen() {
               style={[
                 styles.chipText,
                 variant === 'intro' && isDesktop && styles.chipTextWide,
-                { color: colors.primary, fontFamily: 'Cairo_500Medium' },
+                { color: colors.primary, fontFamily: 'ReadexPro_500Medium' },
               ]}
             >
               {item.label}
@@ -3210,7 +3211,7 @@ export default function IqraScreen() {
             }}
           >
             <Ionicons name="time-outline" size={13} color={colors.primary} />
-            <Text style={{ fontSize: 12.5, fontFamily: 'Cairo_600SemiBold', color: colors.primary }}>{periodLine}</Text>
+            <Text style={{ fontSize: 13, fontFamily: 'ReadexPro_600SemiBold', color: colors.primary }}>{periodLine}</Text>
           </View>
         ) : null}
         <LessonPrepBoard
@@ -3613,7 +3614,7 @@ export default function IqraScreen() {
                 },
               ]}
             >
-              <Text style={{ fontFamily: 'Cairo_500Medium', fontSize: 12, color: colors.foreground }}>
+              <Text style={{ fontFamily: 'ReadexPro_500Medium', fontSize: 12, color: colors.foreground }}>
                 {suggestion.label}
               </Text>
             </Pressable>
@@ -3899,7 +3900,7 @@ const styles = StyleSheet.create({
   // aligned to the start edge of the same column the thread uses.
   deskHeader: { alignItems: 'center', paddingHorizontal: 16, paddingBottom: 2 },
   lessonSlotWide: { paddingHorizontal: 16, paddingTop: 10 },
-  brandWord: { fontFamily: 'Cairo_700Bold', fontSize: 19 },
+  brandWord: { fontFamily: 'ReadexPro_700Bold', fontSize: 19 },
   chip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   chipWide: { paddingHorizontal: 18, paddingVertical: 12, borderRadius: 14 },
   chipText: { fontSize: 12 },
@@ -3944,7 +3945,7 @@ const styles = StyleSheet.create({
   introChipsWide: { gap: 10, marginTop: 16 },
   composerChips: { gap: 8 },
   bubbleAssistant: { padding: 14, borderWidth: 1 },
-  bubbleBold: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 2 },
+  bubbleBold: { fontSize: 14, fontFamily: 'ReadexPro_600SemiBold', marginBottom: 2 },
   bubbleText: { fontSize: 13, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
   bulletRow: { flexDirection: 'row', alignItems: 'flex-start', marginVertical: 1 },
   sourceText: { fontSize: 11, lineHeight: 18, marginTop: 6, fontFamily: 'Almarai_400Regular', fontStyle: 'italic' },
@@ -3952,7 +3953,7 @@ const styles = StyleSheet.create({
 
   msgActions: { alignItems: 'center', flexWrap: 'wrap', columnGap: 14, rowGap: 8, marginTop: 6, paddingHorizontal: 4 },
   msgActionBtn: { alignItems: 'center', gap: 4 },
-  msgActionText: { fontSize: 11, fontFamily: 'Cairo_500Medium' },
+  msgActionText: { fontSize: 11, fontFamily: 'ReadexPro_500Medium' },
   suggestionChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
   suggestionChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 14, borderWidth: 1 },
   suggestionChipText: { fontSize: 12 },

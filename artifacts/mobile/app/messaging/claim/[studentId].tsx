@@ -15,8 +15,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { generateClaimCode, getClaimCode, unlinkAccount, RosterError } from '@/services/roster';
-import { MessagingError, getTeacherContacts, startThread, type ChatRole } from '@/services/messaging';
+import { generateClaimCode, getClaimCode, unlinkAccount } from '@/services/roster';
+import { getTeacherContacts, startThread, type ChatRole } from '@/services/messaging';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 import { copyToClipboard, shareAsText } from '@/services/share.ts';
 import { composeClaimCodeMessage } from '@/services/claimCodeMessage.ts';
 import { PROD_ORIGIN } from '@/services/siteOrigin.ts';
@@ -25,6 +26,7 @@ import { useStudentAccountsEnabled } from '@/services/features';
 import { Avatar } from '@/components/ui/Avatar';
 import { Toast } from '@/components/ui/Toast';
 import { goBack } from '@/services/navigation';
+import { AR_LATIN } from '@/services/dateLabels';
 
 interface Guardian {
   userId: string;
@@ -87,11 +89,7 @@ export default function ClaimCodeScreen() {
   });
   const code = data?.code ?? null;
   const guardians = data?.guardians ?? [];
-  const loadError = loadFailed
-    ? loadErrorRaw instanceof RosterError || loadErrorRaw instanceof MessagingError
-      ? loadErrorRaw.message
-      : t('messagingLoadError')
-    : '';
+  const loadError = loadFailed ? apiErrorMessage(loadErrorRaw, 'messagingLoadError', t) : '';
 
   const handleGenerate = async () => {
     if (!studentId) return;
@@ -117,7 +115,7 @@ export default function ClaimCodeScreen() {
       }));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
-      setError(e instanceof RosterError ? e.message : t('messagingLoadError'));
+      setError(apiErrorMessage(e, 'messagingLoadError', t));
     } finally {
       setGenerating(false);
     }
@@ -163,7 +161,7 @@ export default function ClaimCodeScreen() {
         prev ? { ...prev, guardians: prev.guardians.filter(g => g.userId !== guardian.userId) } : prev,
       );
     } catch (e) {
-      setError(e instanceof RosterError ? e.message : t('messagingLoadError'));
+      setError(apiErrorMessage(e, 'messagingLoadError', t));
     } finally {
       setUnlinkingUserId(null);
     }
@@ -175,7 +173,7 @@ export default function ClaimCodeScreen() {
       const thread = await startThread(userId);
       router.push(`/messaging/${thread.id}`);
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingSendError'));
+      setError(apiErrorMessage(e, 'messagingSendError', t));
     } finally {
       setStartingUserId(null);
     }
@@ -183,7 +181,7 @@ export default function ClaimCodeScreen() {
 
   const topPad = insets.top + (insets.top === 0 ? 12 : 0);
   const align = isRTL ? 'right' : 'left';
-  const expiresLabel = code ? new Date(code.expiresAt).toLocaleDateString() : '';
+  const expiresLabel = code ? new Date(code.expiresAt).toLocaleDateString(lang === 'ar' ? AR_LATIN : undefined) : '';
   // An action error (generate/unlink/message) takes priority over a stale
   // load error — it's the more recent thing the teacher is looking at.
   const displayError = error || loadError;
@@ -194,7 +192,7 @@ export default function ClaimCodeScreen() {
         <Pressable onPress={() => goBack()} hitSlop={10}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]} numberOfLines={1}>
+        <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]} numberOfLines={1}>
           {studentName ?? ''}
         </Text>
       </View>
@@ -206,7 +204,7 @@ export default function ClaimCodeScreen() {
              back-stack. Explain rather than offer a button that would 403.
              The server refusal is the boundary; this is only courtesy. */
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-            <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+            <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('messagingStudentAccountsOffTitle')}
             </Text>
             <Text style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -215,7 +213,7 @@ export default function ClaimCodeScreen() {
           </View>
         ) : (
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
             {t('messagingClaimCodeTitle')}
           </Text>
           <Text style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -227,7 +225,7 @@ export default function ClaimCodeScreen() {
           {!loading && code ? (
             <>
               <View style={[styles.codeRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Text style={[styles.codeText, { color: colors.primary, fontFamily: 'Cairo_700Bold' }]}>{code.value}</Text>
+                <Text style={[styles.codeText, { color: colors.primary, fontFamily: 'ReadexPro_700Bold' }]}>{code.value}</Text>
                 <Pressable onPress={handleCopy} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('messagingCopyCode')}>
                   <Ionicons name="copy-outline" size={20} color={colors.mutedForeground} />
                 </Pressable>
@@ -252,7 +250,7 @@ export default function ClaimCodeScreen() {
               onPress={handleShare}
               style={[styles.generateBtn, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
             >
-              <Text style={{ color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+              <Text style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
                 {t('messagingShareCode')}
               </Text>
             </Pressable>
@@ -275,7 +273,7 @@ export default function ClaimCodeScreen() {
                   style={
                     code
                       ? { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }
-                      : { color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }
+                      : { color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }
                   }
                 >
                   {code ? t('messagingRegenerateCode') : t('messagingCreateCode')}
@@ -289,7 +287,7 @@ export default function ClaimCodeScreen() {
         {/* Suppressed with the rest: "linked accounts — none yet" implies an
             account could turn up, when nothing in this build can create one. */}
         <View style={studentAccounts ? undefined : { display: 'none' }}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
             {t('messagingGuardiansTitle')}
           </Text>
           {loading ? (
@@ -307,7 +305,7 @@ export default function ClaimCodeScreen() {
                 >
                   <Avatar firstName={g.firstName} lastName={g.lastName} size={36} colors={colors} />
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.guardianName, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]} numberOfLines={1}>
+                    <Text style={[styles.guardianName, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]} numberOfLines={1}>
                       {g.firstName} {g.lastName}
                     </Text>
                     <Text style={[styles.guardianRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -322,7 +320,7 @@ export default function ClaimCodeScreen() {
                     {startingUserId === g.userId ? (
                       <ActivityIndicator color={colors.primary} size="small" />
                     ) : (
-                      <Text style={{ color: colors.primary, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>
+                      <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>
                         {t('messagingMessageAction')}
                       </Text>
                     )}

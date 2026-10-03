@@ -17,7 +17,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
-  MessagingError,
   getMyContacts,
   getTeacherContacts,
   listThreads,
@@ -25,6 +24,7 @@ import {
   type ChatThreadSummary,
   type ChatRole,
 } from '@/services/messaging';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 import { chatRoleLabel } from '@/services/chatRoleLabel';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
@@ -102,7 +102,7 @@ export default function NotificationsScreen() {
       setContacts(myContacts);
       setError('');
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingLoadError'));
+      setError(apiErrorMessage(e, 'messagingLoadError', t));
     } finally {
       setLoading(false);
     }
@@ -119,7 +119,7 @@ export default function NotificationsScreen() {
       setNewChatOpen(false);
       router.push(`/messaging/${thread.id}`);
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingSendError'));
+      setError(apiErrorMessage(e, 'messagingSendError', t));
     } finally {
       setStartingUserId(null);
     }
@@ -136,7 +136,7 @@ export default function NotificationsScreen() {
       // account, not people on the roster, and "none yet" needs to say so.
       ListEmptyComponent={
         <View style={{ paddingVertical: 20, gap: 6 }}>
-          <Text style={[styles.threadName, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
+          <Text style={[styles.threadName, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }]}>
             {t('messagingNoContactsTitle')}
           </Text>
           <Text style={[styles.threadPreview, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center', lineHeight: 20 }]}>
@@ -153,7 +153,7 @@ export default function NotificationsScreen() {
         >
           <Avatar firstName={item.firstName} lastName={item.lastName} size={40} colors={colors} />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.threadName, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]} numberOfLines={1}>
+            <Text style={[styles.threadName, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]} numberOfLines={1}>
               {item.firstName} {item.lastName}
             </Text>
             <Text style={[styles.threadPreview, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]} numberOfLines={1}>
@@ -168,7 +168,7 @@ export default function NotificationsScreen() {
             {startingUserId === item.userId ? (
               <ActivityIndicator color={colors.primaryForeground} size="small" />
             ) : (
-              <Text style={{ color: colors.primaryForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+              <Text style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                 {t('messagingStartConversation')}
               </Text>
             )}
@@ -192,7 +192,7 @@ export default function NotificationsScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'flex-end' }]}>
         <View style={{ alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
-          <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+          <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
             {t('notificationsTitle')}
           </Text>
           {unreadCount > 0 && (
@@ -251,7 +251,7 @@ export default function NotificationsScreen() {
                 accessibilityState={{ selected: active }}
                 style={[styles.filterChip, { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border }]}
               >
-                <Text style={{ fontSize: 13, fontFamily: 'Cairo_600SemiBold', color: active ? colors.primaryForeground : colors.mutedForeground }}>
+                <Text style={{ fontSize: 13, fontFamily: 'ReadexPro_600SemiBold', color: active ? colors.primaryForeground : colors.mutedForeground }}>
                   {filterLabel[f]}
                 </Text>
               </Pressable>
@@ -301,7 +301,7 @@ export default function NotificationsScreen() {
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
                     <Text
-                      style={[styles.threadName, { color: colors.foreground, fontFamily: item.unreadCount > 0 ? 'Cairo_600SemiBold' : 'Cairo_500Medium', textAlign: align, flex: 1 }]}
+                      style={[styles.threadName, { color: colors.foreground, fontFamily: item.unreadCount > 0 ? 'ReadexPro_600SemiBold' : 'ReadexPro_500Medium', textAlign: align, flex: 1 }]}
                       numberOfLines={1}
                     >
                       {name}
@@ -337,7 +337,7 @@ export default function NotificationsScreen() {
                 </View>
                 {item.unreadCount > 0 && (
                   <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-                    <Text style={{ color: '#fff', fontSize: 11, fontFamily: 'Cairo_600SemiBold', lineHeight: 16 }}>
+                    <Text style={{ color: '#fff', fontSize: 11, fontFamily: 'ReadexPro_600SemiBold', lineHeight: 16 }}>
                       {item.unreadCount > 9 ? '9+' : String(item.unreadCount)}
                     </Text>
                   </View>
@@ -371,7 +371,7 @@ export default function NotificationsScreen() {
         <Pressable style={styles.newChatBackdrop} onPress={() => setNewChatOpen(false)}>
           <Pressable style={[styles.newChatSheet, { backgroundColor: colors.background }]} onPress={e => e.stopPropagation()}>
             <View style={[styles.newChatHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Text style={[styles.title, { fontSize: 18, color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text style={[styles.title, { fontSize: 18, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('messagingStartConversation')}
               </Text>
               <Pressable onPress={() => setNewChatOpen(false)} hitSlop={10}>
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
   unreadCount: { fontSize: 13, lineHeight: 21, marginTop: 2 },
   headerAction: { alignItems: 'center', gap: 4 },
   headerActionPrimary: { alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  headerActionText: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
+  headerActionText: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
   filterRow: { gap: 8, paddingHorizontal: 16, paddingTop: 12 },
   filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   threadPreview: { fontSize: 13, lineHeight: 21 },
   badge: { minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   empty: { alignItems: 'center', paddingTop: 60, paddingBottom: 24, paddingHorizontal: 32, gap: 8 },
-  emptyText: { fontSize: 15, fontFamily: 'Cairo_500Medium' as any },
+  emptyText: { fontSize: 15, fontFamily: 'ReadexPro_500Medium' as any },
   emptyDesc: { fontSize: 13, lineHeight: 21, textAlign: 'center' },
   contactCard: { padding: 12, gap: 12, borderWidth: 1, alignItems: 'center' },
   messageBtn: { paddingHorizontal: 14, paddingVertical: 8, minWidth: 72, alignItems: 'center' },

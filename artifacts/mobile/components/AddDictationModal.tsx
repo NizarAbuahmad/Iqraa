@@ -216,7 +216,7 @@ export function AddDictationModal({
       <View style={styles.backdrop}>
         <View style={[styles.sheet, { backgroundColor: colors.background }]}>
           <View style={[styles.header, { flexDirection: isRTL ? 'row-reverse' : 'row', borderColor: colors.border }]}>
-            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 17 }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17 }}>
               {t('dictationAddTitle')}
             </Text>
             <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('close')}>
@@ -459,12 +459,12 @@ export function AddDictationModal({
               {busy ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <ActivityIndicator color="#fff" size="small" />
-                  <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+                  <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
                     {t('dictationAddProgress', String(progress), String(items.length))}
                   </Text>
                 </View>
               ) : (
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
                   {t('dictationAddBtn', String(items.length))}
                 </Text>
               )}
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
   },
-  label: { fontFamily: 'Cairo_600SemiBold', fontSize: 14 },
+  label: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 },
   hint: { fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 20 },
   wordsInput: {
     borderWidth: 1,

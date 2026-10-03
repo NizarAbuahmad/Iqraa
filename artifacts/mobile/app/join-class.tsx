@@ -68,7 +68,7 @@ export default function JoinClassScreen() {
         <View style={[styles.successIcon, { backgroundColor: colors.primary + '18' }]}>
           <Ionicons name="checkmark-circle" size={48} color={colors.primary} />
         </View>
-        <Text style={[styles.successTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: 'center' }]}>
+        <Text style={[styles.successTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: 'center' }]}>
           {t('joinAnotherClassSuccess')}
         </Text>
         <Button label={t('joinAnotherClassDone')} onPress={() => goBack()} fullWidth style={{ marginTop: 24 }} />
@@ -93,7 +93,7 @@ export default function JoinClassScreen() {
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('joinAnotherClass')}
         </Text>
       </View>

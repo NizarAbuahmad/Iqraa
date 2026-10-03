@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  barTopic: { fontFamily: 'Cairo_700Bold', fontSize: 15, lineHeight: 21 },
+  barTopic: { fontFamily: 'ReadexPro_700Bold', fontSize: 15, lineHeight: 21 },
   card: {
     borderWidth: 1,
     padding: 12,
@@ -164,8 +164,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   cardHeader: { alignItems: 'center', gap: 6 },
-  cardLabel: { fontFamily: 'Cairo_600SemiBold', fontSize: 11 },
-  cardTopic: { fontFamily: 'Cairo_700Bold', fontSize: 15, lineHeight: 22 },
+  cardLabel: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 },
+  cardTopic: { fontFamily: 'ReadexPro_700Bold', fontSize: 15, lineHeight: 22 },
   meta: { fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 },
   changeBtn: {
     alignItems: 'center',
@@ -177,5 +177,5 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     marginTop: 2,
   },
-  changeBtnText: { fontFamily: 'Cairo_600SemiBold', fontSize: 12 },
+  changeBtnText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 },
 });

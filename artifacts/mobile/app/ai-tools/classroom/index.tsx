@@ -98,7 +98,7 @@ export default function ClassroomHubScreen() {
                 onPress={() => { setFilter(f.key); Haptics.selectionAsync(); }}
                 style={[styles.chip, { backgroundColor: active ? ACCENT : colors.muted, borderColor: active ? ACCENT : colors.border }]}
               >
-                <Text style={[styles.chipText, { color: active ? palette.primaryForeground : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
+                <Text style={[styles.chipText, { color: active ? palette.primaryForeground : colors.mutedForeground, fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular' }]}>
                   {t(f.labelKey as any)}
                 </Text>
               </Pressable>
@@ -111,7 +111,7 @@ export default function ClassroomHubScreen() {
           <View style={styles.section}>
             <View style={[styles.sectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="star" size={14} color="#B54708" />
-              <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
+              <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold' }]}>
                 {t('marketplaceFeatured' as any)}
               </Text>
             </View>
@@ -125,7 +125,7 @@ export default function ClassroomHubScreen() {
               <View style={[styles.featuredTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Text style={styles.featuredEmoji}>{featured.emoji}</Text>
                 <View style={{ flex: 1, marginHorizontal: 16 }}>
-                  <Text style={[styles.featuredTitle, { fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+                  <Text style={[styles.featuredTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
                     {t(featured.titleKey as any)}
                   </Text>
                   <Text style={[styles.featuredDesc, { fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -147,7 +147,7 @@ export default function ClassroomHubScreen() {
 
         {/* ── All Activities ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Cairo_700Bold', marginBottom: 12 }]}>
+          <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', marginBottom: 12 }]}>
             {filter === 'all' && !query.trim()
               ? t('marketplaceActivities' as any)
               : lang === 'ar' ? arCountPhrase(filtered.length, 'نشاط', 'نشاطان', 'أنشطة') : `${filtered.length} ${filtered.length === 1 ? 'activity' : 'activities'}`}
@@ -174,7 +174,7 @@ export default function ClassroomHubScreen() {
                   {/* New badge */}
                   {card.isNew && (
                     <View style={[styles.newBadge, { backgroundColor: readableOn(card.accentColor, '#FFFFFF') }]}>
-                      <Text style={[styles.newBadgeText, { fontFamily: 'Cairo_600SemiBold' }]}>
+                      <Text style={[styles.newBadgeText, { fontFamily: 'ReadexPro_600SemiBold' }]}>
                         {t('marketplaceNew' as any)}
                       </Text>
                     </View>
@@ -185,7 +185,7 @@ export default function ClassroomHubScreen() {
                       <Text style={{ fontSize: 26 }}>{card.emoji}</Text>
                     </View>
                     <View style={{ flex: 1, marginHorizontal: 14 }}>
-                      <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+                      <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
                         {t(card.titleKey as any)}
                       </Text>
                       <Text style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
@@ -214,7 +214,7 @@ function MetaPill({ icon, label, color }: { icon: keyof typeof Ionicons.glyphMap
   return (
     <View style={styles.metaPill}>
       <Ionicons name={icon} size={11} color={color} />
-      <Text style={[styles.metaPillText, { color, fontFamily: 'Cairo_500Medium' }]}>{label}</Text>
+      <Text style={[styles.metaPillText, { color, fontFamily: 'ReadexPro_500Medium' }]}>{label}</Text>
     </View>
   );
 }
@@ -223,7 +223,7 @@ function FeaturedPill({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; l
   return (
     <View style={styles.metaPill}>
       <Ionicons name={icon} size={11} color="rgba(255,255,255,0.8)" />
-      <Text style={[styles.metaPillText, { color: 'rgba(255,255,255,0.9)', fontFamily: 'Cairo_500Medium' }]}>{label}</Text>
+      <Text style={[styles.metaPillText, { color: 'rgba(255,255,255,0.9)', fontFamily: 'ReadexPro_500Medium' }]}>{label}</Text>
     </View>
   );
 }

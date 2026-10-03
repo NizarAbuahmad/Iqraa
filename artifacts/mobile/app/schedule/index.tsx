@@ -103,7 +103,7 @@ function Chip({ label, active, onPress, icon, colors }: {
       }}
     >
       {icon ? <Ionicons name={icon} size={15} color={active ? ACCENT : colors.mutedForeground} /> : null}
-      <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular', fontSize: 13 }}>
+      <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular', fontSize: 13 }}>
         {label}
       </Text>
     </Pressable>
@@ -142,7 +142,7 @@ function TimeField({ hours, minutes, onHours, onMinutes, colors }: {
         selectTextOnFocus
         style={box}
       />
-      <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 14 }}>:</Text>
+      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>:</Text>
       <TextInput
         ref={minutesRef}
         value={minutes}
@@ -184,7 +184,7 @@ function PeriodRow({ period, isNew, onSave, onDelete, isRTL, colors, t }: {
 
   return (
     <View style={{ gap: 6, paddingBottom: 10, borderBottomWidth: isNew ? 0 : 1, borderBottomColor: colors.border }}>
-      <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
+      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
         {t('schedulePeriodNumber', period.periodNumber)}
       </Text>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'center' }}>
@@ -235,10 +235,10 @@ function PeriodsEditorModal({ visible, schoolName, schoolLabel, periods, onClose
       <View style={styles.modalBackdrop}>
         <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
           <View style={{ gap: 2 }}>
-            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('schedulePeriodsTitle')}
             </Text>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, textAlign: align }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
               {`${schoolLabel} · ${t('scheduleSchoolHint')}`}
             </Text>
           </View>
@@ -263,7 +263,7 @@ function PeriodsEditorModal({ visible, schoolName, schoolLabel, periods, onClose
           </ScrollView>
           <View style={styles.modalActions}>
             <Pressable onPress={onClose} style={styles.modalBtn}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>{t('cancel')}</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>{t('cancel')}</Text>
             </Pressable>
           </View>
         </View>
@@ -296,7 +296,7 @@ function SchoolNameModal({ title, initial, taken, onClose, onSubmit, isRTL, colo
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalBackdrop}>
         <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+          <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
             {title}
           </Text>
           <TextInput
@@ -308,19 +308,19 @@ function SchoolNameModal({ title, initial, taken, onClose, onSubmit, isRTL, colo
             maxLength={80}
             style={[styles.smallInput, { borderColor: colors.border, color: colors.foreground, textAlign: align, paddingVertical: 10 }]}
           />
-          <Text style={{ color: error || isTaken ? colors.destructive : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, textAlign: align }}>
+          <Text style={{ color: error || isTaken ? colors.destructive : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
             {error || (isTaken ? t('scheduleSchoolNameTaken') : t('scheduleSchoolHint'))}
           </Text>
           <View style={styles.modalActions}>
             <Pressable onPress={onClose} style={styles.modalBtn}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>{t('cancel')}</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>{t('cancel')}</Text>
             </Pressable>
             <Pressable
               onPress={async () => setError(await onSubmit(clean))}
               disabled={!canSave}
               style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT_FILL, opacity: canSave ? 1 : 0.4 }]}
             >
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>{t('save')}</Text>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>{t('save')}</Text>
             </Pressable>
           </View>
         </View>
@@ -350,7 +350,7 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalBackdrop}>
         <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+          <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
             {title}
           </Text>
           <ScrollView style={{ maxHeight: 380 }} contentContainerStyle={{ gap: 12 }}>
@@ -390,13 +390,13 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
           </ScrollView>
           <View style={styles.modalActions}>
             <Pressable onPress={onClose} style={styles.modalBtn}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>{t('cancel')}</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>{t('cancel')}</Text>
             </Pressable>
             <Pressable
               onPress={() => onSave({ classGroupId: selected, notes })}
               style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT_FILL }]}
             >
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>{t('save')}</Text>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>{t('save')}</Text>
             </Pressable>
           </View>
         </View>
@@ -437,11 +437,11 @@ function SlotContent({ className, notes, compact, colors }: {
   }
   return (
     <View style={{ alignItems: 'center', gap: 2 }}>
-      <Text numberOfLines={2} style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: 'center' }}>
+      <Text numberOfLines={2} style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: 'center' }}>
         {className}
       </Text>
       {notes ? (
-        <Text numberOfLines={1} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10.5, textAlign: 'center' }}>
+        <Text numberOfLines={1} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: 'center' }}>
           {notes}
         </Text>
       ) : null}
@@ -470,7 +470,7 @@ function TableView({ periods, weekdays, today, slotAt, classNameFor, onCell, isR
           <View style={[styles.periodCol, cellBorder]} />
           {weekdays.map(d => (
             <View key={d} style={[styles.dayCol, cellBorder, { paddingVertical: 10, alignItems: 'center' }]}>
-              <Text style={{ color: d === today ? ACCENT : colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 13.5 }}>
+              <Text style={{ color: d === today ? ACCENT : colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>
                 {t(WEEKDAY_KEYS[d]!)}
               </Text>
               {d === today ? <View style={{ marginTop: 3, width: 18, height: 3, borderRadius: 2, backgroundColor: ACCENT }} /> : null}
@@ -480,10 +480,10 @@ function TableView({ periods, weekdays, today, slotAt, classNameFor, onCell, isR
         {periods.map(p => (
           <View key={p.periodNumber} style={{ flexDirection: row }}>
             <View style={[styles.periodCol, cellBorder, { justifyContent: 'center', alignItems: 'center', gap: 2, backgroundColor: colors.muted }]}>
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                 {t('schedulePeriodNumber', p.periodNumber)}
               </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10.5 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>
                 {`${p.startTime}–${endTime(p.startTime, p.durationMinutes)}`}
               </Text>
             </View>
@@ -563,7 +563,7 @@ function DayView({ day, setDay, weekdays, today, periods, slots, classNameFor, m
               }}
             >
               <View style={{ width: 54, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 14 }}>{r.startTime}</Text>
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>{r.startTime}</Text>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>
                   {endTime(r.startTime, r.durationMinutes)}
                 </Text>
@@ -571,12 +571,12 @@ function DayView({ day, setDay, weekdays, today, periods, slots, classNameFor, m
               <View style={{ width: 3, borderRadius: 2, backgroundColor: className ? ACCENT : colors.border }} />
               <View style={{ flex: 1, gap: 3, justifyContent: 'center' }}>
                 <View style={{ flexDirection: row, alignItems: 'center', gap: 8 }}>
-                  <Text style={{ color: className ? colors.foreground : colors.mutedForeground, fontFamily: className ? 'Cairo_700Bold' : 'Almarai_400Regular', fontSize: 15, textAlign: align }}>
+                  <Text style={{ color: className ? colors.foreground : colors.mutedForeground, fontFamily: className ? 'ReadexPro_700Bold' : 'Almarai_400Regular', fontSize: 15, textAlign: align }}>
                     {className || t('scheduleFreePeriod')}
                   </Text>
                   {live ? (
                     <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, backgroundColor: ACCENT_FILL }}>
-                      <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 11 }}>{t('scheduleNow')}</Text>
+                      <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 }}>{t('scheduleNow')}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -621,7 +621,7 @@ function CardsView({ periods, weekdays, today, slotAt, classNameFor, onCell, isR
       {weekdays.map(d => (
         <View key={d} style={{ gap: 10 }}>
           <View style={{ flexDirection: row, alignItems: 'center', gap: 10 }}>
-            <Text style={{ color: d === today ? ACCENT : colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 15 }}>
+            <Text style={{ color: d === today ? ACCENT : colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 15 }}>
               {t(WEEKDAY_KEYS[d]!)}
             </Text>
             <View style={{ flex: 1, height: 1, backgroundColor: colors.border, opacity: 0.6 }} />
@@ -642,7 +642,7 @@ function CardsView({ periods, weekdays, today, slotAt, classNameFor, onCell, isR
                       alignItems: 'center',
                     }}
                   >
-                    <Text style={{ alignSelf: 'stretch', color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10.5, lineHeight: 17, textAlign: isRTL ? 'right' : 'left' }}>
+                    <Text style={{ alignSelf: 'stretch', color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 17, textAlign: isRTL ? 'right' : 'left' }}>
                       {`${t('schedulePeriodNumber', p.periodNumber)} · ${p.startTime}`}
                     </Text>
                     <View style={{ flex: 1, justifyContent: 'center' }}>
@@ -860,7 +860,7 @@ export default function ScheduleScreen() {
         onPress={() => setShowPeriodsEditor(true)}
         style={{ marginTop: 4, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 18, backgroundColor: ACCENT_FILL }}
       >
-        <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13.5 }}>
+        <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
           {t('scheduleSetupPeriods')}
         </Text>
       </Pressable>
@@ -883,7 +883,7 @@ export default function ScheduleScreen() {
             </Pressable>
           </View>
         </View>
-        <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('myWeeklySchedule')}
         </Text>
       </View>
@@ -960,7 +960,7 @@ export default function ScheduleScreen() {
               )}
 
               <Pressable onPress={() => setShowWeekend(v => !v)} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', paddingVertical: 4 }}>
-                <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>
+                <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                   {showWeekend ? t('scheduleHideWeekend') : t('scheduleShowWeekend')}
                 </Text>
               </Pressable>

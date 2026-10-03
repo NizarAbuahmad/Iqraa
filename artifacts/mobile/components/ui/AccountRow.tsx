@@ -42,11 +42,11 @@ export function AccountRow({
   const body = (
     <View style={[styles.body, { flexDirection: direction }]}>
       <View style={[styles.avatar, { backgroundColor: colors.primary + '1F' }]}>
-        <Text style={{ color: colors.primary, fontFamily: 'Cairo_700Bold', fontSize: 16 }}>{initial}</Text>
+        <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_700Bold', fontSize: 16 }}>{initial}</Text>
       </View>
 
       <View style={{ flex: 1, gap: 2 }}>
-        <Text numberOfLines={1} style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: align }}>
+        <Text numberOfLines={1} style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }}>
           {name}
         </Text>
         <Text numberOfLines={1} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
@@ -54,11 +54,11 @@ export function AccountRow({
         </Text>
         <View style={[styles.chips, { flexDirection: direction }]}>
           <View style={[styles.chip, { backgroundColor: colors.muted }]}>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11 }}>{roleLabel}</Text>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }}>{roleLabel}</Text>
           </View>
           {badge ? (
             <View style={[styles.chip, { backgroundColor: colors.primary + '1F' }]}>
-              <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 11 }}>{badge}</Text>
+              <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 }}>{badge}</Text>
             </View>
           ) : null}
         </View>

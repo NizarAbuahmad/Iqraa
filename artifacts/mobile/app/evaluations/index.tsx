@@ -96,7 +96,7 @@ export default function EvaluationsScreen() {
     <View style={[styles.deskHeader, { flexDirection: isRTL ? 'row-reverse' : 'row', borderBottomColor: colors.border }, centered]}>
       <View style={{ gap: 4 }}>
         {backButton}
-        <Text style={[styles.deskTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.deskTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('myEvaluations')}
         </Text>
         <Text style={[styles.deskSub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -108,13 +108,13 @@ export default function EvaluationsScreen() {
         style={[styles.deskNewBtn, { backgroundColor: ACCENT_FILL }]}
       >
         <Ionicons name="add" size={18} color="#fff" />
-        <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>{t('newEvaluation')}</Text>
+        <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('newEvaluation')}</Text>
       </Pressable>
     </View>
   ) : (
     <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
       {backButton}
-      <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+      <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
         {t('myEvaluations')}
       </Text>
       <Text
@@ -154,7 +154,7 @@ export default function EvaluationsScreen() {
             error ? null : (
               <View style={styles.empty}>
                 <Ionicons name="clipboard-outline" size={40} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+                <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {t('noEvaluationsYet')}
                 </Text>
                 <Text
@@ -176,13 +176,13 @@ export default function EvaluationsScreen() {
               <View style={{ flex: 1 }}>
                 <View style={[styles.cardTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <Text
-                    style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}
+                    style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}
                     numberOfLines={1}
                   >
                     {(lang === 'ar' ? item.titleAr : item.title) || t('newEvaluation')}
                   </Text>
                   <View style={[styles.statusPill, { backgroundColor: STATUS_COLOR[item.status] + '20' }]}>
-                    <Text style={{ color: STATUS_COLOR[item.status], fontFamily: 'Cairo_600SemiBold', fontSize: 11 }}>
+                    <Text style={{ color: STATUS_COLOR[item.status], fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 }}>
                       {t(STATUS_KEY[item.status])}
                     </Text>
                   </View>

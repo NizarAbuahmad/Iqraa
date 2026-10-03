@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Ionicons } from '@expo/vector-icons';
 import { toLatinDigits } from '@/services/latinDigits';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 
 /**
  * One screen, two steps, rather than two routed screens like register →
@@ -45,7 +46,7 @@ export default function ForgotPasswordScreen() {
       setStep('code');
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(e.message ?? t('invalidVerificationCode'));
+      setError(apiErrorMessage(e, 'invalidVerificationCode', t));
     } finally {
       setLoading(false);
     }
@@ -63,7 +64,7 @@ export default function ForgotPasswordScreen() {
       router.replace('/(auth)/login');
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(e.message ?? t('invalidVerificationCode'));
+      setError(apiErrorMessage(e, 'invalidVerificationCode', t));
     } finally {
       setLoading(false);
     }
@@ -98,7 +99,7 @@ export default function ForgotPasswordScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
 
-        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {step === 'email' ? t('forgotPasswordTitle') : t('resetPasswordTitle')}
         </Text>
         <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -173,7 +174,7 @@ export default function ForgotPasswordScreen() {
                 style={styles.resendRow}
                 accessibilityRole="link"
               >
-                <Text style={[styles.resendText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
+                <Text style={[styles.resendText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {t('resendCode')}
                 </Text>
               </Pressable>

@@ -795,7 +795,7 @@ export default function SlidesScreen() {
       />
       <Text style={[styles.toggleText, {
         color: value ? ACCENT : colors.mutedForeground,
-        fontFamily: value ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+        fontFamily: value ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
       }]}>
         {label}
       </Text>
@@ -873,7 +873,7 @@ export default function SlidesScreen() {
             hitSlop={8}
             style={{ alignSelf: 'center', marginTop: 14 }}
           >
-            <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+            <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
               {t('slidesFromPromptLink')}
             </Text>
           </Pressable>
@@ -915,10 +915,10 @@ export default function SlidesScreen() {
             </View>
 
             <View style={[styles.previewCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-              <Text style={[styles.previewTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.previewTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
                 {deck.activityName}
               </Text>
-              <Text style={[styles.previewMeta, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.previewMeta, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('slideCount', deck.slides.length)}
               </Text>
 
@@ -979,7 +979,7 @@ export default function SlidesScreen() {
                   ]}
                 >
                   <Ionicons name="flag-outline" size={16} color={colors.destructive} />
-                  <Text style={{ fontSize: 14, color: colors.destructive, fontFamily: 'Cairo_600SemiBold' }}>
+                  <Text style={{ fontSize: 14, color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold' }}>
                     {t('reportArtifactBtn')}
                   </Text>
                 </Pressable>

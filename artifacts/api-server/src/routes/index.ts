@@ -15,6 +15,7 @@ import scheduleRouter from "./schedule";
 import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
 import studentAttemptRouter from "./studentAttempt";
+import studentExamsRouter from "./studentExams";
 import mediaRouter from "./media";
 import practiceRouter from "./practice";
 import lessonMediaRouter from "./lessonMedia";
@@ -91,6 +92,8 @@ router.use(attemptsRouter);
 // teacher routers so it cannot shadow them, and asserted in mountOrder.test.ts
 // both ways: reachable without a token, and not having made anything else so.
 router.use(studentAttemptRouter);
+// «اختباراتي» — authenticated, student-only, and path-scoped to /student.
+router.use(studentExamsRouter);
 // Path-scoped, not `router.use(authMiddleware, chatRouter)` — that form mounts
 // the middleware at "/" and reproduces the original bug, answering 401 for
 // paths no router owns. The prefixes below cover every route these four

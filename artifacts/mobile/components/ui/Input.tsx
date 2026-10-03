@@ -25,7 +25,7 @@ export function Input({
   return (
     <View style={styles.container}>
       {label && (
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {label}
         </Text>
       )}

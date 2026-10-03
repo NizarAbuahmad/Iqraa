@@ -10,6 +10,7 @@ import {
   setOnRefreshFailed,
   getApiBaseUrl,
 } from '@/services/apiClient';
+import { LEGAL_VERSION } from '@/constants/legal';
 import { trackEvent } from '@/services/analytics';
 import { fetchWithTimeout } from '@/services/fetchWithTimeout';
 import { setActiveLessonContextUser } from '@/services/lessonContext';
@@ -115,6 +116,12 @@ export interface RegisterData {
   confirmPassword?: string;
   /** Defaults to 'teacher' server-side when omitted. */
   role?: 'teacher' | 'student' | 'parent';
+  /**
+   * The person ticked «أوافق على شروط الاستخدام وسياسة الخصوصية». The server
+   * refuses a new account without it and records the version shown
+   * (`LEGAL_VERSION`) — see `api-server/src/lib/termsAcceptance.ts`.
+   */
+  acceptedTerms?: boolean;
 }
 
 interface AuthContextType {
@@ -127,7 +134,7 @@ interface AuthContextType {
    * "Continue with Google" button, which used to ignore the role pill
    * entirely and silently create a teacher.
    */
-  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role'>) => Promise<void>;
+  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role' | 'acceptedTerms'>) => Promise<void>;
   /**
    * Creates the account but does NOT sign in — a password account starts
    * unverified and the server refuses login until `verifyEmail` succeeds.
@@ -421,8 +428,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    if (!email || !password) throw new Error('Email and password are required');
-    if (!email.includes('@')) throw new Error('Invalid email address');
+    if (!email || !password) throw new ApiError('Email and password are required', 'missing_fields');
+    if (!email.includes('@')) throw new ApiError('Invalid email address', 'invalid_email');
 
     const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
       '/auth/login',
@@ -437,7 +444,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = useCallback(async (
     credential: string,
-    signup?: Pick<RegisterData, 'role'>,
+    signup?: Pick<RegisterData, 'role' | 'acceptedTerms'>,
   ) => {
     // `isNewAccount` is optional on purpose: an app build can outlive the API
     // revision that answers it (and predates it during a rollout). Absent is
@@ -455,6 +462,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           credential,
           role: signup?.role,
+          // Read only when this credential creates an account; someone
+          // signing back in is not asked again.
+          acceptedTerms: signup?.acceptedTerms === true,
+          termsVersion: LEGAL_VERSION,
         }),
       },
     );
@@ -468,13 +479,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [adoptSession]);
 
   const register = useCallback(async (payload: RegisterData) => {
-    if (!payload.firstName?.trim()) throw new Error('First name is required');
-    if (!payload.lastName?.trim()) throw new Error('Last name is required');
-    if (!payload.email?.includes('@')) throw new Error('Valid email is required');
+    if (!payload.firstName?.trim()) throw new ApiError('First name is required', 'missing_fields');
+    if (!payload.lastName?.trim()) throw new ApiError('Last name is required', 'missing_fields');
+    if (!payload.email?.includes('@')) throw new ApiError('Valid email is required', 'invalid_email');
     if (!payload.password || payload.password.length < 8)
-      throw new Error('Password must be at least 8 characters');
+      throw new ApiError('Password must be at least 8 characters', 'password_policy');
     if (payload.confirmPassword && payload.confirmPassword !== payload.password)
-      throw new Error('Passwords do not match');
+      throw new ApiError('Passwords do not match', 'passwords_mismatch');
 
     const data = await apiJson<{ email: string; message: string }>(
       '/auth/register',
@@ -487,6 +498,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           password: payload.password,
           confirmPassword: payload.confirmPassword,
           role: payload.role,
+          acceptedTerms: payload.acceptedTerms === true,
+          termsVersion: LEGAL_VERSION,
         }),
       },
     );

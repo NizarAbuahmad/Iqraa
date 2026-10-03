@@ -82,12 +82,12 @@ export function LessonResources({ topic, onChange }: Props) {
       >
         <Ionicons name={open ? 'chevron-down' : isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
         <Ionicons name="attach-outline" size={16} color={TEAL} />
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
           {t('addMediaTitle')}
         </Text>
         {items.length > 0 && (
           <View style={[styles.badge, { backgroundColor: TEAL + '1A' }]}>
-            <Text style={{ color: TEAL, fontFamily: 'Cairo_600SemiBold', fontSize: 11 }}>
+            <Text style={{ color: TEAL, fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 }}>
               {items.length}
             </Text>
           </View>
@@ -114,7 +114,7 @@ export function LessonResources({ topic, onChange }: Props) {
           />
           <Text
             numberOfLines={1}
-            style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}
+            style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}
           >
             {m.caption || m.url}
           </Text>
@@ -156,7 +156,7 @@ export function LessonResources({ topic, onChange }: Props) {
             accessibilityRole="button"
           >
             <Ionicons name="add" size={16} color={url.trim() ? TEAL : colors.mutedForeground} />
-            <Text style={{ color: url.trim() ? TEAL : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+            <Text style={{ color: url.trim() ? TEAL : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
               {t('addMediaAdd')}
             </Text>
           </Pressable>
