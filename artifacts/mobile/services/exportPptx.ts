@@ -15,6 +15,7 @@
  * (rather than folded into share.ts) because pptxgenjs is a meaningfully
  * larger dependency than docx and this way it only loads when exported.
  */
+import { fetchWithTimeout } from './fetchWithTimeout';
 import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
@@ -85,7 +86,9 @@ async function addSideImage(
 
 async function fetchAsDataUrl(url: string): Promise<string | null> {
   try {
-    const res = await fetch(url);
+    // A stalled image host left `exportingPptx` true for good — the export
+    // button spun until the app was restarted.
+    const res = await fetchWithTimeout(url, {}, 20_000);
     if (!res.ok) return null;
     const blob = await res.blob();
     return await new Promise<string>((resolve, reject) => {

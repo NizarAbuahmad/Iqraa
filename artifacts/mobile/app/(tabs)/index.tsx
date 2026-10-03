@@ -61,8 +61,9 @@ import { buildClassDeck } from '@/services/startClass';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { WORKFLOW } from '@/services/toolCatalog';
 import { trackEvent } from '@/services/analytics';
+import { palette } from '@/constants/colors';
 
-const START_CLASS_COLOR = '#B45309';
+const START_CLASS_COLOR = palette.live;
 const SIDE_PANEL_WIDTH = 356;
 
 export default function Index() {
@@ -417,6 +418,7 @@ function LessonWorkspace() {
                 onMake={(row) => router.push({ pathname: row.route as never, params: toolParams as never })}
                 onToggleSkip={toggleSkip}
                 skipLabel={t('homePrepSkip')}
+                skipShortLabel={t('homePrepSkipShort')}
                 skippedLabel={t('homePrepSkipped')}
                 restoreLabel={t('homePrepRestore')}
                 classLabelFor={(id) => classNameFor(classes, id, lang as 'ar' | 'en')}

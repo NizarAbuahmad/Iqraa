@@ -5,7 +5,7 @@
  * Audio is always started from a tap. Browsers refuse `play()` that no gesture
  * started, so "Next" plays the next word rather than a mount effect doing it.
  */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -160,11 +160,29 @@ export function ListenChoose({ words, onFinish }: { words: HubWord[]; onFinish: 
   );
 }
 
+/**
+ * Timers that die with the component. Both matching games finished with a
+ * 400ms `setTimeout(onFinish)`; a pupil who tapped back inside that window
+ * had a result recorded for an activity they had left (the parent's
+ * `finish()` closes over the current activity), plus a state update on an
+ * unmounted component.
+ */
+function useTimers() {
+  const ids = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => () => { ids.current.forEach(clearTimeout); }, []);
+  return {
+    after(ms: number, fn: () => void) {
+      ids.current.push(setTimeout(fn, ms));
+    },
+  };
+}
+
 // ─── Match the meaning ──────────────────────────────────────────────────────
 
 export function MatchMeaning({ words, onFinish }: { words: HubWord[]; onFinish: Finish }) {
   const { colors, t } = useUi();
   const deck = useMemo(() => buildMatchDeck(words), [words]);
+  const timers = useTimers();
   const [selected, setSelected] = useState<MatchCard | null>(null);
   const [matched, setMatched] = useState<Set<number>>(new Set());
   const [miss, setMiss] = useState<string[]>([]);
@@ -183,10 +201,10 @@ export function MatchMeaning({ words, onFinish }: { words: HubWord[]; onFinish: 
       const next = new Set(matched).add(c.pairId);
       setMatched(next);
       // Stars by accuracy: a perfect board is one move per pair.
-      if (next.size === pairs) setTimeout(() => onFinish(pairs, m), 400);
+      if (next.size === pairs) timers.after(400, () => onFinish(pairs, m));
     } else {
       setMiss([selected.id, c.id]);
-      setTimeout(() => setMiss([]), 700);
+      timers.after(700, () => setMiss([]));
     }
   };
 
@@ -404,6 +422,7 @@ export function Scramble({ words, onFinish }: { words: HubWord[]; onFinish: Fini
 export function PictureMatch({ words, onFinish }: { words: HubWord[]; onFinish: Finish }) {
   const { colors, t } = useUi();
   const deck = useMemo(() => buildPictureDeck(words), [words]);
+  const timers = useTimers();
   const [selected, setSelected] = useState<PictureCard | null>(null);
   const [matched, setMatched] = useState<Set<number>>(new Set());
   const [miss, setMiss] = useState<string[]>([]);
@@ -421,10 +440,10 @@ export function PictureMatch({ words, onFinish }: { words: HubWord[]; onFinish: 
     if (isPictureMatch(selected, c)) {
       const next = new Set(matched).add(c.pairId);
       setMatched(next);
-      if (next.size === pairs) setTimeout(() => onFinish(pairs, m), 400);
+      if (next.size === pairs) timers.after(400, () => onFinish(pairs, m));
     } else {
       setMiss([selected.id, c.id]);
-      setTimeout(() => setMiss([]), 700);
+      timers.after(700, () => setMiss([]));
     }
   };
 

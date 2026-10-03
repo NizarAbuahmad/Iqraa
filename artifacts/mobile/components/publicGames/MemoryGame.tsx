@@ -3,7 +3,7 @@
  * otherwise. Win condition is simply "every pair found" — moves count is the
  * only score, so fewer is better rather than more.
  */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -22,6 +22,10 @@ export function MemoryGame() {
   const [matched, setMatched] = useState<Set<string>>(new Set());
   const [moves, setMoves] = useState(0);
   const [busy, setBusy] = useState(false); // true while a non-matching pair is shown
+  // Cleared on unmount: the flip-back timer used to fire into a screen the
+  // player had already left.
+  const flipBack = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (flipBack.current) clearTimeout(flipBack.current); }, []);
 
   const won = matched.size === deck.length;
 
@@ -39,7 +43,7 @@ export function MemoryGame() {
         setFlipped([]);
       } else {
         setBusy(true);
-        setTimeout(() => { setFlipped([]); setBusy(false); }, 700);
+        flipBack.current = setTimeout(() => { setFlipped([]); setBusy(false); }, 700);
       }
     }
   };

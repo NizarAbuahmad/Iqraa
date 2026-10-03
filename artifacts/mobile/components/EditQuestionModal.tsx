@@ -40,6 +40,7 @@ import {
 import type { TranslationKey } from '@/services/i18n';
 import { COMPETENCIES } from '@/components/AddReadAloudModal';
 import { palette } from '@/constants/colors';
+import { toLatinDigits } from '@/services/latinDigits';
 
 const ACCENT = palette.primary;
 const ACCENT_FILL = palette.hero;
@@ -89,7 +90,7 @@ export function EditQuestionModal({
   const [error, setError] = useState('');
 
   const set = (patch: Partial<QuestionForm>) => setForm(f => ({ ...f, ...patch }));
-  const marksValue = Number(marks);
+  const marksValue = Number(toLatinDigits(marks));
   const canSave = marksValue > 0 && !!objectiveId && !busy;
 
   async function save() {

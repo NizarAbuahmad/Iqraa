@@ -248,7 +248,7 @@ export async function retireVariant(artifactId: string): Promise<boolean> {
 }
 
 export type ReportOutcome =
-  | { ok: true; reportId: string; kind: string; lessonRef: string }
+  | { ok: true; reportId: string; kind: string; lessonRef: string; duplicate?: boolean }
   | { ok: false };
 
 /**
@@ -276,6 +276,24 @@ export async function reportVariant(args: {
     if (!artifact) {
       lastFailure = null;
       return { ok: false };
+    }
+    // One open report per teacher per artifact. Each call used to insert a
+    // row and email every admin, so a double-tap (or a retry) sent the same
+    // report again; the existing one is returned as if it were just filed.
+    const [open] = await db
+      .select({ id: aiArtifactReports.id })
+      .from(aiArtifactReports)
+      .where(
+        and(
+          eq(aiArtifactReports.artifactId, args.artifactId),
+          eq(aiArtifactReports.reporterUserId, args.reporterUserId),
+          eq(aiArtifactReports.status, "open"),
+        ),
+      )
+      .limit(1);
+    if (open) {
+      lastFailure = null;
+      return { ok: true, reportId: open.id, kind: artifact.kind, lessonRef: artifact.lessonRef, duplicate: true };
     }
     const [row] = await db
       .insert(aiArtifactReports)

@@ -14,7 +14,9 @@ export type ChatRouteIntent =
   | 'refinement'
   | 'ambiguous'
   /** "Where do I find X in the app" — answered by the screen from `appHelp.ts`. */
-  | 'app_help';
+  | 'app_help'
+  /** "Who are you" / "what can you do" — answered locally from `capabilityLines`. */
+  | 'about';
 
 export type IntentRouteResult = {
   intent: ChatRouteIntent;
@@ -159,6 +161,39 @@ function isTeaching(q: string): boolean {
   );
 }
 
+/**
+ * Is this message a turn of its own, whatever question the chat has pending?
+ *
+ * `mergeScopeReply` joins a reply onto a standing «أي درس؟» ask so that «الصف
+ * العاشر» narrows the ask instead of arriving alone. It joined everything that
+ * was not a topic switch, another subject or a new artifact ask — so «اشرح لي
+ * المشتقات» became «جهّز اختباراً قصيراً اشرح لي المشتقات», classified as an
+ * artifact, and the teacher who asked for an explanation got a quiz. A reply
+ * that carries its own ask (a question, an explain verb, a refinement) or that
+ * is social (thanks, hello, off-topic) answers nothing and must stand alone.
+ *
+ * Deliberately NOT `classifyChatIntent(...).intent !== 'ambiguous'`: that
+ * classifier reads three or more words with no marker as a teaching ask, and
+ * a lesson title («تطبيقات على قانون الجيوب») is exactly that. Only explicit
+ * markers count here, so a title still joins the ask.
+ */
+export function isStandaloneTurn(query: string): boolean {
+  const q = normalizeQuery(query);
+  if (!q) return false;
+  if (isGreeting(q) || isSmallTalk(q)) return true;
+  return (
+    isAppHelpQuery(q)
+    // «من انت» with a quiz ask pending is a question, not the quiz's scope.
+    || aboutAsk(q) !== null
+    || isOffTopic(q)
+    || isRefinement(q)
+    || isTeaching(q)
+    // `normalizeQuery` strips a trailing «؟», which is the one place a
+    // question usually carries it — read it off the raw text.
+    || /[؟?]/.test(query)
+  );
+}
+
 /** The one list of what Iqrra does — greeting and off-topic must not drift apart. */
 function capabilityLines(isAr: boolean): string[] {
   return isAr
@@ -254,6 +289,78 @@ function smallTalkReply(q: string, isAr: boolean): string {
     : "I'm with you — tell me what you need whenever you're ready.";
 }
 
+type AboutAsk = 'identity' | 'capabilities';
+
+/**
+ * Questions about Iqrra itself. Anchored on purpose: «كيف تساعدني» is about
+ * the assistant, «كيف تساعدني في شرح المشتقات» is about derivatives, and the
+ * only thing telling them apart is that the first one ends there.
+ *
+ * «من انت» used to be two short words that matched nothing and fell to the
+ * generic clarify; «ماذا تستطيع ان تفعل» was long enough to count as a topic,
+ * reached the KB, and was asked which subject it meant.
+ */
+const ABOUT_IDENTITY_AR: RegExp[] = [
+  /^(من|مين|منو|شو|ايش|إيش|وش|ما)\s*(انت|أنت|إنت|انتي|أنتي|إنتي)$/,
+  /^من\s*(تكون|تكونين|يكون)(\s*(انت|أنت|إنت))?$/,
+  /^(ما|شو|ايش|إيش|وش)\s*(هو\s*)?(اسمك|إسمك|أسمك)$/,
+  /^عر[فّ]+(ني)?\s*(عن\s*)?ب?نفسك$/,
+  /^(هل\s*)?(انت|أنت|إنت)\s*(روبوت|بوت|انسان|إنسان|بشر|ذكاء\s*اصطناعي|برنامج|آلة|الة|حقيقي|شخص)/,
+  /^من\s*(صنعك|صممك|صمّمك|طورك|طوّرك|برمجك|انشأك|أنشأك|اخترعك|بناك|صانعك|مطورك|مطوّرك|مبرمجك)$/,
+  /^(ما|شو|ايش|إيش|وش)\s*(هو\s*|هي\s*)?(تطبيق\s*|برنامج\s*)?[اإ]قر[اأ]$/, // the typo spellings too, as a class: CI rejects the literal «إ…»
+];
+const ABOUT_IDENTITY_EN: RegExp[] = [
+  /^(who|what)\s*(are|r)\s*(you|u)$/,
+  /^what('?s|\s*is)\s*(your|ur)\s*name$/,
+  /^(are|r)\s*(you|u)\s*(a\s*|an\s*)?(bot|robot|human|real|ai|chatbot|person|machine|program)/,
+  /^who\s*(made|built|created|developed|designed|trained|programmed)\s*(you|u)$/,
+  /^what('?s|\s*is)\s*(the\s*)?(iqraa?|iqra|this\s*app)$/,
+];
+const ABOUT_CAPABILITIES_AR: RegExp[] = [
+  /^(ماذا|ما\s*الذي|ما|شو|ايش|إيش|وش|شنو)\s*(الذي\s*)?((تستطيع|تقدر|بتقدر|يمكنك|بإمكانك|بامكانك|تعرف|بتعرف)\s*)?((ان|أن)\s*)?(تفعل|تفعله|تعمل|تعمله|تسوي|تقدم|تقدمه|تقدّم|تقدّمه|تساعد|تساعدني|فعله|عمله)(\s*(لي|به|فيه|بيه|معي))?$/,
+  /^(كيف|بماذا|بشو|بايش|بإيش|شلون)\s*((تستطيع|تقدر|بتقدر|يمكنك|بإمكانك|بامكانك)\s*((ان|أن)\s*)?)?(تساعدني|تساعد|بتساعدني|تفيدني)$/,
+  /^(ما|شو|ايش|إيش|وش)\s*(هي\s*|هو\s*)?(قدراتك|امكانياتك|إمكانياتك|امكانيتك|مهامك|وظيفتك|مميزاتك|خدماتك|ادواتك|أدواتك)$/,
+];
+const ABOUT_CAPABILITIES_EN: RegExp[] = [
+  /^what\s*(can|could|do|does)\s*(you|u)\s*(do|offer|help\s*(me\s*)?with)(\s*for\s*me)?$/,
+  /^how\s*(can|could|do|will|would)\s*(you|u)\s*help(\s*me)?$/,
+  /^what\s*(are|r)\s*(your|ur)\s*(capabilities|features|abilities|skills|functions|tools)$/,
+];
+
+function aboutAsk(q: string): AboutAsk | null {
+  const lower = q.toLowerCase();
+  if (ABOUT_IDENTITY_AR.some(re => re.test(q)) || ABOUT_IDENTITY_EN.some(re => re.test(lower))) {
+    return 'identity';
+  }
+  if (ABOUT_CAPABILITIES_AR.some(re => re.test(q)) || ABOUT_CAPABILITIES_EN.some(re => re.test(lower))) {
+    return 'capabilities';
+  }
+  return null;
+}
+
+function aboutReply(ask: AboutAsk, isAr: boolean): string {
+  if (isAr) {
+    const opening = ask === 'identity'
+      ? ['أنا اقرأ 🌿 مساعد تدريس بالذكاء الاصطناعي، مبنيّ على المنهاج الوطني الأردني.', '', 'أستطيع أن أساعدك في:']
+      : ['أساعدك في تحضير حصصك على المنهاج الوطني الأردني:'];
+    return [
+      ...opening,
+      ...capabilityLines(true),
+      '',
+      'اختر درساً من المنهاج أو اكتب ما تحتاجه، وسأبني عليه.',
+    ].join('\n');
+  }
+  const opening = ask === 'identity'
+    ? ["I'm Iqrra 🌿 an AI teaching assistant built on the Jordanian national curriculum.", '', 'I can help you with:']
+    : ['I help you prepare your lessons on the Jordanian national curriculum:'];
+  return [
+    ...opening,
+    ...capabilityLines(false),
+    '',
+    'Pick a lesson from the curriculum or tell me what you need, and I will build on it.',
+  ].join('\n');
+}
+
 function ambiguousReply(isAr: boolean): string {
   return isAr
     ? 'وضّح لي أكثر: هل تريد شرح مفهوم، أم تحضير مادة (خطة درس / ورقة عمل / اختبار)؟'
@@ -306,6 +413,17 @@ export function classifyChatIntent(
       intent: 'small_talk',
       useTeachingPipeline: false,
       socialReply: smallTalkReply(q, isAr),
+    };
+  }
+
+  // Questions about the assistant itself. Before everything that could claim
+  // them: a short one falls to clarify, a long one to the KB (and «أيّ مادة؟»).
+  const about = aboutAsk(q);
+  if (about) {
+    return {
+      intent: 'about',
+      useTeachingPipeline: false,
+      socialReply: aboutReply(about, isAr),
     };
   }
 

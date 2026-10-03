@@ -99,12 +99,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     paddingBottom: 20,
   },
-  // Capped rather than content-sized: on a phone-height viewport this used to
+  // Content-sized and never growing: on a phone-height viewport this used to
   // grow to fill whatever space the flex-column layout gave it, which was
   // most of the screen — pushing every field below the fold on a screen a
-  // returning user opens purely to log back in.
+  // returning user opens purely to log back in. The first fix was
+  // `maxHeight: 220`, which was shorter than the content (~256px on web,
+  // more under a native status bar), so the value line under the logo was cut
+  // off by the panel's bottom edge on every phone.
   brandPanelNarrow: {
-    maxHeight: 220,
+    flexGrow: 0,
+    flexShrink: 0,
   },
   brandPanelWide: {
     flex: 1.05,
@@ -118,13 +122,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
   },
-  // flex-start, not center: centering a flex:1 box whose content is taller
-  // than the space `brandPanelNarrow`'s capped height leaves it (English's
-  // longer eyebrow line pushes it over) grows the box symmetrically past its
-  // own bounds — upward into the language toggle's row above it, not just
-  // downward where `overflow: hidden` would catch it.
+  // No `flex: 1` here: inside a content-sized parent a flex:1 child has a
+  // zero basis, so the parent sized itself as if this block were empty and
+  // the block overflowed it (that is what the old cap was fighting).
   brandContentNarrow: {
-    flex: 1,
     justifyContent: 'flex-start',
     marginTop: 8,
   },

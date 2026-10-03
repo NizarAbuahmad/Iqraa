@@ -39,6 +39,7 @@ import {
   chatThreads,
   chatParticipants,
   chatMessages,
+  chatMessageReads,
   chatBlocks,
   chatReports,
   rosterLinks,
@@ -49,7 +50,7 @@ import {
   devicePushTokens,
   type DevicePushPlatform,
 } from "@workspace/db";
-import { and, asc, count, desc, eq, inArray, isNull, lt, ne, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull, lt, ne, notInArray, or } from "drizzle-orm";
 import {
   authMiddleware,
   TEACHER_ROLES,
@@ -118,13 +119,33 @@ async function isConnected(teacherId: string, otherUserId: string): Promise<bool
 }
 
 /** A participant's own row in a thread, or null if they aren't in it. */
-async function participantOf(threadId: string, userId: string) {
+/**
+ * Membership in a *live* thread. Archiving a class archives its thread
+ * (lib/classThread.ts) but removes nobody from it, and until this filter
+ * existed only the inbox honoured `archivedAt`: a student whose app still
+ * held the thread id could keep reading and posting after the teacher had
+ * archived the class and stopped seeing it — the unsupervised channel the
+ * file header says cannot exist. Reporting passes `includeArchived` because
+ * a report about an archived thread must still reach moderation.
+ */
+async function participantOf(
+  threadId: string,
+  userId: string,
+  opts: { includeArchived?: boolean } = {},
+) {
   const [row] = await db
-    .select()
+    .select({ participant: chatParticipants })
     .from(chatParticipants)
-    .where(and(eq(chatParticipants.threadId, threadId), eq(chatParticipants.userId, userId)))
+    .innerJoin(chatThreads, eq(chatThreads.id, chatParticipants.threadId))
+    .where(
+      and(
+        eq(chatParticipants.threadId, threadId),
+        eq(chatParticipants.userId, userId),
+        ...(opts.includeArchived ? [] : [isNull(chatThreads.archivedAt)]),
+      ),
+    )
     .limit(1);
-  return row ?? null;
+  return row?.participant ?? null;
 }
 
 /**
@@ -441,14 +462,14 @@ router.post("/messaging/threads", async (req: AuthenticatedRequest, res) => {
     const meIsTeacher = isTeacherRole(req.user!.role);
     const counterpartIsTeacher = isTeacherRole(counterpart.role);
     if (meIsTeacher === counterpartIsTeacher) {
-      res.status(403).json({ error: "Direct messages are only between a teacher and a parent or student" });
+      res.status(403).json({ error: "Direct messages are only between a teacher and a parent or student", code: "same_side" });
       return;
     }
 
     const teacherId = meIsTeacher ? req.user!.id : counterpart.id;
     const otherId = meIsTeacher ? counterpart.id : req.user!.id;
     if (!(await isConnected(teacherId, otherId))) {
-      res.status(403).json({ error: "You are not connected to this person" });
+      res.status(403).json({ error: "You are not connected to this person", code: "not_connected" });
       return;
     }
 
@@ -463,7 +484,7 @@ router.post("/messaging/threads", async (req: AuthenticatedRequest, res) => {
       )
       .limit(1);
     if (existingBlock) {
-      res.status(403).json({ error: "Cannot start a conversation with this person" });
+      res.status(403).json({ error: "Cannot start a conversation with this person", code: "blocked" });
       return;
     }
 
@@ -507,7 +528,14 @@ router.post("/messaging/threads", async (req: AuthenticatedRequest, res) => {
 router.get("/messaging/threads/class/:classGroupId", async (req: AuthenticatedRequest, res) => {
   try {
     const classGroupId = req.params["classGroupId"] as string;
-    const [group] = await db.select().from(classGroups).where(eq(classGroups.id, classGroupId)).limit(1);
+    // An archived class has no live thread to get or create — without this
+    // filter a student could re-fetch the archived thread's id from the
+    // class id and keep using it.
+    const [group] = await db
+      .select()
+      .from(classGroups)
+      .where(and(eq(classGroups.id, classGroupId), isNull(classGroups.archivedAt)))
+      .limit(1);
     if (!group) {
       res.status(404).json({ error: "Class not found" });
       return;
@@ -792,7 +820,12 @@ router.get("/messaging/threads/:id/messages", async (req: AuthenticatedRequest, 
       ? Math.min(requestedLimit, MAX_MESSAGE_LIMIT)
       : DEFAULT_MESSAGE_LIMIT;
 
-    const rows = await db
+    // Teachers never filter blocked senders — see the file header on why.
+    // The exclusion is in the query, before `limit`: filtering the page in
+    // JS afterwards returned a short or empty page while older messages
+    // still existed, and the client reads an empty page as the end.
+    const blocked = isTeacherRole(req.user!.role) ? new Set<string>() : await blockedSenderIds(req.user!.id);
+    const messages = await db
       .select()
       .from(chatMessages)
       .where(
@@ -800,18 +833,11 @@ router.get("/messaging/threads/:id/messages", async (req: AuthenticatedRequest, 
           eq(chatMessages.threadId, threadId),
           isNull(chatMessages.archivedAt),
           beforeDate ? lt(chatMessages.createdAt, beforeDate) : undefined,
+          blocked.size > 0 ? notInArray(chatMessages.senderId, [...blocked]) : undefined,
         ),
       )
       .orderBy(desc(chatMessages.createdAt))
       .limit(limit);
-
-    // Teachers never filter blocked senders — see the file header on why.
-    const messages = isTeacherRole(req.user!.role)
-      ? rows
-      : await (async () => {
-          const blocked = await blockedSenderIds(req.user!.id);
-          return blocked.size === 0 ? rows : rows.filter(m => !blocked.has(m.senderId));
-        })();
 
     await db
       .update(chatParticipants)
@@ -854,6 +880,51 @@ const sendMessageLimiter = createRateLimiter({
  * mime allowlist from lib/lessonMediaUpload.ts wholesale — a chat photo has
  * the same size/type constraints a lesson photo does.
  */
+/** Caps one report; a screen shows a few dozen messages at most, and a list is re-reported only as it scrolls. */
+const MAX_READ_REPORT = 100;
+
+/**
+ * The reader's screen says which messages it actually rendered. Per message,
+ * unlike `lastReadAt` above, which is per thread and stays the unread-count
+ * mechanism: this exists so a parent *letter* can be called read when the
+ * parent saw it, not when they opened the thread for anything (see
+ * lib/parentContactRead.ts). Ids outside this thread, or sent by the caller,
+ * are dropped silently — a client that reports its own messages is not an
+ * error worth failing the batch over.
+ */
+router.post("/messaging/threads/:id/read", async (req: AuthenticatedRequest, res) => {
+  try {
+    const threadId = req.params["id"] as string;
+    if (!(await participantOf(threadId, req.user!.id))) {
+      res.status(404).json({ error: "Thread not found" });
+      return;
+    }
+    const raw: unknown = req.body?.messageIds;
+    const ids = Array.isArray(raw)
+      ? [...new Set(raw.filter((x): x is string => typeof x === "string" && x.length > 0 && x.length <= 64))].slice(0, MAX_READ_REPORT)
+      : [];
+    if (ids.length === 0) {
+      res.json({ marked: 0 });
+      return;
+    }
+    const mine = await db
+      .select({ id: chatMessages.id })
+      .from(chatMessages)
+      .where(and(eq(chatMessages.threadId, threadId), inArray(chatMessages.id, ids), ne(chatMessages.senderId, req.user!.id)));
+    if (mine.length === 0) {
+      res.json({ marked: 0 });
+      return;
+    }
+    await db
+      .insert(chatMessageReads)
+      .values(mine.map(m => ({ messageId: m.id, userId: req.user!.id })))
+      .onConflictDoNothing();
+    res.json({ marked: mine.length });
+  } catch (err) {
+    failMessaging(res, err, "mark messages read", "Failed to mark messages read");
+  }
+});
+
 router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: AuthenticatedRequest, res) => {
   try {
     const threadId = req.params["id"] as string;
@@ -957,6 +1028,22 @@ router.post("/messaging/blocks", async (req: AuthenticatedRequest, res) => {
       res.status(400).json({ error: "Cannot block yourself" });
       return;
     }
+    // Blocking exists so a parent or student can stop an adult reaching
+    // them — never the reverse. A student's block filters that sender out of
+    // *every* thread, the class announcement group included, so blocking the
+    // teacher silently muted the class and left the teacher with an
+    // unexplained 403. Report a teacher instead; that reaches someone.
+    if (!isTeacherRole(req.user!.role)) {
+      const [target] = await db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.id, blockedUserId))
+        .limit(1);
+      if (target && isTeacherRole(target.role)) {
+        res.status(403).json({ error: "A teacher cannot be blocked. Report the message instead.", code: "cannot_block_teacher" });
+        return;
+      }
+    }
 
     await db
       .insert(chatBlocks)
@@ -1007,7 +1094,8 @@ router.post("/messaging/reports", async (req: AuthenticatedRequest, res) => {
       reporterUserId: req.user!.id,
       reportedUserId,
       messageId,
-      isParticipant: async (userId) => (await participantOf(threadId, userId)) !== null,
+      isParticipant: async (userId) =>
+        (await participantOf(threadId, userId, { includeArchived: true })) !== null,
       threadIdOfMessage: async (id) => {
         const [row] = await db
           .select({ threadId: chatMessages.threadId })

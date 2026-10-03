@@ -19,6 +19,7 @@ import {
   deleteEvaluationQuestion,
   generateEvaluation,
   getEvaluation,
+  closeEvaluation,
   publishEvaluation,
   setEvaluationClass,
   showBlanks,
@@ -39,6 +40,7 @@ import { bookFigureRefsForObjectives } from '@/services/bookFigureUri';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { PROD_ORIGIN } from '@/services/siteOrigin';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -136,7 +138,7 @@ export default function EvaluationDetailScreen() {
   /** The question open in the editor; 'new' when writing one from scratch. */
   const [editing, setEditing] = useState<EvaluationQuestion | 'new' | null>(null);
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState<'generate' | 'publish' | null>(null);
+  const [busy, setBusy] = useState<'generate' | 'publish' | 'close' | null>(null);
   // What the generator said while producing this paper ("2 questions removed:
   // the verifier contradicted their key"). The questions cannot show a
   // question that was dropped, so this is the only place the teacher hears it.
@@ -236,6 +238,30 @@ export default function EvaluationDetailScreen() {
       await refetch();
     } catch (err) {
       setError(err instanceof EvaluationError ? err.message : t('evaluationGenerateFailed'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onClose = async () => {
+    if (!id || busy) return;
+    const ok = await confirm({
+      title: t('closeEvaluationBtn'),
+      message: t('closeEvaluationConfirm'),
+      confirmLabel: t('closeEvaluationBtn'),
+      cancelLabel: t('cancel'),
+    });
+    if (!ok) return;
+
+    setBusy('close');
+    setError('');
+    try {
+      const updated = await closeEvaluation(id);
+      queryClient.setQueryData<EvaluationData>(evaluationQueryKey(id), prev =>
+        prev ? { ...prev, evaluation: updated } : prev,
+      );
+    } catch (err) {
+      setError(err instanceof EvaluationError ? err.message : t('evaluationCloseFailed'));
     } finally {
       setBusy(null);
     }
@@ -366,6 +392,43 @@ export default function EvaluationDetailScreen() {
             <Ionicons name="bar-chart-outline" size={18} color={ACCENT} />
             <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
               {t('resultsDashboardBtn')}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={onClose}
+            disabled={busy === 'close'}
+            style={[styles.resultsBtn, { borderColor: colors.border, opacity: busy === 'close' ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="lock-closed-outline" size={18} color={colors.mutedForeground} />
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+              {t('closeEvaluationBtn')}
+            </Text>
+          </Pressable>
+        </View>
+      )}
+
+      {evaluation?.status === 'closed' && (
+        <View style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+            {t('evaluationClosedNote')}
+          </Text>
+          <Pressable
+            onPress={() => router.push({ pathname: '/evaluations/[id]/results', params: { id: evaluation.id } })}
+            style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="bar-chart-outline" size={18} color={ACCENT} />
+            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+              {t('resultsDashboardBtn')}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={onPublish}
+            disabled={busy === 'publish'}
+            style={[styles.resultsBtn, { borderColor: colors.border, opacity: busy === 'publish' ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="lock-open-outline" size={18} color={colors.mutedForeground} />
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+              {t('publishEvaluationBtn')}
             </Text>
           </Pressable>
         </View>
@@ -677,10 +740,13 @@ function ShareLinkCard({
   // Built from where the app is actually being served, so a local build hands
   // out a local link and production hands out a production one. Hardcoding it
   // is how a pilot ends up telling thirty students to visit localhost.
+  // On the native app there is no window, and the card used to show and copy
+  // a bare `/take/ABC123` — a link that opens nothing when pasted into
+  // WhatsApp. Fall back to the production site, as the drill share does.
   const origin =
     typeof window !== 'undefined' && window.location?.origin
       ? window.location.origin
-      : '';
+      : PROD_ORIGIN;
   const url = `${origin}/take/${shareCode}`;
 
   return (

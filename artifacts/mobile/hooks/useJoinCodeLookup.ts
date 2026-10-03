@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { RosterError, lookupJoinCode, type JoinRosterEntry } from '@/services/roster';
-import { canSubmitClaim, needsNameConfirm, type JoinCodeState } from '@/services/claimCodeGate';
+import { canSubmitClaim, needsNameConfirm, normalizeClaimCode, type JoinCodeState } from '@/services/claimCodeGate';
 
 /**
  * The code-lookup-and-name-picker logic shared by every screen that claims a
@@ -29,10 +29,12 @@ export function useJoinCodeLookup() {
   // Any change of code or name voids the confirmation: it was for that name.
   useEffect(() => setConfirmed(false), [code, studentId]);
 
-  // Codes are a fixed six characters, so "long enough to be a code" is the
-  // whole trigger — no debounce timer to get wrong.
+  // Codes are a fixed six characters *after* the server's normalisation, so
+  // "long enough to be a code" is the whole trigger — no debounce timer to get
+  // wrong. Counted on the normalised form: `YHFM-8` is six typed characters
+  // and five of code, and used to fire a lookup the server could only 404.
   useEffect(() => {
-    const trimmed = code.trim();
+    const trimmed = normalizeClaimCode(code);
     if (trimmed.length < 6) {
       setRoster(null);
       setClassName('');

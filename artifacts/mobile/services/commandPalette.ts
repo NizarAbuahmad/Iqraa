@@ -11,6 +11,7 @@
  * --test` can run it.
  */
 import { WORKFLOW } from './toolCatalog.ts';
+import { tabHref } from './tabRoute.ts';
 
 /**
  * The part of a `ToolDef` this file needs. Structural rather than the real
@@ -143,7 +144,7 @@ export function buildCommands(opts: {
       label: entry.label,
       hint: isAr ? 'انتقال' : 'Go to',
       icon: entry.icon,
-      route: `/${entry.name === 'index' ? '' : entry.name}`,
+      route: tabHref(entry.name),
       keywords: [entry.name],
     });
   }

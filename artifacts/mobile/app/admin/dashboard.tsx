@@ -10,7 +10,7 @@
  * GET /feedback both 403 for anything but school_admin/system_admin.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,7 +33,43 @@ type UsageSummary = {
   usersWithoutRecovery: number;
   materialsByType: Record<string, number>;
   feedbackByRating: Record<string, number>;
+  usersByRole: { role: string; count: number; suspended: number }[];
+  suspendedCount: number;
+  signupsByDay: { day: string; role: string; count: number }[];
+  authSplit: { google: number; password: number };
+  activeUsers7d: number;
+  activeUsers30d: number;
+  ai: {
+    budget: { liveMode: boolean; spentUsd: number; limitUsd: number; generationModel: string; chatModel: string };
+    byKind: { kind: string; count: number; hits: number; costUsd: number; p50Ms: number | null; p95Ms: number | null }[];
+    topSpenders: { userId: string; email: string; role: string; costUsd: number; count: number }[];
+  };
+  classes: { classes: number; students: number; students30d: number };
+  parentLetters: { channel: string; total: number; last30d: number }[];
+  siteSignups: { waitlist: number; contact: number };
+  limits: {
+    userBudgetUsd: number;
+    studentBudgetUsd: number;
+    rateLimits: { name: string; windowMs: number; max: number }[];
+  };
 };
+
+type MetricRow = { key: string; value: number; date: string };
+
+/** Must match METRIC_KEYS in api-server lib/adminMetrics.ts. */
+const METRICS: { key: string; ar: string; en: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: 'play_downloads', ar: 'تنزيلات Google Play', en: 'Play downloads', icon: 'logo-google-playstore' },
+  { key: 'instagram', ar: 'Instagram', en: 'Instagram', icon: 'logo-instagram' },
+  { key: 'facebook', ar: 'Facebook', en: 'Facebook', icon: 'logo-facebook' },
+  { key: 'youtube', ar: 'YouTube', en: 'YouTube', icon: 'logo-youtube' },
+  { key: 'linkedin', ar: 'LinkedIn', en: 'LinkedIn', icon: 'logo-linkedin' },
+  { key: 'x', ar: 'X', en: 'X', icon: 'logo-twitter' },
+];
+
+const usd = (n: number) => `$${n.toFixed(n < 1 ? 4 : 2)}`;
+const secs = (ms: number | null) => (ms == null ? '—' : `${(ms / 1000).toFixed(1)}s`);
+const windowLabel = (ms: number) =>
+  ms >= 3_600_000 ? `${ms / 3_600_000}h` : ms >= 60_000 ? `${ms / 60_000}m` : `${ms / 1000}s`;
 
 type FeedbackItem = {
   id: string;
@@ -53,12 +89,13 @@ const PAGE_SIZE = 30;
 export default function AdminDashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { isRTL, lang } = useLanguage();
+  const { isRTL, lang, t } = useLanguage();
   const { user, isLoading: authLoading } = useAuth();
   const isAdmin = !!user && ADMIN_ROLES.includes(user.role);
   const topPad = insets.top + (insets.top === 0 ? 20 : 0);
 
   const [summary, setSummary] = useState<UsageSummary | null>(null);
+  const [metrics, setMetrics] = useState<MetricRow[]>([]);
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState<RatingFilter>('all');
@@ -71,11 +108,13 @@ export default function AdminDashboardScreen() {
 
   const load = useCallback(async (nextFilter: RatingFilter, offset: number) => {
     const ratingParam = nextFilter === 'all' ? '' : `&rating=${nextFilter}`;
-    const [summaryRes, feedbackRes] = await Promise.all([
+    const [summaryRes, feedbackRes, metricsRes] = await Promise.all([
       offset === 0 ? apiJson<UsageSummary>('/admin/usage-summary') : Promise.resolve(null),
       apiJson<{ items: FeedbackItem[]; total: number }>(`/feedback?limit=${PAGE_SIZE}&offset=${offset}${ratingParam}`),
+      offset === 0 ? apiJson<{ items: MetricRow[] }>('/admin/metrics') : Promise.resolve(null),
     ]);
     if (summaryRes) setSummary(summaryRes);
+    if (metricsRes) setMetrics(metricsRes.items);
     setItems(cur => (offset === 0 ? feedbackRes.items : [...cur, ...feedbackRes.items]));
     setTotal(feedbackRes.total);
   }, []);
@@ -137,7 +176,7 @@ export default function AdminDashboardScreen() {
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
-            {lang === 'ar' ? 'لوحة الإدارة' : 'Admin dashboard'}
+            {t('adminDashboard')}
           </Text>
         </View>
 
@@ -149,57 +188,171 @@ export default function AdminDashboardScreen() {
           <Text style={{ color: colors.destructive, textAlign: 'center', margin: 20, fontFamily: 'Almarai_400Regular' }}>{error}</Text>
         ) : (
           <>
-            {/* Moderation. Above usage on purpose: reported messages carry a
-                24-hour obligation (Apple 1.2) and usage counts do not. */}
-            <Pressable
-              onPress={() => router.push('/admin/moderation' as any)}
-              style={({ pressed }) => [
-                styles.card,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  borderRadius: colors.radius,
-                  marginHorizontal: 20,
-                  marginBottom: 16,
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
-            >
-              <Ionicons name="flag-outline" size={20} color={ACCENT} />
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
-                {lang === 'ar' ? 'بلاغات الرسائل' : 'Message reports'}
-              </Text>
-              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
-            </Pressable>
+            {/* Moderation first: reported messages carry a 24-hour obligation
+                (Apple 1.2) and usage counts do not. */}
+            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 10, marginHorizontal: 20, marginBottom: 16 }}>
+              {([
+                ['/admin/moderation', 'flag-outline', 'بلاغات الرسائل', 'Message reports'],
+                ['/admin/artifact-reports', 'document-text-outline', 'بلاغات المحتوى', 'Content reports'],
+                ['/admin/users', 'people-outline', 'المستخدمون والحظر', 'Users & blocking'],
+                ['/admin/signups', 'mail-outline', 'البريد المجمّع', 'Collected emails'],
+              ] as const).map(([href, icon, ar, en]) => (
+                <Pressable
+                  key={href}
+                  onPress={() => router.push(href as any)}
+                  style={({ pressed }) => [
+                    styles.card,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                      borderRadius: colors.radius,
+                      flexDirection: isRTL ? 'row-reverse' : 'row',
+                      alignItems: 'center',
+                      gap: 10,
+                      flexGrow: 1,
+                      flexBasis: 220,
+                      opacity: pressed ? 0.7 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons name={icon} size={20} color={ACCENT} />
+                  <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
+                    {lang === 'ar' ? ar : en}
+                  </Text>
+                  <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
+                </Pressable>
+              ))}
+            </View>
 
-            {/* Content reports — same visibility tier as message moderation,
-                just for AI artifacts instead of chat messages. */}
-            <Pressable
-              onPress={() => router.push('/admin/artifact-reports' as any)}
-              style={({ pressed }) => [
-                styles.card,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  borderRadius: colors.radius,
-                  marginHorizontal: 20,
-                  marginBottom: 16,
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
-            >
-              <Ionicons name="document-text-outline" size={20} color={ACCENT} />
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
-                {lang === 'ar' ? 'بلاغات المحتوى' : 'Content reports'}
-              </Text>
-              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
-            </Pressable>
+            {summary && (
+              <View style={{ marginHorizontal: 20, marginBottom: 16 }}>
+                <SectionTitle text={lang === 'ar' ? 'نظرة عامة' : 'Overview'} isRTL={isRTL} colors={colors} />
+                <View style={[styles.statRow, { flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap' }]}>
+                  <StatCard label={lang === 'ar' ? 'كل الحسابات' : 'All accounts'} value={summary.totalUsers} colors={colors} />
+                  <StatCard label={lang === 'ar' ? 'نشطون ٧ أيام' : 'Active 7d'} value={summary.activeUsers7d} colors={colors} />
+                  <StatCard label={lang === 'ar' ? 'نشطون ٣٠ يومًا' : 'Active 30d'} value={summary.activeUsers30d} colors={colors} />
+                  <StatCard label={lang === 'ar' ? 'قائمة الانتظار' : 'Waitlist emails'} value={summary.siteSignups.waitlist} colors={colors} />
+                  <StatCard label={lang === 'ar' ? 'رسائل التواصل' : 'Contact messages'} value={summary.siteSignups.contact} colors={colors} />
+                  <StatCard label={lang === 'ar' ? 'محظورون' : 'Blocked'} value={summary.suspendedCount} colors={colors} />
+                </View>
+                <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginTop: 10 }]}>
+                  {summary.usersByRole.map(r => (
+                    <KeyValue key={r.role} k={r.role} v={String(r.count)} isRTL={isRTL} colors={colors} />
+                  ))}
+                  <KeyValue
+                    k={lang === 'ar' ? 'دخول Google / كلمة مرور' : 'Google / password sign-in'}
+                    v={`${summary.authSplit.google} / ${summary.authSplit.password}`}
+                    isRTL={isRTL}
+                    colors={colors}
+                  />
+                </View>
+              </View>
+            )}
+
+            <GrowthSection
+              metrics={metrics}
+              onSaved={() => apiJson<{ items: MetricRow[] }>('/admin/metrics').then(r => setMetrics(r.items))}
+              isRTL={isRTL}
+              ar={lang === 'ar'}
+              colors={colors}
+            />
+
+            {summary && (
+              <View style={{ marginHorizontal: 20, marginBottom: 16 }}>
+                <SectionTitle text={lang === 'ar' ? 'التسجيلات — آخر ٣٠ يومًا' : 'Signups — last 30 days'} isRTL={isRTL} colors={colors} />
+                <SignupBars rows={summary.signupsByDay} ar={lang === 'ar'} isRTL={isRTL} colors={colors} />
+              </View>
+            )}
+
+            {summary && (
+              <View style={{ marginHorizontal: 20, marginBottom: 16 }}>
+                <SectionTitle text={lang === 'ar' ? 'الذكاء الاصطناعي: الاستخدام والتكلفة والأداء (هذا الشهر)' : 'AI usage, cost & performance (this month)'} isRTL={isRTL} colors={colors} />
+                <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+                  <KeyValue
+                    k={lang === 'ar' ? 'الإنفاق / السقف' : 'Spent / cap'}
+                    v={`${usd(summary.ai.budget.spentUsd)} / ${usd(summary.ai.budget.limitUsd)}`}
+                    isRTL={isRTL}
+                    colors={colors}
+                  />
+                  <Bar ratio={summary.ai.budget.limitUsd ? summary.ai.budget.spentUsd / summary.ai.budget.limitUsd : 0} isRTL={isRTL} colors={colors} />
+                  <KeyValue
+                    k={lang === 'ar' ? 'الوضع' : 'Mode'}
+                    v={`${summary.ai.budget.liveMode ? 'live' : 'off'} · ${summary.ai.budget.generationModel} · chat ${summary.ai.budget.chatModel}`}
+                    isRTL={isRTL}
+                    colors={colors}
+                  />
+                </View>
+                <Table
+                  head={lang === 'ar' ? ['النوع', 'العدد', 'من المخزن', 'التكلفة', 'p50', 'p95'] : ['Kind', 'Calls', 'Cache hits', 'Cost', 'p50', 'p95']}
+                  rows={summary.ai.byKind.map(k => [k.kind, String(k.count), String(k.hits), usd(k.costUsd), secs(k.p50Ms), secs(k.p95Ms)])}
+                  empty={lang === 'ar' ? 'لا توليد هذا الشهر' : 'No generations this month'}
+                  isRTL={isRTL}
+                  colors={colors}
+                />
+                {summary.ai.topSpenders.length > 0 && (
+                  <Table
+                    head={lang === 'ar' ? ['الأعلى إنفاقًا', 'الدور', 'الطلبات', 'التكلفة'] : ['Top spenders', 'Role', 'Calls', 'Cost']}
+                    rows={summary.ai.topSpenders.map(s => [s.email, s.role, String(s.count), usd(s.costUsd)])}
+                    isRTL={isRTL}
+                    colors={colors}
+                  />
+                )}
+                <Pressable
+                  onPress={() => { void openExternal('https://console.cloud.google.com/run?project=iqraa-auth-507315'); }}
+                  style={[styles.posthogLink, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                >
+                  <Ionicons name="speedometer-outline" size={15} color={colors.mutedForeground} />
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 12.5, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
+                    {lang === 'ar' ? 'زمن استجابة الخادم ونسبة الأخطاء في Cloud Run' : 'Server latency & error rate in Cloud Run'}
+                  </Text>
+                  <Ionicons name="open-outline" size={13} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
+            )}
+
+            {summary && (
+              <View style={{ marginHorizontal: 20, marginBottom: 16 }}>
+                <SectionTitle text={lang === 'ar' ? 'الشُّعب وأولياء الأمور' : 'Classes & parents'} isRTL={isRTL} colors={colors} />
+                <View style={[styles.statRow, { flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap' }]}>
+                  <StatCard label={lang === 'ar' ? 'الشُّعب' : 'Classes'} value={summary.classes.classes} colors={colors} />
+                  <StatCard label={lang === 'ar' ? 'الطلاب' : 'Students'} value={summary.classes.students} colors={colors} />
+                  <StatCard label={lang === 'ar' ? 'طلاب جدد ٣٠ يومًا' : 'New students 30d'} value={summary.classes.students30d} colors={colors} />
+                </View>
+                <Table
+                  head={lang === 'ar' ? ['رسائل الأهل حسب القناة', 'الكل', '٣٠ يومًا'] : ['Parent letters by channel', 'Total', '30d']}
+                  rows={summary.parentLetters.map(p => [p.channel, String(p.total), String(p.last30d)])}
+                  empty={lang === 'ar' ? 'لا رسائل بعد' : 'No letters yet'}
+                  isRTL={isRTL}
+                  colors={colors}
+                />
+              </View>
+            )}
+
+            {summary && (
+              <View style={{ marginHorizontal: 20, marginBottom: 16 }}>
+                <SectionTitle text={lang === 'ar' ? 'الحدود' : 'Limits'} isRTL={isRTL} colors={colors} />
+                <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+                  <KeyValue
+                    k={lang === 'ar' ? 'سقف المعلم الشهري (AI_USER_BUDGET_USD)' : 'Teacher monthly cap (AI_USER_BUDGET_USD)'}
+                    v={summary.limits.userBudgetUsd ? usd(summary.limits.userBudgetUsd) : (lang === 'ar' ? 'بلا سقف' : 'none')}
+                    isRTL={isRTL}
+                    colors={colors}
+                  />
+                  <KeyValue
+                    k={lang === 'ar' ? 'سقف الطالب الشهري (AI_STUDENT_BUDGET_USD)' : 'Student monthly cap (AI_STUDENT_BUDGET_USD)'}
+                    v={summary.limits.studentBudgetUsd ? usd(summary.limits.studentBudgetUsd) : (lang === 'ar' ? 'بلا سقف' : 'none')}
+                    isRTL={isRTL}
+                    colors={colors}
+                  />
+                </View>
+                <Table
+                  head={lang === 'ar' ? ['حدّ المعدّل', 'الأقصى', 'لكل'] : ['Rate limit', 'Max', 'Per']}
+                  rows={summary.limits.rateLimits.map(l => [l.name, String(l.max), windowLabel(l.windowMs)])}
+                  isRTL={isRTL}
+                  colors={colors}
+                />
+              </View>
+            )}
 
             {/* Usage summary */}
             {summary && (
@@ -208,7 +361,6 @@ export default function AdminDashboardScreen() {
                   {lang === 'ar' ? 'الاستخدام' : 'Usage'}
                 </Text>
                 <View style={[styles.statRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                  <StatCard label={lang === 'ar' ? 'المعلمون' : 'Teachers'} value={summary.totalUsers} colors={colors} />
                   <StatCard label={lang === 'ar' ? 'التقييمات' : 'Evaluations'} value={summary.totalEvaluations} colors={colors} />
                   <StatCard
                     label={lang === 'ar' ? 'الملاحظات' : 'Feedback'}
@@ -316,6 +468,187 @@ function StatCard({ label, value, colors }: { label: string; value: number; colo
     <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
       <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 20 }}>{value}</Text>
       <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, marginTop: 2, textAlign: 'center' }}>{label}</Text>
+    </View>
+  );
+}
+
+function SectionTitle({ text, isRTL, colors }: { text: string; isRTL: boolean; colors: any }) {
+  return (
+    <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+      {text}
+    </Text>
+  );
+}
+
+function KeyValue({ k, v, isRTL, colors }: { k: string; v: string; isRTL: boolean; colors: any }) {
+  return (
+    <View style={[styles.barRow, { flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12 }]}>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>{k}</Text>
+      <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 13 }}>{v}</Text>
+    </View>
+  );
+}
+
+function Bar({ ratio, isRTL, colors }: { ratio: number; isRTL: boolean; colors: any }) {
+  const r = Math.max(0, Math.min(1, ratio));
+  return (
+    <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.muted, overflow: 'hidden', flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+      <View style={{ width: `${r * 100}%`, backgroundColor: r >= 0.9 ? colors.destructive : ACCENT }} />
+    </View>
+  );
+}
+
+function Table({ head, rows, empty, isRTL, colors }: { head: string[]; rows: string[][]; empty?: string; isRTL: boolean; colors: any }) {
+  const cellStyle = (i: number) => ({
+    flex: i === 0 ? 2 : 1,
+    color: colors.foreground,
+    fontFamily: 'Almarai_400Regular',
+    fontSize: 12.5,
+    lineHeight: 20,
+    textAlign: (i === 0 ? (isRTL ? 'right' : 'left') : 'center') as 'right' | 'left' | 'center',
+  });
+  return (
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginTop: 10, gap: 2 }]}>
+      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', paddingBottom: 4, borderBottomWidth: 1, borderColor: colors.border }}>
+        {head.map((h, i) => <Text key={h} style={[cellStyle(i), { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>{h}</Text>)}
+      </View>
+      {rows.length === 0 && !!empty && (
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: 'center' }}>{empty}</Text>
+      )}
+      {rows.map((r, ri) => (
+        <View key={ri} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', paddingVertical: 2 }}>
+          {r.map((c, i) => <Text key={i} numberOfLines={1} style={cellStyle(i)}>{c}</Text>)}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** One bar per day for the last 30 days, height = signups that day, all roles. */
+function SignupBars({ rows, ar, isRTL, colors }: { rows: UsageSummary['signupsByDay']; ar: boolean; isRTL: boolean; colors: any }) {
+  const byDay = new Map<string, number>();
+  for (const r of rows) byDay.set(r.day, (byDay.get(r.day) ?? 0) + r.count);
+  const days = Array.from({ length: 30 }, (_, i) => new Date(Date.now() - (29 - i) * 86_400_000).toISOString().slice(0, 10));
+  const max = Math.max(1, ...days.map(d => byDay.get(d) ?? 0));
+  const total = days.reduce((n, d) => n + (byDay.get(d) ?? 0), 0);
+  const byRole = new Map<string, number>();
+  for (const r of rows) byRole.set(r.role, (byRole.get(r.role) ?? 0) + r.count);
+  return (
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-end', height: 90, gap: 2 }}>
+        {days.map(d => {
+          const n = byDay.get(d) ?? 0;
+          return (
+            <View key={d} style={{ flex: 1, height: `${(n / max) * 100}%`, minHeight: n ? 3 : 1, backgroundColor: n ? ACCENT : colors.border, borderRadius: 2 }}
+              // Hover tooltip on web: the day and its count.
+              {...({ title: `${d}: ${n}` } as object)} />
+          );
+        })}
+      </View>
+      <KeyValue
+        k={ar ? 'المجموع حسب الدور' : 'Total by role'}
+        v={`${total} — ${[...byRole].map(([r, n]) => `${r} ${n}`).join(' · ') || '—'}`}
+        isRTL={isRTL}
+        colors={colors}
+      />
+    </View>
+  );
+}
+
+/**
+ * Hand-entered numbers from Play Console and each social platform. Shows the
+ * latest value and the change since the previous entry; the form below
+ * records today's (or a past day's) figure — the same day again replaces it.
+ */
+function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
+  metrics: MetricRow[];
+  onSaved: () => Promise<unknown>;
+  isRTL: boolean;
+  ar: boolean;
+  colors: any;
+}) {
+  const [key, setKey] = useState(METRICS[0].key);
+  const [value, setValue] = useState('');
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  const save = async () => {
+    setSaving(true);
+    setMsg('');
+    try {
+      await apiJson('/admin/metrics', { method: 'POST', body: JSON.stringify({ key, value: Number(value), date }) });
+      await onSaved();
+      setValue('');
+      setMsg(ar ? 'حُفظ' : 'Saved');
+    } catch (e: unknown) {
+      setMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const input = { borderWidth: 1, borderColor: colors.border, borderRadius: colors.radius, paddingHorizontal: 10, paddingVertical: 8, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13 };
+
+  return (
+    <View style={{ marginHorizontal: 20, marginBottom: 16 }}>
+      <SectionTitle text={ar ? 'التنزيلات والمتابعون' : 'Downloads & followers'} isRTL={isRTL} colors={colors} />
+      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 10 }}>
+        {METRICS.map(m => {
+          const hist = metrics.filter(r => r.key === m.key);
+          const last = hist[hist.length - 1];
+          const prev = hist[hist.length - 2];
+          const delta = last && prev ? last.value - prev.value : null;
+          return (
+            <View key={m.key} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexGrow: 1, flexBasis: 150 }]}>
+              <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name={m.icon} size={15} color={ACCENT} />
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{ar ? m.ar : m.en}</Text>
+              </View>
+              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
+                {last ? last.value.toLocaleString() : '—'}
+              </Text>
+              <Text style={{ color: delta == null ? colors.mutedForeground : delta >= 0 ? '#067647' : colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
+                {last
+                  ? `${delta == null ? '' : `${delta >= 0 ? '+' : ''}${delta.toLocaleString()} · `}${last.date}`
+                  : (ar ? 'لم يُسجَّل بعد' : 'Not recorded yet')}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginTop: 10, flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }]}>
+        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6 }}>
+          {METRICS.map(m => (
+            <FilterChip key={m.key} label={ar ? m.ar : m.en} active={key === m.key} onPress={() => setKey(m.key)} colors={colors} />
+          ))}
+        </View>
+        <TextInput
+          value={value}
+          onChangeText={t => setValue(t.replace(/[^\d]/g, ''))}
+          placeholder={ar ? 'العدد' : 'Number'}
+          placeholderTextColor={colors.mutedForeground}
+          keyboardType="number-pad"
+          style={[input, { width: 120 }]}
+        />
+        <TextInput
+          value={date}
+          onChangeText={setDate}
+          placeholder="YYYY-MM-DD"
+          placeholderTextColor={colors.mutedForeground}
+          style={[input, { width: 120 }]}
+          // A native date picker on web.
+          {...(Platform.OS === 'web' ? ({ type: 'date' } as object) : {})}
+        />
+        <Pressable
+          onPress={save}
+          disabled={saving || !value}
+          style={[styles.chip, { backgroundColor: ACCENT, borderColor: ACCENT, borderRadius: colors.radius, opacity: saving || !value ? 0.5 : 1 }]}
+        >
+          <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>{ar ? 'حفظ' : 'Save'}</Text>
+        </Pressable>
+        {!!msg && <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>{msg}</Text>}
+      </View>
     </View>
   );
 }

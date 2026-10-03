@@ -47,6 +47,7 @@ import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { LoadError } from '@/components/ui/LoadError';
+import { toLatinDigits } from '@/services/latinDigits';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -109,7 +110,7 @@ function Chip({ label, active, onPress, icon, colors }: {
   );
 }
 
-const twoDigits = (v: string) => v.replace(/\D/g, '').slice(0, 2);
+const twoDigits = (v: string) => toLatinDigits(v).replace(/\D/g, '').slice(0, 2);
 
 /**
  * Hours and minutes as two boxes around a fixed colon — the colon is a label,
@@ -190,7 +191,7 @@ function PeriodRow({ period, isNew, onSave, onDelete, isRTL, colors, t }: {
         <TimeField hours={hours} minutes={minutes} onHours={setHours} onMinutes={setMinutes} colors={colors} />
         <TextInput
           value={duration}
-          onChangeText={v => (v === '' || /^\d{1,3}$/.test(v)) && setDuration(v)}
+          onChangeText={raw => { const v = toLatinDigits(raw); if (v === '' || /^\d{1,3}$/.test(v)) setDuration(v); }}
           placeholder={t('scheduleDuration')}
           placeholderTextColor={colors.mutedForeground}
           keyboardType="number-pad"

@@ -99,6 +99,13 @@ jobs:
       - name: Test math-verify
         run: pnpm --filter @workspace/math-verify run test
 
+      # The spelling bank behind the Arabic إملاء worksheets. Same story as
+      # math-verify above: it declared a `test` script from the day it was
+      # written and nothing ran it, so eight rules sat below the suite's
+      # own eight-word floor until 2026-10-02.
+      - name: Test arabic-spelling
+        run: pnpm --filter @workspace/arabic-spelling run test
+
       # Structural errors in curriculum data fail the build; content gaps are
       # printed and do not. Phase one is grades 1-10, so this table is the only
       # thing that will keep saying how much of it is actually grounded.

@@ -162,13 +162,23 @@ router.put("/schedule/slots/:dayOfWeek/:periodNumber", async (req: Authenticated
   try {
     input = parseSlotInput(req.body);
     schoolName = parseSchoolName((req.body as { schoolName?: unknown }).schoolName);
-    classGroupId = await resolveClassGroupId(input.classGroupId, req.user!.id);
   } catch (msg) {
     res.status(400).json({ error: String(msg) });
     return;
   }
 
   try {
+    // Inside the DB try, not the validation one above: this runs a query, so
+    // a driver error (a malformed uuid, a missing table) used to come back as
+    // a 400 carrying the raw Drizzle message. Only the plain-string refusal
+    // is the caller's fault.
+    try {
+      classGroupId = await resolveClassGroupId(input.classGroupId, req.user!.id);
+    } catch (msg) {
+      if (typeof msg !== "string") throw msg;
+      res.status(400).json({ error: msg });
+      return;
+    }
     const [row] = await db
       .insert(scheduleSlots)
       .values({

@@ -16,6 +16,7 @@ import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/Goo
 import { Input } from '@/components/ui/Input';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { useStudentAccountsStatus } from '@/services/features';
+import { ApiError } from '@/services/apiClient';
 import { Ionicons } from '@expo/vector-icons';
 import { goBack } from '@/services/navigation';
 
@@ -53,18 +54,24 @@ export default function RegisterScreen() {
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   const handleGoogleCredential = async (credential: string) => {
-    if (!chosenRole) return; // the button is not rendered until a role is picked
     setError('');
     setGoogleLoading(true);
     try {
-      // Same role the manual form below would send — a brand-new Google
-      // account used to always come out as a teacher, no matter which pill
-      // was selected, because this call carried nothing but the credential.
-      // No roster code here anymore either: a parent/student claims one
-      // afterwards, on the mandatory screen the routing gate sends them to.
-      await loginWithGoogle(credential, { role: chosenRole });
+      // Same role the manual form below would send when a pill was picked.
+      // With none picked the server defaults to teacher and the mandatory
+      // /setup-subjects screen asks the role again — the same path Google
+      // from the login screen already takes. No roster code here either: a
+      // parent/student claims one afterwards, on the mandatory screen the
+      // routing gate sends them to.
+      await loginWithGoogle(credential, chosenRole ? { role: chosenRole } : undefined);
       router.replace('/(tabs)');
     } catch (e: any) {
+      // The server only refuses the pill's role when the existing account can
+      // no longer change it (lib/roleSwitch.ts); otherwise it applies it.
+      if (e instanceof ApiError && (e.code === 'role_locked_teaching' || e.code === 'role_locked_linked')) {
+        setError(t(e.code === 'role_locked_teaching' ? 'accountTypeLockedTeaching' : 'accountTypeLockedLinked'));
+        return;
+      }
       setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول عبر Google' : 'Google sign-in failed'));
     } finally {
       setGoogleLoading(false);
@@ -108,7 +115,10 @@ export default function RegisterScreen() {
     lastName.trim().length > 0 &&
     email.includes('@') &&
     password.length >= 8 &&
-    (confirmPassword === '' || confirmPassword === password) &&
+    // Required, not optional: the server treats any sent value as meaningful,
+    // so an empty confirm field was accepted here and refused there with an
+    // English "Passwords do not match".
+    confirmPassword === password &&
     termsAccepted;
 
   const formPanel = (
@@ -193,9 +203,10 @@ export default function RegisterScreen() {
             />
           ) : null}
 
-          {/* Hidden until the role is known: Google creates the account on
-              the first tap, and the role cannot be asked afterwards. */}
-          {isGoogleSignInAvailable() && !featuresLoading && chosenRole && (
+          {/* Shown whether or not a role pill is picked — hiding it until then
+              read as "no Google signup here". /setup-subjects re-asks the role
+              for any Google-created account anyway. */}
+          {isGoogleSignInAvailable() && !featuresLoading && (
             <>
               <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
               {googleLoading ? (

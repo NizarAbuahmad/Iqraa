@@ -14,13 +14,14 @@ import {
   attemptQuestionGrades,
   attemptResults,
   attempts,
+  classMemberships,
   evaluations,
   gradeOverrides,
   recommendations,
   students,
 } from "@workspace/db";
-import type { Attempt, EvaluationQuestion } from "@workspace/db";
-import { and, eq, ne } from "drizzle-orm";
+import type { EvaluationQuestion } from "@workspace/db";
+import { and, eq, isNull, ne } from "drizzle-orm";
 import {
   authMiddleware,
   requireRole,
@@ -29,18 +30,16 @@ import {
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
 import {
-  gradeAttempt,
-  scorePersistedGrades,
-  type AttemptQuestionInput,
-} from "../modules/assessment/gradeAttempt";
-import type { AttemptScore } from "../modules/assessment/scoring";
-import {
   deriveVerdict,
   isVerdict,
   normalizeManualMarks,
 } from "../modules/assessment/manualGrade";
-import { recommendationsFor } from "../modules/assessment/recommend";
-import type { LevelBandInput } from "../modules/assessment/scoring";
+import {
+  gradeSubmission,
+  recomputeResult,
+  snapshotBands,
+  snapshotQuestions,
+} from "../modules/assessment/attemptGrading.ts";
 import {
   buildScanPrompt,
   parseScanResponse,
@@ -58,7 +57,6 @@ import {
 } from "../lib/aiBudget.ts";
 import { extractJSON } from "../lib/generationShape.ts";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { resolveObjectiveIds } from "@workspace/curriculum";
 
 const router = Router();
 // Path-scoped — see the note in roster.ts and evaluations.ts. This router
@@ -98,142 +96,6 @@ async function ownedStudent(id: string, teacherId: string) {
     .where(and(eq(students.id, id), eq(students.teacherId, teacherId)))
     .limit(1);
   return row;
-}
-
-/** The snapshot, in the shape the scoring modules take. */
-function snapshotQuestions(attempt: Attempt): AttemptQuestionInput[] {
-  const snapshot = (attempt.questionSnapshot as EvaluationQuestion[]) ?? [];
-  return snapshot.map(q => ({
-    questionId: q.id,
-    type: q.type,
-    body: q.body,
-    expectedAnswer: q.expectedAnswer,
-    competencyKey: q.competencyKey,
-    objectiveId: q.objectiveId,
-    marks: Number(q.marks),
-    difficulty: q.difficulty,
-  }));
-}
-
-function snapshotBands(attempt: Attempt): LevelBandInput[] {
-  const scale = attempt.levelScaleSnapshot as { scaleId?: string | null; bands?: LevelBandInput[] } | null;
-  return scale?.bands ?? [];
-}
-
-/**
- * Rebuild the stored result from every grade currently on record, and move the
- * attempt's status to match.
- *
- * Both submitting and marking a single question by hand end here, so there is
- * one place that decides what a result says. The status follows from the same
- * count: while any question is unmarked the result is provisional and the
- * attempt `needs_review`; marking the last one flips both — which is the whole
- * point of teacher marking existing.
- */
-async function recomputeResult(attempt: Attempt) {
-  const questions = snapshotQuestions(attempt);
-  const bands = snapshotBands(attempt);
-  const gradeRows = await db
-    .select()
-    .from(attemptQuestionGrades)
-    .where(eq(attemptQuestionGrades.attemptId, attempt.id));
-
-  const { score, ungradedQuestionIds } = scorePersistedGrades(
-    questions,
-    gradeRows.map(g => ({
-      questionId: g.questionId,
-      awardedMarks: Number(g.awardedMarks),
-      maxMarks: Number(g.maxMarks),
-      verdict: g.verdict,
-    })),
-    bands,
-  );
-
-  const isProvisional = ungradedQuestionIds.length > 0;
-  const scaleId = (attempt.levelScaleSnapshot as { scaleId?: string | null } | null)?.scaleId ?? null;
-  const resultValues = {
-    attemptId: attempt.id,
-    earnedMarks: score.earnedMarks.toFixed(2),
-    totalMarks: score.totalMarks.toFixed(2),
-    percent: score.percent.toFixed(2),
-    competencyScores: score.competencyScores,
-    objectiveScores: score.objectiveScores,
-    levelKey: score.levelKey,
-    levelScaleId: scaleId,
-    isProvisional,
-    computedAt: new Date(),
-  };
-  await db
-    .insert(attemptResults)
-    .values(resultValues)
-    .onConflictDoUpdate({ target: attemptResults.attemptId, set: resultValues });
-
-  const [updatedAttempt] = await db
-    .update(attempts)
-    .set({
-      status: isProvisional ? "needs_review" : "graded",
-      gradedAt: new Date(),
-      updatedAt: new Date(),
-    })
-    .where(eq(attempts.id, attempt.id))
-    .returning();
-
-  const nextSteps = await refreshRecommendations(attempt.id, score);
-
-  return {
-    attempt: updatedAttempt!,
-    ungradedQuestionIds,
-    recommendations: nextSteps,
-    result: { ...resultValues, computedAt: resultValues.computedAt.toISOString() },
-  };
-}
-
-/**
- * Rewrite this attempt's next steps from the marks as they now stand.
- *
- * Replaced rather than appended on every recompute, because a recommendation
- * is a statement about the current marks — leaving yesterday's "reteach this"
- * beside a mark the teacher has since corrected would be advice about a result
- * that no longer exists.
- *
- * Only rule-based rows are cleared. AI enrichment does not exist yet, but when
- * it does it must not lose its work every time a teacher edits one mark.
- */
-async function refreshRecommendations(attemptId: string, score: AttemptScore) {
-  const objectiveIds = score.objectiveScores.map(o => o.objectiveId);
-  const { found } = resolveObjectiveIds(objectiveIds);
-  const byId = new Map(found.map(o => [o.id, o]));
-  const drafts = recommendationsFor(score, id => {
-    const objective = byId.get(id);
-    if (!objective) return undefined;
-    return {
-      title: objective.description ?? "",
-      titleAr: objective.descriptionAr || objective.description || "",
-    };
-  });
-
-  await db
-    .delete(recommendations)
-    .where(
-      and(eq(recommendations.attemptId, attemptId), eq(recommendations.generatedBy, "rule")),
-    );
-  if (drafts.length === 0) return [];
-
-  return db
-    .insert(recommendations)
-    .values(
-      drafts.map(d => ({
-        attemptId,
-        kind: d.kind,
-        objectiveId: d.objectiveId,
-        payload: d.payload,
-        generatedBy: "rule" as const,
-        // Arithmetic over the teacher's own marks is not a guess. A confidence
-        // number here would imply it might be wrong the way an AI call can be.
-        confidence: null,
-      })),
-    )
-    .returning();
 }
 
 router.get("/attempts/:id", async (req: AuthenticatedRequest, res) => {
@@ -362,68 +224,12 @@ router.post("/attempts/:id/submit", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    const questions = snapshotQuestions(owned.attempt);
-    if (questions.length === 0) {
-      res.status(409).json({ error: "This attempt has no questions" });
+    const graded = await gradeSubmission(owned.attempt);
+    if (!graded.ok) {
+      res.status(409).json({ error: graded.error });
       return;
     }
-
-    const bands = snapshotBands(owned.attempt);
-    if (bands.length === 0) {
-      res.status(409).json({ error: "No level scale was captured for this attempt" });
-      return;
-    }
-
-    const answerRows = await db
-      .select()
-      .from(attemptAnswers)
-      .where(eq(attemptAnswers.attemptId, owned.attempt.id));
-    const answerMap = new Map(answerRows.map(a => [a.questionId, a.response]));
-
-    const existingGrades = await db
-      .select({ questionId: attemptQuestionGrades.questionId })
-      .from(attemptQuestionGrades)
-      .where(
-        and(
-          eq(attemptQuestionGrades.attemptId, owned.attempt.id),
-          eq(attemptQuestionGrades.grader, "teacher"),
-        ),
-      );
-    const handMarked = new Set(existingGrades.map(g => g.questionId));
-
-    const outcome = gradeAttempt(questions, answerMap, bands);
-    const machineGrades = outcome.graded.filter(g => !handMarked.has(g.questionId));
-
-    await db
-      .delete(attemptQuestionGrades)
-      .where(
-        and(
-          eq(attemptQuestionGrades.attemptId, owned.attempt.id),
-          ne(attemptQuestionGrades.grader, "teacher"),
-        ),
-      );
-    if (machineGrades.length > 0) {
-      await db.insert(attemptQuestionGrades).values(
-        machineGrades.map(g => ({
-          attemptId: owned.attempt.id,
-          questionId: g.questionId,
-          awardedMarks: g.awardedMarks.toFixed(2),
-          maxMarks: g.maxMarks.toFixed(2),
-          verdict: g.verdict,
-          grader: "deterministic" as const,
-          needsReview: false,
-          rationaleAr: g.rationaleAr,
-        })),
-      );
-    }
-
-    const now = new Date();
-    await db
-      .update(attempts)
-      .set({ submittedAt: owned.attempt.submittedAt ?? now, updatedAt: now })
-      .where(eq(attempts.id, owned.attempt.id));
-
-    const recomputed = await recomputeResult(owned.attempt);
+    const { machineGrades, recomputed } = graded;
 
     res.json({
       attempt: recomputed.attempt,
@@ -686,6 +492,33 @@ router.patch("/attempts/:id", async (req: AuthenticatedRequest, res) => {
       const studentId = req.body.studentId.trim();
       const student = await ownedStudent(studentId, req.user!.id);
       if (!student) {
+        res.status(404).json({ error: "Student not found" });
+        return;
+      }
+      // The sitting must land on a current member of the exam's own class:
+      // ownership alone let a paper be moved onto an archived student, or
+      // one in a different class, where no roster would ever show it. An
+      // evaluation whose class was deleted (`classGroupId` set null) keeps
+      // the ownership rule only.
+      const classId = owned.evaluation.classGroupId;
+      const eligibleQuery = classId
+        ? db
+            .select({ id: students.id })
+            .from(students)
+            .innerJoin(classMemberships, eq(classMemberships.studentId, students.id))
+            .where(
+              and(
+                eq(students.id, studentId),
+                isNull(students.archivedAt),
+                eq(classMemberships.classGroupId, classId),
+              ),
+            )
+        : db
+            .select({ id: students.id })
+            .from(students)
+            .where(and(eq(students.id, studentId), isNull(students.archivedAt)));
+      const [eligible] = await eligibleQuery.limit(1);
+      if (!eligible) {
         res.status(404).json({ error: "Student not found" });
         return;
       }

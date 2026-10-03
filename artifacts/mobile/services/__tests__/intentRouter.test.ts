@@ -195,3 +195,72 @@ describe('leavesClarificationStanding', () => {
     assert.equal(withoutFlag.intent, 'ambiguous');
   });
 });
+
+describe('questions about Iqrra itself are answered, not clarified or taught', () => {
+  // The screenshot that prompted this: «من انت» got «وضّح لي أكثر», and
+  // «ماذا تستطيع ان تفعل» reached the KB and got «أيّ مادة تقصد؟».
+  const identity: Array<[string, 'ar' | 'en']> = [
+    ['من انت', 'ar'],
+    ['من أنت؟', 'ar'],
+    ['مين انت', 'ar'],
+    ['شو انت', 'ar'],
+    ['ما اسمك', 'ar'],
+    ['عرف عن نفسك', 'ar'],
+    ['هل أنت روبوت', 'ar'],
+    ['هل انت ذكاء اصطناعي؟', 'ar'],
+    ['من صنعك', 'ar'],
+    ['ما هو اقرأ', 'ar'],
+    ['who are you?', 'en'],
+    ['what are you', 'en'],
+    ["what's your name", 'en'],
+    ['are you a bot', 'en'],
+    ['who made you?', 'en'],
+    ['what is iqraa', 'en'],
+  ];
+
+  for (const [q, lang] of identity) {
+    it(`"${q}" → about, with a reply that says what Iqrra is`, () => {
+      const route = classifyChatIntent(q, lang);
+      assert.equal(route.intent, 'about');
+      assert.equal(route.useTeachingPipeline, false);
+      assert.match(route.socialReply ?? '', lang === 'ar' ? /اقرأ/ : /Iqrra/);
+    });
+  }
+
+  const capabilities: Array<[string, 'ar' | 'en']> = [
+    ['ماذا تستطيع ان تفعل', 'ar'],
+    ['ماذا تستطيع أن تفعل؟', 'ar'],
+    ['شو بتقدر تعمل', 'ar'],
+    ['ما الذي يمكنك فعله', 'ar'],
+    ['كيف تساعدني', 'ar'],
+    ['بماذا تساعدني؟', 'ar'],
+    ['ما هي قدراتك', 'ar'],
+    ['ماذا تفعل', 'ar'],
+    ['what can you do?', 'en'],
+    ['what do you do', 'en'],
+    ['how can you help me', 'en'],
+    ['what are your capabilities', 'en'],
+  ];
+
+  for (const [q, lang] of capabilities) {
+    it(`"${q}" → about, listing the capabilities`, () => {
+      const route = classifyChatIntent(q, lang);
+      assert.equal(route.intent, 'about');
+      assert.equal(route.useTeachingPipeline, false);
+      assert.match(route.socialReply ?? '', lang === 'ar' ? /خطة درس/ : /lesson plan/);
+    });
+  }
+
+  it('answers even right after a clarify — the question is not a clarify answer', () => {
+    assert.equal(classifyChatIntent('من انت', 'ar', true).intent, 'about');
+    assert.equal(classifyChatIntent('ماذا تستطيع ان تفعل', 'ar', true).intent, 'about');
+  });
+
+  it('does not claim teaching questions that share a word', () => {
+    assert.equal(classifyChatIntent('ما هو الاقتران', 'ar').intent, 'teaching');
+    assert.equal(classifyChatIntent('من اكتشف الذرة؟', 'ar').intent, 'teaching');
+    assert.equal(classifyChatIntent('كيف تساعدني في شرح المشتقات', 'ar').intent, 'teaching');
+    assert.equal(classifyChatIntent('what is a function', 'en').intent, 'teaching');
+    assert.equal(classifyChatIntent('how can you help me teach vectors', 'en').intent, 'teaching');
+  });
+});

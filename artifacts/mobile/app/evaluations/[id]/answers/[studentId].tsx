@@ -52,6 +52,7 @@ import { FillBlankInput, MatchingInput } from '@/components/QuestionInputs';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { toLatinDigits } from '@/services/latinDigits';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -192,7 +193,7 @@ export default function AnswerEntryScreen() {
       if (!attemptId) return;
       if (marks.trim() === '') return;
       const max = Number(question.marks);
-      const value = Number(marks.trim());
+      const value = Number(toLatinDigits(marks.trim()));
       if (!Number.isFinite(value) || value < 0 || value > max) {
         showToast(t('markOutOfRange', String(max)));
         // Put the accepted mark back in the box. Leaving the refused one on
