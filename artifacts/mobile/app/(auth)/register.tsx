@@ -16,7 +16,7 @@ import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/Goo
 import { Input } from '@/components/ui/Input';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { useStudentAccountsStatus } from '@/services/features';
-import { ApiError } from '@/services/apiClient';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 import { Ionicons } from '@expo/vector-icons';
 import { goBack } from '@/services/navigation';
 
@@ -55,6 +55,12 @@ export default function RegisterScreen() {
 
   const handleGoogleCredential = async (credential: string) => {
     setError('');
+    // The button is blocked until the box is ticked; this is the backstop for
+    // a credential that arrives anyway. The server refuses it too.
+    if (!termsAccepted) {
+      setError(t('errTermsRequired'));
+      return;
+    }
     setGoogleLoading(true);
     try {
       // Same role the manual form below would send when a pill was picked.
@@ -63,16 +69,14 @@ export default function RegisterScreen() {
       // from the login screen already takes. No roster code here either: a
       // parent/student claims one afterwards, on the mandatory screen the
       // routing gate sends them to.
-      await loginWithGoogle(credential, chosenRole ? { role: chosenRole } : undefined);
+      await loginWithGoogle(credential, { role: chosenRole ?? undefined, acceptedTerms: true });
       router.replace('/(tabs)');
     } catch (e: any) {
       // The server only refuses the pill's role when the existing account can
       // no longer change it (lib/roleSwitch.ts); otherwise it applies it.
-      if (e instanceof ApiError && (e.code === 'role_locked_teaching' || e.code === 'role_locked_linked')) {
-        setError(t(e.code === 'role_locked_teaching' ? 'accountTypeLockedTeaching' : 'accountTypeLockedLinked'));
-        return;
-      }
-      setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول عبر Google' : 'Google sign-in failed'));
+      // The role-locked refusals (lib/roleSwitch.ts) are among the codes
+      // apiErrorKey translates, alongside every other sign-up refusal.
+      setError(apiErrorMessage(e, 'errGoogleFailed', t));
     } finally {
       setGoogleLoading(false);
     }
@@ -95,6 +99,7 @@ export default function RegisterScreen() {
         // on the mandatory screen the routing gate sends them to (see
         // needsRosterClaim in services/routeGating.ts).
         role: chosenRole,
+        acceptedTerms: termsAccepted,
       });
       // No session yet — a password account is unverified until it proves
       // the address it just typed. Google's "Continue with" button above
@@ -102,7 +107,7 @@ export default function RegisterScreen() {
       router.replace({ pathname: '/(auth)/verify-email', params: { email: registeredEmail } });
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(e.message ?? 'Registration failed. Please try again.');
+      setError(apiErrorMessage(e, 'errRegisterFailed', t));
     } finally {
       setLoading(false);
     }
@@ -158,7 +163,7 @@ export default function RegisterScreen() {
           isRTL={isRTL}
         />
 
-        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('createYourAccount')}
         </Text>
         <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -206,9 +211,52 @@ export default function RegisterScreen() {
           {/* Shown whether or not a role pill is picked — hiding it until then
               read as "no Google signup here". /setup-subjects re-asks the role
               for any Google-created account anyway. */}
+          {/* Above both ways to sign up, because it governs both. It used to sit
+              under «إنشاء حساب» and gate the password form only, so «متابعة
+              عبر Google» created accounts nobody had asked to accept anything. */}
+          <Pressable
+            onPress={() => setTermsAccepted(v => !v)}
+            style={[styles.termsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: termsAccepted }}
+          >
+            <View style={[
+              styles.checkbox,
+              {
+                borderColor: termsAccepted ? colors.primary : colors.border,
+                backgroundColor: termsAccepted ? colors.primary : 'transparent',
+              },
+            ]}>
+              {termsAccepted && <Ionicons name="checkmark" size={12} color="#fff" />}
+            </View>
+            <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', flex: 1 }]}>
+              {lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
+              <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/terms')}>
+                {t('termsOfService')}
+              </Text>
+              {lang === 'ar' ? ' و' : ' and '}
+              <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/privacy')}>
+                {t('privacyPolicy')}
+              </Text>
+            </Text>
+          </Pressable>
+
           {isGoogleSignInAvailable() && !featuresLoading && (
             <>
-              <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
+              {/* Google draws its own button on web, which has no disabled
+                  state; a non-interactive wrapper is the closest thing. */}
+              <View
+                pointerEvents={termsAccepted ? 'auto' : 'none'}
+                style={{ opacity: termsAccepted ? 1 : 0.45 }}
+                accessibilityState={{ disabled: !termsAccepted }}
+              >
+                <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
+              </View>
+              {!termsAccepted ? (
+                <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+                  {t('registerAcceptTermsFirst')}
+                </Text>
+              ) : null}
               {googleLoading ? (
                 <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
                   {lang === 'ar' ? 'جارٍ تسجيل الدخول…' : 'Signing in…'}
@@ -297,33 +345,12 @@ export default function RegisterScreen() {
             disabled={!canSubmit}
             fullWidth
           />
-
-          <Pressable
-            onPress={() => setTermsAccepted(v => !v)}
-            style={[styles.termsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: termsAccepted }}
-          >
-            <View style={[
-              styles.checkbox,
-              {
-                borderColor: termsAccepted ? colors.primary : colors.border,
-                backgroundColor: termsAccepted ? colors.primary : 'transparent',
-              },
-            ]}>
-              {termsAccepted && <Ionicons name="checkmark" size={12} color="#fff" />}
-            </View>
-            <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', flex: 1 }]}>
-              {lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
-              <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/terms')}>
-                {t('termsOfService')}
-              </Text>
-              {lang === 'ar' ? ' و' : ' and '}
-              <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/privacy')}>
-                {t('privacyPolicy')}
-              </Text>
+          {!termsAccepted ? (
+            <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+              {t('registerAcceptTermsFirst')}
             </Text>
-          </Pressable>
+          ) : null}
+
         </View>
 
       </ScrollView>

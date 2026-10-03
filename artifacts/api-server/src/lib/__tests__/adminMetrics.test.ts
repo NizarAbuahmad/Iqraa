@@ -1,7 +1,29 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { parseMetricInput, parseSiteSignup, siteKeyMatches, toCsv } from "../adminMetrics.ts";
+import { parseDateRange, parseMetricInput, parseSiteSignup, signupSource, siteKeyMatches, toCsv } from "../adminMetrics.ts";
+
+describe("parseDateRange", () => {
+  it("is open-ended when absent and makes `to` inclusive of its day", () => {
+    assert.deepEqual(parseDateRange({}), {});
+    const r = parseDateRange({ from: "2026-10-01", to: "2026-10-02" }) as { from: Date; to: Date };
+    assert.equal(r.from.toISOString(), "2026-10-01T00:00:00.000Z");
+    assert.equal(r.to.toISOString(), "2026-10-03T00:00:00.000Z");
+  });
+  it("rejects bad dates and inverted ranges", () => {
+    assert.ok("error" in parseDateRange({ from: "1/10/2026" }));
+    assert.ok("error" in parseDateRange({ from: "2026-10-05", to: "2026-10-01" }));
+  });
+});
+
+describe("signupSource", () => {
+  it("keeps only known platforms and a clipped referrer", () => {
+    assert.deepEqual(signupSource({ "x-iqraa-platform": "android" }), { signupPlatform: "android", signupReferrer: null });
+    assert.deepEqual(signupSource({ "x-iqraa-platform": "tv", "x-iqraa-landing": "  https://iqrra.com/ " }),
+      { signupPlatform: null, signupReferrer: "https://iqrra.com/" });
+    assert.equal((signupSource({ "x-iqraa-landing": "a".repeat(400) }).signupReferrer ?? "").length, 300);
+  });
+});
 
 describe("parseMetricInput", () => {
   const today = "2026-10-01";

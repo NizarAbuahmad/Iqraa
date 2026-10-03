@@ -167,7 +167,7 @@ export default function ResultsDashboardScreen() {
         <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]} numberOfLines={1}>
+        <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]} numberOfLines={1}>
           {t('resultsDashboardTitle')}
         </Text>
         <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: align, color: 'rgba(255,255,255,0.95)' }]} numberOfLines={1}>
@@ -206,7 +206,7 @@ export default function ResultsDashboardScreen() {
                   )}
                 </View>
                 {meanPercent !== null && (
-                  <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 16, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
+                  <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
                     {t('classAverageLabel')}: {t('resultPercentLabel', String(meanPercent))}
                   </Text>
                 )}
@@ -214,7 +214,7 @@ export default function ResultsDashboardScreen() {
 
               {gradedCount > 0 && (
                 <View style={{ marginTop: 14, gap: 8 }}>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 12, textAlign: align }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12, textAlign: align }}>
                     {t('levelDistributionLabel')}
                   </Text>
                   {LEVEL_ORDER.map(key => {
@@ -228,7 +228,7 @@ export default function ResultsDashboardScreen() {
                         <View style={[styles.barTrack, { backgroundColor: colors.muted }]}>
                           <View style={[styles.barFill, { width: `${widthPct}%`, backgroundColor: LEVEL_COLOR[key] }]} />
                         </View>
-                        <Text style={{ width: 20, color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 12, textAlign: 'center' }}>
+                        <Text style={{ width: 20, color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12, textAlign: 'center' }}>
                           {count}
                         </Text>
                       </View>
@@ -256,7 +256,7 @@ export default function ResultsDashboardScreen() {
           error ? null : (
             <View style={styles.empty}>
               <Ionicons name="bar-chart-outline" size={40} color={colors.mutedForeground} />
-              <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('noAttemptsYet')}
               </Text>
               <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
@@ -271,13 +271,13 @@ export default function ResultsDashboardScreen() {
             style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: align }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }}>
                 {item.studentName}
               </Text>
               {item.result && Number(item.result.totalMarks) > 0 && (
                 <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginTop: 4 }]}>
                   {item.result.levelKey && (
-                    <Text style={{ color: LEVEL_COLOR[item.result.levelKey], fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>
+                    <Text style={{ color: LEVEL_COLOR[item.result.levelKey], fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
                       {t(LEVEL_KEY[item.result.levelKey])}
                     </Text>
                   )}
@@ -288,7 +288,7 @@ export default function ResultsDashboardScreen() {
               )}
             </View>
             <View style={[styles.statusPill, { backgroundColor: STATUS_COLOR[item.status] + '20' }]}>
-              <Text style={{ color: STATUS_COLOR[item.status], fontFamily: 'Cairo_600SemiBold', fontSize: 11 }}>
+              <Text style={{ color: STATUS_COLOR[item.status], fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 }}>
                 {t(STATUS_KEY[item.status])}
               </Text>
             </View>
@@ -374,7 +374,7 @@ function ClassGaps({
 
   return (
     <View style={{ marginTop: 18, gap: 10 }}>
-      <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: align }}>
+      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
         {t('classGapsTitle')}
       </Text>
       <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
@@ -387,7 +387,7 @@ function ClassGaps({
         return (
           <View key={o.objectiveId} style={{ gap: 4 }}>
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ color: weak ? '#D92D20' : colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>
+              <Text style={{ color: weak ? '#D92D20' : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
                 {t('resultPercentLabel', String(o.percent))}
               </Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>
@@ -412,7 +412,7 @@ function ClassGaps({
           style={[styles.classGapBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           <Ionicons name="document-text-outline" size={14} color={ACCENT} />
-          <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>
+          <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>
             {t('classGapWorksheet')}
           </Text>
         </Pressable>
@@ -428,7 +428,7 @@ function ClassGaps({
           {warming
             ? <ActivityIndicator size="small" color={ACCENT} />
             : <Ionicons name="flash-outline" size={14} color={ACCENT} />}
-          <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>
+          <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>
             {t('classGapWarmup')}
           </Text>
         </Pressable>

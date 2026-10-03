@@ -6,23 +6,24 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AppSplash } from '@/components/ui/AppSplash';
+import { ConfirmHost } from '@/components/ui/ConfirmDialog';
 /**
  * Arabic type. Inter has no Arabic glyphs, so every Arabic string — which is
  * nearly the whole product — was being drawn by whatever fallback each device
  * happened to pick, at that fallback's own weight. Bold headings were not
  * reliably bold, and three users on three platforms saw three typefaces.
  *
- * Almarai carries body copy; Cairo carries every heavier weight, which is where
+ * Almarai carries body copy; Readex Pro carries every heavier weight, which is where
  * headings, titles, buttons and labels live. Both cover Latin and digits too,
  * so English terms and numerals stay in one family rather than switching
  * mid-sentence.
  */
 import { Almarai_400Regular } from '@expo-google-fonts/almarai';
 import {
-  Cairo_500Medium,
-  Cairo_600SemiBold,
-  Cairo_700Bold,
-} from '@expo-google-fonts/cairo';
+  ReadexPro_500Medium,
+  ReadexPro_600SemiBold,
+  ReadexPro_700Bold,
+} from '@expo-google-fonts/readex-pro';
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, usePathname } from 'expo-router';
@@ -184,6 +185,7 @@ function RootLayoutNav() {
       <Stack.Screen name="admin/dashboard" options={{ headerShown: false }} />
       <Stack.Screen name="admin/users" options={{ headerShown: false }} />
       <Stack.Screen name="admin/signups" options={{ headerShown: false }} />
+      <Stack.Screen name="admin/ai-costs" options={{ headerShown: false }} />
       <Stack.Screen name="classes/index" options={{ headerShown: false }} />
       <Stack.Screen name="classes/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="evaluations/index" options={{ headerShown: false }} />
@@ -200,6 +202,7 @@ function RootLayoutNav() {
       <Stack.Screen name="setup-subjects" options={{ headerShown: false, gestureEnabled: false }} />
     </Stack>
     <AppSplash visible={isLoading} onLayout={() => SplashScreen.hideAsync().catch(() => {})} />
+    <ConfirmHost />
     </>
   );
 }
@@ -207,9 +210,9 @@ function RootLayoutNav() {
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Almarai_400Regular,
-    Cairo_500Medium,
-    Cairo_600SemiBold,
-    Cairo_700Bold,
+    ReadexPro_500Medium,
+    ReadexPro_600SemiBold,
+    ReadexPro_700Bold,
     // Vector icons must be explicitly loaded — Ionicons font powers all
     // non-iOS tab bar icons and in-app icons on Android / web.
     ...Ionicons.font,

@@ -91,7 +91,7 @@ function Chip({ label, selected, onPress, colors, accent }: {
       <Text
         style={[
           styles.chipText,
-          { color: selected ? colors.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium' },
+          { color: selected ? colors.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_500Medium' },
         ]}
       >
         {label}
@@ -213,7 +213,7 @@ export default function SetupSubjectsScreen() {
           />
         ) : null}
 
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {editMode ? t('editTeachingTitle') : t('teacherSetupTitle')}
         </Text>
         <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -230,7 +230,7 @@ export default function SetupSubjectsScreen() {
               style={[styles.gradeCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}
             >
               <View style={[styles.gradeCardHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Text style={[styles.gradeCardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align, flex: 1 }]}>
+                <Text style={[styles.gradeCardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align, flex: 1 }]}>
                   {gradeName}
                 </Text>
                 <Pressable
@@ -264,7 +264,7 @@ export default function SetupSubjectsScreen() {
 
         {remainingGrades.length > 0 ? (
           <>
-            <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align, marginTop: assignments.length > 0 ? 8 : 20 }]}>
+            <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align, marginTop: assignments.length > 0 ? 8 : 20 }]}>
               {t('teacherSetupAddGrade')}
             </Text>
             <View style={[styles.chips, isRTL && { flexDirection: 'row-reverse' }]}>

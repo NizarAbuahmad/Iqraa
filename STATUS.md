@@ -53,6 +53,21 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Interface dates and times are written in Latin digits** (2026-10-03).
+  Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
+  «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
+  screens disagreed with each other. Every date or time an interface screen or
+  export prints now goes through `dateLocale(lang)` / `AR_LATIN`
+  (`services/dateLabels.ts`): the Arabic weekday and month names stay, only the
+  numbering changes, and English is untouched. `dateLabels.test.ts` scans
+  `app/`, `components/`, `services/` and `hooks/` and fails on a plain `'ar-JO'`
+  or a locale-less `toLocaleDateString()`, so a new screen cannot bring it back.
+  **Deliberately still Arabic-Indic:** book citations («صفحة ٣٥»), the page and
+  count labels in the resources screen, exercise numbers, game scores and
+  maths, which are content rather than interface text. **Not covered:**
+  `app/admin` and `app/dev`, which print the device's own format. Typed input
+  is already folded to Latin by `toLatinDigits`. Checked by tests and typecheck;
+  not looked at in a browser.
 - **The tool screens share one rule per failure mode** (2026-10-02, PR #772).
   A review of every `/ai-tools` screen found ~40 issues, most of them one
   pattern repeated per screen. Each pattern now has one helper, used by
@@ -87,8 +102,11 @@ an announcement by default» below.
   machine-testable (the runner cannot load react-native). Still open from
   the same review: a reopened deck is not loaded from موادي on either slides
   screen (only the form is prefilled); pen ink drifts off the content on
-  resize; the timer has no pause; `homeAiTools.ts` still disables
-  `activity`/`game` for the related-tools panel, deliberately.
+  resize; `homeAiTools.ts` still disables `activity`/`game` for the
+  related-tools panel, deliberately. (The timer pause that was listed here
+  landed 2026-10-03: tap the clock, press P, or use the bottom-bar button on
+  wide screens. Pausing holds the second; a new slide or a restart clears it.
+  Not looked at in a browser.)
 - **A free, no-login games hub shipped** (2026-09-18), a competitive response
   to hasaadx.com/teacher. `/play` (added to `routeGating.ts`'s
   `PUBLIC_ROUTES`, same no-account pattern as `app/take/[code].tsx`) offers
@@ -531,6 +549,45 @@ an announcement by default» below.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## One parent per name on a class list, 2026-10-03
+
+Found by testing, not by reading: the same child could be picked from a class
+code's name list by any number of parent accounts. Each one then saw that
+child's letters. The old design said this was the point («both parents is the
+normal case»), but a class code is one string handed to a whole class and its
+picker lists every child, so "anyone with the code can attach to anyone on the
+list" was the real rule.
+
+**The rule now.** A name picked from a class code's list takes one parent
+account. The name stays on the list, greyed out and labelled «تم ربطه بالفعل»,
+so the person looking for their own child sees it exists and has been claimed
+rather than wondering whether the code is wrong. A second parent is let in on
+purpose, by the teacher, with that child's own code from «ربط الحساب» — that
+path is deliberately not limited, and it is also how a teacher replaces a wrong
+first claim (unlink it from the same screen).
+
+**Where it lives.** `decideClaim` refuses with `claim_guardian_taken` (409)
+only on the class-code branch, after membership is proven, so a name that is not
+on the list never leaks whether it has a parent. The route asks again inside the
+transaction that already locks the student row for the student-account rule, so
+two parents choosing the same name in the same second get one winner. No schema
+change and no push. `GET /auth/join/:code` now returns `guardianTaken` beside
+`taken`; it is unauthenticated and cannot know who is asking, so it sends both
+and the picker reads the one for the viewer's role. An older server that sends
+no `guardianTaken` degrades to «free», which that server also accepts.
+
+**What it costs.** Two parents can no longer both self-serve from the class
+code. The second one needs the teacher to issue their child's code; the error
+text says so. A wrong first claim now locks the rightful parent out until the
+teacher unlinks it, which is why that unlink screen matters.
+
+Checked against a local API: the lookup flags, a second parent refused with the
+right code, the first parent re-sending their own claim (accepted — their own
+link does not count), a teacher-issued child code adding a second parent
+(accepted), and two parents racing for a fresh name (one 201, one 409). Checked
+on screen in the web build: claimed names listed, labelled and unselectable, an
+unclaimed one still selectable. Not checked on a device.
 
 ## One phone, several accounts, and a Google chooser that always appears, 2026-10-03
 
@@ -4344,10 +4401,12 @@ would have silently answered 401 to the parents it exists for.
 `mountOrder.test.ts` pins that.
 
 Claimed names are returned with a `taken` flag rather than filtered out.
-Filtering looked safer and is wrong: only the one `self` link is exclusive,
-guardians are unlimited by design, so hiding claimed names would stop the
-second parent finding their own child and make the code look broken to them.
-The names are exposed either way, so filtering buys no privacy.
+Filtering looked safer and is wrong: hiding a claimed name makes the class code
+look broken to the person searching for their own child, and the names are
+exposed either way, so filtering buys no privacy. *(This paragraph used to say
+guardians were unlimited by design, so a second parent could always pick the
+same child. That stopped being true on 2026-10-03 — see «One parent per name on
+a class list» below. The flag now exists for guardians too, as `guardianTaken`.)*
 
 **The two findability fixes**, which were the original complaint:
 
@@ -14538,6 +14597,22 @@ contact form, CSV export).
   `GET /auth/me` and account deletion (`lib/suspension.ts`), and every other route
   403s on the next request anyway.
 
+**Round 2, 2026-10-02:** `/admin/ai-costs` (spend over any date range: per day,
+by tool, by model, by user; defaults to the budget month); `from`/`to` filters
+on users, feedback and collected emails (`parseDateRange`, inclusive days,
+UTC); `DELETE /feedback/:id` so a read note disappears — the list is a to-do,
+not an archive, and the dashboard's feedback count drops with it; and
+**where an account was created**: the client sends `X-Iqraa-Platform`
+(android/ios/web) and, on web, `X-Iqraa-Landing` (first `?utm_source` or
+referrer the tab saw, `services/clientPlatform.ts`), stored at registration in
+`users.signup_platform/signup_referrer` and shown per user + as "joined via"
+on the overview. Accounts from before this show `unknown` — nothing recorded
+it. Schema: `docs/schema-push-2026-10-02-signup-source.sql`. Follower counts
+stay manual: the Meta connector available here is the Ads API (ad accounts,
+campaigns) and cannot read page/profile follower counts; Instagram Graph needs
+a Business account + app review, so a number typed in weekly is the honest
+option until that is worth doing.
+
 ## Chat review: five bugs in the «اقرأ» tab, 2026-10-02
 
 A read-through of `app/(tabs)/iqra.tsx`, `services/ai/chatArtifacts.ts` and
@@ -14666,3 +14741,110 @@ Not seen in a browser — same reason as the 2026-09-13 entry. Covered by 25
 new unit tests (`studentResponse`, `answerSaveQueue`, `takeErrorKey`,
 `formatMarks`, routeGating and participantPicker pins); api-server 1014/1014
 and mobile 2152/2152 pass, typecheck clean.
+
+## Cleanup after the student-side review, 2026-10-03
+
+Three of the five items the 2026-10-02 student review left open.
+
+- **A student's voice recording outlived every row that pointed at it.** Four
+  paths, not one: a teacher releasing a sitting (`DELETE /attempts/:id`), a
+  teacher deleting their account (the answers cascade from the user), a
+  student's re-take (the new key overwrote the old one and the earlier take's
+  file stayed), and an upload whose transcription then failed. All four now
+  delete the object, best-effort and after the database change, the rule
+  account deletion already followed (`lib/attemptAudio.ts`). The key rule is
+  `attemptAudioKeys`, tested, which ignores the placeholder `'saved'` that
+  rows written before #776 carry. Recordings already orphaned before this
+  are **not** swept — that needs a one-off listing of `attempt-audio/` against
+  `attempt_answers`, which nothing here does.
+- **The public books endpoint handed out teacher-guide links.**
+  `GET /curriculum/books` has no session and asked the catalog for the
+  teacher view, so every `guidePdfUrl` came back. It now answers as a student
+  would (`lib/publicBooks.ts`, tested). Defence in depth, not a closed door:
+  most guide links are the ministry's own public NCCD URLs, and the catalog
+  ships in the app bundle. Four are Google Drive copies of a commercial
+  York Press teacher's book, which the bundle still carries.
+- **Raw English server errors on the Arabic sign-in and messaging screens.**
+  The server now sends a `code` on every refusal a user can actually hit
+  (auth, messaging, and the shared 429 as `rate_limited`), the client's own
+  validation throws coded errors too, and `services/apiErrorKey.ts` turns a
+  code into a sentence in both languages — never the English body. One
+  exception, on purpose: a suspension shows the reason an administrator
+  wrote, unless it is the server's English default. Covers login, register,
+  verify-email, forgot-password, the inbox, threads, class chat, new group
+  and the claim-code screen. A missing translation for any code fails the
+  typecheck (checked by adding a bogus key: 25 errors).
+
+**Still open from the review:** terms acceptance for Google sign-up (needs a
+schema column and a manual push), and a «اختباراتي» screen so a signed-in
+student can find their exams and results without the share link.
+
+## «اختباراتي» — a student can find their exams and results, 2026-10-03
+
+**The share link was the only door into an exam, and the hand-in screen the
+only place a result appeared.** A student who closed that tab had no way back
+to either. A signed-in student now has «اختباراتي»: a tile on the library tab
+(their landing page, with a count of exams waiting) and a row on the profile.
+
+- **`GET /student/exams`** (`routes/studentExams.ts`, student-only, guard
+  path-scoped to `/student` and pinned in `mountOrder.test.ts` along with the
+  roster's `/students` it must not shadow). It lists every published or
+  closed exam set to a class the account is `self`-linked into, plus any exam
+  the student already holds a sitting on.
+- **What each row says is decided in `modules/assessment/studentExams.ts`,
+  tested (15 cases).** A link only while `/take/:code` would admit the
+  student — never for a closed or expired exam, which that route answers as
+  an unknown code. A result only when `/take/attempt/result` would release it
+  (`studentResultReady`, same projection), so an unreleased mark never leaves
+  the server. A paper the teacher is typing in for the student is never
+  offered to continue, because `claim-self` refuses to resume one.
+- **Opening an exam goes through `/take/:code`**, which already recognises a
+  signed-in student and resumes their sitting (#776). Released results expand
+  in place, through `components/StudentResultCard.tsx` — lifted out of the
+  hand-in screen so the two show a mark identically.
+- `POST /evaluations/:id/close` now stamps `closedAt`, and re-publishing
+  clears it. The column existed and nothing wrote it.
+
+**Not seen in a browser.** It needs a signed-in student account with a
+roster link and a published exam against a real database, which this
+session's environment does not have.
+
+**Not in scope:** parents see nothing here. The endpoint answers students
+only, and a parent who types `/my-exams` gets the translated refusal. A
+parent view of their child's results is a separate decision.
+
+## Every new account records that it accepted the terms, 2026-10-03
+
+**The terms checkbox on the register screen gated the password form only.**
+«متابعة عبر Google» sat above it and created accounts without asking, and the
+server stored nothing on either path — for an app whose accounts include
+minors'. Now:
+
+- **The server refuses a new account without acceptance** (`400
+  terms_required`, `api-server/src/lib/termsAcceptance.ts`, tested) on both
+  `POST /auth/register` and the account-creating branch of `POST
+  /auth/google`. Someone signing back in with Google is not asked again.
+- **It records when and which wording**: `users.terms_accepted_at` and
+  `users.terms_version`, the same shape as the teacher's roster attestation.
+  The version is the date the app's documents show (`LEGAL_VERSION` beside
+  `LEGAL_LAST_UPDATED` in `constants/legal.ts`; `legalVersion.test.ts` fails
+  if the two disagree), validated as date-shaped — anything else is stored as
+  `unspecified` rather than trusted.
+- **The register screen's checkbox moved above both sign-up paths**, and the
+  Google button is blocked until it is ticked (a non-interactive wrapper:
+  Google draws its own button on web and it has no disabled state). A hint
+  says why under both buttons.
+- **The login screen's Google button can also create an account**, so it now
+  carries a «by continuing… you agree to» notice with both links, and sends
+  acceptance — the notice is the acceptance there. That is a deliberate
+  choice: refusing and redirecting to register was the stricter alternative.
+
+**Schema: `docs/schema-push-2026-10-03-terms-acceptance.sql` must run on Neon
+before this merges.** Both sign-up routes write the new columns, so without
+them every new account fails to insert. `verify-schema` checks the columns.
+
+**Not done:** accounts created before this have no record (`terms_accepted_at`
+null) and are not asked to accept; re-acceptance when the wording changes is
+a separate flow. Apps that have not relaunched since the merge still send no
+acceptance and are refused with a generic error until the over-the-air update
+reaches them (published on every merge to main).

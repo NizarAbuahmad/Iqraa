@@ -74,3 +74,37 @@ export function toCsv(header: string[], rows: unknown[][]): string {
   };
   return [header, ...rows].map(r => r.map(cell).join(",")).join("\r\n") + "\r\n";
 }
+
+/** Postgres rejects a malformed uuid with 22P02, which would surface as a 500. */
+export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * `?from=YYYY-MM-DD&to=YYYY-MM-DD` → half-open [from, to) in UTC. Both are
+ * optional; `to` names a whole day, so the bound returned is the next
+ * midnight. Bad input is an error, never silently "all time".
+ */
+export function parseDateRange(q: Record<string, unknown>): { from?: Date; to?: Date } | { error: string } {
+  const out: { from?: Date; to?: Date } = {};
+  for (const k of ["from", "to"] as const) {
+    const v = q[k];
+    if (v === undefined || v === "") continue;
+    if (typeof v !== "string" || !DAY.test(v) || Number.isNaN(Date.parse(v))) return { error: `${k} must be YYYY-MM-DD` };
+    const d = new Date(`${v}T00:00:00Z`);
+    if (k === "to") d.setUTCDate(d.getUTCDate() + 1);
+    out[k] = d;
+  }
+  if (out.from && out.to && out.from >= out.to) return { error: "from must be on or before to" };
+  return out;
+}
+
+const PLATFORMS = new Set(["android", "ios", "web"]);
+
+/** What the client said about itself at registration — see mobile services/clientPlatform.ts. */
+export function signupSource(headers: Record<string, unknown>): { signupPlatform: string | null; signupReferrer: string | null } {
+  const p = headers["x-iqraa-platform"];
+  const r = headers["x-iqraa-landing"];
+  return {
+    signupPlatform: typeof p === "string" && PLATFORMS.has(p) ? p : null,
+    signupReferrer: typeof r === "string" && r.trim() ? r.trim().slice(0, 300) : null,
+  };
+}

@@ -21,6 +21,13 @@ export const users = pgTable("users", {
    */
   avatarKey: text("avatar_key"),
   emailVerified: boolean("email_verified").notNull().default(false),
+  /** 'android' | 'ios' | 'web' — what the client said at registration
+   *  (X-Iqraa-Platform, see mobile services/clientPlatform.ts). Null for
+   *  accounts created before 2026-10-02. */
+  signupPlatform: text("signup_platform"),
+  /** Web only: the page or ?utm_source that brought the visitor to the app,
+   *  captured on first load of the tab and sent at registration. */
+  signupReferrer: text("signup_referrer"),
   /**
    * Set by a moderator acting on a report — see `routes/moderation.ts`.
    *
@@ -56,6 +63,16 @@ export const users = pgTable("users", {
    * changes more often than schemas do.
    */
   rosterConsentVersion: text("roster_consent_version").notNull().default(""),
+  /**
+   * When this account accepted the terms of use and privacy policy, and which
+   * wording (the date-shaped version `constants/legal.ts` shows). Required of
+   * every account created from 2026-10-03 on — see
+   * `api-server/src/lib/termsAcceptance.ts`. Null on older accounts: the
+   * register checkbox existed but nothing recorded it, and «متابعة عبر
+   * Google» never asked at all.
+   */
+  termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+  termsVersion: text("terms_version").notNull().default(""),
   /**
    * Grade and subject catalog ids (`@workspace/curriculum`'s GRADES/SUBJECTS)
    * this teacher picked at signup. Empty on every non-teacher account, and on

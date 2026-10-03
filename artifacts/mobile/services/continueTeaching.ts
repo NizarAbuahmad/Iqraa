@@ -3,6 +3,7 @@
  * Presentation-only; does not add product features.
  */
 import type { SavedMaterial } from '@/services/workspace';
+import { AR_LATIN } from './dateLabels.ts';
 
 export type ContinueMaterialKind =
   | 'lesson'
@@ -80,7 +81,7 @@ export function relativeEditWhen(
       if (diffH < 24) return `منذ ${diffH} ساعة`;
       if (diffD === 2) return 'منذ يومين';
       if (diffD < 7) return `منذ ${diffD} أيام`;
-      return new Date(iso).toLocaleDateString('ar-JO', { day: 'numeric', month: 'short' });
+      return new Date(iso).toLocaleDateString(AR_LATIN, { day: 'numeric', month: 'short' });
     }
     if (diffH < 24) return `${diffH}h ago`;
     if (diffD < 7) return `${diffD}d ago`;

@@ -13,6 +13,7 @@
  * still an exam, and a blank is truer than a guess.
  */
 import { getBookById } from '@workspace/curriculum';
+import { dateLocale } from './dateLabels.ts';
 
 /** The book an exam was built from, or null when it cannot be resolved. */
 export function bookLabel(bookId: string | undefined | null, lang: 'ar' | 'en'): string | null {
@@ -25,8 +26,9 @@ export function bookLabel(bookId: string | undefined | null, lang: 'ar' | 'en'):
 /**
  * When the exam was created, in the reader's calendar.
  *
- * Same locales the workspace list and the home feed already use ('ar-JO' /
- * 'en-GB'), so three lists of dated things do not render dates three ways.
+ * Same locales the workspace list and the home feed already use (Arabic with
+ * Latin digits / 'en-GB'), so three lists of dated things do not render dates
+ * three ways.
  */
 export function formatListDate(iso: string | undefined | null, lang: 'ar' | 'en'): string | null {
   if (!iso) return null;
@@ -34,7 +36,7 @@ export function formatListDate(iso: string | undefined | null, lang: 'ar' | 'en'
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return null;
     const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
-    return d.toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-GB', opts);
+    return d.toLocaleDateString(dateLocale(lang), opts);
   } catch {
     return null;
   }

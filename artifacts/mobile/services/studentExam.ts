@@ -15,7 +15,7 @@
  * `apiFetch` on purpose, because it *is* asking "who is signed in" rather than
  * avoiding it. See its own comment.
  */
-import { apiFetch, getApiBaseUrl } from './apiClient.ts';
+import { apiFetch, apiJson, getApiBaseUrl } from './apiClient.ts';
 import { fetchWithTimeout } from './fetchWithTimeout.ts';
 import type { StudentResponse } from './studentAnswers.ts';
 import type { CompetencyKey, CompetencyScore, LevelKey } from './evaluations.ts';
@@ -211,4 +211,15 @@ export interface StudentResult {
  */
 export function getExamResult(token: string): Promise<{ ready: boolean; result?: StudentResult }> {
   return call('/take/attempt/result', { token });
+}
+
+/**
+ * «اختباراتي»: every exam set to the signed-in student's classes, with where
+ * each one stands. Uses `apiFetch` on purpose, like `claimEvaluationAsSelf`:
+ * this *is* the signed-in session asking about itself. Throws an `ApiError`
+ * the screen translates with `apiErrorMessage`.
+ */
+export async function getMyExams(): Promise<import('./myExams.ts').MyExam[]> {
+  const data = await apiJson<{ exams: import('./myExams.ts').MyExam[] }>('/student/exams');
+  return data.exams ?? [];
 }

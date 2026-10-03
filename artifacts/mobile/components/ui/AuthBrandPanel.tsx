@@ -57,27 +57,23 @@ export function AuthBrandPanel({ isWide }: { isWide: boolean }) {
         accessibilityLabel={lang === 'ar' ? 'التبديل إلى الإنجليزية' : 'Switch to Arabic'}
       >
         <Ionicons name="language-outline" size={15} color="rgba(255,255,255,0.9)" />
-        <Text style={[styles.langBtnText, { fontFamily: 'Cairo_500Medium' }]}>
+        <Text style={[styles.langBtnText, { fontFamily: 'ReadexPro_500Medium' }]}>
           {lang === 'ar' ? 'English' : 'عربي'}
         </Text>
       </Pressable>
 
       <View style={[styles.brandContent, isWide ? styles.brandContentWide : styles.brandContentNarrow]}>
-        <Text style={[styles.eyebrow, { fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
+        <Text style={[styles.eyebrow, { fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }]}>
           {t('loginBrandEyebrow')}
         </Text>
 
-        <BrandLogo
-          onDark
-          width={isWide ? 220 : 96}
-          height={isWide ? 220 : 96}
-        />
+        <BrandLogo onDark width={isWide ? 240 : 150} />
 
         <Text
           style={[
             styles.valueProp,
             {
-              fontFamily: lang === 'ar' ? 'Cairo_500Medium' : 'Almarai_400Regular',
+              fontFamily: lang === 'ar' ? 'ReadexPro_500Medium' : 'Almarai_400Regular',
               textAlign: 'center',
               writingDirection: isRTL ? 'rtl' : 'ltr',
             },

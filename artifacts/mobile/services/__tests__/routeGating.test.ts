@@ -119,6 +119,7 @@ describe('isNonTeacherRoute', () => {
       '/settings',
       '/faq',
       '/delete-account',
+      '/my-exams',
       '/profile',
       '/join-class',
       '/claim-required',

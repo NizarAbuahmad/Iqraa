@@ -83,7 +83,7 @@ const TAGS = `
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="اقرأ" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-maskable.png" />
     <style id="iqraa-preboot">
       /* Painted before the JS bundle boots, so the first frame is the app's own
          background rather than a white flash on the way to a navy screen. */

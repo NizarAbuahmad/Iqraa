@@ -1,4 +1,6 @@
 import { Router, type Request } from "express";
+import { signupSource } from "../lib/adminMetrics.js";
+import { termsAcceptance } from "../lib/termsAcceptance.ts";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -27,6 +29,7 @@ import { decideGoogleLink, googleRoleConflict } from "../lib/googleLink.js";
 import { decideRefresh, refreshTokenTtlMs } from "../lib/refreshPolicy.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import { syncClassThreadsForStudent } from "../lib/classThread.js";
+import { audioKeysForTeacher } from "../lib/attemptAudio.ts";
 import {
   ROSTER_CONSENT_STATEMENT_EN,
   ROSTER_CONSENT_VERSION,
@@ -279,23 +282,23 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
       };
 
     if (typeof firstName !== "string" || !firstName.trim()) {
-      res.status(400).json({ error: "First name is required" });
+      res.status(400).json({ error: "First name is required", code: "missing_fields" });
       return;
     }
     if (typeof lastName !== "string" || !lastName.trim()) {
-      res.status(400).json({ error: "Last name is required" });
+      res.status(400).json({ error: "Last name is required", code: "missing_fields" });
       return;
     }
     if (typeof email !== "string" || !email.includes("@")) {
-      res.status(400).json({ error: "Valid email is required" });
+      res.status(400).json({ error: "Valid email is required", code: "invalid_email" });
       return;
     }
     if (typeof password !== "string" || !password || !isStrongPassword(password)) {
-      res.status(400).json({ error: PASSWORD_POLICY_MESSAGE });
+      res.status(400).json({ error: PASSWORD_POLICY_MESSAGE, code: "password_policy" });
       return;
     }
     if (confirmPassword !== undefined && confirmPassword !== password) {
-      res.status(400).json({ error: "Passwords do not match" });
+      res.status(400).json({ error: "Passwords do not match", code: "passwords_mismatch" });
       return;
     }
 
@@ -319,6 +322,13 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
       return;
     }
 
+    // A new account must have accepted the terms; see lib/termsAcceptance.ts.
+    const terms = termsAcceptance(req.body);
+    if (!terms.ok) {
+      res.status(terms.status).json({ error: terms.error, code: terms.code });
+      return;
+    }
+
     // Check duplicate email
     const [existing] = await db
       .select({ id: users.id })
@@ -327,7 +337,7 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
       .limit(1);
 
     if (existing) {
-      res.status(409).json({ error: "An account with this email already exists" });
+      res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });
       return;
     }
 
@@ -341,6 +351,9 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
         passwordHash,
         role,
         preferredLanguage: "en",
+        termsAcceptedAt: terms.termsAcceptedAt,
+        termsVersion: terms.termsVersion,
+        ...signupSource(req.headers),
       })
       .returning();
 
@@ -358,7 +371,7 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
     });
   } catch (err: any) {
     if (err.code === "23505") {
-      res.status(409).json({ error: "An account with this email already exists" });
+      res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });
       return;
     }
     logger.error({ err }, "register failed");
@@ -371,7 +384,7 @@ router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, asyn
   try {
     const { email, code } = req.body as { email?: string; code?: string };
     if (!email || !code) {
-      res.status(400).json({ error: "Email and code are required" });
+      res.status(400).json({ error: "Email and code are required", code: "missing_fields" });
       return;
     }
 
@@ -387,14 +400,14 @@ router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, asyn
     // own duplicate-email check already tells a caller an address is taken,
     // so this isn't hiding account existence, just not adding a second,
     // finer-grained oracle on top of it.
-    const invalid = () => res.status(400).json({ error: "Invalid or expired code" });
+    const invalid = () => res.status(400).json({ error: "Invalid or expired code", code: "invalid_code" });
 
     if (!user) {
       invalid();
       return;
     }
     if (user.emailVerified) {
-      res.status(400).json({ error: "This email is already verified" });
+      res.status(400).json({ error: "This email is already verified", code: "already_verified" });
       return;
     }
 
@@ -473,7 +486,7 @@ router.post("/resend-verification", resendVerificationLimiter, resendVerificatio
   try {
     const { email } = req.body as { email?: string };
     if (!email) {
-      res.status(400).json({ error: "Email is required" });
+      res.status(400).json({ error: "Email is required", code: "missing_fields" });
       return;
     }
 
@@ -525,7 +538,7 @@ router.post("/change-unverified-email", changeEmailLimiter, changeEmailAddressLi
     };
 
     if (!email || !password || !newEmail?.includes("@")) {
-      res.status(400).json({ error: "Current email, password and a valid new email are required" });
+      res.status(400).json({ error: "Current email, password and a valid new email are required", code: "missing_fields" });
       return;
     }
 
@@ -533,7 +546,7 @@ router.post("/change-unverified-email", changeEmailLimiter, changeEmailAddressLi
     const next = newEmail.toLowerCase().trim();
 
     if (current === next) {
-      res.status(400).json({ error: "That is already the address on this account" });
+      res.status(400).json({ error: "That is already the address on this account", code: "same_email" });
       return;
     }
 
@@ -543,18 +556,18 @@ router.post("/change-unverified-email", changeEmailLimiter, changeEmailAddressLi
     // this route is reachable without a session, so it must not confirm which
     // addresses have pending signups.
     if (!user?.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
-      res.status(401).json({ error: "Invalid email or password" });
+      res.status(401).json({ error: "Invalid email or password", code: "invalid_credentials" });
       return;
     }
 
     if (user.emailVerified) {
-      res.status(400).json({ error: "This account is already verified" });
+      res.status(400).json({ error: "This account is already verified", code: "already_verified" });
       return;
     }
 
     const [taken] = await db.select({ id: users.id }).from(users).where(eq(users.email, next)).limit(1);
     if (taken) {
-      res.status(409).json({ error: "An account with this email already exists" });
+      res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });
       return;
     }
 
@@ -583,7 +596,7 @@ router.post("/change-unverified-email", changeEmailLimiter, changeEmailAddressLi
     res.json({ email: updated.email, message: "A new code was sent to that address." });
   } catch (err: any) {
     if (err.code === "23505") {
-      res.status(409).json({ error: "An account with this email already exists" });
+      res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });
       return;
     }
     logger.error({ err }, "change unverified email failed");
@@ -616,7 +629,7 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
   try {
     const { email } = req.body as { email?: string };
     if (!email?.includes("@")) {
-      res.status(400).json({ error: "Valid email is required" });
+      res.status(400).json({ error: "Valid email is required", code: "invalid_email" });
       return;
     }
 
@@ -685,15 +698,15 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
     };
 
     if (!email || !code) {
-      res.status(400).json({ error: "Email and code are required" });
+      res.status(400).json({ error: "Email and code are required", code: "missing_fields" });
       return;
     }
     if (!password || !isStrongPassword(password)) {
-      res.status(400).json({ error: PASSWORD_POLICY_MESSAGE });
+      res.status(400).json({ error: PASSWORD_POLICY_MESSAGE, code: "password_policy" });
       return;
     }
     if (confirmPassword !== undefined && confirmPassword !== password) {
-      res.status(400).json({ error: "Passwords do not match" });
+      res.status(400).json({ error: "Passwords do not match", code: "passwords_mismatch" });
       return;
     }
 
@@ -701,7 +714,7 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
     // code, an expired one, an address with no account, an account that has
     // no password. Distinguishing them tells a guesser which door to keep
     // knocking on.
-    const invalid = () => res.status(400).json({ error: "Invalid or expired code" });
+    const invalid = () => res.status(400).json({ error: "Invalid or expired code", code: "invalid_code" });
 
     const [user] = await db
       .select({ id: users.id })
@@ -787,7 +800,7 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
       return;
     }
 
-    const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
+    const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId), req.user!.id);
     if (!resolved.ok) {
       // `code` as well as `error`: the app is Arabic-first and these strings
       // are English, so the screen translates the code rather than printing
@@ -823,6 +836,23 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
           .limit(1);
         if (taken) return "taken" as const;
       }
+      // The one-parent rule for a class-code claim, asked again under the same
+      // lock: decideClaim's answer was given before it, so two parents picking
+      // the same name in the same second would both have been told "free".
+      if (resolved.relation === "guardian" && resolved.viaClassCode) {
+        const [other] = await tx
+          .select({ id: rosterLinks.id })
+          .from(rosterLinks)
+          .where(
+            and(
+              eq(rosterLinks.studentId, resolved.studentId),
+              eq(rosterLinks.relation, "guardian"),
+              ne(rosterLinks.userId, userId),
+            ),
+          )
+          .limit(1);
+        if (other) return "guardian_taken" as const;
+      }
       await tx
         .insert(rosterLinks)
         .values({ studentId: resolved.studentId, userId, relation: resolved.relation })
@@ -833,6 +863,13 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
       res.status(409).json({
         error: "This student is already linked to another account",
         code: "claim_already_linked",
+      });
+      return;
+    }
+    if (outcome === "guardian_taken") {
+      res.status(409).json({
+        error: "A parent account is already linked to this student",
+        code: "claim_guardian_taken",
       });
       return;
     }
@@ -1004,11 +1041,14 @@ router.get("/join/:code", joinLookupLimiter, async (req, res) => {
       .orderBy(asc(students.displayName));
 
     // Every name is returned, with `taken` marking the ones a student account
-    // already holds — not filtered out. Only the one self-link is exclusive;
-    // guardians are deliberately unlimited, so hiding claimed names would mean
-    // the second parent could not find their own child and the class code
-    // would appear broken to them. The names are visible either way, so
-    // filtering would buy no privacy and cost a real case.
+    // already holds and `guardianTaken` the ones a parent account does — not
+    // filtered out. Each relation is exclusive on this list (decideClaim), but
+    // hiding a claimed name would make the class code look broken to the person
+    // looking for their own child, and the names are visible either way, so
+    // filtering would buy no privacy. They are listed, marked, and the app
+    // refuses to select them. Which flag applies depends on who is looking, and
+    // this route does not know — it is unauthenticated — so it sends both.
+    // A second parent is added with the per-student code instead.
     // Skipped entirely on an empty roster rather than asked with a placeholder
     // id. `rosterLinks.studentId` is a uuid column, so the `[""]` that used to
     // stand in for "no ids" made Postgres reject the whole statement — every
@@ -1016,23 +1056,19 @@ router.get("/join/:code", joinLookupLimiter, async (req, res) => {
     // answered 500 here, the app read that as "not a class code", hid the
     // picker, and let the joiner submit a nameless claim that came back
     // "Choose your name from the class list".
-    const selfLinked =
+    const links =
       roster.length === 0
         ? []
         : await db
-            .select({ studentId: rosterLinks.studentId })
+            .select({ studentId: rosterLinks.studentId, relation: rosterLinks.relation })
             .from(rosterLinks)
-            .where(
-              and(
-                eq(rosterLinks.relation, "self"),
-                inArray(rosterLinks.studentId, roster.map(s => s.id)),
-              ),
-            );
-    const taken = new Set(selfLinked.map(r => r.studentId));
+            .where(inArray(rosterLinks.studentId, roster.map(s => s.id)));
+    const taken = new Set(links.filter(r => r.relation === "self").map(r => r.studentId));
+    const guardianTaken = new Set(links.filter(r => r.relation === "guardian").map(r => r.studentId));
 
     res.json({
       class: { name: group.name, nameAr: group.nameAr },
-      students: roster.map(s => ({ ...s, taken: taken.has(s.id) })),
+      students: roster.map(s => ({ ...s, taken: taken.has(s.id), guardianTaken: guardianTaken.has(s.id) })),
     });
   } catch (err) {
     logger.error({ err }, "join code lookup failed");
@@ -1049,7 +1085,7 @@ router.post("/login", loginLimiter, async (req, res) => {
     // used to pass the guard and throw inside `.toLowerCase()` / bcrypt,
     // which answered 500 "Login failed" for what is a malformed request.
     if (typeof email !== "string" || typeof password !== "string" || !email || !password) {
-      res.status(400).json({ error: "Email and password are required" });
+      res.status(400).json({ error: "Email and password are required", code: "missing_fields" });
       return;
     }
 
@@ -1062,13 +1098,13 @@ router.post("/login", loginLimiter, async (req, res) => {
     if (!user || !user.passwordHash) {
       // No account, or a Google-only account with no password set — same
       // generic message either way so this can't be used to enumerate emails.
-      res.status(401).json({ error: "Invalid email or password" });
+      res.status(401).json({ error: "Invalid email or password", code: "invalid_credentials" });
       return;
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      res.status(401).json({ error: "Invalid email or password" });
+      res.status(401).json({ error: "Invalid email or password", code: "invalid_credentials" });
       return;
     }
 
@@ -1156,7 +1192,7 @@ router.post("/google", googleLimiter, async (req, res) => {
       role?: string;
     };
     if (!credential) {
-      res.status(400).json({ error: "Google credential is required" });
+      res.status(400).json({ error: "Google credential is required", code: "invalid_google_credential" });
       return;
     }
 
@@ -1176,12 +1212,12 @@ router.post("/google", googleLimiter, async (req, res) => {
       // a bad token is routine, and the accepted list is included so the log
       // line alone settles which of the two it was.
       logger.warn({ err, acceptedAudiences: googleClientIdList }, "google id token rejected");
-      res.status(401).json({ error: "Invalid Google credential" });
+      res.status(401).json({ error: "Invalid Google credential", code: "invalid_google_credential" });
       return;
     }
 
     if (!payload?.sub || !payload.email) {
-      res.status(401).json({ error: "Invalid Google credential" });
+      res.status(401).json({ error: "Invalid Google credential", code: "invalid_google_credential" });
       return;
     }
 
@@ -1200,7 +1236,7 @@ router.post("/google", googleLimiter, async (req, res) => {
      */
     if (payload.email_verified !== true) {
       logger.warn({ sub: payload.sub }, "google id token rejected — email not verified by google");
-      res.status(401).json({ error: "Invalid Google credential" });
+      res.status(401).json({ error: "Invalid Google credential", code: "invalid_google_credential" });
       return;
     }
 
@@ -1310,6 +1346,16 @@ router.post("/google", googleLimiter, async (req, res) => {
           return;
         }
 
+        // Only here, on the branch that creates an account: someone signing
+        // back in with Google is not asked again. The register screen's
+        // checkbox used to gate its password form only — this button
+        // skipped it, and nothing was recorded either way.
+        const terms = termsAcceptance(req.body);
+        if (!terms.ok) {
+          res.status(terms.status).json({ error: terms.error, code: terms.code });
+          return;
+        }
+
         isNewAccount = true;
         [user] = await db
           .insert(users)
@@ -1321,6 +1367,9 @@ router.post("/google", googleLimiter, async (req, res) => {
             role,
             preferredLanguage: "en",
             emailVerified: true,
+            termsAcceptedAt: terms.termsAcceptedAt,
+            termsVersion: terms.termsVersion,
+            ...signupSource(req.headers),
           })
           .returning();
       }
@@ -1379,7 +1428,7 @@ router.post("/google", googleLimiter, async (req, res) => {
     });
   } catch (err: any) {
     if (err.code === "23505") {
-      res.status(409).json({ error: "An account with this email already exists" });
+      res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });
       return;
     }
     logger.error({ err }, "google auth failed");
@@ -1802,13 +1851,13 @@ router.delete(
           ? await bcrypt.compare(password, account.passwordHash)
           : false;
         if (!ok) {
-          res.status(401).json({ error: "Password is incorrect" });
+          res.status(401).json({ error: "Password is incorrect", code: "password_incorrect" });
           return;
         }
       } else if (
         confirmEmail?.trim().toLowerCase() !== account.email.toLowerCase()
       ) {
-        res.status(401).json({ error: "Email confirmation does not match" });
+        res.status(401).json({ error: "Email confirmation does not match", code: "email_mismatch" });
         return;
       }
 
@@ -1826,6 +1875,11 @@ router.delete(
           ),
         );
 
+      // A teacher's exams cascade with the account, and so do the students'
+      // read-aloud answers on them — whose recordings would otherwise stay in
+      // R2 with nothing left pointing at them.
+      const recordings = await audioKeysForTeacher(userId);
+
       await db.delete(users).where(eq(users.id, userId));
 
       // Deliberately after the row is gone: the deletion the user asked for is
@@ -1836,6 +1890,7 @@ router.delete(
       const keys = [
         ...media.map(m => m.key),
         ...attachments.map(a => a.key as string),
+        ...recordings,
       ];
       let orphaned = 0;
       for (const key of keys) {

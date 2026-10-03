@@ -31,7 +31,7 @@ export function Avatar({ firstName, lastName, size = 40, colors }: Props) {
         { width: size, height: size, borderRadius: size / 2, backgroundColor: colors.secondary },
       ]}
     >
-      <Text style={[styles.text, { fontSize: size * 0.4, color: colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
+      <Text style={[styles.text, { fontSize: size * 0.4, color: colors.primary, fontFamily: 'ReadexPro_600SemiBold' }]}>
         {initials}
       </Text>
     </View>
