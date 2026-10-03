@@ -737,17 +737,10 @@ function ShareLinkCard({
   const [copied, setCopied] = useState(false);
   if (!shareCode) return null;
 
-  // Built from where the app is actually being served, so a local build hands
-  // out a local link and production hands out a production one. Hardcoding it
-  // is how a pilot ends up telling thirty students to visit localhost.
-  // On the native app there is no window, and the card used to show and copy
-  // a bare `/take/ABC123` — a link that opens nothing when pasted into
-  // WhatsApp. Fall back to the production site, as the drill share does.
-  const origin =
-    typeof window !== 'undefined' && window.location?.origin
-      ? window.location.origin
-      : PROD_ORIGIN;
-  const url = `${origin}/take/${shareCode}`;
+  // Always the live site. This used to follow the host of the current page, so
+  // a teacher on a local build told thirty students to visit localhost; the
+  // native app has no window at all and showed a bare `/take/ABC123`.
+  const url = `${PROD_ORIGIN}/take/${shareCode}`;
 
   return (
     <View style={{ marginHorizontal: 20, marginTop: 16 }}>
