@@ -107,19 +107,25 @@ function expand(lesson: Lesson): CurriculumObjective[] {
   });
 }
 
-/** Every objective in the catalog, indexed by id. Built once at module load. */
-const OBJECTIVE_INDEX: ReadonlyMap<string, CurriculumObjective> = new Map(
-  LESSONS.flatMap(expand).map(o => [o.id, o]),
-);
+let objectiveIndex: ReadonlyMap<string, CurriculumObjective> | undefined;
+
+/**
+ * Every objective in the catalog, indexed by id. Built on first use, not at
+ * module load: importing `@workspace/curriculum` is on the app's cold-start
+ * path, and the home screen never reads an objective.
+ */
+function objectivesById(): ReadonlyMap<string, CurriculumObjective> {
+  return (objectiveIndex ??= new Map(LESSONS.flatMap(expand).map(o => [o.id, o])));
+}
 
 /** All objectives, in catalog order. */
 export function getAllObjectives(): CurriculumObjective[] {
-  return [...OBJECTIVE_INDEX.values()];
+  return [...objectivesById().values()];
 }
 
 /** Resolve one objective id. Returns undefined for ids not in the catalog. */
 export function getObjectiveById(id: string): CurriculumObjective | undefined {
-  return OBJECTIVE_INDEX.get(id);
+  return objectivesById().get(id);
 }
 
 /**
@@ -136,7 +142,7 @@ export function resolveObjectiveIds(ids: readonly string[]): {
   const found: CurriculumObjective[] = [];
   const missing: string[] = [];
   for (const id of ids) {
-    const hit = OBJECTIVE_INDEX.get(id);
+    const hit = objectivesById().get(id);
     if (hit) found.push(hit);
     else missing.push(id);
   }
@@ -178,7 +184,7 @@ export function lessonIdsForObjectiveIds(
   const out: string[] = [];
   const seen = new Set<string>();
   for (const id of objectiveIds ?? []) {
-    const lessonId = OBJECTIVE_INDEX.get(id)?.lessonId;
+    const lessonId = objectivesById().get(id)?.lessonId;
     if (!lessonId || seen.has(lessonId)) continue;
     seen.add(lessonId);
     out.push(lessonId);
@@ -206,7 +212,7 @@ export function objectivesAreWithinBook(
   bookId: string,
 ): boolean {
   if (ids.length === 0) return false;
-  return ids.every(id => OBJECTIVE_INDEX.get(id)?.bookId === bookId);
+  return ids.every(id => objectivesById().get(id)?.bookId === bookId);
 }
 
 /**
