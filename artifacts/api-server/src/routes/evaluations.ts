@@ -482,6 +482,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       const runLlm = (avoidList: readonly string[], insistent: boolean) => generateWithModel(
         {
           objectives,
+          gradeId: evaluation.gradeId,
           assessmentTypes: evaluation.assessmentTypes,
           count: evaluation.targetQuestionCount,
           difficulty: evaluation.difficulty,
@@ -586,6 +587,15 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
      * verifier that cannot be reached, removes nothing.
      */
     const keyCheck = await verifyAnswerKeys(validation.accepted, relateAnswerKey);
+    // The model is asked for `count` questions and is free to send more. A
+    // paper longer than the teacher asked for changes its marks and its length.
+    const surplus = keyCheck.kept.length - evaluation.targetQuestionCount;
+    if (surplus > 0) {
+      keyCheck.kept.splice(evaluation.targetQuestionCount);
+      generationNotes.push(
+        `The generator returned ${surplus} more question${surplus === 1 ? "" : "s"} than the ${evaluation.targetQuestionCount} requested; the extra ${surplus === 1 ? "one was" : "ones were"} left out.`,
+      );
+    }
     generationParams["keysChecked"] = keyCheck.checked;
     generationParams["keysVerified"] = keyCheck.verified;
 
