@@ -29,6 +29,7 @@ import {
   type AuthenticatedRequest,
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
+import { audioKeysForAttempt, deleteAttemptAudio } from "../lib/attemptAudio.ts";
 import {
   deriveVerdict,
   isVerdict,
@@ -581,7 +582,12 @@ router.delete("/attempts/:id", async (req: AuthenticatedRequest, res) => {
       res.status(404).json({ error: "Attempt not found" });
       return;
     }
+    // Read the recording keys before the cascade removes the rows that hold
+    // them; delete the objects after, so a storage outage cannot block the
+    // release the teacher asked for. See lib/attemptAudio.ts.
+    const audioKeys = await audioKeysForAttempt(owned.attempt.id);
     await db.delete(attempts).where(eq(attempts.id, owned.attempt.id));
+    await deleteAttemptAudio(audioKeys, { attemptId: owned.attempt.id, reason: "attempt released" });
     res.json({ deleted: true });
   } catch (err) {
     logger.error({ err }, "delete attempt failed");

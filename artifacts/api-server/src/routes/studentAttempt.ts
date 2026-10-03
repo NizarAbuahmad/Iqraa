@@ -74,6 +74,7 @@ import {
   isPastDeadline,
 } from "../modules/assessment/studentResponse.ts";
 import { gradeSubmission } from "../modules/assessment/attemptGrading.ts";
+import { attemptAudioKey, deleteAttemptAudio } from "../lib/attemptAudio.ts";
 
 const router = Router();
 
@@ -656,6 +657,7 @@ router.use(
 );
 
 router.post("/take/attempt/audio/:questionId", async (req, res) => {
+  let uploadedKey: string | null = null;
   try {
     const attempt = await attemptForToken(req.headers.authorization);
     if (!attempt) {
@@ -753,6 +755,10 @@ router.post("/take/attempt/audio/:questionId", async (req, res) => {
 
     const key = newAttemptAudioKey(verdict.extension);
     await putObject(key, parsed.buffer, parsed.mime);
+    // Set once the object exists and cleared once a row points at it: if
+    // anything between here and the write fails (transcription, most
+    // likely), the catch below removes the file nobody will ever reference.
+    uploadedKey = key;
 
     /*
      * Imported inside the handler, never at module scope.
@@ -778,12 +784,23 @@ router.post("/take/attempt/audio/:questionId", async (req, res) => {
         target: [attemptAnswers.attemptId, attemptAnswers.questionId],
         set: { response, updatedAt: new Date() },
       });
+    uploadedKey = null;
+
+    // The take this one replaced is no longer referenced by anything; its
+    // recording goes with it rather than sitting in R2 for good.
+    const replaced = attemptAudioKey(previous);
+    if (replaced && replaced !== key) {
+      await deleteAttemptAudio([replaced], { attemptId: attempt.id, questionId, reason: "re-take" });
+    }
 
     // The transcript goes back so the student can see what was heard and
     // decide whether to use a remaining take. The score does not: releasing a
     // result here would tell them their mark before the teacher has the paper.
     res.json({ saved: true, transcript, takesLeft: MAX_TAKES_PER_QUESTION - (takes + 1) });
   } catch (err) {
+    if (uploadedKey) {
+      await deleteAttemptAudio([uploadedKey], { reason: "upload failed before it was saved" });
+    }
     if (
       err instanceof AiLiveModeOffError
       || err instanceof AiBudgetExceededError

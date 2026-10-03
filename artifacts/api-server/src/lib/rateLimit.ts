@@ -69,7 +69,7 @@ export function createRateLimiter(opts: {
       const retryAfterSec = Math.max(1, Math.ceil((hit.resetAt.getTime() - Date.now()) / 1000));
       logger.warn({ key: bucketKey, limiter: opts.name, retryAfterSec }, "rate limit exceeded");
       res.setHeader("Retry-After", String(retryAfterSec));
-      res.status(429).json({ error: "Too many attempts. Please try again later." });
+      res.status(429).json({ error: "Too many attempts. Please try again later.", code: "rate_limited" });
       return;
     }
 

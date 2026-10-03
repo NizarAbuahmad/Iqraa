@@ -9,7 +9,8 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { MessagingError, getClassThread } from '@/services/messaging';
+import { getClassThread } from '@/services/messaging';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 
 export default function ClassThreadRedirect() {
   const { classGroupId } = useLocalSearchParams<{ classGroupId: string }>();
@@ -25,7 +26,7 @@ export default function ClassThreadRedirect() {
         const thread = await getClassThread(classGroupId);
         if (!cancelled) router.replace(`/messaging/${thread.id}`);
       } catch (e) {
-        if (!cancelled) setError(e instanceof MessagingError ? e.message : t('messagingLoadError'));
+        if (!cancelled) setError(apiErrorMessage(e, 'messagingLoadError', t));
       }
     })();
     return () => { cancelled = true; };
