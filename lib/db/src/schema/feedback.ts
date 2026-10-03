@@ -8,7 +8,7 @@ export const feedback = pgTable("feedback", {
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   materialType: text("material_type").notNull(), // 'lesson' | 'worksheet' | 'quiz' | 'flow' | 'activity' | 'slides'
   toolId: text("tool_id").notNull().default(""), // toolCatalog id, e.g. 'lesson-plan', 'simplify'
-  rating: text("rating").notNull(), // 'up' | 'down' | 'idea' (a feature suggestion, materialType 'feature_request')
+  rating: text("rating").notNull(), // 'up' | 'down'
   comment: text("comment").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
