@@ -182,11 +182,14 @@ export function servedReasonOf(out: unknown): 'quota' | 'budget' | null {
 
 export function aiErrorMessageKey(
   e: unknown,
-): 'aiQuotaSpent' | 'aiUnavailable' | 'generationFailed' {
+): 'aiQuotaSpent' | 'aiUnavailable' | 'noQuestionBank' | 'generationFailed' {
   if (!e || typeof e !== 'object') return 'generationFailed';
   const code = (e as { code?: unknown }).code;
   if (code === 'user_quota_exceeded' || code === 'budget_exceeded') return 'aiQuotaSpent';
   if (code === 'live_mode_off') return 'aiUnavailable';
+  // Thrown by the offline generator for a subject with no question bank — see
+  // `NoQuestionBankError`. Not «try again»: it will say the same thing.
+  if (code === 'no_question_bank') return 'noQuestionBank';
   return 'generationFailed';
 }
 
