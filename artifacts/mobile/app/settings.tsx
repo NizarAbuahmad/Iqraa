@@ -16,6 +16,8 @@ import { useStudentAccountsEnabled } from '@/services/features';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
+import { AccountRow } from '@/components/ui/AccountRow';
+import { confirm } from '@/services/confirm';
 
 type AiUsage = { spentUsd: number | null; limitUsd: number; resetsAt: string };
 
@@ -24,7 +26,7 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang, toggleLang } = useLanguage();
   const [usage, setUsage] = useState<AiUsage | null>(null);
-  const { user, switchRole } = useAuth();
+  const { user, switchRole, savedAccounts, switchAccount, addAccount, forgetAccount } = useAuth();
   const studentAccounts = useStudentAccountsEnabled();
   // A teacher account made by mistake (the old pre-selected signup pill, or
   // Google on the login screen) can still become a parent/student while it
@@ -53,6 +55,63 @@ export default function SettingsScreen() {
     } finally {
       setSendingTest(false);
     }
+  };
+
+  // Several accounts on one device. `accountBusy` is the user id being switched
+  // to, or 'add' — one at a time, and every other row is inert meanwhile.
+  const [accountBusy, setAccountBusy] = useState<string | null>(null);
+  const [accountError, setAccountError] = useState('');
+  const roleLabelFor = (role: string) =>
+    t(role === 'parent' ? 'roleParent'
+      : role === 'student' ? 'roleStudent'
+      : role === 'school_admin' ? 'roleAdmin'
+      : role === 'system_admin' ? 'roleSysAdmin'
+      : 'roleTeacher');
+
+  const handleSwitchAccount = async (userId: string) => {
+    if (accountBusy) return;
+    setAccountBusy(userId);
+    setAccountError('');
+    try {
+      await switchAccount(userId);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // The tab bar and the routing gates follow the new role; this only has to
+      // leave a screen that may not exist for it.
+      router.replace('/(tabs)');
+    } catch (e) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setAccountError(t(e instanceof ApiError && e.code === 'session_expired' ? 'accountsSessionExpired' : 'accountsSwitchFailed'));
+      setAccountBusy(null);
+    }
+  };
+
+  const handleAddAccount = async () => {
+    if (accountBusy) return;
+    setAccountBusy('add');
+    setAccountError('');
+    try {
+      // On success the open account becomes null and the routing gate opens the
+      // login screen, where this one is listed and one tap from coming back.
+      await addAccount();
+    } catch (e) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setAccountError(t(e instanceof Error && e.message === 'too_many_accounts' ? 'accountsLimit' : 'accountsAddFailed'));
+      setAccountBusy(null);
+    }
+  };
+
+  const handleForgetAccount = async (userId: string, name: string) => {
+    if (accountBusy) return;
+    const ok = await confirm({
+      title: t('accountsRemoveConfirm', name),
+      message: t('accountsRemoveNote'),
+      confirmLabel: t('accountsRemove'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    setAccountError('');
+    await forgetAccount(userId);
   };
 
   const handleSwitchRole = async () => {
@@ -112,8 +171,62 @@ export default function SettingsScreen() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 24, paddingBottom: 60 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Accounts on this device. First, because switching is the thing a
+            person with two accounts opens Settings to do. The open account is
+            listed too, ticked, so the card reads as "who am I right now". */}
+        {user && (
+          <>
+            <SectionLabel label={t('accountsSection')} isRTL={isRTL} colors={colors} />
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+              <AccountRow
+                name={`${user.firstName} ${user.lastName}`.trim()}
+                email={user.email}
+                roleLabel={roleLabelFor(user.role)}
+                current
+                colors={colors}
+                isRTL={isRTL}
+              />
+              {savedAccounts.map((a, i) => (
+                <React.Fragment key={a.userId}>
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                  <AccountRow
+                    name={a.name}
+                    email={a.email}
+                    roleLabel={roleLabelFor(a.role)}
+                    badge={i === 0 ? t('accountsLastUsed') : undefined}
+                    busy={accountBusy === a.userId}
+                    disabled={!!accountBusy}
+                    onPress={() => void handleSwitchAccount(a.userId)}
+                    onRemove={() => void handleForgetAccount(a.userId, a.name)}
+                    removeLabel={t('accountsRemove')}
+                    colors={colors}
+                    isRTL={isRTL}
+                  />
+                </React.Fragment>
+              ))}
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <SettingRow
+                icon="person-add-outline"
+                label={t('accountsAdd')}
+                isRTL={isRTL}
+                colors={colors}
+                onPress={() => void handleAddAccount()}
+                right={accountBusy === 'add' ? <ActivityIndicator size="small" color={colors.primary} /> : undefined}
+              />
+            </View>
+            {accountError ? (
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+                {accountError}
+              </Text>
+            ) : null}
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('accountsAddNote')}{Platform.OS !== 'web' ? ` ${t('accountsPushNote')}` : ''}
+            </Text>
+          </>
+        )}
+
         {/* Language */}
-        <SectionLabel label={t('languageSection')} isRTL={isRTL} colors={colors} />
+        <SectionLabel label={t('languageSection')} isRTL={isRTL} colors={colors} top={!!user} />
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <SettingRow
             icon="language-outline"
