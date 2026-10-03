@@ -114,7 +114,7 @@ export function LessonResources({ topic, onChange }: Props) {
           />
           <Text
             numberOfLines={1}
-            style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}
+            style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }}
           >
             {m.caption || m.url}
           </Text>
@@ -145,7 +145,7 @@ export function LessonResources({ topic, onChange }: Props) {
             style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }]}
           />
           {error ? (
-            <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
           ) : null}
@@ -170,8 +170,8 @@ const styles = StyleSheet.create({
   wrap: { marginTop: 4, marginBottom: 12, gap: 8 },
   header: { alignItems: 'center', gap: 8 },
   badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
-  hint: { fontSize: 12, lineHeight: 18 },
+  hint: { fontSize: 13, lineHeight: 20 },
   row: { alignItems: 'center', gap: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
-  input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: 'Almarai_400Regular' },
+  input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, fontFamily: 'Almarai_400Regular' },
   addBtn: { alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, paddingVertical: 10 },
 });

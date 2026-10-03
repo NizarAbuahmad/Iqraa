@@ -284,7 +284,7 @@ export function ParticipantPickerSheet({
                       <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }} numberOfLines={1}>
                         {item.firstName} {item.lastName}
                       </Text>
-                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }} numberOfLines={1}>
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }} numberOfLines={1}>
                         {item.role === 'student' ? t('roleStudent') : t('roleParent')} · {item.studentName}
                       </Text>
                     </View>
@@ -319,12 +319,12 @@ const styles = StyleSheet.create({
   sheet: { maxHeight: '75%', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 16, gap: 12 },
   head: { alignItems: 'center', paddingHorizontal: 16 },
   title: { fontSize: 17 },
-  hint: { fontSize: 13, lineHeight: 21, paddingVertical: 28, paddingHorizontal: 16 },
+  hint: { fontSize: 15, lineHeight: 24, paddingVertical: 28, paddingHorizontal: 16 },
   emptyTitle: { fontSize: 14 },
   searchWrap: { alignItems: 'center', gap: 8, marginHorizontal: 16, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, borderWidth: 1 },
   // No explicit height: the row sizes to the input, and a fixed one clips
   // Cairo's Arabic descenders.
-  searchInput: { flex: 1, fontFamily: 'Almarai_400Regular', fontSize: 14, padding: 0 },
+  searchInput: { flex: 1, fontFamily: 'Almarai_400Regular', fontSize: 15, padding: 0 },
   classHint: { fontSize: 11, lineHeight: 16 },
   chipRow: { gap: 6, paddingHorizontal: 16 },
   chip: { alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, borderWidth: 1 },

@@ -521,7 +521,7 @@ export default function LessonPlanScreen() {
             <Text style={{
               color: colors.mutedForeground,
               fontFamily: 'Almarai_400Regular',
-              fontSize: 12, lineHeight: 19,
+              fontSize: 13, lineHeight: 21,
               marginTop: 2,
               textAlign: isRTL ? 'right' : 'left',
             }}>
@@ -542,7 +542,7 @@ export default function LessonPlanScreen() {
           beside the spinner they replace — they used to render above the form,
           out of sight of the button that had just been pressed.
         */}
-        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button
           label={loading ? t('generatingLessonPlan') : t('generateLessonPlanBtn')}
           onPress={() => generate()}

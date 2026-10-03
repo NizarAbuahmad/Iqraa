@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, marginBottom: 8 },
   aiBadge: { alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, marginBottom: 10 },
   aiBadgeText: { fontSize: 12 },
-  subtitle: { fontSize: 13, lineHeight: 20 },
+  subtitle: { fontSize: 15, lineHeight: 23 },
   section: { paddingTop: 8 },
   sectionTitle: {
     fontSize: 12,
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 15 },
   badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
   badgeText: { fontSize: 10 },
-  cardDesc: { fontSize: 12, lineHeight: 17 },
+  cardDesc: { fontSize: 13, lineHeight: 18 },
   note: { alignItems: 'flex-start', gap: 8, padding: 14, marginBottom: 20 },
-  noteText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  noteText: { flex: 1, fontSize: 13, lineHeight: 18 },
 });

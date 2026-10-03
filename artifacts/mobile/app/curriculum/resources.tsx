@@ -827,7 +827,7 @@ const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   backBtn: { padding: 4 },
   heroTitle: { color: '#fff', fontSize: 22 },
-  heroMeta: { color: 'rgba(255,255,255,0.95)', fontSize: 13, lineHeight: 21 },
+  heroMeta: { color: 'rgba(255,255,255,0.95)', fontSize: 15, lineHeight: 24 },
   addBtn: {
     alignItems: 'center',
     gap: 6,
@@ -838,7 +838,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   addBtnText: { fontSize: 13 },
-  intro: { fontSize: 13, lineHeight: 20, paddingHorizontal: 20, paddingTop: 14 },
+  intro: { fontSize: 15, lineHeight: 23, paddingHorizontal: 20, paddingTop: 14 },
   chipRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
   chipText: { fontSize: 13 },
@@ -881,10 +881,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   kindText: { fontSize: 11 },
-  rowTitle: { fontSize: 13, lineHeight: 21 },
+  rowTitle: { fontSize: 15, lineHeight: 24 },
   rowNote: { fontSize: 11, lineHeight: 16, marginTop: 2 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 48, paddingHorizontal: 40 },
-  emptyText: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  emptyText: { fontSize: 15, textAlign: 'center', lineHeight: 23 },
 });
 
 export default LibraryScreen;

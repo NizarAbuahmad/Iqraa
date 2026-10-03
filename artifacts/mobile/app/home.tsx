@@ -628,7 +628,7 @@ export default function DashboardScreen() {
         <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('homeAiToolsTitle')}
         </Text>
-        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>
           {lang === 'ar' ? 'قبل الحصة · أثناءها · بعدها' : 'Before · during · after class'}
         </Text>
         <View style={[styles.toolsGrid, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -683,7 +683,7 @@ export default function DashboardScreen() {
                 {continueCard.primaryHeading}
               </Text>
               <Text
-                style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}
+                style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}
                 numberOfLines={1}
               >
                 {continueCard.editedLabel}
@@ -699,7 +699,7 @@ export default function DashboardScreen() {
             onPress={() => openGenerator('lesson-plan')}
             style={[styles.continueRow, { backgroundColor: colors.card, borderColor: colors.border }]}
           >
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
               {t('continueEmptyDesc')}
             </Text>
           </Pressable>
@@ -722,7 +722,7 @@ export default function DashboardScreen() {
         </View>
 
         {recentItems.length === 0 ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left', marginTop: 4 }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left', marginTop: 4 }}>
             {t('recentEmptyDesc')}
           </Text>
         ) : (
@@ -781,7 +781,7 @@ export default function DashboardScreen() {
             ]}
           >
             <Pressable onPress={() => setPickerOpen(false)} hitSlop={10} style={{ width: 64 }}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
                 {t('cancel')}
               </Text>
             </Pressable>
@@ -801,7 +801,7 @@ export default function DashboardScreen() {
               style={{
                 color: colors.mutedForeground,
                 fontFamily: 'Almarai_400Regular',
-                fontSize: 13, lineHeight: 21,
+                fontSize: 15, lineHeight: 24,
                 marginBottom: 14,
                 textAlign: isRTL ? 'right' : 'left',
               }}
@@ -995,7 +995,7 @@ export default function DashboardScreen() {
                     style={{
                       color: colors.mutedForeground,
                       fontFamily: 'Almarai_400Regular',
-                      fontSize: 12, lineHeight: 19,
+                      fontSize: 13, lineHeight: 21,
                       marginTop: 6,
                       marginBottom: 10,
                       textAlign: isRTL ? 'right' : 'left',
@@ -1028,7 +1028,7 @@ export default function DashboardScreen() {
                         flex: 1,
                         color: colors.foreground,
                         fontFamily: 'Almarai_400Regular',
-                        fontSize: 13, lineHeight: 20,
+                        fontSize: 15, lineHeight: 23,
                         textAlign: isRTL ? 'right' : 'left',
                       }}
                     >
@@ -1078,7 +1078,7 @@ export default function DashboardScreen() {
                       style={{
                         color: '#D92D20',
                         fontFamily: 'Almarai_400Regular',
-                        fontSize: 12, lineHeight: 19,
+                        fontSize: 13, lineHeight: 21,
                         textAlign: isRTL ? 'right' : 'left',
                       }}
                     >
@@ -1193,7 +1193,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginTop: 1,
   },
   coachNumText: { color: '#fff', fontSize: 11 },
-  coachStep: { color: 'rgba(255,255,255,0.95)', fontSize: 13, lineHeight: 19, flex: 1 },
+  coachStep: { color: 'rgba(255,255,255,0.95)', fontSize: 15, lineHeight: 22, flex: 1 },
   coachBtn: {
     alignSelf: 'flex-start', marginTop: 4,
     backgroundColor: 'rgba(255,255,255,0.14)',
@@ -1225,7 +1225,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontFamily: 'Almarai_400Regular',
-    fontSize: 13,
+    fontSize: 15,
     marginBottom: 8,
   },
   mediaAddBtn: {
@@ -1271,7 +1271,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   heroTitle: { color: '#fff', fontSize: 22, lineHeight: 30 },
-  heroSub: { color: 'rgba(255,255,255,0.95)', fontSize: 14, lineHeight: 21 },
+  heroSub: { color: 'rgba(255,255,255,0.95)', fontSize: 15, lineHeight: 23 },
   promptBox: {
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 16,

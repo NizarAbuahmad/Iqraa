@@ -157,9 +157,9 @@ export default function LessonsScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14 },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
-  eyebrow: { fontSize: 13, lineHeight: 21, marginBottom: 4 },
+  eyebrow: { fontSize: 15, lineHeight: 24, marginBottom: 4 },
   title: { fontSize: 22, marginBottom: 4 },
-  sub: { fontSize: 13, lineHeight: 21 },
+  sub: { fontSize: 15, lineHeight: 24 },
   unitCard: { alignItems: 'center', padding: 16, borderWidth: 1, gap: 14 },
   unitBadge: {
     width: 44,
@@ -171,10 +171,10 @@ const styles = StyleSheet.create({
   },
   unitNum: { fontSize: 16 },
   unitName: { fontSize: 16, marginBottom: 4 },
-  unitDesc: { fontSize: 12, marginBottom: 6, lineHeight: 18 },
-  unitMeta: { fontSize: 12, lineHeight: 19 },
+  unitDesc: { fontSize: 13, marginBottom: 6, lineHeight: 20 },
+  unitMeta: { fontSize: 13, lineHeight: 21 },
   prepBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, flexShrink: 0 },
   prepBadgeText: { fontSize: 11 },
   empty: { alignItems: 'center', paddingTop: 80, gap: 10 },
-  emptyText: { fontSize: 14, lineHeight: 22 },
+  emptyText: { fontSize: 15, lineHeight: 24 },
 });

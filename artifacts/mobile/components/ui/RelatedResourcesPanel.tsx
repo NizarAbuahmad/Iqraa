@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   done: { fontSize: 15 },
-  hint: { fontSize: 13, lineHeight: 19, marginBottom: 2 },
+  hint: { fontSize: 15, lineHeight: 22, marginBottom: 2 },
   grid: { flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 12,

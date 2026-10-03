@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 15 },
   card: { borderWidth: 1, borderRadius: 14, padding: 16, gap: 12 },
   credit: { fontSize: 11, lineHeight: 18 },
-  note: { fontSize: 12, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
+  note: { fontSize: 13, lineHeight: 22, fontFamily: 'Almarai_400Regular' },
   recordBtn: {
     flexDirection: 'row',
     alignItems: 'center',

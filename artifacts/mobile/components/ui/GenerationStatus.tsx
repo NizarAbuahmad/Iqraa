@@ -188,8 +188,8 @@ const styles = StyleSheet.create({
   },
   row: { alignItems: 'center', gap: 10 },
   title: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, lineHeight: 20 },
-  meta: { fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18 },
-  hint: { fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18 },
+  meta: { fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20 },
+  hint: { fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20 },
   cancelBtn: { paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1 },
   cancelText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 },
   retryBtn: {

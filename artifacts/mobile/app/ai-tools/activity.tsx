@@ -365,7 +365,7 @@ export default function ActivityScreen() {
           arrangement as the other generators; this screen still showed them
           above the button with neither.
         */}
-        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button
           label={loading ? t('generatingActivity') : t('generateActivityBtn')}
           onPress={() => generate()}
@@ -378,7 +378,7 @@ export default function ActivityScreen() {
           product rather than an unmet precondition. It says which one.
         */}
         {!topic.trim() ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
             {t('needTopicHint')}
           </Text>
         ) : null}
@@ -495,7 +495,7 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
         <Text style={[{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 11, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }]}>
           {lang === 'ar' ? 'الهدف' : 'Objective'}
         </Text>
-        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }]}>
           {activity.objective}
         </Text>
       </View>
@@ -635,12 +635,12 @@ const styles = StyleSheet.create({
   resultSectionBody: { padding: 14, borderWidth: 1 },
   bulletRow: { gap: 10, marginBottom: 6, alignItems: 'flex-start' },
   bulletDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
-  bulletText: { flex: 1, fontSize: 13, lineHeight: 20 },
-  bodyText: { fontSize: 13, lineHeight: 20 },
+  bulletText: { flex: 1, fontSize: 15, lineHeight: 23 },
+  bodyText: { fontSize: 15, lineHeight: 23 },
   stepCard: { borderWidth: 1, padding: 14, marginBottom: 10 },
   stepHeader: { alignItems: 'center', gap: 10, marginBottom: 8 },
   stepNum: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   stepTitle: { fontSize: 13 },
   stepDur: { fontSize: 11, lineHeight: 18 },
-  stepDesc: { fontSize: 13, lineHeight: 20 },
+  stepDesc: { fontSize: 15, lineHeight: 23 },
 });

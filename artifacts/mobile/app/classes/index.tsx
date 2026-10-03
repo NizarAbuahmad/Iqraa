@@ -461,8 +461,8 @@ function ClassesList() {
                   style={{
                     color: colors.destructive,
                     fontFamily: 'Almarai_400Regular',
-                    fontSize: 13,
-                    lineHeight: 19,
+                    fontSize: 15,
+                    lineHeight: 22,
                     flex: 1,
                     textAlign: align,
                   }}
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroTitle: { fontSize: 26, color: '#fff' },
-  heroSub: { fontSize: 13, color: 'rgba(255,255,255,0.70)', marginTop: 3, fontFamily: 'Almarai_400Regular' },
+  heroSub: { fontSize: 15, color: 'rgba(255,255,255,0.70)', marginTop: 3, fontFamily: 'Almarai_400Regular' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   card: {
     flexDirection: 'row',
@@ -532,10 +532,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cardTitle: { fontSize: 16 },
-  cardMeta: { fontSize: 13, lineHeight: 21, marginTop: 4 },
+  cardMeta: { fontSize: 15, lineHeight: 24, marginTop: 4 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17 },
-  emptyText: { fontSize: 14, maxWidth: 280, lineHeight: 20 },
+  emptyText: { fontSize: 15, maxWidth: 280, lineHeight: 21 },
   fab: {
     position: 'absolute',
     alignSelf: 'center',

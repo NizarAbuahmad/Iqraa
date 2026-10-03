@@ -379,7 +379,7 @@ export default function TakeExamScreen() {
         <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
           {error || t('takeLinkFailed')}
         </Text>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
           {t('takeAskTeacher')}
         </Text>
         {/* A dropped connection looks exactly like a dead link from here. */}
@@ -403,7 +403,7 @@ export default function TakeExamScreen() {
           {t('takeHandedIn')}
         </Text>
         {notice ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
             {notice}
           </Text>
         ) : null}
@@ -411,7 +411,7 @@ export default function TakeExamScreen() {
             (`releaseResultsToStudent`) and requires the paper to be fully
             marked — this only ever checks, on request, whether both are true
             yet; see `studentResultReady` on the server. */}
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
           {t('takeTeacherWillReview')}
         </Text>
 
@@ -422,7 +422,7 @@ export default function TakeExamScreen() {
         ) : (
           <View style={{ marginTop: 8, alignItems: 'center', gap: 8 }}>
             {resultChecked && (
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: 'center' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: 'center' }}>
                 {t('takeResultNotReady')}
               </Text>
             )}
@@ -475,7 +475,7 @@ export default function TakeExamScreen() {
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         {header}
         <ScrollView contentContainerStyle={{ padding: 20, gap: 10, paddingBottom: 40 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
             {t('takeQuestionsAndMarks', String(exam?.questionCount ?? 0), formatMarks(exam?.totalMarks))}
           </Text>
 
@@ -486,11 +486,11 @@ export default function TakeExamScreen() {
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 22, textAlign: 'center' }}>
                 {chosen.displayName}
               </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
                 {t('takeConfirmName')}
               </Text>
               {error ? (
-                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
+                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
                   {error}
                 </Text>
               ) : null}
@@ -513,7 +513,7 @@ export default function TakeExamScreen() {
                 {t('takePickYourName')}
               </Text>
               {error ? (
-                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
                   {error}
                 </Text>
               ) : null}
@@ -536,7 +536,7 @@ export default function TakeExamScreen() {
                     {s.displayName}
                   </Text>
                   {s.taken && (
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                       {t('takeNameTaken')}
                     </Text>
                   )}
@@ -578,11 +578,11 @@ export default function TakeExamScreen() {
           </View>
 
           {/* Name the number. "Are you sure?" is not information. */}
-          <Text style={{ color: unanswered > 0 ? '#B54708' : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: align }}>
+          <Text style={{ color: unanswered > 0 ? '#B54708' : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
             {unanswered > 0 ? t('takeUnansweredWarning', String(unanswered)) : t('takeAllAnswered')}
           </Text>
           {error ? (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>{error}</Text>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>{error}</Text>
           ) : null}
 
           <Pressable onPress={() => void hand()} disabled={busy} style={[styles.primaryBtn, { backgroundColor: ACCENT_FILL, opacity: busy ? 0.7 : 1 }]}>
@@ -610,7 +610,7 @@ export default function TakeExamScreen() {
           <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
             {t('takeProgress', String(index + 1), String(questions.length))}
           </Text>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
             {t('marksAbbrev', question?.marks ?? '')}
           </Text>
           {unsavedCount > 0 && (
@@ -620,7 +620,7 @@ export default function TakeExamScreen() {
               accessibilityRole="button"
               style={{ marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}
             >
-              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                 {t('takeSaveFailed')} · <Text style={{ fontFamily: 'ReadexPro_600SemiBold', textDecorationLine: 'underline' }}>{t('retry')}</Text>
               </Text>
             </Pressable>
@@ -628,7 +628,7 @@ export default function TakeExamScreen() {
         </View>
 
         {notice ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
             {notice}
           </Text>
         ) : null}
