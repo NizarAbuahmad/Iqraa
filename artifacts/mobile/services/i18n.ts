@@ -100,7 +100,7 @@ const translations = {
     // Tabs
     tabHome: 'الرئيسية',
     tabCurriculum: 'المنهاج',
-    tabIqra: 'اقرأ',
+    tabIqra: 'المساعد',
     tabTools: 'الأدوات',
     tabAlerts: 'الرسائل',
     tabProfile: 'حسابي',
@@ -2032,7 +2032,7 @@ const translations = {
 
     tabHome: 'Home',
     tabCurriculum: 'Curriculum',
-    tabIqra: 'Iqrra',
+    tabIqra: 'Assistant',
     tabTools: 'Tools',
     tabAlerts: 'Messages',
     tabProfile: 'Profile',
