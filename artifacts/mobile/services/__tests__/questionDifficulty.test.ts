@@ -17,10 +17,10 @@
  * showed before the fix. These tests assert tier MEMBERSHIP instead: a
  * question tagged `hard` must never appear on an easy-only paper.
  */
-import { describe, it } from 'node:test';
+import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { aiService } from '@/services/ai/generators.ts';
+import { aiService, questionBankPolicy } from '@/services/ai/generators.ts';
 import type { AIRequest, QuizOutput, WorksheetOutput } from '@/services/ai/AIService.ts';
 
 /**
@@ -34,6 +34,12 @@ import type { AIRequest, QuizOutput, WorksheetOutput } from '@/services/ai/AISer
  * tests testing what they were written to test. If biology ever gains a bank,
  * move this again rather than deleting the assertions.
  */
+// These assertions are about the template tiers, which the service no longer
+// serves for a subject with no bank (see NoQuestionBankError) — so the policy
+// is lifted for this file only.
+before(() => { questionBankPolicy.required = false; });
+after(() => { questionBankPolicy.required = true; });
+
 const TEMPLATED = { topic: 'الخلية ووظائفها', subject: 'الأحياء', grade: 'الصف العاشر' };
 /**
  * An exponential-equations lesson, not «قانون الجيوب».

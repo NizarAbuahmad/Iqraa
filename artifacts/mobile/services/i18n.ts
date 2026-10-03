@@ -143,6 +143,9 @@ const translations = {
     errSameEmail: 'هذا هو البريد المسجّل في الحساب أصلًا.',
     errGoogleFailed: 'تعذّر تسجيل الدخول عبر Google. حاول مرة أخرى.',
     errStudentAccountsDisabled: 'حسابات الطلبة وأولياء الأمور غير متاحة بعد.',
+    errTermsRequired: 'وافق على شروط الاستخدام وسياسة الخصوصية لإنشاء الحساب.',
+    registerAcceptTermsFirst: 'ضع علامة الموافقة على الشروط أعلاه أولًا.',
+    loginGoogleTermsNotice: 'إن كنت تنشئ حسابًا جديدًا بالمتابعة عبر Google فأنت توافق على',
     errPasswordIncorrect: 'كلمة المرور غير صحيحة.',
     errEmailMismatch: 'البريد الإلكتروني لا يطابق بريد الحساب.',
     errAccountSuspended: 'تم إيقاف هذا الحساب. تواصل مع الدعم.',
@@ -557,6 +560,8 @@ const translations = {
     aiQuotaSpent:
       'انتهت حصة التوليد الجديد لهذا الشهر. لا يزال بإمكانك فتح الأوراق والدروس المحفوظة.',
     aiUnavailable: 'خدمة الذكاء الاصطناعي متوقفة حاليًا. حاول لاحقًا.',
+    // The offline demo has real questions for maths and chemistry only.
+    noQuestionBank: 'لا يتوفر بعد بنك أسئلة لهذا الدرس في النسخة التجريبية، لذلك لا نعرض أسئلة عامة لا تخص الدرس. جرّب خطة الدرس أو الأنشطة، أو درسًا من الرياضيات أو الكيمياء.',
     // Shown with a result, not instead of one: the teacher asked for something
     // new and got a saved copy, and must not mistake it for a fresh generation.
     aiServedSavedCopy: 'هذه نسخة محفوظة — انتهت حصة التوليد الجديد لهذا الشهر.',
@@ -2143,6 +2148,9 @@ const translations = {
     errSameEmail: 'That is already the email on this account.',
     errGoogleFailed: 'Google sign-in failed. Try again.',
     errStudentAccountsDisabled: 'Student and parent accounts are not available yet.',
+    errTermsRequired: 'Accept the terms of use and privacy policy to create an account.',
+    registerAcceptTermsFirst: 'Tick the terms box above first.',
+    loginGoogleTermsNotice: 'If continuing with Google creates a new account, you agree to the',
     errPasswordIncorrect: 'Incorrect password.',
     errEmailMismatch: 'That email does not match this account.',
     errAccountSuspended: 'This account has been suspended. Contact support.',
@@ -2530,6 +2538,7 @@ const translations = {
     aiQuotaSpent:
       "This month's AI allowance is used up. You can still open saved worksheets and lessons.",
     aiUnavailable: 'The AI service is switched off right now. Try again later.',
+    noQuestionBank: 'The demo has no question bank for this lesson yet, so we won\'t show generic questions that aren\'t about it. Try the lesson plan or activities, or a maths or chemistry lesson.',
     aiServedSavedCopy: "This is a saved copy — this month's AI allowance is used up.",
     curriculumUngroundedNotice: 'This topic is not in the currently available curriculum. The plan is generic and not grounded in a specific textbook lesson.',
     curriculumUngroundedNoticeWorksheet: 'This topic is not in the currently available curriculum. The worksheet is generic and not grounded in a specific textbook lesson.',

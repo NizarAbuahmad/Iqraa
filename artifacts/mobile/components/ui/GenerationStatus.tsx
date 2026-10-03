@@ -140,6 +140,10 @@ export function GenerationStatus({
     );
   }
 
+  // «No question bank» is the same answer every time — a retry button would
+  // only invite the teacher to ask again.
+  const retryable = onRetry && errorDetail !== t('noQuestionBank');
+
   return (
     <View style={shell(colors.destructive, colors.destructive + '10')} accessibilityRole="alert">
       <View style={[styles.row, { flexDirection: rowDir }]}>
@@ -155,7 +159,7 @@ export function GenerationStatus({
           ) : null}
         </View>
       </View>
-      {onRetry ? (
+      {retryable ? (
         <Pressable
           onPress={onRetry}
           style={({ pressed }) => [

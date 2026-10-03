@@ -676,6 +676,33 @@ function makeQuizSA_en(topic: string, kb: KBLesson | null, pts: number, id: stri
   return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `Full answer: ${q.answer}` };
 }
 
+// ─── No question bank ─────────────────────────────────────────────────────────
+
+/**
+ * The offline generator has real, lesson-specific questions for two subjects:
+ * mathematics and chemistry. Everything else used to fall through to topic-
+ * templated sentences — «أيّ مما يلي يُعرِّف X؟» with «الوصف الصحيح لـX» as the
+ * key — that read like a worksheet and test nothing. Showing that to a teacher
+ * as a finished paper is worse than saying there is no bank yet, so the
+ * question-based generators refuse instead. `code` is what `aiErrorMessageKey`
+ * maps to the on-screen sentence.
+ */
+export class NoQuestionBankError extends Error {
+  readonly code = 'no_question_bank';
+  constructor(topic: string) {
+    super(`No offline question bank for "${topic}"`);
+    this.name = 'NoQuestionBankError';
+  }
+}
+
+/** Tests that exercise the template machinery directly turn this off; nothing else should. */
+export const questionBankPolicy = { required: true };
+
+function requireQuestionBank(topic: string, kb: KBLesson | null, subject?: string): void {
+  if (!questionBankPolicy.required || isMathContext(topic, kb, subject) || isChemContext(topic, kb, subject)) return;
+  throw new NoQuestionBankError(topic);
+}
+
 // ─── Main service class ───────────────────────────────────────────────────────
 
 export class MockAIService extends AIService {
@@ -809,6 +836,8 @@ export class MockAIService extends AIService {
     const topic = (docs.present && docs.title) ? docs.title : req.topic;
     // Prefer uploaded materials over a weakly matching KB lesson
     const kb = docs.present ? null : groundedKb(topic, lang, req.lessonId);
+    // A paper built from the teacher's own file is grounded in that file.
+    if (!docs.present) requireQuestionBank(topic, kb, req.subject);
     const selectedTypes: QType[] = (req.questionTypes as QType[])?.length
       ? (req.questionTypes as QType[])
       : ['multiple_choice', 'short_answer'];
@@ -983,6 +1012,7 @@ export class MockAIService extends AIService {
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const kb = groundedKb(req.topic, lang, req.lessonId);
     const topic = req.topic;
+    requireQuestionBank(topic, kb, req.subject);
     const totalMarks = req.totalMarks ?? 20;
     const duration = req.duration ?? 20;
     const types: QType[] = (req.questionTypes as QType[]) ?? ['multiple_choice', 'true_false', 'short_answer'];
@@ -2223,6 +2253,7 @@ export class MockAIService extends AIService {
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const kb = groundedKb(req.topic, lang, req.lessonId);
     const topic = req.topic;
+    requireQuestionBank(topic, kb, req.subject);
     const estMinutes = 25;
     const math = isMathContext(topic, kb, req.subject);
 
