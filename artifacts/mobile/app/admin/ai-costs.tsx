@@ -64,7 +64,7 @@ export default function AdminAiCostsScreen() {
   if (!isAdmin) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }}>{ar ? 'هذه الصفحة للإدارة فقط' : 'This page is for admins only'}</Text>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }}>{ar ? 'هذه الصفحة للإدارة فقط' : 'This page is for admins only'}</Text>
       </View>
     );
   }
@@ -82,7 +82,7 @@ export default function AdminAiCostsScreen() {
           <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginBottom: 8 }}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
-          <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: align }}>
+          <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: align }}>
             {ar ? 'تكاليف الذكاء الاصطناعي' : 'AI costs'}
           </Text>
         </View>

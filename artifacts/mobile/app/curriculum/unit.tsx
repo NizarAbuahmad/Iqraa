@@ -52,7 +52,7 @@ export default function UnitLessonsScreen() {
         <Text style={[styles.eyebrow, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {semesterLabel ? `${semesterLabel} · ` : ''}{t('unitLabel')} {unit.order}
         </Text>
-        <Text style={[styles.title, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
+        <Text style={[styles.title, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
           {unitName}
         </Text>
         <Text style={[styles.sub, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -105,7 +105,7 @@ export default function UnitLessonsScreen() {
                       styles.lessonTitle,
                       {
                         color: colors.foreground,
-                        fontFamily: 'Cairo_500Medium',
+                        fontFamily: 'ReadexPro_500Medium',
                         textAlign: isRTL ? 'right' : 'left',
                         flex: 1,
                         marginBottom: 0,
@@ -117,7 +117,7 @@ export default function UnitLessonsScreen() {
                   </Text>
                   {isBrowserLessonTitleOnly(lesson.id) ? (
                     <View style={[styles.prepBadge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                      <Text style={[styles.prepBadgeText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+                      <Text style={[styles.prepBadgeText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
                         {t('curriculumTitleOnlyBadge')}
                       </Text>
                     </View>

@@ -437,7 +437,7 @@ export default function LessonPlanScreen() {
         />
 
         {/* Objectives (optional) */}
-        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('objectivesLabel')}
         </Text>
         <View style={[styles.inputBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -456,7 +456,7 @@ export default function LessonPlanScreen() {
             ADHD" is an instruction about how to write the plan, not something
             a student should be able to do by the end of it. Typed into the
             objectives box it came back as the lesson's stated objective. */}
-        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('adaptationsLabel')}
         </Text>
         <View style={[styles.inputBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -483,7 +483,7 @@ export default function LessonPlanScreen() {
             style={[styles.presetChip, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="bulb-outline" size={14} color={ACCENT} />
-            <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
               {t('adaptationSimplifyChip')}
             </Text>
           </Pressable>
@@ -493,7 +493,7 @@ export default function LessonPlanScreen() {
             Separate from adaptations: this is content to revisit at the start
             of the lesson — earlier material some students haven't grasped —
             not an instruction about how to deliver today's new material. */}
-        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('priorTopicsLabel')}
         </Text>
         <View style={[styles.inputBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -655,7 +655,7 @@ function LessonPlanResult({ plan, colors, isRTL, t, onEdit, editedFields }: {
     <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
       <View style={[styles.resultHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name="checkmark-circle" size={20} color={ACCENT} />
-        <Text style={[styles.resultHeaderText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>
+        <Text style={[styles.resultHeaderText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>
           {t('lessonPlanReady')}
         </Text>
       </View>
@@ -688,7 +688,7 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
         {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
       </View>
-      <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
     </Pressable>
   );
 }

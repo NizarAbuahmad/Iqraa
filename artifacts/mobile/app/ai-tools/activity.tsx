@@ -344,7 +344,7 @@ export default function ActivityScreen() {
         <PickerField label={t('activityTypeLabel')} value={activityTypeLabels[activityTypeIdx]} options={activityTypeLabels} onChange={setActivityTypeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('durationLabel')} value={durationLabels[durationIdx]} options={durationLabels} onChange={setDurationIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('activityObjectiveLabel')}
         </Text>
         <View style={[styles.inputBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -478,7 +478,7 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
       {/* Success banner */}
       <View style={[styles.resultHeader, { backgroundColor: ACCENT_LOCAL + '15', borderColor: ACCENT_LOCAL + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name="checkmark-circle" size={20} color={ACCENT_LOCAL} />
-        <Text style={[styles.resultHeaderText, { color: ACCENT_LOCAL, fontFamily: 'Cairo_600SemiBold' }]}>
+        <Text style={[styles.resultHeaderText, { color: ACCENT_LOCAL, fontFamily: 'ReadexPro_600SemiBold' }]}>
           {t('activityReady')}
         </Text>
       </View>
@@ -492,7 +492,7 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
 
       {/* Objective */}
       <View style={[styles.objectiveBox, { backgroundColor: ACCENT_LOCAL + '10', borderColor: ACCENT_LOCAL + '30', borderRadius: colors.radius }]}>
-        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 11, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }]}>
           {lang === 'ar' ? 'الهدف' : 'Objective'}
         </Text>
         <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
@@ -509,7 +509,7 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
       <View style={{ marginBottom: 16 }}>
         <View style={[styles.resultSectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name="list-outline" size={15} color={ACCENT_LOCAL} />
-          <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('sectionActivitySteps')}
           </Text>
         </View>
@@ -540,7 +540,7 @@ function MetaPill({ icon, label, color }: { icon: keyof typeof Ionicons.glyphMap
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6 }}>
       <Ionicons name={icon} size={13} color={color} />
-      <Text style={{ fontSize: 12, color, fontFamily: 'Cairo_500Medium' }}>{label}</Text>
+      <Text style={{ fontSize: 12, color, fontFamily: 'ReadexPro_500Medium' }}>{label}</Text>
     </View>
   );
 }
@@ -553,14 +553,14 @@ function StepCard({ step, colors, isRTL, t }: {
     <View style={[styles.stepCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
       <View style={[styles.stepHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <View style={[styles.stepNum, { backgroundColor: ACCENT_LOCAL }]}>
-          <Text style={{ color: '#fff', fontSize: 12, fontFamily: 'Cairo_700Bold' }}>{step.stepNumber}</Text>
+          <Text style={{ color: '#fff', fontSize: 12, fontFamily: 'ReadexPro_700Bold' }}>{step.stepNumber}</Text>
         </View>
         <Text
           style={[
             styles.stepTitle,
             {
               color: colors.foreground,
-              fontFamily: 'Cairo_600SemiBold',
+              fontFamily: 'ReadexPro_600SemiBold',
               flex: 1,
               textAlign: isRTL ? 'right' : 'left',
               writingDirection: isRTL ? 'rtl' : 'ltr',
@@ -599,7 +599,7 @@ function ResultSection({ title, icon, isRTL, children }: {
     <View style={{ marginBottom: 16 }}>
       <View style={[styles.resultSectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name={icon} size={15} color={ACCENT_LOCAL} />
-        <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
+        <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
       </View>
       <View style={[styles.resultSectionBody, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
         {children}

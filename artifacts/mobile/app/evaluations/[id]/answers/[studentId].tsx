@@ -343,7 +343,7 @@ export default function AnswerEntryScreen() {
           <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
-          <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>{studentName}</Text>
+          <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>{studentName}</Text>
           <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: align, color: 'rgba(255,255,255,0.95)' }]} numberOfLines={1}>
             {evaluationTitle}
           </Text>
@@ -393,7 +393,7 @@ export default function AnswerEntryScreen() {
             ) : (
               <Ionicons name="camera-outline" size={18} color={ACCENT} />
             )}
-            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
               {scanning ? t('scanReading') : t('scanMarksBtn')}
             </Text>
           </Pressable>
@@ -423,7 +423,7 @@ export default function AnswerEntryScreen() {
         </View>
 
         <View style={{ paddingHorizontal: 20, paddingBottom: 16 }}>
-          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align, marginBottom: 8 }}>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align, marginBottom: 8 }}>
             {t('performanceCommentLabel')}
           </Text>
           <TextInput
@@ -446,7 +446,7 @@ export default function AnswerEntryScreen() {
             {submitting ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
                 {t('submitAndGradeBtn')}
               </Text>
             )}
@@ -474,17 +474,17 @@ function ResultCard({
     <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
       <View style={[styles.resultCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={[styles.resultTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 16 }]}>
+          <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16 }]}>
             {t('resultTitle')}
           </Text>
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 14, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
             <Pressable onPress={onCopy} hitSlop={8} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}>
               <Ionicons name="copy-outline" size={16} color={ACCENT} />
-              <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{t('iqraCopyMessage')}</Text>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('iqraCopyMessage')}</Text>
             </Pressable>
             <Pressable onPress={onShare} hitSlop={8} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}>
               <Ionicons name="share-outline" size={16} color={ACCENT} />
-              <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{t('exportShare')}</Text>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('exportShare')}</Text>
             </Pressable>
           </View>
         </View>
@@ -498,12 +498,12 @@ function ResultCard({
             <View style={[styles.levelRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               {result.levelKey && (
                 <View style={[styles.levelPill, { backgroundColor: LEVEL_COLOR[result.levelKey] + '20' }]}>
-                  <Text style={{ color: LEVEL_COLOR[result.levelKey], fontFamily: 'Cairo_700Bold', fontSize: 14 }}>
+                  <Text style={{ color: LEVEL_COLOR[result.levelKey], fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>
                     {t(LEVEL_KEY[result.levelKey])}
                   </Text>
                 </View>
               )}
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
                 {t('resultPercentLabel', result.percent)}
               </Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
@@ -523,7 +523,7 @@ function ResultCard({
                     <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, flex: 1, textAlign: align }}>
                       {t(COMPETENCY_KEY[key])}
                     </Text>
-                    <Text style={{ color: c?.sufficient ? colors.foreground : colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+                    <Text style={{ color: c?.sufficient ? colors.foreground : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                       {c?.sufficient ? `${c.percent}%` : t('insufficientEvidence')}
                     </Text>
                   </View>
@@ -586,7 +586,7 @@ function NextStepsCard({
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
       <View style={[styles.resultCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 16, textAlign: align }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16, textAlign: align }}>
           {t('nextStepsTitle')}
         </Text>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 4, textAlign: align }}>
@@ -603,7 +603,7 @@ function NextStepsCard({
               <View key={rec.id} style={{ gap: 6 }}>
                 <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
                   <Ionicons name={KIND_ICON[rec.kind]} size={15} color={ACCENT} />
-                  <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                  <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                     {t(KIND_LABEL[rec.kind])}
                   </Text>
                   <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
@@ -619,7 +619,7 @@ function NextStepsCard({
                     style={[styles.recBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                   >
                     <Ionicons name="document-text-outline" size={14} color={ACCENT} />
-                    <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>
+                    <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>
                       {t('recBuildWorksheet')}
                     </Text>
                   </Pressable>
@@ -655,7 +655,7 @@ function QuestionInput({
     <View style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <View style={[styles.qNum, { backgroundColor: ACCENT_FILL }]}>
-          <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 12 }}>{index + 1}</Text>
+          <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 12 }}>{index + 1}</Text>
         </View>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
           {t('marksAbbrev', question.marks)}
@@ -738,7 +738,7 @@ function GradeRow({
   return (
     <View style={[styles.gradeRow, { borderTopColor: colors.border }]}>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
           {t('markLabel')}
         </Text>
         <TextInput
@@ -863,7 +863,7 @@ function TrueFalseInput({
               onPress={() => onChange({ value: opt.v })}
               style={[styles.tfBtn, { borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? ACCENT : 'transparent' }]}
             >
-              <Text style={{ color: selected ? palette.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 14 }}>{t(opt.key)}</Text>
+              <Text style={{ color: selected ? palette.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>{t(opt.key)}</Text>
             </Pressable>
           );
         })}

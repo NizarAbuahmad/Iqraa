@@ -140,10 +140,10 @@ export default function CalendarScreen() {
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <Pressable onPress={goToday} hitSlop={12}>
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('tabToday')}</Text>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('tabToday')}</Text>
           </Pressable>
         </View>
-        <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>{t('myCalendar')}</Text>
+        <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>{t('myCalendar')}</Text>
       </View>
 
       {loading ? (
@@ -166,7 +166,7 @@ export default function CalendarScreen() {
               <Pressable onPress={isRTL ? goNextMonth : goPrevMonth} hitSlop={10}>
                 <Ionicons name="chevron-back" size={20} color={colors.foreground} style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined} />
               </Pressable>
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>{monthLabel}</Text>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>{monthLabel}</Text>
               <Pressable onPress={isRTL ? goPrevMonth : goNextMonth} hitSlop={10}>
                 <Ionicons name="chevron-forward" size={20} color={colors.foreground} style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined} />
               </Pressable>
@@ -208,7 +208,7 @@ export default function CalendarScreen() {
                         <Text
                           style={{
                             color: isSelected ? palette.primaryForeground : inMonth ? colors.foreground : colors.mutedForeground,
-                            fontFamily: isToday || isSelected ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                            fontFamily: isToday || isSelected ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                             fontSize: 13, opacity: inMonth ? 1 : 0.4,
                           }}
                         >
@@ -232,7 +232,7 @@ export default function CalendarScreen() {
 
           {/* Selected day's agenda */}
           <View style={{ gap: 10, marginTop: 8 }}>
-            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
               {dateHeading}
             </Text>
 
@@ -244,7 +244,7 @@ export default function CalendarScreen() {
               <>
                 {selectedAgenda.periods.length > 0 ? (
                   <View style={{ gap: 6 }}>
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, textAlign: align }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
                       {t('calendarPeriodsSection')}
                     </Text>
                     {selectedAgenda.periods.map(p => (
@@ -255,14 +255,14 @@ export default function CalendarScreen() {
                           borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card,
                         }}
                       >
-                        <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>
+                        <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                           {p.startTime || t('schedulePeriodNumber', p.periodNumber)}
                         </Text>
                         <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                           {classNameFor(p.classGroupId)}
                         </Text>
                         {p.schoolName ? (
-                          <Text numberOfLines={1} style={{ maxWidth: 140, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5 }}>
+                          <Text numberOfLines={1} style={{ maxWidth: 140, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
                             {p.schoolName}
                           </Text>
                         ) : null}
@@ -273,7 +273,7 @@ export default function CalendarScreen() {
 
                 {selectedAgenda.lessons.length > 0 ? (
                   <View style={{ gap: 6 }}>
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, textAlign: align }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
                       {t('calendarLessonsSection')}
                     </Text>
                     {selectedAgenda.lessons.map(l => {
@@ -284,10 +284,10 @@ export default function CalendarScreen() {
                           key={`${l.planId}:${l.lessonId}`}
                           style={{ padding: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, gap: 2 }}
                         >
-                          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: align }}>
+                          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
                             {title}
                           </Text>
-                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, textAlign: align }}>
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
                             {t('calendarLessonFrom', l.planTitle)}
                           </Text>
                         </View>

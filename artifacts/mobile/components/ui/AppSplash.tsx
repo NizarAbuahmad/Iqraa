@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   },
   latin: {
     color: INK,
-    fontFamily: 'Cairo_600SemiBold',
+    fontFamily: 'ReadexPro_600SemiBold',
     fontSize: 12,
     letterSpacing: 3,
     textAlign: 'center',

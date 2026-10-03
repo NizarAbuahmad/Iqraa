@@ -49,7 +49,7 @@ export function RelatedResourcesPanel({ toolId = 'lesson-plan', topic, isRTL }: 
       <Text
         style={[
           styles.done,
-          { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: rtl ? 'right' : 'left' },
+          { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: rtl ? 'right' : 'left' },
         ]}
       >
         {toolId === 'lesson-plan'
@@ -82,7 +82,7 @@ export function RelatedResourcesPanel({ toolId = 'lesson-plan', topic, isRTL }: 
                 },
               ]}
             >
-              <Text style={[styles.chipText, { color: colors.foreground, fontFamily: 'Cairo_500Medium' }]}>
+              <Text style={[styles.chipText, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium' }]}>
                 {tool.emoji} {label}
               </Text>
             </Pressable>
@@ -101,7 +101,7 @@ export function RelatedResourcesPanel({ toolId = 'lesson-plan', topic, isRTL }: 
           },
         ]}
       >
-        <Text style={[styles.createAllText, { fontFamily: 'Cairo_600SemiBold' }]}>
+        <Text style={[styles.createAllText, { fontFamily: 'ReadexPro_600SemiBold' }]}>
           {t('relatedCreateAll')}
         </Text>
       </Pressable>

@@ -509,7 +509,7 @@ export default function QuizScreen() {
         <PickerField label={t('totalMarksLabel')} value={marksLabels[marksIdx]} options={marksLabels} onChange={setMarksIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('numQuestionsLabel')} value={numQLabels[numQIdx]} options={numQLabels} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           {ALL_Q_TYPES.map(type => (
             <CheckboxRow key={type} label={TYPE_LABEL[type]} checked={selectedTypes.has(type)} onToggle={() => toggleType(type)} accent={ACCENT} colors={colors} isRTL={isRTL} />
@@ -607,7 +607,7 @@ export default function QuizScreen() {
       {result && (
         <View style={{ paddingHorizontal: 20 }}>
           <View style={[styles.quizHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '40', borderRadius: colors.radius }]}>
-            <Text style={[styles.quizTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
+            <Text style={[styles.quizTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
             <View style={[styles.quizMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <MetaPill icon="time-outline" text={`${result.duration} ${t('min')}`} color={ACCENT} />
               <MetaPill icon="star-outline" text={`${result.totalPoints} ${t('pts')}`} color={ACCENT} />
@@ -648,7 +648,7 @@ export default function QuizScreen() {
             accessibilityRole="button"
           >
             <Ionicons name="tv-outline" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 14 }}>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>
               {t('presentOnScreen')}
             </Text>
           </Pressable>
@@ -658,7 +658,7 @@ export default function QuizScreen() {
             style={[styles.toggleBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
           >
             <Ionicons name={showAnswers ? 'eye-off-outline' : 'eye-outline'} size={16} color={ACCENT} />
-            <Text style={[{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>
+            <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>
               {showAnswers ? t('hideAnswers') : t('showAnswers')}
             </Text>
           </Pressable>
@@ -670,10 +670,10 @@ export default function QuizScreen() {
               <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
                 <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <View style={[styles.qNumCircle, { backgroundColor: ACCENT_FILL }]}>
-                    <Text style={[{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 12 }]}>{i + 1}</Text>
+                    <Text style={[{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 12 }]}>{i + 1}</Text>
                   </View>
                   <View style={[styles.typeBadge, { backgroundColor: tc + '18' }]}>
-                    <Text style={[{ color: tc, fontFamily: 'Cairo_500Medium', fontSize: 11 }]}>{TYPE_LABEL[q.type as QType] ?? q.type}</Text>
+                    <Text style={[{ color: tc, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }]}>{TYPE_LABEL[q.type as QType] ?? q.type}</Text>
                   </View>
                   <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
                     <View style={{ minWidth: 54 }}>
@@ -733,7 +733,7 @@ export default function QuizScreen() {
                   const isCorrect = marker === 'selected';
                   return (
                     <View key={oi} style={[styles.optRow, { backgroundColor: isCorrect ? '#067647' + '15' : colors.muted, borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                      <Text style={[styles.optLabel, { color: isCorrect ? '#067647' : colors.mutedForeground, fontFamily: isCorrect ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
+                      <Text style={[styles.optLabel, { color: isCorrect ? '#067647' : colors.mutedForeground, fontFamily: isCorrect ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular' }]}>
                         {optionLetter(oi, lang === 'ar')}.
                       </Text>
                       <View style={{ flex: 1 }}>
@@ -773,7 +773,7 @@ export default function QuizScreen() {
                 {showAnswers && q.type === 'true_false' && (
                   <View style={[styles.ansBox, { backgroundColor: '#067647' + '15', borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     <Ionicons name="checkmark-circle" size={14} color="#067647" />
-                    <Text style={[{ color: '#067647', fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>{t('answer')}:</Text>
+                    <Text style={[{ color: '#067647', fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('answer')}:</Text>
                     <View style={{ flex: 1 }}>
                       <EditableText
                         value={q.correctAnswer}
@@ -856,7 +856,7 @@ function MetaPill({ icon, text, color }: { icon: keyof typeof Ionicons.glyphMap;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: color + '18', borderRadius: 20 }}>
       <Ionicons name={icon} size={12} color={color} />
-      <Text style={{ color, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{text}</Text>
+      <Text style={{ color, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{text}</Text>
     </View>
   );
 }
@@ -870,7 +870,7 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL }: {
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
         {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
       </View>
-      <Text style={[{ color: colors.foreground, fontFamily: checked ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[{ color: colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -889,7 +889,7 @@ function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
 
 const styles = StyleSheet.create({
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
-  verifyText: { fontFamily: 'Cairo_600SemiBold', fontSize: 12, flex: 1 },
+  verifyText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12, flex: 1 },
   label: { fontSize: 13, marginBottom: 6 },
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },
