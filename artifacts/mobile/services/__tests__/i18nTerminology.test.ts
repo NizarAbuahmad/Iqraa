@@ -80,9 +80,17 @@ const BANNED: Array<{ term: string; use: string; why: string; exact?: boolean }>
   // English table alongside its replacement.
   {
     term: 'IQRA',
-    use: 'Iqraa',
-    why: 'one English spelling of the brand — the domain, the emails and the store listing say Iqraa',
-    // Case-sensitive: folded, "iqra" is a substring of every "Iqraa".
+    use: 'Iqrra',
+    why: 'one English spelling of the brand — the domain is iqrra.com',
+    // Case-sensitive: folded, "iqra" is a substring of every "Iqrra".
+    exact: true,
+  },
+  // 2026-10-01: the brand is spelled with two r's, as the domain is. "Iqraa"
+  // was the repo folder's spelling and had leaked into 86 strings and comments.
+  {
+    term: 'Iqraa',
+    use: 'Iqrra',
+    why: 'iqrra.com, app.iqrra.com and the store listing all say Iqrra',
     exact: true,
   },
   {

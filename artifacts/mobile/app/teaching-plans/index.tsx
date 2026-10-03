@@ -49,8 +49,8 @@ import {
   type PlanEntry,
 } from '@/services/planEntries';
 import { getLessonById, getLessonsForUnit, getUnitForLesson, getUnitsForSubjectGrade } from '@/services/knowledgeBase';
-import { buildMinistryPlanHTML, stagesFromLessonPlan, type MinistryLessonPage } from '@/services/ministryPlanHtml';
-import { exportAsPDF } from '@/services/share';
+import { stagesFromLessonPlan, type MinistryLessonPage } from '@/services/ministryPlan';
+import { exportMinistryPlanWord } from '@/services/share';
 import { useAuth } from '@/context/AuthContext';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { resolveGeneratorGrounding } from '@/services/kbContext';
@@ -526,7 +526,7 @@ export default function TeachingPlansScreen() {
       setExportingId(null);
     }
     try {
-      await exportAsPDF(buildMinistryPlanHTML(pages, plan.title), plan.title);
+      await exportMinistryPlanWord(pages, plan.title);
     } catch {
       setError(t('teachingPlansLoadFailed'));
     }

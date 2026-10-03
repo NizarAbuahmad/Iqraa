@@ -1318,7 +1318,7 @@ export function buildLessonFlowHTML(
 
   ${figuresSectionHTML(figures, isAr)}
 
-  <div class="footer">${isAr ? 'اقرأ — رفيقك في تحضير الحصص' : 'Iqraa — your lesson-prep companion'} · ${esc(flow.topic)} · ${new Date().toLocaleDateString(isAr ? 'ar-JO' : 'en-GB')}</div>
+  <div class="footer">${isAr ? 'اقرأ — رفيقك في تحضير الحصص' : 'Iqrra — your lesson-prep companion'} · ${esc(flow.topic)} · ${new Date().toLocaleDateString(isAr ? 'ar-JO' : 'en-GB')}</div>
 </div>
 </body>
 </html>`;

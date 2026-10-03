@@ -6,7 +6,7 @@
  */
 
 /**
- * Teacher document upload in the Iqraa chat (PDF / Word / PowerPoint / images).
+ * Teacher document upload in the Iqrra chat (PDF / Word / PowerPoint / images).
  *
  * Off since 2026-08-09. The reasoning is about cost, not capability: the whole
  * Jordanian curriculum is already in the app, so a teacher photographing a

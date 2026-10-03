@@ -25,6 +25,22 @@ export function numericValue(normalized: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * `normalizeArabic` plus the typing differences that never change an answer:
+ * the keys use the typographic minus (−) where students type a hyphen, «x = 4»
+ * against «x=4», a trailing full stop, and Persian-keyboard ی/ک. Lives here, not
+ * in `normalizeArabic`, because that one also feeds spelling rules.
+ */
+function normalizeAnswer(raw: unknown): string {
+  return normalizeArabic(raw)
+    .replace(/[ی]/g, "ي")
+    .replace(/[ک]/g, "ك")
+    .replace(/[−‐-—]/g, "-")
+    .replace(/\s*([=+\-×÷*/^<>(),])\s*/g, "$1")
+    .replace(/[.。،,؛;:!؟?]+$/, "")
+    .trim();
+}
+
 /** Decimal places written in an already-normalised numeric string. */
 function decimalPlaces(normalized: string): number {
   const dot = normalized.indexOf(".");
@@ -46,8 +62,8 @@ function decimalPlaces(normalized: string): number {
  * loop.
  */
 export function answersMatch(studentRaw: unknown, keyRaw: unknown): boolean {
-  const student = normalizeArabic(studentRaw);
-  const key = normalizeArabic(keyRaw);
+  const student = normalizeAnswer(studentRaw);
+  const key = normalizeAnswer(keyRaw);
   if (!student || !key) return false;
   if (student === key) return true;
 

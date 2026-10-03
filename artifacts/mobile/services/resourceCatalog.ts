@@ -1,7 +1,7 @@
 /**
  * One list out of three libraries.
  *
- * The library screen offers ready-made material only, in one place: what Iqraa
+ * The library screen offers ready-made material only, in one place: what Iqrra
  * staff upload per grade/subject/lesson (`libraryApi.ts`), the frozen practice
  * sheets, and the QR codes printed in the NCCD books. Those arrive in three
  * shapes from three places, and the screen should not know that. This module
