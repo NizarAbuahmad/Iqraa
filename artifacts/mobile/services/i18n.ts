@@ -1906,7 +1906,7 @@ const translations = {
     joinCodeNone: 'لم يُنشأ رمز لهذه الشعبة بعد',
     joinPickYourName: 'اختر اسمك من قائمة الشعبة',
     joinPickYourNameFor: (className: string) => `اختر اسمك من قائمة شعبة «${className}»`,
-    joinNameTaken: 'مرتبط بحساب',
+    joinNameTaken: 'تم ربطه بالفعل',
     joinConfirmStudent: (name: string) => `ستربط حسابك بالاسم «${name}». هل هذا اسمك أنت؟`,
     joinConfirmParent: (name: string) => `ستربط حسابك بالطالب/ة «${name}». هل هو ابنك أو ابنتك؟`,
     joinConfirmYes: 'نعم، هذا أنا',
@@ -1938,6 +1938,7 @@ const translations = {
     claimNeedsName: 'اختر اسمك من قائمة الشعبة أولًا',
     claimNameNotInClass: 'هذا الاسم ليس في قائمة هذه الشعبة',
     claimAlreadyLinked: 'هذا الطالب مرتبط بحساب آخر بالفعل',
+    claimGuardianTaken: 'هذا الاسم مرتبط بحساب وليّ أمر بالفعل. إن كنت وليّ أمره، اطلب من المعلم رمزًا خاصًا بابنك أو ابنتك.',
     claimEmptyClass: 'لا توجد أسماء في هذه الشعبة بعد. اطلب من المعلم إضافة أسماء الطلبة، ثم أعد المحاولة.',
     claimEmptyClassFor: (className: string) =>
       `لا توجد أسماء في شعبة «${className}» بعد. اطلب من المعلم إضافة أسماء الطلبة، ثم أعد المحاولة.`,
@@ -3839,7 +3840,7 @@ const translations = {
     joinCodeNone: 'No code for this class yet',
     joinPickYourName: 'Pick your name from the class list',
     joinPickYourNameFor: (className: string) => `Pick your name from ${className}'s class list`,
-    joinNameTaken: 'Already linked',
+    joinNameTaken: 'Already claimed',
     joinConfirmStudent: (name: string) => `You're about to link your account to “${name}”. Is that you?`,
     joinConfirmParent: (name: string) => `You're about to link your account to “${name}”. Is that your child?`,
     joinConfirmYes: 'Yes, that’s me',
@@ -3867,6 +3868,7 @@ const translations = {
     claimNeedsName: 'Choose your name from the class list first',
     claimNameNotInClass: 'That name is not on this class list',
     claimAlreadyLinked: 'This student is already linked to another account',
+    claimGuardianTaken: 'A parent account is already linked to this name. If you are their parent, ask the teacher for a code for your child.',
     claimEmptyClass: 'This class has no names on it yet. Ask the teacher to add the students, then try again.',
     claimEmptyClassFor: (className: string) =>
       `"${className}" has no names on it yet. Ask the teacher to add the students, then try again.`,
