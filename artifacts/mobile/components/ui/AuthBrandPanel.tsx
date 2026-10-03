@@ -67,11 +67,7 @@ export function AuthBrandPanel({ isWide }: { isWide: boolean }) {
           {t('loginBrandEyebrow')}
         </Text>
 
-        <BrandLogo
-          onDark
-          width={isWide ? 220 : 96}
-          height={isWide ? 220 : 96}
-        />
+        <BrandLogo onDark width={isWide ? 240 : 150} />
 
         <Text
           style={[
