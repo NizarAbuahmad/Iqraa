@@ -23,19 +23,28 @@ export function Button({ label, onPress, variant = 'primary', size = 'md', disab
     onPress();
   };
 
-  const bgColor = {
-    primary: colors.primary,
-    secondary: colors.secondary,
-    ghost: 'transparent',
-    destructive: colors.destructive,
-  }[variant];
+  // A disabled button is drawn in the tint, not faded: `opacity: 0.5` left
+  // white text on a half-teal fill at ~2.3:1 on the login screen, which reads
+  // as broken rather than "not yet". The tints below are all ≥ 4.5:1.
+  const inactive = !!disabled && !loading;
 
-  const textColor = {
-    primary: colors.primaryForeground,
-    secondary: colors.secondaryForeground,
-    ghost: colors.foreground,
-    destructive: colors.destructiveForeground,
-  }[variant];
+  const bgColor = inactive
+    ? (variant === 'ghost' ? 'transparent' : variant === 'primary' ? colors.secondary : colors.muted)
+    : {
+      primary: colors.primary,
+      secondary: colors.secondary,
+      ghost: 'transparent',
+      destructive: colors.destructive,
+    }[variant];
+
+  const textColor = inactive
+    ? (variant === 'primary' ? colors.secondaryForeground : colors.mutedForeground)
+    : {
+      primary: colors.primaryForeground,
+      secondary: colors.secondaryForeground,
+      ghost: colors.foreground,
+      destructive: colors.destructiveForeground,
+    }[variant];
 
   const borderColor = {
     primary: 'transparent',
@@ -65,7 +74,7 @@ export function Button({ label, onPress, variant = 'primary', size = 'md', disab
           paddingHorizontal: paddingH,
           paddingVertical: paddingV,
           borderRadius: colors.radius,
-          opacity: pressed ? 0.75 : disabled || loading ? 0.5 : hovered ? 0.9 : 1,
+          opacity: pressed ? 0.75 : loading ? 0.5 : hovered && !inactive ? 0.9 : 1,
           ...(fullWidth ? { width: '100%' } : {}),
         },
         style,

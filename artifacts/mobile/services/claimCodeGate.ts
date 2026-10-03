@@ -44,6 +44,16 @@ export function canSubmitClaim(state: JoinCodeState, studentId: string): boolean
   return false;
 }
 
+/**
+ * A class code is shared with the whole class, so a wrong tap (or a classmate's
+ * name) links the account to the wrong child. Before sending, the joiner is
+ * asked once to confirm the name they picked. A per-student code names its own
+ * student, so there is nothing to confirm.
+ */
+export function needsNameConfirm(state: JoinCodeState, studentId: string, confirmed: boolean): boolean {
+  return state === 'class' && studentId !== '' && !confirmed;
+}
+
 /** Every rejection `decideClaim` can return, keyed by the server's `code`. */
 const CLAIM_ERROR_KEYS: Record<string, TranslationKey> = {
   claim_code_invalid: 'claimCodeInvalid',
@@ -60,4 +70,18 @@ const CLAIM_ERROR_KEYS: Record<string, TranslationKey> = {
  */
 export function claimErrorKey(code: string | undefined): TranslationKey {
   return (code && CLAIM_ERROR_KEYS[code]) || 'joinAnotherClassFailed';
+}
+
+/**
+ * What the server's `normalizeShareCode` does, done before the screen counts
+ * characters: uppercase, and drop anything that is not a letter or digit.
+ *
+ * The lookup fires at six characters. A code read off a whiteboard arrives as
+ * `YHFM-8Y`, so at `YHFM-8` the screen had six characters and five of code:
+ * the server normalised it, found nothing, and the 404 was taken for a
+ * per-student code — Continue appeared on a code that was not finished.
+ * Counting what the server will actually see closes that.
+ */
+export function normalizeClaimCode(raw: string): string {
+  return raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
 }

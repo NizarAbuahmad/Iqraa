@@ -60,13 +60,33 @@ export function isPublicRoute(pathname: string | null | undefined): boolean {
  * the tab bar — a bookmark, a typed URL, a shared link — so the app stops
  * rendering a screen whose every call is going to come back 403.
  */
-const NON_TEACHER_ROUTES = ['/notifications', '/messaging', '/curriculum', '/profile', '/join-class', '/claim-required'];
+/**
+ * `/settings`, `/faq` and `/delete-account` are here because the profile tab
+ * links every role to them, and the bounce in app/_layout.tsx runs on every
+ * path change — not only at boot. Without them a parent tapping «الإعدادات»
+ * landed back in Messages, and account deletion was unreachable for anyone
+ * who was not a teacher. `routeGating.test.ts` pins each one.
+ */
+const NON_TEACHER_ROUTES = [
+  '/notifications',
+  '/messaging',
+  '/curriculum',
+  '/profile',
+  '/join-class',
+  '/claim-required',
+  '/settings',
+  '/faq',
+  '/delete-account',
+];
 
 /**
- * Teacher-only despite sitting under an allowed prefix: this is the screen
- * that mints a student's claim code, and it reads and writes the roster.
+ * Teacher-only despite sitting under an allowed prefix: `/messaging/claim`
+ * mints a student's claim code and reads and writes the roster;
+ * `/messaging/new-group` creates a group, which the server refuses for a
+ * non-teacher — and its picker loads a teacher-shaped contact list, so the
+ * screen died with a "no connection" message instead of the refusal.
  */
-const NON_TEACHER_EXCEPTIONS = ['/messaging/claim'];
+const NON_TEACHER_EXCEPTIONS = ['/messaging/claim', '/messaging/new-group'];
 
 function matchesPrefix(pathname: string, prefixes: string[]): boolean {
   return prefixes.some(p => pathname === p || pathname.startsWith(`${p}/`));
@@ -80,7 +100,10 @@ export function isNonTeacherRoute(pathname: string | null | undefined): boolean 
 }
 
 /** Routes whose whole purpose is to lead somewhere else once you're signed in. */
-const ENTRY_ROUTES = ['/login', '/register', '/onboarding', '/forgot-password'];
+// `/verify-email` too: it is reached signed-out (register answers with no
+// tokens), so a reload there used to bounce to login and drop the `email`
+// param the code screen needs.
+const ENTRY_ROUTES = ['/login', '/register', '/onboarding', '/forgot-password', '/verify-email'];
 
 export function isEntryRoute(pathname: string | null | undefined): boolean {
   // No path yet (first paint) is treated as an entry: there is no destination

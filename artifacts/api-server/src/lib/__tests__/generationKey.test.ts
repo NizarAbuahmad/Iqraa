@@ -92,6 +92,13 @@ describe("generationKeys", () => {
       assert.notEqual(keys(base).coarseKey, keys({ ...base, topic: "المتجهات" }).coarseKey);
     });
 
+    it("changes the strict key for ministryRoles but not the coarse key", () => {
+      const plain = keys(base);
+      const withRoles = keys({ ...base, ministryRoles: true });
+      assert.equal(plain.coarseKey, withRoles.coarseKey);
+      assert.notEqual(plain.strictKey, withRoles.strictKey);
+    });
+
     it("changes the strict key for priorTopicsNotes but not the coarse key", () => {
       const plain = keys(base);
       const withNotes = keys({ ...base, priorTopicsNotes: "راجع حل المعادلات من الصف التاسع" });

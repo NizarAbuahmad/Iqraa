@@ -16,7 +16,7 @@
  * shared class thread, and a report never leaves this app; the owning
  * teacher already sees everything as a permanent participant).
  */
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable,
   StyleSheet, Text, TextInput, View,
@@ -35,6 +35,7 @@ import {
   blockUser,
   getThread,
   listMessages,
+  markMessagesRead,
   pickChatImage,
   removeGroupMember,
   reportUser,
@@ -50,6 +51,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { chatRoleLabel } from '@/services/chatRoleLabel';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 import { mergeNewMessages } from '@/services/messageMerge';
+import { pickUnreportedReads } from '@/services/readReceipts';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { saveRemoteImage } from '@/services/share';
@@ -142,6 +144,30 @@ export default function ThreadScreen() {
   }, [threadId]);
 
   usePollingRefresh(refresh, 10000);
+
+  /*
+   * Read receipts, per message. The list reports what it actually rendered so
+   * a parent letter's «مقروءة» means the parent saw that letter, not that this
+   * thread was opened (services/readReceipts.ts picks the ids; the server
+   * drops anything that is not another participant's message in this thread).
+   * FlatList refuses a viewability callback or config that changes between
+   * renders, so both live in refs, and the values they need are read through
+   * refs too. A failed report is forgotten so the next scroll retries it.
+   */
+  const reportedReads = useRef(new Set<string>());
+  const readCtx = useRef({ threadId, userId: user?.id });
+  readCtx.current = { threadId, userId: user?.id };
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60, minimumViewTime: 400 }).current;
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<{ item: ChatMessage }> }) => {
+    const { threadId: tid, userId } = readCtx.current;
+    if (!tid) return;
+    const ids = pickUnreportedReads(viewableItems.map(v => v.item), userId, reportedReads.current);
+    if (ids.length === 0) return;
+    for (const id of ids) reportedReads.current.add(id);
+    markMessagesRead(tid, ids).catch(() => {
+      for (const id of ids) reportedReads.current.delete(id);
+    });
+  }).current;
 
   const participantsById = useMemo(() => {
     const map = new Map<string, ChatParticipantInfo>();
@@ -371,6 +397,8 @@ export default function ThreadScreen() {
           contentContainerStyle={{ padding: 16, flexGrow: 1, justifyContent: 'flex-end' }}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
+          viewabilityConfig={viewabilityConfig}
+          onViewableItemsChanged={onViewableItemsChanged}
           ListFooterComponent={loadingMore ? <ActivityIndicator color={colors.mutedForeground} style={{ marginVertical: 8 }} /> : null}
           renderItem={({ item }) => {
             const isOwn = item.senderId === user?.id;

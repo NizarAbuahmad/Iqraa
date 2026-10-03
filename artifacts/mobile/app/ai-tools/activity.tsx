@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,9 +8,9 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { isolateForeignRuns } from '@/services/mathRender';
-import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
+import { pooledVariantId } from '@/services/ai/regeneration';
 import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
@@ -28,12 +28,20 @@ import {
   type ActivityTypeId } from '@/constants/activityType';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
-import { aiErrorMessageKey } from '@/services/ai/aiProvenance';
+import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { GenerationStatus } from '@/components/ui/GenerationStatus';
+import { useFavorite } from '@/hooks/useFavorite';
+import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
+import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
+import { readIndexParam } from '@/services/materialParams';
+import { buildActivityRequest } from '@/services/generatorRequests';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { buildActivityHTML, buildActivitySlidesHTML, formatActivityText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
+import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { nextFrame } from '@/services/nextFrame';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -72,14 +80,37 @@ export default function ActivityScreen() {
   const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   const [topic, setTopic] = useState(params.topic ?? '');
-  const [activityTypeIdx, setActivityTypeIdx] = useState(params.activityTypeIdx ? parseInt(params.activityTypeIdx, 10) : 1);
-  const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 1);
+  useWarmGrounding(topic, lang);
+  const [activityTypeIdx, setActivityTypeIdx] = useState(readIndexParam(params.activityTypeIdx, ACTIVITY_TYPE_IDS.length, 1));
+  const [durationIdx, setDurationIdx] = useState(readIndexParam(params.durationIdx, DURATION_VALUES.length, 1));
   const [objective, setObjective] = useState(params.objective ?? '');
   const [loading, setLoading] = useState(false);
+  /**
+   * Held across renders so Cancel can reach the in-flight request. A cancel
+   * that only cleared the spinner would leave the call running and still
+   * billing against AI_BUDGET_USD — the teacher would have stopped the
+   * waiting, not the spending. This screen had no Cancel at all.
+   */
+  const abortRef = useRef<AbortController | null>(null);
+  useAbortOnUnmount(abortRef);
+  const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<ActivityOutput | null>(null);
-  /** Whether the output was anchored to a curriculum lesson, and which one. */
-  const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
-  const [groundedLesson, setGroundedLesson] = useState<string | null>(null);
+  /**
+   * The scope the activity on screen was generated under — pickers, topic
+   * and the grounded lesson, frozen at generation time (or re-derived from
+   * the saved form state on reopen). Save and export read this, never the
+   * live pickers: changing the subject clears the topic but keeps the
+   * activity, and reading the form at that point stored it under the new
+   * subject as «نشاط: ».
+   */
+  const [generated, setGenerated] = useState<GenerationScope | null>(
+    () => (params.savedId ? reopenedGenerationScope(initialScope, params.topic, lang as 'ar' | 'en') : null),
+  );
+  const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
+  const curriculumGrounded: boolean | null = generated ? generated.grounded : null;
+  const groundedLesson: string | null = generated?.lesson
+    ? (lang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
+    : null;
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
@@ -88,6 +119,8 @@ export default function ActivityScreen() {
   const [toastVisible, setToastVisible] = useState(false);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
+  const { favorited, setFavorited, toggle: handleToggleFavorite } =
+    useFavorite(savedId, key => showToast(t(key)));
 
   // Reset topic when grade or subject changes
   const prevGradeRef = React.useRef(gradeIdx);
@@ -95,6 +128,9 @@ export default function ActivityScreen() {
   useEffect(() => {
     if (prevGradeRef.current !== gradeIdx || prevSubjectRef.current !== subjectIdx) {
       setTopic('');
+      // A «subject mismatch» refusal is about the old pairing; it used to
+      // stay on screen in red under the now-empty topic field.
+      setError('');
       prevGradeRef.current = gradeIdx;
       prevSubjectRef.current = subjectIdx;
     }
@@ -105,13 +141,14 @@ export default function ActivityScreen() {
       getItem(params.savedId).then(item => {
         if (item) {
           try { setResult(JSON.parse(item.content) as ActivityOutput); } catch { /* noop */ }
+          setFavorited(item.isFavorite);
         }
       });
     }
   }, [params.savedId]);
 
   useEffect(() => {
-    if (result) setSaveLabel(savedId ? 'updated' : 'save');
+    if (result) setSaveLabel('save');
   }, [result]);
 
   /**
@@ -127,68 +164,93 @@ export default function ActivityScreen() {
     // Read before any setState clears it — this is what the teacher is
     // looking at, and what a regeneration must not hand back.
     const previous = result;
+    // What a failed or cancelled run must hand back. It used to be cleared
+    // up front and never restored, so a failed regenerate threw away the
+    // unsaved activity the teacher was looking at.
+    const held = { result, generated };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // activity — the KB serves that lesson's own content while the header
     // claims the picked subject. Refuse and name the real subject instead.
-    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
-    if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
+    const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
+    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
-    setError(''); setLoading(true); setResult(null); setSaveLabel('save');
+    setError(''); setCancelled(false);
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLoading(true); setResult(null); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await nextFrame();
     try {
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
-      setCurriculumGrounded(grounding.grounded);
-      setGroundedLesson(
-        grounding.lesson ? (lang === 'ar' ? grounding.lesson.titleAr : grounding.lesson.titleEn) : null,
-      );
-      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en');
-      const unitId = generatorUnitId(topic.trim(), lang as 'ar' | 'en');
-      const out = await aiService.generateActivity({
-        grade: grades[gradeIdx].name,
-        subject: subjects[subjectIdx].name,
-        topic: topic.trim(),
-        language: lang === 'ar' ? 'arabic' : 'english',
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
+      // The body comes from generatorRequests, like the worksheet's and the
+      // plan's, so the pregenerate script and this screen hash the same
+      // artifact. It also carries the localised grade name — this screen
+      // sent "Grade 10" into an Arabic activity.
+      const out = await aiService.generateActivity(buildActivityRequest({
+        gradeName: gradeNames[gradeIdx]!,
+        subjectName: subjects[subjectIdx].name,
+        topic,
+        lang: lang as 'ar' | 'en',
         activityType: ACTIVITY_TYPE_IDS[activityTypeIdx],
-        duration: DURATION_VALUES[durationIdx],
-        objectives: objective.trim() || undefined,
-        additionalContext,
-        unitId,
-        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
-        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
-        // A typed objective is the teacher's own words, and they end up inside
-        // the generated activity — so that request is theirs alone and never
-        // enters the shared pool. Picking a lesson and generating does.
-        contextSource: objective.trim() ? 'teacher' : 'curriculum',
-        ...regenerationFields(opts?.regenerate === true, previous),
-      });
+        durationMinutes: DURATION_VALUES[durationIdx],
+        objective,
+        regenerate: opts?.regenerate === true,
+        previous,
+      }, grounding), { signal: controller.signal });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (e) {
-      setError(t(aiErrorMessageKey(e)));
+      // A cancel is the teacher's own doing, so it is reported as a stop, not
+      // as a failure they need to diagnose or retry out of.
+      if (isAbortError(e)) setCancelled(true);
+      else setError(t(aiErrorMessageKey(e)));
+      if (held.result) {
+        setResult(held.result);
+        setGenerated(held.generated);
+      }
     } finally {
+      abortRef.current = null;
       setLoading(false);
     }
   };
 
+  /** Stop the in-flight request and hand the teacher their form back. */
+  const cancelGenerate = () => {
+    abortRef.current?.abort();
+  };
+
   const getExportTitle = () => lang === 'ar'
-    ? `نشاط: ${topic.trim()}`
-    : `Activity: ${topic.trim()}`;
+    ? `نشاط: ${scope.topic}`
+    : `Activity: ${scope.topic}`;
 
   const getExportMeta = () => ({
     // Localised, like the picker above it. Taking `.name` straight off the
     // catalog put "Mathematics | Grade 10" at the top of an otherwise Arabic
     // plan — the screen showed الرياضيات and the exported file disagreed.
-    subject: subjectNames[subjectIdx]!,
-    grade: gradeNames[gradeIdx]!,
+    // Labels are per grade, so they are read against the generated grade.
+    subject: subjectPickerLabels(grades[scope.gradeIdx].id, lang as 'ar' | 'en')[scope.subjectIdx]!,
+    grade: gradeNames[scope.gradeIdx]!,
   });
 
   const handleSave = async () => {
     if (!result) return;
     const title = getExportTitle();
-    const formState = { gradeIdx, subjectIdx, topic: topic.trim(), activityTypeIdx, durationIdx, objective };
+    const formState = { gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic, activityTypeIdx, durationIdx, objective };
+    // Built once: the two branches below used to each spell out the payload.
+    // The grade is the localised name, as the lesson plan stores it.
+    const payload = {
+      title,
+      subject: subjects[scope.subjectIdx].name,
+      grade: gradeNames[scope.gradeIdx]!,
+      topic: scope.topic,
+      language: lang,
+      content: JSON.stringify(result),
+      formState,
+    };
 
     // `updateItem` answers false when the material is no longer there — the
     // teacher deleted it from موادي while this screen still held its id. The
@@ -196,32 +258,15 @@ export default function ActivityScreen() {
     // over a material that no longer existed and the work was never saved
     // again. Folding the call into the condition makes a failed update fall
     // through to creating a fresh one, which is what pressing Save meant.
-    if (savedId && (await updateItem(savedId, {
-        title,
-        subject: subjects[subjectIdx].name,
-        grade: grades[gradeIdx].name,
-        topic: topic.trim(),
-        language: lang,
-        content: JSON.stringify(result),
-        formState,
-      }))) {
+    if (savedId && (await updateItem(savedId, payload))) {
       setSaveLabel('updated');
     } else {
-      const saved = await saveItem({
-        // Its own type, not 'lesson'. That substitution existed only because
-        // the workspace viewer had no activity branch and fell through to the
-        // quiz renderer; it has one now (see app/workspace/view.tsx), so the
-        // material can say what it is. Activities already saved as 'lesson'
-        // are rescued there by shape — nothing needs migrating.
-        type: 'activity',
-        title,
-        subject: subjects[subjectIdx].name,
-        grade: grades[gradeIdx].name,
-        topic: topic.trim(),
-        language: lang,
-        content: JSON.stringify(result),
-        formState,
-      });
+      // Its own type, not 'lesson'. That substitution existed only because
+      // the workspace viewer had no activity branch and fell through to the
+      // quiz renderer; it has one now (see app/workspace/view.tsx), so the
+      // material can say what it is. Activities already saved as 'lesson'
+      // are rescued there by shape — nothing needs migrating.
+      const saved = await saveItem({ type: 'activity', ...payload });
       setSavedId(saved.id);
       setSaveLabel('saved');
     }
@@ -241,7 +286,8 @@ export default function ActivityScreen() {
     loadingSlides,
   } = useGeneratorExport({
     result,
-    topic,
+    topic: scope.topic,
+    lessonId: scope.lesson?.id,
     lang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
@@ -312,7 +358,14 @@ export default function ActivityScreen() {
           />
         </View>
 
-        {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {/*
+          The validation error (an empty topic) stays here, next to the field
+          it is about. Generation failures render below in GenerationStatus,
+          beside the spinner they replace, with Cancel and Retry — the same
+          arrangement as the other generators; this screen still showed them
+          above the button with neither.
+        */}
+        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button
           label={loading ? t('generatingActivity') : t('generateActivityBtn')}
           onPress={() => generate()}
@@ -332,14 +385,18 @@ export default function ActivityScreen() {
       </View>
 
       {/* Loading */}
-      {loading && (
-        <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <ActivityIndicator color={ACCENT} />
-          <Text style={[styles.loadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-            {t('craftingActivity')}
-          </Text>
-        </View>
-      )}
+      <GenerationStatus
+        phase={loading ? 'loading' : cancelled ? 'cancelled' : (error && topic.trim()) ? 'error' : 'idle'}
+        loadingLabel={t('craftingActivity')}
+        errorDetail={error}
+        onCancel={cancelGenerate}
+        onRetry={() => generate()}
+        colors={colors}
+        isRTL={isRTL}
+        lang={lang as 'ar' | 'en'}
+        accent={ACCENT}
+        t={t}
+      />
 
       {/* Result */}
       {/* What the material is anchored to. Shown both ways: a teacher needs to
@@ -378,12 +435,13 @@ export default function ActivityScreen() {
           onToast={showToast}
           saveState={saveLabel}
           onSave={handleSave}
+          favorite={{ favorited, onToggle: handleToggleFavorite }}
           onExport={() => setShowExport(true)}
           onRegenerate={() => generate({ regenerate: true })}
           variantId={pooledVariantId(result)}
           materialType="activity"
           toolId="activity"
-          topic={topic.trim()}
+          topic={scope.topic}
         />
       )}
     </ScrollView>
@@ -568,8 +626,6 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 13, marginBottom: 6 },
   inputBox: { borderWidth: 1.5, padding: 14, marginBottom: 16 },
   textInput: { fontSize: 15, padding: 0, minHeight: 44 },
-  loadingBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginBottom: 16 },
-  loadingText: { fontSize: 14, lineHeight: 22 },
   resultHeader: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1, marginBottom: 16 },
   resultHeaderText: { fontSize: 14 },
   metaRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, marginBottom: 16, borderRadius: 10, overflow: 'hidden' },

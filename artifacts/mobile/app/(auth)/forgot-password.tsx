@@ -13,6 +13,7 @@ import { AuthBrandPanel, useAuthLayout } from '@/components/ui/AuthBrandPanel';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Ionicons } from '@expo/vector-icons';
+import { toLatinDigits } from '@/services/latinDigits';
 
 /**
  * One screen, two steps, rather than two routed screens like register →
@@ -140,7 +141,7 @@ export default function ForgotPasswordScreen() {
                 label={t('verificationCode')}
                 placeholder={t('verificationCodePlaceholder')}
                 value={code}
-                onChangeText={text => setCode(text.replace(/\D/g, '').slice(0, 6))}
+                onChangeText={text => setCode(toLatinDigits(text).replace(/\D/g, '').slice(0, 6))}
                 leftIcon="key-outline"
                 keyboardType="number-pad"
                 maxLength={6}

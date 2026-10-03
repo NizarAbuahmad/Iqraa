@@ -29,6 +29,8 @@ import { chatRoleLabel } from '@/services/chatRoleLabel';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
+import { setUnreadMessages } from '@/services/unreadMessages';
+import { filterThreads, THREAD_FILTERS, type ThreadFilter } from '@/services/threadFilter';
 import { Avatar } from '@/components/ui/Avatar';
 import { LoadError } from '@/components/ui/LoadError';
 
@@ -69,6 +71,7 @@ export default function NotificationsScreen() {
   // group, which a teacher never explicitly "starts" — this is the only way
   // back to that list, so it has to work even with threads already present.
   const [newChatOpen, setNewChatOpen] = useState(false);
+  const [filter, setFilter] = useState<ThreadFilter>('all');
 
   const load = useCallback(async () => {
     try {
@@ -95,6 +98,7 @@ export default function NotificationsScreen() {
             ),
       ]);
       setThreads(list);
+      setUnreadMessages(list.reduce((sum, th) => sum + th.unreadCount, 0));
       setContacts(myContacts);
       setError('');
     } catch (e) {
@@ -177,6 +181,12 @@ export default function NotificationsScreen() {
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
   const unreadCount = threads.reduce((sum, th) => sum + th.unreadCount, 0);
   const align = isRTL ? 'right' : 'left';
+  const visibleThreads = filterThreads(threads, filter);
+  const filterLabel: Record<ThreadFilter, string> = {
+    all: t('messagingFilterAll'),
+    groups: t('messagingFilterGroups'),
+    direct: t('messagingFilterDirect'),
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -229,12 +239,36 @@ export default function NotificationsScreen() {
         // Nothing loaded: «لا توجد محادثات بعد» would be a claim we cannot make.
         null
       ) : threads.length > 0 ? (
+        <View style={{ flex: 1 }}>
+        <View style={[styles.filterRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]} accessibilityRole="tablist">
+          {THREAD_FILTERS.map(f => {
+            const active = f === filter;
+            return (
+              <Pressable
+                key={f}
+                onPress={() => setFilter(f)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                style={[styles.filterChip, { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border }]}
+              >
+                <Text style={{ fontSize: 13, fontFamily: 'Cairo_600SemiBold', color: active ? colors.primaryForeground : colors.mutedForeground }}>
+                  {filterLabel[f]}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
         <FlatList
-          data={threads}
+          data={visibleThreads}
           keyExtractor={th => th.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+          ListEmptyComponent={
+            <Text style={[styles.emptyDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', paddingTop: 32 }]}>
+              {t('messagingFilterEmpty')}
+            </Text>
+          }
           renderItem={({ item }) => {
             const other = item.otherParticipant;
             const isGroup = item.type !== 'direct';
@@ -312,6 +346,7 @@ export default function NotificationsScreen() {
             );
           }}
         />
+        </View>
       ) : (
         <View style={{ flex: 1 }}>
           <View style={styles.empty}>
@@ -358,6 +393,8 @@ const styles = StyleSheet.create({
   headerAction: { alignItems: 'center', gap: 4 },
   headerActionPrimary: { alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   headerActionText: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
+  filterRow: { gap: 8, paddingHorizontal: 16, paddingTop: 12 },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   threadCard: { padding: 14, gap: 12, borderWidth: 1, alignItems: 'center' },
   groupIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

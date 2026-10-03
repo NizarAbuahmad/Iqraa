@@ -12,6 +12,7 @@ import assert from "node:assert/strict";
 
 import {
   assertUsableGeneration,
+  extractJSON,
   deckShortfalls,
   missingFields,
   REQUIRED_FIELDS,
@@ -233,5 +234,24 @@ describe("infographic contract", () => {
       () => assertUsableGeneration("infographic", { ...infographic(), sections: [] }),
       UnusableGenerationError,
     );
+  });
+});
+
+describe("extractJSON with LaTeX in the reply", () => {
+  it("recovers a reply with a lone backslash instead of throwing", () => {
+    // Production 2026-09-30: «Bad escaped character in JSON» on a maths lesson plan.
+    const raw = String.raw`{"title":"حل \(x^2 = 4\)","note":"جذر \sqrt{9}"}`;
+    assert.throws(() => JSON.parse(raw));
+    assert.deepEqual(extractJSON(raw), { title: String.raw`حل \(x^2 = 4\)`, note: String.raw`جذر \sqrt{9}` });
+  });
+
+  it("leaves valid escapes alone, including an escaped backslash before a letter", () => {
+    const raw = String.raw`{"a":"line\nbreak","b":"\\alpha","c":"\u0627","d":"q\"uote"}`;
+    assert.equal(JSON.parse(raw).b, String.raw`\alpha`); // already valid: must come out unchanged
+    assert.deepEqual(extractJSON(raw), { a: "line\nbreak", b: String.raw`\alpha`, c: "ا", d: 'q"uote' });
+  });
+
+  it("still fails on a reply that is not JSON at all", () => {
+    assert.throws(() => extractJSON("sorry, I cannot help with that"));
   });
 });

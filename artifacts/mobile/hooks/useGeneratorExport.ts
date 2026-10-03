@@ -25,6 +25,8 @@ export type GeneratorExportMeta = { subject: string; grade: string; duration?: n
 export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(config: {
   result: TResult | null;
   topic: string;
+  /** The lesson the material was generated under; beats re-grounding `topic`. */
+  lessonId?: string;
   lang: Lang;
   getTitle: () => string;
   getMeta: () => TMeta;
@@ -34,15 +36,15 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
   onError: (key: TranslationKey) => void;
   onCopied: (key: TranslationKey) => void;
 }) {
-  const { result, topic, lang, getTitle, getMeta, formatText, buildHTML, buildSlidesHTML, onError, onCopied } = config;
+  const { result, topic, lessonId, lang, getTitle, getMeta, formatText, buildHTML, buildSlidesHTML, onError, onCopied } = config;
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
   const [loadingSlides, setLoadingSlides] = useState(false);
   const isAr = lang === 'ar';
 
   const getExportFigures = useCallback((): BookFigureRef[] => {
-    return bookFigureRefsForLesson(resolveGeneratorGrounding(topic.trim(), lang).lesson?.id, isAr);
-  }, [topic, lang, isAr]);
+    return bookFigureRefsForLesson(lessonId ?? resolveGeneratorGrounding(topic.trim(), lang).lesson?.id, isAr);
+  }, [lessonId, topic, lang, isAr]);
 
   const filenameOf = (title: string, suffix = '') =>
     (title + suffix).replace(suffix ? /[^\w\s-]/g : /[^\w\s]/g, '').trim();

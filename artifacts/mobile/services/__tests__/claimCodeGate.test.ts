@@ -12,7 +12,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { canSubmitClaim, claimErrorKey } from '../claimCodeGate.ts';
+import { canSubmitClaim, claimErrorKey, needsNameConfirm, normalizeClaimCode } from '../claimCodeGate.ts';
 
 describe('canSubmitClaim', () => {
   it('blocks a code too short to have been looked up', () => {
@@ -74,5 +74,35 @@ describe('claimErrorKey', () => {
 
   it('falls back when the server sent no code at all', () => {
     assert.equal(claimErrorKey(undefined), 'joinAnotherClassFailed');
+  });
+});
+
+describe('needsNameConfirm', () => {
+  it('asks once for a class code with a picked name', () => {
+    assert.equal(needsNameConfirm('class', 'abc', false), true);
+    assert.equal(needsNameConfirm('class', 'abc', true), false);
+  });
+
+  it('never asks for a per-student code, or before a name is picked', () => {
+    assert.equal(needsNameConfirm('student-code', '', false), false);
+    assert.equal(needsNameConfirm('class', '', false), false);
+  });
+});
+
+describe('normalizeClaimCode', () => {
+  it('drops the dash a code is written with on a whiteboard, so six typed characters are six', () => {
+    // `YHFM-8` is six characters typed but five of code: the lookup fired on
+    // it, the server normalised it to `YHFM8`, answered 404, and the screen
+    // took that for a per-student code and offered Continue on a half-typed one.
+    assert.equal(normalizeClaimCode('YHFM-8'), 'YHFM8');
+    assert.equal(normalizeClaimCode('YHFM-8Y'), 'YHFM8Y');
+  });
+
+  it('uppercases and strips spaces, matching the server\'s normalizeShareCode', () => {
+    assert.equal(normalizeClaimCode(' yhfm 8y '), 'YHFM8Y');
+  });
+
+  it('leaves a clean code alone', () => {
+    assert.equal(normalizeClaimCode('ABC234'), 'ABC234');
   });
 });

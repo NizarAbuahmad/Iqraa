@@ -36,6 +36,7 @@ import { addEvaluationQuestion, type CompetencyKey, type EvaluationQuestion } fr
 import type { TranslationKey } from '@/services/i18n';
 import { objectiveLabel } from '@/services/curriculumData';
 import { palette } from '@/constants/colors';
+import { toLatinDigits } from '@/services/latinDigits';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -88,7 +89,7 @@ export function AddReadAloudModal({
     [passage],
   );
   const lengthOk = wordCount >= MIN_WORDS && wordCount <= MAX_WORDS;
-  const marksValue = Number(marks);
+  const marksValue = Number(toLatinDigits(marks));
   const canSave = lengthOk && marksValue > 0 && !!objectiveId && !busy;
 
   async function save() {

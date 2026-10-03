@@ -48,9 +48,9 @@ export default function ClaimRequiredScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useLanguage();
-  const { user, markRosterClaimed, switchRole } = useAuth();
+  const { user, markRosterClaimed, switchRole, logout } = useAuth();
 
-  const { code, setCode, roster, className, studentId, setStudentId, state, canSubmit: canSubmitCode } = useJoinCodeLookup();
+  const { code, setCode, roster, className, studentId, setStudentId, state, canSubmit: canSubmitCode, needsConfirm, confirmed, setConfirmed, pickedName } = useJoinCodeLookup();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -87,6 +87,8 @@ export default function ClaimRequiredScreen() {
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
+    // A class code is shared: ask once whether the picked name is really theirs.
+    if (needsConfirm) { setConfirmed(true); return; }
     setSubmitting(true);
     setError('');
     try {
@@ -197,6 +199,9 @@ export default function ClaimRequiredScreen() {
           onSelectStudent={setStudentId}
           state={state}
           userRole={user?.role}
+          confirming={confirmed}
+          pickedName={pickedName}
+          onChangeMind={() => setConfirmed(false)}
           colors={colors}
           isRTL={isRTL}
           t={t}
@@ -212,13 +217,23 @@ export default function ClaimRequiredScreen() {
         ) : null}
 
         <Button
-          label={t('claimRequiredSubmit')}
+          label={confirmed ? t('joinConfirmYes') : t('claimRequiredSubmit')}
           onPress={handleSubmit}
           loading={submitting}
           disabled={!canSubmit}
           fullWidth
           style={{ marginTop: 24 }}
         />
+
+        {/* The only other exit. This screen is mandatory and the back gesture
+            is off, so a student whose code has expired — or who signed in on
+            a shared school device — was trapped here, and so was the next
+            person to pick up that device. */}
+        <Pressable onPress={() => void logout()} hitSlop={8} style={{ alignSelf: 'center', marginTop: 20, marginBottom: 8 }}>
+          <Text style={[styles.roleLink, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
+            {t('signOut')}
+          </Text>
+        </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );

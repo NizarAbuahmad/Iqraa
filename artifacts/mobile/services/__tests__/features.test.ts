@@ -28,7 +28,7 @@ describe('fetchFeatures', () => {
 
   it('fails closed once retries run out, and caches nothing', async () => {
     const f = flaky(10);
-    assert.deepEqual(await fetchFeatures(f.load, [0, 0]), { studentAccounts: false });
+    assert.deepEqual(await fetchFeatures(f.load, [0, 0]), { studentAccounts: false, failed: true });
     assert.equal(f.calls(), 3);
     const ok = flaky(0);
     assert.deepEqual(await fetchFeatures(ok.load, [0, 0]), { studentAccounts: true });

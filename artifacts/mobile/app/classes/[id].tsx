@@ -54,7 +54,9 @@ import {
   type ClassParentContact,
   type RosterStudent,
 } from '@/services/roster';
-import { getPickerGrades } from '@/services/curriculumData';
+import { SUBJECTS, getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { narrowSubjectsForGrade } from '@/services/teacherCatalogFilter';
+import { useAuth } from '@/context/AuthContext';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { copyToClipboard, shareAsText } from '@/services/share';
 import { Toast } from '@/components/ui/Toast';
@@ -72,6 +74,7 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
 import { summarizeClassContacts, type ClassContactSummary } from '@/services/parentMessage';
 import { palette } from '@/constants/colors';
+import { CLASSES_QUERY_KEY, classQueryKey as CLASS_QUERY_KEY } from '@/services/rosterQueryKeys';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -83,8 +86,6 @@ type Tab = 'students' | 'materials' | 'exams';
 
 type ClassQueryData = { group: ClassGroup; students: RosterStudent[] };
 
-/** Route-scoped key: each class id gets its own cache entry. */
-const CLASS_QUERY_KEY = (id: string) => ['class', id] as const;
 /**
  * This screen is stack-pushed per class, so every visit used to be a fresh
  * mount that re-earned the roster over the network before painting anything
@@ -133,6 +134,7 @@ export default function ClassDetailScreen() {
   const [showEdit, setShowEdit] = useState(false);
   const [editName, setEditName] = useState('');
   const [editGradeId, setEditGradeId] = useState('grade-10');
+  const [editSubjectId, setEditSubjectId] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
   const {
@@ -155,6 +157,22 @@ export default function ClassDetailScreen() {
   const teacherScope = useTeacherScope();
   const pickerGrades = getPickerGrades().filter(g => teacherScope.isGradeShown(g.id) || g.id === group?.gradeId);
 
+  /**
+   * Subject choices for the edit sheet: what this teacher teaches to the
+   * chosen grade (same narrowing as class creation), plus the class's current
+   * subject so editing never hides it. A class made before subjects were
+   * stored has none — this is how it gets one, which the teaching-plan
+   * schedule needs to list any lessons.
+   */
+  const { user } = useAuth();
+  const pickerSubjects = (() => {
+    const narrowed = narrowSubjectsForGrade(
+      getPickerSubjects(editGradeId), editGradeId, user?.teachingAssignments, user?.subjectIds,
+    );
+    const current = SUBJECTS.find(x => x.id === group?.subjectId);
+    return current && !narrowed.some(x => x.id === current.id) ? [...narrowed, current] : narrowed;
+  })();
+
   /** Server errors arrive in English; this screen is Arabic-first. */
   const describe = useCallback(
     (err: unknown): string => {
@@ -169,20 +187,34 @@ export default function ClassDetailScreen() {
   );
   const loadError = loadFailed ? describe(loadErrorRaw) : '';
 
+  /**
+   * Everything on this screen that is not the roster itself. Never throws:
+   * it runs from `useFocusEffect` as a fire-and-forget, where a rejection is
+   * an unhandled promise and nothing on screen, and from `onAdd` inside the
+   * try block, where a failed *exams* fetch used to be reported as a failed
+   * *add* — after the students had in fact been saved — and swallowed the
+   * skipped-names message in the process.
+   */
   const load = useCallback(async () => {
     if (!id) return;
     setError('');
     // Materials are a separate store with its own offline fallback, so a
     // roster failure must not blank the materials tab and vice versa.
     setMaterials(await getItems({ classId: id }));
-    setExams(await listEvaluations({ classId: id }));
+    // The exams list has no fallback and throws on any non-2xx. Say so in the
+    // banner and keep whatever was shown before rather than blanking the tab.
+    try {
+      setExams(await listEvaluations({ classId: id }));
+    } catch (err) {
+      setError(describe(err));
+    }
     // Term mastery is a nice-to-have on this screen, not a reason to fail it.
     // A class with no marked attempts yet answers with empty objectives, which
     // the section renders as "nothing yet" rather than as an error.
     setMastery(await getClassMastery(id).catch(() => null));
     // Same rule: the contact card is advice, never a reason to fail the roster.
     setParentContacts(await listClassParentContacts(id).catch(() => null));
-  }, [id]);
+  }, [id, describe]);
 
   const contactSummary = useMemo(
     () => (parentContacts ? summarizeClassContacts(students, parentContacts, new Date()) : null),
@@ -218,6 +250,9 @@ export default function ClassDetailScreen() {
       // addStudents only returns counts, not the created rows, so there is no
       // local shape to write into the cache — refetch the roster instead.
       await Promise.all([load(), refetch()]);
+      // The class list shows a student count and caches for a minute; without
+      // this, going back showed the old number until the cache aged out.
+      void queryClient.invalidateQueries({ queryKey: CLASSES_QUERY_KEY });
       // Say so when names were skipped. A teacher who pastes 30 and gets 27
       // needs to know the 3 were already on the roster, not lost.
       if (result.skipped.length > 0) {
@@ -271,6 +306,7 @@ export default function ClassDetailScreen() {
     if (!group) return;
     setEditName(group.name);
     setEditGradeId(group.gradeId || 'grade-10');
+    setEditSubjectId(group.subjectId || '');
     setError('');
     setShowEdit(true);
   };
@@ -281,7 +317,11 @@ export default function ClassDetailScreen() {
     setSavingEdit(true);
     setError('');
     try {
-      const updated = await updateClass(id, { name, gradeId: editGradeId });
+      const updated = await updateClass(id, {
+        name,
+        gradeId: editGradeId,
+        ...(editSubjectId ? { subjectId: editSubjectId } : {}),
+      });
       queryClient.setQueryData<ClassQueryData>(CLASS_QUERY_KEY(id), prev =>
         prev ? { ...prev, group: { ...prev.group, ...updated } } : prev,
       );
@@ -309,6 +349,7 @@ export default function ClassDetailScreen() {
       queryClient.setQueryData<ClassQueryData>(CLASS_QUERY_KEY(id), prev =>
         prev ? { ...prev, students: prev.students.filter(s => s.id !== student.id) } : prev,
       );
+      void queryClient.invalidateQueries({ queryKey: CLASSES_QUERY_KEY });
     } catch (err) {
       setError(describe(err));
     }
@@ -619,7 +660,7 @@ export default function ClassDetailScreen() {
                 />
               )}
               {students.length > 0 && (
-                <ParentContactSection summary={contactSummary} colors={colors} isRTL={isRTL} align={align} t={t} />
+                <ParentContactSection summary={contactSummary} subjectId={group?.subjectId} colors={colors} isRTL={isRTL} align={align} t={t} />
               )}
             </View>
           }
@@ -953,39 +994,45 @@ export default function ClassDetailScreen() {
                 { color: colors.foreground, borderColor: colors.border, fontFamily: 'Almarai_400Regular', textAlign: align },
               ]}
             />
-            {/* Same grade pills as class creation (classes/index.tsx) — only
-                worth showing once there is a real choice. */}
-            {pickerGrades.length > 1 ? (
-              <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
-                {pickerGrades.map(g => {
-                  const active = editGradeId === g.id;
-                  return (
-                    <Pressable
-                      key={g.id}
-                      onPress={() => setEditGradeId(g.id)}
-                      style={{
-                        paddingHorizontal: 14,
-                        paddingVertical: 7,
-                        borderRadius: 18,
-                        borderWidth: 1.5,
-                        borderColor: active ? ACCENT : colors.border,
-                        backgroundColor: active ? ACCENT + '16' : colors.card,
-                      }}
-                    >
-                      <Text
+            {/* Same grade and subject pills as class creation
+                (classes/index.tsx) — only worth showing once there is a real
+                choice. */}
+            {([
+              [pickerGrades, editGradeId, setEditGradeId],
+              [pickerSubjects, editSubjectId, setEditSubjectId],
+            ] as const).map(([options, selected, onSelect], row) =>
+              options.length > 1 ? (
+                <View key={row} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+                  {options.map(o => {
+                    const active = selected === o.id;
+                    return (
+                      <Pressable
+                        key={o.id}
+                        onPress={() => onSelect(o.id)}
                         style={{
-                          color: active ? ACCENT : colors.mutedForeground,
-                          fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                          fontSize: 13,
+                          paddingHorizontal: 14,
+                          paddingVertical: 7,
+                          borderRadius: 18,
+                          borderWidth: 1.5,
+                          borderColor: active ? ACCENT : colors.border,
+                          backgroundColor: active ? ACCENT + '16' : colors.card,
                         }}
                       >
-                        {lang === 'ar' ? g.nameAr : g.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : null}
+                        <Text
+                          style={{
+                            color: active ? ACCENT : colors.mutedForeground,
+                            fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                            fontSize: 13,
+                          }}
+                        >
+                          {lang === 'ar' ? o.nameAr : o.name}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : null,
+            )}
             {error ? (
               <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: align }}>
                 {error}
@@ -1560,9 +1607,11 @@ function JoinStatusSection({
  * family it starts on «إشادة وتقدير», because that is the letter that's missing.
  */
 function ParentContactSection({
-  summary, colors, isRTL, align, t,
+  summary, subjectId, colors, isRTL, align, t,
 }: {
   summary: ClassContactSummary | null;
+  /** The class's subject, so the letter opens naming it — the picker path seeds this from the class too. */
+  subjectId?: string;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   align: 'left' | 'right';
@@ -1578,7 +1627,7 @@ function ParentContactSection({
           key={s.id}
           onPress={() => router.push({
             pathname: '/ai-tools/parent-message',
-            params: { studentId: s.id, studentName: s.displayName, ...(kind ? { kind } : {}) },
+            params: { studentId: s.id, studentName: s.displayName, ...(subjectId ? { subjectId } : {}), ...(kind ? { kind } : {}) },
           })}
           style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, borderWidth: 1, borderColor: colors.border }}
         >

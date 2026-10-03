@@ -18,8 +18,13 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  attachmentProblem,
+  attachmentKind,
   composeParentMessage,
+  parentMessageReady,
   guardiansForStudent,
+  MAX_LETTER_LENGTH,
+  outgoingLetter,
   kindLabel,
   MESSAGE_KINDS,
   needsDetails,
@@ -414,5 +419,73 @@ describe('remembered answers', () => {
     assert.equal(rosterGender('male'), 'male');
     assert.equal(rosterGender(''), null);
     assert.equal(rosterGender(undefined), null);
+  });
+});
+
+describe('hand-edited letter', () => {
+  const generated = 'أهلاً بكم، ... ابنتكم سارة ...';
+
+  it('sends the generated letter until the teacher edits it', () => {
+    assert.deepEqual(outgoingLetter(generated, null, 'سارة'), { text: generated, edited: false, stale: false });
+  });
+
+  it('sends the edit verbatim, not the regenerated text, once there is one', () => {
+    const edit = { text: 'نص كتبته بنفسي عن سارة', studentName: 'سارة' };
+    assert.deepEqual(outgoingLetter(generated, edit, 'سارة'), { text: edit.text, edited: true, stale: false });
+  });
+
+  // The edit names the child in free text. Picking another student must not
+  // quietly send Sara's letter to Basel's parent.
+  it('marks an edit stale when the student changed after it was made', () => {
+    const edit = { text: 'نص عن سارة', studentName: 'سارة' };
+    assert.equal(outgoingLetter(generated, edit, 'باسل').stale, true);
+    assert.equal(outgoingLetter(generated, edit, '  سارة ').stale, false);
+  });
+
+  it('caps the letter at what the server accepts', () => {
+    assert.equal(MAX_LETTER_LENGTH, 4000);
+  });
+});
+
+describe('attachment', () => {
+  const png = 'data:image/png;base64,iVBORw0KGgo=';
+  const pdf = 'data:application/pdf;base64,JVBERi0=';
+
+  it('names what kind of file is attached', () => {
+    assert.equal(attachmentKind(png), 'image');
+    assert.equal(attachmentKind(pdf), 'pdf');
+    assert.equal(attachmentKind('data:audio/mpeg;base64,AA=='), null);
+    assert.equal(attachmentKind('not a data url'), null);
+  });
+
+  it('refuses a type parents cannot be sent, and a file over the server limit', () => {
+    assert.equal(attachmentProblem(png), null);
+    assert.equal(attachmentProblem(pdf), null);
+    assert.equal(attachmentProblem('data:application/zip;base64,AA=='), 'unsupported');
+    assert.equal(attachmentProblem('data:image/png;base64,' + 'A'.repeat(8_000_000)), 'too_large');
+  });
+});
+
+describe('parentMessageReady — a concern letter needs its details', () => {
+  // The details label already says "required" for concern kinds; the Send,
+  // Share and Copy buttons used to ignore it and let an empty concern reach a
+  // real parent.
+  it('is false for a concern kind with no details, whatever the message says', () => {
+    assert.equal(parentMessageReady('absence', '', 'some composed text'), false);
+    assert.equal(parentMessageReady('absence', '   ', 'some composed text'), false);
+  });
+
+  it('is true for a concern kind once details are typed', () => {
+    assert.equal(parentMessageReady('absence', 'غاب ثلاثة أيام', 'some composed text'), true);
+  });
+
+  it('does not need details for praise or progress', () => {
+    assert.equal(parentMessageReady('praise', '', 'some composed text'), true);
+    assert.equal(parentMessageReady('progress', '', 'some composed text'), true);
+  });
+
+  it('is never true without a composed message', () => {
+    assert.equal(parentMessageReady('praise', '', ''), false);
+    assert.equal(parentMessageReady('absence', 'details', ''), false);
   });
 });

@@ -9,6 +9,10 @@
  * Students are personal data about minors. Names are never logged, and the
  * error paths deliberately say "not found" rather than distinguishing "exists
  * but belongs to another teacher" — the latter leaks the roster of a colleague.
+ *
+ * An archived class is "not found" on every per-id route too, via
+ * `findLiveClass` (lib/classOwnership.ts). Archiving is this module's delete,
+ * and for a while only the list honoured it — see that helper for the bug.
  */
 import { Router } from "express";
 import { db } from "@workspace/db";
@@ -23,6 +27,7 @@ import {
   parentContacts,
   rosterLinks,
   students,
+  chatMessageReads,
   type ParentContactChannel,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
@@ -39,9 +44,16 @@ import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { generateShareCode } from "../modules/assessment/studentView.ts";
 import { isCodeLive } from "../lib/claimDecision.ts";
+import { letterReadState } from "../lib/parentContactRead.ts";
 import { requireRosterConsent } from "../lib/rosterConsent.js";
 import { studentAccountsEnabled } from "../lib/features.js";
-import { syncClassGroupThread } from "../lib/classThread.js";
+import {
+  archiveClassThread,
+  renameClassGroupThread,
+  resyncClassGroupThreadIfExists,
+  syncClassGroupThread,
+} from "../lib/classThread.js";
+import { findLiveClass } from "../lib/classOwnership.js";
 
 const router = Router();
 
@@ -150,12 +162,7 @@ router.post("/classes", async (req: AuthenticatedRequest, res) => {
 router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = req.params["id"] as string;
-    const [group] = await db
-      .select()
-      .from(classGroups)
-      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
-      .limit(1);
-
+    const group = await findLiveClass(classId, req.user!.id);
     if (!group) {
       res.status(404).json({ error: "Class not found" });
       return;
@@ -218,13 +225,7 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
 router.get("/classes/:id/mastery", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = req.params["id"] as string;
-    const [group] = await db
-      .select({ id: classGroups.id })
-      .from(classGroups)
-      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
-      .limit(1);
-
-    if (!group) {
+    if (!(await findLiveClass(classId, req.user!.id))) {
       res.status(404).json({ error: "Class not found" });
       return;
     }
@@ -312,12 +313,23 @@ router.patch("/classes/:id", async (req: AuthenticatedRequest, res) => {
     const [row] = await db
       .update(classGroups)
       .set(patch)
-      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      .where(
+        and(
+          eq(classGroups.id, classId),
+          eq(classGroups.teacherId, req.user!.id),
+          isNull(classGroups.archivedAt),
+        ),
+      )
       .returning();
 
     if (!row) {
       res.status(404).json({ error: "Class not found" });
       return;
+    }
+    // The class chat is titled after the class; a rename used to reach it only
+    // when somebody next opened the thread.
+    if ("name" in patch || "nameAr" in patch) {
+      await renameClassGroupThread(row.id, row.name, row.nameAr);
     }
     res.json({ class: row });
   } catch (err) {
@@ -343,6 +355,7 @@ router.delete("/classes/:id", async (req: AuthenticatedRequest, res) => {
       res.status(404).json({ error: "Class not found" });
       return;
     }
+    await archiveClassThread(row.id);
     res.json({ archived: row.id });
   } catch (err) {
     failRoster(res, err, "archive class", "Failed to archive class");
@@ -414,12 +427,7 @@ router.get("/students", async (req: AuthenticatedRequest, res) => {
 router.post("/classes/:id/students", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = req.params["id"] as string;
-    const [group] = await db
-      .select()
-      .from(classGroups)
-      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
-      .limit(1);
-
+    const group = await findLiveClass(classId, req.user!.id);
     if (!group) {
       res.status(404).json({ error: "Class not found" });
       return;
@@ -446,7 +454,9 @@ router.post("/classes/:id/students", async (req: AuthenticatedRequest, res) => {
     for (const entry of raw) {
       const id = trimmed(entry?.id);
       if (id) {
-        existingIds.push(id);
+        // Deduplicated: the ownership check below compares row count to id
+        // count, and the same id listed twice used to read as "not found".
+        if (!existingIds.includes(id)) existingIds.push(id);
         continue;
       }
       const displayName = trimmed(entry?.displayName);
@@ -528,6 +538,15 @@ router.post("/classes/:id/students", async (req: AuthenticatedRequest, res) => {
         .returning({ studentId: classMemberships.studentId });
     }
 
+    // A student brought in from another class may already hold a linked
+    // account, and class-chat membership is derived from the roster — so the
+    // thread has to learn about them now, not when somebody next opens it.
+    // Freshly created rows have no account yet, so only the attach path can
+    // change membership.
+    if (joined.length > 0 && ownedExisting.length > 0) {
+      await resyncClassGroupThreadIfExists(classId, req.user!.id);
+    }
+
     // `added` counts memberships actually created, so a duplicate tap reports 0
     // rather than claiming an add that did not happen. `skipped` names the
     // students who were already on the roster, so the teacher can see that the
@@ -549,13 +568,7 @@ router.delete("/classes/:id/students/:studentId", async (req: AuthenticatedReque
     const classId = req.params["id"] as string;
     const studentId = req.params["studentId"] as string;
 
-    const [group] = await db
-      .select({ id: classGroups.id })
-      .from(classGroups)
-      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
-      .limit(1);
-
-    if (!group) {
+    if (!(await findLiveClass(classId, req.user!.id))) {
       res.status(404).json({ error: "Class not found" });
       return;
     }
@@ -574,6 +587,12 @@ router.delete("/classes/:id/students/:studentId", async (req: AuthenticatedReque
       res.status(404).json({ error: "Student is not in this class" });
       return;
     }
+
+    // Class-chat membership is derived from the roster. Until this call, a
+    // linked student taken off the class kept their seat in its chat until
+    // someone next opened the thread — reading, and able to post.
+    await resyncClassGroupThreadIfExists(classId, req.user!.id);
+
     res.json({ removed: studentId });
   } catch (err) {
     failRoster(res, err, "remove student", "Failed to remove student");
@@ -657,11 +676,20 @@ router.post("/students/:id/parent-contacts", async (req: AuthenticatedRequest, r
       res.status(404).json({ error: "Student not found" });
       return;
     }
+    // In-app only: which chat messages the letter became, so `read` can be
+    // decided from them (lib/parentContactRead.ts). Not verified against
+    // chat_messages here — a wrong id just leaves that letter looking unread.
+    const rawIds: unknown = req.body?.messageIds;
+    const messageIds = channel === "in_app" && Array.isArray(rawIds)
+      ? [...new Set(rawIds.filter((x): x is string => typeof x === "string" && x.length > 0 && x.length <= 64))].slice(0, 50)
+      : [];
     const [row] = await db
       .insert(parentContacts)
-      .values({ teacherId: req.user!.id, studentId, kind, channel })
+      .values({ teacherId: req.user!.id, studentId, kind, channel, messageIds: messageIds.length > 0 ? messageIds : null })
       .returning({ kind: parentContacts.kind, channel: parentContacts.channel, createdAt: parentContacts.createdAt });
-    res.status(201).json({ contact: row });
+    // A letter just sent has not been read: say so, rather than leave the
+    // history strip without an answer until the next load.
+    res.status(201).json({ contact: { ...row, read: channel === "in_app" ? false : null } });
   } catch (err) {
     failRoster(res, err, "log parent contact", "Failed to log parent contact");
   }
@@ -670,8 +698,10 @@ router.post("/students/:id/parent-contacts", async (req: AuthenticatedRequest, r
 /**
  * Per student: the latest time any linked guardian opened their direct thread
  * with this teacher (`chat_participants.lastReadAt`, set on open and on reply —
- * see routes/messaging.ts). An in-app letter counts as read when this is at or
- * after the letter. The thread key is built exactly like messaging.ts builds it
+ * see routes/messaging.ts). This was how every in-app letter's `read` was
+ * decided until 2026-10-02, and it is wrong for the reason
+ * lib/parentContactRead.ts gives; it now answers only for letters logged
+ * before message ids were recorded with them. The thread key is built exactly like messaging.ts builds it
  * (sorted ids joined with ':'), in JS rather than SQL so uuid ordering can't
  * differ by collation.
  */
@@ -698,16 +728,29 @@ async function guardianLastRead(teacherId: string, studentIds: string[]): Promis
   return out;
 }
 
-/** `read` only means something for in-app letters; shared/copied text left the app. */
-function withReadState<T extends { studentId: string; channel: string; createdAt: Date }>(
+/**
+ * `read` for each letter, decided by lib/parentContactRead.ts: from the
+ * letter's own messages' receipts (chat_message_reads) where it has them, and
+ * from `guardianLastRead` above for letters logged before those existed. The
+ * legacy map is only fetched when some row still needs it.
+ */
+async function withReadState<T extends { studentId: string; channel: string; createdAt: Date; messageIds: string[] | null }>(
+  teacherId: string,
   rows: T[],
-  lastRead: Map<string, Date>,
-): (T & { read: boolean | null })[] {
-  return rows.map(r => {
-    if (r.channel !== "in_app") return { ...r, read: null };
-    const at = lastRead.get(r.studentId);
-    return { ...r, read: Boolean(at && at >= r.createdAt) };
-  });
+): Promise<(Omit<T, "messageIds"> & { read: boolean | null })[]> {
+  const inApp = rows.filter(r => r.channel === "in_app");
+  const allIds = [...new Set(inApp.flatMap(r => r.messageIds ?? []))];
+  const readRows = allIds.length > 0
+    ? await db
+        .select({ messageId: chatMessageReads.messageId })
+        .from(chatMessageReads)
+        .where(inArray(chatMessageReads.messageId, allIds))
+    : [];
+  const legacyStudents = [...new Set(inApp.filter(r => !r.messageIds?.length).map(r => r.studentId))];
+  const legacy = await guardianLastRead(teacherId, legacyStudents);
+  return letterReadState(rows, new Set(readRows.map(r => r.messageId)), legacy)
+    // The ids are the mechanism, not something the history strip shows.
+    .map(({ messageIds: _ids, ...c }) => c);
 }
 
 router.get("/students/:id/parent-contacts", async (req: AuthenticatedRequest, res) => {
@@ -718,13 +761,18 @@ router.get("/students/:id/parent-contacts", async (req: AuthenticatedRequest, re
       return;
     }
     const rows = await db
-      .select({ studentId: parentContacts.studentId, kind: parentContacts.kind, channel: parentContacts.channel, createdAt: parentContacts.createdAt })
+      .select({
+        studentId: parentContacts.studentId,
+        kind: parentContacts.kind,
+        channel: parentContacts.channel,
+        createdAt: parentContacts.createdAt,
+        messageIds: parentContacts.messageIds,
+      })
       .from(parentContacts)
       .where(and(eq(parentContacts.studentId, studentId), eq(parentContacts.teacherId, req.user!.id)))
       .orderBy(desc(parentContacts.createdAt))
       .limit(50);
-    const contacts = withReadState(rows, await guardianLastRead(req.user!.id, [studentId]))
-      .map(({ studentId: _s, ...c }) => c);
+    const contacts = (await withReadState(req.user!.id, rows)).map(({ studentId: _s, ...c }) => c);
     res.json({ contacts });
   } catch (err) {
     failRoster(res, err, "load parent contacts", "Failed to load parent contacts");
@@ -739,25 +787,25 @@ router.get("/students/:id/parent-contacts", async (req: AuthenticatedRequest, re
 router.get("/classes/:id/parent-contacts", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = req.params["id"] as string;
-    const [group] = await db
-      .select({ id: classGroups.id })
-      .from(classGroups)
-      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
-      .limit(1);
-    if (!group) {
+    if (!(await findLiveClass(classId, req.user!.id))) {
       res.status(404).json({ error: "Class not found" });
       return;
     }
     const rows = await db
-      .select({ studentId: parentContacts.studentId, kind: parentContacts.kind, channel: parentContacts.channel, createdAt: parentContacts.createdAt })
+      .select({
+        studentId: parentContacts.studentId,
+        kind: parentContacts.kind,
+        channel: parentContacts.channel,
+        createdAt: parentContacts.createdAt,
+        messageIds: parentContacts.messageIds,
+      })
       .from(parentContacts)
       .innerJoin(classMemberships, eq(classMemberships.studentId, parentContacts.studentId))
       .where(and(eq(classMemberships.classGroupId, classId), eq(parentContacts.teacherId, req.user!.id)))
       .orderBy(desc(parentContacts.createdAt))
       // ponytail: flat cap — ~30 students × a year of letters fits; paginate if a class ever outgrows it.
       .limit(2000);
-    const inApp = [...new Set(rows.filter(r => r.channel === "in_app").map(r => r.studentId))];
-    res.json({ contacts: withReadState(rows, await guardianLastRead(req.user!.id, inApp)) });
+    res.json({ contacts: await withReadState(req.user!.id, rows) });
   } catch (err) {
     failRoster(res, err, "load class parent contacts", "Failed to load parent contacts");
   }
@@ -897,7 +945,15 @@ router.post("/classes/:id/join-code", async (req: AuthenticatedRequest, res) => 
     const [row] = await db
       .update(classGroups)
       .set({ joinCode, joinCodeExpiresAt, updatedAt: new Date() })
-      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      // GET /auth/join/:code already refuses an archived class, so a code
+      // minted here would be one nothing can redeem — refuse to mint it.
+      .where(
+        and(
+          eq(classGroups.id, classId),
+          eq(classGroups.teacherId, req.user!.id),
+          isNull(classGroups.archivedAt),
+        ),
+      )
       .returning({ id: classGroups.id });
 
     if (!row) {

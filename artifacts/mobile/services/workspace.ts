@@ -3,8 +3,15 @@
  *
  * Strategy:
  *  - When authenticated (token in SecureStore): use the /workspace/items API.
- *    Falls back to AsyncStorage on network failure and syncs pending changes on reconnect.
+ *    A save that fails there lands in AsyncStorage instead, and the list
+ *    shows those device-only items beside the server's — there is no sync
+ *    back to the server (the header once claimed one; nothing implemented it).
  *  - When unauthenticated: use AsyncStorage only (legacy behavior preserved).
+ *
+ * Local storage is scoped PER USER, like lessonContext.ts and lessonMedia.ts:
+ * AuthContext calls `setActiveWorkspaceUser` on every auth change. Before
+ * that, one key served every account on the device, so teacher B's موادي
+ * showed teacher A's device-saved materials whenever one list request failed.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch, getAccessToken } from './apiClient';
@@ -41,7 +48,17 @@ export interface SavedMaterial {
 }
 
 const LOCAL_KEY = '@iqra_workspace_v1';
-const PENDING_SYNC_KEY = '@iqra_workspace_pending_sync_v1';
+
+let activeUserId: string | null = null;
+
+export function setActiveWorkspaceUser(userId: string | null): void {
+  activeUserId = userId;
+}
+
+/** Signed out keeps the legacy unscoped key, so pre-login saves still open. */
+function localKey(): string {
+  return activeUserId ? `${LOCAL_KEY}:${activeUserId}` : LOCAL_KEY;
+}
 
 // ─── Auth helpers ──────────────────────────────────────────────────────────────
 
@@ -54,7 +71,7 @@ async function isAuthenticated(): Promise<boolean> {
 
 async function readLocal(): Promise<SavedMaterial[]> {
   try {
-    const raw = await AsyncStorage.getItem(LOCAL_KEY);
+    const raw = await AsyncStorage.getItem(localKey());
     if (!raw) return [];
     return JSON.parse(raw) as SavedMaterial[];
   } catch {
@@ -63,7 +80,16 @@ async function readLocal(): Promise<SavedMaterial[]> {
 }
 
 async function writeLocal(items: SavedMaterial[]): Promise<void> {
-  await AsyncStorage.setItem(LOCAL_KEY, JSON.stringify(items));
+  await AsyncStorage.setItem(localKey(), JSON.stringify(items));
+}
+
+function matchesQuery(item: SavedMaterial, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  return (
+    item.title.toLowerCase().includes(q) ||
+    item.subject.toLowerCase().includes(q) ||
+    item.topic.toLowerCase().includes(q)
+  );
 }
 
 function makeLocalId(): string {
@@ -364,7 +390,15 @@ export async function getItems(opts: {
 
     const data = await apiGet<ApiItem[]>(`/workspace/items?${params.toString()}`);
     if (data !== null) {
-      return data.map(apiToLocal);
+      // Plus this user's device-only saves: a save made while the API was
+      // unreachable landed below, toasted «حُفظت», and then never appeared
+      // here again once the list came from the server.
+      const local = (await readLocal()).filter(i =>
+        (!opts.type || i.type === opts.type)
+        && (!opts.classId || i.classGroupId === opts.classId)
+        && (!opts.query?.trim() || matchesQuery(i, opts.query)),
+      );
+      return [...data.map(apiToLocal), ...local];
     }
     // Network failed — fall through to local
   }
@@ -373,13 +407,7 @@ export async function getItems(opts: {
   if (opts.type) items = items.filter((i) => i.type === opts.type);
   if (opts.classId) items = items.filter((i) => i.classGroupId === opts.classId);
   if (opts.query?.trim()) {
-    const q = opts.query.trim().toLowerCase();
-    items = items.filter(
-      (i) =>
-        i.title.toLowerCase().includes(q) ||
-        i.subject.toLowerCase().includes(q) ||
-        i.topic.toLowerCase().includes(q),
-    );
+    items = items.filter((i) => matchesQuery(i, opts.query!));
   }
   if (opts.favoritesFirst) {
     items = [

@@ -14,6 +14,8 @@ import {
   issueAccessToken,
   normalizeShareCode,
   sanitizeQuestionForStudent,
+  sanitizeResultForStudent,
+  studentResultReady,
 } from "../studentView.ts";
 import { QUESTION_TYPES } from "../questionTypes.ts";
 
@@ -260,5 +262,56 @@ describe("matching: the order the student is given", () => {
     );
     assert.equal(graded.fraction, 1);
     assert.equal(graded.status, "correct");
+  });
+});
+
+describe("studentResultReady", () => {
+  it("needs both the teacher's release flag and a finished paper", () => {
+    assert.equal(
+      studentResultReady({ released: true, result: { isProvisional: false } }),
+      true,
+    );
+  });
+
+  it("stays closed if the teacher never opted the exam in, even once fully marked", () => {
+    assert.equal(
+      studentResultReady({ released: false, result: { isProvisional: false } }),
+      false,
+    );
+  });
+
+  it("stays closed while any question is still ungraded, even if released", () => {
+    assert.equal(
+      studentResultReady({ released: true, result: { isProvisional: true } }),
+      false,
+    );
+  });
+
+  it("stays closed when nothing has been graded yet at all", () => {
+    assert.equal(studentResultReady({ released: true, result: undefined }), false);
+  });
+});
+
+describe("sanitizeResultForStudent", () => {
+  it("keeps the level, marks and competency breakdown, and nothing else", () => {
+    const raw = {
+      levelKey: "proficient",
+      percent: "78.50",
+      earnedMarks: "15.70",
+      totalMarks: "20.00",
+      competencyScores: { knowledge: { earned: 5, total: 5, percent: 100, sufficient: true } },
+      objectiveScores: [{ objectiveId: "o1", earned: 1, total: 2 }],
+      teacherComment: "لم يراجع سؤال البرهان جيدًا",
+    };
+    const result = sanitizeResultForStudent(raw);
+    assert.deepEqual(result, {
+      levelKey: "proficient",
+      percent: 78.5,
+      earnedMarks: 15.7,
+      totalMarks: 20,
+      competencyScores: raw.competencyScores,
+    });
+    assert.equal("objectiveScores" in result, false);
+    assert.equal("teacherComment" in result, false);
   });
 });

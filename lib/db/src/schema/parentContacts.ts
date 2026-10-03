@@ -7,7 +7,7 @@
  * back. `share`/`copy` rows record intent, not delivery: the text left the app
  * and we cannot see whether it reached anyone.
  */
-import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { students } from "./students";
 
@@ -26,6 +26,13 @@ export const parentContacts = pgTable(
     /** A MessageKind from services/parentMessage.ts, e.g. 'missing-homework'. */
     kind: text("kind").notNull(),
     channel: text("channel").$type<ParentContactChannel>().notNull(),
+    /**
+     * In-app only: the chat message ids this letter became, one per guardian
+     * thread. `read` is decided from these (lib/parentContactRead.ts in the
+     * API), not from the thread. Null on rows logged before 2026-10-02 and on
+     * shared/copied rows, which have no message.
+     */
+    messageIds: jsonb("message_ids").$type<string[]>(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   t => [index("parent_contacts_student_created_idx").on(t.studentId, t.createdAt)],

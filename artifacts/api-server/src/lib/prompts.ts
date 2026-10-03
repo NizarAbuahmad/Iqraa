@@ -269,7 +269,13 @@ ${priorNotes ? `ملاحظات المعلم عن موضوعات سابقة (قد
   "closure": "نص الإغلاق (2-3 جمل)",
   "assessment": "وصف التقييم",
   "differentiation": "استراتيجيات التمييز",
-  "homework": "الواجب البيتي المقترح"
+  "homework": "الواجب البيتي المقترح"${b.ministryRoles ? `,
+  "ministryRoles": [
+    { "teacher": "دور المعلم في مرحلة التهيئة والاندماج", "learner": "دور المتعلم في المرحلة نفسها" },
+    { "teacher": "دور المعلم في مرحلة الشرح والتفسير", "learner": "دور المتعلم في المرحلة نفسها" },
+    { "teacher": "دور المعلم في مرحلة التوسع ودعم التميز", "learner": "دور المتعلم في المرحلة نفسها" },
+    { "teacher": "دور المعلم في مرحلة تأكيد التعلم", "learner": "دور المتعلم في المرحلة نفسها" }
+  ]` : ""}
 }`;
 }
 
@@ -304,7 +310,13 @@ Return JSON in this exact shape:
   "closure": "Closure text (2-3 sentences)",
   "assessment": "Assessment description",
   "differentiation": "Differentiation strategies",
-  "homework": "Suggested homework"
+  "homework": "Suggested homework"${b.ministryRoles ? `,
+  "ministryRoles": [
+    { "teacher": "Teacher's role in the Engagement stage", "learner": "Learner's role in the same stage" },
+    { "teacher": "Teacher's role in the Explanation stage", "learner": "Learner's role in the same stage" },
+    { "teacher": "Teacher's role in the Extension stage", "learner": "Learner's role in the same stage" },
+    { "teacher": "Teacher's role in the Consolidation stage", "learner": "Learner's role in the same stage" }
+  ]` : ""}
 }`;
 }
 

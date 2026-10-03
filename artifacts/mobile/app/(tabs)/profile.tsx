@@ -35,6 +35,7 @@ function SettingRow({ icon, label, onPress, destructive, isRTL, colors }: {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
       style={({ pressed }) => [
         styles.settingRow,
         { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.7 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' },
@@ -342,14 +343,19 @@ export default function ProfileScreen() {
           </>
         ) : null}
 
-        {/* Settings */}
+        {/* «المزيد», not «الإعدادات»: the list holds materials, classes, the
+            admin dashboard, FAQ and sign-out, and a row inside it is itself
+            called الإعدادات — under the old heading the teacher read
+            "Settings → Settings". */}
         <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('settingsSection')}
+          {t('moreSection')}
         </Text>
         <View style={{ gap: 8 }}>
-          <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
-          {isTeacherRole(user?.role) ? null : (
-            <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
+          {/* مساحتي and شُعَبي are teacher screens: the routing gate
+              (services/routeGating.ts) bounces anyone else off them, so to a
+              parent these rows were doors straight back to Messages. */}
+          {isTeacherRole(user?.role) && (
+            <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
           )}
           {/* خطط التدريس was here unconditionally — a parent/student saw it
               too, leading to a teacher-only screen the middleware would 403
@@ -368,7 +374,7 @@ export default function ProfileScreen() {
           {(user?.role === 'school_admin' || user?.role === 'system_admin') && (
             <SettingRow
               icon="bar-chart-outline"
-              label={isRTL ? 'لوحة الإدارة' : 'Admin dashboard'}
+              label={t('adminDashboard')}
               onPress={() => router.push('/admin/dashboard' as any)}
               isRTL={isRTL}
               colors={colors}

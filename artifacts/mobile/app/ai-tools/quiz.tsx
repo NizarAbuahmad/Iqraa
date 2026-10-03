@@ -25,6 +25,10 @@ import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
+import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
+import { createVerificationTracker } from '@/services/verificationTracker';
+import { readIndexParam } from '@/services/materialParams';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { EditableText } from '@/components/ui/Editable';
@@ -45,6 +49,8 @@ import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { buildQuizHTML, buildQuizSlidesHTML, formatQuizText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
+import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { nextFrame } from '@/services/nextFrame';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -71,7 +77,7 @@ export default function QuizScreen() {
   const { t, isRTL, lang } = useLanguage();
   const params = useLocalSearchParams<{
     savedId?: string; gradeIdx?: string; subjectIdx?: string;
-    topic?: string; durationIdx?: string; marksIdx?: string; numQIdx?: string; selectedTypes?: string;
+    topic?: string; durationIdx?: string; marksIdx?: string; numQIdx?: string; diffIdx?: string; selectedTypes?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -103,7 +109,10 @@ export default function QuizScreen() {
   const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   const [topic, setTopic] = useState(params.topic ?? '');
-  const [diffIdx, setDiffIdx] = useState(0);
+  useWarmGrounding(topic, lang);
+  // Persisted with the material (it was not: a reopened «صعب» quiz regenerated
+  // as easy), and range-checked like the other positions.
+  const [diffIdx, setDiffIdx] = useState(readIndexParam(params.diffIdx, DIFFICULTY_IDS.length, 0));
 
   // Reset topic when grade or subject changes
   const prevGradeRef = React.useRef(gradeIdx);
@@ -111,14 +120,17 @@ export default function QuizScreen() {
   useEffect(() => {
     if (prevGradeRef.current !== gradeIdx || prevSubjectRef.current !== subjectIdx) {
       setTopic('');
+      // A «subject mismatch» refusal is about the old pairing; it used to
+      // stay on screen in red under the now-empty topic field.
+      setError('');
       prevGradeRef.current = gradeIdx;
       prevSubjectRef.current = subjectIdx;
     }
   }, [gradeIdx, subjectIdx]);
 
-  const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 2);
-  const [marksIdx, setMarksIdx] = useState(params.marksIdx ? parseInt(params.marksIdx, 10) : 1);
-  const [numQIdx, setNumQIdx] = useState(params.numQIdx ? parseInt(params.numQIdx, 10) : 2);
+  const [durationIdx, setDurationIdx] = useState(readIndexParam(params.durationIdx, DURATION_OPTIONS.length, 2));
+  const [marksIdx, setMarksIdx] = useState(readIndexParam(params.marksIdx, MARKS_OPTIONS.length, 1));
+  const [numQIdx, setNumQIdx] = useState(readIndexParam(params.numQIdx, NUM_Q_OPTIONS.length, 2));
   const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
   const [loading, setLoading] = useState(false);
   /**
@@ -128,13 +140,27 @@ export default function QuizScreen() {
    * waiting, not the spending.
    */
   const abortRef = useRef<AbortController | null>(null);
+  useAbortOnUnmount(abortRef);
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<QuizOutput | null>(null);
   /** null = not checked yet (or the check failed); [] onwards = per question. */
   const [outcomes, setOutcomes] = useState<VerifyOutcome[] | null>(null);
-  /** Whether the output was anchored to a curriculum lesson, and which one. */
-  const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
-  const [groundedLesson, setGroundedLesson] = useState<string | null>(null);
+  /**
+   * The scope the quiz on screen was generated under — pickers, topic and
+   * the grounded lesson, frozen at generation time (or re-derived from the
+   * saved form state on reopen). Save, export and present read this, never
+   * the live pickers: changing the subject clears the topic but keeps the
+   * quiz, and reading the form at that point stored it under the new subject
+   * as «اختبار: » and re-grounded the deck from an empty topic.
+   */
+  const [generated, setGenerated] = useState<GenerationScope | null>(
+    () => (params.savedId ? reopenedGenerationScope(initialScope, params.topic, lang as 'ar' | 'en') : null),
+  );
+  const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
+  const curriculumGrounded: boolean | null = generated ? generated.grounded : null;
+  const groundedLesson: string | null = generated?.lesson
+    ? (lang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
+    : null;
   /** Ids of questions the teacher has changed, so provenance stays honest. */
   const [editedQuestions, setEditedQuestions] = useState<ReadonlySet<string>>(new Set());
   const [error, setError] = useState('');
@@ -160,7 +186,7 @@ export default function QuizScreen() {
   }, [params.savedId]);
 
   useEffect(() => {
-    if (result) setSaveLabel(savedId ? 'updated' : 'save');
+    if (result) setSaveLabel('save');
   }, [result]);
 
   const toggleType = (type: QType) => {
@@ -205,7 +231,7 @@ export default function QuizScreen() {
   /** Marks the paper dirty and records which question was touched. */
   const markEdited = (id: string) => {
     setEditedQuestions(prev => new Set(prev).add(id));
-    setSaveLabel(savedId ? 'updated' : 'save');
+    setSaveLabel('save');
   };
 
   const updateQuestion = (index: number, patch: Partial<QuizQuestion>) => {
@@ -237,11 +263,37 @@ export default function QuizScreen() {
       destructive: true,
     });
     if (!ok) return;
-    setResult(prev => (prev ? removeQuestionAt(prev, index) : prev));
-    // outcomes is index-aligned to result.questions — drop the same slot so
-    // verification badges don't shift onto the wrong question after a delete.
-    setOutcomes(prev => (prev ? prev.filter((_, i) => i !== index) : prev));
-    setSaveLabel(savedId ? 'updated' : 'save');
+    if (!result) return;
+    const next = removeQuestionAt(result, index);
+    setResult(next);
+    // outcomes is index-aligned to result.questions. A finished check loses
+    // the same slot, so the badges after it do not shift onto the wrong
+    // question. A check still in flight is for the old list and would land
+    // one slot off — it is dropped and run again for the new one.
+    verifyRef.current.drop();
+    if (outcomes) setOutcomes(outcomes.filter((_, i) => i !== index));
+    else verifyKeys(next);
+    setSaveLabel('save');
+  };
+
+  /**
+   * Verification runs after the quiz is on screen, not before. It is a
+   * per-question round trip to a service that may be asleep or absent, and
+   * making the teacher wait on it would trade a working quiz for a slower
+   * one. Its result is positional, so it may only land on the exact output it
+   * was run for: after a regenerate it would badge the new paper, and after a
+   * delete it would land one slot off and mark an unchecked question proved.
+   */
+  const verifyRef = useRef(createVerificationTracker<QuizOutput>());
+  const verifyKeys = (out: QuizOutput) => {
+    verifyRef.current.begin(out);
+    setOutcomes(null);
+    void (async () => {
+      const { verifyQuizAnswers } = await import('@/services/quizVerification');
+      const { verifyMathItem } = await import('@/services/ai/verifyMath');
+      const checked = await verifyQuizAnswers(out, verifyMathItem);
+      if (verifyRef.current.accepts(out)) setOutcomes(checked);
+    })().catch(() => { if (verifyRef.current.accepts(out)) setOutcomes(null); });
   };
 
   /**
@@ -257,27 +309,31 @@ export default function QuizScreen() {
     // Read before any setState clears it — this is what the teacher is
     // looking at, and what a regeneration must not hand back.
     const previous = result;
+    // Everything a failed or cancelled run must hand back: the paper, its
+    // badges and edits, and the scope it was generated under. It used to be
+    // cleared up front and never restored, so Cancel on a regenerate threw
+    // away the unsaved quiz the teacher was looking at.
+    const held = { result, outcomes, editedQuestions, showAnswers, generated };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // paper — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
-    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
-    if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
+    const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
+    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setCancelled(false);
     const controller = new AbortController();
     abortRef.current = controller;
     setLoading(true); setResult(null); setOutcomes(null); setEditedQuestions(new Set()); setShowAnswers(false); setSaveLabel('save');
+    verifyRef.current.drop();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await nextFrame();
     try {
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
-      setCurriculumGrounded(grounding.grounded);
-      setGroundedLesson(
-        grounding.lesson ? (lang === 'ar' ? grounding.lesson.titleAr : grounding.lesson.titleEn) : null,
-      );
-      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en');
-      const unitId = generatorUnitId(topic.trim(), lang as 'ar' | 'en');
+      const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: kbScope });
+      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en', { scope: kbScope });
+      const unitId = generatorUnitId(topic.trim(), lang as 'ar' | 'en', kbScope);
       const out = await aiService.generateQuiz({
         // Localised: this string is carried into generated content verbatim —
         // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
@@ -295,8 +351,8 @@ export default function QuizScreen() {
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         additionalContext,
         unitId,
-        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
-        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
+        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en', kbScope),
+        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en', kbScope),
         // Curriculum-derived, so the artifact may be shared with any teacher
         // who asks the same question — see AIRequest.contextSource.
         contextSource: 'curriculum',
@@ -307,22 +363,12 @@ export default function QuizScreen() {
       // Models routinely bake their own "أ)" into the option text as well, and
       // leaving it there prints "أ. أ) الوقت" on the paper — so it is dropped
       // on the way in, before this ever reaches the editor or the exporter.
-      setResult({ ...out, questions: out.questions.map(normalizeQuestionOptions) });
+      const normalized = { ...out, questions: out.questions.map(normalizeQuestionOptions) };
+      setResult(normalized);
+      setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
 
-      /*
-        Verification runs after the quiz is on screen, not before. It is a
-        per-question round trip to a service that may be asleep or absent, and
-        making the teacher wait on it would trade a working quiz for a slower
-        one. The summary appears when it resolves; until then the screen simply
-        makes no claim.
-      */
-      setOutcomes(null);
-      void (async () => {
-        const { verifyQuizAnswers } = await import('@/services/quizVerification');
-        const { verifyMathItem } = await import('@/services/ai/verifyMath');
-        setOutcomes(await verifyQuizAnswers(out, verifyMathItem));
-      })().catch(() => setOutcomes(null));
+      verifyKeys(normalized);
     } catch (e) {
       // A cancel is the teacher's own doing, so it is reported as a stop, not
       // as a failure they need to diagnose or retry out of. The raw error text
@@ -330,6 +376,17 @@ export default function QuizScreen() {
       // a teacher reads, and aiProvenance already records it for the badge.
       if (isAbortError(e)) setCancelled(true);
       else setError(t(aiErrorMessageKey(e)));
+      // Hand back what was on screen; a stop or a failure is not a reason to
+      // lose it. The scope goes back with it so the badges and the grounding
+      // notice describe the restored paper, not the one that never came.
+      if (held.result) {
+        setResult(held.result);
+        setOutcomes(held.outcomes);
+        setEditedQuestions(held.editedQuestions);
+        setShowAnswers(held.showAnswers);
+        setGenerated(held.generated);
+        if (held.outcomes) verifyRef.current.begin(held.result);
+      }
     } finally {
       abortRef.current = null;
       setLoading(false);
@@ -343,12 +400,15 @@ export default function QuizScreen() {
 
   const handleSave = async () => {
     if (!result) return;
-    const title = lang === 'ar'
-      ? `اختبار: ${topic.trim()}`
-      : `Quiz: ${topic.trim()}`;
+    const title = getExportTitle();
     const formState = {
-      gradeIdx, subjectIdx, topic: topic.trim(),
-      durationIdx, marksIdx, numQIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
+      gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic,
+      durationIdx, marksIdx, numQIdx, diffIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
+    };
+    // Built once: the two branches below used to each spell out the payload.
+    const payload = {
+      title, subject: subjects[scope.subjectIdx].name, grade: grades[scope.gradeIdx].name,
+      topic: scope.topic, language: lang, content: JSON.stringify(result), formState,
     };
     // `updateItem` answers false when the material is no longer there — the
     // teacher deleted it from موادي while this screen still held its id. The
@@ -356,17 +416,10 @@ export default function QuizScreen() {
     // over a material that no longer existed and the work was never saved
     // again. Folding the call into the condition makes a failed update fall
     // through to creating a fresh one, which is what pressing Save meant.
-    if (savedId && (await updateItem(savedId, {
-        title, subject: subjects[subjectIdx].name, grade: grades[gradeIdx].name,
-        topic: topic.trim(), language: lang, content: JSON.stringify(result), formState,
-      }))) {
+    if (savedId && (await updateItem(savedId, payload))) {
       setSaveLabel('updated');
     } else {
-      const saved = await saveItem({
-        type: 'quiz', title,
-        subject: subjects[subjectIdx].name, grade: grades[gradeIdx].name,
-        topic: topic.trim(), language: lang, content: JSON.stringify(result), formState,
-      });
+      const saved = await saveItem({ type: 'quiz', ...payload });
       setSavedId(saved.id);
       setSaveLabel('saved');
     }
@@ -376,11 +429,15 @@ export default function QuizScreen() {
 
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
-  const getExportTitle = () => lang === 'ar' ? `اختبار: ${topic.trim()}` : `Quiz: ${topic.trim()}`;
+  const getExportTitle = () => lang === 'ar' ? `اختبار: ${scope.topic}` : `Quiz: ${scope.topic}`;
   // Localised, like the picker above it. Taking `.name` straight off the
   // catalog put "Mathematics | Grade 10" at the top of an otherwise Arabic
   // material — the screen showed الرياضيات and the exported file disagreed.
-  const getExportMeta = () => ({ subject: subjectNames[subjectIdx]!, grade: gradeNames[gradeIdx]! });
+  // Labels are per grade, so they are read against the generated grade.
+  const getExportMeta = () => ({
+    subject: subjectPickerLabels(grades[scope.gradeIdx].id, lang as 'ar' | 'en')[scope.subjectIdx]!,
+    grade: gradeNames[scope.gradeIdx]!,
+  });
 
   const {
     getExportFigures,
@@ -394,7 +451,8 @@ export default function QuizScreen() {
     loadingSlides,
   } = useGeneratorExport({
     result,
-    topic,
+    topic: scope.topic,
+    lessonId: scope.lesson?.id,
     lang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
@@ -553,7 +611,7 @@ export default function QuizScreen() {
             <View style={[styles.quizMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <MetaPill icon="time-outline" text={`${result.duration} ${t('min')}`} color={ACCENT} />
               <MetaPill icon="star-outline" text={`${result.totalPoints} ${t('pts')}`} color={ACCENT} />
-              <MetaPill icon="help-circle-outline" text={`${result.questions.length} Q`} color={ACCENT} />
+              <MetaPill icon="help-circle-outline" text={t('questionCountPill', result.questions.length)} color={ACCENT} />
             </View>
           </View>
 
@@ -563,10 +621,11 @@ export default function QuizScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
               setPendingClassroomActivity(
-                buildDeckFromQuiz(result, topic.trim(), lang === 'ar', {
-                  lesson: grounding.lesson,
+                buildDeckFromQuiz(result, scope.topic, lang === 'ar', {
+                  // The lesson this quiz was generated for — not one re-derived
+                  // from whatever the topic box says now.
+                  lesson: scope.lesson,
                   // Was a blanket `verified: false`, which hid the keys the
                   // verifier had actually proved. Per question now, so the
                   // projector badges exactly what was checked.
@@ -768,7 +827,7 @@ export default function QuizScreen() {
           variantId={pooledVariantId(result)}
           materialType="quiz"
           toolId="quiz"
-          topic={topic.trim()}
+          topic={scope.topic}
         />
       )}
     </ScrollView>

@@ -24,6 +24,10 @@ import type { NextFunction, Request, Response } from "express";
 import { logger } from "./logger.ts";
 import { pgRateLimitStore, type RateLimitStore } from "./rateLimitStore.ts";
 
+/** Every limiter this process created, by name — read by the admin dashboard so
+ *  its "limits" table is the real configuration, not a copy that drifts. */
+export const RATE_LIMITS = new Map<string, { windowMs: number; max: number }>();
+
 export function createRateLimiter(opts: {
   windowMs: number;
   max: number;
@@ -33,6 +37,7 @@ export function createRateLimiter(opts: {
   store?: RateLimitStore;
 }) {
   const store = opts.store ?? pgRateLimitStore;
+  RATE_LIMITS.set(opts.name, { windowMs: opts.windowMs, max: opts.max });
 
   return async function rateLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
     const caller = opts.key?.(req) ?? req.ip ?? "unknown";

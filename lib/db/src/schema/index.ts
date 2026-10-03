@@ -49,3 +49,6 @@ export * from "./parentContacts";
 
 // Rate-limit counters, shared across instances — see lib/rateLimit.ts
 export * from "./rateLimits";
+
+// Admin dashboard: hand-entered growth numbers + iqrra.com signups — see adminMetrics.ts
+export * from "./adminMetrics";

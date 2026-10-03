@@ -25,15 +25,20 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>('ar'); // Arabic default
 
   useEffect(() => {
-    AsyncStorage.getItem(LANG_KEY).then(stored => {
-      if (stored === 'en' || stored === 'ar') {
-        setLangState(stored);
-        applyRTL(stored);
-      } else {
-        // Default to Arabic
-        applyRTL('ar');
-      }
-    });
+    AsyncStorage.getItem(LANG_KEY)
+      .then(stored => {
+        if (stored === 'en' || stored === 'ar') {
+          setLangState(stored);
+          applyRTL(stored);
+        } else {
+          // Default to Arabic
+          applyRTL('ar');
+        }
+      })
+      // Storage can throw (web private mode, quota). Without this the
+      // rejection was unhandled and `applyRTL` never ran, which brought the
+      // double-flipped layout described above back on exactly those devices.
+      .catch(() => applyRTL('ar'));
   }, []);
 
   const applyRTL = (l: Lang) => {

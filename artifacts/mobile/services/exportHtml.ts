@@ -23,7 +23,7 @@
  */
 import { labelAnswer, labelOption, labelOptionLine } from './optionLabels.ts';
 import { arCountPhrase } from './arCount.ts';
-import { isolateForeignRuns } from './mathRender.ts';
+import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
 import type {
   ActivityOutput,
   LessonFlowOutput,
@@ -253,7 +253,12 @@ function escAttr(s: string): string {
 function esc(s: string): string {
   // Null-safe via isolateForeignRuns, which two builders here relied on when
   // they each carried their own `s ?? ''` copy of this function.
-  return escAttr(isolateForeignRuns(s));
+  //
+  // Exponents are normalised BEFORE isolating, so «2^{12}» becomes «2¹²» and the
+  // run is then isolated as a whole. Doing it here rather than at each option
+  // and key line is the same argument as the isolation itself: 57 call sites,
+  // and a new builder must not be able to forget.
+  return escAttr(isolateForeignRuns(normalizeExponents(s)));
 }
 
 /**

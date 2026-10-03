@@ -128,11 +128,24 @@ router.use(mediaRouter);
  * is far above a teacher attaching material to a lesson and far below anything
  * worth doing with a bucket.
  */
-router.use(
-  "/media/lesson",
-  requireRole(...TEACHER_ROLES),
-  createRateLimiter({ windowMs: 60 * 60 * 1000, max: 20, name: "lesson-media", key: perUser }),
-);
+const lessonMediaWriteLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  name: "lesson-media",
+  key: perUser,
+});
+router.use("/media/lesson", requireRole(...TEACHER_ROLES), (req, res, next) => {
+  // Writes only. The limiter used to count every GET as well, so a teacher
+  // who opened ~20 lessons in an hour (the slides builder lists attachments
+  // on each lesson change) saw their attachments silently vanish — the
+  // client reads a failed list as empty — and then got 429 on the upload
+  // the limiter exists for.
+  if (req.method === "GET" || req.method === "HEAD") {
+    next();
+    return;
+  }
+  lessonMediaWriteLimiter(req, res, next);
+});
 router.use("/media", lessonMediaRouter);
 router.use(practiceRouter);
 // The resources library: any signed-in user reads, system_admin writes

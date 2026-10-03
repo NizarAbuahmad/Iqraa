@@ -52,6 +52,7 @@ import { addEvaluationQuestion, type CompetencyKey, type EvaluationQuestion } fr
 import type { TranslationKey } from '@/services/i18n';
 import { objectiveLabel } from '@/services/curriculumData';
 import { palette } from '@/constants/colors';
+import { toLatinDigits } from '@/services/latinDigits';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -160,7 +161,7 @@ export function AddDictationModal({
     return takeSpellingItems(rule, n, { seed: rule.id.length + n, grade });
   }, [source, ownLines, rule, count, grade]);
 
-  const marksValue = Number(marks);
+  const marksValue = Number(toLatinDigits(marks));
   const canSave = items.length > 0 && marksValue > 0 && !!objectiveId && !busy;
 
   async function save() {

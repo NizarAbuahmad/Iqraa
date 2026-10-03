@@ -18,6 +18,63 @@ TRANSFORMATIONS = standard_transformations + (
 )
 
 
+# ── Input gate ───────────────────────────────────────────────────────────────
+# `parse_expr` is eval-based: whatever reaches it runs as Python. A request
+# string such as `__import__('os').system(...)` therefore executed on this
+# service — which is deployed reachable from the internet, and which the API
+# forwards any signed-in account's text to. Every parse now goes through
+# `safe_parse_expr`, which refuses anything that is not plainly maths before
+# SymPy sees it. Refusal raises, and every caller already turns an exception
+# into a fail-closed verdict (parse/solve/verify_error) — never "wrong", so a
+# refused key costs an item its badge, not its place in the paper.
+
+MAX_EXPR_LENGTH = 400
+
+# Digits, Latin letters, arithmetic, grouping, relations, and the typographic
+# characters the normalisers accept (± √ π are rewritten before parsing but
+# may still appear in a distractor). No quotes, brackets, braces, `@`, `#`,
+# `;`, `:` or backslash — nothing an expression needs and everything an
+# injection does.
+_EXPR_CHARS = re.compile(r"^[0-9A-Za-z+\-*/^().,=<>|!\s±√π]*$")
+_IDENT = re.compile(r"[A-Za-z_][A-Za-z_0-9]*")
+# `.` followed by a name is attribute access, never a decimal point.
+_ATTRIBUTE = re.compile(r"\.\s*[A-Za-z_]")
+_ALLOWED_NAMES = frozenset({
+    "sqrt", "cbrt", "root", "sin", "cos", "tan", "sec", "csc", "cot",
+    "asin", "acos", "atan", "arcsin", "arccos", "arctan",
+    "sinh", "cosh", "tanh", "ln", "log", "exp", "abs", "Abs",
+    "pi", "E", "I", "oo", "floor", "ceiling", "factorial",
+})
+
+
+class UnsafeExpressionError(ValueError):
+    """The text is not maths this service is willing to hand to `parse_expr`."""
+
+
+def assert_safe_expr_text(text: str) -> None:
+    if len(text) > MAX_EXPR_LENGTH:
+        raise UnsafeExpressionError("expression too long")
+    if not _EXPR_CHARS.match(text):
+        raise UnsafeExpressionError("unsupported characters")
+    if "__" in text or _ATTRIBUTE.search(text):
+        raise UnsafeExpressionError("attribute access is not an expression")
+    for ident in _IDENT.findall(text):
+        if ident in _ALLOWED_NAMES:
+            continue
+        # Variables: x, y, n, t, and the implicit products of them (`xy`).
+        # Anything longer than a couple of letters is a Python name, not a
+        # symbol a Grade-10 key would use.
+        if len(ident) <= 2 and ident.isalpha():
+            continue
+        raise UnsafeExpressionError(f"unknown name: {ident}")
+
+
+def safe_parse_expr(text: str, **kwargs: Any) -> Any:
+    """`parse_expr`, behind the gate above. The only way text reaches SymPy."""
+    assert_safe_expr_text(text)
+    return parse_expr(text, transformations=TRANSFORMATIONS, **kwargs)
+
+
 # Typographic characters a teacher-facing option or key can carry. Only the
 # character swaps belong here — the word-level rewrites in
 # _normalise_answer_text ("أو" → ";") are for solution SETS and would break an
@@ -56,9 +113,8 @@ def normalise_expr_text(expr: str) -> str:
 
 def parse_latin(expr: str) -> Any:
     x = Symbol("x")
-    return parse_expr(
+    return safe_parse_expr(
         normalise_expr_text(expr),
-        transformations=TRANSFORMATIONS,
         local_dict={"x": x},
         evaluate=True,
     )
@@ -144,11 +200,7 @@ def _diff_x(question: str) -> Any:
 
 def _parse_any(expr: str) -> Any:
     """Parse without pinning the variable — equations may use n, y, t…"""
-    return parse_expr(
-        expr.strip(),
-        transformations=TRANSFORMATIONS,
-        evaluate=True,
-    )
+    return safe_parse_expr(expr.strip(), evaluate=True)
 
 
 def _normalise_answer_text(answer: str) -> str:
@@ -283,8 +335,8 @@ def _circle(payload: str) -> tuple[Any, Any, Any]:
         raise ValueError("expected exactly one '='")
     lhs_s, rhs_s = text.split("=")
     x, y = Symbol("x"), Symbol("y")
-    lhs = parse_expr(lhs_s, transformations=TRANSFORMATIONS, local_dict={"x": x, "y": y})
-    rhs = parse_expr(rhs_s, transformations=TRANSFORMATIONS, local_dict={"x": x, "y": y})
+    lhs = safe_parse_expr(lhs_s, local_dict={"x": x, "y": y})
+    rhs = safe_parse_expr(rhs_s, local_dict={"x": x, "y": y})
     poly = (lhs - rhs).expand()
     if poly.free_symbols != {x, y}:
         raise ValueError("expected exactly the unknowns x and y")
@@ -428,7 +480,7 @@ def parse_point(text: str) -> tuple[Any, ...]:
     if len(parts) != 2 or not all(parts):
         raise ValueError("expected an ordered pair")
     return tuple(
-        parse_expr(pp, transformations=TRANSFORMATIONS, evaluate=True) for pp in parts
+        safe_parse_expr(pp, evaluate=True) for pp in parts
     )
 
 

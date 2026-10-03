@@ -116,10 +116,23 @@ describe('isNonTeacherRoute', () => {
       // pinned here so converting it to exact matching fails loudly instead of
       // quietly ejecting a student to /notifications.
       '/curriculum/resources',
+      '/settings',
+      '/faq',
+      '/delete-account',
       '/profile',
       '/join-class',
       '/claim-required',
     ]) {
+      assert.equal(isNonTeacherRoute(p), true, p);
+    }
+  });
+
+  it('lets a parent reach the account screens the profile tab links to', () => {
+    // The profile screen offers Settings, FAQ and Delete account to every role,
+    // and the bounce in app/_layout.tsx runs on every path change — so a parent
+    // tapping «الإعدادات» was sent straight back to Messages, and could never
+    // reach account deletion at all.
+    for (const p of ['/settings', '/faq', '/delete-account']) {
       assert.equal(isNonTeacherRoute(p), true, p);
     }
   });
@@ -148,6 +161,7 @@ describe('isNonTeacherRoute', () => {
     // despite the prefix that would otherwise let it through.
     assert.equal(isNonTeacherRoute('/messaging/claim'), false);
     assert.equal(isNonTeacherRoute('/messaging/claim/abc-123'), false);
+    assert.equal(isNonTeacherRoute('/messaging/new-group'), false);
   });
 
   it('does not match a route that merely starts with the same letters', () => {

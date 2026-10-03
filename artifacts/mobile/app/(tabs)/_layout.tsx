@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { scheme } from '@/constants/colors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -14,6 +14,10 @@ import { DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { WebSidebar } from '@/components/ui/WebSidebar';
 import { CommandPalette } from '@/components/ui/CommandPalette';
 import { GlobalLessonBar } from '@/components/ui/GlobalLessonBar';
+import { NotificationBell } from '@/components/ui/NotificationBell';
+import { listThreads } from '@/services/messaging';
+import { usePollingRefresh } from '@/hooks/usePollingRefresh';
+import { badgeLabel, setUnreadMessages, useUnreadMessages } from '@/services/unreadMessages';
 import { TranslationKey } from '@/services/i18n';
 import { HomeLessonPick, loadLessonPick, subscribeLessonPick } from '@/services/lessonContext';
 import { DEFAULT_ACTIVE_LESSON_ID } from '@/services/lessonCopilot';
@@ -51,9 +55,11 @@ export type TabEntry = {
   titleKey: TranslationKey;
   visible: boolean;
   icon: TabIcon;
+  /** Unread count label for the tab badge / sidebar row. */
+  badge?: string;
 };
 
-function buildTabEntries(isTeacher: boolean, isDesktop: boolean): TabEntry[] {
+function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number): TabEntry[] {
   return [
     {
       /*
@@ -121,6 +127,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean): TabEntry[] {
       name: 'notifications',
       titleKey: 'tabAlerts',
       visible: true,
+      badge: badgeLabel(unread),
       icon: ({ color, focused, isIOS }) =>
         isIOS ? (
           <SymbolView name={focused ? 'bubble.left.fill' : 'bubble.left'} tintColor={color} size={22} />
@@ -198,7 +205,21 @@ function ClassicTabLayout() {
         }
       : null;
 
-  const tabEntries = buildTabEntries(isTeacher, isDesktop);
+  const unread = useUnreadMessages();
+  const loadUnread = useCallback(async () => {
+    if (!user) return setUnreadMessages(0);
+    try {
+      setUnreadMessages((await listThreads()).reduce((sum, th) => sum + th.unreadCount, 0));
+    } catch {
+      // Keep the last count; the inbox screen surfaces load errors itself.
+    }
+  }, [user]);
+  useEffect(() => {
+    void loadUnread();
+  }, [loadUnread]);
+  usePollingRefresh(loadUnread);
+
+  const tabEntries = buildTabEntries(isTeacher, isDesktop, unread);
 
   const tabs = (
     <Tabs
@@ -250,6 +271,7 @@ function ClassicTabLayout() {
               ? {
                   title: t(entry.titleKey),
                   tabBarIcon: ({ color, focused }) => entry.icon({ color, focused, isIOS }),
+                  tabBarBadge: entry.badge,
                 }
               : HIDDEN
           }
@@ -258,9 +280,6 @@ function ClassicTabLayout() {
     </Tabs>
   );
 
-  // Not shown to a parent/student: they have no lesson context to switch, and
-  // the two tabs it would drive them toward (iQra, AI Tools) are hidden for
-  // them anyway.
   // The fallback-aware lesson, not the raw pick: with no pick saved yet the bar
   // said «اختر الدرس الحالي» while the chat card beside it showed the default
   // lesson it seeds — the same teacher told two different things.
@@ -273,6 +292,8 @@ function ClassicTabLayout() {
     t,
     onPress: () => router.push({ pathname: '/iqra', params: { openLessonPicker: String(Date.now()) } }),
   };
+  // Not shown to a parent/student: they have no lesson context to switch, and
+  // the two tabs it would drive them toward (iQra, AI Tools) are hidden for
   // them anyway. Not shown on iQra itself either — CurrentLessonCard already
   // does this job there, full-width and with the Start Class action; a second
   // copy stacked above it would just be the same line twice.
@@ -294,9 +315,28 @@ function ClassicTabLayout() {
     // Not on iQra itself — CurrentLessonCard already does this job there,
     // full-width and with the Start Class action; a second copy stacked above
     // it would just be the same line twice.
-    const bar = isTeacher && !pathname.startsWith('/iqra') ? (
-      <GlobalLessonBar layout="bar" topInset={insets.top} {...lessonProps} />
-    ) : null;
+    // Teachers get the bell beside the lesson bar; parents and students have
+    // no bar, so they get a slim header carrying just the bell.
+    const bell = <NotificationBell />;
+    const bar = isTeacher ? (
+      pathname.startsWith('/iqra') ? null : (
+        <GlobalLessonBar layout="bar" topInset={insets.top} trailing={bell} {...lessonProps} />
+      )
+    ) : (
+      <View
+        style={{
+          paddingTop: insets.top,
+          paddingHorizontal: 12,
+          flexDirection: isRTL ? 'row-reverse' : 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: colors.background,
+        }}
+      >
+        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 18 }}>{t('appName')}</Text>
+        {bell}
+      </View>
+    );
     return (
       <View style={{ flex: 1 }}>
         {bar}
