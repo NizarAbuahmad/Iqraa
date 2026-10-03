@@ -2,24 +2,25 @@ import React from 'react';
 import { ImageStyle, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 
-const LOGO_MARK_LIGHT = require('@/assets/images/logo-mark.png');
-const LOGO_MARK_DARK = require('@/assets/images/logo-mark-dark.png');
-const LOGO_LOCKUP_LIGHT = require('@/assets/images/logo-lockup.png');
-const LOGO_LOCKUP_DARK = require('@/assets/images/logo-lockup-dark.png');
+// The PNGs hold only the Arabic اقرأ glyph (the Latin line was cropped off
+// 2026-10-02). The wordmark under it is text, so it always carries the
+// brand's spelling — Iqrra, as the domain — and never needs a new export.
+const MARK_LIGHT = require('@/assets/images/logo-mark.png');
+const MARK_DARK = require('@/assets/images/logo-mark-dark.png');
 
 const NAVY = '#081B3A';
 const TEAL = '#00A99D';
 
-type Variant = 'mark' | 'lockup';
+/** Below this box height the wordmark would be under 7px tall: glyph only. */
+const WORDMARK_MIN_HEIGHT = 40;
 
 type Props = {
-  /** mark = Arabic + IQRA wordmark; lockup = full stacked brand lockup */
-  variant?: Variant;
   /**
    * true  → light glyphs (for dark / teal backgrounds)
    * false → dark Midnight Navy glyphs (for light backgrounds)
    */
   onDark?: boolean;
+  /** Box for the glyph; the wordmark sits under it and adds its own height. */
   width?: number;
   height?: number;
   style?: StyleProp<ImageStyle>;
@@ -28,67 +29,47 @@ type Props = {
 };
 
 /**
- * IQRA brand logo with automatic light/dark glyph selection for contrast.
- * Falls back to Midnight Navy wordmark + teal accent if a dark asset is missing.
+ * Iqrra brand mark: the Arabic glyph with the IQRRA wordmark under it, glyph
+ * colour picked for the background.
  */
 export function BrandLogo({
-  variant = 'mark',
   onDark = false,
-  width,
-  height,
+  width = 26,
+  height = 24,
   style,
   containerStyle,
   accessibilityLabel = 'Iqrra',
 }: Props) {
-  const defaults =
-    variant === 'lockup'
-      ? { width: 140, height: 32 }
-      : { width: 26, height: 24 };
-
-  const w = width ?? defaults.width;
-  const h = height ?? defaults.height;
-
-  // Prefer asset variants; text fallback keeps Midnight Navy + teal if dark PNG is absent.
-  const darkAsset = variant === 'lockup' ? LOGO_LOCKUP_DARK : LOGO_MARK_DARK;
-  const lightAsset = variant === 'lockup' ? LOGO_LOCKUP_LIGHT : LOGO_MARK_LIGHT;
-  const source = onDark ? lightAsset : darkAsset;
-
-  if (!onDark && !darkAsset) {
-    return (
-      <View
-        style={[styles.fallback, { width: w, height: h }, containerStyle]}
-        accessibilityRole="image"
-        accessibilityLabel={accessibilityLabel}
-      >
-        <Text style={styles.fallbackIqra}>
-          I<Text style={styles.fallbackQ}>Q</Text>RA
-        </Text>
-      </View>
-    );
-  }
+  const fontSize = Math.round(width * 0.17);
 
   return (
-    <Image
-      source={source}
-      style={[{ width: w, height: h }, style]}
-      resizeMode="contain"
+    <View
+      style={[styles.column, containerStyle]}
+      accessibilityRole="image"
       accessibilityLabel={accessibilityLabel}
-    />
+    >
+      <Image source={onDark ? MARK_LIGHT : MARK_DARK} style={[{ width, height }, style]} resizeMode="contain" />
+      {height >= WORDMARK_MIN_HEIGHT ? (
+        <Text
+          style={[
+            styles.wordmark,
+            { color: onDark ? '#FFFFFF' : NAVY, fontSize, letterSpacing: fontSize * 0.4, marginTop: Math.round(height * 0.04) },
+          ]}
+        >
+          I<Text style={styles.q}>Q</Text>RRA
+        </Text>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  fallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  column: { alignItems: 'center' },
+  wordmark: {
+    fontFamily: 'Cairo_500Medium',
+    textAlign: 'center',
+    // Centre the glyph run: letterSpacing trails the last letter too.
+    paddingLeft: 4,
   },
-  fallbackIqra: {
-    color: NAVY,
-    fontSize: 18,
-    fontFamily: 'Cairo_700Bold',
-    letterSpacing: 2,
-  },
-  fallbackQ: {
-    color: TEAL,
-  },
+  q: { color: TEAL },
 });
