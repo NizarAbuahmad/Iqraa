@@ -30,7 +30,6 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
-  MessagingError,
   addGroupMembers,
   blockUser,
   getThread,
@@ -46,6 +45,7 @@ import {
   type ChatParticipantInfo,
   type ThreadDetail,
 } from '@/services/messaging';
+import { apiErrorMessage } from '@/services/apiErrorKey';
 import { MessageBubble } from '@/components/ui/MessageBubble';
 import { Avatar } from '@/components/ui/Avatar';
 import { chatRoleLabel } from '@/services/chatRoleLabel';
@@ -114,7 +114,7 @@ export default function ThreadScreen() {
       setHasMore(msgs.length > 0);
       setError('');
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingLoadError'));
+      setError(apiErrorMessage(e, 'messagingLoadError', t));
     } finally {
       setLoading(false);
     }
@@ -209,7 +209,7 @@ export default function ThreadScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setInput(body);
       setAttachment(pendingAttachment);
-      setError(e instanceof MessagingError ? e.message : t('messagingSendError'));
+      setError(apiErrorMessage(e, 'messagingSendError', t));
     } finally {
       setSending(false);
     }
@@ -235,7 +235,7 @@ export default function ThreadScreen() {
       setThread(prev => (prev ? { ...prev, studentPostingEnabled: next } : prev));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingLoadError'));
+      setError(apiErrorMessage(e, 'messagingLoadError', t));
     } finally {
       setTogglingPosting(false);
     }
@@ -248,7 +248,7 @@ export default function ThreadScreen() {
       await removeGroupMember(threadId, userId);
       setThread(prev => (prev ? { ...prev, participants: (prev.participants ?? []).filter(p => p.userId !== userId) } : prev));
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingLoadError'));
+      setError(apiErrorMessage(e, 'messagingLoadError', t));
     } finally {
       setMemberActionUserId(null);
     }
@@ -261,7 +261,7 @@ export default function ThreadScreen() {
       await removeGroupMember(threadId, user.id);
       goBack();
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingLoadError'));
+      setError(apiErrorMessage(e, 'messagingLoadError', t));
       setLeaving(false);
     }
   };
@@ -276,7 +276,7 @@ export default function ThreadScreen() {
       setThread(prev => (prev ? { ...prev, isBlocked: !prev.isBlocked } : prev));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingLoadError'));
+      setError(apiErrorMessage(e, 'messagingLoadError', t));
     } finally {
       setBlocking(false);
     }
@@ -295,7 +295,7 @@ export default function ThreadScreen() {
       setReportTarget(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
-      setError(e instanceof MessagingError ? e.message : t('messagingLoadError'));
+      setError(apiErrorMessage(e, 'messagingLoadError', t));
     } finally {
       setReporting(false);
     }
@@ -620,7 +620,7 @@ export default function ThreadScreen() {
             const participants = await addGroupMembers(threadId, picked.map(p => p.userId));
             setThread(prev => (prev ? { ...prev, participants } : prev));
           } catch (e) {
-            setError(e instanceof MessagingError ? e.message : t('messagingLoadError'));
+            setError(apiErrorMessage(e, 'messagingLoadError', t));
           } finally {
             setAddMembersOpen(false);
           }

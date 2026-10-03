@@ -421,8 +421,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    if (!email || !password) throw new Error('Email and password are required');
-    if (!email.includes('@')) throw new Error('Invalid email address');
+    if (!email || !password) throw new ApiError('Email and password are required', 'missing_fields');
+    if (!email.includes('@')) throw new ApiError('Invalid email address', 'invalid_email');
 
     const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
       '/auth/login',
@@ -468,13 +468,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [adoptSession]);
 
   const register = useCallback(async (payload: RegisterData) => {
-    if (!payload.firstName?.trim()) throw new Error('First name is required');
-    if (!payload.lastName?.trim()) throw new Error('Last name is required');
-    if (!payload.email?.includes('@')) throw new Error('Valid email is required');
+    if (!payload.firstName?.trim()) throw new ApiError('First name is required', 'missing_fields');
+    if (!payload.lastName?.trim()) throw new ApiError('Last name is required', 'missing_fields');
+    if (!payload.email?.includes('@')) throw new ApiError('Valid email is required', 'invalid_email');
     if (!payload.password || payload.password.length < 8)
-      throw new Error('Password must be at least 8 characters');
+      throw new ApiError('Password must be at least 8 characters', 'password_policy');
     if (payload.confirmPassword && payload.confirmPassword !== payload.password)
-      throw new Error('Passwords do not match');
+      throw new ApiError('Passwords do not match', 'passwords_mismatch');
 
     const data = await apiJson<{ email: string; message: string }>(
       '/auth/register',

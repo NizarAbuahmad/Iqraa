@@ -27,6 +27,7 @@ import {
   resolveObjectiveIds,
   type CurriculumObjective,
 } from "@workspace/curriculum";
+import { publicBook } from "../lib/publicBooks.ts";
 
 const curriculumRouter = Router();
 
@@ -76,7 +77,9 @@ curriculumRouter.get("/curriculum/books", (req, res) => {
     res.status(400).json({ error: "gradeId and subjectId are required" });
     return;
   }
-  res.json({ books: getBooksForSubjectGrade(subjectId, gradeId, "teacher") });
+  // The student view, guide links stripped: this route has no session, so it
+  // answers as the least-privileged reader. See lib/publicBooks.ts.
+  res.json({ books: getBooksForSubjectGrade(subjectId, gradeId, "student").map(publicBook) });
 });
 
 curriculumRouter.get("/curriculum/units", (req, res) => {
