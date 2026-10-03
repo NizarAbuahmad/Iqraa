@@ -68,10 +68,9 @@ export function AuthBrandPanel({ isWide }: { isWide: boolean }) {
         </Text>
 
         <BrandLogo
-          variant="mark"
           onDark
-          style={[styles.logo, isWide ? styles.logoWide : styles.logoNarrow]}
-          accessibilityLabel="Iqrra"
+          width={isWide ? 220 : 96}
+          height={isWide ? 220 : 96}
         />
 
         <Text
@@ -176,9 +175,6 @@ const styles = StyleSheet.create({
     color: AQUA,
     marginBottom: 2,
   },
-  logo: { alignSelf: 'center' },
-  logoNarrow: { width: 96, height: 96 },
-  logoWide: { width: 260, height: 260 },
   valueProp: {
     fontSize: 14,
     lineHeight: 22,

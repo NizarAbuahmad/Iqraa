@@ -279,10 +279,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const accessToken = await getAccessToken();
+        const [accessToken, snapshot] = await Promise.all([
+          getAccessToken(),
+          readUserSnapshot<User>(),
+        ]);
         if (!accessToken) {
           setIsLoading(false);
           return;
+        }
+
+        // The access token lives 15 minutes, so nearly every cold start is
+        // /auth/me -> 401 -> /auth/refresh -> /auth/me: three round trips with
+        // the splash held behind them. A token plus a saved profile is enough to
+        // open the app now; the checks below still run and replace or clear it.
+        if (snapshot) {
+          setUser(snapshot);
+          setIsLoading(false);
         }
 
         // Verify token is still valid by fetching /auth/me
@@ -297,14 +309,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // from a basement, with credentials nothing could check.
           const serverAnswered = err instanceof ApiError && err.status !== undefined && err.status < 500;
           if (!serverAnswered) {
-            const snapshot = await readUserSnapshot<User>();
-            if (snapshot) setUser(snapshot);
+            // Already shown above; this covers a snapshot that was unreadable then.
+            if (!snapshot) setUser(await readUserSnapshot<User>());
             return;
           }
           // Token invalid — try refresh
           const refreshToken = await getRefreshToken();
           if (!refreshToken) {
             await clearTokens();
+            setUser(null);
             setIsLoading(false);
             return;
           }
@@ -325,14 +338,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setUser(toUser(apiUser));
             } else if (res.status === 400 || res.status === 401 || res.status === 403) {
               await clearTokens();
+              setUser(null);
             }
           } catch (refreshErr) {
-            if (!isNetworkError(refreshErr)) await clearTokens();
+            if (!isNetworkError(refreshErr)) {
+              await clearTokens();
+              setUser(null);
+            }
           }
         }
       } catch {
         // Storage itself failed; there is no session to keep.
         await clearTokens();
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -341,9 +359,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Whatever the signed-in user is now is what an offline boot opens on;
   // null (sign-out, account deletion) removes it.
+  // Not while booting: the first render's null user would delete the snapshot
+  // before the boot effect above has read it.
   useEffect(() => {
-    void saveUserSnapshot(user);
-  }, [user]);
+    if (!isLoading) void saveUserSnapshot(user);
+  }, [user, isLoading]);
 
   const login = useCallback(async (email: string, password: string) => {
     if (!email || !password) throw new Error('Email and password are required');

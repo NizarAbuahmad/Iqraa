@@ -187,6 +187,8 @@ export default function ClassGameScreen() {
         lesson: grounding.lesson,
         verified: false,
         figureUri: bookFigureUri,
+        grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
+        subject: subjectNames[subjectIdx],
       });
 
       // A deck with no scoreable questions is a game that cannot be played —

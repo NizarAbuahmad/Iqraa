@@ -280,7 +280,7 @@ const BANK: ConcreteItem[] = [
   // ── Simplify exponents ──
   { id: 'se-e1', family: 'simplify_exp', diff: 'easy', eq: '2^3 · 2^4', answer: '2^7 = 128', wrongs: ['2^{12}', '8^4', '2^1'], kind: 'simplify', promptAr: 'بسّط: 2³ · 2⁴', promptEn: 'Simplify: 2³ · 2⁴' },
   { id: 'se-e2', family: 'simplify_exp', diff: 'easy', eq: '5^7 / 5^3', answer: '5^4 = 625', wrongs: ['5^{10}', '5^2', '1'], kind: 'simplify', promptAr: 'بسّط: 5⁷ ÷ 5³', promptEn: 'Simplify: 5⁷ ÷ 5³' },
-  { id: 'se-e3', family: 'simplify_exp', diff: 'easy', eq: '(3^2)^3', answer: '3^6 = 729', wrongs: ['3^5', '9^3', '3^9'], kind: 'simplify', promptAr: 'بسّط: (3²)³', promptEn: 'Simplify: (3²)³' },
+  { id: 'se-e3', family: 'simplify_exp', diff: 'easy', eq: '(3^2)^3', answer: '3^6 = 729', wrongs: ['3^5', '6^3', '3^9'], kind: 'simplify', promptAr: 'بسّط: (3²)³', promptEn: 'Simplify: (3²)³' },
   { id: 'se-m1', family: 'simplify_exp', diff: 'medium', eq: '8^{2/3}', answer: '4', wrongs: ['2', '16', '8'], kind: 'simplify', promptAr: 'بسّط: 8^(2/3)', promptEn: 'Simplify: 8^(2/3)' },
   { id: 'se-m2', family: 'simplify_exp', diff: 'medium', eq: '27^{2/3}', answer: '9', wrongs: ['3', '18', '81'], kind: 'simplify', promptAr: 'بسّط: 27^(2/3)', promptEn: 'Simplify: 27^(2/3)' },
   { id: 'se-m3', family: 'simplify_exp', diff: 'medium', eq: '(2^3 · 2^{-1}) / 2', answer: '2', wrongs: ['4', '1', '8'], kind: 'simplify', promptAr: 'بسّط: (2³ · 2⁻¹) ÷ 2', promptEn: 'Simplify: (2³ · 2⁻¹) ÷ 2' },

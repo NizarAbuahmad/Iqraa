@@ -106,3 +106,16 @@ describe('question formats', () => {
     }
   });
 });
+
+describe('fraction addition distractors', () => {
+  const value = (s: string) => { const [n, d] = s.split('/').map(Number); return d === undefined ? n! : n! / d; };
+  it('never offers a second option equal in value to the answer', () => {
+    for (let i = 0; i < 2000; i++) {
+      const item = makeElementaryItem('جمع الكسور', 4 + (i % 3), 'medium', new Set());
+      const all = [item.answer, ...item.wrongs].map(value);
+      assert.equal(item.wrongs.length, 3, item.eq);
+      assert.equal(new Set(all).size, 4, `${item.eq}: ${item.answer} vs ${item.wrongs.join(', ')}`);
+      assert.ok(![item.answer, ...item.wrongs].some(w => /\/1$/.test(w)), `${item.eq}: x/1 option`);
+    }
+  });
+});
