@@ -1,5 +1,5 @@
 /**
- * How to use Iqraa — as questions, not as a tour.
+ * How to use Iqrra — as questions, not as a tour.
  *
  * This replaced re-opening the "start here" coach card on the retired home
  * screen. That card answered one question ("what is this?") once, at a moment
