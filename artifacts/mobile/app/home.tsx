@@ -56,6 +56,7 @@ import {
   type LessonMediaItem,
 } from '@/services/lessonMedia';
 import { palette } from '@/constants/colors';
+import { AR_LATIN } from '@/services/dateLabels';
 
 const NAVY = '#081B3A';
 const TEAL = palette.primary;
@@ -395,7 +396,7 @@ export default function DashboardScreen() {
         if (diffD === 1) return 'منذ يوم';
         if (diffD === 2) return 'منذ يومين';
         if (diffD < 7) return `منذ ${diffD} أيام`;
-        return d.toLocaleDateString('ar-JO', { day: 'numeric', month: 'short' });
+        return d.toLocaleDateString(AR_LATIN, { day: 'numeric', month: 'short' });
       }
       if (diffH < 1) return 'Just now';
       if (diffH < 24) return `${diffH}h ago`;

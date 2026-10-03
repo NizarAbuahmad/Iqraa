@@ -53,6 +53,21 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Interface dates and times are written in Latin digits** (2026-10-03).
+  Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
+  «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
+  screens disagreed with each other. Every date or time an interface screen or
+  export prints now goes through `dateLocale(lang)` / `AR_LATIN`
+  (`services/dateLabels.ts`): the Arabic weekday and month names stay, only the
+  numbering changes, and English is untouched. `dateLabels.test.ts` scans
+  `app/`, `components/`, `services/` and `hooks/` and fails on a plain `'ar-JO'`
+  or a locale-less `toLocaleDateString()`, so a new screen cannot bring it back.
+  **Deliberately still Arabic-Indic:** book citations («صفحة ٣٥»), the page and
+  count labels in the resources screen, exercise numbers, game scores and
+  maths, which are content rather than interface text. **Not covered:**
+  `app/admin` and `app/dev`, which print the device's own format. Typed input
+  is already folded to Latin by `toLatinDigits`. Checked by tests and typecheck;
+  not looked at in a browser.
 - **The tool screens share one rule per failure mode** (2026-10-02, PR #772).
   A review of every `/ai-tools` screen found ~40 issues, most of them one
   pattern repeated per screen. Each pattern now has one helper, used by

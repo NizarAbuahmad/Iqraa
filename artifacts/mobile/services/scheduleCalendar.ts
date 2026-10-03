@@ -11,6 +11,7 @@
  * runner can load it (CLAUDE.md on `services/__tests__`).
  */
 import { nextEntry, normalizePlanEntries, toISODate } from './planEntries.ts';
+import { dateLocale } from './dateLabels.ts';
 
 export interface AgendaPeriod {
   schoolName: string;
@@ -247,7 +248,7 @@ export function formatNextPeriod(
   let when = next.startTime;
   if (next.date !== opts.today) {
     try {
-      const day = new Date(`${next.date}T00:00:00`).toLocaleDateString(opts.lang === 'ar' ? 'ar-JO' : 'en-GB', { weekday: 'long' });
+      const day = new Date(`${next.date}T00:00:00`).toLocaleDateString(dateLocale(opts.lang), { weekday: 'long' });
       when = `${day} ${when}`.trim();
     } catch {
       /* no weekday then */
