@@ -1,5 +1,5 @@
 /**
- * The resources library: ready-made material Iqraa staff publish per grade,
+ * The resources library: ready-made material Iqrra staff publish per grade,
  * subject and lesson (schema: lib/db/src/schema/libraryResources.ts).
  *
  * Reading is open to any signed-in user — the library screen lives under

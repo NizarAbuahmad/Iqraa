@@ -140,9 +140,9 @@ export function deckForArtifact(
         figureUri,
       });
     case 'worksheet':
-      return buildDeckFromWorksheet(data.worksheet, topic, isAr, { lesson, figureUri });
+      return buildDeckFromWorksheet(data.worksheet, topic, isAr, { lesson, figureUri, grade: opts.grade, subject: opts.subject });
     case 'quiz':
-      return buildDeckFromQuiz(data.quiz, topic, isAr, { lesson, figureUri });
+      return buildDeckFromQuiz(data.quiz, topic, isAr, { lesson, figureUri, grade: opts.grade, subject: opts.subject });
     case 'activity':
     case 'infographic':
       return null;

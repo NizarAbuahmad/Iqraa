@@ -19,7 +19,7 @@ function renderEmailShell(bodyHtml: string): string {
                     <img src="https://www.iqrra.com/icon-192.png" width="36" height="36" alt="اقرأ" style="display:block;border-radius:8px;" />
                   </td>
                   <td style="vertical-align:middle;">
-                    <div style="font-size:17px;font-weight:bold;color:#FFFFFF;line-height:1.3;">اقرأ <span style="font-weight:normal;color:#94A3B8;font-size:13px;">Iqraa</span></div>
+                    <div style="font-size:17px;font-weight:bold;color:#FFFFFF;line-height:1.3;">اقرأ <span style="font-weight:normal;color:#94A3B8;font-size:13px;">Iqrra</span></div>
                     <div style="font-size:12px;color:#94A3B8;line-height:1.4;">رفيقك في تحضير الحصص · AI Teaching Assistant</div>
                   </td>
                 </tr>
@@ -67,9 +67,9 @@ export async function sendVerificationEmail(to: string, code: string): Promise<b
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL ?? "Iqraa <onboarding@resend.dev>",
+        from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
         to,
-        subject: "رمز تأكيد بريدك الإلكتروني في اقرأ / Your Iqraa verification code",
+        subject: "رمز تأكيد بريدك الإلكتروني في اقرأ / Your Iqrra verification code",
         html: renderVerificationEmailHtml(code),
       }),
     });
@@ -95,9 +95,9 @@ function renderVerificationEmailHtml(code: string): string {
     <hr style="border:none;border-top:1px solid #E2E8F0;" />
     <div dir="ltr" style="font-family:Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-top:24px;">
       <p>Hi,</p>
-      <p>Your Iqraa email verification code is:</p>
+      <p>Your Iqrra email verification code is:</p>
       <p style="font-size:28px;font-weight:bold;letter-spacing:4px;background:#F1F5F9;border-radius:8px;padding:12px;text-align:center;">${code}</p>
-      <p>This code expires in 15 minutes. If you didn't create an Iqraa account, you can ignore this email.</p>
+      <p>This code expires in 15 minutes. If you didn't create an Iqrra account, you can ignore this email.</p>
     </div>
   `);
 }
@@ -127,9 +127,9 @@ export async function sendPasswordResetEmail(to: string, code: string): Promise<
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL ?? "Iqraa <onboarding@resend.dev>",
+        from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
         to,
-        subject: "رمز إعادة تعيين كلمة المرور في اقرأ / Your Iqraa password reset code",
+        subject: "رمز إعادة تعيين كلمة المرور في اقرأ / Your Iqrra password reset code",
         html: renderPasswordResetEmailHtml(code),
       }),
     });
@@ -165,7 +165,7 @@ export async function sendGoogleAccountNoticeEmail(to: string): Promise<boolean>
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL ?? "Iqraa <onboarding@resend.dev>",
+        from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
         to,
         subject: "حسابك مرتبط بجوجل / Your account uses Google sign-in",
         html: renderGoogleAccountNoticeHtml(),
@@ -192,7 +192,7 @@ function renderGoogleAccountNoticeHtml(): string {
     <hr style="border:none;border-top:1px solid #E2E8F0;" />
     <div dir="ltr" style="font-family:Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-top:24px;">
       <p>Hi,</p>
-      <p>Someone (probably you) asked to reset the password for this email, but your Iqraa account doesn't have a password — it's linked to Google sign-in.</p>
+      <p>Someone (probably you) asked to reset the password for this email, but your Iqrra account doesn't have a password — it's linked to Google sign-in.</p>
       <p>Use the "Continue with Google" button to sign in instead.</p>
     </div>
   `);
@@ -209,7 +209,7 @@ function renderPasswordResetEmailHtml(code: string): string {
     <hr style="border:none;border-top:1px solid #E2E8F0;" />
     <div dir="ltr" style="font-family:Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-top:24px;">
       <p>Hi,</p>
-      <p>Your Iqraa password reset code is:</p>
+      <p>Your Iqrra password reset code is:</p>
       <p style="font-size:28px;font-weight:bold;letter-spacing:4px;background:#F1F5F9;border-radius:8px;padding:12px;text-align:center;">${code}</p>
       <p>This code expires in 15 minutes. If you didn't ask to reset your password, there's nothing to do — your current password still works.</p>
     </div>
@@ -253,7 +253,7 @@ export async function sendArtifactReportedEmail(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL ?? "Iqraa <onboarding@resend.dev>",
+        from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
         to,
         subject: "تقرير محتوى جديد بانتظار المراجعة / New content report awaiting review",
         html: renderArtifactReportedEmailHtml(info),

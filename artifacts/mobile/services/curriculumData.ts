@@ -10,6 +10,18 @@
  * the package, not here.
  */
 export * from '@workspace/curriculum';
+import { getObjectiveById } from '@workspace/curriculum';
+
+/**
+ * An objective's own wording, as the new-evaluation checklist shows it. The
+ * question composers used to label objectives «النتاج 1 / النتاج 2», which a
+ * teacher cannot tell apart; undefined only for an id the catalog lost.
+ */
+export function objectiveLabel(id: string, lang: 'ar' | 'en'): string | undefined {
+  const o = getObjectiveById(id);
+  if (!o) return undefined;
+  return lang === 'ar' ? o.descriptionAr || o.description : o.description;
+}
 
 // ─── Notifications ────────────────────────────────────────────────────────────
 // Mock UI data, not curriculum — deliberately left in the app.

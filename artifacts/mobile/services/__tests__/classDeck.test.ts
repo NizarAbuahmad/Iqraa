@@ -477,3 +477,12 @@ describe('book figures on quiz and worksheet decks', () => {
     assert.equal(deck.slides.filter(s => s.type === 'media').length, 0);
   });
 });
+
+describe('deck header grade and subject', () => {
+  it('carries the caller\'s grade and subject instead of a hardcoded Grade 10', () => {
+    const deck = buildDeckFromQuiz(QUIZ, 'درس', true, { grade: 'الصف الأول', subject: 'العلوم' });
+    assert.equal(deck.grade, 'الصف الأول');
+    assert.equal(deck.subject, 'العلوم');
+    assert.equal(buildDeckFromQuiz(QUIZ, 'درس', true).grade, '');
+  });
+});

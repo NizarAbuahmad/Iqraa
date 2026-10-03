@@ -196,7 +196,7 @@ describe('leavesClarificationStanding', () => {
   });
 });
 
-describe('questions about Iqraa itself are answered, not clarified or taught', () => {
+describe('questions about Iqrra itself are answered, not clarified or taught', () => {
   // The screenshot that prompted this: «من انت» got «وضّح لي أكثر», and
   // «ماذا تستطيع ان تفعل» reached the KB and got «أيّ مادة تقصد؟».
   const identity: Array<[string, 'ar' | 'en']> = [
@@ -219,11 +219,11 @@ describe('questions about Iqraa itself are answered, not clarified or taught', (
   ];
 
   for (const [q, lang] of identity) {
-    it(`"${q}" → about, with a reply that says what Iqraa is`, () => {
+    it(`"${q}" → about, with a reply that says what Iqrra is`, () => {
       const route = classifyChatIntent(q, lang);
       assert.equal(route.intent, 'about');
       assert.equal(route.useTeachingPipeline, false);
-      assert.match(route.socialReply ?? '', lang === 'ar' ? /اقرأ/ : /Iqraa/);
+      assert.match(route.socialReply ?? '', lang === 'ar' ? /اقرأ/ : /Iqrra/);
     });
   }
 

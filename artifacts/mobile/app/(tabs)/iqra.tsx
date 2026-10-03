@@ -229,7 +229,7 @@ function ephemeralFromTeachingActions(
 // ─── Types ──────────────────────────────────────────────────────────────────
 type Role = 'user' | 'assistant';
 /**
- * Iqraa is a teacher tool. The student half of this screen was a mode toggle
+ * Iqrra is a teacher tool. The student half of this screen was a mode toggle
  * promising a student experience that was never built and is not planned —
  * students never get accounts (see lib/db/src/schema/students.ts). Keeping the
  * type as a single member so the compiler flags anything that still branches.
@@ -666,7 +666,7 @@ function ContextBanner({
                 fontFamily: 'Cairo_700Bold',
               }]}>
                 {draftTopic.trim()
-                  ? (lang === 'ar' ? `ابدأ التحضير: ${draftTopic}` : `Ask Iqraa about: ${draftTopic}`)
+                  ? (lang === 'ar' ? `ابدأ التحضير: ${draftTopic}` : `Ask Iqrra about: ${draftTopic}`)
                   : (lang === 'ar' ? 'اختر الدرس أولاً' : 'Select a lesson first')}
               </Text>
             </Pressable>
@@ -3831,7 +3831,7 @@ export default function IqraScreen() {
         loadingWord={loadingWord}
         onShare={async () => {
           setExportVisible(false);
-          await shareAsText(exportText, currentLessonView?.topic ?? 'Iqraa');
+          await shareAsText(exportText, currentLessonView?.topic ?? 'Iqrra');
         }}
         onCopy={async () => {
           setExportVisible(false);
