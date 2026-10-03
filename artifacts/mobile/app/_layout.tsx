@@ -6,6 +6,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AppSplash } from '@/components/ui/AppSplash';
+import { ConfirmHost } from '@/components/ui/ConfirmDialog';
 /**
  * Arabic type. Inter has no Arabic glyphs, so every Arabic string — which is
  * nearly the whole product — was being drawn by whatever fallback each device
@@ -184,6 +185,7 @@ function RootLayoutNav() {
       <Stack.Screen name="admin/dashboard" options={{ headerShown: false }} />
       <Stack.Screen name="admin/users" options={{ headerShown: false }} />
       <Stack.Screen name="admin/signups" options={{ headerShown: false }} />
+      <Stack.Screen name="admin/ai-costs" options={{ headerShown: false }} />
       <Stack.Screen name="classes/index" options={{ headerShown: false }} />
       <Stack.Screen name="classes/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="evaluations/index" options={{ headerShown: false }} />
@@ -200,6 +202,7 @@ function RootLayoutNav() {
       <Stack.Screen name="setup-subjects" options={{ headerShown: false, gestureEnabled: false }} />
     </Stack>
     <AppSplash visible={isLoading} onLayout={() => SplashScreen.hideAsync().catch(() => {})} />
+    <ConfirmHost />
     </>
   );
 }

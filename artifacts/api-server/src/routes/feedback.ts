@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { db, feedback, users } from "@workspace/db";
-import { desc, eq, and, sql } from "drizzle-orm";
+import { desc, eq, and, gte, lt, sql } from "drizzle-orm";
 import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
+import { parseDateRange, UUID } from "../lib/adminMetrics.js";
 
 const router = Router();
 
@@ -61,10 +62,17 @@ router.get("/feedback", authMiddleware, requireRole(...ADMIN_ROLES), async (req,
     const pageSize = Math.min(Math.max(Number(limit) || 50, 1), 200);
     const parsedOffset = Math.floor(Number(offset));
     const pageOffset = Number.isFinite(parsedOffset) && parsedOffset > 0 ? parsedOffset : 0;
+    const range = parseDateRange(req.query as Record<string, unknown>);
+    if ("error" in range) {
+      res.status(400).json({ error: range.error });
+      return;
+    }
 
     const conditions = [
       rating && VALID_RATINGS.includes(rating) ? eq(feedback.rating, rating) : undefined,
       materialType ? eq(feedback.materialType, materialType) : undefined,
+      range.from ? gte(feedback.createdAt, range.from) : undefined,
+      range.to ? lt(feedback.createdAt, range.to) : undefined,
     ].filter((c): c is NonNullable<typeof c> => c !== undefined);
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -96,6 +104,29 @@ router.get("/feedback", authMiddleware, requireRole(...ADMIN_ROLES), async (req,
   } catch (err) {
     logger.error({ err }, "list feedback failed");
     res.status(500).json({ error: "Failed to fetch feedback" });
+  }
+});
+
+// DELETE /feedback/:id — admin only. "I've read this one": a note is removed
+// once acted on, so the list is a to-do, not an archive. Counts in
+// usage-summary drop with it, which is the honest reading of "handled".
+router.delete("/feedback/:id", authMiddleware, requireRole(...ADMIN_ROLES), async (req: AuthenticatedRequest, res) => {
+  const id = req.params["id"] as string;
+  if (!UUID.test(id)) {
+    res.status(404).json({ error: "Feedback not found" });
+    return;
+  }
+  try {
+    const [gone] = await db.delete(feedback).where(eq(feedback.id, id)).returning({ id: feedback.id });
+    if (!gone) {
+      res.status(404).json({ error: "Feedback not found" });
+      return;
+    }
+    logger.info({ actorId: req.user!.id, feedbackId: id }, "admin deleted feedback");
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "delete feedback failed");
+    res.status(500).json({ error: "Failed to delete feedback" });
   }
 });
 

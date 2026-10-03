@@ -1,4 +1,5 @@
 import { Router, type Request } from "express";
+import { signupSource } from "../lib/adminMetrics.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -341,6 +342,7 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
         passwordHash,
         role,
         preferredLanguage: "en",
+        ...signupSource(req.headers),
       })
       .returning();
 
@@ -1321,6 +1323,7 @@ router.post("/google", googleLimiter, async (req, res) => {
             role,
             preferredLanguage: "en",
             emailVerified: true,
+            ...signupSource(req.headers),
           })
           .returning();
       }
