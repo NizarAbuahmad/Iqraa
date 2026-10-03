@@ -22,8 +22,10 @@ import { openExternal } from '@/services/externalLinks';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
+import { confirm } from '@/services/confirm';
+import { ACCENT, Bar, FilterChip, KeyValue, SectionTitle, StatCard, Table } from '@/components/admin/widgets';
+import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 
-const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
 
 type UsageSummary = {
@@ -34,6 +36,7 @@ type UsageSummary = {
   materialsByType: Record<string, number>;
   feedbackByRating: Record<string, number>;
   usersByRole: { role: string; count: number; suspended: number }[];
+  signupPlatforms: { platform: string; count: number }[];
   suspendedCount: number;
   signupsByDay: { day: string; role: string; count: number }[];
   authSplit: { google: number; password: number };
@@ -99,6 +102,7 @@ export default function AdminDashboardScreen() {
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState<RatingFilter>('all');
+  const [range, setRange] = useState<Range>(EMPTY_RANGE);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
@@ -106,11 +110,11 @@ export default function AdminDashboardScreen() {
   const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
   const centered = { width: '100%' as const, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' as const };
 
-  const load = useCallback(async (nextFilter: RatingFilter, offset: number) => {
+  const load = useCallback(async (nextFilter: RatingFilter, r: Range, offset: number) => {
     const ratingParam = nextFilter === 'all' ? '' : `&rating=${nextFilter}`;
     const [summaryRes, feedbackRes, metricsRes] = await Promise.all([
       offset === 0 ? apiJson<UsageSummary>('/admin/usage-summary') : Promise.resolve(null),
-      apiJson<{ items: FeedbackItem[]; total: number }>(`/feedback?limit=${PAGE_SIZE}&offset=${offset}${ratingParam}`),
+      apiJson<{ items: FeedbackItem[]; total: number }>(`/feedback?limit=${PAGE_SIZE}&offset=${offset}${ratingParam}${rangeQuery(r)}`),
       offset === 0 ? apiJson<{ items: MetricRow[] }>('/admin/metrics') : Promise.resolve(null),
     ]);
     if (summaryRes) setSummary(summaryRes);
@@ -123,7 +127,7 @@ export default function AdminDashboardScreen() {
     if (!isAdmin) return;
     setLoading(true);
     setError('');
-    load(filter, 0)
+    load(filter, range, 0)
       // Show what actually failed. A bare "couldn't load" sent this screen's
       // first real user hunting through browser devtools for a 500 that turned
       // out to be a missing table — the message was already in the error.
@@ -132,13 +136,30 @@ export default function AdminDashboardScreen() {
         + (e instanceof Error ? e.message : String(e)),
       ))
       .finally(() => setLoading(false));
-  }, [isAdmin, filter, load, lang]);
+  }, [isAdmin, filter, range, load, lang]);
+
+  const removeFeedback = async (item: FeedbackItem) => {
+    const ok = await confirm({
+      title: lang === 'ar' ? 'حذف هذه الملاحظة؟' : 'Delete this note?',
+      confirmLabel: lang === 'ar' ? 'حذف' : 'Delete',
+      cancelLabel: lang === 'ar' ? 'إلغاء' : 'Cancel',
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await apiJson(`/feedback/${item.id}`, { method: 'DELETE' });
+      setItems(cur => cur.filter(i => i.id !== item.id));
+      setTotal(t => t - 1);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
 
   const loadMore = async () => {
     if (loadingMore || items.length >= total) return;
     setLoadingMore(true);
     try {
-      await load(filter, items.length);
+      await load(filter, range, items.length);
     } catch {
       // A failed "load more" just leaves the list where it was.
     } finally {
@@ -196,6 +217,7 @@ export default function AdminDashboardScreen() {
                 ['/admin/artifact-reports', 'document-text-outline', 'بلاغات المحتوى', 'Content reports'],
                 ['/admin/users', 'people-outline', 'المستخدمون والحظر', 'Users & blocking'],
                 ['/admin/signups', 'mail-outline', 'البريد المجمّع', 'Collected emails'],
+                ['/admin/ai-costs', 'cash-outline', 'تكاليف الذكاء الاصطناعي', 'AI costs'],
               ] as const).map(([href, icon, ar, en]) => (
                 <Pressable
                   key={href}
@@ -242,6 +264,12 @@ export default function AdminDashboardScreen() {
                   <KeyValue
                     k={lang === 'ar' ? 'دخول Google / كلمة مرور' : 'Google / password sign-in'}
                     v={`${summary.authSplit.google} / ${summary.authSplit.password}`}
+                    isRTL={isRTL}
+                    colors={colors}
+                  />
+                  <KeyValue
+                    k={lang === 'ar' ? 'انضموا عبر (التطبيق / الويب)' : 'Joined via (app / web)'}
+                    v={summary.signupPlatforms.map(p => `${p.platform} ${p.count}`).join(' · ')}
                     isRTL={isRTL}
                     colors={colors}
                   />
@@ -433,6 +461,7 @@ export default function AdminDashboardScreen() {
                 <FilterChip label="👍" active={filter === 'up'} onPress={() => setFilter('up')} colors={colors} />
                 <FilterChip label="👎" active={filter === 'down'} onPress={() => setFilter('down')} colors={colors} />
               </View>
+              <DateRange value={range} onChange={setRange} ar={lang === 'ar'} isRTL={isRTL} colors={colors} />
 
               {items.length === 0 ? (
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 12, textAlign: 'center' }}>
@@ -442,7 +471,7 @@ export default function AdminDashboardScreen() {
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
                   {items.map(item => (
                     <View key={item.id} style={{ width: isDesktop ? '32%' : '100%' }}>
-                      <FeedbackRow item={item} isRTL={isRTL} colors={colors} />
+                      <FeedbackRow item={item} isRTL={isRTL} colors={colors} onDelete={() => removeFeedback(item)} />
                     </View>
                   ))}
                 </View>
@@ -459,67 +488,6 @@ export default function AdminDashboardScreen() {
           </>
         )}
       </ScrollView>
-    </View>
-  );
-}
-
-function StatCard({ label, value, colors }: { label: string; value: number; colors: any }) {
-  return (
-    <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20 }}>{value}</Text>
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, marginTop: 2, textAlign: 'center' }}>{label}</Text>
-    </View>
-  );
-}
-
-function SectionTitle({ text, isRTL, colors }: { text: string; isRTL: boolean; colors: any }) {
-  return (
-    <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-      {text}
-    </Text>
-  );
-}
-
-function KeyValue({ k, v, isRTL, colors }: { k: string; v: string; isRTL: boolean; colors: any }) {
-  return (
-    <View style={[styles.barRow, { flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12 }]}>
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>{k}</Text>
-      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 13 }}>{v}</Text>
-    </View>
-  );
-}
-
-function Bar({ ratio, isRTL, colors }: { ratio: number; isRTL: boolean; colors: any }) {
-  const r = Math.max(0, Math.min(1, ratio));
-  return (
-    <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.muted, overflow: 'hidden', flexDirection: isRTL ? 'row-reverse' : 'row' }}>
-      <View style={{ width: `${r * 100}%`, backgroundColor: r >= 0.9 ? colors.destructive : ACCENT }} />
-    </View>
-  );
-}
-
-function Table({ head, rows, empty, isRTL, colors }: { head: string[]; rows: string[][]; empty?: string; isRTL: boolean; colors: any }) {
-  const cellStyle = (i: number) => ({
-    flex: i === 0 ? 2 : 1,
-    color: colors.foreground,
-    fontFamily: 'Almarai_400Regular',
-    fontSize: 13,
-    lineHeight: 20,
-    textAlign: (i === 0 ? (isRTL ? 'right' : 'left') : 'center') as 'right' | 'left' | 'center',
-  });
-  return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginTop: 10, gap: 2 }]}>
-      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', paddingBottom: 4, borderBottomWidth: 1, borderColor: colors.border }}>
-        {head.map((h, i) => <Text key={h} style={[cellStyle(i), { color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>{h}</Text>)}
-      </View>
-      {rows.length === 0 && !!empty && (
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: 'center' }}>{empty}</Text>
-      )}
-      {rows.map((r, ri) => (
-        <View key={ri} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', paddingVertical: 2 }}>
-          {r.map((c, i) => <Text key={i} numberOfLines={1} style={cellStyle(i)}>{c}</Text>)}
-        </View>
-      ))}
     </View>
   );
 }
@@ -653,22 +621,7 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
   );
 }
 
-function FilterChip({ label, active, onPress, colors }: { label: string; active: boolean; onPress: () => void; colors: any }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.chip, {
-        backgroundColor: active ? ACCENT : colors.card,
-        borderColor: active ? ACCENT : colors.border,
-        borderRadius: colors.radius,
-      }]}
-    >
-      <Text style={{ color: active ? '#fff' : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function FeedbackRow({ item, isRTL, colors }: { item: FeedbackItem; isRTL: boolean; colors: any }) {
+function FeedbackRow({ item, isRTL, colors, onDelete }: { item: FeedbackItem; isRTL: boolean; colors: any; onDelete: () => void }) {
   const date = new Date(item.createdAt).toLocaleDateString();
   return (
     <View style={[styles.feedbackCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -682,6 +635,10 @@ function FeedbackRow({ item, isRTL, colors }: { item: FeedbackItem; isRTL: boole
           {item.materialType} · {item.toolId}
         </Text>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>{date}</Text>
+        {/* "Read it": the note goes away. The list is a to-do, not an archive. */}
+        <Pressable onPress={onDelete} hitSlop={8} accessibilityLabel="delete">
+          <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
+        </Pressable>
       </View>
       {!!item.comment && (
         <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}>

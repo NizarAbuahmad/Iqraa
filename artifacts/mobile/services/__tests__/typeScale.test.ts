@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Source-level guard for the 2026-10 type pass: headings are Readex Pro, and
@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 // an old screen, and neither fails loudly — a stray Cairo key falls back to
 // the system font on a device, and 12.5 just looks "almost right".
 
-const root = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
+const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DIRS = ['app', 'components', 'constants'];
 
 function* sources(dir: string): Generator<string> {

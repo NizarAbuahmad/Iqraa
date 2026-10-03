@@ -18,6 +18,7 @@ import { useAuth } from '@/context/AuthContext';
 import { apiFetch, apiJson } from '@/services/apiClient';
 import { goBack } from '@/services/navigation';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -34,12 +35,13 @@ export default function AdminSignupsScreen() {
   const isAdmin = !!user && ADMIN_ROLES.includes(user.role);
 
   const [kind, setKind] = useState<Kind>('all');
+  const [range, setRange] = useState<Range>(EMPTY_RANGE);
   const [items, setItems] = useState<Signup[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const kindParam = kind === 'all' ? '' : `kind=${kind}&`;
+  const kindParam = (kind === 'all' ? '' : `kind=${kind}&`) + (rangeQuery(range) ? `${rangeQuery(range).slice(1)}&` : '');
 
   const load = useCallback(async (offset: number) => {
     const res = await apiJson<{ items: Signup[]; total: number }>(`/admin/signups?${kindParam}offset=${offset}`);
@@ -128,6 +130,7 @@ export default function AdminSignupsScreen() {
               </Pressable>
             )}
           </View>
+          <DateRange value={range} onChange={setRange} ar={ar} isRTL={isRTL} colors={colors} />
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
             {ar ? `${total} إدخال` : `${total} entries`}
           </Text>
