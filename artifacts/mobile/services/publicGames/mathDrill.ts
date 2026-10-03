@@ -101,8 +101,8 @@ export function drillPath(config: DrillConfig): string {
   return `${DRILL_ROUTES[config.op]}?${detail}&secs=${config.seconds}`;
 }
 
-/** Empty `origin` is the native app (no window.location) — hand out the real site. */
-export function drillShareUrl(config: DrillConfig, origin: string): string {
+/** Defaults to the live site; callers only pass `origin` to pin a host in tests. */
+export function drillShareUrl(config: DrillConfig, origin: string = PROD_ORIGIN): string {
   return `${origin || PROD_ORIGIN}${drillPath(config)}`;
 }
 

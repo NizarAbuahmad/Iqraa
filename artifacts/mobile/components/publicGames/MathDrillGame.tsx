@@ -57,9 +57,7 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
   };
 
   const share = () => {
-    // `window.location` is undefined on native; drillShareUrl falls back to production then.
-    const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
-    shareAsText(drillShareUrl(config, origin), t(TITLES[config.op]))
+    shareAsText(drillShareUrl(config), t(TITLES[config.op]))
       .then(how => setCopied(how === 'copied'))
       .catch(() => {});
   };

@@ -19,6 +19,7 @@ import { generateClaimCode, getClaimCode, unlinkAccount, RosterError } from '@/s
 import { MessagingError, getTeacherContacts, startThread, type ChatRole } from '@/services/messaging';
 import { copyToClipboard, shareAsText } from '@/services/share.ts';
 import { composeClaimCodeMessage } from '@/services/claimCodeMessage.ts';
+import { PROD_ORIGIN } from '@/services/siteOrigin.ts';
 import { confirm } from '@/services/confirm.ts';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { Avatar } from '@/components/ui/Avatar';
@@ -135,9 +136,9 @@ export default function ClaimCodeScreen() {
         studentName: studentName ?? '',
         code: code.value,
         expiresOn: expiresLabel,
-        // Web only — there is no window on native, and the composer drops the
-        // "open this link" line rather than emitting a hostless URL.
-        origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+        // Always the live site: the parent opens this on their own phone, so the
+        // teacher's localhost (or a native build with no window) is never right.
+        origin: PROD_ORIGIN,
         fieldLabel: t('classCode'),
       },
       lang === 'ar',
