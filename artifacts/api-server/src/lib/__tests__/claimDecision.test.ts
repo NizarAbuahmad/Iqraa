@@ -25,6 +25,7 @@ const base: ClaimInput = {
   classGroup: null,
   isMember: async () => false,
   hasSelfLink: async () => false,
+  hasGuardianLink: async () => false,
 };
 
 const decide = (over: Partial<ClaimInput>) => decideClaim({ ...base, ...over });
@@ -32,7 +33,7 @@ const decide = (over: Partial<ClaimInput>) => decideClaim({ ...base, ...over });
 describe("per-student claim codes", () => {
   it("resolves without a studentId, exactly as before class codes existed", async () => {
     const got = await decide({ student: { id: "stu-1", expiresAt: LIVE } });
-    assert.deepEqual(got, { ok: true, studentId: "stu-1", relation: "guardian" });
+    assert.deepEqual(got, { ok: true, studentId: "stu-1", relation: "guardian", viaClassCode: false });
   });
 
   it("ignores a studentId sent alongside one — the code already names its student", async () => {
@@ -40,7 +41,7 @@ describe("per-student claim codes", () => {
       student: { id: "stu-1", expiresAt: LIVE },
       requestedStudentId: "stu-99",
     });
-    assert.deepEqual(got, { ok: true, studentId: "stu-1", relation: "guardian" });
+    assert.deepEqual(got, { ok: true, studentId: "stu-1", relation: "guardian", viaClassCode: false });
   });
 
   it("refuses an expired one", async () => {
@@ -77,7 +78,7 @@ describe("class join codes", () => {
 
   it("resolves a member name", async () => {
     const got = await decide({ ...inClass, requestedStudentId: "stu-1" });
-    assert.deepEqual(got, { ok: true, studentId: "stu-1", relation: "guardian" });
+    assert.deepEqual(got, { ok: true, studentId: "stu-1", relation: "guardian", viaClassCode: true });
   });
 
   it("refuses an expired class code even when the name is a real member", async () => {
@@ -130,7 +131,7 @@ describe("one account per student", () => {
     assert.equal(got.ok === false && got.status, 409);
   });
 
-  it("allows a second guardian on the same name — both parents is the normal case", async () => {
+  it("a student account does not stop a parent claiming the same name", async () => {
     const got = await decide({
       role: "parent",
       classGroup,
@@ -138,7 +139,71 @@ describe("one account per student", () => {
       isMember: async () => true,
       hasSelfLink: async () => true,
     });
-    assert.deepEqual(got, { ok: true, studentId: "stu-1", relation: "guardian" });
+    assert.deepEqual(got, { ok: true, studentId: "stu-1", relation: "guardian", viaClassCode: true });
+  });
+
+  it("refuses a second parent on a name picked off the class list, with 409", async () => {
+    const got = await decide({
+      role: "parent",
+      classGroup,
+      requestedStudentId: "stu-1",
+      isMember: async () => true,
+      hasGuardianLink: async () => true,
+    });
+    assert.equal(got.ok, false);
+    assert.equal(got.ok === false && got.status, 409);
+    assert.equal(got.ok === false && got.code, "claim_guardian_taken");
+  });
+
+  it("still lets a teacher add the second parent with that child's own code", async () => {
+    const got = await decide({
+      role: "parent",
+      student: { id: "stu-1", expiresAt: LIVE },
+      hasGuardianLink: async () => true,
+    });
+    assert.deepEqual(got, { ok: true, studentId: "stu-1", relation: "guardian", viaClassCode: false });
+  });
+
+  it("does not ask about parents when the claimant is a student", async () => {
+    let asked = false;
+    await decide({
+      role: "student",
+      classGroup,
+      requestedStudentId: "stu-1",
+      isMember: async () => true,
+      hasGuardianLink: async () => {
+        asked = true;
+        return true;
+      },
+    });
+    assert.equal(asked, false);
+  });
+
+  it("asks about the picked name, and only after membership is proven", async () => {
+    const seen: string[] = [];
+    await decide({
+      role: "parent",
+      classGroup,
+      requestedStudentId: "stu-7",
+      isMember: async () => false,
+      hasGuardianLink: async id => {
+        seen.push(id);
+        return false;
+      },
+    });
+    assert.equal(seen.length, 0, "a name that is not on the list must not leak whether it has a parent");
+
+    await decide({
+      role: "parent",
+      classGroup,
+      requestedStudentId: "stu-7",
+      isMember: async () => true,
+      hasGuardianLink: async id => {
+        seen.push(id);
+        return false;
+      },
+    });
+    assert.deepEqual(seen, ["stu-7"]);
   });
 
   it("guards the per-student code path too", async () => {
@@ -210,6 +275,17 @@ describe("machine-readable rejection codes", () => {
       hasSelfLink: async () => true,
     });
     assert.equal(codeOf(got), "claim_already_linked");
+  });
+
+  it("codes a name a parent already holds distinctly from one a student holds", async () => {
+    const got = await decide({
+      role: "parent",
+      classGroup,
+      requestedStudentId: "stu-1",
+      isMember: async () => true,
+      hasGuardianLink: async () => true,
+    });
+    assert.equal(codeOf(got), "claim_guardian_taken");
   });
 });
 

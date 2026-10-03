@@ -102,8 +102,11 @@ an announcement by default» below.
   machine-testable (the runner cannot load react-native). Still open from
   the same review: a reopened deck is not loaded from موادي on either slides
   screen (only the form is prefilled); pen ink drifts off the content on
-  resize; the timer has no pause; `homeAiTools.ts` still disables
-  `activity`/`game` for the related-tools panel, deliberately.
+  resize; `homeAiTools.ts` still disables `activity`/`game` for the
+  related-tools panel, deliberately. (The timer pause that was listed here
+  landed 2026-10-03: tap the clock, press P, or use the bottom-bar button on
+  wide screens. Pausing holds the second; a new slide or a restart clears it.
+  Not looked at in a browser.)
 - **A free, no-login games hub shipped** (2026-09-18), a competitive response
   to hasaadx.com/teacher. `/play` (added to `routeGating.ts`'s
   `PUBLIC_ROUTES`, same no-account pattern as `app/take/[code].tsx`) offers
@@ -546,6 +549,45 @@ an announcement by default» below.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## One parent per name on a class list, 2026-10-03
+
+Found by testing, not by reading: the same child could be picked from a class
+code's name list by any number of parent accounts. Each one then saw that
+child's letters. The old design said this was the point («both parents is the
+normal case»), but a class code is one string handed to a whole class and its
+picker lists every child, so "anyone with the code can attach to anyone on the
+list" was the real rule.
+
+**The rule now.** A name picked from a class code's list takes one parent
+account. The name stays on the list, greyed out and labelled «تم ربطه بالفعل»,
+so the person looking for their own child sees it exists and has been claimed
+rather than wondering whether the code is wrong. A second parent is let in on
+purpose, by the teacher, with that child's own code from «ربط الحساب» — that
+path is deliberately not limited, and it is also how a teacher replaces a wrong
+first claim (unlink it from the same screen).
+
+**Where it lives.** `decideClaim` refuses with `claim_guardian_taken` (409)
+only on the class-code branch, after membership is proven, so a name that is not
+on the list never leaks whether it has a parent. The route asks again inside the
+transaction that already locks the student row for the student-account rule, so
+two parents choosing the same name in the same second get one winner. No schema
+change and no push. `GET /auth/join/:code` now returns `guardianTaken` beside
+`taken`; it is unauthenticated and cannot know who is asking, so it sends both
+and the picker reads the one for the viewer's role. An older server that sends
+no `guardianTaken` degrades to «free», which that server also accepts.
+
+**What it costs.** Two parents can no longer both self-serve from the class
+code. The second one needs the teacher to issue their child's code; the error
+text says so. A wrong first claim now locks the rightful parent out until the
+teacher unlinks it, which is why that unlink screen matters.
+
+Checked against a local API: the lookup flags, a second parent refused with the
+right code, the first parent re-sending their own claim (accepted — their own
+link does not count), a teacher-issued child code adding a second parent
+(accepted), and two parents racing for a fresh name (one 201, one 409). Checked
+on screen in the web build: claimed names listed, labelled and unselectable, an
+unclaimed one still selectable. Not checked on a device.
 
 ## One phone, several accounts, and a Google chooser that always appears, 2026-10-03
 
@@ -4359,10 +4401,12 @@ would have silently answered 401 to the parents it exists for.
 `mountOrder.test.ts` pins that.
 
 Claimed names are returned with a `taken` flag rather than filtered out.
-Filtering looked safer and is wrong: only the one `self` link is exclusive,
-guardians are unlimited by design, so hiding claimed names would stop the
-second parent finding their own child and make the code look broken to them.
-The names are exposed either way, so filtering buys no privacy.
+Filtering looked safer and is wrong: hiding a claimed name makes the class code
+look broken to the person searching for their own child, and the names are
+exposed either way, so filtering buys no privacy. *(This paragraph used to say
+guardians were unlimited by design, so a second parent could always pick the
+same child. That stopped being true on 2026-10-03 — see «One parent per name on
+a class list» below. The flag now exists for guardians too, as `guardianTaken`.)*
 
 **The two findability fixes**, which were the original complaint:
 

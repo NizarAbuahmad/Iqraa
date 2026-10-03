@@ -208,11 +208,27 @@ export default function ClaimRequiredScreen() {
                  mount-time default would offer to change an account to the
                  role it already has. */
               onPress={() => { setNextRole(role); setPickerOpen(true); }}
-              hitSlop={8}
+              accessibilityRole="button"
+              /* A button, not a link. This was a 13px line of text under the
+                 e-mail address, and the request log showed testers who had
+                 picked the wrong type typing their e-mail into the code box
+                 instead of finding it. */
+              style={({ pressed }) => [
+                styles.roleButton,
+                {
+                  borderColor: colors.primary,
+                  backgroundColor: colors.card,
+                  borderRadius: colors.radius,
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
             >
-              <Text style={[styles.roleLink, { color: colors.primary, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
+              <Ionicons name="swap-horizontal" size={18} color={colors.primary} />
+              <Text style={[styles.roleButtonText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
                 {t('claimRequiredWrongRole')}
               </Text>
+              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.primary} />
             </Pressable>
           )}
         </View>
@@ -298,6 +314,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, marginBottom: 8, lineHeight: 30 },
   desc: { fontSize: 15, lineHeight: 24, marginBottom: 20 },
   savedTitle: { fontSize: 14, marginBottom: 8 },
+  roleButton: { marginTop: 12, borderWidth: 1.5, paddingVertical: 12, paddingHorizontal: 14, alignItems: 'center', gap: 10 },
+  roleButtonText: { flex: 1, fontSize: 14 },
   roleCard: { borderWidth: 1, padding: 14, marginBottom: 24 },
   roleRow: { alignItems: 'center', gap: 8 },
   roleText: { flex: 1, fontSize: 14 },

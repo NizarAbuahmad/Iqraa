@@ -60,6 +60,7 @@ const CLAIM_ERROR_KEYS: Record<string, TranslationKey> = {
   claim_needs_name: 'claimNeedsName',
   claim_name_not_in_class: 'claimNameNotInClass',
   claim_already_linked: 'claimAlreadyLinked',
+  claim_guardian_taken: 'claimGuardianTaken',
 };
 
 /**
