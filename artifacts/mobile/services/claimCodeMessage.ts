@@ -63,7 +63,12 @@ export function composeClaimCodeMessage(input: ClaimCodeMessageInput, isAr: bool
       // WhatsApp selects it and nothing else.
       `${fieldLabel}:\n${code}`,
       `ينتهي في: ${expiresOn}`,
-      origin ? `افتح ${origin} ثم «إنشاء حساب»، واختر «وليّ أمر»، وأدخل الرمز أعلاه.` : null,
+      // The code is asked for on the mandatory claim screen that follows email
+      // verification — not at sign-up, which stopped taking one. The same code
+      // is handed to students, so the role is theirs to pick, not prescribed.
+      origin
+        ? `افتح ${origin} وأنشئ حسابًا (وليّ أمر أو طالب)، وبعد تأكيد بريدك الإلكتروني ستُطلب منك إدخال الرمز أعلاه.`
+        : null,
       teacherName ? `وتفضّلوا بقبول فائق الاحترام،\n${teacherName}` : 'وتفضّلوا بقبول فائق الاحترام،',
     ]);
   }
@@ -73,7 +78,9 @@ export function composeClaimCodeMessage(input: ClaimCodeMessageInput, isAr: bool
     `You can follow ${studentName}'s progress and message me inside the Iqraa app.`,
     `${fieldLabel}:\n${code}`,
     `Expires: ${expiresOn}`,
-    origin ? `Open ${origin}, choose "Create account", pick "Parent", and enter the code above.` : null,
+    origin
+      ? `Open ${origin} and create an account (Parent or Student). After verifying your email you will be asked for the code above.`
+      : null,
     teacherName ? `Kind regards,\n${teacherName}` : 'Kind regards,',
   ]);
 }

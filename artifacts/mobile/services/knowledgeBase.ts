@@ -4479,18 +4479,49 @@ function strongTitleAffinity(query: string, title: string): boolean {
  * `null`: ungrounded is recoverable, silently grounding to the wrong subject
  * is what this whole path exists to prevent.
  */
-function titleOnlyFallback(query: string, lang: 'ar' | 'en'): KBLesson | null {
+function titleOnlyFallback(query: string, lang: 'ar' | 'en', scope?: KbScope): KBLesson | null {
   const key = normalizeTitleKey(query);
   if (!key) return null;
 
-  let hit: KBLesson | null = null;
+  const hits: KBLesson[] = [];
   for (const lesson of KB_LESSONS) {
     const title = lang === 'ar' ? lesson.titleAr : lesson.titleEn;
-    if (normalizeTitleKey(title) !== key) continue;
-    if (hit) return null;
-    hit = lesson;
+    if (normalizeTitleKey(title) === key) hits.push(lesson);
   }
-  return hit;
+  if (hits.length <= 1) return hits[0] ?? null;
+  // Ambiguous across the KB — but the caller's picked grade/subject can
+  // settle it where the title alone cannot.
+  return lessonsInKbScope(hits, scope)[0] ?? null;
+}
+
+/**
+ * The grade/subject a caller already knows the lesson belongs to — the
+ * generator screens' pickers, or a saved material's scope.
+ *
+ * A title does not identify a lesson (CLAUDE.md): 107 Arabic titles are
+ * shared across books, so «النسب المثلثية» is both Grade 10 S1 and Grade 9
+ * S2 maths, and «جمع المتجهات وطرحها» is both Grade 10 maths and physics.
+ * Resolving on the title alone took whichever ranked first, so a Grade 10
+ * quiz was built from Grade 9 objectives and sent with the Grade 9 lesson id,
+ * and a maths topic was refused as "belongs to physics". The scope is a
+ * tie-break only: it never promotes a lesson whose title does not match.
+ */
+export type KbScope = { gradeId?: string; subjectId?: string };
+
+function lessonsInKbScope(lessons: readonly KBLesson[], scope: KbScope | undefined): KBLesson[] {
+  if (!scope || (!scope.gradeId && !scope.subjectId)) return [];
+  return lessons.filter(lesson => {
+    const book = getBookForLesson(lesson);
+    if (!book) return false;
+    if (scope.gradeId && book.gradeId !== scope.gradeId) return false;
+    if (scope.subjectId && book.subjectId !== scope.subjectId) return false;
+    return true;
+  });
+}
+
+/** The first candidate inside the scope, else the first candidate. */
+function preferInScope(lessons: readonly KBLesson[], scope: KbScope | undefined): KBLesson {
+  return (lessonsInKbScope(lessons, scope)[0] ?? lessons[0])!;
 }
 
 /**
@@ -4506,10 +4537,11 @@ const groundedCache = new Map<string, KBLesson | null>();
 export function resolveGroundedKbLesson(
   query: string,
   lang: 'ar' | 'en' = 'ar',
+  scope?: KbScope,
 ): KBLesson | null {
-  const key = `${lang} ${query.trim()}`;
+  const key = `${lang} ${scope?.gradeId ?? ''} ${scope?.subjectId ?? ''} ${query.trim()}`;
   if (groundedCache.has(key)) return groundedCache.get(key)!;
-  const lesson = resolveGroundedKbLessonUncached(query, lang);
+  const lesson = resolveGroundedKbLessonUncached(query, lang, scope);
   // ponytail: FIFO eviction, same ceiling as rankedCache.
   if (groundedCache.size >= RANKED_CACHE_MAX) groundedCache.delete(groundedCache.keys().next().value!);
   groundedCache.set(key, lesson);
@@ -4519,17 +4551,19 @@ export function resolveGroundedKbLesson(
 function resolveGroundedKbLessonUncached(
   query: string,
   lang: 'ar' | 'en',
+  scope?: KbScope,
 ): KBLesson | null {
   const q = query.trim();
   if (!q) return null;
 
   const ranked = searchKBRanked(q, lang);
 
-  const exact = ranked.find(r => {
-    const title = lang === 'ar' ? r.lesson.titleAr : r.lesson.titleEn;
-    return normalizeTitleKey(title) === normalizeTitleKey(q);
-  });
-  if (exact) return exact.lesson;
+  const qKey = normalizeTitleKey(q);
+  const exact = ranked
+    .filter(r => normalizeTitleKey(lang === 'ar' ? r.lesson.titleAr : r.lesson.titleEn) === qKey)
+    .map(r => r.lesson);
+  // Several books can share the title; the caller's scope picks among them.
+  if (exact.length > 0) return preferInScope(exact, scope);
 
   // The scorer does not fold tashkeel, so a lesson whose title IS the query
   // can score 0 and never appear in `ranked` at all — the check above then
@@ -4537,7 +4571,7 @@ function resolveGroundedKbLessonUncached(
   // whole KB before falling through to the fuzzy heuristics: an exact title
   // is a stronger signal than an affinity guess, and this is the only way
   // the unvowelled form of a vowelled title is ever reachable.
-  const byTitle = titleOnlyFallback(q, lang);
+  const byTitle = titleOnlyFallback(q, lang, scope);
   if (byTitle) return byTitle;
 
   if (ranked.length === 0) return null;

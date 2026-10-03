@@ -42,6 +42,7 @@ import {
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { toLatinDigits } from '@/services/latinDigits';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -223,7 +224,7 @@ export default function NewEvaluationScreen() {
     if (mode === 'paper') {
       // Named row, not "check your marks" — on a 30-row grid the teacher
       // should not have to hunt for the one that is wrong.
-      const bad = paperRows.findIndex(r => !(Number(r.marks) > 0));
+      const bad = paperRows.findIndex(r => !(Number(toLatinDigits(r.marks)) > 0));
       if (bad >= 0) {
         setError(t('paperMarksInvalid', String(bad + 1)));
         return;
@@ -248,7 +249,7 @@ export default function NewEvaluationScreen() {
         await setPaperQuestions(
           evaluation.id,
           paperRows.map(r => ({
-            marks: Number(r.marks),
+            marks: Number(toLatinDigits(r.marks)),
             objectiveId: r.objectiveId,
             competencyKey: r.competencyKey,
             difficulty,

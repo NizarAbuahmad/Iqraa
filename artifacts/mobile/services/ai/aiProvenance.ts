@@ -121,6 +121,22 @@ export function isAbortError(e: unknown): boolean {
 }
 
 /**
+ * Re-raise a cancellation that a `.catch` further down has already absorbed.
+ *
+ * A screen that joins several requests and tolerates each one failing on its
+ * own (a missing check, a missing explanation) swallows the abort with them,
+ * and then answers "stop" with a finished result. Call this after the join:
+ * it throws the same shape `fetch` would have, so the screen's existing
+ * `isAbortError` branch reports a stop rather than a success.
+ */
+export function throwIfAborted(signal: AbortSignal): void {
+  if (!signal.aborted) return;
+  const err = new Error('The operation was aborted.');
+  err.name = 'AbortError';
+  throw err;
+}
+
+/**
  * The server refused because a spending cap is reached, not because anything
  * broke.
  *

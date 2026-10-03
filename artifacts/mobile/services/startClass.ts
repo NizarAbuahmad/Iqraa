@@ -15,7 +15,8 @@ import { bookFigureRefsForLesson } from './bookFigureUri.ts';
 import { BOOK_FIGURE_MAX } from './lessonSlides.ts';
 import { getLessonMedia } from './lessonMedia.ts';
 import { resolveGeneratorGrounding } from './kbContext.ts';
-import { getLessonById } from './knowledgeBase.ts';
+import { getBookForLesson, getLessonById } from './knowledgeBase.ts';
+import { getPickerSubjects } from './curriculumData.ts';
 import type { ClassroomActivity } from './ai/AIService.ts';
 
 export type StartClassInput = {
@@ -44,14 +45,25 @@ export type StartClassInput = {
 export async function buildClassDeck({
   topic: rawTopic,
   lang,
-  subjectId = 'mathematics',
-  subjectName = 'Mathematics',
+  subjectId: pickedSubjectId,
+  subjectName: pickedSubjectName,
   lessonId,
 }: StartClassInput): Promise<ClassroomActivity> {
   const topic = rawTopic.trim();
   const isAr = lang === 'ar';
   const groundedLesson = (lessonId ? getLessonById(lessonId) : null)
     ?? resolveGeneratorGrounding(topic, lang).lesson;
+  // The subject defaulted to maths whenever the caller held none — a
+  // free-typed chemistry title or an uploaded-document pick — and the
+  // generator branches on that NAME (CLAUDE.md), so «ابدأ الحصة» on a
+  // chemistry lesson projected maths quick-check questions under its title.
+  // The lesson was already grounded two lines up; its book says the subject.
+  const groundedBook = groundedLesson ? getBookForLesson(groundedLesson) : undefined;
+  const subjectId = pickedSubjectId ?? groundedBook?.subjectId ?? 'mathematics';
+  const subjectName =
+    pickedSubjectName
+    ?? getPickerSubjects().find(s => s.id === subjectId)?.name
+    ?? 'Mathematics';
 
   const activity = await aiService.generateClassroomActivity({
     grade: '10',

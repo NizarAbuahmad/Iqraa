@@ -13,6 +13,7 @@
  * importing from the specific module in new code.
  */
 
+import { fetchWithTimeout } from './fetchWithTimeout';
 import { Platform, Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Print from 'expo-print';
@@ -173,7 +174,7 @@ export async function exportAsPDF(html: string, filename: string): Promise<void>
  * which is where "Save Image" actually lives on both iOS and Android.
  */
 export async function saveRemoteImage(url: string, filename: string): Promise<void> {
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url, {}, 20_000);
   if (!res.ok) throw new Error(`Failed to download image (${res.status})`);
   const blob = await res.blob();
 

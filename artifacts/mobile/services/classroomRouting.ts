@@ -317,3 +317,30 @@ const META_AR: [RegExp, string][] = [
 export function cardMetaLabel(value: string, lang: string): string {
   return lang === 'ar' ? META_AR.reduce((s, [re, ar]) => s.replace(re, ar), value) : value;
 }
+
+export type ActivityFilter = 'all' | 'quick' | 'team' | 'solo';
+
+/**
+ * The cards the classroom hub lists under its filter bar.
+ *
+ * The featured card is rendered as a hero above the list, but only while the
+ * list is unfiltered and unsearched. It used to be dropped from the list
+ * unconditionally, so searching for the escape challenge, or picking the
+ * «team» filter it satisfies, showed it nowhere at all. It is left out of the
+ * list exactly when the hero carries it, and nowhere else.
+ */
+export function visibleActivityCards<T extends ActivityCard>(
+  cards: readonly T[],
+  filter: ActivityFilter,
+  query: string,
+  textOf: (card: T) => string,
+): T[] {
+  const q = query.trim().toLowerCase();
+  const heroShown = filter === 'all' && q === '';
+  let list = heroShown ? cards.filter(c => !c.isFeatured) : [...cards];
+  if (filter === 'quick') list = list.filter(c => c.durationMin <= 15);
+  if (filter === 'team') list = list.filter(c => c.isTeam);
+  if (filter === 'solo') list = list.filter(c => c.isSolo);
+  if (q) list = list.filter(c => textOf(c).toLowerCase().includes(q));
+  return list;
+}

@@ -79,7 +79,10 @@ export function buildPickerContacts(byStudent: ContactStudent[]): {
     for (const cl of s.classes ?? []) {
       if (!classById.has(cl.id)) classById.set(cl.id, cl);
     }
-    for (const c of s.contacts) {
+    // `GET /messaging/contacts` answers a non-teacher with flat rows that
+    // carry no `contacts`; iterating `undefined` threw and the sheet showed
+    // a "no connection" message for what was really the wrong caller.
+    for (const c of s.contacts ?? []) {
       const existing = seen.get(c.userId);
       if (existing) {
         for (const cl of s.classes ?? []) {

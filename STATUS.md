@@ -53,28 +53,61 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
-- **A free, no-login games hub and a Smart Whiteboard tool shipped** (2026-09-18),
-  a competitive response to hasaadx.com/teacher. `/play` (added to
-  `routeGating.ts`'s `PUBLIC_ROUTES`, same no-account pattern as
-  `app/take/[code].tsx`) offers four client-only games — flags and capitals
-  trivia (`components/publicGames/TriviaGame.tsx`, flag images from
-  flagcdn.com, no key/bundle needed), memory-match, and spot-the-odd-square —
-  each ending in a "create a free teacher account" CTA
-  (`components/publicGames/GameShell.tsx`); no backend, no persisted scores,
-  by design. `/ai-tools/whiteboard.tsx` is a new during-class tool (added to
-  `DURING_CLASS_ALL` and the `toolCatalog.test.ts` offered-tools list — a
-  deliberate, tracked un-parking, not an accidental one): type a prompt,
-  display it full-screen in large type. Not a drawing canvas — confirmed with
-  the user against Hasaad's actual description before building. The
-  projector fullscreen helper moved out of `presentation.tsx` into the
-  already-shared `presentationUtils.ts` so both screens use one copy.
-  Verified: full mobile suite 1494/1494 (10 pre-existing skips), monorepo
-  typecheck clean, and all four games plus the routing gate exercised live in
-  a browser (flags scoring/next, memory flip/match, colour round-advance,
-  `/ai-tools/whiteboard` correctly bounces a signed-out visitor to
-  onboarding — `/play` does not). Not yet verified: the whiteboard's
-  authenticated UI (no test teacher account in this session) and capitals
+- **The tool screens share one rule per failure mode** (2026-10-02, PR #772).
+  A review of every `/ai-tools` screen found ~40 issues, most of them one
+  pattern repeated per screen. Each pattern now has one helper, used by
+  quiz, worksheet, lesson plan, activity, game, slides and prompt-slides:
+  - Save, export and present read the scope the material was *generated*
+    under (`services/generationScope.ts`), never the live pickers — changing
+    the subject cleared the topic but kept the result, so Save stored it
+    under the new subject as «اختبار: » and «اعرض على الشاشة» re-grounded the
+    deck from an empty topic (the lesson-title trap in CLAUDE.md). A
+    reopened material re-grounds its saved topic, which is what gives it
+    its grounding notice, figures and the Ministry form's unit back.
+  - A failed or cancelled regenerate hands back what was on screen.
+  - Every generator aborts on unmount (`hooks/useAbortOnUnmount.ts`);
+    activity and the classroom builder gained Cancel.
+  - Background verification is tied to the exact output it ran for
+    (`services/verificationTracker.ts`), so a late result cannot badge the
+    next paper or land one slot off after a delete.
+  - Saved picker positions are range-checked (`readIndexParam`); the
+    homework flag accepts the `'true'` موادي spreads back into the route
+    (`readHomeworkParam`) — a reopened homework used to become a worksheet.
+  - Slides and prompt-slides share `hooks/useDeckWorkspace.ts`,
+    `hooks/useSlideEditor.ts` and `components/slides/` (~540 net lines
+    removed). Auto-sync to موادي is a property of the link, not of having an
+    id (`services/deckSaveLink.ts`): a regenerated deck no longer silently
+    overwrites a saved, edited one.
+  - Classroom presentation: the countdown re-arms between timed slides
+    (it froze on Q1 → Q2), hint/answer follow the slide's direction, Esc
+    closes a zoomed figure instead of leaving the deck, the keyboard
+    handler is the pure `keyboardAction` in `presentationUtils.ts`.
+  Verified by typecheck and the mobile suite (2204 pass, 0 fail, 10
+  skipped). **Not verified in a browser** — none of the screen wiring is
+  machine-testable (the runner cannot load react-native). Still open from
+  the same review: a reopened deck is not loaded from موادي on either slides
+  screen (only the form is prefilled); pen ink drifts off the content on
+  resize; the timer has no pause; `homeAiTools.ts` still disables
+  `activity`/`game` for the related-tools panel, deliberately.
+- **A free, no-login games hub shipped** (2026-09-18), a competitive response
+  to hasaadx.com/teacher. `/play` (added to `routeGating.ts`'s
+  `PUBLIC_ROUTES`, same no-account pattern as `app/take/[code].tsx`) offers
+  four client-only games — flags and capitals trivia
+  (`components/publicGames/TriviaGame.tsx`, flag images from flagcdn.com, no
+  key/bundle needed), memory-match, and spot-the-odd-square — each ending in
+  a "create a free teacher account" CTA (`components/publicGames/GameShell.tsx`);
+  no backend, no persisted scores, by design. Linked from the Tools tab as the
+  `games` card since 2026-09-19 (#536). Verified at the time: full mobile
+  suite green, monorepo typecheck clean, and all four games plus the routing
+  gate exercised live in a browser (flags scoring/next, memory flip/match,
+  colour round-advance, `/play` loads signed-out). Not verified: capitals
   trivia specifically (same component as flags, lower risk).
+  - **The Smart Whiteboard that shipped beside it is gone** — removed on
+    2026-09-25 (#624): a text box shown full-screen, no AI, no drawing,
+    nothing saved, and the classroom board already did the job. It is not in
+    `toolCatalog.ts`, `toolCatalog.test.ts` or `app/ai-tools/` any more. This
+    entry went on describing it as a live during-class tool for a week after
+    the delete — checked against the tree on 2026-10-02.
 - **A teacher can set, replace and remove their own profile picture**
   (2026-09-09): `app/(tabs)/profile.tsx`, `POST`/`DELETE /auth/users/avatar`.
   Uploads into the `iqraa-public` R2 bucket (anonymous-read, non-expiring
@@ -498,6 +531,348 @@ an announcement by default» below.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## A whole-app audit: the verifier ran request text as code, and 30 smaller bugs, 2026-10-02
+
+A read-only audit of every package (API routes, mobile services and
+screens, the SymPy verifier, the shared libs, the schema and CI), each
+finding re-verified by hand before it was fixed. Everything below is in one
+PR; the test counts after it: mobile 2290 → 2296 (0 fail, 10 skipped), API
+1019, curriculum 243, math-verify 6, arabic-spelling 226 (new in CI),
+verifier 75/75, monorepo typecheck clean, web export builds.
+
+- **The math verifier executed request text.** `parse_expr` is eval-based,
+  and `verify_core.py` handed it raw strings from `/verify/*` — reachable
+  by any signed-in account through the API proxy and, with the service
+  deployed `--allow-unauthenticated`, from the internet. Reproduced:
+  `verify_item('derivative_polynomial', "__import__('os').getpid()", '0')`
+  ran and answered `verified: true`. Every parse now goes through
+  `safe_parse_expr`, which refuses anything outside a maths character set,
+  any `__`, any attribute access and any identifier that is not a known
+  function or a one/two-letter variable — and raises, so the existing
+  fail-closed paths report `verify_error`/`error`, never "wrong".
+  `test_equations.py` pins three injection cases. Request fields are capped
+  at 400 chars (`app.py`, and the API proxy), because an oversized string
+  used to cost a 2s worker timeout and a pool respawn. **Still to do by a
+  human:** deploy the verifier without `--allow-unauthenticated` (API →
+  verifier via Cloud Run service auth). The input gate closes the hole; the
+  auth change is defence in depth.
+- **Archived class threads stayed live for students.** Archiving a class
+  archived the thread but removed nobody; only the inbox honoured
+  `archivedAt`, so a student holding the thread id could keep reading and
+  posting after the teacher stopped seeing it. `participantOf` now joins the
+  thread and requires it live (reports pass `includeArchived`), and the
+  class-thread lookup refuses an archived class.
+- **A network blip signed the teacher out.** Boot cleared both tokens on
+  *any* `/auth/me` failure (a 15s cold-API timeout, a basement, a 502 page),
+  and `refreshAccessToken` did the same on a timeout. Both now clear only on
+  a 400/401/403 *answer*; a boot that cannot reach the server opens on a
+  cached profile snapshot (`services/userSnapshot.ts`, not a credential).
+  `apiJson` reads text before parsing, so an HTML 502 page becomes an
+  `ApiError` with a status instead of a `SyntaxError`.
+- **A title shared across books grounded to the wrong grade.** 107 Arabic
+  titles repeat across books («النسب المثلثية» is Grade 10 S1 and Grade 9
+  S2); the resolver took whichever ranked first, so a Grade 10 quiz was
+  built from Grade 9 objectives and sent with the Grade 9 lesson id, and a
+  maths title physics also uses was refused as "belongs to physics".
+  `resolveGroundedKbLesson` takes an optional `KbScope` (grade/subject) as
+  a tie-break among exact-title matches; the four generator screens, the
+  reopened-material scope, the subject-conflict check and the request
+  builders (which re-derived the lesson id from the title, ignoring the
+  grounding they were handed) all pass it. `groundingScope.test.ts`.
+- **Shared-pool key omitted `classroomSetup`**, so a no-projector deck was
+  served to a projector request. Added to the strict key; `PROMPT_VERSION`
+  bumped to `2026-10-02.1`, which retires every pooled artifact once.
+- **Global AI budget was per Cloud Run instance** after boot: N instances
+  allowed N× the cap. `assertBudgetAvailable` now re-reads the store every
+  60s (fire-and-forget; the in-memory increment stays the fast path).
+- **The exam countdown ran on the device clock**: a phone a few minutes
+  fast force-handed the paper in early, irrevocably. `/take/attempt/state`
+  returns `serverNow`; the client counts down in server time.
+- **Arabic-Indic digits were rejected** by every numeric box except two:
+  paper-mode marks, the three question modals, the marking screen, the
+  schedule time/duration and both six-digit code screens. One
+  `toLatinDigits()` (`services/latinDigits.ts`) folds them before validation.
+- **API 500s that were really 400s**: Express 5 leaves `req.body` undefined
+  with no JSON body and most handlers destructured it; malformed JSON fell
+  to the generic handler; non-string `email`/`password` threw inside
+  bcrypt. A `req.body ??= {}` middleware, a body-parser status pass-through
+  and type guards on login/register/logout/profile. `preferredLanguage` is
+  now allow-listed to `ar`/`en`.
+- Smaller, each confirmed: the lesson-media rate limiter counted GETs so
+  attachments vanished after ~20 lesson opens an hour (writes only now);
+  logout revoked a token family without checking it was the caller's;
+  teacher answer-entry 500'd for a student who had sat via the link (unique
+  constraint — any existing attempt is returned now); `POST
+  /classes/:id/students` false-404'd on a duplicated id; the schedule
+  route turned driver errors into 400s carrying the raw query; workspace
+  items accepted an unverified `classGroupId`; `?offset=1e400` reached
+  Postgres; `/generate/variants/:id/retire` re-filed and re-emailed the
+  same report on every tap; the batch route reported `pass: true` on a NaN
+  count; attempt reassignment ignored class membership and archival; three
+  routes read `language === 'arabic'` where every other reads `!==
+  'english'`; موادي's local store was one key for every account on the
+  device (now per user, and device-only saves show beside the server's
+  instead of vanishing once online); student exam calls had no timeout, so
+  a dead socket wedged the autosave queue and «إرسال» forever; the
+  option-label stripper missed «١)»; language restore had no `.catch`;
+  image fetches for PPTX/share had no deadline; the native share link was
+  a bare `/take/CODE`; «ابدأ الحصة» defaulted a subject-less topic to
+  maths (now the grounded lesson's book decides); the admin CSV export
+  called `document` on Android; `/verify-email` was not an entry route so
+  a reload lost the code screen; two matching games and memory-match fired
+  timers after unmount.
+- **`lib/arabic-spelling` had 11 failing tests and was not in CI.** Eight
+  rules sat under the suite's eight-word floor, one misspelling was three
+  edits off, «بن» had no harakat and a grade-4 sentence quoted the grade-5
+  word «الله». Words added (with harakat and near-miss misspellings), and
+  the package runs in `ci.yml`.
+- **Schema: three indexes are missing and were NOT added here.** Every
+  refresh/logout filters `refresh_tokens` by `user_id`/`family_id`
+  (only `token_hash` is indexed) and every موادي read filters
+  `saved_materials` by `user_id`. They were drafted in this PR and then
+  pulled out: a schema edit needs the manual production push, and this PR
+  must not block on a step only a human can run. Add them in their own PR
+  (`index("refresh_tokens_user_idx").on(t.userId)`,
+  `index("refresh_tokens_family_idx").on(t.familyId)`,
+  `index("saved_materials_user_idx").on(t.userId)`), push, and answer
+  `schema-push: done`. The API runs correctly without them; they are speed,
+  not correctness. `verify-schema` does not check indexes either way.
+  (The audit also claimed `class_memberships.class_group_id`,
+  `attempt_answers.attempt_id` and `chat_blocks.blocker_user_id` lacked
+  indexes — they do not: each is the leading column of an existing unique
+  constraint.)
+- **Not verified in a browser or on a device** — none of the screen wiring
+  is machine-testable here. The 67 `pnpm audit` findings are all transitive
+  build-time dependencies of the Expo/React Native toolchain (none in the
+  API runtime) and need an Expo SDK bump, which is a native-surface change
+  and was left out on purpose.
+- Audit findings checked and found sound, so nobody re-audits them: every
+  per-id route scopes by owner; refresh rotation is race-safe; `verified`
+  is only ever the verifier's word; the prompt-slides route never touches
+  the pool; grading normalises Arabic digits; push sends survive one bad
+  token; `PUBLIC_ROUTES` all exist; all 191 curriculum files parse with
+  unique ids; `EXPO_PUBLIC_*` keys are declared in all three places.
+
+## A letter is read when the parent saw it, and one self-link is now a constraint, 2026-10-02
+
+Follow-up to the parent-side review below. Two changes, one schema push.
+
+**«مقروءة» on a parent letter meant the thread had been opened.** `read` was
+derived from the guardian's thread-level `chat_participants.lastReadAt`. A
+parent with two children on one teacher's roster has one direct thread with
+that teacher, and the thread screen sets `lastReadAt` on open and on every
+ten-second poll while it is open — so opening the thread for a one-line reply
+about child A marked a pending letter about child B read, and the class
+screen's «لم تُقرأ» list dropped it.
+
+Now per message. The reader's thread screen reports the messages its list
+actually rendered (`FlatList` viewability, 60% visible for 400ms, own messages
+never) to `POST /messaging/threads/:id/read`, which records them in
+`chat_message_reads`. An in-app letter logs the chat message ids it became
+(`parent_contacts.message_ids`, one per guardian), and `read` is "any of
+those has a receipt" — the rule is `letterReadState` in
+`api-server/src/lib/parentContactRead.ts`, pure and tested. Letters logged
+before this carry no ids and keep the old thread-level answer, so history does
+not flip to unread overnight. `lastReadAt` itself is untouched: it is still
+the unread-count mechanism, and the receipts do not feed it.
+
+**One self-link per student is a database constraint.** The claim route's
+check-then-insert (and the compensating re-read added below) now has the
+backstop the previous entry asked for: `roster_links_one_self_idx`, a partial
+unique index on `student_id WHERE relation = 'self'`. `verify-schema` checks
+unique indexes by name, so a push that skips it will be caught.
+
+**Schema push: done, 2026-10-02.** Applied by hand in the Neon SQL editor on
+the production branch, because the session that wrote this had no
+`DATABASE_URL`. The SQL mirrors the Drizzle schema exactly, constraint and
+index names included, so a later `drizzle-kit push` sees no drift. Checked
+before: no student held two self-links, so the partial unique index could
+build. Checked after: `to_regclass` found `chat_message_reads` and
+`roster_links_one_self_idx`, and `information_schema.columns` found
+`parent_contacts.message_ids`.
+
+**Verified:** typecheck clean; mobile and api-server suites green with the two
+new pure tests (watched failing first). **Not verified:** the receipt round
+trip end to end — the route and the viewability wiring are SQL- and
+FlatList-bound, and neither runner can load them. React Native Web's FlatList
+does support `viewabilityConfig`; whether the 60% threshold fires for a long
+letter that fills more than one screen is the thing to watch on the web build.
+
+## «من انت» and «ماذا تستطيع أن تفعل» are answered, not clarified, 2026-10-02
+
+Two screenshots from the chat: «من انت» got «وضّح لي أكثر: هل تريد شرح مفهوم،
+أم تحضير مادة…؟», and «ماذا تستطيع ان تفعل» got «سؤالك قد يخص أكثر من مادة.
+أيّ مادة تقصد؟» with subject chips. Neither is a bug in those two replies —
+both did what they are for. The router in `services/ai/intentRouter.ts` simply
+had no intent for a question about the assistant itself, so each fell to
+whichever fallback its length picked: two short words → the generic clarify;
+four words → "a substantive topic", into the KB, where a whole-curriculum
+search spans several subjects and `detectSubjectAmbiguity` asks which.
+
+There is now an `about` intent, checked right after greeting/small talk and
+before app-help, off-topic and the teaching heuristics. It answers from the
+same `capabilityLines()` the greeting and the off-topic reply use, with an
+identity opener («أنا اقرأ 🌿 مساعد تدريس بالذكاء الاصطناعي…») for *who/what
+are you*, and a capabilities opener for *what can you do / how can you help*.
+Both languages. It is also checked ahead of the `afterClarify` short-circuit,
+so asking it as a reply to a clarify still gets the answer instead of being
+forwarded to teaching.
+
+The patterns are **anchored** on purpose. «كيف تساعدني» is about the assistant;
+«كيف تساعدني في شرح المشتقات» is about derivatives, and the only thing telling
+them apart is where the message ends. `intentRouter.test.ts` pins 28 positive
+cases and the negatives («ما هو الاقتران», «من اكتشف الذرة؟», «how can you help
+me teach vectors» all stay `teaching`). As with `off_topic`, this is the
+demo-mode / local path; the live prompt already knows what Iqraa is.
+
+## The parent message can be edited by hand and carry a file, 2026-10-02
+
+`ai-tools/parent-message` showed its letter as read-only text: the only way to
+change a word was through the fields, and nothing could be attached. The
+preview is now the editable letter, and a teacher can attach one photo or PDF.
+
+- **An edit wins over the fields.** Once the teacher types in the preview, that
+  text is what is sent; changing tone or kind no longer rewrites it. A note
+  under the box says so, with «استعادة النص المقترح» to go back. Typing back to
+  exactly the composed text drops the edit.
+- **An edit is pinned to the student it was written for.** It names the child
+  in free text, so if the student name changes afterwards the edit is *stale*:
+  send, share and copy are all disabled, the box turns amber, and the teacher
+  must restore or touch the letter again. Otherwise picking Basel after
+  editing Sara's letter would send Sara's letter to Basel's parent.
+  `outgoingLetter()` in `services/parentMessage.ts`, tested.
+- **A hand edit doesn't skip «required» details.** #772's
+  `parentMessageReady` (a concern letter needs its details) is applied to the
+  outgoing text, edited or not, so fixing one typo can't wave an empty
+  concern letter through.
+- **The attachment only travels in-app.** It rides `sendMessage`'s existing
+  `attachmentDataUrl` to each guardian — no endpoint, schema or dependency
+  change. Share and copy are text-only, and the chip says so. Photos and PDFs
+  only (audio is allowed by the server but not offered); the 8 MB data-URL
+  ceiling is checked before the send, not discovered by it.
+
+Checked in the web build against a mocked API: edit, stale lock, and a picked
+photo. Not checked on a device or against the real messaging API.
+
+## A parent could not reach Settings, and six smaller parent-side bugs, 2026-10-02
+
+A code review of the parent-facing surface — claim flow, routing, messaging,
+and the teacher's letter tool — against the running code. Eight bugs, seven
+fixed here, one left out with its reason.
+
+**The profile tab linked a parent to screens the routing gate bounced them
+off.** `NON_TEACHER_ROUTES` had no `/settings`, `/faq` or `/delete-account`,
+and the bounce in `app/_layout.tsx` runs on every path change, not only at
+boot — so «الإعدادات» sent a parent straight back to Messages, and account
+deletion was unreachable for anyone who was not a teacher, which the store
+listings require. The three are allowlisted now, pinned in
+`routeGating.test.ts`. The same profile section also offered «شُعَبي» to
+non-teachers (the roster screen) and «مساحتي» to everyone; both are teacher
+screens the gate rejects, and both rows are teacher-only now.
+
+**Smaller fixes in the same pass:**
+
+- `register.tsx` accepted an empty confirm-password field while the server
+  refused any sent value that differed from the password, so skipping the
+  field produced an English "Passwords do not match". The field is required.
+- The share message for a link code (`claimCodeMessage.ts`) said to enter the
+  code at «إنشاء حساب» and to pick «وليّ أمر». Registration stopped taking a
+  code; it is asked on `/claim-required` after email verification, and the
+  same code goes to students. The message now says so, and names both roles.
+- The claim form counted a dash as a character: `YHFM-8` fired the lookup,
+  the server normalised it to five characters, the 404 read as "per-student
+  code", and Continue appeared on an unfinished code. `normalizeClaimCode`
+  (`claimCodeGate.ts`, tested) applies the server's normalisation as typed.
+- `ai-tools/parent-message` opened from a class's contact card with a
+  `studentId` param never read the roster row, so a girl recorded «أنثى»
+  got a letter saying «ابنكم». It now reads the row once on arrival
+  (`listStudents()`, new in `services/roster.ts`) and takes the class's
+  subject from a `subjectId` param the card passes.
+- The same screen swallowed `roster_consent_required` on its two roster
+  writes, so an un-attested teacher silently lost letter history and the
+  gender save. That one 403 now shows `parentMsgConsentNeeded`; every other
+  failure stays quiet, because a failed log must never delay the letter.
+- `POST /auth/claim` was check-then-insert for the one-self-link rule, and
+  the unique index is on student+user, so two student accounts claiming the
+  same name at once both got in. The route now re-reads after inserting and
+  the later racer withdraws with the same 409. A partial unique index would
+  be the real backstop — **not added here**, because a schema change needs
+  the manual production push this checkout cannot do, and `schema-push:
+  done` would have been the false claim the 2026-09-16 entry warns about.
+- A student claiming via a class code was never added to the class chat
+  (the thread was re-derived on unlink but not on claim). The claim route now
+  calls `resyncClassGroupThreadIfExists`, the same helper roster edits use.
+
+**Left as a decision, not a bug:** any holder of a class code can link as a
+guardian of any child on it with no notice to the teacher
+(`claimDecision.ts`, deliberate per its comment). The second concern raised
+here — a letter's `read` state being the guardian's thread-level `lastReadAt`
+— is fixed in the entry above this one.
+
+`pnpm run typecheck` clean; mobile 2135 passed, 0 failed, 10 skipped;
+api-server 1000 passed.
+
+## The roster now tells the class chat, and an archived class stays archived, 2026-10-02
+
+A review of the classes feature (roster router, schema, list and detail
+screens) found no security hole and four things worth fixing. All four are in
+one PR; the rest of the review is in that PR's description.
+
+**A student removed from a class kept their seat in its chat.** Class-group
+thread membership is *derived* from the roster, but `DELETE
+/classes/:id/students/:studentId` never re-derived it — only opening the class
+thread (`GET /messaging/threads/class/:id`) did, and posting checks
+`chat_participants` alone. So a linked child taken off the roster could go on
+reading and posting until somebody happened to open the thread. Now the remove
+route, and the add route when it attaches an *existing* student (the only add
+that can carry an account), call `resyncClassGroupThreadIfExists`
+(`api-server/src/lib/classThread.ts`). "If exists" is deliberate: the sync used
+on open get-or-creates, and a roster edit must not conjure an empty chat into
+a teacher's inbox. A rename (`PATCH /classes/:id`) now retitles the thread
+through `renameClassGroupThread` for the same reason — it used to show the old
+name until the next open. The membership rule itself did not move; it is the
+same `reconcileClassThreadMembers` body `syncClassGroupThread` always ran.
+
+**Archiving a class only hid it from the list.** Every per-id route accepted
+an archived class — detail, patch, add students, join code, mastery, parent
+contacts — and so did `resolveClassGroupId` (plans, schedule slots) and the
+evaluation attach route. A stale deep link or a saved material's `classGroupId`
+could keep feeding a class the teacher had deleted, and a join code could be
+minted that `GET /auth/join/:code` (which *does* filter archived) would never
+redeem. One lookup now answers "owned and live" for all of them:
+`findLiveClass` in `api-server/src/lib/classOwnership.ts`, 404 on miss, with
+the same "not found either way" rule the router header states. `DELETE
+/classes/:id` itself is left without the filter so a double tap stays
+idempotent. Not changed: the messaging routes still open an archived class's
+thread — that is chat history, and hiding it is a product call, not a cleanup.
+
+**The class screen's secondary loads could throw.** `load()` in
+`app/classes/[id].tsx` awaited `listEvaluations` unguarded. From
+`useFocusEffect` that was an unhandled rejection with nothing on screen; from
+`onAdd`, inside its try block, a transient exams failure was reported as a
+failed *add* after the students had been saved, and ate the skipped-names
+message. The exams fetch is now caught into the banner; materials, mastery and
+contacts already had fallbacks.
+
+**The class list showed a stale student count** for up to a minute after
+adding or removing students — the detail screen never invalidated the list's
+query. Both keys now live in `services/rosterQueryKeys.ts` and the detail
+screen invalidates `['classes']` on both writes.
+
+**Verified:** typecheck clean, api-server 1000/1000 (built bundle), mobile
+2130/2130 with the 10 pre-existing skips. **Not verified:** none of the four
+is exercised by a test — the three server changes are SQL-bound and this repo
+has no DB-backed tests (see `lib/claimDecision.ts` on why), and the two screen
+changes live under `app/`, which the mobile runner cannot load. The thread
+resync and the archived 404s were read, not driven against a database.
+
+**Left for later, from the same review:** bulk add is not transactional
+(students then memberships, orphans on a mid-way failure); a malformed uuid is
+a 500, not a 404; the edit sheet's `'grade-10'` fallback is hardcoded and a
+grade change can keep a subject the new grade does not offer; class mastery
+joins by the evaluation's class, so a student removed from the roster still
+appears in it; the within-class name dedup rule is inline and untestable.
 
 ## An English corner for Grades 1–4, 2026-09-25
 
@@ -14118,3 +14493,132 @@ contact form, CSV export).
 - Blocking does not revoke refresh tokens on purpose: a suspended account keeps
   `GET /auth/me` and account deletion (`lib/suspension.ts`), and every other route
   403s on the next request anyway.
+
+## Chat review: five bugs in the «اقرأ» tab, 2026-10-02
+
+A read-through of `app/(tabs)/iqra.tsx`, `services/ai/chatArtifacts.ts` and
+the `/chat` route, looking for bugs. Five fixed in one PR; the rest are listed
+below as open improvements.
+
+- **A pending «أي درس؟» swallowed the next message.** `mergeScopeReply` glued
+  any follow-up that was not a topic switch, another subject or a new artifact
+  ask onto the standing ask — «اشرح لي المشتقات» became «جهّز اختباراً قصيراً
+  اشرح لي المشتقات», classified as an artifact, and a teacher who asked for an
+  explanation got a quiz (reproduced under `node --test`; even «شكراً» merged).
+  `isStandaloneTurn` (`intentRouter.ts`) now keeps a question, an explain
+  verb, a refinement or small talk as its own turn; a grade, a subject, a
+  lesson title and an ordinal still join. Pinned in `askVocabulary.test.ts`.
+- **Quota and live-mode refusals were papered over.** The generators rethrow
+  `user_quota_exceeded` / `budget_exceeded` / `live_mode_off` on purpose
+  (`generateWithProvenance`), but chat caught them and showed a local
+  knowledge-base reply under «تحقق من الإنترنت». Chat now says
+  `aiQuotaSpent` / `aiUnavailable` and generates nothing, the same policy as
+  every generator screen.
+- **Chat materials defaulted to الرياضيات / الصف العاشر without a lesson.** The
+  upload path and every ungrounded topic hit `buildRequest` with no lesson, so
+  the request said `subject: 'Mathematics'` — and generators branch on that
+  name (CLAUDE.md), so a chemistry teacher's uploaded worksheet came back as a
+  maths quiz headed الرياضيات. `resolveArtifactScope` (`artifactScope.ts`)
+  labels the request with the lesson's book, else the picked subject and grade
+  (`teachingCtxScope`, set from the sheet, the home pick and a deep link), and
+  only with nothing known keeps the old default. Chat still does not run
+  `groundedSubjectConflict`; the `/ai-tools` screens do.
+- **Enter did not send on desktop web.** The composer is `multiline` without
+  `blurOnSubmit`, and react-native-web only fires `onSubmitEditing` when
+  `blurOnSubmit || !multiline`, so Enter inserted a newline. `shouldSendOnEnter`
+  (`composerKeys.ts`) decides in `onKeyPress` on web: Enter sends, Shift+Enter
+  breaks the line, Enter mid-IME-composition is left alone.
+- **The change-lesson sheet reopened on a stale draft.** It kept its own copy
+  of the last confirmed topic, so the card's clear button (which resets the
+  screen, not the sheet) left the next open pre-filled with the lesson just
+  cleared. The sheet now opens on the screen's `teachingCtx`.
+
+**Still open, found in the same pass** (not fixed, in rough priority order):
+`CHAT_MAX_TOKENS` is 1200 and `finish_reason` is never read, so a plan asked in
+chat ends mid-sentence with no signal; confirming the sheet auto-sends a paid
+«نظرة شاملة» turn on every lesson change; history forwards each message's
+`text`, which for a generated worksheet is the whole document (clamped
+server-side mid-document — send `artifactProse` instead); model output is not
+normalised client-side, so a `##` heading or `1)` list prints literally;
+`onContentSizeChange` always scrolls to the end, so an inline plan edit above
+the fold jumps away; `context` is injected into the system prompt rather than a
+delimited user block; `/chat` has no route test and the OpenAPI spec still
+calls it an SSE stream; the composer caps at 800 chars against the server's
+2,000; no `KeyboardAvoidingView` (matters once iOS ships).
+
+## Student-side review: the exam link, accounts, chat and the lesson page, 2026-10-02
+
+A read-through of everything a student touches found eight things worth
+calling bugs and a dozen smaller ones; this PR fixes the eight and the
+cheap half of the rest. Full list in the PR body. What changed, and why it
+mattered:
+
+- **A student could write their own read-aloud transcript.** `PUT
+  /take/attempt/answers/:questionId` stored any JSON object for any question,
+  so `{ transcript: "<the passage>", takes: 0 }` on a read-aloud question was
+  full marks and unlimited paid transcriptions. Writes now go through
+  `acceptStudentResponse` (`modules/assessment/studentResponse.ts`): read-aloud
+  is not writable at all, every other type is projected onto the keys its
+  grader reads. Tested, and the exam screen no longer echoes the upload's
+  placeholder `audioKey: 'saved'` back through autosave, which had been
+  replacing the real storage key on every recording made so far.
+- **Autosave was one PUT per keystroke through a per-classroom limiter.**
+  `services/answerSaveQueue.ts` debounces typing (600 ms), saves taps at once,
+  and keeps one request in flight per question so a slow early save can no
+  longer land after a later one. Server side, `/take/attempt/*` is now keyed
+  on the attempt token (hashed) with a loose per-IP ceiling, while
+  `/take/:code` keeps its per-IP bucket — a junk bearer header must not buy a
+  fresh bucket for walking codes.
+- **A reload mid-exam locked the student out.** The token lives in
+  `services/examSession.ts` (AsyncStorage, keyed by share code) and a reload
+  resumes through `/take/attempt/state`. A signed-in student with an existing
+  sitting is resumed by `claim-self` (`resumeAttemptFor`) with a fresh token
+  instead of answered «بدأ أحدهم بهذا الاسم». The comment in
+  `studentAttempt.ts` saying reload resumed was untrue until now.
+- **Time limits are enforced, and an exam can be closed.** `writeGate`
+  refuses answers after `startedAt + timeLimitMin` (60 s grace) or once the
+  evaluation is `closed`; hand-in stays allowed. The screen shows a countdown
+  and hands in at zero. `POST /evaluations/:id/close` exists at last
+  (`'closed'` was in the type since day one and nothing set it); «أغلق
+  الاختبار» sits beside the results button, re-publish reopens.
+- **Student submit now grades.** `gradeSubmission` in
+  `modules/assessment/attemptGrading.ts` is shared by the teacher's and the
+  student's submit routes, so thirty papers no longer need thirty taps on
+  «تصحيح». Result release is unchanged: still gated on the teacher's opt-in
+  and on no question left unmarked.
+- **Students could not reach Settings, FAQ or Delete Account** — the routes
+  were missing from `NON_TEACHER_ROUTES`, so the profile rows bounced them to
+  Messages (and the store-required in-app deletion was unreachable). #775
+  found the same from the parent's side and landed first; this PR keeps its
+  version and adds `/messaging/new-group` as an exception alongside
+  `/messaging/claim`. `/claim-required` has a sign-out link: it was a mandatory screen
+  with the back gesture off and no exit for an expired code on a shared
+  device.
+- **Class chat membership reconciled only when the teacher opened the chat.**
+  #771 landed the same afternoon with `resyncClassGroupThreadIfExists` for
+  adding and removing a member; this PR adds `syncClassThreadsForStudent`
+  for `POST /auth/claim` and `archiveClassThread` for archiving a class
+  (`lib/classThread.ts`), under #771's rule that a roster edit never conjures
+  an empty chat — a newly claimed student got no announcements until then,
+  and an archived class's chat stayed live.
+- Smaller: the claim and role-switch limiters are per user and mounted after
+  auth (a classroom claiming codes is one NAT address); two students can no
+  longer self-claim the same roster name concurrently (the row is locked in a
+  transaction, no schema change); a student can no longer block their teacher
+  (which muted class announcements); blocked senders are excluded inside the
+  paginated query, not after `limit`; «ملاحظات المعلم» is teacher-only on the
+  lesson page; the profile no longer offers students «مساحة عملي»/«شُعَبي»;
+  the exam screen translates server error codes instead of printing the
+  English body; «10.00 علامة» prints as «10».
+
+**Not done, from the same review:** the terms checkbox is bypassed by Google
+sign-up and acceptance is never stored (needs a schema column, so a
+`schema-push`); English server errors still print raw on the messaging and
+register/verify screens; a signed-in student has nowhere to list their exams
+or results — the share link is the only door; `GET /curriculum/books` serves
+`guidePdfUrl` unauthenticated; deleting an attempt leaves its audio in R2.
+
+Not seen in a browser — same reason as the 2026-09-13 entry. Covered by 25
+new unit tests (`studentResponse`, `answerSaveQueue`, `takeErrorKey`,
+`formatMarks`, routeGating and participantPicker pins); api-server 1014/1014
+and mobile 2152/2152 pass, typecheck clean.

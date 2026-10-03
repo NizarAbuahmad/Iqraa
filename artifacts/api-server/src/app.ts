@@ -151,6 +151,18 @@ app.use(
  */
 app.use(express.json({ limit: "12mb" }));
 app.use(express.urlencoded({ extended: true }));
+/**
+ * Express 5's body-parser leaves `req.body` undefined when a request carries
+ * no body (or a content-type it does not parse). Most handlers destructure
+ * `req.body` directly, so a bare `POST /auth/login` from curl or a prober
+ * threw a TypeError inside the route's try block and answered 500 — and
+ * every such request landed in the recent-errors buffer as a server fault.
+ * An empty object makes those requests fail validation (400) instead.
+ */
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  if (req.body === undefined) req.body = {};
+  next();
+});
 
 app.use("/api", router);
 
@@ -173,6 +185,17 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
       error: "That upload is too large. Try again at a lower quality.",
       code: "payload_too_large",
     });
+    return;
+  }
+  // body-parser's other client faults (malformed JSON → `entity.parse.failed`
+  // 400, an unsupported charset/encoding → 415) carry their own status. They
+  // are the caller's problem too, and answering 500 logged every typo'd curl
+  // request as an outage.
+  const parserStatus = (err as { status?: number; type?: string })?.status;
+  const parserType = (err as { type?: string })?.type;
+  if (typeof parserType === "string" && parserStatus && parserStatus >= 400 && parserStatus < 500) {
+    logger.warn({ url: req.url, type: parserType }, "malformed request body");
+    res.status(parserStatus).json({ error: "Malformed request body", code: parserType });
     return;
   }
   logger.error({ err, url: req.url }, "unhandled error");

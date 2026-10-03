@@ -10,7 +10,8 @@
  * real participants. Reusing those names here would make every future grep
  * for "messages" ambiguous about which chat it means.
  */
-import { boolean, pgTable, text, timestamp, uuid, index, integer, unique } from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp, uuid, index, integer, unique, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { users } from "./users";
 import { students, classGroups } from "./students";
 
@@ -20,9 +21,11 @@ export type RosterLinkRelation = "self" | "guardian";
  * Links a real account — a student's own, once they have one, or a parent's
  * — to a roster row a teacher already typed in.
  *
- * A `students` row may have at most one `self` link (enforced in the claim
- * route, not here — see routes/roster.ts's duplicate-check style) and any
- * number of `guardian` links. Deliberately allows one `userId` to appear
+ * A `students` row may have at most one `self` link and any number of
+ * `guardian` links. The self rule is checked in the claim route and backed by
+ * `roster_links_one_self_idx` below: the route alone was check-then-insert,
+ * and two student accounts claiming the same name in the same moment both got
+ * through (found 2026-10-02). Deliberately allows one `userId` to appear
  * against many `students` rows: there is no school layer yet (see
  * students.ts), so a child taught by two teachers is two separate `students`
  * rows, and the same parent or student ends up claiming both.
@@ -44,6 +47,8 @@ export const rosterLinks = pgTable(
     unique("roster_links_unique").on(t.studentId, t.userId),
     index("roster_links_user_idx").on(t.userId),
     index("roster_links_student_idx").on(t.studentId),
+    // One self-link per student, enforced where a race cannot get past it.
+    uniqueIndex("roster_links_one_self_idx").on(t.studentId).where(sql`relation = 'self'`),
   ],
 );
 
@@ -221,7 +226,38 @@ export const devicePushTokens = pgTable(
   t => [index("device_push_tokens_user_idx").on(t.userId)],
 );
 
+/**
+ * Which messages a participant's screen has actually shown them.
+ *
+ * `chat_participants.lastReadAt` is thread-level and is the whole of the
+ * unread-count feature; it stays. This exists for one question that answer got
+ * wrong: whether a parent *letter* was read. One thread carries every child of
+ * a parent and every message from a teacher, and the thread screen marks it
+ * read on open and on every poll — so opening it for anything marked every
+ * pending letter read (see lib/parentContactRead.ts in the API). A row lands
+ * here when the reader's list rendered the message (POST
+ * /messaging/threads/:id/read); never for the sender's own messages.
+ */
+export const chatMessageReads = pgTable(
+  "chat_message_reads",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    messageId: uuid("message_id")
+      .notNull()
+      .references(() => chatMessages.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    readAt: timestamp("read_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  t => [
+    unique("chat_message_reads_unique").on(t.messageId, t.userId),
+    index("chat_message_reads_user_idx").on(t.userId),
+  ],
+);
+
 export type RosterLink = typeof rosterLinks.$inferSelect;
+export type ChatMessageRead = typeof chatMessageReads.$inferSelect;
 export type ChatThread = typeof chatThreads.$inferSelect;
 export type ChatParticipant = typeof chatParticipants.$inferSelect;
 export type ChatMessage = typeof chatMessages.$inferSelect;

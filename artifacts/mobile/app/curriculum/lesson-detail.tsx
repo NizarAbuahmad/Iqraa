@@ -279,8 +279,9 @@ export default function LessonDetailScreen() {
         </Section>
         )}
 
-        {/* Teacher Notes */}
-        {!!noteText && (
+        {/* Teacher Notes — addressed to the teacher («دع الطلاب يتدربون…»),
+            and this is the student's study page too. */}
+        {isTeacher && !!noteText && (
         <Section title={t('teacherNotes')} icon="clipboard-outline" color={color} isRTL={isRTL}>
           <Text style={[styles.noteText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {noteText}
