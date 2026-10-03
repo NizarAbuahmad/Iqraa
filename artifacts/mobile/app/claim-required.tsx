@@ -39,6 +39,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useJoinCodeLookup } from '@/hooks/useJoinCodeLookup';
 import { RosterCodeClaimForm } from '@/components/RosterCodeClaimForm';
 import { RosterError, claimRosterCode } from '@/services/roster';
+import { AccountRow } from '@/components/ui/AccountRow';
+import { ApiError } from '@/services/apiClient';
 import { claimErrorKey } from '@/services/claimCodeGate';
 
 /** The three the register screen offers — and the only three POST /auth/role takes. */
@@ -48,7 +50,7 @@ export default function ClaimRequiredScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useLanguage();
-  const { user, markRosterClaimed, switchRole, logout } = useAuth();
+  const { user, markRosterClaimed, switchRole, logout, savedAccounts, switchAccount } = useAuth();
 
   const { code, setCode, roster, className, studentId, setStudentId, state, canSubmit: canSubmitCode, needsConfirm, confirmed, setConfirmed, pickedName } = useJoinCodeLookup();
   const [submitting, setSubmitting] = useState(false);
@@ -63,6 +65,31 @@ export default function ClaimRequiredScreen() {
   const canSubmit = canSubmitCode && !submitting;
   const roleLabel = (r: SwitchableRole) =>
     t(r === 'teacher' ? 'roleTeacher' : r === 'student' ? 'roleStudent' : 'roleParent');
+
+  // A person with a teacher account who adds a parent one lands here until a
+  // class code arrives, and this screen has no back button and no Settings. Any
+  // other account on the device is listed so they are never stuck on it.
+  const [switchingId, setSwitchingId] = useState<string | null>(null);
+  const handleSavedAccount = async (userId: string) => {
+    if (switchingId) return;
+    setSwitchingId(userId);
+    setError('');
+    try {
+      await switchAccount(userId);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace('/(tabs)');
+    } catch (e) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError(t(e instanceof ApiError && e.code === 'session_expired' ? 'accountsSessionExpired' : 'accountsSwitchFailed'));
+      setSwitchingId(null);
+    }
+  };
+  const accountRoleLabel = (r: string) =>
+    t(r === 'parent' ? 'roleParent'
+      : r === 'student' ? 'roleStudent'
+      : r === 'school_admin' ? 'roleAdmin'
+      : r === 'system_admin' ? 'roleSysAdmin'
+      : 'roleTeacher');
 
   const handleSwitchRole = async () => {
     if (switching) return;
@@ -190,6 +217,32 @@ export default function ClaimRequiredScreen() {
           )}
         </View>
 
+        {savedAccounts.length > 0 && (
+          <View style={{ marginBottom: 24 }}>
+            <Text style={[styles.savedTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+              {t('loginSavedTitle')}
+            </Text>
+            <View style={[styles.roleCard, { borderColor: colors.border, backgroundColor: colors.card, borderRadius: colors.radius, padding: 0, marginBottom: 0, overflow: 'hidden' }]}>
+              {savedAccounts.map((a, i) => (
+                <React.Fragment key={a.userId}>
+                  {i > 0 ? <View style={{ height: 1, marginHorizontal: 14, backgroundColor: colors.border }} /> : null}
+                  <AccountRow
+                    name={a.name}
+                    email={a.email}
+                    roleLabel={accountRoleLabel(a.role)}
+                    badge={i === 0 ? t('accountsLastUsed') : undefined}
+                    busy={switchingId === a.userId}
+                    disabled={!!switchingId}
+                    onPress={() => void handleSavedAccount(a.userId)}
+                    colors={colors}
+                    isRTL={isRTL}
+                  />
+                </React.Fragment>
+              ))}
+            </View>
+          </View>
+        )}
+
         <RosterCodeClaimForm
           code={code}
           onChangeCode={setCode}
@@ -244,6 +297,7 @@ const styles = StyleSheet.create({
   icon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 20 },
   title: { fontSize: 22, marginBottom: 8, lineHeight: 30 },
   desc: { fontSize: 14, lineHeight: 22, marginBottom: 20 },
+  savedTitle: { fontSize: 14, marginBottom: 8 },
   roleCard: { borderWidth: 1, padding: 14, marginBottom: 24 },
   roleRow: { alignItems: 'center', gap: 8 },
   roleText: { flex: 1, fontSize: 14 },
