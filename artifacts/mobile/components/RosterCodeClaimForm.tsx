@@ -74,21 +74,21 @@ export function RosterCodeClaimForm({
       */}
       {confirming && pickedName ? (
         <View style={[styles.notice, { borderColor: colors.primary, backgroundColor: colors.primary + '10', gap: 8 }]}>
-          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 16, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16, textAlign: isRTL ? 'right' : 'left' }}>
             {pickedName}
           </Text>
           <Text style={[styles.noticeText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t(userRole === 'student' ? 'joinConfirmStudent' : 'joinConfirmParent', pickedName)}
           </Text>
           <Pressable onPress={onChangeMind} hitSlop={8} accessibilityRole="button">
-            <Text style={{ color: colors.primary, fontFamily: 'Cairo_500Medium', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
               {t('joinConfirmChange')}
             </Text>
           </Pressable>
         </View>
       ) : roster && roster.length > 0 ? (
         <View style={{ gap: 8 }}>
-          <Text style={[styles.pickLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.pickLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
             {className ? t('joinPickYourNameFor', className) : t('joinPickYourName')}
           </Text>
           <View style={[styles.nameChips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -109,7 +109,7 @@ export function RosterCodeClaimForm({
                     },
                   ]}
                 >
-                  <Text style={{ color: picked ? colors.primary : colors.foreground, fontFamily: picked ? 'Cairo_700Bold' : 'Cairo_500Medium', fontSize: 14 }}>
+                  <Text style={{ color: picked ? colors.primary : colors.foreground, fontFamily: picked ? 'ReadexPro_700Bold' : 'ReadexPro_500Medium', fontSize: 14 }}>
                     {picked ? '✓ ' : ''}{entry.displayName}
                   </Text>
                   {entry.taken ? (

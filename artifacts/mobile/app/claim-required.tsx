@@ -146,7 +146,7 @@ export default function ClaimRequiredScreen() {
           <Ionicons name="key-outline" size={32} color={colors.primary} />
         </View>
 
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t(role === 'student' ? 'claimRequiredTitleStudent' : 'claimRequiredTitle')}
         </Text>
         <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -156,7 +156,7 @@ export default function ClaimRequiredScreen() {
         <View style={[styles.roleCard, { borderColor: colors.border, backgroundColor: colors.muted, borderRadius: colors.radius }]}>
           <View style={[styles.roleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="person-circle-outline" size={18} color={colors.mutedForeground} />
-            <Text style={[styles.roleText, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+            <Text style={[styles.roleText, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('claimRequiredSignedInAs', roleLabel(role))}
             </Text>
           </View>
@@ -210,7 +210,7 @@ export default function ClaimRequiredScreen() {
               onPress={() => { setNextRole(role); setPickerOpen(true); }}
               hitSlop={8}
             >
-              <Text style={[styles.roleLink, { color: colors.primary, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+              <Text style={[styles.roleLink, { color: colors.primary, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                 {t('claimRequiredWrongRole')}
               </Text>
             </Pressable>
@@ -219,7 +219,7 @@ export default function ClaimRequiredScreen() {
 
         {savedAccounts.length > 0 && (
           <View style={{ marginBottom: 24 }}>
-            <Text style={[styles.savedTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+            <Text style={[styles.savedTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('loginSavedTitle')}
             </Text>
             <View style={[styles.roleCard, { borderColor: colors.border, backgroundColor: colors.card, borderRadius: colors.radius, padding: 0, marginBottom: 0, overflow: 'hidden' }]}>
@@ -283,7 +283,7 @@ export default function ClaimRequiredScreen() {
             a shared school device — was trapped here, and so was the next
             person to pick up that device. */}
         <Pressable onPress={() => void logout()} hitSlop={8} style={{ alignSelf: 'center', marginTop: 20, marginBottom: 8 }}>
-          <Text style={[styles.roleLink, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
+          <Text style={[styles.roleLink, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }]}>
             {t('signOut')}
           </Text>
         </Pressable>

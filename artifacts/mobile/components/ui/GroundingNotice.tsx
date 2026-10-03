@@ -81,7 +81,7 @@ export function GroundingNotice({ grounded, lessonTitle, sources, isRTL, colors,
             styles.title,
             {
               color: grounded ? colors.primary : colors.foreground,
-              fontFamily: 'Cairo_600SemiBold',
+              fontFamily: 'ReadexPro_600SemiBold',
               textAlign: align,
             },
           ]}
@@ -131,6 +131,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     marginBottom: 12,
   },
-  title: { fontSize: 12.5, lineHeight: 19 },
-  hint: { fontSize: 11.5, lineHeight: 18 },
+  title: { fontSize: 13, lineHeight: 19 },
+  hint: { fontSize: 12, lineHeight: 18 },
 });

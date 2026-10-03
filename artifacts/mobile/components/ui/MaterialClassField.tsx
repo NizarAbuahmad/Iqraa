@@ -225,6 +225,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderWidth: 1,
   },
-  label: { flex: 1, fontSize: 13, fontFamily: 'Cairo_500Medium' },
-  action: { fontSize: 12, fontFamily: 'Cairo_600SemiBold' },
+  label: { flex: 1, fontSize: 13, fontFamily: 'ReadexPro_500Medium' },
+  action: { fontSize: 12, fontFamily: 'ReadexPro_600SemiBold' },
 });

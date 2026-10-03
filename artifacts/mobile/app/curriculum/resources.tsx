@@ -254,7 +254,7 @@ function ResourceRow({
       <View style={[styles.kindPill, { backgroundColor: accent + '15', borderColor: accent + '30' }]}>
         <Ionicons name={KIND_ICON[item.kind]} size={14} color={accent} />
         {showKind ? (
-          <Text style={[styles.kindText, { color: accent, fontFamily: 'Cairo_500Medium' }]}>
+          <Text style={[styles.kindText, { color: accent, fontFamily: 'ReadexPro_500Medium' }]}>
             {t(KIND_LABEL[item.kind])}
           </Text>
         ) : null}
@@ -306,7 +306,7 @@ function ResourceRow({
       {printable ? (
         <View style={[styles.actionPill, { backgroundColor: accent, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name={opensSheet ? 'eye-outline' : 'print-outline'} size={14} color={palette.primaryForeground} />
-          <Text style={[styles.actionText, { color: palette.primaryForeground, fontFamily: 'Cairo_600SemiBold' }]}>
+          <Text style={[styles.actionText, { color: palette.primaryForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
             {t(opensSheet ? 'resourceActionOpen' : 'resourceActionPrint')}
           </Text>
         </View>
@@ -435,7 +435,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
         )}
-        <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('resourcesTitle')}
         </Text>
         <Text style={[styles.heroMeta, { fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -449,7 +449,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
             style={[styles.addBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="add-circle-outline" size={18} color={ACCENT_FILL} />
-            <Text style={[styles.addBtnText, { color: ACCENT_FILL, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.addBtnText, { color: ACCENT_FILL, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {t('libraryAddResource')}
             </Text>
           </Pressable>
@@ -522,7 +522,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                       {
                         maxWidth: 200,
                         color: active ? palette.primaryForeground : colors.mutedForeground,
-                        fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                        fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                       },
                     ]}
                   >
@@ -544,13 +544,13 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 style={[styles.backChip, { backgroundColor: colors.muted, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
                 <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={14} color={colors.mutedForeground} />
-                <Text style={[styles.chipText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
+                <Text style={[styles.chipText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {t('libraryAllShelves')}
                 </Text>
               </Pressable>
               <View style={[styles.shelfTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Ionicons name={SHELF_ICON[openShelf.shelf]} size={18} color={SHELF_COLOR[openShelf.shelf]} />
-                <Text style={[styles.sectionTitle, { paddingHorizontal: 0, color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
+                <Text style={[styles.sectionTitle, { paddingHorizontal: 0, color: colors.foreground, fontFamily: 'ReadexPro_700Bold' }]}>
                   {t(SHELF_LABEL[openShelf.shelf])} · {openShelf.items.length}
                 </Text>
               </View>
@@ -586,7 +586,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
               <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
                 <Ionicons name="book" size={26} color={ACCENT} />
               </View>
-              <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('curriculumTitle')}
               </Text>
               <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
@@ -608,7 +608,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                   <Ionicons name={SHELF_ICON[id]} size={26} color={SHELF_COLOR[id]} />
 
                 </View>
-                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {t(SHELF_LABEL[id])}
                 </Text>
                 <Text style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
@@ -672,7 +672,7 @@ function ChipRow({
                 styles.chipText,
                 {
                   color: on ? palette.primaryForeground : colors.mutedForeground,
-                  fontFamily: on ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                  fontFamily: on ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                 },
               ]}
             >
@@ -747,13 +747,13 @@ function BookShelf({
                 numberOfLines={2}
                 style={[
                   styles.bookTitle,
-                  { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' },
+                  { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' },
                 ]}
               >
                 {title}
               </Text>
               <View style={[styles.countPill, { backgroundColor: ACCENT + '15' }]}>
-                <Text style={[styles.countText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>
+                <Text style={[styles.countText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {count}
                 </Text>
               </View>
@@ -787,10 +787,10 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   addBtnText: { fontSize: 13 },
-  intro: { fontSize: 12.5, lineHeight: 20, paddingHorizontal: 20, paddingTop: 14 },
+  intro: { fontSize: 13, lineHeight: 20, paddingHorizontal: 20, paddingTop: 14 },
   chipRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
-  chipText: { fontSize: 12.5 },
+  chipText: { fontSize: 13 },
   section: { paddingTop: 14, gap: 8 },
   tiles: { flexWrap: 'wrap', gap: 12, paddingHorizontal: 20, paddingTop: 14 },
   tile: { flexGrow: 1, flexBasis: '30%', minWidth: 104, maxWidth: 220, alignItems: 'center', gap: 6, borderWidth: 1, paddingVertical: 16, paddingHorizontal: 8 },
@@ -803,9 +803,9 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 15, paddingHorizontal: 20 },
   bookBlock: { paddingHorizontal: 20, marginBottom: 10, gap: 8 },
   bookHeader: { alignItems: 'center', gap: 10, borderWidth: 1, padding: 12 },
-  bookTitle: { flex: 1, fontSize: 13.5, lineHeight: 20 },
+  bookTitle: { flex: 1, fontSize: 14, lineHeight: 20 },
   countPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-  countText: { fontSize: 11.5 },
+  countText: { fontSize: 12 },
   rows: { gap: 8, paddingHorizontal: 20 },
   rowsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   row: { alignItems: 'center', gap: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },

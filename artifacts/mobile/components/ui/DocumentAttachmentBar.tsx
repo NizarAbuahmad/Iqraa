@@ -180,7 +180,7 @@ export function DocumentAttachmentBar({
               <View style={{ maxWidth: 140 }}>
                 <Text
                   numberOfLines={1}
-                  style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 12 }}
+                  style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}
                 >
                   {d.name}
                 </Text>

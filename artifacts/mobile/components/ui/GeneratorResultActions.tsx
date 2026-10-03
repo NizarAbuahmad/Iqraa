@@ -150,7 +150,7 @@ export function GeneratorResultActions({
           ]}
         >
           <Ionicons name={saveDone ? 'checkmark-circle' : 'bookmark-outline'} size={16} color={saveDone ? textOn(accent) : accent} />
-          <Text style={[styles.actionText, { color: saveDone ? textOn(accent) : accent, fontFamily: 'Cairo_600SemiBold' }]}>
+          <Text style={[styles.actionText, { color: saveDone ? textOn(accent) : accent, fontFamily: 'ReadexPro_600SemiBold' }]}>
             {saveBtnLabel}
           </Text>
         </Pressable>
@@ -171,7 +171,7 @@ export function GeneratorResultActions({
             ]}
           >
             <Ionicons name={favorite.favorited ? 'star' : 'star-outline'} size={16} color={favorite.favorited ? '#B54708' : colors.mutedForeground} />
-            <Text style={[styles.actionText, { color: favorite.favorited ? '#B54708' : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.actionText, { color: favorite.favorited ? '#B54708' : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {favorite.favorited ? t('inFavorites') : t('addToFavorites')}
             </Text>
           </Pressable>
@@ -182,7 +182,7 @@ export function GeneratorResultActions({
           style={[styles.actionBtn, { borderColor: colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
-          <Text style={[styles.actionText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>{t('exportBtn')}</Text>
+          <Text style={[styles.actionText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>{t('exportBtn')}</Text>
         </Pressable>
 
         <Pressable
@@ -190,7 +190,7 @@ export function GeneratorResultActions({
           style={[styles.actionBtn, { borderColor: accent, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           <Ionicons name="refresh-outline" size={16} color={accent} />
-          <Text style={[styles.actionText, { color: accent, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
+          <Text style={[styles.actionText, { color: accent, fontFamily: 'ReadexPro_600SemiBold' }]}>{t('regenerateBtn')}</Text>
         </Pressable>
 
         {/* Report a problem — only for an artifact that is actually shared.
@@ -211,7 +211,7 @@ export function GeneratorResultActions({
             ]}
           >
             <Ionicons name="flag-outline" size={16} color={colors.destructive} />
-            <Text style={[styles.actionText, { color: colors.destructive, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.actionText, { color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {reported ? t('reportArtifactSent') : t('reportArtifactBtn')}
             </Text>
           </Pressable>

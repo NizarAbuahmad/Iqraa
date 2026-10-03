@@ -129,7 +129,7 @@ export function RosterConsentGate({ children }: { children: React.ReactNode }) {
     >
       <Ionicons name="shield-checkmark-outline" size={34} color={colors.primary} />
 
-      <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+      <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
         {copy.title}
       </Text>
       <Text style={[styles.lead, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -161,7 +161,7 @@ export function RosterConsentGate({ children }: { children: React.ReactNode }) {
         {busy ? (
           <ActivityIndicator color={colors.primaryForeground} />
         ) : (
-          <Text style={{ color: colors.primaryForeground, fontFamily: 'Cairo_700Bold', fontSize: 15 }}>
+          <Text style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_700Bold', fontSize: 15 }}>
             {copy.accept}
           </Text>
         )}
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   lead: { fontSize: 14, lineHeight: 24 },
   statement: { borderWidth: 1, padding: 14, marginTop: 4 },
   statementText: { fontSize: 14, lineHeight: 25 },
-  note: { fontSize: 12.5, lineHeight: 21 },
+  note: { fontSize: 13, lineHeight: 21 },
   error: { fontSize: 13, lineHeight: 21 },
   button: { marginTop: 10, paddingVertical: 15, alignItems: 'center', justifyContent: 'center' },
 });

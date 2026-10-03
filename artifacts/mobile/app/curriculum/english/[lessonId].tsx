@@ -84,7 +84,7 @@ export default function EnglishHubLessonScreen() {
       return (
         <View style={styles.done}>
           <Text style={{ fontSize: 44 }}>{'⭐'.repeat(result.stars) || '🙂'}</Text>
-          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 22 }}>{t('hubDone')}</Text>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 22 }}>{t('hubDone')}</Text>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15 }}>
             {activity === 'match' || activity === 'picture' ? t('hubMoves', result.total) : t('hubScore', result.correct, result.total)}
           </Text>
@@ -93,7 +93,7 @@ export default function EnglishHubLessonScreen() {
               {unlocked.map(b => (
                 <View key={b} style={[styles.unlockBadge, { backgroundColor: colors.primary + '14', borderColor: colors.primary }]}>
                   <Ionicons name={BADGE_META[b].icon} size={16} color={colors.primary} />
-                  <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>{t(BADGE_META[b].label)}</Text>
+                  <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>{t(BADGE_META[b].label)}</Text>
                 </View>
               ))}
             </View>
@@ -105,7 +105,7 @@ export default function EnglishHubLessonScreen() {
             <Text style={styles.primaryText}>{t('hubAgain')}</Text>
           </Pressable>
           <Pressable onPress={back} hitSlop={8}>
-            <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>{t('hubBackToLesson')}</Text>
+            <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>{t('hubBackToLesson')}</Text>
           </Pressable>
         </View>
       );
@@ -136,7 +136,7 @@ export default function EnglishHubLessonScreen() {
                 <Ionicons name={META[a].icon} size={24} color={colors.primary} />
               </View>
               <View style={{ flex: 1, gap: 2 }}>
-                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 16, textAlign: align }}>{t(META[a].title)}</Text>
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16, textAlign: align }}>{t(META[a].title)}</Text>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>{t(META[a].desc)}</Text>
               </View>
               {best > 0 ? <Text style={{ fontSize: 14 }}>{'⭐'.repeat(best)}</Text> : null}
@@ -171,12 +171,12 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14 },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
   eyebrow: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 4 },
-  title: { color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 22 },
+  title: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 22 },
   card: { alignItems: 'center', gap: 12, borderWidth: 1, padding: 14 },
   icon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   done: { alignItems: 'center', gap: 12, paddingTop: 24 },
   unlockRow: { flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
   unlockBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   primary: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 32, marginTop: 8 },
-  primaryText: { color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 16 },
+  primaryText: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 16 },
 });

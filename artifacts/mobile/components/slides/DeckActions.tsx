@@ -28,7 +28,7 @@ export function DeckActions({ workspace, onPresent, showToast, isRTL, colors, t 
         style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT_FILL, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
       >
         <Ionicons name="tv-outline" size={20} color="#fff" />
-        <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 15 }}>{t('presentOnScreen')}</Text>
+        <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 15 }}>{t('presentOnScreen')}</Text>
       </Pressable>
 
       {/* Which class this deck is for — nothing until the deck on screen is
@@ -54,7 +54,7 @@ export function DeckActions({ workspace, onPresent, showToast, isRTL, colors, t 
           ]}
         >
           <Ionicons name={saved ? 'bookmark' : 'bookmark-outline'} size={16} color={saved ? palette.primaryForeground : ACCENT} />
-          <Text style={{ color: saved ? palette.primaryForeground : ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+          <Text style={{ color: saved ? palette.primaryForeground : ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
             {saved ? t('savedLabel') : t('save')}
           </Text>
         </Pressable>
@@ -63,7 +63,7 @@ export function DeckActions({ workspace, onPresent, showToast, isRTL, colors, t 
           style={[styles.secondaryBtn, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           <Ionicons name="document-outline" size={16} color={colors.mutedForeground} />
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>PDF</Text>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>PDF</Text>
         </Pressable>
         <Pressable
           onPress={exportPptx}
@@ -73,7 +73,7 @@ export function DeckActions({ workspace, onPresent, showToast, isRTL, colors, t 
           {exportingPptx
             ? <ActivityIndicator size="small" color={colors.mutedForeground} />
             : <Ionicons name="easel-outline" size={16} color={colors.mutedForeground} />}
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>PPTX</Text>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>PPTX</Text>
         </Pressable>
       </View>
     </>

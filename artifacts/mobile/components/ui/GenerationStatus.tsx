@@ -183,14 +183,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   row: { alignItems: 'center', gap: 10 },
-  title: { fontFamily: 'Cairo_600SemiBold', fontSize: 13, lineHeight: 20 },
+  title: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, lineHeight: 20 },
   meta: { fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18 },
   hint: { fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18 },
   cancelBtn: { paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1 },
-  cancelText: { fontFamily: 'Cairo_600SemiBold', fontSize: 12 },
+  cancelText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 },
   retryBtn: {
     alignItems: 'center', justifyContent: 'center', gap: 6,
     paddingVertical: 9, borderWidth: 1,
   },
-  retryText: { fontFamily: 'Cairo_600SemiBold', fontSize: 13 },
+  retryText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 },
 });

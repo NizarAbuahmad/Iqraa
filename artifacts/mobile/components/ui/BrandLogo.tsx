@@ -66,7 +66,7 @@ export function BrandLogo({
 const styles = StyleSheet.create({
   column: { alignItems: 'center' },
   wordmark: {
-    fontFamily: 'Cairo_500Medium',
+    fontFamily: 'ReadexPro_500Medium',
     textAlign: 'center',
     // Centre the glyph run: letterSpacing trails the last letter too.
     paddingLeft: 4,

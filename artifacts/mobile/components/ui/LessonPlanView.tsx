@@ -163,7 +163,7 @@ function Section({
             styles.headerTitle,
             {
               color: colors.foreground,
-              fontFamily: 'Cairo_600SemiBold',
+              fontFamily: 'ReadexPro_600SemiBold',
               textAlign: isRTL ? 'right' : 'left',
             },
           ]}
@@ -189,6 +189,6 @@ const styles = StyleSheet.create({
   body: { borderWidth: 1, padding: 12, gap: 6 },
   bulletRow: { alignItems: 'flex-start', gap: 8 },
   bulletDot: { width: 5, height: 5, borderRadius: 3, marginTop: 8 },
-  bulletText: { flex: 1, fontSize: 13.5, lineHeight: 22 },
-  bodyText: { fontSize: 13.5, lineHeight: 22 },
+  bulletText: { flex: 1, fontSize: 14, lineHeight: 22 },
+  bodyText: { fontSize: 14, lineHeight: 22 },
 });

@@ -27,7 +27,7 @@ type Props = {
 
 const ARABIC_LEAD = /^[\s]*[؀-ۿ]/;
 
-export function MathText({ text, fontSize, color, fontFamily = 'Cairo_700Bold', isRTL, centered }: Props) {
+export function MathText({ text, fontSize, color, fontFamily = 'ReadexPro_700Bold', isRTL, centered }: Props) {
   const nodes = parseMathLine(text);
   // A line that *reads* as Arabic prose keeps its segments in RTL visual
   // order; a pure equation reads LTR even inside an Arabic deck.
