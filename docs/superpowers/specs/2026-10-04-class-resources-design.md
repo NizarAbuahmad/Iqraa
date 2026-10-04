@@ -99,6 +99,15 @@ and marks a row `unavailable` when its source is gone. The accepted cost: a
 staff edit (a corrected link, a new cover) does not reach classes that already
 added the item.
 
+*Amended 2026-10-04, after the piece-1 implementation review (owner's decision):*
+one column is not a snapshot. A staff upload's `url` is composed from
+`R2_PUBLIC_BASE_URL`, which may move, so `GET` rebuilds it from the Library row
+(`r2_key ? publicUrl(r2_key) : source_url`) for every upload that still exists;
+the stored value is only the fallback (the row is gone, the computed link is
+null, or the Library lookup fails). `title`, `media_kind`, `thumbnail_url` and
+every premade-sheet / book-QR column stay snapshots. The staff-edit cost above
+therefore applies to the title and cover only.
+
 ## API
 
 All under `/classes/:id/resources`, inside the existing class router, so every
