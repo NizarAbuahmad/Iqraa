@@ -2044,9 +2044,9 @@ const translations = {
     playColorsGameOver: (round: number) => `وصلت إلى الجولة ${round}`,
 
     hubTitle: 'ركن الإنجليزية',
-    playEnglishDesc: 'كلمات كتاب الإنجليزي للصفوف 1–4: اسمع، طابِق، وتهجَّ',
+    playEnglishDesc: 'كلمات كتب الإنجليزي للصفوف 1–4 و9–10: اسمع، طابِق، وتهجَّ',
     hubIntro: 'استمع والعب بكلمات دروسك. لا يُرسَل شيء إلى معلّمك؛ نجومك محفوظة على هذا الجهاز.',
-    hubGrade: (n: number) => ['الصف الأول', 'الصف الثاني', 'الصف الثالث', 'الصف الرابع'][n - 1] ?? '',
+    hubGrade: (n: number) => ['الصف الأول', 'الصف الثاني', 'الصف الثالث', 'الصف الرابع', 'الصف الخامس', 'الصف السادس', 'الصف السابع', 'الصف الثامن', 'الصف التاسع', 'الصف العاشر'][n - 1] ?? `الصف ${n}`,
     hubUnit: (n: number) => `الوحدة ${n}`,
     hubStreak: (n: number) => `🔥 ${arCountPhrase(n, 'يوم', 'يومان', 'أيام')} متتالية`,
     hubWords: (n: number) => arCountPhrase(n, 'كلمة', 'كلمتان', 'كلمات'),
@@ -3996,7 +3996,7 @@ const translations = {
     playColorsGameOver: (round: number) => `You reached round ${round}`,
 
     hubTitle: 'English Corner',
-    playEnglishDesc: 'Words from the Grade 1–4 English books: listen, match and spell',
+    playEnglishDesc: 'Words from the Grade 1–4 and 9–10 English books: listen, match and spell',
     hubIntro: 'Listen and play with the words from your lessons. Nothing is sent to your teacher; your stars are saved on this device.',
     hubGrade: (n: number) => `Grade ${n}`,
     hubUnit: (n: number) => `Unit ${n}`,

@@ -13,7 +13,7 @@ import {
 } from './ai/teachingAssistant.ts';
 import { DEMO_CONTINUE } from './continueTeaching.ts';
 import { stripScopePhrases, topicFromQuery } from './ai/artifactTopic.ts';
-import { artifactFromAsk } from './ai/askVocabulary.ts';
+import { artifactFromAsk, isBareTeachAsk } from './ai/askVocabulary.ts';
 import { isStandaloneTurn } from './ai/intentRouter.ts';
 import {
   getBookForLesson,
@@ -395,8 +395,15 @@ export function shouldReuseActiveLesson(opts: {
   if (topicSwitchTarget(query) !== null) return false;
   const queryGradeId = extractQueryGradeId(query);
   if (queryGradeId && activeLessonGradeId && queryGradeId !== activeLessonGradeId) return false;
+  // «علمني» / «ابدأ» name no topic: the open lesson is the only one they can
+  // mean, so what the KB ranks for the verb itself is noise, not evidence of
+  // another subject («start» ranks «تأسيس مشروع تجاري» at 92).
+  const bareTeach = intent === 'teaching' && isBareTeachAsk(query);
   // KB evidence for a different subject beats the hard pin
-  if (activeLessonSubjectId && topRankedSubjectId && topRankedSubjectId !== activeLessonSubjectId) return false;
+  if (
+    !bareTeach
+    && activeLessonSubjectId && topRankedSubjectId && topRankedSubjectId !== activeLessonSubjectId
+  ) return false;
   const querySubjectId = extractQuerySubjectId(query);
   if (querySubjectId && activeLessonSubjectId && querySubjectId !== activeLessonSubjectId) return false;
 
@@ -406,6 +413,9 @@ export function shouldReuseActiveLesson(opts: {
   }
 
   if (intent === 'refinement' || isReferentialQuery(query)) return true;
+  // Without this a soft pin is not reused for a teaching ask, and the
+  // pipeline searches the curriculum for the verb itself.
+  if (bareTeach) return true;
 
   if (intent === 'artifact') {
     if (memory.lessonPin === 'hard') return true;
