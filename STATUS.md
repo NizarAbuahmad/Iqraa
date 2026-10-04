@@ -87,10 +87,17 @@ an announcement by default» below.
   throws. The podium medals by rank (a tie for first put third on the silver
   step) and the scoreboard shows none until someone scores
   (`medalFor`). Leaving the presentation mid-game asks first once anything is
-  awarded (`hasGameScores`). Arabic: «فريقين», «من 12 سؤال». Not changed, found
-  in the same review: streak scoring depends on whether ANY team scored a
-  question (a question nobody got is indistinguishable from a skipped one — it
-  needs an explicit «nobody got it» ledger entry, a design decision); a game
+  awarded (`hasGameScores`). Arabic: «فريقين», «من 12 سؤال». Streak scoring
+  no longer depends on the other teams (2026-10-04, follow-up): a question
+  nobody got used to look exactly like one the teacher skipped, so it never
+  broke a streak — team 1 right on Q1, Q2 and Q4 scored 450 if nobody got Q3
+  and 350 if another team did. The ledger now has an explicit «لم يُصب أحد»
+  entry (`GameState.settled`, `toggleNobody`, a button beside «الجميع أصابوا»):
+  a question counts as adjudicated when someone was credited OR it was marked
+  this way, and only adjudicated questions break a run; a skipped question
+  (neither) still does not. Crediting a team replaces the mark, and taking the
+  last credit back leaves the question un-adjudicated rather than «nobody».
+  Not changed, found in the same review: a game
   has no verifier, no «بلّغ عن مشكلة» and no save/reopen/export; the pickers stay
   editable while a deck loads; `builder.tsx` has the same grade-scope gaps and
   sends the English grade name; Arabic-Indic scores sit beside Latin question

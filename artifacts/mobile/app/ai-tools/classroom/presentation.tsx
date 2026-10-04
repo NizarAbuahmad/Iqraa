@@ -40,7 +40,7 @@ import { resolveSlideLayout } from '@/services/slideLayout';
 import { openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
 import {
-  createGame, hasGameScores, podium, resetScores, setAwards, toggleAward, type GameState,
+  createGame, hasGameScores, podium, resetScores, setAwards, toggleAward, toggleNobody, type GameState,
 } from '@/services/classGame';
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
 import { MathText } from '@/components/classroom/MathText';
@@ -1274,7 +1274,8 @@ export default function PresentationScreen() {
                 const everyone = g.teams.every(team => (g.awards[slide.questionIndex!] ?? []).includes(team.id));
                 return setAwards(g, slide.questionIndex!, everyone ? [] : g.teams.map(team => team.id));
               })}
-              labels={{ prompt: t('gameWhoScored'), all: t('gameAwardAll') }}
+              onNobody={() => setGame(g => (g ? toggleNobody(g, slide.questionIndex!) : g))}
+              labels={{ prompt: t('gameWhoScored'), all: t('gameAwardAll'), nobody: t('gameAwardNobody') }}
             />
           )}
 

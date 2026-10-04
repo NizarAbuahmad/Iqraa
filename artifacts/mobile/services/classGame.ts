@@ -49,6 +49,14 @@ export interface GameState {
   teams: GameTeam[];
   /** questionIndex → responder ids credited on that question. */
   awards: Record<number, string[]>;
+  /**
+   * Questions the teacher marked «nobody got it». A question nobody got is a
+   * question that WAS asked, and it must break every team's streak — but it
+   * has no award to leave a trace in `awards`, so without this entry it looked
+   * exactly like a question that was skipped, and a team's bonus depended on
+   * whether some other team happened to get that question right.
+   */
+  settled: number[];
   /** Number of scoreable questions, so standings can report "answered n of m". */
   questionCount: number;
 }
@@ -90,9 +98,13 @@ export function createGame(teamCount: number, questionCount: number, isAr: boole
       color: preset.color,
     })),
     awards: {},
+    settled: [],
     questionCount: Math.max(0, Math.floor(questionCount) || 0),
   };
 }
+
+/** `settled` without `questionIndex` — a credited question is adjudicated by its awards. */
+const unsettled = (settled: number[], questionIndex: number) => settled.filter(q => q !== questionIndex);
 
 /** Credit (or un-credit) one responder on one question. Reversible by design. */
 export function toggleAward(state: GameState, questionIndex: number, responderId: string): GameState {
@@ -103,7 +115,9 @@ export function toggleAward(state: GameState, questionIndex: number, responderId
   const awards = { ...state.awards };
   if (next.length === 0) delete awards[questionIndex];
   else awards[questionIndex] = next;
-  return { ...state, awards };
+  // Crediting a team replaces «nobody got it». Un-crediting the last one does
+  // not bring it back: the question is then simply not adjudicated yet.
+  return { ...state, awards, settled: unsettled(state.settled, questionIndex) };
 }
 
 /** Replace the whole credited set for a question (used by "everyone got it"). */
@@ -112,7 +126,26 @@ export function setAwards(state: GameState, questionIndex: number, responderIds:
   const unique = [...new Set(responderIds)];
   if (unique.length === 0) delete awards[questionIndex];
   else awards[questionIndex] = unique;
-  return { ...state, awards };
+  return { ...state, awards, settled: unsettled(state.settled, questionIndex) };
+}
+
+/**
+ * Mark a question «nobody got it», or take that back. It replaces any awards on
+ * the question, and from then on the question breaks every team's streak like
+ * any other adjudicated question — see `GameState.settled`.
+ */
+export function toggleNobody(state: GameState, questionIndex: number): GameState {
+  if (isNobody(state, questionIndex)) {
+    return { ...state, settled: unsettled(state.settled, questionIndex) };
+  }
+  const awards = { ...state.awards };
+  delete awards[questionIndex];
+  return { ...state, awards, settled: [...unsettled(state.settled, questionIndex), questionIndex] };
+}
+
+/** Whether the question is marked «nobody got it». */
+export function isNobody(state: GameState, questionIndex: number): boolean {
+  return state.settled.includes(questionIndex) && (state.awards[questionIndex] ?? []).length === 0;
 }
 
 /** Whether a responder is currently credited on a question. */
@@ -122,7 +155,7 @@ export function isAwarded(state: GameState, questionIndex: number, responderId: 
 
 /** Clear the ledger, keeping the teams — "play again with the same teams". */
 export function resetScores(state: GameState): GameState {
-  return { ...state, awards: {} };
+  return { ...state, awards: {}, settled: [] };
 }
 
 /**
@@ -142,14 +175,16 @@ export function standings(state: GameState): TeamStanding[] {
     run.set(team.id, 0);
   }
 
-  const answered = Object.keys(state.awards)
-    .map(Number)
+  // A question is adjudicated when someone was credited on it or the teacher
+  // marked it «nobody got it». Only adjudicated questions break a streak: a
+  // question skipped without either (a slide that was discussed instead of
+  // scored) must not silently reset every team's run. A question nobody got is
+  // NOT a skipped one — it used to look identical, so team 1's bonus depended
+  // on whether another team happened to get the question that broke its run.
+  const answered = [...new Set([...Object.keys(state.awards).map(Number), ...state.settled])]
     .filter(n => Number.isFinite(n))
     .sort((a, b) => a - b);
 
-  // Only questions that were actually adjudicated break a streak. A question
-  // the teacher skipped without awarding anyone must not silently reset every
-  // team's run — skipping is common (a slide gets discussed instead of scored).
   for (const qIndex of answered) {
     const credited = new Set(state.awards[qIndex] ?? []);
     for (const team of state.teams) {
