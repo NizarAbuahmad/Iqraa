@@ -519,7 +519,7 @@ export default function PromptSlidesScreen() {
                             setAnswers(cur => ({ ...cur, [q.id]: opt.label }));
                           }}
                           accessibilityRole="radio"
-                          accessibilityState={{ selected: on }}
+                          aria-selected={on}
                           style={[styles.answerChip, {
                             borderColor: on ? ACCENT : colors.border,
                             backgroundColor: on ? ACCENT : 'transparent',

@@ -15228,7 +15228,8 @@ Verified in a browser against the local stack: release → the student's
 «اختباراتي» row reads «النتيجة متاحة»; hide → back to «سُلِّم — بانتظار
 النتيجة».
 
-Not done: students are not notified when results are released. (The «—»
+Not done: students are not notified when results are released — done the
+same day, see «Students are told when results are released». (The «—»
 preview for a read-aloud question, noted here at first, is fixed in the next
 entry.)
 
@@ -15259,7 +15260,48 @@ against the local stack:
   clear which part of the line opens a page and which ticks the box.
   **About 39 other controls** (`grep -rn "accessibilityState=" app
   components`) declare `checked`/`selected`/`expanded` the same way and are
-  equally silent on the web; not changed here.
+  equally silent on the web — converted the same day, see the next entry.
 - **The library chip rows** were already fixed by #819 (they wrap instead of
   scrolling); confirmed, no change.
+
+## Students are told when results are released; state reaches screen readers, 2026-10-04
+
+**A release now announces itself.** When «أعلن النتائج للطلبة» turns a
+release on (`lib/resultsReleaseNotify.ts`, after the route has answered):
+
+- a push to every student account self-linked to a roster row that handed
+  the paper in, opening «اختباراتي» when tapped (`data.screen: 'my-exams'`,
+  whitelisted in `services/notificationDeepLink.ts`);
+- one line in the exam's class group, under the teacher's name —
+  «أُعلنت نتائج «…». افتحوا «اختباراتي» لتروا نتائجكم.» — which the web
+  inbox shows too, since a push reaches only the Android app. Not pushed a
+  second time; marked read for the teacher.
+
+The route's update is conditional on the old value, so pressing release on
+results already released, or two presses racing, announces nothing. Hiding
+and releasing again does announce again — remembering past announcements
+would need a column. The confirmation dialog says what will be sent.
+
+**Parents are not notified,** although that was asked for: no screen shows a
+guardian their child's exam result («اختباراتي» is student-only), so the push
+would open onto nothing. That needs a parent results view first — and a
+decision on whether a parent should see a grade, and when.
+
+Verified against the local stack: release twice → one line in «العاشر أ»,
+shown in the student's inbox as unread under the teacher's name. The push
+itself was not sent locally (it goes to Expo's servers); the recipient query
+and the deep link are what changed.
+
+**`accessibilityState` → `aria-*`, app-wide.** react-native-web 0.21 reads
+neither `accessibilityState.checked/selected/expanded/busy` nor `.disabled` —
+only `aria-*` props reach the DOM — so every checkbox, tab, chip and toggle
+on the web build was silent about its state. All 39 uses now set the
+matching `aria-*` prop, which React Native reads too;
+`services/__tests__/ariaState.test.ts` fails if `accessibilityState=`
+reappears under `app/` or `components/`. Checked in the browser: the
+library's chips carry `aria-selected`.
+
+**More «N علامة».** «اختباراتي» rows said «6 علامة»; the exam totals, the
+marks-lost line and the scan summary had the same template. All go through
+`arMarksPhrase` now.
 
