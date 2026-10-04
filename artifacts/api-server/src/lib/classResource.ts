@@ -144,13 +144,27 @@ export interface ClientClassResource {
   unavailable: boolean;
 }
 
-/** One row as the app reads it. `presentLibraryIds` are the staff uploads that still exist. */
+/**
+ * One row as the app reads it. `presentLibraryIds` are the staff uploads that
+ * still exist.
+ *
+ * `liveUrls` is the current link of each of those uploads, keyed by Library id,
+ * computed by the route (this module stays free of r2.js and env access). A
+ * staff upload's link is the one column built at read time rather than kept as
+ * the snapshot taken when the teacher added it: it is composed from
+ * `R2_PUBLIC_BASE_URL`, which may move, and the stored copy would strand the
+ * row on the old host. It applies only to a staff upload whose Library row still
+ * exists and whose current link is known; every other case, and every other
+ * column, is the stored value.
+ */
 export function presentClassResource(
   row: ClassResourceRowLike,
   presentLibraryIds: ReadonlySet<string>,
+  liveUrls?: ReadonlyMap<string, string | null>,
 ): ClientClassResource {
-  const gone =
-    row.librarySource === "uploaded" && !!row.libraryNativeId && !presentLibraryIds.has(row.libraryNativeId);
+  const isUpload = row.librarySource === "uploaded" && !!row.libraryNativeId;
+  const gone = isUpload && !presentLibraryIds.has(row.libraryNativeId!);
+  const live = isUpload && !gone ? liveUrls?.get(row.libraryNativeId!) : undefined;
   return {
     id: row.id,
     kind: row.kind,
@@ -158,7 +172,7 @@ export function presentClassResource(
     nativeId: row.libraryNativeId,
     title: row.title,
     mediaKind: row.mediaKind,
-    url: row.url,
+    url: typeof live === "string" ? live : row.url,
     thumbnailUrl: row.thumbnailUrl,
     createdAt: row.createdAt.toISOString(),
     unavailable: gone,

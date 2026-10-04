@@ -610,8 +610,9 @@ router.delete("/classes/:id/students/:studentId", async (req: AuthenticatedReque
 
 // ─── Class resources ─────────────────────────────────────────────────────────
 // What a teacher has put in front of a class from the Library. Rows are a
-// pointer plus a snapshot; see lib/db/src/schema/classResources.ts and
-// docs/superpowers/specs/2026-10-04-class-resources-design.md.
+// pointer plus a snapshot, except a staff upload's link, which the GET builds
+// from its Library row on every read; see lib/db/src/schema/classResources.ts
+// and docs/superpowers/specs/2026-10-04-class-resources-design.md.
 
 router.get("/classes/:id/resources", async (req: AuthenticatedRequest, res) => {
   try {
@@ -646,24 +647,36 @@ router.get("/classes/:id/resources", async (req: AuthenticatedRequest, res) => {
     }
 
     // A staff upload can be deleted after a teacher added it. One query for all
-    // of them, not one per row.
+    // of them, not one per row. The same query gives each survivor's current
+    // link: it is built here, on every read, the way the POST builds it, so a
+    // moved R2_PUBLIC_BASE_URL does not strand rows stored under the old host.
     const present = new Set<string>();
+    const liveUrls = new Map<string, string | null>();
     const ids = uploadedLibraryIds(rows);
     if (ids.length > 0) {
       try {
         const found = await db
-          .select({ id: libraryResources.id })
+          .select({
+            id: libraryResources.id,
+            r2Key: libraryResources.r2Key,
+            sourceUrl: libraryResources.sourceUrl,
+          })
           .from(libraryResources)
           .where(inArray(libraryResources.id, ids));
-        for (const f of found) present.add(f.id);
+        for (const f of found) {
+          present.add(f.id);
+          liveUrls.set(f.id, f.r2Key ? publicUrl(f.r2Key) : f.sourceUrl);
+        }
       } catch (err) {
-        // Cannot tell, so call every row available rather than all of them gone.
+        // Cannot tell, so call every row available rather than all of them gone,
+        // and serve the stored links rather than none.
         logger.error({ err }, "class resources: library lookup failed");
+        liveUrls.clear();
         for (const id of ids) present.add(id);
       }
     }
 
-    res.json({ resources: rows.map(row => presentClassResource(row, present)) });
+    res.json({ resources: rows.map(row => presentClassResource(row, present, liveUrls)) });
   } catch (err) {
     failRoster(res, err, "list class resources", "Failed to load class resources");
   }

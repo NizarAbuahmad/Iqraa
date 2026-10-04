@@ -152,6 +152,61 @@ describe("shaping a row for the app", () => {
     assert.equal(presentClassResource(code, new Set()).unavailable, false);
   });
 
+  describe("a staff upload's link is built when the shelf is read", () => {
+    const LIVE = "https://pub.example.test/library/v.mp4";
+
+    it("serves the Library row's current url, not the one stored when the teacher added it", () => {
+      const out = presentClassResource(row, new Set([UUID]), new Map([[UUID, LIVE]]));
+      assert.equal(out.url, LIVE);
+      assert.equal(out.unavailable, false);
+    });
+
+    it("keeps the stored url when no live urls are passed (the two-argument call)", () => {
+      assert.equal(presentClassResource(row, new Set([UUID])).url, "https://example.test/v");
+    });
+
+    it("keeps the stored url, and the unavailable flag, when the Library row is gone", () => {
+      const out = presentClassResource(row, new Set(), new Map([[UUID, LIVE]]));
+      assert.equal(out.url, "https://example.test/v");
+      assert.equal(out.unavailable, true);
+    });
+
+    it("keeps the stored url when the Library row has no url to compute", () => {
+      const out = presentClassResource(row, new Set([UUID]), new Map([[UUID, null]]));
+      assert.equal(out.url, "https://example.test/v");
+      assert.equal(out.unavailable, false);
+    });
+
+    it("keeps the stored url when the map holds no entry for this upload", () => {
+      const out = presentClassResource(row, new Set([UUID]), new Map([[OTHER_UUID, LIVE]]));
+      assert.equal(out.url, "https://example.test/v");
+    });
+
+    it("never touches a premade sheet or a book-QR code, even if the map has an entry under their nativeId", () => {
+      const sheet = { ...row, librarySource: "premade-sheet", libraryNativeId: "pw-x", url: null };
+      const code = {
+        ...row,
+        librarySource: "book-qr",
+        libraryNativeId: "31:http://example.test/a",
+        url: "http://example.test/a",
+      };
+      const live = new Map([
+        ["pw-x", LIVE],
+        ["31:http://example.test/a", LIVE],
+      ]);
+      const present = new Set(["pw-x", "31:http://example.test/a"]);
+      assert.equal(presentClassResource(sheet, present, live).url, null);
+      assert.equal(presentClassResource(code, present, live).url, "http://example.test/a");
+    });
+
+    it("leaves every other column as stored", () => {
+      const out = presentClassResource(row, new Set([UUID]), new Map([[UUID, LIVE]]));
+      assert.equal(out.title, "فيديو");
+      assert.equal(out.mediaKind, "video");
+      assert.equal(out.thumbnailUrl, null);
+    });
+  });
+
   it("renames the columns the way the app reads them and serialises the date", () => {
     assert.deepEqual(presentClassResource(row, new Set([UUID])), {
       id: "r1",
