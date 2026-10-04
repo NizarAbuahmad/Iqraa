@@ -15139,7 +15139,8 @@ the teacher marked it and played the recording back.
 offers it, so no student can see a result: «اختباراتي»'s results and
 «تحقّق من النتيجة» are unreachable for every exam. With the flag set by hand
 in the local database, the student's result card rendered correctly. It
-needs a teacher-facing release switch.
+needed a teacher-facing release switch — added the same day, see the next
+entry.
 
 **Verified working:** the terms box gates «إنشاء حساب» and the acceptance is
 stored; email code; claim by class code with the «هل هذا اسمك؟» confirmation;
@@ -15155,4 +15156,24 @@ class's English name in the Arabic UI; «5 علامة» / «خسر 3 علامة�
 Arabic wants «علامات»; per-question marks shown as «2.00 ع»; the grade and
 subject chip rows start scrolled to the wrong end in RTL; the
 «تابعنا من حيث توقّفت» banner stays on the «تم التسليم» screen.
+
+## A teacher releases results, per exam, 2026-10-04
+
+**Students can now see results — when their teacher releases them.** The
+exam screen (published or closed) carries «أعلن النتائج للطلبة»; releasing
+asks for confirmation, and «إخفاء النتائج عن الطلبة» takes it back without
+asking, since hiding is never the harmful direction. `POST
+/evaluations/:id/results-release` `{ released }` sets
+`release_results_to_student`; the rule — no release for a draft, un-release
+always — is `lib/resultsRelease.ts`, tested. A paper still being marked stays
+hidden after a release (`studentResultReady` also needs a final result), and
+the button says so.
+
+Verified in a browser against the local stack: release → the student's
+«اختباراتي» row reads «النتيجة متاحة»; hide → back to «سُلِّم — بانتظار
+النتيجة».
+
+Not done: students are not notified when results are released; the exam
+screen's question preview shows «—» for a read-aloud question (it reads only
+`prompt`/`stem`).
 

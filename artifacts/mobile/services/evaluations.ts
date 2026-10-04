@@ -62,6 +62,8 @@ export interface Evaluation {
   targetQuestionCount: number;
   assessmentTypes: QuestionType[];
   status: EvaluationStatus;
+  /** Whether students may see their own marked results — the teacher's «أعلن النتائج» switch. */
+  releaseResultsToStudent?: boolean;
   totalMarks: string;
   createdAt: string;
 }
@@ -303,6 +305,16 @@ export async function publishEvaluation(id: string): Promise<Evaluation> {
 export async function closeEvaluation(id: string): Promise<Evaluation> {
   const res = await apiFetch(`/evaluations/${id}/close`, { method: 'POST' });
   const data = await readJson<{ evaluation: Evaluation }>(res, 'Closing evaluation');
+  return data.evaluation;
+}
+
+/** Release (true) or take back (false) this exam's results for its students. */
+export async function setResultsReleased(id: string, released: boolean): Promise<Evaluation> {
+  const res = await apiFetch(`/evaluations/${id}/results-release`, {
+    method: 'POST',
+    body: JSON.stringify({ released }),
+  });
+  const data = await readJson<{ evaluation: Evaluation }>(res, 'Releasing results');
   return data.evaluation;
 }
 

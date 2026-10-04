@@ -21,6 +21,7 @@ import {
   getEvaluation,
   closeEvaluation,
   publishEvaluation,
+  setResultsReleased,
   setEvaluationClass,
   showBlanks,
   type Evaluation,
@@ -138,7 +139,7 @@ export default function EvaluationDetailScreen() {
   /** The question open in the editor; 'new' when writing one from scratch. */
   const [editing, setEditing] = useState<EvaluationQuestion | 'new' | null>(null);
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState<'generate' | 'publish' | 'close' | null>(null);
+  const [busy, setBusy] = useState<'generate' | 'publish' | 'close' | 'release' | null>(null);
   // What the generator said while producing this paper ("2 questions removed:
   // the verifier contradicted their key"). The questions cannot show a
   // question that was dropped, so this is the only place the teacher hears it.
@@ -262,6 +263,35 @@ export default function EvaluationDetailScreen() {
       );
     } catch (err) {
       setError(err instanceof EvaluationError ? err.message : t('evaluationCloseFailed'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Students see nothing of their results until this is on — see
+  // api-server/src/lib/resultsRelease.ts. Releasing asks first; taking it back
+  // does not, because hiding a result is never the harmful direction.
+  const onToggleRelease = async () => {
+    if (!id || busy || !evaluation) return;
+    const release = !evaluation.releaseResultsToStudent;
+    if (release) {
+      const ok = await confirm({
+        title: t('releaseResultsBtn'),
+        message: t('releaseResultsConfirm'),
+        confirmLabel: t('releaseResultsBtn'),
+        cancelLabel: t('cancel'),
+      });
+      if (!ok) return;
+    }
+    setBusy('release');
+    setError('');
+    try {
+      const updated = await setResultsReleased(id, release);
+      queryClient.setQueryData<EvaluationData>(evaluationQueryKey(id), prev =>
+        prev ? { ...prev, evaluation: updated } : prev,
+      );
+    } catch {
+      setError(t('releaseResultsFailed'));
     } finally {
       setBusy(null);
     }
@@ -404,6 +434,36 @@ export default function EvaluationDetailScreen() {
               {t('closeEvaluationBtn')}
             </Text>
           </Pressable>
+        </View>
+      )}
+
+      {(evaluation?.status === 'published' || evaluation?.status === 'closed') && (
+        <View style={{ marginHorizontal: 20, marginTop: 10, gap: 6 }}>
+          <Pressable
+            onPress={onToggleRelease}
+            disabled={busy === 'release'}
+            accessibilityRole="button"
+            style={[
+              styles.resultsBtn,
+              {
+                borderColor: evaluation.releaseResultsToStudent ? colors.border : ACCENT,
+                opacity: busy === 'release' ? 0.6 : 1,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+              },
+            ]}
+          >
+            <Ionicons
+              name={evaluation.releaseResultsToStudent ? 'eye-off-outline' : 'megaphone-outline'}
+              size={18}
+              color={evaluation.releaseResultsToStudent ? colors.mutedForeground : ACCENT}
+            />
+            <Text style={{ color: evaluation.releaseResultsToStudent ? colors.mutedForeground : ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+              {t(evaluation.releaseResultsToStudent ? 'hideResultsBtn' : 'releaseResultsBtn')}
+            </Text>
+          </Pressable>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+            {t(evaluation.releaseResultsToStudent ? 'resultsReleasedNote' : 'resultsNotReleasedNote')}
+          </Text>
         </View>
       )}
 
