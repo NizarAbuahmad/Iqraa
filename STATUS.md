@@ -14913,6 +14913,30 @@ From the 2026-10-02 review's low list:
 
 **Still open from that list:** L2 (a profile edit drops `hasRosterLink` from
 the cached user — latent: the gate reads only `=== false`), L4 (whether
-students may use `/chat` at all — a product decision), L8, L13, L14, and the
-two messaging privacy items (every member's name and role sent to every
-member of an announcement group; report reasons stored as i18n keys).
+students may use `/chat` at all — a product decision), L13 and L14. L8 and
+the two messaging privacy items were fixed the next day — see the entry
+below.
+
+## A class group stops handing every child the class list, 2026-10-04
+
+**`GET /messaging/threads/:id` sent every member's name and role to every
+member.** In an announcement-only class group that is the whole class list,
+delivered to each child in it, for a screen that only needs a name to put on
+a message — and only staff post there. Now (`lib/groupMemberView.ts`,
+tested): the owner and any staff member get everyone; anyone else in an
+announcement-only group gets the staff and themselves; a group where
+students may post keeps the full list, because each student's messages need
+a name and the teacher chose to let them talk.
+
+- **L8** — the inbox (`GET /messaging/threads`) attached an arbitrary other
+  member to every group thread as `otherParticipant`, usually a classmate's
+  name, read by nothing. It is now sent for direct threads only, and the
+  query no longer loads group members at all.
+- **Report reasons** are stored as the picker's translation key
+  («reportReasonBullying»), and the moderation queue printed the key. It is
+  now translated where it is shown (`services/reportReasons.ts`, tested), so
+  the reports already on record read correctly too; anything that is not a
+  known key is shown as written.
+
+Not done: L13 — the inbox still loads every message of every thread on each
+poll, and two screens poll it.

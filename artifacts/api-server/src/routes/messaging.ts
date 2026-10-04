@@ -61,6 +61,7 @@ import { createRateLimiter } from "../lib/rateLimit.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { sendExpoPush, deadTokensFrom } from "../lib/pushNotifications.js";
 import { UUID } from "../lib/adminMetrics.js";
+import { visibleGroupMembers } from "../lib/groupMemberView.ts";
 import { isR2Configured, newChatMediaKey, presignedGetUrl, putObject } from "../lib/r2.js";
 import { syncClassGroupThread } from "../lib/classThread.js";
 import { resolveReport } from "../lib/reportDecision.js";
@@ -364,17 +365,24 @@ router.get("/messaging/threads", async (req: AuthenticatedRequest, res) => {
       .from(chatThreads)
       .where(and(inArray(chatThreads.id, threadIds), isNull(chatThreads.archivedAt)));
 
-    const otherParticipants = await db
-      .select({
-        threadId: chatParticipants.threadId,
-        userId: users.id,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        role: users.role,
-      })
-      .from(chatParticipants)
-      .innerJoin(users, eq(users.id, chatParticipants.userId))
-      .where(and(inArray(chatParticipants.threadId, threadIds), ne(chatParticipants.userId, req.user!.id)));
+    // The other person in a *direct* thread only. Group threads used to get
+    // an arbitrary other member here — usually a classmate's name, sent to a
+    // child who never asked for it, and read by nothing (the client names a
+    // group by its title).
+    const directIds = threadRows.filter(t => t.type === "direct").map(t => t.id);
+    const otherParticipants = directIds.length
+      ? await db
+          .select({
+            threadId: chatParticipants.threadId,
+            userId: users.id,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            role: users.role,
+          })
+          .from(chatParticipants)
+          .innerJoin(users, eq(users.id, chatParticipants.userId))
+          .where(and(inArray(chatParticipants.threadId, directIds), ne(chatParticipants.userId, req.user!.id)))
+      : [];
     const otherByThread = new Map(otherParticipants.map(p => [p.threadId, p]));
 
     // One query for every message across every one of my threads, newest
@@ -765,8 +773,15 @@ router.get("/messaging/threads/:id", async (req: AuthenticatedRequest, res) => {
     }
 
     if (thread.type !== "direct") {
-      const participants = await participantsOf(threadId);
       const isOwner = (await groupOwnerId(thread)) === req.user!.id;
+      // Not the whole class to every child in it — see lib/groupMemberView.ts.
+      const participants = visibleGroupMembers({
+        members: await participantsOf(threadId),
+        viewerId: req.user!.id,
+        viewerIsOwner: isOwner,
+        studentPostingEnabled: thread.studentPostingEnabled,
+        isStaff: isTeacherRole,
+      });
       res.json({ thread, otherParticipant: null, participants, isOwner });
       return;
     }

@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { reportReasonLabel } from '@/services/reportReasons';
 import { useAuth } from '@/context/AuthContext';
 import { apiJson } from '@/services/apiClient';
 import { confirm } from '@/services/confirm';
@@ -283,6 +284,7 @@ function ReportCard({
   onDismiss: () => void;
   onUnsuspend: () => void;
 }) {
+  const { t } = useLanguage();
   const align = isRTL ? 'right' : 'left';
   const open = report.status === 'open';
   const alreadyHidden = !!report.messageArchivedAt;
@@ -309,7 +311,7 @@ function ReportCard({
 
       {report.reason ? (
         <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 10, textAlign: align }}>
-          {ar ? 'السبب: ' : 'Reason: '}{report.reason}
+          {ar ? 'السبب: ' : 'Reason: '}{reportReasonLabel(report.reason, t)}
         </Text>
       ) : null}
 
