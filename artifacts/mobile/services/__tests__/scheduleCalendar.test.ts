@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 
 import {
   buildDayAgenda,
+  classLabel,
   dayHasAgenda,
   dayRows,
   defaultDay,
@@ -292,5 +293,33 @@ describe('timetableSetupStep', () => {
 
   it('asks for nothing when classes are timetabled but none meets within a week', () => {
     assert.equal(timetableSetupStep(SLOTS, null), null);
+  });
+});
+
+/**
+ * What this guards: the calendar used to fall back to the class's raw id when
+ * the class was not in the loaded list, so a teacher read
+ * «e5b7c789-b78e-4011-82ba-f96e436d1324» where a class name belongs. The list
+ * is best-effort (a failed fetch is swallowed) and omits archived classes, so
+ * "not found" is an ordinary state — the label must say so, never print the id.
+ */
+describe('classLabel', () => {
+  const CLASSES = [
+    { id: 'c1', name: '10-B', nameAr: 'العاشر ب' },
+    { id: 'c2', name: '10-C', nameAr: '' },
+  ];
+
+  it('uses the Arabic name in Arabic, falling back to the English one when it has none', () => {
+    assert.equal(classLabel('c1', CLASSES, 'ar'), 'العاشر ب');
+    assert.equal(classLabel('c2', CLASSES, 'ar'), '10-C');
+  });
+
+  it('uses the English name in English', () => {
+    assert.equal(classLabel('c1', CLASSES, 'en'), '10-B');
+  });
+
+  it('answers null — not the id — for a class that is not in the list', () => {
+    assert.equal(classLabel('e5b7c789-b78e-4011-82ba-f96e436d1324', CLASSES, 'ar'), null);
+    assert.equal(classLabel('c1', [], 'ar'), null);
   });
 });

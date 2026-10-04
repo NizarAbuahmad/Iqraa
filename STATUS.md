@@ -557,6 +557,43 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The calendar showed a class id where a class name belongs, 2026-10-04
+
+A teacher's calendar rows read «11:50 · e5b7c789-b78e-4011-82ba-f96e436d1324 ·
+bha» — the class's UUID, then the school name. Two causes, one fix each.
+
+**An archived class kept its timetable slots.** Archiving is a soft delete
+(`archivedAt`), so the `ON DELETE SET NULL` on `schedule_slots.class_group_id`
+never fires — the schema comment that promises "it should just empty that one
+slot" was true of a hard delete only. `GET /classes` omits the class,
+`GET /schedule` still returned its slots, and the calendar had an id it could
+not name. The `findLiveClass` work in the 2026-10-02 entry closed the *write*
+side (a slot can no longer be given an archived class); the slots already in
+that state were never touched. `GET /schedule` now empties a slot whose class is
+not live (`withoutArchivedClasses`, `api-server/src/lib/schedule.ts`), at read
+time: the row keeps its id, and the period shows as free on the schedule screen
+and drops off the calendar and the home card's «الحصة القادمة». No schema change,
+so no `schema-push`. The same masking is **not** applied to
+`teaching_plans.class_group_id`, which has the same shape.
+
+**The calendar fell back to the raw id.** `classNameFor` returned `id` when the
+class was not in the loaded list, and that list is best-effort (a failed
+`listClasses` is swallowed on purpose). It now goes through `classLabel`
+(`services/scheduleCalendar.ts`), which answers `null`, and the screen says
+«صف غير متاح» / "Class unavailable". The schedule screen's own `classNameFor`
+already returned `''` for an unknown class and is unchanged.
+
+**Verified against a real database, not just tests:** a throwaway Postgres 16
+with the schema pushed, the built API, a teacher, a class, two slots; then
+`DELETE /classes/:id`. Before the fix `/classes` was `[]` and `/schedule` still
+returned both slots carrying the class UUID; after it, `/schedule` returns them
+with `classGroupId: null` while the rows still hold the id. Typecheck clean,
+api-server 1090/1090 (built bundle), mobile 2361 passed, 0 failed, 10 skipped.
+**Not verified:** the calendar screen itself (`app/` cannot be loaded by the
+mobile runner, and it was not opened in a browser or on a device), and which of
+the two causes produced the screenshot that reported this — the data was not
+available, and both show the same UUID.
+
 ## «اقترح ميزة» — teachers can suggest a feature, 2026-10-03
 
 A new screen, `/suggest-feature`, lets anyone signed in describe a missing

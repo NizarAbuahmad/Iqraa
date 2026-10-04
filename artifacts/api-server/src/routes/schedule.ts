@@ -7,8 +7,8 @@
  */
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { schedulePeriods, scheduleSlots } from "@workspace/db";
-import { and, asc, eq } from "drizzle-orm";
+import { classGroups, schedulePeriods, scheduleSlots } from "@workspace/db";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import {
   authMiddleware,
   requireRole,
@@ -24,6 +24,7 @@ import {
   parsePeriodInput,
   parseSchoolName,
   parseSlotInput,
+  withoutArchivedClasses,
 } from "../lib/schedule.js";
 
 const router = Router();
@@ -58,7 +59,7 @@ function failSchedule(
 /** The whole grid in one call: every period's time, and every filled slot. */
 router.get("/schedule", async (req: AuthenticatedRequest, res) => {
   try {
-    const [periods, slots] = await Promise.all([
+    const [periods, slots, liveClasses] = await Promise.all([
       db
         .select()
         .from(schedulePeriods)
@@ -69,8 +70,15 @@ router.get("/schedule", async (req: AuthenticatedRequest, res) => {
         .from(scheduleSlots)
         .where(eq(scheduleSlots.teacherId, req.user!.id))
         .orderBy(asc(scheduleSlots.dayOfWeek), asc(scheduleSlots.periodNumber)),
+      db
+        .select({ id: classGroups.id })
+        .from(classGroups)
+        .where(and(eq(classGroups.teacherId, req.user!.id), isNull(classGroups.archivedAt))),
     ]);
-    res.json({ periods, slots });
+    // A slot keeps its class id after the class is archived — see
+    // withoutArchivedClasses. Handing that id to a client gives it a class it
+    // cannot name, so an archived class's periods come back empty instead.
+    res.json({ periods, slots: withoutArchivedClasses(slots, new Set(liveClasses.map(c => c.id))) });
   } catch (err) {
     failSchedule(res, err, "load schedule");
   }

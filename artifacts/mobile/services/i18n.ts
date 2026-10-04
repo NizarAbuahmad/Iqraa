@@ -1412,6 +1412,7 @@ const translations = {
     calendarLessonsSection: 'الدروس',
     calendarLessonFrom: (planTitle: string) => `من: ${planTitle}`,
     calendarLoadFailed: 'تعذّر تحميل التقويم.',
+    calendarClassUnavailable: 'صف غير متاح',
 
     // Class ↔ materials
     classTabStudents: 'الطلبة',
@@ -3375,6 +3376,7 @@ const translations = {
     calendarLessonsSection: 'Lessons',
     calendarLessonFrom: (planTitle: string) => `From: ${planTitle}`,
     calendarLoadFailed: 'Could not load your calendar.',
+    calendarClassUnavailable: 'Class unavailable',
 
     // Class ↔ materials
     classTabStudents: 'Students',

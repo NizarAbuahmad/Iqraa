@@ -91,3 +91,22 @@ export function parseSlotInput(body: unknown): SlotInput {
   }
   return { classGroupId: classGroupId as string | null | undefined, notes: notes as string | undefined };
 }
+
+/**
+ * Empties every slot whose class is not in `liveClassIds`.
+ *
+ * Archiving a class (DELETE /classes/:id) is a soft delete, so the `ON DELETE
+ * SET NULL` on `schedule_slots.class_group_id` never fires: the slot keeps
+ * pointing at a class `GET /classes` no longer lists, and every client then
+ * has an id it cannot name. Masked here, at read time, rather than rewritten
+ * on archive — it also covers the slots already in that state, and it loses
+ * nothing (there is no un-archive, but the row is left as it was).
+ */
+export function withoutArchivedClasses<S extends { classGroupId: string | null }>(
+  slots: readonly S[],
+  liveClassIds: ReadonlySet<string>,
+): S[] {
+  return slots.map(s =>
+    s.classGroupId !== null && !liveClassIds.has(s.classGroupId) ? { ...s, classGroupId: null } : s,
+  );
+}

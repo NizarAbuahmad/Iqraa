@@ -16,7 +16,7 @@ import { getSchedule, type SchedulePeriod, type ScheduleSlot } from '@/services/
 import { listTeachingPlans, type TeachingPlan } from '@/services/teachingPlans';
 import { listClasses, type ClassGroup } from '@/services/roster';
 import { getLessonById } from '@/services/knowledgeBase';
-import { buildDayAgenda, dayHasAgenda, isInMonth, monthGridDates } from '@/services/scheduleCalendar';
+import { buildDayAgenda, classLabel, dayHasAgenda, isInMonth, monthGridDates } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
@@ -60,7 +60,7 @@ async function loadCalendarData(): Promise<CalendarData> {
   try {
     classes = await listClasses();
   } catch {
-    /* period rows fall back to showing the id */
+    /* period rows say the class is unavailable */
   }
   return { periods: schedule.periods, slots: schedule.slots, plans: planList, classes };
 }
@@ -90,11 +90,7 @@ export default function CalendarScreen() {
   const { periods = [], slots = [], plans = [], classes = [] } = calendarData ?? {};
   const error = loadFailed ? t('calendarLoadFailed') : '';
 
-  const classNameFor = (id: string): string => {
-    const found = classes.find(c => c.id === id);
-    if (!found) return id;
-    return lang === 'ar' && found.nameAr ? found.nameAr : found.name;
-  };
+  const classNameFor = (id: string): string => classLabel(id, classes, lang === 'ar' ? 'ar' : 'en') ?? t('calendarClassUnavailable');
 
   const goPrevMonth = () => {
     if (viewMonth === 0) {

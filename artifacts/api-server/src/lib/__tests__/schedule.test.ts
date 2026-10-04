@@ -20,6 +20,7 @@ import {
   parsePeriodInput,
   parseSchoolName,
   parseSlotInput,
+  withoutArchivedClasses,
 } from "../schedule.ts";
 
 function rejects(fn: () => unknown): string {
@@ -158,5 +159,40 @@ describe("parseSlotInput", () => {
       rejects(() => parseSlotInput({ notes: "a".repeat(MAX_NOTES_LENGTH + 1) })),
       /at most 500 characters/,
     );
+  });
+});
+
+/**
+ * What this guards: archiving a class is a soft delete (`archivedAt`), so the
+ * `ON DELETE SET NULL` on `schedule_slots.class_group_id` never fires and the
+ * slot keeps pointing at a class `GET /classes` no longer lists. Reproduced
+ * against a real database: after DELETE /classes/:id, /classes returned [] and
+ * /schedule still returned both slots carrying the archived class's UUID — which
+ * the calendar then printed as the class name.
+ */
+describe("withoutArchivedClasses", () => {
+  const live = new Set(["c-live"]);
+
+  it("empties a slot whose class is no longer live, keeping its note", () => {
+    const [slot] = withoutArchivedClasses(
+      [{ dayOfWeek: 0, periodNumber: 1, classGroupId: "c-archived", notes: "bring calculators" }],
+      live,
+    );
+    assert.equal(slot!.classGroupId, null);
+    assert.equal(slot!.notes, "bring calculators");
+  });
+
+  it("leaves a slot with a live class, and an already-empty slot, alone", () => {
+    const slots = [
+      { dayOfWeek: 0, periodNumber: 1, classGroupId: "c-live", notes: "" },
+      { dayOfWeek: 0, periodNumber: 2, classGroupId: null, notes: "" },
+    ];
+    assert.deepEqual(withoutArchivedClasses(slots, live), slots);
+  });
+
+  it("does not mutate the rows it was given", () => {
+    const row = { dayOfWeek: 1, periodNumber: 1, classGroupId: "c-archived", notes: "" };
+    withoutArchivedClasses([row], live);
+    assert.equal(row.classGroupId, "c-archived");
   });
 });
