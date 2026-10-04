@@ -167,9 +167,27 @@ export interface LessonPlanOutput {
   servedReason?: 'quota' | 'budget';
 }
 
+/**
+ * A problem solved in full at the top of a worksheet, for the class to study.
+ *
+ * Not a question and not numbered: nobody answers it. It counts toward the
+ * total the teacher picked (see `generateWorksheet`), and a worksheet may have
+ * none — a lesson with no solved item, or a model that left it out.
+ */
+export interface WorksheetWorkedExample {
+  problem: string;
+  /** One line of working per step, in order; the last states the result. */
+  steps: string[];
+  answer: string;
+  /** Asks the student to say in a sentence why the first step was valid. */
+  selfExplain?: string;
+}
+
 export interface WorksheetOutput {
   title: string;
   instructions: string;
+  /** Solved in full before the questions; absent when there is nothing honest to show. */
+  workedExample?: WorksheetWorkedExample;
   sections: WorksheetSection[];
   answerKey: WorksheetAnswerKeyItem[];
   sources?: GroundedSource[];
@@ -211,6 +229,8 @@ export interface WorksheetQuestion {
 export interface WorksheetAnswerKeyItem {
   num: number;
   answer: string;
+  /** The working behind `answer`, one line per step — teacher's copy only. */
+  solution?: string[];
 }
 
 export interface QuizOutput {

@@ -25,11 +25,14 @@
  */
 import { CHEM_BANK, detectChemFamily, type ChemFamily } from './chemistry.ts';
 import { subjectIdFromName } from './subjects.ts';
+import { stepsFor } from './steps.ts';
 import { elementaryOpsForTitle, makeElementaryItem } from './elementary.ts';
 
 export { isChemContext, detectChemFamily, CHEM_BANK } from './chemistry.ts';
 export type { ChemFamily } from './chemistry.ts';
 export { subjectIdFromName } from './subjects.ts';
+export { stepsFor, solvedItemIds, completionSplit } from './steps.ts';
+export type { SolutionSteps } from './steps.ts';
 export { detectElementaryOp, elementaryOpsForTitle } from './elementary.ts';
 
 export interface PracticeLesson {
@@ -53,6 +56,13 @@ export interface PracticeWQ {
   options?: string[];
   answer: string;
   points: number;
+  /**
+   * The checked working for this item, in the question's language — present
+   * only when a person wrote and verified it (`steps.ts`). A worksheet shows it
+   * in the teacher's key; absent means the key shows the answer alone, never a
+   * derived solution.
+   */
+  steps?: string[];
 }
 
 /**
@@ -612,7 +622,8 @@ function takeFromBank(
 
   used.add(item.id);
   const formatted = formatItem(item, lang, type);
-  return { ...formatted, points };
+  const working = stepsFor(item.id);
+  return { ...formatted, ...(working ? { steps: [...working[lang]] } : {}), points };
 }
 
 /**
@@ -708,6 +719,79 @@ export function takeConcreteChem(
     session ?? usedIds,
     allowRepeat,
   );
+}
+
+/**
+ * An item with checked working, for a worksheet to study or to finish half-solved.
+ *
+ * Same bank, same family routing and same per-pass `session` set as the
+ * practice questions, so what a paper studies is spent and cannot come back as
+ * a question. Only items in `steps.ts` qualify; there is no fallback to the
+ * generic family or to a repeat, because a worked example off the lesson's
+ * topic is worse than none and the caller simply omits the section.
+ */
+export interface SolvedItem {
+  id: string;
+  /** The stem as the short-answer question would read. */
+  problem: string;
+  /** One line of working per step, in the requested language; the last states the result. */
+  steps: string[];
+  answer: string;
+  diff: DiffTier;
+}
+
+/** The requested tier first, then the nearest — a worked example leans easier before harder. */
+const TIER_ORDER: Record<DiffTier, DiffTier[]> = {
+  easy: ['easy', 'medium', 'hard'],
+  medium: ['medium', 'easy', 'hard'],
+  hard: ['hard', 'medium', 'easy'],
+};
+
+function takeSolvedFromBank(
+  bank: ConcreteItem[],
+  family: Family,
+  diff: DiffTier,
+  lang: Lang,
+  used: Set<string>,
+): SolvedItem | null {
+  for (const tier of TIER_ORDER[diff]) {
+    const pool = bank.filter(i => i.family === family && i.diff === tier && !used.has(i.id) && stepsFor(i.id));
+    if (pool.length === 0) continue;
+    const item = pool[Math.floor(Math.random() * pool.length)]!;
+    used.add(item.id);
+    return {
+      id: item.id,
+      problem: itemStem(item, lang === 'ar'),
+      steps: [...stepsFor(item.id)![lang]],
+      answer: item.answer,
+      diff: item.diff,
+    };
+  }
+  return null;
+}
+
+/** A solved Grade 10 maths item for this lesson, or null when the lesson has none left. */
+export function takeSolvedMath(
+  topic: string,
+  kb: KBLesson | null,
+  diff: DiffTier,
+  lang: Lang,
+  session?: Set<string>,
+): SolvedItem | null {
+  const family = matchMathFamily(topic, kb);
+  if (!family) return null;
+  return takeSolvedFromBank(MATH_BANK, family, diff, lang, session ?? usedIds);
+}
+
+/** A solved chemistry item for this lesson, or null when the lesson has none left. */
+export function takeSolvedChem(
+  topic: string,
+  kb: KBLesson | null,
+  diff: DiffTier,
+  lang: Lang,
+  session?: Set<string>,
+): SolvedItem | null {
+  return takeSolvedFromBank(CHEM_BANK, detectChemFamily(lessonTextBlob(topic, kb)), diff, lang, session ?? usedIds);
 }
 
 /** Peek several concrete chemistry stems for activity slides (marks them used). */

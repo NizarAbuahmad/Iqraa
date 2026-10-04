@@ -28,7 +28,8 @@ async function countFor(numQuestions: number, withWordProblem = false): Promise<
       ? ['multiple_choice', 'short_answer', 'word_problem']
       : ['multiple_choice', 'short_answer'],
   } as AIRequest);
-  return out.sections.reduce((n, s) => n + s.questions.length, 0);
+  // The worked example is not a question but it is one of the n asked for.
+  return out.sections.reduce((n, s) => n + s.questions.length, 0) + (out.workedExample ? 1 : 0);
 }
 
 describe('worksheet question count', () => {

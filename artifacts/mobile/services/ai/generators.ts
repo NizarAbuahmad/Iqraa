@@ -21,9 +21,11 @@ import {
   isMathContext,
   takeConcreteMath,
   takeConcreteMathBatch,
+  takeSolvedMath,
+  completionSplit,
   type DiffTier,
 } from './mathPractice.ts';
-import { isChemContext, takeConcreteChem, takeConcreteChemBatch } from './chemPractice.ts';
+import { isChemContext, takeConcreteChem, takeConcreteChemBatch, takeSolvedChem, type SolvedItem } from './chemPractice.ts';
 import { buildActivityBlueprint } from './activityBlueprints.ts';
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
@@ -56,7 +58,13 @@ async function verifyIfPossible(
 
 type Lang = 'ar' | 'en';
 type QType = 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem';
-interface WQ { text: string; options?: string[]; answer: string; points: number }
+interface WQ {
+  text: string; options?: string[]; answer: string; points: number;
+  /** Checked working from the bank; becomes the key's `solution`, never part of the question. */
+  steps?: string[];
+}
+/** A question as stored on the paper: the working belongs to the key, not the student's copy. */
+const withoutSteps = ({ steps: _steps, ...rest }: WQ): WQ => rest;
 
 /**
  * The KB lesson to ground on: the id when the caller supplied one, otherwise
@@ -966,7 +974,39 @@ export class MockAIService extends AIService {
     const priorCount = priorConcepts.length > 0
       ? Math.min(3, Math.max(2, Math.min(priorConcepts.length, 3)))
       : 0;
-    const mainTotal = Math.max(1, totalQ - (wantsWordProblem ? 1 : 0));
+    // `req.difficulty` SHIFTS the band; it does not flatten it.
+    //
+    // The easy → medium → hard progression is deliberate (worked example →
+    // fading → independent), so honouring "hard" by making all three sections
+    // hard would throw away the scaffolding. It shifts instead — and before
+    // this, `req.difficulty` was not read at all, so the picker on
+    // `app/ai-tools/worksheet.tsx` moved nothing.
+    const BANDS: Record<'easy' | 'medium' | 'hard', [DiffTier, DiffTier, DiffTier]> = {
+      easy: ['easy', 'easy', 'medium'],
+      medium: ['easy', 'medium', 'hard'],
+      hard: ['medium', 'hard', 'hard'],
+    };
+    const requested = req.difficulty === 'easy' || req.difficulty === 'hard' ? req.difficulty : 'medium';
+    const band = BANDS[requested];
+
+    // The worked example, and the half-solved item that follows it.
+    //
+    // Taken before any practice question so the pass's session set spends them:
+    // what the class studies cannot come back as a question two sections later.
+    // Only where a person wrote and checked the working (`steps.ts`) — a lesson
+    // without any, or a teacher's own document, gets the paper it always did.
+    // They count INSIDE `totalQ`, the number the teacher picked, so the page
+    // does not outgrow the period. Homework is a separate generator.
+    const takeSolved = (tier: DiffTier): SolvedItem | null => {
+      if (docs.present) return null;
+      if (isChemContext(topic, kb, req.subject)) return takeSolvedChem(topic, kb, tier, lang);
+      if (isMathContext(topic, kb, req.subject)) return takeSolvedMath(topic, kb, tier, lang);
+      return null;
+    };
+    const exampleItem = takeSolved(band[0]);
+    const completionItem = exampleItem ? takeSolved(band[1]) : null;
+    const reserved = (exampleItem ? 1 : 0) + (completionItem ? 1 : 0);
+    const mainTotal = Math.max(0, totalQ - reserved - (wantsWordProblem ? 1 : 0));
 
     const answerSpace = lang === 'ar'
       ? '\n\nالإجابة:\n_________________________________\n_________________________________'
@@ -977,6 +1017,8 @@ export class MockAIService extends AIService {
     let qNum = 1;
 
     const usedStems = new Set<string>();
+    if (exampleItem) usedStems.add(questionStemKey(exampleItem.problem));
+    if (completionItem) usedStems.add(questionStemKey(completionItem.problem));
 
     // `allowRepeat: false` — a worksheet is one printed page, not a fresh
     // draw each time like a quiz retake. Once a lesson's concrete-math bank
@@ -1039,24 +1081,39 @@ export class MockAIService extends AIService {
     }
 
     // Distribute main questions across selected types with progressive difficulty
-    const easyN = Math.max(1, Math.floor(mainTotal * 0.35));
-    const hardN = Math.max(1, Math.floor(mainTotal * 0.25));
-    const midN = Math.max(1, mainTotal - easyN - hardN);
-
-    // `req.difficulty` SHIFTS the band; it does not flatten it.
     //
-    // The easy → medium → hard progression is deliberate (worked example →
-    // fading → independent), so honouring "hard" by making all three sections
-    // hard would throw away the scaffolding. It shifts instead — and before
-    // this, `req.difficulty` was not read at all, so the picker on
-    // `app/ai-tools/worksheet.tsx` moved nothing.
-    const BANDS: Record<'easy' | 'medium' | 'hard', [DiffTier, DiffTier, DiffTier]> = {
-      easy: ['easy', 'easy', 'medium'],
-      medium: ['easy', 'medium', 'hard'],
-      hard: ['medium', 'hard', 'hard'],
+    // Below three there is no room for a question in each band, and the old
+    // `Math.max(1, …)` per band overshot the total by up to two. Reserving the
+    // worked example and the half-solved item makes totals that small reachable.
+    const splitCounts = (m: number): [number, number, number] => {
+      if (m >= 3) {
+        const easy = Math.max(1, Math.floor(m * 0.35));
+        const hard = Math.max(1, Math.floor(m * 0.25));
+        return [easy, Math.max(1, m - easy - hard), hard];
+      }
+      return m === 2 ? [1, 0, 1] : m === 1 ? [0, 1, 0] : [0, 0, 0];
     };
-    const requested = req.difficulty === 'easy' || req.difficulty === 'hard' ? req.difficulty : 'medium';
-    const band = BANDS[requested];
+    const [easyN, midN, hardN] = splitCounts(mainTotal);
+
+    // The half-solved item: its first steps written, blanks for the rest.
+    if (completionItem) {
+      const { given, remaining } = completionSplit(completionItem.steps);
+      const blanks = Array.from({ length: remaining }, (_, i) => `${given.length + i + 1}) __________`);
+      const text = [
+        completionItem.problem,
+        '',
+        lang === 'ar' ? 'أكمل الحل:' : 'Complete the solution:',
+        ...given.map((line, i) => `${i + 1}) ${line}`),
+        ...blanks,
+      ].join('\n');
+      sections.push({
+        type: 'short_answer',
+        title: lang === 'ar' ? 'مثال نكمله' : 'Finish the solution',
+        questions: [{ text, answer: completionItem.answer, points: saPts(band[1]) }],
+      });
+      answerKey.push({ num: qNum++, answer: completionItem.answer, solution: completionItem.steps });
+    }
+
 
     // Titles name the tier the section actually contains, so a "hard"
     // worksheet does not head its first section «تمارين تمهيدية (سهل)».
@@ -1099,8 +1156,8 @@ export class MockAIService extends AIService {
           break;
         }
         typesUsed.add(type);
-        questions.push(q);
-        answerKey.push({ num: qNum++, answer: q.answer ?? '—' });
+        questions.push(withoutSteps(q));
+        answerKey.push({ num: qNum++, answer: q.answer ?? '—', ...(q.steps ? { solution: q.steps } : {}) });
       }
       if (questions.length > 0) {
         const sectionType = typesUsed.size === 1 ? [...typesUsed][0] : 'mixed';
@@ -1114,9 +1171,9 @@ export class MockAIService extends AIService {
       sections.push({
         type: 'word_problem',
         title: lang === 'ar' ? 'مسألة حياتية' : 'Real-life word problem',
-        questions: [q],
+        questions: [withoutSteps(q)],
       });
-      answerKey.push({ num: qNum++, answer: q.answer ?? '—' });
+      answerKey.push({ num: qNum++, answer: q.answer ?? '—', ...(q.steps ? { solution: q.steps } : {}) });
     }
     } catch (e) {
       if (!(e instanceof BankSpentError)) throw e;
@@ -1130,8 +1187,20 @@ export class MockAIService extends AIService {
         ? `ورقة عمل صفية – ${topic}`
         : `In-class Worksheet – ${topic}`,
       instructions: lang === 'ar'
-        ? `الاسم: ________________    الصف: ${req.grade}    التاريخ: ________________\n\nمقدمة قصيرة: هذه ورقة تدريب صفية حول «${topic}». اعمل بهدوء، وابدأ بالأسهل ثم انتقل للأصعب.\n\n• أجب في المساحات المخصصة.\n• بيّن خطوات الحل عند الحاجة.\n• لا حاجة لملاحظات المعلم — هذه ورقة للطالب.`
-        : `Name: ________________    Grade: ${req.grade}    Date: ________________\n\nShort intro: This is an in-class practice sheet on “${topic}”. Work quietly and move from easier to harder items.\n\n• Write in the answer spaces provided.\n• Show working where needed.\n• Student sheet only — no teacher notes.`,
+        ? `الاسم: ________________    الصف: ${req.grade}    التاريخ: ________________\n\nمقدمة قصيرة: هذه ورقة تدريب صفية حول «${topic}». اعمل بهدوء، وابدأ بالأسهل ثم انتقل للأصعب.\n\n${exampleItem ? '• ادرس المثال المحلول أولًا، ثم أكمل الحل في السؤال الأول، ثم تابع بقية الأسئلة.\n' : ''}• أجب في المساحات المخصصة.\n• بيّن خطوات الحل عند الحاجة.\n• لا حاجة لملاحظات المعلم — هذه ورقة للطالب.`
+        : `Name: ________________    Grade: ${req.grade}    Date: ________________\n\nShort intro: This is an in-class practice sheet on “${topic}”. Work quietly and move from easier to harder items.\n\n${exampleItem ? '• Study the worked example first, then finish the solution in question 1, then carry on.\n' : ''}• Write in the answer spaces provided.\n• Show working where needed.\n• Student sheet only — no teacher notes.`,
+      ...(exampleItem
+        ? {
+            workedExample: {
+              problem: exampleItem.problem,
+              steps: exampleItem.steps,
+              answer: exampleItem.answer,
+              selfExplain: lang === 'ar'
+                ? 'اشرح بجملة واحدة: لماذا كانت الخطوة الأولى صحيحة؟'
+                : 'In one sentence, explain why the first step was valid.',
+            },
+          }
+        : {}),
       sections,
       answerKey,
     };
