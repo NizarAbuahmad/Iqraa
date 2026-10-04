@@ -9,7 +9,7 @@ import type {
 } from './AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 import { buildInfographicFromLesson, type InfographicOutput } from './infographic.ts';
-import { getLessonById, getUnitForLesson, resolveGroundedKbLesson } from '../knowledgeBase.ts';
+import { getBookForLesson, getLessonById, getUnitForLesson, resolveGroundedKbLesson } from '../knowledgeBase.ts';
 import { figuresForLesson } from '../bookFigures.ts';
 import {
   parseDocumentGrounding,
@@ -1128,6 +1128,8 @@ export class MockAIService extends AIService {
 
     const blueprint = buildActivityBlueprint(actType, {
       topic, lang, math, practice, kb, duration,
+      // The lesson's own subject id, else the caller's name — see `handsOnKind`.
+      subject: (kb ? getBookForLesson(kb)?.subjectId : undefined) ?? req.subject,
     });
 
     return plainActivity({

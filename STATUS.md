@@ -63,9 +63,7 @@ an announcement by default» below.
   guessed from a title 107 lessons share; Save stores the type, length and
   objective the activity was **built** with, not the live pickers; the
   evaluation-gap warm-up is saved with a group/20-min form, which is what
-  Regenerate really builds. Not changed, found in the same review: the offline
-  hands-on format is maths-shaped for every subject (fixed ruler/protractor
-  materials, "measured vs computed" for a chemistry model); offline Regenerate
+  Regenerate really builds. Not changed, found in the same review: offline Regenerate
   returns identical content for subjects with no concrete bank; Regenerate keeps
   `savedId`, so Update overwrites the saved version; and typing «أنشئ نشاطًا»
   on `/home` opens the lesson plan, because `buildGeneratorNav` redirects the
@@ -106,6 +104,30 @@ an announcement by default» below.
   `homeAiTools.ts`'s `game` entry points at `/ai-tools/classroom` and is in no
   suggestion list, so flipping `enabled` alone would not surface it. Tests:
   `classDeckAnswerKey.test.ts`, `classGame.test.ts`. Not looked at in a browser.
+- **The hands-on activity works for every subject** (2026-10-04, follow-up). It
+  fixed its kit at ruler/protractor/string and always ended on «measured vs
+  computed», so a chemistry class was told to measure a molecule model and a
+  factorising lesson to «draw the figure to scale». The format is unchanged —
+  students make something physical, check it against the rule or the book, and
+  explain any mismatch — but what they make now depends on the lesson
+  (`handsOnKind` in `activityBlueprints.ts`): a geometric maths item is still
+  drawn and measured (`measure`); other maths builds the expression from cards
+  and checks it by the rule (`tiles`); the sciences — chemistry, physics,
+  biology, earth science, science — build a ball-and-stick/clay model and check
+  it against the formula or the book's diagram (`model`); languages, humanities
+  and any subject not recognised sort or sequence cards from the lesson's
+  concepts and compare with the book (`sort`). The subject comes from the
+  lesson's book id, else the request's subject name. The live prompt's clause
+  (`ACTIVITY_FORMAT_RULES_*`, `prompts.ts`) says the same, per CLAUDE.md's two-
+  places rule, and now says not to require a ruler or protractor unless the
+  lesson involves measuring. **`PROMPT_VERSION` was NOT bumped** — that retires
+  every pooled artifact for every generator, which is a heavy price for one
+  format; so hands-on activities already in the shared pool for a non-maths
+  subject keep being served with the old maths-shaped kit until they are
+  retired («بلّغ عن مشكلة») or the next deliberate bump. `GEOMETRY` in
+  `activityBlueprints.ts` is a keyword list: a geometric item it misses builds
+  with cards instead of being measured. Tests: `handsOnActivity.test.ts`,
+  `activityPrompts.test.ts`. Not looked at in a browser.
 - **Interface dates and times are written in Latin digits** (2026-10-03).
   Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
   «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
