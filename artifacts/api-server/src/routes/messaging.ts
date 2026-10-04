@@ -65,6 +65,7 @@ import { visibleGroupMembers } from "../lib/groupMemberView.ts";
 import { latestVisibleMessages, unreadCounts } from "../lib/inboxSummary.ts";
 import { isR2Configured, newChatMediaKey, presignedGetUrl, putObject } from "../lib/r2.js";
 import { syncClassGroupThread } from "../lib/classThread.js";
+import { pairKey, studentNamesByPair } from "../lib/chatThreadContext.js";
 import { resolveReport } from "../lib/reportDecision.js";
 import { EXTENSION_BY_MIME, MAX_DATA_URL_LENGTH, kindForMime, parseDataUrl } from "../lib/lessonMediaUpload.js";
 
@@ -119,6 +120,33 @@ async function isConnected(teacherId: string, otherUserId: string): Promise<bool
     .where(and(eq(students.teacherId, teacherId), eq(rosterLinks.userId, otherUserId)))
     .limit(1);
   return !!row;
+}
+
+/**
+ * Names of the (unarchived) roster students that link each pair of accounts,
+ * keyed by `pairKey(teacherId, otherUserId)`. One query for every pair asked
+ * about — `pairs` is `[teacherId, otherUserId]` — so the inbox pays for it once,
+ * not per thread. Over-fetches the cross product of the ids involved and lets
+ * the caller pick its pairs out, which at roster scale is cheaper than building
+ * an OR per thread.
+ */
+async function linkedStudentNames(pairs: Array<[string, string]>): Promise<Map<string, string[]>> {
+  if (pairs.length === 0) return new Map();
+  const teacherIds = [...new Set(pairs.map(([t]) => t))];
+  const otherIds = [...new Set(pairs.map(([, o]) => o))];
+  const rows = await db
+    .select({ teacherId: students.teacherId, userId: rosterLinks.userId, studentName: students.displayName })
+    .from(rosterLinks)
+    .innerJoin(students, eq(students.id, rosterLinks.studentId))
+    .where(
+      and(
+        inArray(students.teacherId, teacherIds),
+        inArray(rosterLinks.userId, otherIds),
+        isNull(students.archivedAt),
+      ),
+    )
+    .orderBy(asc(students.displayName));
+  return studentNamesByPair(rows);
 }
 
 /** A participant's own row in a thread, or null if they aren't in it. */
@@ -378,12 +406,26 @@ router.get("/messaging/threads", async (req: AuthenticatedRequest, res) => {
             firstName: users.firstName,
             lastName: users.lastName,
             role: users.role,
+            subjectIds: users.subjectIds,
           })
           .from(chatParticipants)
           .innerJoin(users, eq(users.id, chatParticipants.userId))
           .where(and(inArray(chatParticipants.threadId, directIds), ne(chatParticipants.userId, req.user!.id)))
       : [];
-    const otherByThread = new Map(otherParticipants.map(p => [p.threadId, p]));
+
+    // Which students connect me to each of them — one query for the whole
+    // inbox. The teacher is whichever side holds a teacher role (exactly one
+    // does — POST /messaging/threads), so the pair is the same whoever looks.
+    const meIsTeacher = isTeacherRole(req.user!.role);
+    const pairOf = (otherId: string): [string, string] =>
+      meIsTeacher ? [req.user!.id, otherId] : [otherId, req.user!.id];
+    const studentNames = await linkedStudentNames(otherParticipants.map(p => pairOf(p.userId)));
+    const otherByThread = new Map(
+      otherParticipants.map(p => [
+        p.threadId,
+        { ...p, aboutStudents: studentNames.get(pairKey(...pairOf(p.userId))) ?? [] },
+      ]),
+    );
 
     // Teachers never filter blocked senders (see file header) — only worth
     // the extra query for a non-teacher viewer.
@@ -779,12 +821,27 @@ router.get("/messaging/threads/:id", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    const [other] = await db
-      .select({ userId: users.id, firstName: users.firstName, lastName: users.lastName, role: users.role })
+    const [otherRow] = await db
+      .select({
+        userId: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        role: users.role,
+        subjectIds: users.subjectIds,
+      })
       .from(chatParticipants)
       .innerJoin(users, eq(users.id, chatParticipants.userId))
       .where(and(eq(chatParticipants.threadId, threadId), ne(chatParticipants.userId, req.user!.id)))
       .limit(1);
+
+    // Same shape as the inbox row, so the header and the list never disagree.
+    let other: (typeof otherRow & { aboutStudents: string[] }) | undefined;
+    if (otherRow) {
+      const meIsTeacher = isTeacherRole(req.user!.role);
+      const pair: [string, string] = meIsTeacher ? [req.user!.id, otherRow.userId] : [otherRow.userId, req.user!.id];
+      const names = await linkedStudentNames([pair]);
+      other = { ...otherRow, aboutStudents: names.get(pairKey(...pair)) ?? [] };
+    }
 
     let isBlocked = false;
     if (other) {
