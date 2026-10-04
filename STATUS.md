@@ -719,7 +719,7 @@ screen. Not verified: the React Native screen itself (no screen tests exist),
 and a real model's reply to the new prompt — the live path is covered by prompt
 and sanitizer tests only.
 
-Mobile 2643 pass / 0 fail / 10 skipped, api-server 1113, math-practice 142,
+Mobile 2650 pass / 0 fail / 10 skipped, api-server 1119, math-practice 142,
 typecheck clean.
 
 ## The worksheet question-count picker is honoured offline, 2026-10-04
