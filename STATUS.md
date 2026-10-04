@@ -15209,7 +15209,8 @@ reports no checked state to assistive tech; the claim picker shows the
 class's English name in the Arabic UI; «5 علامة» / «خسر 3 علامة» where
 Arabic wants «علامات»; per-question marks shown as «2.00 ع»; the grade and
 subject chip rows start scrolled to the wrong end in RTL; the
-«تابعنا من حيث توقّفت» banner stays on the «تم التسليم» screen.
+«تابعنا من حيث توقّفت» banner stays on the «تم التسليم» screen. All fixed
+the same day — see «Student-side display fixes» below.
 
 ## A teacher releases results, per exam, 2026-10-04
 
@@ -15227,7 +15228,38 @@ Verified in a browser against the local stack: release → the student's
 «اختباراتي» row reads «النتيجة متاحة»; hide → back to «سُلِّم — بانتظار
 النتيجة».
 
-Not done: students are not notified when results are released; the exam
-screen's question preview shows «—» for a read-aloud question (it reads only
-`prompt`/`stem`).
+Not done: students are not notified when results are released. (The «—»
+preview for a read-aloud question, noted here at first, is fixed in the next
+entry.)
+
+## Student-side display fixes from the walkthrough, 2026-10-04
+
+The small things the student walkthrough listed, each re-checked in a browser
+against the local stack:
+
+- **Marks read as Arabic.** The exam showed «2.00 ع» per question and
+  «5 علامة» in its intro; it now says «علامة واحدة» / «علامتان» / «3 علامات»
+  and «3 أسئلة — 6 علامات» (`arMarksPhrase` / `arQuestionsPhrase` in
+  `services/arCount.ts`, tested). The teacher screens keep the «ع» shorthand
+  but drop the decimals («1 ع»). The marking screen's «خسر 3 علامة» now
+  declines too, with the accusative dual («خسر علامتين»).
+- **«تابعنا من حيث توقّفت» stays on the questions.** It was a `notice`, and
+  `notice` is also how «انتهى الوقت» reaches the «تم التسليم» screen, so a
+  resumed paper carried the line onto the hand-in screen. It is its own flag
+  now.
+- **The claim picker names the class in Arabic.** `GET /auth/join/:code`
+  already returned `nameAr`; `useJoinCodeLookup` showed `name`. It resolves
+  through `className()` (`services/materialClass.ts`) like the teacher
+  screens.
+- **A read-aloud question's preview shows its passage** (`body.passage`)
+  instead of «—» on the teacher's exam screen.
+- **The terms box reports its state.** react-native-web 0.21 drops
+  `accessibilityState` entirely — only `aria-*` reaches the DOM — so the box
+  now also sets `aria-checked`, and the two links are underlined so it is
+  clear which part of the line opens a page and which ticks the box.
+  **About 39 other controls** (`grep -rn "accessibilityState=" app
+  components`) declare `checked`/`selected`/`expanded` the same way and are
+  equally silent on the web; not changed here.
+- **The library chip rows** were already fixed by #819 (they wrap instead of
+  scrolling); confirmed, no change.
 
