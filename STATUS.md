@@ -53,6 +53,81 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Class Activity review fixes** (2026-10-04). The offline jigsaw now lists
+  four tasks for its groups of four (it drew three items and promised four);
+  activities no longer print literal `**bold**` — `services/ai/activityText.ts`
+  strips it where an activity is generated (offline and live) and where a saved
+  one is reopened; PDF and slide exports keep the `\n` line breaks in a step
+  (`white-space: pre-line`); the tools tab sends the picked lesson's grade and
+  subject with its title (`pickPrefillParams`) instead of letting the grade be
+  guessed from a title 107 lessons share; Save stores the type, length and
+  objective the activity was **built** with, not the live pickers; the
+  evaluation-gap warm-up is saved with a group/20-min form, which is what
+  Regenerate really builds. Not changed, found in the same review: offline Regenerate
+  returns identical content for subjects with no concrete bank; Regenerate keeps
+  `savedId`, so Update overwrites the saved version; and typing «أنشئ نشاطًا»
+  on `/home` opens the lesson plan, because `buildGeneratorNav` redirects the
+  disabled `activity`/`homework` tools — part of the recorded `homeAiTools`
+  decision, not touched. Tests: `activityOutput.test.ts`. Not looked at in a
+  browser.
+- **Class Challenge (game) review fixes** (2026-10-04, same PR as the activity
+  fixes above). `game.tsx` now grounds the lesson once, scoped to the picked
+  grade and subject, and carries `lessonId`/`unitId`/figures from that grounding
+  (it grounded by bare title five times — a wrong-grade lesson went to the shared
+  pool with `contextSource: 'curriculum'`); it normalises option letters like
+  `quiz.tsx` (live AI doubled them: «أ  أ) 3»); the deck is built with the team
+  count at build time and rebuilds from the deck's own title (a cleared topic
+  left the intro on a blank line). `indexOfAnswer` in `classDeck.ts` returns -1
+  instead of option A when the key names no option — text, text without option
+  letters, then a bare letter by position (a bare number is not a position); a
+  game drops such a question (it cannot be adjudicated), a quiz/worksheet deck
+  shows it as an open question carrying the key, and a missing key no longer
+  throws. The podium medals by rank (a tie for first put third on the silver
+  step) and the scoreboard shows none until someone scores
+  (`medalFor`). Leaving the presentation mid-game asks first once anything is
+  awarded (`hasGameScores`). Arabic: «فريقين», «من 12 سؤال». Streak scoring
+  no longer depends on the other teams (2026-10-04, follow-up): a question
+  nobody got used to look exactly like one the teacher skipped, so it never
+  broke a streak — team 1 right on Q1, Q2 and Q4 scored 450 if nobody got Q3
+  and 350 if another team did. The ledger now has an explicit «لم يُصب أحد»
+  entry (`GameState.settled`, `toggleNobody`, a button beside «الجميع أصابوا»):
+  a question counts as adjudicated when someone was credited OR it was marked
+  this way, and only adjudicated questions break a run; a skipped question
+  (neither) still does not. Crediting a team replaces the mark, and taking the
+  last credit back leaves the question un-adjudicated rather than «nobody».
+  Not changed, found in the same review: a game
+  has no verifier, no «بلّغ عن مشكلة» and no save/reopen/export; the pickers stay
+  editable while a deck loads; `builder.tsx` has the same grade-scope gaps and
+  sends the English grade name; Arabic-Indic scores sit beside Latin question
+  numbers on one scoreboard row; team colours are used as text on pale tints
+  (~2:1 for amber/green); replay keeps the previous round's pen ink; and
+  `homeAiTools.ts`'s `game` entry points at `/ai-tools/classroom` and is in no
+  suggestion list, so flipping `enabled` alone would not surface it. Tests:
+  `classDeckAnswerKey.test.ts`, `classGame.test.ts`. Not looked at in a browser.
+- **The hands-on activity works for every subject** (2026-10-04, follow-up). It
+  fixed its kit at ruler/protractor/string and always ended on «measured vs
+  computed», so a chemistry class was told to measure a molecule model and a
+  factorising lesson to «draw the figure to scale». The format is unchanged —
+  students make something physical, check it against the rule or the book, and
+  explain any mismatch — but what they make now depends on the lesson
+  (`handsOnKind` in `activityBlueprints.ts`): a geometric maths item is still
+  drawn and measured (`measure`); other maths builds the expression from cards
+  and checks it by the rule (`tiles`); the sciences — chemistry, physics,
+  biology, earth science, science — build a ball-and-stick/clay model and check
+  it against the formula or the book's diagram (`model`); languages, humanities
+  and any subject not recognised sort or sequence cards from the lesson's
+  concepts and compare with the book (`sort`). The subject comes from the
+  lesson's book id, else the request's subject name. The live prompt's clause
+  (`ACTIVITY_FORMAT_RULES_*`, `prompts.ts`) says the same, per CLAUDE.md's two-
+  places rule, and now says not to require a ruler or protractor unless the
+  lesson involves measuring. **`PROMPT_VERSION` was NOT bumped** — that retires
+  every pooled artifact for every generator, which is a heavy price for one
+  format; so hands-on activities already in the shared pool for a non-maths
+  subject keep being served with the old maths-shaped kit until they are
+  retired («بلّغ عن مشكلة») or the next deliberate bump. `GEOMETRY` in
+  `activityBlueprints.ts` is a keyword list: a geometric item it misses builds
+  with cards instead of being measured. Tests: `handsOnActivity.test.ts`,
+  `activityPrompts.test.ts`. Not looked at in a browser.
 - **Interface dates and times are written in Latin digits** (2026-10-03).
   Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
   «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
@@ -15028,3 +15103,56 @@ from someone the viewer blocked showed its preview with no name.
 
 Not done: the two pollers still each fetch the full list every 20 s; sharing
 one fetch between the badge and the inbox would need a shared client store.
+
+## A walk through the student flow, and read-aloud never worked in Chrome, 2026-10-04
+
+**Walked end to end in a browser**, against a local stack: Postgres with this
+schema, the real API and web build, and one small fake standing in for R2 and
+the transcription endpoint (no production accounts were made). Teacher set
+up a class, a roster and an exam with a multiple-choice and a read-aloud
+question; a student signed up, claimed a name, took the exam with a real
+recording from Chromium's fake microphone, reloaded mid-exam and submitted;
+the teacher marked it and played the recording back.
+
+**Found and fixed:**
+
+- **Every read-aloud recording made in Chrome was refused.** Chrome records
+  `audio/webm;codecs=opus`, FileReader copies that into the data URL, and
+  `parseDataUrl` (`lib/lessonMediaUpload.ts`) allowed nothing between the type
+  and `;base64` — so the exam and the practice card both answered «audio must
+  be a base64 data URL». It now accepts mime parameters and returns the bare,
+  lower-cased type; tested. After the fix the recording stored, transcribed
+  and played back for the teacher.
+- **That message reached the student in English.** `useReadAloudRecorder`
+  printed any thrown error's own message, which for an API failure is the
+  server's sentence. It now shows only a translated message the caller
+  supplies; the exam maps codes through `takeErrorKey`
+  (`too_many_takes` → «استخدمتَ جميع محاولات التسجيل»), tested.
+- **The marking screen called every non-open question a paper question.**
+  It tested "no `prompt`", but only open-answer types keep their text there
+  (multiple choice uses `stem`, true/false `statement`, …), so each one showed
+  «سؤال من الورقة — أدخل علامته فقط» under the answer it had just rendered.
+  `services/paperQuestion.ts`, tested.
+
+**Found, not fixed — a decision first:** nothing ever sets
+`evaluations.release_results_to_student`. No route writes it and no screen
+offers it, so no student can see a result: «اختباراتي»'s results and
+«تحقّق من النتيجة» are unreachable for every exam. With the flag set by hand
+in the local database, the student's result card rendered correctly. It
+needs a teacher-facing release switch.
+
+**Verified working:** the terms box gates «إنشاء حساب» and the acceptance is
+stored; email code; claim by class code with the «هل هذا اسمك؟» confirmation;
+the library opening on the student's own grade (with her row on grade 9);
+«اختباراتي»; resuming a sitting in a fresh browser; grading on submit; the
+class group read-only for a student, with the inbox preview and unread
+count.
+
+**Small things seen, not fixed:** tapping the terms sentence opens the
+policy (most of the line is links) rather than ticking the box, and the box
+reports no checked state to assistive tech; the claim picker shows the
+class's English name in the Arabic UI; «5 علامة» / «خسر 3 علامة» where
+Arabic wants «علامات»; per-question marks shown as «2.00 ع»; the grade and
+subject chip rows start scrolled to the wrong end in RTL; the
+«تابعنا من حيث توقّفت» banner stays on the «تم التسليم» screen.
+

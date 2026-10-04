@@ -35,10 +35,17 @@ export function useReadAloudRecorder(options: {
   onRecorded: (audio: Blob, durationMs: number) => Promise<void>;
   /** Shown when the microphone cannot be opened — almost always a denied prompt. */
   micErrorMessage: string;
-  /** Shown when `onRecorded` fails without a message of its own. */
+  /** Shown when `onRecorded` fails, unless `messageFor` names something better. */
   failureMessage: string;
+  /**
+   * The message for a failed `onRecorded`, already translated. The error's own
+   * `message` is never shown: for an API failure it is the server's English
+   * sentence, and that is how a student came to read "audio must be a base64
+   * data URL" in the middle of an Arabic exam.
+   */
+  messageFor?: (err: unknown) => string;
 }): ReadAloudRecorder {
-  const { onRecorded, micErrorMessage, failureMessage } = options;
+  const { onRecorded, micErrorMessage, failureMessage, messageFor } = options;
 
   const [phase, setPhase] = useState<RecordingPhase>('idle');
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -60,11 +67,11 @@ export function useReadAloudRecorder(options: {
       const audio = await active.stop();
       await onRecorded(audio, durationMs);
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : failureMessage);
+      setError(messageFor ? messageFor(err) : failureMessage);
     } finally {
       setPhase('idle');
     }
-  }, [onRecorded, failureMessage]);
+  }, [onRecorded, failureMessage, messageFor]);
 
   // Tick the visible timer, and stop at the ceiling rather than letting a
   // student talk into an upload the server will refuse for being too long.
