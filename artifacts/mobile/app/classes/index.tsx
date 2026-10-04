@@ -29,8 +29,9 @@ import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { RosterError, archiveClass, createClass, listClasses, type ClassGroup } from '@/services/roster';
 import { confirm } from '@/services/confirm';
 import { countStudents, type TranslationKey } from '@/services/i18n';
-import { SUBJECTS, getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
-import { narrowSubjectsForGrade, resolveSelectedId } from '@/services/teacherCatalogFilter';
+import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { narrowSubjectsForGrade } from '@/services/teacherCatalogFilter';
+import { classSubjectIds, classSubjectsLabel, inOptionOrder, resolveSelectedIds, toggleId } from '@/services/classSubjects';
 import { RosterConsentGate } from '@/components/RosterConsentGate';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
@@ -52,23 +53,17 @@ const ACCENT_FILL = palette.hero;
  */
 const CLASSES_STALE_MS = 60_000;
 
-/** A class's subject for the list card. Empty when unset or off-catalog. */
-function subjectName(subjectId: string | undefined, lang: string): string {
-  const subject = subjectId ? SUBJECTS.find(s => s.id === subjectId) : undefined;
-  if (!subject) return '';
-  return lang === 'ar' ? subject.nameAr : subject.name;
-}
-
 /**
- * One row of single-select pills in the new-class sheet — grade, then subject.
+ * One row of pills in the new-class sheet — grade (pick one), then subjects
+ * (pick any: a class teacher teaches one section several subjects).
  *
  * Renders nothing for a list of one: the teacher has no decision to make, and
  * the single value is submitted either way.
  */
-function ChipRow({ label, options, selectedId, onSelect, isRTL, lang, colors }: {
+function ChipRow({ label, options, selectedIds, onSelect, isRTL, lang, colors }: {
   label: string;
   options: readonly { id: string; name: string; nameAr: string }[];
-  selectedId: string;
+  selectedIds: readonly string[];
   onSelect: (id: string) => void;
   isRTL: boolean;
   lang: string;
@@ -89,11 +84,13 @@ function ChipRow({ label, options, selectedId, onSelect, isRTL, lang, colors }: 
       </Text>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
         {options.map(o => {
-          const active = selectedId === o.id;
+          const active = selectedIds.includes(o.id);
           return (
             <Pressable
               key={o.id}
               onPress={() => onSelect(o.id)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
               style={{
                 paddingHorizontal: 14,
                 paddingVertical: 7,
@@ -148,7 +145,8 @@ function ClassesList() {
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
   const [newGradeId, setNewGradeId] = useState(teacherScope.defaultIds.gradeId);
-  const [newSubjectId, setNewSubjectId] = useState('');
+  /** null until the teacher touches the subject chips — every offered subject is ticked until then. */
+  const [newSubjectIds, setNewSubjectIds] = useState<string[] | null>(null);
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const pickerGrades = getPickerGrades().filter(g => teacherScope.isGradeShown(g.id));
@@ -162,6 +160,11 @@ function ClassesList() {
    * The choices are the subjects this teacher already said they teach *to
    * this grade* (`/setup-subjects`), which is the same narrowing the
    * curriculum browser does — nobody should have to state that twice.
+   *
+   * Multi-select, all ticked by default: a class teacher's section takes
+   * several subjects from one roster, and a subject teacher offered one
+   * subject sees no change. The first ticked, in picker order, is the primary
+   * `subjectId` that teaching plans read.
    */
   const { user } = useAuth();
   const pickerSubjects = narrowSubjectsForGrade(
@@ -170,7 +173,7 @@ function ClassesList() {
     user?.teachingAssignments,
     user?.subjectIds,
   );
-  const selectedSubjectId = resolveSelectedId(pickerSubjects, newSubjectId);
+  const selectedSubjectIds = resolveSelectedIds(pickerSubjects, newSubjectIds);
 
   /**
    * The API answers in English; this screen is Arabic-first. Translate the
@@ -238,13 +241,13 @@ function ClassesList() {
       const created = await createClass({
         name,
         gradeId: newGradeId,
-        subjectId: selectedSubjectId || undefined,
+        subjectIds: inOptionOrder(pickerSubjects, selectedSubjectIds),
       });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowNew(false);
       setNewName('');
       setNewGradeId(teacherScope.defaultIds.gradeId);
-      setNewSubjectId('');
+      setNewSubjectIds(null);
       queryClient.setQueryData<ClassGroup[]>(CLASSES_QUERY_KEY, prev => [...(prev ?? []), created]);
       router.push({ pathname: '/classes/[id]', params: { id: created.id } });
     } catch (err) {
@@ -361,7 +364,7 @@ function ClassesList() {
                       two classes of the same grade differ by this line.
                       Classes created before the picker existed have no
                       subject — they keep the bare student count. */}
-                  {[subjectName(item.subjectId, lang), countStudents(item.studentCount, lang)]
+                  {[classSubjectsLabel(classSubjectIds(item), lang, n => t('subjects_count', n)), countStudents(item.studentCount, lang)]
                     .filter(Boolean)
                     .join(' · ')}
                 </Text>
@@ -437,17 +440,17 @@ function ClassesList() {
             <ChipRow
               label={t('grade')}
               options={pickerGrades}
-              selectedId={newGradeId}
-              onSelect={setNewGradeId}
+              selectedIds={[newGradeId]}
+              onSelect={id => { setNewGradeId(id); setNewSubjectIds(null); }}
               isRTL={isRTL}
               lang={lang}
               colors={colors}
             />
             <ChipRow
-              label={t('subject')}
+              label={t('classSubjects')}
               options={pickerSubjects}
-              selectedId={selectedSubjectId}
-              onSelect={setNewSubjectId}
+              selectedIds={selectedSubjectIds}
+              onSelect={id => setNewSubjectIds(toggleId(selectedSubjectIds, id))}
               isRTL={isRTL}
               lang={lang}
               colors={colors}
@@ -476,7 +479,7 @@ function ClassesList() {
                 onPress={() => {
                   setShowNew(false);
                   setNewGradeId(teacherScope.defaultIds.gradeId);
-                  setNewSubjectId('');
+                  setNewSubjectIds(null);
                 }}
                 style={styles.modalBtn}
               >

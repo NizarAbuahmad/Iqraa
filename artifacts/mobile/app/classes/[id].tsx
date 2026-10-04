@@ -56,6 +56,7 @@ import {
 } from '@/services/roster';
 import { SUBJECTS, getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { narrowSubjectsForGrade } from '@/services/teacherCatalogFilter';
+import { classSubjectIds, filterBySubject, inOptionOrder, subjectIdFromName, subjectLabel, toggleId } from '@/services/classSubjects';
 import { useAuth } from '@/context/AuthContext';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { copyToClipboard, shareAsText } from '@/services/share';
@@ -135,7 +136,14 @@ export default function ClassDetailScreen() {
   const [showEdit, setShowEdit] = useState(false);
   const [editName, setEditName] = useState('');
   const [editGradeId, setEditGradeId] = useState('grade-10');
-  const [editSubjectId, setEditSubjectId] = useState('');
+  const [editSubjectIds, setEditSubjectIds] = useState<string[]>([]);
+  /**
+   * Which of the class's subjects the materials and exams tabs show, '' for
+   * all. One roster can take several subjects (a class teacher's section), and
+   * its arabic worksheets and maths quizzes in one undifferentiated list was
+   * the cost of not duplicating the roster.
+   */
+  const [subjectFocus, setSubjectFocus] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
   const {
@@ -152,6 +160,12 @@ export default function ClassDetailScreen() {
   });
   const group = data?.group ?? null;
   const students = data?.students ?? [];
+  const subjectIds = classSubjectIds(group);
+  // A focus left over from before an edit removed that subject would filter
+  // to nothing, with no pill on screen to say why.
+  const focus = subjectIds.includes(subjectFocus) ? subjectFocus : '';
+  const shownMaterials = filterBySubject(materials, focus, m => subjectIdFromName(m.subject));
+  const shownExams = filterBySubject(exams, focus, e => e.subjectId);
 
   // The teacher's own grades (/setup-subjects), plus whatever grade this
   // class already has so editing never hides its current value.
@@ -161,7 +175,7 @@ export default function ClassDetailScreen() {
   /**
    * Subject choices for the edit sheet: what this teacher teaches to the
    * chosen grade (same narrowing as class creation), plus the class's current
-   * subject so editing never hides it. A class made before subjects were
+   * subjects so editing never hides one. A class made before subjects were
    * stored has none — this is how it gets one, which the teaching-plan
    * schedule needs to list any lessons.
    */
@@ -170,8 +184,8 @@ export default function ClassDetailScreen() {
     const narrowed = narrowSubjectsForGrade(
       getPickerSubjects(editGradeId), editGradeId, user?.teachingAssignments, user?.subjectIds,
     );
-    const current = SUBJECTS.find(x => x.id === group?.subjectId);
-    return current && !narrowed.some(x => x.id === current.id) ? [...narrowed, current] : narrowed;
+    const extra = SUBJECTS.filter(x => subjectIds.includes(x.id) && !narrowed.some(n => n.id === x.id));
+    return [...narrowed, ...extra];
   })();
 
   /** Server errors arrive in English; this screen is Arabic-first. */
@@ -307,7 +321,7 @@ export default function ClassDetailScreen() {
     if (!group) return;
     setEditName(group.name);
     setEditGradeId(group.gradeId || 'grade-10');
-    setEditSubjectId(group.subjectId || '');
+    setEditSubjectIds(classSubjectIds(group));
     setError('');
     setShowEdit(true);
   };
@@ -321,7 +335,14 @@ export default function ClassDetailScreen() {
       const updated = await updateClass(id, {
         name,
         gradeId: editGradeId,
-        ...(editSubjectId ? { subjectId: editSubjectId } : {}),
+        // Only what is still offered for the (possibly changed) grade; the
+        // first, in picker order, becomes the primary subject. A single
+        // option has no visible row, so it is submitted as class creation
+        // submits it — otherwise a grade change could clear the subject with
+        // nothing on screen to say so.
+        subjectIds: pickerSubjects.length === 1
+          ? [pickerSubjects[0]!.id]
+          : inOptionOrder(pickerSubjects, editSubjectIds.filter(x => pickerSubjects.some(o => o.id === x))),
       });
       queryClient.setQueryData<ClassQueryData>(CLASS_QUERY_KEY(id), prev =>
         prev ? { ...prev, group: { ...prev.group, ...updated } } : prev,
@@ -529,6 +550,48 @@ export default function ClassDetailScreen() {
     </View>
   );
 
+  /**
+   * «الكل» plus one pill per subject, over the materials and exams lists.
+   * Absent for a one-subject class — there is nothing to narrow.
+   */
+  const subjectFilter = subjectIds.length > 1 ? (
+    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
+      {['', ...subjectIds].map(sid => {
+        const active = focus === sid;
+        return (
+          <Pressable
+            key={sid || 'all'}
+            onPress={() => setSubjectFocus(sid)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 16,
+              borderWidth: 1.5,
+              borderColor: active ? ACCENT : colors.border,
+              backgroundColor: active ? ACCENT + '16' : colors.card,
+            }}
+          >
+            <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular', fontSize: 13 }}>
+              {sid ? subjectLabel(sid, lang) || sid : t('allSubjects')}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  ) : null;
+
+  /** The tab has items, just none in the focused subject — «لا موارد بعد» would be a lie. */
+  const emptyForSubject = (
+    <View style={styles.empty}>
+      <Ionicons name="filter-outline" size={36} color={colors.mutedForeground} />
+      <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+        {t('nothingForSubject', subjectLabel(focus, lang))}
+      </Text>
+    </View>
+  );
+
   const renderTab = (key: Tab, label: string, count: string) => {
     const active = tab === key;
     return (
@@ -661,7 +724,7 @@ export default function ClassDetailScreen() {
                 />
               )}
               {students.length > 0 && (
-                <ParentContactSection summary={contactSummary} subjectId={group?.subjectId} colors={colors} isRTL={isRTL} align={align} t={t} />
+                <ParentContactSection summary={contactSummary} subjectIds={subjectIds} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
               )}
             </View>
           }
@@ -763,11 +826,12 @@ export default function ClassDetailScreen() {
         />
       ) : tab === 'materials' ? (
         <FlatList
-          data={materials}
+          data={shownMaterials}
           keyExtractor={m => m.id}
           contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={empty('folder-open-outline', 'noMaterialsYet', 'noMaterialsDesc')}
+          ListHeaderComponent={subjectFilter}
+          ListEmptyComponent={materials.length > 0 ? emptyForSubject : empty('folder-open-outline', 'noMaterialsYet', 'noMaterialsDesc')}
           renderItem={({ item }) => (
             <Pressable
               onPress={() => router.push({ pathname: '/workspace/view', params: { id: item.id } })}
@@ -816,12 +880,13 @@ export default function ClassDetailScreen() {
         />
       ) : (
         <FlatList
-          data={exams}
+          data={shownExams}
           keyExtractor={e => e.id}
           contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={{ gap: 10, marginBottom: 10 }}>
+              {subjectFilter}
               <Pressable
                 onPress={() => router.push({ pathname: '/evaluations/mini', params: { classId: id } })}
                 style={[
@@ -848,7 +913,7 @@ export default function ClassDetailScreen() {
               <MasterySection mastery={mastery} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
             </View>
           }
-          ListEmptyComponent={empty('clipboard-outline', 'noExamsYet', 'noExamsDesc')}
+          ListEmptyComponent={exams.length > 0 ? emptyForSubject : empty('clipboard-outline', 'noExamsYet', 'noExamsDesc')}
           renderItem={({ item }) => {
             const title = (lang === 'ar' ? item.titleAr : item.title) || t('newEvaluation');
             const draft = item.status !== 'published';
@@ -997,19 +1062,27 @@ export default function ClassDetailScreen() {
             />
             {/* Same grade and subject pills as class creation
                 (classes/index.tsx) — only worth showing once there is a real
-                choice. */}
+                choice. Grade is pick-one; subjects are pick-any. */}
             {([
-              [pickerGrades, editGradeId, setEditGradeId],
-              [pickerSubjects, editSubjectId, setEditSubjectId],
+              [pickerGrades, [editGradeId], setEditGradeId],
+              [pickerSubjects, editSubjectIds, (sid: string) => setEditSubjectIds(prev => toggleId(prev, sid))],
             ] as const).map(([options, selected, onSelect], row) =>
               options.length > 1 ? (
-                <View key={row} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+                <View key={row} style={{ gap: 6 }}>
+                {row === 1 ? (
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12, textAlign: align }}>
+                    {t('classSubjects')}
+                  </Text>
+                ) : null}
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
                   {options.map(o => {
-                    const active = selected === o.id;
+                    const active = selected.includes(o.id);
                     return (
                       <Pressable
                         key={o.id}
                         onPress={() => onSelect(o.id)}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
                         style={{
                           paddingHorizontal: 14,
                           paddingVertical: 7,
@@ -1031,6 +1104,7 @@ export default function ClassDetailScreen() {
                       </Pressable>
                     );
                   })}
+                </View>
                 </View>
               ) : null,
             )}
@@ -1608,28 +1682,42 @@ function JoinStatusSection({
  * family it starts on «إشادة وتقدير», because that is the letter that's missing.
  */
 function ParentContactSection({
-  summary, subjectId, colors, isRTL, align, t,
+  summary, subjectIds, colors, isRTL, align, lang, t,
 }: {
   summary: ClassContactSummary | null;
-  /** The class's subject, so the letter opens naming it — the picker path seeds this from the class too. */
-  subjectId?: string;
+  /**
+   * The class's subjects, so the letter opens naming one. With one subject it
+   * is simply passed; with several the teacher is asked which — the letter is
+   * about one subject, and guessing the first would mislabel it.
+   */
+  subjectIds: string[];
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   align: 'left' | 'right';
+  lang: string;
   t: (key: any, ...args: any[]) => string;
 }) {
+  const [pending, setPending] = useState<{ id: string; displayName: string; kind?: string } | null>(null);
   if (!summary) return null;
   const MAX_NAMES = 8;
+
+  const openLetter = (s: { id: string; displayName: string }, kind: string | undefined, subjectId: string | undefined) => {
+    router.push({
+      pathname: '/ai-tools/parent-message',
+      params: { studentId: s.id, studentName: s.displayName, ...(subjectId ? { subjectId } : {}), ...(kind ? { kind } : {}) },
+    });
+  };
+  const onName = (s: { id: string; displayName: string }, kind?: string) => {
+    if (subjectIds.length > 1) setPending({ ...s, kind });
+    else openLetter(s, kind, subjectIds[0]);
+  };
 
   const names = (list: { id: string; displayName: string }[], kind?: string) => (
     <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6 }}>
       {list.slice(0, MAX_NAMES).map(s => (
         <Pressable
           key={s.id}
-          onPress={() => router.push({
-            pathname: '/ai-tools/parent-message',
-            params: { studentId: s.id, studentName: s.displayName, ...(subjectId ? { subjectId } : {}), ...(kind ? { kind } : {}) },
-          })}
+          onPress={() => onName(s, kind)}
           style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, borderWidth: 1, borderColor: colors.border }}
         >
           <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{s.displayName}</Text>
@@ -1686,6 +1774,37 @@ function ParentContactSection({
           </Text>
         </>
       )}
+
+      <Modal visible={pending !== null} transparent animationType="fade" onRequestClose={() => setPending(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
+              {t('whichSubject')}
+            </Text>
+            {[...subjectIds, ''].map(sid => (
+              <Pressable
+                key={sid || 'none'}
+                onPress={() => {
+                  const p = pending;
+                  setPending(null);
+                  if (p) openLetter(p, p.kind, sid || undefined);
+                }}
+                accessibilityRole="button"
+                style={{ paddingVertical: 12, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}
+              >
+                <Text style={{ color: sid ? colors.foreground : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 14, textAlign: align }}>
+                  {sid ? subjectLabel(sid, lang) || sid : t('noSubject')}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => setPending(null)} style={{ paddingVertical: 10 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }}>
+                {t('cancel')}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
