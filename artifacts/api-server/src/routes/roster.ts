@@ -631,7 +631,14 @@ router.get("/classes/:id/resources", async (req: AuthenticatedRequest, res) => {
     } catch (err) {
       // The table comes from a manual schema push. Until then an empty shelf is
       // the truth a teacher can act on; a 503 here would blank the class screen.
+      // Say so in the log, though: this branch answers 200, so a missed push
+      // would otherwise leave no trace anywhere.
       if (isSchemaMissing(err)) {
+        logger.warn(
+          { err },
+          "GET /classes/:id/resources: class_resources is missing from this database — " +
+            "answering an empty shelf. Run `pnpm --filter @workspace/db run push` against DATABASE_URL.",
+        );
         res.json({ resources: [] });
         return;
       }
