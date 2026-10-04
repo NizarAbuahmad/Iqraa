@@ -9,7 +9,7 @@ export const ACCENT = '#4F46E5';
 
 export function SectionTitle({ text, isRTL, colors }: { text: string; isRTL: boolean; colors: any }) {
   return (
-    <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+    <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
       {text}
     </Text>
   );
@@ -18,8 +18,8 @@ export function SectionTitle({ text, isRTL, colors }: { text: string; isRTL: boo
 export function StatCard({ label, value, colors }: { label: string; value: number | string; colors: any }) {
   return (
     <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-      <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 20 }}>{value}</Text>
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, marginTop: 2, textAlign: 'center' }}>{label}</Text>
+      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20 }}>{value}</Text>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, marginTop: 2, textAlign: 'center' }}>{label}</Text>
     </View>
   );
 }
@@ -27,8 +27,8 @@ export function StatCard({ label, value, colors }: { label: string; value: numbe
 export function KeyValue({ k, v, isRTL, colors }: { k: string; v: string; isRTL: boolean; colors: any }) {
   return (
     <View style={[styles.barRow, { flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12 }]}>
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>{k}</Text>
-      <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 13 }}>{v}</Text>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>{k}</Text>
+      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 13 }}>{v}</Text>
     </View>
   );
 }
@@ -47,17 +47,17 @@ export function Table({ head, rows, empty, isRTL, colors }: { head: string[]; ro
     flex: i === 0 ? 2 : 1,
     color: colors.foreground,
     fontFamily: 'Almarai_400Regular',
-    fontSize: 12.5,
+    fontSize: 13,
     lineHeight: 20,
     textAlign: (i === 0 ? (isRTL ? 'right' : 'left') : 'center') as 'right' | 'left' | 'center',
   });
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginTop: 10, gap: 2 }]}>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', paddingBottom: 4, borderBottomWidth: 1, borderColor: colors.border }}>
-        {head.map((h, i) => <Text key={h} style={[cellStyle(i), { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>{h}</Text>)}
+        {head.map((h, i) => <Text key={h} style={[cellStyle(i), { color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>{h}</Text>)}
       </View>
       {rows.length === 0 && !!empty && (
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: 'center' }}>{empty}</Text>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: 'center' }}>{empty}</Text>
       )}
       {rows.map((r, ri) => (
         <View key={ri} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', paddingVertical: 2 }}>
@@ -78,7 +78,7 @@ export function FilterChip({ label, active, onPress, colors }: { label: string; 
         borderRadius: colors.radius,
       }]}
     >
-      <Text style={{ color: active ? '#fff' : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 }}>{label}</Text>
+      <Text style={{ color: active ? '#fff' : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{label}</Text>
     </Pressable>
   );
 }

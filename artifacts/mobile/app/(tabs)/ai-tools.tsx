@@ -12,7 +12,7 @@ import { DEMO_MODE } from '@/services/ai/demoMode';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { openGeogebraGraphing } from '@/services/geogebra';
 import { trackEvent } from '@/services/analytics';
-import { getPickerSubjects } from '@/services/curriculumData';
+import { pickPrefillParams } from '@/services/lessonPrep';
 import { loadLessonPick } from '@/services/lessonContext';
 import {
   ALL_TOOLS,
@@ -21,7 +21,7 @@ import {
 } from '@/services/toolCatalog';
 
 
-async function runToolAction(tool: ToolDef) {
+async function runToolAction(tool: ToolDef, lang: 'ar' | 'en') {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   trackEvent('tool_opened', { toolId: tool.id, source: 'tools_tab' });
   if (tool.externalAction === 'geogebra-graphing') {
@@ -34,14 +34,12 @@ async function runToolAction(tool: ToolDef) {
     // routeParams always win; the teacher can still change it in the tool —
     // that change stays local to the material being generated.
     const pick = await loadLessonPick();
-    const prefill: Record<string, string> = {};
-    if (pick?.topic && !tool.routeParams?.topic) {
-      prefill.topic = pick.topic;
-      if (pick.subjectId) {
-        const idx = getPickerSubjects().findIndex(s => s.id === pick.subjectId);
-        if (idx >= 0) prefill.subjectIdx = String(idx);
-      }
-    }
+    // The lesson's own grade and subject travel with its title — see
+    // `pickPrefillParams`. An explicit `routeParams.topic` still wins whole:
+    // the pick's grade must not ride along with somebody else's topic.
+    const prefill: Record<string, string> = tool.routeParams?.topic
+      ? {}
+      : pickPrefillParams(pick, lang) as Record<string, string>;
     router.push({ pathname: tool.route as any, params: { ...prefill, ...tool.routeParams } });
   }
 }
@@ -62,6 +60,7 @@ function ToolCard({
   grid?: boolean;
 }) {
   const isExternal = !!tool.externalAction;
+  const { lang } = useLanguage();
 
   // A left-icon/right-text row reads fine at phone width, but stretched
   // across a desktop grid tile it leaves the icon and chevron stranded at
@@ -70,7 +69,7 @@ function ToolCard({
   if (grid) {
     return (
       <Pressable
-        onPress={() => { void runToolAction(tool); }}
+        onPress={() => { void runToolAction(tool, lang); }}
         style={({ pressed }) => [
           styles.gridCard,
           {
@@ -85,12 +84,12 @@ function ToolCard({
           <Ionicons name={tool.icon} size={30} color={tool.color} />
         </View>
         <View style={[styles.gridTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: 'center' }]}>
+          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }]}>
             {t(tool.titleKey as any)}
           </Text>
           {tool.badgeKey && (
             <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
-              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t(tool.badgeKey as any)}
               </Text>
             </View>
@@ -109,7 +108,7 @@ function ToolCard({
 
   return (
     <Pressable
-      onPress={() => { void runToolAction(tool); }}
+      onPress={() => { void runToolAction(tool, lang); }}
       style={({ pressed }) => [
         styles.card,
         compact && styles.cardCompact,
@@ -131,12 +130,12 @@ function ToolCard({
       </View>
       <View style={{ flex: 1 }}>
         <View style={[styles.titleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: compact ? 14 : 15 }]}>
+          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: compact ? 14 : 15 }]}>
             {t(tool.titleKey as any)}
           </Text>
           {tool.badgeKey && (
             <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
-              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t(tool.badgeKey as any)}
               </Text>
             </View>
@@ -173,7 +172,7 @@ export default function AIToolsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.header, { paddingTop: topPad + 16, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('aiTools')}
         </Text>
         {DEMO_MODE ? (
@@ -181,7 +180,7 @@ export default function AIToolsScreen() {
         ) : (
           <View style={[styles.aiBadge, { backgroundColor: colors.primary + '18', borderRadius: 20, alignSelf: isRTL ? 'flex-end' : 'flex-start', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="sparkles-outline" size={14} color={colors.primary} />
-            <Text style={[styles.aiBadgeText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.aiBadgeText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {t('poweredByAI')}
             </Text>
           </View>
@@ -220,7 +219,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, marginBottom: 8 },
   aiBadge: { alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, marginBottom: 10 },
   aiBadgeText: { fontSize: 12 },
-  subtitle: { fontSize: 13, lineHeight: 20 },
+  subtitle: { fontSize: 15, lineHeight: 23 },
   section: { paddingTop: 8 },
   sectionTitle: {
     fontSize: 12,
@@ -249,7 +248,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 15 },
   badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
   badgeText: { fontSize: 10 },
-  cardDesc: { fontSize: 12, lineHeight: 17 },
+  cardDesc: { fontSize: 13, lineHeight: 18 },
   note: { alignItems: 'flex-start', gap: 8, padding: 14, marginBottom: 20 },
-  noteText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  noteText: { flex: 1, fontSize: 13, lineHeight: 18 },
 });

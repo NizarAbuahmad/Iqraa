@@ -75,6 +75,7 @@ import { goBack } from '@/services/navigation';
 import { summarizeClassContacts, type ClassContactSummary } from '@/services/parentMessage';
 import { palette } from '@/constants/colors';
 import { CLASSES_QUERY_KEY, classQueryKey as CLASS_QUERY_KEY } from '@/services/rosterQueryKeys';
+import { AR_LATIN } from '@/services/dateLabels';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -514,7 +515,7 @@ export default function ClassDetailScreen() {
   ) => (
     <View style={styles.empty}>
       <Ionicons name={icon} size={40} color={colors.mutedForeground} />
-      <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+      <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
         {t(titleKey)}
       </Text>
       <Text
@@ -545,7 +546,7 @@ export default function ClassDetailScreen() {
           style={[
             styles.tabLabel,
             {
-              fontFamily: active ? 'Cairo_700Bold' : 'Cairo_500Medium',
+              fontFamily: active ? 'ReadexPro_700Bold' : 'ReadexPro_500Medium',
               color: active ? '#fff' : 'rgba(255,255,255,0.7)',
             },
           ]}
@@ -587,7 +588,7 @@ export default function ClassDetailScreen() {
           Deliberately not a fourth tab: the three tabs swap what this screen
           shows, this leaves the screen.
         */}
-        <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]} numberOfLines={1}>
+        <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]} numberOfLines={1}>
           {title}
         </Text>
         {/*
@@ -607,7 +608,7 @@ export default function ClassDetailScreen() {
             style={[styles.classChatPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="chatbubbles-outline" size={15} color="#fff" />
-            <Text style={[styles.classChatPillText, { fontFamily: 'Cairo_500Medium' }]}>
+            <Text style={[styles.classChatPillText, { fontFamily: 'ReadexPro_500Medium' }]}>
               {t('messagingClassChat')}
             </Text>
           </Pressable>
@@ -622,7 +623,7 @@ export default function ClassDetailScreen() {
               style={[styles.classChatPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name="key-outline" size={15} color="#fff" />
-              <Text style={[styles.classChatPillText, { fontFamily: 'Cairo_500Medium' }]}>
+              <Text style={[styles.classChatPillText, { fontFamily: 'ReadexPro_500Medium' }]}>
                 {t('joinCodeTitle')}
               </Text>
             </Pressable>
@@ -683,7 +684,7 @@ export default function ClassDetailScreen() {
                 <Text
                   style={[
                     styles.rowName,
-                    { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align },
+                    { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align },
                   ]}
                 >
                   {item.displayName}
@@ -733,7 +734,7 @@ export default function ClassDetailScreen() {
                   student accounts are off, so it never renders in v1. */}
               {item.linked ? (
                 <View style={[styles.linkedPill, { backgroundColor: ACCENT + '18' }]}>
-                  <Text style={[styles.linkedPillText, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>
+                  <Text style={[styles.linkedPillText, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>
                     {t('rosterLinked')}
                   </Text>
                 </View>
@@ -788,7 +789,7 @@ export default function ClassDetailScreen() {
                 <Text
                   style={[
                     styles.rowName,
-                    { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align },
+                    { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align },
                   ]}
                   numberOfLines={2}
                 >
@@ -836,7 +837,7 @@ export default function ClassDetailScreen() {
               >
                 <Ionicons name="flash-outline" size={20} color={ACCENT} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+                  <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
                     {t('miniEvalBtn')}
                   </Text>
                   <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
@@ -863,7 +864,7 @@ export default function ClassDetailScreen() {
                 style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.rowName, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]} numberOfLines={1}>
+                  <Text style={[styles.rowName, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]} numberOfLines={1}>
                     {title}
                   </Text>
                   <Text style={[styles.rowRef, { color: draft ? '#B54708' : colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -902,7 +903,7 @@ export default function ClassDetailScreen() {
       >
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('joinCodeTitle')}
             </Text>
             <Text style={[styles.modalHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -911,12 +912,12 @@ export default function ClassDetailScreen() {
 
             {group?.joinCode ? (
               <>
-                <Text style={[styles.codeText, { color: ACCENT, fontFamily: 'Cairo_700Bold' }]} selectable>
+                <Text style={[styles.codeText, { color: ACCENT, fontFamily: 'ReadexPro_700Bold' }]} selectable>
                   {group.joinCode}
                 </Text>
                 {group.joinCodeExpiresAt ? (
                   <Text style={[styles.modalHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
-                    {t('messagingCodeExpires')}: {new Date(group.joinCodeExpiresAt).toLocaleDateString()}
+                    {t('messagingCodeExpires')}: {new Date(group.joinCodeExpiresAt).toLocaleDateString(lang === 'ar' ? AR_LATIN : undefined)}
                   </Text>
                 ) : null}
                 <View style={[styles.codeActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -928,7 +929,7 @@ export default function ClassDetailScreen() {
                     style={[styles.pickRow, { borderColor: colors.border, flex: 1, justifyContent: 'center', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                   >
                     <Ionicons name="copy-outline" size={18} color={colors.mutedForeground} />
-                    <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium' }}>{t('messagingCopyCode')}</Text>
+                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium' }}>{t('messagingCopyCode')}</Text>
                   </Pressable>
                   <Pressable
                     // The Windows/Chrome share sheet has no Copy entry, so the code
@@ -945,7 +946,7 @@ export default function ClassDetailScreen() {
                     style={[styles.pickRow, { borderColor: colors.border, flex: 1, justifyContent: 'center', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                   >
                     <Ionicons name="share-outline" size={18} color={colors.mutedForeground} />
-                    <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium' }}>{t('joinCodeShare')}</Text>
+                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium' }}>{t('joinCodeShare')}</Text>
                   </Pressable>
                 </View>
               </>
@@ -965,7 +966,7 @@ export default function ClassDetailScreen() {
               ) : (
                 <>
                   <Ionicons name="refresh-outline" size={18} color={ACCENT} />
-                  <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold' }}>
+                  <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }}>
                     {group?.joinCode ? t('joinCodeRegenerate') : t('joinCodeGenerate')}
                   </Text>
                 </>
@@ -973,7 +974,7 @@ export default function ClassDetailScreen() {
             </Pressable>
 
             <Pressable onPress={() => setShowJoinCode(false)} style={{ paddingVertical: 12 }}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }}>
                 {t('cancel')}
               </Text>
             </Pressable>
@@ -984,7 +985,7 @@ export default function ClassDetailScreen() {
       <Modal visible={showEdit} transparent animationType="fade" onRequestClose={() => setShowEdit(false)}>
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('editClass')}
             </Text>
             <TextInput
@@ -1025,7 +1026,7 @@ export default function ClassDetailScreen() {
                         <Text
                           style={{
                             color: active ? ACCENT : colors.mutedForeground,
-                            fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                            fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                             fontSize: 13,
                           }}
                         >
@@ -1038,13 +1039,13 @@ export default function ClassDetailScreen() {
               ) : null,
             )}
             {error ? (
-              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: align }}>
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: align }}>
                 {error}
               </Text>
             ) : null}
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowEdit(false)} style={styles.modalBtn}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
                   {t('cancel')}
                 </Text>
               </Pressable>
@@ -1060,7 +1061,7 @@ export default function ClassDetailScreen() {
                 {savingEdit ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>{t('save')}</Text>
+                  <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>{t('save')}</Text>
                 )}
               </Pressable>
             </View>
@@ -1074,7 +1075,7 @@ export default function ClassDetailScreen() {
             <Text
               style={[
                 styles.modalTitle,
-                { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
+                { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align },
               ]}
             >
               {t('addStudents')}
@@ -1132,7 +1133,7 @@ export default function ClassDetailScreen() {
             ) : null}
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowAdd(false)} style={styles.modalBtn}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
                   {t('cancel')}
                 </Text>
               </Pressable>
@@ -1151,7 +1152,7 @@ export default function ClassDetailScreen() {
                 {saving ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>
+                  <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>
                     {t('addToClass')}
                   </Text>
                 )}
@@ -1172,7 +1173,7 @@ export default function ClassDetailScreen() {
             <Text
               style={[
                 styles.modalTitle,
-                { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
+                { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align },
               ]}
             >
               {noteStudent?.displayName}
@@ -1205,7 +1206,7 @@ export default function ClassDetailScreen() {
             />
             <View style={styles.modalActions}>
               <Pressable onPress={() => setNoteStudent(null)} style={styles.modalBtn}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
                   {t('cancel')}
                 </Text>
               </Pressable>
@@ -1221,7 +1222,7 @@ export default function ClassDetailScreen() {
                 {savingNote ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>
+                  <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>
                     {t('saveNote')}
                   </Text>
                 )}
@@ -1242,7 +1243,7 @@ export default function ClassDetailScreen() {
             <Text
               style={[
                 styles.modalTitle,
-                { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
+                { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align },
               ]}
             >
               {t('attachMaterial')}
@@ -1325,7 +1326,7 @@ export default function ClassDetailScreen() {
               <Text
                 style={{
                   color: ACCENT,
-                  fontFamily: 'Cairo_600SemiBold',
+                  fontFamily: 'ReadexPro_600SemiBold',
                   flex: 1,
                   textAlign: align,
                 }}
@@ -1336,7 +1337,7 @@ export default function ClassDetailScreen() {
 
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowAttach(false)} style={styles.modalBtn}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
                   {t('cancel')}
                 </Text>
               </Pressable>
@@ -1356,7 +1357,7 @@ export default function ClassDetailScreen() {
             <Text
               style={[
                 styles.modalTitle,
-                { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
+                { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align },
               ]}
             >
               {t('attachExam')}
@@ -1406,7 +1407,7 @@ export default function ClassDetailScreen() {
                     style={{
                       color: colors.foreground,
                       fontFamily: 'Almarai_400Regular',
-                      fontSize: 14, lineHeight: 22,
+                      fontSize: 15, lineHeight: 24,
                       flex: 1,
                       textAlign: align,
                     }}
@@ -1440,7 +1441,7 @@ export default function ClassDetailScreen() {
               <Text
                 style={{
                   color: ACCENT,
-                  fontFamily: 'Cairo_600SemiBold',
+                  fontFamily: 'ReadexPro_600SemiBold',
                   flex: 1,
                   textAlign: align,
                 }}
@@ -1449,7 +1450,7 @@ export default function ClassDetailScreen() {
               </Text>
             </Pressable>
             <Pressable onPress={() => setShowAttachExam(false)} style={{ paddingVertical: 12 }}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }}>
                 {t('cancel')}
               </Text>
             </Pressable>
@@ -1493,7 +1494,7 @@ function MasterySection({
   return (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10 }]}>
       <View style={{ gap: 2 }}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
           {t('masteryTitle')}
         </Text>
         {gaps.length > 0 && (
@@ -1505,7 +1506,7 @@ function MasterySection({
 
       {gaps.length === 0 ? (
         <View style={{ gap: 2 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
             {t('masteryEmpty')}
           </Text>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
@@ -1516,7 +1517,7 @@ function MasterySection({
         gaps.map(o => (
           <View key={o.objectiveId} style={{ gap: 3 }}>
             <Text
-              style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}
+              style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}
               numberOfLines={2}
             >
               {(lang === 'ar' ? o.titleAr : o.title) || o.objectiveId}
@@ -1570,21 +1571,21 @@ function JoinStatusSection({
   return (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10, flexDirection: 'column', alignItems: 'stretch' }]}>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align, flex: 1 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align, flex: 1 }}>
           {t('joinedCount', linked, total)}
         </Text>
         <Pressable onPress={onShareCode} hitSlop={8}>
-          <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{t('joinStatusOpenCode')}</Text>
+          <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{t('joinStatusOpenCode')}</Text>
         </Pressable>
       </View>
 
       {unjoined.length === 0 ? (
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
           {t('joinStatusAllJoined')}
         </Text>
       ) : (
         <View style={{ gap: 6 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
             {t('joinStatusNotJoinedLabel')}
           </Text>
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6 }}>
@@ -1594,7 +1595,7 @@ function JoinStatusSection({
                 onPress={() => router.push(`/messaging/claim/${s.id}?studentName=${encodeURIComponent(s.displayName)}`)}
                 style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, borderWidth: 1, borderColor: colors.border }}
               >
-                <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{s.displayName}</Text>
+                <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{s.displayName}</Text>
               </Pressable>
             ))}
           </View>
@@ -1635,11 +1636,11 @@ function ParentContactSection({
           })}
           style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, borderWidth: 1, borderColor: colors.border }}
         >
-          <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{s.displayName}</Text>
+          <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{s.displayName}</Text>
         </Pressable>
       ))}
       {list.length > MAX_NAMES && (
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, alignSelf: 'center' }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, alignSelf: 'center' }}>
           {`+${list.length - MAX_NAMES}`}
         </Text>
       )}
@@ -1647,7 +1648,7 @@ function ParentContactSection({
   );
 
   const label = (text: string) => (
-    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
       {text}
     </Text>
   );
@@ -1656,7 +1657,7 @@ function ParentContactSection({
   return (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10, flexDirection: 'column', alignItems: 'stretch' }]}>
       <View style={{ gap: 2 }}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
           {t('parentContactsTitle')}
         </Text>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
@@ -1723,10 +1724,10 @@ const styles = StyleSheet.create({
   },
   matIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   rowName: { fontSize: 15 },
-  rowRef: { fontSize: 12, lineHeight: 19, marginTop: 2 },
+  rowRef: { fontSize: 13, lineHeight: 21, marginTop: 2 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17 },
-  emptyText: { fontSize: 14, maxWidth: 280, lineHeight: 20 },
+  emptyText: { fontSize: 15, maxWidth: 280, lineHeight: 21 },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1754,7 +1755,7 @@ const styles = StyleSheet.create({
   },
   modalCard: { width: '100%', maxWidth: 460, borderRadius: 16, padding: 20, gap: 12 },
   modalTitle: { fontSize: 18 },
-  modalHint: { fontSize: 13, lineHeight: 21 },
+  modalHint: { fontSize: 15, lineHeight: 24 },
   pickRow: {
     alignItems: 'center',
     gap: 10,
@@ -1782,7 +1783,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
-  count: { fontSize: 13, lineHeight: 21 },
+  count: { fontSize: 15, lineHeight: 24 },
   codeText: { fontSize: 28, letterSpacing: 4, textAlign: 'center', marginTop: 4 },
   codeActions: { gap: 8 },
   linkedPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },

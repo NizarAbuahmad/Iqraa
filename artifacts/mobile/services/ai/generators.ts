@@ -1,3 +1,4 @@
+import { plainActivity } from './activityText.ts';
 import { AIService } from './AIService.ts';
 import type {
   ActivityOutput, ActivityStep, AIRequest,
@@ -8,7 +9,7 @@ import type {
 } from './AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 import { buildInfographicFromLesson, type InfographicOutput } from './infographic.ts';
-import { getLessonById, getUnitForLesson, resolveGroundedKbLesson } from '../knowledgeBase.ts';
+import { getBookForLesson, getLessonById, getUnitForLesson, resolveGroundedKbLesson } from '../knowledgeBase.ts';
 import { figuresForLesson } from '../bookFigures.ts';
 import {
   parseDocumentGrounding,
@@ -676,6 +677,33 @@ function makeQuizSA_en(topic: string, kb: KBLesson | null, pts: number, id: stri
   return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `Full answer: ${q.answer}` };
 }
 
+// ─── No question bank ─────────────────────────────────────────────────────────
+
+/**
+ * The offline generator has real, lesson-specific questions for two subjects:
+ * mathematics and chemistry. Everything else used to fall through to topic-
+ * templated sentences — «أيّ مما يلي يُعرِّف X؟» with «الوصف الصحيح لـX» as the
+ * key — that read like a worksheet and test nothing. Showing that to a teacher
+ * as a finished paper is worse than saying there is no bank yet, so the
+ * question-based generators refuse instead. `code` is what `aiErrorMessageKey`
+ * maps to the on-screen sentence.
+ */
+export class NoQuestionBankError extends Error {
+  readonly code = 'no_question_bank';
+  constructor(topic: string) {
+    super(`No offline question bank for "${topic}"`);
+    this.name = 'NoQuestionBankError';
+  }
+}
+
+/** Tests that exercise the template machinery directly turn this off; nothing else should. */
+export const questionBankPolicy = { required: true };
+
+function requireQuestionBank(topic: string, kb: KBLesson | null, subject?: string): void {
+  if (!questionBankPolicy.required || isMathContext(topic, kb, subject) || isChemContext(topic, kb, subject)) return;
+  throw new NoQuestionBankError(topic);
+}
+
 // ─── Main service class ───────────────────────────────────────────────────────
 
 export class MockAIService extends AIService {
@@ -809,6 +837,8 @@ export class MockAIService extends AIService {
     const topic = (docs.present && docs.title) ? docs.title : req.topic;
     // Prefer uploaded materials over a weakly matching KB lesson
     const kb = docs.present ? null : groundedKb(topic, lang, req.lessonId);
+    // A paper built from the teacher's own file is grounded in that file.
+    if (!docs.present) requireQuestionBank(topic, kb, req.subject);
     const selectedTypes: QType[] = (req.questionTypes as QType[])?.length
       ? (req.questionTypes as QType[])
       : ['multiple_choice', 'short_answer'];
@@ -983,6 +1013,7 @@ export class MockAIService extends AIService {
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const kb = groundedKb(req.topic, lang, req.lessonId);
     const topic = req.topic;
+    requireQuestionBank(topic, kb, req.subject);
     const totalMarks = req.totalMarks ?? 20;
     const duration = req.duration ?? 20;
     const types: QType[] = (req.questionTypes as QType[]) ?? ['multiple_choice', 'true_false', 'short_answer'];
@@ -1086,8 +1117,9 @@ export class MockAIService extends AIService {
     const duration = req.duration ?? (isWarmup ? 8 : 30);
     const math = isMathContext(topic, kb, req.subject);
     // A warm-up poses one item; the main activity needs three (worked
-    // example, faded item, unaided item / jigsaw parts / game rounds).
-    const wantItems = isWarmup ? 1 : 3;
+    // example, faded item, unaided item / game rounds) and the jigsaw four,
+    // one per member of a home group.
+    const wantItems = isWarmup ? 1 : actType === 'group' ? 4 : 3;
     const practice = math
       ? takeConcreteMathBatch(wantItems, topic, kb, lang, 'medium')
       : isChemContext(topic, kb, req.subject)
@@ -1096,9 +1128,11 @@ export class MockAIService extends AIService {
 
     const blueprint = buildActivityBlueprint(actType, {
       topic, lang, math, practice, kb, duration,
+      // The lesson's own subject id, else the caller's name — see `handsOnKind`.
+      subject: (kb ? getBookForLesson(kb)?.subjectId : undefined) ?? req.subject,
     });
 
-    return {
+    return plainActivity({
       title: `${topic} – ${blueprint.titleSuffix}`,
       // Report the type the caller asked for, verbatim. `activityTypeLabel`
       // already falls back to the raw value for anything the form never
@@ -1116,7 +1150,7 @@ export class MockAIService extends AIService {
       teacherTips: blueprint.teacherTips,
       differentiation: blueprint.differentiation,
       assessment: blueprint.assessment,
-    };
+    });
   }
 
   async generateInfographic(req: AIRequest): Promise<InfographicOutput> {
@@ -2223,6 +2257,7 @@ export class MockAIService extends AIService {
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const kb = groundedKb(req.topic, lang, req.lessonId);
     const topic = req.topic;
+    requireQuestionBank(topic, kb, req.subject);
     const estMinutes = 25;
     const math = isMathContext(topic, kb, req.subject);
 

@@ -32,6 +32,7 @@ import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import { logger } from "../lib/logger";
+import { studentGradeIds } from "../lib/studentGrades.ts";
 import {
   sortStudentExams,
   studentExamRow,
@@ -47,6 +48,27 @@ router.use("/student", authMiddleware, requireRole("student"));
 function progress(s: { submittedAt: Date | null }): number {
   return s.submittedAt ? 1 : 0;
 }
+
+/**
+ * The grades this student is in, so the library and the curriculum browser
+ * open on theirs rather than on the first grade in the catalog. Same live
+ * rows as the exam list: self-linked, not archived, live classes only.
+ */
+router.get("/student/grades", async (req: AuthenticatedRequest, res) => {
+  try {
+    const rows = await db
+      .select({ studentGradeId: students.gradeId, classGradeId: classGroups.gradeId })
+      .from(rosterLinks)
+      .innerJoin(students, eq(students.id, rosterLinks.studentId))
+      .leftJoin(classMemberships, eq(classMemberships.studentId, students.id))
+      .leftJoin(classGroups, and(eq(classGroups.id, classMemberships.classGroupId), isNull(classGroups.archivedAt)))
+      .where(and(eq(rosterLinks.userId, req.user!.id), eq(rosterLinks.relation, "self"), isNull(students.archivedAt)));
+    res.json({ gradeIds: studentGradeIds(rows) });
+  } catch (err) {
+    logger.error({ err }, "student grades failed");
+    res.status(500).json({ error: "Failed to load your grade" });
+  }
+});
 
 router.get("/student/exams", async (req: AuthenticatedRequest, res) => {
   try {

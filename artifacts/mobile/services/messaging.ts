@@ -41,6 +41,15 @@ export interface ChatParticipantInfo {
   firstName: string;
   lastName: string;
   role: ChatRole;
+  /**
+   * Catalog subject ids the other person teaches, and the roster students that
+   * connect the two accounts. Both optional: the API is deployed by hand while
+   * the web app deploys on merge (docs/deploying.md), so the client will meet a
+   * server that predates them. Absent reads as "unknown" — `chatThreadSubtitle`
+   * then falls back to the plain role label.
+   */
+  subjectIds?: string[];
+  aboutStudents?: string[];
 }
 
 export interface ChatMessage {

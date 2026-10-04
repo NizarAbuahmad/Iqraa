@@ -104,13 +104,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   title: {
-    fontFamily: 'Cairo_700Bold',
+    fontFamily: 'ReadexPro_700Bold',
     fontSize: 19,
   },
   body: {
     fontFamily: 'Almarai_400Regular',
-    fontSize: 14,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 26,
     maxWidth: 340,
   },
   actions: {
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   actionText: {
-    fontFamily: 'Cairo_600SemiBold',
+    fontFamily: 'ReadexPro_600SemiBold',
     fontSize: 14,
   },
 });

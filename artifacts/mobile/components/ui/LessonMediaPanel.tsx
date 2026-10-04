@@ -66,7 +66,7 @@ function VideoItem({ resource, align }: { resource: ExternalResource; align: 'le
           style={[styles.openBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
         >
           <Ionicons name="play-circle" size={20} color={colors.foreground} />
-          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
             {t('openMedia')}
           </Text>
         </Pressable>
@@ -142,7 +142,7 @@ export function LessonMediaPanel({ lessonId, accent }: { lessonId: string; accen
     <View style={styles.section}>
       <View style={[styles.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name="play-circle-outline" size={16} color={accent} />
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
           {t('lessonMediaTitle')}
         </Text>
       </View>
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 15 },
   body: { marginHorizontal: 20, borderWidth: 1, borderRadius: 14, padding: 14, gap: 18 },
   item: { gap: 6 },
-  itemTitle: { fontSize: 14, lineHeight: 22 },
+  itemTitle: { fontSize: 15, lineHeight: 24 },
   frame: {
     width: '100%',
     aspectRatio: 16 / 9,

@@ -295,8 +295,16 @@ export async function unlinkAccount(studentId: string, userId: string): Promise<
 export interface JoinRosterEntry {
   id: string;
   displayName: string;
-  /** A student account already holds this name. Parents may still claim it; a second student may not. */
+  /** A student account already holds this name; a second student may not claim it. */
   taken: boolean;
+  /**
+   * A parent account already holds this name; a second parent may not pick it
+   * from this list (the teacher adds one with the child's own code). Optional
+   * because a server from before the rule does not send it, and reading absent
+   * as "free" is the right way for an old server to degrade — the picker lets
+   * the claim through and that server accepts it.
+   */
+  guardianTaken?: boolean;
 }
 
 /**

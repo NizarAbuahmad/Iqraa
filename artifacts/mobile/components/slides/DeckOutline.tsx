@@ -41,14 +41,14 @@ export function DeckOutline({ slides, onEdit, onRemove, isRTL, colors, t }: {
             ]}
           >
             <View style={[deckStyles.slideNum, { backgroundColor: DECK_ACCENT + '18' }]}>
-              <Text style={{ color: DECK_ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 11 }}>{i + 1}</Text>
+              <Text style={{ color: DECK_ACCENT, fontFamily: 'ReadexPro_700Bold', fontSize: 11 }}>{i + 1}</Text>
             </View>
             <Text
               style={{
                 flex: 1,
                 color: colors.foreground,
                 fontFamily: 'Almarai_400Regular',
-                fontSize: 13, lineHeight: 21,
+                fontSize: 15, lineHeight: 24,
                 textAlign: isRTL ? 'right' : 'left',
                 writingDirection: isRTL ? 'rtl' : 'ltr',
               }}
@@ -59,7 +59,7 @@ export function DeckOutline({ slides, onEdit, onRemove, isRTL, colors, t }: {
             {/* The projector's own rule, so the editor cannot advertise a
                 timer the presentation screen then refuses to run. */}
             {timerSecondsForSlide(s) > 0 && (
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }}>
                 {timerSecondsForSlide(s)}s
               </Text>
             )}

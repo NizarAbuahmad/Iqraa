@@ -59,6 +59,6 @@ const styles = StyleSheet.create({
   text: {
     color: '#fff',
     fontSize: 14,
-    fontFamily: 'Cairo_500Medium',
+    fontFamily: 'ReadexPro_500Medium',
   },
 });

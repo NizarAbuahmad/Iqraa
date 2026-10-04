@@ -52,7 +52,7 @@ export default function UnitLessonsScreen() {
         <Text style={[styles.eyebrow, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {semesterLabel ? `${semesterLabel} · ` : ''}{t('unitLabel')} {unit.order}
         </Text>
-        <Text style={[styles.title, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
+        <Text style={[styles.title, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
           {unitName}
         </Text>
         <Text style={[styles.sub, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -105,7 +105,7 @@ export default function UnitLessonsScreen() {
                       styles.lessonTitle,
                       {
                         color: colors.foreground,
-                        fontFamily: 'Cairo_500Medium',
+                        fontFamily: 'ReadexPro_500Medium',
                         textAlign: isRTL ? 'right' : 'left',
                         flex: 1,
                         marginBottom: 0,
@@ -117,7 +117,7 @@ export default function UnitLessonsScreen() {
                   </Text>
                   {isBrowserLessonTitleOnly(lesson.id) ? (
                     <View style={[styles.prepBadge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                      <Text style={[styles.prepBadgeText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+                      <Text style={[styles.prepBadgeText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
                         {t('curriculumTitleOnlyBadge')}
                       </Text>
                     </View>
@@ -146,9 +146,9 @@ export default function UnitLessonsScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14 },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
-  eyebrow: { fontSize: 13, lineHeight: 21, marginBottom: 4 },
+  eyebrow: { fontSize: 15, lineHeight: 24, marginBottom: 4 },
   title: { fontSize: 22, marginBottom: 4 },
-  sub: { fontSize: 13, lineHeight: 21 },
+  sub: { fontSize: 15, lineHeight: 24 },
   lessonCard: {
     alignItems: 'center',
     paddingVertical: 14,
@@ -164,5 +164,5 @@ const styles = StyleSheet.create({
   prepBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, flexShrink: 0 },
   prepBadgeText: { fontSize: 11 },
   empty: { alignItems: 'center', paddingTop: 80, gap: 10 },
-  emptyText: { fontSize: 14, lineHeight: 22 },
+  emptyText: { fontSize: 15, lineHeight: 24 },
 });

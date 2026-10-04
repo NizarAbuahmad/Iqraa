@@ -50,7 +50,7 @@ export function LoadError({
 
 const styles = StyleSheet.create({
   box: { alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 12 },
-  text: { flex: 1, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 },
+  text: { flex: 1, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 },
   retry: { alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  retryText: { fontFamily: 'Cairo_600SemiBold', fontSize: 12.5 },
+  retryText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 },
 });

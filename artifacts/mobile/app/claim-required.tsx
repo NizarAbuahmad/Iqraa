@@ -146,7 +146,7 @@ export default function ClaimRequiredScreen() {
           <Ionicons name="key-outline" size={32} color={colors.primary} />
         </View>
 
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t(role === 'student' ? 'claimRequiredTitleStudent' : 'claimRequiredTitle')}
         </Text>
         <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -156,7 +156,7 @@ export default function ClaimRequiredScreen() {
         <View style={[styles.roleCard, { borderColor: colors.border, backgroundColor: colors.muted, borderRadius: colors.radius }]}>
           <View style={[styles.roleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="person-circle-outline" size={18} color={colors.mutedForeground} />
-            <Text style={[styles.roleText, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+            <Text style={[styles.roleText, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('claimRequiredSignedInAs', roleLabel(role))}
             </Text>
           </View>
@@ -208,18 +208,34 @@ export default function ClaimRequiredScreen() {
                  mount-time default would offer to change an account to the
                  role it already has. */
               onPress={() => { setNextRole(role); setPickerOpen(true); }}
-              hitSlop={8}
+              accessibilityRole="button"
+              /* A button, not a link. This was a 13px line of text under the
+                 e-mail address, and the request log showed testers who had
+                 picked the wrong type typing their e-mail into the code box
+                 instead of finding it. */
+              style={({ pressed }) => [
+                styles.roleButton,
+                {
+                  borderColor: colors.primary,
+                  backgroundColor: colors.card,
+                  borderRadius: colors.radius,
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
             >
-              <Text style={[styles.roleLink, { color: colors.primary, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+              <Ionicons name="swap-horizontal" size={18} color={colors.primary} />
+              <Text style={[styles.roleButtonText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
                 {t('claimRequiredWrongRole')}
               </Text>
+              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.primary} />
             </Pressable>
           )}
         </View>
 
         {savedAccounts.length > 0 && (
           <View style={{ marginBottom: 24 }}>
-            <Text style={[styles.savedTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+            <Text style={[styles.savedTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('loginSavedTitle')}
             </Text>
             <View style={[styles.roleCard, { borderColor: colors.border, backgroundColor: colors.card, borderRadius: colors.radius, padding: 0, marginBottom: 0, overflow: 'hidden' }]}>
@@ -283,7 +299,7 @@ export default function ClaimRequiredScreen() {
             a shared school device — was trapped here, and so was the next
             person to pick up that device. */}
         <Pressable onPress={() => void logout()} hitSlop={8} style={{ alignSelf: 'center', marginTop: 20, marginBottom: 8 }}>
-          <Text style={[styles.roleLink, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
+          <Text style={[styles.roleLink, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }]}>
             {t('signOut')}
           </Text>
         </Pressable>
@@ -296,14 +312,16 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, paddingHorizontal: 24 },
   icon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 20 },
   title: { fontSize: 22, marginBottom: 8, lineHeight: 30 },
-  desc: { fontSize: 14, lineHeight: 22, marginBottom: 20 },
+  desc: { fontSize: 15, lineHeight: 24, marginBottom: 20 },
   savedTitle: { fontSize: 14, marginBottom: 8 },
+  roleButton: { marginTop: 12, borderWidth: 1.5, paddingVertical: 12, paddingHorizontal: 14, alignItems: 'center', gap: 10 },
+  roleButtonText: { flex: 1, fontSize: 14 },
   roleCard: { borderWidth: 1, padding: 14, marginBottom: 24 },
   roleRow: { alignItems: 'center', gap: 8 },
   roleText: { flex: 1, fontSize: 14 },
-  roleEmail: { fontSize: 12, lineHeight: 19, marginTop: 4 },
+  roleEmail: { fontSize: 13, lineHeight: 21, marginTop: 4 },
   roleLink: { fontSize: 13, marginTop: 10 },
   roleActions: { gap: 8, alignItems: 'center' },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1, marginTop: 16 },
-  errorText: { flex: 1, fontSize: 13, lineHeight: 21 },
+  errorText: { flex: 1, fontSize: 15, lineHeight: 24 },
 });

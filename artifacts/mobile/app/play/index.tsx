@@ -57,10 +57,10 @@ export default function PlayHubScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.header, { paddingTop: topPad, backgroundColor: ACCENT_FILL }]}>
-          <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 24, textAlign: 'center' }}>
+          <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 24, textAlign: 'center' }}>
             {t('playHubTitle')}
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center', marginTop: 6 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center', marginTop: 6 }}>
             {t('playHubSubtitle')}
           </Text>
         </View>
@@ -75,10 +75,10 @@ export default function PlayHubScreen() {
               <View style={[styles.iconWrap, { backgroundColor: `${g.color}1a` }]}>
                 <Ionicons name={g.icon} size={26} color={g.color} />
               </View>
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, textAlign: 'center' }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
                 {t(g.titleKey)}
               </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: 'center' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
                 {t(g.descKey)}
               </Text>
             </Pressable>
@@ -87,10 +87,10 @@ export default function PlayHubScreen() {
 
         {!user && (
           <View style={[styles.ctaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, textAlign: 'center' }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
               {t('playCtaHeading')}
             </Text>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: 'center', lineHeight: 23 }}>
               {t('playCtaBody')}
             </Text>
             <Button

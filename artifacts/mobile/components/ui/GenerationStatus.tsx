@@ -140,6 +140,10 @@ export function GenerationStatus({
     );
   }
 
+  // «No question bank» is the same answer every time — a retry button would
+  // only invite the teacher to ask again.
+  const retryable = onRetry && errorDetail !== t('noQuestionBank');
+
   return (
     <View style={shell(colors.destructive, colors.destructive + '10')} accessibilityRole="alert">
       <View style={[styles.row, { flexDirection: rowDir }]}>
@@ -155,7 +159,7 @@ export function GenerationStatus({
           ) : null}
         </View>
       </View>
-      {onRetry ? (
+      {retryable ? (
         <Pressable
           onPress={onRetry}
           style={({ pressed }) => [
@@ -183,14 +187,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   row: { alignItems: 'center', gap: 10 },
-  title: { fontFamily: 'Cairo_600SemiBold', fontSize: 13, lineHeight: 20 },
-  meta: { fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18 },
-  hint: { fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18 },
+  title: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, lineHeight: 20 },
+  meta: { fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20 },
+  hint: { fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20 },
   cancelBtn: { paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1 },
-  cancelText: { fontFamily: 'Cairo_600SemiBold', fontSize: 12 },
+  cancelText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 },
   retryBtn: {
     alignItems: 'center', justifyContent: 'center', gap: 6,
     paddingVertical: 9, borderWidth: 1,
   },
-  retryText: { fontFamily: 'Cairo_600SemiBold', fontSize: 13 },
+  retryText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 },
 });

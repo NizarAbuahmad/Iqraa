@@ -50,6 +50,7 @@ import { saveItem } from '@/services/workspace';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { ACTIVITY_TYPE_IDS } from '@/constants/activityType';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -167,7 +168,7 @@ export default function ResultsDashboardScreen() {
         <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]} numberOfLines={1}>
+        <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]} numberOfLines={1}>
           {t('resultsDashboardTitle')}
         </Text>
         <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: align, color: 'rgba(255,255,255,0.95)' }]} numberOfLines={1}>
@@ -193,20 +194,20 @@ export default function ResultsDashboardScreen() {
             <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 16 }]}>
               <View style={[styles.summaryTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={{ alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
                     {t('gradedCountLabel', gradedCount, attempts.length)}
                   </Text>
                   {/* Named rather than folded in: these papers carry a result
                       the machine wrote over the questions it could mark, and
                       averaging that in would flatter the class. */}
                   {provisionalCount > 0 && (
-                    <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 2 }}>
+                    <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 2 }}>
                       {t('provisionalCountLabel', provisionalCount)}
                     </Text>
                   )}
                 </View>
                 {meanPercent !== null && (
-                  <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 16, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
+                  <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
                     {t('classAverageLabel')}: {t('resultPercentLabel', String(meanPercent))}
                   </Text>
                 )}
@@ -214,7 +215,7 @@ export default function ResultsDashboardScreen() {
 
               {gradedCount > 0 && (
                 <View style={{ marginTop: 14, gap: 8 }}>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 12, textAlign: align }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12, textAlign: align }}>
                     {t('levelDistributionLabel')}
                   </Text>
                   {LEVEL_ORDER.map(key => {
@@ -222,13 +223,13 @@ export default function ResultsDashboardScreen() {
                     const widthPct = (count / maxLevelCount) * 100;
                     return (
                       <View key={key} style={[styles.levelBarRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                        <Text style={{ width: 70, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+                        <Text style={{ width: 70, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                           {t(LEVEL_KEY[key])}
                         </Text>
                         <View style={[styles.barTrack, { backgroundColor: colors.muted }]}>
                           <View style={[styles.barFill, { width: `${widthPct}%`, backgroundColor: LEVEL_COLOR[key] }]} />
                         </View>
-                        <Text style={{ width: 20, color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 12, textAlign: 'center' }}>
+                        <Text style={{ width: 20, color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12, textAlign: 'center' }}>
                           {count}
                         </Text>
                       </View>
@@ -256,7 +257,7 @@ export default function ResultsDashboardScreen() {
           error ? null : (
             <View style={styles.empty}>
               <Ionicons name="bar-chart-outline" size={40} color={colors.mutedForeground} />
-              <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('noAttemptsYet')}
               </Text>
               <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
@@ -271,24 +272,24 @@ export default function ResultsDashboardScreen() {
             style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: align }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }}>
                 {item.studentName}
               </Text>
               {item.result && Number(item.result.totalMarks) > 0 && (
                 <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginTop: 4 }]}>
                   {item.result.levelKey && (
-                    <Text style={{ color: LEVEL_COLOR[item.result.levelKey], fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>
+                    <Text style={{ color: LEVEL_COLOR[item.result.levelKey], fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
                       {t(LEVEL_KEY[item.result.levelKey])}
                     </Text>
                   )}
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                     {t('resultPercentLabel', item.result.percent)}
                   </Text>
                 </View>
               )}
             </View>
             <View style={[styles.statusPill, { backgroundColor: STATUS_COLOR[item.status] + '20' }]}>
-              <Text style={{ color: STATUS_COLOR[item.status], fontFamily: 'Cairo_600SemiBold', fontSize: 11 }}>
+              <Text style={{ color: STATUS_COLOR[item.status], fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 }}>
                 {t(STATUS_KEY[item.status])}
               </Text>
             </View>
@@ -351,10 +352,16 @@ function ClassGaps({
         topic,
         language: lang as 'ar' | 'en',
         content: JSON.stringify(out),
-        formState: { gradeIdx, subjectIdx, topic, activityTypeIdx: 0, durationIdx: 0, objective: '' },
+        formState: {
+          gradeIdx, subjectIdx, topic,
+          activityTypeIdx: ACTIVITY_TYPE_IDS.indexOf('group'),
+          // The form's shortest length (20 min) — it has no 8-minute option.
+          durationIdx: 0,
+          objective: '',
+        },
       });
       // ponytail: Regenerate on the activity screen rebuilds this as a plain
-      // group activity — its form has no warm-up slot. Add a `variant=warmup`
+      // 20-minute group activity — its form has no warm-up slot. Add a `variant=warmup`
       // route param there if teachers turn out to regenerate warm-ups.
       router.push({
         pathname: '/ai-tools/activity',
@@ -374,7 +381,7 @@ function ClassGaps({
 
   return (
     <View style={{ marginTop: 18, gap: 10 }}>
-      <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: align }}>
+      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
         {t('classGapsTitle')}
       </Text>
       <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
@@ -387,14 +394,14 @@ function ClassGaps({
         return (
           <View key={o.objectiveId} style={{ gap: 4 }}>
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ color: weak ? '#D92D20' : colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>
+              <Text style={{ color: weak ? '#D92D20' : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
                 {t('resultPercentLabel', String(o.percent))}
               </Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>
                 {t('classBelowLine', String(o.studentsBelowGap), String(o.studentCount))}
               </Text>
             </View>
-            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
               {title}
             </Text>
           </View>
@@ -412,7 +419,7 @@ function ClassGaps({
           style={[styles.classGapBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           <Ionicons name="document-text-outline" size={14} color={ACCENT} />
-          <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>
+          <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>
             {t('classGapWorksheet')}
           </Text>
         </Pressable>
@@ -428,7 +435,7 @@ function ClassGaps({
           {warming
             ? <ActivityIndicator size="small" color={ACCENT} />
             : <Ionicons name="flash-outline" size={14} color={ACCENT} />}
-          <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>
+          <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>
             {t('classGapWarmup')}
           </Text>
         </Pressable>
@@ -446,7 +453,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   headerTitle: { fontSize: 22, color: '#fff' },
-  headerSub: { fontSize: 13, lineHeight: 21 },
+  headerSub: { fontSize: 15, lineHeight: 24 },
   errorBox: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1 },
   summaryCard: { borderWidth: 1, borderRadius: 14, padding: 16 },
   summaryTop: { alignItems: 'center' },
@@ -458,5 +465,5 @@ const styles = StyleSheet.create({
   statusPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17 },
-  emptyText: { fontSize: 14, maxWidth: 280, lineHeight: 20 },
+  emptyText: { fontSize: 15, maxWidth: 280, lineHeight: 21 },
 });

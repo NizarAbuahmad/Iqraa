@@ -3,7 +3,7 @@
  * Demo Mode: fully local KB grounding. No OpenAI / network.
  */
 
-import { artifactFromAsk } from './askVocabulary.ts';
+import { artifactFromAsk, isTeachMeAsk } from './askVocabulary.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 import { getBookForLesson, getUnitForLesson } from '../knowledgeBase.ts';
 import { GRADES, SUBJECTS } from '../curriculumData.ts';
@@ -410,7 +410,10 @@ export function detectIntent(query: string): Intent {
   if (/مثال|example|تمارين?\s*محلول|أضف\s*مثالاً?|اضف\s*مثال|add\s*an?\s*example/i.test(q)) {
     return 'example';
   }
-  if (/كيف\s*أشرح|شرح|explain|simplify|بسّ?ط|سهلة|بطريقة|للطلبة\s*الضعفاء|للطلبة\s*المتفوقين/i.test(q)) {
+  if (
+    /كيف\s*أشرح|شرح|explain|simplify|بسّ?ط|سهلة|بطريقة|للطلبة\s*الضعفاء|للطلبة\s*المتفوقين/i.test(q)
+    || isTeachMeAsk(q)
+  ) {
     return 'explain';
   }
   if (isReferentialQuery(q)) return 'follow_up';

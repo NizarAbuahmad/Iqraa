@@ -96,7 +96,7 @@ export default function EvaluationsScreen() {
     <View style={[styles.deskHeader, { flexDirection: isRTL ? 'row-reverse' : 'row', borderBottomColor: colors.border }, centered]}>
       <View style={{ gap: 4 }}>
         {backButton}
-        <Text style={[styles.deskTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.deskTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('myEvaluations')}
         </Text>
         <Text style={[styles.deskSub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -108,13 +108,13 @@ export default function EvaluationsScreen() {
         style={[styles.deskNewBtn, { backgroundColor: ACCENT_FILL }]}
       >
         <Ionicons name="add" size={18} color="#fff" />
-        <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>{t('newEvaluation')}</Text>
+        <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('newEvaluation')}</Text>
       </Pressable>
     </View>
   ) : (
     <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
       {backButton}
-      <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+      <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
         {t('myEvaluations')}
       </Text>
       <Text
@@ -154,7 +154,7 @@ export default function EvaluationsScreen() {
             error ? null : (
               <View style={styles.empty}>
                 <Ionicons name="clipboard-outline" size={40} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+                <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {t('noEvaluationsYet')}
                 </Text>
                 <Text
@@ -176,13 +176,13 @@ export default function EvaluationsScreen() {
               <View style={{ flex: 1 }}>
                 <View style={[styles.cardTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <Text
-                    style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}
+                    style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}
                     numberOfLines={1}
                   >
                     {(lang === 'ar' ? item.titleAr : item.title) || t('newEvaluation')}
                   </Text>
                   <View style={[styles.statusPill, { backgroundColor: STATUS_COLOR[item.status] + '20' }]}>
-                    <Text style={{ color: STATUS_COLOR[item.status], fontFamily: 'Cairo_600SemiBold', fontSize: 11 }}>
+                    <Text style={{ color: STATUS_COLOR[item.status], fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 }}>
                       {t(STATUS_KEY[item.status])}
                     </Text>
                   </View>
@@ -249,7 +249,7 @@ export default function EvaluationsScreen() {
 const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   heroTitle: { fontSize: 26, color: '#fff' },
-  heroSub: { fontSize: 13, lineHeight: 21 },
+  heroSub: { fontSize: 15, lineHeight: 24 },
   deskHeader: {
     alignItems: 'flex-end',
     justifyContent: 'space-between',
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   deskTitle: { fontSize: 26, marginTop: 8 },
-  deskSub: { fontSize: 14, lineHeight: 22 },
+  deskSub: { fontSize: 15, lineHeight: 24 },
   deskNewBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -272,10 +272,10 @@ const styles = StyleSheet.create({
   card: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 14, borderWidth: 1 },
   cardTop: { alignItems: 'center', gap: 8 },
   cardTitle: { fontSize: 16, flex: 1 },
-  cardMeta: { fontSize: 13, lineHeight: 21, marginTop: 4 },
+  cardMeta: { fontSize: 15, lineHeight: 24, marginTop: 4 },
   statusPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17 },
-  emptyText: { fontSize: 14, maxWidth: 280, lineHeight: 20 },
+  emptyText: { fontSize: 15, maxWidth: 280, lineHeight: 21 },
   fab: { position: 'absolute', alignSelf: 'center', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
 });

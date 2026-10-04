@@ -51,7 +51,7 @@ export default function LegalScreen() {
           </Pressable>
         ) : null}
         <Text
-          style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}
+          style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}
         >
           {content.title}
         </Text>
@@ -76,7 +76,7 @@ export default function LegalScreen() {
         {content.sections.map(section => (
           <View key={section.heading} style={styles.section}>
             <Text
-              style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}
+              style={[styles.heading, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}
             >
               {section.heading}
             </Text>
@@ -102,9 +102,9 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth },
   backBtn: { padding: 4, marginBottom: 8 },
   title: { fontSize: 22 },
-  updated: { fontSize: 12, lineHeight: 19, marginTop: 4 },
+  updated: { fontSize: 13, lineHeight: 21, marginTop: 4 },
   intro: { fontSize: 15, lineHeight: 26 },
   section: { marginTop: 26 },
   heading: { fontSize: 16, marginBottom: 10 },
-  paragraph: { fontSize: 14, lineHeight: 25, marginBottom: 10 },
+  paragraph: { fontSize: 15, lineHeight: 27, marginBottom: 10 },
 });

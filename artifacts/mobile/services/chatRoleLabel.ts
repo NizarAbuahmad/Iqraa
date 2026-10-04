@@ -24,7 +24,9 @@ import type { TranslationKey } from './i18n.ts';
 
 /**
  * `school_admin` and `system_admin` share one label — no screen in this app
- * distinguishes them from each other, only from `teacher`. Exhaustive over
+ * distinguishes them from each other, only from `teacher`. It is «مسؤول», not
+ * the profile screen's «مدير المدرسة»: in a chat an account that teaches was
+ * being introduced to parents as the school's principal. Exhaustive over
  * `ChatRole` so a future sixth role fails to compile instead of silently
  * rendering nothing.
  */
@@ -34,7 +36,7 @@ export function chatRoleLabel(role: ChatRole, t: (key: TranslationKey) => string
       return t('roleTeacher');
     case 'school_admin':
     case 'system_admin':
-      return t('roleAdmin');
+      return t('chatRoleAdmin');
     case 'student':
       return t('roleStudent');
     case 'parent':

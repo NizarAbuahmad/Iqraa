@@ -115,7 +115,7 @@ export default function PickStudentScreen() {
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
         </View>
-        <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {classId ? t('pickStudentTitle') : t('pickClassFirst')}
         </Text>
       </View>
@@ -139,7 +139,7 @@ export default function PickStudentScreen() {
               onPress={() => openClass(item.id)}
               style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
-              <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, textAlign: align }]}>
+              <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: align }]}>
                 {lang === 'ar' && item.nameAr ? item.nameAr : item.name}
               </Text>
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
@@ -160,17 +160,17 @@ export default function PickStudentScreen() {
                 style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: align }]}>
+                  <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }]}>
                     {item.displayName}
                   </Text>
                   {attempt?.result && (
-                    <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 2, textAlign: align }]}>
+                    <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 2, textAlign: align }]}>
                       {t('resultPercentLabel', attempt.result.percent)}
                     </Text>
                   )}
                 </View>
                 <View style={[styles.statusPill, { backgroundColor: STATUS_COLOR[status] + '20' }]}>
-                  <Text style={{ color: STATUS_COLOR[status], fontFamily: 'Cairo_600SemiBold', fontSize: 11 }}>
+                  <Text style={{ color: STATUS_COLOR[status], fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 }}>
                     {t(STATUS_KEY[status])}
                   </Text>
                 </View>
