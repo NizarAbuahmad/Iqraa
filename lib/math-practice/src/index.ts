@@ -290,7 +290,7 @@ function levelOptionShape(
 
 // ─── Concrete banks (real solvable items — not meta prompts) ─────────────────
 
-const BANK: ConcreteItem[] = [
+export const MATH_BANK: ConcreteItem[] = [
   // ── Exponential equations ──
   { id: 'exp-e1', family: 'exp_eq', diff: 'easy', eq: '2^x = 32', answer: 'x = 5', wrongs: ['x = 4', 'x = 6', 'x = 16'] },
   { id: 'exp-e2', family: 'exp_eq', diff: 'easy', eq: '3^x = 27', answer: 'x = 3', wrongs: ['x = 2', 'x = 9', 'x = 4'] },
@@ -423,6 +423,7 @@ const BANK: ConcreteItem[] = [
     wordEn: 'A quantity doubles each day from 1. After how many days is it 16? Write and solve an exponential equation.',
   },
 ];
+const BANK = MATH_BANK;
 
 /**
  * The question as a teacher would write it.
