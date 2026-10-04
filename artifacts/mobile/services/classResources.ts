@@ -2,8 +2,10 @@
  * The pure half of a class's Resources tab — what sits beside a teacher's own
  * materials once Library items can be put in front of a class.
  *
- * Pure on purpose: no `react-native`, no `expo-*`, and every import is a type
- * import, so the bare `node --test` runner can load it.
+ * Pure on purpose: no `react-native` and no `expo-*`, directly or through
+ * anything it imports at runtime (today only `./i18n.ts`, a plain string
+ * catalogue), so the bare `node --test` runner can load it. The other imports
+ * are type-only.
  *
  * Spec: docs/superpowers/specs/2026-10-04-class-resources-design.md
  */

@@ -17,7 +17,7 @@ import {
   withAddedResource,
   type ClassResource,
 } from '../classResources.ts';
-import type { ResourceItem } from '../resourceCatalog.ts';
+import { buildResourceCatalog, type ResourceItem } from '../resourceCatalog.ts';
 import type { SavedMaterial } from '../workspace.ts';
 
 const material = (id: string, savedAt: string): SavedMaterial => ({
@@ -92,15 +92,68 @@ describe('mergeClassShelf', () => {
 });
 
 describe('addedKeys', () => {
+  // Built by the real catalogue, one item per source, so this fails if the
+  // `<source>:<nativeId>` format drifts between resourceCatalog.ts and here.
+  const catalogue = buildResourceCatalog({
+    uploaded: [
+      {
+        id: 'u1',
+        gradeId: 'grade-5',
+        subjectId: 'science',
+        lessonId: null,
+        category: 'video',
+        titleAr: 'فيديو',
+        description: '',
+        mimeType: 'video/mp4',
+        sizeBytes: 1000,
+        isLink: false,
+        url: 'https://pub.example/library/u1.mp4',
+        semester: null,
+        thumbnailUrl: null,
+        createdAt: '2026-09-25T00:00:00Z',
+      },
+    ],
+    premade: [
+      {
+        id: 'pw-kbl-math-s1-nccd-u1_l1-medium',
+        lessonId: 'kbl-math-s1-nccd-u1_l1',
+        gradeId: 'grade-10',
+        subjectId: 'mathematics',
+        level: 'medium',
+        titleAr: 'حل نظام',
+        titleEn: 'Solving a system',
+        content: { title: 'ورقة عمل', instructions: '', sections: [], answerKey: [] },
+        keyVerification: [],
+        generatedAt: '2026-09-15T00:00:00.000Z',
+        promptVersion: 'v1',
+        model: 'test',
+      },
+    ],
+    qr: [
+      {
+        title: 'العلوم — الفصل الأول',
+        subjectId: 'science',
+        resources: [{ kind: 'audio', url: 'http://example.invalid/a1', pdfPage: 31, isHttp: true }],
+      },
+    ],
+  });
+
   it('matches the key the Library catalogue gives the same item', () => {
-    const upload = resource({ id: 'u1', source: 'uploaded', nativeId: 'u1' });
-    const sheet = resource({ id: 'p1', source: 'premade-sheet', nativeId: 'pw-demo' });
-    const code = resource({ id: 'q1', source: 'book-qr', nativeId: '31:http://example.test/a' });
-    const added = addedKeys([upload, sheet, code]);
-    assert.ok(added.has(item({ key: 'uploaded:u1' }).key));
-    assert.ok(added.has('premade-sheet:pw-demo'));
-    assert.ok(added.has('book-qr:31:http://example.test/a'));
-    assert.ok(!added.has('uploaded:other'));
+    assert.deepEqual(catalogue.map(i => i.source).sort(), ['book-qr', 'premade-sheet', 'uploaded']);
+    const onShelf = catalogue.map((item, i) =>
+      resource({ id: `r${i}`, source: item.source, nativeId: item.nativeId }),
+    );
+    const added = addedKeys(onShelf);
+    for (const item of catalogue) assert.ok(added.has(item.key), `${item.key} not recognised as added`);
+    assert.equal(added.size, catalogue.length);
+  });
+
+  it('does not match an item that is not on the shelf', () => {
+    const onShelf = catalogue.filter(i => i.source === 'uploaded').map(i =>
+      resource({ id: 'r', source: i.source, nativeId: i.nativeId }),
+    );
+    const added = addedKeys(onShelf);
+    for (const item of catalogue.filter(i => i.source !== 'uploaded')) assert.ok(!added.has(item.key));
   });
 });
 

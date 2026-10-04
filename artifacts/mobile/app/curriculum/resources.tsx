@@ -53,7 +53,6 @@ import {
   filterResources,
   groupIntoShelves,
   type ResourceItem,
-  type ResourceKind,
   type Shelf,
 } from '@/services/resourceCatalog';
 import { allPremade } from '@workspace/curriculum/premade';
