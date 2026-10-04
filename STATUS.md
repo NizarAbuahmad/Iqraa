@@ -100,13 +100,16 @@ an announcement by default» below.
   Verified by typecheck and the mobile suite (2204 pass, 0 fail, 10
   skipped). **Not verified in a browser** — none of the screen wiring is
   machine-testable (the runner cannot load react-native). Still open from
-  the same review: a reopened deck is not loaded from موادي on either slides
-  screen (only the form is prefilled); pen ink drifts off the content on
-  resize; `homeAiTools.ts` still disables `activity`/`game` for the
-  related-tools panel, deliberately. (The timer pause that was listed here
-  landed 2026-10-03: tap the clock, press P, or use the bottom-bar button on
-  wide screens. Pausing holds the second; a new slide or a restart clears it.
-  Not looked at in a browser.)
+  the same review: pen ink drifts off the content on resize;
+  `homeAiTools.ts` still disables `activity`/`game` for the related-tools
+  panel, deliberately. (The timer pause that was listed here landed
+  2026-10-03: tap the clock, press P, or use the bottom-bar button on wide
+  screens. Pausing holds the second; a new slide or a restart clears it. The
+  reopened deck landed 2026-10-04: «تعديل» on a saved deck now loads the deck
+  itself — slides, edits, scope and its link to the stored item — on both
+  slides screens (`services/savedDeck.ts`); an item that is gone or unreadable
+  keeps the prefilled form and says so. موادي's row menu offers «تعديل» on
+  `slides` too — only the item page did. Neither is looked at in a browser.)
 - **A free, no-login games hub shipped** (2026-09-18), a competitive response
   to hasaadx.com/teacher. `/play` (added to `routeGating.ts`'s
   `PUBLIC_ROUTES`, same no-account pattern as `app/take/[code].tsx`) offers
