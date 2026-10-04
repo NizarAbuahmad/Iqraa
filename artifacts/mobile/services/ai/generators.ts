@@ -9,7 +9,7 @@ import type {
 } from './AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 import { buildInfographicFromLesson, type InfographicOutput } from './infographic.ts';
-import { getLessonById, getUnitForLesson, resolveGroundedKbLesson } from '../knowledgeBase.ts';
+import { getBookForLesson, getLessonById, getUnitForLesson, resolveGroundedKbLesson } from '../knowledgeBase.ts';
 import { figuresForLesson } from '../bookFigures.ts';
 import {
   parseDocumentGrounding,
@@ -17,6 +17,7 @@ import {
 } from '../documents/grounding.ts';
 import {
   beginMathPracticeSession,
+  hasMathBank,
   isMathContext,
   takeConcreteMath,
   takeConcreteMathBatch,
@@ -210,6 +211,24 @@ function tryMathPractice(
   return null;
 }
 
+/**
+ * Thrown while a quiz or worksheet is being built, when a lesson the bank
+ * covers has no unused item left. The caller stops and returns the questions
+ * it has: a shorter paper, not a paper padded with topic-templated sentences
+ * that read like questions and test nothing.
+ */
+class BankSpentError extends Error {}
+let bankOnly = false;
+
+/** `tryMathPractice`, except that a spent bank is an error while `bankOnly` is set. */
+function takeFromBankOrStop(...args: Parameters<typeof tryMathPractice>): WQ | null {
+  const item = tryMathPractice(...args);
+  if (item === null && bankOnly && (isChemContext(args[1], args[2], args[6]) || isMathContext(args[1], args[2], args[6]))) {
+    throw new BankSpentError();
+  }
+  return item;
+}
+
 // ─── Lesson Plan helpers (Arabic) ────────────────────────────────────────────
 
 function lpObjectivesAr(topic: string, kb: KBLesson | null, custom?: string): string[] {
@@ -385,7 +404,7 @@ function tfPts(_diff: string) { return 2; }
 
 function makeMCQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = mcPts(diff);
-  const math = tryMathPractice('multiple_choice', topic, kb, diff, 'ar', pts, subject, allowRepeat);
+  const math = takeFromBankOrStop('multiple_choice', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
   const t0 = kb?.keyTerms?.filter(t => t.ar?.trim())[0];
   const t1 = kb?.keyTerms?.filter(t => t.ar?.trim())[1];
@@ -408,7 +427,7 @@ function makeMCQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
 
 function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = saPts(diff);
-  const math = tryMathPractice('short_answer', topic, kb, diff, 'ar', pts, subject, allowRepeat);
+  const math = takeFromBankOrStop('short_answer', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
   const t0 = kb?.keyTerms?.filter(t => t.ar?.trim())[0];
   const t1 = kb?.keyTerms?.filter(t => t.ar?.trim())[1];
@@ -428,7 +447,7 @@ function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
 
 function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = fbPts(diff);
-  const math = tryMathPractice('fill_blank', topic, kb, diff, 'ar', pts, subject, allowRepeat);
+  const math = takeFromBankOrStop('fill_blank', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
   const t0 = kb?.keyTerms?.filter(t => t.ar?.trim())[0];
   const t1 = kb?.keyTerms?.filter(t => t.ar?.trim())[1];
@@ -446,7 +465,7 @@ function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
 
 function makeTFQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = tfPts(diff);
-  const math = tryMathPractice('true_false', topic, kb, diff, 'ar', pts, subject, allowRepeat);
+  const math = takeFromBankOrStop('true_false', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
   const c0 = kb?.keyConceptsAr?.[0]?.trim() || topic;
   const c1 = kb?.keyConceptsAr?.[1]?.trim() || `تطبيق ${topic}`;
@@ -465,7 +484,7 @@ function makeTFQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
 /** Real-life word problem aligned with "حل مسائل حياتية" curriculum phrasing. */
 function makeWPQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = saPts(diff);
-  const math = tryMathPractice('word_problem', topic, kb, diff, 'ar', pts, subject, allowRepeat);
+  const math = takeFromBankOrStop('word_problem', topic, kb, diff, 'ar', pts, subject, allowRepeat);
   if (math) return math;
   const c0 = kb?.keyConceptsAr?.[0]?.trim() || topic;
   const obj = kb?.objectives?.find(o => /حياتي|مسألة|نمذج/.test(o));
@@ -503,7 +522,7 @@ function makePriorReviewQ_ar(concept: string): WQ {
 
 function makeMCQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = mcPts(diff);
-  const math = tryMathPractice('multiple_choice', topic, kb, diff, 'en', pts, subject, allowRepeat);
+  const math = takeFromBankOrStop('multiple_choice', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
   const t0 = kb?.keyTerms?.filter(t => t.en?.trim())[0];
   const t1 = kb?.keyTerms?.filter(t => t.en?.trim())[1];
@@ -525,7 +544,7 @@ function makeMCQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
 
 function makeSAQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = saPts(diff);
-  const math = tryMathPractice('short_answer', topic, kb, diff, 'en', pts, subject, allowRepeat);
+  const math = takeFromBankOrStop('short_answer', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
   const t0 = kb?.keyTerms?.filter(t => t.en?.trim())[0];
   const t1 = kb?.keyTerms?.filter(t => t.en?.trim())[1];
@@ -545,7 +564,7 @@ function makeSAQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
 
 function makeFBQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = fbPts(diff);
-  const math = tryMathPractice('fill_blank', topic, kb, diff, 'en', pts, subject, allowRepeat);
+  const math = takeFromBankOrStop('fill_blank', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
   const t0 = kb?.keyTerms?.filter(t => t.en?.trim())[0];
   const t1 = kb?.keyTerms?.filter(t => t.en?.trim())[1];
@@ -563,7 +582,7 @@ function makeFBQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
 
 function makeTFQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = tfPts(diff);
-  const math = tryMathPractice('true_false', topic, kb, diff, 'en', pts, subject, allowRepeat);
+  const math = takeFromBankOrStop('true_false', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
   const c0 = kb?.keyConceptsEn?.[0]?.trim() || topic;
   const c1 = kb?.keyConceptsEn?.[1]?.trim() || `application of ${topic}`;
@@ -582,7 +601,7 @@ function makeTFQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
 /** Real-life word problem aligned with curriculum "solve real-life problems" outcomes. */
 function makeWPQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string, allowRepeat: boolean = true): WQ {
   const pts = saPts(diff);
-  const math = tryMathPractice('word_problem', topic, kb, diff, 'en', pts, subject, allowRepeat);
+  const math = takeFromBankOrStop('word_problem', topic, kb, diff, 'en', pts, subject, allowRepeat);
   if (math) return math;
   const c0 = kb?.keyConceptsEn?.[0]?.trim() || topic;
   const templates: TieredTemplate[] = [
@@ -700,7 +719,11 @@ export class NoQuestionBankError extends Error {
 export const questionBankPolicy = { required: true };
 
 function requireQuestionBank(topic: string, kb: KBLesson | null, subject?: string): void {
-  if (!questionBankPolicy.required || isMathContext(topic, kb, subject) || isChemContext(topic, kb, subject)) return;
+  if (!questionBankPolicy.required || isChemContext(topic, kb, subject)) return;
+  // A maths lesson is covered only when the bank has items ABOUT it — Grade 7–9
+  // lessons and lessons the generators cannot ask (geometry, data, money…) are
+  // refused like any other subject, not served the grade's default arithmetic.
+  if (isMathContext(topic, kb, subject) && hasMathBank(topic, kb)) return;
   throw new NoQuestionBankError(topic);
 }
 
@@ -964,7 +987,11 @@ export class MockAIService extends AIService {
         ];
 
     let typeIdx = 0;
+    let spent = false;
+    bankOnly = questionBankPolicy.required;
+    try {
     for (const bucket of buckets) {
+      if (spent) break;
       const questions: WQ[] = [];
       // Types rotate WITHIN a bucket, so a section can hold more than one.
       // `sectionType` used to be reassigned on every iteration and ended up
@@ -973,8 +1000,16 @@ export class MockAIService extends AIService {
       for (let i = 0; i < bucket.count; i++) {
         const type = mainTypes[typeIdx % mainTypes.length];
         typeIdx += 1;
+        let q: WQ;
+        try {
+          q = pushQuestion(type, makeQ(type, bucket.diff), true);
+        } catch (e) {
+          // The lesson's bank ran out: this section and the rest stay short.
+          if (!(e instanceof BankSpentError)) throw e;
+          spent = true;
+          break;
+        }
         typesUsed.add(type);
-        const q = pushQuestion(type, makeQ(type, bucket.diff), true);
         questions.push(q);
         answerKey.push({ num: qNum++, answer: q.answer ?? '—' });
       }
@@ -985,7 +1020,7 @@ export class MockAIService extends AIService {
     }
 
     // At least one life-application word problem when selected
-    if (wantsWordProblem) {
+    if (wantsWordProblem && !spent) {
       const q = pushQuestion('word_problem', makeQ('word_problem', 'medium'), true);
       sections.push({
         type: 'word_problem',
@@ -994,6 +1029,12 @@ export class MockAIService extends AIService {
       });
       answerKey.push({ num: qNum++, answer: q.answer ?? '—' });
     }
+    } catch (e) {
+      if (!(e instanceof BankSpentError)) throw e;
+    } finally {
+      bankOnly = false;
+    }
+    if (sections.every(sec => sec.questions.length === 0)) throw new NoQuestionBankError(topic);
 
     return {
       title: lang === 'ar'
@@ -1051,6 +1092,8 @@ export class MockAIService extends AIService {
       return q;
     };
 
+    bankOnly = questionBankPolicy.required;
+    try {
     for (let i = 0; i < numQuestions; i++) {
       const type = types[i % types.length];
       const id = `q${qIdx++}`;
@@ -1074,6 +1117,18 @@ export class MockAIService extends AIService {
         else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id, req.subject, tier)));
         else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id, req.subject, tier)));
       }
+    }
+    } catch (e) {
+      // The lesson's bank ran out: keep what was asked so far.
+      if (!(e instanceof BankSpentError)) throw e;
+    } finally {
+      bankOnly = false;
+    }
+    if (questions.length === 0) throw new NoQuestionBankError(topic);
+    if (questions.length < numQuestions) {
+      // Spread the marks over the questions that exist.
+      const each = Math.max(1, Math.floor(totalMarks / questions.length));
+      questions.forEach(q => { q.points = each; });
     }
 
     // Ensure totalPoints sums exactly to totalMarks
@@ -1128,6 +1183,8 @@ export class MockAIService extends AIService {
 
     const blueprint = buildActivityBlueprint(actType, {
       topic, lang, math, practice, kb, duration,
+      // The lesson's own subject id, else the caller's name — see `handsOnKind`.
+      subject: (kb ? getBookForLesson(kb)?.subjectId : undefined) ?? req.subject,
     });
 
     return plainActivity({
