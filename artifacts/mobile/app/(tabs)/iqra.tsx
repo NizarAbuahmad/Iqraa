@@ -1917,7 +1917,15 @@ export default function IqraScreen() {
         || !!ordinalLessonId
         || !!extractQuerySubjectId(q)
         || !!extractQueryGradeId(q);
-      const route = classifyChatIntent(q, lang as 'ar' | 'en', answersChat, user?.firstName);
+      // The lesson on the card, so «علمني» teaches it instead of asking «شرح
+      // مفهوم، أم مادة؟» as if nothing were open. Not a lesson the teacher left
+      // (pin 'none'): that one is no longer what a bare ask means.
+      const openLessonId = pinnedLessonId
+        ?? (sessionMemory.lessonPin !== 'none' ? sessionMemory.activeLessonId : null);
+      const openLesson = openLessonId ? getLessonById(openLessonId) : null;
+      const route = classifyChatIntent(q, lang as 'ar' | 'en', answersChat, user?.firstName, {
+        activeLessonTitle: openLesson ? (lang === 'ar' ? openLesson.titleAr : openLesson.titleEn) : null,
+      });
       awaitingClarifyRef.current = route.intent === 'ambiguous';
       if (route.intent === 'artifact') {
         setThinkingLabel(
