@@ -410,6 +410,8 @@ function bankMultipleChoice(
   // would otherwise reach the maths bank's family detection and come back
   // with a quadratic.
   const primary = Number(gradeId?.match(/^grade-(\d+)$/)?.[1]);
+  // Grades 7–9 have no maths bank, and the Grade 10 one is not theirs.
+  if (subjectId !== "chemistry" && primary >= 7 && primary <= 9) return null;
   const item = subjectId !== "chemistry" && primary >= 1 && primary <= 6
     ? takeElementaryMath("multiple_choice", topic, null, primary, BANK_TIER[difficulty], "ar", marks, session)
     : (subjectId === "chemistry" ? takeConcreteChem : takeConcreteMath)(
