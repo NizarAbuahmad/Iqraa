@@ -662,13 +662,20 @@ teacher's materials, newest first, tagged «المكتبة».
 item, and its title / kind / link as they were when added), not a copy. The tab
 renders without downloading the Library. A staff upload deleted afterwards shows
 greyed out as «لم يعد متاحًا» (the list endpoint checks), and ✕ removes only the
-class's row. Premade sheets open in the existing read-only sheet viewer.
+class's row. Premade sheets open in the existing read-only sheet viewer. A
+book-QR row stored over plain `http` carries the Library's «رابط غير آمن (http)»
+line. A failed read of the shelf shows no banner and keeps what was showing; an
+add whose follow-up re-read fails still puts the new row on the shelf.
 
 **Why not `saved_materials`.** A later piece (device uploads) needs a storage
 key, and in an app-written JSON column the server would be signing URLs from
-keys a client supplied. Here the server owns every column. Design:
+keys a client supplied. Here the server validates every column and copies a
+staff upload's from its own row (premade-sheet and book-QR snapshots are supplied
+by the app and validated by the server). Design:
 `docs/superpowers/specs/2026-10-04-class-resources-design.md`; plan:
-`docs/superpowers/plans/2026-10-04-class-resources-piece-1.md`.
+`docs/superpowers/plans/2026-10-04-class-resources-piece-1.md`. **Those two files
+are not on this branch yet** — they live in PR #833, so the links resolve only
+once #833 lands.
 
 **API** (`/classes/:id/resources`, inside the roster router so its path-scoped
 auth and consent guards apply): `GET`, `POST` (a repeat is `409 already_added`,
@@ -676,8 +683,9 @@ which the app treats as success), `DELETE /:rid`. Another teacher's class is a
 404. A staff upload is copied from the Library's own row, never from what the
 app sent; links are https-only except book-QR codes, which the API also accepts
 over plain http (an `http://` code was added with a `201`, a `javascript:` link
-was refused with a `400`). A missing table reads as an empty shelf and writes
-answer `503 roster_storage_unavailable`.
+was refused with a `400`). A missing table reads as an empty shelf (logged at
+`warn`, so a skipped schema push leaves a trace) and writes answer
+`503 roster_storage_unavailable`.
 
 **Retired.** `addToClassPlan` and the `add-to-class` action: the plan was to copy
 a premade sheet into the teacher's materials, nothing ever called it, and the
@@ -716,18 +724,44 @@ from this branch, Expo web, headless Chromium at 390×844 in Arabic):
 - *Book codes.* In a grade-10 civics class the picker had 5 book-QR rows. Two
   codes from the same book, added, read «… الفصل الأول — صفحة ٢٤» and
   «… — صفحة ٤٩» on the tab: distinguishable. No reachable code in today's
-  catalogue is `http`, so the picker's per-row http warning was **not seen**.
+  catalogue is `http`, so the picker's per-row http warning was **not seen** in a
+  browser; the shelf row's same line was seen only in a server-side render of
+  the row (below).
 - *Failures are visible.* With `class_resources` dropped and the picker open,
   tapping an item showed «تعذّر تحديث موارد الشعبة — حاول مرة أخرى» inside the
   picker (no «مضاف», no spinner; cleared on closing). With a row on the shelf
   and the table dropped, ✕ showed the same message as a toast on the class
   screen and the row stayed.
-- *The API, two teachers* (20 checks): the other teacher got 404 on read, add
-  and remove; a repeated add was a 409; a deleted staff upload came back
+- *The API, two teachers* (20 checks, a hand-run script against local Postgres;
+  **not committed**, because it hard-codes local credentials, so this line is
+  not reproducible from the repo): the other teacher got 404 on read, add and
+  remove; a repeated add was a 409; a deleted staff upload came back
   `unavailable`; no token was a 401; with the table dropped a read returned
-  `[]` and a write a 503.
+  `[]` and a write a 503. What *is* committed: the 17 tests of
+  `classResource.ts` (the validation) and the 401 guard in
+  `mountOrder.test.ts`. Ownership, the 409, the 503s and `unavailable` live in
+  the route handlers and have no committed test.
+- *Nested buttons.* Before the fix a Library row on the tab put a `<button>`
+  inside a `<button>` (React logged «`<button>` cannot be a descendant of
+  `<button>`» on every load). The open action and the ✕ are now siblings. A
+  server-side render of `ClassResourceRow` through react-native-web counted 1
+  nested `<button>` in the old row and 0 in the new one, for a live row, an
+  unavailable row (its open action `disabled`, the ✕ not) and an `http` book code
+  (which also showed the insecure line). **Not re-driven in a browser after the
+  fix:** the console-clean check (Chromium, a hand-run script that is not in the
+  repo) was not run for this change, so a console free of that error is
+  expected, not observed.
 
 **Not verified.** A native device (only Expo web, only Chromium, was driven).
+The failure fallbacks (a failed shelf read; an add whose re-read fails) and the
+`warn` log line were not driven: they have typecheck, and `withAddedResource` a
+unit test, and nothing more.
+
+**Open for the owner.** (a) A staff upload's `url` on the shelf is a snapshot of
+the composed R2 URL; if `R2_PUBLIC_BASE_URL` ever changes, those rows keep the
+old host. The fix is to build it at read time from the Library row's `r2Key`.
+(b) Premade-sheet ids are not validated server-side, so a regenerated manifest
+can orphan a stored id; the row then opens the viewer's not-found screen.
 
 **Not in this change.** Teacher-pasted links (no schema change) and device
 uploads (one more push, private storage, no video under the 8 MB cap) are
