@@ -164,7 +164,7 @@ export default function PickStudentScreen() {
                     {item.displayName}
                   </Text>
                   {attempt?.result && (
-                    <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 2, textAlign: align }]}>
+                    <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 2, textAlign: align }]}>
                       {t('resultPercentLabel', attempt.result.percent)}
                     </Text>
                   )}

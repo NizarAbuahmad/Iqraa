@@ -251,11 +251,32 @@ function trimmedOrUndefined(value: unknown): string | undefined {
  * queried for those two roles — a teacher never has rosterLinks, and running
  * this on every teacher request would be a wasted query on the common path.
  */
+/**
+ * Any roster link at all, archived rows included — the role-switch lock, which
+ * counts archived data the same way `hasAnyTeachingData` does below. A link
+ * stays a link while its row is archived, and the row can be restored.
+ */
 async function hasAnyRosterLink(userId: string): Promise<boolean> {
   const [row] = await db
     .select({ id: rosterLinks.id })
     .from(rosterLinks)
     .where(eq(rosterLinks.userId, userId))
+    .limit(1);
+  return !!row;
+}
+
+/**
+ * A link to a live roster row — what the claim gate (`hasRosterLink` on the
+ * user) asks. A student whose only link is to an archived row used to pass
+ * the gate into an app with no class, no teacher and no contacts;
+ * `/messaging/contacts` already drops archived rows, and this is that rule.
+ */
+async function hasLiveRosterLink(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: rosterLinks.id })
+    .from(rosterLinks)
+    .innerJoin(students, eq(students.id, rosterLinks.studentId))
+    .where(and(eq(rosterLinks.userId, userId), isNull(students.archivedAt)))
     .limit(1);
   return !!row;
 }
@@ -314,7 +335,7 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
     // No roster code is asked for or resolved at this point anymore: a
     // parent/student account is created bare, and links to a roster row
     // afterwards through the one claiming path, POST /auth/claim — see
-    // hasAnyRosterLink and the client-side gate that gets them there.
+    // hasLiveRosterLink and the client-side gate that gets them there.
     if (role !== "teacher" && !studentAccountsEnabled()) {
       res.status(403).json({
         code: "student_accounts_disabled",
@@ -801,7 +822,7 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
       return;
     }
 
-    const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
+    const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId), req.user!.id);
     if (!resolved.ok) {
       // `code` as well as `error`: the app is Arabic-first and these strings
       // are English, so the screen translates the code rather than printing
@@ -837,6 +858,23 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
           .limit(1);
         if (taken) return "taken" as const;
       }
+      // The one-parent rule for a class-code claim, asked again under the same
+      // lock: decideClaim's answer was given before it, so two parents picking
+      // the same name in the same second would both have been told "free".
+      if (resolved.relation === "guardian" && resolved.viaClassCode) {
+        const [other] = await tx
+          .select({ id: rosterLinks.id })
+          .from(rosterLinks)
+          .where(
+            and(
+              eq(rosterLinks.studentId, resolved.studentId),
+              eq(rosterLinks.relation, "guardian"),
+              ne(rosterLinks.userId, userId),
+            ),
+          )
+          .limit(1);
+        if (other) return "guardian_taken" as const;
+      }
       const [inserted] = await tx
         .insert(rosterLinks)
         .values({ studentId: resolved.studentId, userId, relation: resolved.relation })
@@ -849,6 +887,13 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
       res.status(409).json({
         error: "This student is already linked to another account",
         code: "claim_already_linked",
+      });
+      return;
+    }
+    if (outcome === "guardian_taken") {
+      res.status(409).json({
+        error: "A parent account is already linked to this student",
+        code: "claim_guardian_taken",
       });
       return;
     }
@@ -1024,11 +1069,14 @@ router.get("/join/:code", joinLookupLimiter, async (req, res) => {
       .orderBy(asc(students.displayName));
 
     // Every name is returned, with `taken` marking the ones a student account
-    // already holds — not filtered out. Only the one self-link is exclusive;
-    // guardians are deliberately unlimited, so hiding claimed names would mean
-    // the second parent could not find their own child and the class code
-    // would appear broken to them. The names are visible either way, so
-    // filtering would buy no privacy and cost a real case.
+    // already holds and `guardianTaken` the ones a parent account does — not
+    // filtered out. Each relation is exclusive on this list (decideClaim), but
+    // hiding a claimed name would make the class code look broken to the person
+    // looking for their own child, and the names are visible either way, so
+    // filtering would buy no privacy. They are listed, marked, and the app
+    // refuses to select them. Which flag applies depends on who is looking, and
+    // this route does not know — it is unauthenticated — so it sends both.
+    // A second parent is added with the per-student code instead.
     // Skipped entirely on an empty roster rather than asked with a placeholder
     // id. `rosterLinks.studentId` is a uuid column, so the `[""]` that used to
     // stand in for "no ids" made Postgres reject the whole statement — every
@@ -1036,23 +1084,19 @@ router.get("/join/:code", joinLookupLimiter, async (req, res) => {
     // answered 500 here, the app read that as "not a class code", hid the
     // picker, and let the joiner submit a nameless claim that came back
     // "Choose your name from the class list".
-    const selfLinked =
+    const links =
       roster.length === 0
         ? []
         : await db
-            .select({ studentId: rosterLinks.studentId })
+            .select({ studentId: rosterLinks.studentId, relation: rosterLinks.relation })
             .from(rosterLinks)
-            .where(
-              and(
-                eq(rosterLinks.relation, "self"),
-                inArray(rosterLinks.studentId, roster.map(s => s.id)),
-              ),
-            );
-    const taken = new Set(selfLinked.map(r => r.studentId));
+            .where(inArray(rosterLinks.studentId, roster.map(s => s.id)));
+    const taken = new Set(links.filter(r => r.relation === "self").map(r => r.studentId));
+    const guardianTaken = new Set(links.filter(r => r.relation === "guardian").map(r => r.studentId));
 
     res.json({
       class: { name: group.name, nameAr: group.nameAr },
-      students: roster.map(s => ({ ...s, taken: taken.has(s.id) })),
+      students: roster.map(s => ({ ...s, taken: taken.has(s.id), guardianTaken: guardianTaken.has(s.id) })),
     });
   } catch (err) {
     logger.error({ err }, "join code lookup failed");
@@ -1134,7 +1178,7 @@ router.post("/login", loginLimiter, async (req, res) => {
     // cares about — a teacher never has (or needs) a rosterLinks row.
     const hasRosterLink =
       user.role === "student" || user.role === "parent"
-        ? await hasAnyRosterLink(user.id)
+        ? await hasLiveRosterLink(user.id)
         : undefined;
 
     res.json({
@@ -1382,7 +1426,7 @@ router.post("/google", googleLimiter, async (req, res) => {
         ? undefined
         : isNewAccount
           ? false
-          : await hasAnyRosterLink(user.id);
+          : await hasLiveRosterLink(user.id);
 
     res.json({
       accessToken,
@@ -1571,7 +1615,7 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
     // login/register/google.
     const hasRosterLink =
       user.role === "student" || user.role === "parent"
-        ? await hasAnyRosterLink(user.id)
+        ? await hasLiveRosterLink(user.id)
         : undefined;
 
     res.json({

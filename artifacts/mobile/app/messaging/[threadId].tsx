@@ -28,6 +28,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { REPORT_REASON_KEYS } from '@/services/reportReasons';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   addGroupMembers,
@@ -48,7 +49,7 @@ import {
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { MessageBubble } from '@/components/ui/MessageBubble';
 import { Avatar } from '@/components/ui/Avatar';
-import { chatRoleLabel } from '@/services/chatRoleLabel';
+import { chatThreadSubtitle } from '@/services/chatThreadSubtitle';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 import { mergeNewMessages } from '@/services/messageMerge';
 import { pickUnreportedReads } from '@/services/readReceipts';
@@ -57,7 +58,6 @@ import { useStudentAccountsEnabled } from '@/services/features';
 import { saveRemoteImage } from '@/services/share';
 import { goBack } from '@/services/navigation';
 
-const REPORT_REASON_KEYS = ['reportReasonInappropriate', 'reportReasonBullying', 'reportReasonSpam', 'reportReasonOther'] as const;
 
 export default function ThreadScreen() {
   const { threadId } = useLocalSearchParams<{ threadId: string }>();
@@ -307,8 +307,10 @@ export default function ThreadScreen() {
   const headerTitle = isGroup ? (lang === 'ar' ? thread?.titleAr : thread?.title) || thread?.title : '';
   const isTeacher = isTeacherRole(user?.role);
   // The server enforces this too (see routes/messaging.ts) — hiding the
-  // composer is the courtesy, not the rule.
-  const canPost = !thread || !isGroup || isTeacher || thread.studentPostingEnabled;
+  // composer is the courtesy, not the rule. Nothing is shown until the thread
+  // has loaded: assuming "can post" meanwhile flashed a composer in every
+  // announcement-only class group before swapping it for the notice.
+  const canPost = !!thread && (!isGroup || isTeacher || thread.studentPostingEnabled);
 
   return (
     <KeyboardAvoidingView
@@ -355,7 +357,7 @@ export default function ThreadScreen() {
                 style={[styles.headerRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
                 numberOfLines={1}
               >
-                {chatRoleLabel(thread.otherParticipant.role, t)}
+                {chatThreadSubtitle(thread.otherParticipant, t, lang)}
               </Text>
             </View>
           </>
@@ -449,7 +451,7 @@ export default function ThreadScreen() {
         </Text>
       ) : null}
 
-      {!canPost ? (
+      {!thread ? null : !canPost ? (
         <View style={[styles.inputBar, { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 8) }]}>
           <View style={[styles.readOnlyNotice, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="megaphone-outline" size={16} color={colors.mutedForeground} />
@@ -677,14 +679,14 @@ const styles = StyleSheet.create({
   // below it) rather than being the row's only flexible child, unlike
   // headerName above which is shared with the group-thread branch.
   headerNameStacked: { fontSize: 16 },
-  headerRole: { fontSize: 12 },
+  headerRole: { fontSize: 13 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 80, gap: 12 },
-  emptyText: { fontSize: 14, lineHeight: 22 },
-  errorText: { fontSize: 12, lineHeight: 19, paddingHorizontal: 16, paddingBottom: 4 },
+  emptyText: { fontSize: 15, lineHeight: 24 },
+  errorText: { fontSize: 13, lineHeight: 21, paddingHorizontal: 16, paddingBottom: 4 },
   inputBar: { borderTopWidth: 1, paddingHorizontal: 12, paddingTop: 10 },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
-  input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0 },
+  input: { flex: 1, fontSize: 15, maxHeight: 100, paddingVertical: 0 },
   sendBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   menuCard: { width: '100%', maxWidth: 340, borderRadius: 16, padding: 10, gap: 2 },
@@ -692,7 +694,7 @@ const styles = StyleSheet.create({
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 10 },
   menuText: { fontSize: 14, flex: 1 },
   readOnlyNotice: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 12 },
-  readOnlyText: { fontSize: 13, lineHeight: 20, flexShrink: 1 },
+  readOnlyText: { fontSize: 15, lineHeight: 23, flexShrink: 1 },
   attachmentPreview: { alignItems: 'center', gap: 8, paddingHorizontal: 4, paddingBottom: 8 },
   viewerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
   viewerBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 8 },

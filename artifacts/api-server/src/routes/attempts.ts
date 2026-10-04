@@ -29,7 +29,8 @@ import {
   type AuthenticatedRequest,
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
-import { audioKeysForAttempt, deleteAttemptAudio } from "../lib/attemptAudio.ts";
+import { audioKeysForAttempt, deleteAttemptAudio, withRecordingUrls } from "../lib/attemptAudio.ts";
+import { presignedGetUrl } from "../lib/r2.js";
 import {
   deriveVerdict,
   isVerdict,
@@ -112,10 +113,12 @@ router.get("/attempts/:id", async (req: AuthenticatedRequest, res) => {
       .from(students)
       .where(eq(students.id, owned.attempt.studentId))
       .limit(1);
-    const answers = await db
-      .select()
-      .from(attemptAnswers)
-      .where(eq(attemptAnswers.attemptId, owned.attempt.id));
+    // A read-aloud answer carries a signed link to the child's recording, so
+    // the teacher can hear what the transcript-based mark was given for.
+    const answers = await withRecordingUrls(
+      await db.select().from(attemptAnswers).where(eq(attemptAnswers.attemptId, owned.attempt.id)),
+      key => presignedGetUrl(key),
+    );
     const grades = await db
       .select()
       .from(attemptQuestionGrades)

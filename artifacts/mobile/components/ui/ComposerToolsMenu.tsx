@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   grabber: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 10 },
   headerRow: { alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingBottom: 6 },
   title: { fontFamily: 'ReadexPro_700Bold', fontSize: 16 },
-  context: { fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, marginTop: 1 },
+  context: { fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 1 },
   body: { paddingHorizontal: 10, paddingBottom: 4 },
   group: { paddingTop: 6 },
   sectionTitle: {
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   iconWrap: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   titleRow: { alignItems: 'center', gap: 6 },
   rowTitle: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 },
-  rowDesc: { fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18 },
+  rowDesc: { fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20 },
   badge: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: 7 },
   badgeText: { fontFamily: 'ReadexPro_500Medium', fontSize: 10 },
 });

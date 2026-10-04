@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, usePathname } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -45,6 +46,38 @@ function SidebarRow({ entry, isIOS, active }: { entry: TabEntry; isIOS: boolean;
           <Text style={styles.badgeText}>{entry.badge}</Text>
         </View>
       ) : null}
+    </Pressable>
+  );
+}
+
+/**
+ * «اقترح ميزة» — always visible at the foot of the rail on the website, so
+ * a teacher with an idea does not have to know it lives under the profile tab.
+ * Quieter than the nav rows above it: it is an invitation, not a destination.
+ */
+function SuggestFeatureLink({ active }: { active: boolean }) {
+  const colors = useColors();
+  const { t } = useLanguage();
+  const [hovered, setHovered] = useState(false);
+  const tint = active || hovered ? colors.primary : colors.mutedForeground;
+
+  return (
+    <Pressable
+      onPress={() => router.push('/suggest-feature' as never)}
+      accessibilityRole="link"
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      style={[
+        styles.suggest,
+        {
+          borderColor: active || hovered ? colors.primary + '55' : colors.border,
+          backgroundColor: active ? colors.primary + '1a' : 'transparent',
+          borderRadius: colors.radius,
+        },
+      ]}
+    >
+      <Ionicons name="bulb-outline" size={18} color={tint} />
+      <Text style={[styles.suggestLabel, { color: tint }]}>{t('suggestFeature')}</Text>
     </Pressable>
   );
 }
@@ -99,7 +132,10 @@ export function WebSidebar({
           <SidebarRow key={entry.name} entry={entry} isIOS={isIOS} active={isTabActive(pathname, entry.name)} />
         ))}
       {/* Brand and nav first, the lesson being prepared last: it is context, not navigation. */}
-      {lessonCard ? <View style={styles.lessonSlot}>{lessonCard}</View> : null}
+      <View style={styles.footer}>
+        {lessonCard}
+        <SuggestFeatureLink active={pathname === '/suggest-feature'} />
+      </View>
     </View>
   );
 }
@@ -116,7 +152,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingBottom: 18,
   },
-  lessonSlot: { marginTop: 'auto' },
+  footer: { marginTop: 'auto', gap: 10 },
+  suggest: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+  },
+  suggestLabel: { fontSize: 14, fontFamily: 'ReadexPro_500Medium', flex: 1 },
   brandWord: { fontFamily: 'ReadexPro_700Bold', fontSize: 19 },
   row: {
     flexDirection: 'row',

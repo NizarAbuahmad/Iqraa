@@ -74,7 +74,7 @@ export function GameShell({
                 <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }}>
                   {t('playCtaHeading')}
                 </Text>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: 'center', lineHeight: 23 }}>
                   {t('playCtaBody')}
                 </Text>
                 <Button label={t('playCtaButton')} onPress={() => router.push('/(auth)/register')} variant="secondary" fullWidth />

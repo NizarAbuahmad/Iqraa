@@ -308,7 +308,7 @@ export function EditQuestionModal({
                       style={[row, styles.objectiveRow, { borderColor: on ? ACCENT : colors.border, backgroundColor: on ? ACCENT + '12' : colors.card }]}
                     >
                       <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={18} color={on ? ACCENT : colors.mutedForeground} />
-                      <Text numberOfLines={2} style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: align }}>
+                      <Text numberOfLines={2} style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
                         {objectiveLabel(id, lang) ?? t('readAloudObjectiveN', String(i + 1))}
                       </Text>
                     </Pressable>
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   sheet: { maxHeight: '92%', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
   header: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1 },
   label: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, marginTop: 6 },
-  hint: { fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 20 },
+  hint: { fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 22 },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, fontFamily: 'Almarai_400Regular' },
   multiline: { minHeight: 80, textAlignVertical: 'top' },
   wrap: { flexWrap: 'wrap', gap: 8 },

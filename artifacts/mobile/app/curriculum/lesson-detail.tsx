@@ -235,7 +235,7 @@ export default function LessonDetailScreen() {
             with no server call to make. Renders nothing elsewhere. */}
         <VocabularyPracticePanel lessonId={lesson.id} accent={color} />
 
-        {/* Grades 1–4 English: the same words, voiced and played with. */}
+        {/* Grades 1–4 and 9–10 English: the same words, voiced and played with. */}
         {hubLesson(lesson.id) ? (
           <Pressable
             onPress={() => router.push({ pathname: '/curriculum/english/[lessonId]', params: { lessonId: lesson.id } } as never)}
@@ -357,16 +357,16 @@ const styles = StyleSheet.create({
   sectionBody: { padding: 16, borderWidth: 1 },
   bullet: { gap: 10, marginBottom: 8, alignItems: 'flex-start' },
   bulletDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
-  bulletText: { flex: 1, fontSize: 14, lineHeight: 21 },
+  bulletText: { flex: 1, fontSize: 15, lineHeight: 23 },
   keywords: { flexWrap: 'wrap', gap: 8 },
   keyword: { paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1 },
   keywordText: { fontSize: 12 },
-  noteText: { fontSize: 14, lineHeight: 21 },
+  noteText: { fontSize: 15, lineHeight: 23 },
   outcomeCard: { padding: 14, marginBottom: 10 },
   outcomeTop: { marginBottom: 8 },
   bloomsBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start' },
   bloomsText: { fontSize: 11 },
-  outcomeDesc: { fontSize: 14, lineHeight: 20, marginBottom: 10 },
+  outcomeDesc: { fontSize: 15, lineHeight: 21, marginBottom: 10 },
   skills: { flexWrap: 'wrap', gap: 6 },
   skillPill: { paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
   skillText: { fontSize: 11, lineHeight: 18 },

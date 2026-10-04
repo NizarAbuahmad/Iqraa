@@ -34,11 +34,17 @@ export function kindForMime(mime: string): LessonMediaKind {
   return KIND_BY_MIME_PREFIX[prefix] ?? "document";
 }
 
-/** Parses `data:<mime>;base64,<data>` into its parts, or null if malformed. */
+/**
+ * Parses `data:<mime>[;param=value…];base64,<data>` into its parts, or null if
+ * malformed. The mime comes back bare and lower-cased: Chrome records
+ * read-aloud answers as `audio/webm;codecs=opus`, FileReader copies that into
+ * the data URL verbatim, and the old pattern — which allowed nothing between
+ * the type and `;base64` — refused every one of them as "not a data URL".
+ */
 export function parseDataUrl(dataUrl: string): { mime: string; buffer: Buffer } | null {
-  const match = /^data:([^;]+);base64,(.+)$/s.exec(dataUrl);
+  const match = /^data:([^;,]+)(?:;[^;,=]+=[^;,]*)*;base64,(.+)$/s.exec(dataUrl);
   if (!match) return null;
-  const mime = match[1] as string;
+  const mime = (match[1] as string).trim().toLowerCase();
   try {
     return { mime, buffer: Buffer.from(match[2] as string, "base64") };
   } catch {

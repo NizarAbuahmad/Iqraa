@@ -50,6 +50,7 @@ import { saveItem } from '@/services/workspace';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { ACTIVITY_TYPE_IDS } from '@/constants/activityType';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -193,14 +194,14 @@ export default function ResultsDashboardScreen() {
             <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 16 }]}>
               <View style={[styles.summaryTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={{ alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
                     {t('gradedCountLabel', gradedCount, attempts.length)}
                   </Text>
                   {/* Named rather than folded in: these papers carry a result
                       the machine wrote over the questions it could mark, and
                       averaging that in would flatter the class. */}
                   {provisionalCount > 0 && (
-                    <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 2 }}>
+                    <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 2 }}>
                       {t('provisionalCountLabel', provisionalCount)}
                     </Text>
                   )}
@@ -222,7 +223,7 @@ export default function ResultsDashboardScreen() {
                     const widthPct = (count / maxLevelCount) * 100;
                     return (
                       <View key={key} style={[styles.levelBarRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                        <Text style={{ width: 70, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+                        <Text style={{ width: 70, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                           {t(LEVEL_KEY[key])}
                         </Text>
                         <View style={[styles.barTrack, { backgroundColor: colors.muted }]}>
@@ -281,7 +282,7 @@ export default function ResultsDashboardScreen() {
                       {t(LEVEL_KEY[item.result.levelKey])}
                     </Text>
                   )}
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                     {t('resultPercentLabel', item.result.percent)}
                   </Text>
                 </View>
@@ -351,10 +352,16 @@ function ClassGaps({
         topic,
         language: lang as 'ar' | 'en',
         content: JSON.stringify(out),
-        formState: { gradeIdx, subjectIdx, topic, activityTypeIdx: 0, durationIdx: 0, objective: '' },
+        formState: {
+          gradeIdx, subjectIdx, topic,
+          activityTypeIdx: ACTIVITY_TYPE_IDS.indexOf('group'),
+          // The form's shortest length (20 min) — it has no 8-minute option.
+          durationIdx: 0,
+          objective: '',
+        },
       });
       // ponytail: Regenerate on the activity screen rebuilds this as a plain
-      // group activity — its form has no warm-up slot. Add a `variant=warmup`
+      // 20-minute group activity — its form has no warm-up slot. Add a `variant=warmup`
       // route param there if teachers turn out to regenerate warm-ups.
       router.push({
         pathname: '/ai-tools/activity',
@@ -394,7 +401,7 @@ function ClassGaps({
                 {t('classBelowLine', String(o.studentsBelowGap), String(o.studentCount))}
               </Text>
             </View>
-            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
               {title}
             </Text>
           </View>
@@ -446,7 +453,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   headerTitle: { fontSize: 22, color: '#fff' },
-  headerSub: { fontSize: 13, lineHeight: 21 },
+  headerSub: { fontSize: 15, lineHeight: 24 },
   errorBox: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1 },
   summaryCard: { borderWidth: 1, borderRadius: 14, padding: 16 },
   summaryTop: { alignItems: 'center' },
@@ -458,5 +465,5 @@ const styles = StyleSheet.create({
   statusPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17 },
-  emptyText: { fontSize: 14, maxWidth: 280, lineHeight: 20 },
+  emptyText: { fontSize: 15, maxWidth: 280, lineHeight: 21 },
 });

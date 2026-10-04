@@ -171,9 +171,9 @@ const styles = StyleSheet.create({
   row: { alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   prompt: { fontSize: 14, flex: 1 },
   thumb: { width: 34, height: 34, borderRadius: 10, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, minHeight: 44 },
+  input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, minHeight: 44 },
   submitBtn: { alignSelf: 'flex-start', paddingHorizontal: 18, paddingVertical: 9 },
   submitText: { color: '#fff', fontSize: 13 },
-  thanks: { fontSize: 14, lineHeight: 22 },
-  failed: { fontSize: 13, lineHeight: 18 },
+  thanks: { fontSize: 15, lineHeight: 24 },
+  failed: { fontSize: 15, lineHeight: 21 },
 });

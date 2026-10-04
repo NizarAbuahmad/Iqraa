@@ -622,13 +622,13 @@ export default function ParentMessageScreen() {
                 scrollEnabled={false}
                 onContentSizeChange={e => setLetterHeight(Math.max(120, e.nativeEvent.contentSize.height))}
                 style={{
-                  color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 26,
+                  color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 28,
                   textAlign: isRTL ? 'right' : 'left', textAlignVertical: 'top', height: letterHeight, padding: 0,
                   outlineStyle: 'none' as never,
                 }}
               />
             ) : (
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center', paddingVertical: 20 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center', paddingVertical: 20 }}>
                 {t('parentMsgNeedsName')}
               </Text>
             )}
@@ -706,7 +706,7 @@ export default function ParentMessageScreen() {
           {/* Above the button, not under it: the teacher reads this before the
               tap — either who the letter will reach, or why it can't. */}
           {ready ? (
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 12, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 12, textAlign: isRTL ? 'right' : 'left' }}>
               {guardians.length > 0
                 ? t('parentMsgRecipients', guardians.map(g => `${g.firstName} ${g.lastName}`).join(nameSeparator))
                 : pickedStudentId ? t('parentMsgNoGuardian') : t('parentMsgPickForSend')}
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
   pickLink: { alignItems: 'center', gap: 6, marginTop: 8 },
   pickLinkText: { fontSize: 13 },
   history: { marginTop: 10, paddingHorizontal: 12, paddingVertical: 8, gap: 2 },
-  historyText: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular' },
+  historyText: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular' },
   pill: { alignItems: 'center', paddingHorizontal: 13, paddingVertical: 8, borderWidth: 1.5 },
   pillText: { fontSize: 13 },
   input: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },

@@ -34,6 +34,7 @@ import type { ClassroomActivity, QuizOutput } from '@/services/ai/AIService';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { regenerationFields } from '@/services/ai/regeneration';
+import { normalizeQuestionOptions } from '@/services/optionLabels';
 import { buildGameDeckFromQuiz } from '@/services/classDeck';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { createGame, MAX_TEAMS, MIN_TEAMS } from '@/services/classGame';
@@ -86,6 +87,12 @@ export default function ClassGameScreen() {
   const [topic, setTopic] = useState(params.topic ?? '');
   useWarmGrounding(topic, lang);
   const [teamCount, setTeamCount] = useState(4);
+  // Read at the moment a deck is built, not when generation was tapped: the
+  // pill stays live while a request is in flight, and a deck built with the
+  // count from the tap disagreed with the preview — the rebuild effect below
+  // only fires when the pill MOVES, so nothing corrected it.
+  const teamCountRef = useRef(teamCount);
+  teamCountRef.current = teamCount;
   const [questionCount, setQuestionCount] = useState(8);
   const [loading, setLoading] = useState(false);
   const [deck, setDeck] = useState<ClassroomActivity | null>(null);
@@ -136,7 +143,7 @@ export default function ClassGameScreen() {
     // the picked subject. Refuse and name the real subject instead.
     const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
     if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(trimmed, lang as 'ar' | 'en', subjects[subjectIdx].id);
+    const conflict = groundedSubjectConflict(trimmed, lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', isAr ? conflict.nameAr : conflict.name)); return; }
     setError(''); setCancelled(false); setLoading(true); setDeck(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -144,7 +151,13 @@ export default function ClassGameScreen() {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en');
+    // Scoped to the picked grade and subject, and resolved ONCE: 107 Arabic
+    // titles repeat across the grade 1–10 books, so a bare title can be
+    // another grade's lesson — and `lessonId` goes to the server with
+    // `contextSource: 'curriculum'`, which stores the quiz in the pool every
+    // teacher is served from. Same rule as quiz.tsx.
+    const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+    const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en', { scope: kbScope });
     setGrounded(grounding.grounded);
     setGroundedLesson(grounding.lesson ? (isAr ? grounding.lesson.titleAr : grounding.lesson.titleEn) : '');
     const restore = () => {
@@ -157,7 +170,7 @@ export default function ClassGameScreen() {
     };
 
     try {
-      const quiz = await aiService.generateQuiz({
+      const generated = await aiService.generateQuiz({
         // Localised like quiz.tsx: `grade` is display-only and rides into the
         // generated content verbatim — an Arabic deck should not read
         // «الصف: Grade 10». `subject` stays English on purpose: it feeds
@@ -168,22 +181,27 @@ export default function ClassGameScreen() {
         numQuestions: questionCount,
         questionTypes: ['multiple_choice'],
         language: isAr ? 'arabic' : 'english',
-        additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en'),
-        unitId: generatorUnitId(trimmed, lang as 'ar' | 'en'),
-        lessonId: generatorLessonId(trimmed, lang as 'ar' | 'en'),
+        additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en', { scope: kbScope }),
+        unitId: generatorUnitId(trimmed, lang as 'ar' | 'en', kbScope),
+        lessonId: generatorLessonId(trimmed, lang as 'ar' | 'en', kbScope),
         // The quiz screen asks for the book's figures; this one did not, so
         // a game on a figure-heavy lesson had none to show.
-        bookFigureCount: generatorFigureCount(trimmed, lang as 'ar' | 'en'),
+        bookFigureCount: generatorFigureCount(trimmed, lang as 'ar' | 'en', kbScope),
         // Nothing here but the lesson the teacher picked, so the quiz behind
         // the deck can be shared with every other teacher who picks it.
         contextSource: 'curriculum',
         ...regenerationFields(opts?.regenerate === true, previous),
       }, { signal: controller.signal });
+      // The deck draws its own أ/ب/ج badges, and the live quiz prompt asks for
+      // options already lettered («أ) 3») with a lettered key — projected as
+      // is, every option read «أ  أ) 3». Normalised on the way in, as quiz.tsx
+      // does, so the key and the options also agree with each other.
+      const quiz = { ...generated, questions: generated.questions.map(normalizeQuestionOptions) };
       previousQuizRef.current = quiz;
       groundingRef.current = grounding;
 
       const built = buildGameDeckFromQuiz(quiz, trimmed, isAr, {
-        teamCount,
+        teamCount: teamCountRef.current,
         lesson: grounding.lesson,
         verified: false,
         figureUri: bookFigureUri,
@@ -227,12 +245,14 @@ export default function ClassGameScreen() {
   useEffect(() => {
     const quiz = previousQuizRef.current;
     if (!deck || !quiz || deck.game?.teamCount === teamCount) return;
-    setDeck(buildGameDeckFromQuiz(quiz, topic.trim(), isAr, {
+    setDeck(buildGameDeckFromQuiz(quiz, deck.lesson, isAr, {
       teamCount,
       lesson: groundingRef.current?.lesson ?? null,
       verified: false,
       figureUri: bookFigureUri,
-      // The deck's own, not the pickers': they may have moved since it was built.
+      // The deck's own title, grade and subject, not the form's: the topic and
+      // pickers may have moved since it was built, and a cleared topic left
+      // the intro slide opening on a blank line.
       grade: deck.grade,
       subject: deck.subject,
     }));
@@ -267,7 +287,7 @@ export default function ClassGameScreen() {
               <View style={[styles.stepNum, { backgroundColor: ACCENT_FILL }]}>
                 <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }}>
                 {line}
               </Text>
             </View>
@@ -357,7 +377,7 @@ export default function ClassGameScreen() {
           />
 
           {error ? (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
           ) : null}
@@ -370,14 +390,14 @@ export default function ClassGameScreen() {
             fullWidth
           />
           {!topic.trim() ? (
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
               {t('needTopicHint')}
             </Text>
           ) : null}
         </View>
 
         {cancelled && !loading && !deck && (
-          <Text style={{ marginHorizontal: 20, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ marginHorizontal: 20, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
             {t('genCancelled')}
           </Text>
         )}
@@ -385,7 +405,7 @@ export default function ClassGameScreen() {
         {loading && (
           <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <ActivityIndicator color={ACCENT} />
-            <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
               {t('gameBuilding')}
             </Text>
             <Pressable onPress={cancelGenerate} hitSlop={8}>
@@ -437,8 +457,8 @@ export default function ClassGameScreen() {
                       flex: 1,
                       color: colors.foreground,
                       fontFamily: 'Almarai_400Regular',
-                      fontSize: 13,
-                      lineHeight: 20,
+                      fontSize: 15,
+                      lineHeight: 23,
                       textAlign: isRTL ? 'right' : 'left',
                       writingDirection: isRTL ? 'rtl' : 'ltr',
                     }}

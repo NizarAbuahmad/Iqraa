@@ -137,7 +137,7 @@ export default function EnglishHubLessonScreen() {
               </View>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16, textAlign: align }}>{t(META[a].title)}</Text>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>{t(META[a].desc)}</Text>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>{t(META[a].desc)}</Text>
               </View>
               {best > 0 ? <Text style={{ fontSize: 14 }}>{'⭐'.repeat(best)}</Text> : null}
             </Pressable>
@@ -170,7 +170,7 @@ export default function EnglishHubLessonScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14 },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
-  eyebrow: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 4 },
+  eyebrow: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 15, marginBottom: 4 },
   title: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 22 },
   card: { alignItems: 'center', gap: 12, borderWidth: 1, padding: 14 },
   icon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

@@ -143,3 +143,49 @@ describe('polishDeck — dropping what says nothing', () => {
     assert.ok(!out.slides.some(s => s.layout));
   });
 });
+
+describe('polishDeck — a question slide only claims an answer it can point at', () => {
+  const q = (over: Partial<ActivitySlide> = {}): ActivitySlide => slide({
+    type: 'question', title: 'سؤال', content: 'ما ناتج 2 + 2؟',
+    options: ['3', '4', '5', '6'], correctIndex: 1, ...over,
+  });
+  const polishedQuestion = (s: ActivitySlide) => polishDeck(deck([slide(), s, ...padding(5)])).slides[1]!;
+
+  it('leaves a sound question alone', () => {
+    const out = polishedQuestion(q());
+    assert.equal(out.type, 'question');
+    assert.equal(out.correctIndex, 1);
+    assert.deepEqual(out.options, ['3', '4', '5', '6']);
+  });
+
+  it('reads a numeric string as its number', () => {
+    assert.equal(polishedQuestion(q({ correctIndex: '2' as never })).correctIndex, 2);
+  });
+
+  it('turns an out-of-range, fractional or missing index into an open check, keeping the options readable', () => {
+    for (const bad of [4, -1, 1.5, undefined, 'b', null]) {
+      const out = polishedQuestion(q({ correctIndex: bad as never }));
+      assert.equal(out.type, 'challenge', String(bad));
+      assert.equal(out.correctIndex, undefined);
+      assert.equal(out.options, undefined);
+      assert.ok(out.content.includes('• 4') && out.content.includes('ما ناتج'), String(bad));
+    }
+  });
+
+  it('refuses options it cannot tell apart', () => {
+    assert.equal(polishedQuestion(q({ options: ['4', '4', '5', '6'] })).type, 'challenge');
+    assert.equal(polishedQuestion(q({ options: ['4', '', '5', '6'] })).type, 'challenge');
+  });
+
+  it('prints the answer key from the slides, not from what the model said', () => {
+    const d = deck([slide(), q(), ...padding(5)]);
+    d.answerKey = ['سؤال: 3'];
+    assert.deepEqual(polishDeck(d).answerKey, ['سؤال: 4']);
+  });
+
+  it('keeps the model key when no slide carries an answer to derive one from', () => {
+    const d = deck([slide(), ...padding(5)]);
+    d.answerKey = ['من النموذج'];
+    assert.deepEqual(polishDeck(d).answerKey, ['من النموذج']);
+  });
+});

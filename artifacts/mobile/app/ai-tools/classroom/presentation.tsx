@@ -28,7 +28,7 @@ import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/classroomStore';
 import {
   calcTimerPct, canFullscreen, describeKeyTarget, isFullscreen, keyboardAction, onFullscreenChange,
-  slideIsRTL, tickTimer, timerColor, timerSecondsForSlide, toggleFullscreen,
+  canTogglePause, slideIsRTL, tickTimer, timerColor, timerSecondsForSlide, timerShouldTick, toggleFullscreen,
 } from '@/services/presentationUtils';
 import { openExternal } from '@/services/externalLinks';
 import Svg, { Line, Polyline, Rect } from 'react-native-svg';
@@ -40,7 +40,7 @@ import { resolveSlideLayout } from '@/services/slideLayout';
 import { openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
 import {
-  createGame, podium, resetScores, setAwards, toggleAward, type GameState,
+  createGame, hasGameScores, podium, resetScores, setAwards, toggleAward, toggleNobody, type GameState,
 } from '@/services/classGame';
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
 import { MathText } from '@/components/classroom/MathText';
@@ -48,6 +48,7 @@ import { VerifiedBadge } from '@/components/classroom/VerifiedBadge';
 import { PEN_COLORS, PenCanvas, PenPalette, type Stroke } from '@/components/classroom/PenLayer';
 import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
 import { goBack } from '@/services/navigation';
+import { confirm } from '@/services/confirm';
 
 /** Open a media URL outside the app (native fallback — no WebView dep). */
 async function openExternalMedia(url: string): Promise<void> {
@@ -872,6 +873,12 @@ export default function PresentationScreen() {
   const [teacherPanelOpen, setTeacherPanelOpen] = useState(false);
   const [timerSec, setTimerSec] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
+  /**
+   * Holds the countdown where it is. `timerRunning` stays true while paused —
+   * the interval is what is disarmed, not the slide's timer — so resuming
+   * continues from `timerSec` rather than from the slide's full time.
+   */
+  const [timerPaused, setTimerPaused] = useState(false);
   /** Counts (re)starts, so a restart on an already-running clock still re-arms the interval. */
   const [timerRun, setTimerRun] = useState(0);
   const [timerTotal, setTimerTotal] = useState(0);
@@ -938,12 +945,14 @@ export default function PresentationScreen() {
       setTimerSec(seconds);
       setTimerTotal(seconds);
       setTimerRunning(true);
+      setTimerPaused(false);
       setTimerRun(n => n + 1);
     } else {
       clearIntervalIfRunning();
       setTimerSec(0);
       setTimerTotal(0);
       setTimerRunning(false);
+      setTimerPaused(false);
     }
   };
 
@@ -953,8 +962,11 @@ export default function PresentationScreen() {
   // effect never re-ran and the new slide's clock sat at its full time.
   // Restart-while-running did the same. Bumping the run counter restarts the
   // interval even when the flag does not change.
+  //
+  // A pause disarms the interval and leaves `timerSec` alone; resuming re-arms it
+  // from the same second. A new slide or a restart clears the pause.
   useEffect(() => {
-    if (timerRunning && timerSec > 0) {
+    if (timerShouldTick({ running: timerRunning, paused: timerPaused, sec: timerSec })) {
       timerRef.current = setInterval(() => {
         setTimerSec(s => {
           const next = tickTimer(s);
@@ -967,7 +979,7 @@ export default function PresentationScreen() {
       }, 1000);
     }
     return clearIntervalIfRunning;
-  }, [timerRunning, timerRun]);
+  }, [timerRunning, timerRun, timerPaused]);
 
   const showCelebration = () => {
     setCelebrationVisible(true);
@@ -1062,12 +1074,32 @@ export default function PresentationScreen() {
       e.preventDefault();
       if (action === 'next') goToSlide(slideIndex + 1);
       else if (action === 'prev') goToSlide(slideIndex - 1);
+      else if (action === 'togglePause') togglePauseTimer();
       else if (action === 'toggleFullscreen' || action === 'exitFullscreen') toggleFullscreen();
-      else goBack();
+      else void exitPresentation();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
+
+  /**
+   * Leave the deck. A Class Challenge's scores live only in this screen's
+   * state, so a stray Esc or a tap on ✕ mid-game threw the whole ledger away
+   * with no way back — ask first once anything has been awarded.
+   */
+  const exitPresentation = async () => {
+    if (hasGameScores(game)) {
+      const leave = await confirm({
+        title: t('gameExitTitle'),
+        message: t('gameExitMsg'),
+        confirmLabel: t('gameExitConfirm'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      });
+      if (!leave) return;
+    }
+    goBack();
+  };
 
   const restartTimer = () => {
     if (!activity) return;
@@ -1077,9 +1109,17 @@ export default function PresentationScreen() {
       setTimerSec(seconds);
       setTimerTotal(seconds);
       setTimerRunning(true);
+      setTimerPaused(false);
       setTimerRun(n => n + 1);
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  /** Hold or resume the countdown mid-question. No-op once the time is up. */
+  const togglePauseTimer = () => {
+    if (!canTogglePause({ running: timerRunning, sec: timerSec })) return;
+    setTimerPaused(p => !p);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   // While redirecting (activity is null), render nothing
@@ -1115,7 +1155,7 @@ export default function PresentationScreen() {
       {/* ── Top Bar ── */}
       <View style={[styles.topBar, { paddingTop: insets.top + 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {/* Exit */}
-        <Pressable onPress={() => goBack()} style={styles.exitBtn} hitSlop={12}>
+        <Pressable onPress={() => { void exitPresentation(); }} style={styles.exitBtn} hitSlop={12}>
           <Ionicons name="close" size={22} color={TEXT_MUTED} />
         </Pressable>
 
@@ -1157,10 +1197,20 @@ export default function PresentationScreen() {
 
         {/* Timer */}
         {hasTimer ? (
-          <View style={[styles.timerBox, { borderColor: tColor + '44', backgroundColor: tColor + '15' }]}>
-            <Ionicons name="timer-outline" size={13} color={tColor} />
+          // The clock is the pause control on every screen size: a phone's bottom
+          // bar has no room for another icon, and tapping the clock you are
+          // watching is where a hand goes. P does the same from the keyboard.
+          <Pressable
+            onPress={togglePauseTimer}
+            disabled={!canTogglePause({ running: timerRunning, sec: timerSec })}
+            hitSlop={10}
+            style={[styles.timerBox, { borderColor: tColor + '44', backgroundColor: tColor + '15', opacity: timerPaused ? 0.6 : 1 }]}
+            accessibilityRole="button"
+            accessibilityLabel={timerPaused ? t('resumeTimer') : t('pauseTimer')}
+          >
+            <Ionicons name={timerPaused ? 'pause-circle-outline' : 'timer-outline'} size={13} color={tColor} />
             <Text style={[styles.timerText, { color: tColor, fontFamily: 'ReadexPro_700Bold' }]}>{mm}:{ss}</Text>
-          </View>
+          </Pressable>
         ) : (
           <View style={{ width: 76 }} />
         )}
@@ -1224,7 +1274,8 @@ export default function PresentationScreen() {
                 const everyone = g.teams.every(team => (g.awards[slide.questionIndex!] ?? []).includes(team.id));
                 return setAwards(g, slide.questionIndex!, everyone ? [] : g.teams.map(team => team.id));
               })}
-              labels={{ prompt: t('gameWhoScored'), all: t('gameAwardAll') }}
+              onNobody={() => setGame(g => (g ? toggleNobody(g, slide.questionIndex!) : g))}
+              labels={{ prompt: t('gameWhoScored'), all: t('gameAwardAll'), nobody: t('gameAwardNobody') }}
             />
           )}
 
@@ -1397,6 +1448,21 @@ export default function PresentationScreen() {
               </Text>
             )}
           </Pressable>
+          {hasTimer && !compactBar && canTogglePause({ running: timerRunning, sec: timerSec }) && (
+            <Pressable
+              onPress={togglePauseTimer}
+              style={[styles.actionBtn, timerPaused && { borderColor: ACCENT + '50', backgroundColor: ACCENT + '12' }]}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={timerPaused ? t('resumeTimer') : t('pauseTimer')}
+              accessibilityState={{ selected: timerPaused }}
+            >
+              <Ionicons name={timerPaused ? 'play-outline' : 'pause-outline'} size={18} color={timerPaused ? ACCENT : TEXT_MUTED} />
+              <Text numberOfLines={1} style={[styles.actionLabel, timerPaused && { color: ACCENT }, { fontFamily: 'Almarai_400Regular' }]}>
+                {timerPaused ? t('resumeTimer') : t('pauseTimer')}
+              </Text>
+            </Pressable>
+          )}
           {hasTimer && (
             <Pressable
               onPress={restartTimer}

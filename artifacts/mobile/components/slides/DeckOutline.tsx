@@ -48,7 +48,7 @@ export function DeckOutline({ slides, onEdit, onRemove, isRTL, colors, t }: {
                 flex: 1,
                 color: colors.foreground,
                 fontFamily: 'Almarai_400Regular',
-                fontSize: 13, lineHeight: 21,
+                fontSize: 15, lineHeight: 24,
                 textAlign: isRTL ? 'right' : 'left',
                 writingDirection: isRTL ? 'rtl' : 'ltr',
               }}

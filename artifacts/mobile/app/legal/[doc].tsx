@@ -102,9 +102,9 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth },
   backBtn: { padding: 4, marginBottom: 8 },
   title: { fontSize: 22 },
-  updated: { fontSize: 12, lineHeight: 19, marginTop: 4 },
+  updated: { fontSize: 13, lineHeight: 21, marginTop: 4 },
   intro: { fontSize: 15, lineHeight: 26 },
   section: { marginTop: 26 },
   heading: { fontSize: 16, marginBottom: 10 },
-  paragraph: { fontSize: 14, lineHeight: 25, marginBottom: 10 },
+  paragraph: { fontSize: 15, lineHeight: 27, marginBottom: 10 },
 });

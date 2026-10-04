@@ -248,7 +248,7 @@ export function AddDictationModal({
                     size={18}
                     color={source === s ? ACCENT : colors.mutedForeground}
                   />
-                  <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, flex: 1 }}>
+                  <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1 }}>
                     {t(s === 'rule' ? 'dictationSourceRule' : 'dictationSourceOwn')}
                   </Text>
                 </Pressable>
@@ -281,10 +281,10 @@ export function AddDictationModal({
                           color={ruleId === r.id ? ACCENT : colors.mutedForeground}
                         />
                         <View style={{ flex: 1 }}>
-                          <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }}>
+                          <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
                             {r.nameAr}
                           </Text>
-                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}>
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
                             {t('dictationRuleGrades', r.grades.join('، '))}
                           </Text>
                         </View>
@@ -409,7 +409,7 @@ export function AddDictationModal({
                         size={18}
                         color={objectiveId === id ? ACCENT : colors.mutedForeground}
                       />
-                      <Text numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
+                      <Text numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
                         {objectiveLabel(id, lang) ?? t('readAloudObjectiveN', String(i + 1))}
                       </Text>
                     </Pressable>
@@ -441,7 +441,7 @@ export function AddDictationModal({
                       size={18}
                       color={competency === c.key ? ACCENT : colors.mutedForeground}
                     />
-                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22 }}>
+                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
                       {t(c.label)}
                     </Text>
                   </Pressable>
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   label: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 },
-  hint: { fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 20 },
+  hint: { fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 22 },
   wordsInput: {
     borderWidth: 1,
     borderRadius: 12,

@@ -1,3 +1,4 @@
+import { plainActivity } from '@/services/ai/activityText';
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -111,6 +112,22 @@ export default function ActivityScreen() {
   const groundedLesson: string | null = generated?.lesson
     ? (lang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
     : null;
+  /**
+   * The type, length and objective the activity on screen was built with —
+   * frozen like `generated`, because the pickers stay editable afterwards.
+   * Save used to read them live: switch the type picker to «فردي» after
+   * generating a game, press Save, and the game was stored with a form that
+   * reopens as an individual activity — Regenerate then built a different
+   * kind of activity than the one saved. A reopened activity starts from the
+   * form it was saved with.
+   */
+  const [builtWith, setBuiltWith] = useState<{ activityTypeIdx: number; durationIdx: number; objective: string } | null>(
+    () => (params.savedId ? {
+      activityTypeIdx: readIndexParam(params.activityTypeIdx, ACTIVITY_TYPE_IDS.length, 1),
+      durationIdx: readIndexParam(params.durationIdx, DURATION_VALUES.length, 1),
+      objective: params.objective ?? '',
+    } : null),
+  );
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
@@ -140,7 +157,7 @@ export default function ActivityScreen() {
     if (params.savedId) {
       getItem(params.savedId).then(item => {
         if (item) {
-          try { setResult(JSON.parse(item.content) as ActivityOutput); } catch { /* noop */ }
+          try { setResult(plainActivity(JSON.parse(item.content) as ActivityOutput)); } catch { /* noop */ }
           setFavorited(item.isFavorite);
         }
       });
@@ -167,7 +184,7 @@ export default function ActivityScreen() {
     // What a failed or cancelled run must hand back. It used to be cleared
     // up front and never restored, so a failed regenerate threw away the
     // unsaved activity the teacher was looking at.
-    const held = { result, generated };
+    const held = { result, generated, builtWith };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // activity — the KB serves that lesson's own content while the header
@@ -201,6 +218,7 @@ export default function ActivityScreen() {
       }, grounding), { signal: controller.signal });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
+      setBuiltWith({ activityTypeIdx, durationIdx, objective });
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (e) {
@@ -211,6 +229,7 @@ export default function ActivityScreen() {
       if (held.result) {
         setResult(held.result);
         setGenerated(held.generated);
+        setBuiltWith(held.builtWith);
       }
     } finally {
       abortRef.current = null;
@@ -239,7 +258,7 @@ export default function ActivityScreen() {
   const handleSave = async () => {
     if (!result) return;
     const title = getExportTitle();
-    const formState = { gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic, activityTypeIdx, durationIdx, objective };
+    const formState = { gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic, ...(builtWith ?? { activityTypeIdx, durationIdx, objective }) };
     // Built once: the two branches below used to each spell out the payload.
     // The grade is the localised name, as the lesson plan stores it.
     const payload = {
@@ -365,7 +384,7 @@ export default function ActivityScreen() {
           arrangement as the other generators; this screen still showed them
           above the button with neither.
         */}
-        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button
           label={loading ? t('generatingActivity') : t('generateActivityBtn')}
           onPress={() => generate()}
@@ -378,7 +397,7 @@ export default function ActivityScreen() {
           product rather than an unmet precondition. It says which one.
         */}
         {!topic.trim() ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
             {t('needTopicHint')}
           </Text>
         ) : null}
@@ -495,7 +514,7 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
         <Text style={[{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 11, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }]}>
           {lang === 'ar' ? 'الهدف' : 'Objective'}
         </Text>
-        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }]}>
           {activity.objective}
         </Text>
       </View>
@@ -635,12 +654,12 @@ const styles = StyleSheet.create({
   resultSectionBody: { padding: 14, borderWidth: 1 },
   bulletRow: { gap: 10, marginBottom: 6, alignItems: 'flex-start' },
   bulletDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
-  bulletText: { flex: 1, fontSize: 13, lineHeight: 20 },
-  bodyText: { fontSize: 13, lineHeight: 20 },
+  bulletText: { flex: 1, fontSize: 15, lineHeight: 23 },
+  bodyText: { fontSize: 15, lineHeight: 23 },
   stepCard: { borderWidth: 1, padding: 14, marginBottom: 10 },
   stepHeader: { alignItems: 'center', gap: 10, marginBottom: 8 },
   stepNum: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   stepTitle: { fontSize: 13 },
   stepDur: { fontSize: 11, lineHeight: 18 },
-  stepDesc: { fontSize: 13, lineHeight: 20 },
+  stepDesc: { fontSize: 15, lineHeight: 23 },
 });

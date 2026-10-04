@@ -50,7 +50,8 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
 5. "workedExample.problem" نص المسألة كاملًا بمعطياتها، ولا يتضمّن الإجابة أبدًا. "steps" خطوات الحل بالترتيب (٢-٦ خطوات)، و"answer" الإجابة النهائية وحدها.
    كل خطوة تنجز شيئًا (كتابة العلاقة، التعويض، الحساب، تحويل الوحدة)، والخطوة الأخيرة تصل إلى القيمة. لا خطوة تكتفي بإعلان ما سيأتي مثل «نستنتج الكتلة النهائية».
 6. "practice.problem" مسألة جديدة من نوع المثال نفسه، بأرقام مختلفة، لا تتضمّن إجابتها. "hint" يوجّه دون أن يحلّ.
-7. اكتب المعادلات والرموز الرياضية بالحروف اللاتينية x و y وبالأرقام اللاتينية حتى داخل الجمل العربية، والصيغ الكيميائية بصيغتها المعتادة (H₂O). للضرب استعمل الرمز × دائمًا، لا الحرف x ولا *: الحرف x في هذا التطبيق متغيّر.8. إن لم يكن في الدرس ما يُحسب (درس وصفي بالكامل) فاجعل "workedExample" تحليلًا لحالة أو مقارنة محلولة، و"practice" سؤالًا تطبيقيًا بإجابة نموذجية.
+7. اكتب المعادلات والرموز الرياضية بالحروف اللاتينية x و y وبالأرقام اللاتينية حتى داخل الجمل العربية، والصيغ الكيميائية بصيغتها المعتادة (H₂O). للضرب استعمل الرمز × دائمًا، لا الحرف x ولا *: الحرف x في هذا التطبيق متغيّر. لا تستعمل LaTeX ولا شرطة مائلة عكسية (\frac، \theta، \times)؛ اكتب x^2 و3/4 و×.
+8. إن لم يكن في الدرس ما يُحسب (درس وصفي بالكامل) فاجعل "workedExample" تحليلًا لحالة أو مقارنة محلولة، و"practice" سؤالًا تطبيقيًا بإجابة نموذجية.
 9. لا تُضِف حقل "verified" أو "verifiedBy" إطلاقًا.
 10. راجع إملاء المصطلحات قبل الإرجاع (المولات لا «الموغات»).
 
@@ -86,7 +87,8 @@ Mandatory rules:
 5. "workedExample.problem" states the full problem with its givens and never contains the answer. "steps" is the solution in order (2-6 steps), and "answer" is the final answer alone.
    Every step does work (write the relation, substitute, calculate, convert a unit), and the last step reaches the value. No step that only announces the next one, such as "we conclude the final mass".
 6. "practice.problem" is a new problem of the same kind as the example, with different numbers, not containing its answer. "hint" guides without solving.
-7. Write equations with latin x and y, and chemical formulas in their usual form (H₂O). For multiplication always use ×, never the letter x or *: x is a variable in this app.8. If the lesson has nothing to calculate (a purely descriptive lesson), make "workedExample" a solved case analysis or comparison and "practice" an applied question with a model answer.
+7. Write equations with latin x and y, and chemical formulas in their usual form (H₂O). For multiplication always use ×, never the letter x or *: x is a variable in this app. Never write LaTeX or a backslash (\frac, \theta, \times): write x^2, 3/4 and ×.
+8. If the lesson has nothing to calculate (a purely descriptive lesson), make "workedExample" a solved case analysis or comparison and "practice" an applied question with a model answer.
 9. Never add a "verified" or "verifiedBy" field.
 10. Check the spelling of subject terms before returning.
 

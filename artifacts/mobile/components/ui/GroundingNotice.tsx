@@ -132,5 +132,5 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: { fontSize: 13, lineHeight: 19 },
-  hint: { fontSize: 12, lineHeight: 18 },
+  hint: { fontSize: 13, lineHeight: 20 },
 });

@@ -352,6 +352,8 @@ export interface AttemptAnswer {
   attemptId: string;
   questionId: string;
   response: Record<string, unknown>;
+  /** A signed, expiring link to a read-aloud recording; `null` otherwise. */
+  audioUrl?: string | null;
 }
 
 export interface AttemptQuestionGrade {

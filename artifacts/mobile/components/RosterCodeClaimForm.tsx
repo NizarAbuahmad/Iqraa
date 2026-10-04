@@ -68,9 +68,12 @@ export function RosterCodeClaimForm({
         own, so the joiner says which name on the roster is theirs. A
         per-student claim code 404s the lookup and this never appears.
 
-        `taken` means a student account already holds that name. Disabled for
-        a student — one account per child — but left open for a parent,
-        because both parents linking to the same child is the normal case.
+        A name is listed even when it cannot be picked, so a parent who finds
+        their child greyed out sees that the name is there and has been claimed,
+        instead of wondering whether the class code is wrong. `taken` is a
+        student account on it (blocks a student), `guardianTaken` a parent
+        account (blocks a parent); each kind of account may sit on a name
+        alongside the other. A second parent gets in with the child's own code.
       */}
       {confirming && pickedName ? (
         <View style={[styles.notice, { borderColor: colors.primary, backgroundColor: colors.primary + '10', gap: 8 }]}>
@@ -93,7 +96,10 @@ export function RosterCodeClaimForm({
           </Text>
           <View style={[styles.nameChips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             {roster.map(entry => {
-              const blocked = entry.taken && userRole === 'student';
+              // The name is listed either way, so the person looking for their
+              // own child can see it exists; whether they may pick it depends on
+              // which kind of account is already on it.
+              const blocked = userRole === 'student' ? entry.taken : !!entry.guardianTaken;
               const picked = entry.id === studentId;
               return (
                 <Pressable
@@ -112,7 +118,7 @@ export function RosterCodeClaimForm({
                   <Text style={{ color: picked ? colors.primary : colors.foreground, fontFamily: picked ? 'ReadexPro_700Bold' : 'ReadexPro_500Medium', fontSize: 14 }}>
                     {picked ? '✓ ' : ''}{entry.displayName}
                   </Text>
-                  {entry.taken ? (
+                  {blocked ? (
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10, lineHeight: 16 }}>
                       {t('joinNameTaken')}
                     </Text>
@@ -152,7 +158,7 @@ export function RosterCodeClaimForm({
 
 const styles = StyleSheet.create({
   notice: { borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 12 },
-  noticeText: { fontSize: 13, lineHeight: 21 },
+  noticeText: { fontSize: 15, lineHeight: 24 },
   pickLabel: { fontSize: 13 },
   nameChips: { flexWrap: 'wrap', gap: 8 },
   nameChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1, alignItems: 'center' },

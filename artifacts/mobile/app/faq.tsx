@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   headerRow: { alignItems: 'center', gap: 12 },
   title: { fontFamily: 'ReadexPro_700Bold', fontSize: 20 },
-  subtitle: { fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 6 },
+  subtitle: { fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, marginTop: 6 },
   body: { padding: 16 },
   // Matches the chat column so the page does not sprawl on a desktop browser.
   column: { width: '100%', maxWidth: 760, alignSelf: 'center', gap: 10 },
@@ -149,8 +149,8 @@ const styles = StyleSheet.create({
   question: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 },
   answer: {
     fontFamily: 'Almarai_400Regular',
-    fontSize: 13,
-    lineHeight: 23,
+    fontSize: 15,
+    lineHeight: 27,
     paddingBottom: 14,
     paddingTop: 2,
   },

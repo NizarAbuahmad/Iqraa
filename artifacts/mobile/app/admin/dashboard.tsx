@@ -78,7 +78,8 @@ type FeedbackItem = {
   id: string;
   materialType: string;
   toolId: string;
-  rating: 'up' | 'down';
+  /** 'idea' is a «اقترح ميزة» suggestion (materialType 'feature_request'). */
+  rating: 'up' | 'down' | 'idea';
   comment: string;
   createdAt: string;
   userFirstName: string;
@@ -86,7 +87,7 @@ type FeedbackItem = {
   userEmail: string;
 };
 
-type RatingFilter = 'all' | 'up' | 'down';
+type RatingFilter = 'all' | 'up' | 'down' | 'idea';
 const PAGE_SIZE = 30;
 
 export default function AdminDashboardScreen() {
@@ -395,6 +396,11 @@ export default function AdminDashboardScreen() {
                     value={(summary.feedbackByRating.up ?? 0) + (summary.feedbackByRating.down ?? 0)}
                     colors={colors}
                   />
+                  <StatCard
+                    label={lang === 'ar' ? 'اقتراحات الميزات' : 'Feature ideas'}
+                    value={summary.feedbackByRating.idea ?? 0}
+                    colors={colors}
+                  />
                 </View>
                 {/*
                   Not a usage number, which is why it sits outside the row above:
@@ -460,6 +466,7 @@ export default function AdminDashboardScreen() {
                 <FilterChip label={lang === 'ar' ? 'الكل' : 'All'} active={filter === 'all'} onPress={() => setFilter('all')} colors={colors} />
                 <FilterChip label="👍" active={filter === 'up'} onPress={() => setFilter('up')} colors={colors} />
                 <FilterChip label="👎" active={filter === 'down'} onPress={() => setFilter('down')} colors={colors} />
+                <FilterChip label={lang === 'ar' ? '💡 اقتراحات' : '💡 Ideas'} active={filter === 'idea'} onPress={() => setFilter('idea')} colors={colors} />
               </View>
               <DateRange value={range} onChange={setRange} ar={lang === 'ar'} isRTL={isRTL} colors={colors} />
 
@@ -627,12 +634,12 @@ function FeedbackRow({ item, isRTL, colors, onDelete }: { item: FeedbackItem; is
     <View style={[styles.feedbackCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
       <View style={[styles.feedbackHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons
-          name={item.rating === 'up' ? 'thumbs-up' : 'thumbs-down'}
+          name={item.rating === 'idea' ? 'bulb' : item.rating === 'up' ? 'thumbs-up' : 'thumbs-down'}
           size={14}
-          color={item.rating === 'up' ? '#067647' : colors.destructive}
+          color={item.rating === 'idea' ? '#B54708' : item.rating === 'up' ? '#067647' : colors.destructive}
         />
         <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
-          {item.materialType} · {item.toolId}
+          {item.rating === 'idea' ? (isRTL ? 'اقتراح ميزة' : 'Feature idea') : `${item.materialType} · ${item.toolId}`}
         </Text>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>{date}</Text>
         {/* "Read it": the note goes away. The list is a to-do, not an archive. */}

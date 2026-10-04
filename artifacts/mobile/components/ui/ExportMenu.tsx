@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   rowLabel: { fontSize: 15 },
-  rowSub: { fontSize: 12, lineHeight: 19 },
+  rowSub: { fontSize: 13, lineHeight: 21 },
   cancelBtn: { marginTop: 12, padding: 14, alignItems: 'center' },
   cancelText: { fontSize: 15 },
 });

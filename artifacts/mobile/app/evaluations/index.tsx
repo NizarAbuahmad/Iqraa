@@ -249,7 +249,7 @@ export default function EvaluationsScreen() {
 const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   heroTitle: { fontSize: 26, color: '#fff' },
-  heroSub: { fontSize: 13, lineHeight: 21 },
+  heroSub: { fontSize: 15, lineHeight: 24 },
   deskHeader: {
     alignItems: 'flex-end',
     justifyContent: 'space-between',
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   deskTitle: { fontSize: 26, marginTop: 8 },
-  deskSub: { fontSize: 14, lineHeight: 22 },
+  deskSub: { fontSize: 15, lineHeight: 24 },
   deskNewBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -272,10 +272,10 @@ const styles = StyleSheet.create({
   card: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 14, borderWidth: 1 },
   cardTop: { alignItems: 'center', gap: 8 },
   cardTitle: { fontSize: 16, flex: 1 },
-  cardMeta: { fontSize: 13, lineHeight: 21, marginTop: 4 },
+  cardMeta: { fontSize: 15, lineHeight: 24, marginTop: 4 },
   statusPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17 },
-  emptyText: { fontSize: 14, maxWidth: 280, lineHeight: 20 },
+  emptyText: { fontSize: 15, maxWidth: 280, lineHeight: 21 },
   fab: { position: 'absolute', alignSelf: 'center', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
 });

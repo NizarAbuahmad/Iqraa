@@ -216,11 +216,11 @@ export default function SettingsScreen() {
               />
             </View>
             {accountError ? (
-              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
                 {accountError}
               </Text>
             ) : null}
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
               {t('accountsAddNote')}{Platform.OS !== 'web' ? ` ${t('accountsPushNote')}` : ''}
             </Text>
           </>
@@ -279,7 +279,7 @@ export default function SettingsScreen() {
             label={t('version')}
             isRTL={isRTL}
             colors={colors}
-            right={<Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }]}>{buildLabel}</Text>}
+            right={<Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }]}>{buildLabel}</Text>}
           />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <SettingRow
@@ -321,7 +321,7 @@ export default function SettingsScreen() {
                 >
                   <View style={{ width: `${usedPct}%`, backgroundColor: usedPct >= 100 ? colors.destructive : colors.primary, borderRadius: 3 }} />
                 </View>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
                   {t('aiUsageResets')} {new Date(usage.resetsAt).toLocaleDateString(dateLocale(lang === 'ar' ? 'ar' : 'en'), { day: 'numeric', month: 'long', timeZone: 'UTC' })}
                 </Text>
               </View>
@@ -356,7 +356,7 @@ export default function SettingsScreen() {
                     containerStyle={{ marginBottom: 12 }}
                   />
                   {typeError ? (
-                    <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }}>
+                    <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }}>
                       {typeError}
                     </Text>
                   ) : null}
