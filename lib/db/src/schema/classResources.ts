@@ -5,9 +5,12 @@
  * A row is a pointer plus a snapshot, not a copy of anything. `library_source`
  * and `library_native_id` say which catalogue item it points at; `title`,
  * `media_kind`, `url` and `thumbnail_url` are what the item looked like when it
- * was added, so the tab renders without downloading the Library. A staff upload
- * can be deleted afterwards — the list endpoint reports that as `unavailable`
- * rather than the row quietly dying.
+ * was added, so the tab renders without downloading the Library. A staff
+ * upload's `url` is the exception: the list endpoint rebuilds it from the
+ * Library row on every read (the R2 base it was composed from may move), and
+ * the stored value is only the fallback. A staff upload can be deleted
+ * afterwards — the list endpoint reports that as `unavailable` rather than the
+ * row quietly dying.
  *
  * `kind` is `library` today. `link` (a teacher-pasted URL) and `file` (a device
  * upload) are reserved for later pieces and need no change to this shape except
