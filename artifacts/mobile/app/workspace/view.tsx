@@ -20,7 +20,7 @@ import { arCountPhrase } from '@/services/arCount';
 // adding a sixth to a private copy is exactly the drift `materialKind.ts` was
 // extracted to stop — a card in موادي and the material it opens must not
 // disagree about what colour an activity is.
-import { MATERIAL_COLOR } from '@/constants/materialKind';
+import { MATERIAL_COLOR, MATERIAL_FILL } from '@/constants/materialKind';
 import { activityTypeLabel } from '@/constants/activityType';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
@@ -210,7 +210,7 @@ export default function WorkspaceViewScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: accent, paddingTop: topPad + 12 }]}>
+      <View style={[styles.header, { backgroundColor: MATERIAL_FILL[kind as keyof typeof MATERIAL_FILL] ?? colors.hero, paddingTop: topPad + 12 }]}>
         <Pressable
           onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
