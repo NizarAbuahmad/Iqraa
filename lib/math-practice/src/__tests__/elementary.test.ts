@@ -93,7 +93,7 @@ describe('question formats', () => {
     const session = new Set<string>();
     const keys = new Set<string>();
     for (let i = 0; i < 30; i++) {
-      keys.add(takeElementaryMath('true_false', 'الجمع', null, 2, 'medium', 'ar', 1, session).answer);
+      keys.add(takeElementaryMath('true_false', 'الجمع', null, 2, 'medium', 'ar', 1, session)!.answer);
     }
     assert.deepEqual([...keys].sort(), ['خطأ', 'صح']);
   });
@@ -102,7 +102,7 @@ describe('question formats', () => {
     const session = new Set<string>();
     for (const type of ['multiple_choice', 'short_answer', 'fill_blank', 'true_false', 'word_problem'] as const) {
       const q = takeElementaryMath(type, 'الجمع', null, 2, 'medium', 'ar', 1, session);
-      assert.doesNotMatch(q.text, /[xy]\s*[=²^]|\^|√/);
+      assert.doesNotMatch(q!.text, /[xy]\s*[=²^]|\^|√/);
     }
   });
 });
