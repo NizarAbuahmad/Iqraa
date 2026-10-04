@@ -1,6 +1,6 @@
 import React from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -14,6 +14,7 @@ import { openGeogebraGraphing } from '@/services/geogebra';
 import { trackEvent } from '@/services/analytics';
 import { getPickerSubjects } from '@/services/curriculumData';
 import { loadLessonPick } from '@/services/lessonContext';
+import { classToolParamsFromRoute, type ClassToolParams } from '@/services/classToolParams';
 import {
   ALL_TOOLS,
   LIBRARY_TOOL,
@@ -21,11 +22,20 @@ import {
 } from '@/services/toolCatalog';
 
 
-async function runToolAction(tool: ToolDef) {
+async function runToolAction(tool: ToolDef, forClass: ClassToolParams | null) {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   trackEvent('tool_opened', { toolId: tool.id, source: 'tools_tab' });
   if (tool.externalAction === 'geogebra-graphing') {
     await openGeogebraGraphing();
+    return;
+  }
+  // Arrived from a class: the class decides the scope, so the global "current
+  // lesson" below is skipped — it can belong to another subject, and a topic
+  // from one subject under another's indices is refused as a conflict.
+  // Explicit routeParams still win. The library is a catalogue, not a
+  // generator, so it is left alone.
+  if (tool.route && forClass && tool.id !== LIBRARY_TOOL.id) {
+    router.push({ pathname: tool.route as any, params: { ...forClass, ...tool.routeParams } });
     return;
   }
   if (tool.route) {
@@ -53,6 +63,7 @@ function ToolCard({
   t,
   compact,
   grid,
+  forClass,
 }: {
   tool: ToolDef;
   isRTL: boolean;
@@ -60,6 +71,8 @@ function ToolCard({
   t: (key: any) => string;
   compact?: boolean;
   grid?: boolean;
+  /** Set when the teacher came from a class's الموارد tab. */
+  forClass: ClassToolParams | null;
 }) {
   const isExternal = !!tool.externalAction;
 
@@ -70,7 +83,7 @@ function ToolCard({
   if (grid) {
     return (
       <Pressable
-        onPress={() => { void runToolAction(tool); }}
+        onPress={() => { void runToolAction(tool, forClass); }}
         style={({ pressed }) => [
           styles.gridCard,
           {
@@ -109,7 +122,7 @@ function ToolCard({
 
   return (
     <Pressable
-      onPress={() => { void runToolAction(tool); }}
+      onPress={() => { void runToolAction(tool, forClass); }}
       style={({ pressed }) => [
         styles.card,
         compact && styles.cardCompact,
@@ -165,6 +178,9 @@ export default function AIToolsScreen() {
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
   const viewportW = useViewportWidth();
   const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
+  // Set only when the teacher tapped «أنشئ مادة جديدة» inside a class.
+  const routeParams = useLocalSearchParams<{ classId?: string; gradeIdx?: string; subjectIdx?: string }>();
+  const forClass = classToolParamsFromRoute(routeParams);
 
   return (
     <ScrollView
@@ -198,7 +214,7 @@ export default function AIToolsScreen() {
       <View style={[styles.section, { paddingTop: 16 }]}>
         <View style={[styles.list, isDesktop && styles.listGrid]}>
           {[LIBRARY_TOOL, ...ALL_TOOLS].map(tool => (
-            <ToolCard key={tool.id} tool={tool} isRTL={isRTL} colors={colors} t={t} grid={isDesktop} />
+            <ToolCard key={tool.id} tool={tool} isRTL={isRTL} colors={colors} t={t} grid={isDesktop} forClass={forClass} />
           ))}
         </View>
       </View>

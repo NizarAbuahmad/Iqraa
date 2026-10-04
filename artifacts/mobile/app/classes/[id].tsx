@@ -72,6 +72,7 @@ import { confirm } from '@/services/confirm';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
+import { classToolParams } from '@/services/classToolParams';
 import { summarizeClassContacts, type ClassContactSummary } from '@/services/parentMessage';
 import { palette } from '@/constants/colors';
 import { CLASSES_QUERY_KEY, classQueryKey as CLASS_QUERY_KEY } from '@/services/rosterQueryKeys';
@@ -1311,7 +1312,12 @@ export default function ClassDetailScreen() {
             <Pressable
               onPress={() => {
                 setShowAttach(false);
-                router.push('/(tabs)/ai-tools');
+                // The class travels with the teacher: the tool opens on this
+                // class's grade and subject, and what they save is filed here.
+                router.push({
+                  pathname: '/(tabs)/ai-tools',
+                  params: group ? classToolParams(group) : {},
+                });
               }}
               style={[
                 styles.createRow,
