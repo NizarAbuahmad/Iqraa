@@ -9,19 +9,39 @@
 import type { Ionicons } from '@expo/vector-icons';
 import type { MaterialType } from '@/services/workspace';
 import type { TranslationKey } from '@/services/i18n';
+import { scheme } from './colors';
 
-export const MATERIAL_COLOR: Record<MaterialType, string> = {
-  lesson: '#1B6B62',
-  worksheet: '#8B5CF6',
-  quiz: '#F59E0B',
-  flow: '#00A99D',
-  activity: '#EC4899',
-  // Matches the Slides Maker screen's accent, so a saved deck is the same
-  // colour in the workspace as the tool that produced it.
-  slides: '#0EA5E9',
-  // Matches prompt-slides.tsx's own accent, same reasoning as `slides` above.
-  'prompt-slides': '#7C3AED',
+/**
+ * One hue per kind, deep enough to carry white text (≥ 5.2:1) and to be text
+ * on white or paper (≥ 4.8:1). These were stock Tailwind values — quiz amber
+ * was 2.15:1 on white, and two kinds were the same violet. No purple: the
+ * site's DESIGN.md rules it out. The printed and projected copies use the same
+ * four (`DOC_ACCENT` in services/exportHtml.ts). Both deck kinds share blue;
+ * the icon tells them apart.
+ */
+export const MATERIAL_FILL: Record<MaterialType, string> = {
+  lesson: '#006D65',
+  worksheet: '#8A5A00',
+  quiz: '#B0284F',
+  flow: '#44506A',
+  activity: '#3F7A1E',
+  slides: '#1F5FA8',
+  'prompt-slides': '#1F5FA8',
 };
+
+/** The same hues lifted for the dark card (#111F36): each ≥ 7.1:1 there. */
+const ON_DARK: Record<MaterialType, string> = {
+  lesson: '#2DD4BF',
+  worksheet: '#E2B25C',
+  quiz: '#F28BA8',
+  flow: '#AAB6CC',
+  activity: '#9BCB6A',
+  slides: '#7DB4F2',
+  'prompt-slides': '#7DB4F2',
+};
+
+/** Icon and text colour on a card. Fills that carry white text use MATERIAL_FILL. */
+export const MATERIAL_COLOR = scheme === 'dark' ? ON_DARK : MATERIAL_FILL;
 
 export const MATERIAL_ICON: Record<MaterialType, keyof typeof Ionicons.glyphMap> = {
   lesson: 'document-text-outline',
