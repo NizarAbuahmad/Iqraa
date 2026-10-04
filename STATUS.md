@@ -632,6 +632,98 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A class can hold Library items, 2026-10-04
+
+A class's الموارد tab held one thing — the teacher's own saved materials — so a
+Library video or a ready-made worksheet could not be put in front of a class.
+The «+» sheet now has **«من المكتبة»**, which opens a picker filtered to the
+class's grade and subject; one tap adds an item and the tab shows it beside the
+teacher's materials, newest first, tagged «المكتبة».
+
+**What a row is.** A pointer plus a snapshot (`class_resources`: which catalogue
+item, and its title / kind / link as they were when added), not a copy. The tab
+renders without downloading the Library. A staff upload deleted afterwards shows
+greyed out as «لم يعد متاحًا» (the list endpoint checks), and ✕ removes only the
+class's row. Premade sheets open in the existing read-only sheet viewer.
+
+**Why not `saved_materials`.** A later piece (device uploads) needs a storage
+key, and in an app-written JSON column the server would be signing URLs from
+keys a client supplied. Here the server owns every column. Design:
+`docs/superpowers/specs/2026-10-04-class-resources-design.md`; plan:
+`docs/superpowers/plans/2026-10-04-class-resources-piece-1.md`.
+
+**API** (`/classes/:id/resources`, inside the roster router so its path-scoped
+auth and consent guards apply): `GET`, `POST` (a repeat is `409 already_added`,
+which the app treats as success), `DELETE /:rid`. Another teacher's class is a
+404. A staff upload is copied from the Library's own row, never from what the
+app sent; links are https-only except book-QR codes, which the API also accepts
+over plain http (an `http://` code was added with a `201`, a `javascript:` link
+was refused with a `400`). A missing table reads as an empty shelf and writes
+answer `503 roster_storage_unavailable`.
+
+**Retired.** `addToClassPlan` and the `add-to-class` action: the plan was to copy
+a premade sheet into the teacher's materials, nothing ever called it, and the
+viewer is read-only so a copy had no use. Premade sheets advertised an action
+nothing carried out.
+
+**Schema push required before merge.** `docs/schema-push-2026-10-04-class-resources.sql`
+(one table, two indexes, additive). Run it in Neon, then
+`pnpm --filter @workspace/db run verify-schema`.
+
+**Verified against the running system** (local Postgres 16, the real API built
+from this branch, Expo web, headless Chromium at 390×844 in Arabic):
+
+- *Empty class.* A grade-10 maths class with nothing saved still had
+  **«من المكتبة»** in the «+» sheet.
+- *The picker.* For that class it listed the seeded staff video and 28 premade
+  maths sheets (so the class's subject id does match the catalogue's), the video
+  shelf before the worksheet shelf, each row naming its kind. It had no
+  book-QR rows, because the catalogue has none for grade-10 maths — its grade-10
+  codes are Arabic, civics, geography and Islamic studies.
+- *Adding.* One tap showed a spinner, then «مضاف»; the sheet stayed open; tapping
+  an added row again sent no request. The spinner only showed because the test
+  held the `POST` for 1.5 s — locally it answers instantly.
+- *The tab.* «تم» closed the picker; the tab listed «المكتبة · فيديو» and
+  «المكتبة · ورقة عمل», the sheet (added second) above the video, and the tab's
+  count read «موردان». A reload and `SELECT … FROM class_resources` both had
+  both rows.
+- *Opening.* A staff row called `window.open` and the browser requested
+  `https://example.com/v` (the sandbox cannot reach that host, so the new tab
+  was Chromium's error page). A premade row went to
+  `/workspace/view?premade=…` and the sheet rendered read-only.
+- *Removing.* ✕ removed only that row and did not also open it; the video was
+  still in `library_resources` and addable again in the picker. After
+  `DELETE FROM library_resources` a reload showed the row greyed out and
+  labelled «لم يعد متاحًا», not openable, with ✕ still working.
+- *Book codes.* In a grade-10 civics class the picker had 5 book-QR rows. Two
+  codes from the same book, added, read «… الفصل الأول — صفحة ٢٤» and
+  «… — صفحة ٤٩» on the tab: distinguishable. No reachable code in today's
+  catalogue is `http`, so the picker's per-row http warning was **not seen**.
+- *Failures are visible.* With `class_resources` dropped and the picker open,
+  tapping an item showed «تعذّر تحديث موارد الشعبة — حاول مرة أخرى» inside the
+  picker (no «مضاف», no spinner; cleared on closing). With a row on the shelf
+  and the table dropped, ✕ showed the same message as a toast on the class
+  screen and the row stayed.
+- *The API, two teachers* (20 checks): the other teacher got 404 on read, add
+  and remove; a repeated add was a 409; a deleted staff upload came back
+  `unavailable`; no token was a 401; with the table dropped a read returned
+  `[]` and a write a 503.
+
+**Not verified.** A native device (only Expo web, only Chromium, was driven).
+
+**Known, not fixed — nested `<button>`.** `ClassResourceRow`'s outer `Pressable`
+and its ✕ both have `accessibilityRole="button"`, so on web a `<button>` sits
+inside a `<button>` and React logs console errors («`<button>` cannot be a
+descendant of `<button>`») whenever the tab shows a Library row. Clicks work in
+Chromium. Firefox and Safari were not driven, and browsers differ on clicks
+inside a button. The materials rows beside it do not do this: their outer
+`Pressable` has no role.
+
+**Not in this change.** Teacher-pasted links (no schema change) and device
+uploads (one more push, private storage, no video under the 8 MB cap) are
+pieces 2 and 3 of the spec. A Library-screen «add to class» button is out of
+scope; it could reuse the same `POST`.
+
 ## «علمني» with a lesson open teaches that lesson, 2026-10-04
 
 Reported from the app: with «تركيب الاقترانات» on the chat's lesson card, «علمني»
