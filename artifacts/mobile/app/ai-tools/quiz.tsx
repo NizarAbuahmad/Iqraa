@@ -12,6 +12,7 @@ import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generat
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
+import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
@@ -614,6 +615,8 @@ export default function QuizScreen() {
               <MetaPill icon="help-circle-outline" text={t('questionCountPill', result.questions.length)} color={ACCENT} />
             </View>
           </View>
+
+          <ShortPaperNotice shortfall={result.shortfall} />
 
           {/* Class Mode: project this quiz as whole-class response slides.
               Phones are banned in class, so students answer from their seats

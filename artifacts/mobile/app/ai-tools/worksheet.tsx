@@ -12,6 +12,7 @@ import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbC
 import { pooledVariantId } from '@/services/ai/regeneration';
 import { WorksheetOutput } from '@/services/ai/AIService';
 import { buildDeckFromWorksheet } from '@/services/classDeck';
+import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
@@ -762,6 +763,8 @@ export default function WorksheetScreen() {
             <Ionicons name="document-text" size={18} color={ACCENT} />
             <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
           </View>
+
+          <ShortPaperNotice shortfall={result.shortfall} />
 
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 16, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
             {result.instructions}
