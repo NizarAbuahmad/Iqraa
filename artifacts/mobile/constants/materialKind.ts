@@ -46,11 +46,11 @@ export const MATERIAL_LABEL_KEY: Record<MaterialType, TranslationKey> = {
 /**
  * Which generator screen reopens this kind for editing.
  *
- * `slides` has no form-driven editor — the deck is built from a saved lesson —
- * so it is absent rather than pointed at a screen that cannot rebuild it.
- * `prompt-slides` DOES have one — its whole form (the prompt, mode, slide
- * count) is exactly what `formState` already carries, unlike `slides`'s
- * curriculum grounding.
+ * Both deck kinds reopen their saved deck, not just a form: `savedId` makes
+ * the screen load the stored slides (`services/savedDeck.ts`), and the spread
+ * `formState` restores what each was built from — gradeIdx/subjectIdx/topic
+ * for `slides`, prompt/mode/slide count for `prompt-slides`. Neither screen can
+ * take the other's item: their form states are different shapes.
  */
 export const MATERIAL_EDIT_ROUTE: Partial<Record<MaterialType, string>> = {
   lesson: '/ai-tools/lesson-plan',
@@ -58,5 +58,6 @@ export const MATERIAL_EDIT_ROUTE: Partial<Record<MaterialType, string>> = {
   quiz: '/ai-tools/quiz',
   flow: '/ai-tools/lesson-flow',
   activity: '/ai-tools/activity',
+  slides: '/ai-tools/slides',
   'prompt-slides': '/ai-tools/prompt-slides',
 };
