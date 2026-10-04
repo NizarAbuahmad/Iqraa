@@ -6,6 +6,12 @@
  * A staff upload the Library has since deleted stays on the shelf, greyed out
  * and labelled, with its ✕ still working: the teacher should see that it went,
  * not find the row silently gone.
+ *
+ * The ✕ is a sibling of the open action, not a child of it. On web a
+ * `Pressable` with a button role renders a `<button>`, and a `<button>` inside
+ * a `<button>` is invalid DOM that some browsers do not deliver clicks through.
+ * It also lets the open action be properly `disabled` for a gone row without
+ * swallowing the ✕.
  */
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -30,41 +36,47 @@ export function ClassResourceRow({
   const gone = resource.unavailable;
   const tint = gone ? colors.mutedForeground : colors.primary;
 
+  const direction = isRTL ? 'row-reverse' : 'row';
+
   return (
-    <Pressable
-      // Not `disabled`: that would swallow the ✕ on some platforms.
-      onPress={gone ? undefined : onOpen}
-      accessibilityRole="button"
+    <View
       style={[
         styles.row,
         {
           backgroundColor: colors.card,
           borderColor: colors.border,
-          flexDirection: isRTL ? 'row-reverse' : 'row',
+          flexDirection: direction,
           opacity: gone ? 0.6 : 1,
         },
       ]}
     >
-      <View style={[styles.icon, { backgroundColor: tint + '18' }]}>
-        <Ionicons name={RESOURCE_KIND_ICON[resource.mediaKind]} size={20} color={tint} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text
-          numberOfLines={2}
-          style={[styles.name, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}
-        >
-          {resource.title}
-        </Text>
-        <Text style={[styles.meta, { color: tint, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-          {gone
-            ? t('resourceUnavailable')
-            : `${t('resourceTag')} · ${t(RESOURCE_KIND_LABEL[resource.mediaKind])}`}
-        </Text>
-      </View>
+      <Pressable
+        onPress={onOpen}
+        disabled={gone}
+        accessibilityRole="button"
+        style={{ flex: 1, flexDirection: direction, alignItems: 'center', gap: 12 }}
+      >
+        <View style={[styles.icon, { backgroundColor: tint + '18' }]}>
+          <Ionicons name={RESOURCE_KIND_ICON[resource.mediaKind]} size={20} color={tint} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text
+            numberOfLines={2}
+            style={[styles.name, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}
+          >
+            {resource.title}
+          </Text>
+          <Text style={[styles.meta, { color: tint, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+            {gone
+              ? t('resourceUnavailable')
+              : `${t('resourceTag')} · ${t(RESOURCE_KIND_LABEL[resource.mediaKind])}`}
+          </Text>
+        </View>
+      </Pressable>
       <Pressable onPress={onRemove} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('remove')}>
         <Ionicons name="close" size={20} color={colors.mutedForeground} />
       </Pressable>
-    </Pressable>
+    </View>
   );
 }
 

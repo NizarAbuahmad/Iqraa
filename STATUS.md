@@ -729,14 +729,6 @@ from this branch, Expo web, headless Chromium at 390×844 in Arabic):
 
 **Not verified.** A native device (only Expo web, only Chromium, was driven).
 
-**Known, not fixed — nested `<button>`.** `ClassResourceRow`'s outer `Pressable`
-and its ✕ both have `accessibilityRole="button"`, so on web a `<button>` sits
-inside a `<button>` and React logs console errors («`<button>` cannot be a
-descendant of `<button>`») whenever the tab shows a Library row. Clicks work in
-Chromium. Firefox and Safari were not driven, and browsers differ on clicks
-inside a button. The materials rows beside it do not do this: their outer
-`Pressable` has no role.
-
 **Not in this change.** Teacher-pasted links (no schema change) and device
 uploads (one more push, private storage, no video under the 8 MB cap) are
 pieces 2 and 3 of the spec. A Library-screen «add to class» button is out of
