@@ -659,8 +659,10 @@ class's grade and subject; one tap adds an item and the tab shows it beside the
 teacher's materials, newest first, tagged «المكتبة».
 
 **What a row is.** A pointer plus a snapshot (`class_resources`: which catalogue
-item, and its title / kind / link as they were when added), not a copy. The tab
-renders without downloading the Library. A staff upload deleted afterwards shows
+item, and its title / kind / thumbnail / link as they were when added), not a
+copy, with one exception: a staff upload's *link* is built from its Library row
+on every read (see *Staff links are read-time* below). The tab renders without
+downloading the Library. A staff upload deleted afterwards shows
 greyed out as «لم يعد متاحًا» (the list endpoint checks), and ✕ removes only the
 class's row. Premade sheets open in the existing read-only sheet viewer. A
 book-QR row stored over plain `http` carries the Library's «رابط غير آمن (http)»
@@ -670,8 +672,9 @@ add whose follow-up re-read fails still puts the new row on the shelf.
 **Why not `saved_materials`.** A later piece (device uploads) needs a storage
 key, and in an app-written JSON column the server would be signing URLs from
 keys a client supplied. Here the server validates every column and copies a
-staff upload's from its own row (premade-sheet and book-QR snapshots are supplied
-by the app and validated by the server). Design:
+staff upload's title, kind and thumbnail from its own row when it is added, and
+builds its link from that row on every read (premade-sheet and book-QR snapshots
+are supplied by the app and validated by the server). Design:
 `docs/superpowers/specs/2026-10-04-class-resources-design.md`; plan:
 `docs/superpowers/plans/2026-10-04-class-resources-piece-1.md`. **Those two files
 are not on this branch yet** — they live in PR #833, so the links resolve only
@@ -681,7 +684,9 @@ once #833 lands.
 auth and consent guards apply): `GET`, `POST` (a repeat is `409 already_added`,
 which the app treats as success), `DELETE /:rid`. Another teacher's class is a
 404. A staff upload is copied from the Library's own row, never from what the
-app sent; links are https-only except book-QR codes, which the API also accepts
+app sent, and the `url` a read returns is rebuilt from that row each time
+(`r2Key ? publicUrl(r2Key) : sourceUrl`, falling back to the stored `url` when
+the row is gone or yields no link); links are https-only except book-QR codes, which the API also accepts
 over plain http (an `http://` code was added with a `201`, a `javascript:` link
 was refused with a `400`). A missing table reads as an empty shelf (logged at
 `warn`, so a skipped schema push leaves a trace) and writes answer
@@ -741,9 +746,10 @@ from this branch, Expo web, headless Chromium at 390×844 in Arabic):
   not reproducible from the repo): the other teacher got 404 on read, add and
   remove; a repeated add was a 409; a deleted staff upload came back
   `unavailable`; no token was a 401; with the table dropped a read returned
-  `[]` and a write a 503. What *is* committed: the 17 tests of
-  `classResource.ts` (the validation) and the 401 guard in
-  `mountOrder.test.ts`. Ownership, the 409, the 503s and `unavailable` live in
+  `[]` and a write a 503. What *is* committed: the 24 tests of
+  `classResource.ts` (the validation, and `presentClassResource` including the
+  read-time link) and the 401 guard in `mountOrder.test.ts`. Ownership, the 409,
+  the 503s, `unavailable` and the lookup that feeds the read-time link live in
   the route handlers and have no committed test.
 - *Nested buttons.* Before the fix a Library row on the tab put a `<button>`
   inside a `<button>` (React logged «`<button>` cannot be a descendant of
@@ -763,13 +769,27 @@ from this branch, Expo web, headless Chromium at 390×844 in Arabic):
 in Chromium was driven; Firefox and Safari were not, so the nested-`<button>`
 fix is confirmed by the DOM and console in Chromium only). The `warn` log line
 for a missing table was not driven. The http line on a shelf row was never seen
-in a browser (see *Book codes*).
+in a browser (see *Book codes*). The read-time staff link (below) has unit tests
+of `presentClassResource` only; the route's Library lookup behind it has no
+committed test.
 
-**Open for the owner.** (a) A staff upload's `url` on the shelf is a snapshot of
-the composed R2 URL; if `R2_PUBLIC_BASE_URL` ever changes, those rows keep the
-old host. The fix is to build it at read time from the Library row's `r2Key`.
-(b) Premade-sheet ids are not validated server-side, so a regenerated manifest
-can orphan a stored id; the row then opens the viewer's not-found screen.
+**Staff links are read-time.** Production's `R2_PUBLIC_BASE_URL` is a dev
+`r2.dev` URL that may move, and a staff upload's `url` stored when it was added
+would keep the old host. So `GET /classes/:id/resources` selects `r2Key` and
+`sourceUrl` in the lookup it already makes for `unavailable`, and the link it
+returns for a staff upload whose Library row still exists is built from that row
+(`r2Key ? publicUrl(r2Key) : sourceUrl`, the same expression the add uses). That
+also repairs rows already stored. Everything else stays a snapshot: `title`,
+`mediaKind`, `thumbnailUrl`, and every `premade-sheet` / `book-qr` column. The
+stored `url` is the fallback in three cases: the Library row is gone (the row
+keeps it and is `unavailable`), the computed link is null (`R2_PUBLIC_BASE_URL`
+unset and no `sourceUrl`), and the lookup itself fails (every row is then called
+available and keeps its stored link). The add's response is unchanged: a fresh
+add is already current.
+
+**Open for the owner.** (b) Premade-sheet ids are not validated server-side, so
+a regenerated manifest can orphan a stored id; the row then opens the viewer's
+not-found screen.
 
 **Not in this change.** Teacher-pasted links (no schema change) and device
 uploads (one more push, private storage, no video under the 8 MB cap) are
