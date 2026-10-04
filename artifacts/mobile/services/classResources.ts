@@ -7,6 +7,7 @@
  *
  * Spec: docs/superpowers/specs/2026-10-04-class-resources-design.md
  */
+import { getT } from './i18n.ts';
 import type { ResourceItem, ResourceKind, ResourceSource } from './resourceCatalog.ts';
 import type { SavedMaterial } from './workspace.ts';
 
@@ -95,9 +96,18 @@ export function addedKeys(resources: ClassResource[]): Set<string> {
 export function addBodyFor(item: ResourceItem, lang: 'ar' | 'en'): AddResourceBody {
   const base = { kind: 'library' as const, source: item.source, nativeId: item.nativeId };
   if (item.source === 'uploaded') return base;
+
+  let title = lang === 'en' && item.titleEn ? item.titleEn : item.titleAr;
+
+  // For book-QR items with a page, append the page label so rows from the same book differ
+  if (item.source === 'book-qr' && item.page !== undefined) {
+    const pageText = lang === 'ar' ? item.page.toLocaleString('ar-EG') : String(item.page);
+    title = `${title} — ${getT(lang)('qrOnPage', pageText)}`;
+  }
+
   return {
     ...base,
-    title: lang === 'en' && item.titleEn ? item.titleEn : item.titleAr,
+    title,
     mediaKind: item.kind,
     ...(item.source === 'book-qr' && item.url ? { url: item.url } : {}),
     ...(item.thumbnailUrl ? { thumbnailUrl: item.thumbnailUrl } : {}),

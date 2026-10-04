@@ -136,7 +136,7 @@ describe('addBodyFor', () => {
     assert.equal(addBodyFor(sheet, 'en').title, 'ورقة');
   });
 
-  it('carries a book-QR code with its link', () => {
+  it('carries a book-QR code with its link and page in title (Arabic)', () => {
     const code = item({
       key: 'book-qr:31:http://example.test/a',
       source: 'book-qr',
@@ -149,9 +149,48 @@ describe('addBodyFor', () => {
       kind: 'library',
       source: 'book-qr',
       nativeId: '31:http://example.test/a',
-      title: 'عنوان',
+      title: 'عنوان — صفحة ٣١',
       mediaKind: 'page',
       url: 'http://example.test/a',
+    });
+  });
+
+  it('carries a book-QR code with its link and page in title (English)', () => {
+    const code = item({
+      key: 'book-qr:31:http://example.test/a',
+      source: 'book-qr',
+      nativeId: '31:http://example.test/a',
+      kind: 'page',
+      titleAr: 'عنوان',
+      titleEn: 'Title',
+      url: 'http://example.test/a',
+      page: 31,
+    });
+    assert.deepEqual(addBodyFor(code, 'en'), {
+      kind: 'library',
+      source: 'book-qr',
+      nativeId: '31:http://example.test/a',
+      title: 'Title — Page 31',
+      mediaKind: 'page',
+      url: 'http://example.test/a',
+    });
+  });
+
+  it('carries a book-QR code without a page as plain title', () => {
+    const code = item({
+      key: 'book-qr:http://example.test/b',
+      source: 'book-qr',
+      nativeId: 'http://example.test/b',
+      kind: 'page',
+      url: 'http://example.test/b',
+    });
+    assert.deepEqual(addBodyFor(code, 'ar'), {
+      kind: 'library',
+      source: 'book-qr',
+      nativeId: 'http://example.test/b',
+      title: 'عنوان',
+      mediaKind: 'page',
+      url: 'http://example.test/b',
     });
   });
 });
