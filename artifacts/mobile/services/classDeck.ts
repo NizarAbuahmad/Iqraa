@@ -508,7 +508,7 @@ export function buildGameDeckFromQuiz(
       ? 'النتيجة تقيس الفريق، لكن توزيع البطاقات المرفوعة هو ما يكشف الخطأ الشائع — انظر إليه قبل الكشف.'
       : 'The score measures the team, but the spread of raised cards is what exposes the common error — read it before revealing.',
     extensionChallenge: '',
-    game: { teamCount, questionCount: scoreable.length },
+    game: { teamCount, questionCount: scoreable.length, isAr },
     slides,
   };
 }

@@ -557,6 +557,39 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## English is prepared in English, whatever the UI language, 2026-10-04
+
+Nizar: an English lesson's plan, slides and results came out in Arabic. Every
+generator took its content language from the app's UI language, so an Arabic-UI
+English teacher got an Arabic lesson plan about an English lesson.
+
+`services/contentLanguage.ts` now decides: `contentLang(subjectId, uiLang)` is
+`'en'` for the English subject and the UI language otherwise, and
+`topicInLang` restates a handed-over topic — every hand-off passes the lesson
+title in the UI language, and an English lesson's Arabic title is a gloss — as
+the lesson's own title in that language. Each generator screen (lesson plan,
+lesson-prep panel, slides, AI slides, worksheet/homework, quiz, activity,
+game, lesson flow, classroom builder, «ابدأ الحصة») uses it for the topic
+list, grounding, request, result rendering, save and export; pickers, buttons
+and errors stay in the UI language. Material that outlives a picker change
+follows the subject it was generated for (`scope`), not the live picker.
+Chat carries the material's language on the message (`artifactMeta.lang`) so
+the bubble, canvas, copy/export, save and «اعرض» read it the same way; the
+chat's own prose stays in the UI language. A game deck carries `isAr` so its
+team names match. New exams on an English book are stored as `language: 'en'`
+(the client never sent one, so every exam was `'ar'`).
+
+Supersedes «Every slide heading is bilingual for the English subject» below:
+`buildLessonDeck` no longer composes «مفردات الدرس · Key Vocabulary» — an
+English deck is built in English, so its headings are English only.
+
+Known limits: materials saved before this reopen with English chrome over
+their old Arabic text (regenerate them); resources a teacher pinned under an
+English lesson's Arabic title are not found under its English one; AI slides
+from a free prompt are English only for a teacher whose sole subject is
+English (nothing else says what the prompt is about); exams created before
+this stay Arabic.
+
 ## «علمني» with a lesson open teaches that lesson, 2026-10-04
 
 Reported from the app: with «تركيب الاقترانات» on the chat's lesson card, «علمني»
@@ -13966,6 +13999,9 @@ to match the Arabic half instead. Mobile suite 1031 pass / 0 fail (10
 skipped), typecheck clean.
 
 ## Every slide heading is bilingual for the English subject, not just checks, 2026-08-30
+
+> **Superseded 2026-10-04** by «English is prepared in English, whatever the
+> UI language» above: English decks are now built in English, headings included.
 
 Follow-up to the same-day fix above: a screenshot showed a plain content
 slide («مفردات الدرس» — Key Vocabulary, for a Grade 10 English-Agriculture

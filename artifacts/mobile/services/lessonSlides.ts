@@ -22,7 +22,7 @@ import type {
   LessonPlanOutput,
   LessonTeachingOutput,
 } from './ai/AIService.ts';
-import { getBookForLesson, type KBLesson } from './knowledgeBase.ts';
+import type { KBLesson } from './knowledgeBase.ts';
 import { buildChartSlide, buildGraphSlide, referencesShownVisual, scanGraphCommands } from './classMedia.ts';
 import { chartForLesson, visualForSlide } from './deckVisuals.ts';
 import { type BookFigure, figuresForLesson } from './bookFigures.ts';
@@ -420,27 +420,10 @@ export function buildLessonDeck(
   let aiWritten = false;
   const includeExamples = opts.includeExamples !== false;
   const includePractice = opts.includePractice !== false;
+  // One language per deck. English-subject decks used to carry bilingual
+  // headings («مفردات الدرس · Key Vocabulary»); they are now built in English
+  // end to end (`contentLang`), so the caller's `isAr` alone decides.
   const L = (ar: string, en: string) => (isAr ? ar : en);
-  // Both languages in one title, for `T` below. The check titles (Quick
-  // Check / Exit Ticket) used this unconditionally, because an English-subject
-  // lesson's checks come back in English even in an Arabic deck — but `T`
-  // already covers exactly that case, and every other Arabic deck projected
-  // «تحقّق سريع 1 · Quick Check 1» over an Arabic question.
-  const BL = (ar: string, en: string) => `${ar} · ${en}`;
-
-  // Whether this deck teaches the English subject itself — Grade 10's
-  // vocational tracks (Commerce, Agriculture, Hospitality, Industrial). Those
-  // lessons are read by an Arabic-medium class, so every slide heading needs
-  // both languages, not just the numbered check titles above: a teacher and
-  // students who read «مفردات الدرس» alone still need "Key Vocabulary" next
-  // to it to know this is the English lesson's vocabulary section, not a
-  // translation exercise. The book is the source of truth when a curriculum
-  // lesson is attached; `opts.subject` (localised — "English" or «اللغة
-  // الإنجليزية» depending on `isAr`) is the fallback for a plan-only deck.
-  const isEnglishSubject =
-    (lesson ? getBookForLesson(lesson)?.subjectId === 'english' : undefined)
-    ?? /^(english|اللغة الإنجليزية)$/i.test((opts.subject ?? '').trim());
-  const T = (ar: string, en: string) => (isEnglishSubject ? BL(ar, en) : L(ar, en));
 
   const title = nonEmpty(lessonTitle)
     || nonEmpty(pickLang(lesson?.titleAr, lesson?.titleEn, isAr))
@@ -482,7 +465,7 @@ export function buildLessonDeck(
   if (objectives.length > 0) {
     push({
       type: 'intro',
-      title: T('🎯 نتاجات التعلم', '🎯 Learning Outcomes'),
+      title: L('🎯 نتاجات التعلم', '🎯 Learning Outcomes'),
       content: objectives.map(o => `• ${o}`).join('\n'),
       durationSeconds: 0,
     });
@@ -493,7 +476,7 @@ export function buildLessonDeck(
   if (terms.length > 0) {
     push({
       type: 'intro',
-      title: T('📖 مفردات الدرس', '📖 Key Vocabulary'),
+      title: L('📖 مفردات الدرس', '📖 Key Vocabulary'),
       content: terms
         .map(term => {
           const word = isAr ? term.ar : term.en;
@@ -531,7 +514,7 @@ export function buildLessonDeck(
       'Ask, then wait five silent seconds before taking any answer.');
     push({
       type: 'intro',
-      title: T('✨ تمهيد', '✨ Warm-up'),
+      title: L('✨ تمهيد', '✨ Warm-up'),
       content: hook.question,
       durationSeconds: 0,
       ...(hook.generated ? { aiWritten: true } : {}),
@@ -641,7 +624,7 @@ export function buildLessonDeck(
     for (let i = 0; i < bareConcepts.length; i += 4) {
       push({
         type: 'intro',
-        title: T('💡 أفكار الدرس', '💡 Key Ideas'),
+        title: L('💡 أفكار الدرس', '💡 Key Ideas'),
         content: bareConcepts.slice(i, i + 4).map(c => `• ${c}`).join('\n'),
         durationSeconds: 0,
       });
@@ -666,7 +649,7 @@ export function buildLessonDeck(
   if (rules.length > 0) {
     push({
       type: 'intro',
-      title: T('📐 القاعدة', '📐 The Rule'),
+      title: L('📐 القاعدة', '📐 The Rule'),
       content: rules.map(r => `• ${r}`).join('\n'),
       durationSeconds: 0,
       ...(ruleFigure?.mediaUrl
@@ -749,7 +732,7 @@ export function buildLessonDeck(
   // "did you follow me".
   const firstCheckCount = Math.floor(midChecks.length / 2);
   midChecks.slice(0, firstCheckCount).forEach((check, i) => {
-    push(asCheckSlide(check, T(`✋ تحقّق سريع ${i + 1}`, `Quick Check ${i + 1}`)));
+    push(asCheckSlide(check, L(`✋ تحقّق سريع ${i + 1}`, `Quick Check ${i + 1}`)));
   });
 
   // ── 7. Worked examples — attempted before they are shown ────────────────
@@ -766,7 +749,7 @@ export function buildLessonDeck(
     const [problem, answer] = splitExample(example);
     push({
       type: 'challenge',
-      title: T(`مثال ${i + 1}`, `Example ${i + 1}`),
+      title: L(`مثال ${i + 1}`, `Example ${i + 1}`),
       content: problem,
       durationSeconds: EXAMPLE_THINK_SECONDS,
       ...(answer ? { answer } : {}),
@@ -788,7 +771,7 @@ export function buildLessonDeck(
     push({
       aiWritten: true,
       type: 'challenge',
-      title: T('مثال 1', 'Example 1'),
+      title: L('مثال 1', 'Example 1'),
       content: generatedExample.problem,
       durationSeconds: EXAMPLE_THINK_SECONDS,
       answer: generatedExample.answer,
@@ -805,7 +788,7 @@ export function buildLessonDeck(
   laterChecks.forEach((check, i) => {
     push(asCheckSlide(
       check,
-      T(`✋ تحقّق سريع ${firstCheckCount + i + 1}`, `Quick Check ${firstCheckCount + i + 1}`),
+      L(`✋ تحقّق سريع ${firstCheckCount + i + 1}`, `Quick Check ${firstCheckCount + i + 1}`),
     ));
   });
 
@@ -829,7 +812,7 @@ export function buildLessonDeck(
       push({
         aiWritten: true,
         type: 'intro',
-        title: T('🤝 تدريب موجّه', '🤝 Guided Practice'),
+        title: L('🤝 تدريب موجّه', '🤝 Guided Practice'),
         content: problem,
         durationSeconds: 0,
         teacher: {
@@ -842,7 +825,7 @@ export function buildLessonDeck(
     } else if (guided) {
       push({
         type: 'intro',
-        title: T('🤝 تدريب موجّه', '🤝 Guided Practice'),
+        title: L('🤝 تدريب موجّه', '🤝 Guided Practice'),
         content: L('لنحلّ هذا معًا خطوة بخطوة.', "Let's work through this together, step by step."),
         durationSeconds: 0,
         // The prompt above is the whole slide, by design. Say so, or the
@@ -860,7 +843,7 @@ export function buildLessonDeck(
     if (independent) {
       push({
         type: 'intro',
-        title: T('✍️ تدريب مستقل', '✍️ Independent Practice'),
+        title: L('✍️ تدريب مستقل', '✍️ Independent Practice'),
         content: L('حان دوركم — حاولوا بمفردكم.', "Now it's your turn — try it on your own."),
         durationSeconds: 0,
         teacherLed: true,
@@ -898,7 +881,7 @@ export function buildLessonDeck(
     : L(`أنهينا درس «${title}».`, `We finished “${title}”.`);
   push({
     type: 'summary',
-    title: T('🎉 ملخص الدرس', '🎉 Lesson Summary'),
+    title: L('🎉 ملخص الدرس', '🎉 Lesson Summary'),
     content: closureSummary,
     durationSeconds: 0,
     teacher: closure ? {
@@ -917,13 +900,13 @@ export function buildLessonDeck(
     push({
       type: 'divider',
       title,
-      content: T('🎫 تذكرة الخروج', 'Exit Ticket'),
+      content: L('🎫 تذكرة الخروج', 'Exit Ticket'),
       durationSeconds: 0,
     });
     exitChecks.forEach((check, i) => {
       push(asCheckSlide(
         check,
-        T(`🎫 تذكرة الخروج ${i + 1}`, `Exit Ticket ${i + 1}`),
+        L(`🎫 تذكرة الخروج ${i + 1}`, `Exit Ticket ${i + 1}`),
       ));
     });
   }
@@ -943,7 +926,7 @@ export function buildLessonDeck(
   if (homework || bookLine) {
     push({
       type: 'intro',
-      title: T('🏠 الواجب', '🏠 Homework'),
+      title: L('🏠 الواجب', '🏠 Homework'),
       content: [homework, bookLine].filter(Boolean).join('\n\n'),
       durationSeconds: 0,
     });

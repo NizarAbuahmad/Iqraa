@@ -902,7 +902,7 @@ export default function PresentationScreen() {
     const a = getPendingClassroomActivity();
     if (a) {
       setActivity(a);
-      if (a.game) setGame(createGame(a.game.teamCount, a.game.questionCount, lang === 'ar'));
+      if (a.game) setGame(createGame(a.game.teamCount, a.game.questionCount, a.game.isAr ?? lang === 'ar'));
       initSlide(a.slides[0]);
     } else {
       router.replace({
