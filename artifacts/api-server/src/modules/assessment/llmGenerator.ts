@@ -37,10 +37,16 @@ import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { variationBlock } from "../../lib/variation.ts";
 
 /** Bumped when the prompt changes shape, so usage rows stay comparable. */
-export const GENERATION_PROMPT_VERSION = "exam-gen-4";
+export const GENERATION_PROMPT_VERSION = "exam-gen-5";
 
 export interface LlmGenerationRequest {
   objectives: CurriculumObjective[];
+  /**
+   * The evaluation's catalog grade id («grade-4»). The prompt used to say
+   * "Grade 10" for every paper, so a Grade 4 exam was written to Grade 10
+   * framing. Absent or unrecognised leaves the grade unstated rather than wrong.
+   */
+  gradeId?: string;
   assessmentTypes: QuestionType[];
   count: number;
   difficulty: Difficulty;
@@ -157,6 +163,12 @@ export function paperIsMathematics(objectives: readonly CurriculumObjective[]): 
   return objectives.some(o => isMathematicsSubject(o.subjectId));
 }
 
+/** ", Grade 4" for «grade-4»; nothing for an id we do not recognise. */
+export function gradeClause(gradeId: string | undefined): string {
+  const n = Number(gradeId?.match(/^grade-(\d{1,2})$/)?.[1]);
+  return Number.isInteger(n) && n >= 1 && n <= 12 ? `, Grade ${n}` : "";
+}
+
 export function buildGenerationPrompt(req: LlmGenerationRequest): {
   system: string;
   user: string;
@@ -173,7 +185,7 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
   const isMaths = paperIsMathematics(req.objectives);
 
   const system = [
-    "You write exam questions for the Jordanian national curriculum, Grade 10.",
+    `You write exam questions for the Jordanian national curriculum${gradeClause(req.gradeId)}.`,
     arabic
       ? "Every question you write is in Modern Standard Arabic, as a Jordanian teacher would phrase it "
         + "for their own class. Use Arabic mathematical notation and Arabic-Indic digits where a teacher "

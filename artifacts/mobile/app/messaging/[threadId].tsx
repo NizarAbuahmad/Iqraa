@@ -28,6 +28,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { REPORT_REASON_KEYS } from '@/services/reportReasons';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   addGroupMembers,
@@ -48,7 +49,7 @@ import {
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { MessageBubble } from '@/components/ui/MessageBubble';
 import { Avatar } from '@/components/ui/Avatar';
-import { chatRoleLabel } from '@/services/chatRoleLabel';
+import { chatThreadSubtitle } from '@/services/chatThreadSubtitle';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 import { mergeNewMessages } from '@/services/messageMerge';
 import { pickUnreportedReads } from '@/services/readReceipts';
@@ -57,7 +58,6 @@ import { useStudentAccountsEnabled } from '@/services/features';
 import { saveRemoteImage } from '@/services/share';
 import { goBack } from '@/services/navigation';
 
-const REPORT_REASON_KEYS = ['reportReasonInappropriate', 'reportReasonBullying', 'reportReasonSpam', 'reportReasonOther'] as const;
 
 export default function ThreadScreen() {
   const { threadId } = useLocalSearchParams<{ threadId: string }>();
@@ -357,7 +357,7 @@ export default function ThreadScreen() {
                 style={[styles.headerRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
                 numberOfLines={1}
               >
-                {chatRoleLabel(thread.otherParticipant.role, t)}
+                {chatThreadSubtitle(thread.otherParticipant, t, lang)}
               </Text>
             </View>
           </>
