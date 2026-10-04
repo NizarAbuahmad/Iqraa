@@ -28,11 +28,13 @@ import {
   rosterLinks,
   students,
 } from "@workspace/db";
-import { and, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
+import { lessonIdsForObjectiveIds } from "@workspace/curriculum";
 import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
-import { studentAccountsEnabled } from "../lib/features.js";
+import { masteryGateEnabled, studentAccountsEnabled } from "../lib/features.js";
 import { logger } from "../lib/logger";
 import { studentGradeIds } from "../lib/studentGrades.ts";
+import { MASTERY_PASS_PERCENT, passedLessonIds } from "../modules/assessment/lessonProgress.ts";
 import {
   sortStudentExams,
   studentExamRow,
@@ -43,6 +45,16 @@ import {
 const router = Router();
 
 router.use("/student", authMiddleware, requireRole("student"));
+
+/** Every live roster row this account is `self`-linked to. */
+async function selfLinkedStudentIds(userId: string): Promise<string[]> {
+  const linked = await db
+    .select({ studentId: rosterLinks.studentId })
+    .from(rosterLinks)
+    .innerJoin(students, eq(students.id, rosterLinks.studentId))
+    .where(and(eq(rosterLinks.userId, userId), eq(rosterLinks.relation, "self"), isNull(students.archivedAt)));
+  return [...new Set(linked.map(l => l.studentId))];
+}
 
 /** How far a sitting has got, so a duplicate keeps the more advanced one. */
 function progress(s: { submittedAt: Date | null }): number {
@@ -80,18 +92,7 @@ router.get("/student/exams", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    const linked = await db
-      .select({ studentId: rosterLinks.studentId })
-      .from(rosterLinks)
-      .innerJoin(students, eq(students.id, rosterLinks.studentId))
-      .where(
-        and(
-          eq(rosterLinks.userId, req.user!.id),
-          eq(rosterLinks.relation, "self"),
-          isNull(students.archivedAt),
-        ),
-      );
-    const studentIds = [...new Set(linked.map(l => l.studentId))];
+    const studentIds = await selfLinkedStudentIds(req.user!.id);
     if (studentIds.length === 0) {
       res.json({ exams: [] });
       return;
@@ -181,6 +182,54 @@ router.get("/student/exams", async (req: AuthenticatedRequest, res) => {
   } catch (err) {
     logger.error({ err }, "student exam list failed");
     res.status(500).json({ error: "Failed to load your exams" });
+  }
+});
+
+/**
+ * The lessons this student has passed, for the mastery gate.
+ *
+ * Reports `enabled: false` (and nothing else) until `MASTERY_GATE=true`, so a
+ * client that asks before the pilot starts locks nothing. Only lesson ids come
+ * back, never marks: whether a mark may be shown is the teacher's call
+ * (`releaseResultsToStudent`), and "passed" is all an unlock needs to say.
+ * What counts as passed is `passedLessonIds`.
+ */
+router.get("/student/progress", async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not available yet.",
+      });
+      return;
+    }
+    if (!masteryGateEnabled()) {
+      res.json({ enabled: false, passedLessonIds: [], threshold: MASTERY_PASS_PERCENT });
+      return;
+    }
+
+    const studentIds = await selfLinkedStudentIds(req.user!.id);
+    const sittings = studentIds.length
+      ? await db
+          .select({
+            objectiveIds: evaluations.objectiveIds,
+            percent: attemptResults.percent,
+            isProvisional: attemptResults.isProvisional,
+          })
+          .from(attempts)
+          .innerJoin(attemptResults, eq(attemptResults.attemptId, attempts.id))
+          .innerJoin(evaluations, eq(evaluations.id, attempts.evaluationId))
+          .where(and(inArray(attempts.studentId, studentIds), isNotNull(attempts.submittedAt)))
+      : [];
+
+    res.json({
+      enabled: true,
+      passedLessonIds: passedLessonIds(sittings, lessonIdsForObjectiveIds),
+      threshold: MASTERY_PASS_PERCENT,
+    });
+  } catch (err) {
+    logger.error({ err }, "student progress failed");
+    res.status(500).json({ error: "Failed to load your progress" });
   }
 });
 

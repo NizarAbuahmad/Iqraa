@@ -31,3 +31,15 @@
 export function studentAccountsEnabled(): boolean {
   return process.env.STUDENT_ACCOUNTS === "true";
 }
+
+/**
+ * Whether passing a lesson's quiz unlocks the next lesson for a student.
+ *
+ * Off unless `MASTERY_GATE=true`: a lock is the one feature here that can stop
+ * a child doing something, so it ships dark and is switched on for a pilot
+ * class rather than for everyone. Off, `/student/progress` reports
+ * `enabled: false` and no client should lock anything.
+ */
+export function masteryGateEnabled(): boolean {
+  return process.env.MASTERY_GATE === "true";
+}
