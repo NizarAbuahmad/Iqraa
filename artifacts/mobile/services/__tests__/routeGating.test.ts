@@ -133,7 +133,7 @@ describe('isNonTeacherRoute', () => {
     // and the bounce in app/_layout.tsx runs on every path change — so a parent
     // tapping «الإعدادات» was sent straight back to Messages, and could never
     // reach account deletion at all.
-    for (const p of ['/settings', '/faq', '/delete-account']) {
+    for (const p of ['/settings', '/faq', '/suggest-feature', '/delete-account']) {
       assert.equal(isNonTeacherRoute(p), true, p);
     }
   });
