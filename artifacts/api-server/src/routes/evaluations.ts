@@ -252,7 +252,8 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
         difficulty,
         targetQuestionCount: count,
         assessmentTypes: requestedTypes,
-        language: trimmed(req.body?.language) || "ar",
+        // English is examined in English whatever the app's UI language.
+        language: book.subjectId === "english" ? "en" : trimmed(req.body?.language) || "ar",
         levelScaleId: defaultScale.id,
       })
       .returning();
