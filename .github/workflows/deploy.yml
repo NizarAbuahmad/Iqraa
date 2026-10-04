@@ -344,8 +344,14 @@ jobs:
       - name: Verify the deployed bundle
         run: |
           set -euo pipefail
-          sleep 15
-          SERVED=$(curl -fsS --max-time 30 https://app.iqrra.com/ | grep -o 'content="[a-f0-9]\{40\}"' | head -1 | sed 's/content="//;s/"//')
-          echo "served=$SERVED wanted=$GITHUB_SHA"
-          [ "$SERVED" = "$GITHUB_SHA" ] \
-            || { echo "::error::app.iqrra.com is serving $SERVED, not $GITHUB_SHA."; exit 1; }
+          # Pages' edge can lag the upload by more than one 15 s sleep (a green
+          # deploy once failed here and was serving the right SHA a minute later),
+          # so retry for ~2 min before calling it a failure.
+          for attempt in 1 2 3 4 5 6 7 8; do
+            sleep 15
+            SERVED=$(curl -fsS --max-time 30 https://app.iqrra.com/ | grep -o 'content="[a-f0-9]\{40\}"' | head -1 | sed 's/content="//;s/"//' || true)
+            echo "attempt=$attempt served=$SERVED wanted=$GITHUB_SHA"
+            [ "$SERVED" = "$GITHUB_SHA" ] && exit 0
+          done
+          echo "::error::app.iqrra.com is serving $SERVED, not $GITHUB_SHA."
+          exit 1
