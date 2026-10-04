@@ -650,6 +650,31 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The worksheet question-count picker is honoured offline, 2026-10-04
+
+`worksheet.tsx` offers 5, 8, 10, 12, 15 and 20 questions. The offline
+`generateWorksheet` forced the number into 6–12, so 5 gave 6 and 15 or 20 gave
+12, while the live prompt carried the number as asked — a teacher got a
+different paper depending on whether live AI was on. `lessonFlowRunner` asks
+for 5 and was getting 6 for the same reason.
+
+**Measured before** on exponential equations: 5→6, 8→8, 10→10, 12→12, 15→12,
+20→12. **Now** the clamp is the picker's own range, 5–20, and those return what
+was asked. The word problem is counted inside the total, not on top of it.
+
+**Deliberately unchanged:** a lesson whose bank holds fewer items than asked
+still returns fewer, because the offline path is bank-only and stays short
+rather than padding with templates (`BankSpentError`). Measured the same day:
+«قانون الجيوب» returns 3 whatever the picker says, «المشتقات» returns 5. A
+teacher asking for 12 and getting 3 is told nothing — the screen does not say
+the bank ran out. That is the next gap here, not this fix.
+
+The prior-review section is still added on top of the count (2–3 extra
+questions), as it was before. Pinned by
+`services/__tests__/worksheetQuestionCount.test.ts`; it fails on the old clamp
+(6 where 5 was asked, 12 where 15 was). Mobile 2603 pass / 0 fail / 10 skipped,
+typecheck clean.
+
 ## English is prepared in English, whatever the UI language, 2026-10-04
 
 Nizar: an English lesson's plan, slides and results came out in Arabic. Every

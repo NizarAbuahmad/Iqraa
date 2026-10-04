@@ -950,7 +950,16 @@ export class MockAIService extends AIService {
     if (mainTypes.length === 0) mainTypes.push('short_answer');
 
     // In-class practice: progressive difficulty (easy → medium → hard)
-    const totalQ = Math.min(12, Math.max(6, req.numQuestions ?? 8));
+    //
+    // The count is the picker's own range (5–20, `NUM_Q_OPTIONS` in
+    // `app/ai-tools/worksheet.tsx`), not a private one. This used to be 6–12, so
+    // asking for 5 gave 6 and asking for 15 or 20 gave 12 while the live prompt
+    // honoured the number — the same teacher got a different paper by whether
+    // live AI was on. 5 is also the smallest the bucket split below can fill
+    // exactly (one easy, one hard, the rest middle, plus the word problem).
+    // A lesson whose bank holds fewer items than this still returns fewer: that
+    // limit is `BankSpentError`, not this line.
+    const totalQ = Math.min(20, Math.max(5, req.numQuestions ?? 8));
     const priorConcepts = req.includePriorReview && req.priorKnowledge?.length
       ? req.priorKnowledge
       : [];
