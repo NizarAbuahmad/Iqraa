@@ -1189,6 +1189,9 @@ const translations = {
     slidesSaved: 'حُفظت الشرائح في مساحتك',
     slidesUnsaved: 'أزلت الشرائح من مساحتك',
     savedDeckUnreadable: 'تعذّر فتح العرض المحفوظ — يمكنك إنشاؤه من جديد.',
+    gameExitTitle: 'إنهاء التحدي؟',
+    gameExitMsg: 'ستُمسح نتائج الفرق ولا يمكن استرجاعها.',
+    gameExitConfirm: 'إنهاء',
     // Prompt Slides
     promptSlidesTitle: 'اكتب فكرتك، وجهّز شرائحك',
     promptSlidesSubtitle: 'اكتب وصفًا لما تريده، واختر بين قالب مجاني فوري أو عرض يبنيه الذكاء الاصطناعي.',
@@ -3158,6 +3161,9 @@ const translations = {
     slidesSaved: 'Slides saved to your workspace',
     slidesUnsaved: 'Slides removed from your workspace',
     savedDeckUnreadable: "Couldn't open the saved deck — you can build it again.",
+    gameExitTitle: 'End the challenge?',
+    gameExitMsg: "The teams' scores will be cleared and can't be recovered.",
+    gameExitConfirm: 'End',
     // Prompt Slides
     promptSlidesTitle: 'Write your idea, build your slides',
     promptSlidesSubtitle: 'Describe what you want, then choose an instant free template or AI-generated slides.',

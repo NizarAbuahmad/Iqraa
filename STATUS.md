@@ -72,6 +72,33 @@ an announcement by default» below.
   disabled `activity`/`homework` tools — part of the recorded `homeAiTools`
   decision, not touched. Tests: `activityOutput.test.ts`. Not looked at in a
   browser.
+- **Class Challenge (game) review fixes** (2026-10-04, same PR as the activity
+  fixes above). `game.tsx` now grounds the lesson once, scoped to the picked
+  grade and subject, and carries `lessonId`/`unitId`/figures from that grounding
+  (it grounded by bare title five times — a wrong-grade lesson went to the shared
+  pool with `contextSource: 'curriculum'`); it normalises option letters like
+  `quiz.tsx` (live AI doubled them: «أ  أ) 3»); the deck is built with the team
+  count at build time and rebuilds from the deck's own title (a cleared topic
+  left the intro on a blank line). `indexOfAnswer` in `classDeck.ts` returns -1
+  instead of option A when the key names no option — text, text without option
+  letters, then a bare letter by position (a bare number is not a position); a
+  game drops such a question (it cannot be adjudicated), a quiz/worksheet deck
+  shows it as an open question carrying the key, and a missing key no longer
+  throws. The podium medals by rank (a tie for first put third on the silver
+  step) and the scoreboard shows none until someone scores
+  (`medalFor`). Leaving the presentation mid-game asks first once anything is
+  awarded (`hasGameScores`). Arabic: «فريقين», «من 12 سؤال». Not changed, found
+  in the same review: streak scoring depends on whether ANY team scored a
+  question (a question nobody got is indistinguishable from a skipped one — it
+  needs an explicit «nobody got it» ledger entry, a design decision); a game
+  has no verifier, no «بلّغ عن مشكلة» and no save/reopen/export; the pickers stay
+  editable while a deck loads; `builder.tsx` has the same grade-scope gaps and
+  sends the English grade name; Arabic-Indic scores sit beside Latin question
+  numbers on one scoreboard row; team colours are used as text on pale tints
+  (~2:1 for amber/green); replay keeps the previous round's pen ink; and
+  `homeAiTools.ts`'s `game` entry points at `/ai-tools/classroom` and is in no
+  suggestion list, so flipping `enabled` alone would not surface it. Tests:
+  `classDeckAnswerKey.test.ts`, `classGame.test.ts`. Not looked at in a browser.
 - **Interface dates and times are written in Latin digits** (2026-10-03).
   Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
   «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other

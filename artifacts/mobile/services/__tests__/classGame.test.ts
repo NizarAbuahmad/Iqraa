@@ -26,7 +26,9 @@ import assert from 'node:assert/strict';
 import {
   BASE_POINTS,
   createGame,
+  hasGameScores,
   isAwarded,
+  medalFor,
   podium,
   resetScores,
   setAwards,
@@ -205,6 +207,48 @@ describe('podium', () => {
 
   it('is empty when nobody scored — never crowns an arbitrary team', () => {
     assert.deepEqual(podium(createGame(4, 5, true)), []);
+  });
+});
+
+describe('medalFor', () => {
+  it('is the medal of a RANK, not of a position in the list', () => {
+    assert.equal(medalFor(1, true), '🥇');
+    assert.equal(medalFor(2, true), '🥈');
+    assert.equal(medalFor(3, true), '🥉');
+    assert.equal(medalFor(4, true), null);
+  });
+
+  it('hands out none before anyone has scored — everybody is "first" at 0', () => {
+    assert.equal(medalFor(1, false), null);
+  });
+
+  it('a team that follows a tie for first gets third place, not second', () => {
+    // Two teams tie on top, a third trails: ranks are 1, 1, 3 — there is no
+    // rank 2. The podium used to medal groups by position, so the trailing
+    // team stood on the silver step.
+    let state = createGame(4, 5, true);
+    state = setAwards(state, 0, ['team-1', 'team-2']);
+    state = setAwards(state, 1, ['team-1', 'team-2']);
+    state = setAwards(state, 3, ['team-3']);
+    const groups = podium(state);
+    assert.deepEqual(groups.map(g => g[0]!.rank), [1, 3]);
+    assert.deepEqual(groups.map(g => medalFor(g[0]!.rank, true)), ['🥇', '🥉']);
+  });
+});
+
+describe('hasGameScores', () => {
+  it('is false for a fresh game and after a reset, true once anything is awarded', () => {
+    let state = createGame(3, 5, true);
+    assert.equal(hasGameScores(state), false);
+    state = toggleAward(state, 0, 'team-1');
+    assert.equal(hasGameScores(state), true);
+    assert.equal(hasGameScores(resetScores(state)), false);
+  });
+
+  it('ignores a question whose awards were all taken back', () => {
+    let state = toggleAward(createGame(3, 5, true), 0, 'team-1');
+    state = toggleAward(state, 0, 'team-1');
+    assert.equal(hasGameScores(state), false);
   });
 });
 

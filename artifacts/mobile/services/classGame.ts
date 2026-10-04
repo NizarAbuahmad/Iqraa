@@ -212,3 +212,25 @@ export function podium(state: GameState): TeamStanding[][] {
     .map(rank => rows.filter(r => r.rank === rank))
     .filter(group => group.length > 0);
 }
+
+/**
+ * The medal for a standing, by RANK — not by where its group sits in the list.
+ *
+ * Ranks skip after a tie (1, 1, 3), so a podium that medalled group index 1
+ * put the third-placed team on the silver step. And a scoreboard where nobody
+ * has scored yet has every team on rank 1, so it crowned all of them: no
+ * medals until there is a score to rank by.
+ */
+export function medalFor(rank: number, anyScored: boolean): '🥇' | '🥈' | '🥉' | null {
+  if (!anyScored) return null;
+  return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
+}
+
+/**
+ * Has anything been awarded? Leaving the deck throws the ledger away — it only
+ * lives in the presentation screen's state — so this is what decides whether
+ * a stray Esc or a tap on ✕ is worth a confirmation.
+ */
+export function hasGameScores(state: GameState | null): boolean {
+  return !!state && Object.values(state.awards).some(ids => ids.length > 0);
+}

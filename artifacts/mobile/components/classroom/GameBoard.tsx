@@ -16,7 +16,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import type { GameState, TeamStanding } from '@/services/classGame';
-import { isAwarded, standings } from '@/services/classGame';
+import { isAwarded, medalFor, standings } from '@/services/classGame';
 
 const CARD_BG = '#FFFFFF';
 const BORDER = '#EFDCD4';
@@ -24,7 +24,6 @@ const TEXT_PRIMARY = '#22303C';
 const TEXT_MUTED = '#7C6A65';
 const GREEN = '#16A34A';
 
-const MEDALS = ['🥇', '🥈', '🥉'];
 
 /** Arabic-Indic digits, because the rest of the projected deck is Arabic. */
 function num(n: number, isAr: boolean): string {
@@ -164,6 +163,7 @@ export function ScoreboardView({
 }) {
   const rows = standings(state);
   const leader = rows[0]?.score ?? 0;
+  const anyScored = rows.some(r => r.score > 0);
 
   return (
     <View style={board.wrap}>
@@ -180,7 +180,7 @@ export function ScoreboardView({
           ]}
         >
           <Text style={[board.rank, { color: team.color, fontFamily: 'ReadexPro_700Bold' }]}>
-            {team.rank <= 3 ? MEDALS[team.rank - 1] : num(team.rank, isAr)}
+            {medalFor(team.rank, anyScored) ?? num(team.rank, isAr)}
           </Text>
           <Text style={board.emoji}>{team.emoji}</Text>
           <View style={{ flex: 1, marginHorizontal: 12 }}>
@@ -269,7 +269,7 @@ export function PodiumView({
                 },
               ]}
             >
-              <Text style={[podium.medal, { fontSize: gi === 0 ? 52 : 38 }]}>{MEDALS[gi]}</Text>
+              <Text style={[podium.medal, { fontSize: gi === 0 ? 52 : 38 }]}>{medalFor(group[0]!.rank, true)}</Text>
               <View style={{ flex: 1, marginHorizontal: 14 }}>
                 <Text
                   style={[
