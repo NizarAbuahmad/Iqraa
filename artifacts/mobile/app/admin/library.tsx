@@ -258,7 +258,7 @@ export default function LibraryAdminScreen() {
             key={s}
             onPress={() => setScope(s)}
             accessibilityRole="button"
-            accessibilityState={{ selected: s === scope }}
+            aria-selected={s === scope}
             style={[styles.chip, { backgroundColor: s === scope ? ACCENT : colors.muted }]}
           >
             <Text style={{ color: s === scope ? palette.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
@@ -287,7 +287,7 @@ export default function LibraryAdminScreen() {
             key={c}
             onPress={() => setCategory(c)}
             accessibilityRole="button"
-            accessibilityState={{ selected: c === category }}
+            aria-selected={c === category}
             style={[styles.chip, { backgroundColor: c === category ? ACCENT : colors.muted }]}
           >
             <Text style={{ color: c === category ? palette.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>

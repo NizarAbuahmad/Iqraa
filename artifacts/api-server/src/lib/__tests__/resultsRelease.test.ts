@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { resultsReleaseDecision } from "../resultsRelease.ts";
+import { releaseAnnouncement, resultsReleaseDecision } from "../resultsRelease.ts";
 
 describe("resultsReleaseDecision", () => {
   it("releases a published or a closed exam", () => {
@@ -26,5 +26,21 @@ describe("resultsReleaseDecision", () => {
       assert.equal(d.ok, false);
       assert.equal(!d.ok && d.code, "invalid_input");
     }
+  });
+});
+
+describe("releaseAnnouncement", () => {
+  it("names the exam by its Arabic title", () => {
+    const a = releaseAnnouncement({ title: "Waves quiz", titleAr: "اختبار الموجات" });
+    assert.equal(a.pushTitle, "نتيجة «اختبار الموجات»");
+    assert.match(a.groupLine, /«اختبار الموجات»/);
+    assert.match(a.pushBody, /«اختباراتي»/);
+  });
+
+  it("falls back to the latin title, then to no name, never to empty quotes", () => {
+    assert.equal(releaseAnnouncement({ title: "Waves quiz", titleAr: "  " }).pushTitle, "نتيجة «Waves quiz»");
+    const bare = releaseAnnouncement({ title: "", titleAr: null });
+    assert.equal(bare.pushTitle, "نتيجة اختبارك");
+    assert.doesNotMatch(bare.groupLine, /«»/);
   });
 });

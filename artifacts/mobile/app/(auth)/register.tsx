@@ -218,7 +218,6 @@ export default function RegisterScreen() {
             onPress={() => setTermsAccepted(v => !v)}
             style={[styles.termsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             accessibilityRole="checkbox"
-            accessibilityState={{ checked: termsAccepted }}
             // react-native-web 0.21 drops `accessibilityState`; only `aria-*`
             // reaches the DOM, so a screen reader heard an unticked box.
             aria-checked={termsAccepted}
@@ -254,7 +253,7 @@ export default function RegisterScreen() {
               <View
                 pointerEvents={termsAccepted ? 'auto' : 'none'}
                 style={{ opacity: termsAccepted ? 1 : 0.45 }}
-                accessibilityState={{ disabled: !termsAccepted }}
+                aria-disabled={!termsAccepted}
               >
                 <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
               </View>

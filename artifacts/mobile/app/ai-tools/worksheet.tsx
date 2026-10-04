@@ -763,7 +763,7 @@ export default function WorksheetScreen() {
                     key={label}
                     onPress={() => showLevel(i)}
                     accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
+                    aria-selected={active}
                     style={[styles.levelTab, { backgroundColor: active ? ACCENT : 'transparent', borderRadius: colors.radius }]}
                   >
                     <Text style={{ color: active ? palette.primaryForeground : ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{label}</Text>
@@ -881,7 +881,7 @@ export default function WorksheetScreen() {
                               onPress={() => updateAnswer(si, i, o)}
                               hitSlop={6}
                               accessibilityRole="button"
-                              accessibilityState={{ selected: isCorrect }}
+                              aria-selected={isCorrect}
                               accessibilityLabel={`${o} — ${t('answer')}`}
                             >
                               <Ionicons

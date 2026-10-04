@@ -52,7 +52,7 @@ export function AuthModeSwitch({ mode, loginLabel, registerLabel, onSwitch, colo
           <Pressable
             key={s.key}
             accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
+            aria-selected={active}
             onPress={() => {
               if (active) return;
               Haptics.selectionAsync();
