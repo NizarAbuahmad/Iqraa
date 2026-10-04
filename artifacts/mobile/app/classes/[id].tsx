@@ -40,12 +40,15 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   RosterError,
+  addClassResource,
   addStudents,
   generateJoinCode,
   getClass,
   getClassMastery,
   listClassParentContacts,
+  listClassResources,
   parseStudentNames,
+  removeClassResource,
   removeStudentFromClass,
   updateClass,
   updateStudent,
@@ -72,6 +75,18 @@ import { confirm } from '@/services/confirm';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
+import { ClassResourceRow } from '@/components/classes/ClassResourceRow';
+import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
+import {
+  addBodyFor,
+  addedKeys,
+  mergeClassShelf,
+  openTargetFor,
+  type ClassResource,
+} from '@/services/classResources';
+import { openExternal } from '@/services/externalLinks';
+import { trackEvent } from '@/services/analytics';
+import type { ResourceItem } from '@/services/resourceCatalog';
 import { summarizeClassContacts, type ClassContactSummary } from '@/services/parentMessage';
 import { palette } from '@/constants/colors';
 import { CLASSES_QUERY_KEY, classQueryKey as CLASS_QUERY_KEY } from '@/services/rosterQueryKeys';
@@ -122,6 +137,9 @@ export default function ClassDetailScreen() {
   const [showAttach, setShowAttach] = useState(false);
   const [attachable, setAttachable] = useState<SavedMaterial[]>([]);
   const [attachingId, setAttachingId] = useState<string | null>(null);
+  const [resources, setResources] = useState<ClassResource[]>([]);
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [addingKey, setAddingKey] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState(0);
   const [mastery, setMastery] = useState<ClassMastery | null>(null);
   /** Null until loaded, or when the log can't be read — the card then hides. */
@@ -202,6 +220,13 @@ export default function ClassDetailScreen() {
     // Materials are a separate store with its own offline fallback, so a
     // roster failure must not blank the materials tab and vice versa.
     setMaterials(await getItems({ classId: id }));
+    // The shelf's second source, with its own try/catch like exams below: a
+    // failure keeps what was showing and never blanks the materials.
+    try {
+      setResources(await listClassResources(id));
+    } catch (err) {
+      setError(describe(err));
+    }
     // The exams list has no fallback and throws on any non-2xx. Say so in the
     // banner and keep whatever was shown before rather than blanking the tab.
     try {
@@ -221,6 +246,9 @@ export default function ClassDetailScreen() {
     () => (parentContacts ? summarizeClassContacts(students, parentContacts, new Date()) : null),
     [students, parentContacts],
   );
+
+  const shelf = useMemo(() => mergeClassShelf(materials, resources), [materials, resources]);
+  const shelfKeys = useMemo(() => addedKeys(resources), [resources]);
 
   // Who has actually claimed their roster row, split out once here rather than
   // filtered inline in JSX twice (the count line and the chip row both need it).
@@ -485,6 +513,43 @@ export default function ClassDetailScreen() {
     setMaterials(prev => prev.filter(m => m.id !== material.id));
   };
 
+  const onAddResource = async (item: ResourceItem) => {
+    if (!id || addingKey) return;
+    setAddingKey(item.key);
+    try {
+      await addClassResource(id, addBodyFor(item, lang as 'ar' | 'en'));
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      trackEvent('class_resource_added', { source: item.source, mediaKind: item.kind });
+      // Re-read rather than splice: the server owns the snapshot, and a 409
+      // (already there) resolves quietly with nothing to splice at all.
+      setResources(await listClassResources(id));
+    } catch {
+      setError(t('classResourceFailed'));
+    } finally {
+      setAddingKey(null);
+    }
+  };
+
+  const onRemoveResource = async (resource: ClassResource) => {
+    if (!id) return;
+    try {
+      await removeClassResource(id, resource.id);
+      // Only drop it once the delete persisted, as onDetach does.
+      setResources(prev => prev.filter(r => r.id !== resource.id));
+    } catch {
+      setError(t('classResourceFailed'));
+    }
+  };
+
+  const onOpenResource = (resource: ClassResource) => {
+    const target = openTargetFor(resource);
+    if (target.kind === 'url') void openExternal(target.url);
+    // `as never`: the typed route has no `premade` param, as in the Library screen.
+    else if (target.kind === 'premade') {
+      router.push({ pathname: '/workspace/view' as never, params: { premade: target.id } });
+    }
+  };
+
   const align = isRTL ? 'right' : 'left';
   const title = group ? (lang === 'ar' && group.nameAr ? group.nameAr : group.name) : '';
 
@@ -631,7 +696,7 @@ export default function ClassDetailScreen() {
         </View>
         <View style={[styles.tabs, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {renderTab('students', t('classTabStudents'), countStudents(students.length, lang))}
-          {renderTab('materials', t('classTabMaterials'), countMaterials(materials.length, lang))}
+          {renderTab('materials', t('classTabMaterials'), countMaterials(materials.length + resources.length, lang))}
           {renderTab('exams', t('classTabExams'), t('countExams', exams.length))}
         </View>
       </View>
@@ -763,12 +828,23 @@ export default function ClassDetailScreen() {
         />
       ) : tab === 'materials' ? (
         <FlatList
-          data={materials}
-          keyExtractor={m => m.id}
+          data={shelf}
+          keyExtractor={e => e.key}
           contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={empty('folder-open-outline', 'noMaterialsYet', 'noMaterialsDesc')}
-          renderItem={({ item }) => (
+          renderItem={({ item: entry }) => {
+            if (entry.type === 'resource') {
+              return (
+                <ClassResourceRow
+                  resource={entry.resource}
+                  onOpen={() => onOpenResource(entry.resource)}
+                  onRemove={() => { void onRemoveResource(entry.resource); }}
+                />
+              );
+            }
+            const item = entry.material;
+            return (
             <Pressable
               onPress={() => router.push({ pathname: '/workspace/view', params: { id: item.id } })}
               style={[
@@ -812,7 +888,8 @@ export default function ClassDetailScreen() {
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
               </Pressable>
             </Pressable>
-          )}
+            );
+          }}
         />
       ) : (
         <FlatList
@@ -1305,6 +1382,30 @@ export default function ClassDetailScreen() {
                 </Pressable>
               )}
             />
+            <Pressable
+              onPress={() => {
+                setShowAttach(false);
+                setShowLibrary(true);
+              }}
+              accessibilityRole="button"
+              style={[
+                styles.createRow,
+                { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' },
+              ]}
+            >
+              <Ionicons name="library-outline" size={18} color={ACCENT} />
+              <Text
+                style={{
+                  color: ACCENT,
+                  fontFamily: 'ReadexPro_600SemiBold',
+                  flex: 1,
+                  textAlign: align,
+                }}
+              >
+                {t('fromLibrary')}
+              </Text>
+            </Pressable>
+
             {/* The sheet offered one way out — pick something that exists.
                 A teacher with nothing saved, or nothing left to attach, was
                 shown a dead end and a Cancel button. */}
@@ -1341,6 +1442,15 @@ export default function ClassDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      <LibraryPickerSheet
+        visible={showLibrary}
+        group={{ gradeId: group?.gradeId ?? '', subjectId: group?.subjectId ?? '' }}
+        added={shelfKeys}
+        busyKey={addingKey}
+        onAdd={item => { void onAddResource(item); }}
+        onClose={() => setShowLibrary(false)}
+      />
 
       <Modal
         visible={showAttachExam}
