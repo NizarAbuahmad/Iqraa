@@ -53,6 +53,25 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Class Activity review fixes** (2026-10-04). The offline jigsaw now lists
+  four tasks for its groups of four (it drew three items and promised four);
+  activities no longer print literal `**bold**` — `services/ai/activityText.ts`
+  strips it where an activity is generated (offline and live) and where a saved
+  one is reopened; PDF and slide exports keep the `\n` line breaks in a step
+  (`white-space: pre-line`); the tools tab sends the picked lesson's grade and
+  subject with its title (`pickPrefillParams`) instead of letting the grade be
+  guessed from a title 107 lessons share; Save stores the type, length and
+  objective the activity was **built** with, not the live pickers; the
+  evaluation-gap warm-up is saved with a group/20-min form, which is what
+  Regenerate really builds. Not changed, found in the same review: the offline
+  hands-on format is maths-shaped for every subject (fixed ruler/protractor
+  materials, "measured vs computed" for a chemistry model); offline Regenerate
+  returns identical content for subjects with no concrete bank; Regenerate keeps
+  `savedId`, so Update overwrites the saved version; and typing «أنشئ نشاطًا»
+  on `/home` opens the lesson plan, because `buildGeneratorNav` redirects the
+  disabled `activity`/`homework` tools — part of the recorded `homeAiTools`
+  decision, not touched. Tests: `activityOutput.test.ts`. Not looked at in a
+  browser.
 - **Interface dates and times are written in Latin digits** (2026-10-03).
   Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
   «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
