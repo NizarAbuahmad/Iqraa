@@ -557,6 +557,43 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## «علمني» with a lesson open teaches that lesson, 2026-10-04
+
+Reported from the app: with «تركيب الاقترانات» on the chat's lesson card, «علمني»
+got the generic «وضّح لي أكثر: هل تريد شرح مفهوم، أم تحضير مادة…؟» — as if
+nothing were open. Two gaps in `services/ai/intentRouter.ts`, plus a third the
+fix would have walked into:
+
+- **No word for "teach me".** `isTeaching` knew شرح / وضّح / ما هو only, so
+  «علمني» (one word) and «علمني الاقترانات» (two) both fell to the short-token
+  clarify. `isTeachMeAsk` (`services/ai/askVocabulary.ts`) now covers
+  علّمني / فهّمني / درّسني / teach me / help me understand, and `detectIntent`
+  reads them as `explain`. Only the pronoun-suffixed verb counts — «المعلم»,
+  «العلوم», «علم الكيمياء» do not.
+- **The router never saw the lesson card.** `classifyChatIntent` takes
+  `{ activeLessonTitle }` (the pinned lesson, or the active one unless its pin
+  is `'none'`). A *bare* teach/continue ask — `isBareTeachAsk`: «علمني»,
+  «اشرحه», «ابدأ», «كمّل», "start", "continue", anchored so «اشرح المشتقات» is
+  not bare — is then teaching about that lesson. A clarify that still happens
+  with a lesson open names it («تريد أن أشرح «تركيب الاقترانات»، أم…؟»). With
+  no lesson, a bare «علمني» asks which lesson rather than "concept or
+  material?"; a bare «شرح» still routes to teaching, because it is one of the
+  options the generic clarify offers.
+- **Routing to teaching alone would have picked the wrong lesson.** A soft pin
+  is not reused for a teaching ask, so the pipeline would have searched the KB
+  for the verb: measured, «علمني» ranks «أسس علم التصنيف» first and «start»
+  ranks «تأسيس مشروع تجاري» at 92 — high enough to read as another subject and
+  drop even a hard pin. `shouldReuseActiveLesson` now reuses the lesson for a
+  bare ask and ignores the KB's subject signal for it. Uploaded documents still
+  come first under a soft pin, and none of the bare phrases is a confident hit,
+  so nothing gets hard-pinned by accident.
+
+84 cases in `teachMeAsk.test.ts`, watched failing first; one existing test
+(«شرح» answers the clarify) caught a regression on the way and shaped the
+`شرح` exception. Demo-mode / local path only, like the other router entries.
+**Not checked** in the running app — the router and gate are unit-tested, the
+`iqra.tsx` wiring is typechecked only.
+
 ## «اقترح ميزة» — teachers can suggest a feature, 2026-10-03
 
 A new screen, `/suggest-feature`, lets anyone signed in describe a missing
