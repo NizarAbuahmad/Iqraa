@@ -770,7 +770,8 @@ in Chromium was driven; Firefox and Safari were not, so the nested-`<button>`
 fix is confirmed by the DOM and console in Chromium only). The `warn` log line
 for a missing table was not driven. The http line on a shelf row was never seen
 in a browser (see *Book codes*). The read-time staff link (below) has unit tests
-of `presentClassResource` only; the route's Library lookup behind it has no
+of `presentClassResource`, and was run against a real API and database (a
+hand-run script, not committed); the route's Library lookup behind it has no
 committed test.
 
 **Staff links are read-time.** Production's `R2_PUBLIC_BASE_URL` is a dev
@@ -787,9 +788,17 @@ unset and no `sourceUrl`), and the lookup itself fails (every row is then called
 available and keeps its stored link). The add's response is unchanged: a fresh
 add is already current.
 
-**Open for the owner.** (b) Premade-sheet ids are not validated server-side, so
-a regenerated manifest can orphan a stored id; the row then opens the viewer's
-not-found screen.
+Run against a local API and Postgres (a hand-run script, not committed): a
+Library row with an `r2_key`, added while `R2_PUBLIC_BASE_URL` was
+`https://cdn-a.test`, came back under `https://cdn-b.test` after the API
+restarted with that base, while the stored `url` column still read `cdn-a`;
+changing the Library row's key changed the returned link; deleting the Library
+row returned the stored `cdn-a` link with `unavailable: true`. The 20-check
+two-teacher run above was repeated on this code and passed.
+
+**Open for the owner.** Premade-sheet ids are not validated server-side, so a
+regenerated manifest can orphan a stored id; the row then opens the viewer's
+not-found screen. Left for piece 2 on the owner's say-so.
 
 **Not in this change.** Teacher-pasted links (no schema change) and device
 uploads (one more push, private storage, no video under the 8 MB cap) are
