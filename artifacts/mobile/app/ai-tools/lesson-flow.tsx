@@ -20,6 +20,8 @@ import * as Haptics from 'expo-haptics';
 
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { getT } from '@/services/i18n';
+import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { isolateForeignRuns } from '@/services/mathRender';
@@ -85,7 +87,7 @@ const INITIAL_STEP_STATE: StepState = {
 export default function LessonFlowScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL, lang } = useLanguage();
+  const { t, isRTL, lang: uiLang } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
   const params = useLocalSearchParams<{
     topic?: string; gradeIdx?: string; subjectIdx?: string;
@@ -95,12 +97,11 @@ export default function LessonFlowScreen() {
   const subjects = getPickerSubjects();
 
   // Form state
-  const [topic, setTopic] = useState(params.topic ?? '');
   // An index the picker list cannot honour is NOT index 0 — see
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en', teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -108,8 +109,15 @@ export default function LessonFlowScreen() {
   // Labels are per-grade too: Grade 6's creative-arts book has no music
   // in it, so it must not be offered under the combined name. Same
   // index alignment as the mask above.
-  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, uiLang);
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
+  // The picked subject's material language — English is taught in English.
+  // The form is gone once building starts, so this cannot move under a flow.
+  const lang = contentLang(subjects[subjectIdx].id, uiLang);
+  const [topic, setTopic] = useState(() => topicInLang(
+    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+  ));
   const [durationIdx, setDurationIdx] = useState(0);
 
   // Generation state
@@ -146,7 +154,8 @@ export default function LessonFlowScreen() {
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
 
-  const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
+  const gradeNames = grades.map(g => uiLang === 'ar' ? g.nameAr : g.name);
+  const contentT = getT(lang);
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
@@ -161,10 +170,10 @@ export default function LessonFlowScreen() {
     // A topic that grounds to another subject's lesson cannot make an honest
     // flow — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
-    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPhase('building');
     setError('');
@@ -398,8 +407,8 @@ export default function LessonFlowScreen() {
               </View>
               <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
                 {isDone
-                  ? (lang === 'ar' ? '✓ جاهز' : '✓ Ready')
-                  : `${lang === 'ar' ? 'خطوة' : 'Step'} ${completedCount + 1} ${lang === 'ar' ? 'من' : 'of'} 6`}
+                  ? (uiLang === 'ar' ? '✓ جاهز' : '✓ Ready')
+                  : `${uiLang === 'ar' ? 'خطوة' : 'Step'} ${completedCount + 1} ${uiLang === 'ar' ? 'من' : 'of'} 6`}
               </Text>
             </View>
           )}
@@ -410,14 +419,14 @@ export default function LessonFlowScreen() {
           <View style={styles.formSection}>
             {/* Topic */}
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
-              {lang === 'ar' ? 'موضوع الدرس' : 'Lesson Topic'}
+              {uiLang === 'ar' ? 'موضوع الدرس' : 'Lesson Topic'}
             </Text>
             <TopicSelector
               gradeId={grades[gradeIdx]?.id ?? ''}
               subjectId={subjects[subjectIdx]?.id ?? ''}
               value={topic}
               onChange={setTopic}
-              lang={lang as 'ar' | 'en'}
+              lang={lang}
               isRTL={isRTL}
               colors={colors}
               accent={ACCENT}
@@ -505,12 +514,12 @@ export default function LessonFlowScreen() {
                 <StepCard
                   key={step.key}
                   stepNum={idx + 1}
-                  label={t(step.labelKey as any)}
+                  label={contentT(step.labelKey as any)}
                   icon={step.icon}
                   color={step.color}
                   status={status}
-                  isRTL={isRTL}
-                  lang={lang}
+                  isRTL={lang === 'ar'}
+                  lang={uiLang}
                   colors={colors}
                   collapsed={collapsed[step.key]}
                   onToggleCollapse={() => setCollapsed(prev => ({ ...prev, [step.key]: !prev[step.key] }))}
@@ -524,7 +533,7 @@ export default function LessonFlowScreen() {
                       guidedPractice={guidedPractice}
                       worksheet={worksheet}
                       exitTicket={exitTicket}
-                      isRTL={isRTL}
+                      isRTL={lang === 'ar'}
                       colors={colors}
                       lang={lang}
                     />
@@ -547,7 +556,7 @@ export default function LessonFlowScreen() {
               style={({ pressed }) => ({ backgroundColor: '#D92D20', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, opacity: pressed ? 0.8 : 1 })}
             >
               <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
-                {lang === 'ar' ? 'أعد المحاولة' : 'Retry'}
+                {uiLang === 'ar' ? 'أعد المحاولة' : 'Retry'}
               </Text>
             </Pressable>
           </View>

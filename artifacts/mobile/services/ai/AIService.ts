@@ -467,6 +467,8 @@ export interface ClassGameConfig {
   teamCount: number;
   /** Scoreable questions in the deck — the ledger's upper bound. */
   questionCount: number;
+  /** The deck's language, which team names follow — an English game in an Arabic UI. */
+  isAr?: boolean;
 }
 
 export interface ClassroomActivityRequest {
