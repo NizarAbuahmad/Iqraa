@@ -44,7 +44,12 @@ import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
-import { captureGenerationScope, materialScope, type GenerationScope } from '@/services/generationScope';
+import {
+  captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope,
+} from '@/services/generationScope';
+import { parseSavedDeck } from '@/services/savedDeck';
+import { readFlagParam } from '@/services/materialParams';
+import { getItem } from '@/services/workspace';
 import { createVerificationTracker } from '@/services/verificationTracker';
 import { useDeckWorkspace, type DeckWorkspaceSnapshot } from '@/hooks/useDeckWorkspace';
 import { useSlideEditor } from '@/hooks/useSlideEditor';
@@ -81,6 +86,9 @@ export default function SlidesScreen() {
   // all three and default to grade 10 / mathematics / no topic.
   const params = useLocalSearchParams<{
     gradeIdx?: string; subjectIdx?: string; topic?: string;
+    // Sent by موادي's «تعديل» with the saved form state spread beside it.
+    savedId?: string;
+    includeExamples?: string; includePractice?: string; includeAttachments?: string;
   }>();
   // An index the picker list cannot honour is NOT index 0 — see
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
@@ -104,8 +112,9 @@ export default function SlidesScreen() {
     () => resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id ?? '',
     [topic, lang],
   );
-  const [includeExamples, setIncludeExamples] = useState(true);
-  const [includePractice, setIncludePractice] = useState(true);
+  // A reopened deck comes back with the toggles it was built with.
+  const [includeExamples, setIncludeExamples] = useState(() => readFlagParam(params.includeExamples, true));
+  const [includePractice, setIncludePractice] = useState(() => readFlagParam(params.includePractice, true));
   /**
    * Off by default, and deliberately: a teacher's attachments are their own
    * files pinned to the lesson, not deck content. Merging them in
@@ -113,7 +122,7 @@ export default function SlidesScreen() {
    * with the same photos and voice notes re-inserted as slides, which reads
    * as the generator inventing media it did not make. They go in when asked.
    */
-  const [includeAttachments, setIncludeAttachments] = useState(false);
+  const [includeAttachments, setIncludeAttachments] = useState(() => readFlagParam(params.includeAttachments, false));
   const [loading, setLoading] = useState(false);
   /**
    * Held across renders so Cancel can reach the in-flight requests — plural
@@ -220,8 +229,7 @@ export default function SlidesScreen() {
    * both to save and to recognise a deck that is already saved — if the two
    * ever drift the button starts lying again.
    */
-  const deckIdentity = (built: ClassroomActivity) => {
-    const s = deckScope();
+  const deckIdentity = (built: ClassroomActivity, s: GenerationScope = deckScope()) => {
     return {
       type: 'slides' as const,
       title: built.activityName,
@@ -254,6 +262,40 @@ export default function SlidesScreen() {
   });
   const forgetSaved = workspace.forget;
   const editor = useSlideEditor({ deck, setDeck, isAr, t, showToast, mediaEditing: true });
+
+  /**
+   * A deck reopened from موادي. «تعديل» sends `savedId` with the form fields,
+   * and this screen used to read only the fields — the deck the teacher had
+   * built and edited was nowhere, and the next press of Generate would have
+   * made a different one. Load the stored deck, its scope and its workspace
+   * link; an item that is gone or unreadable leaves the prefilled form and
+   * says so.
+   */
+  useEffect(() => {
+    const id = params.savedId;
+    if (!id) return;
+    let cancelled = false;
+    void (async () => {
+      const item = await getItem(id).catch(() => null);
+      if (cancelled) return;
+      // A teacher who pressed Generate before the read came back keeps theirs.
+      if (runRef.current !== 0 || deckRef.current) return;
+      const loaded = item ? parseSavedDeck(item.content) : null;
+      if (!loaded) { showToast(t('savedDeckUnreadable')); return; }
+      const regrounded = reopenedGenerationScope(initialScope, params.topic, lang as 'ar' | 'en');
+      // Without a saved topic there is nothing to re-ground: the live form.
+      const scope = materialScope(regrounded, {
+        gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic: params.topic ?? '',
+      });
+      setGenerated({ scope, options: { includeExamples, includePractice, includeAttachments } });
+      setGrounded(scope.grounded);
+      setGroundedLesson(scope.lesson ? (isAr ? scope.lesson.titleAr : scope.lesson.titleEn) : '');
+      setPreliminary(false);
+      workspace.adopt(id, loaded, deckIdentity(loaded, scope));
+      setDeck(loaded);
+    })();
+    return () => { cancelled = true; };
+  }, [params.savedId]);
 
   /**
    * Put the next search candidate into the fields — it does not save.

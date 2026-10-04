@@ -7,6 +7,7 @@ import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import {
   NO_LINK, linkAfterSave, linkFromMatch, pendingSync, saveAction, showsSaved, type DeckLink,
 } from '@/services/deckSaveLink';
+import { reopenedDeckLink } from '@/services/savedDeck';
 import type { TranslationKey } from '@/services/i18n';
 
 /** What `restore` needs to put a deck's workspace link back exactly as it was. */
@@ -76,6 +77,19 @@ export function useDeckWorkspace(config: {
   const restore = (snap: DeckWorkspaceSnapshot) => {
     setLink(snap.link);
     lookedUpKeyRef.current = snap.lookedUpKey;
+  };
+
+  /**
+   * Take up a deck reopened from موادي: it IS the stored item, so the screen
+   * follows it from the first frame instead of looking it up by identity.
+   * `identityOf` is what the deck is in workspace terms, passed in because the
+   * screen's own state has not caught up with the deck it is about to show —
+   * and recorded as already looked up, so un-saving does not go hunting for an
+   * older duplicate to adopt.
+   */
+  const adopt = (id: string, loaded: ClassroomActivity, identityOf: MaterialIdentity) => {
+    setLink(reopenedDeckLink(id, loaded));
+    lookedUpKeyRef.current = JSON.stringify(identityOf);
   };
 
   /**
@@ -195,6 +209,7 @@ export function useDeckWorkspace(config: {
     savingBusy,
     toggleSave,
     forget,
+    adopt,
     snapshot,
     restore,
     exportPdf,
