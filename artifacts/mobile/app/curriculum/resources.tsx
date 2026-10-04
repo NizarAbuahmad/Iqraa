@@ -63,34 +63,9 @@ import { goBack } from '@/services/navigation';
 import { cellWidthPercent, isVisualKind, libraryColumns, previewCount } from '@/services/libraryLayout';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { RESOURCE_KIND_ICON as KIND_ICON, RESOURCE_KIND_LABEL as KIND_LABEL } from '@/constants/resourceKind';
 
 type Cols = 1 | 2 | 3;
-
-const KIND_LABEL: Record<ResourceKind, TranslationKey> = {
-  infographic: 'libraryCatInfographic',
-  video: 'libraryCatVideo',
-  audio: 'libraryCatAudio',
-  game: 'libraryCatGame',
-  worksheet: 'libraryCatWorksheet',
-  template: 'libraryCatTemplate',
-  presentation: 'libraryCatPresentation',
-  document: 'libraryCatDocument',
-  image: 'qrKindImage',
-  page: 'qrKindPage',
-};
-
-const KIND_ICON: Record<ResourceKind, React.ComponentProps<typeof Ionicons>['name']> = {
-  infographic: 'bar-chart-outline',
-  video: 'play-circle-outline',
-  audio: 'musical-notes-outline',
-  game: 'game-controller-outline',
-  worksheet: 'document-text-outline',
-  template: 'copy-outline',
-  presentation: 'easel-outline',
-  document: 'document-outline',
-  image: 'image-outline',
-  page: 'globe-outline',
-};
 
 /** One tile per shelf: its plural name, icon and colour. */
 const SHELF_LABEL: Record<Shelf, TranslationKey> = {
