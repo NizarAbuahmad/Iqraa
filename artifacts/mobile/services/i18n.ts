@@ -1188,6 +1188,7 @@ const translations = {
     slidesIncludeAttachments: 'أضف مرفقاتي لهذا الدرس (صور وتسجيلات) إلى الشرائح',
     slidesSaved: 'حُفظت الشرائح في مساحتك',
     slidesUnsaved: 'أزلت الشرائح من مساحتك',
+    savedDeckUnreadable: 'تعذّر فتح العرض المحفوظ — يمكنك إنشاؤه من جديد.',
     // Prompt Slides
     promptSlidesTitle: 'اكتب فكرتك، وجهّز شرائحك',
     promptSlidesSubtitle: 'اكتب وصفًا لما تريده، واختر بين قالب مجاني فوري أو عرض يبنيه الذكاء الاصطناعي.',
@@ -2034,9 +2035,9 @@ const translations = {
     playColorsGameOver: (round: number) => `وصلت إلى الجولة ${round}`,
 
     hubTitle: 'ركن الإنجليزية',
-    playEnglishDesc: 'كلمات كتاب الإنجليزي للصفوف 1–4: اسمع، طابِق، وتهجَّ',
+    playEnglishDesc: 'كلمات كتب الإنجليزي للصفوف 1–4 و9–10: اسمع، طابِق، وتهجَّ',
     hubIntro: 'استمع والعب بكلمات دروسك. لا يُرسَل شيء إلى معلّمك؛ نجومك محفوظة على هذا الجهاز.',
-    hubGrade: (n: number) => ['الصف الأول', 'الصف الثاني', 'الصف الثالث', 'الصف الرابع'][n - 1] ?? '',
+    hubGrade: (n: number) => ['الصف الأول', 'الصف الثاني', 'الصف الثالث', 'الصف الرابع', 'الصف الخامس', 'الصف السادس', 'الصف السابع', 'الصف الثامن', 'الصف التاسع', 'الصف العاشر'][n - 1] ?? `الصف ${n}`,
     hubUnit: (n: number) => `الوحدة ${n}`,
     hubStreak: (n: number) => `🔥 ${arCountPhrase(n, 'يوم', 'يومان', 'أيام')} متتالية`,
     hubWords: (n: number) => arCountPhrase(n, 'كلمة', 'كلمتان', 'كلمات'),
@@ -3157,6 +3158,7 @@ const translations = {
     slidesIncludeAttachments: 'Include my attachments for this lesson (photos and recordings)',
     slidesSaved: 'Slides saved to your workspace',
     slidesUnsaved: 'Slides removed from your workspace',
+    savedDeckUnreadable: "Couldn't open the saved deck — you can build it again.",
     // Prompt Slides
     promptSlidesTitle: 'Write your idea, build your slides',
     promptSlidesSubtitle: 'Describe what you want, then choose an instant free template or AI-generated slides.',
@@ -3976,7 +3978,7 @@ const translations = {
     playColorsGameOver: (round: number) => `You reached round ${round}`,
 
     hubTitle: 'English Corner',
-    playEnglishDesc: 'Words from the Grade 1–4 English books: listen, match and spell',
+    playEnglishDesc: 'Words from the Grade 1–4 and 9–10 English books: listen, match and spell',
     hubIntro: 'Listen and play with the words from your lessons. Nothing is sent to your teacher; your stars are saved on this device.',
     hubGrade: (n: number) => `Grade ${n}`,
     hubUnit: (n: number) => `Unit ${n}`,
