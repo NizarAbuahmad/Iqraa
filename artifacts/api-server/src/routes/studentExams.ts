@@ -34,7 +34,7 @@ import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middl
 import { masteryGateEnabled, studentAccountsEnabled } from "../lib/features.js";
 import { logger } from "../lib/logger";
 import { studentGradeIds } from "../lib/studentGrades.ts";
-import { MASTERY_PASS_PERCENT, passedLessonIds } from "../modules/assessment/lessonProgress.ts";
+import { MASTERY_PASS_PERCENT, passedLessonIds, quizLessonIds } from "../modules/assessment/lessonProgress.ts";
 import {
   sortStudentExams,
   studentExamRow,
@@ -204,11 +204,36 @@ router.get("/student/progress", async (req: AuthenticatedRequest, res) => {
       return;
     }
     if (!masteryGateEnabled()) {
-      res.json({ enabled: false, passedLessonIds: [], threshold: MASTERY_PASS_PERCENT });
+      res.json({ enabled: false, passedLessonIds: [], quizLessonIds: [], threshold: MASTERY_PASS_PERCENT });
       return;
     }
 
     const studentIds = await selfLinkedStudentIds(req.user!.id);
+
+    // Quizzes the student could sit right now: published, link not expired,
+    // set to a live class they are in. Closed or expired ones hold nobody back.
+    const classIds = studentIds.length
+      ? (
+          await db
+            .select({ classGroupId: classMemberships.classGroupId })
+            .from(classMemberships)
+            .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
+            .where(and(inArray(classMemberships.studentId, studentIds), isNull(classGroups.archivedAt)))
+        ).map(m => m.classGroupId)
+      : [];
+    const now = new Date();
+    const openExams = classIds.length
+      ? (
+          await db
+            .select({
+              objectiveIds: evaluations.objectiveIds,
+              shareCodeExpiresAt: evaluations.shareCodeExpiresAt,
+            })
+            .from(evaluations)
+            .where(and(inArray(evaluations.classGroupId, [...new Set(classIds)]), eq(evaluations.status, "published")))
+        ).filter(e => !e.shareCodeExpiresAt || e.shareCodeExpiresAt.getTime() > now.getTime())
+      : [];
+
     const sittings = studentIds.length
       ? await db
           .select({
@@ -225,6 +250,7 @@ router.get("/student/progress", async (req: AuthenticatedRequest, res) => {
     res.json({
       enabled: true,
       passedLessonIds: passedLessonIds(sittings, lessonIdsForObjectiveIds),
+      quizLessonIds: quizLessonIds(openExams, lessonIdsForObjectiveIds),
       threshold: MASTERY_PASS_PERCENT,
     });
   } catch (err) {

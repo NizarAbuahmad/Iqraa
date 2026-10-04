@@ -17,6 +17,7 @@
  */
 import { apiFetch, apiJson, getApiBaseUrl } from './apiClient.ts';
 import { fetchWithTimeout } from './fetchWithTimeout.ts';
+import { NO_PROGRESS, type MasteryProgress } from './lessonLock.ts';
 import type { StudentResponse } from './studentAnswers.ts';
 import type { CompetencyKey, CompetencyScore, LevelKey } from './evaluations.ts';
 
@@ -222,6 +223,25 @@ export function getExamResult(token: string): Promise<{ ready: boolean; result?:
 export async function getMyExams(): Promise<import('./myExams.ts').MyExam[]> {
   const data = await apiJson<{ exams: import('./myExams.ts').MyExam[] }>('/student/exams');
   return data.exams ?? [];
+}
+
+/**
+ * What the mastery gate needs: which lessons the student has passed and which
+ * have a quiz to pass. Never throws — any failure answers "gate off", so a
+ * lookup that cannot complete locks nothing (see `lessonLock.ts`).
+ */
+export async function getMyProgress(): Promise<MasteryProgress> {
+  try {
+    const data = await apiJson<Partial<MasteryProgress>>('/student/progress');
+    if (!data.enabled) return NO_PROGRESS;
+    return {
+      enabled: true,
+      passedLessonIds: Array.isArray(data.passedLessonIds) ? data.passedLessonIds : [],
+      quizLessonIds: Array.isArray(data.quizLessonIds) ? data.quizLessonIds : [],
+    };
+  } catch {
+    return NO_PROGRESS;
+  }
 }
 
 /**

@@ -5,7 +5,12 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { MASTERY_PASS_PERCENT, passedLessonIds, type SittingForProgress } from "../lessonProgress.ts";
+import {
+  MASTERY_PASS_PERCENT,
+  passedLessonIds,
+  quizLessonIds,
+  type SittingForProgress,
+} from "../lessonProgress.ts";
 
 // objective "oN" belongs to lesson "lN"; "oX" belongs to no lesson.
 const lessonsOf = (ids: readonly string[] | null | undefined) =>
@@ -14,6 +19,20 @@ const lessonsOf = (ids: readonly string[] | null | undefined) =>
 function sitting(over: Partial<SittingForProgress> = {}): SittingForProgress {
   return { objectiveIds: ["o1"], percent: "85.00", isProvisional: false, ...over };
 }
+
+describe("quizLessonIds", () => {
+  it("lists only lessons an exam covers on its own, once each", () => {
+    const exams = [
+      { objectiveIds: ["o1"] },
+      { objectiveIds: ["o1", "o1"] },
+      { objectiveIds: ["o2", "o3"] },
+      { objectiveIds: ["oX"] },
+      { objectiveIds: null },
+      { objectiveIds: ["o4"] },
+    ];
+    assert.deepEqual(quizLessonIds(exams, lessonsOf), ["l1", "l4"]);
+  });
+});
 
 describe("passedLessonIds", () => {
   it("passes a lesson at or above the mark, and not below it", () => {

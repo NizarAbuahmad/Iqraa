@@ -33,6 +33,24 @@ export interface SittingForProgress {
  *   practice `lessonIdsForObjectiveIds`. Injected so this stays free of the
  *   curriculum bundle and testable with plain arrays.
  */
+/**
+ * The lessons that have a quiz a student can sit now — the only lessons the
+ * gate may hold anyone behind. A lesson with no open quiz must never lock the
+ * next one, or the few lessons that have quizzes would dead-end the rest.
+ * Same single-lesson rule as `passedLessonIds`, for the same reason.
+ */
+export function quizLessonIds(
+  exams: readonly { objectiveIds: readonly string[] | null | undefined }[],
+  lessonsOf: (objectiveIds: readonly string[] | null | undefined) => string[],
+): string[] {
+  const out = new Set<string>();
+  for (const e of exams) {
+    const lessons = lessonsOf(e.objectiveIds);
+    if (lessons.length === 1) out.add(lessons[0]!);
+  }
+  return [...out];
+}
+
 export function passedLessonIds(
   sittings: readonly SittingForProgress[],
   lessonsOf: (objectiveIds: readonly string[] | null | undefined) => string[],

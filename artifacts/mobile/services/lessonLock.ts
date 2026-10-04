@@ -1,0 +1,42 @@
+/**
+ * Which lessons of a unit a student sees locked, decided from
+ * `GET /student/progress` (what "passed" means is `passedLessonIds` on the
+ * server). Pure and free of React Native, so it runs under the bare runner.
+ *
+ * The rule: lessons are read in order, and everything *after* the first lesson
+ * whose open quiz has not been passed is locked. That lesson itself stays
+ * open — a student has to be able to read it to sit its quiz.
+ *
+ * **Fails open everywhere.** A lesson with no open quiz never holds anyone
+ * back, and a gate that is off or a request that failed locks nothing: a lock
+ * is the one thing here that can stop a child, so any doubt means unlocked.
+ */
+export interface MasteryProgress {
+  enabled: boolean;
+  passedLessonIds: string[];
+  /** Lessons with a quiz the student can sit now; only these can block. */
+  quizLessonIds: string[];
+}
+
+/** What a failed or disabled lookup stands for: nothing is locked. */
+export const NO_PROGRESS: MasteryProgress = { enabled: false, passedLessonIds: [], quizLessonIds: [] };
+
+export interface LockState {
+  locked: Set<string>;
+  /** The lesson whose quiz is holding the rest back, for the explanation. */
+  blockedBy: string | null;
+}
+
+export function lockState(orderedLessonIds: readonly string[], progress: MasteryProgress): LockState {
+  const locked = new Set<string>();
+  if (!progress.enabled) return { locked, blockedBy: null };
+
+  const quiz = new Set(progress.quizLessonIds);
+  const passed = new Set(progress.passedLessonIds);
+  let blockedBy: string | null = null;
+  for (const id of orderedLessonIds) {
+    if (blockedBy) locked.add(id);
+    else if (quiz.has(id) && !passed.has(id)) blockedBy = id;
+  }
+  return { locked, blockedBy: locked.size > 0 ? blockedBy : null };
+}
