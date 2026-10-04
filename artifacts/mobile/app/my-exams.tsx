@@ -30,7 +30,9 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { goBack } from '@/services/navigation';
-import { getMyExams } from '@/services/studentExam';
+import { getMyExams, retakeExam } from '@/services/studentExam';
+import { confirm } from '@/services/confirm';
+import { useMasteryProgress } from '@/hooks/useMasteryProgress';
 import {
   MY_EXAM_STATE_KEY,
   myExamAction,
@@ -75,6 +77,8 @@ export default function MyExamsScreen() {
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [openResult, setOpenResult] = useState<string | null>(null);
+  const progress = useMasteryProgress();
+  const [retaking, setRetaking] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError('');
@@ -109,6 +113,29 @@ export default function MyExamsScreen() {
       return;
     }
     if (exam.shareCode) router.push(`/take/${exam.shareCode}` as never);
+  };
+
+  const onRetake = async (exam: MyExam) => {
+    const go = await confirm({
+      title: t('masteryRetakeConfirmTitle'),
+      message: t('masteryRetakeConfirmBody'),
+      confirmLabel: t('masteryRetake'),
+      cancelLabel: t('masteryClose'),
+    });
+    if (!go) return;
+    setRetaking(exam.evaluationId);
+    setError('');
+    try {
+      const { shareCode } = await retakeExam(exam.evaluationId);
+      // The old sitting is gone, so opening the link starts a fresh one.
+      if (shareCode) router.push(`/take/${shareCode}` as never);
+      else await load();
+    } catch (e) {
+      setError(apiErrorMessage(e, 'masteryRetakeFailed', t));
+      await load();
+    } finally {
+      setRetaking(null);
+    }
   };
 
   return (
@@ -179,6 +206,9 @@ export default function MyExamsScreen() {
             exam={exam}
             open={openResult === exam.evaluationId}
             onPress={() => onRow(exam)}
+            canRetake={progress.retakeEvaluationIds.includes(exam.evaluationId)}
+            retaking={retaking === exam.evaluationId}
+            onRetake={() => void onRetake(exam)}
             colors={colors}
             isRTL={isRTL}
             lang={lang}
@@ -191,11 +221,15 @@ export default function MyExamsScreen() {
 }
 
 function ExamRow({
-  exam, open, onPress, colors, isRTL, lang, t,
+  exam, open, onPress, canRetake, retaking, onRetake, colors, isRTL, lang, t,
 }: {
   exam: MyExam;
   open: boolean;
   onPress: () => void;
+  /** A failed lesson quiz the student may sit again (mastery gate). */
+  canRetake: boolean;
+  retaking: boolean;
+  onRetake: () => void;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   lang: 'ar' | 'en';
@@ -219,7 +253,10 @@ function ExamRow({
 
   const levelKey = exam.result?.levelKey ? LEVEL_LABEL_KEY[exam.result.levelKey] : undefined;
 
+  // The retake bar sits beside the card, not inside it: the card is a button,
+  // and a button inside a button is invalid on the web build.
   return (
+    <View style={{ gap: 8 }}>
     <Pressable
       onPress={onPress}
       disabled={!action}
@@ -273,6 +310,31 @@ function ExamRow({
         </View>
       ) : null}
     </Pressable>
+    {canRetake ? (
+      <View
+        style={[
+          styles.retakeBar,
+          { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius },
+        ]}
+      >
+        <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+          {t('masteryNotPassed')}
+        </Text>
+        <Pressable
+          onPress={onRetake}
+          disabled={retaking}
+          accessibilityRole="button"
+          style={[styles.cta, { backgroundColor: ACCENT_FILL, opacity: retaking ? 0.6 : 1 }]}
+        >
+          {retaking ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('masteryRetake')}</Text>
+          )}
+        </Pressable>
+      </View>
+    ) : null}
+    </View>
   );
 }
 
@@ -289,5 +351,6 @@ const styles = StyleSheet.create({
   rowTop: { alignItems: 'flex-start', gap: 12 },
   stateIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   chip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  retakeBar: { alignItems: 'center', gap: 12, borderWidth: 1, paddingVertical: 10, paddingHorizontal: 14 },
   cta: { alignSelf: 'center', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
 });

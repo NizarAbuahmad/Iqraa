@@ -266,6 +266,36 @@ export const gradingJobs = pgTable(
   t => [index("grading_jobs_status_idx").on(t.status)],
 );
 
+/**
+ * One row per time a student threw away a failed sitting to try again.
+ *
+ * A retake deletes the `attempts` row (and with it the answers and result), so
+ * the next claim gets a fresh sitting through the ordinary path and nothing
+ * that reads "the attempt for this student and exam" has to know retakes
+ * exist. What would otherwise be lost lives here: the mark that was thrown
+ * away, for the teacher, and the row count, for the cap.
+ *
+ * The `attempts` unique key on (evaluation, student) is deliberately left
+ * alone — swapping a constraint on a live table is the riskier migration.
+ */
+export const attemptRetakes = pgTable(
+  "attempt_retakes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    evaluationId: uuid("evaluation_id")
+      .notNull()
+      .references(() => evaluations.id, { onDelete: "cascade" }),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "cascade" }),
+    /** The percent on the sitting that was discarded. */
+    failedPercent: numeric("failed_percent", { precision: 5, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  t => [index("attempt_retakes_eval_student_idx").on(t.evaluationId, t.studentId)],
+);
+
+export type AttemptRetake = typeof attemptRetakes.$inferSelect;
 export type EvaluationAssignment = typeof evaluationAssignments.$inferSelect;
 export type Attempt = typeof attempts.$inferSelect;
 export type AttemptAnswer = typeof attemptAnswers.$inferSelect;

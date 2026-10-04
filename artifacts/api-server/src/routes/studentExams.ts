@@ -21,6 +21,7 @@ import { Router } from "express";
 import {
   db,
   attemptResults,
+  attemptRetakes,
   attempts,
   classGroups,
   classMemberships,
@@ -28,13 +29,15 @@ import {
   rosterLinks,
   students,
 } from "@workspace/db";
-import { and, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { lessonIdsForObjectiveIds } from "@workspace/curriculum";
 import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { masteryGateEnabled, studentAccountsEnabled } from "../lib/features.js";
 import { logger } from "../lib/logger";
+import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { studentGradeIds } from "../lib/studentGrades.ts";
 import { MASTERY_PASS_PERCENT, passedLessonIds, quizLessonIds } from "../modules/assessment/lessonProgress.ts";
+import { retakeDecision } from "../modules/assessment/retake.ts";
 import {
   sortStudentExams,
   studentExamRow,
@@ -54,6 +57,72 @@ async function selfLinkedStudentIds(userId: string): Promise<string[]> {
     .innerJoin(students, eq(students.id, rosterLinks.studentId))
     .where(and(eq(rosterLinks.userId, userId), eq(rosterLinks.relation, "self"), isNull(students.archivedAt)));
   return [...new Set(linked.map(l => l.studentId))];
+}
+
+interface RetakeCandidate {
+  attemptId: string;
+  evaluationId: string;
+  studentId: string;
+  shareCode: string | null;
+  decision: ReturnType<typeof retakeDecision>;
+  failedPercent: unknown;
+}
+
+/**
+ * Every submitted sitting these roster rows hold, each with the verdict on
+ * whether it may be thrown away for a retake. Shared by `/student/progress`
+ * (which lists the eligible ones) and the retake route (which acts on one),
+ * so "may retake" is decided in exactly one place. Throws a missing-table
+ * error if `attempt_retakes` has not been pushed; callers decide what that means.
+ */
+async function loadRetakeCandidates(studentIds: string[], now: Date): Promise<RetakeCandidate[]> {
+  if (studentIds.length === 0) return [];
+  const sittings = await db
+    .select({
+      attemptId: attempts.id,
+      evaluationId: attempts.evaluationId,
+      studentId: attempts.studentId,
+      submittedAt: attempts.submittedAt,
+      percent: attemptResults.percent,
+      isProvisional: attemptResults.isProvisional,
+      objectiveIds: evaluations.objectiveIds,
+      status: evaluations.status,
+      shareCode: evaluations.shareCode,
+      shareCodeExpiresAt: evaluations.shareCodeExpiresAt,
+    })
+    .from(attempts)
+    .innerJoin(evaluations, eq(evaluations.id, attempts.evaluationId))
+    .leftJoin(attemptResults, eq(attemptResults.attemptId, attempts.id))
+    .where(and(inArray(attempts.studentId, studentIds), isNotNull(attempts.submittedAt)));
+
+  const used = await db
+    .select({
+      evaluationId: attemptRetakes.evaluationId,
+      studentId: attemptRetakes.studentId,
+      n: sql<number>`count(*)::int`,
+    })
+    .from(attemptRetakes)
+    .where(inArray(attemptRetakes.studentId, studentIds))
+    .groupBy(attemptRetakes.evaluationId, attemptRetakes.studentId);
+  const usedBy = new Map(used.map(u => [`${u.evaluationId}:${u.studentId}`, u.n]));
+
+  return sittings.map(s => ({
+    attemptId: s.attemptId,
+    evaluationId: s.evaluationId,
+    studentId: s.studentId,
+    shareCode: s.shareCode,
+    failedPercent: s.percent,
+    decision: retakeDecision({
+      submitted: s.submittedAt !== null,
+      // No result row means grading never ran; treat it as not final.
+      isProvisional: s.isProvisional ?? true,
+      percent: s.percent,
+      threshold: MASTERY_PASS_PERCENT,
+      retakesUsed: usedBy.get(`${s.evaluationId}:${s.studentId}`) ?? 0,
+      singleLesson: lessonIdsForObjectiveIds(s.objectiveIds).length === 1,
+      open: s.status === "published" && (!s.shareCodeExpiresAt || s.shareCodeExpiresAt.getTime() > now.getTime()),
+    }),
+  }));
 }
 
 /** How far a sitting has got, so a duplicate keeps the more advanced one. */
@@ -204,7 +273,13 @@ router.get("/student/progress", async (req: AuthenticatedRequest, res) => {
       return;
     }
     if (!masteryGateEnabled()) {
-      res.json({ enabled: false, passedLessonIds: [], quizLessonIds: [], threshold: MASTERY_PASS_PERCENT });
+      res.json({
+        enabled: false,
+        passedLessonIds: [],
+        quizLessonIds: [],
+        retakeEvaluationIds: [],
+        threshold: MASTERY_PASS_PERCENT,
+      });
       return;
     }
 
@@ -247,15 +322,96 @@ router.get("/student/progress", async (req: AuthenticatedRequest, res) => {
           .where(and(inArray(attempts.studentId, studentIds), isNotNull(attempts.submittedAt)))
       : [];
 
+    // Which failed quizzes could be retaken. If `attempt_retakes` has not been
+    // pushed yet, offer none rather than failing the whole gate.
+    let retakeEvaluationIds: string[] = [];
+    try {
+      retakeEvaluationIds = (await loadRetakeCandidates(studentIds, now))
+        .filter(c => c.decision.ok)
+        .map(c => c.evaluationId);
+    } catch (err) {
+      if (!isSchemaMissing(err)) throw err;
+      logger.error({ err }, "attempt_retakes is missing from this database; offering no retakes");
+    }
+
     res.json({
       enabled: true,
       passedLessonIds: passedLessonIds(sittings, lessonIdsForObjectiveIds),
       quizLessonIds: quizLessonIds(openExams, lessonIdsForObjectiveIds),
+      retakeEvaluationIds: [...new Set(retakeEvaluationIds)],
       threshold: MASTERY_PASS_PERCENT,
     });
   } catch (err) {
     logger.error({ err }, "student progress failed");
     res.status(500).json({ error: "Failed to load your progress" });
+  }
+});
+
+/**
+ * Throw away a failed lesson-quiz sitting so the student can sit it again.
+ *
+ * Deletes the `attempts` row (answers, grades and result go with it by
+ * cascade) and records the discarded mark in `attempt_retakes`, so the next
+ * `/take/:code/claim-self` starts a clean sitting through the ordinary path.
+ * Whether it is allowed is `retakeDecision`; the refusal code is returned so
+ * the app can say why. The delete and the record are one transaction, and the
+ * delete is guarded on `submitted_at`, so two taps cannot both succeed.
+ */
+router.post("/student/exams/:evaluationId/retake", async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not available yet.",
+      });
+      return;
+    }
+    if (!masteryGateEnabled()) {
+      res.status(403).json({ code: "mastery_gate_disabled", error: "Retakes are not available." });
+      return;
+    }
+
+    const studentIds = await selfLinkedStudentIds(req.user!.id);
+    const evaluationId = req.params["evaluationId"] as string;
+    const candidate = (await loadRetakeCandidates(studentIds, new Date())).find(
+      c => c.evaluationId === evaluationId,
+    );
+    if (!candidate) {
+      res.status(404).json({ code: "no_sitting", error: "You have no finished sitting on this exam." });
+      return;
+    }
+    if (!candidate.decision.ok) {
+      res.status(409).json({ code: candidate.decision.code, error: "This quiz cannot be retaken." });
+      return;
+    }
+
+    const failedPercent = Number(candidate.failedPercent);
+    const done = await db.transaction(async tx => {
+      const removed = await tx
+        .delete(attempts)
+        .where(and(eq(attempts.id, candidate.attemptId), isNotNull(attempts.submittedAt)))
+        .returning({ id: attempts.id });
+      if (removed.length === 0) return false;
+      await tx.insert(attemptRetakes).values({
+        evaluationId: candidate.evaluationId,
+        studentId: candidate.studentId,
+        failedPercent: (Number.isFinite(failedPercent) ? failedPercent : 0).toFixed(2),
+      });
+      return true;
+    });
+    if (!done) {
+      res.status(409).json({ code: "already_reset", error: "This sitting was already reset." });
+      return;
+    }
+    res.json({ ok: true, shareCode: candidate.shareCode });
+  } catch (err) {
+    if (isSchemaMissing(err)) {
+      logger.error({ err }, "retake failed — attempt_retakes table is missing from this database");
+      res.status(503).json({ code: "retakes_unavailable", error: "Retakes are not set up on this server yet." });
+      return;
+    }
+    logger.error({ err }, "student retake failed");
+    res.status(500).json({ error: "Failed to reset this quiz" });
   }
 });
 

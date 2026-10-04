@@ -16,10 +16,17 @@ export interface MasteryProgress {
   passedLessonIds: string[];
   /** Lessons with a quiz the student can sit now; only these can block. */
   quizLessonIds: string[];
+  /** Failed quizzes the student may throw away and sit again. */
+  retakeEvaluationIds: string[];
 }
 
 /** What a failed or disabled lookup stands for: nothing is locked. */
-export const NO_PROGRESS: MasteryProgress = { enabled: false, passedLessonIds: [], quizLessonIds: [] };
+export const NO_PROGRESS: MasteryProgress = {
+  enabled: false,
+  passedLessonIds: [],
+  quizLessonIds: [],
+  retakeEvaluationIds: [],
+};
 
 export interface LockState {
   locked: Set<string>;
