@@ -14938,5 +14938,31 @@ a name and the teacher chose to let them talk.
   the reports already on record read correctly too; anything that is not a
   known key is shown as written.
 
-Not done: L13 — the inbox still loads every message of every thread on each
-poll, and two screens poll it.
+L13 (the inbox loading every message on each poll) was fixed the next
+entry down.
+
+## The inbox stops loading every message it has ever held, 2026-10-04
+
+**`GET /messaging/threads` read every message of every thread the caller is
+in, on every poll, to show one latest message and one unread number per
+thread.** A class group gains a message per announcement and loses none, and
+the app polls this route every 20 s from two places (the tab badge and the
+inbox), so each poll grew with the whole history of every class.
+
+Now `lib/inboxSummary.ts` asks the database for exactly those two things: a
+`LATERAL … LIMIT 1` per thread for the latest visible message, and one grouped
+count of unread ones. Measured on a local Postgres with this schema and 480k
+messages: the latest-message lookup takes 0.2 ms, against 260 ms for a
+`DISTINCT ON` version, which still sorted every row. Checked against the old
+in-memory logic on randomly seeded threads (archived messages, blocked
+senders, null and set read times): 388 comparisons, 0 differences. That check
+was a scratch script against a throwaway local database, not a committed test
+— the api-server suite has no database.
+
+One visible change: the sender name on the inbox preview is now looked up for
+the message actually shown. It used to be looked up for the latest message
+*before* blocked senders were removed, so a thread whose newest message came
+from someone the viewer blocked showed its preview with no name.
+
+Not done: the two pollers still each fetch the full list every 20 s; sharing
+one fetch between the badge and the inbox would need a shared client store.
