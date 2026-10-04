@@ -100,7 +100,7 @@ export default function LessonDetailScreen() {
           onPress={() => router.replace('/my-exams' as never)}
           style={{ backgroundColor: colors.primary, paddingHorizontal: 22, paddingVertical: 12, borderRadius: colors.radius }}
         >
-          <Text style={{ color: readableOn(colors.primary, '#FFFFFF'), fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+          <Text style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
             {t('masteryGoToExams')}
           </Text>
         </Pressable>
