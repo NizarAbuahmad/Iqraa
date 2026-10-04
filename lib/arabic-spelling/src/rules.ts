@@ -470,7 +470,8 @@ const alifLayyinaFawqThulathiya: SpellingRule = {
     { grade: 5, correct: "الدُّنْيَا", wrong: ["الدنيى"] },
     // "مستشفى" bare = same as correct bare; replace with "مستشفا" (ى→ا error).
     { grade: 5, correct: "مُسْتَشْفَى", wrong: ["مستشفا", "مستشفي"] },
-    { grade: 5, correct: "إِلَّا", wrong: ["الا", "إلى"] },
+    // Not «إلى»: that is a different real word, so out of context it is a second right answer.
+    { grade: 5, correct: "إِلَّا", wrong: ["الا"] },
     { grade: 5, correct: "مَتَى", wrong: ["متا"] },
   ],
 };
