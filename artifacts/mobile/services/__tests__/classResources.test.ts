@@ -14,6 +14,7 @@ import {
   isInsecureResource,
   mergeClassShelf,
   openTargetFor,
+  withAddedResource,
   type ClassResource,
 } from '../classResources.ts';
 import type { ResourceItem } from '../resourceCatalog.ts';
@@ -239,5 +240,28 @@ describe('isInsecureResource', () => {
   it('does not flag http on a row that is not a book-QR code', () => {
     assert.equal(isInsecureResource(resource({ id: 'u', source: 'uploaded', url: 'http://example.test/v' })), false);
     assert.equal(isInsecureResource(resource({ id: 'p', source: 'premade-sheet', url: 'http://example.test/s' })), false);
+  });
+});
+
+describe('withAddedResource', () => {
+  it('puts the row just added at the front, so the shelf reads newest first', () => {
+    const older = resource({ id: 'old', createdAt: '2026-10-03T08:00:00.000Z' });
+    const fresh = resource({ id: 'new', createdAt: '2026-10-04T08:00:00.000Z' });
+    const shelf = mergeClassShelf([], withAddedResource([older], fresh));
+    assert.deepEqual(shelf.map(e => e.key), ['resource:new', 'resource:old']);
+  });
+
+  it('never lists the same row twice, so the shelf has no duplicate keys', () => {
+    const row = resource({ id: 'r' });
+    const once = withAddedResource([row], resource({ id: 'r', title: 'copy' }));
+    assert.deepEqual(once.map(r => r.id), ['r']);
+    const keys = mergeClassShelf([], once).map(e => e.key);
+    assert.equal(new Set(keys).size, keys.length);
+  });
+
+  it('does not change the list it was given', () => {
+    const list = [resource({ id: 'a' })];
+    withAddedResource(list, resource({ id: 'b' }));
+    assert.deepEqual(list.map(r => r.id), ['a']);
   });
 });

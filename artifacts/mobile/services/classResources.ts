@@ -80,6 +80,19 @@ export function mergeClassShelf(
 }
 
 /**
+ * The shelf with a just-added row on it — the fallback when the add succeeded
+ * but the re-read that would normally bring the row back failed. The newest row
+ * goes first (the server lists newest first) and a row already there is not
+ * added twice, so the shelf never carries a duplicate key.
+ */
+export function withAddedResource(
+  resources: ClassResource[],
+  added: ClassResource,
+): ClassResource[] {
+  return resources.some(resource => resource.id === added.id) ? resources : [added, ...resources];
+}
+
+/**
  * `<source>:<nativeId>` for every resource already on the shelf — the same key
  * `ResourceItem.key` carries, so "already added" is one Set lookup in the picker.
  */

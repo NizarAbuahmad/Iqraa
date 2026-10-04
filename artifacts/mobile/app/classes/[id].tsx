@@ -82,6 +82,7 @@ import {
   addedKeys,
   mergeClassShelf,
   openTargetFor,
+  withAddedResource,
   type ClassResource,
 } from '@/services/classResources';
 import { openExternal } from '@/services/externalLinks';
@@ -521,8 +522,9 @@ export default function ClassDetailScreen() {
     if (!id || addingKey) return;
     setAddingKey(item.key);
     setPickerError('');
+    let added: ClassResource | null;
     try {
-      await addClassResource(id, addBodyFor(item, lang as 'ar' | 'en'));
+      added = await addClassResource(id, addBodyFor(item, lang));
     } catch {
       // Shown inside the picker: a toast on this screen would sit behind its Modal.
       setPickerError(t('classResourceFailed'));
@@ -530,13 +532,16 @@ export default function ClassDetailScreen() {
       return;
     }
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    trackEvent('class_resource_added', { source: item.source, mediaKind: item.kind });
-    // Re-read rather than splice: the server owns the snapshot, and a 409
-    // (already there) resolves quietly with nothing to splice at all.
+    // `null` is the 409 "already there": nothing was created, so nothing to count.
+    if (added) trackEvent('class_resource_added', { source: item.source, mediaKind: item.kind });
+    // Re-read rather than splice: the server owns the snapshot.
     try {
       setResources(await listClassResources(id));
     } catch {
-      // The add landed; the shelf catches up on the next load.
+      // The add landed, so this is not an error. If the re-read failed, put the
+      // row the server handed back on the shelf rather than leave the teacher
+      // looking at a shelf that seems to have ignored the tap.
+      if (added) setResources(prev => withAddedResource(prev, added));
     }
     setAddingKey(null);
   };
