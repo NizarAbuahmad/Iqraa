@@ -54,6 +54,7 @@ import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { toLatinDigits } from '@/services/latinDigits';
 import { playUri } from '@/services/englishAudio';
+import { isPaperQuestion } from '@/services/paperQuestion';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -81,17 +82,6 @@ const COMPETENCY_KEY: Record<CompetencyKey, TranslationKey> = {
 
 type Response = Record<string, unknown>;
 
-/**
- * A question from an exam the app never wrote: no prompt, nothing to
- * transcribe. Tested on the body rather than on `gradingMode`, so a manually
- * graded question that *does* carry its own text still renders it.
- */
-function isPaperQuestion(question: EvaluationQuestion): boolean {
-  // A read-aloud question has a passage, not a prompt — it was being
-  // labelled as a paper question it never was.
-  if (question.type === 'read_aloud') return false;
-  return !((question.body?.['prompt'] as string) ?? '').trim();
-}
 
 /**
  * The mark and comment as they sit in the boxes, before they're saved.

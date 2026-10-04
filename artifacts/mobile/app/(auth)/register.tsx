@@ -219,6 +219,9 @@ export default function RegisterScreen() {
             style={[styles.termsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: termsAccepted }}
+            // react-native-web 0.21 drops `accessibilityState`; only `aria-*`
+            // reaches the DOM, so a screen reader heard an unticked box.
+            aria-checked={termsAccepted}
           >
             <View style={[
               styles.checkbox,
@@ -231,11 +234,14 @@ export default function RegisterScreen() {
             </View>
             <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', flex: 1 }]}>
               {lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
-              <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/terms')}>
+              {/* Underlined: the two links fill most of the sentence, and
+                  tapping one opened the policy when the tap was meant to tick
+                  the box. Only «أوافق على» and the box itself toggle. */}
+              <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => router.push('/legal/terms')}>
                 {t('termsOfService')}
               </Text>
               {lang === 'ar' ? ' و' : ' and '}
-              <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/privacy')}>
+              <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => router.push('/legal/privacy')}>
                 {t('privacyPolicy')}
               </Text>
             </Text>

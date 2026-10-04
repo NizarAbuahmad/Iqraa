@@ -4,7 +4,8 @@
  * Usage: const { t } = useLanguage(); then t('key')
  */
 
-import { arCountPhrase } from './arCount.ts';
+import { arCountPhrase, arMarksPhrase, arQuestionsPhrase, enMarksPhrase } from './arCount.ts';
+import { formatMarks } from './studentAnswers.ts';
 
 export type Lang = 'ar' | 'en';
 
@@ -1547,6 +1548,12 @@ const translations = {
     publishEvaluationBtn: 'انشر التقييم',
     publishing: 'جارٍ النشر…',
     closeEvaluationBtn: 'أغلق الاختبار',
+    releaseResultsBtn: 'أعلن النتائج للطلبة',
+    hideResultsBtn: 'إخفاء النتائج عن الطلبة',
+    releaseResultsConfirm: 'سيرى كل طالب علامته في «اختباراتي» بعد اكتمال تصحيح ورقته. يمكنك إخفاء النتائج لاحقًا.',
+    releaseResultsFailed: 'تعذّر تحديث إعلان النتائج.',
+    resultsReleasedNote: 'النتائج معلنة: يرى كل طالب علامته حين يكتمل تصحيح ورقته.',
+    resultsNotReleasedNote: 'لم تُعلَن النتائج بعد — لا يرى الطلبة علاماتهم حتى تعلنها.',
     closeEvaluationConfirm: 'سيتوقف الرابط عن قبول طلبة جدد وإجابات جديدة. يمكن للطلبة الذين بدؤوا تسليم ما كتبوه. يمكنك إعادة النشر لفتحه مجددًا.',
     evaluationCloseFailed: 'تعذّر إغلاق الاختبار.',
     evaluationClosedNote: 'هذا الاختبار مُغلق. أعد النشر لفتح الرابط مجددًا.',
@@ -1658,7 +1665,7 @@ const translations = {
     extKindImage: 'صورة',
     extKindSimulation: 'محاكاة',
     extKindVideo: 'فيديو',
-    marksAbbrev: (n: string) => `${n} ع`,
+    marksAbbrev: (n: string) => `${formatMarks(n)} ع`,
     // «تم التحقق» يوصف المفتاح لا السؤال: البرنامج يتحقق من صحة الإجابة
     // رياضيًا، ولا يحكم على جودة السؤال نفسه.
     keyVerifiedBadge: 'مفتاح مُتحقَّق منه',
@@ -1721,7 +1728,9 @@ const translations = {
     takeConfirmName: 'هل هذا اسمك؟ لن تتمكّن من تغييره بعد البدء.',
     takeYesStart: 'نعم، ابدأ',
     takeNotMe: 'ليس أنا — أعد الاختيار',
-    takeQuestionsAndMarks: (n: string, marks: string) => `${n} أسئلة — ${marks} علامة`,
+    takeQuestionsAndMarks: (n: string, marks: string) => `${arQuestionsPhrase(Number(n))} — ${arMarksPhrase(marks)}`,
+    // Spelled out for the student; «ع» is the teacher screens' shorthand.
+    takeQuestionMarks: (n: string) => arMarksPhrase(n),
     takeProgress: (i: string, n: string) => `السؤال ${i} من ${n}`,
     takeWriteHere: 'اكتب إجابتك هنا…',
     takePrevious: 'السابق',
@@ -1781,7 +1790,7 @@ const translations = {
     recKindPractice: 'تدريب إضافي',
     recKindActivity: 'توسّع',
     recKindReassess: 'أعد التقييم بعد التدريس',
-    recEvidence: (pct: string, lost: string) => `${pct}٪ — خسر ${lost} علامة`,
+    recEvidence: (pct: string, lost: string) => `${pct}٪ — خسر ${arMarksPhrase(lost, true)}`,
     recBuildWorksheet: 'جهّز ورقة عمل',
     evalModeGenerate: 'ولّد الأسئلة',
     evalModePaper: 'امتحان ورقي',
@@ -3518,6 +3527,12 @@ const translations = {
     publishEvaluationBtn: 'Publish evaluation',
     publishing: 'Publishing…',
     closeEvaluationBtn: 'Close exam',
+    releaseResultsBtn: 'Release results to students',
+    hideResultsBtn: 'Hide results from students',
+    releaseResultsConfirm: "Each student will see their mark in «My exams» once their paper is fully marked. You can hide the results again later.",
+    releaseResultsFailed: 'Could not update the result release.',
+    resultsReleasedNote: 'Results released: each student sees their mark once their paper is fully marked.',
+    resultsNotReleasedNote: 'Results not released yet — students cannot see their marks until you release them.',
     closeEvaluationConfirm: 'The link will stop admitting new students and new answers. Students who already started can still hand in. Re-publish to reopen.',
     evaluationCloseFailed: 'Could not close the exam.',
     evaluationClosedNote: 'This exam is closed. Re-publish to reopen the link.',
@@ -3625,7 +3640,7 @@ const translations = {
     extKindImage: 'Image',
     extKindSimulation: 'Simulation',
     extKindVideo: 'Video',
-    marksAbbrev: (n: string) => `${n} marks`,
+    marksAbbrev: (n: string) => enMarksPhrase(n),
     keyVerifiedBadge: 'Key verified',
     keysVerifiedSummary: (n: string, m: string) =>
       `${n} of ${m} answer keys verified by the maths verifier`,
@@ -3683,7 +3698,8 @@ const translations = {
     takeConfirmName: 'Is this your name? You cannot change it after you start.',
     takeYesStart: 'Yes, start',
     takeNotMe: "That's not me — choose again",
-    takeQuestionsAndMarks: (n: string, marks: string) => `${n} questions — ${marks} marks`,
+    takeQuestionsAndMarks: (n: string, marks: string) => `${n} ${n === '1' ? 'question' : 'questions'} — ${enMarksPhrase(marks)}`,
+    takeQuestionMarks: (n: string) => enMarksPhrase(n),
     takeProgress: (i: string, n: string) => `Question ${i} of ${n}`,
     takeWriteHere: 'Write your answer here…',
     takePrevious: 'Previous',
@@ -3743,7 +3759,7 @@ const translations = {
     recKindPractice: 'More practice',
     recKindActivity: 'Extend',
     recKindReassess: 'Reassess after teaching',
-    recEvidence: (pct: string, lost: string) => `${pct}% — ${lost} marks lost`,
+    recEvidence: (pct: string, lost: string) => `${pct}% — ${enMarksPhrase(lost)} lost`,
     recBuildWorksheet: 'Build a worksheet',
     evalModeGenerate: 'Write the questions',
     evalModePaper: 'Paper exam',
