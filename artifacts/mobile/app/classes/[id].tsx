@@ -221,12 +221,15 @@ export default function ClassDetailScreen() {
     // Materials are a separate store with its own offline fallback, so a
     // roster failure must not blank the materials tab and vice versa.
     setMaterials(await getItems({ classId: id }));
-    // The shelf's second source, with its own try/catch like exams below: a
-    // failure keeps what was showing and never blanks the materials.
+    // The shelf's second source. Library items are an extra on this screen, not
+    // a reason to fail it: the server's own list already reads a missing table
+    // as an empty shelf, so a failure here is not worth a banner (which would
+    // also sit on the Students tab, in the server's English). Keep whatever was
+    // showing — an empty shelf on first load — and never blank the materials.
     try {
       setResources(await listClassResources(id));
-    } catch (err) {
-      setError(describe(err));
+    } catch {
+      // Deliberately silent; see above.
     }
     // The exams list has no fallback and throws on any non-2xx. Say so in the
     // banner and keep whatever was shown before rather than blanking the tab.
