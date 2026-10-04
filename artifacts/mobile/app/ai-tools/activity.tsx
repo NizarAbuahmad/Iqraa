@@ -1,3 +1,4 @@
+import { plainActivity } from '@/services/ai/activityText';
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -121,6 +122,22 @@ export default function ActivityScreen() {
   const groundedLesson: string | null = generated?.lesson
     ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
     : null;
+  /**
+   * The type, length and objective the activity on screen was built with —
+   * frozen like `generated`, because the pickers stay editable afterwards.
+   * Save used to read them live: switch the type picker to «فردي» after
+   * generating a game, press Save, and the game was stored with a form that
+   * reopens as an individual activity — Regenerate then built a different
+   * kind of activity than the one saved. A reopened activity starts from the
+   * form it was saved with.
+   */
+  const [builtWith, setBuiltWith] = useState<{ activityTypeIdx: number; durationIdx: number; objective: string } | null>(
+    () => (params.savedId ? {
+      activityTypeIdx: readIndexParam(params.activityTypeIdx, ACTIVITY_TYPE_IDS.length, 1),
+      durationIdx: readIndexParam(params.durationIdx, DURATION_VALUES.length, 1),
+      objective: params.objective ?? '',
+    } : null),
+  );
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
@@ -150,7 +167,7 @@ export default function ActivityScreen() {
     if (params.savedId) {
       getItem(params.savedId).then(item => {
         if (item) {
-          try { setResult(JSON.parse(item.content) as ActivityOutput); } catch { /* noop */ }
+          try { setResult(plainActivity(JSON.parse(item.content) as ActivityOutput)); } catch { /* noop */ }
           setFavorited(item.isFavorite);
         }
       });
@@ -177,7 +194,7 @@ export default function ActivityScreen() {
     // What a failed or cancelled run must hand back. It used to be cleared
     // up front and never restored, so a failed regenerate threw away the
     // unsaved activity the teacher was looking at.
-    const held = { result, generated };
+    const held = { result, generated, builtWith };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // activity — the KB serves that lesson's own content while the header
@@ -211,6 +228,7 @@ export default function ActivityScreen() {
       }, grounding), { signal: controller.signal });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
+      setBuiltWith({ activityTypeIdx, durationIdx, objective });
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (e) {
@@ -221,6 +239,7 @@ export default function ActivityScreen() {
       if (held.result) {
         setResult(held.result);
         setGenerated(held.generated);
+        setBuiltWith(held.builtWith);
       }
     } finally {
       abortRef.current = null;
@@ -249,7 +268,7 @@ export default function ActivityScreen() {
   const handleSave = async () => {
     if (!result) return;
     const title = getExportTitle();
-    const formState = { gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic, activityTypeIdx, durationIdx, objective };
+    const formState = { gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic, ...(builtWith ?? { activityTypeIdx, durationIdx, objective }) };
     // Built once: the two branches below used to each spell out the payload.
     // The grade is the localised name, as the lesson plan stores it.
     const payload = {

@@ -47,19 +47,20 @@ describe('chatRoleLabel', () => {
   });
 
   it('matches the exact i18n strings a teacher and a guardian already see elsewhere', () => {
-    // Same keys ParticipantPickerSheet.tsx and messaging/claim/[studentId].tsx
-    // already render inline — this pins that this helper reuses them rather
-    // than drifting into a second copy of the translation.
+    // Student/parent/teacher use the same keys ParticipantPickerSheet.tsx and
+    // messaging/claim/[studentId].tsx already render inline — this pins that
+    // this helper reuses them rather than drifting into a second copy. Admin
+    // has its own chat-only key: «مدير المدرسة» stays on profile/settings.
     const ar = getT('ar');
     assert.equal(chatRoleLabel('student', ar), 'طالب/ة');
     assert.equal(chatRoleLabel('parent', ar), 'وليّ أمر');
     assert.equal(chatRoleLabel('teacher', ar), 'معلم');
-    assert.equal(chatRoleLabel('school_admin', ar), 'مدير المدرسة');
+    assert.equal(chatRoleLabel('school_admin', ar), 'مسؤول');
 
     const en = getT('en');
     assert.equal(chatRoleLabel('student', en), 'Student');
     assert.equal(chatRoleLabel('parent', en), 'Parent');
     assert.equal(chatRoleLabel('teacher', en), 'Teacher');
-    assert.equal(chatRoleLabel('school_admin', en), 'School admin');
+    assert.equal(chatRoleLabel('school_admin', en), 'Admin');
   });
 });

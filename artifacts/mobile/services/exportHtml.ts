@@ -156,7 +156,7 @@ function htmlBase(
       padding-bottom: 4px; margin-bottom: 8px;
       border-bottom: 1px solid ${accent}33;
     }
-    .body-text { font-size: 12.5px; line-height: 1.8; color: #374151; }
+    .body-text { font-size: 12.5px; line-height: 1.8; color: #374151; white-space: pre-line; }
     ul { padding-${isRTL ? 'right' : 'left'}: 18px; }
     li { margin-bottom: 5px; font-size: 12.5px; color: #374151; line-height: 1.6; }
     /* Question cards — a numbered badge instead of a bold full stop. */
@@ -208,7 +208,7 @@ function htmlBase(
     }
     .step-body { flex: 1; }
     .step-title { font-size: 12.5px; font-weight: 700; color: #111827; margin-bottom: 3px; }
-    .step-desc { font-size: 11.5px; color: #6b7280; line-height: 1.55; }
+    .step-desc { font-size: 11.5px; color: #6b7280; line-height: 1.55; white-space: pre-line; }
     /* A tinted callout for the one line that matters most on the page. */
     .callout {
       background: ${accent}0F; border-radius: 8px; padding: 12px 14px;
@@ -870,7 +870,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .step-num { background:${ACCENT}; color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
 .step-title { font-weight:600; font-size:12px; flex:1; color:#111827; }
 .step-dur { font-size:10px; color:#9ca3af; }
-.step-desc { font-size:11.5px; color:#374151; line-height:1.6; }
+.step-desc { font-size:11.5px; color:#374151; line-height:1.6; white-space: pre-line; }
 .slide-footer { height:26px; border-top:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; padding:0 26px; flex-shrink:0; }
 .slide-footer span { font-size:9px; color:#9ca3af; }
 </style>
@@ -1259,7 +1259,7 @@ export function buildLessonFlowHTML(
   .step-num { min-width: 24px; height: 24px; border-radius: 50%; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .step-body { flex: 1; }
   .step-title { font-size: 12.5px; font-weight: 600; color: #111827; margin-bottom: 3px; }
-  .step-desc { font-size: 11.5px; color: #6b7280; line-height: 1.5; }
+  .step-desc { font-size: 11.5px; color: #6b7280; line-height: 1.5; white-space: pre-line; }
   /* Guided practice */
   .guided-text { font-size: 12.5px; color: #374151; line-height: 1.7; background: #f0fdf9; border-radius: 8px; padding: 14px; border: 1px solid ${TEAL}30; }
   /* Questions */

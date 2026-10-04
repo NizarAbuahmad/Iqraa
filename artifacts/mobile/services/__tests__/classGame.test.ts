@@ -26,13 +26,17 @@ import assert from 'node:assert/strict';
 import {
   BASE_POINTS,
   createGame,
+  hasGameScores,
   isAwarded,
+  isNobody,
+  medalFor,
   podium,
   resetScores,
   setAwards,
   standings,
   streakBonus,
   toggleAward,
+  toggleNobody,
 } from '../classGame.ts';
 
 const scoreOf = (state: ReturnType<typeof createGame>, teamId: string) =>
@@ -205,6 +209,122 @@ describe('podium', () => {
 
   it('is empty when nobody scored — never crowns an arbitrary team', () => {
     assert.deepEqual(podium(createGame(4, 5, true)), []);
+  });
+});
+
+describe('medalFor', () => {
+  it('is the medal of a RANK, not of a position in the list', () => {
+    assert.equal(medalFor(1, true), '🥇');
+    assert.equal(medalFor(2, true), '🥈');
+    assert.equal(medalFor(3, true), '🥉');
+    assert.equal(medalFor(4, true), null);
+  });
+
+  it('hands out none before anyone has scored — everybody is "first" at 0', () => {
+    assert.equal(medalFor(1, false), null);
+  });
+
+  it('a team that follows a tie for first gets third place, not second', () => {
+    // Two teams tie on top, a third trails: ranks are 1, 1, 3 — there is no
+    // rank 2. The podium used to medal groups by position, so the trailing
+    // team stood on the silver step.
+    let state = createGame(4, 5, true);
+    state = setAwards(state, 0, ['team-1', 'team-2']);
+    state = setAwards(state, 1, ['team-1', 'team-2']);
+    state = setAwards(state, 3, ['team-3']);
+    const groups = podium(state);
+    assert.deepEqual(groups.map(g => g[0]!.rank), [1, 3]);
+    assert.deepEqual(groups.map(g => medalFor(g[0]!.rank, true)), ['🥇', '🥉']);
+  });
+});
+
+describe('a question nobody got right', () => {
+  // The review's case: team 1 is right on Q0, Q1 and Q3. Q2 is the question
+  // that breaks its run — whether or not any OTHER team got it.
+  const teamOneRight = (extra: (s: ReturnType<typeof createGame>) => ReturnType<typeof createGame>) => {
+    let state = createGame(3, 4, true);
+    for (const q of [0, 1, 3]) state = toggleAward(state, q, 'team-1');
+    return scoreOf(extra(state), 'team-1');
+  };
+
+  it('breaks a streak exactly as when another team got it — the score cannot depend on the other teams', () => {
+    const otherTeamGotIt = teamOneRight(s => toggleAward(s, 2, 'team-2'));
+    const nobodyGotIt = teamOneRight(s => toggleNobody(s, 2));
+    assert.equal(nobodyGotIt, otherTeamGotIt);
+    // 100 + 150 (run of 2) + 100 (run restarted) — not 450.
+    assert.equal(nobodyGotIt, 350);
+  });
+
+  it('is unchanged for a question the teacher never adjudicated: skipping does not break a run', () => {
+    assert.equal(teamOneRight(s => s), 450);
+  });
+
+  it('is exactly reversible — a second press takes it back', () => {
+    const marked = toggleNobody(createGame(3, 4, true), 2);
+    assert.equal(isNobody(marked, 2), true);
+    const undone = toggleNobody(marked, 2);
+    assert.equal(isNobody(undone, 2), false);
+    assert.deepEqual(undone.settled, []);
+  });
+
+  it('replaces any awards on that question', () => {
+    let state = toggleAward(createGame(3, 4, true), 2, 'team-1');
+    state = toggleNobody(state, 2);
+    assert.equal(isAwarded(state, 2, 'team-1'), false);
+    assert.equal(isNobody(state, 2), true);
+    assert.equal(scoreOf(state, 'team-1'), 0);
+  });
+
+  it('is cleared the moment a team is credited, and a later un-credit does not restore it', () => {
+    let state = toggleNobody(createGame(3, 4, true), 2);
+    state = toggleAward(state, 2, 'team-1');
+    assert.equal(isNobody(state, 2), false);
+    state = toggleAward(state, 2, 'team-1');
+    // Back to "not adjudicated", not silently back to "nobody got it".
+    assert.equal(isNobody(state, 2), false);
+    assert.deepEqual(state.settled, []);
+  });
+
+  it('is cleared by setAwards too ("everyone got it")', () => {
+    const state = setAwards(toggleNobody(createGame(3, 4, true), 1), 1, ['team-1', 'team-2', 'team-3']);
+    assert.equal(isNobody(state, 1), false);
+  });
+
+  it('awards no points and does not count as a score on its own', () => {
+    const state = toggleNobody(createGame(3, 4, true), 0);
+    assert.equal(standings(state).every(t => t.score === 0 && t.correctCount === 0), true);
+    assert.equal(hasGameScores(state), false);
+    assert.deepEqual(podium(state), []);
+  });
+
+  it('resets with the rest of the ledger', () => {
+    const state = resetScores(toggleNobody(createGame(3, 4, true), 0));
+    assert.deepEqual(state.settled, []);
+  });
+
+  it('a live streak is broken at once, so the 🔥 on the strip goes out', () => {
+    let state = createGame(2, 4, true);
+    state = toggleAward(state, 0, 'team-1');
+    state = toggleAward(state, 1, 'team-1');
+    assert.equal(standings(state).find(t => t.id === 'team-1')!.streak, 2);
+    state = toggleNobody(state, 2);
+    assert.equal(standings(state).find(t => t.id === 'team-1')!.streak, 0);
+  });
+});
+
+describe('hasGameScores', () => {
+  it('is false for a fresh game and after a reset, true once anything is awarded', () => {
+    let state = createGame(3, 5, true);
+    assert.equal(hasGameScores(state), false);
+    state = toggleAward(state, 0, 'team-1');
+    assert.equal(hasGameScores(state), true);
+    assert.equal(hasGameScores(resetScores(state)), false);
+  });
+
+  it('ignores a question whose awards were all taken back', () => {
+    let state = toggleAward(createGame(3, 5, true), 0, 'team-1');
+    state = toggleAward(state, 0, 'team-1');
+    assert.equal(hasGameScores(state), false);
   });
 });
 
