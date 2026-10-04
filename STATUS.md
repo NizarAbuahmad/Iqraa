@@ -63,8 +63,7 @@ an announcement by default» below.
   guessed from a title 107 lessons share; Save stores the type, length and
   objective the activity was **built** with, not the live pickers; the
   evaluation-gap warm-up is saved with a group/20-min form, which is what
-  Regenerate really builds. Not changed, found in the same review: offline Regenerate
-  returns identical content for subjects with no concrete bank; Regenerate keeps
+  Regenerate really builds. Not changed, found in the same review: Regenerate keeps
   `savedId`, so Update overwrites the saved version; and typing «أنشئ نشاطًا»
   on `/home` opens the lesson plan, because `buildGeneratorNav` redirects the
   disabled `activity`/`homework` tools — part of the recorded `homeAiTools`
@@ -128,6 +127,25 @@ an announcement by default» below.
   `activityBlueprints.ts` is a keyword list: a geometric item it misses builds
   with cards instead of being measured. Tests: `handsOnActivity.test.ts`,
   `activityPrompts.test.ts`. Not looked at in a browser.
+- **Offline Regenerate returns something different for every subject**
+  (2026-10-04, follow-up). `MockAIService.generateActivity` never read
+  `regenerate`: maths and chemistry varied only because their banks draw items
+  at random, so Arabic, English, Islamic, history, biology, or a topic the book
+  does not hold got a byte-identical activity — and with `DEMO_MODE` on that is
+  the only path. Blueprints now take a `variant` (0 = the first version, to the
+  character); `nextActivityVariant` in `generators.ts` counts Regenerates per
+  lesson + format + language in memory (a plain request starts over, a reload
+  restarts the count). A variant changes the slots a blueprint fills from the
+  lesson — which key concepts and rules lead, and which wording the retrieval
+  prompt, the contestable claim, the game questions, the jigsaw parts and a
+  hands-on «challenge» use (`rotate`/`pick` over pools whose first entry is the
+  original text) — so each version differs from the last for every format, in
+  both languages, with or without a grounded lesson. **What it is not:** the
+  offline path has no bank for these subjects, so it re-frames the same lesson;
+  it does not invent new items. The live path is unchanged (it already sends
+  `regenerate`/`avoid`/`excludeVariantIds`). Only the activity generator was
+  touched — the other offline generators were not checked for the same
+  sameness. Tests: `activityRegenerate.test.ts`. Not looked at in a browser.
 - **Interface dates and times are written in Latin digits** (2026-10-03).
   Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
   «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
