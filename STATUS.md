@@ -1041,6 +1041,24 @@ appears in it; the within-class name dedup rule is inline and untestable.
 
 ## An English corner for Grades 1–4, 2026-09-25
 
+> **Grades 9 and 10 joined on 2026-10-04** — 56 more lessons: grade 9 both
+> semesters (36), grade 10 semester 1 (20). Grade 10 semester 2 has no
+> extracted vocabulary, so it has no lessons yet. The words come from
+> `vocabulary.ts` (the same list the lesson-page drill uses). The Arabic meanings
+> are in `lib/curriculum/src/data/english_vocabulary_ar.json`: 647 entries,
+> **drafted by Claude, not by a teacher, and not yet reviewed**. They were checked
+> by hand against each lesson for wrong senses (e.g. *still* water, *narrow*
+> trousers). A test pins that no two words in one lesson share a meaning, because
+> the Match game would then show two identical Arabic cards. The book's
+> annotations ("eager (phr)", "or learnt") are stripped by `hubWordFromBook`.
+> Units there hold several lessons, so a hub card adds the lesson title after
+> «الوحدة N» whenever its unit has more than one.
+> **Their audio is not generated yet**: until
+> `pnpm --filter @workspace/curriculum run english-audio` is re-run with the
+> keys, a 9–10 word's speaker button plays nothing. The narration prompt now
+> addresses a teenage student; the Grade 1–4 recordings keep their child-pitched
+> voice because the script skips existing files (`--force` would re-voice them).
+
 Anyone can practise the Grade 1–4 English lesson words at
 `/curriculum/english`, **with no account** — it's the first card on the `/play`
 games page. `/curriculum/english` is in `PUBLIC_ROUTES`; the rest of
