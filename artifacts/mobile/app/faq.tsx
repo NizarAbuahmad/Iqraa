@@ -102,7 +102,7 @@ export default function FaqScreen() {
                   onPress={() => toggle(entry.q)}
                   style={[styles.qRow, { flexDirection: rowDir }]}
                   accessibilityRole="button"
-                  accessibilityState={{ expanded: isOpen }}
+                  aria-expanded={isOpen}
                 >
                   <Text style={[styles.question, { color: colors.foreground, textAlign: align, flex: 1 }]}>
                     {t(entry.q)}

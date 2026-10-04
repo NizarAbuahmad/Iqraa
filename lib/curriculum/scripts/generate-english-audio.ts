@@ -30,9 +30,17 @@ const PREFIX = 'english-audio';
 const MODEL = 'gpt-4o-mini-tts';
 const VOICE = 'coral';
 // The books are British ("mum", "colourful", "trainers"), so the voice is too.
+//
+// Pitched at teenagers (Grades 9–10), not young children. The 458 Grade 1–4
+// words were voiced on 2026-09-25 with a "reading to a young child" prompt;
+// a normal run skips words that already have a file, so they keep that
+// recording, and a word both age groups share stays in its Grade 1–4 voice.
+// `--force` would re-voice ALL of them in this register — decide that on
+// purpose.
 const INSTRUCTIONS =
-  'You are reading a vocabulary card to a young child learning English. ' +
-  'Say only the given word or phrase, once, clearly and a little slowly, with a friendly British accent.';
+  'You are reading a vocabulary card to a teenage student learning English. ' +
+  'Say only the given word or phrase, once, clearly and at a natural, unhurried pace, ' +
+  'in a warm but not childish tone, with a British accent.';
 
 const force = process.argv.includes('--force');
 const dryRun = process.argv.includes('--dry-run');

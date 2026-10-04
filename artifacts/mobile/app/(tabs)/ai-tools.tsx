@@ -12,7 +12,7 @@ import { DEMO_MODE } from '@/services/ai/demoMode';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { openGeogebraGraphing } from '@/services/geogebra';
 import { trackEvent } from '@/services/analytics';
-import { getPickerSubjects } from '@/services/curriculumData';
+import { pickPrefillParams } from '@/services/lessonPrep';
 import { loadLessonPick } from '@/services/lessonContext';
 import {
   ALL_TOOLS,
@@ -21,7 +21,7 @@ import {
 } from '@/services/toolCatalog';
 
 
-async function runToolAction(tool: ToolDef) {
+async function runToolAction(tool: ToolDef, lang: 'ar' | 'en') {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   trackEvent('tool_opened', { toolId: tool.id, source: 'tools_tab' });
   if (tool.externalAction === 'geogebra-graphing') {
@@ -34,14 +34,12 @@ async function runToolAction(tool: ToolDef) {
     // routeParams always win; the teacher can still change it in the tool —
     // that change stays local to the material being generated.
     const pick = await loadLessonPick();
-    const prefill: Record<string, string> = {};
-    if (pick?.topic && !tool.routeParams?.topic) {
-      prefill.topic = pick.topic;
-      if (pick.subjectId) {
-        const idx = getPickerSubjects().findIndex(s => s.id === pick.subjectId);
-        if (idx >= 0) prefill.subjectIdx = String(idx);
-      }
-    }
+    // The lesson's own grade and subject travel with its title — see
+    // `pickPrefillParams`. An explicit `routeParams.topic` still wins whole:
+    // the pick's grade must not ride along with somebody else's topic.
+    const prefill: Record<string, string> = tool.routeParams?.topic
+      ? {}
+      : pickPrefillParams(pick, lang) as Record<string, string>;
     router.push({ pathname: tool.route as any, params: { ...prefill, ...tool.routeParams } });
   }
 }
@@ -62,6 +60,7 @@ function ToolCard({
   grid?: boolean;
 }) {
   const isExternal = !!tool.externalAction;
+  const { lang } = useLanguage();
 
   // A left-icon/right-text row reads fine at phone width, but stretched
   // across a desktop grid tile it leaves the icon and chevron stranded at
@@ -70,7 +69,7 @@ function ToolCard({
   if (grid) {
     return (
       <Pressable
-        onPress={() => { void runToolAction(tool); }}
+        onPress={() => { void runToolAction(tool, lang); }}
         style={({ pressed }) => [
           styles.gridCard,
           {
@@ -109,7 +108,7 @@ function ToolCard({
 
   return (
     <Pressable
-      onPress={() => { void runToolAction(tool); }}
+      onPress={() => { void runToolAction(tool, lang); }}
       style={({ pressed }) => [
         styles.card,
         compact && styles.cardCompact,
