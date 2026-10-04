@@ -148,14 +148,7 @@ function rules(ctx: ActivityBlueprintContext, n: number): string[] {
  */
 function jigsawParts(ctx: ActivityBlueprintContext): string[] {
   const ar = ctx.lang === 'ar';
-  if (ctx.practice.length >= 2) {
-    return ctx.practice.map(p => (ar ? `حلّ: ${p.text}` : `Solve: ${p.text}`));
-  }
-  const cs = concepts(ctx, 4);
-  if (cs.length >= 2) {
-    return cs.map(c => (ar ? `اشرح «${c}» بمثال من الكتاب` : `Explain “${c}” with a textbook example`));
-  }
-  return ar
+  const generic = ar
     ? [
         `عرّف ${ctx.topic} بكلماتك`,
         `أعطِ مثالًا يوضّح ${ctx.topic}`,
@@ -168,6 +161,17 @@ function jigsawParts(ctx: ActivityBlueprintContext): string[] {
         `Name one common error in ${ctx.topic}`,
         `Link ${ctx.topic} to a real situation`,
       ];
+  const cs = concepts(ctx, 4);
+  const base = ctx.practice.length >= 2
+    ? ctx.practice.map(p => (ar ? `حلّ: ${p.text}` : `Solve: ${p.text}`))
+    : cs.length >= 2
+      ? cs.map(c => (ar ? `اشرح «${c}» بمثال من الكتاب` : `Explain “${c}” with a textbook example`))
+      : generic;
+  // The format is built for groups of four — «a number 1–4», «four task
+  // cards». A lesson that yields only two or three tasks used to leave the
+  // fourth member of every group with nothing, so the answer was complete
+  // without them, which is exactly what the jigsaw exists to prevent.
+  return [...base, ...generic.slice(base.length)].slice(0, 4);
 }
 
 /**
