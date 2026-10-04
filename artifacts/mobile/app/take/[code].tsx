@@ -42,6 +42,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, useAuth } from '@/context/AuthContext';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookFigureRefsForLessons } from '@/services/bookFigureUri';
+import { questionRefersToFigure } from '@/services/questionFigures';
 import {
   StudentExamError,
   claimEvaluationAsSelf,
@@ -501,8 +502,15 @@ export default function TakeExamScreen() {
                   <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 16 }}>{t('takeYesStart')}</Text>
                 )}
               </Pressable>
-              <Pressable onPress={() => { setChosen(null); setPhase('pick'); }} hitSlop={8}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>
+              {/* Grey caption text read as a label, not a control, and a child who
+                  tapped the wrong name never found the way back. */}
+              <Pressable
+                onPress={() => { setChosen(null); setPhase('pick'); }}
+                hitSlop={8}
+                accessibilityRole="button"
+                style={[styles.navBtn, { borderColor: colors.border, minWidth: 200 }]}
+              >
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>
                   {t('takeNotMe')}
                 </Text>
               </Pressable>
@@ -601,7 +609,12 @@ export default function TakeExamScreen() {
   }
 
   const question = questions[index];
-  const examFigures = bookFigureRefsForLessons(lessonIds, lang === 'ar');
+  // Lesson-level, so on its own it sat under every question — a spelling item in a
+  // maths paper got the maths lesson's compass rose. Show it only where the
+  // question itself points at a figure.
+  const examFigures = question && questionRefersToFigure(question.body)
+    ? bookFigureRefsForLessons(lessonIds, lang === 'ar')
+    : [];
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {header}

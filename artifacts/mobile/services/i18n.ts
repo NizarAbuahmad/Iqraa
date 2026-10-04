@@ -1780,7 +1780,11 @@ const translations = {
     recKindPractice: 'تدريب إضافي',
     recKindActivity: 'توسّع',
     recKindReassess: 'أعد التقييم بعد التدريس',
-    recEvidence: (pct: string, lost: string) => `${pct}٪ — خسر ${lost} علامة`,
+    recEvidence: (pct: string, lost: string) => {
+      const n = Number(lost);
+      const marks = Number.isInteger(n) ? arCountPhrase(n, 'علامة', 'علامتين', 'علامات') : `${lost} علامة`;
+      return `${pct}٪ — خسر ${marks}`;
+    },
     recBuildWorksheet: 'جهّز ورقة عمل',
     evalModeGenerate: 'ولّد الأسئلة',
     evalModePaper: 'امتحان ورقي',
