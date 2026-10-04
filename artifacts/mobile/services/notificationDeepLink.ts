@@ -22,6 +22,11 @@ export function routeFromNotificationData(data: unknown): string | null {
   const threadId = threadIdFromNotificationData(data);
   if (threadId) return `/messaging/${threadId}`;
   if (typeof data !== 'object' || data === null) return null;
-  const screen = (data as Record<string, unknown>).screen;
+  const { screen, studentId } = data as Record<string, unknown>;
+  // A teacher told "someone linked to «name»" lands on that student's screen,
+  // where the linked accounts are listed with the unlink button.
+  if (screen === 'student-link') {
+    return typeof studentId === 'string' && studentId ? `/messaging/claim/${encodeURIComponent(studentId)}` : null;
+  }
   return typeof screen === 'string' && Object.hasOwn(SCREEN_ROUTES, screen) ? SCREEN_ROUTES[screen] : null;
 }

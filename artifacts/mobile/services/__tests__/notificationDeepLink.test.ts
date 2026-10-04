@@ -12,6 +12,11 @@ describe('routeFromNotificationData', () => {
     assert.equal(routeFromNotificationData({ screen: 'artifact-reports' }), '/admin/artifact-reports');
   });
 
+  it('opens the student screen, with its unlink button, for a link push', () => {
+    assert.equal(routeFromNotificationData({ screen: 'student-link', studentId: 's 1' }), '/messaging/claim/s%201');
+    assert.equal(routeFromNotificationData({ screen: 'student-link' }), null);
+  });
+
   it('ignores screens that are not whitelisted and malformed data', () => {
     assert.equal(routeFromNotificationData({ screen: '/admin/dashboard' }), null);
     assert.equal(routeFromNotificationData({ screen: 'toString' }), null);
