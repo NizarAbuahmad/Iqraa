@@ -1197,6 +1197,7 @@ const translations = {
     slidesIncludeAttachments: 'أضف مرفقاتي لهذا الدرس (صور وتسجيلات) إلى الشرائح',
     slidesSaved: 'حُفظت الشرائح في مساحتك',
     slidesUnsaved: 'أزلت الشرائح من مساحتك',
+    savedDeckUnreadable: 'تعذّر فتح العرض المحفوظ — يمكنك إنشاؤه من جديد.',
     // Prompt Slides
     promptSlidesTitle: 'اكتب فكرتك، وجهّز شرائحك',
     promptSlidesSubtitle: 'اكتب وصفًا لما تريده، واختر بين قالب مجاني فوري أو عرض يبنيه الذكاء الاصطناعي.',
@@ -3174,6 +3175,7 @@ const translations = {
     slidesIncludeAttachments: 'Include my attachments for this lesson (photos and recordings)',
     slidesSaved: 'Slides saved to your workspace',
     slidesUnsaved: 'Slides removed from your workspace',
+    savedDeckUnreadable: "Couldn't open the saved deck — you can build it again.",
     // Prompt Slides
     promptSlidesTitle: 'Write your idea, build your slides',
     promptSlidesSubtitle: 'Describe what you want, then choose an instant free template or AI-generated slides.',

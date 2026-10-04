@@ -33,3 +33,16 @@ export function readIndexParam(value: string | undefined, length: number, fallba
   if (!Number.isInteger(n) || n < 0 || n >= length) return fallback;
   return n;
 }
+
+/**
+ * A saved on/off toggle, read back from the route.
+ *
+ * `formState` holds booleans, and spreading it into route params turns them
+ * into the strings `'true'` / `'false'`. Anything else (absent, hand-written)
+ * keeps the screen's own default rather than flipping it.
+ */
+export function readFlagParam(value: string | undefined, fallback: boolean): boolean {
+  if (value === 'true' || value === '1') return true;
+  if (value === 'false' || value === '0') return false;
+  return fallback;
+}
