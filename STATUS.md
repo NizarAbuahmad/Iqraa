@@ -716,17 +716,21 @@ from this branch, Expo web, headless Chromium at 390×844 in Arabic):
 - *Opening.* A staff row called `window.open` and the browser requested
   `https://example.com/v` (the sandbox cannot reach that host, so the new tab
   was Chromium's error page). A premade row went to
-  `/workspace/view?premade=…` and the sheet rendered read-only.
-- *Removing.* ✕ removed only that row and did not also open it; the video was
-  still in `library_resources` and addable again in the picker. After
-  `DELETE FROM library_resources` a reload showed the row greyed out and
-  labelled «لم يعد متاحًا», not openable, with ✕ still working.
+  `/workspace/view?premade=…` and the sheet rendered read-only. The staff row
+  was **re-driven after the ✕ was made a sibling** and still opened.
+- *Removing.* ✕ removed only that row and did not also open it (re-driven after
+  the restructure: no new tab, no request to its link, still on the class
+  screen); the video was still in `library_resources` and addable again in the
+  picker. After `DELETE FROM library_resources` a reload showed the row greyed
+  out and labelled «لم يعد متاحًا»; its open action was a `disabled` button
+  (opacity 0.6), tapping it opened nothing, and ✕ still removed it.
 - *Book codes.* In a grade-10 civics class the picker had 5 book-QR rows. Two
   codes from the same book, added, read «… الفصل الأول — صفحة ٢٤» and
   «… — صفحة ٤٩» on the tab: distinguishable. No reachable code in today's
   catalogue is `http`, so the picker's per-row http warning was **not seen** in a
-  browser; the shelf row's same line was seen only in a server-side render of
-  the row (below).
+  browser; the shelf row's same line is covered by a unit test of
+  `isInsecureResource` and was seen only in a throwaway server-side render of the
+  row (not in the repo), never in a browser.
 - *Failures are visible.* With `class_resources` dropped and the picker open,
   tapping an item showed «تعذّر تحديث موارد الشعبة — حاول مرة أخرى» inside the
   picker (no «مضاف», no spinner; cleared on closing). With a row on the shelf
@@ -743,19 +747,23 @@ from this branch, Expo web, headless Chromium at 390×844 in Arabic):
   the route handlers and have no committed test.
 - *Nested buttons.* Before the fix a Library row on the tab put a `<button>`
   inside a `<button>` (React logged «`<button>` cannot be a descendant of
-  `<button>`» on every load). The open action and the ✕ are now siblings. A
-  server-side render of `ClassResourceRow` through react-native-web counted 1
-  nested `<button>` in the old row and 0 in the new one, for a live row, an
-  unavailable row (its open action `disabled`, the ✕ not) and an `http` book code
-  (which also showed the insecure line). **Not re-driven in a browser after the
-  fix:** the console-clean check (Chromium, a hand-run script that is not in the
-  repo) was not run for this change, so a console free of that error is
-  expected, not observed.
+  `<button>`» on every load). The open action and the ✕ are now siblings.
+  Re-driven in Chromium on Expo web with a hand-run script (not in the repo)
+  that added a video and a premade sheet, reloaded, opened, removed and
+  deleted-from-the-Library them: the DOM had **0** `<button>`s inside a
+  `<button>` with both rows showing (two ✕, each a real `<button>`), and the run
+  logged **0 console errors** apart from the 404/500 answers it injected on
+  purpose.
+- *Failure fallbacks, driven.* With every `GET …/resources` answered 404, the
+  class screen loaded and the Students tab showed no banner. With the add's
+  `POST` succeeding and the re-read after it answered 500, the picker still read
+  «مضاف» with no error, and the shelf listed the new row.
 
-**Not verified.** A native device (only Expo web, only Chromium, was driven).
-The failure fallbacks (a failed shelf read; an add whose re-read fails) and the
-`warn` log line were not driven: they have typecheck, and `withAddedResource` a
-unit test, and nothing more.
+**Not verified.** A native device, or any browser but Chromium (only Expo web
+in Chromium was driven; Firefox and Safari were not, so the nested-`<button>`
+fix is confirmed by the DOM and console in Chromium only). The `warn` log line
+for a missing table was not driven. The http line on a shelf row was never seen
+in a browser (see *Book codes*).
 
 **Open for the owner.** (a) A staff upload's `url` on the shelf is a snapshot of
 the composed R2 URL; if `R2_PUBLIC_BASE_URL` ever changes, those rows keep the
