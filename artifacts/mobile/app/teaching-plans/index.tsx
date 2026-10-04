@@ -319,25 +319,31 @@ export default function TeachingPlansScreen() {
     period. Opens that class's plan, or a new one already on the class, once
     the list has loaded; handled once per id so closing the form sticks.
   */
-  const { classId } = useLocalSearchParams<{ classId?: string }>();
+  const { classId, subjectId: linkSubjectId } = useLocalSearchParams<{ classId?: string; subjectId?: string }>();
   const handledClassId = useRef<string | null>(null);
   useEffect(() => {
-    if (loading || !classId || handledClassId.current === classId) return;
-    handledClassId.current = classId;
-    // A class taking several subjects can have a plan per subject, and the
-    // timetable slot behind this link does not say which subject the period
-    // is — so with more than one, leave the teacher on the list to choose
-    // rather than opening whichever was made first.
-    const existing = plans.filter(p => p.classGroupId === classId);
+    const key = `${classId ?? ''}:${linkSubjectId ?? ''}`;
+    if (loading || !classId || handledClassId.current === key) return;
+    handledClassId.current = key;
+    // A class taking several subjects can have a plan per subject. When the
+    // timetable period names its subject, open (or start) that subject's
+    // plan. When it does not, open the class's plan only if there is exactly
+    // one — otherwise leave the teacher on the list to choose rather than
+    // opening whichever was made first.
+    const cls = classes.find(c => c.id === classId);
+    const onClass = plans.filter(p => p.classGroupId === classId);
+    const existing = linkSubjectId
+      ? onClass.filter(p => planSubjectId(p, cls) === linkSubjectId)
+      : onClass;
     if (existing.length === 1) {
       openEdit(existing[0]!);
     } else if (existing.length === 0) {
       openCreate();
-      setForm(f => ({ ...f, classGroupId: classId }));
+      setForm(f => ({ ...f, classGroupId: classId, subjectId: linkSubjectId ?? '' }));
     }
     // openCreate/openEdit are plain closures over setters; keyed on the data.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, classId, plans]);
+  }, [loading, classId, linkSubjectId, plans]);
 
   const classNameFor = (id: string | null): string => {
     if (!id) return '';

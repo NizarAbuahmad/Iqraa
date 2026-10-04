@@ -122,6 +122,7 @@ import { formatNextPeriod } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
 import { listClasses, type ClassGroup } from '@/services/roster';
 import { classNameFor } from '@/services/materialClass';
+import { periodClassLabel } from '@/services/classSubjects';
 import { answerAppHelp } from '@/services/appHelp';
 import { TOOL_ASK_TARGETS, toolAskFromQuery, toolAskReply } from '@/services/chatToolAsk';
 import { formatInfographicText, isInfographicAsk } from '@/services/ai/infographic';
@@ -1735,7 +1736,7 @@ export default function IqraScreen() {
       setPeriodLine('');
       if (fromSchedule && next) {
         listClasses()
-          .then(classes => classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'))
+          .then(classes => periodClassLabel(classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'), next.subjectId, lang))
           .catch(() => null)
           .then(classLabel => setPeriodLine(formatNextPeriod(next, {
             classLabel, today: todayISO(), lang: lang as 'ar' | 'en',

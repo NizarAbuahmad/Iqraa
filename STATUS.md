@@ -589,11 +589,19 @@ parent thread for each copy.
   plan meant (`planSubjectId`, `services/planScope.ts`). Changing the subject
   of a plan that has scheduled lessons asks first, then clears them, because
   they belong to the old subject.
-- **The home card pools a class's plans.** A timetable slot names a class, not
-  a subject, so `nextPeriodLesson` reads the entries of every plan on the
-  class. If two subjects both have a lesson on that date, it shows the first
-  plan's lesson. Fixing that would need a subject on each timetable slot. The
-  «أضف الخطة» link opens a class's plan only when it has exactly one.
+- **A timetable period can name its subject:** `schedule_slots.subject_id`
+  (text, default `''`, **a third schema push**). The slot editor shows «مادة
+  هذه الحصة» when the class takes more than one subject. Tapping the selected
+  chip again clears it, and `''` stays a valid answer. Choosing another class
+  clears the subject, on the server too.
+- **The home card follows it.** `nextPeriodLesson` reads only that subject's
+  plans when the period names a subject. A plan with no subject counts as its
+  class's primary subject, using the classes `loadTimetable` now fetches. If
+  that subject has no plan, the period shows no lesson rather than borrowing
+  another subject's. A period that names no subject still pools every plan on
+  the class. The class label on the home card, the calendar and the timetable
+  reads «العاشر أ · الرياضيات». The «أضف الخطة» link carries the subject and
+  opens or starts that subject's plan.
 
 ## «اقترح ميزة» — teachers can suggest a feature, 2026-10-03
 

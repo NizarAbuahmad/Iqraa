@@ -42,7 +42,7 @@ describe('buildDayAgenda', () => {
   it('combines this weekday\'s filled periods with every plan\'s lessons on this date', () => {
     const agenda = buildDayAgenda('2026-09-20', PERIODS, SLOTS, PLANS);
     assert.deepEqual(agenda.periods, [
-      { schoolName: '', periodNumber: 1, startTime: '08:00', durationMinutes: 45, classGroupId: 'c1' },
+      { schoolName: '', periodNumber: 1, startTime: '08:00', durationMinutes: 45, classGroupId: 'c1', subjectId: '' },
     ]);
     assert.deepEqual(agenda.lessons, [
       { planId: 'p1', planTitle: 'Plan A', lessonId: 'l1' },
@@ -58,7 +58,7 @@ describe('buildDayAgenda', () => {
   it('picks up a different weekday\'s own periods', () => {
     const agenda = buildDayAgenda('2026-09-22', PERIODS, SLOTS, PLANS);
     assert.deepEqual(agenda.periods, [
-      { schoolName: '', periodNumber: 1, startTime: '08:00', durationMinutes: 45, classGroupId: 'c2' },
+      { schoolName: '', periodNumber: 1, startTime: '08:00', durationMinutes: 45, classGroupId: 'c2', subjectId: '' },
     ]);
     assert.deepEqual(agenda.lessons, [{ planId: 'p2', planTitle: 'Plan B', lessonId: 'l3' }]);
   });
@@ -79,7 +79,7 @@ describe('buildDayAgenda', () => {
 
   it('falls back to an empty startTime when the period itself was deleted', () => {
     const agenda = buildDayAgenda('2026-09-20', [], [{ dayOfWeek: 0, periodNumber: 1, classGroupId: 'c1' }], []);
-    assert.deepEqual(agenda.periods, [{ schoolName: '', periodNumber: 1, startTime: '', durationMinutes: 0, classGroupId: 'c1' }]);
+    assert.deepEqual(agenda.periods, [{ schoolName: '', periodNumber: 1, startTime: '', durationMinutes: 0, classGroupId: 'c1', subjectId: '' }]);
   });
 
   it('drops a malformed entry from a plan rather than the whole plan (via normalizePlanEntries)', () => {
@@ -97,7 +97,7 @@ const TWO_SCHOOL_PERIODS = [
   { schoolName: 'مسائية', periodNumber: 1, startTime: '13:00', durationMinutes: 40 },
 ];
 const TWO_SCHOOL_SLOTS = [
-  { schoolName: 'مسائية', dayOfWeek: 0, periodNumber: 1, classGroupId: 'evening', notes: 'قاعة 3' },
+  { schoolName: 'مسائية', dayOfWeek: 0, periodNumber: 1, classGroupId: 'evening', subjectId: '', notes: 'قاعة 3' },
   { schoolName: '', dayOfWeek: 0, periodNumber: 1, classGroupId: 'morning' },
 ];
 
@@ -114,9 +114,9 @@ describe('buildDayAgenda across schools', () => {
 describe('dayRows', () => {
   it('lists every period of every school, empty ones included, in clock order', () => {
     assert.deepEqual(dayRows(0, TWO_SCHOOL_PERIODS, TWO_SCHOOL_SLOTS), [
-      { schoolName: '', periodNumber: 1, startTime: '08:00', durationMinutes: 45, classGroupId: 'morning', notes: '' },
-      { schoolName: '', periodNumber: 2, startTime: '08:45', durationMinutes: 45, classGroupId: null, notes: '' },
-      { schoolName: 'مسائية', periodNumber: 1, startTime: '13:00', durationMinutes: 40, classGroupId: 'evening', notes: 'قاعة 3' },
+      { schoolName: '', periodNumber: 1, startTime: '08:00', durationMinutes: 45, classGroupId: 'morning', subjectId: '', notes: '' },
+      { schoolName: '', periodNumber: 2, startTime: '08:45', durationMinutes: 45, classGroupId: null, subjectId: '', notes: '' },
+      { schoolName: 'مسائية', periodNumber: 1, startTime: '13:00', durationMinutes: 40, classGroupId: 'evening', subjectId: '', notes: 'قاعة 3' },
     ]);
   });
 
@@ -258,6 +258,40 @@ describe('nextPeriodLesson', () => {
     assert.equal(nextPeriodLesson(at('2026-09-20T08:10:00'), PERIODS, SLOTS, twoSubjects)?.lessonId, 'ma1');
   });
 
+  describe('a period that names its subject', () => {
+    // c1 on Sunday is a class teacher's section: period 1 is Arabic, period 2 maths.
+    const slots = [
+      { dayOfWeek: 0, periodNumber: 1, classGroupId: 'c1', subjectId: 'arabic' },
+      { dayOfWeek: 0, periodNumber: 2, classGroupId: 'c1', subjectId: 'mathematics' },
+    ];
+    const twoPlans = [
+      { id: 'ar', title: 'عربي', classGroupId: 'c1', subjectId: 'arabic', entries: [{ lessonId: 'ar1', date: '2026-09-20' }] },
+      { id: 'ma', title: 'رياضيات', classGroupId: 'c1', subjectId: 'mathematics', entries: [{ lessonId: 'ma1', date: '2026-09-20' }] },
+    ];
+
+    it('takes the lesson from that subject\'s plan', () => {
+      const first = nextPeriodLesson(at('2026-09-20T08:10:00'), PERIODS, slots, twoPlans);
+      assert.equal(first?.subjectId, 'arabic');
+      assert.equal(first?.lessonId, 'ar1');
+      const second = nextPeriodLesson(at('2026-09-20T08:50:00'), PERIODS, slots, twoPlans);
+      assert.equal(second?.subjectId, 'mathematics');
+      assert.equal(second?.lessonId, 'ma1');
+    });
+
+    it('reads a plan with no subject as the class\'s primary subject', () => {
+      const legacy = [{ id: 'old', title: 'قديمة', classGroupId: 'c1', entries: [{ lessonId: 'ar0', date: '2026-09-20' }] }];
+      const classes = [{ id: 'c1', subjectId: 'arabic' }];
+      assert.equal(nextPeriodLesson(at('2026-09-20T08:10:00'), PERIODS, slots, legacy, classes)?.lessonId, 'ar0');
+      // Period 2 is maths, and the legacy plan is Arabic — no lesson, not the wrong one.
+      assert.equal(nextPeriodLesson(at('2026-09-20T08:50:00'), PERIODS, slots, legacy, classes)?.lessonId, null);
+    });
+
+    it('has no lesson when that subject has no plan, rather than borrowing another\'s', () => {
+      const arabicOnly = [twoPlans[0]!];
+      assert.equal(nextPeriodLesson(at('2026-09-20T08:50:00'), PERIODS, slots, arabicOnly)?.lessonId, null);
+    });
+  });
+
   it('gives the period with no lesson when the class has no plan', () => {
     const next = nextPeriodLesson(at('2026-09-20T07:00:00'), PERIODS, SLOTS, []);
     assert.equal(next?.classGroupId, 'c1');
@@ -293,7 +327,14 @@ describe('timetableSetupStep', () => {
   });
 
   it('asks for a plan for the next period\'s class when it has no lesson', () => {
-    assert.deepEqual(timetableSetupStep(SLOTS, { ...next, lessonId: null }), { step: 'plan', classGroupId: 'c1' });
+    assert.deepEqual(timetableSetupStep(SLOTS, { ...next, lessonId: null }), { step: 'plan', classGroupId: 'c1', subjectId: '' });
+  });
+
+  it('asks for that subject\'s plan when the period names one', () => {
+    assert.deepEqual(
+      timetableSetupStep(SLOTS, { ...next, subjectId: 'arabic', lessonId: null }),
+      { step: 'plan', classGroupId: 'c1', subjectId: 'arabic' },
+    );
   });
 
   it('asks for nothing once the next period has a lesson', () => {

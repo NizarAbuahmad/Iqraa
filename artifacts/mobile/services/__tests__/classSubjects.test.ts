@@ -5,6 +5,7 @@ import {
   classSubjectsLabel,
   filterBySubject,
   inOptionOrder,
+  periodClassLabel,
   resolveSelectedIds,
   subjectIdFromName,
   toggleId,
@@ -87,5 +88,17 @@ describe('filterBySubject', () => {
   });
   it('keeps the focused subject and anything unattributable', () => {
     assert.deepEqual(filterBySubject(items, 'arabic', i => i.s), [{ s: 'arabic' }, { s: '' }]);
+  });
+});
+
+describe('periodClassLabel', () => {
+  it('adds the period\'s subject to the class', () => {
+    assert.equal(periodClassLabel('العاشر أ', 'mathematics', 'ar'), 'العاشر أ · الرياضيات');
+  });
+  it('is the bare class when the period names no subject', () => {
+    assert.equal(periodClassLabel('العاشر أ', '', 'ar'), 'العاشر أ');
+  });
+  it('stays null for an unknown class', () => {
+    assert.equal(periodClassLabel(null, 'mathematics', 'ar'), null);
   });
 });

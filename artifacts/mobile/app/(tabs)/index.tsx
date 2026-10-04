@@ -46,6 +46,7 @@ import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { listClasses } from '@/services/roster';
 import type { ClassGroup } from '@/services/roster';
+import { periodClassLabel } from '@/services/classSubjects';
 import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
 import { loadTimetable } from '@/services/schedule';
@@ -172,7 +173,7 @@ function LessonWorkspace() {
   // «الحصة القادمة · العاشر ب · 10:15» — only when the card is showing that period's lesson.
   const periodLine = fromSchedule && next
     ? formatNextPeriod(next, {
-        classLabel: classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'),
+        classLabel: periodClassLabel(classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'), next.subjectId, lang),
         today: todayISO(),
         lang: lang as 'ar' | 'en',
         nowLabel: t('homePeriodNow'),
@@ -364,13 +365,16 @@ function LessonWorkspace() {
                 <Text style={[s.nudgeText, { color: colors.foreground, textAlign: align }]}>
                   {setup.step === 'timetable'
                     ? t('homeSetupTimetable')
-                    : t('homeSetupPlan', classNameFor(classes, setup.classGroupId, lang as 'ar' | 'en') ?? '')}
+                    : t('homeSetupPlan', periodClassLabel(classNameFor(classes, setup.classGroupId, lang as 'ar' | 'en'), setup.subjectId, lang) ?? '')}
                 </Text>
                 <Pressable
                   onPress={() =>
                     setup.step === 'timetable'
                       ? router.push('/schedule' as never)
-                      : router.push({ pathname: '/teaching-plans', params: { classId: setup.classGroupId } } as never)
+                      : router.push({
+                          pathname: '/teaching-plans',
+                          params: { classId: setup.classGroupId, ...(setup.subjectId ? { subjectId: setup.subjectId } : {}) },
+                        } as never)
                   }
                   style={({ pressed }) => [s.nudgeBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                   accessibilityRole="button"

@@ -98,3 +98,14 @@ export function filterBySubject<T>(items: readonly T[], focus: string, subjectOf
     return !id || id === focus;
   });
 }
+
+/**
+ * «العاشر أ · الرياضيات» — a timetable period's class plus the subject the
+ * period names. Bare class when the period names none (or the class is
+ * unknown, then null, so callers keep their own fallback).
+ */
+export function periodClassLabel(classLabel: string | null, subjectId: string | null | undefined, lang: string): string | null {
+  const subject = subjectId ? subjectLabel(subjectId, lang) : '';
+  if (!classLabel) return null;
+  return subject ? `${classLabel} · ${subject}` : classLabel;
+}
