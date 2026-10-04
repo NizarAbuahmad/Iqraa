@@ -76,7 +76,7 @@ export function PickerField({ label, value, options, onChange, colors, isRTL, ac
               .map(({ o, i }) => (
                 <Pressable
                   key={i}
-                  accessibilityState={{ selected: o === value }}
+                  aria-selected={o === value}
                   onPress={() => { onChange(i); setOpen(false); }}
                   style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: o === value ? selectedTint ?? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                 >

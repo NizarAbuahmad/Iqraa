@@ -15290,7 +15290,8 @@ the teacher marked it and played the recording back.
 offers it, so no student can see a result: «اختباراتي»'s results and
 «تحقّق من النتيجة» are unreachable for every exam. With the flag set by hand
 in the local database, the student's result card rendered correctly. It
-needs a teacher-facing release switch.
+needed a teacher-facing release switch — added the same day, see the next
+entry.
 
 **Verified working:** the terms box gates «إنشاء حساب» and the acceptance is
 stored; email code; claim by class code with the «هل هذا اسمك؟» confirmation;
@@ -15305,5 +15306,99 @@ reports no checked state to assistive tech; the claim picker shows the
 class's English name in the Arabic UI; «5 علامة» / «خسر 3 علامة» where
 Arabic wants «علامات»; per-question marks shown as «2.00 ع»; the grade and
 subject chip rows start scrolled to the wrong end in RTL; the
-«تابعنا من حيث توقّفت» banner stays on the «تم التسليم» screen.
+«تابعنا من حيث توقّفت» banner stays on the «تم التسليم» screen. All fixed
+the same day — see «Student-side display fixes» below.
+
+## A teacher releases results, per exam, 2026-10-04
+
+**Students can now see results — when their teacher releases them.** The
+exam screen (published or closed) carries «أعلن النتائج للطلبة»; releasing
+asks for confirmation, and «إخفاء النتائج عن الطلبة» takes it back without
+asking, since hiding is never the harmful direction. `POST
+/evaluations/:id/results-release` `{ released }` sets
+`release_results_to_student`; the rule — no release for a draft, un-release
+always — is `lib/resultsRelease.ts`, tested. A paper still being marked stays
+hidden after a release (`studentResultReady` also needs a final result), and
+the button says so.
+
+Verified in a browser against the local stack: release → the student's
+«اختباراتي» row reads «النتيجة متاحة»; hide → back to «سُلِّم — بانتظار
+النتيجة».
+
+Not done: students are not notified when results are released — done the
+same day, see «Students are told when results are released». (The «—»
+preview for a read-aloud question, noted here at first, is fixed in the next
+entry.)
+
+## Student-side display fixes from the walkthrough, 2026-10-04
+
+The small things the student walkthrough listed, each re-checked in a browser
+against the local stack:
+
+- **Marks read as Arabic.** The exam showed «2.00 ع» per question and
+  «5 علامة» in its intro; it now says «علامة واحدة» / «علامتان» / «3 علامات»
+  and «3 أسئلة — 6 علامات» (`arMarksPhrase` / `arQuestionsPhrase` in
+  `services/arCount.ts`, tested). The teacher screens keep the «ع» shorthand
+  but drop the decimals («1 ع»). The marking screen's «خسر 3 علامة» now
+  declines too, with the accusative dual («خسر علامتين»).
+- **«تابعنا من حيث توقّفت» stays on the questions.** It was a `notice`, and
+  `notice` is also how «انتهى الوقت» reaches the «تم التسليم» screen, so a
+  resumed paper carried the line onto the hand-in screen. It is its own flag
+  now.
+- **The claim picker names the class in Arabic.** `GET /auth/join/:code`
+  already returned `nameAr`; `useJoinCodeLookup` showed `name`. It resolves
+  through `className()` (`services/materialClass.ts`) like the teacher
+  screens.
+- **A read-aloud question's preview shows its passage** (`body.passage`)
+  instead of «—» on the teacher's exam screen.
+- **The terms box reports its state.** react-native-web 0.21 drops
+  `accessibilityState` entirely — only `aria-*` reaches the DOM — so the box
+  now also sets `aria-checked`, and the two links are underlined so it is
+  clear which part of the line opens a page and which ticks the box.
+  **About 39 other controls** (`grep -rn "accessibilityState=" app
+  components`) declare `checked`/`selected`/`expanded` the same way and are
+  equally silent on the web — converted the same day, see the next entry.
+- **The library chip rows** were already fixed by #819 (they wrap instead of
+  scrolling); confirmed, no change.
+
+## Students are told when results are released; state reaches screen readers, 2026-10-04
+
+**A release now announces itself.** When «أعلن النتائج للطلبة» turns a
+release on (`lib/resultsReleaseNotify.ts`, after the route has answered):
+
+- a push to every student account self-linked to a roster row that handed
+  the paper in, opening «اختباراتي» when tapped (`data.screen: 'my-exams'`,
+  whitelisted in `services/notificationDeepLink.ts`);
+- one line in the exam's class group, under the teacher's name —
+  «أُعلنت نتائج «…». افتحوا «اختباراتي» لتروا نتائجكم.» — which the web
+  inbox shows too, since a push reaches only the Android app. Not pushed a
+  second time; marked read for the teacher.
+
+The route's update is conditional on the old value, so pressing release on
+results already released, or two presses racing, announces nothing. Hiding
+and releasing again does announce again — remembering past announcements
+would need a column. The confirmation dialog says what will be sent.
+
+**Parents are not notified,** although that was asked for: no screen shows a
+guardian their child's exam result («اختباراتي» is student-only), so the push
+would open onto nothing. That needs a parent results view first — and a
+decision on whether a parent should see a grade, and when.
+
+Verified against the local stack: release twice → one line in «العاشر أ»,
+shown in the student's inbox as unread under the teacher's name. The push
+itself was not sent locally (it goes to Expo's servers); the recipient query
+and the deep link are what changed.
+
+**`accessibilityState` → `aria-*`, app-wide.** react-native-web 0.21 reads
+neither `accessibilityState.checked/selected/expanded/busy` nor `.disabled` —
+only `aria-*` props reach the DOM — so every checkbox, tab, chip and toggle
+on the web build was silent about its state. All 39 uses now set the
+matching `aria-*` prop, which React Native reads too;
+`services/__tests__/ariaState.test.ts` fails if `accessibilityState=`
+reappears under `app/` or `components/`. Checked in the browser: the
+library's chips carry `aria-selected`.
+
+**More «N علامة».** «اختباراتي» rows said «6 علامة»; the exam totals, the
+marks-lost line and the scan summary had the same template. All go through
+`arMarksPhrase` now.
 
