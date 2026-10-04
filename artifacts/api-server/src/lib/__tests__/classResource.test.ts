@@ -48,6 +48,11 @@ describe("class resource input", () => {
     assert.match(bad({ kind: "library", source: "uploaded", nativeId: "not-a-uuid" }), /nativeId/);
   });
 
+  it("lowercases an uppercase uuid so the dedupe key is canonical", () => {
+    const parsed = ok({ kind: "library", source: "uploaded", nativeId: UUID.toUpperCase() });
+    assert.deepEqual(parsed, { source: "uploaded", nativeId: UUID });
+  });
+
   it("accepts a premade sheet, trims its title, and drops any url (it never leaves the app)", () => {
     const parsed = ok({ ...premade, url: "https://example.test/x" });
     assert.ok(parsed.source === "premade-sheet");

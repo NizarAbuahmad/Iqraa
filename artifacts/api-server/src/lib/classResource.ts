@@ -81,7 +81,7 @@ export function parseClassResourceInput(body: unknown): ClassResourceInput | { e
 
   if (source === "uploaded") {
     if (!isUuid(nativeId)) return { error: "nativeId must be a library item id" };
-    return { source, nativeId };
+    return { source, nativeId: nativeId.toLowerCase() };
   }
 
   const title = typeof b["title"] === "string" ? b["title"].trim() : "";
