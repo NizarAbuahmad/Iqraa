@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { RESOURCE_KIND_ICON, RESOURCE_KIND_LABEL } from '@/constants/resourceKind';
-import type { ClassResource } from '@/services/classResources';
+import { isInsecureResource, type ClassResource } from '@/services/classResources';
 
 export function ClassResourceRow({
   resource,
@@ -71,6 +71,11 @@ export function ClassResourceRow({
               ? t('resourceUnavailable')
               : `${t('resourceTag')} · ${t(RESOURCE_KIND_LABEL[resource.mediaKind])}`}
           </Text>
+          {isInsecureResource(resource) ? (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: align }}>
+              {t('qrInsecureRow')}
+            </Text>
+          ) : null}
         </View>
       </Pressable>
       <Pressable onPress={onRemove} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('remove')}>

@@ -125,3 +125,13 @@ export function openTargetFor(resource: ClassResource): OpenTarget {
   if (resource.source === 'premade-sheet') return { kind: 'premade', id: resource.nativeId };
   return resource.url ? { kind: 'url', url: resource.url } : { kind: 'none' };
 }
+
+/**
+ * Whether a shelf row should carry the Library's "insecure link (http)" line.
+ * Only book-QR codes can be stored over plain http (the server refuses http for
+ * everything else), so this mirrors the picker's per-row `insecure` flag from
+ * the url the row kept.
+ */
+export function isInsecureResource(resource: ClassResource): boolean {
+  return resource.source === 'book-qr' && /^http:/i.test(resource.url ?? '');
+}

@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import {
   addBodyFor,
   addedKeys,
+  isInsecureResource,
   mergeClassShelf,
   openTargetFor,
   type ClassResource,
@@ -214,5 +215,29 @@ describe('openTargetFor', () => {
 
   it('opens nothing when there is no url to open', () => {
     assert.deepEqual(openTargetFor(resource({ id: 'r', url: null })), { kind: 'none' });
+  });
+});
+
+describe('isInsecureResource', () => {
+  it('flags a book-QR code stored over plain http, as the Library does', () => {
+    assert.equal(isInsecureResource(resource({ id: 'q', source: 'book-qr', url: 'http://example.test/a' })), true);
+  });
+
+  it('does not flag a book-QR code stored over https', () => {
+    assert.equal(isInsecureResource(resource({ id: 'q', source: 'book-qr', url: 'https://example.test/a' })), false);
+  });
+
+  it('does not flag a book-QR row that has no url', () => {
+    assert.equal(isInsecureResource(resource({ id: 'q', source: 'book-qr', url: null })), false);
+  });
+
+  it('does not flag a staff upload or a premade sheet', () => {
+    assert.equal(isInsecureResource(resource({ id: 'u', source: 'uploaded', url: 'https://example.test/v' })), false);
+    assert.equal(isInsecureResource(resource({ id: 'p', source: 'premade-sheet', url: null })), false);
+  });
+
+  it('does not flag http on a row that is not a book-QR code', () => {
+    assert.equal(isInsecureResource(resource({ id: 'u', source: 'uploaded', url: 'http://example.test/v' })), false);
+    assert.equal(isInsecureResource(resource({ id: 'p', source: 'premade-sheet', url: 'http://example.test/s' })), false);
   });
 });
