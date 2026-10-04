@@ -1011,8 +1011,9 @@ appears in it; the within-class name dedup rule is inline and untestable.
 > «الوحدة N» whenever its unit has more than one.
 > **Their audio is not generated yet**: until
 > `pnpm --filter @workspace/curriculum run english-audio` is re-run with the
-> keys, a 9–10 word's speaker button plays nothing. The script's narration
-> prompt still says "a young child"; reconsider it for teenagers before running.
+> keys, a 9–10 word's speaker button plays nothing. The narration prompt now
+> addresses a teenage student; the Grade 1–4 recordings keep their child-pitched
+> voice because the script skips existing files (`--force` would re-voice them).
 
 Anyone can practise the Grade 1–4 English lesson words at
 `/curriculum/english`, **with no account** — it's the first card on the `/play`
