@@ -40,7 +40,7 @@ import { resolveSlideLayout } from '@/services/slideLayout';
 import { openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
 import {
-  createGame, podium, resetScores, setAwards, toggleAward, type GameState,
+  createGame, hasGameScores, podium, resetScores, setAwards, toggleAward, toggleNobody, type GameState,
 } from '@/services/classGame';
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
 import { MathText } from '@/components/classroom/MathText';
@@ -48,6 +48,7 @@ import { VerifiedBadge } from '@/components/classroom/VerifiedBadge';
 import { PEN_COLORS, PenCanvas, PenPalette, type Stroke } from '@/components/classroom/PenLayer';
 import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
 import { goBack } from '@/services/navigation';
+import { confirm } from '@/services/confirm';
 
 /** Open a media URL outside the app (native fallback — no WebView dep). */
 async function openExternalMedia(url: string): Promise<void> {
@@ -1075,11 +1076,30 @@ export default function PresentationScreen() {
       else if (action === 'prev') goToSlide(slideIndex - 1);
       else if (action === 'togglePause') togglePauseTimer();
       else if (action === 'toggleFullscreen' || action === 'exitFullscreen') toggleFullscreen();
-      else goBack();
+      else void exitPresentation();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
+
+  /**
+   * Leave the deck. A Class Challenge's scores live only in this screen's
+   * state, so a stray Esc or a tap on ✕ mid-game threw the whole ledger away
+   * with no way back — ask first once anything has been awarded.
+   */
+  const exitPresentation = async () => {
+    if (hasGameScores(game)) {
+      const leave = await confirm({
+        title: t('gameExitTitle'),
+        message: t('gameExitMsg'),
+        confirmLabel: t('gameExitConfirm'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      });
+      if (!leave) return;
+    }
+    goBack();
+  };
 
   const restartTimer = () => {
     if (!activity) return;
@@ -1135,7 +1155,7 @@ export default function PresentationScreen() {
       {/* ── Top Bar ── */}
       <View style={[styles.topBar, { paddingTop: insets.top + 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {/* Exit */}
-        <Pressable onPress={() => goBack()} style={styles.exitBtn} hitSlop={12}>
+        <Pressable onPress={() => { void exitPresentation(); }} style={styles.exitBtn} hitSlop={12}>
           <Ionicons name="close" size={22} color={TEXT_MUTED} />
         </Pressable>
 
@@ -1254,7 +1274,8 @@ export default function PresentationScreen() {
                 const everyone = g.teams.every(team => (g.awards[slide.questionIndex!] ?? []).includes(team.id));
                 return setAwards(g, slide.questionIndex!, everyone ? [] : g.teams.map(team => team.id));
               })}
-              labels={{ prompt: t('gameWhoScored'), all: t('gameAwardAll') }}
+              onNobody={() => setGame(g => (g ? toggleNobody(g, slide.questionIndex!) : g))}
+              labels={{ prompt: t('gameWhoScored'), all: t('gameAwardAll'), nobody: t('gameAwardNobody') }}
             />
           )}
 

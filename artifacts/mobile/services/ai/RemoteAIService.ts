@@ -11,6 +11,7 @@
  * Arabic lesson plan either way. A `console.warn` is not a disclosure to a
  * teacher holding the result.
  */
+import { plainActivity } from './activityText';
 import {
   ActivityOutput, AIRequest, AIService,
   ClassroomActivity, ClassroomActivityRequest,
@@ -128,11 +129,13 @@ export class RemoteAIService extends AIService {
   }
 
   async generateActivity(req: AIRequest, opts?: GenerateOptions): Promise<ActivityOutput> {
-    return generateWithProvenance(
+    // The model can echo the `**bold**` its prompt uses; no renderer here
+    // reads markdown, so it would print as asterisks.
+    return plainActivity(await generateWithProvenance(
       'activity',
       () => postJSON<ActivityOutput>('/generate/activity', req, opts),
       () => this.fallback.generateActivity(req),
-    );
+    ));
   }
 
   async generateInfographic(req: AIRequest, opts?: GenerateOptions): Promise<InfographicOutput> {
