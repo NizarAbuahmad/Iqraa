@@ -45,17 +45,18 @@ import type {
 /**
  * The accent a printed document is built around.
  *
- * The same four colours the projector already uses per artifact type
- * (`buildWorksheetSlidesHTML` et al, and `deckTheme.ts`'s `slideTypeAccent`),
- * so a teacher who prints a worksheet and then projects it sees one product.
- * They were previously teal for everything except the activity, which had its
- * own orange and its own hand-built document to put it in.
+ * The same four colours the projector slides use (`buildWorksheetSlidesHTML`
+ * et al read them from here) and the app shows for each material
+ * (`MATERIAL_FILL` in constants/materialKind.ts, which this file can't import:
+ * it pulls in react-native), so a worksheet printed, projected and opened in
+ * موادي is one colour. Each is ≥ 5.2:1 under white and ≥ 4.8:1 as text on
+ * white; the old quiz amber was 2.15:1, and it numbered projected questions.
  */
 export const DOC_ACCENT = {
-  lesson: '#1B6B62',
-  worksheet: '#8B5CF6',
-  quiz: '#F59E0B',
-  activity: '#E67E22',
+  lesson: '#006D65',
+  worksheet: '#8A5A00',
+  quiz: '#B0284F',
+  activity: '#3F7A1E',
 } as const;
 
 /** Where the name-and-date block gets its rule, and every section its tint. */
@@ -609,7 +610,7 @@ export function buildLessonPlanSlidesHTML(
   figures: readonly BookFigureRef[] = [],
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
-  const ACCENT = '#1B6B62';
+  const ACCENT = DOC_ACCENT.lesson;
   const bullets = (items: string[]) => items.map(i => `<li>${esc(i)}</li>`).join('');
   const L = (ar: string, en: string) => isAr ? ar : en;
 
@@ -714,7 +715,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
   overflow: hidden; page-break-after: always; display: flex; flex-direction: column;
 }
 /* Title slide */
-.title-slide { background: linear-gradient(135deg, ${ACCENT} 0%, #144f49 100%); }
+.title-slide { background: linear-gradient(135deg, ${ACCENT} 0%, #004C46 100%); }
 .title-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; }
 .title-badge { background: rgba(255,255,255,0.2); color:#fff; font-size:11px; letter-spacing:2px; text-transform:uppercase; padding:4px 16px; border-radius:20px; margin-bottom:20px; }
 .title-main { font-size:36px; font-weight:700; color:#fff; line-height:1.3; margin-bottom:16px; max-width:500px; }
@@ -762,7 +763,7 @@ export function buildActivitySlidesHTML(
   figures: readonly BookFigureRef[] = [],
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
-  const ACCENT = '#E67E22';
+  const ACCENT = DOC_ACCENT.activity;
   const L = (ar: string, en: string) => isAr ? ar : en;
 
   const TOTAL = 3 + Math.ceil(activity.steps.length / 2) + (figures.length ? 1 : 0);
@@ -845,7 +846,7 @@ export function buildActivitySlidesHTML(
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
-.title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#b55a0f 100%); }
+.title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#2A5414 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
 .title-badge { background:rgba(255,255,255,0.2); color:#fff; font-size:11px; letter-spacing:2px; text-transform:uppercase; padding:4px 16px; border-radius:20px; margin-bottom:20px; }
 .title-main { font-size:34px; font-weight:700; color:#fff; line-height:1.3; margin-bottom:14px; max-width:520px; }
@@ -853,7 +854,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .title-obj { font-size:12px; color:rgba(255,255,255,0.7); max-width:480px; line-height:1.5; }
 .slide-header { display:flex; align-items:stretch; height:60px; flex-shrink:0; }
 .header-accent { width:8px; background:${ACCENT}; flex-shrink:0; }
-.header-content { flex:1; background:#FFF7ED; padding:10px 24px; display:flex; flex-direction:column; justify-content:center; border-bottom:1px solid #e5e7eb; }
+.header-content { flex:1; background:#F2F7EE; padding:10px 24px; display:flex; flex-direction:column; justify-content:center; border-bottom:1px solid #e5e7eb; }
 .slide-eyebrow { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:${ACCENT}; font-weight:600; margin-bottom:3px; }
 .slide-topic { font-size:13px; font-weight:700; color:#111827; }
 .slide-body { flex:1; padding:18px 26px; overflow:hidden; }
@@ -901,7 +902,7 @@ export function buildWorksheetSlidesHTML(
   includeAnswers = true,
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
-  const ACCENT = '#8B5CF6';
+  const ACCENT = DOC_ACCENT.worksheet;
   // Text only in this builder — no attribute or URL goes through `e`, so it
   // is the isolating `esc` under a shorter name.
   const e = esc;
@@ -991,7 +992,7 @@ export function buildWorksheetSlidesHTML(
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
-.title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#5b21b6 100%); }
+.title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#5E3D00 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
 .title-badge { background:rgba(255,255,255,0.2); color:#fff; font-size:11px; letter-spacing:2px; text-transform:uppercase; padding:4px 16px; border-radius:20px; margin-bottom:20px; }
 .title-main { font-size:34px; font-weight:700; color:#fff; line-height:1.3; margin-bottom:14px; max-width:520px; }
@@ -999,7 +1000,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .title-brand { font-size:11px; color:rgba(255,255,255,0.5); margin-top:8px; }
 .slide-header { display:flex; align-items:stretch; height:60px; flex-shrink:0; }
 .header-accent { width:8px; background:${ACCENT}; flex-shrink:0; }
-.header-content { flex:1; background:#faf5ff; padding:10px 24px; display:flex; flex-direction:column; justify-content:center; border-bottom:1px solid #e5e7eb; }
+.header-content { flex:1; background:#FBF6EC; padding:10px 24px; display:flex; flex-direction:column; justify-content:center; border-bottom:1px solid #e5e7eb; }
 .slide-eyebrow { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:${ACCENT}; font-weight:600; margin-bottom:3px; }
 .slide-topic { font-size:13px; font-weight:700; color:#111827; }
 .slide-body { flex:1; padding:18px 26px; overflow:hidden; }
@@ -1014,7 +1015,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .q-opt { white-space:nowrap; }
 .q-pts { font-size:10px; color:#9ca3af; margin-${isAr ? 'right' : 'left'}:auto; }
 .ak-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:8px; }
-.ak-row { display:flex; gap:6px; align-items:baseline; background:#faf5ff; border:1px solid ${ACCENT}22; border-radius:6px; padding:6px 10px; font-size:11.5px; }
+.ak-row { display:flex; gap:6px; align-items:baseline; background:#FBF6EC; border:1px solid ${ACCENT}22; border-radius:6px; padding:6px 10px; font-size:11.5px; }
 .ak-num { font-weight:700; color:${ACCENT}; flex-shrink:0; }
 .ak-ans { color:#374151; }
 .slide-footer { height:26px; border-top:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; padding:0 26px; flex-shrink:0; }
@@ -1046,7 +1047,7 @@ export function buildQuizSlidesHTML(
   figures: readonly BookFigureRef[] = [],
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
-  const ACCENT = '#F59E0B';
+  const ACCENT = DOC_ACCENT.quiz;
   // Text only in this builder — no attribute or URL goes through `e`, so it
   // is the isolating `esc` under a shorter name.
   const e = esc;
@@ -1133,7 +1134,7 @@ export function buildQuizSlidesHTML(
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
-.title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#b45309 100%); }
+.title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#7E1C38 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
 .title-badge { background:rgba(255,255,255,0.2); color:#fff; font-size:11px; letter-spacing:2px; text-transform:uppercase; padding:4px 16px; border-radius:20px; margin-bottom:20px; }
 .title-main { font-size:34px; font-weight:700; color:#fff; line-height:1.3; margin-bottom:14px; max-width:520px; }
@@ -1141,20 +1142,20 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .title-brand { font-size:11px; color:rgba(255,255,255,0.5); margin-top:8px; }
 .slide-header { display:flex; align-items:stretch; height:60px; flex-shrink:0; }
 .header-accent { width:8px; background:${ACCENT}; flex-shrink:0; }
-.header-content { flex:1; background:#fffbeb; padding:10px 24px; display:flex; flex-direction:column; justify-content:center; border-bottom:1px solid #e5e7eb; }
+.header-content { flex:1; background:#FCF1F4; padding:10px 24px; display:flex; flex-direction:column; justify-content:center; border-bottom:1px solid #e5e7eb; }
 .slide-eyebrow { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:${ACCENT}; font-weight:600; margin-bottom:3px; }
 .slide-topic { font-size:13px; font-weight:700; color:#111827; }
 .slide-body { flex:1; padding:16px 26px; overflow:hidden; display:flex; flex-direction:column; gap:8px; }
 .q-card { border:1px solid #e5e7eb; border-radius:8px; padding:10px 14px; flex-shrink:0; }
 .q-top { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
 .q-num { background:${ACCENT}; color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
-.type-badge { font-size:10px; background:#fef3c7; color:#92400e; padding:2px 8px; border-radius:10px; }
+.type-badge { font-size:10px; background:#F9DDE5; color:#7E1C38; padding:2px 8px; border-radius:10px; }
 .q-pts { font-size:10px; color:#9ca3af; margin-${isAr ? 'right' : 'left'}:auto; }
 .q-text { font-size:12px; color:#111827; line-height:1.5; }
 .q-opts { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:6px; padding-${isAr ? 'right' : 'left'}:12px; font-size:10.5px; color:#6b7280; }
 .q-opt { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .ak-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
-.ak-row { display:flex; gap:6px; align-items:baseline; background:#fffbeb; border:1px solid ${ACCENT}33; border-radius:6px; padding:6px 10px; font-size:11.5px; }
+.ak-row { display:flex; gap:6px; align-items:baseline; background:#FCF1F4; border:1px solid ${ACCENT}33; border-radius:6px; padding:6px 10px; font-size:11.5px; }
 .ak-num { font-weight:700; color:${ACCENT}; flex-shrink:0; }
 .ak-ans { color:#374151; }
 .slide-footer { height:26px; border-top:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; padding:0 26px; flex-shrink:0; }
