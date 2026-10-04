@@ -28,6 +28,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { REPORT_REASON_KEYS } from '@/services/reportReasons';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   addGroupMembers,
@@ -57,7 +58,6 @@ import { useStudentAccountsEnabled } from '@/services/features';
 import { saveRemoteImage } from '@/services/share';
 import { goBack } from '@/services/navigation';
 
-const REPORT_REASON_KEYS = ['reportReasonInappropriate', 'reportReasonBullying', 'reportReasonSpam', 'reportReasonOther'] as const;
 
 export default function ThreadScreen() {
   const { threadId } = useLocalSearchParams<{ threadId: string }>();
