@@ -63,6 +63,20 @@ export interface ActivityBlueprintContext {
    * decide what students build and what they check it against.
    */
   subject?: string;
+  /**
+   * Which version of the activity this is. 0 — or absent — is the first, and
+   * is what every generation produced before Regenerate existed here. A
+   * regeneration asks for the next one.
+   *
+   * Maths and chemistry vary by themselves, because their items are drawn at
+   * random from a bank. Every other subject has no bank and nothing here was
+   * random, so «إعادة التوليد» returned a byte-identical activity. The
+   * variation therefore has to come from the slots a blueprint fills from the
+   * lesson: which key concepts lead, and which of a few wordings the retrieval
+   * prompt, the claim, the game questions, the jigsaw parts and the hands-on
+   * challenge use. Index 0 of every pool is the original text.
+   */
+  variant?: number;
   /** Total minutes the steps must sum to exactly. */
   duration: number;
 }
@@ -135,14 +149,32 @@ function item(ctx: ActivityBlueprintContext, i: number): PracticeWQ | null {
   return ctx.practice[i] ?? null;
 }
 
+/** The variant, as a safe non-negative integer. */
+function variantOf(ctx: ActivityBlueprintContext): number {
+  const v = Math.floor(ctx.variant ?? 0);
+  return Number.isFinite(v) && v > 0 ? v : 0;
+}
+
+/** `list` rotated left by `by` places — the same items, a different one first. */
+function rotate<T>(list: readonly T[], by: number): T[] {
+  if (list.length === 0) return [];
+  const k = by % list.length;
+  return [...list.slice(k), ...list.slice(0, k)];
+}
+
+/** This variant's entry from a pool whose first entry is the original text. */
+function pick<T>(ctx: ActivityBlueprintContext, pool: readonly T[]): T {
+  return pool[variantOf(ctx) % pool.length]!;
+}
+
 function concepts(ctx: ActivityBlueprintContext, n: number): string[] {
   const list = ctx.lang === 'ar' ? ctx.kb?.keyConceptsAr : ctx.kb?.keyConceptsEn;
-  return (list ?? []).slice(0, n);
+  return rotate(list ?? [], variantOf(ctx)).slice(0, n);
 }
 
 function rules(ctx: ActivityBlueprintContext, n: number): string[] {
   const list = ctx.lang === 'ar' ? ctx.kb?.rulesAr : ctx.kb?.rulesEn;
-  return (list ?? []).slice(0, n);
+  return rotate(list ?? [], variantOf(ctx)).slice(0, n);
 }
 
 /**
@@ -154,19 +186,30 @@ function rules(ctx: ActivityBlueprintContext, n: number): string[] {
  */
 function jigsawParts(ctx: ActivityBlueprintContext): string[] {
   const ar = ctx.lang === 'ar';
-  const generic = ar
+  // Eight parts, the first four being the original set; a variant slides the
+  // window, so a regeneration hands each member of the group a different task.
+  const pool = ar
     ? [
         `عرّف ${ctx.topic} بكلماتك`,
         `أعطِ مثالًا يوضّح ${ctx.topic}`,
         `اذكر خطأً شائعًا في ${ctx.topic}`,
         `اربط ${ctx.topic} بموقف حياتي`,
+        `قارن ${ctx.topic} بفكرة قريبة منه، وبيّن أين يختلفان`,
+        `ما الشرط الذي يجب أن يتحقق حتى تصحّ فكرة ${ctx.topic}؟`,
+        `لخّص ${ctx.topic} في ثلاث جمل لزميل لم يحضر الحصة`,
+        `اكتب سؤال امتحان متوقعًا عن ${ctx.topic} مع إجابته`,
       ]
     : [
         `Define ${ctx.topic} in your own words`,
         `Give a worked example of ${ctx.topic}`,
         `Name one common error in ${ctx.topic}`,
         `Link ${ctx.topic} to a real situation`,
+        `Compare ${ctx.topic} with a nearby idea and say where they differ`,
+        `What must be true for ${ctx.topic} to hold?`,
+        `Summarise ${ctx.topic} in three sentences for a classmate who was absent`,
+        `Write a likely exam question on ${ctx.topic}, with its answer`,
       ];
+  const generic = rotate(pool, variantOf(ctx));
   const cs = concepts(ctx, 4);
   const base = ctx.practice.length >= 2
     ? ctx.practice.map(p => (ar ? `حلّ: ${p.text}` : `Solve: ${p.text}`))
@@ -200,14 +243,30 @@ function contestableClaim(ctx: ActivityBlueprintContext): string {
   }
   const rule = rules(ctx, 1)[0];
   if (rule) {
-    return ar
-      ? `«${rule}» — هل تنطبق هذه القاعدة دائمًا، أم لها شروط؟`
-      : `“${rule}” — Does this always hold, or does it have conditions?`;
+    const askAr = [
+      'هل تنطبق هذه القاعدة دائمًا، أم لها شروط؟',
+      'في أي حالة قد تفشل هذه القاعدة؟',
+      'هل يكفي أن نحفظ هذه القاعدة لنطبّقها صحيحًا؟',
+    ];
+    const askEn = [
+      'Does this always hold, or does it have conditions?',
+      'In what case might this rule fail?',
+      'Is memorising this rule enough to apply it correctly?',
+    ];
+    return ar ? `«${rule}» — ${pick(ctx, askAr)}` : `“${rule}” — ${pick(ctx, askEn)}`;
   }
   const concept = concepts(ctx, 1)[0] ?? ctx.topic;
-  return ar
-    ? `«يمكن تطبيق ${concept} في كل الحالات دون استثناء.» — هل توافق؟`
-    : `“${concept} can be applied in every case without exception.” — Do you agree?`;
+  const claimsAr = [
+    `«يمكن تطبيق ${concept} في كل الحالات دون استثناء.» — هل توافق؟`,
+    `«يكفي أن أحفظ ${concept} حتى أتقنه، ولا حاجة لفهم سببه.» — هل توافق؟`,
+    `«مثال واحد صحيح يكفي لإثبات ${concept} في كل الحالات.» — هل توافق؟`,
+  ];
+  const claimsEn = [
+    `“${concept} can be applied in every case without exception.” — Do you agree?`,
+    `“Memorising ${concept} is enough to master it — there is no need to understand why.” — Do you agree?`,
+    `“One correct example is enough to prove ${concept} in every case.” — Do you agree?`,
+  ];
+  return ar ? pick(ctx, claimsAr) : pick(ctx, claimsEn);
 }
 
 /**
@@ -388,25 +447,64 @@ function gameQuestions(ctx: ActivityBlueprintContext): string[] {
   }
   const cs = concepts(ctx, 3);
   if (cs.length) {
-    return cs.map(c => (ar ? `ما المقصود بـ«${c}»؟ وأعطِ مثالًا.` : `What is “${c}”? Give an example.`));
+    // One wording per variant for every concept, so a regeneration both leads
+    // with different concepts (see `concepts`) and asks about them differently.
+    const askAr = [
+      (c: string) => `ما المقصود بـ«${c}»؟ وأعطِ مثالًا.`,
+      (c: string) => `اشرح «${c}» بكلماتك مع مثال من عندك.`,
+      (c: string) => `أين يخطئ الطلبة عادةً في «${c}»؟ ولماذا؟`,
+      (c: string) => `ما علاقة «${c}» بموضوع ${ctx.topic}؟`,
+    ];
+    const askEn = [
+      (c: string) => `What is “${c}”? Give an example.`,
+      (c: string) => `Explain “${c}” in your own words, with an example of your own.`,
+      (c: string) => `Where do students usually go wrong with “${c}”, and why?`,
+      (c: string) => `How does “${c}” relate to ${ctx.topic}?`,
+    ];
+    const ask = ar ? pick(ctx, askAr) : pick(ctx, askEn);
+    return cs.map(ask);
   }
-  return ar
-    ? [`عرّف ${ctx.topic}`, `أعطِ مثالًا على ${ctx.topic}`, `ما الخطأ الشائع في ${ctx.topic}؟`]
-    : [`Define ${ctx.topic}`, `Give an example of ${ctx.topic}`, `What is a common error in ${ctx.topic}?`];
+  const pool = ar
+    ? [
+        `عرّف ${ctx.topic}`, `أعطِ مثالًا على ${ctx.topic}`, `ما الخطأ الشائع في ${ctx.topic}؟`,
+        `ما الفرق بين ${ctx.topic} وفكرة قريبة منه؟`, `متى لا تصحّ فكرة ${ctx.topic}؟`, `اشرح ${ctx.topic} لطالب أصغر منك سنًّا.`,
+      ]
+    : [
+        `Define ${ctx.topic}`, `Give an example of ${ctx.topic}`, `What is a common error in ${ctx.topic}?`,
+        `How does ${ctx.topic} differ from a nearby idea?`, `When does ${ctx.topic} not hold?`, `Explain ${ctx.topic} to a younger student.`,
+      ];
+  return rotate(pool, variantOf(ctx)).slice(0, 3);
 }
 
 /** The prior-knowledge prompt a warm-up retrieves — never today's new content. */
 function priorRecallPrompt(ctx: ActivityBlueprintContext): string {
   const ar = ctx.lang === 'ar';
-  const prior = (ctx.kb?.objectives ?? []).slice(0, 1)[0];
+  const objectives = ctx.kb?.objectives ?? [];
+  const prior = objectives.length ? objectives[variantOf(ctx) % objectives.length] : undefined;
   if (prior) {
-    return ar
-      ? `اكتب من ذاكرتك — الدفاتر مغلقة — ما تتذكره عن: ${prior}`
-      : `From memory, notebooks closed — write what you recall about: ${prior}`;
+    return pick(ctx, ar
+      ? [
+          `اكتب من ذاكرتك — الدفاتر مغلقة — ما تتذكره عن: ${prior}`,
+          `دوّن بصمت — الدفاتر مغلقة — كل ما تعرفه عن: ${prior}`,
+          `أجب كتابةً من الذاكرة دون النظر في الكتاب: ماذا تتذكر عن: ${prior}`,
+        ]
+      : [
+          `From memory, notebooks closed — write what you recall about: ${prior}`,
+          `Silently jot down, notebooks closed, everything you know about: ${prior}`,
+          `Answer in writing from memory, without looking at the book: what do you recall about: ${prior}`,
+        ]);
   }
-  return ar
-    ? `اكتب من ذاكرتك — الدفاتر مغلقة — كل ما تتذكره عن ${ctx.topic} من الحصة السابقة (3 نقاط).`
-    : `From memory, notebooks closed — write everything you recall about ${ctx.topic} from last lesson (3 points).`;
+  return pick(ctx, ar
+    ? [
+        `اكتب من ذاكرتك — الدفاتر مغلقة — كل ما تتذكره عن ${ctx.topic} من الحصة السابقة (3 نقاط).`,
+        `دوّن بصمت — الدفاتر مغلقة — ثلاث أفكار تتذكرها عن ${ctx.topic} من الحصة السابقة.`,
+        `أجب كتابةً من الذاكرة: ما أهم ما تعلّمته عن ${ctx.topic} في الحصة السابقة؟ (3 نقاط).`,
+      ]
+    : [
+        `From memory, notebooks closed — write everything you recall about ${ctx.topic} from last lesson (3 points).`,
+        `Silently jot down, notebooks closed, three ideas you remember about ${ctx.topic} from last lesson.`,
+        `Answer in writing from memory: what was the most important thing you learned about ${ctx.topic} last lesson? (3 points).`,
+      ]);
 }
 
 // ─── Blueprints ──────────────────────────────────────────────────────────────
@@ -503,8 +601,35 @@ function discussionAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
   };
 }
 
+/**
+ * A challenge added to the build step on a regeneration — a different thing to
+ * DO with what students make, which is what changes between versions of a
+ * hands-on activity when there is no bank of items to redraw. None for the
+ * first version.
+ */
+function handsOnTwist(ctx: ActivityBlueprintContext): string {
+  const v = variantOf(ctx);
+  if (v === 0) return '';
+  const ar = ctx.lang === 'ar';
+  const pool = ar
+    ? [
+        'تحدٍّ إضافي: بعد البناء، يتبادل الثنائي ما أنتجه مع ثنائي مجاور، ويحدّد الثنائي الآخر موضع أي اختلاف عن القاعدة قبل أن تُفتح بطاقة التسجيل.',
+        'قيد إضافي: قبل البدء، يقرّر الثنائي ما الذي سيبسّطه في ما ينتجه وما الذي لا يجوز تبسيطه، ويكتب القرارين على بطاقة التسجيل.',
+        'تحدٍّ إضافي: يخفي أحد الشريكين جزءًا من الناتج، ويتوقّع الآخر ما يمثّله ذلك الجزء قبل أن يُكشف.',
+        'تحدٍّ إضافي: يضيف الثنائي إلى ما أنتجه عنصرًا واحدًا فيه خطأ شائع مقصود، ثم يتبادل مع ثنائي آخر ليكتشف الخطأ.',
+      ]
+    : [
+        'Extra challenge: after building, swap what you made with a neighbouring pair, who mark where it differs from the rule before the record card is opened.',
+        'Extra constraint: before starting, the pair decide what they will simplify in what they make and what they must not, and write both decisions on the record card.',
+        'Extra challenge: one partner hides a part of the product and the other predicts what that part represents before it is revealed.',
+        'Extra challenge: the pair add one deliberate common error to what they made, then swap with another pair who must find it.',
+      ];
+  return pool[(v - 1) % pool.length]!;
+}
+
 function handsOnAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
   const plan = handsOnPlan(ctx);
+  const twist = handsOnTwist(ctx);
   const mins = distributeMinutes(ctx.duration, [1, 3, 2, 1.2]);
   return {
     titleSuffix: 'نشاط تطبيقي عملي',
@@ -513,7 +638,7 @@ function handsOnAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
     materials: plan.materials,
     steps: steps([
       ['جهّزوا المواد ووزّعوا الدورين', 'كل ثنائي يأخذ عدّة كاملة. حدّدا من يبني أولًا ومن يسجّل — ستتبادلان الدورين في منتصف الخطوة التالية. راجع قواعد السلامة في استخدام المقص.'],
-      ['ابنِ', plan.task],
+      ['ابنِ', twist ? `${plan.task}\n${twist}` : plan.task],
       ['من النموذج إلى القاعدة', `${plan.check}\nاكتبا على بطاقة التسجيل: ${plan.record}.`],
       ['اعرضوا وقارنوا', 'علّق الثنائيات نماذجها على الحائط مع بطاقات التسجيل. جولة سريعة: أي ثنائي كان نموذجه الأقرب إلى القاعدة؟ وماذا فعل مختلفًا؟ اختم بالقاعدة مكتوبة على السبورة إلى جانب أحد النماذج.'],
     ], mins),
@@ -679,6 +804,7 @@ function discussionEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
 
 function handsOnEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
   const plan = handsOnPlan(ctx);
+  const twist = handsOnTwist(ctx);
   const mins = distributeMinutes(ctx.duration, [1, 3, 2, 1.2]);
   return {
     titleSuffix: 'Hands-on Build',
@@ -687,7 +813,7 @@ function handsOnEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
     materials: plan.materials,
     steps: steps([
       ['Set up and split the roles', 'Each pair takes a full kit. Decide who builds first and who records — you will swap halfway through the next step. Review scissor safety.'],
-      ['Build', plan.task],
+      ['Build', twist ? `${plan.task}\n${twist}` : plan.task],
       ['From model to rule', `${plan.check}\nOn the record card write: ${plan.record}.`],
       ['Display and compare', 'Pairs post their models on the wall with their record cards. Quick tour: which pair\'s model came closest to the rule, and what did they do differently? Close with the rule written on the board next to one of the models.'],
     ], mins),

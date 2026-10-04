@@ -727,6 +727,86 @@ function requireQuestionBank(topic: string, kb: KBLesson | null, subject?: strin
   throw new NoQuestionBankError(topic);
 }
 
+/**
+ * Which version of an activity a request gets.
+ *
+ * A first generation is version 0 — the activity as it always was. Each
+ * Regenerate for the same lesson and format moves one on, so the teacher is
+ * never handed back what is already on screen; a plain request starts over.
+ * Kept in memory, per session: the offline path has no server to remember it,
+ * and a reload merely restarts the count (the next Regenerate is version 1).
+ */
+const activityVariants = new Map<string, number>();
+const MAX_TRACKED_ACTIVITIES = 200;
+
+export function nextActivityVariant(req: AIRequest): number {
+  const kind = req.activityVariant === 'warmup' ? 'warmup' : (req.activityType ?? 'group');
+  const key = [req.language, kind, req.lessonId ?? '', req.topic].join('|');
+  const next = req.regenerate === true ? (activityVariants.get(key) ?? 0) + 1 : 0;
+  activityVariants.delete(key); // re-insert last, so the oldest entry is the stalest
+  activityVariants.set(key, next);
+  if (activityVariants.size > MAX_TRACKED_ACTIVITIES) {
+    activityVariants.delete(activityVariants.keys().next().value as string);
+  }
+  return next;
+}
+
+/**
+ * The offline activity for a request, at version `variant` (0 = the first).
+ * `MockAIService.generateActivity` adds the simulated latency and picks the
+ * version; this is the part with no delay, so it can be exercised directly.
+ */
+export function buildOfflineActivity(req: AIRequest, variant = 0): ActivityOutput {
+  // The lesson flow generates a warm-up and then the main activity. Both
+  // used to reset the session, so both drew the SAME three problems and the
+  // teacher posed each of them twice in one lesson. `continueMathPractice`
+  // lets the second call carry on from where the first stopped.
+  if (!req.continueMathPractice) beginMathPracticeSession();
+
+  const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
+  const kb = groundedKb(req.topic, lang, req.lessonId);
+  const topic = req.topic;
+  const isWarmup = req.activityVariant === 'warmup';
+  const actType = isWarmup ? 'warmup' : (req.activityType ?? 'group');
+  const duration = req.duration ?? (isWarmup ? 8 : 30);
+  const math = isMathContext(topic, kb, req.subject);
+  // A warm-up poses one item; the main activity needs three (worked
+  // example, faded item, unaided item / game rounds) and the jigsaw four,
+  // one per member of a home group.
+  const wantItems = isWarmup ? 1 : actType === 'group' ? 4 : 3;
+  const practice = math
+    ? takeConcreteMathBatch(wantItems, topic, kb, lang, 'medium')
+    : isChemContext(topic, kb, req.subject)
+      ? takeConcreteChemBatch(wantItems, topic, kb, lang, 'medium')
+      : [];
+
+  const blueprint = buildActivityBlueprint(actType, {
+    topic, lang, math, practice, kb, duration, variant,
+    // The lesson's own subject id, else the caller's name — see `handsOnKind`.
+    subject: (kb ? getBookForLesson(kb)?.subjectId : undefined) ?? req.subject,
+  });
+
+  return plainActivity({
+    title: `${topic} – ${blueprint.titleSuffix}`,
+    // Report the type the caller asked for, verbatim. `activityTypeLabel`
+    // already falls back to the raw value for anything the form never
+    // offered, so an unrecognised type stays honest instead of being
+    // relabelled as the `group` fallback the blueprint used.
+    activityType: actType,
+    // Taken from the steps, not from `duration`: the two disagreed before
+    // (a "10 minute" warm-up whose steps summed to 20), and a request for
+    // fewer minutes than the format has steps cannot be honoured exactly.
+    totalDuration: blueprint.steps.reduce((sum, s) => sum + s.durationMin, 0),
+    objective: req.objectives?.trim() || blueprint.objective,
+    groupSize: blueprint.groupSize,
+    materials: blueprint.materials,
+    steps: blueprint.steps,
+    teacherTips: blueprint.teacherTips,
+    differentiation: blueprint.differentiation,
+    assessment: blueprint.assessment,
+  });
+}
+
 // ─── Main service class ───────────────────────────────────────────────────────
 
 export class MockAIService extends AIService {
@@ -1158,54 +1238,7 @@ export class MockAIService extends AIService {
    */
   async generateActivity(req: AIRequest): Promise<ActivityOutput> {
     await this.delay();
-    // The lesson flow generates a warm-up and then the main activity. Both
-    // used to reset the session, so both drew the SAME three problems and the
-    // teacher posed each of them twice in one lesson. `continueMathPractice`
-    // lets the second call carry on from where the first stopped.
-    if (!req.continueMathPractice) beginMathPracticeSession();
-
-    const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
-    const kb = groundedKb(req.topic, lang, req.lessonId);
-    const topic = req.topic;
-    const isWarmup = req.activityVariant === 'warmup';
-    const actType = isWarmup ? 'warmup' : (req.activityType ?? 'group');
-    const duration = req.duration ?? (isWarmup ? 8 : 30);
-    const math = isMathContext(topic, kb, req.subject);
-    // A warm-up poses one item; the main activity needs three (worked
-    // example, faded item, unaided item / game rounds) and the jigsaw four,
-    // one per member of a home group.
-    const wantItems = isWarmup ? 1 : actType === 'group' ? 4 : 3;
-    const practice = math
-      ? takeConcreteMathBatch(wantItems, topic, kb, lang, 'medium')
-      : isChemContext(topic, kb, req.subject)
-        ? takeConcreteChemBatch(wantItems, topic, kb, lang, 'medium')
-        : [];
-
-    const blueprint = buildActivityBlueprint(actType, {
-      topic, lang, math, practice, kb, duration,
-      // The lesson's own subject id, else the caller's name — see `handsOnKind`.
-      subject: (kb ? getBookForLesson(kb)?.subjectId : undefined) ?? req.subject,
-    });
-
-    return plainActivity({
-      title: `${topic} – ${blueprint.titleSuffix}`,
-      // Report the type the caller asked for, verbatim. `activityTypeLabel`
-      // already falls back to the raw value for anything the form never
-      // offered, so an unrecognised type stays honest instead of being
-      // relabelled as the `group` fallback the blueprint used.
-      activityType: actType,
-      // Taken from the steps, not from `duration`: the two disagreed before
-      // (a "10 minute" warm-up whose steps summed to 20), and a request for
-      // fewer minutes than the format has steps cannot be honoured exactly.
-      totalDuration: blueprint.steps.reduce((sum, s) => sum + s.durationMin, 0),
-      objective: req.objectives?.trim() || blueprint.objective,
-      groupSize: blueprint.groupSize,
-      materials: blueprint.materials,
-      steps: blueprint.steps,
-      teacherTips: blueprint.teacherTips,
-      differentiation: blueprint.differentiation,
-      assessment: blueprint.assessment,
-    });
+    return buildOfflineActivity(req, nextActivityVariant(req));
   }
 
   async generateInfographic(req: AIRequest): Promise<InfographicOutput> {

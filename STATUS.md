@@ -63,8 +63,7 @@ an announcement by default» below.
   guessed from a title 107 lessons share; Save stores the type, length and
   objective the activity was **built** with, not the live pickers; the
   evaluation-gap warm-up is saved with a group/20-min form, which is what
-  Regenerate really builds. Not changed, found in the same review: offline Regenerate
-  returns identical content for subjects with no concrete bank; Regenerate keeps
+  Regenerate really builds. Not changed, found in the same review: Regenerate keeps
   `savedId`, so Update overwrites the saved version; and typing «أنشئ نشاطًا»
   on `/home` opens the lesson plan, because `buildGeneratorNav` redirects the
   disabled `activity`/`homework` tools — part of the recorded `homeAiTools`
@@ -128,6 +127,25 @@ an announcement by default» below.
   `activityBlueprints.ts` is a keyword list: a geometric item it misses builds
   with cards instead of being measured. Tests: `handsOnActivity.test.ts`,
   `activityPrompts.test.ts`. Not looked at in a browser.
+- **Offline Regenerate returns something different for every subject**
+  (2026-10-04, follow-up). `MockAIService.generateActivity` never read
+  `regenerate`: maths and chemistry varied only because their banks draw items
+  at random, so Arabic, English, Islamic, history, biology, or a topic the book
+  does not hold got a byte-identical activity — and with `DEMO_MODE` on that is
+  the only path. Blueprints now take a `variant` (0 = the first version, to the
+  character); `nextActivityVariant` in `generators.ts` counts Regenerates per
+  lesson + format + language in memory (a plain request starts over, a reload
+  restarts the count). A variant changes the slots a blueprint fills from the
+  lesson — which key concepts and rules lead, and which wording the retrieval
+  prompt, the contestable claim, the game questions, the jigsaw parts and a
+  hands-on «challenge» use (`rotate`/`pick` over pools whose first entry is the
+  original text) — so each version differs from the last for every format, in
+  both languages, with or without a grounded lesson. **What it is not:** the
+  offline path has no bank for these subjects, so it re-frames the same lesson;
+  it does not invent new items. The live path is unchanged (it already sends
+  `regenerate`/`avoid`/`excludeVariantIds`). Only the activity generator was
+  touched — the other offline generators were not checked for the same
+  sameness. Tests: `activityRegenerate.test.ts`. Not looked at in a browser.
 - **Interface dates and times are written in Latin digits** (2026-10-03).
   Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
   «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
@@ -15175,7 +15193,8 @@ the teacher marked it and played the recording back.
 offers it, so no student can see a result: «اختباراتي»'s results and
 «تحقّق من النتيجة» are unreachable for every exam. With the flag set by hand
 in the local database, the student's result card rendered correctly. It
-needs a teacher-facing release switch.
+needed a teacher-facing release switch — added the same day, see the next
+entry.
 
 **Verified working:** the terms box gates «إنشاء حساب» and the acceptance is
 stored; email code; claim by class code with the «هل هذا اسمك؟» confirmation;
@@ -15190,5 +15209,57 @@ reports no checked state to assistive tech; the claim picker shows the
 class's English name in the Arabic UI; «5 علامة» / «خسر 3 علامة» where
 Arabic wants «علامات»; per-question marks shown as «2.00 ع»; the grade and
 subject chip rows start scrolled to the wrong end in RTL; the
-«تابعنا من حيث توقّفت» banner stays on the «تم التسليم» screen.
+«تابعنا من حيث توقّفت» banner stays on the «تم التسليم» screen. All fixed
+the same day — see «Student-side display fixes» below.
+
+## A teacher releases results, per exam, 2026-10-04
+
+**Students can now see results — when their teacher releases them.** The
+exam screen (published or closed) carries «أعلن النتائج للطلبة»; releasing
+asks for confirmation, and «إخفاء النتائج عن الطلبة» takes it back without
+asking, since hiding is never the harmful direction. `POST
+/evaluations/:id/results-release` `{ released }` sets
+`release_results_to_student`; the rule — no release for a draft, un-release
+always — is `lib/resultsRelease.ts`, tested. A paper still being marked stays
+hidden after a release (`studentResultReady` also needs a final result), and
+the button says so.
+
+Verified in a browser against the local stack: release → the student's
+«اختباراتي» row reads «النتيجة متاحة»; hide → back to «سُلِّم — بانتظار
+النتيجة».
+
+Not done: students are not notified when results are released. (The «—»
+preview for a read-aloud question, noted here at first, is fixed in the next
+entry.)
+
+## Student-side display fixes from the walkthrough, 2026-10-04
+
+The small things the student walkthrough listed, each re-checked in a browser
+against the local stack:
+
+- **Marks read as Arabic.** The exam showed «2.00 ع» per question and
+  «5 علامة» in its intro; it now says «علامة واحدة» / «علامتان» / «3 علامات»
+  and «3 أسئلة — 6 علامات» (`arMarksPhrase` / `arQuestionsPhrase` in
+  `services/arCount.ts`, tested). The teacher screens keep the «ع» shorthand
+  but drop the decimals («1 ع»). The marking screen's «خسر 3 علامة» now
+  declines too, with the accusative dual («خسر علامتين»).
+- **«تابعنا من حيث توقّفت» stays on the questions.** It was a `notice`, and
+  `notice` is also how «انتهى الوقت» reaches the «تم التسليم» screen, so a
+  resumed paper carried the line onto the hand-in screen. It is its own flag
+  now.
+- **The claim picker names the class in Arabic.** `GET /auth/join/:code`
+  already returned `nameAr`; `useJoinCodeLookup` showed `name`. It resolves
+  through `className()` (`services/materialClass.ts`) like the teacher
+  screens.
+- **A read-aloud question's preview shows its passage** (`body.passage`)
+  instead of «—» on the teacher's exam screen.
+- **The terms box reports its state.** react-native-web 0.21 drops
+  `accessibilityState` entirely — only `aria-*` reaches the DOM — so the box
+  now also sets `aria-checked`, and the two links are underlined so it is
+  clear which part of the line opens a page and which ticks the box.
+  **About 39 other controls** (`grep -rn "accessibilityState=" app
+  components`) declare `checked`/`selected`/`expanded` the same way and are
+  equally silent on the web; not changed here.
+- **The library chip rows** were already fixed by #819 (they wrap instead of
+  scrolling); confirmed, no change.
 

@@ -125,6 +125,10 @@ export default function TakeExamScreen() {
   // refuses late writes and that refusal hands in).
   const clockOffsetMs = useRef(0);
   const [notice, setNotice] = useState('');
+  // Its own flag, not a `notice`: «تابعنا من حيث توقّفت» is about the
+  // questions, and as a notice it carried over to «تم التسليم» — on a paper
+  // reopened after hand-in, and on one resumed and then handed in.
+  const [showResumed, setShowResumed] = useState(false);
 
   /**
    * Enter the paper with a sitting the server just handed over — a fresh
@@ -146,7 +150,8 @@ export default function TakeExamScreen() {
     }
     setChosen({ id: claimed.student.id, displayName: claimed.student.displayName, taken: true });
     if (code) await saveExamSession(code, { token: claimed.token, studentName: claimed.student.displayName });
-    setNotice(resumed ? t('takeResumed') : '');
+    setNotice('');
+    setShowResumed(resumed && !state.submittedAt);
     setPhase(state.submittedAt ? 'done' : 'answering');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
@@ -624,7 +629,7 @@ export default function TakeExamScreen() {
             {t('takeProgress', String(index + 1), String(questions.length))}
           </Text>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
-            {t('marksAbbrev', question?.marks ?? '')}
+            {t('takeQuestionMarks', question?.marks ?? '')}
           </Text>
           {unsavedCount > 0 && (
             <Pressable
@@ -640,9 +645,9 @@ export default function TakeExamScreen() {
           )}
         </View>
 
-        {notice ? (
+        {notice || showResumed ? (
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
-            {notice}
+            {notice || t('takeResumed')}
           </Text>
         ) : null}
 
