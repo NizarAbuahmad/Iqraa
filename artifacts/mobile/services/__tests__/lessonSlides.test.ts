@@ -27,7 +27,7 @@ import {
   splitWarmup, usableTeaching, withoutSlide,
 } from '../lessonSlides.ts';
 import { figuresForLesson } from '../bookFigures.ts';
-import { KB_LESSONS, getUnitsForSubjectGrade } from '../knowledgeBase.ts';
+import { KB_LESSONS } from '../knowledgeBase.ts';
 import type { ActivitySlide, LessonPlanOutput } from '../ai/AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 
@@ -567,8 +567,6 @@ describe('formative checks in the lesson deck', () => {
     // section title, because "تذكرة الخروج 1" is the first exit-ticket
     // question and not the first question in the deck.
     assert.ok(deck.answerKey.some(k => k.startsWith('مثال 1:')));
-    // Match on the Arabic title plus the answer rather than the whole row:
-    // an English-subject deck appends « · Quick Check 1» to the same title.
     assert.ok(deck.answerKey.some(k => k.includes('✋ تحقّق سريع 1') && k.endsWith(': ب1')));
     assert.ok(deck.answerKey.some(k => k.includes('🎫 تذكرة الخروج 1') && k.endsWith(': ب3')));
   });
@@ -858,65 +856,27 @@ describe('bookFigureCaption', () => {
   });
 });
 
-describe('bilingual chrome titles for the English subject', () => {
-  // Reported from the running app: a Grade 10 English-track deck's "مفردات
-  // الدرس" (Key Vocabulary) heading was Arabic-only even though the lesson
-  // itself teaches English — a teacher or student who does not read the
-  // Arabic label has no idea what the slide is. `opts.subject` is localised
-  // (the caller passes "English" or «اللغة الإنجليزية» depending on the app's
-  // UI language), so both spellings must trigger it.
-  const ENGLISH_PLAN: LessonPlanOutput = { ...PLAN, subject: 'English' };
-
-  // An English lesson's checks come back in English even in an Arabic deck,
-  // so its check titles must say both.
-  it('keeps the numbered check titles bilingual for the English subject', () => {
-    const deck = buildLessonDeck('Farm Equipment', true, {
-      plan: ENGLISH_PLAN, subject: 'English', checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
-    });
-    assert.ok(deck.slides.some(s => s.title === '✋ تحقّق سريع 1 · Quick Check 1'));
-    assert.ok(deck.slides.some(s => s.title === '🎫 تذكرة الخروج 1 · Exit Ticket 1'));
-  });
-
-  it('shows every section heading in both languages when subject is English', () => {
-    const deck = buildLessonDeck('Farm Equipment', true, {
-      plan: ENGLISH_PLAN, subject: 'English',
-    });
-    const summary = deck.slides.find(s => s.type === 'summary')!;
-    assert.match(summary.title, /ملخص الدرس/);
-    assert.match(summary.title, /Lesson Summary/);
-  });
-
-  it('recognises the Arabic subject label too', () => {
-    const deck = buildLessonDeck('معدات المزرعة', true, {
-      plan: ENGLISH_PLAN, subject: 'اللغة الإنجليزية',
-    });
-    const summary = deck.slides.find(s => s.type === 'summary')!;
-    assert.match(summary.title, /Lesson Summary/);
-  });
-
-  it('trusts the lesson\'s own book over the subject string when both are present', () => {
-    // A real English-track KB lesson rather than a fabricated unitId —
-    // getBookForLesson resolves through the real KB_UNITS/KB_BOOKS tables, so
-    // a made-up id would just resolve to nothing.
-    //
-    // Named explicitly rather than taken as `getUnitsForSubjectGrade(...)[0]`,
-    // which is what this used to do. That worked only while the vocational
-    // tracks were the sole English books; general English arrived in front of
-    // them on 2026-09-05 and the [0] silently became a lesson with no key
-    // terms, so the vocabulary slide this asserts on stopped existing. The
-    // test is about bilingual chrome, not about which lesson — so it says
-    // which lesson.
+describe('one language per deck', () => {
+  // English-subject decks used to carry bilingual headings («مفردات الدرس ·
+  // Key Vocabulary») over an Arabic-UI deck. They are now built in English
+  // (`contentLang`), so the headings are English and nothing else.
+  it('builds an English-subject deck with English-only headings', () => {
+    // A real English-track KB lesson, named rather than taken as `[0]` of its
+    // unit list — general English arrived in front of the vocational tracks on
+    // 2026-09-05 and a positional pick silently became a lesson with no key
+    // terms, so the vocabulary slide asserted on stopped existing.
     const englishLesson = KB_LESSONS.find(l => l.id === 'kbl-eng-agri-s1-nccd-u1_l1')!;
     assert.ok(englishLesson, 'the agriculture-track lesson still exists');
-    const deck = buildLessonDeck(englishLesson.titleAr, true, {
-      lesson: englishLesson, plan: ENGLISH_PLAN,
-      // Deliberately wrong subject string — a mismatched caller must not
-      // suppress the bilingual heading the book itself calls for.
-      subject: 'الرياضيات',
+    const deck = buildLessonDeck(englishLesson.titleEn, false, {
+      lesson: englishLesson, subject: 'English',
+      checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
     });
-    const vocab = deck.slides.find(s => s.title.includes('مفردات الدرس'));
+    const vocab = deck.slides.find(s => s.title.includes('Key Vocabulary'));
     assert.ok(vocab, 'the lesson has key terms, so a vocabulary slide exists');
-    assert.match(vocab!.title, /Key Vocabulary/);
+    assert.equal(vocab!.title, '📖 Key Vocabulary');
+    assert.ok(deck.slides.some(s => s.title === 'Quick Check 1'));
+    assert.ok(deck.slides.some(s => s.title === 'Exit Ticket 1'));
+    for (const s of deck.slides) assert.doesNotMatch(s.title, /[؀-ۿ]/, s.title);
   });
 
   it('leaves a non-English deck single-language, exactly as before', () => {

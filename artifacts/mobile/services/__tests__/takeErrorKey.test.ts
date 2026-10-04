@@ -14,6 +14,14 @@ describe('takeErrorKey', () => {
     assert.equal(takeErrorKey({ code: 'exam_closed', status: 409 }, 'takeSaveFailed'), 'takeExamClosed');
   });
 
+  it('names a used-up recording allowance, and never prints a recording rejection', () => {
+    assert.equal(takeErrorKey({ code: 'too_many_takes', status: 429 }, 'readAloudFailed'), 'readAloudNoTakesLeft');
+    // The rejection that hid a Chrome-only bug: the student read
+    // "audio must be a base64 data URL". Unknown codes fall back.
+    assert.equal(takeErrorKey({ code: 'bad_audio', status: 400 }, 'readAloudFailed'), 'readAloudFailed');
+    assert.equal(takeErrorKey({ code: 'audio_too_long', status: 413 }, 'readAloudFailed'), 'readAloudFailed');
+  });
+
   it('reads a rate limit off the status, which carries no code', () => {
     assert.equal(takeErrorKey({ code: '', status: 429 }, 'takeSaveFailed'), 'takeTooManyRequests');
   });

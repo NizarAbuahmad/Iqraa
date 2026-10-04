@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PillSelector } from '@/components/ui/PillSelector';
@@ -34,6 +35,7 @@ import type { ClassroomActivity, QuizOutput } from '@/services/ai/AIService';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { regenerationFields } from '@/services/ai/regeneration';
+import { normalizeQuestionOptions } from '@/services/optionLabels';
 import { buildGameDeckFromQuiz } from '@/services/classDeck';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { createGame, MAX_TEAMS, MIN_TEAMS } from '@/services/classGame';
@@ -55,8 +57,7 @@ const QUESTION_COUNTS = [5, 8, 10, 12];
 export default function ClassGameScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL, lang } = useLanguage();
-  const isAr = lang === 'ar';
+  const { t, isRTL, lang: uiLang } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
@@ -73,7 +74,7 @@ export default function ClassGameScreen() {
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en', teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -81,11 +82,24 @@ export default function ClassGameScreen() {
   // Labels are per-grade too: Grade 6's creative-arts book has no music in
   // it, so it must not be offered under the combined name. Same index
   // alignment as the mask above.
-  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, isAr ? 'ar' : 'en');
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, uiLang);
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
-  const [topic, setTopic] = useState(params.topic ?? '');
+  // The picked subject's material language — an English game is played in
+  // English. A subject change clears the deck, so the deck always shares it.
+  const lang = contentLang(subjects[subjectIdx].id, uiLang);
+  const isAr = lang === 'ar';
+  const [topic, setTopic] = useState(() => topicInLang(
+    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+  ));
   useWarmGrounding(topic, lang);
   const [teamCount, setTeamCount] = useState(4);
+  // Read at the moment a deck is built, not when generation was tapped: the
+  // pill stays live while a request is in flight, and a deck built with the
+  // count from the tap disagreed with the preview — the rebuild effect below
+  // only fires when the pill MOVES, so nothing corrected it.
+  const teamCountRef = useRef(teamCount);
+  teamCountRef.current = teamCount;
   const [questionCount, setQuestionCount] = useState(8);
   const [loading, setLoading] = useState(false);
   const [deck, setDeck] = useState<ClassroomActivity | null>(null);
@@ -134,17 +148,23 @@ export default function ClassGameScreen() {
     // A topic that grounds to another subject's lesson cannot make an honest
     // game — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
-    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(trimmed, lang as 'ar' | 'en', subjects[subjectIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', isAr ? conflict.nameAr : conflict.name)); return; }
+    const conflict = groundedSubjectConflict(trimmed, lang, subjects[subjectIdx].id, grades[gradeIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setCancelled(false); setLoading(true); setDeck(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en');
+    // Scoped to the picked grade and subject, and resolved ONCE: 107 Arabic
+    // titles repeat across the grade 1–10 books, so a bare title can be
+    // another grade's lesson — and `lessonId` goes to the server with
+    // `contextSource: 'curriculum'`, which stores the quiz in the pool every
+    // teacher is served from. Same rule as quiz.tsx.
+    const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+    const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en', { scope: kbScope });
     setGrounded(grounding.grounded);
     setGroundedLesson(grounding.lesson ? (isAr ? grounding.lesson.titleAr : grounding.lesson.titleEn) : '');
     const restore = () => {
@@ -157,7 +177,7 @@ export default function ClassGameScreen() {
     };
 
     try {
-      const quiz = await aiService.generateQuiz({
+      const generated = await aiService.generateQuiz({
         // Localised like quiz.tsx: `grade` is display-only and rides into the
         // generated content verbatim — an Arabic deck should not read
         // «الصف: Grade 10». `subject` stays English on purpose: it feeds
@@ -168,27 +188,32 @@ export default function ClassGameScreen() {
         numQuestions: questionCount,
         questionTypes: ['multiple_choice'],
         language: isAr ? 'arabic' : 'english',
-        additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en'),
-        unitId: generatorUnitId(trimmed, lang as 'ar' | 'en'),
-        lessonId: generatorLessonId(trimmed, lang as 'ar' | 'en'),
+        additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en', { scope: kbScope }),
+        unitId: generatorUnitId(trimmed, lang as 'ar' | 'en', kbScope),
+        lessonId: generatorLessonId(trimmed, lang as 'ar' | 'en', kbScope),
         // The quiz screen asks for the book's figures; this one did not, so
         // a game on a figure-heavy lesson had none to show.
-        bookFigureCount: generatorFigureCount(trimmed, lang as 'ar' | 'en'),
+        bookFigureCount: generatorFigureCount(trimmed, lang as 'ar' | 'en', kbScope),
         // Nothing here but the lesson the teacher picked, so the quiz behind
         // the deck can be shared with every other teacher who picks it.
         contextSource: 'curriculum',
         ...regenerationFields(opts?.regenerate === true, previous),
       }, { signal: controller.signal });
+      // The deck draws its own أ/ب/ج badges, and the live quiz prompt asks for
+      // options already lettered («أ) 3») with a lettered key — projected as
+      // is, every option read «أ  أ) 3». Normalised on the way in, as quiz.tsx
+      // does, so the key and the options also agree with each other.
+      const quiz = { ...generated, questions: generated.questions.map(normalizeQuestionOptions) };
       previousQuizRef.current = quiz;
       groundingRef.current = grounding;
 
       const built = buildGameDeckFromQuiz(quiz, trimmed, isAr, {
-        teamCount,
+        teamCount: teamCountRef.current,
         lesson: grounding.lesson,
         verified: false,
         figureUri: bookFigureUri,
         grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
-        subject: subjectNames[subjectIdx],
+        subject: subjectPickerLabels(grades[gradeIdx].id, lang)[subjectIdx],
       });
 
       // A deck with no scoreable questions is a game that cannot be played —
@@ -227,12 +252,14 @@ export default function ClassGameScreen() {
   useEffect(() => {
     const quiz = previousQuizRef.current;
     if (!deck || !quiz || deck.game?.teamCount === teamCount) return;
-    setDeck(buildGameDeckFromQuiz(quiz, topic.trim(), isAr, {
+    setDeck(buildGameDeckFromQuiz(quiz, deck.lesson, isAr, {
       teamCount,
       lesson: groundingRef.current?.lesson ?? null,
       verified: false,
       figureUri: bookFigureUri,
-      // The deck's own, not the pickers': they may have moved since it was built.
+      // The deck's own title, grade and subject, not the form's: the topic and
+      // pickers may have moved since it was built, and a cleared topic left
+      // the intro slide opening on a blank line.
       grade: deck.grade,
       subject: deck.subject,
     }));
@@ -277,7 +304,7 @@ export default function ClassGameScreen() {
         <View style={styles.form}>
           <PillSelector
             label={t('grade')}
-            options={grades.map((g, i) => ({ value: i, label: isAr ? g.nameAr : g.name })).filter(o => !teacherScope.gradeHidden[o.value])}
+            options={grades.map((g, i) => ({ value: i, label: uiLang === 'ar' ? g.nameAr : g.name })).filter(o => !teacherScope.gradeHidden[o.value])}
             value={gradeIdx}
             onChange={setGradeIdx}
             colors={colors}
@@ -413,7 +440,7 @@ export default function ClassGameScreen() {
             </View>
 
             <View style={[styles.readyCard, { backgroundColor: colors.card, borderColor: ACCENT + '40', borderRadius: colors.radius }]}>
-              <Text style={[styles.readyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.readyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isAr ? 'right' : 'left' }]}>
                 {deck.activityName}
               </Text>
               <View style={[styles.statsRow, { flexDirection: isRTL ? 'row-reverse' : 'row', borderTopColor: colors.border }]}>
@@ -426,11 +453,11 @@ export default function ClassGameScreen() {
             {/* Materials — the one thing that must
                 exist in the room before the game starts. */}
             <View style={[styles.materialsCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-              <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: isAr ? 'right' : 'left' }]}>
                 {isAr ? 'قبل أن تبدأ' : 'Before you start'}
               </Text>
               {deck.materials.map((m, i) => (
-                <View key={i} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', marginTop: 5 }}>
+                <View key={i} style={{ flexDirection: isAr ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', marginTop: 5 }}>
                   <View style={[styles.dot, { backgroundColor: ACCENT_FILL }]} />
                   <Text
                     style={{
@@ -439,8 +466,8 @@ export default function ClassGameScreen() {
                       fontFamily: 'Almarai_400Regular',
                       fontSize: 15,
                       lineHeight: 23,
-                      textAlign: isRTL ? 'right' : 'left',
-                      writingDirection: isRTL ? 'rtl' : 'ltr',
+                      textAlign: isAr ? 'right' : 'left',
+                      writingDirection: isAr ? 'rtl' : 'ltr',
                     }}
                   >
                     {isolateForeignRuns(m)}

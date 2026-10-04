@@ -286,11 +286,20 @@ function LessonWorkspace() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* ─── Top bar ─────────────────────────────────────────────── */}
-      <View style={[s.topbar, { backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: rowDir }]}>
+      {/*
+        ─── Header band ───────────────────────────────────────────
+        The logo's navy as a surface, so splash, login and the workspace read
+        as one product. It carries the two things the screen is about — which
+        lesson, and the one action that starts it — and the card below keeps
+        only what is still missing.
+      */}
+      <View style={[s.band, { backgroundColor: colors.ink }]}>
+        <View pointerEvents="none" style={[s.bandGlow, s.bandGlowA, { backgroundColor: colors.brand }]} />
+        <View pointerEvents="none" style={[s.bandGlow, s.bandGlowB, { backgroundColor: colors.brand }]} />
+      <View style={[s.topbar, { flexDirection: rowDir }]}>
         <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 10 }]}>
-          <Text style={[s.today, { color: colors.mutedForeground }]}>{todayLabel(lang as 'ar' | 'en')}</Text>
-          <AiSourceBadge isRTL={isRTL} />
+          <Text style={[s.today, { color: 'rgba(255,255,255,0.78)' }]}>{todayLabel(lang as 'ar' | 'en')}</Text>
+          <AiSourceBadge onDark isRTL={isRTL} />
         </View>
         <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 9 }]}>
           <Pressable
@@ -313,14 +322,39 @@ function LessonWorkspace() {
             style={({ pressed }) => [
               s.btn,
               s.btnGhost,
-              { borderColor: colors.primary + '55', backgroundColor: colors.card, opacity: pressed ? 0.8 : 1, flexDirection: rowDir },
+              { borderColor: 'rgba(255,255,255,0.28)', backgroundColor: 'rgba(255,255,255,0.06)', opacity: pressed ? 0.8 : 1, flexDirection: rowDir },
             ]}
             accessibilityRole="button"
           >
-            <Ionicons name="swap-horizontal" size={15} color={colors.primary} />
-            <Text style={[s.btnText, { color: colors.primary }]}>{t('changeLesson')}</Text>
+            <Ionicons name="swap-horizontal" size={15} color="#fff" />
+            <Text style={s.btnText}>{t('changeLesson')}</Text>
           </Pressable>
         </View>
+      </View>
+
+      {/* Which lesson this is */}
+      <View style={s.bandLesson}>
+        {periodLine ? (
+          <View style={[s.periodPill, { backgroundColor: colors.accent, flexDirection: rowDir, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+            <Ionicons name={next?.happeningNow ? 'radio-button-on' : 'time-outline'} size={13} color={colors.accentForeground} />
+            <Text style={[s.periodText, { color: colors.accentForeground }]}>{periodLine}</Text>
+          </View>
+        ) : null}
+        <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 7 }]}>
+          <JordanFlag width={17} />
+          <Text style={[s.crumb, { color: 'rgba(255,255,255,0.78)', textAlign: align }]}>
+            {[subjectLabel, gradeLabel].filter(Boolean).join(isAr ? ' • ' : ' • ')}
+          </Text>
+        </View>
+        <Text style={[s.lessonTitle, { color: '#FFFFFF', textAlign: align }]}>
+          {topic || t('homeNoLesson')}
+        </Text>
+        {!topic ? (
+          <Text style={[s.hint, { color: 'rgba(255,255,255,0.78)', textAlign: align }]}>
+            {t('homeNoLessonHint')}
+          </Text>
+        ) : null}
+      </View>
       </View>
 
       <View style={[s.body, { flexDirection: rowDir }]}>
@@ -328,31 +362,6 @@ function LessonWorkspace() {
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.mainCol} showsVerticalScrollIndicator={false}>
           {/* Lesson + readiness */}
           <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={[{ flexDirection: rowDir, alignItems: 'flex-start', gap: 16 }]}>
-              <View style={{ flex: 1 }}>
-                {periodLine ? (
-                  <View style={[s.periodPill, { backgroundColor: colors.secondary, flexDirection: rowDir, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-                    <Ionicons name={next?.happeningNow ? 'radio-button-on' : 'time-outline'} size={13} color={colors.primary} />
-                    <Text style={[s.periodText, { color: colors.primary }]}>{periodLine}</Text>
-                  </View>
-                ) : null}
-                <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 7, marginBottom: 7 }]}>
-                  <JordanFlag width={17} />
-                  <Text style={[s.crumb, { color: colors.mutedForeground, textAlign: align }]}>
-                    {[subjectLabel, gradeLabel].filter(Boolean).join(isAr ? ' • ' : ' • ')}
-                  </Text>
-                </View>
-                <Text style={[s.lessonTitle, { color: colors.foreground, textAlign: align }]}>
-                  {topic || t('homeNoLesson')}
-                </Text>
-                {!topic ? (
-                  <Text style={[s.hint, { color: colors.mutedForeground, textAlign: align }]}>
-                    {t('homeNoLessonHint')}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-
             {/*
               One next thing to set up so this card can follow the timetable —
               production had bell times but not a single class in a period.
@@ -405,7 +414,7 @@ function LessonWorkspace() {
               </View>
             ) : null}
 
-            <View style={{ marginTop: 16 }}>
+            <View>
               <LessonPrepBoard
                 rows={board}
                 colors={colors}
@@ -560,30 +569,34 @@ function suggestionsFor(board: PrepRow[], topic: string, isAr: boolean): string[
 }
 
 const s = StyleSheet.create({
+  // The navy header band. `overflow: hidden` clips the two glows to it.
+  band: { paddingHorizontal: 24, paddingTop: 14, paddingBottom: 26, gap: 14, overflow: 'hidden' },
+  bandGlow: { position: 'absolute', borderRadius: 999, opacity: 0.16 },
+  bandGlowA: { width: 320, height: 320, top: -170, left: -90 },
+  bandGlowB: { width: 260, height: 260, bottom: -190, left: 200, opacity: 0.09 },
+  bandLesson: { gap: 8 },
   topbar: {
-    height: 58,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    borderBottomWidth: 1,
   },
   today: { fontSize: 15, lineHeight: 23, fontFamily: 'Almarai_400Regular' },
-  btn: { alignItems: 'center', gap: 7, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12 },
+  btn: { alignItems: 'center', gap: 7, paddingHorizontal: 16, paddingVertical: 11, minHeight: 44, borderRadius: 12 },
   btnGhost: { borderWidth: 1 },
   btnText: { color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 },
 
   body: { flex: 1, gap: 20, padding: 22 },
   mainCol: { gap: 16, paddingBottom: 40 },
-  card: { borderWidth: 1, borderRadius: 18, padding: 22 },
+  card: { borderWidth: 1, borderRadius: 18, padding: 22, gap: 14 },
   crumb: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular' },
-  periodPill: { alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 10 },
+  periodPill: { alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
   periodText: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
-  lessonTitle: { fontSize: 22, fontFamily: 'ReadexPro_700Bold', lineHeight: 34 },
-  hint: { fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular', marginTop: 6 },
+  lessonTitle: { fontSize: 28, fontFamily: 'ReadexPro_700Bold', lineHeight: 40 },
+  hint: { fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular' },
 
 
-  errorRow: { alignItems: 'center', gap: 7, borderRadius: 10, padding: 9, marginTop: 12 },
-  nudge: { alignItems: 'center', gap: 10, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, marginTop: 14 },
+  errorRow: { alignItems: 'center', gap: 7, borderRadius: 10, padding: 9 },
+  nudge: { alignItems: 'center', gap: 10, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12 },
   nudgeText: { flex: 1, fontSize: 15, lineHeight: 23, fontFamily: 'Almarai_400Regular' },
   nudgeBtn: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   nudgeBtnText: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },

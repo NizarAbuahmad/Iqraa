@@ -47,6 +47,7 @@ import { openExternal } from '@/services/externalLinks';
 import { buildWorksheetHTML, exportAsPDF } from '@/services/share';
 import { qrResourcesForGrade } from '@/services/bookQrLinks';
 import { getVideoFrameThumbnail } from '@/services/videoThumbnail';
+import { videoCoverFromUrl } from '@/services/resourceThumbnail';
 import {
   buildResourceCatalog,
   filterResources,
@@ -134,16 +135,10 @@ const SHELF_COLOR: Record<Shelf, string> = {
 
 const ACCENT = palette.primary;
 
-/** YouTube video ID → thumbnail URL, or null for non-YouTube URLs. */
-function youtubeThumbnail(url: string): string | null {
-  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
-  return m ? `https://img.youtube.com/vi/${m[1]}/mqdefault.jpg` : null;
-}
-
 function itemThumbnail(item: ResourceItem): string | null {
   if (item.thumbnailUrl) return item.thumbnailUrl;
   if (!item.url) return null;
-  if (item.kind === 'video') return youtubeThumbnail(item.url);
+  if (item.kind === 'video') return videoCoverFromUrl(item.url);
   if (item.kind === 'image') return item.url;
   return null;
 }
