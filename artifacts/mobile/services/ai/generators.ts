@@ -1,3 +1,4 @@
+import { plainActivity } from './activityText.ts';
 import { AIService } from './AIService.ts';
 import type {
   ActivityOutput, ActivityStep, AIRequest,
@@ -1116,8 +1117,9 @@ export class MockAIService extends AIService {
     const duration = req.duration ?? (isWarmup ? 8 : 30);
     const math = isMathContext(topic, kb, req.subject);
     // A warm-up poses one item; the main activity needs three (worked
-    // example, faded item, unaided item / jigsaw parts / game rounds).
-    const wantItems = isWarmup ? 1 : 3;
+    // example, faded item, unaided item / game rounds) and the jigsaw four,
+    // one per member of a home group.
+    const wantItems = isWarmup ? 1 : actType === 'group' ? 4 : 3;
     const practice = math
       ? takeConcreteMathBatch(wantItems, topic, kb, lang, 'medium')
       : isChemContext(topic, kb, req.subject)
@@ -1128,7 +1130,7 @@ export class MockAIService extends AIService {
       topic, lang, math, practice, kb, duration,
     });
 
-    return {
+    return plainActivity({
       title: `${topic} – ${blueprint.titleSuffix}`,
       // Report the type the caller asked for, verbatim. `activityTypeLabel`
       // already falls back to the raw value for anything the form never
@@ -1146,7 +1148,7 @@ export class MockAIService extends AIService {
       teacherTips: blueprint.teacherTips,
       differentiation: blueprint.differentiation,
       assessment: blueprint.assessment,
-    };
+    });
   }
 
   async generateInfographic(req: AIRequest): Promise<InfographicOutput> {

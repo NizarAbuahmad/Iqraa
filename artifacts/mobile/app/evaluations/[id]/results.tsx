@@ -50,6 +50,7 @@ import { saveItem } from '@/services/workspace';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { ACTIVITY_TYPE_IDS } from '@/constants/activityType';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -351,10 +352,16 @@ function ClassGaps({
         topic,
         language: lang as 'ar' | 'en',
         content: JSON.stringify(out),
-        formState: { gradeIdx, subjectIdx, topic, activityTypeIdx: 0, durationIdx: 0, objective: '' },
+        formState: {
+          gradeIdx, subjectIdx, topic,
+          activityTypeIdx: ACTIVITY_TYPE_IDS.indexOf('group'),
+          // The form's shortest length (20 min) — it has no 8-minute option.
+          durationIdx: 0,
+          objective: '',
+        },
       });
       // ponytail: Regenerate on the activity screen rebuilds this as a plain
-      // group activity — its form has no warm-up slot. Add a `variant=warmup`
+      // 20-minute group activity — its form has no warm-up slot. Add a `variant=warmup`
       // route param there if teachers turn out to regenerate warm-ups.
       router.push({
         pathname: '/ai-tools/activity',
