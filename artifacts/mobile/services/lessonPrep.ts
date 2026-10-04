@@ -154,6 +154,31 @@ export function scopePickerParams(
 }
 
 /**
+ * Route params that open a generator on the teacher's current lesson — the
+ * tools tab's prefill.
+ *
+ * It used to send `topic` and `subjectIdx` and leave the grade to
+ * `scopeFromParams`, which re-grounds a bare title. 107 titles repeat across
+ * the grade 1–10 books, so a Grade 9 pick could open the tool on Grade 10 and
+ * generate for the wrong class. The pick already knows its lesson, or at
+ * least its grade and subject, so those are sent as positions — computed
+ * against the same bare picker lists the receiving screens rebuild.
+ *
+ * A pick saved before grades existed has neither, and keeps the old
+ * subject-only behaviour.
+ */
+export function pickPrefillParams(
+  pick: { topic: string; lessonId?: string | null; gradeId?: string; subjectId?: string } | null | undefined,
+  lang: 'ar' | 'en',
+): { topic?: string; gradeIdx?: string; subjectIdx?: string } {
+  if (!pick?.topic) return {};
+  const scoped = lessonPickerParams(pick.lessonId, lang) ?? scopePickerParams(pick.gradeId, pick.subjectId);
+  if (scoped) return { topic: pick.topic, ...scoped };
+  const subjectIdx = pick.subjectId ? getPickerSubjects().findIndex(s => s.id === pick.subjectId) : -1;
+  return subjectIdx >= 0 ? { topic: pick.topic, subjectIdx: String(subjectIdx) } : { topic: pick.topic };
+}
+
+/**
  * The grade/subject a generator screen should open on, given its route params.
  *
  * Every screen used to inline this, and the inline version had two holes that
