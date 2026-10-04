@@ -119,7 +119,9 @@ API-wide).
     does.
   - A repeat returns 409 `already_added`; the app treats it as success, so a
     double tap is harmless.
-  - A missing table answers 503 `class_resources_unavailable`.
+  - A missing table answers 503 `roster_storage_unavailable` — the code
+    `failRoster` already returns and the app already understands. `DELETE`
+    answers it too.
 - `DELETE /:rid` removes the row only. It never touches the Library item.
 - A class that is not the caller's answers **404**, never 403, so a class's
   existence does not leak.
@@ -131,8 +133,9 @@ API-wide).
   empty class with nothing saved now has somewhere to go.
 - **Library picker** (new component, not more lines in the 1,800-line class
   screen): items from `buildResourceCatalog`, narrowed with the existing,
-  tested `filterResources({ gradeId, subjectId })` and grouped by the same
-  shelves as the Library screen. One tap adds; the sheet stays open so several
+  tested `filterResources({ gradeId, subjectId })` and ordered by the same
+  shelf order as the Library screen, each row carrying its kind label (no
+  section headers — a deliberate simplification). One tap adds; the sheet stays open so several
   can be added; items already in the class show «مضاف»; «تم» closes. It uses a
   compact row (title, kind icon, add button) rather than the Library screen's
   cover cards, so the Library screen is untouched. `listLibrary` already
@@ -169,9 +172,14 @@ API-wide).
   at the start of a line in the PR body (matched literally). The daily
   `schema-check` job also catches a miss, and `verify-schema` checks columns,
   not only table names.
-- **Tolerant read, loud write.** `GET` degrades to empty; `POST` answers 503
-  and the app shows the existing save-to-class error.
-- Class or account deleted: rows cascade.
+- **Tolerant read, loud write.** `GET` degrades to empty; `POST` and `DELETE`
+  answer 503 and the app shows a new, accurate message («تعذّر تحديث موارد
+  الشعبة»). The existing save-to-class error says "the material is saved",
+  which would be false here.
+- Account deleted: rows cascade. A class is never hard-deleted in the product:
+  `DELETE /classes/:id` archives it, and every per-id route then answers 404
+  through `findLiveClass`, so an archived class's shelf is unreachable rather
+  than removed.
 - A staff upload deleted after being added: flagged `unavailable` (above).
 
 ## Testing and verification
@@ -205,9 +213,10 @@ API-wide).
   under a server-generated key. `GET` mints a fresh signed URL per row and
   never stores one, and never signs a key taken from the request.
   - **Limitation to accept:** no video upload under the 8 MB data-URL cap.
-  - **To design there:** deleting a class cascades the rows but not the stored
-    objects, so the class-delete handler must delete those objects first (or a
-    sweep must).
+  - **To design there:** deleting an *account* cascades the rows but not the
+    stored objects, so the account-deletion path must delete a teacher's
+    class-resource files first (or a sweep must). Archiving a class leaves the
+    files in place and needs nothing.
 
 ## Out of scope for piece #1
 
