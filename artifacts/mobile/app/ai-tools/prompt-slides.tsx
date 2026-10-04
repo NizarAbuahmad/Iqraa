@@ -24,7 +24,7 @@
  * of "edit this text" placeholders, which teachers read as a broken feature, so
  * a failed generation now shows an error instead of fabricating a deck.
  */
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -52,6 +52,8 @@ import { palette } from '@/constants/colors';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { normalizeSlideCountText, slideCountFromText } from '@/services/slideCountInput';
 import { useDeckWorkspace } from '@/hooks/useDeckWorkspace';
+import { parseSavedDeck } from '@/services/savedDeck';
+import { getItem } from '@/services/workspace';
 import { useSlideEditor } from '@/hooks/useSlideEditor';
 import { DeckOutline } from '@/components/slides/DeckOutline';
 import { DeckActions } from '@/components/slides/DeckActions';
@@ -87,7 +89,7 @@ export default function PromptSlidesScreen() {
   // Reopening a saved item from موادي pushes here with its `formState`
   // spread as params (see workspace/view.tsx's `editRoute`) — the same keys
   // `toggleSave` below writes, so the form comes back exactly as it was left.
-  const params = useLocalSearchParams<{ prompt?: string; slideCountText?: string; source?: string }>();
+  const params = useLocalSearchParams<{ prompt?: string; slideCountText?: string; source?: string; savedId?: string }>();
 
   const [prompt, setPrompt] = useState(params.prompt ?? '');
   const [slideCountText, setSlideCountText] = useState(params.slideCountText ?? '');
@@ -157,6 +159,34 @@ export default function PromptSlidesScreen() {
   });
   const forgetSaved = workspace.forget;
   const editor = useSlideEditor({ deck, setDeck, isAr, t, showToast });
+
+  /**
+   * A deck reopened from موادي. «تعديل» sends `savedId` with the prompt, count
+   * and source, and this screen used to read only those: the deck itself — its
+   * slides, its edits — was never loaded, so the teacher had a prefilled form
+   * and one press from replacing what they had built. Load the stored deck and
+   * its workspace link; an item that is gone or unreadable leaves the form and
+   * says so.
+   */
+  useEffect(() => {
+    const id = params.savedId;
+    if (!id) return;
+    let cancelled = false;
+    void (async () => {
+      const item = await getItem(id).catch(() => null);
+      if (cancelled) return;
+      // A teacher who pressed Build before the read came back keeps theirs.
+      if (deckRef.current || abortRef.current) return;
+      const loaded = item ? parseSavedDeck(item.content) : null;
+      if (!loaded) { showToast(t('savedDeckUnreadable')); return; }
+      if (params.prompt) {
+        setBuiltFrom({ prompt: params.prompt, slideCountText: params.slideCountText ?? '', source: params.source ?? '' });
+      }
+      workspace.adopt(id, loaded, deckIdentity(loaded));
+      setDeck(loaded);
+    })();
+    return () => { cancelled = true; };
+  }, [params.savedId]);
 
   /**
    * Build pressed. Ask first, unless there is nothing worth asking.
@@ -258,7 +288,7 @@ export default function PromptSlidesScreen() {
       // deck rather than after it. Polish runs first: it drops the slides that
       // say nothing, and a dropped slide should not have had a graph inserted
       // after it.
-      const built = attachDrawnVisuals(polishDeck(out), isAr);
+      const built = attachDrawnVisuals(polishDeck(out, isAr), isAr);
       setAsking([]); setAnswers({});
       setBuiltFrom(form);
       setDeck(built);
@@ -343,10 +373,10 @@ export default function PromptSlidesScreen() {
               <Ionicons name="sparkles" size={22} color="#fff" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
                 {t('promptSlidesTitle')}
               </Text>
-              <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }}>
+              <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }}>
                 {t('promptSlidesSubtitle')}
               </Text>
             </View>
@@ -369,7 +399,7 @@ export default function PromptSlidesScreen() {
         </LinearGradient>
 
         <View style={styles.form}>
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: 0 }]}>
+          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: 0 }]}>
             {t('promptSlidesFieldLabel')}
           </Text>
           <TextInput
@@ -389,7 +419,7 @@ export default function PromptSlidesScreen() {
             }]}
           />
           {error && !prompt.trim() ? (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
           ) : null}
@@ -408,7 +438,7 @@ export default function PromptSlidesScreen() {
               size={16}
               color={colors.primary}
             />
-            <Text style={{ color: colors.primary, fontFamily: 'Cairo_500Medium', fontSize: 14 }}>
+            <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>
               {t('promptSlidesSourceToggle')}
             </Text>
             {!sourceOpen && source.trim() ? (
@@ -442,7 +472,7 @@ export default function PromptSlidesScreen() {
             </>
           )}
 
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('promptSlidesSlideCountLabel')}
           </Text>
           <TextInput
@@ -468,7 +498,7 @@ export default function PromptSlidesScreen() {
                   style={[styles.questionCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}
                 >
                   <Text style={{
-                    color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13,
+                    color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13,
                     textAlign: isRTL ? 'right' : 'left', marginBottom: 10,
                   }}>
                     {q.question}
@@ -493,7 +523,7 @@ export default function PromptSlidesScreen() {
                         >
                           <Text style={{
                             color: on ? palette.primaryForeground : colors.mutedForeground,
-                            fontFamily: 'Cairo_500Medium', fontSize: 12,
+                            fontFamily: 'ReadexPro_500Medium', fontSize: 12,
                           }}>
                             {opt.label}
                           </Text>
@@ -520,7 +550,7 @@ export default function PromptSlidesScreen() {
 
           {asking.length > 0 && !loading && (
             <Pressable onPress={() => { void generate({ withAnswers: false }); }} style={styles.skipBtn}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                 {t('promptSlidesSkipQuestions')}
               </Text>
             </Pressable>
@@ -549,7 +579,7 @@ export default function PromptSlidesScreen() {
             <View style={[styles.emptyIcon, { backgroundColor: ACCENT_FILL }]}>
               <Ionicons name="sparkles" size={26} color="#fff" />
             </View>
-            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
+            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold' }]}>
               {t('promptSlidesEmptyTitle')}
             </Text>
             <Text style={[styles.emptyHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
@@ -562,11 +592,11 @@ export default function PromptSlidesScreen() {
           <View style={{ marginHorizontal: 20 }}>
             <View style={[styles.previewCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
               <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <Text style={[styles.previewTitle, { flex: 1, color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[styles.previewTitle, { flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
                   {deck.activityName}
                 </Text>
               </View>
-              <Text style={[styles.previewMeta, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.previewMeta, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('slideCount', deck.slides.length)}
               </Text>
 
@@ -606,7 +636,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5,
     borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.14)',
   },
-  heroPillText: { color: 'rgba(255,255,255,0.9)', fontFamily: 'Cairo_500Medium', fontSize: 11 },
+  heroPillText: { color: 'rgba(255,255,255,0.9)', fontFamily: 'ReadexPro_500Medium', fontSize: 11 },
   questionCard: { padding: 14, borderWidth: 1 },
   answerChip: { paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1.5 },
   skipBtn: { alignItems: 'center', paddingVertical: 12 },
@@ -619,14 +649,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptyTitle: { fontSize: 16, textAlign: 'center' },
-  emptyHint: { fontSize: 12, lineHeight: 19, textAlign: 'center' },
+  emptyHint: { fontSize: 13, lineHeight: 21, textAlign: 'center' },
   form: { padding: 20 },
-  promptInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 96, textAlignVertical: 'top', marginBottom: 8 },
+  promptInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, minHeight: 96, textAlignVertical: 'top', marginBottom: 8 },
   fieldLabel: { fontSize: 13, marginBottom: 6, marginTop: 4 },
   sourceToggle: { alignItems: 'center', gap: 6, paddingVertical: 8, marginBottom: 2 },
-  sourceInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 120, textAlignVertical: 'top', marginBottom: 6 },
-  sourceHint: { fontSize: 12, marginBottom: 12, lineHeight: 18, fontFamily: 'Almarai_400Regular' },
-  slideCountInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, marginBottom: 16, width: 100 },
+  sourceInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, minHeight: 120, textAlignVertical: 'top', marginBottom: 6 },
+  sourceHint: { fontSize: 13, marginBottom: 12, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
+  slideCountInput: { borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, marginBottom: 16, width: 100 },
   previewCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
   previewTitle: { fontSize: 17 },
   previewMeta: { fontSize: 12 },

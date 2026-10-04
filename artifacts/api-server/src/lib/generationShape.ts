@@ -206,11 +206,33 @@ export function extractJSON(raw: string): unknown {
  * production 2026-09-30, one lesson plan of 32). Strict parse first, so a valid
  * reply is never touched; only on failure are the illegal escapes doubled.
  *
- * ponytail: \b \f \t \n \r are legal JSON escapes, so a LaTeX «\frac» or
- * «\theta» parses without error as a form feed / tab. That is a different
- * failure, silent, and not repaired here.
+ * The other half of the same mistake is silent: \b \f \t \n \r are legal JSON
+ * escapes, so a LaTeX «\frac» or «\theta» parses without error as a form feed
+ * or a tab and the lesson prints «rac{1}{2}». `restoreLatexEscapes` turns those
+ * back into a literal backslash, but only when the letters after the escape
+ * spell a LaTeX command — an ordinary «\n» followed by a word is left alone.
+ * The prompts also tell the model not to write LaTeX; this is the backstop.
  */
+const LATEX_AFTER: Record<string, RegExp> = {
+  f: /^(?:rac|orall)(?![a-z])/,
+  t: /^(?:heta|imes|ext|frac|ilde|riangle)(?![a-z])/,
+  n: /^(?:eq|abla)(?![a-z])/,
+  r: /^(?:ight|angle)(?![a-z])/,
+  b: /^(?:eta|inom|egin|oldsymbol)(?![a-z])/,
+};
+
+/** Exported for the test: a JSON text in, the same text with LaTeX escapes made literal. */
+export function restoreLatexEscapes(text: string): string {
+  // Pairs are consumed whole, so «\\frac» (an escaped backslash) is never touched.
+  return text.replace(/\\(["\\/]|u[0-9a-fA-F]{4}|[bfnrt]|[\s\S])/g, (m, esc: string, offset: number) => {
+    const after = LATEX_AFTER[esc];
+    if (after && after.test(text.slice(offset + 2, offset + 12))) return "\\\\" + esc;
+    return m;
+  });
+}
+
 function parseRepairing(text: string): unknown {
+  text = restoreLatexEscapes(text);
   try {
     return JSON.parse(text);
   } catch (err) {

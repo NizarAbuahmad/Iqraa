@@ -28,6 +28,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { REPORT_REASON_KEYS } from '@/services/reportReasons';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   addGroupMembers,
@@ -57,7 +58,6 @@ import { useStudentAccountsEnabled } from '@/services/features';
 import { saveRemoteImage } from '@/services/share';
 import { goBack } from '@/services/navigation';
 
-const REPORT_REASON_KEYS = ['reportReasonInappropriate', 'reportReasonBullying', 'reportReasonSpam', 'reportReasonOther'] as const;
 
 export default function ThreadScreen() {
   const { threadId } = useLocalSearchParams<{ threadId: string }>();
@@ -307,8 +307,10 @@ export default function ThreadScreen() {
   const headerTitle = isGroup ? (lang === 'ar' ? thread?.titleAr : thread?.title) || thread?.title : '';
   const isTeacher = isTeacherRole(user?.role);
   // The server enforces this too (see routes/messaging.ts) — hiding the
-  // composer is the courtesy, not the rule.
-  const canPost = !thread || !isGroup || isTeacher || thread.studentPostingEnabled;
+  // composer is the courtesy, not the rule. Nothing is shown until the thread
+  // has loaded: assuming "can post" meanwhile flashed a composer in every
+  // announcement-only class group before swapping it for the notice.
+  const canPost = !!thread && (!isGroup || isTeacher || thread.studentPostingEnabled);
 
   return (
     <KeyboardAvoidingView
@@ -330,7 +332,7 @@ export default function ThreadScreen() {
               <Ionicons name="people" size={18} color={colors.primary} />
             </View>
             <Text
-              style={[styles.headerName, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}
+              style={[styles.headerName, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}
               numberOfLines={1}
             >
               {headerTitle}
@@ -346,7 +348,7 @@ export default function ThreadScreen() {
                 name inside uses the non-flex variant. */}
             <View style={{ flex: 1 }}>
               <Text
-                style={[styles.headerNameStacked, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}
+                style={[styles.headerNameStacked, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}
                 numberOfLines={1}
               >
                 {thread.otherParticipant.firstName} {thread.otherParticipant.lastName}
@@ -449,7 +451,7 @@ export default function ThreadScreen() {
         </Text>
       ) : null}
 
-      {!canPost ? (
+      {!thread ? null : !canPost ? (
         <View style={[styles.inputBar, { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 8) }]}>
           <View style={[styles.readOnlyNotice, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="megaphone-outline" size={16} color={colors.mutedForeground} />
@@ -510,7 +512,7 @@ export default function ThreadScreen() {
                       size={18}
                       color={thread.studentPostingEnabled ? colors.primary : colors.mutedForeground}
                     />
-                    <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+                    <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                       {t('messagingAllowStudentPosting')}
                     </Text>
                   </Pressable>
@@ -535,7 +537,7 @@ export default function ThreadScreen() {
                     style={styles.menuRow}
                   >
                     <Ionicons name="key-outline" size={18} color={colors.foreground} />
-                    <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+                    <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                       {t('messagingStudentCodes')}
                     </Text>
                   </Pressable>
@@ -543,14 +545,14 @@ export default function ThreadScreen() {
                 {isOwnerOfGroup ? (
                   <Pressable onPress={() => { setMenuOpen(false); setManageOpen(true); }} style={styles.menuRow}>
                     <Ionicons name="people-outline" size={18} color={colors.foreground} />
-                    <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+                    <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                       {t('messagingManageMembers')}
                     </Text>
                   </Pressable>
                 ) : thread?.type === 'custom_group' ? (
                   <Pressable onPress={() => { setMenuOpen(false); void handleLeaveGroup(); }} disabled={leaving} style={styles.menuRow}>
                     <Ionicons name="exit-outline" size={18} color={colors.destructive} />
-                    <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+                    <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                       {t('messagingLeaveGroup')}
                     </Text>
                   </Pressable>
@@ -559,7 +561,7 @@ export default function ThreadScreen() {
             ) : (
               <Pressable onPress={toggleBlock} disabled={blocking} style={styles.menuRow}>
                 <Ionicons name={thread?.isBlocked ? 'checkmark-circle-outline' : 'ban-outline'} size={18} color={colors.destructive} />
-                <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+                <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                   {thread?.isBlocked ? t('messagingUnblock') : t('messagingBlock')}
                 </Text>
               </Pressable>
@@ -573,7 +575,7 @@ export default function ThreadScreen() {
         <Pressable style={styles.newChatBackdrop} onPress={() => setManageOpen(false)}>
           <Pressable style={[styles.newChatSheet, { backgroundColor: colors.background }]} onPress={e => e.stopPropagation()}>
             <View style={[styles.newChatHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align, flex: 1 }]}>
+              <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align, flex: 1 }]}>
                 {t('messagingManageMembers')}
               </Text>
               <Pressable onPress={() => setManageOpen(false)} hitSlop={10}>
@@ -588,7 +590,7 @@ export default function ThreadScreen() {
               renderItem={({ item }) => (
                 <View style={[styles.memberManageRow, { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <Avatar firstName={item.firstName} lastName={item.lastName} size={30} colors={colors} />
-                  <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }} numberOfLines={1}>
+                  <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }} numberOfLines={1}>
                     {item.firstName} {item.lastName}
                   </Text>
                   {item.userId !== thread?.createdBy ? (
@@ -604,7 +606,7 @@ export default function ThreadScreen() {
               style={[styles.addMembersRow, { borderColor: colors.primary, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name="person-add-outline" size={18} color={colors.primary} />
-              <Text style={{ color: colors.primary, fontFamily: 'Cairo_500Medium' }}>{t('messagingPickMembers')}</Text>
+              <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium' }}>{t('messagingPickMembers')}</Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -631,7 +633,7 @@ export default function ThreadScreen() {
       <Modal visible={!!reportTarget} transparent animationType="fade" onRequestClose={() => setReportTarget(null)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setReportTarget(null)}>
           <View style={[styles.menuCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('messagingReportTitle')}
             </Text>
             {REPORT_REASON_KEYS.map(key => (
@@ -677,14 +679,14 @@ const styles = StyleSheet.create({
   // below it) rather than being the row's only flexible child, unlike
   // headerName above which is shared with the group-thread branch.
   headerNameStacked: { fontSize: 16 },
-  headerRole: { fontSize: 12 },
+  headerRole: { fontSize: 13 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 80, gap: 12 },
-  emptyText: { fontSize: 14, lineHeight: 22 },
-  errorText: { fontSize: 12, lineHeight: 19, paddingHorizontal: 16, paddingBottom: 4 },
+  emptyText: { fontSize: 15, lineHeight: 24 },
+  errorText: { fontSize: 13, lineHeight: 21, paddingHorizontal: 16, paddingBottom: 4 },
   inputBar: { borderTopWidth: 1, paddingHorizontal: 12, paddingTop: 10 },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
-  input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0 },
+  input: { flex: 1, fontSize: 15, maxHeight: 100, paddingVertical: 0 },
   sendBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   menuCard: { width: '100%', maxWidth: 340, borderRadius: 16, padding: 10, gap: 2 },
@@ -692,7 +694,7 @@ const styles = StyleSheet.create({
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 10 },
   menuText: { fontSize: 14, flex: 1 },
   readOnlyNotice: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 12 },
-  readOnlyText: { fontSize: 12.5, lineHeight: 20, flexShrink: 1 },
+  readOnlyText: { fontSize: 15, lineHeight: 23, flexShrink: 1 },
   attachmentPreview: { alignItems: 'center', gap: 8, paddingHorizontal: 4, paddingBottom: 8 },
   viewerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
   viewerBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 8 },

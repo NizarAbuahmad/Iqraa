@@ -79,3 +79,18 @@ export function resolveSelectedId<T extends { id: string }>(
 ): string {
   return options.some(o => o.id === selectedId) ? selectedId : (options[0]?.id ?? '');
 }
+
+/**
+ * The grade a student's screen should open on: the first of the student's
+ * own grades that the catalog shows. `undefined` when none is shown, so the
+ * caller keeps its usual default. Unlike `narrowToSelection` this never
+ * narrows — a student may still browse other grades — it only picks where
+ * to start.
+ */
+export function preferredGrade<T extends { id: string }>(all: readonly T[], preferredIds: readonly string[]): T | undefined {
+  for (const id of preferredIds) {
+    const hit = all.find(g => g.id === id);
+    if (hit) return hit;
+  }
+  return undefined;
+}

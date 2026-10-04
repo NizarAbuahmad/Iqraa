@@ -308,20 +308,20 @@ export default function EvaluationDetailScreen() {
         <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]} numberOfLines={2}>
+        <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]} numberOfLines={2}>
           {evaluation ? (lang === 'ar' ? evaluation.titleAr : evaluation.title) || t('newEvaluation') : ''}
         </Text>
         {evaluation && (
           <View style={[styles.metaRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <View style={[styles.statusPill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
                 {t(STATUS_KEY[evaluation.status])}
               </Text>
             </View>
-            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
               {t('evalQuestionCount', questions.length)}
             </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
               {t('evalTotalMarks', evaluation.totalMarks)}
             </Text>
           </View>
@@ -381,7 +381,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="create-outline" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('enterAnswersBtn')}
             </Text>
           </Pressable>
@@ -390,7 +390,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="bar-chart-outline" size={18} color={ACCENT} />
-            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('resultsDashboardBtn')}
             </Text>
           </Pressable>
@@ -400,7 +400,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.resultsBtn, { borderColor: colors.border, opacity: busy === 'close' ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="lock-closed-outline" size={18} color={colors.mutedForeground} />
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('closeEvaluationBtn')}
             </Text>
           </Pressable>
@@ -409,7 +409,7 @@ export default function EvaluationDetailScreen() {
 
       {evaluation?.status === 'closed' && (
         <View style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
             {t('evaluationClosedNote')}
           </Text>
           <Pressable
@@ -417,7 +417,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="bar-chart-outline" size={18} color={ACCENT} />
-            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('resultsDashboardBtn')}
             </Text>
           </Pressable>
@@ -427,7 +427,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.resultsBtn, { borderColor: colors.border, opacity: busy === 'publish' ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="lock-open-outline" size={18} color={colors.mutedForeground} />
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('publishEvaluationBtn')}
             </Text>
           </Pressable>
@@ -446,7 +446,7 @@ export default function EvaluationDetailScreen() {
             <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
             <View style={{ flex: 1, gap: 4 }}>
               {genWarnings.map((w, i) => (
-                <Text key={i} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+                <Text key={i} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                   {`• ${w}`}
                 </Text>
               ))}
@@ -460,14 +460,14 @@ export default function EvaluationDetailScreen() {
           <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <View style={[styles.qNum, { backgroundColor: ACCENT_FILL }]}>
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 12 }}>{i + 1}</Text>
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 12 }}>{i + 1}</Text>
               </View>
               <View style={[styles.typeBadge, { backgroundColor: ACCENT + '18' }]}>
-                <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
+                <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }}>
                   {t(TYPE_LABEL_KEY[q.type])}
                 </Text>
               </View>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
                 {t('marksAbbrev', q.marks)}
               </Text>
               {evaluation?.status === 'draft' && (
@@ -489,7 +489,7 @@ export default function EvaluationDetailScreen() {
             {q.verification?.verified ? (
               <View style={[styles.verifiedRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Ionicons name="shield-checkmark" size={13} color="#067647" />
-                <Text style={{ color: '#067647', fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
+                <Text style={{ color: '#067647', fontFamily: 'ReadexPro_500Medium', fontSize: 11 }}>
                   {t('keyVerifiedBadge')}
                 </Text>
               </View>
@@ -550,7 +550,7 @@ export default function EvaluationDetailScreen() {
             {busy === 'publish' ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
                 {t('publishEvaluationBtn')}
               </Text>
             )}
@@ -565,7 +565,7 @@ export default function EvaluationDetailScreen() {
             ) : (
               <>
                 <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-                <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+                <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
                   {t('regenerateQuestionsBtn')}
                 </Text>
               </>
@@ -577,7 +577,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.actionBtnOutline, { borderColor: ACCENT, opacity: !!busy ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="add-circle-outline" size={16} color={ACCENT} />
-            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
               {t('addOwnQuestionBtn')}
             </Text>
           </Pressable>
@@ -589,7 +589,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.actionBtnOutline, { borderColor: ACCENT, opacity: !!busy ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="mic-outline" size={16} color={ACCENT} />
-            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
               {t('addReadAloudBtn')}
             </Text>
           </Pressable>
@@ -601,7 +601,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.actionBtnOutline, { borderColor: ACCENT, opacity: !!busy ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="create-outline" size={16} color={ACCENT} />
-            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
               {t('addDictationBtn')}
             </Text>
           </Pressable>
@@ -712,11 +712,11 @@ function KeyCheckNotice({
     <View style={[styles.verifySummary, { backgroundColor: tone.bg, borderColor: tone.border }]}>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
         <Ionicons name={tone.icon} size={15} color={tone.fg} />
-        <Text style={{ flex: 1, color: tone.fg, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: align }}>
+        <Text style={{ flex: 1, color: tone.fg, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
           {title}
         </Text>
       </View>
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, marginTop: 4, textAlign: align, lineHeight: 18 }}>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 4, textAlign: align, lineHeight: 20 }}>
         {note}
       </Text>
     </View>
@@ -745,13 +745,13 @@ function ShareLinkCard({
   return (
     <View style={{ marginHorizontal: 20, marginTop: 16 }}>
       <View style={[styles.shareCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
           {t('shareExamTitle')}
         </Text>
 
         {!attachedToClass ? (
           <>
-            <Text style={{ color: '#B54708', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 8, textAlign: align }}>
+            <Text style={{ color: '#B54708', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginTop: 8, textAlign: align }}>
               {t('shareExamNeedsClass')}
             </Text>
             {/* Naming the problem without offering the fix is what made this a
@@ -761,23 +761,23 @@ function ShareLinkCard({
               style={[styles.shareBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name="people-outline" size={16} color={ACCENT} />
-              <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                 {t('shareExamAttachNow')}
               </Text>
             </Pressable>
           </>
         ) : (
           <>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 4, textAlign: align }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 4, textAlign: align }}>
               {t('shareExamHint')}
             </Text>
             <Text
               selectable
-              style={{ color: ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 34, letterSpacing: 4, textAlign: 'center', marginVertical: 12 }}
+              style={{ color: ACCENT, fontFamily: 'ReadexPro_700Bold', fontSize: 34, letterSpacing: 4, textAlign: 'center', marginVertical: 12 }}
             >
               {shareCode}
             </Text>
-            <Text selectable style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: 'center' }}>
+            <Text selectable style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
               {url}
             </Text>
             <Pressable
@@ -788,7 +788,7 @@ function ShareLinkCard({
               style={[styles.shareBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={16} color={ACCENT} />
-              <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                 {t(copied ? 'copiedToClipboard' : 'shareExamCopyLink')}
               </Text>
             </Pressable>
@@ -810,7 +810,7 @@ const styles = StyleSheet.create({
   qTop: { alignItems: 'center', gap: 8, marginBottom: 8 },
   qNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  qText: { fontSize: 14, lineHeight: 20 },
+  qText: { fontSize: 15, lineHeight: 21 },
   verifiedRow: { alignItems: 'center', gap: 5, marginBottom: 6 },
   verifySummary: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
   actionBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 15, borderRadius: 10 },

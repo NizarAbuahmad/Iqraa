@@ -112,7 +112,7 @@ export default function DeleteAccountScreen() {
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('deleteAccountTitle')}
         </Text>
       </View>
@@ -134,7 +134,7 @@ export default function DeleteAccountScreen() {
           </Text>
         ) : null}
 
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
           {hasPassword === false ? t('deleteAccountEmailLabel') : t('deleteAccountPasswordLabel')}
         </Text>
         <TextInput
@@ -184,7 +184,7 @@ export default function DeleteAccountScreen() {
             <Text
               style={[
                 styles.deleteBtnText,
-                { color: colors.destructiveForeground, fontFamily: 'Cairo_700Bold' },
+                { color: colors.destructiveForeground, fontFamily: 'ReadexPro_700Bold' },
               ]}
             >
               {t('deleteAccountSubmit')}
@@ -193,7 +193,7 @@ export default function DeleteAccountScreen() {
         </Pressable>
 
         <Pressable onPress={() => goBack()} hitSlop={10} disabled={busy} style={styles.cancelBtn}>
-          <Text style={[styles.cancelText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+          <Text style={[styles.cancelText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
             {t('deleteAccountCancel')}
           </Text>
         </Pressable>
@@ -207,11 +207,11 @@ const styles = StyleSheet.create({
   backBtn: { padding: 4, marginBottom: 8 },
   title: { fontSize: 22 },
   lead: { fontSize: 15, lineHeight: 26 },
-  body: { fontSize: 14, lineHeight: 25, marginTop: 12 },
-  hint: { fontSize: 13, lineHeight: 22, marginTop: 12 },
+  body: { fontSize: 15, lineHeight: 27, marginTop: 12 },
+  hint: { fontSize: 15, lineHeight: 25, marginTop: 12 },
   label: { fontSize: 14, marginTop: 28, marginBottom: 8 },
   input: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
-  error: { fontSize: 13, lineHeight: 21, marginTop: 8 },
+  error: { fontSize: 15, lineHeight: 24, marginTop: 8 },
   deleteBtn: { marginTop: 24, paddingVertical: 15, alignItems: 'center', justifyContent: 'center' },
   deleteBtnText: { fontSize: 15 },
   cancelBtn: { marginTop: 8, paddingVertical: 14, alignItems: 'center' },

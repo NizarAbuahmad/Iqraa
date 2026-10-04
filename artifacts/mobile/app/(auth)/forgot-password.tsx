@@ -99,7 +99,7 @@ export default function ForgotPasswordScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
 
-        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {step === 'email' ? t('forgotPasswordTitle') : t('resetPasswordTitle')}
         </Text>
         <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -174,7 +174,7 @@ export default function ForgotPasswordScreen() {
                 style={styles.resendRow}
                 accessibilityRole="link"
               >
-                <Text style={[styles.resendText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
+                <Text style={[styles.resendText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {t('resendCode')}
                 </Text>
               </Pressable>
@@ -200,10 +200,10 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, paddingHorizontal: 24, width: '100%', alignSelf: 'center' },
   back: { marginBottom: 20, width: 40 },
   heading: { fontSize: 26, marginBottom: 6 },
-  sub: { fontSize: 14, lineHeight: 22, marginBottom: 24 },
+  sub: { fontSize: 15, lineHeight: 24, marginBottom: 24 },
   card: { padding: 24, borderWidth: 1, marginBottom: 24, gap: 16 },
   banner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
-  bannerText: { flex: 1, fontSize: 13, lineHeight: 21 },
+  bannerText: { flex: 1, fontSize: 15, lineHeight: 24 },
   resendRow: { alignItems: 'center', paddingVertical: 8 },
   resendText: { fontSize: 14 },
 });

@@ -156,7 +156,7 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
             <Button label={t('playDrillStart')} onPress={start} style={{ backgroundColor: ACCENT }} fullWidth size="lg" />
             <Button label={t('playDrillShare')} onPress={share} variant="secondary" fullWidth />
             {copied ? (
-              <Text style={{ color: RIGHT, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: 'center' }}>
+              <Text style={{ color: RIGHT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: 'center' }}>
                 {t('playDrillCopied')}
               </Text>
             ) : null}
@@ -224,10 +224,10 @@ function DrillRound({ config, onDone }: { config: DrillConfig; onDone: (r: Resul
   return (
     <View style={{ flex: 1, padding: 20, gap: 16 }}>
       <View style={styles.statusRow}>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
           {t('playDrillTimeLeft', secsLeft)}
         </Text>
-        <Text style={{ color: RIGHT, fontFamily: 'Cairo_700Bold', fontSize: 16 }}>✓ {state.correct}</Text>
+        <Text style={{ color: RIGHT, fontFamily: 'ReadexPro_700Bold', fontSize: 16 }}>✓ {state.correct}</Text>
       </View>
       <View style={[styles.track, { backgroundColor: colors.border }]}>
         <View style={{ width: `${(msLeft / (config.seconds * 1000)) * 100}%`, height: '100%', backgroundColor: ACCENT, borderRadius: 3 }} />
@@ -273,18 +273,18 @@ function DrillRound({ config, onDone }: { config: DrillConfig; onDone: (r: Resul
 }
 
 const styles = StyleSheet.create({
-  label: { fontFamily: 'Cairo_600SemiBold', fontSize: 15 },
+  label: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   chip: { width: 58, height: 48, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   pill: { flexGrow: 1, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
-  chipText: { fontFamily: 'Cairo_700Bold', fontSize: 16 },
+  chipText: { fontFamily: 'ReadexPro_700Bold', fontSize: 16 },
   // The pad and the sum always read left-to-right, whatever the UI direction.
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   track: { height: 6, borderRadius: 3, overflow: 'hidden' },
   problemWrap: { alignItems: 'center', paddingVertical: 12 },
-  problem: { fontFamily: 'Cairo_700Bold', fontSize: 44, writingDirection: 'ltr', textAlign: 'center' },
-  reveal: { fontFamily: 'Cairo_700Bold', fontSize: 22, marginTop: 4 },
+  problem: { fontFamily: 'ReadexPro_700Bold', fontSize: 44, writingDirection: 'ltr', textAlign: 'center' },
+  reveal: { fontFamily: 'ReadexPro_700Bold', fontSize: 22, marginTop: 4 },
   padRow: { flexDirection: 'row', gap: 10, writingDirection: 'ltr' },
   padKey: { flexBasis: '30%', flexGrow: 1, height: 58, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  padText: { fontFamily: 'Cairo_700Bold', fontSize: 24 },
+  padText: { fontFamily: 'ReadexPro_700Bold', fontSize: 24 },
 });

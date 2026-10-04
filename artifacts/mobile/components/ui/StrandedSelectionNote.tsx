@@ -94,5 +94,5 @@ const styles = StyleSheet.create({
     marginTop: -4,
     marginBottom: 16,
   },
-  text: { flex: 1, fontSize: 11.5, lineHeight: 18 },
+  text: { flex: 1, fontSize: 13, lineHeight: 20 },
 });

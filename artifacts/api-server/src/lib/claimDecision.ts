@@ -23,7 +23,17 @@ export type ClaimRelation = "self" | "guardian";
 export type ClaimRole = "student" | "parent";
 
 export type ClaimResolution =
-  | { ok: true; studentId: string; relation: ClaimRelation }
+  | {
+      ok: true;
+      studentId: string;
+      relation: ClaimRelation;
+      /**
+       * The name was picked off a class code's shared list rather than named by
+       * a per-student code. The route needs it to re-check the one-parent rule
+       * under the row lock — see `hasGuardianLink`.
+       */
+      viaClassCode: boolean;
+    }
   | { ok: false; status: number; error: string; code: ClaimErrorCode };
 
 /**
@@ -36,13 +46,15 @@ export type ClaimErrorCode =
   | "claim_code_invalid"
   | "claim_needs_name"
   | "claim_name_not_in_class"
-  | "claim_already_linked";
+  | "claim_already_linked"
+  | "claim_guardian_taken";
 
 /** Every rejection a caller may show. Kept in one place so the wording can't drift between the two callers. */
 const INVALID = { ok: false, status: 400, code: "claim_code_invalid", error: "That code is invalid or has expired" } as const;
 const NEEDS_NAME = { ok: false, status: 400, code: "claim_needs_name", error: "Choose your name from the class list" } as const;
 const NOT_IN_CLASS = { ok: false, status: 400, code: "claim_name_not_in_class", error: "That name is not on this class list" } as const;
 const ALREADY_LINKED = { ok: false, status: 409, code: "claim_already_linked", error: "This student is already linked to an account" } as const;
+const GUARDIAN_TAKEN = { ok: false, status: 409, code: "claim_guardian_taken", error: "A parent account is already linked to this student" } as const;
 
 export interface ClaimInput {
   now: Date;
@@ -54,7 +66,20 @@ export interface ClaimInput {
   /** The `class_groups` row whose joinCode matched, if any. */
   classGroup: { id: string; expiresAt: Date | null } | null;
   isMember: (studentId: string, classGroupId: string) => Promise<boolean>;
+  /**
+   * Whether some account OTHER than the caller already holds this student's
+   * self link. Same rule as `hasGuardianLink`: counting the caller's own link
+   * told a student re-entering their own code that the name belonged to
+   * another account. The claim transaction in `auth.ts` already excluded the
+   * caller; this answer, given first, did not.
+   */
   hasSelfLink: (studentId: string) => Promise<boolean>;
+  /**
+   * Whether some account OTHER than the caller already holds a guardian link to
+   * this student. The caller's own link must not count, or a parent re-sending
+   * a claim they already made would be told the name was taken by themselves.
+   */
+  hasGuardianLink: (studentId: string) => Promise<boolean>;
 }
 
 /**
@@ -94,14 +119,23 @@ export async function decideClaim(input: ClaimInput): Promise<ClaimResolution> {
 
   // Only reached on the class-code path — a per-student code already named its
   // own student, so there is nothing to verify it against.
-  if (!live(student?.expiresAt ?? null, now)) {
+  const viaClassCode = !live(student?.expiresAt ?? null, now);
+  if (viaClassCode) {
     if (!(await input.isMember(target, classGroup!.id))) return NOT_IN_CLASS;
+
+    // One parent per name on the shared list. A class code is one string handed
+    // to a whole class and its picker lists every child's name, so before this
+    // anyone holding it could pick a child that already had a parent and read
+    // that child's letters too. The name stays on the list, marked taken; the
+    // second parent of the same child is added on purpose, by the teacher, with
+    // that child's own code (the branch above this one, which is not limited).
+    if (relation === "guardian" && (await input.hasGuardianLink(target))) return GUARDIAN_TAKEN;
   }
 
   // One student, one self-link. A second sibling or friend trying the same code
-  // as a student is refused; a second guardian on the same child is expected
-  // (both parents) and deliberately unrestricted.
+  // as a student is refused. Guardians are limited only on the class-code path,
+  // above; a per-student code from the teacher may add another.
   if (relation === "self" && (await input.hasSelfLink(target))) return ALREADY_LINKED;
 
-  return { ok: true, studentId: target, relation };
+  return { ok: true, studentId: target, relation, viaClassCode };
 }

@@ -30,7 +30,7 @@ export function VerifiedBadge({ verifiedBy, computedAnswer, isRTL, t, inline }: 
     <View style={inline ? styles.wrapInline : styles.wrap}>
       <View style={[styles.badge, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name={symbolic ? 'shield-checkmark' : 'library-outline'} size={inline ? 15 : 16} color={color} />
-        <Text style={[styles.text, { fontFamily: 'Cairo_600SemiBold', color }]}>
+        <Text style={[styles.text, { fontFamily: 'ReadexPro_600SemiBold', color }]}>
           {symbolic ? t('verifiedBySymbolic') : t('verifiedByBank')}
         </Text>
       </View>
@@ -51,5 +51,5 @@ const styles = StyleSheet.create({
     paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20,
     backgroundColor: DECK_CARD_BG, borderWidth: 1, borderColor: DECK_BORDER,
   },
-  text: { fontSize: 13.5, color: TIMER_GREEN },
+  text: { fontSize: 14, color: TIMER_GREEN },
 });

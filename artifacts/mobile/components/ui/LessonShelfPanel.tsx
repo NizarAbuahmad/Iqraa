@@ -109,7 +109,7 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
       ]}
     >
       <View style={[styles.kindPill, { backgroundColor: accent + '15', borderColor: accent + '30' }]}>
-        <Text style={[styles.kindText, { color: accent, fontFamily: 'Cairo_500Medium' }]}>
+        <Text style={[styles.kindText, { color: accent, fontFamily: 'ReadexPro_500Medium' }]}>
           {kindLabel(r.kind, lang as 'ar' | 'en')}
         </Text>
       </View>
@@ -168,7 +168,7 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
         ]}
       >
         <View style={[styles.kindPill, { backgroundColor: accent + '15', borderColor: accent + '30' }]}>
-          <Text style={[styles.kindText, { color: accent, fontFamily: 'Cairo_500Medium' }]}>
+          <Text style={[styles.kindText, { color: accent, fontFamily: 'ReadexPro_500Medium' }]}>
             {t(EXTERNAL_KIND_KEY[r.kind])}
           </Text>
         </View>
@@ -205,12 +205,12 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
     <View style={styles.section}>
       <View style={[styles.sectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name="library-outline" size={16} color={accent} />
-        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
           {t('shelfTitle')}
         </Text>
         {bankTotal > 0 ? (
           <View style={[styles.countPill, { backgroundColor: accent + '15' }]}>
-            <Text style={[styles.countText, { color: accent, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.countText, { color: accent, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {t('shelfCount', bankTotal)}
             </Text>
           </View>
@@ -229,7 +229,7 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
           <>
             {shelf.external.length > 0 ? (
               <>
-                <Text style={[styles.groupLabel, { color: accent, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[styles.groupLabel, { color: accent, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
                   {t('shelfExternal', shelf.external.length)}
                 </Text>
                 <View style={styles.group}>{shelf.external.map(externalRow)}</View>
@@ -256,7 +256,7 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
 
             {showBank && shelf.unit.length > 0 ? (
               <>
-                <Text style={[styles.groupLabel, { color: accent, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[styles.groupLabel, { color: accent, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
                   {t('shelfUnitScoped', shelf.unit.reduce((n, g) => n + g.items.length, 0))}
                 </Text>
                 {groups(shelf.unit)}
@@ -278,7 +278,7 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
                     size={14}
                     color={colors.mutedForeground}
                   />
-                  <Text style={[styles.toggleText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+                  <Text style={[styles.toggleText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
                     {showSemester
                       ? t('shelfHideSemester', semesterCount)
                       : t('shelfShowSemester', semesterCount)}
@@ -301,15 +301,15 @@ const styles = StyleSheet.create({
   countPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
   countText: { fontSize: 11 },
   sectionBody: { padding: 16, borderWidth: 1, borderRadius: 12, gap: 8 },
-  note: { fontSize: 12, lineHeight: 18 },
-  groupLabel: { fontSize: 12.5, marginTop: 6 },
+  note: { fontSize: 13, lineHeight: 20 },
+  groupLabel: { fontSize: 13, marginTop: 6 },
   group: { gap: 8 },
   row: { alignItems: 'center', gap: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
   rowBody: { flex: 1, gap: 2 },
-  rowTitle: { fontSize: 12.5, lineHeight: 18 },
+  rowTitle: { fontSize: 15, lineHeight: 21 },
   rowAuthor: { fontSize: 11, lineHeight: 18 },
   kindPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1 },
-  kindText: { fontSize: 10.5 },
+  kindText: { fontSize: 11 },
   toggle: { alignItems: 'center', gap: 6, paddingVertical: 8, marginTop: 4 },
-  toggleText: { fontSize: 12.5 },
+  toggleText: { fontSize: 13 },
 });

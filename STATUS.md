@@ -53,6 +53,21 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Interface dates and times are written in Latin digits** (2026-10-03).
+  Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
+  «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
+  screens disagreed with each other. Every date or time an interface screen or
+  export prints now goes through `dateLocale(lang)` / `AR_LATIN`
+  (`services/dateLabels.ts`): the Arabic weekday and month names stay, only the
+  numbering changes, and English is untouched. `dateLabels.test.ts` scans
+  `app/`, `components/`, `services/` and `hooks/` and fails on a plain `'ar-JO'`
+  or a locale-less `toLocaleDateString()`, so a new screen cannot bring it back.
+  **Deliberately still Arabic-Indic:** book citations («صفحة ٣٥»), the page and
+  count labels in the resources screen, exercise numbers, game scores and
+  maths, which are content rather than interface text. **Not covered:**
+  `app/admin` and `app/dev`, which print the device's own format. Typed input
+  is already folded to Latin by `toLatinDigits`. Checked by tests and typecheck;
+  not looked at in a browser.
 - **The tool screens share one rule per failure mode** (2026-10-02, PR #772).
   A review of every `/ai-tools` screen found ~40 issues, most of them one
   pattern repeated per screen. Each pattern now has one helper, used by
@@ -85,10 +100,20 @@ an announcement by default» below.
   Verified by typecheck and the mobile suite (2204 pass, 0 fail, 10
   skipped). **Not verified in a browser** — none of the screen wiring is
   machine-testable (the runner cannot load react-native). Still open from
-  the same review: a reopened deck is not loaded from موادي on either slides
-  screen (only the form is prefilled); pen ink drifts off the content on
-  resize; the timer has no pause; `homeAiTools.ts` still disables
-  `activity`/`game` for the related-tools panel, deliberately.
+  the same review: `homeAiTools.ts` still disables `activity`/`game` for the
+  related-tools panel, deliberately. (Pen ink drift landed 2026-10-04: strokes
+  are stored as fractions of the canvas width, not pixels
+  (`services/penInk.ts`), so ink follows the slide through fullscreen, a
+  rotated tablet or a resized window. It follows the slide's scale, not a
+  word — text that reflows differently can still sit a line off. Not looked
+  at in a browser.) (The timer pause that was listed here landed
+  2026-10-03: tap the clock, press P, or use the bottom-bar button on wide
+  screens. Pausing holds the second; a new slide or a restart clears it. The
+  reopened deck landed 2026-10-04: «تعديل» on a saved deck now loads the deck
+  itself — slides, edits, scope and its link to the stored item — on both
+  slides screens (`services/savedDeck.ts`); an item that is gone or unreadable
+  keeps the prefilled form and says so. موادي's row menu offers «تعديل» on
+  `slides` too — only the item page did. Neither is looked at in a browser.)
 - **A free, no-login games hub shipped** (2026-09-18), a competitive response
   to hasaadx.com/teacher. `/play` (added to `routeGating.ts`'s
   `PUBLIC_ROUTES`, same no-account pattern as `app/take/[code].tsx`) offers
@@ -531,6 +556,65 @@ an announcement by default» below.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## «اقترح ميزة» — teachers can suggest a feature, 2026-10-03
+
+A new screen, `/suggest-feature`, lets anyone signed in describe a missing
+feature and tells them the team will review it. It is reachable two ways: a
+dashed «اقترح ميزة» link at the foot of the desktop web sidebar
+(`WebSidebar.tsx`), and a row in the profile tab on every platform. It is in
+`NON_TEACHER_ROUTES`, so parents and students can reach it too.
+
+**No new table.** A suggestion is a `feedback` row with `rating: 'idea'` and
+`materialType: 'feature_request'`, so no schema push is needed and it shows up
+in the admin dashboard's existing feedback to-do list. That list has a
+«💡 اقتراحات» filter and a «اقتراحات الميزات» count. The checks on
+`POST /feedback` now live in `api-server/src/lib/feedbackInput.ts` (tested).
+An idea must say something: an empty comment answers 400. A thumb's comment is
+still optional. Like `FeedbackWidget`, the screen shows its thank-you only on
+`res.ok`, and keeps the text in the box when sending fails.
+
+Logged-out visitors don't see it, because `POST /feedback` requires an account.
+A public form would need an unauthenticated endpoint and spam protection.
+
+## One parent per name on a class list, 2026-10-03
+
+Found by testing, not by reading: the same child could be picked from a class
+code's name list by any number of parent accounts. Each one then saw that
+child's letters. The old design said this was the point («both parents is the
+normal case»), but a class code is one string handed to a whole class and its
+picker lists every child, so "anyone with the code can attach to anyone on the
+list" was the real rule.
+
+**The rule now.** A name picked from a class code's list takes one parent
+account. The name stays on the list, greyed out and labelled «تم ربطه بالفعل»,
+so the person looking for their own child sees it exists and has been claimed
+rather than wondering whether the code is wrong. A second parent is let in on
+purpose, by the teacher, with that child's own code from «ربط الحساب» — that
+path is deliberately not limited, and it is also how a teacher replaces a wrong
+first claim (unlink it from the same screen).
+
+**Where it lives.** `decideClaim` refuses with `claim_guardian_taken` (409)
+only on the class-code branch, after membership is proven, so a name that is not
+on the list never leaks whether it has a parent. The route asks again inside the
+transaction that already locks the student row for the student-account rule, so
+two parents choosing the same name in the same second get one winner. No schema
+change and no push. `GET /auth/join/:code` now returns `guardianTaken` beside
+`taken`; it is unauthenticated and cannot know who is asking, so it sends both
+and the picker reads the one for the viewer's role. An older server that sends
+no `guardianTaken` degrades to «free», which that server also accepts.
+
+**What it costs.** Two parents can no longer both self-serve from the class
+code. The second one needs the teacher to issue their child's code; the error
+text says so. A wrong first claim now locks the rightful parent out until the
+teacher unlinks it, which is why that unlink screen matters.
+
+Checked against a local API: the lookup flags, a second parent refused with the
+right code, the first parent re-sending their own claim (accepted — their own
+link does not count), a teacher-issued child code adding a second parent
+(accepted), and two parents racing for a fresh name (one 201, one 409). Checked
+on screen in the web build: claimed names listed, labelled and unselectable, an
+unclaimed one still selectable. Not checked on a device.
 
 ## One phone, several accounts, and a Google chooser that always appears, 2026-10-03
 
@@ -4344,10 +4428,12 @@ would have silently answered 401 to the parents it exists for.
 `mountOrder.test.ts` pins that.
 
 Claimed names are returned with a `taken` flag rather than filtered out.
-Filtering looked safer and is wrong: only the one `self` link is exclusive,
-guardians are unlimited by design, so hiding claimed names would stop the
-second parent finding their own child and make the code look broken to them.
-The names are exposed either way, so filtering buys no privacy.
+Filtering looked safer and is wrong: hiding a claimed name makes the class code
+look broken to the person searching for their own child, and the names are
+exposed either way, so filtering buys no privacy. *(This paragraph used to say
+guardians were unlimited by design, so a second parent could always pick the
+same child. That stopped being true on 2026-10-03 — see «One parent per name on
+a class list» below. The flag now exists for guardians too, as `guardianTaken`.)*
 
 **The two findability fixes**, which were the original complaint:
 
@@ -14753,3 +14839,137 @@ session's environment does not have.
 **Not in scope:** parents see nothing here. The endpoint answers students
 only, and a parent who types `/my-exams` gets the translated refusal. A
 parent view of their child's results is a separate decision.
+
+## Every new account records that it accepted the terms, 2026-10-03
+
+**The terms checkbox on the register screen gated the password form only.**
+«متابعة عبر Google» sat above it and created accounts without asking, and the
+server stored nothing on either path — for an app whose accounts include
+minors'. Now:
+
+- **The server refuses a new account without acceptance** (`400
+  terms_required`, `api-server/src/lib/termsAcceptance.ts`, tested) on both
+  `POST /auth/register` and the account-creating branch of `POST
+  /auth/google`. Someone signing back in with Google is not asked again.
+- **It records when and which wording**: `users.terms_accepted_at` and
+  `users.terms_version`, the same shape as the teacher's roster attestation.
+  The version is the date the app's documents show (`LEGAL_VERSION` beside
+  `LEGAL_LAST_UPDATED` in `constants/legal.ts`; `legalVersion.test.ts` fails
+  if the two disagree), validated as date-shaped — anything else is stored as
+  `unspecified` rather than trusted.
+- **The register screen's checkbox moved above both sign-up paths**, and the
+  Google button is blocked until it is ticked (a non-interactive wrapper:
+  Google draws its own button on web and it has no disabled state). A hint
+  says why under both buttons.
+- **The login screen's Google button can also create an account**, so it now
+  carries a «by continuing… you agree to» notice with both links, and sends
+  acceptance — the notice is the acceptance there. That is a deliberate
+  choice: refusing and redirecting to register was the stricter alternative.
+
+**Schema: `docs/schema-push-2026-10-03-terms-acceptance.sql` was run on Neon
+before the merge (#800, 2026-10-03), by the owner — not re-checked from the
+session that wrote this.** Both sign-up routes write the new columns, so if
+they are missing every new account fails to insert. `pnpm --filter
+@workspace/db run verify-schema` checks them.
+
+**Not done:** accounts created before this have no record (`terms_accepted_at`
+null) and are not asked to accept; re-acceptance when the wording changes is
+a separate flow. Apps that have not relaunched since the merge still send no
+acceptance and are refused with a generic error until the over-the-air update
+reaches them (published on every merge to main).
+
+## A teacher can hear a read-aloud answer, and the review's small items, 2026-10-03
+
+**A read-aloud answer kept the child's voice and nobody could play it.** The
+mark is transcript accuracy against the passage, so a microphone that clipped
+or an accent the transcriber missed reads as a weak reader, and the one thing
+that would settle it — the recording — had no screen. Now:
+
+- **`GET /attempts/:id` carries a signed, expiring `audioUrl`** on each answer
+  with a stored recording (`withRecordingUrls`, `lib/attemptAudioKeys.ts`,
+  tested). Teacher-only, like the rest of that route; the key never becomes a
+  public link.
+- **The marking screen shows a read-aloud answer**: the passage, «ما
+  سمعناه», and «استمع إلى تسجيل الطالب», through the `expo-audio` player the
+  English hub already ships (no native change, no `version` bump). Before
+  this it labelled read-aloud as a paper question and showed nothing at all.
+
+From the 2026-10-02 review's low list:
+
+- **L3** — the claim gate counted a link to an archived roster row, so a
+  student whose only link was archived got into an empty app. The gate now
+  asks `hasLiveRosterLink`; the role-switch lock keeps counting archived
+  links, as its teacher-side twin counts archived classes.
+- **L5** — malformed ids on `/messaging/blocks` and `/messaging/reports` came
+  back 500 from a Postgres cast; now `400 invalid_input`.
+- **L6** — the empty inbox told parents and students they could message "a
+  linked parent". A direct thread needs exactly one teacher; the line now
+  says a teacher.
+- **L7** — an announcement-only class group flashed a message box while the
+  thread loaded. Nothing shows until it has.
+- **L11** — a student has no grade picker, so the library and the
+  curriculum browser opened on the catalog's first grade (Grade 10 for a
+  Grade 9 student). `GET /student/grades` returns the grades of their live
+  roster rows (the row's own grade, else its class's; `lib/studentGrades.ts`,
+  tested) and both screens start there.
+- **L15** — re-entering your own claim code said the name belonged to
+  another account: `decideClaim`'s self-link check counted the caller's own
+  link, though the claim transaction after it did not.
+- **L10** was already fixed on main (the sitting-move checks class
+  membership).
+
+**Still open from that list:** L2 (a profile edit drops `hasRosterLink` from
+the cached user — latent: the gate reads only `=== false`), L4 (whether
+students may use `/chat` at all — a product decision), L13 and L14. L8 and
+the two messaging privacy items were fixed the next day — see the entry
+below.
+
+## A class group stops handing every child the class list, 2026-10-04
+
+**`GET /messaging/threads/:id` sent every member's name and role to every
+member.** In an announcement-only class group that is the whole class list,
+delivered to each child in it, for a screen that only needs a name to put on
+a message — and only staff post there. Now (`lib/groupMemberView.ts`,
+tested): the owner and any staff member get everyone; anyone else in an
+announcement-only group gets the staff and themselves; a group where
+students may post keeps the full list, because each student's messages need
+a name and the teacher chose to let them talk.
+
+- **L8** — the inbox (`GET /messaging/threads`) attached an arbitrary other
+  member to every group thread as `otherParticipant`, usually a classmate's
+  name, read by nothing. It is now sent for direct threads only, and the
+  query no longer loads group members at all.
+- **Report reasons** are stored as the picker's translation key
+  («reportReasonBullying»), and the moderation queue printed the key. It is
+  now translated where it is shown (`services/reportReasons.ts`, tested), so
+  the reports already on record read correctly too; anything that is not a
+  known key is shown as written.
+
+L13 (the inbox loading every message on each poll) was fixed the next
+entry down.
+
+## The inbox stops loading every message it has ever held, 2026-10-04
+
+**`GET /messaging/threads` read every message of every thread the caller is
+in, on every poll, to show one latest message and one unread number per
+thread.** A class group gains a message per announcement and loses none, and
+the app polls this route every 20 s from two places (the tab badge and the
+inbox), so each poll grew with the whole history of every class.
+
+Now `lib/inboxSummary.ts` asks the database for exactly those two things: a
+`LATERAL … LIMIT 1` per thread for the latest visible message, and one grouped
+count of unread ones. Measured on a local Postgres with this schema and 480k
+messages: the latest-message lookup takes 0.2 ms, against 260 ms for a
+`DISTINCT ON` version, which still sorted every row. Checked against the old
+in-memory logic on randomly seeded threads (archived messages, blocked
+senders, null and set read times): 388 comparisons, 0 differences. That check
+was a scratch script against a throwaway local database, not a committed test
+— the api-server suite has no database.
+
+One visible change: the sender name on the inbox preview is now looked up for
+the message actually shown. It used to be looked up for the latest message
+*before* blocked senders were removed, so a thread whose newest message came
+from someone the viewer blocked showed its preview with no name.
+
+Not done: the two pollers still each fetch the full list every 20 s; sharing
+one fetch between the badge and the inbox would need a shared client store.

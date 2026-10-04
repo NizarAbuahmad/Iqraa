@@ -56,6 +56,7 @@ import {
   type LessonMediaItem,
 } from '@/services/lessonMedia';
 import { palette } from '@/constants/colors';
+import { AR_LATIN } from '@/services/dateLabels';
 
 const NAVY = '#081B3A';
 const TEAL = palette.primary;
@@ -395,7 +396,7 @@ export default function DashboardScreen() {
         if (diffD === 1) return 'منذ يوم';
         if (diffD === 2) return 'منذ يومين';
         if (diffD < 7) return `منذ ${diffD} أيام`;
-        return d.toLocaleDateString('ar-JO', { day: 'numeric', month: 'short' });
+        return d.toLocaleDateString(AR_LATIN, { day: 'numeric', month: 'short' });
       }
       if (diffH < 1) return 'Just now';
       if (diffH < 24) return `${diffH}h ago`;
@@ -417,7 +418,7 @@ export default function DashboardScreen() {
       {/* Compact top bar */}
       <View style={[styles.topBar, { paddingTop: topPad + 12, backgroundColor: colors.background, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.greet, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.greet, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('welcomeBackNamed', firstName)}
           </Text>
         </View>
@@ -430,14 +431,14 @@ export default function DashboardScreen() {
           <View style={[styles.coachCard, { backgroundColor: NAVY }]}>
             <View style={[styles.coachHead, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="sparkles" size={16} color={TEAL} />
-              <Text style={[styles.coachTitle, { fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.coachTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('coachTitle')}
               </Text>
             </View>
             {[t('coachStep1'), t('coachStep2'), t('coachStep3')].map((step, i) => (
               <View key={i} style={[styles.coachRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={styles.coachNum}>
-                  <Text style={[styles.coachNumText, { fontFamily: 'Cairo_700Bold' }]}>{i + 1}</Text>
+                  <Text style={[styles.coachNumText, { fontFamily: 'ReadexPro_700Bold' }]}>{i + 1}</Text>
                 </View>
                 <Text style={[styles.coachStep, { fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                   {step}
@@ -448,7 +449,7 @@ export default function DashboardScreen() {
               onPress={() => { setCoachVisible(false); void setCoachDismissed(true); }}
               style={({ pressed }) => [styles.coachBtn, { opacity: pressed ? 0.85 : 1 }]}
             >
-              <Text style={[styles.coachBtnText, { fontFamily: 'Cairo_600SemiBold' }]}>{t('coachDismiss')}</Text>
+              <Text style={[styles.coachBtnText, { fontFamily: 'ReadexPro_600SemiBold' }]}>{t('coachDismiss')}</Text>
             </Pressable>
           </View>
         </View>
@@ -463,14 +464,14 @@ export default function DashboardScreen() {
           ]}
         >
           <View style={[styles.contextBody, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-            <Text style={[styles.contextFlag, { fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.contextFlag, { fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
               {t('jordanCurriculum')}
             </Text>
-            <Text style={[styles.contextMeta, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.contextMeta, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
               {[contextSubject, contextGrade].filter(Boolean).join(' • ') || t('setTeachingContext')}
             </Text>
             <Text
-              style={[styles.contextLesson, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}
+              style={[styles.contextLesson, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}
               numberOfLines={2}
             >
               {contextUnit}
@@ -486,7 +487,7 @@ export default function DashboardScreen() {
                 ]}
               >
                 <Ionicons name="albums-outline" size={13} color={TEAL} />
-                <Text style={{ color: TEAL, fontFamily: 'Cairo_600SemiBold', fontSize: 11.5 }}>
+                <Text style={{ color: TEAL, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
                   {t('mediaAttachedCount', media.length)}
                 </Text>
               </View>
@@ -536,7 +537,7 @@ export default function DashboardScreen() {
       {/* 2 ── AI Hero Prompt */}
       <View style={styles.sectionPad}>
         <View style={[styles.hero, { backgroundColor: NAVY }]}>
-          <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('homeHeroTitle')}
           </Text>
           <Text style={[styles.heroSub, { fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -612,7 +613,7 @@ export default function DashboardScreen() {
                   <View style={[styles.suggestIcon, { backgroundColor: accent.iconBg }]}>
                     <Text style={styles.suggestEmoji}>{s.emoji}</Text>
                   </View>
-                  <Text style={[styles.suggestChipText, { fontFamily: 'Cairo_600SemiBold' }]}>
+                  <Text style={[styles.suggestChipText, { fontFamily: 'ReadexPro_600SemiBold' }]}>
                     {lang === 'ar' ? s.labelAr : s.labelEn}
                   </Text>
                 </Pressable>
@@ -624,10 +625,10 @@ export default function DashboardScreen() {
 
       {/* 4 ── AI Tools grid */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('homeAiToolsTitle')}
         </Text>
-        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>
           {lang === 'ar' ? 'قبل الحصة · أثناءها · بعدها' : 'Before · during · after class'}
         </Text>
         <View style={[styles.toolsGrid, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -646,7 +647,7 @@ export default function DashboardScreen() {
             >
               <Text style={styles.toolEmoji}>{tool.emoji}</Text>
               <Text
-                style={[styles.toolLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}
+                style={[styles.toolLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }]}
                 numberOfLines={2}
               >
                 {lang === 'ar' ? tool.labelAr : tool.labelEn}
@@ -658,7 +659,7 @@ export default function DashboardScreen() {
 
       {/* 5 ── Continue Teaching (compact) */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('continueWorking')}
         </Text>
         {continueCard ? (
@@ -676,20 +677,20 @@ export default function DashboardScreen() {
           >
             <View style={{ flex: 1, gap: 3 }}>
               <Text
-                style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }}
+                style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }}
                 numberOfLines={1}
               >
                 {continueCard.primaryHeading}
               </Text>
               <Text
-                style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}
+                style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}
                 numberOfLines={1}
               >
                 {continueCard.editedLabel}
               </Text>
             </View>
             <View style={[styles.continueBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>{t('resumeWork')}</Text>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>{t('resumeWork')}</Text>
               <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={14} color="#fff" />
             </View>
           </Pressable>
@@ -698,7 +699,7 @@ export default function DashboardScreen() {
             onPress={() => openGenerator('lesson-plan')}
             style={[styles.continueRow, { backgroundColor: colors.card, borderColor: colors.border }]}
           >
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
               {t('continueEmptyDesc')}
             </Text>
           </Pressable>
@@ -708,12 +709,12 @@ export default function DashboardScreen() {
       {/* 7 ── Recent Documents (lighter) */}
       <View style={styles.section}>
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', marginBottom: 0, textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', marginBottom: 0, textAlign: isRTL ? 'right' : 'left' }]}>
             {t('recentMaterials')}
           </Text>
           {recentItems.length > 0 && (
             <Pressable onPress={() => router.push('/workspace')}>
-              <Text style={{ color: TEAL, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+              <Text style={{ color: TEAL, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                 {lang === 'ar' ? 'عرض الكل' : 'View all'}
               </Text>
             </Pressable>
@@ -721,7 +722,7 @@ export default function DashboardScreen() {
         </View>
 
         {recentItems.length === 0 ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left', marginTop: 4 }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left', marginTop: 4 }}>
             {t('recentEmptyDesc')}
           </Text>
         ) : (
@@ -742,12 +743,12 @@ export default function DashboardScreen() {
               >
                 <View style={{ flex: 1, gap: 4 }}>
                   <View style={[styles.badge, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-                    <Text style={[styles.badgeText, { fontFamily: 'Cairo_500Medium' }]}>
+                    <Text style={[styles.badgeText, { fontFamily: 'ReadexPro_500Medium' }]}>
                       {typeBadge(m.type, m.formState)}
                     </Text>
                   </View>
                   <Text
-                    style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }}
+                    style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }}
                     numberOfLines={1}
                   >
                     {m.title}
@@ -756,7 +757,7 @@ export default function DashboardScreen() {
                     {formatDate(m.savedAt)}
                   </Text>
                 </View>
-                <Text style={{ color: TEAL, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>
+                <Text style={{ color: TEAL, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
                   {t('openDocument')}
                 </Text>
               </Pressable>
@@ -780,11 +781,11 @@ export default function DashboardScreen() {
             ]}
           >
             <Pressable onPress={() => setPickerOpen(false)} hitSlop={10} style={{ width: 64 }}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
                 {t('cancel')}
               </Text>
             </Pressable>
-            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 16 }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16 }}>
               {t('changeLesson')}
             </Text>
             <View style={{ width: 64 }} />
@@ -800,7 +801,7 @@ export default function DashboardScreen() {
               style={{
                 color: colors.mutedForeground,
                 fontFamily: 'Almarai_400Regular',
-                fontSize: 13, lineHeight: 21,
+                fontSize: 15, lineHeight: 24,
                 marginBottom: 14,
                 textAlign: isRTL ? 'right' : 'left',
               }}
@@ -816,7 +817,7 @@ export default function DashboardScreen() {
                 <Text
                   style={{
                     color: colors.foreground,
-                    fontFamily: 'Cairo_500Medium',
+                    fontFamily: 'ReadexPro_500Medium',
                     fontSize: 14,
                     marginBottom: 8,
                     textAlign: isRTL ? 'right' : 'left',
@@ -857,8 +858,8 @@ export default function DashboardScreen() {
                         <Text
                           style={{
                             color: active ? TEAL : colors.mutedForeground,
-                            fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                            fontSize: 13.5,
+                            fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
+                            fontSize: 14,
                           }}
                         >
                           {lang === 'ar' ? g.nameAr : g.name}
@@ -874,7 +875,7 @@ export default function DashboardScreen() {
             <Text
               style={{
                 color: colors.foreground,
-                fontFamily: 'Cairo_500Medium',
+                fontFamily: 'ReadexPro_500Medium',
                 fontSize: 14,
                 marginBottom: 8,
                 textAlign: isRTL ? 'right' : 'left',
@@ -906,8 +907,8 @@ export default function DashboardScreen() {
                     <Text
                       style={{
                         color: active ? TEAL : colors.mutedForeground,
-                        fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                        fontSize: 13.5,
+                        fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
+                        fontSize: 14,
                       }}
                     >
                       {lang === 'ar' ? s.nameAr : s.name}
@@ -963,7 +964,7 @@ export default function DashboardScreen() {
                   <Text
                     style={{
                       color: colors.foreground,
-                      fontFamily: 'Cairo_600SemiBold',
+                      fontFamily: 'ReadexPro_600SemiBold',
                       fontSize: 14,
                       textAlign: isRTL ? 'right' : 'left',
                     }}
@@ -994,7 +995,7 @@ export default function DashboardScreen() {
                     style={{
                       color: colors.mutedForeground,
                       fontFamily: 'Almarai_400Regular',
-                      fontSize: 12, lineHeight: 19,
+                      fontSize: 13, lineHeight: 21,
                       marginTop: 6,
                       marginBottom: 10,
                       textAlign: isRTL ? 'right' : 'left',
@@ -1027,7 +1028,7 @@ export default function DashboardScreen() {
                         flex: 1,
                         color: colors.foreground,
                         fontFamily: 'Almarai_400Regular',
-                        fontSize: 12.5, lineHeight: 20,
+                        fontSize: 15, lineHeight: 23,
                         textAlign: isRTL ? 'right' : 'left',
                       }}
                     >
@@ -1077,7 +1078,7 @@ export default function DashboardScreen() {
                       style={{
                         color: '#D92D20',
                         fontFamily: 'Almarai_400Regular',
-                        fontSize: 12, lineHeight: 19,
+                        fontSize: 13, lineHeight: 21,
                         textAlign: isRTL ? 'right' : 'left',
                       }}
                     >
@@ -1100,7 +1101,7 @@ export default function DashboardScreen() {
                     <Text
                       style={{
                         color: mediaUrl.trim() ? TEAL : colors.mutedForeground,
-                        fontFamily: 'Cairo_600SemiBold',
+                        fontFamily: 'ReadexPro_600SemiBold',
                         fontSize: 13,
                       }}
                     >
@@ -1127,7 +1128,7 @@ export default function DashboardScreen() {
               <Text
                 style={{
                   color: draftTopic.trim() ? palette.primaryForeground : colors.mutedForeground,
-                  fontFamily: 'Cairo_600SemiBold',
+                  fontFamily: 'ReadexPro_600SemiBold',
                   fontSize: 15,
                 }}
               >
@@ -1178,8 +1179,8 @@ const styles = StyleSheet.create({
   },
   changeLessonBtnText: {
     color: '#fff',
-    fontFamily: 'Cairo_600SemiBold',
-    fontSize: 12.5,
+    fontFamily: 'ReadexPro_600SemiBold',
+    fontSize: 13,
   },
   contextActions: { alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   coachCard: { borderRadius: 16, padding: 16, gap: 10 },
@@ -1192,7 +1193,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginTop: 1,
   },
   coachNumText: { color: '#fff', fontSize: 11 },
-  coachStep: { color: 'rgba(255,255,255,0.95)', fontSize: 12.5, lineHeight: 19, flex: 1 },
+  coachStep: { color: 'rgba(255,255,255,0.95)', fontSize: 15, lineHeight: 22, flex: 1 },
   coachBtn: {
     alignSelf: 'flex-start', marginTop: 4,
     backgroundColor: 'rgba(255,255,255,0.14)',
@@ -1224,7 +1225,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontFamily: 'Almarai_400Regular',
-    fontSize: 13,
+    fontSize: 15,
     marginBottom: 8,
   },
   mediaAddBtn: {
@@ -1245,8 +1246,8 @@ const styles = StyleSheet.create({
   },
   startClassBtnText: {
     color: '#fff',
-    fontFamily: 'Cairo_700Bold',
-    fontSize: 12.5,
+    fontFamily: 'ReadexPro_700Bold',
+    fontSize: 13,
   },
   pickerHeader: {
     alignItems: 'center',
@@ -1270,7 +1271,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   heroTitle: { color: '#fff', fontSize: 22, lineHeight: 30 },
-  heroSub: { color: 'rgba(255,255,255,0.95)', fontSize: 14, lineHeight: 21 },
+  heroSub: { color: 'rgba(255,255,255,0.95)', fontSize: 15, lineHeight: 23 },
   promptBox: {
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 16,
@@ -1316,7 +1317,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   suggestEmoji: { fontSize: 13 },
-  suggestChipText: { color: '#fff', fontSize: 12.5 },
+  suggestChipText: { color: '#fff', fontSize: 13 },
 
   toolsGrid: { flexWrap: 'wrap', gap: 10 },
   toolCard: {

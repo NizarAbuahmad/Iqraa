@@ -142,7 +142,7 @@ export function ExportMenu({
           <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
           {/* Title */}
-          <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
             {labels.title}
           </Text>
 
@@ -160,7 +160,7 @@ export function ExportMenu({
                 <Ionicons name={opt.icon} size={22} color={opt.color} />
               </View>
               <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[styles.rowLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[styles.rowLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                   {opt.label}
                 </Text>
                 <Text style={[styles.rowSub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -179,7 +179,7 @@ export function ExportMenu({
             onPress={onClose}
             style={[styles.cancelBtn, { backgroundColor: colors.muted, borderRadius: 12 }]}
           >
-            <Text style={[styles.cancelText, { color: colors.foreground, fontFamily: 'Cairo_500Medium' }]}>
+            <Text style={[styles.cancelText, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium' }]}>
               {labels.cancel}
             </Text>
           </Pressable>
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   rowLabel: { fontSize: 15 },
-  rowSub: { fontSize: 12, lineHeight: 19 },
+  rowSub: { fontSize: 13, lineHeight: 21 },
   cancelBtn: { marginTop: 12, padding: 14, alignItems: 'center' },
   cancelText: { fontSize: 15 },
 });

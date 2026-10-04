@@ -58,7 +58,7 @@ export function ConfirmHost() {
               color={tone}
             />
           </View>
-          <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
+          <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold' }]}>
             {opts.title}
           </Text>
           {opts.message ? (
@@ -71,7 +71,7 @@ export function ConfirmHost() {
               onPress={() => settle(true)}
               style={({ pressed }) => [styles.btn, { backgroundColor: tone, opacity: pressed ? 0.85 : 1 }]}
             >
-              <Text style={[styles.btnText, { color: toneText, fontFamily: 'Cairo_700Bold' }]}>
+              <Text style={[styles.btnText, { color: toneText, fontFamily: 'ReadexPro_700Bold' }]}>
                 {opts.confirmLabel}
               </Text>
             </Pressable>
@@ -82,7 +82,7 @@ export function ConfirmHost() {
                 { backgroundColor: colors.muted, opacity: pressed ? 0.85 : 1 },
               ]}
             >
-              <Text style={[styles.btnText, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text style={[styles.btnText, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {opts.cancelLabel}
               </Text>
             </Pressable>
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   title: { fontSize: 18, textAlign: 'center', lineHeight: 28 },
-  message: { fontSize: 14, textAlign: 'center', lineHeight: 22 },
+  message: { fontSize: 15, textAlign: 'center', lineHeight: 24 },
   actions: { width: '100%', gap: 10, marginTop: 16 },
   btn: {
     flex: 1,

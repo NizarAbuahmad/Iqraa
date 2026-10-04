@@ -169,7 +169,7 @@ function MaterialText({ text, colors, isRTL }: { text: string; colors: any; isRT
               <View style={{ flex: 1 }}>
                 <MathParagraph
                   text={line.trimStart().replace(/^[•-]\s*/, '')}
-                  style={{ fontSize: 14.5, lineHeight: 26, color: colors.foreground, textAlign: align, writingDirection: isRTL ? 'rtl' : 'ltr' }}
+                  style={{ fontSize: 15, lineHeight: 26, color: colors.foreground, textAlign: align, writingDirection: isRTL ? 'rtl' : 'ltr' }}
                   isRTL={isRTL}
                 />
               </View>
@@ -180,7 +180,7 @@ function MaterialText({ text, colors, isRTL }: { text: string; colors: any; isRT
           <MathParagraph
             key={i}
             text={line}
-            style={{ fontSize: 14.5, lineHeight: 27, color: colors.foreground, textAlign: align, writingDirection: isRTL ? 'rtl' : 'ltr' }}
+            style={{ fontSize: 15, lineHeight: 27, color: colors.foreground, textAlign: align, writingDirection: isRTL ? 'rtl' : 'ltr' }}
             isRTL={isRTL}
           />
         );
@@ -199,10 +199,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
   },
-  title: { fontSize: 15, fontFamily: 'Cairo_600SemiBold' },
-  subtitle: { fontSize: 11.5, lineHeight: 18, fontFamily: 'Almarai_400Regular', marginTop: 1 },
+  title: { fontSize: 15, fontFamily: 'ReadexPro_600SemiBold' },
+  subtitle: { fontSize: 13, lineHeight: 20, fontFamily: 'Almarai_400Regular', marginTop: 1 },
   btn: { alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 11, paddingHorizontal: 12, paddingVertical: 8 },
-  btnText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
+  btnText: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
   close: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { padding: 24, paddingBottom: 60, alignItems: 'center' },
   paper: {
@@ -216,6 +216,6 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 6 },
   },
-  heading: { fontSize: 15.5, fontFamily: 'Cairo_600SemiBold', marginTop: 14, marginBottom: 4 },
+  heading: { fontSize: 16, fontFamily: 'ReadexPro_600SemiBold', marginTop: 14, marginBottom: 4 },
   bulletRow: { gap: 8, alignItems: 'flex-start' },
 });

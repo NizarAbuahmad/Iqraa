@@ -23,6 +23,7 @@ describe('apiErrorKey', () => {
     assert.equal(apiErrorKey(err('invalid_google_credential', 401), 'fb'), 'errGoogleFailed');
     assert.equal(apiErrorKey(err('role_locked_teaching', 409), 'fb'), 'accountTypeLockedTeaching');
     assert.equal(apiErrorKey(err('role_locked_linked', 409), 'fb'), 'accountTypeLockedLinked');
+    assert.equal(apiErrorKey(err('terms_required', 400), 'fb'), 'errTermsRequired');
   });
 
   it('maps the messaging refusals', () => {

@@ -191,7 +191,7 @@ export function TopicSelector({
   if (!kbAvailable) {
     return (
       <View style={{ marginBottom: 16 }}>
-        <Text style={[s.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[s.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('topicLabel')}
         </Text>
         <View style={[s.inputBox, {
@@ -246,7 +246,7 @@ export function TopicSelector({
   return (
     <View style={{ marginBottom: 8 }}>
       {/* ── Unit picker ─────────────────────────── */}
-      <Text style={[s.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+      <Text style={[s.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
         {t('topicLabel')}
       </Text>
       <Pressable
@@ -302,7 +302,7 @@ export function TopicSelector({
       {/* ── Lesson picker (only when a specific unit is chosen) ─────────── */}
       {selectedUnitId && selectedUnitId !== ENTIRE_BOOK && (
         <View style={{ marginTop: 4, marginBottom: 8 }}>
-          <Text style={[s.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[s.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('selectLesson')}
           </Text>
           <Pressable
@@ -370,7 +370,7 @@ function SemesterSectionHeader({ label, colors, isRTL }: {
     >
       <Text style={{
         color: colors.mutedForeground,
-        fontFamily: 'Cairo_600SemiBold',
+        fontFamily: 'ReadexPro_600SemiBold',
         fontSize: 12,
         textAlign: isRTL ? 'right' : 'left',
       }}>
@@ -398,7 +398,7 @@ function DropdownItem({ label, selected, onPress, accent, colors, isRTL }: {
       <Text style={[{
         flex: 1,
         color: selected ? accent : colors.foreground,
-        fontFamily: selected ? 'Cairo_500Medium' : 'Almarai_400Regular',
+        fontFamily: selected ? 'ReadexPro_500Medium' : 'Almarai_400Regular',
         fontSize: 14,
         textAlign: isRTL ? 'right' : 'left',
       }]}>

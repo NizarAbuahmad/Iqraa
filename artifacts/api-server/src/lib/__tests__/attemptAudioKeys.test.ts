@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { attemptAudioKey, attemptAudioKeys } from "../attemptAudioKeys.ts";
+import { attemptAudioKey, attemptAudioKeys, withRecordingUrls } from "../attemptAudioKeys.ts";
 
 describe("attemptAudioKey", () => {
   it("reads a stored recording key", () => {
@@ -32,5 +32,33 @@ describe("attemptAudioKeys", () => {
       ]),
       ["attempt-audio/a.webm", "attempt-audio/b.m4a"],
     );
+  });
+});
+
+describe("withRecordingUrls", () => {
+  it("signs only real recordings, and keeps every answer", async () => {
+    const signed: string[] = [];
+    const out = await withRecordingUrls(
+      [
+        { id: "a", response: { audioKey: "attempt-audio/1.webm", transcript: "t" } },
+        { id: "b", response: { audioKey: "saved" } },
+        { id: "c", response: { text: "42" } },
+      ],
+      async key => {
+        signed.push(key);
+        return `https://signed/${key}`;
+      },
+    );
+    assert.deepEqual(signed, ["attempt-audio/1.webm"]);
+    assert.deepEqual(out.map(a => [a.id, a.audioUrl]), [
+      ["a", "https://signed/attempt-audio/1.webm"],
+      ["b", null],
+      ["c", null],
+    ]);
+  });
+
+  it("passes an unsignable link through as null", async () => {
+    const out = await withRecordingUrls([{ response: { audioKey: "attempt-audio/1.webm" } }], async () => null);
+    assert.equal(out[0]!.audioUrl, null);
   });
 });

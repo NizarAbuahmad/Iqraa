@@ -381,6 +381,40 @@ describe('splitExample', () => {
     assert.equal(problem, 'x + 1 = 5');
     assert.equal(answer, '');
   });
+
+  // The book's own examples, as stored. The colon form used to be projected
+  // whole — answer included — and an arrow chain left its working on the wall.
+  it('hides the answer of a «givens: solution» example behind the reveal', () => {
+    assert.deepEqual(
+      splitExample('دائرة مركزها (2,−3) ونصف قطرها 5: (x−2)²+(y+3)²=25'),
+      ['دائرة مركزها (2,−3) ونصف قطرها 5', '(x−2)²+(y+3)²=25'],
+    );
+    assert.deepEqual(
+      splitExample('v = ⟨3, 4⟩: |v| = √(9+16) = √25 = 5'),
+      ['v = ⟨3, 4⟩', '|v| = √(9+16) = √25 = 5'],
+    );
+  });
+
+  it('keeps the working with the answer, not with the question', () => {
+    const [problem, answer] = splitExample("f(x) = −x² + 4x: f'(x) = −2x + 4 = 0 → x = 2، قيمة عظمى = f(2) = 4");
+    assert.equal(problem, 'f(x) = −x² + 4x');
+    assert.ok(answer.startsWith("f'(x)") && answer.includes('→ x = 2'));
+  });
+
+  it('splits at the last colon when the givens themselves contain one', () => {
+    const [problem, answer] = splitExample('مثلث قائم: الوتر=10، مقابل زاوية A = 6: sin A = 6/10 = 0.6 → A = 37°');
+    assert.equal(problem, 'مثلث قائم: الوتر=10، مقابل زاوية A = 6');
+    assert.equal(answer, 'sin A = 6/10 = 0.6 → A = 37°');
+  });
+
+  it('never hides a definition that has no working in it', () => {
+    assert.deepEqual(splitExample('الفاعل: اسم مرفوع يأتي بعد الفعل'), ['الفاعل: اسم مرفوع يأتي بعد الفعل', '']);
+    assert.deepEqual(splitExample('النسبة 3:4 بين العددين'), ['النسبة 3:4 بين العددين', '']);
+  });
+
+  it('lets an explicit label win over a colon in the answer', () => {
+    assert.deepEqual(splitExample('احسب المساحة الجواب: A = 5 × 4 = 20'), ['احسب المساحة', 'A = 5 × 4 = 20']);
+  });
 });
 
 // ── Formative checks ─────────────────────────────────────────────────────────
@@ -932,6 +966,11 @@ describe('usableTeaching', () => {
 
   it('drops a worked example whose problem already shows its answer', () => {
     const t = usableTeaching({ workedExample: { problem: 'مركزها (2,−3) ونصف قطرها 5: (x−2)²+(y+3)²=25', steps: ['عوّض'], answer: '(x−2)² + (y+3)² = 25' } });
+    assert.equal(t.workedExample, null);
+  });
+
+  it('drops a worked example whose problem already contains a short answer like x = 4', () => {
+    const t = usableTeaching({ workedExample: { problem: 'إذا كان x = 4 فما قيمة 2x + 1؟', steps: ['عوّض'], answer: 'x = 4' } });
     assert.equal(t.workedExample, null);
   });
 

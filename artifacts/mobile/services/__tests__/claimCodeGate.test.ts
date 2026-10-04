@@ -64,6 +64,7 @@ describe('claimErrorKey', () => {
     assert.equal(claimErrorKey('claim_needs_name'), 'claimNeedsName');
     assert.equal(claimErrorKey('claim_name_not_in_class'), 'claimNameNotInClass');
     assert.equal(claimErrorKey('claim_already_linked'), 'claimAlreadyLinked');
+    assert.equal(claimErrorKey('claim_guardian_taken'), 'claimGuardianTaken');
   });
 
   it('falls back to a generic message for an unknown code', () => {

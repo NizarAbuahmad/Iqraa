@@ -71,19 +71,19 @@ export function TriviaGame({
       onReplay={replay}
     >
       <View style={{ flex: 1, padding: 20, gap: 20 }}>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
           {t('playQuestionProgress', index + 1, questions.length)}
         </Text>
 
         {field === 'name' ? (
           <View style={styles.flagWrap}>
             <Image source={{ uri: flagUrl(question.country.code) }} style={styles.flag} resizeMode="cover" />
-            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 18, textAlign: 'center', marginTop: 14 }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 18, textAlign: 'center', marginTop: 14 }}>
               {t('playFlagsPrompt')}
             </Text>
           </View>
         ) : (
-          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: 'center', marginVertical: 20 }}>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: 'center', marginVertical: 20 }}>
             {t('playCapitalsPrompt', lang === 'ar' ? question.country.nameAr : question.country.nameEn)}
           </Text>
         )}
@@ -107,7 +107,7 @@ export function TriviaGame({
                 onPress={() => pick(o.id)}
                 style={[styles.option, { backgroundColor: bg, borderColor: border }]}
               >
-                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: 'center' }}>
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }}>
                   {o.label}
                 </Text>
                 {revealed && isCorrect && <Ionicons name="checkmark-circle" size={18} color="#16A34A" style={styles.optionIcon} />}
@@ -119,7 +119,7 @@ export function TriviaGame({
 
         {selected ? (
           <Pressable onPress={next} style={[styles.nextBtn, { backgroundColor: accent }]}>
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>{t('playNext')}</Text>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>{t('playNext')}</Text>
           </Pressable>
         ) : null}
       </View>

@@ -170,8 +170,9 @@ export function usableTeaching(raw: LessonTeachingOutput | null | undefined): Us
   const steps = lines(raw?.workedExample?.steps, 6);
   // Only an answer long enough to mean something: «4» appears in half the
   // problems that have 4 as their answer, «(x−2)²+(y+3)²=25» in none of them.
+  // Three characters is «x=4» — specific enough, and four let it through.
   const squashedAnswer = answer.replace(/\s+/g, '');
-  const answerShown = squashedAnswer.length >= 4
+  const answerShown = squashedAnswer.length >= 3
     && problem.replace(/\s+/g, '').includes(squashedAnswer);
   const practiceProblem = str(raw?.practice?.problem);
   return {
@@ -1022,22 +1023,50 @@ export function rebuildAnswerKey(slides: readonly ActivitySlide[], isAr: boolean
 }
 
 /**
+ * Where a `givens: solution` example turns into its solution, or -1.
+ *
+ * The text after the colon must look like working — an '=' or an arrow — so a
+ * definition («الفاعل: اسم مرفوع») is never hidden behind a reveal, and the text
+ * before it must hold givens (a number or symbol), so «حل: x² = 9 → x = ±3»
+ * keeps its equation on the slide. A colon needs a space after it, which keeps
+ * ratios like 3:4 intact.
+ */
+function lastSolutionColon(text: string): number {
+  const found = [...text.matchAll(/[:：](?=\s)/g)];
+  for (let i = found.length - 1; i >= 0; i--) {
+    const at = found[i]!.index!;
+    const before = text.slice(0, at).trim();
+    const after = text.slice(at + 1).trim();
+    // The part before must itself hold givens — a number or a symbol. A bare
+    // instruction («حل:», «Solve:») is a label on the problem, not its givens.
+    if (before && after && /[\d=<>⟨√²³]/.test(before) && /[=→⇒]|=>/.test(after)) return at;
+  }
+  return -1;
+}
+
+/**
  * Split a stored example into problem and answer.
  *
- * Book examples arrive as a single string; when they carry their answer it is
- * after the last '=' or an arrow. Splitting on the LAST separator is what makes
- * this safe for maths — `2x + 3 = 11 → x = 4` must split at the arrow, not at
- * the first '=' which is part of the equation itself.
+ * Book examples arrive as a single string, in three conventions:
+ *   - `problem الجواب: answer` — an explicit label;
+ *   - `givens: working → … → answer` — a colon after the givens. Everything
+ *     after the LAST colon is the solution and stays behind the reveal, so a
+ *     chain of steps is not projected as part of the question;
+ *   - `problem → answer` — an arrow, split at the last one so
+ *     `2x + 3 = 11 → x = 4` keeps its own '=' in the problem.
+ * A bare `x + 1 = 5` is not split: it is a problem as often as it is a fact.
  */
 export function splitExample(example: string): [problem: string, answer: string] {
   const text = (example ?? '').trim();
+  // An explicit "الجواب: …" / "Answer: …" label wins over any other separator.
+  const labelled = text.match(/^([\s\S]+?)[\s]*(?:الجواب|الحل|Answer|Solution)\s*[:：]\s*([\s\S]+)$/);
+  if (labelled) return [labelled[1].trim(), labelled[2].trim()];
+  const colon = lastSolutionColon(text);
+  if (colon > 0) return [text.slice(0, colon).trim(), text.slice(colon + 1).trim()];
   const arrow = Math.max(text.lastIndexOf('→'), text.lastIndexOf('=>'), text.lastIndexOf('⇒'));
   if (arrow > 0) {
     const sepLen = text.slice(arrow).startsWith('=>') ? 2 : 1;
     return [text.slice(0, arrow).trim(), text.slice(arrow + sepLen).trim()];
   }
-  // A trailing "الجواب: …" / "Answer: …" is the other convention in the bank.
-  const labelled = text.match(/^([\s\S]+?)[\s]*(?:الجواب|الحل|Answer|Solution)\s*[:：]\s*([\s\S]+)$/);
-  if (labelled) return [labelled[1].trim(), labelled[2].trim()];
   return [text, ''];
 }

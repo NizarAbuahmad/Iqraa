@@ -259,15 +259,15 @@ export default function ClassGameScreen() {
         {/* How it works — the format is unfamiliar, and a teacher will not risk
             a class period on a mode they have to guess at. */}
         <View style={[styles.howCard, { backgroundColor: ACCENT + '10', borderColor: ACCENT + '35', borderRadius: colors.radius }]}>
-          <Text style={[styles.howTitle, { color: ACCENT, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.howTitle, { color: ACCENT, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('gameHowTitle')}
           </Text>
           {[t('gameHow1'), t('gameHow2'), t('gameHow3'), t('gameHow4')].map((line, i) => (
             <View key={i} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', marginTop: 6 }}>
               <View style={[styles.stepNum, { backgroundColor: ACCENT_FILL }]}>
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }}>
                 {line}
               </Text>
             </View>
@@ -337,7 +337,7 @@ export default function ClassGameScreen() {
                   }]}
                 >
                   <Text style={{ fontSize: 14 }}>{team.emoji}</Text>
-                  <Text style={{ color: readableOn(team.color, colors.card, 5.5) /* on the team tint, so a margin over 4.5 */, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>{team.name}</Text>
+                  <Text style={{ color: readableOn(team.color, colors.card, 5.5) /* on the team tint, so a margin over 4.5 */, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>{team.name}</Text>
                 </View>
               ))}
             </View>
@@ -357,7 +357,7 @@ export default function ClassGameScreen() {
           />
 
           {error ? (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
           ) : null}
@@ -370,14 +370,14 @@ export default function ClassGameScreen() {
             fullWidth
           />
           {!topic.trim() ? (
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
               {t('needTopicHint')}
             </Text>
           ) : null}
         </View>
 
         {cancelled && !loading && !deck && (
-          <Text style={{ marginHorizontal: 20, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ marginHorizontal: 20, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
             {t('genCancelled')}
           </Text>
         )}
@@ -385,11 +385,11 @@ export default function ClassGameScreen() {
         {loading && (
           <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <ActivityIndicator color={ACCENT} />
-            <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
               {t('gameBuilding')}
             </Text>
             <Pressable onPress={cancelGenerate} hitSlop={8}>
-              <Text style={{ color: colors.destructive, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+              <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                 {t('cancel')}
               </Text>
             </Pressable>
@@ -413,7 +413,7 @@ export default function ClassGameScreen() {
             </View>
 
             <View style={[styles.readyCard, { backgroundColor: colors.card, borderColor: ACCENT + '40', borderRadius: colors.radius }]}>
-              <Text style={[styles.readyTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.readyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
                 {deck.activityName}
               </Text>
               <View style={[styles.statsRow, { flexDirection: isRTL ? 'row-reverse' : 'row', borderTopColor: colors.border }]}>
@@ -426,7 +426,7 @@ export default function ClassGameScreen() {
             {/* Materials — the one thing that must
                 exist in the room before the game starts. */}
             <View style={[styles.materialsCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-              <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
                 {isAr ? 'قبل أن تبدأ' : 'Before you start'}
               </Text>
               {deck.materials.map((m, i) => (
@@ -437,8 +437,8 @@ export default function ClassGameScreen() {
                       flex: 1,
                       color: colors.foreground,
                       fontFamily: 'Almarai_400Regular',
-                      fontSize: 13,
-                      lineHeight: 20,
+                      fontSize: 15,
+                      lineHeight: 23,
                       textAlign: isRTL ? 'right' : 'left',
                       writingDirection: isRTL ? 'rtl' : 'ltr',
                     }}
@@ -454,7 +454,7 @@ export default function ClassGameScreen() {
               style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT_FILL, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
             >
               <Ionicons name="play-circle" size={22} color="#fff" />
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 16 }}>{t('gameStart')}</Text>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 16 }}>{t('gameStart')}</Text>
             </Pressable>
 
             <Pressable
@@ -462,7 +462,7 @@ export default function ClassGameScreen() {
               style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-              <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>{t('regenerateBtn')}</Text>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('regenerateBtn')}</Text>
             </Pressable>
           </View>
         )}
@@ -475,7 +475,7 @@ function Stat({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: st
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       <Ionicons name={icon} size={13} color={ACCENT} />
-      <Text style={{ fontSize: 12, color: ACCENT, fontFamily: 'Cairo_500Medium' }}>{label}</Text>
+      <Text style={{ fontSize: 12, color: ACCENT, fontFamily: 'ReadexPro_500Medium' }}>{label}</Text>
     </View>
   );
 }

@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { reportReasonLabel } from '@/services/reportReasons';
 import { useAuth } from '@/context/AuthContext';
 import { apiJson } from '@/services/apiClient';
 import { confirm } from '@/services/confirm';
@@ -172,11 +173,11 @@ export default function ModerationScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, padding: 24 }]}>
         <Ionicons name="lock-closed-outline" size={32} color={colors.mutedForeground} />
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, marginTop: 12, textAlign: 'center' }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, marginTop: 12, textAlign: 'center' }}>
           {ar ? 'هذه الصفحة للإدارة فقط' : 'This page is for admins only'}
         </Text>
         <Pressable onPress={() => goBack()} hitSlop={10} style={{ marginTop: 16 }}>
-          <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold' }}>{ar ? 'رجوع' : 'Go back'}</Text>
+          <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }}>{ar ? 'رجوع' : 'Go back'}</Text>
         </Pressable>
       </View>
     );
@@ -188,7 +189,7 @@ export default function ModerationScreen() {
         <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
+        <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
           {ar ? 'البلاغات' : 'Reports'}
         </Text>
         <Text style={{ color: '#fff', opacity: 0.85, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }}>
@@ -205,7 +206,7 @@ export default function ModerationScreen() {
             onPress={() => setFilter(f)}
             style={[styles.chip, { backgroundColor: filter === f ? ACCENT : colors.card, borderColor: colors.border }]}
           >
-            <Text style={{ color: filter === f ? '#fff' : colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>
+            <Text style={{ color: filter === f ? '#fff' : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>
               {labelFor(f, ar)}
             </Text>
           </Pressable>
@@ -283,6 +284,7 @@ function ReportCard({
   onDismiss: () => void;
   onUnsuspend: () => void;
 }) {
+  const { t } = useLanguage();
   const align = isRTL ? 'right' : 'left';
   const open = report.status === 'open';
   const alreadyHidden = !!report.messageArchivedAt;
@@ -294,7 +296,7 @@ function ReportCard({
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-      <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
         {report.reportedName}
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
           {'  '}{report.reportedEmail} · {report.reportedRole}
@@ -309,7 +311,7 @@ function ReportCard({
 
       {report.reason ? (
         <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 10, textAlign: align }}>
-          {ar ? 'السبب: ' : 'Reason: '}{report.reason}
+          {ar ? 'السبب: ' : 'Reason: '}{reportReasonLabel(report.reason, t)}
         </Text>
       ) : null}
 
@@ -368,7 +370,7 @@ function statusLabel(s: Report['status'], ar: boolean): string {
 function Badge({ text, color, colors }: { text: string; color: string; colors: ReturnType<typeof useColors> }) {
   return (
     <View style={[styles.badge, { borderColor: color, borderRadius: colors.radius }]}>
-      <Text style={{ color, fontFamily: 'Cairo_500Medium', fontSize: 11 }}>{text}</Text>
+      <Text style={{ color, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }}>{text}</Text>
     </View>
   );
 }
@@ -385,7 +387,7 @@ function Action({ label, onPress, color, colors }: {
         { borderColor: color, borderRadius: colors.radius, opacity: pressed ? 0.6 : 1 },
       ]}
     >
-      <Text style={{ color, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>{label}</Text>
+      <Text style={{ color, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>{label}</Text>
     </Pressable>
   );
 }

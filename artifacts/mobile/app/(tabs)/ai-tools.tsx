@@ -85,12 +85,12 @@ function ToolCard({
           <Ionicons name={tool.icon} size={30} color={tool.color} />
         </View>
         <View style={[styles.gridTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: 'center' }]}>
+          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }]}>
             {t(tool.titleKey as any)}
           </Text>
           {tool.badgeKey && (
             <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
-              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t(tool.badgeKey as any)}
               </Text>
             </View>
@@ -131,12 +131,12 @@ function ToolCard({
       </View>
       <View style={{ flex: 1 }}>
         <View style={[styles.titleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: compact ? 14 : 15 }]}>
+          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: compact ? 14 : 15 }]}>
             {t(tool.titleKey as any)}
           </Text>
           {tool.badgeKey && (
             <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
-              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t(tool.badgeKey as any)}
               </Text>
             </View>
@@ -173,7 +173,7 @@ export default function AIToolsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.header, { paddingTop: topPad + 16, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('aiTools')}
         </Text>
         {DEMO_MODE ? (
@@ -181,7 +181,7 @@ export default function AIToolsScreen() {
         ) : (
           <View style={[styles.aiBadge, { backgroundColor: colors.primary + '18', borderRadius: 20, alignSelf: isRTL ? 'flex-end' : 'flex-start', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="sparkles-outline" size={14} color={colors.primary} />
-            <Text style={[styles.aiBadgeText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.aiBadgeText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {t('poweredByAI')}
             </Text>
           </View>
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, marginBottom: 8 },
   aiBadge: { alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, marginBottom: 10 },
   aiBadgeText: { fontSize: 12 },
-  subtitle: { fontSize: 13, lineHeight: 20 },
+  subtitle: { fontSize: 15, lineHeight: 23 },
   section: { paddingTop: 8 },
   sectionTitle: {
     fontSize: 12,
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 15 },
   badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
   badgeText: { fontSize: 10 },
-  cardDesc: { fontSize: 12, lineHeight: 17 },
+  cardDesc: { fontSize: 13, lineHeight: 18 },
   note: { alignItems: 'flex-start', gap: 8, padding: 14, marginBottom: 20 },
-  noteText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  noteText: { flex: 1, fontSize: 13, lineHeight: 18 },
 });
