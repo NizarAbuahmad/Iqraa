@@ -2,8 +2,8 @@
  * The English hub: pick a grade, pick a lesson, play with its words.
  *
  * Under `/curriculum` so students reach it without touching the role gate
- * (`services/routeGating.ts`). Grades 1–4 only for now — the books whose words
- * are glossed and voiced; see `@workspace/curriculum/englishHub`.
+ * (`services/routeGating.ts`). Grades 1–4 and 9–10 — the books whose words
+ * are glossed; see `@workspace/curriculum/englishHub`.
  */
 import React, { useCallback, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
@@ -35,6 +35,11 @@ export default function EnglishHubScreen() {
   const practicedToday = progress.lastDay === today;
   const earned = new Set(badgesEarned(progress));
   const lessons = hubLessonsForGrade(grade);
+  // Grades 9–10 offer several lessons per unit, so the unit title alone would
+  // repeat on card after card; there the lesson's own title tells them apart.
+  const unitKey = (l: { semester: number; unitNumber: number }) => `${l.semester}-${l.unitNumber}`;
+  const perUnit = new Map<string, number>();
+  for (const l of lessons) perUnit.set(unitKey(l), (perUnit.get(unitKey(l)) ?? 0) + 1);
   const row = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';
 
@@ -129,7 +134,7 @@ export default function EnglishHubScreen() {
         {lessons.map(l => {
           const stars = lessonStars(progress, l.id);
           return (
-            // Titled by unit, not lesson: every hub lesson in these books is the
+            // Titled by unit, not lesson: every Grade 1–4 hub lesson is the
             // unit's "Vocabulary & Grammar" one, so the lesson title tells a
             // child nothing and the unit title ("Look at my toys!") does.
             <Pressable
@@ -141,7 +146,9 @@ export default function EnglishHubScreen() {
                 ]}
               >
                 <View style={{ flex: 1, gap: 4 }}>
-                  <Text style={[styles.unit, { color: colors.mutedForeground, textAlign: align }]}>{t('hubUnit', l.unitNumber)}</Text>
+                  <Text style={[styles.unit, { color: colors.mutedForeground, textAlign: align }]}>{t('hubUnit', l.unitNumber)}
+                    {(perUnit.get(unitKey(l)) ?? 0) > 1 ? ` · ${lang === 'ar' ? l.titleAr || l.title : l.title}` : ''}
+                  </Text>
                   <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }} numberOfLines={2}>
                     {lang === 'ar' ? l.unitTitleAr || l.unitTitle : l.unitTitle}
                   </Text>

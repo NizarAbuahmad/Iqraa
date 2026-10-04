@@ -19,6 +19,7 @@ import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { narrowSubjectsForGrade, narrowToSelection, preferredGrade } from '@/services/teacherCatalogFilter';
 import { getMyGradeIds } from '@/services/studentExam';
+import { ENGLISH_HUB_GRADES } from '@workspace/curriculum/englishHub';
 
 const SUBJECT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   arabic:      'text',
@@ -241,7 +242,7 @@ export default function CurriculumBrowseScreen() {
                 </Pressable>
               ) : null}
             </View>
-            {selectedGrade.level <= 4 ? (
+            {(ENGLISH_HUB_GRADES as readonly number[]).includes(selectedGrade.level) ? (
               <Pressable
                 onPress={() => router.push({ pathname: '/curriculum/english', params: { grade: String(selectedGrade.level) } } as never)}
                 style={({ pressed }) => [

@@ -100,13 +100,20 @@ an announcement by default» below.
   Verified by typecheck and the mobile suite (2204 pass, 0 fail, 10
   skipped). **Not verified in a browser** — none of the screen wiring is
   machine-testable (the runner cannot load react-native). Still open from
-  the same review: a reopened deck is not loaded from موادي on either slides
-  screen (only the form is prefilled); pen ink drifts off the content on
-  resize; `homeAiTools.ts` still disables `activity`/`game` for the
-  related-tools panel, deliberately. (The timer pause that was listed here
-  landed 2026-10-03: tap the clock, press P, or use the bottom-bar button on
-  wide screens. Pausing holds the second; a new slide or a restart clears it.
-  Not looked at in a browser.)
+  the same review: `homeAiTools.ts` still disables `activity`/`game` for the
+  related-tools panel, deliberately. (Pen ink drift landed 2026-10-04: strokes
+  are stored as fractions of the canvas width, not pixels
+  (`services/penInk.ts`), so ink follows the slide through fullscreen, a
+  rotated tablet or a resized window. It follows the slide's scale, not a
+  word — text that reflows differently can still sit a line off. Not looked
+  at in a browser.) (The timer pause that was listed here landed
+  2026-10-03: tap the clock, press P, or use the bottom-bar button on wide
+  screens. Pausing holds the second; a new slide or a restart clears it. The
+  reopened deck landed 2026-10-04: «تعديل» on a saved deck now loads the deck
+  itself — slides, edits, scope and its link to the stored item — on both
+  slides screens (`services/savedDeck.ts`); an item that is gone or unreadable
+  keeps the prefilled form and says so. موادي's row menu offers «تعديل» on
+  `slides` too — only the item page did. Neither is looked at in a browser.)
 - **A free, no-login games hub shipped** (2026-09-18), a competitive response
   to hasaadx.com/teacher. `/play` (added to `routeGating.ts`'s
   `PUBLIC_ROUTES`, same no-account pattern as `app/take/[code].tsx`) offers
@@ -549,6 +556,43 @@ an announcement by default» below.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## «علمني» with a lesson open teaches that lesson, 2026-10-04
+
+Reported from the app: with «تركيب الاقترانات» on the chat's lesson card, «علمني»
+got the generic «وضّح لي أكثر: هل تريد شرح مفهوم، أم تحضير مادة…؟» — as if
+nothing were open. Two gaps in `services/ai/intentRouter.ts`, plus a third the
+fix would have walked into:
+
+- **No word for "teach me".** `isTeaching` knew شرح / وضّح / ما هو only, so
+  «علمني» (one word) and «علمني الاقترانات» (two) both fell to the short-token
+  clarify. `isTeachMeAsk` (`services/ai/askVocabulary.ts`) now covers
+  علّمني / فهّمني / درّسني / teach me / help me understand, and `detectIntent`
+  reads them as `explain`. Only the pronoun-suffixed verb counts — «المعلم»,
+  «العلوم», «علم الكيمياء» do not.
+- **The router never saw the lesson card.** `classifyChatIntent` takes
+  `{ activeLessonTitle }` (the pinned lesson, or the active one unless its pin
+  is `'none'`). A *bare* teach/continue ask — `isBareTeachAsk`: «علمني»,
+  «اشرحه», «ابدأ», «كمّل», "start", "continue", anchored so «اشرح المشتقات» is
+  not bare — is then teaching about that lesson. A clarify that still happens
+  with a lesson open names it («تريد أن أشرح «تركيب الاقترانات»، أم…؟»). With
+  no lesson, a bare «علمني» asks which lesson rather than "concept or
+  material?"; a bare «شرح» still routes to teaching, because it is one of the
+  options the generic clarify offers.
+- **Routing to teaching alone would have picked the wrong lesson.** A soft pin
+  is not reused for a teaching ask, so the pipeline would have searched the KB
+  for the verb: measured, «علمني» ranks «أسس علم التصنيف» first and «start»
+  ranks «تأسيس مشروع تجاري» at 92 — high enough to read as another subject and
+  drop even a hard pin. `shouldReuseActiveLesson` now reuses the lesson for a
+  bare ask and ignores the KB's subject signal for it. Uploaded documents still
+  come first under a soft pin, and none of the bare phrases is a confident hit,
+  so nothing gets hard-pinned by accident.
+
+84 cases in `teachMeAsk.test.ts`, watched failing first; one existing test
+(«شرح» answers the clarify) caught a regression on the way and shaped the
+`شرح` exception. Demo-mode / local path only, like the other router entries.
+**Not checked** in the running app — the router and gate are unit-tested, the
+`iqra.tsx` wiring is typechecked only.
 
 ## «اقترح ميزة» — teachers can suggest a feature, 2026-10-03
 
@@ -996,6 +1040,24 @@ joins by the evaluation's class, so a student removed from the roster still
 appears in it; the within-class name dedup rule is inline and untestable.
 
 ## An English corner for Grades 1–4, 2026-09-25
+
+> **Grades 9 and 10 joined on 2026-10-04** — 56 more lessons: grade 9 both
+> semesters (36), grade 10 semester 1 (20). Grade 10 semester 2 has no
+> extracted vocabulary, so it has no lessons yet. The words come from
+> `vocabulary.ts` (the same list the lesson-page drill uses). The Arabic meanings
+> are in `lib/curriculum/src/data/english_vocabulary_ar.json`: 647 entries,
+> **drafted by Claude, not by a teacher, and not yet reviewed**. They were checked
+> by hand against each lesson for wrong senses (e.g. *still* water, *narrow*
+> trousers). A test pins that no two words in one lesson share a meaning, because
+> the Match game would then show two identical Arabic cards. The book's
+> annotations ("eager (phr)", "or learnt") are stripped by `hubWordFromBook`.
+> Units there hold several lessons, so a hub card adds the lesson title after
+> «الوحدة N» whenever its unit has more than one.
+> **Their audio is not generated yet**: until
+> `pnpm --filter @workspace/curriculum run english-audio` is re-run with the
+> keys, a 9–10 word's speaker button plays nothing. The narration prompt now
+> addresses a teenage student; the Grade 1–4 recordings keep their child-pitched
+> voice because the script skips existing files (`--force` would re-voice them).
 
 Anyone can practise the Grade 1–4 English lesson words at
 `/curriculum/english`, **with no account** — it's the first card on the `/play`
@@ -14938,5 +15000,31 @@ a name and the teacher chose to let them talk.
   the reports already on record read correctly too; anything that is not a
   known key is shown as written.
 
-Not done: L13 — the inbox still loads every message of every thread on each
-poll, and two screens poll it.
+L13 (the inbox loading every message on each poll) was fixed the next
+entry down.
+
+## The inbox stops loading every message it has ever held, 2026-10-04
+
+**`GET /messaging/threads` read every message of every thread the caller is
+in, on every poll, to show one latest message and one unread number per
+thread.** A class group gains a message per announcement and loses none, and
+the app polls this route every 20 s from two places (the tab badge and the
+inbox), so each poll grew with the whole history of every class.
+
+Now `lib/inboxSummary.ts` asks the database for exactly those two things: a
+`LATERAL … LIMIT 1` per thread for the latest visible message, and one grouped
+count of unread ones. Measured on a local Postgres with this schema and 480k
+messages: the latest-message lookup takes 0.2 ms, against 260 ms for a
+`DISTINCT ON` version, which still sorted every row. Checked against the old
+in-memory logic on randomly seeded threads (archived messages, blocked
+senders, null and set read times): 388 comparisons, 0 differences. That check
+was a scratch script against a throwaway local database, not a committed test
+— the api-server suite has no database.
+
+One visible change: the sender name on the inbox preview is now looked up for
+the message actually shown. It used to be looked up for the latest message
+*before* blocked senders were removed, so a thread whose newest message came
+from someone the viewer blocked showed its preview with no name.
+
+Not done: the two pollers still each fetch the full list every 20 s; sharing
+one fetch between the badge and the inbox would need a shared client store.
