@@ -2,7 +2,7 @@
  * Intent Router — classifies chat messages BEFORE curriculum / Teaching Assistant.
  * Demo Mode only; fully local. Greetings & small talk never trigger lesson generation.
  */
-import { artifactFromAsk } from './askVocabulary.ts';
+import { artifactFromAsk, isBareTeachAsk, isTeachMeAsk } from './askVocabulary.ts';
 import { isAppHelpQuery } from '../appHelp.ts';
 
 export type ChatRouteIntent =
@@ -157,6 +157,7 @@ function isTeaching(q: string): boolean {
     /شرح|كيف\s*أبسط|كيف\s*ابسط|ما\s*هو|ما\s*هي|ما\s*معنى|أعطني\s*مثالاً?|اعطني\s*مثال|وضح|وضّح|explain|concept|what\s+is|what\s+are|how\s+(do|can|to)\s+i\s+(explain|teach|simplify)|give\s+me\s+an?\s+example|help\s+me\s+(explain|teach)/i.test(
       q,
     )
+    || isTeachMeAsk(q)
     || (/[؟?]/.test(q) && !isGreeting(q) && !isSmallTalk(normalizeQuery(q)))
   );
 }
@@ -361,11 +362,32 @@ function aboutReply(ask: AboutAsk, isAr: boolean): string {
   ].join('\n');
 }
 
-function ambiguousReply(isAr: boolean): string {
+function ambiguousReply(isAr: boolean, lessonTitle?: string | null): string {
+  if (lessonTitle) {
+    return isAr
+      ? `تريد أن أشرح «${lessonTitle}»، أم أحضّر له مادة (خطة درس / ورقة عمل / اختبار)؟`
+      : `Shall I explain «${lessonTitle}», or prepare a material for it (plan / worksheet / quiz)?`;
+  }
   return isAr
     ? 'وضّح لي أكثر: هل تريد شرح مفهوم، أم تحضير مادة (خطة درس / ورقة عمل / اختبار)؟'
     : 'So I can help precisely: do you want a concept explanation, or a teaching material (plan / worksheet / quiz)?';
 }
+
+/** «علمني» with nothing open: the missing piece is the lesson, not the kind of help. */
+function lessonAskReply(isAr: boolean): string {
+  return isAr
+    ? 'بكل سرور! ماذا نتعلّم؟ اكتب الدرس أو الموضوع، أو اختر درساً من المنهاج.'
+    : 'Happy to! What shall we learn? Type the lesson or topic, or pick a lesson from the curriculum.';
+}
+
+export type ClassifyChatOptions = {
+  /**
+   * Title of the lesson on the chat's lesson card, when one is open and still
+   * pinned. A bare «علمني» / «ابدأ» is then about that lesson, and a clarify
+   * that still has to happen asks about it by name.
+   */
+  activeLessonTitle?: string | null;
+};
 
 /**
  * Classify an incoming chat message before any curriculum context is applied.
@@ -381,16 +403,18 @@ export function classifyChatIntent(
   lang: 'ar' | 'en' = 'ar',
   afterClarify = false,
   userName?: string,
+  options: ClassifyChatOptions = {},
 ): IntentRouteResult {
   const isAr = lang === 'ar';
   const q = normalizeQuery(query);
+  const lessonTitle = options.activeLessonTitle?.trim() || null;
   const clarify = (): IntentRouteResult =>
     afterClarify
       ? { intent: 'teaching', useTeachingPipeline: true }
       : {
           intent: 'ambiguous',
           useTeachingPipeline: false,
-          socialReply: ambiguousReply(isAr),
+          socialReply: ambiguousReply(isAr, lessonTitle),
         };
   if (!q) {
     return {
@@ -442,6 +466,18 @@ export function classifyChatIntent(
       useTeachingPipeline: false,
       socialReply: offTopicReply(isAr),
     };
+  }
+
+  // «علمني» / «ابدأ» / "teach me" — a verb with no topic. With a lesson open it
+  // is about that lesson; with none, the lesson is what is missing, so ask for
+  // it rather than searching the curriculum for the verb.
+  // A bare «شرح» / "explain" keeps routing to teaching even then: it is one of
+  // the options the generic clarify offers, so asking again would loop.
+  if (isBareTeachAsk(q)) {
+    if (lessonTitle || afterClarify || /شرح|explain/i.test(q)) {
+      return { intent: 'teaching', useTeachingPipeline: true };
+    }
+    return { intent: 'ambiguous', useTeachingPipeline: false, socialReply: lessonAskReply(isAr) };
   }
 
   // Refinement / artifact / teaching — Teaching Assistant may use lesson context
