@@ -1960,6 +1960,11 @@ const translations = {
     reportReasonOther: 'سبب آخر',
     messagingNewGroup: 'مجموعة جديدة',
     messagingThreadClassGroup: 'مجموعة الصف',
+    // Chat-only: `roleAdmin` («مدير المدرسة») is also the profile/settings label
+    // and is deliberately left alone.
+    chatRoleAdmin: 'مسؤول',
+    chatTeacherOf: (subjects: string) => `معلم ${subjects}`,
+    chatAboutStudent: (names: string) => `بخصوص ${names}`,
     messagingThreadCustomGroup: 'مجموعة مخصصة',
     messagingFilterAll: 'الكل',
     messagingFilterGroups: 'المجموعات',
@@ -3883,6 +3888,9 @@ const translations = {
     reportReasonOther: 'Other reason',
     messagingNewGroup: 'New group',
     messagingThreadClassGroup: 'Class group',
+    chatRoleAdmin: 'Admin',
+    chatTeacherOf: (subjects: string) => `${subjects} teacher`,
+    chatAboutStudent: (names: string) => `About ${names}`,
     messagingThreadCustomGroup: 'Custom group',
     messagingFilterAll: 'All',
     messagingFilterGroups: 'Groups',

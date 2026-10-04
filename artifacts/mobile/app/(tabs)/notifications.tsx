@@ -25,7 +25,7 @@ import {
   type ChatRole,
 } from '@/services/messaging';
 import { apiErrorMessage } from '@/services/apiErrorKey';
-import { chatRoleLabel } from '@/services/chatRoleLabel';
+import { chatThreadSubtitle } from '@/services/chatThreadSubtitle';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
@@ -317,7 +317,7 @@ export default function NotificationsScreen() {
                       style={[styles.threadRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
                       numberOfLines={1}
                     >
-                      {chatRoleLabel(other.role, t)}
+                      {chatThreadSubtitle(other, t, lang)}
                     </Text>
                   ) : item.type === 'class_group' ? (
                     <Text style={[styles.threadRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]} numberOfLines={1}>

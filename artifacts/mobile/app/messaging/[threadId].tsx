@@ -48,7 +48,7 @@ import {
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { MessageBubble } from '@/components/ui/MessageBubble';
 import { Avatar } from '@/components/ui/Avatar';
-import { chatRoleLabel } from '@/services/chatRoleLabel';
+import { chatThreadSubtitle } from '@/services/chatThreadSubtitle';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 import { mergeNewMessages } from '@/services/messageMerge';
 import { pickUnreportedReads } from '@/services/readReceipts';
@@ -355,7 +355,7 @@ export default function ThreadScreen() {
                 style={[styles.headerRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
                 numberOfLines={1}
               >
-                {chatRoleLabel(thread.otherParticipant.role, t)}
+                {chatThreadSubtitle(thread.otherParticipant, t, lang)}
               </Text>
             </View>
           </>
