@@ -97,6 +97,7 @@ export function LibraryPickerSheet({
   group,
   added,
   busyKey,
+  error,
   onAdd,
   onClose,
 }: {
@@ -107,11 +108,13 @@ export function LibraryPickerSheet({
   added: ReadonlySet<string>;
   /** The item currently being added, so its row can show a spinner. */
   busyKey: string | null;
+  /** A failed add, shown inside the sheet: a toast on the screen would sit behind this Modal. */
+  error?: string;
   onAdd: (item: ResourceItem) => void;
   onClose: () => void;
 }) {
   const colors = useColors();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [uploaded, setUploaded] = useState<LibraryItem[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -149,6 +152,18 @@ export function LibraryPickerSheet({
           <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
             {t('libraryPickerTitle')}
           </Text>
+          {error ? (
+            <Text
+              style={{
+                color: colors.destructive,
+                fontFamily: 'Almarai_400Regular',
+                fontSize: 13,
+                textAlign: isRTL ? 'right' : 'left',
+              }}
+            >
+              {error}
+            </Text>
+          ) : null}
           {loading && items.length === 0 ? <ActivityIndicator color={colors.primary} /> : null}
           <FlatList
             data={items}

@@ -140,6 +140,7 @@ export default function ClassDetailScreen() {
   const [resources, setResources] = useState<ClassResource[]>([]);
   const [showLibrary, setShowLibrary] = useState(false);
   const [addingKey, setAddingKey] = useState<string | null>(null);
+  const [pickerError, setPickerError] = useState('');
   const [savedCount, setSavedCount] = useState(0);
   const [mastery, setMastery] = useState<ClassMastery | null>(null);
   /** Null until loaded, or when the log can't be read — the card then hides. */
@@ -516,18 +517,25 @@ export default function ClassDetailScreen() {
   const onAddResource = async (item: ResourceItem) => {
     if (!id || addingKey) return;
     setAddingKey(item.key);
+    setPickerError('');
     try {
       await addClassResource(id, addBodyFor(item, lang as 'ar' | 'en'));
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      trackEvent('class_resource_added', { source: item.source, mediaKind: item.kind });
-      // Re-read rather than splice: the server owns the snapshot, and a 409
-      // (already there) resolves quietly with nothing to splice at all.
+    } catch {
+      // Shown inside the picker: a toast on this screen would sit behind its Modal.
+      setPickerError(t('classResourceFailed'));
+      setAddingKey(null);
+      return;
+    }
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    trackEvent('class_resource_added', { source: item.source, mediaKind: item.kind });
+    // Re-read rather than splice: the server owns the snapshot, and a 409
+    // (already there) resolves quietly with nothing to splice at all.
+    try {
       setResources(await listClassResources(id));
     } catch {
-      setError(t('classResourceFailed'));
-    } finally {
-      setAddingKey(null);
+      // The add landed; the shelf catches up on the next load.
     }
+    setAddingKey(null);
   };
 
   const onRemoveResource = async (resource: ClassResource) => {
@@ -537,7 +545,7 @@ export default function ClassDetailScreen() {
       // Only drop it once the delete persisted, as onDetach does.
       setResources(prev => prev.filter(r => r.id !== resource.id));
     } catch {
-      setError(t('classResourceFailed'));
+      setToast(t('classResourceFailed'));
     }
   };
 
@@ -1385,6 +1393,7 @@ export default function ClassDetailScreen() {
             <Pressable
               onPress={() => {
                 setShowAttach(false);
+                setPickerError('');
                 setShowLibrary(true);
               }}
               accessibilityRole="button"
@@ -1448,8 +1457,12 @@ export default function ClassDetailScreen() {
         group={{ gradeId: group?.gradeId ?? '', subjectId: group?.subjectId ?? '' }}
         added={shelfKeys}
         busyKey={addingKey}
+        error={pickerError}
         onAdd={item => { void onAddResource(item); }}
-        onClose={() => setShowLibrary(false)}
+        onClose={() => {
+          setPickerError('');
+          setShowLibrary(false);
+        }}
       />
 
       <Modal
