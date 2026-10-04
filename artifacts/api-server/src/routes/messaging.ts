@@ -61,6 +61,8 @@ import { createRateLimiter } from "../lib/rateLimit.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { sendExpoPush, deadTokensFrom } from "../lib/pushNotifications.js";
 import { UUID } from "../lib/adminMetrics.js";
+import { visibleGroupMembers } from "../lib/groupMemberView.ts";
+import { latestVisibleMessages, unreadCounts } from "../lib/inboxSummary.ts";
 import { isR2Configured, newChatMediaKey, presignedGetUrl, putObject } from "../lib/r2.js";
 import { syncClassGroupThread } from "../lib/classThread.js";
 import { resolveReport } from "../lib/reportDecision.js";
@@ -347,7 +349,7 @@ router.get("/messaging/contacts", async (req: AuthenticatedRequest, res) => {
 router.get("/messaging/threads", async (req: AuthenticatedRequest, res) => {
   try {
     const mine = await db
-      .select({ threadId: chatParticipants.threadId, lastReadAt: chatParticipants.lastReadAt })
+      .select({ threadId: chatParticipants.threadId })
       .from(chatParticipants)
       .where(eq(chatParticipants.userId, req.user!.id));
 
@@ -357,61 +359,60 @@ router.get("/messaging/threads", async (req: AuthenticatedRequest, res) => {
     }
 
     const threadIds = mine.map(m => m.threadId);
-    const lastReadByThread = new Map(mine.map(m => [m.threadId, m.lastReadAt]));
 
     const threadRows = await db
       .select()
       .from(chatThreads)
       .where(and(inArray(chatThreads.id, threadIds), isNull(chatThreads.archivedAt)));
 
-    const otherParticipants = await db
-      .select({
-        threadId: chatParticipants.threadId,
-        userId: users.id,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        role: users.role,
-      })
-      .from(chatParticipants)
-      .innerJoin(users, eq(users.id, chatParticipants.userId))
-      .where(and(inArray(chatParticipants.threadId, threadIds), ne(chatParticipants.userId, req.user!.id)));
+    // The other person in a *direct* thread only. Group threads used to get
+    // an arbitrary other member here — usually a classmate's name, sent to a
+    // child who never asked for it, and read by nothing (the client names a
+    // group by its title).
+    const directIds = threadRows.filter(t => t.type === "direct").map(t => t.id);
+    const otherParticipants = directIds.length
+      ? await db
+          .select({
+            threadId: chatParticipants.threadId,
+            userId: users.id,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            role: users.role,
+          })
+          .from(chatParticipants)
+          .innerJoin(users, eq(users.id, chatParticipants.userId))
+          .where(and(inArray(chatParticipants.threadId, directIds), ne(chatParticipants.userId, req.user!.id)))
+      : [];
     const otherByThread = new Map(otherParticipants.map(p => [p.threadId, p]));
 
-    // One query for every message across every one of my threads, newest
-    // first, then aggregated in JS below. Roster-sized scale (a teacher's own
-    // parents, or one family's teachers) — not worth a per-thread round trip
-    // or a raw grouped-SQL query for this.
-    const allMessages = await db
-      .select()
-      .from(chatMessages)
-      .where(and(inArray(chatMessages.threadId, threadIds), isNull(chatMessages.archivedAt)))
-      .orderBy(desc(chatMessages.createdAt));
+    // Teachers never filter blocked senders (see file header) — only worth
+    // the extra query for a non-teacher viewer.
+    const blocked = isTeacherRole(req.user!.role) ? [] : [...(await blockedSenderIds(req.user!.id))];
 
-    // Resolve first-names for the senders of each thread's last message so the
+    // The latest message and the unread count per thread, asked of the
+    // database — see lib/inboxSummary.ts for why this no longer loads every
+    // message of every thread.
+    const liveIds = threadRows.map(t => t.id);
+    const [latestRows, unreadByThread] = await Promise.all([
+      latestVisibleMessages(liveIds, blocked),
+      unreadCounts(liveIds, req.user!.id, blocked),
+    ]);
+    const latestByThread = new Map(latestRows.map(m => [m.threadId, m]));
+
+    // First names for the senders of each thread's last message, so the
     // client can show "Ahmad: Hi" instead of just "Hi".
-    const lastSenderIds = [...new Set(
-      threadIds.map(tid => allMessages.find(m => m.threadId === tid)?.senderId).filter(Boolean) as string[]
-    )];
+    const lastSenderIds = [...new Set(latestRows.map(m => m.senderId))];
     const senderRows = lastSenderIds.length
       ? await db.select({ id: users.id, firstName: users.firstName }).from(users).where(inArray(users.id, lastSenderIds))
       : [];
     const senderNames = new Map(senderRows.map(u => [u.id, u.firstName]));
 
-    // Teachers never filter blocked senders (see file header) — only worth
-    // the extra query for a non-teacher viewer.
-    const blocked = isTeacherRole(req.user!.role) ? null : await blockedSenderIds(req.user!.id);
-
     const threads = await Promise.all(threadRows.map(async thread => {
-      const lastReadAt = lastReadByThread.get(thread.id) ?? null;
-      const messages = allMessages
-        .filter(m => m.threadId === thread.id)
-        .filter(m => !blocked || !blocked.has(m.senderId));
-      const lastMessage = messages[0]
-        ? { ...await toClientMessage(messages[0]), senderName: senderNames.get(messages[0].senderId) ?? null }
+      const latest = latestByThread.get(thread.id);
+      const lastMessage = latest
+        ? { ...await toClientMessage(latest), senderName: senderNames.get(latest.senderId) ?? null }
         : null;
-      const unreadCount = messages.filter(
-        m => m.senderId !== req.user!.id && (!lastReadAt || m.createdAt > lastReadAt),
-      ).length;
+      const unreadCount = unreadByThread.get(thread.id) ?? 0;
 
       return {
         id: thread.id,
@@ -765,8 +766,15 @@ router.get("/messaging/threads/:id", async (req: AuthenticatedRequest, res) => {
     }
 
     if (thread.type !== "direct") {
-      const participants = await participantsOf(threadId);
       const isOwner = (await groupOwnerId(thread)) === req.user!.id;
+      // Not the whole class to every child in it — see lib/groupMemberView.ts.
+      const participants = visibleGroupMembers({
+        members: await participantsOf(threadId),
+        viewerId: req.user!.id,
+        viewerIsOwner: isOwner,
+        studentPostingEnabled: thread.studentPostingEnabled,
+        isStaff: isTeacherRole,
+      });
       res.json({ thread, otherParticipant: null, participants, isOwner });
       return;
     }

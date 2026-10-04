@@ -235,7 +235,7 @@ export default function LessonDetailScreen() {
             with no server call to make. Renders nothing elsewhere. */}
         <VocabularyPracticePanel lessonId={lesson.id} accent={color} />
 
-        {/* Grades 1–4 English: the same words, voiced and played with. */}
+        {/* Grades 1–4 and 9–10 English: the same words, voiced and played with. */}
         {hubLesson(lesson.id) ? (
           <Pressable
             onPress={() => router.push({ pathname: '/curriculum/english/[lessonId]', params: { lessonId: lesson.id } } as never)}
