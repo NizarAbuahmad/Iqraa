@@ -103,7 +103,7 @@ export function PenPalette({ color, onColor, onUndo, onClear, canUndo, labels }:
           hitSlop={6}
           accessibilityRole="button"
           accessibilityLabel={labels.colors[i]}
-          accessibilityState={{ selected: c === color }}
+          aria-selected={c === color}
           style={[styles.swatch, { backgroundColor: c }, c === color && styles.swatchOn]}
         />
       ))}

@@ -820,7 +820,6 @@ function FilterChip({
         onPress();
       }}
       accessibilityRole="button"
-      accessibilityState={{ selected: on }}
       aria-selected={on}
       style={state => [
         styles.chip,
@@ -898,7 +897,6 @@ function ShelfTabs({
           onPick(id);
         }}
         accessibilityRole="tab"
-        accessibilityState={{ selected: on }}
         aria-selected={on}
         accessibilityLabel={`${label}, ${count}`}
         style={state => [

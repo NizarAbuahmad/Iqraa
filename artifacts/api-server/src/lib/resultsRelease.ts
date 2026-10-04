@@ -26,3 +26,31 @@ export function resultsReleaseDecision(evaluation: { status: string }, body: unk
   }
   return { ok: true, released };
 }
+
+/**
+ * What a release says, to whom. Announced when a release turns on — the
+ * route's conditional update decides that, so pressing «أعلن» on results
+ * already released sends nothing. Hiding and releasing again does announce
+ * again: remembering a past announcement would need a column, and a teacher
+ * hides results only to correct something.
+ *
+ * Arabic only: the product language, and the push goes out with no request in
+ * hand to read a locale from. The group line is posted under the teacher's
+ * name, because it is their button and their class.
+ */
+export interface ReleaseAnnouncement {
+  pushTitle: string;
+  pushBody: string;
+  groupLine: string;
+}
+
+export function releaseAnnouncement(evaluation: { title: string | null; titleAr: string | null }): ReleaseAnnouncement {
+  const name = evaluation.titleAr?.trim() || evaluation.title?.trim() || "";
+  return {
+    pushTitle: name ? `نتيجة «${name}»` : "نتيجة اختبارك",
+    pushBody: "أعلن معلّمك النتيجة. افتحها من «اختباراتي».",
+    groupLine: name
+      ? `أُعلنت نتائج «${name}». افتحوا «اختباراتي» لتروا نتائجكم.`
+      : "أُعلنت نتائج الاختبار. افتحوا «اختباراتي» لتروا نتائجكم.",
+  };
+}

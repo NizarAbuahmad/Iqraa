@@ -146,7 +146,7 @@ export function CurrentLessonCard({
           },
         ]}
         accessibilityRole="button"
-        accessibilityState={{ disabled: startClassBusy, busy: startClassBusy }}
+        aria-disabled={startClassBusy} aria-busy={startClassBusy}
         accessibilityLabel={startClassLabel}
       >
         {startClassBusy ? (
@@ -190,7 +190,7 @@ export function CurrentLessonCard({
             onPress={onToggleCollapse}
             style={[styles.collapsedMain, { flexDirection: rowDir, flex: 1 }]}
             accessibilityRole="button"
-            accessibilityState={{ expanded: false }}
+            aria-expanded={false}
             accessibilityLabel={lesson.unitLesson}
           >
             <JordanFlag width={17} />
@@ -289,7 +289,7 @@ export function CurrentLessonCard({
                 },
               ]}
               accessibilityRole="button"
-              accessibilityState={{ disabled: startClassBusy, busy: startClassBusy }}
+              aria-disabled={startClassBusy} aria-busy={startClassBusy}
               accessibilityLabel={startClassLabel}
             >
               {startClassBusy ? (

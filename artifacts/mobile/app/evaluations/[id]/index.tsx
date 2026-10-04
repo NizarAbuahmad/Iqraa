@@ -97,6 +97,8 @@ function questionText(q: EvaluationQuestion): string {
     // matching question existed but not what it asked. The left column is what
     // it asks about.
     ?? matchingLeftText(body['left'])
+    // A read-aloud body keeps its text in `passage` and printed as «—».
+    ?? (body['passage'] as string | undefined)
     // A dictation body has none of the above — the prompt is spoken, not
     // written. On the teacher's own screen the dictated text IS what the
     // question asks, and showing it here is what lets a teacher read the list
