@@ -550,6 +550,26 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## «اقترح ميزة» — teachers can suggest a feature, 2026-10-03
+
+A new screen, `/suggest-feature`, lets anyone signed in describe a missing
+feature and tells them the team will review it. It is reachable two ways: a
+dashed «اقترح ميزة» link at the foot of the desktop web sidebar
+(`WebSidebar.tsx`), and a row in the profile tab on every platform. It is in
+`NON_TEACHER_ROUTES`, so parents and students can reach it too.
+
+**No new table.** A suggestion is a `feedback` row with `rating: 'idea'` and
+`materialType: 'feature_request'`, so no schema push is needed and it shows up
+in the admin dashboard's existing feedback to-do list. That list has a
+«💡 اقتراحات» filter and a «اقتراحات الميزات» count. The checks on
+`POST /feedback` now live in `api-server/src/lib/feedbackInput.ts` (tested).
+An idea must say something: an empty comment answers 400. A thumb's comment is
+still optional. Like `FeedbackWidget`, the screen shows its thank-you only on
+`res.ok`, and keeps the text in the box when sending fails.
+
+Logged-out visitors don't see it, because `POST /feedback` requires an account.
+A public form would need an unauthenticated endpoint and spam protection.
+
 ## One parent per name on a class list, 2026-10-03
 
 Found by testing, not by reading: the same child could be picked from a class

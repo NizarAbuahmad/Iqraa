@@ -76,6 +76,8 @@ const NON_TEACHER_ROUTES = [
   '/claim-required',
   '/settings',
   '/faq',
+  // «اقترح ميزة» is linked from the profile tab for every role, like /faq.
+  '/suggest-feature',
   '/delete-account',
   // «اختباراتي». The API behind it answers students only; a parent who types
   // the URL gets the screen's translated refusal, not a teacher login.

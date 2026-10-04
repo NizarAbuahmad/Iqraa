@@ -398,6 +398,13 @@ export default function ProfileScreen() {
             isRTL={isRTL}
             colors={colors}
           />
+          <SettingRow
+            icon="bulb-outline"
+            label={t('suggestFeature')}
+            onPress={() => router.push('/suggest-feature' as any)}
+            isRTL={isRTL}
+            colors={colors}
+          />
           <SettingRow icon="log-out-outline" label={t('signOut')} onPress={handleLogout} destructive isRTL={isRTL} colors={colors} />
         </View>
       </View>
