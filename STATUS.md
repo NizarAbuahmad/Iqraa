@@ -15028,3 +15028,56 @@ from someone the viewer blocked showed its preview with no name.
 
 Not done: the two pollers still each fetch the full list every 20 s; sharing
 one fetch between the badge and the inbox would need a shared client store.
+
+## A walk through the student flow, and read-aloud never worked in Chrome, 2026-10-04
+
+**Walked end to end in a browser**, against a local stack: Postgres with this
+schema, the real API and web build, and one small fake standing in for R2 and
+the transcription endpoint (no production accounts were made). Teacher set
+up a class, a roster and an exam with a multiple-choice and a read-aloud
+question; a student signed up, claimed a name, took the exam with a real
+recording from Chromium's fake microphone, reloaded mid-exam and submitted;
+the teacher marked it and played the recording back.
+
+**Found and fixed:**
+
+- **Every read-aloud recording made in Chrome was refused.** Chrome records
+  `audio/webm;codecs=opus`, FileReader copies that into the data URL, and
+  `parseDataUrl` (`lib/lessonMediaUpload.ts`) allowed nothing between the type
+  and `;base64` — so the exam and the practice card both answered «audio must
+  be a base64 data URL». It now accepts mime parameters and returns the bare,
+  lower-cased type; tested. After the fix the recording stored, transcribed
+  and played back for the teacher.
+- **That message reached the student in English.** `useReadAloudRecorder`
+  printed any thrown error's own message, which for an API failure is the
+  server's sentence. It now shows only a translated message the caller
+  supplies; the exam maps codes through `takeErrorKey`
+  (`too_many_takes` → «استخدمتَ جميع محاولات التسجيل»), tested.
+- **The marking screen called every non-open question a paper question.**
+  It tested "no `prompt`", but only open-answer types keep their text there
+  (multiple choice uses `stem`, true/false `statement`, …), so each one showed
+  «سؤال من الورقة — أدخل علامته فقط» under the answer it had just rendered.
+  `services/paperQuestion.ts`, tested.
+
+**Found, not fixed — a decision first:** nothing ever sets
+`evaluations.release_results_to_student`. No route writes it and no screen
+offers it, so no student can see a result: «اختباراتي»'s results and
+«تحقّق من النتيجة» are unreachable for every exam. With the flag set by hand
+in the local database, the student's result card rendered correctly. It
+needs a teacher-facing release switch.
+
+**Verified working:** the terms box gates «إنشاء حساب» and the acceptance is
+stored; email code; claim by class code with the «هل هذا اسمك؟» confirmation;
+the library opening on the student's own grade (with her row on grade 9);
+«اختباراتي»; resuming a sitting in a fresh browser; grading on submit; the
+class group read-only for a student, with the inbox preview and unread
+count.
+
+**Small things seen, not fixed:** tapping the terms sentence opens the
+policy (most of the line is links) rather than ticking the box, and the box
+reports no checked state to assistive tech; the claim picker shows the
+class's English name in the Arabic UI; «5 علامة» / «خسر 3 علامة» where
+Arabic wants «علامات»; per-question marks shown as «2.00 ع»; the grade and
+subject chip rows start scrolled to the wrong end in RTL; the
+«تابعنا من حيث توقّفت» banner stays on the «تم التسليم» screen.
+
