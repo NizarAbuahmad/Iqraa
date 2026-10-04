@@ -13,6 +13,26 @@
 import { nextEntry, normalizePlanEntries, toISODate } from './planEntries.ts';
 import { dateLocale } from './dateLabels.ts';
 
+export interface ClassLike {
+  id: string;
+  name: string;
+  nameAr?: string;
+}
+
+/**
+ * The class's display name, or `null` when it is not in `classes`.
+ *
+ * Never the id: the list is best-effort (a failed fetch is swallowed) and
+ * leaves out archived classes, so "not found" is an ordinary state, and an id
+ * printed in its place reads as a name that is simply unreadable. The caller
+ * words the fallback.
+ */
+export function classLabel(id: string, classes: readonly ClassLike[], lang: 'ar' | 'en'): string | null {
+  const found = classes.find(c => c.id === id);
+  if (!found) return null;
+  return lang === 'ar' && found.nameAr ? found.nameAr : found.name;
+}
+
 export interface AgendaPeriod {
   schoolName: string;
   periodNumber: number;
