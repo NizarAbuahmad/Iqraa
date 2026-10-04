@@ -28,10 +28,12 @@ export type ResourceKind =
   | 'page';
 
 /**
- * What a row lets a teacher do. `print` renders a frozen sheet; `open` opens
- * the file or link; `add-to-class` files a copy — see `addToClassPlan`.
+ * What a row lets a teacher do on the Library screen. `print` renders a frozen
+ * sheet; `open` opens the file or link. Putting a row on a class's shelf is not
+ * a Library-screen action: it happens from inside the class
+ * (`components/classes/LibraryPickerSheet.tsx`), as a pointer, never a copy.
  */
-export type ResourceAction = 'add-to-class' | 'print' | 'open';
+export type ResourceAction = 'print' | 'open';
 
 export interface ResourceItem {
   /** `<source>:<nativeId>`. Unique across every source by construction. */
@@ -109,7 +111,7 @@ function fromPremade(sheet: PremadeWorksheet): ResourceItem {
     lessonId: sheet.lessonId,
     gradeId: sheet.gradeId,
     subjectId: sheet.subjectId,
-    actions: ['add-to-class', 'print'],
+    actions: ['print'],
   };
 }
 
@@ -201,21 +203,3 @@ export function groupIntoShelves(items: ResourceItem[]): Array<{ shelf: Shelf; i
     .filter(group => group.items.length > 0);
 }
 
-/**
- * The writes "add to class" needs, in order, for a given source. Kept here so
- * the mapping is testable. Empty means the source can't be attached: uploads
- * and book codes are shared links, not teacher-owned material.
- */
-export type AddToClassStep = 'save-material' | 'attach-material';
-
-export function addToClassPlan(item: Pick<ResourceItem, 'source'>): AddToClassStep[] {
-  switch (item.source) {
-    case 'premade-sheet':
-      // Materialise a teacher-owned copy first: attaching the shared manifest
-      // entry itself would let one teacher's edit change every teacher's sheet.
-      return ['save-material', 'attach-material'];
-    case 'uploaded':
-    case 'book-qr':
-      return [];
-  }
-}
