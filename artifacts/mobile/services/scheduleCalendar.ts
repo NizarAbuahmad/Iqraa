@@ -174,7 +174,7 @@ export interface NextPeriodLesson extends AgendaPeriod {
   /** ISO date of the period. */
   date: string;
   happeningNow: boolean;
-  /** From this class's pacing plan; null when the class has no plan or it is empty. */
+  /** From this class's pacing plans (one per subject); null when it has none or they are empty. */
   lessonId: string | null;
 }
 
@@ -205,8 +205,13 @@ export function nextPeriodLesson(
     });
     if (!period) continue;
 
-    const plan = plans.find(p => p.classGroupId === period.classGroupId);
-    const entries = plan ? normalizePlanEntries(plan.entries) : [];
+    // Every plan on the class, not the first: a class taking several subjects
+    // has one plan per subject, and a timetable slot does not say which
+    // subject the period is. Pooling their entries lets today's lesson win
+    // from whichever plan holds it.
+    const entries = plans
+      .filter(p => p.classGroupId === period.classGroupId)
+      .flatMap(p => normalizePlanEntries(p.entries));
     const before = entries.filter(e => e.date <= date).sort((a, b) => b.date.localeCompare(a.date));
     const lessonId = (before[0] ?? nextEntry(entries, date))?.lessonId ?? null;
     return {

@@ -575,9 +575,18 @@ parent thread for each copy.
   subject can't be resolved stays visible under every filter. Writing to a
   parent from the class card asks «عن أيّ مادة؟» when there is more than one
   subject.
-- **Still single-subject:** teaching plans (`teaching-plans/index.tsx`) plan
-  only the primary subject. A class teacher who wants to plan Arabic for a
-  maths-first class has no way to yet.
+- **Teaching plans are per subject:** `teaching_plans.subject_id` (text,
+  default `''`, **a second schema push**). When the class takes more than one
+  subject, the plan form shows «مادة هذه الخطة» and lists that subject's
+  lessons. `''` means the class's primary subject, which is what every older
+  plan meant (`planSubjectId`, `services/planScope.ts`). Changing the subject
+  of a plan that has scheduled lessons asks first, then clears them, because
+  they belong to the old subject.
+- **The home card pools a class's plans.** A timetable slot names a class, not
+  a subject, so `nextPeriodLesson` reads the entries of every plan on the
+  class. If two subjects both have a lesson on that date, it shows the first
+  plan's lesson. Fixing that would need a subject on each timetable slot. The
+  «أضف الخطة» link opens a class's plan only when it has exactly one.
 
 ## «اقترح ميزة» — teachers can suggest a feature, 2026-10-03
 

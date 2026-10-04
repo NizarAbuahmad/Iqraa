@@ -248,6 +248,16 @@ describe('nextPeriodLesson', () => {
     assert.equal(nextPeriodLesson(at('2026-09-20T07:00:00'), PERIODS, SLOTS, early)?.lessonId, 'z');
   });
 
+  it('reads every plan of a class that takes several subjects, not just the first', () => {
+    // A class teacher's section: an Arabic plan and a maths plan on one class.
+    // The maths plan has today's lesson; the Arabic one, found first, does not.
+    const twoSubjects = [
+      { id: 'ar', title: 'عربي', classGroupId: 'c1', entries: [{ lessonId: 'ar1', date: '2026-09-13' }] },
+      { id: 'ma', title: 'رياضيات', classGroupId: 'c1', entries: [{ lessonId: 'ma1', date: '2026-09-20' }] },
+    ];
+    assert.equal(nextPeriodLesson(at('2026-09-20T08:10:00'), PERIODS, SLOTS, twoSubjects)?.lessonId, 'ma1');
+  });
+
   it('gives the period with no lesson when the class has no plan', () => {
     const next = nextPeriodLesson(at('2026-09-20T07:00:00'), PERIODS, SLOTS, []);
     assert.equal(next?.classGroupId, 'c1');
