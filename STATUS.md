@@ -100,9 +100,13 @@ an announcement by default» below.
   Verified by typecheck and the mobile suite (2204 pass, 0 fail, 10
   skipped). **Not verified in a browser** — none of the screen wiring is
   machine-testable (the runner cannot load react-native). Still open from
-  the same review: pen ink drifts off the content on resize;
-  `homeAiTools.ts` still disables `activity`/`game` for the related-tools
-  panel, deliberately. (The timer pause that was listed here landed
+  the same review: `homeAiTools.ts` still disables `activity`/`game` for the
+  related-tools panel, deliberately. (Pen ink drift landed 2026-10-04: strokes
+  are stored as fractions of the canvas width, not pixels
+  (`services/penInk.ts`), so ink follows the slide through fullscreen, a
+  rotated tablet or a resized window. It follows the slide's scale, not a
+  word — text that reflows differently can still sit a line off. Not looked
+  at in a browser.) (The timer pause that was listed here landed
   2026-10-03: tap the clock, press P, or use the bottom-bar button on wide
   screens. Pausing holds the second; a new slide or a restart clears it. The
   reopened deck landed 2026-10-04: «تعديل» on a saved deck now loads the deck
