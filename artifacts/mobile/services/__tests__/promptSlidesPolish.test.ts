@@ -189,3 +189,20 @@ describe('polishDeck — a question slide only claims an answer it can point at'
     assert.deepEqual(polishDeck(d).answerKey, ['من النموذج']);
   });
 });
+
+describe('polishDeck — a procedure written on one line', () => {
+  const procedure = 'الخطوات: 1) عزل y من المعادلة الخطية 2) تعويضه في التربيعية 3) حل المعادلة الناتجة';
+
+  it('becomes numbered steps rather than a long sentence in display type', () => {
+    const out = polishDeck(deck([slide(), slide({ content: `• ${procedure}` }), ...padding(4)]));
+    const s = out.slides[1]!;
+    assert.equal(s.layout, 'steps');
+    assert.equal(s.content, '• عزل y من المعادلة الخطية\n• تعويضه في التربيعية\n• حل المعادلة الناتجة');
+    assert.equal(resolveSlideLayout(s)?.kind, 'steps');
+  });
+
+  it('leaves a one-line slide with only two numbered clauses as an ordinary statement', () => {
+    const out = polishDeck(deck([slide(), slide({ content: 'تعرّف أولًا 1) الفكرة 2) والمثال' }), ...padding(4)]));
+    assert.equal(out.slides[1]!.layout, 'statement');
+  });
+});

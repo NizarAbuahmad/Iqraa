@@ -35,7 +35,7 @@ import Svg, { Line, Polyline, Rect } from 'react-native-svg';
 import { plotGeometry, visualForSlide } from '@/services/deckVisuals';
 // Shared with both exports so the projected slide and the exported one cannot
 // disagree about what a bullet, an equation or a section glyph is.
-import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet } from '@/services/deckText';
+import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet, workingSteps } from '@/services/deckText';
 import { resolveSlideLayout } from '@/services/slideLayout';
 import { openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
@@ -539,6 +539,50 @@ function QuestionOptions({
  * screen), not the app's — an English-subject check reads left-to-right even
  * in the Arabic app. See `slideIsRTL` for why.
  */
+/** One line of worked answer — math-aware, the same choice the reveal makes for a single line. */
+function WorkingLine({ text, size, bold, isRTL }: { text: string; size: number; bold?: boolean; isRTL: boolean }) {
+  const fontFamily = bold ? 'ReadexPro_700Bold' : 'ReadexPro_500Medium';
+  return hasRenderableMath(text) ? (
+    <MathText text={text} fontSize={size} color={TEXT_PRIMARY} fontFamily={fontFamily} isRTL={isRTL} />
+  ) : (
+    <Text
+      style={[
+        styles.revealText,
+        { fontSize: size, fontFamily, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
+      ]}
+    >
+      {isolateForeignRuns(text)}
+    </Text>
+  );
+}
+
+/**
+ * A worked example's answer as numbered working with the result beneath.
+ * `workingSteps` splits the book's `working → … → answer` chain; the caller
+ * only renders this when it can, so a plain answer keeps its one line.
+ */
+function WorkingAnswer({ answer, isRTL }: { answer: string; isRTL: boolean }) {
+  const working = workingSteps(answer);
+  if (!working) return null;
+  return (
+    <View style={{ gap: 8 }}>
+      {working.steps.map((step, i) => (
+        <View key={i} style={[styles.workingRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.workingNum, { backgroundColor: TIMER_GREEN }]}>
+            <Text style={styles.workingNumText}>{i + 1}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <WorkingLine text={step} size={16} isRTL={isRTL} />
+          </View>
+        </View>
+      ))}
+      <View style={[styles.workingFinal, { borderTopColor: TIMER_GREEN + '60' }]}>
+        <WorkingLine text={working.final} size={18} bold isRTL={isRTL} />
+      </View>
+    </View>
+  );
+}
+
 function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
   // Only for the teacher-led cue below. `isRTL` stays the prop: it follows
   // the slide's own payload, not the app's UI language.
@@ -1356,7 +1400,9 @@ export default function PresentationScreen() {
               {/* Same split as the hint: chrome above, the slide's text here. */}
               {answerVisible && (
                 <View style={[styles.revealContent, { borderColor: TIMER_GREEN + '40', backgroundColor: TIMER_GREEN + '10' }]}>
-                  {hasRenderableMath(slide.answer) ? (
+                  {workingSteps(slide.answer) ? (
+                    <WorkingAnswer answer={slide.answer} isRTL={slideRTL} />
+                  ) : hasRenderableMath(slide.answer) ? (
                     <MathText
                       text={slide.answer}
                       fontSize={18}
@@ -1573,6 +1619,10 @@ const styles = StyleSheet.create({
   revealBtnText: { fontSize: 14 },
   revealContent: { padding: 14, borderRadius: 10, borderWidth: 1 },
   revealText: { fontSize: 14, color: TEXT_PRIMARY, lineHeight: 22 },
+  workingRow: { alignItems: 'center', gap: 10 },
+  workingNum: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  workingNumText: { color: '#FFFFFF', fontSize: 13, fontFamily: 'ReadexPro_700Bold' },
+  workingFinal: { borderTopWidth: 1, paddingTop: 8 },
   bottomBar: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: BORDER, backgroundColor: CARD_BG },
   navBtnWide: { alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 110, height: 46, borderRadius: 23, paddingHorizontal: 16 },
   // 92 fits «التالي»/«السابق» plus the chevron at 360dp with the two
