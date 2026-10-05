@@ -238,7 +238,7 @@ export function AddDictationModal({
                     styles.choice,
                     {
                       borderColor: source === s ? ACCENT : colors.border,
-                      backgroundColor: source === s ? ACCENT + '12' : colors.card,
+                      backgroundColor: source === s ? palette.selected : colors.card,
                       flexDirection: isRTL ? 'row-reverse' : 'row',
                     },
                   ]}
@@ -270,7 +270,7 @@ export function AddDictationModal({
                           styles.choice,
                           {
                             borderColor: ruleId === r.id ? ACCENT : colors.border,
-                            backgroundColor: ruleId === r.id ? ACCENT + '12' : colors.card,
+                            backgroundColor: ruleId === r.id ? palette.selected : colors.card,
                             flexDirection: isRTL ? 'row-reverse' : 'row',
                           },
                         ]}
@@ -399,7 +399,7 @@ export function AddDictationModal({
                         styles.choice,
                         {
                           borderColor: objectiveId === id ? ACCENT : colors.border,
-                          backgroundColor: objectiveId === id ? ACCENT + '12' : colors.card,
+                          backgroundColor: objectiveId === id ? palette.selected : colors.card,
                           flexDirection: isRTL ? 'row-reverse' : 'row',
                         },
                       ]}
@@ -431,7 +431,7 @@ export function AddDictationModal({
                       styles.choice,
                       {
                         borderColor: competency === c.key ? ACCENT : colors.border,
-                        backgroundColor: competency === c.key ? ACCENT + '12' : colors.card,
+                        backgroundColor: competency === c.key ? palette.selected : colors.card,
                         flexDirection: isRTL ? 'row-reverse' : 'row',
                       },
                     ]}

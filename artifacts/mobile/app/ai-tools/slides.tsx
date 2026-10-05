@@ -838,7 +838,7 @@ export default function SlidesScreen() {
       onPress={() => { onChange(!value); Haptics.selectionAsync(); }}
       style={[styles.toggle, {
         borderColor: value ? ACCENT : colors.border,
-        backgroundColor: value ? ACCENT + '12' : colors.card,
+        backgroundColor: value ? palette.selected : colors.card,
         borderRadius: colors.radius,
         flexDirection: isRTL ? 'row-reverse' : 'row',
       }]}

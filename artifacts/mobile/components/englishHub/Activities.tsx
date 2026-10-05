@@ -221,7 +221,7 @@ export function MatchMeaning({ words, onFinish }: { words: HubWord[]; onFinish: 
             <Pressable
               key={c.id}
               onPress={() => tap(c)}
-              style={[styles.matchCard, { borderColor: border, backgroundColor: done ? RIGHT + '18' : on ? colors.primary + '14' : colors.card, opacity: done ? 0.7 : 1 }]}
+              style={[styles.matchCard, { borderColor: border, backgroundColor: done ? RIGHT + '18' : on ? colors.selected : colors.card, opacity: done ? 0.7 : 1 }]}
             >
               <Text
                 style={{
@@ -460,7 +460,7 @@ export function PictureMatch({ words, onFinish }: { words: HubWord[]; onFinish: 
             <Pressable
               key={c.id}
               onPress={() => tap(c)}
-              style={[styles.matchCard, { borderColor: border, backgroundColor: done ? RIGHT + '18' : on ? colors.primary + '14' : colors.card, opacity: done ? 0.7 : 1 }]}
+              style={[styles.matchCard, { borderColor: border, backgroundColor: done ? RIGHT + '18' : on ? colors.selected : colors.card, opacity: done ? 0.7 : 1 }]}
             >
               {c.kind === 'emoji' ? (
                 <Text style={{ fontSize: 32 }}>{c.text}</Text>

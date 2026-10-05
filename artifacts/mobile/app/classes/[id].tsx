@@ -1016,7 +1016,7 @@ export default function ClassDetailScreen() {
                           borderRadius: 18,
                           borderWidth: 1.5,
                           borderColor: active ? ACCENT : colors.border,
-                          backgroundColor: active ? ACCENT + '16' : colors.card,
+                          backgroundColor: active ? palette.selected : colors.card,
                         }}
                       >
                         <Text

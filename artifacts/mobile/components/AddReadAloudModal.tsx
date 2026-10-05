@@ -195,7 +195,7 @@ export function AddReadAloudModal({
                         styles.choice,
                         {
                           borderColor: objectiveId === id ? ACCENT : colors.border,
-                          backgroundColor: objectiveId === id ? ACCENT + '12' : colors.card,
+                          backgroundColor: objectiveId === id ? palette.selected : colors.card,
                           flexDirection: isRTL ? 'row-reverse' : 'row',
                         },
                       ]}
@@ -230,7 +230,7 @@ export function AddReadAloudModal({
                       styles.choice,
                       {
                         borderColor: competency === c.key ? ACCENT : colors.border,
-                        backgroundColor: competency === c.key ? ACCENT + '12' : colors.card,
+                        backgroundColor: competency === c.key ? palette.selected : colors.card,
                         flexDirection: isRTL ? 'row-reverse' : 'row',
                       },
                     ]}

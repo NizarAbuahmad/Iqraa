@@ -188,7 +188,7 @@ function WeekdayToggle({ selected, onToggle, isRTL, colors, t }: {
               borderRadius: 14,
               borderWidth: 1.5,
               borderColor: active ? ACCENT : colors.border,
-              backgroundColor: active ? ACCENT + '16' : colors.card,
+              backgroundColor: active ? palette.selected : colors.card,
             }}
           >
             <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular', fontSize: 12 }}>
@@ -778,7 +778,7 @@ export default function TeachingPlansScreen() {
                             borderRadius: 18,
                             borderWidth: 1.5,
                             borderColor: active ? ACCENT : colors.border,
-                            backgroundColor: active ? ACCENT + '16' : colors.card,
+                            backgroundColor: active ? palette.selected : colors.card,
                           }}
                         >
                           <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular', fontSize: 13 }}>
