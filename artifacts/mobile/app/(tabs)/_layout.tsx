@@ -20,7 +20,7 @@ import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { badgeLabel, setUnreadMessages, useUnreadMessages } from '@/services/unreadMessages';
 import { TranslationKey } from '@/services/i18n';
 import { HomeLessonPick, loadLessonPick, subscribeLessonPick } from '@/services/lessonContext';
-import { DEFAULT_ACTIVE_LESSON_ID } from '@/services/lessonCopilot';
+import { defaultLessonIdFor } from '@/services/lessonCopilot';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
 
 /**
@@ -188,7 +188,7 @@ function ClassicTabLayout() {
     workspace both fall back to when there is none. Resolved here rather than
     in the palette so all three surfaces name the same lesson.
   */
-  const fallbackLesson = resolveLessonPrepContext(DEFAULT_ACTIVE_LESSON_ID, lang as 'ar' | 'en');
+  const fallbackLesson = resolveLessonPrepContext(defaultLessonIdFor(user?.teachingAssignments), lang as 'ar' | 'en');
   const activeLesson = lessonPick?.topic?.trim()
     ? {
         topic: lessonPick.topic.trim(),
