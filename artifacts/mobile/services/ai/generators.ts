@@ -316,11 +316,22 @@ function bookFigureCue(kb: KBLesson | null, lang: Lang): string {
 /**
  * Openings that suit the lesson. The generic ones — «التنبؤ والاستكشاف: اعرض
  * موقفًا حياتيًا واطلب التنبؤ بالتفسير» — are a science hook; on a surah or a
- * relay race they read as the wrong lesson. Science and social studies keep
- * the generic set, which fits them.
+ * relay race they read as the wrong lesson. Science and social studies had been
+ * left on the generic set; their own openers start from an observation or a
+ * source instead of asking where the topic turns up in daily life.
  */
 function kindIntro(kind: LessonKind, topic: string, lang: Lang): string[] | null {
   const ar: Partial<Record<LessonKind, string[]>> = {
+    science: [
+      `ابدأ بظاهرة قصيرة أو صورة مثيرة مرتبطة بـ«${topic}» دون أن تفسّرها، واسأل: «ماذا ترون؟ وماذا تتوقعون أن يحدث بعد ذلك؟» وسجّل التوقعات على السبورة لنعود إليها في نهاية الحصة.`,
+      `اسأل الطلبة: «أين صادفتم “${topic}” في بيتكم أو في الطبيعة؟» ثم اختر مثالًا واحدًا وحوّله إلى سؤال يبحث عنه الدرس: «لماذا يحدث هذا؟»`,
+      `اعرض شيئًا أو صورة مرتبطة بـ«${topic}» واطلب من كل طالب أن يكتب سؤالًا واحدًا يريد أن يعرف جوابه، ثم اجمع الأسئلة وأعلن أن الحصة ستجيب عن بعضها.`,
+    ],
+    social: [
+      `اعرض صورة أو خريطة أو سطرًا قصيرًا من مصدر الدرس عن «${topic}»، واسأل: «ماذا نلاحظ؟ وما الذي يثير تساؤلكم؟» ودوّن أسئلة الطلبة لنحاول الإجابة عنها خلال الحصة.`,
+      `اطرح موقفًا قريبًا من حياة الطلبة له علاقة بـ«${topic}» واسأل: «ماذا كنتم ستفعلون؟ ولماذا؟» ثم اربط إجاباتهم بما سندرسه اليوم.`,
+      `اسأل: «ماذا نعرف عن “${topic}”؟ ومن أين عرفنا ذلك؟» ثم ميّز مع الطلبة بين ما نعرفه بدليل وما سمعناه فقط، وأعلن أننا سنتحقّق منه بالمصدر.`,
+    ],
     recitation: [
       `ابدأ بتهيئة هادئة: استمع دقيقتين إلى ما يعرفه الطلبة عن «${topic}»، ثم أعلن هدف الحصة: أن نقرأ قراءة سليمة، ونفهم المعنى، ونعمل بما نتعلّم.`,
       `اسأل: «لماذا نتعلّم “${topic}”؟ وماذا نتوقع أن يتغيّر في سلوكنا؟» ثم أخبر الطلبة أنهم سيقرؤون ما تقرّر من آيات أو حديث ثم يتأمّلون معناه معًا.`,
@@ -343,6 +354,16 @@ function kindIntro(kind: LessonKind, topic: string, lang: Lang): string[] | null
     ],
   };
   const en: Partial<Record<LessonKind, string[]>> = {
+    science: [
+      `Start with a short phenomenon or a striking picture linked to “${topic}”, without explaining it, and ask: “What do you see? What do you expect to happen next?” Record the predictions on the board so we can return to them at the end of the lesson.`,
+      `Ask: “Where have you come across “${topic}” at home or in nature?” Then pick one example and turn it into the question the lesson will look into: “Why does this happen?”`,
+      `Show an object or picture linked to “${topic}” and have each student write one question they want answered, then collect them and say the lesson will answer some of them.`,
+    ],
+    social: [
+      `Show a picture, a map or a short line from the lesson’s source about “${topic}” and ask: “What do we notice? What makes you wonder?” Record the students’ questions to try to answer during the lesson.`,
+      `Pose a situation close to students’ lives that relates to “${topic}” and ask: “What would you do, and why?” Then link their answers to what we will study today.`,
+      `Ask: “What do we know about “${topic}”, and how do we know it?” Then separate with students what we know from evidence and what we have only heard, and say we will check it against the source.`,
+    ],
     recitation: [
       `Begin with a calm preparation: listen for two minutes to what students already know about “${topic}”, then state the lesson’s aim: to read well, to understand, and to act on what we learn.`,
       `Ask: “Why do we learn “${topic}”? What do we expect to change in our behaviour?” Then tell students they will read the set text and then understand it together.`,
@@ -369,7 +390,7 @@ function kindIntro(kind: LessonKind, topic: string, lang: Lang): string[] | null
 
 function lpIntroAr(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'): string {
   const own = kindIntro(kind, topic, 'ar');
-  if (own) return pick(own);
+  if (own) return pick(own) + bookFigureCue(kb, 'ar');
   if (kb) return pick([
     `ابدأ بطرح السؤال: "أين نلتقي ${arPrefixed('ب', topic)} في حياتنا اليومية؟" سجّل إجابات الطلبة على السبورة.${bookFigureCue(kb, 'ar')} ثم اربط إجاباتهم بأهداف الدرس.`,
     `لعبة "ما أعرفه / ما أريد تعلّمه": يكتب الطلبة على ورقة ما يعرفونه عن ${kb.titleAr} (دقيقتان). تُشارك بعض الإجابات ثم يُحدد المعلم ما سنكتشفه معًا.`,
@@ -411,7 +432,7 @@ function lpObjectivesEn(topic: string, kb: KBLesson | null, custom?: string, kin
 }
 function lpIntroEn(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'): string {
   const own = kindIntro(kind, topic, 'en');
-  if (own) return pick(own);
+  if (own) return pick(own) + bookFigureCue(kb, 'en');
   if (kb) return pick([
     `Open with: "Where do we encounter ${topic} in everyday life?" Record 3-4 student responses on the board.${bookFigureCue(kb, 'en')} Then bridge to today's objectives.`,
     `"Know / Want to Know" activity: Students write what they already know about ${kb.titleEn} (2 min). Share responses, then identify what we'll discover together.`,
