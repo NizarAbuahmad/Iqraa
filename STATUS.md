@@ -681,6 +681,104 @@ restored): an Arabic «خطة درس: التربة» opened from the viewer came
 "Lesson Plan: Soil", stored as `en` over the same item, and reopening it
 stayed in the viewer with English headings; an Arabic deck came back as 14
 English slides over the same item. Mobile suite 2664 pass / 0 fail.
+## A worksheet opens with a worked example, and its key shows the working, 2026-10-04
+
+Worked example → faded → independent is the best-evidenced order for novices,
+and the worksheet had none of it: section A was just easier questions, and the
+key was final answers only. Now, wherever a person wrote and checked the
+working:
+
+- **A worked example** (`workedExample` on `WorksheetOutput`: problem, steps,
+  answer, a self-explanation prompt) sits above the questions. It is studied,
+  not answered, so it is on the student copy too.
+- **The first question is half-solved** — its first steps written, numbered
+  blanks for the rest, the result line always left to the student.
+- **The key carries each question's working** (`answerKey[].solution`) and is
+  printed on its own page, so the paper can be handed out without it.
+- **Both count inside the number the teacher picked.** Asking for 10 gets one
+  example, one half-solved question and eight practice questions, so the page
+  does not outgrow a 45-minute period. The count picker says so. A lesson with
+  no solved item, a teacher's own document and homework get the paper they
+  always did.
+
+**The data: `lib/math-practice/src/steps*.ts`, 165 items, every one of them.**
+Working in Arabic and English, keyed by bank item id and kept out of
+`index.ts`. `steps.test.ts` ties each entry to a real item, requires the last
+Arabic line to contain that item's own `answer`, and requires two solved items
+per family (one to study, one to finish). **Verified how:** the maths was
+checked item by item with SymPy (each intermediate equation has the solution
+set the answer claims) and the chemistry by recomputing every figure with the
+book's rounded masses; those scripts lived in the session, **not in the repo**,
+so the repo test checks structure and the answer line, not the mathematics.
+**Not verified: a Grade 10 teacher has not read these.** Every teacher on the
+offline path is shown them as written, so that read is the next thing to do
+before this reaches a class.
+
+**A correction to the counts.** This work found the maths bank has **93 items
+in 14 families**, not the 86 in 13 written elsewhere: the `sequences` family
+(7 items) had been missed. Chemistry is 72 in 14. `sequences` has working like
+the rest.
+
+**The live path has the same structure** (`worksheetPromptAr/En`, with the count
+rule spelled out as n−1 questions in the sections). It must stay in step with
+`generateWorksheet`; `PROMPT_VERSION` is now `2026-10-04.1` so the pool does not
+serve old-shape papers. The model's extras are optional, so a malformed
+`workedExample` or `solution` is dropped by `sanitizeWorksheetExtras` before the
+artifact is stored, rather than failing a paid generation or being shown to a
+class. The screen badges the live example only on a symbolic proof.
+
+**Where it shows:** the screen, the printed/PDF page, shared text, the slide
+export (the example gets a slide; the key slide stays answers-only because a
+fixed A4 slide cannot hold ten answers with working), the live class deck
+(an `intro` slide, so the question slides' flat numbering and verification
+outcomes do not shift; the working goes in the teacher panel), the saved-material
+viewer and the lesson-flow document. Editing keeps the working: a points edit
+and a delete carry it; rewording a question, its options or its answer drops
+that row's working, because working for a different question is worse than none.
+
+**Found by printing one, not by a test:** a half-solved question's line breaks
+collapsed into a single run on paper. Worksheet questions now keep their breaks
+(`.q-break`, worksheet builders only — quizzes are laid out as before) and the
+generator's «الإجابة:» underscore suffix is not printed under the ruled lines.
+The instructions callout still prints as one paragraph; that predates this.
+
+**Known, not done:** a shallow bank still returns a short paper (`قانون الجيوب`
+is 3 items: one to study, one to finish, one to practise), and the notice
+added in #837 now says so. It counts the worked example among the items
+produced, because the example is one of the items the picker's total promised
+(`shortfall.produced` is questions plus the example). Bank answers are Arabic
+even in an English worksheet's key; only the working is English. The worked example is not editable on the
+screen. Not verified: the React Native screen itself (no screen tests exist),
+and a real model's reply to the new prompt — the live path is covered by prompt
+and sanitizer tests only.
+
+Mobile 2706 pass / 0 fail / 10 skipped, api-server 1123, math-practice 142,
+typecheck clean.
+
+## The worksheet question-count picker is honoured offline, 2026-10-04
+
+`worksheet.tsx` offers 5, 8, 10, 12, 15 and 20 questions. The offline
+`generateWorksheet` forced the number into 6–12, so 5 gave 6 and 15 or 20 gave
+12, while the live prompt carried the number as asked — a teacher got a
+different paper depending on whether live AI was on. `lessonFlowRunner` asks
+for 5 and was getting 6 for the same reason.
+
+**Measured before** on exponential equations: 5→6, 8→8, 10→10, 12→12, 15→12,
+20→12. **Now** the clamp is the picker's own range, 5–20, and those return what
+was asked. The word problem is counted inside the total, not on top of it.
+
+**Deliberately unchanged:** a lesson whose bank holds fewer items than asked
+still returns fewer, because the offline path is bank-only and stays short
+rather than padding with templates (`BankSpentError`). Measured the same day:
+«قانون الجيوب» returns 3 whatever the picker says, «المشتقات» returns 5. A
+teacher asking for 12 and getting 3 is told nothing — the screen does not say
+the bank ran out. That is the next gap here, not this fix.
+
+The prior-review section is still added on top of the count (2–3 extra
+questions), as it was before. Pinned by
+`services/__tests__/worksheetQuestionCount.test.ts`; it fails on the old clamp
+(6 where 5 was asked, 12 where 15 was). Mobile 2603 pass / 0 fail / 10 skipped,
+typecheck clean.
 
 ## English is prepared in English, whatever the UI language, 2026-10-04
 

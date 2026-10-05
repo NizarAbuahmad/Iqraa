@@ -163,6 +163,13 @@ export default function WorksheetScreen() {
   /** null = not checked yet (or the check failed); [] onwards = per question. */
   const [outcomes, setOutcomes] = useState<VerifyOutcome[] | null>(null);
   /**
+   * Whether the verifier proved the worked example's own answer. The example is
+   * the one thing on the page students are told to study, so it earns a badge
+   * only on a symbolic proof — never on the bank fallback, and never while the
+   * check is still running.
+   */
+  const [exampleOutcome, setExampleOutcome] = useState<VerifyOutcome | null>(null);
+  /**
    * Flat question positions (0-based, same indexing as `outcomes`) the
    * teacher has hand-edited. A verified badge is dropped for these — the
    * verifier proved the *generated* text, and an edit may have changed the
@@ -277,12 +284,16 @@ export default function WorksheetScreen() {
   const verifyKeys = (out: WorksheetOutput) => {
     verifyRef.current.begin(out);
     setOutcomes(null);
+    setExampleOutcome(null);
     void (async () => {
       const { verifyWorksheetAnswers } = await import('@/services/quizVerification');
       const { verifyMathItem } = await import('@/services/ai/verifyMath');
-      const checked = await verifyWorksheetAnswers(out, verifyMathItem);
-      if (verifyRef.current.accepts(out)) setOutcomes(checked);
-    })().catch(() => { if (verifyRef.current.accepts(out)) setOutcomes(null); });
+      const [checked, example] = await Promise.all([
+        verifyWorksheetAnswers(out, verifyMathItem),
+        out.workedExample ? verifyMathItem(out.workedExample.problem, out.workedExample.answer) : Promise.resolve(null),
+      ]);
+      if (verifyRef.current.accepts(out)) { setOutcomes(checked); setExampleOutcome(example); }
+    })().catch(() => { if (verifyRef.current.accepts(out)) { setOutcomes(null); setExampleOutcome(null); } });
   };
 
   /** Swap the paper on screen; everything below reads `result` + `diffIdx`. */
@@ -631,6 +642,11 @@ export default function WorksheetScreen() {
             filed it under the wrong level on the next tab tap. */}
         <PickerField label={t('difficultyLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={i => (levels ? showLevel(i) : setDiffIdx(i))} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('numQuestionsLabel')} value={numQLabels[numQIdx]} options={numQLabels} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        {isHomework ? null : (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: -8, marginBottom: 14, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('numQuestionsIncludesExample')}
+          </Text>
+        )}
 
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -843,6 +859,43 @@ export default function WorksheetScreen() {
             </Text>
           </Pressable>
 
+          {result.workedExample ? (
+            <View
+              style={[styles.workedCard, { backgroundColor: ACCENT + '0F', borderColor: ACCENT + '40', borderRadius: colors.radius }]}
+              accessible
+              accessibilityLabel={t('workedExampleTitle')}
+            >
+              <View style={[styles.akHeader, { flexDirection: isRTL ? 'row-reverse' : 'row', marginTop: 0 }]}>
+                <Ionicons name="create-outline" size={15} color={ACCENT} />
+                <Text style={[styles.akTitle, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{t('workedExampleTitle')}</Text>
+              </View>
+              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
+                {isolateForeignRuns(result.workedExample.problem)}
+              </Text>
+              {result.workedExample.steps.map((step, i) => (
+                <View key={i} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start' }]}>
+                  <Text style={[styles.optLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{i + 1}.</Text>
+                  <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }}>
+                    {isolateForeignRuns(step)}
+                  </Text>
+                </View>
+              ))}
+              {exampleOutcome?.verifiedBy === 'symbolic' ? (
+                <View style={[styles.verifyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <Ionicons name="shield-checkmark" size={12} color="#067647" />
+                  <Text style={[styles.verifyText, { fontSize: 11, color: '#067647', textAlign: isRTL ? 'right' : 'left' }]}>
+                    {t('verifiedBySymbolic')}
+                  </Text>
+                </View>
+              ) : null}
+              {result.workedExample.selfExplain ? (
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+                  {isolateForeignRuns(result.workedExample.selfExplain)}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+
           {result.sections.map((sec, si) => (
             <View key={sec.title} style={{ marginBottom: 20 }}>
               <Text style={[styles.secTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: outRTL ? 'right' : 'left' }]}>{sec.title}</Text>
@@ -965,6 +1018,18 @@ export default function WorksheetScreen() {
                         isRTL={outRTL}
                         placeholder={t('editPlaceholder')}
                       />
+                      {item.solution?.length ? (
+                        <View style={{ marginTop: 4 }}>
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 11, textAlign: isRTL ? 'right' : 'left' }}>
+                            {t('workedSolutionTitle')}
+                          </Text>
+                          {item.solution.map((line, li) => (
+                            <Text key={li} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
+                              {`${li + 1}) `}{isolateForeignRuns(line)}
+                            </Text>
+                          ))}
+                        </View>
+                      ) : null}
                       {proved ? (
                         <View style={[styles.verifyRow, { marginTop: 2, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                           <Ionicons name="shield-checkmark" size={12} color="#067647" />
@@ -1085,4 +1150,5 @@ const styles = StyleSheet.create({
   akBody: { borderWidth: 1, padding: 14 },
   akRow: { gap: 8, marginBottom: 6, alignItems: 'flex-start' },
   akNum: { fontSize: 13, width: 22 },
+  workedCard: { borderWidth: 1, padding: 14, marginBottom: 16 },
 });
