@@ -154,6 +154,12 @@ export default function SetupSubjectsScreen() {
     setAssignments(prev => prev.map(a => (a.gradeId === gradeId ? { ...a, subjectIds: toggle(a.subjectIds, subjectId) } : a)));
   };
 
+  const setAllSubjects = (gradeId: string, all: boolean) => {
+    Haptics.selectionAsync();
+    const ids = all ? getSubjectsForGrade(gradeId).map(s => s.id) : [];
+    setAssignments(prev => prev.map(a => (a.gradeId === gradeId ? { ...a, subjectIds: ids } : a)));
+  };
+
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setSaving(true);
@@ -224,6 +230,7 @@ export default function SetupSubjectsScreen() {
           const grade = grades.find(g => g.id === a.gradeId);
           if (!grade) return null;
           const gradeName = lang === 'ar' ? grade.nameAr : grade.name;
+          const allSelected = getSubjectsForGrade(a.gradeId).every(s => a.subjectIds.includes(s.id));
           return (
             <View
               key={a.gradeId}
@@ -233,6 +240,11 @@ export default function SetupSubjectsScreen() {
                 <Text style={[styles.gradeCardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align, flex: 1 }]}>
                   {gradeName}
                 </Text>
+                <Pressable onPress={() => setAllSubjects(a.gradeId, !allSelected)} hitSlop={8}>
+                  <Text style={[styles.selectAll, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                    {allSelected ? t('teacherSetupDeselectAll') : t('teacherSetupSelectAll')}
+                  </Text>
+                </Pressable>
                 <Pressable
                   onPress={() => removeGrade(a.gradeId)}
                   hitSlop={8}
@@ -320,6 +332,7 @@ const styles = StyleSheet.create({
   gradeCard: { borderWidth: 1, padding: 14, marginBottom: 12 },
   gradeCardHeader: { alignItems: 'center', marginBottom: 12, gap: 8 },
   gradeCardTitle: { fontSize: 15 },
+  selectAll: { fontSize: 13 },
   gradeCardHint: { fontSize: 13, lineHeight: 20, marginTop: 10 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1 },

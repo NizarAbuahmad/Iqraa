@@ -18,6 +18,8 @@ export type KeyCheckSummary =
   | { kind: 'verified'; verified: number; total: number }
   | { kind: 'verifier-down' }
   | { kind: 'none-checkable' }
+  /** A checkable answer existed, but it was not the answer the question is graded against. */
+  | { kind: 'unlinked'; unlinked: number }
   | { kind: 'silent' };
 
 export function summariseKeyChecks(
@@ -38,6 +40,12 @@ export function summariseKeyChecks(
   if (questions.some(q => q.verification?.code === 'verifier_unreachable')) {
     return { kind: 'verifier-down' };
   }
+
+  // A checkable answer existed but was not the one the question is graded
+  // against. That is a different thing from "nothing was checkable": the
+  // teacher can fix it by making the model answer state the checked answer.
+  const unlinked = questions.filter(q => q.verification?.code === 'key_unlinked').length;
+  if (unlinked > 0) return { kind: 'unlinked', unlinked };
 
   // Only claim "nothing here was checkable" about a paper we actually looked
   // at. Every question written before key checking existed carries no
