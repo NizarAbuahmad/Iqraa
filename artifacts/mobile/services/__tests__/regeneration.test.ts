@@ -36,6 +36,16 @@ describe('avoidSignatures', () => {
     assert.ok(lines.includes('اشتق الاقتران بالنسبة إلى س'));
   });
 
+  it('includes a worksheet\u2019s worked example, so a regenerated paper does not hand the same one back', () => {
+    const lines = avoidSignatures({
+      title: 'ورقة عمل حول الأسس',
+      workedExample: { problem: 'حل المعادلة 2^(x+1) = 32 بتوحيد الأساس', steps: ['نكتب 32 = 2^5 أولًا ثم نساوي الأسس'], answer: 'x = 4' },
+      sections: [],
+    });
+    assert.ok(lines.includes('حل المعادلة 2^(x+1) = 32 بتوحيد الأساس'));
+    assert.ok(!lines.some(l => l.includes('نكتب 32')), 'working lines are not stems');
+  });
+
   it('skips short labels every artifact of a kind shares', () => {
     assert.deepEqual(avoidSignatures({ title: 'الأسئلة' }), []);
   });

@@ -12,7 +12,8 @@ import {
   lessonTextBlob,
 } from '@workspace/math-practice';
 
-export { takeConcreteChem, takeConcreteChemBatch, detectChemFamily } from '@workspace/math-practice';
+export { takeConcreteChem, takeConcreteChemBatch, takeSolvedChem, detectChemFamily } from '@workspace/math-practice';
+export type { SolvedItem } from '@workspace/math-practice';
 
 /**
  * Same precedence as `isMathContext`: the lesson's own subject wins, the
