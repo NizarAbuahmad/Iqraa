@@ -832,8 +832,12 @@ has none, and it is already in production), so a Library item shows under every
 subject filter, not just its own; the teacher's saved materials still follow the
 filter. The picker offers the focused subject's items, or the class's first
 subject on «الكل», so a second subject's items are reached by focusing it first.
-This merge was checked by typecheck and the suites only; the combination (filter
-chip + Library row + picker) was not driven in a browser.
+Driven in Chromium on a two-subject class (maths + chemistry, local database):
+the chips showed; a maths sheet added from the picker on «الكل» stayed on the
+shelf under the chemistry focus; the chemistry-focused picker did not list that
+sheet (this local Library has no chemistry items, so it showed its empty
+message); the console was clean. Adding a chemistry item under the focus was
+not exercised, for want of one.
 
 **Not in this change.** Teacher-pasted links (no schema change) and device
 uploads (one more push, private storage, no video under the 8 MB cap) are
