@@ -475,7 +475,7 @@ describe('formative checks in the lesson deck', () => {
       checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
     });
     const summary = deck.slides.findIndex(s => s.type === 'summary');
-    const divider = deck.slides.findIndex(s => s.type === 'divider' && s.content.includes('تذكرة الخروج'));
+    const divider = deck.slides.findIndex(s => s.type === 'divider' && s.title.includes('تذكرة الخروج'));
     const firstTicket = deck.slides.findIndex(s => s.title.includes('تذكرة الخروج '));
     assert.ok(summary >= 0 && divider > summary, 'divider follows the summary');
     assert.equal(firstTicket, divider + 1);
@@ -1036,5 +1036,78 @@ describe('generated explanation in the deck', () => {
       const after = buildLessonDeck('x', true, { lesson: LESSON, plan: PLAN, teaching });
       assert.deepEqual(after, before);
     }
+  });
+});
+
+describe('opening order', () => {
+  const two: KBLesson = {
+    ...LESSON,
+    keyTerms: [
+      { ar: 'الجذر', en: 'Root', definitionAr: 'قيمة تحقق المعادلة', definitionEn: 'A value satisfying the equation' },
+      { ar: 'المميّز', en: 'Discriminant', definitionAr: 'b² − 4ac', definitionEn: 'b² − 4ac' },
+    ],
+  };
+  const build = (lesson: KBLesson, extra: Record<string, unknown> = {}) =>
+    buildLessonDeck('حل المعادلات التربيعية', true, { lesson, plan: PLAN, ...extra });
+  const at = (deck: { slides: ActivitySlide[] }, pick: (s: ActivitySlide) => boolean) => deck.slides.findIndex(pick);
+
+  it('runs title, outcomes, warm-up, section break, vocabulary, explanation', () => {
+    const deck = build(two, { teaching: TEACHING });
+    const outcomes = at(deck, s => s.title.includes('نتاجات'));
+    const warmup = at(deck, s => s.title.includes('تمهيد'));
+    const divider = at(deck, s => s.type === 'divider');
+    const vocab = at(deck, s => s.title.includes('مفردات'));
+    assert.equal(outcomes, 1, 'the outcomes slide teachers must show comes straight after the cover');
+    assert.ok(warmup > outcomes, 'the warm-up follows the outcomes');
+    assert.ok(divider > warmup, 'the section break follows the warm-up');
+    assert.equal(vocab, divider + 1, 'vocabulary is the first slide after the break');
+    assert.ok(at(deck, s => s.title === TEACHING.concepts[0]!.title) > vocab, 'then the explanation');
+  });
+
+  it('puts the section name on the divider and the lesson under it', () => {
+    const deck = build(two, { teaching: TEACHING });
+    const divider = deck.slides[at(deck, s => s.type === 'divider')]!;
+    assert.equal(divider.title, 'لنبدأ الشرح');
+    assert.equal(divider.content, 'حل المعادلات التربيعية');
+  });
+
+  it('gives the exit-ticket divider the same shape', () => {
+    const deck = build(two, { checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)] });
+    const exit = deck.slides.filter(s => s.type === 'divider').pop()!;
+    assert.equal(exit.title, 'تذكرة الخروج');
+    assert.equal(exit.content, 'حل المعادلات التربيعية');
+  });
+
+  it('keeps a vocabulary list of two or more terms as one slide', () => {
+    const vocab = build(two).slides.find(s => s.title.includes('مفردات'))!;
+    assert.match(vocab.content, /الجذر — قيمة تحقق المعادلة/);
+    assert.match(vocab.content, /المميّز/);
+  });
+
+  it('draws a lone defined term as a titled slide, not a one-item list', () => {
+    const deck = build(LESSON);   // one key term, «الجذر», with a definition
+    assert.equal(at(deck, s => s.title.includes('مفردات')), -1);
+    const term = deck.slides.find(s => s.title === 'الجذر')!;
+    assert.ok(term, 'the term still reaches the deck');
+    assert.equal(term.content, 'قيمة تحقق المعادلة');
+  });
+
+  it('does not draw a lone term twice when the explanation already has it as a concept', () => {
+    const lesson: KBLesson = { ...LESSON, keyConceptsAr: ['الجذر', 'التحليل إلى عاملين'] };
+    assert.equal(build(lesson).slides.filter(s => s.title === 'الجذر').length, 1);
+  });
+
+  it('adds nothing for a lone term that has no definition', () => {
+    const lesson = { ...LESSON, keyTerms: [{ ar: 'الجذر', en: 'Root' }] } as unknown as KBLesson;
+    const deck = build(lesson);
+    assert.equal(at(deck, s => s.title === 'الجذر'), -1);
+    assert.equal(at(deck, s => s.title.includes('مفردات')), -1);
+  });
+
+  it('puts vocabulary straight after the warm-up when there is no explanation to break to', () => {
+    const lesson: KBLesson = { ...two, keyConceptsAr: [], keyConceptsEn: [] };
+    const deck = build(lesson, { teaching: { ...TEACHING, concepts: [] } });
+    assert.equal(at(deck, s => s.type === 'divider'), -1, 'no explanation, no break');
+    assert.equal(at(deck, s => s.title.includes('مفردات')), at(deck, s => s.title.includes('تمهيد')) + 1);
   });
 });

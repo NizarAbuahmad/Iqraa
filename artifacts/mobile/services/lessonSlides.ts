@@ -471,24 +471,8 @@ export function buildLessonDeck(
     });
   }
 
-  // ── 3. Vocabulary (المفردات) ────────────────────────────────────────────
-  const terms = (lesson?.keyTerms ?? []).slice(0, 6);
-  if (terms.length > 0) {
-    push({
-      type: 'intro',
-      title: L('📖 مفردات الدرس', '📖 Key Vocabulary'),
-      content: terms
-        .map(term => {
-          const word = isAr ? term.ar : term.en;
-          const def = isAr ? term.definitionAr : term.definitionEn;
-          return def ? `• ${word} — ${def}` : `• ${word}`;
-        })
-        .join('\n'),
-      durationSeconds: 0,
-    });
-  }
-
-  // ── 4. Hook / introduction ──────────────────────────────────────────────
+  // ── 3. Hook / introduction ──────────────────────────────────────────────
+  // (Vocabulary is §4c, after the section break — see there.)
   const intro = nonEmpty(plan?.introduction);
   const warm = intro ? splitWarmup(intro) : null;
   // splitWarmup only lifts a clean line when the model quoted a question or
@@ -527,8 +511,9 @@ export function buildLessonDeck(
   }
 
   // ── 4b. Section divider — a pacing break before the dense part starts ────
-  // Everything so far has been short orientation slides; the explanation
-  // that follows is where the deck gets read-heavy. A full-bleed "chapter
+  // Everything so far has been short orientation slides (title, outcomes,
+  // warm-up); the vocabulary and explanation that follow are where the deck
+  // gets read-heavy. A full-bleed "chapter
   // title" moment here is cheap (no content to author, just the topic name)
   // and breaks up what would otherwise be one visually uniform deck from
   // start to finish.
@@ -536,7 +521,7 @@ export function buildLessonDeck(
   // vocabulary list (index terms with no extracted definition — the G9 NCCD
   // data does this deliberately rather than invent one). A concept slide for
   // one of those projects a heading and nothing else, so it is dropped here:
-  // it is already shown in the vocabulary slide above, and this file's own
+  // it is already shown in the vocabulary slide below, and this file's own
   // rule is that an empty slide costs the class more than a shorter deck.
   // A concept with a real definition attached gets it appended below; a
   // concept that matches no `keyTerms` entry at all is assumed to already be
@@ -557,12 +542,51 @@ export function buildLessonDeck(
     })
     .filter(concept => !ruleTexts.some(rule => rule.includes(squash(concept))));
   if (concepts.length > 0 || teaching.concepts.length > 0) {
+    // The section name is the big line and the lesson the small one. It was the
+    // other way round, so the lesson title filled the screen a second time three
+    // slides after the cover and «لنبدأ الشرح» was a caption under it — a chapter
+    // break that did not say which chapter it was. The exit-ticket divider (§9b)
+    // follows the same shape.
     push({
       type: 'divider',
-      title,
-      content: L('لنبدأ الشرح', "Let's dig in"),
+      title: L('لنبدأ الشرح', "Let's dig in"),
+      content: title,
       durationSeconds: 0,
     });
+  }
+
+  // ── 4c. Vocabulary (المفردات) ───────────────────────────────────────────
+  // After the warm-up and the section break, not before them. The terms are the
+  // explanation's own vocabulary: shown first they were definitions handed to a
+  // class that had not yet been asked anything. And with the section break
+  // after them, the deck said "orientation" for three slides, "now we begin",
+  // and then went on defining terms — the break sat in the middle of the
+  // preamble instead of at the end of it.
+  const terms = (lesson?.keyTerms ?? []).slice(0, 6);
+  if (terms.length >= 2) {
+    push({
+      type: 'intro',
+      title: L('📖 مفردات الدرس', '📖 Key Vocabulary'),
+      content: terms
+        .map(term => {
+          const word = isAr ? term.ar : term.en;
+          const def = isAr ? term.definitionAr : term.definitionEn;
+          return def ? `• ${word} — ${def}` : `• ${word}`;
+        })
+        .join('\n'),
+      durationSeconds: 0,
+    });
+  } else if (terms.length === 1) {
+    // One term is not a vocabulary list — a heading over a single bullet. With
+    // a definition it is a concept like any other and gets a slide titled by
+    // its name; without one there is nothing to show. Skipped when the concept
+    // loop below already draws it under that name.
+    const word = isAr ? terms[0]!.ar : terms[0]!.en;
+    const def = nonEmpty(isAr ? terms[0]!.definitionAr : terms[0]!.definitionEn);
+    const drawnAsConcept = teaching.concepts.length === 0 && concepts.includes(word);
+    if (def && !drawnAsConcept) {
+      push({ type: 'intro', title: word, content: def, durationSeconds: 0 });
+    }
   }
 
   // ── 5. The explanation ──────────────────────────────────────────────────
@@ -899,8 +923,8 @@ export function buildLessonDeck(
   if (exitChecks.length > 0) {
     push({
       type: 'divider',
-      title,
-      content: L('🎫 تذكرة الخروج', 'Exit Ticket'),
+      title: L('تذكرة الخروج', 'Exit Ticket'),
+      content: title,
       durationSeconds: 0,
     });
     exitChecks.forEach((check, i) => {
