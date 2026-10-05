@@ -9,8 +9,10 @@
  * Same rule as FeedbackWidget: `apiFetch` resolves on any HTTP status, so the
  * thank-you only shows on `res.ok`. On failure the text stays in the box —
  * a teacher who typed out an idea must not lose it to a dropped connection.
+ * It is also kept in suggestionDraft.ts as they type, so a session that ends
+ * (which sends them to login and unmounts this screen) does not take it either.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +22,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { apiFetch } from '@/services/apiClient';
 import { trackEvent } from '@/services/analytics';
 import { goBack } from '@/services/navigation';
+import { loadSuggestionDraft, saveSuggestionDraft } from '@/services/suggestionDraft';
 
 const MAX_LENGTH = 2000;
 
@@ -31,6 +34,12 @@ export default function SuggestFeatureScreen() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [failed, setFailed] = useState<null | 'network' | 'session'>(null);
+
+  // A draft from before the session ended. `prev || draft`: never overwrite what
+  // the teacher has typed since the screen opened.
+  useEffect(() => {
+    void loadSuggestionDraft().then(draft => { if (draft) setIdea(prev => prev || draft); });
+  }, []);
 
   const align = isRTL ? 'right' : 'left' as const;
   const rowDir = isRTL ? 'row-reverse' : 'row' as const;
@@ -56,6 +65,7 @@ export default function SuggestFeatureScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setSent(true);
       setIdea('');
+      void saveSuggestionDraft('');
     } catch {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
       setFailed('network');
@@ -111,7 +121,7 @@ export default function SuggestFeatureScreen() {
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput
                 value={idea}
-                onChangeText={(v) => { setIdea(v); if (failed) setFailed(null); }}
+                onChangeText={(v) => { setIdea(v); void saveSuggestionDraft(v); if (failed) setFailed(null); }}
                 placeholder={t('suggestFeaturePlaceholder')}
                 placeholderTextColor={colors.mutedForeground}
                 multiline
