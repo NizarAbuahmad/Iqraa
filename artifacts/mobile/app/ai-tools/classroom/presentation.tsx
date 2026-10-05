@@ -31,7 +31,8 @@ import {
   canTogglePause, slideIsRTL, tickTimer, timerColor, timerSecondsForSlide, timerShouldTick, toggleFullscreen,
 } from '@/services/presentationUtils';
 import { openExternal } from '@/services/externalLinks';
-import Svg, { Line, Polyline, Rect } from 'react-native-svg';
+import Svg, { Circle, Line, Path, Polyline, Rect } from 'react-native-svg';
+import { DECK_ICON_SHAPES, iconForGlyph, type DeckIconName } from '@/services/deckIcons';
 import { plotGeometry, visualForSlide } from '@/services/deckVisuals';
 // Shared with both exports so the projected slide and the exported one cannot
 // disagree about what a bullet, an equation or a section glyph is.
@@ -535,10 +536,34 @@ function QuestionOptions({
 
 // ─── Slide Content ────────────────────────────────────────────────────────────
 /**
- * `isRTL` is the slide's own direction (`slideIsRTL`, computed once by the
- * screen), not the app's — an English-subject check reads left-to-right even
- * in the Arabic app. See `slideIsRTL` for why.
+ * A section icon, drawn from `deckIcons.ts` — the table the PDF export draws
+ * the same icons from, so the handout and the projector cannot disagree about
+ * what a section's picture is. Decorative: the heading beside it carries the
+ * meaning, so it is hidden from the accessibility tree.
  */
+function DeckIcon({ name, color, size }: { name: DeckIconName; color: string; size: number }) {
+  return (
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      {DECK_ICON_SHAPES[name].map((s, i) => {
+        if (s.t === 'path') return <Path key={i} d={s.d} />;
+        if (s.t === 'circle') return <Circle key={i} cx={s.cx} cy={s.cy} r={s.r} />;
+        return <Rect key={i} x={s.x} y={s.y} width={s.w} height={s.h} />;
+      })}
+    </Svg>
+  );
+}
+
 /** One line of worked answer — math-aware, the same choice the reveal makes for a single line. */
 function WorkingLine({ text, size, bold, isRTL }: { text: string; size: number; bold?: boolean; isRTL: boolean }) {
   const fontFamily = bold ? 'ReadexPro_700Bold' : 'ReadexPro_500Medium';
@@ -583,6 +608,12 @@ function WorkingAnswer({ answer, isRTL }: { answer: string; isRTL: boolean }) {
   );
 }
 
+/**
+ * `isRTL` is the slide's own direction (`slideIsRTL`, computed once by the
+ * screen), not the app's — an English-subject check reads left-to-right even
+ * in the Arabic app. See `slideIsRTL` for why.
+ */
+
 function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
   // Only for the teacher-led cue below. `isRTL` stays the prop: it follows
   // the slide's own payload, not the app's UI language.
@@ -600,6 +631,9 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
   const edge = isRTL ? ('flex-end' as const) : ('flex-start' as const);
   const lines = slide.content.split('\n').map(l => l.trim()).filter(Boolean);
   const [glyph, heading] = splitEmoji(slide.title);
+  // The section icon the PDF draws for this glyph, from the same table; null
+  // keeps the emoji for the playful glyphs that have no entry.
+  const glyphIcon = iconForGlyph(glyph);
 
   // A slide that asked to be drawn in a particular shape. Sits above the cover
   // check because a deck's first slide can legitimately be a statement, and
@@ -735,7 +769,11 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
       <View style={[slideStyles.headRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {!!glyph && (
           <View style={[slideStyles.glyphChip, { backgroundColor: accent + '18', borderColor: accent + '33' }]}>
-            <Text style={slideStyles.glyph}>{glyph}</Text>
+            {glyphIcon ? (
+              <DeckIcon name={glyphIcon} color={accent} size={24} />
+            ) : (
+              <Text style={slideStyles.glyph}>{glyph}</Text>
+            )}
           </View>
         )}
         <Text
