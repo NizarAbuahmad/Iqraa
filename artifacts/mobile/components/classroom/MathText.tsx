@@ -11,7 +11,7 @@
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { groupRtlSegments, isArabicLed, parseMathLine, type MathNode } from '@/services/mathRender';
+import { groupLtrSegments, groupRtlSegments, isArabicLed, parseMathLine, type MathNode } from '@/services/mathRender';
 
 type Props = {
   text: string;
@@ -59,13 +59,37 @@ export function MathText({ text, fontSize, color, fontFamily = 'ReadexPro_700Bol
     );
   }
 
+  const justifyContent = centered ? 'center' : 'flex-start';
+
+  // Prose around an equation: wrap between the two, never inside the equation.
+  // A pure equation has nothing to separate, so it keeps the node-level wrap
+  // (a very long one must still be able to break).
+  const segs = groupLtrSegments(nodes);
+  if (segs.length > 1) {
+    return (
+      <View style={[styles.row, { flexDirection: 'row', justifyContent }]}>
+        {segs.map((g, i) =>
+          g.kind === 'prose' ? (
+            <Text
+              key={i}
+              style={{ fontSize, color, fontFamily, lineHeight: Math.round(fontSize * 1.4), flexShrink: 1 }}
+            >
+              {g.text}
+            </Text>
+          ) : (
+            <View key={i} style={[styles.row, styles.mathGroup, { marginHorizontal: Math.round(fontSize * 0.22) }]}>
+              {g.nodes.map((n, j) => (
+                <Node key={j} node={n} fontSize={fontSize} color={color} fontFamily={fontFamily} />
+              ))}
+            </View>
+          ),
+        )}
+      </View>
+    );
+  }
+
   return (
-    <View
-      style={[
-        styles.row,
-        { flexDirection: 'row', justifyContent: centered ? 'center' : 'flex-start' },
-      ]}
-    >
+    <View style={[styles.row, { flexDirection: 'row', justifyContent }]}>
       {nodes.map((n, i) => (
         <Node key={i} node={n} fontSize={fontSize} color={color} fontFamily={fontFamily} />
       ))}
