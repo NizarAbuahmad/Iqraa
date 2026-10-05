@@ -160,3 +160,44 @@ describe('SLIDE_LAYOUTS', () => {
     }
   });
 });
+
+import { inlineSteps } from '../slideLayout.ts';
+
+describe('inlineSteps', () => {
+  it('reads the book’s one-line procedure as its steps, dropping the lead-in', () => {
+    assert.deepEqual(
+      inlineSteps('الخطوات: 1) عزل y من المعادلة الخطية 2) تعويضه في التربيعية 3) حل المعادلة الناتجة 4) إيجاد y لكل x'),
+      ['عزل y من المعادلة الخطية', 'تعويضه في التربيعية', 'حل المعادلة الناتجة', 'إيجاد y لكل x'],
+    );
+  });
+
+  it('accepts a bullet, a full stop as the marker, and Arabic-Indic digits', () => {
+    assert.deepEqual(inlineSteps('• ١) اقرأ ٢) احسب ٣) تحقّق'), ['اقرأ', 'احسب', 'تحقّق']);
+    assert.deepEqual(inlineSteps('1. read 2. solve 3. check'), ['read', 'solve', 'check']);
+  });
+
+  it('strips the separators left between steps', () => {
+    assert.deepEqual(inlineSteps('1) اقرأ؛ 2) احسب، 3) تحقّق.'), ['اقرأ', 'احسب', 'تحقّق.']);
+  });
+
+  it('is not fooled by numbers that are not markers', () => {
+    assert.equal(inlineSteps('طاقة المستوى E = −13.6 / n² حيث f(2) = 5 و n = 3'), null);
+  });
+
+  it('refuses two numbered clauses — a pair is not a process', () => {
+    assert.equal(inlineSteps('1) اقرأ 2) احسب'), null);
+  });
+
+  it('refuses markers that do not count 1, 2, 3 in order', () => {
+    assert.equal(inlineSteps('1) اقرأ 3) احسب 4) تحقّق'), null);
+    assert.equal(inlineSteps('2) اقرأ 3) احسب 4) تحقّق'), null);
+  });
+
+  it('refuses a long lead-in, which is prose and not a label', () => {
+    assert.equal(inlineSteps('لحل أي نظام من هذا النوع نتبع ما يلي بالترتيب: 1) أ 2) ب 3) ج'), null);
+  });
+
+  it('refuses a step with nothing in it', () => {
+    assert.equal(inlineSteps('1) اقرأ 2)  3) تحقّق'), null);
+  });
+});

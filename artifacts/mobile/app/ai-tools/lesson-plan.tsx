@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useEnglishRefresh } from '@/hooks/useEnglishRefresh';
 import { getT } from '@/services/i18n';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
@@ -401,6 +402,15 @@ export default function LessonPlanScreen() {
       setLoadingMinistry(false);
     }
   };
+
+  // An English material saved in Arabic (before 2026-10-04) is redone in
+  // English as soon as it opens, and the English copy replaces it.
+  useEnglishRefresh({
+    savedId: params.savedId,
+    current: result,
+    generate: () => generate(),
+    save: async () => { await handleSave(); showToast(t('englishMaterialRedone')); },
+  });
 
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 

@@ -9,6 +9,8 @@ import assert from 'node:assert/strict';
 import {
   hasRenderableMath,
   isolateForeignRuns,
+  groupRtlSegments,
+  isArabicLed,
   normalizeExponents,
   mathLineToHtml,
   mathLineToUnicode,
@@ -367,5 +369,149 @@ describe('normalizeExponents', () => {
     // promptAr for se-e1 is «2³ · 2⁴»; its canonical eq is «2^3 · 2^4».
     assert.equal(normalizeExponents('2^3 · 2^4'), '2³ · 2⁴');
     assert.equal(normalizeExponents('(2^3 · 2^{-1}) / 2'), '(2³ · 2⁻¹) / 2');
+  });
+});
+
+// The curriculum data writes every minus as U+2212, not the ASCII hyphen. With
+// only `-` in the run class, «y = 2x−5» was cut at the sign and bidi reordered
+// the pieces, so a worked example reached the projector as «7x+12=0−x²».
+describe('isolateForeignRuns — the U+2212 minus sign', () => {
+  const strip = (s: string) => s.replace(/[⁦⁩]/g, '');
+
+  it('keeps a worked example whole, one isolate per side of the Arabic «و»', () => {
+    const line = 'y = 2x−5 و y = x²−5x+7: 2x−5 = x²−5x+7 → x²−7x+12=0';
+    const out = isolateForeignRuns(line);
+    assert.equal(
+      out,
+      '⁦y = 2x−5⁩ و ⁦y = x²−5x+7⁩: ⁦2x−5 = x²−5x+7 → x²−7x+12=0⁩',
+    );
+    assert.equal(strip(out), line);
+  });
+
+  it('keeps a negative energy expression whole', () => {
+    const out = isolateForeignRuns('طاقة المستوى: E = −13.6 / n² إلكترون فولت');
+    assert.equal(out, 'طاقة المستوى: ⁦E = −13.6 / n²⁩ إلكترون فولت');
+  });
+
+  it('treats a number and a U+2212 minus as notation, like the ASCII hyphen', () => {
+    assert.equal(isolateForeignRuns('الناتج 7−3 هنا'), 'الناتج ⁦7−3⁩ هنا');
+  });
+});
+
+// The bank writes powers as `3^{2x}` and `2^{x+3}`. The parser only knew
+// `^2` and `^(2x)`, so a braced exponent fell through to plain text and
+// printed with its braces on the worksheet screen. (Found by running the app
+// 2026-10-05: «4^x = 2^{x+3}» rendered as «2^{x+3}4^x».)
+describe('parseMathLine — braced exponents', () => {
+  it('reads ^{x+3} as one exponent, braces dropped', () => {
+    const n = parseMathLine('2^{x+3}');
+    assert.deepEqual(n, [{ kind: 'sup', base: '2', exp: 'x+3' }]);
+  });
+
+  it('reads ^{2x} and keeps the text after it', () => {
+    assert.deepEqual(parseMathLine('3^{2x} = 81'), [
+      { kind: 'sup', base: '3', exp: '2x' },
+      { kind: 'text', text: ' = 81' },
+    ]);
+  });
+
+  it('handles a braced and a bare exponent on one line', () => {
+    assert.deepEqual(parseMathLine('4^x = 2^{x+3}'), [
+      { kind: 'sup', base: '4', exp: 'x' },
+      { kind: 'text', text: ' = ' },
+      { kind: 'sup', base: '2', exp: 'x+3' },
+    ]);
+  });
+
+  it('reads a braced exponent after a parenthesised group', () => {
+    assert.deepEqual(parseMathLine('(2^2)^{x}'), [
+      { kind: 'sup', base: '(2^2)', exp: 'x' },
+    ]);
+  });
+
+  it('leaves an unclosed brace as plain text', () => {
+    const n = parseMathLine('2^{x+3');
+    assert.ok(!n.some(x => x.kind === 'sup'));
+    assert.equal(n.map(x => (x.kind === 'text' ? x.text : '')).join(''), '2^{x+3');
+  });
+
+  it('renders HTML and unicode without braces', () => {
+    assert.equal(mathLineToHtml('2^{x+3}'), '2<sup>x+3</sup>');
+    assert.equal(mathLineToUnicode('3^{2}'), '3²');
+  });
+});
+
+describe('isolateForeignRuns — braces stay inside the run', () => {
+  it('wraps «3^{2x} = 81» in one isolate, not three', () => {
+    const out = isolateForeignRuns('أوجد حل المعادلة: 3^{2x} = 81');
+    assert.equal(out, 'أوجد حل المعادلة: ⁦3^{2x} = 81⁩');
+  });
+});
+
+// MathText lays an Arabic-led line out with flex-direction row-reverse so the
+// prose reads right to left. That reversed EVERY node, including the pieces of
+// one equation: «أوجد حل المعادلة: 3^x = 27» drew as «= 27 | 3ˣ | prose», the
+// equation back to front. The fix keeps each equation as one left-to-right
+// group and reverses only between Arabic phrases and equations.
+describe('groupRtlSegments — one equation is one left-to-right group', () => {
+  const prose = (text: string) => ({ kind: 'prose', text });
+  const kinds = (segs: ReturnType<typeof groupRtlSegments>) => segs.map(g => g.kind);
+
+  it('keeps «3^x = 27» together after the Arabic lead', () => {
+    const segs = groupRtlSegments(parseMathLine('أوجد حل المعادلة: 3^x = 27'));
+    assert.deepEqual(kinds(segs), ['prose', 'math']);
+    assert.deepEqual(segs[0], prose('أوجد حل المعادلة:'));
+    const m = segs[1];
+    assert.ok(m.kind === 'math');
+    assert.deepEqual(m.nodes.map(n => n.kind), ['sup', 'text']);
+    assert.equal(flat(m.nodes).trim(), '3^x = 27');
+  });
+
+  it('puts the colon with the Arabic, not at the front of the equation', () => {
+    const segs = groupRtlSegments(parseMathLine('أوجد حل المعادلة: 3^x = 27'));
+    assert.ok(segs[0].kind === 'prose' && segs[0].text.endsWith(':'));
+  });
+
+  it('splits an equation sitting between two Arabic phrases', () => {
+    const segs = groupRtlSegments(parseMathLine('إذا كان x^2 = 4 فإن س موجبة'));
+    assert.deepEqual(kinds(segs), ['prose', 'math', 'prose']);
+    assert.equal(segs[0].kind === 'prose' && segs[0].text, 'إذا كان');
+    assert.equal(segs[2].kind === 'prose' && segs[2].text, 'فإن س موجبة');
+  });
+
+  it('keeps «27 = 3^3» whole in the half-solved step line', () => {
+    const segs = groupRtlSegments(parseMathLine('1) نكتب 27 بالأساس 3: 27 = 3^3'));
+    const maths = segs.filter(g => g.kind === 'math');
+    const last = maths[maths.length - 1];
+    assert.ok(last.kind === 'math');
+    assert.ok(flat(last.nodes).replace(/\s/g, '').endsWith('27=3^3'));
+  });
+
+  it('returns a single math group for a line with no Arabic', () => {
+    const segs = groupRtlSegments(parseMathLine('3^x = 27'));
+    assert.deepEqual(kinds(segs), ['math']);
+  });
+
+  it('drops nothing: segments reassemble to the original text', () => {
+    const line = 'بسّط: x^2 + 1 ثم عوّض x = 2';
+    const segs = groupRtlSegments(parseMathLine(line));
+    const back = segs.map(g => (g.kind === 'prose' ? g.text : flat(g.nodes))).join('');
+    assert.equal(back.replace(/\s/g, ''), line.replace(/\s/g, ''));
+  });
+});
+
+// A numbered step line — «1) نكتب 27 بالأساس 3: 27 = 3^3» — opens with its
+// marker, not Arabic, so the old /^\s*Arabic/ test called it a left-to-right
+// line and the browser's bidi scrambled it («= 27 :3 ...»; seen in the app).
+describe('isArabicLed — a list marker does not make a line Latin', () => {
+  it('true for plain Arabic and for Arabic after a marker', () => {
+    for (const s of ['أوجد حل المعادلة: 3^x = 27', '1) نكتب 27', '2. نعوّض', '(3) اجمع', '١) نكتب', '  - اكتب']) {
+      assert.equal(isArabicLed(s), true, s);
+    }
+  });
+  it('false for an equation or Latin-led line', () => {
+    for (const s of ['3^x = 27', 'x = 3 ثم', '12 + 4 = 16', '(x+1)/2', 'f(x) = 2x', '']) {
+      assert.equal(isArabicLed(s), false, s);
+    }
   });
 });

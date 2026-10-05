@@ -55,10 +55,10 @@ export function hasMathBank(topic: string, kb: KBLesson | null): boolean {
   return mathBankCovers(topic, kb, bookGrade(kb));
 }
 
-function primaryGrade(kb: KBLesson | null): number | null {
-  const m = kb ? getBookForLesson(kb)?.gradeId?.match(/^grade-(\d+)$/) : null;
-  const n = m ? Number(m[1]) : NaN;
-  return n >= 1 && n <= 6 ? n : null;
+/** 1–9 for a lesson `takeElementaryMath` serves (drills for 1–6, topic generators for 1–9), else null. */
+function computedGrade(kb: KBLesson | null): number | null {
+  const n = bookGrade(kb);
+  return n !== null && n <= 9 ? n : null;
 }
 
 /**
@@ -77,11 +77,10 @@ export function takeConcreteMath(
   session?: Set<string>,
   allowRepeat: boolean = true,
 ): PracticeWQ | null {
-  const grade = primaryGrade(kb);
+  const grade = computedGrade(kb);
+  // Grades 1–9 are generated per lesson and refuse what they have nothing for;
+  // the banked families are Grade 10's and are not theirs.
   if (grade) return takeElementaryMath(type, topic, kb, grade, diff, lang, points, session);
-  // Grades 7–9 have no bank; the Grade 10 one is not theirs.
-  const book = bookGrade(kb);
-  if (book !== null && book >= 7 && book <= 9) return null;
   return takeBankMath(type, topic, kb, diff, lang, points, session, allowRepeat);
 }
 
@@ -98,7 +97,7 @@ export function takeSolvedMath(
   lang: Lang,
   session?: Set<string>,
 ): SolvedItem | null {
-  if (primaryGrade(kb)) return null;
+  if (computedGrade(kb) !== null) return null;
   const book = bookGrade(kb);
   if (book !== null && book >= 7 && book <= 9) return null;
   return takeBankSolved(topic, kb, diff, lang, session);
