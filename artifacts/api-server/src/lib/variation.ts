@@ -73,7 +73,7 @@ export function variationProfile(variantIndex: number, isArabic: boolean): strin
  *  kinds have six different shapes, and a per-kind extractor is one more place
  *  to forget when a seventh arrives — it would fail by silently finding nothing
  *  to avoid, which reads exactly like a successful regeneration. */
-const SIGNATURE_KEYS = new Set(["title", "text", "question", "objective", "description"]);
+const SIGNATURE_KEYS = new Set(["title", "text", "question", "objective", "description", "problem"]);
 
 /** Enough of a stem to identify it; past this it is prompt weight for nothing. */
 const SIGNATURE_MAX_CHARS = 120;

@@ -21,17 +21,26 @@ type FlatItem = {
   question: WorksheetQuestion;
   /** This question's own answer-key text, looked up by its current flat position. */
   answer: string;
+  /**
+   * The working behind `answer`, when the key has it. It belongs to the
+   * question as it was generated: any edit to the question's wording, its
+   * options or its answer drops it, because working that led to a different
+   * question or answer is worse on a teacher's key than no working.
+   */
+  solution?: string[];
 };
 
 /** Every question paired with its own answer, in on-paper order. */
 function flatten(ws: WorksheetOutput): FlatItem[] {
   const answerByPos = new Map(ws.answerKey.map(a => [a.num, a.answer]));
+  const solutionByPos = new Map(ws.answerKey.map(a => [a.num, a.solution]));
   const out: FlatItem[] = [];
   let pos = 0;
   ws.sections.forEach((sec, sectionIndex) => {
     sec.questions.forEach((question, questionIndex) => {
       pos += 1;
-      out.push({ sectionIndex, questionIndex, question, answer: answerByPos.get(pos) ?? '' });
+      const solution = solutionByPos.get(pos);
+      out.push({ sectionIndex, questionIndex, question, answer: answerByPos.get(pos) ?? '', ...(solution ? { solution } : {}) });
     });
   });
   return out;
@@ -51,7 +60,7 @@ function rebuild(ws: WorksheetOutput, flat: FlatItem[]): WorksheetOutput {
       questions: flat.filter(f => f.sectionIndex === sectionIndex).map(f => f.question),
     }))
     .filter(sec => sec.questions.length > 0);
-  const answerKey = flat.map((f, i) => ({ num: i + 1, answer: f.answer }));
+  const answerKey = flat.map((f, i) => ({ num: i + 1, answer: f.answer, ...(f.solution ? { solution: f.solution } : {}) }));
   return { ...ws, sections, answerKey };
 }
 
@@ -65,7 +74,13 @@ export function answerFor(ws: WorksheetOutput, sectionIndex: number, questionInd
   return flatten(ws).find(f => f.sectionIndex === sectionIndex && f.questionIndex === questionIndex)?.answer ?? '';
 }
 
-/** Patch a question's own fields (text, points) — the answer key is untouched. */
+/** The same item without its working — see `FlatItem.solution`. */
+const withoutSolution = ({ solution: _solution, ...rest }: FlatItem): FlatItem => rest;
+
+/**
+ * Patch a question's own fields (text, points) — the answer is untouched. A new
+ * `text` drops this row's working; a points-only edit keeps it.
+ */
 export function applyWorksheetQuestionEdit(
   ws: WorksheetOutput,
   sectionIndex: number,
@@ -74,7 +89,7 @@ export function applyWorksheetQuestionEdit(
 ): WorksheetOutput {
   const flat = flatten(ws).map(f =>
     f.sectionIndex === sectionIndex && f.questionIndex === questionIndex
-      ? { ...f, question: { ...f.question, ...patch } }
+      ? { ...('text' in patch ? withoutSolution(f) : f), question: { ...f.question, ...patch } }
       : f,
   );
   return rebuild(ws, flat);
@@ -96,7 +111,7 @@ export function applyWorksheetOptionEdit(
     if (f.sectionIndex !== sectionIndex || f.questionIndex !== questionIndex) return f;
     const options = (f.question.options ?? []).map((o, i) => (i === optionIndex ? next : o));
     const wasCorrect = (f.question.options ?? [])[optionIndex] === f.answer;
-    return { ...f, question: { ...f.question, options }, answer: wasCorrect ? next : f.answer };
+    return { ...withoutSolution(f), question: { ...f.question, options }, answer: wasCorrect ? next : f.answer };
   });
   return rebuild(ws, flat);
 }
@@ -112,7 +127,7 @@ export function applyWorksheetAnswerEdit(
   next: string,
 ): WorksheetOutput {
   const flat = flatten(ws).map(f =>
-    f.sectionIndex === sectionIndex && f.questionIndex === questionIndex ? { ...f, answer: next } : f,
+    f.sectionIndex === sectionIndex && f.questionIndex === questionIndex ? { ...withoutSolution(f), answer: next } : f,
   );
   return rebuild(ws, flat);
 }

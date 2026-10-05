@@ -15,7 +15,7 @@ import type { ClassGroup } from './roster.ts';
  * teacher named "10B" and never gave an Arabic name for is still called 10B,
  * which is better than an empty row that looks like a loading bug.
  */
-export function className(group: ClassGroup, lang: 'ar' | 'en'): string {
+export function className(group: Pick<ClassGroup, 'name' | 'nameAr'>, lang: 'ar' | 'en'): string {
   const ar = group.nameAr?.trim();
   const en = group.name?.trim();
   if (lang === 'ar') return ar || en || '';

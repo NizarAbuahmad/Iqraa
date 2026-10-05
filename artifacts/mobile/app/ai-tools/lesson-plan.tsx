@@ -6,6 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useEnglishRefresh } from '@/hooks/useEnglishRefresh';
+import { getT } from '@/services/i18n';
+import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
@@ -51,7 +54,7 @@ const STYLE_IDS = ['direct', 'inquiry', 'collaborative'] as const;
 export default function LessonPlanScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL, lang } = useLanguage();
+  const { t, isRTL, lang: uiLang } = useLanguage();
   const { user } = useAuth();
   const params = useLocalSearchParams<{
     topic?: string; savedId?: string;
@@ -64,7 +67,7 @@ export default function LessonPlanScreen() {
 
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
-  const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
+  const gradeNames = grades.map(g => uiLang === 'ar' ? g.nameAr : g.name);
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
   const styleLabels = [t('teachingStyleDirect'), t('teachingStyleInquiry'), t('teachingStyleCollaborative')];
 
@@ -72,7 +75,7 @@ export default function LessonPlanScreen() {
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en', teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -80,9 +83,14 @@ export default function LessonPlanScreen() {
   // Labels are per-grade too: Grade 6's creative-arts book has no music
   // in it, so it must not be offered under the combined name. Same
   // index alignment as the mask above.
-  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, uiLang);
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
-  const [topic, setTopic] = useState(params.topic ?? '');
+  // The picked subject's material language — English is planned in English.
+  const lang = contentLang(subjects[subjectIdx].id, uiLang);
+  const [topic, setTopic] = useState(() => topicInLang(
+    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+  ));
   useWarmGrounding(topic, lang);
 
   // Reset topic when grade or subject changes so stale KB selections are cleared
@@ -127,12 +135,16 @@ export default function LessonPlanScreen() {
    * that point stored it under the new subject as «خطة درس: ».
    */
   const [generated, setGenerated] = useState<GenerationScope | null>(
-    () => (params.savedId ? reopenedGenerationScope(initialScope, params.topic, lang as 'ar' | 'en') : null),
+    () => (params.savedId ? reopenedGenerationScope(initialScope, topic, lang) : null),
   );
   const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
+  // The plan on screen keeps the language it was generated in, even after the
+  // pickers move on — like everything else read off `scope`.
+  const outLang = contentLang(subjects[scope.subjectIdx].id, uiLang);
+  const outT = getT(outLang);
   const curriculumGrounded: boolean | null = generated ? generated.grounded : null;
   const groundedLesson: string | null = generated?.lesson
-    ? (lang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
+    ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
     : null;
   /** KB id of that lesson — the Ministry form needs its unit and period count. */
   const groundedLessonId: string | null = generated?.lesson?.id ?? null;
@@ -215,10 +227,10 @@ export default function LessonPlanScreen() {
     // A topic that grounds to another subject's lesson cannot make an honest
     // plan — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
-    const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
     const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError('');
     setCancelled(false);
     const controller = new AbortController();
@@ -231,10 +243,10 @@ export default function LessonPlanScreen() {
     await nextFrame();
     try {
       const form = {
-        gradeName: gradeNames[gradeIdx]!,
+        gradeName: lang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
         subjectName: subjects[subjectIdx].name,
         topic,
-        lang: lang as 'ar' | 'en',
+        lang,
         durationMinutes: DURATION_VALUES[durationIdx],
         teachingStyle: STYLE_IDS[styleIdx],
         objectives, adaptations, priorTopicsNotes, includePriorReview,
@@ -294,9 +306,9 @@ export default function LessonPlanScreen() {
       // compared anywhere, only displayed and passed through, so translating it
       // is safe. `subject` is deliberately left in English: it feeds
       // isMathContext and ~30 other call sites.
-      grade: gradeNames[scope.gradeIdx]!,
+      grade: outLang === 'ar' ? grades[scope.gradeIdx].nameAr : grades[scope.gradeIdx].name,
       topic: scope.topic,
-      language: lang,
+      language: outLang,
       content: JSON.stringify(result),
       formState,
     };
@@ -323,12 +335,12 @@ export default function LessonPlanScreen() {
     // catalog put "Mathematics | Grade 10" at the top of an otherwise Arabic
     // plan — the screen showed الرياضيات and the exported file disagreed.
     // Labels are per grade, so they are read against the generated grade.
-    subject: subjectPickerLabels(grades[scope.gradeIdx].id, lang as 'ar' | 'en')[scope.subjectIdx]!,
-    grade: gradeNames[scope.gradeIdx]!,
+    subject: subjectPickerLabels(grades[scope.gradeIdx].id, outLang)[scope.subjectIdx]!,
+    grade: outLang === 'ar' ? grades[scope.gradeIdx].nameAr : grades[scope.gradeIdx].name,
     duration: DURATION_VALUES[durationIdx],
   });
 
-  const getExportTitle = () => lang === 'ar' ? `خطة درس: ${scope.topic}` : `Lesson Plan: ${scope.topic}`;
+  const getExportTitle = () => outLang === 'ar' ? `خطة درس: ${scope.topic}` : `Lesson Plan: ${scope.topic}`;
 
   const {
     getExportFigures,
@@ -344,7 +356,7 @@ export default function LessonPlanScreen() {
     result,
     topic: scope.topic,
     lessonId: scope.lesson?.id,
-    lang,
+    lang: outLang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
     formatText: formatLessonPlanText,
@@ -391,6 +403,15 @@ export default function LessonPlanScreen() {
     }
   };
 
+  // An English material saved in Arabic (before 2026-10-04) is redone in
+  // English as soon as it opens, and the English copy replaces it.
+  useEnglishRefresh({
+    savedId: params.savedId,
+    current: result,
+    generate: () => generate(),
+    save: async () => { await handleSave(); showToast(t('englishMaterialRedone')); },
+  });
+
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const exportLabels = {
@@ -428,7 +449,7 @@ export default function LessonPlanScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
-          lang={lang as 'ar' | 'en'}
+          lang={lang}
           isRTL={isRTL}
           colors={colors}
           accent={ACCENT}
@@ -559,7 +580,7 @@ export default function LessonPlanScreen() {
         onRetry={generate}
         colors={colors}
         isRTL={isRTL}
-        lang={lang as 'ar' | 'en'}
+        lang={uiLang}
         accent={ACCENT}
         t={t}
       />
@@ -597,8 +618,8 @@ export default function LessonPlanScreen() {
         <LessonPlanResult
           plan={result}
           colors={colors}
-          isRTL={isRTL}
-          t={t}
+          isRTL={outLang === 'ar'}
+          t={outT}
           onEdit={applyEdit}
           editedFields={editedFields}
         />

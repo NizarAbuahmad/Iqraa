@@ -248,7 +248,7 @@ export default function NotificationsScreen() {
                 key={f}
                 onPress={() => setFilter(f)}
                 accessibilityRole="tab"
-                accessibilityState={{ selected: active }}
+                aria-selected={active}
                 style={[styles.filterChip, { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border }]}
               >
                 <Text style={{ fontSize: 13, fontFamily: 'ReadexPro_600SemiBold', color: active ? colors.primaryForeground : colors.mutedForeground }}>

@@ -85,7 +85,7 @@ export default function UnitLessonsScreen() {
 
           return (
             <Pressable
-              accessibilityState={{ disabled: isLocked }}
+              aria-disabled={isLocked}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 if (isLocked) {

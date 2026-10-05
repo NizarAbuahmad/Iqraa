@@ -14,7 +14,8 @@ import type {
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import type { SessionArtifact } from '@/services/ai/teachingAssistant';
 import { buildGeneratorContext, nccdUnitId } from '@/services/kbContext';
-import type { KBLesson } from '@/services/knowledgeBase';
+import { getBookForLesson, type KBLesson } from '@/services/knowledgeBase';
+import { contentLang } from '@/services/contentLanguage';
 import {
   formatActivityText,
   formatLessonPlanText,
@@ -60,8 +61,24 @@ export type ChatArtifactResult = {
    * generated and quietly drop the teacher's edits.
    */
   title: string;
-  meta: { subject: string; grade: string; duration?: number };
+  /** `lang` is the material's own language, which can differ from the chat's — see `materialLang`. */
+  meta: { subject: string; grade: string; duration?: number; lang: 'ar' | 'en' };
 };
+
+/**
+ * The material's language and the topic restated in it. English is written in
+ * English inside an Arabic chat; the conversation around it is not.
+ */
+function materialLang(
+  topic: string,
+  lesson: KBLesson | null,
+  scope: ArtifactScope | null,
+  lang: 'ar' | 'en',
+): { lang: 'ar' | 'en'; topic: string } {
+  const matLang = contentLang((lesson ? getBookForLesson(lesson)?.subjectId : null) ?? scope?.subjectId, lang);
+  if (matLang === lang || !lesson) return { lang: matLang, topic: topic.trim() };
+  return { lang: matLang, topic: matLang === 'ar' ? lesson.titleAr : lesson.titleEn };
+}
 
 function nextStepLine(artifact: SessionArtifact, isAr: boolean): string {
   const tips: Record<SessionArtifact, { ar: string; en: string }> = {
@@ -178,9 +195,11 @@ export async function generateChatArtifact(opts: {
   const fromDocuments = !!documentContext?.trim();
   // When docs are the primary context, don't let a soft curriculum lesson override generators
   const lessonForGen = fromDocuments && fromSoftPin ? null : lesson;
-  const req = buildRequest(topic, lessonForGen, lang, documentContext, scope);
-  const meta = { subject: req.subject, grade: req.grade, duration: req.duration };
-  const titleBase = topic.trim();
+  const material = materialLang(topic, lessonForGen, scope, lang);
+  const matAr = material.lang === 'ar';
+  const req = buildRequest(material.topic, lessonForGen, material.lang, documentContext, scope);
+  const meta = { subject: req.subject, grade: req.grade, duration: req.duration, lang: material.lang };
+  const titleBase = material.topic;
 
   const TITLES: Record<SessionArtifact, { ar: string; en: string }> = {
     'lesson-plan': { ar: 'خطة درس', en: 'Lesson plan' },
@@ -189,7 +208,7 @@ export async function generateChatArtifact(opts: {
     quiz: { ar: 'اختبار قصير', en: 'Short quiz' },
     activity: { ar: 'نشاط صفي', en: 'Class activity' },
   };
-  const artifactTitle = `${isAr ? TITLES[artifact].ar : TITLES[artifact].en}: ${titleBase}`;
+  const artifactTitle = `${matAr ? TITLES[artifact].ar : TITLES[artifact].en}: ${titleBase}`;
 
   let body = '';
   let data: ChatArtifactData | undefined;
@@ -201,7 +220,7 @@ export async function generateChatArtifact(opts: {
         out,
         artifactTitle,
         meta,
-        isAr,
+        matAr,
       );
       break;
     }
@@ -212,7 +231,7 @@ export async function generateChatArtifact(opts: {
         out,
         artifactTitle,
         meta,
-        isAr,
+        matAr,
       );
       break;
     }
@@ -223,7 +242,7 @@ export async function generateChatArtifact(opts: {
         out,
         artifactTitle,
         meta,
-        isAr,
+        matAr,
       );
       break;
     }
@@ -234,7 +253,7 @@ export async function generateChatArtifact(opts: {
         out,
         artifactTitle,
         meta,
-        isAr,
+        matAr,
       );
       break;
     }
@@ -245,7 +264,7 @@ export async function generateChatArtifact(opts: {
         out,
         artifactTitle,
         meta,
-        isAr,
+        matAr,
       );
       break;
     }
@@ -282,19 +301,20 @@ export async function generateChatInfographic(opts: {
   lang: 'ar' | 'en';
   scope?: ArtifactScope | null;
 }): Promise<Omit<ChatArtifactResult, 'artifact'> & { data: ChatArtifactData }> {
-  const { topic, lesson = null, lang, scope = null } = opts;
+  const { lesson = null, lang, scope = null } = opts;
   const isAr = lang === 'ar';
-  const req = buildRequest(topic, lesson, lang, undefined, scope);
+  const { lang: matLang, topic } = materialLang(opts.topic, lesson, scope, lang);
+  const req = buildRequest(topic, lesson, matLang, undefined, scope);
   const out = await remoteAIService.generateInfographic(req);
   const prose = isAr
     ? `جهّزت إنفوجرافيك لدرس «${topic}». انسخه أو صدّره للطباعة من الأزرار بالأسفل.`
     : `Here is an infographic for “${topic}”. Copy it or export it for printing below.`;
-  const title = `${isAr ? 'إنفوجرافيك' : 'Infographic'}: ${topic}`;
+  const title = `${matLang === 'ar' ? 'إنفوجرافيك' : 'Infographic'}: ${topic}`;
   return {
-    text: `${prose}\n\n${formatInfographicText(out, isAr)}`,
+    text: `${prose}\n\n${formatInfographicText(out, matLang === 'ar')}`,
     prose,
     title,
-    meta: { subject: req.subject, grade: req.grade },
+    meta: { subject: req.subject, grade: req.grade, lang: matLang },
     data: { kind: 'infographic', infographic: out },
     topic,
     lessonId: lesson?.id,

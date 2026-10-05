@@ -102,7 +102,7 @@ function Pill<T extends string | number>({
   const [hovered, setHovered] = useState(false);
   return (
     <Pressable
-      accessibilityState={{ selected: active }}
+      aria-selected={active}
       onPress={onPress}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}

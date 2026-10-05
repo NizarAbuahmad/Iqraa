@@ -52,10 +52,19 @@ import { FillBlankInput, MatchingInput } from '@/components/QuestionInputs';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { toLatinDigits } from '@/services/latinDigits';
 import { playUri } from '@/services/englishAudio';
+import { isPaperQuestion } from '@/services/paperQuestion';
 
 const ACCENT = palette.primary;
+
+/** «12.50» and «12.5» are the same score; one card should not print both. */
+function tidyPercent(p: string | number | null): string {
+  if (p == null) return '—';
+  const n = Number(p);
+  return Number.isFinite(n) ? String(n) : String(p);
+}
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
@@ -81,17 +90,6 @@ const COMPETENCY_KEY: Record<CompetencyKey, TranslationKey> = {
 
 type Response = Record<string, unknown>;
 
-/**
- * A question from an exam the app never wrote: no prompt, nothing to
- * transcribe. Tested on the body rather than on `gradingMode`, so a manually
- * graded question that *does* carry its own text still renders it.
- */
-function isPaperQuestion(question: EvaluationQuestion): boolean {
-  // A read-aloud question has a passage, not a prompt — it was being
-  // labelled as a paper question it never was.
-  if (question.type === 'read_aloud') return false;
-  return !((question.body?.['prompt'] as string) ?? '').trim();
-}
 
 /**
  * The mark and comment as they sit in the boxes, before they're saved.
@@ -355,6 +353,10 @@ export default function AnswerEntryScreen() {
           </Text>
         </View>
 
+        {/* The teal header spans the window; the cards under it do not. Uncapped,
+            a 1920px browser put each competency's name and its score 1,700px
+            apart. */}
+        <View style={{ width: '100%', maxWidth: CHAT_MAX_WIDTH, alignSelf: 'center' }}>
         {error ? (
           <View style={[styles.errorBox, { borderColor: colors.destructive, margin: 20, marginBottom: 0 }]}>
             <Ionicons name="alert-circle-outline" size={18} color={colors.destructive} />
@@ -459,6 +461,7 @@ export default function AnswerEntryScreen() {
             )}
           </Pressable>
         </View>
+        </View>
       </ScrollView>
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
@@ -511,7 +514,7 @@ function ResultCard({
                 </View>
               )}
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
-                {t('resultPercentLabel', result.percent)}
+                {t('resultPercentLabel', tidyPercent(result.percent))}
               </Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
                 {result.earnedMarks} / {result.totalMarks}
@@ -525,14 +528,27 @@ function ResultCard({
             <View style={{ marginTop: 12, gap: 6 }}>
               {COMPETENCY_ORDER.map(key => {
                 const c = result.competencyScores[key];
+                const scored = !!c?.sufficient;
+                const fill = Math.max(0, Math.min(100, Number(c?.percent) || 0));
                 return (
                   <View key={key} style={[styles.competencyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: align }}>
+                    <Text style={{ color: scored ? colors.foreground : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, width: 130, textAlign: align }}>
                       {t(COMPETENCY_KEY[key])}
                     </Text>
-                    <Text style={{ color: c?.sufficient ? colors.foreground : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
-                      {c?.sufficient ? `${c.percent}%` : t('insufficientEvidence')}
-                    </Text>
+                    {scored ? (
+                      <>
+                        <View style={[styles.competencyTrack, { backgroundColor: colors.border }]}>
+                          <View style={[styles.competencyFill, { width: `${fill}%`, backgroundColor: ACCENT }]} />
+                        </View>
+                        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, minWidth: 48, textAlign: isRTL ? 'left' : 'right' }}>
+                          {t('resultPercentLabel', tidyPercent(c.percent))}
+                        </Text>
+                      </>
+                    ) : (
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, flex: 1, textAlign: align }}>
+                        {t('insufficientEvidence')}
+                      </Text>
+                    )}
                   </View>
                 );
               })}
@@ -623,7 +639,7 @@ function NextStepsCard({
                 {canGenerate && rec.kind !== 'reassess' && title ? (
                   <Pressable
                     onPress={() => openWorksheet(title)}
-                    style={[styles.recBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                    style={[styles.recBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
                   >
                     <Ionicons name="document-text-outline" size={14} color={ACCENT} />
                     <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>
@@ -972,7 +988,9 @@ const styles = StyleSheet.create({
   resultTop: { alignItems: 'center' },
   levelRow: { alignItems: 'center', gap: 12, marginTop: 12 },
   levelPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  competencyRow: { alignItems: 'center' },
+  competencyRow: { alignItems: 'center', gap: 10 },
+  competencyTrack: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
+  competencyFill: { height: 8, borderRadius: 4 },
   qCard: { borderWidth: 1, borderRadius: 12, padding: 14 },
   qTop: { alignItems: 'center', gap: 8, marginBottom: 10 },
   scanBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderRadius: 10, paddingVertical: 12 },

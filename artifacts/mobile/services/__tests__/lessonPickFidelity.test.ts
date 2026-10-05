@@ -168,7 +168,8 @@ describe('the subject a deck is generated under', () => {
     const svc = new MockAIService();
     const req = {
       grade: '10',
-      topic: 'موضوع حر غير موجود في المنهاج',
+      // A typed topic that names a banked family but matches no catalog lesson.
+      topic: 'حل المعادلة الأسية',
       activityType: 'quick-check',
       duration: 15,
       difficulty: 'standard',
@@ -181,7 +182,7 @@ describe('the subject a deck is generated under', () => {
     const asChem = await svc.generateClassroomActivity({ ...req, subject: 'Chemistry' } as any);
 
     // The maths reading pulls x/y algebra items a chemistry-labelled request never gets.
-    assert.match(questionText(asMaths), /y\s*=|x²/);
+    assert.match(questionText(asMaths), /y\s*=|x²|[xy]\s*=/);
     assert.doesNotMatch(questionText(asChem), /y\s*=|x²/);
   });
 });

@@ -11,6 +11,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  guardianExamRow,
   sortStudentExams,
   studentExamRow,
   type ExamForStudent,
@@ -182,5 +183,25 @@ describe("sortStudentExams", () => {
       rowOf(exam({ id: "continuing", publishedAt: at("2026-09-10T00:00:00Z") }), { status: "in_progress", startedAt: NOW, submittedAt: null }, null, NOW),
     ];
     assert.deepEqual(sortStudentExams(rows).map(r => r.evaluationId), ["continuing", "available", "new-closed", "old-result"]);
+  });
+});
+
+describe("guardianExamRow", () => {
+  it("keeps the released result but never hands a parent the exam link", () => {
+    const open = rowOf(exam(), null, null, NOW);
+    assert.ok(open.shareCode, "the student's row carries the link");
+    assert.equal(guardianExamRow(open).shareCode, null);
+    assert.equal(guardianExamRow(open).state, "available");
+  });
+
+  it("shows a parent no result the student could not see", () => {
+    const sitting = { status: "submitted", startedAt: NOW, submittedAt: NOW };
+    const result = { levelKey: "proficient", percent: "80", earnedMarks: "8", totalMarks: "10", competencyScores: [], isProvisional: false };
+    const hidden = guardianExamRow(rowOf(exam({ releaseResultsToStudent: false }), sitting, result, NOW));
+    assert.equal(hidden.state, "submitted");
+    assert.equal(hidden.result, null);
+    const shown = guardianExamRow(rowOf(exam({ releaseResultsToStudent: true }), sitting, result, NOW));
+    assert.equal(shown.state, "result");
+    assert.ok(shown.result);
   });
 });
