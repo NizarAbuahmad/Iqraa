@@ -20,7 +20,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 
-import { classifyDocLines, docLineText } from './docxOutline.ts';
+import { buildWordDocument } from './docxBuild.ts';
 import { buildMinistryPlanDocx, type MinistryLessonPage } from './ministryPlan.ts';
 import { trackEvent } from '@/services/analytics';
 
@@ -209,56 +209,8 @@ export async function exportAsWord(
 ): Promise<void> {
   trackEvent('material_exported', { format: 'word' });
   // Dynamic import to avoid startup cost
-  const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType } = await import('docx');
-
-  const align = isAr ? AlignmentType.RIGHT : AlignmentType.LEFT;
-  const lines = text.split('\n');
-  const kinds = classifyDocLines(lines);
-
-  const children = lines.map((line, i) => {
-    const kind = kinds[i]!;
-    const content = docLineText(line, kind);
-
-    switch (kind) {
-      case 'blank':
-        return new Paragraph({ children: [new TextRun('')] });
-      // The underline belonging to the heading above has already done its
-      // job by marking it; printing it would just draw dashes in the doc.
-      case 'rule':
-        return new Paragraph({ children: [new TextRun({ text: '', break: 1 })] });
-      case 'title':
-        return new Paragraph({
-          heading: HeadingLevel.HEADING_1,
-          alignment: align,
-          children: [new TextRun({ text: content, bold: true, size: 32 })],
-        });
-      case 'heading':
-        return new Paragraph({
-          heading: HeadingLevel.HEADING_2,
-          alignment: align,
-          children: [new TextRun({ text: content, bold: true, size: 24 })],
-        });
-      case 'bullet':
-        return new Paragraph({
-          alignment: align,
-          bullet: { level: 0 },
-          children: [new TextRun({ text: content, size: 22 })],
-        });
-      default:
-        return new Paragraph({
-          alignment: align,
-          children: [new TextRun({ text: content, size: 22 })],
-        });
-    }
-  });
-
-  const doc = new Document({
-    sections: [{
-      properties: {},
-      children,
-    }],
-  });
-  await saveDocx(doc, filename);
+  const docx = await import('docx');
+  await saveDocx(buildWordDocument(text, isAr, docx), filename);
 }
 
 /**
