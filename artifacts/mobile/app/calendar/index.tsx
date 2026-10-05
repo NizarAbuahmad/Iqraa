@@ -15,6 +15,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { getSchedule, type SchedulePeriod, type ScheduleSlot } from '@/services/schedule';
 import { listTeachingPlans, type TeachingPlan } from '@/services/teachingPlans';
 import { listClasses, type ClassGroup } from '@/services/roster';
+import { periodClassLabel } from '@/services/classSubjects';
 import { getLessonById } from '@/services/knowledgeBase';
 import { buildDayAgenda, dayHasAgenda, isInMonth, monthGridDates } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
@@ -260,7 +261,7 @@ export default function CalendarScreen() {
                           {p.startTime || t('schedulePeriodNumber', p.periodNumber)}
                         </Text>
                         <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
-                          {classNameFor(p.classGroupId)}
+                          {periodClassLabel(classNameFor(p.classGroupId), p.subjectId, lang)}
                         </Text>
                         {p.schoolName ? (
                           <Text numberOfLines={1} style={{ maxWidth: 140, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
