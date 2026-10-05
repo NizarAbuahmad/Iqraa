@@ -22,7 +22,7 @@ export type ElementaryOp =
 const TASHKEEL = /[ً-ٰٟـ]/g;
 
 /** Harakat off, hamza/alef, yaa and taa-marbuta folded, so one spelling matches. */
-const fold = (s: string) =>
+export const fold = (s: string) =>
   s.replace(TASHKEEL, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه');
 
 /**
@@ -117,8 +117,8 @@ const TABLE_MAX: Record<number, number> = { 1: 2, 2: 5, 3: 10, 4: 10, 5: 10, 6: 
 
 const TIER_SCALE: Record<DiffTier, number> = { easy: 0.1, medium: 0.5, hard: 1 };
 
-type Rng = () => number;
-const int = (rng: Rng, lo: number, hi: number) => lo + Math.floor(rng() * (hi - lo + 1));
+export type Rng = () => number;
+export const int = (rng: Rng, lo: number, hi: number) => lo + Math.floor(rng() * (hi - lo + 1));
 
 /** Three distinct plausible wrong answers around a numeric answer. */
 function numericWrongs(answer: number, rng: Rng, spread: number[]): string[] {
@@ -137,8 +137,8 @@ function numericWrongs(answer: number, rng: Rng, spread: number[]): string[] {
   return [...out].slice(0, 3);
 }
 
-const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
-const frac = (n: number, d: number) => {
+export const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+export const frac = (n: number, d: number) => {
   const g = gcd(n, d);
   return d / g === 1 ? `${n / g}` : `${n / g}/${d / g}`;
 };
@@ -150,8 +150,8 @@ const fracValue = (s: string) => {
 };
 
 /** «12.5» from 125 at one place; trailing zeros dropped. */
-const fixedDec = (n: number, places: number) => (n / 10 ** places).toFixed(places);
-const fmtDec = (n: number, places: number) => fixedDec(n, places).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+export const fixedDec = (n: number, places: number) => (n / 10 ** places).toFixed(places);
+export const fmtDec = (n: number, places: number) => fixedDec(n, places).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
 
 /** Up to three distinct, non-negative decimals that are not the answer. */
 function distinctDecimals(answer: string, candidates: string[]): string[] {

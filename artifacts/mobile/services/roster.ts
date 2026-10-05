@@ -15,7 +15,10 @@ export interface ClassGroup {
   name: string;
   nameAr: string;
   gradeId: string;
+  /** The primary subject — `subjectIds[0]`. Read the list through `classSubjectIds` (services/classSubjects.ts). */
   subjectId: string;
+  /** Every subject taught to this class. Optional: a server older than the field omits it. */
+  subjectIds?: string[];
   academicYear: string;
   createdAt: string;
   studentCount: number;
@@ -109,7 +112,7 @@ export async function createClass(input: {
   name: string;
   nameAr?: string;
   gradeId?: string;
-  subjectId?: string;
+  subjectIds?: string[];
   academicYear?: string;
 }): Promise<ClassGroup> {
   const res = await apiFetch('/classes', {
@@ -122,7 +125,7 @@ export async function createClass(input: {
 
 export async function updateClass(
   classId: string,
-  patch: { name?: string; nameAr?: string; gradeId?: string; subjectId?: string; academicYear?: string },
+  patch: { name?: string; nameAr?: string; gradeId?: string; subjectIds?: string[]; academicYear?: string },
 ): Promise<ClassGroup> {
   const res = await apiFetch(`/classes/${classId}`, {
     method: 'PATCH',

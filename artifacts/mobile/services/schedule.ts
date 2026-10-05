@@ -12,6 +12,7 @@
 import { apiFetch } from './apiClient.ts';
 import { nextPeriodLesson, timetableSetupStep, type NextPeriodLesson, type TimetableSetupStep } from './scheduleCalendar.ts';
 import { listTeachingPlans } from './teachingPlans.ts';
+import { listClasses } from './roster.ts';
 
 export interface SchedulePeriod {
   id: string;
@@ -31,6 +32,8 @@ export interface ScheduleSlot {
   periodNumber: number;
   /** Empty slot (free period, lunch, admin time) when null. */
   classGroupId: string | null;
+  /** Which of the class's subjects this period is; '' (or absent, from an older server) = not said. */
+  subjectId?: string;
   notes: string;
 }
 
@@ -100,8 +103,14 @@ export async function loadTimetable(
   now: Date = new Date(),
 ): Promise<{ next: NextPeriodLesson | null; setup: TimetableSetupStep | null } | null> {
   try {
-    const [schedule, plans] = await Promise.all([getSchedule(), listTeachingPlans()]);
-    const next = nextPeriodLesson(now, schedule.periods, schedule.slots, plans);
+    // Classes resolve a plan with no subject of its own to its class's
+    // primary one. Best-effort: without them such a plan still matches.
+    const [schedule, plans, classes] = await Promise.all([
+      getSchedule(),
+      listTeachingPlans(),
+      listClasses().catch(() => []),
+    ]);
+    const next = nextPeriodLesson(now, schedule.periods, schedule.slots, plans, classes);
     return { next, setup: timetableSetupStep(schedule.slots, next) };
   } catch {
     return null;
@@ -133,7 +142,7 @@ export async function setScheduleSlot(
   schoolName: string,
   dayOfWeek: number,
   periodNumber: number,
-  input: { classGroupId?: string | null; notes?: string },
+  input: { classGroupId?: string | null; subjectId?: string; notes?: string },
 ): Promise<ScheduleSlot> {
   const res = await apiFetch(`/schedule/slots/${dayOfWeek}/${periodNumber}`, {
     method: 'PUT',

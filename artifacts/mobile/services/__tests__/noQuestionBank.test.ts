@@ -55,6 +55,7 @@ describe('subjects with no question bank', () => {
 
 import { KB_LESSONS, getBookForLesson } from '../knowledgeBase.ts';
 import { hasMathBank } from '../ai/mathPractice.ts';
+import { topicFor } from '@workspace/math-practice';
 
 const mathLessons = KB_LESSONS.filter(l => getBookForLesson(l)?.subjectId === 'mathematics');
 const gradeOf = (l: (typeof KB_LESSONS)[number]) => Number(getBookForLesson(l)!.gradeId.replace('grade-', ''));
@@ -69,9 +70,11 @@ describe('maths lessons: covered or refused, never off-topic filler', () => {
     assert.ok(mathLessons.some(l => !hasMathBank(l.titleAr, l)));
   });
 
-  it('Grades 7–9 maths have no bank — none of those lessons is served the Grade 10 one', () => {
-    for (const l of mathLessons.filter(l => gradeOf(l) >= 7 && gradeOf(l) <= 9)) {
-      assert.equal(hasMathBank(l.titleAr, l), false, l.titleAr);
+  it('Grades 7–9 maths are served by a lesson-specific generator or not at all — never the Grade 10 bank', () => {
+    const g79 = mathLessons.filter(l => gradeOf(l) >= 7 && gradeOf(l) <= 9);
+    assert.ok(g79.some(l => hasMathBank(l.titleAr, l)) && g79.some(l => !hasMathBank(l.titleAr, l)));
+    for (const l of g79) {
+      assert.equal(hasMathBank(l.titleAr, l), topicFor(l.titleAr, gradeOf(l)) !== null, l.titleAr);
     }
   });
 
