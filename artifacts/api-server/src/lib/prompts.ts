@@ -320,6 +320,39 @@ Return JSON in this exact shape:
 }`;
 }
 
+/**
+ * The structure a worksheet follows: a worked example the class studies, one
+ * half-solved question, then independent practice.
+ *
+ * This is the live twin of the offline worksheet in
+ * `artifacts/mobile/services/ai/generators.ts` — change one, change the other,
+ * or a teacher gets a different paper depending on whether live AI was on. The
+ * count rule is the part to keep identical: the example and the half-solved
+ * question are INSIDE the total the teacher picked, so a picker of 10 means
+ * nine questions in the sections, not eleven. Homework does not use it.
+ */
+function workedExampleRuleAr(n: number): string {
+  const q = Math.max(1, n - 1);
+  return `
+البنية المطلوبة (من المثال المحلول إلى العمل المستقل):
+1. "workedExample": مسألة من الدرس نفسه محلولة كاملًا، يدرسها الطلبة ولا يحلّونها. "steps" من 3 إلى 6 خطوات، سطر لكل خطوة، وتُذكر القاعدة عند استعمالها، وآخر خطوة فيها الناتج. "answer" هو الناتج النهائي. "selfExplain" سؤال واحد يطلب من الطالب أن يشرح بجملة لماذا كانت الخطوة الأولى صحيحة. لا تكرّر مسألة المثال في أسئلة الورقة.
+2. أول سؤال في أول قسم تدريب (بعد قسم المراجعة السابقة إن طُلب) سؤال نصف محلول: نص المسألة، ثم الخطوات الأولى مكتوبة، ثم بنود مرقّمة فارغة (__________) يكملها الطالب حتى الناتج.
+3. المثال المحلول والسؤال نصف المحلول يُحسبان ضمن عدد الأسئلة الكلي (${n}): فمجموع الأسئلة في الأقسام ${q} بالضبط (غير أسئلة المراجعة السابقة إن طُلبت)، ويقابلها العدد نفسه في answerKey.
+4. في كل عنصر من answerKey حقل "solution": مصفوفة خطوات الحل بالترتيب، سطر لكل خطوة وآخرها الناتج، ليقارن بها المعلم عمل الطالب.
+5. إن لم يكن في الدرس إجراء متعدد الخطوات يصلح نمذجته (درس تعريفات مثلًا) فاحذف "workedExample" ولا تجعل أي سؤال نصف محلول، وأعطِ ${n} سؤالًا كالمعتاد.`;
+}
+
+function workedExampleRuleEn(n: number): string {
+  const q = Math.max(1, n - 1);
+  return `
+Required structure (worked example, then faded, then independent):
+1. "workedExample": a problem from this same lesson, solved in full for the class to study, not to solve. "steps" is 3 to 6 lines, one per step, naming the rule where it is used, and the last step states the result. "answer" is the final result. "selfExplain" is one question asking the student to say in a sentence why the first step was valid. Do not repeat the example's problem among the worksheet questions.
+2. The first question of the first practice section (after the prior-knowledge review, if one is requested) is half-solved: the problem, then the first steps already written, then numbered blanks (__________) for the student to finish down to the result.
+3. The worked example and the half-solved question both count toward the total of ${n}: the sections hold exactly ${q} questions in all (not counting any prior-knowledge review questions), with the same number of answerKey entries.
+4. Every answerKey entry carries a "solution": an array of the working in order, one line per step, the last being the result, so the teacher can compare the student's work with it.
+5. If the lesson has no multi-step procedure worth modelling (a definitions-only lesson, say), omit "workedExample", make no question half-solved, and give ${n} questions as usual.`;
+}
+
 export function worksheetPromptAr(b: any): string {
   const n = b.numQuestions ?? 8;
   const isHW = b.homework;
@@ -335,10 +368,17 @@ ${difficultyClauseAr(b)}
 ${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
 ${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
+${isHW ? "" : workedExampleRuleAr(n)}
 أعد JSON بالشكل الآتي (بالعربية):
 {
   "title": "عنوان الورقة",
-  "instructions": "تعليمات عامة",
+  "instructions": "تعليمات عامة",${isHW ? "" : `
+  "workedExample": {
+    "problem": "نص مسألة محلولة كاملًا",
+    "steps": ["الخطوة الأولى", "الخطوة الثانية", "الخطوة الأخيرة وفيها الناتج"],
+    "answer": "الناتج النهائي",
+    "selfExplain": "سؤال يطلب من الطالب أن يشرح بجملة لماذا كانت الخطوة الأولى صحيحة"
+  },`}
   "sections": [
     {
       "type": "short_answer",
@@ -349,7 +389,7 @@ ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه 
     }
   ],
   "answerKey": [
-    { "num": 1, "answer": "الإجابة" }
+    { "num": 1, "answer": "الإجابة"${isHW ? "" : `, "solution": ["خطوة", "خطوة", "الناتج"]`} }
   ]
 }
 مهم: كل سؤال يجب أن يقابله عنصر في answerKey (قسم الإجابات).`;
@@ -370,10 +410,17 @@ Question types: ${types.join(", ")}
 ${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
 ${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
+${isHW ? "" : workedExampleRuleEn(n)}
 Return JSON in this exact shape:
 {
   "title": "Worksheet title",
-  "instructions": "General instructions",
+  "instructions": "General instructions",${isHW ? "" : `
+  "workedExample": {
+    "problem": "A problem, solved in full",
+    "steps": ["First step", "Second step", "Last step, ending in the result"],
+    "answer": "The final result",
+    "selfExplain": "One question asking the student to say in a sentence why the first step was valid"
+  },`}
   "sections": [
     {
       "type": "short_answer",
@@ -384,7 +431,7 @@ Return JSON in this exact shape:
     }
   ],
   "answerKey": [
-    { "num": 1, "answer": "Answer" }
+    { "num": 1, "answer": "Answer"${isHW ? "" : `, "solution": ["step", "step", "result"]`} }
   ]
 }
 Important: every question must have a matching answerKey entry.`;

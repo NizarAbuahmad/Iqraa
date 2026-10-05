@@ -24,7 +24,7 @@
  *  dressed. Mirrors SIGNATURE_KEYS in the API's `lib/variation.ts`; the two
  *  lists only need to overlap, not match — the server normalises and compares
  *  its own extraction against this one. */
-const SIGNATURE_KEYS = new Set(['title', 'text', 'question', 'objective', 'description']);
+const SIGNATURE_KEYS = new Set(['title', 'text', 'question', 'objective', 'description', 'problem']);
 
 const MAX_CHARS = 120;
 const MAX_LINES = 24;
