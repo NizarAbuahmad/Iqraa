@@ -73,9 +73,11 @@ function initialAssignments(user: { teachingAssignments?: TeachingAssignment[]; 
   return [];
 }
 
-function Chip({ label, selected, onPress, colors, accent }: {
+function Chip({ label, selected, onPress, colors, accent, oneLine }: {
   label: string; selected: boolean; onPress: () => void;
   colors: ReturnType<typeof useColors>; accent: string;
+  /** A short label that must never wrap — see the grade chips below. */
+  oneLine?: boolean;
 }) {
   return (
     <Pressable
@@ -89,6 +91,9 @@ function Chip({ label, selected, onPress, colors, accent }: {
       ]}
     >
       <Text
+        numberOfLines={oneLine ? 1 : undefined}
+        adjustsFontSizeToFit={oneLine}
+        minimumFontScale={0.85}
         style={[
           styles.chipText,
           { color: selected ? colors.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_500Medium' },
@@ -135,7 +140,9 @@ export default function SetupSubjectsScreen() {
   const align = isRTL ? 'right' : 'left';
   const grades = getPickerGrades();
   const addedGradeIds = new Set(assignments.map(a => a.gradeId));
-  const remainingGrades = grades.filter(g => !addedGradeIds.has(g.id));
+  // Highest grade first. The picker's own order is persisted state (grade-1 and
+  // grade-2 were appended after grade-3, so it reads ...3, 1, 2), so sort a copy.
+  const remainingGrades = grades.filter(g => !addedGradeIds.has(g.id)).sort((x, y) => y.level - x.level);
   // A grade card with no subjects picked isn't a valid entry, so it's dropped
   // at save time instead of blocking the whole form — see handleSubmit.
   const canSubmit = assignments.some(a => a.subjectIds.length > 0) && !saving;
@@ -284,6 +291,7 @@ export default function SetupSubjectsScreen() {
                 <Chip
                   key={g.id}
                   label={lang === 'ar' ? g.nameAr : g.name}
+                  oneLine
                   selected={false}
                   onPress={() => addGrade(g.id)}
                   colors={colors}
