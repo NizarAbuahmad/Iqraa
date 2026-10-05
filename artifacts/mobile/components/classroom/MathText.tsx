@@ -11,7 +11,7 @@
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { parseMathLine, type MathNode } from '@/services/mathRender';
+import { groupRtlSegments, isArabicLed, parseMathLine, type MathNode } from '@/services/mathRender';
 
 type Props = {
   text: string;
@@ -25,22 +25,45 @@ type Props = {
   centered?: boolean;
 };
 
-const ARABIC_LEAD = /^[\s]*[؀-ۿ]/;
-
 export function MathText({ text, fontSize, color, fontFamily = 'ReadexPro_700Bold', isRTL, centered }: Props) {
   const nodes = parseMathLine(text);
   // A line that *reads* as Arabic prose keeps its segments in RTL visual
   // order; a pure equation reads LTR even inside an Arabic deck.
-  const rtlLine = isRTL && ARABIC_LEAD.test(text);
+  const rtlLine = isRTL && isArabicLed(text);
+
+  if (rtlLine) {
+    // Reverse between Arabic phrases and equations only. Each equation stays
+    // one left-to-right group, or «3^x = 27» draws back to front.
+    return (
+      <View style={[styles.row, { flexDirection: 'row-reverse', justifyContent: 'flex-start' }]}>
+        {groupRtlSegments(nodes).map((g, i) =>
+          g.kind === 'prose' ? (
+            <Text
+              key={i}
+              style={{ fontSize, color, fontFamily, lineHeight: Math.round(fontSize * 1.4), writingDirection: 'rtl' }}
+            >
+              {g.text}
+            </Text>
+          ) : (
+            <View
+              key={i}
+              style={[styles.row, styles.mathGroup, { marginHorizontal: Math.round(fontSize * 0.25), direction: 'ltr' }]}
+            >
+              {g.nodes.map((n, j) => (
+                <Node key={j} node={n} fontSize={fontSize} color={color} fontFamily={fontFamily} />
+              ))}
+            </View>
+          ),
+        )}
+      </View>
+    );
+  }
 
   return (
     <View
       style={[
         styles.row,
-        {
-          flexDirection: rtlLine ? 'row-reverse' : 'row',
-          justifyContent: centered ? 'center' : (rtlLine ? 'flex-start' : 'flex-start'),
-        },
+        { flexDirection: 'row', justifyContent: centered ? 'center' : 'flex-start' },
       ]}
     >
       {nodes.map((n, i) => (
@@ -107,6 +130,7 @@ function Node({ node, fontSize, color, fontFamily }: {
 
 const styles = StyleSheet.create({
   row: { flexWrap: 'wrap', alignItems: 'center' },
+  mathGroup: { flexDirection: 'row', flexWrap: 'nowrap' },
   // Exponent hangs off the top of its base — flex-start against the base's
   // full line height reads as "raised" without unsupported baseline shifts.
   supRow: { flexDirection: 'row', alignItems: 'flex-start' },

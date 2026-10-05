@@ -41,6 +41,7 @@ import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { buildWorksheetHTML, buildWorksheetSlidesHTML, formatWorksheetText } from '@/services/share';
 import { EditableText } from '@/components/ui/Editable';
+import { MathParagraph } from '@/components/ui/MathParagraph';
 import { optionLetter } from '@/services/optionLabels';
 import { confirm } from '@/services/confirm';
 import { ToolHeader } from '@/components/ui/ToolHeader';
@@ -859,15 +860,21 @@ export default function WorksheetScreen() {
                 <Ionicons name="create-outline" size={15} color={ACCENT} />
                 <Text style={[styles.akTitle, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{t('workedExampleTitle')}</Text>
               </View>
-              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
-                {isolateForeignRuns(result.workedExample.problem)}
-              </Text>
+              <MathParagraph
+                text={result.workedExample.problem}
+                isRTL={isRTL}
+                containerStyle={{ marginBottom: 8 }}
+                style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}
+              />
               {result.workedExample.steps.map((step, i) => (
                 <View key={i} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start' }]}>
                   <Text style={[styles.optLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{i + 1}.</Text>
-                  <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }}>
-                    {isolateForeignRuns(step)}
-                  </Text>
+                  <MathParagraph
+                    text={step}
+                    isRTL={isRTL}
+                    containerStyle={{ flex: 1 }}
+                    style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }}
+                  />
                 </View>
               ))}
               {exampleOutcome?.verifiedBy === 'symbolic' ? (
@@ -1014,9 +1021,12 @@ export default function WorksheetScreen() {
                             {t('workedSolutionTitle')}
                           </Text>
                           {item.solution.map((line, li) => (
-                            <Text key={li} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
-                              {`${li + 1}) `}{isolateForeignRuns(line)}
-                            </Text>
+                            <MathParagraph
+                              key={li}
+                              text={`${li + 1}) ${line}`}
+                              isRTL={isRTL}
+                              style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}
+                            />
                           ))}
                         </View>
                       ) : null}
