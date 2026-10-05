@@ -650,6 +650,37 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Old English materials are redone in English when opened, 2026-10-05
+
+Follow-up to the entry below, Nizar's call: an English material saved before
+2026-10-04 is Arabic (`language: 'ar'`), and opening it now redoes it in
+English and saves the English copy **over** the Arabic one (chosen over
+keeping both; any edits to the Arabic copy go with it).
+
+`isPreEnglishMaterial` (`services/contentLanguage.ts`, tested) recognises
+one: English subject — from `formState.subjectIdx`, else the stored subject
+name — saved as `'ar'`, and a kind whose tool rebuilds it from the subject
+(lesson, worksheet, quiz, activity, slides; not flows, which cannot be
+reopened, nor prompt decks, whose language follows the teacher). موادي's
+viewer sends such an item to its tool; `hooks/useEnglishRefresh.ts` there
+waits for the old copy to load, regenerates once, and saves only a finished
+new result — a failed or cancelled run restores the old object, which is
+never saved. Slides store over the item by id (`generate` drops the
+workspace link, so the toggle would have added a copy). The list's «تعديل»
+lands on the same tool, so both ways in are covered. Not on demo builds
+(`!DEMO_MODE`): the web's templates would overwrite a real copy made on a
+phone.
+
+Also fixed: the viewer rendered every material in the UI language, so an
+English plan saved after #831 still opened with Arabic headings there. It now
+reads English-subject materials in their stored language.
+
+Verified locally (live AI is unreachable from this machine — the local key
+has no model access — so the demo gate was lifted for the run only, then
+restored): an Arabic «خطة درس: التربة» opened from the viewer came back as
+"Lesson Plan: Soil", stored as `en` over the same item, and reopening it
+stayed in the viewer with English headings; an Arabic deck came back as 14
+English slides over the same item. Mobile suite 2664 pass / 0 fail.
 ## The chat answers before it asks, and knows what موادي already holds, 2026-10-04
 
 Items 2 and 4 of the "make the chat smarter" list, plus two bugs found by
@@ -840,8 +871,8 @@ Supersedes «Every slide heading is bilingual for the English subject» below:
 `buildLessonDeck` no longer composes «مفردات الدرس · Key Vocabulary» — an
 English deck is built in English, so its headings are English only.
 
-Known limits: materials saved before this reopen with English chrome over
-their old Arabic text (regenerate them); resources a teacher pinned under an
+Known limits: materials saved before this were Arabic — redone in English
+when opened since 2026-10-05, see the entry above; resources a teacher pinned under an
 English lesson's Arabic title are not found under its English one; AI slides
 from a free prompt are English only for a teacher whose sole subject is
 English (nothing else says what the prompt is about); exams created before
