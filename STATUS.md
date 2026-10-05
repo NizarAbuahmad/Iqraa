@@ -854,6 +854,26 @@ Not checked on a device, nor with live AI. 41 cases in
 `guessAndNextStep.test.ts` and 3 more in `teachMeAsk.test.ts`, each watched
 failing first.
 
+## The English projector split an equation across two lines, 2026-10-05
+
+Found by checking the worksheet in English on a phone-width projector (the
+follow-up the previous entry left open). «Solve the equation: 2ˣ = 32» broke
+between the raised exponent and « = 32»; «Write 32 with base 2: 32 = 2⁵» left
+«2⁵» alone on a line; «…are equal: x = 3» wrapped as «x» / «= 3».
+
+- `MathText`'s left-to-right row wrapped at every node boundary. `groupLtrSegments`
+  (`services/mathRender.ts`) now moves the numbers and operators that touch a
+  raised exponent, fraction or radical into that equation's group, up to the
+  first ordinary word, so a wrap can fall between prose and an equation but
+  never inside one. A pure equation keeps the old node-level wrap, so a very
+  long one can still break.
+- A plain-text slide line has no nodes to group. `bindOperators` makes the spaces
+  around `= + × ÷ < > ≤ ≥ ≠ ≈ ± −` non-breaking (a spaced hyphen is left alone:
+  it is punctuation), applied after `isolateForeignRuns` on the projector's body
+  lines. Arabic lines get it too.
+- Checked in the browser, English and Arabic projector: every equation whole.
+  Mobile suite 2808 pass / 0 fail / 10 skipped. Not re-checked: the native app.
+
 ## A worksheet opens with a worked example, and its key shows the working, 2026-10-04
 
 Worked example → faded → independent is the best-evidenced order for novices,
