@@ -774,7 +774,7 @@ export default function QuizScreen() {
                           onPress={() => updateQuestion(i, { correctAnswer: opt })}
                           hitSlop={6}
                           accessibilityRole="button"
-                          accessibilityState={{ selected: isCorrect }}
+                          aria-selected={isCorrect}
                           accessibilityLabel={`${opt} — ${t('answer')}`}
                         >
                           <Ionicons

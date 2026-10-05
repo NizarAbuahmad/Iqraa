@@ -460,7 +460,7 @@ export default function LessonFlowScreen() {
                 .map(({ s, i }) => {
                   const active = subjectIdx === i;
                   return (
-                    <Pressable key={i} accessibilityState={{ selected: active }}
+                    <Pressable key={i} aria-selected={active}
                       onPress={() => setSubjectIdx(i)}
                       style={[styles.chip, { flexShrink: 0, backgroundColor: active ? colors.primary : colors.muted, borderColor: active ? colors.primary : colors.border }]}>
                       <Text style={[styles.chipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_500Medium' }]}>{s}</Text>

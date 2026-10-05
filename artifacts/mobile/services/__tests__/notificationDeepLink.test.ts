@@ -12,6 +12,10 @@ describe('routeFromNotificationData', () => {
     assert.equal(routeFromNotificationData({ screen: 'artifact-reports' }), '/admin/artifact-reports');
   });
 
+  it('opens «اختباراتي» for a results-release push', () => {
+    assert.equal(routeFromNotificationData({ screen: 'my-exams' }), '/my-exams');
+  });
+
   it('ignores screens that are not whitelisted and malformed data', () => {
     assert.equal(routeFromNotificationData({ screen: '/admin/dashboard' }), null);
     assert.equal(routeFromNotificationData({ screen: 'toString' }), null);

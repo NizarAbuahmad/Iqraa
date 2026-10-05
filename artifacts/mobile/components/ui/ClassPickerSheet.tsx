@@ -181,7 +181,8 @@ export function ClassPickerSheet({
                     },
                   ]}
                   accessibilityRole={multiple ? 'checkbox' : 'button'}
-                  accessibilityState={multiple ? { checked: on } : { selected: current }}
+                  aria-checked={multiple ? on : undefined}
+                  aria-selected={multiple ? undefined : current}
                 >
                   <Ionicons
                     name={multiple ? (on ? 'checkbox' : 'square-outline') : (current ? 'checkmark-circle' : 'people-outline')}
@@ -259,7 +260,7 @@ export function ClassPickerSheet({
                 if (picks.length > 0) onPick(picks);
               }}
               disabled={selected.length === 0}
-              accessibilityState={{ disabled: selected.length === 0 }}
+              aria-disabled={selected.length === 0}
               style={[
                 styles.btn,
                 styles.confirm,
