@@ -178,6 +178,10 @@ export interface WorksheetOutput {
    *  `servedReason` in api-server's routes/generate.ts. The screen must say so
    *  rather than present a repeat as newly generated. */
   servedReason?: 'quota' | 'budget';
+  /** Present when the lesson's question bank ran out before the requested
+   *  count, so the paper is shorter than asked for. The screen says so — a
+   *  short paper with no explanation reads as a bug. */
+  shortfall?: { requested: number; produced: number };
 }
 
 export interface WorksheetSection {
@@ -224,6 +228,9 @@ export interface QuizOutput {
    *  `servedReason` in api-server's routes/generate.ts. The screen must say so
    *  rather than present a repeat as newly generated. */
   servedReason?: 'quota' | 'budget';
+  /** Present when the lesson's question bank ran out before the requested
+   *  count — see `WorksheetOutput.shortfall`. */
+  shortfall?: { requested: number; produced: number };
 }
 
 export interface QuizQuestion {
