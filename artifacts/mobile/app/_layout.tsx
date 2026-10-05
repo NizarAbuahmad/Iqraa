@@ -31,7 +31,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { hasSeenAppIntro } from '@/services/appIntro';
-import { CLAIM_REQUIRED_ROUTE, isEntryRoute, isNonTeacherRoute, isPublicRoute, needsRosterClaim, needsTeacherSetup, TEACHER_SETUP_ROUTE } from '@/services/routeGating';
+import { CLAIM_REQUIRED_ROUTE, isEntryRoute, isNonTeacherRoute, isPublicRoute, needsRosterClaim, needsTeacherSetup, needsTermsAcceptance, TEACHER_SETUP_ROUTE, TERMS_ROUTE } from '@/services/routeGating';
+import { LEGAL_VERSION } from '@/constants/legal';
 import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackEvent, trackScreen } from '@/services/analytics';
 import { subscribeToGenerations } from '@/services/ai/aiProvenance';
 
@@ -66,6 +67,20 @@ function RootLayoutNav() {
     // signed-out one would send them to a login screen they can never pass,
     // and the signed-in one would yank a teacher testing the link to the tabs.
     if (isPublicRoute(pathname)) {
+      wasLoading.current = false;
+      wasSignedIn.current = signedIn;
+      return;
+    }
+
+    // An account that has not accepted the current terms of use and privacy
+    // policy — they changed since it did, or it never did — is held on
+    // `/accept-terms` before anything else, including the two gates below: the
+    // first thing a person should be asked is the thing that governs the rest.
+    // `/legal/*` stays reachable (public routes returned above), so they can
+    // read what they are accepting. Skipped for a user that carries no version
+    // at all — see `needsTermsAcceptance`.
+    if (signedIn && user && needsTermsAcceptance(user, LEGAL_VERSION) && pathname !== TERMS_ROUTE) {
+      router.replace(TERMS_ROUTE as any);
       wasLoading.current = false;
       wasSignedIn.current = signedIn;
       return;
@@ -199,6 +214,7 @@ function RootLayoutNav() {
       <Stack.Screen name="faq" options={{ headerShown: false }} />
       <Stack.Screen name="suggest-feature" options={{ headerShown: false }} />
       <Stack.Screen name="join-class" options={{ headerShown: false }} />
+      <Stack.Screen name="accept-terms" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="claim-required" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="setup-subjects" options={{ headerShown: false, gestureEnabled: false }} />
     </Stack>

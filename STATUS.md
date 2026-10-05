@@ -15058,7 +15058,8 @@ they are missing every new account fails to insert. `pnpm --filter
 
 **Not done:** accounts created before this have no record (`terms_accepted_at`
 null) and are not asked to accept; re-acceptance when the wording changes is
-a separate flow. Apps that have not relaunched since the merge still send no
+a separate flow — built 2026-10-05, see «Existing accounts accept the terms
+again; no AI chat for students». Apps that have not relaunched since the merge still send no
 acceptance and are refused with a generic error until the over-the-air update
 reaches them (published on every merge to main).
 
@@ -15335,4 +15336,62 @@ through the class code: the released exam shows its result, an unreleased one
 «سُلِّم — بانتظار النتيجة», no row has a link, and the parent is refused
 `/student/exams`. The release's recipients include both the student's own
 account and the guardian. The push itself was not sent locally.
+
+## Existing accounts accept the terms again; no AI chat for students, 2026-10-05
+
+Two owner decisions, 2026-10-05.
+
+**No AI chat for students, for now.** `POST /chat` answered any signed-in
+role. The app never offered it to a student (the iQra tab is hidden) and the
+published terms say a student account reaches no AI generation, but the route
+itself said yes to a student's client or a hand-built request — and `mode:
+"student"` even had a prompt waiting. It now answers a student 403
+`student_chat_off` (`index.ts`, before the rate limiter), behind
+`STUDENT_CHAT` (`lib/features.ts`, off unless exactly `"true"`, tested like
+`STUDENT_ACCOUNTS`). Turning it back on is that one variable; the student
+prompt, the `AI_STUDENT_BUDGET_USD` allowance and the usage kind are untouched.
+**Parents are not gated:** a parent still reaches `/chat` at the API (no screen
+offers it). That was not part of the decision; say if it should be.
+
+**Existing accounts accept the terms again.** An account is held on a blocking
+`/accept-terms` screen until it has accepted the wording this build carries
+(`LEGAL_VERSION`), whenever that is newer than what the account recorded.
+- **Bump `LEGAL_VERSION` and `LEGAL_LAST_UPDATED` together in
+  `constants/legal.ts` and every account is asked again** on its next launch;
+  `legalVersion.test.ts` keeps the pair honest. No server change is needed: the
+  wording lives in the app, so the app is what knows it is newer.
+- `needsTermsAcceptance` (`services/routeGating.ts`) is the rule; the layout
+  checks it before the roster-claim and teacher-setup gates, so «أوافق» is the
+  first thing asked. `/legal/*` stays reachable from the screen. A user object
+  with no `termsVersion` at all (an older server, a profile cached before the
+  field) is never held — that server has no accept route either.
+- `POST /auth/accept-terms` (`termsReacceptance`, tested): the version must be
+  date-shaped and not later than tomorrow UTC; it never moves the record
+  backwards (an outdated build re-sending its own older version is told "no
+  change"); the same version twice keeps the first timestamp; the update is
+  conditional on the version just read, so two devices accepting at once record
+  one acceptance. `termsVersion` is now served at every sign-in and on `/me`
+  (with `termsAcceptedAt`), so the gate does not wait for a cold start.
+- **It is a client gate.** Server-side, sign-up still refuses a new account
+  without acceptance; for an existing one the server records and validates but
+  does not refuse API calls from an account that has not accepted — a build
+  without this screen, or a hand-built request, is not stopped. Refusing every
+  call until accepted would also have bricked builds that do not know the code.
+
+**Every existing account is asked once, on its first launch after this
+deploys.** Accounts from before 2026-10-03 carry no record at all
+(`terms_version` empty), so they are behind every version — including the
+current one. That is the point (a consent nobody can show is not a consent) and
+it is also every teacher seeing a screen on a Monday. To spare accounts with no
+record and ask only on future changes, treat `''` as current in
+`needsTermsAcceptance` and `isBehindTerms`.
+
+Verified against the local stack: an account with no record and one on older
+wording are held on `/accept-terms` (a deep link to `/my-exams` bounces back);
+`/legal/terms` opens and returns; the box ticks from its sentence; a failed
+call keeps the account on the screen with the connection message; «أوافق» on
+success records `2026-09-06` with the time and releases the account; the same
+account is not asked again; a teacher already on the current version never sees
+it. A student `/chat` call gets 403 `student_chat_off`; a teacher's passes the
+guard.
 

@@ -84,6 +84,13 @@ export interface User {
    */
   hasRosterLink?: boolean;
   /**
+   * The terms-of-use wording this account last accepted — a date such as
+   * '2026-09-06', or '' for an account with no record. Absent means the server
+   * did not say (an older one), which must never gate: see
+   * `needsTermsAcceptance` in services/routeGating.ts, the gate it feeds.
+   */
+  termsVersion?: string;
+  /**
    * Grade/subject catalog ids (`@workspace/curriculum`'s GRADES/SUBJECTS)
    * this teacher picked at signup, editable later from the profile screen.
    * Both empty is what `needsTeacherSetup` (routeGating.ts) reads to send a
@@ -185,6 +192,14 @@ interface AuthContextType {
    */
   markRosterClaimed: () => void;
   /**
+   * Accepts the terms of use and privacy policy this build carries
+   * (`LEGAL_VERSION`) for the signed-in account — the «أوافق» on
+   * `/accept-terms`. Records on the server first and only then clears the
+   * gate locally, so a failed call leaves the account where it was. Throws
+   * the server's `ApiError` on failure.
+   */
+  acceptTerms: () => Promise<void>;
+  /**
    * Changes the role picked at signup. The server (POST /auth/role) allows it
    * only while this account has claimed no roster row — i.e. exactly while the
    * gate is holding it on `/claim-required`, which is the only screen that
@@ -225,6 +240,7 @@ type ApiUser = {
   createdAt: string;
   lastLogin?: string;
   hasRosterLink?: boolean;
+  termsVersion?: string;
   gradeIds?: string[];
   subjectIds?: string[];
   teachingAssignments?: TeachingAssignment[];
@@ -243,6 +259,7 @@ function toUser(apiUser: ApiUser): User {
     avatarUrl: apiUser.avatarUrl ?? null,
     createdAt: apiUser.createdAt,
     hasRosterLink: apiUser.hasRosterLink,
+    termsVersion: apiUser.termsVersion,
     gradeIds: apiUser.gradeIds ?? [],
     subjectIds: apiUser.subjectIds ?? [],
     teachingAssignments: apiUser.teachingAssignments ?? [],
@@ -653,6 +670,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(u => (u ? { ...u, hasRosterLink: true } : u));
   }, []);
 
+  const acceptTerms = useCallback(async () => {
+    const res = await apiJson<{ termsVersion: string }>('/auth/accept-terms', {
+      method: 'POST',
+      body: JSON.stringify({ termsVersion: LEGAL_VERSION }),
+    });
+    // What the server now holds, not what was sent: for an outdated build
+    // (older LEGAL_VERSION than the account's) those differ, and the gate has
+    // to compare against the record.
+    setUser(u => (u ? { ...u, termsVersion: res.termsVersion } : u));
+  }, []);
+
   const switchRole = useCallback(async (role: 'teacher' | 'parent' | 'student') => {
     const updated = await apiJson<{ role: UserRole; hasRosterLink?: boolean }>('/auth/role', {
       method: 'POST',
@@ -817,6 +845,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         removeAvatar,
         deleteAccount,
         markRosterClaimed,
+        acceptTerms,
         switchRole,
         savedAccounts,
         switchAccount,

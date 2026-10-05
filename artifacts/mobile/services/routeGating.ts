@@ -79,6 +79,9 @@ const NON_TEACHER_ROUTES = [
   // «اقترح ميزة» is linked from the profile tab for every role, like /faq.
   '/suggest-feature',
   '/delete-account',
+  // The terms an account has to accept again; every role reaches it, and the
+  // gate below sends them there before anything else.
+  '/accept-terms',
   // «اختباراتي» for a student, «نتائج أبنائي» for a parent — one screen,
   // reading /student/exams or /parent/exams by role.
   '/my-exams',
@@ -115,6 +118,35 @@ export function isEntryRoute(pathname: string | null | undefined): boolean {
   // to preserve, and failing the other way would strand the teacher nowhere.
   if (!pathname || pathname === '/') return true;
   return ENTRY_ROUTES.some(p => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+/** Where a signed-in account that has not accepted the current terms is held. */
+export const TERMS_ROUTE = '/accept-terms';
+
+/**
+ * Whether this account has to accept the terms of use and privacy policy
+ * before it goes any further — because the wording changed since it did, or
+ * because it never has (every account from before 2026-10-03 carries no
+ * version at all).
+ *
+ * `current` is the wording this build ships (`LEGAL_VERSION`); the account's
+ * `termsVersion` is what the server recorded. Dates compare as strings.
+ *
+ * `undefined` means "not answered": a server from before this field existed,
+ * or a cached profile saved before it. That must not trap anyone on a screen
+ * whose accept call the same old server would not understand, so only an
+ * actual string — including the empty "never accepted" one — can trigger the
+ * gate. A version the server holds that this build does not recognise as a
+ * date ("unspecified", from a sign-up that sent a malformed one) ranks as
+ * never accepted, matching `isBehindTerms` on the server.
+ */
+export function needsTermsAcceptance(
+  user: { termsVersion?: string | null } | null | undefined,
+  current: string,
+): boolean {
+  if (!user || typeof user.termsVersion !== 'string') return false;
+  const rank = /^\d{4}-\d{2}-\d{2}(\.[a-z0-9]{1,8})?$/.test(user.termsVersion) ? user.termsVersion : '';
+  return rank < current;
 }
 
 /** The one screen a signed-in parent/student with no roster link may reach. */

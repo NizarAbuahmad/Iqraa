@@ -29,7 +29,8 @@
  *
  * What the student surface actually is, and what §5 below relies on: messaging
  * and the curriculum tab. iQra and the AI tools are hidden from these roles and
- * refused server-side. A direct thread always has exactly one teacher and one
+ * refused server-side — for a student `/chat` too since 2026-10-05, behind
+ * `STUDENT_CHAT` (`features.ts`); before that the route answered any role. A direct thread always has exactly one teacher and one
  * non-teacher, and a group is announcement-only until its owning teacher
  * enables student posting — so no student-to-student channel exists. If any of
  * that changes, §5 and the conduct rules are wrong until they are rewritten.

@@ -31,3 +31,27 @@
 export function studentAccountsEnabled(): boolean {
   return process.env.STUDENT_ACCOUNTS === "true";
 }
+
+/**
+ * Whether a student account may talk to the AI assistant (`POST /chat`).
+ *
+ * **Off unless explicitly enabled** — owner decision, 2026-10-05: no AI chat
+ * for students for now. A student is a minor, and a free-text model that
+ * answers a child is its own review (what it may say, what is logged, whose
+ * allowance pays), not a side effect of having a student account.
+ *
+ * The app never offered it — the iQra tab is hidden from students — but the
+ * route used to answer any signed-in role, so a student's client (or a
+ * hand-built request) could reach it, and `mode: "student"` in the body even
+ * had a prompt waiting. This is the server saying no, which a hidden tab is
+ * not. Turning it back on is `STUDENT_CHAT=true`; the student prompt, the
+ * `AI_STUDENT_BUDGET_USD` allowance and the usage kind are all still there.
+ */
+export function studentChatEnabled(): boolean {
+  return process.env.STUDENT_CHAT === "true";
+}
+
+/** Whether this signed-in role may use `/chat` at all. Only students are gated. */
+export function chatAllowedFor(role: string | undefined): boolean {
+  return role === "student" ? studentChatEnabled() : true;
+}

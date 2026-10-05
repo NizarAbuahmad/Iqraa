@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isEntryRoute, isNonTeacherRoute, isPublicRoute, needsRosterClaim, needsTeacherSetup } from '../routeGating.ts';
+import { isEntryRoute, isNonTeacherRoute, isPublicRoute, needsRosterClaim, needsTeacherSetup, needsTermsAcceptance } from '../routeGating.ts';
 
 describe('isEntryRoute', () => {
   it('treats the auth and onboarding routes as entries', () => {
@@ -238,5 +238,38 @@ describe('needsTeacherSetup', () => {
   it('fails open on no user', () => {
     assert.equal(needsTeacherSetup(null), false);
     assert.equal(needsTeacherSetup(undefined), false);
+  });
+});
+
+describe('needsTermsAcceptance', () => {
+  const CURRENT = '2026-10-05';
+
+  it('holds an account that never accepted anything', () => {
+    // '' is every account from before 2026-10-03; 'unspecified' a sign-up that
+    // sent a malformed version. Neither names a wording anyone saw.
+    assert.equal(needsTermsAcceptance({ termsVersion: '' }, CURRENT), true);
+    assert.equal(needsTermsAcceptance({ termsVersion: 'unspecified' }, CURRENT), true);
+  });
+
+  it('holds an account on older wording, and releases it on the current or a newer one', () => {
+    assert.equal(needsTermsAcceptance({ termsVersion: '2026-09-06' }, CURRENT), true);
+    assert.equal(needsTermsAcceptance({ termsVersion: '2026-10-05' }, CURRENT), false);
+    assert.equal(needsTermsAcceptance({ termsVersion: '2026-10-05.b' }, CURRENT), false);
+    // An outdated build must not trap someone who accepted on a newer one.
+    assert.equal(needsTermsAcceptance({ termsVersion: '2026-11-01' }, CURRENT), false);
+  });
+
+  it('never traps anyone on "not answered"', () => {
+    // A server from before the field existed, or a profile cached before it:
+    // its accept route would not exist either.
+    assert.equal(needsTermsAcceptance({}, CURRENT), false);
+    assert.equal(needsTermsAcceptance({ termsVersion: undefined }, CURRENT), false);
+    assert.equal(needsTermsAcceptance({ termsVersion: null }, CURRENT), false);
+    assert.equal(needsTermsAcceptance(null, CURRENT), false);
+    assert.equal(needsTermsAcceptance(undefined, CURRENT), false);
+  });
+
+  it('lets every role reach the screen it sends them to', () => {
+    assert.equal(isNonTeacherRoute('/accept-terms'), true);
   });
 });
