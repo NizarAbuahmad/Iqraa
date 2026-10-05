@@ -47,6 +47,7 @@ import {
   formatLessonPlanText,
   shareAsText,
 } from '@/services/share';
+import { exportFilename } from '@/services/exportFilename';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { Button } from '@/components/ui/Button';
 import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
@@ -238,7 +239,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
     try {
       await exportAsPDF(
         buildLessonPlanHTML(result, exportTitle, exportMeta, lang === 'ar'),
-        exportTitle.replace(/[^\w\s]/g, '').trim(),
+        exportFilename(exportTitle),
       );
     } catch {
       showToast(t('generationFailed'));
@@ -253,7 +254,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
     try {
       await exportAsWord(
         formatLessonPlanText(result, exportTitle, exportMeta, lang === 'ar'),
-        exportTitle.replace(/[^\w\s]/g, '').trim(),
+        exportFilename(exportTitle),
         lang === 'ar',
       );
     } catch {
@@ -269,7 +270,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
     try {
       await exportAsPDF(
         buildLessonPlanSlidesHTML(result, exportTitle, exportMeta, lang === 'ar'),
-        (exportTitle + '-slides').replace(/[^\w\s-]/g, '').trim(),
+        exportFilename(exportTitle, '-slides'),
       );
     } catch {
       showToast(t('generationFailed'));

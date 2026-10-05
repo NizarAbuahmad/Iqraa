@@ -187,6 +187,7 @@ router.put("/schedule/slots/:dayOfWeek/:periodNumber", async (req: Authenticated
         dayOfWeek,
         periodNumber,
         classGroupId: classGroupId ?? null,
+        subjectId: input.subjectId ?? "",
         notes: input.notes ?? "",
       })
       .onConflictDoUpdate({
@@ -196,6 +197,13 @@ router.put("/schedule/slots/:dayOfWeek/:periodNumber", async (req: Authenticated
           // turned that into undefined too), so an update that only sends
           // `notes` must not blank out the class already sitting in this slot.
           ...(classGroupId !== undefined ? { classGroupId } : {}),
+          // A new class without a subject clears the old one: the previous
+          // class's «العربية» says nothing about the class now in the slot.
+          ...(input.subjectId !== undefined
+            ? { subjectId: input.subjectId }
+            : classGroupId !== undefined
+              ? { subjectId: "" }
+              : {}),
           ...(input.notes !== undefined ? { notes: input.notes } : {}),
           updatedAt: new Date(),
         },

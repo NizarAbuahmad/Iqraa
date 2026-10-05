@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import {
   getAccessToken,
   getRefreshToken,
@@ -18,6 +19,7 @@ import { setActiveMediaUser } from '@/services/lessonMedia';
 import { setActiveWorkspaceUser } from '@/services/workspace';
 import { readUserSnapshot, saveUserSnapshot } from '@/services/userSnapshot';
 import { queryClient } from '@/services/queryClient';
+import { isTokenRemovedByOtherTab } from '@/services/sessionLoss';
 import { isSavedFull, sortSavedAccounts, type SavedAccountMeta } from '@/services/accountList';
 import {
   getSavedRefreshToken,
@@ -308,6 +310,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       redirectToLogin.current?.();
     });
+  }, []);
+
+  // Web only: tokens live in localStorage, which every tab on the origin
+  // shares. Signing out (or adding an account) in one tab clears them under
+  // the others, which would keep showing a user whose requests all 401.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const onStorage = (e: StorageEvent) => {
+      if (!isTokenRemovedByOtherTab(e)) return;
+      queryClient.clear();
+      setUser(null);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   // On mount: try to restore session from stored access token

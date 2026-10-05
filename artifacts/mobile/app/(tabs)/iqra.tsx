@@ -30,7 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAuth } from '@/context/AuthContext';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   KBLesson,
   getBookForLesson,
@@ -124,6 +124,7 @@ import { formatNextPeriod } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
 import { listClasses, type ClassGroup } from '@/services/roster';
 import { classNameFor } from '@/services/materialClass';
+import { periodClassLabel } from '@/services/classSubjects';
 import { answerAppHelp } from '@/services/appHelp';
 import { TOOL_ASK_TARGETS, toolAskFromQuery, toolAskReply } from '@/services/chatToolAsk';
 import { formatInfographicText, isInfographicAsk } from '@/services/ai/infographic';
@@ -146,6 +147,7 @@ import {
   pinLesson,
   resolvePickedLesson,
   resourceRoute,
+  defaultLessonIdFor,
   seedDefaultLessonMemory,
   softPinIfUnpinned,
   shouldReuseActiveLesson,
@@ -390,6 +392,7 @@ function ContextBanner({
   const [modalOpen, setModalOpen] = useState(false);
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
+  const { user } = useAuth();
   const [subjIdx, setSubjIdx] = useState(teacherScope.defaultScope.subjectIdx);
   const [gradeId, setGradeId] = useState(teacherScope.defaultIds.gradeId);
   const topic = currentTopic;
@@ -630,6 +633,27 @@ function ContextBanner({
                 );
               })}
             </View>
+
+            {/* Where to go to widen the pills above: they are masked to the
+                teacher's /setup-subjects choice, so a missing grade or subject
+                otherwise looks like a bug. Teacher-only — nobody else has a scope. */}
+            {isTeacherRole(user?.role) ? (
+              <Text style={{
+                marginTop: 14, fontSize: 12, lineHeight: 18, color: colors.mutedForeground,
+                fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left',
+              }}>
+                {t('pickerScopeNote')}{' '}
+                <Text
+                  onPress={() => {
+                    setOpen(false);
+                    router.push({ pathname: '/setup-subjects', params: { mode: 'edit' } } as any);
+                  }}
+                  style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', textDecorationLine: 'underline' }}
+                >
+                  {t('editTeachingTitle')}
+                </Text>
+              </Text>
+            ) : null}
 
             {/* Topic selector — no section header here: TopicSelector renders its
                 own «موضوع الدرس» label, so one field carried two labels. The
@@ -1392,7 +1416,7 @@ export default function IqraScreen() {
   const teachingCtxRef = useRef(teachingCtx);
   /** Session memory for collaborative Demo Mode chat (active lesson + prior asks). */
   const [sessionMemory, setSessionMemory] = useState<ChatSessionMemory>(() =>
-    seedDefaultLessonMemory(emptyChatSessionMemory()),
+    seedDefaultLessonMemory(emptyChatSessionMemory(), defaultLessonIdFor(user?.teachingAssignments)),
   );
   const [sessionDocs, setSessionDocs] = useState<SessionDocument[]>(() => getSessionDocuments());
   /** Composer-only shortcuts — cleared as soon as the teacher taps one or sends a message. */
@@ -1716,7 +1740,7 @@ export default function IqraScreen() {
 
   // Welcome message on mount / language change — reset session, keep one default active lesson
   useEffect(() => {
-    setSessionMemory(seedDefaultLessonMemory(emptyChatSessionMemory()));
+    setSessionMemory(seedDefaultLessonMemory(emptyChatSessionMemory(), defaultLessonIdFor(user?.teachingAssignments)));
     clearSessionDocuments();
     setEphemeralSuggestions([]);
     setLessonCardCollapsed(true);
@@ -1746,7 +1770,7 @@ export default function IqraScreen() {
       setPeriodLine('');
       if (fromSchedule && next) {
         listClasses()
-          .then(classes => classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'))
+          .then(classes => periodClassLabel(classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'), next.subjectId, lang))
           .catch(() => null)
           .then(classLabel => setPeriodLine(formatNextPeriod(next, {
             classLabel, today: todayISO(), lang: lang as 'ar' | 'en',
@@ -3937,7 +3961,7 @@ export default function IqraScreen() {
         onWord={async () => {
           setLoadingWord(true);
           try {
-            await exportAsWord(exportText, `iqra-${Date.now()}.docx`, isRTL);
+            await exportAsWord(exportText, `iqra-${Date.now()}`, isRTL);
           } finally {
             setLoadingWord(false);
             setExportVisible(false);

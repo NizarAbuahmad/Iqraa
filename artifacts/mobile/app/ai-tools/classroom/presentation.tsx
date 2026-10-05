@@ -31,11 +31,12 @@ import {
   canTogglePause, slideIsRTL, tickTimer, timerColor, timerSecondsForSlide, timerShouldTick, toggleFullscreen,
 } from '@/services/presentationUtils';
 import { openExternal } from '@/services/externalLinks';
-import Svg, { Line, Polyline, Rect } from 'react-native-svg';
+import Svg, { Circle, Line, Path, Polyline, Rect } from 'react-native-svg';
+import { DECK_ICON_SHAPES, iconForGlyph, type DeckIconName } from '@/services/deckIcons';
 import { plotGeometry, visualForSlide } from '@/services/deckVisuals';
 // Shared with both exports so the projected slide and the exported one cannot
 // disagree about what a bullet, an equation or a section glyph is.
-import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet } from '@/services/deckText';
+import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet, workingSteps } from '@/services/deckText';
 import { resolveSlideLayout } from '@/services/slideLayout';
 import { openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
@@ -46,7 +47,7 @@ import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/c
 import { MathText } from '@/components/classroom/MathText';
 import { VerifiedBadge } from '@/components/classroom/VerifiedBadge';
 import { PEN_COLORS, PenCanvas, PenPalette, type Stroke } from '@/components/classroom/PenLayer';
-import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
+import { bindOperators, hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
 import { goBack } from '@/services/navigation';
 import { confirm } from '@/services/confirm';
 
@@ -535,10 +536,84 @@ function QuestionOptions({
 
 // ─── Slide Content ────────────────────────────────────────────────────────────
 /**
+ * A section icon, drawn from `deckIcons.ts` — the table the PDF export draws
+ * the same icons from, so the handout and the projector cannot disagree about
+ * what a section's picture is. Decorative: the heading beside it carries the
+ * meaning, so it is hidden from the accessibility tree.
+ */
+function DeckIcon({ name, color, size }: { name: DeckIconName; color: string; size: number }) {
+  return (
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      {DECK_ICON_SHAPES[name].map((s, i) => {
+        if (s.t === 'path') return <Path key={i} d={s.d} />;
+        if (s.t === 'circle') return <Circle key={i} cx={s.cx} cy={s.cy} r={s.r} />;
+        return <Rect key={i} x={s.x} y={s.y} width={s.w} height={s.h} />;
+      })}
+    </Svg>
+  );
+}
+
+/** One line of worked answer — math-aware, the same choice the reveal makes for a single line. */
+function WorkingLine({ text, size, bold, isRTL }: { text: string; size: number; bold?: boolean; isRTL: boolean }) {
+  const fontFamily = bold ? 'ReadexPro_700Bold' : 'ReadexPro_500Medium';
+  return hasRenderableMath(text) ? (
+    <MathText text={text} fontSize={size} color={TEXT_PRIMARY} fontFamily={fontFamily} isRTL={isRTL} />
+  ) : (
+    <Text
+      style={[
+        styles.revealText,
+        { fontSize: size, fontFamily, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
+      ]}
+    >
+      {isolateForeignRuns(text)}
+    </Text>
+  );
+}
+
+/**
+ * A worked example's answer as numbered working with the result beneath.
+ * `workingSteps` splits the book's `working → … → answer` chain; the caller
+ * only renders this when it can, so a plain answer keeps its one line.
+ */
+function WorkingAnswer({ answer, isRTL }: { answer: string; isRTL: boolean }) {
+  const working = workingSteps(answer);
+  if (!working) return null;
+  return (
+    <View style={{ gap: 8 }}>
+      {working.steps.map((step, i) => (
+        <View key={i} style={[styles.workingRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.workingNum, { backgroundColor: TIMER_GREEN }]}>
+            <Text style={styles.workingNumText}>{i + 1}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <WorkingLine text={step} size={16} isRTL={isRTL} />
+          </View>
+        </View>
+      ))}
+      <View style={[styles.workingFinal, { borderTopColor: TIMER_GREEN + '60' }]}>
+        <WorkingLine text={working.final} size={18} bold isRTL={isRTL} />
+      </View>
+    </View>
+  );
+}
+
+/**
  * `isRTL` is the slide's own direction (`slideIsRTL`, computed once by the
  * screen), not the app's — an English-subject check reads left-to-right even
  * in the Arabic app. See `slideIsRTL` for why.
  */
+
 function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
   // Only for the teacher-led cue below. `isRTL` stays the prop: it follows
   // the slide's own payload, not the app's UI language.
@@ -556,6 +631,9 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
   const edge = isRTL ? ('flex-end' as const) : ('flex-start' as const);
   const lines = slide.content.split('\n').map(l => l.trim()).filter(Boolean);
   const [glyph, heading] = splitEmoji(slide.title);
+  // The section icon the PDF draws for this glyph, from the same table; null
+  // keeps the emoji for the playful glyphs that have no entry.
+  const glyphIcon = iconForGlyph(glyph);
 
   // A slide that asked to be drawn in a particular shape. Sits above the cover
   // check because a deck's first slide can legitimately be a statement, and
@@ -691,7 +769,11 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
       <View style={[slideStyles.headRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {!!glyph && (
           <View style={[slideStyles.glyphChip, { backgroundColor: accent + '18', borderColor: accent + '33' }]}>
-            <Text style={slideStyles.glyph}>{glyph}</Text>
+            {glyphIcon ? (
+              <DeckIcon name={glyphIcon} color={accent} size={24} />
+            ) : (
+              <Text style={slideStyles.glyph}>{glyph}</Text>
+            )}
           </View>
         )}
         <Text
@@ -727,7 +809,7 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
                     { textAlign: align, writingDirection: dir, fontFamily: 'Almarai_400Regular' },
                   ]}
                 >
-                  {isolateForeignRuns(text)}
+                  {bindOperators(isolateForeignRuns(text))}
                 </Text>
               </View>
             );
@@ -765,7 +847,7 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
                     { writingDirection: dir, fontFamily: 'ReadexPro_700Bold' },
                   ]}
                 >
-                  {isolateForeignRuns(text)}
+                  {bindOperators(isolateForeignRuns(text))}
                 </Text>
               </View>
             );
@@ -786,7 +868,7 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
                 },
               ]}
             >
-              {isolateForeignRuns(text)}
+              {bindOperators(isolateForeignRuns(text))}
             </Text>
           );
         })}
@@ -1356,7 +1438,9 @@ export default function PresentationScreen() {
               {/* Same split as the hint: chrome above, the slide's text here. */}
               {answerVisible && (
                 <View style={[styles.revealContent, { borderColor: TIMER_GREEN + '40', backgroundColor: TIMER_GREEN + '10' }]}>
-                  {hasRenderableMath(slide.answer) ? (
+                  {workingSteps(slide.answer) ? (
+                    <WorkingAnswer answer={slide.answer} isRTL={slideRTL} />
+                  ) : hasRenderableMath(slide.answer) ? (
                     <MathText
                       text={slide.answer}
                       fontSize={18}
@@ -1573,6 +1657,10 @@ const styles = StyleSheet.create({
   revealBtnText: { fontSize: 14 },
   revealContent: { padding: 14, borderRadius: 10, borderWidth: 1 },
   revealText: { fontSize: 14, color: TEXT_PRIMARY, lineHeight: 22 },
+  workingRow: { alignItems: 'center', gap: 10 },
+  workingNum: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  workingNumText: { color: '#FFFFFF', fontSize: 13, fontFamily: 'ReadexPro_700Bold' },
+  workingFinal: { borderTopWidth: 1, paddingTop: 8 },
   bottomBar: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: BORDER, backgroundColor: CARD_BG },
   navBtnWide: { alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 110, height: 46, borderRadius: 23, paddingHorizontal: 16 },
   // 92 fits «التالي»/«السابق» plus the chevron at 360dp with the two
