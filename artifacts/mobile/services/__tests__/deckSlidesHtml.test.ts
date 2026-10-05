@@ -574,3 +574,30 @@ describe('fitBodyPx', () => {
     assert.equal(fitBodyPx(['', '  ']), 26);
   });
 });
+
+describe('buildDeckSlidesHTML — a worked example’s answer chain', () => {
+  const example = (answer: string): ActivitySlide => ({
+    slideNumber: 2, type: 'challenge', title: 'مثال 1', content: 'y = 2x−5 و y = x²−5x+7',
+    durationSeconds: 60, answer,
+  });
+  const render = (answer: string) => markup(buildDeckSlidesHTML(deck([titleSlide, example(answer)]), true));
+
+  it('numbers the working one step per row and sets the result apart', () => {
+    const html = render('2x−5 = x²−5x+7 → x²−7x+12=0 → x=3 أو x=4');
+    assert.equal((html.match(/class="deck-working-row"/g) ?? []).length, 2);
+    assert.match(html, /deck-working-num[^>]*>1</);
+    assert.match(html, /deck-working-num[^>]*>2</);
+    assert.match(html, /class="deck-eq deck-final"/);
+    assert.match(stripIsolates(html), /deck-final[^>]*>x=3 أو x=4</);
+  });
+
+  it('keeps an answer with no working as the one line it was', () => {
+    const html = render('x=4 أو x=3');
+    assert.doesNotMatch(html, /deck-working|deck-final/);
+    assert.match(stripIsolates(html), /class="deck-eq">x=4 أو x=3</);
+  });
+
+  it('keeps a reaction on one line — an arrow is not always working', () => {
+    assert.doesNotMatch(render('N₂ + 3H₂ → 2NH₃'), /deck-working-row/);
+  });
+});

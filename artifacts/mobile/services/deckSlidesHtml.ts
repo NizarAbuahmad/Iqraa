@@ -17,7 +17,7 @@
  * so it's directly testable.
  */
 import { visualForSlide, visualToSvg } from './deckVisuals.ts';
-import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet } from './deckText.ts';
+import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet, workingSteps } from './deckText.ts';
 import { resolveSlideLayout } from './slideLayout.ts';
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { hasRenderableMath, isolateForeignRuns, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
@@ -150,6 +150,27 @@ export function fitBodyPx(lines: readonly string[]): number {
   return FIT_SIZES_PX[FIT_SIZES_PX.length - 1];
 }
 
+/**
+ * The body of a worked example's answer card.
+ *
+ * The book stores the working and the result as one chain joined by arrows, so
+ * the card used to print «2x−5 = x²−5x+7 → x²−7x+12=0 → x=3 أو x=4» as a single
+ * line. When `workingSteps` can split it, each step gets its own numbered row
+ * and the result is set apart beneath; otherwise it is the one line it always
+ * was.
+ */
+function deckAnswerBody(answer: string, accent: string): string {
+  const working = workingSteps(answer);
+  if (!working) return `<div class="deck-eq">${mathLineToHtml(answer)}</div>`;
+  return `<div class="deck-working">${working.steps.map((step, i) => `
+              <div class="deck-working-row">
+                <span class="deck-working-num" style="background:${accent}">${i + 1}</span>
+                <span class="deck-working-eq">${mathLineToHtml(step)}</span>
+              </div>`).join('')}
+            </div>
+            <div class="deck-eq deck-final" style="border-color:${accent}66">${mathLineToHtml(working.final)}</div>`;
+}
+
 /** One content line, math-aware — mirrors MathText.tsx's decision on native. */
 function deckContentLine(line: string, isEquation: boolean): string {
   if (!line.trim()) return '';
@@ -259,7 +280,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         ${slide.answer ? `
           <div class="deck-answer" style="border-color:${accent}44">
             <div class="deck-answer-label" style="color:${accent}">${L('الإجابة', 'Answer')}</div>
-            <div class="deck-eq">${mathLineToHtml(slide.answer)}</div>
+            ${deckAnswerBody(slide.answer, accent)}
             ${verifiedBadge}
           </div>` : ''}
       </div>
@@ -601,6 +622,14 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-eq { font-size:32px; font-weight:700; color:${DECK_TEXT}; text-align:center; line-height:1.6; }
 .deck-answer { margin-top:22px; border:1.5px solid; border-radius:12px; padding:16px 24px; background:${DECK_CARD_BG}; min-width:320px; }
 .deck-answer-label { font-size:14px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+/* Worked-example answer: the working one numbered row per step, the result set
+   apart beneath. Row direction is left to the document's own dir — never
+   row-reverse. The equations are LTR runs, so each row's text is start-aligned. */
+.deck-working { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+.deck-working-row { display:flex; flex-direction:row; align-items:center; gap:12px; font-size:24px; line-height:1.6; }
+.deck-working-num { flex-shrink:0; width:34px; height:34px; border-radius:50%; color:#fff; font-size:18px; font-weight:700; display:flex; align-items:center; justify-content:center; font-family:'Cairo','Arial','Tahoma',sans-serif; }
+.deck-working-eq { text-align:start; }
+.deck-final { border-top:1.5px solid; padding-top:10px; }
 .deck-plot { margin:14px auto 0; max-width:660px; }
 .deck-verified { margin-top:12px; font-size:11px; font-weight:600; display:flex; flex-direction:column; align-items:center; gap:4px; }
 .deck-evidence { font-size:10px; color:${DECK_MUTED}; font-weight:400; }

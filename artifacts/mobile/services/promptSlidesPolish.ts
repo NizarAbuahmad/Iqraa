@@ -27,7 +27,7 @@
  */
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { isBulletLine, looksLikeEquation, stripBullet } from './deckText.ts';
-import { MAX_STATEMENT_CHARS, resolveSlideLayout } from './slideLayout.ts';
+import { MAX_STATEMENT_CHARS, inlineSteps, resolveSlideLayout } from './slideLayout.ts';
 import { rebuildAnswerKey } from './lessonSlides.ts';
 
 /**
@@ -66,6 +66,9 @@ function readsAsSequence(slide: ActivitySlide, body: string[]): boolean {
   return body.every(l => /^[0-9٠-٩]+\s*[.)\-–]/.test(stripBullet(l)));
 }
 
+/** What `inferLayout` decided: the layout, and the body rewritten for it when it needs to be. */
+type InferredLayout = { layout: NonNullable<ActivitySlide['layout']>; content?: string };
+
 /**
  * The layout this slide should have been given, or `undefined` to leave it
  * alone.
@@ -77,7 +80,7 @@ function readsAsSequence(slide: ActivitySlide, body: string[]): boolean {
  * function infers can never be one a renderer would then refuse to draw and
  * leave blank.
  */
-function inferLayout(slide: ActivitySlide, index: number): ActivitySlide['layout'] | undefined {
+function inferLayout(slide: ActivitySlide, index: number): InferredLayout | undefined {
   if (slide.layout) return undefined;                 // the model asked; respect it
   if (index === 0) return undefined;                  // the cover has its own shape
   if (!PROSE_TYPES.has(slide.type)) return undefined;
@@ -93,16 +96,21 @@ function inferLayout(slide: ActivitySlide, index: number): ActivitySlide['layout
 
   if (body.length === 1) {
     const text = stripBullet(body[0]!);
+    // A procedure written on one line («1) … 2) … 3) …») is a sequence, not a
+    // sentence — set as a statement it would be one long run of numbered clauses
+    // in display type. Its steps become the bullets the steps layout draws.
+    const procedure = inlineSteps(text);
+    if (procedure) return { layout: 'steps', content: procedure.map(step => `• ${step}`).join('\n') };
     // An equation already has its own boxed, centred rendering in the ordinary
     // layout (`looksLikeEquation`), which is better than setting it in display
     // type as if it were a sentence.
     if (looksLikeEquation(text) || text.length > MAX_STATEMENT_CHARS) return undefined;
-    return 'statement';
+    return { layout: 'statement' };
   }
 
   const bullets = body.filter(isBulletLine);
   if (bullets.length === body.length && bullets.length >= MIN_INFERRED_STEPS && readsAsSequence(slide, body)) {
-    return 'steps';
+    return { layout: 'steps' };
   }
   return undefined;
 }
@@ -166,9 +174,9 @@ export function polishDeck(deck: ClassroomActivity, isAr = true): ClassroomActiv
 
   const kept = deck.slides.filter((_, index) => !hollow.has(index)).map(repairQuestion);
   const slides = kept.map((slide, index) => {
-    const layout = inferLayout(slide, index);
-    if (!layout) return { ...slide, slideNumber: index + 1 };
-    const withLayout = { ...slide, layout, slideNumber: index + 1 };
+    const inferred = inferLayout(slide, index);
+    if (!inferred) return { ...slide, slideNumber: index + 1 };
+    const withLayout = { ...slide, ...inferred, slideNumber: index + 1 };
     // The renderers' own gate, asked before the layout is kept rather than
     // after it is drawn.
     return resolveSlideLayout(withLayout) ? withLayout : { ...slide, slideNumber: index + 1 };
