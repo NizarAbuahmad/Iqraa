@@ -28,8 +28,12 @@ export type MaterialLike = {
   savedAt: string;
   /** The class the material is filed under, if any (`SavedMaterial['classGroupId']`). */
   classGroupId?: string | null;
-  /** `SavedMaterial['formState']`; `lessonId` is stamped at save time by workspace.ts. */
-  formState?: { lessonId?: unknown } | null;
+  /**
+   * `SavedMaterial['formState']`; `lessonId` is stamped at save time by
+   * workspace.ts, and the worksheet screen writes `materialKind: 'homework'`
+   * for a homework, which is otherwise saved as a worksheet.
+   */
+  formState?: { lessonId?: unknown; materialKind?: unknown } | null;
 };
 
 export type PrepRowMeta = {
@@ -147,6 +151,37 @@ export function buildPrepBoard(
     const done = hits.length > 0;
     return { ...meta, done, material: hits[0] ?? null, count: hits.length, skipped: !done && skipped.includes(meta.type) };
   });
+}
+
+/** What the chat calls the materials it can make (`SessionArtifact`). */
+export type ChatArtifactType = 'lesson-plan' | 'worksheet' | 'quiz' | 'activity' | 'homework';
+
+/**
+ * The chat's material types this lesson already has saved in موادي.
+ *
+ * The chat's chips and lesson card read its own session, which forgets a plan
+ * made yesterday or from the tools tab — so they offered «حضّر خطة الدرس» for a
+ * lesson whose board already counted one. This is the same saved record the
+ * board reads, in the chat's own terms: a homework is saved as a worksheet
+ * tagged `materialKind: 'homework'` and is counted as homework here (the board
+ * has no homework row and counts it as its worksheet). Slides and flows have
+ * no chat equivalent and are left out.
+ */
+export function savedPrepArtifacts(
+  materials: MaterialLike[],
+  topic: string,
+  lessonId?: string | null,
+): ChatArtifactType[] {
+  const out = new Set<ChatArtifactType>();
+  for (const m of materialsForTopic(materials, topic, lessonId)) {
+    switch (m.type) {
+      case 'lesson': out.add('lesson-plan'); break;
+      case 'worksheet': out.add(m.formState?.materialKind === 'homework' ? 'homework' : 'worksheet'); break;
+      case 'quiz': out.add('quiz'); break;
+      case 'activity': out.add('activity'); break;
+    }
+  }
+  return [...out];
 }
 
 /** Rows marked not needed leave the total, so 3 of 3 can read as ready. */
