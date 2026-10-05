@@ -722,6 +722,53 @@ parent thread for each copy.
   reads «العاشر أ · الرياضيات». The «أضف الخطة» link carries the subject and
   opens or starts that subject's plan.
 
+## A material made from a class files itself into it, 2026-10-04
+
+Reported from the الموارد tab: «أنشئ مادة جديدة» sent a teacher to the tools
+hub with no memory of where they came from. The hub opened on its defaults
+(index 0 = Mathematics, so a chemistry class got a maths worksheet), the saved
+material had to be filed into the class by hand through a picker the teacher
+had already answered by starting there, and nothing led back.
+
+**What happens now.** The class screen sends `classId` plus its own grade and
+subject as picker indices (`classToolParams`, built on `scopePickerParams`). The
+hub forwards them to whichever tool opens; with a class present it skips the
+global «current lesson» prefill, which can belong to another subject. On the
+first save `MaterialClassField` files the material into that class **without
+asking**, toasts «حُفظت في …», and shows «العودة إلى …», which unwinds to the
+existing class screen (`router.dismissTo`) rather than stacking a second one.
+`MaterialClassField` is the one place all three save paths already share
+(`GeneratorResultActions`, lesson-flow, `DeckActions`), so the change is there,
+not in each tool.
+
+**It fails open to the old behaviour, deliberately.** A `classId` the roster
+cannot resolve (deleted class, offline roster) opens the picker instead of
+claiming a filing nobody confirmed; no `classId` is exactly the old flow. The
+return button disappears if the material is moved to another class.
+
+**Verified against the running system**, not just tests: local Postgres, the
+real API and Expo web, driven with headless Chromium. Chemistry class → الموارد
+→ «+» → «أنشئ مادة جديدة» → hub URL carried `classId`, `gradeIdx=0`,
+`subjectIdx=1` → ورقة عمل opened on الصف العاشر + الكيمياء → saved → the
+database row had `class_group_id` set to that class → «العودة إلى …» landed on
+`/classes/<id>` with history length unchanged, browser back then went to
+`/classes` and `/profile` (the path actually walked), and opening «الأدوات» from
+the tab bar afterwards had no `classId`. Also checked by deep link: no class →
+picker opens as before; a nonexistent class → picker, no return button.
+Typecheck clean; mobile suite 2377 tests, 0 failures. No schema change, so
+`schema-push:` is not applicable.
+
+**Not done.** Library (المكتبة) items still cannot be attached to a class — they
+are a separate catalogue, not saved materials, and have no class link. That
+wants its own design. Also noticed, left alone: the tools hub's top banner still
+shows the global current lesson (Mathematics · Grade 10 by default) even when
+opened from a chemistry class; the tool itself opens on the class's scope.
+
+**For the next person verifying in a browser:** every tab and the class screen
+stay mounted underneath, so text queries match hidden copies — «ورقة عمل» alone
+matches the class's own material row and the chat tab's readiness list. Filter
+to visible elements.
+
 ## Maths on the worksheet screen read back to front, 2026-10-05
 
 Found by running the worksheet screen for the first time (headless Chromium
@@ -852,6 +899,26 @@ Playwright), card on «تركيب الاقترانات»:
 Not checked on a device, nor with live AI. 41 cases in
 `guessAndNextStep.test.ts` and 3 more in `teachMeAsk.test.ts`, each watched
 failing first.
+
+## The English projector split an equation across two lines, 2026-10-05
+
+Found by checking the worksheet in English on a phone-width projector (the
+follow-up the previous entry left open). «Solve the equation: 2ˣ = 32» broke
+between the raised exponent and « = 32»; «Write 32 with base 2: 32 = 2⁵» left
+«2⁵» alone on a line; «…are equal: x = 3» wrapped as «x» / «= 3».
+
+- `MathText`'s left-to-right row wrapped at every node boundary. `groupLtrSegments`
+  (`services/mathRender.ts`) now moves the numbers and operators that touch a
+  raised exponent, fraction or radical into that equation's group, up to the
+  first ordinary word, so a wrap can fall between prose and an equation but
+  never inside one. A pure equation keeps the old node-level wrap, so a very
+  long one can still break.
+- A plain-text slide line has no nodes to group. `bindOperators` makes the spaces
+  around `= + × ÷ < > ≤ ≥ ≠ ≈ ± −` non-breaking (a spaced hyphen is left alone:
+  it is punctuation), applied after `isolateForeignRuns` on the projector's body
+  lines. Arabic lines get it too.
+- Checked in the browser, English and Arabic projector: every equation whole.
+  Mobile suite 2808 pass / 0 fail / 10 skipped. Not re-checked: the native app.
 
 ## A worksheet opens with a worked example, and its key shows the working, 2026-10-04
 
