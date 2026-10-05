@@ -15,6 +15,7 @@ import { LESSON_STYLE_IDS } from '../ai/lessonPlanBlueprints.ts';
 import { arPrefixed, lessonKindFor, type LessonKind } from '../ai/lessonPlanKinds.ts';
 import { arMinutes } from '../ai/lessonPlanTypes.ts';
 import { KB_LESSONS, getBookForLesson } from '../knowledgeBase.ts';
+import { figuresForLesson } from '../bookFigures.ts';
 import type { AIRequest, LessonPlanOutput } from '../ai/AIService.ts';
 
 // The mock generator sleeps 1–2 s per call to feel like a model; this suite makes hundreds.
@@ -162,5 +163,38 @@ describe('the plan\'s wording', () => {
     } as AIRequest);
     assert.match(p.mainActivity, /مرتّلًا/);
     assert.doesNotMatch(text(p), /مثال محلول/);
+  });
+});
+
+describe('science and social studies open with their own hook', () => {
+  // The generic openers every subject used to share.
+  const GENERIC = [/أين نلتقي/, /ما أعرفه \/ ما أريد/, /فكّر – زاوج – شارك/, /كيف يرتبط .* بحياتنا اليومية/];
+  const GENERIC_EN = [/Where do we encounter/, /Know \/ Want to Know/, /Think – Pair – Share/, /How does .* connect to our daily lives/];
+
+  for (const subjectId of ['science', 'biology', 'physics', 'social', 'history', 'civic-education'] as const) {
+    it(`${subjectId}: no plan opens with a generic hook, in either language`, async () => {
+      // The opener is picked at random from a short list; 25 draws reach every entry.
+      for (let i = 0; i < 25; i++) {
+        const ar = (await planFor(subjectId, 'direct', 'arabic')).introduction;
+        const en = (await planFor(subjectId, 'direct', 'english')).introduction;
+        for (const re of GENERIC) assert.ok(!re.test(ar), `${subjectId} (ar) still opens: ${ar.slice(0, 80)}`);
+        for (const re of GENERIC_EN) assert.ok(!re.test(en), `${subjectId} (en) still opens: ${en.slice(0, 80)}`);
+      }
+    });
+  }
+
+  it('a science opener starts from something to look at, a social one from a source or a situation', async () => {
+    for (let i = 0; i < 25; i++) {
+      assert.match((await planFor('biology', 'direct', 'arabic')).introduction, /ظاهرة|صورة|شيئًا|أين صادفتم/);
+      assert.match((await planFor('history', 'direct', 'arabic')).introduction, /مصدر|موقفًا|ماذا نعرف/);
+    }
+  });
+
+  it('keeps the book-figure cue for a lesson that has figures (financial literacy is a social-kind subject)', async () => {
+    const withFigures = KB_LESSONS.find(l => getBookForLesson(l)?.subjectId === 'financial-literacy' && figuresForLesson(l.id).length > 0);
+    if (!withFigures) return; // no such lesson in this catalog: nothing to protect
+    let cued = false;
+    for (let i = 0; i < 25 && !cued; i++) cued = /من كتاب الطالب/.test((await planFor('financial-literacy', 'direct', 'arabic', withFigures)).introduction);
+    assert.ok(cued, 'the figure cue was dropped from the opener');
   });
 });
