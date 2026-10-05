@@ -90,7 +90,7 @@ function ChipRow({ label, options, selectedIds, onSelect, isRTL, lang, colors }:
               key={o.id}
               onPress={() => onSelect(o.id)}
               accessibilityRole="button"
-              accessibilityState={{ selected: active }}
+              aria-selected={active}
               style={{
                 paddingHorizontal: 14,
                 paddingVertical: 7,

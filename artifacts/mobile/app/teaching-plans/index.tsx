@@ -843,7 +843,7 @@ export default function TeachingPlansScreen() {
                               key={sid}
                               onPress={() => { void onPickSubject(sid); }}
                               accessibilityRole="button"
-                              accessibilityState={{ selected: active }}
+                              aria-selected={active}
                               style={{
                                 paddingHorizontal: 14,
                                 paddingVertical: 7,

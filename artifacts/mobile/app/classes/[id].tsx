@@ -563,7 +563,7 @@ export default function ClassDetailScreen() {
             key={sid || 'all'}
             onPress={() => setSubjectFocus(sid)}
             accessibilityRole="button"
-            accessibilityState={{ selected: active }}
+            aria-selected={active}
             style={{
               paddingHorizontal: 12,
               paddingVertical: 6,
@@ -1082,7 +1082,7 @@ export default function ClassDetailScreen() {
                         key={o.id}
                         onPress={() => onSelect(o.id)}
                         accessibilityRole="button"
-                        accessibilityState={{ selected: active }}
+                        aria-selected={active}
                         style={{
                           paddingHorizontal: 14,
                           paddingVertical: 7,
