@@ -369,3 +369,29 @@ describe('normalizeExponents', () => {
     assert.equal(normalizeExponents('(2^3 · 2^{-1}) / 2'), '(2³ · 2⁻¹) / 2');
   });
 });
+
+// The curriculum data writes every minus as U+2212, not the ASCII hyphen. With
+// only `-` in the run class, «y = 2x−5» was cut at the sign and bidi reordered
+// the pieces, so a worked example reached the projector as «7x+12=0−x²».
+describe('isolateForeignRuns — the U+2212 minus sign', () => {
+  const strip = (s: string) => s.replace(/[⁦⁩]/g, '');
+
+  it('keeps a worked example whole, one isolate per side of the Arabic «و»', () => {
+    const line = 'y = 2x−5 و y = x²−5x+7: 2x−5 = x²−5x+7 → x²−7x+12=0';
+    const out = isolateForeignRuns(line);
+    assert.equal(
+      out,
+      '⁦y = 2x−5⁩ و ⁦y = x²−5x+7⁩: ⁦2x−5 = x²−5x+7 → x²−7x+12=0⁩',
+    );
+    assert.equal(strip(out), line);
+  });
+
+  it('keeps a negative energy expression whole', () => {
+    const out = isolateForeignRuns('طاقة المستوى: E = −13.6 / n² إلكترون فولت');
+    assert.equal(out, 'طاقة المستوى: ⁦E = −13.6 / n²⁩ إلكترون فولت');
+  });
+
+  it('treats a number and a U+2212 minus as notation, like the ASCII hyphen', () => {
+    assert.equal(isolateForeignRuns('الناتج 7−3 هنا'), 'الناتج ⁦7−3⁩ هنا');
+  });
+});
