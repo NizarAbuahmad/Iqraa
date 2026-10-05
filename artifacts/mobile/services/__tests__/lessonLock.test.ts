@@ -11,7 +11,7 @@ import { lockState, NO_PROGRESS, type MasteryProgress } from '../lessonLock.ts';
 const LESSONS = ['l1', 'l2', 'l3', 'l4'];
 
 function progress(over: Partial<MasteryProgress> = {}): MasteryProgress {
-  return { enabled: true, passedLessonIds: [], quizLessonIds: [], ...over };
+  return { enabled: true, passedLessonIds: [], quizLessonIds: [], retakeEvaluationIds: [], ...over };
 }
 
 describe('lockState', () => {
