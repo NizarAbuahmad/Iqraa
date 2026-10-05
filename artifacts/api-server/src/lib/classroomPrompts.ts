@@ -465,7 +465,7 @@ ${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
 
 Return JSON in this exact shape (all text in English):
 {
-  "activityName": "Math Bingo – ${b.topic}",
+  "activityName": "Bingo – ${b.topic}",
   "activityType": "bingo",
   "grade": "${b.grade}",
   "subject": "${b.subject}",
@@ -651,7 +651,7 @@ Generate 3 questions: recall, application, critical thinking. Each is a challeng
   // Same reason as the Arabic builder: the how-to-play slide states the count.
   const challengeCount = Math.floor((b.duration ?? 20) / 4);
 
-  return `You are an interactive classroom activity designer. Create a Math Escape Challenge for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
+  return `You are an interactive classroom activity designer. Create an Escape Challenge for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
 Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
 ${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
 
