@@ -1390,7 +1390,9 @@ export default function ClassDetailScreen() {
                 // class's grade and subject, and what they save is filed here.
                 router.push({
                   pathname: '/(tabs)/ai-tools',
-                  params: group ? classToolParams(group) : {},
+                  // The subject the teacher has filtered to, on a class taking several;
+                  // otherwise the class's primary subject.
+                  params: group ? classToolParams({ ...group, subjectId: focus || group.subjectId }) : {},
                 });
               }}
               style={[
