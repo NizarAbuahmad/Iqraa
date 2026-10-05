@@ -15285,7 +15285,8 @@ would need a column. The confirmation dialog says what will be sent.
 **Parents are not notified,** although that was asked for: no screen shows a
 guardian their child's exam result («اختباراتي» is student-only), so the push
 would open onto nothing. That needs a parent results view first — and a
-decision on whether a parent should see a grade, and when.
+decision on whether a parent should see a grade, and when. Decided and built
+the next day — see «Parents see results after release».
 
 Verified against the local stack: release twice → one line in «العاشر أ»,
 shown in the student's inbox as unread under the teacher's name. The push
@@ -15304,4 +15305,34 @@ library's chips carry `aria-selected`.
 **More «N علامة».** «اختباراتي» rows said «6 علامة»; the exam totals, the
 marks-lost line and the scan summary had the same template. All go through
 `arMarksPhrase` now.
+
+## Parents see results after release, 2026-10-05
+
+**Decision (owner, 2026-10-05): a parent sees a child's result when the
+student can — after the teacher releases it.** No separate parent release.
+
+- `GET /parent/exams` (`routes/studentExams.ts`): one list per roster row the
+  account is `guardian`-linked to. The rows come from the same loader as
+  `/student/exams` (`examRowsFor`) and the same `studentExamRow`, so the two
+  can never disagree about what is released; `guardianExamRow` then drops the
+  exam link — the paper is the child's to sit. Guarded by
+  `requireRole("parent")` on the `/parent` prefix; `mountOrder.test.ts` pins
+  the 401.
+- `/my-exams` is role-aware: a parent sees «نتائج أبنائي», one section per
+  child, results expandable as for the student. Reached from the profile tab
+  and the library tile, both labelled «نتائج أبنائي» for a parent. The screen
+  now waits for the session before choosing which list to read: a reload had
+  asked `/student/exams` for a parent and its 403 painted an error over the
+  correct list.
+- A release now pushes each parent too (`resultsReleaseNotify.ts`), naming
+  the child: «نتيجة سارة أحمد» / «أعلن المعلّم نتيجة «…». افتحها من «نتائج
+  أبنائي».» — opening the same screen.
+- A row for an exam published without a title read blank; it says
+  «اختبار الكيمياء» now.
+
+Verified against the local stack with a parent account claiming a student
+through the class code: the released exam shows its result, an unreleased one
+«سُلِّم — بانتظار النتيجة», no row has a link, and the parent is refused
+`/student/exams`. The release's recipients include both the student's own
+account and the guardian. The push itself was not sent locally.
 
