@@ -146,6 +146,7 @@ import {
   pinLesson,
   resolvePickedLesson,
   resourceRoute,
+  defaultLessonIdFor,
   seedDefaultLessonMemory,
   softPinIfUnpinned,
   shouldReuseActiveLesson,
@@ -1392,7 +1393,7 @@ export default function IqraScreen() {
   const teachingCtxRef = useRef(teachingCtx);
   /** Session memory for collaborative Demo Mode chat (active lesson + prior asks). */
   const [sessionMemory, setSessionMemory] = useState<ChatSessionMemory>(() =>
-    seedDefaultLessonMemory(emptyChatSessionMemory()),
+    seedDefaultLessonMemory(emptyChatSessionMemory(), defaultLessonIdFor(user?.teachingAssignments)),
   );
   const [sessionDocs, setSessionDocs] = useState<SessionDocument[]>(() => getSessionDocuments());
   /** Composer-only shortcuts — cleared as soon as the teacher taps one or sends a message. */
@@ -1716,7 +1717,7 @@ export default function IqraScreen() {
 
   // Welcome message on mount / language change — reset session, keep one default active lesson
   useEffect(() => {
-    setSessionMemory(seedDefaultLessonMemory(emptyChatSessionMemory()));
+    setSessionMemory(seedDefaultLessonMemory(emptyChatSessionMemory(), defaultLessonIdFor(user?.teachingAssignments)));
     clearSessionDocuments();
     setEphemeralSuggestions([]);
     setLessonCardCollapsed(true);
