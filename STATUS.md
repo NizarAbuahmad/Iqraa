@@ -650,6 +650,40 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Maths on the worksheet screen read back to front, 2026-10-05
+
+Found by running the worksheet screen for the first time (headless Chromium
+against a local API; the PR for the worked example listed the screen as "not
+verified"). Three display bugs, all pre-existing, all more visible once the
+worksheet carried more working:
+
+- **An equation in an Arabic line drew reversed.** «أوجد حل المعادلة: 3^x = 27»
+  showed as «= 27 | 3ˣ | prose». `MathText` laid Arabic-led lines out with
+  `row-reverse` node by node, which reversed the pieces of one equation too.
+  `groupRtlSegments` (`services/mathRender.ts`) now splits such a line into
+  Arabic phrases and whole equations; `MathText` reverses between them and keeps
+  each equation a left-to-right group. The Arabic colon stays with the Arabic.
+- **A numbered step was judged left-to-right.** «1) نكتب 27 بالأساس 3: …» does
+  not *start* with Arabic, so it took the Latin path and the browser's bidi
+  scrambled it. `isArabicLed` skips a leading marker («1)», «2.», «(3)», «-»).
+- **Braced exponents printed their braces.** The bank writes `3^{2x}` and
+  `2^{x+3}`; the parser only knew `^2` and `^(2x)`. `readExponent` takes
+  `{...}`, and `isolateForeignRuns` keeps braces inside the run (it used to cut
+  «3^{2x}» into three isolates). The printed worksheet was already right because
+  it runs `normalizeExponents`.
+
+The worked-example card and the key's working now render through
+`MathParagraph` like the questions do, so exponents are raised there too.
+Checked in the browser after the fix: all nine questions, the half-solved one,
+the worked example and the key. **Still visible:** a list marker's parenthesis
+shows mirrored («1)» reads «(1») inside an Arabic line; the order is right and
+it is the platform's own bidi mirroring, so it was left. The projector was
+checked too (worked-example and question slides): equations centred and in
+order. That check caught a regression in this very change — the new Arabic-led
+branch of `MathText` ignored `centered`, which would have left-aligned every
+projected equation with Arabic in it; fixed. English mode and the native app
+were not re-checked.
+
 ## Old English materials are redone in English when opened, 2026-10-05
 
 Follow-up to the entry below, Nizar's call: an English material saved before
@@ -681,6 +715,7 @@ restored): an Arabic «خطة درس: التربة» opened from the viewer came
 "Lesson Plan: Soil", stored as `en` over the same item, and reopening it
 stayed in the viewer with English headings; an Arabic deck came back as 14
 English slides over the same item. Mobile suite 2664 pass / 0 fail.
+
 ## The chat answers before it asks, and knows what موادي already holds, 2026-10-04
 
 Items 2 and 4 of the "make the chat smarter" list, plus two bugs found by
@@ -813,8 +848,7 @@ added in #837 now says so. It counts the worked example among the items
 produced, because the example is one of the items the picker's total promised
 (`shortfall.produced` is questions plus the example). Bank answers are Arabic
 even in an English worksheet's key; only the working is English. The worked example is not editable on the
-screen. Not verified: the React Native screen itself (no screen tests exist),
-and a real model's reply to the new prompt — the live path is covered by prompt
+screen. Not verified: a real model's reply to the new prompt — the live path is covered by prompt
 and sanitizer tests only.
 
 Mobile 2706 pass / 0 fail / 10 skipped, api-server 1123, math-practice 142,
