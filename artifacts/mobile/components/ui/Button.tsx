@@ -64,7 +64,7 @@ export function Button({ label, onPress, variant = 'primary', size = 'md', disab
       onHoverOut={() => setHovered(false)}
       disabled={disabled || loading}
       accessibilityRole="button"
-      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      aria-disabled={disabled || loading} aria-busy={loading}
       style={({ pressed }) => [
         styles.base,
         {

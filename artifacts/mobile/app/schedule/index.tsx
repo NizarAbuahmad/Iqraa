@@ -95,7 +95,7 @@ function Chip({ label, active, onPress, icon, colors }: {
   return (
     <Pressable
       onPress={onPress}
-      accessibilityState={{ selected: active }}
+      aria-selected={active}
       style={{
         flexDirection: 'row', alignItems: 'center', gap: 6,
         paddingHorizontal: 12, paddingVertical: 7, borderRadius: 18, borderWidth: 1.5,
