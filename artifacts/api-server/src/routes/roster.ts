@@ -54,6 +54,7 @@ import {
   syncClassGroupThread,
 } from "../lib/classThread.js";
 import { findLiveClass } from "../lib/classOwnership.js";
+import { subjectColumns, withSubjectIds } from "../lib/classSubjects.js";
 
 const router = Router();
 
@@ -113,6 +114,7 @@ router.get("/classes", async (req: AuthenticatedRequest, res) => {
         nameAr: classGroups.nameAr,
         gradeId: classGroups.gradeId,
         subjectId: classGroups.subjectId,
+        subjectIds: classGroups.subjectIds,
         academicYear: classGroups.academicYear,
         createdAt: classGroups.createdAt,
         studentCount: count(students.id),
@@ -127,7 +129,7 @@ router.get("/classes", async (req: AuthenticatedRequest, res) => {
       .groupBy(classGroups.id)
       .orderBy(asc(classGroups.createdAt));
 
-    res.json({ classes: rows });
+    res.json({ classes: rows.map(withSubjectIds) });
   } catch (err) {
     failRoster(res, err, "list classes", "Failed to load classes");
   }
@@ -148,12 +150,12 @@ router.post("/classes", async (req: AuthenticatedRequest, res) => {
         name,
         nameAr: trimmed(req.body?.nameAr),
         gradeId: trimmed(req.body?.gradeId),
-        subjectId: trimmed(req.body?.subjectId),
+        ...(subjectColumns(req.body) ?? { subjectId: "", subjectIds: [] }),
         academicYear: trimmed(req.body?.academicYear),
       })
       .returning();
 
-    res.status(201).json({ class: { ...row, studentCount: 0 } });
+    res.status(201).json({ class: { ...withSubjectIds(row!), studentCount: 0 } });
   } catch (err) {
     failRoster(res, err, "create class", "Failed to create class");
   }
@@ -191,7 +193,7 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
       .orderBy(asc(students.displayName));
 
     res.json({
-      class: group,
+      class: withSubjectIds(group),
       students: roster.map(({ linkedCount, ...s }) => ({ ...s, linked: linkedCount > 0 })),
     });
   } catch (err) {
@@ -302,9 +304,11 @@ router.patch("/classes/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = req.params["id"] as string;
     const patch: Record<string, unknown> = { updatedAt: new Date() };
-    for (const field of ["name", "nameAr", "gradeId", "subjectId", "academicYear"] as const) {
+    for (const field of ["name", "nameAr", "gradeId", "academicYear"] as const) {
       if (req.body?.[field] !== undefined) patch[field] = trimmed(req.body[field]);
     }
+    // Both columns move together, or the primary subject drifts off the list.
+    Object.assign(patch, subjectColumns(req.body));
     if (patch["name"] === "") {
       res.status(400).json({ error: "name cannot be empty" });
       return;
@@ -331,7 +335,7 @@ router.patch("/classes/:id", async (req: AuthenticatedRequest, res) => {
     if ("name" in patch || "nameAr" in patch) {
       await renameClassGroupThread(row.id, row.name, row.nameAr);
     }
-    res.json({ class: row });
+    res.json({ class: withSubjectIds(row) });
   } catch (err) {
     failRoster(res, err, "update class", "Failed to update class");
   }
