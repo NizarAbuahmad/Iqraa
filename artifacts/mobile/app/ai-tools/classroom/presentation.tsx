@@ -46,7 +46,7 @@ import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/c
 import { MathText } from '@/components/classroom/MathText';
 import { VerifiedBadge } from '@/components/classroom/VerifiedBadge';
 import { PEN_COLORS, PenCanvas, PenPalette, type Stroke } from '@/components/classroom/PenLayer';
-import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
+import { bindOperators, hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
 import { goBack } from '@/services/navigation';
 import { confirm } from '@/services/confirm';
 
@@ -771,7 +771,7 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
                     { textAlign: align, writingDirection: dir, fontFamily: 'Almarai_400Regular' },
                   ]}
                 >
-                  {isolateForeignRuns(text)}
+                  {bindOperators(isolateForeignRuns(text))}
                 </Text>
               </View>
             );
@@ -809,7 +809,7 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
                     { writingDirection: dir, fontFamily: 'ReadexPro_700Bold' },
                   ]}
                 >
-                  {isolateForeignRuns(text)}
+                  {bindOperators(isolateForeignRuns(text))}
                 </Text>
               </View>
             );
@@ -830,7 +830,7 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
                 },
               ]}
             >
-              {isolateForeignRuns(text)}
+              {bindOperators(isolateForeignRuns(text))}
             </Text>
           );
         })}
