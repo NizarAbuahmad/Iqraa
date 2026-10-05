@@ -58,6 +58,7 @@ import {
 } from '@/services/resourceCatalog';
 import { allPremade } from '@workspace/curriculum/premade';
 import { getSubjectsForGrade, getVisibleGrades } from '@workspace/curriculum';
+import { ENGLISH_HUB_GRADES } from '@workspace/curriculum/englishHub';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { cellWidthPercent, isVisualKind, libraryColumns, previewCount } from '@/services/libraryLayout';
@@ -734,6 +735,30 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 {t('libraryCurriculumDesc')}
               </Text>
             </Pressable>
+            {gradeInfo && (ENGLISH_HUB_GRADES as readonly number[]).includes(gradeInfo.level) ? (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push({ pathname: '/curriculum/english' as never, params: { grade: String(gradeInfo.level) } });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`${t('hubTitle')}, ${t('hubListenDesc')}`}
+                style={({ pressed }) => [
+                  styles.tile,
+                  { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+                  <Ionicons name="headset" size={26} color={ACCENT} />
+                </View>
+                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                  {t('hubTitle')}
+                </Text>
+                <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+                  {t('hubListenDesc')}
+                </Text>
+              </Pressable>
+            ) : null}
             {isStudent || isParent ? (
               <Pressable
                 onPress={() => {
