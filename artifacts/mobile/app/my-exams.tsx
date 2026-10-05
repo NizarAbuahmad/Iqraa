@@ -12,8 +12,12 @@
  * builds a link of its own. Opening an exam goes through `/take/:code`, which
  * recognises a signed-in student and skips the name picker — or resumes the
  * sitting they already hold.
+ *
+ * A parent reaches the same screen as «نتائج أبنائي»: one section per child,
+ * from `GET /parent/exams`, under the student's release rule and with no
+ * link on any row — the exam is the child's to sit.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -29,8 +33,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { goBack } from '@/services/navigation';
-import { getMyExams } from '@/services/studentExam';
+import { getChildExams, getMyExams } from '@/services/studentExam';
 import {
   MY_EXAM_STATE_KEY,
   myExamAction,
@@ -65,26 +70,45 @@ const STATE_ICON: Record<MyExamState, keyof typeof Ionicons.glyphMap> = {
   closed: 'lock-closed-outline',
 };
 
+/** A child's section for a parent; the student's own list is one unnamed group. */
+interface ExamGroup {
+  key: string;
+  name: string | null;
+  exams: MyExam[];
+}
+
 export default function MyExamsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
 
-  const [exams, setExams] = useState<MyExam[] | null>(null);
+  const { user } = useAuth();
+  const isParent = user?.role === 'parent';
+  const [groups, setGroups] = useState<ExamGroup[] | null>(null);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [openResult, setOpenResult] = useState<string | null>(null);
 
+  // Which list to read depends on the role, so nothing loads until the
+  // session has: a reload used to ask /student/exams for a parent, and its
+  // 403 landed after the right list and put an error banner over it. A
+  // newer load also wins over an older one still in flight.
+  const loadSeq = useRef(0);
   const load = useCallback(async () => {
+    if (!user) return;
+    const seq = ++loadSeq.current;
     setError('');
     try {
-      setExams(await getMyExams());
+      const next = isParent
+        ? (await getChildExams()).map(c => ({ key: c.studentId, name: c.displayName, exams: c.exams }))
+        : [{ key: 'self', name: null, exams: await getMyExams() }];
+      if (seq === loadSeq.current) setGroups(next);
     } catch (e) {
-      setError(apiErrorMessage(e, 'myExamsLoadFailed', t));
+      if (seq === loadSeq.current) setError(apiErrorMessage(e, isParent ? 'childResultsLoadFailed' : 'myExamsLoadFailed', t));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isParent, user?.id]);
 
   // On every focus, not once: a student comes back here from handing a paper
   // in, and the row they just finished must not still say «تابع».
@@ -100,12 +124,13 @@ export default function MyExamsScreen() {
     setRefreshing(false);
   }, [load]);
 
-  const onRow = (exam: MyExam) => {
+  // Keyed by group as well: two siblings in one class share an exam id.
+  const onRow = (exam: MyExam, openKey: string) => {
     const action = myExamAction(exam);
     if (!action) return;
     Haptics.selectionAsync();
     if (action === 'toggle_result') {
-      setOpenResult(prev => (prev === exam.evaluationId ? null : exam.evaluationId));
+      setOpenResult(prev => (prev === openKey ? null : openKey));
       return;
     }
     if (exam.shareCode) router.push(`/take/${exam.shareCode}` as never);
@@ -123,10 +148,10 @@ export default function MyExamsScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
-          {t('myExamsTitle')}
+          {t(isParent ? 'childResultsTitle' : 'myExamsTitle')}
         </Text>
         <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-          {t('myExamsDesc')}
+          {t(isParent ? 'childResultsDesc' : 'myExamsDesc')}
         </Text>
       </View>
 
@@ -155,11 +180,11 @@ export default function MyExamsScreen() {
           </View>
         ) : null}
 
-        {exams === null && !error ? (
+        {groups === null && !error ? (
           <ActivityIndicator color={ACCENT} style={{ marginTop: 40 }} />
         ) : null}
 
-        {exams !== null && exams.length === 0 ? (
+        {groups !== null && groups.every(g => g.exams.length === 0) ? (
           <View style={styles.empty}>
             <View style={[styles.emptyIcon, { backgroundColor: ACCENT + '1F' }]}>
               <Ionicons name="document-text-outline" size={30} color={ACCENT} />
@@ -168,23 +193,42 @@ export default function MyExamsScreen() {
               {t('myExamsEmptyTitle')}
             </Text>
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
-              {t('myExamsEmptyDesc')}
+              {t(isParent ? 'childResultsEmptyDesc' : 'myExamsEmptyDesc')}
             </Text>
           </View>
         ) : null}
 
-        {(exams ?? []).map(exam => (
-          <ExamRow
-            key={exam.evaluationId}
-            exam={exam}
-            open={openResult === exam.evaluationId}
-            onPress={() => onRow(exam)}
-            colors={colors}
-            isRTL={isRTL}
-            lang={lang}
-            t={t}
-          />
-        ))}
+        {groups !== null && groups.some(g => g.exams.length > 0)
+          ? groups.map(group => (
+              <View key={group.key} style={{ gap: 12 }}>
+                {group.name ? (
+                  <Text style={[styles.childName, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
+                    {group.name}
+                  </Text>
+                ) : null}
+                {group.name && group.exams.length === 0 ? (
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: align }}>
+                    {t('childResultsNone')}
+                  </Text>
+                ) : null}
+                {group.exams.map(exam => {
+                  const openKey = `${group.key}:${exam.evaluationId}`;
+                  return (
+                    <ExamRow
+                      key={openKey}
+                      exam={exam}
+                      open={openResult === openKey}
+                      onPress={() => onRow(exam, openKey)}
+                      colors={colors}
+                      isRTL={isRTL}
+                      lang={lang}
+                      t={t}
+                    />
+                  );
+                })}
+              </View>
+            ))
+          : null}
       </ScrollView>
     </View>
   );
@@ -235,7 +279,7 @@ function ExamRow({
         </View>
         <View style={{ flex: 1, gap: 4 }}>
           <Text numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, lineHeight: 23, textAlign: align }}>
-            {myExamTitle(exam, lang)}
+            {myExamTitle(exam, lang) || t('myExamsUntitled', subject ?? '')}
           </Text>
           {meta ? (
             <Text numberOfLines={2} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
@@ -290,4 +334,5 @@ const styles = StyleSheet.create({
   stateIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   chip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   cta: { alignSelf: 'center', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  childName: { fontSize: 17, marginTop: 4 },
 });

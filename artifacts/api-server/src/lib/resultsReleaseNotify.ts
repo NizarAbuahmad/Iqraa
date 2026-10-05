@@ -3,14 +3,15 @@
  * only by happening to open «اختباراتي».
  *
  * Two channels, because a push reaches only the Android app:
- *   - a push to every student account self-linked to a roster row that handed
- *     a paper in — the people with a result to look at;
+ *   - a push to every account linked to a roster row that handed a paper in:
+ *     the student themself (`self`), and each parent (`guardian`), whose push
+ *     names the child — a parent can hold several;
  *   - one line in the exam's class group, under the teacher's name, which the
  *     web app's inbox shows too. Not pushed again: the students it would
  *     reach already got the push above.
  *
- * Parents are not notified: no screen shows a guardian their child's exam
- * result, so a push would open onto nothing.
+ * Both open `/my-exams`, which shows a parent «نتائج أبنائي» — the same
+ * release rule, read through `GET /parent/exams`.
  *
  * Fire-and-forget, like the message push in routes/messaging.ts: the caller
  * has already answered the teacher, and a failure here must never turn into
@@ -42,27 +43,29 @@ export async function announceResultsRelease(evaluation: {
   const text = releaseAnnouncement(evaluation);
 
   const sat = await db
-    .select({ userId: rosterLinks.userId })
+    .select({ userId: rosterLinks.userId, relation: rosterLinks.relation, childName: students.displayName })
     .from(attempts)
     .innerJoin(students, eq(students.id, attempts.studentId))
-    .innerJoin(rosterLinks, and(eq(rosterLinks.studentId, attempts.studentId), eq(rosterLinks.relation, "self")))
+    .innerJoin(rosterLinks, eq(rosterLinks.studentId, attempts.studentId))
     .where(and(eq(attempts.evaluationId, evaluation.id), isNotNull(attempts.submittedAt), isNull(students.archivedAt)));
   const userIds = [...new Set(sat.map(r => r.userId))];
 
   if (userIds.length > 0) {
     const tokens = await db
-      .select({ expoPushToken: devicePushTokens.expoPushToken })
+      .select({ userId: devicePushTokens.userId, expoPushToken: devicePushTokens.expoPushToken })
       .from(devicePushTokens)
       .where(inArray(devicePushTokens.userId, userIds));
-    if (tokens.length > 0) {
-      const results = await sendExpoPush(
-        tokens.map(t => ({
-          to: t.expoPushToken,
-          title: text.pushTitle,
-          body: text.pushBody,
-          data: { screen: "my-exams" },
-        })),
-      );
+    const messages = sat.flatMap(link => {
+      const { title, body } =
+        link.relation === "guardian"
+          ? text.guardianPush(link.childName)
+          : { title: text.pushTitle, body: text.pushBody };
+      return tokens
+        .filter(t => t.userId === link.userId)
+        .map(t => ({ to: t.expoPushToken, title, body, data: { screen: "my-exams" } }));
+    });
+    if (messages.length > 0) {
+      const results = await sendExpoPush(messages);
       const dead = deadTokensFrom(results);
       if (dead.length > 0) await db.delete(devicePushTokens).where(inArray(devicePushTokens.expoPushToken, dead));
     }
