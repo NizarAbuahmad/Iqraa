@@ -3923,7 +3923,7 @@ export default function IqraScreen() {
         onWord={async () => {
           setLoadingWord(true);
           try {
-            await exportAsWord(exportText, `iqra-${Date.now()}.docx`, isRTL);
+            await exportAsWord(exportText, `iqra-${Date.now()}`, isRTL);
           } finally {
             setLoadingWord(false);
             setExportVisible(false);
