@@ -6,10 +6,14 @@
 import {
   hasGeneratedResource,
   isReferentialQuery,
+  nextPrepStep,
+  PREP_ARTIFACT_STEPS,
   resolveCurriculumContext,
   type ChatSessionMemory,
   type LessonPinStrength,
+  type PrepStepId,
   type SessionArtifact,
+  type TeachingAction,
 } from './ai/teachingAssistant.ts';
 import { DEMO_CONTINUE } from './continueTeaching.ts';
 import { stripScopePhrases, topicFromQuery } from './ai/artifactTopic.ts';
@@ -428,6 +432,19 @@ export function shouldReuseActiveLesson(opts: {
   return false;
 }
 
+/**
+ * The turn's lessons once the open lesson is reused: it goes first, and the
+ * search's own hits follow — except for a bare «علمني» / «ابدأ», whose hits are
+ * whatever the curriculum matched for the verb itself («أسس علم التصنيف»,
+ * «علم أصول الفقه»). Kept, those reached the subject-ambiguity check, which a
+ * soft pin does not suppress, and the teacher was asked «أيّ مادة تقصد؟» about
+ * the lesson already on the card.
+ */
+export function withActiveLesson(results: KBLesson[], active: KBLesson, query: string): KBLesson[] {
+  if (isBareTeachAsk(query)) return [active];
+  return [active, ...results.filter(r => r.id !== active.id)].slice(0, 3);
+}
+
 export function pinLesson(
   memory: ChatSessionMemory,
   lesson: KBLesson,
@@ -496,6 +513,8 @@ export function buildCurrentLessonView(
   memory: ChatSessionMemory,
   docs: SessionDocument[],
   lang: 'ar' | 'en',
+  /** Material types موادي already holds for the lesson (`savedPrepArtifacts`). */
+  saved: readonly string[] = [],
 ): CurrentLessonView | null {
   const lesson = resolveActiveLesson(memory)
     ?? getLessonById(DEFAULT_ACTIVE_LESSON_ID)
@@ -538,107 +557,117 @@ export function buildCurrentLessonView(
     uploadedCount: readyDocs.length,
     resources: RESOURCE_META.map(meta => ({
       ...meta,
-      done: hasGeneratedResource(memory, meta.type),
+      done: hasGeneratedResource(memory, meta.type) || saved.includes(meta.type),
     })),
   };
 }
 
+/** Session and موادي taken together: what is done, what is left, what comes next. */
+function prepState(
+  memory: ChatSessionMemory,
+  prep: { saved?: readonly string[]; skipped?: readonly string[] },
+): { first: PrepStepId | null; missing: PrepStepId[] } {
+  const saved = prep.saved ?? [];
+  const skipped = prep.skipped ?? [];
+  const completed: PrepStepId[] = [
+    ...memory.prepCompleted,
+    ...PREP_ARTIFACT_STEPS.filter(t =>
+      hasGeneratedResource(memory, t as SessionArtifact) || saved.includes(t)),
+  ];
+  const offerable = PREP_ARTIFACT_STEPS.filter(t => !skipped.includes(t));
+  return {
+    first: nextPrepStep(completed, memory.lastCompletedPrepStep, offerable),
+    missing: offerable.filter(t => !completed.includes(t)),
+  };
+}
+
 /**
- * Intelligent composer suggestions from the current lesson state.
- * Prefer next missing resource; offer refine when it already exists.
+ * The follow-up actions under a reply, by the same rule as the chips: what is
+ * already made (here or in موادي) or marked «غير مطلوب» is dropped, and the
+ * next step leads. They used to be all five materials every time, with the one
+ * just asked about first — a worksheet saved yesterday was offered again.
+ */
+export function nextStepActions(
+  actions: TeachingAction[],
+  memory: ChatSessionMemory,
+  prep: { saved?: readonly string[]; skipped?: readonly string[] } = {},
+): TeachingAction[] {
+  const { first, missing } = prepState(memory, prep);
+  const left = actions.filter(a => (missing as string[]).includes(a.type));
+  return [...left.filter(a => a.type === first), ...left.filter(a => a.type !== first)];
+}
+
+/** «حضّر خطة الدرس» and its siblings — the chip that makes each material. */
+const CREATE_CHIP: Record<SessionArtifact, Omit<LessonSuggestion, 'promptAr' | 'promptEn' | 'lessonId'> & {
+  promptAr: (topic: string) => string;
+  promptEn: (topic: string) => string;
+}> = {
+  'lesson-plan': {
+    id: 'create-plan', emoji: '📄', labelAr: 'حضّر خطة الدرس', labelEn: 'Create lesson plan',
+    promptAr: t => `حضّر خطة درس كاملة عن: ${t}`, promptEn: t => `Prepare a full lesson plan about: ${t}`,
+    toolType: 'lesson-plan',
+  },
+  worksheet: {
+    id: 'create-ws', emoji: '📝', labelAr: 'أنشئ ورقة عمل', labelEn: 'Create worksheet',
+    promptAr: t => `أنشئ ورقة عمل صفية عن: ${t}`, promptEn: t => `Create an in-class worksheet about: ${t}`,
+    toolType: 'worksheet',
+  },
+  quiz: {
+    id: 'create-quiz', emoji: '➕', labelAr: 'جهّز اختباراً قصيراً', labelEn: 'Create short quiz',
+    promptAr: t => `جهّز اختباراً قصيراً عن: ${t}`, promptEn: t => `Create a short quiz about: ${t}`,
+    toolType: 'quiz',
+  },
+  activity: {
+    id: 'create-act', emoji: '🎯', labelAr: 'اقترح نشاطاً صفياً', labelEn: 'Class activity',
+    promptAr: t => `اقترح نشاطاً صفياً عن: ${t}`, promptEn: t => `Suggest a classroom activity about: ${t}`,
+    toolType: 'activity',
+  },
+  homework: {
+    id: 'create-hw', emoji: '🏠', labelAr: 'أنشئ واجباً منزلياً', labelEn: 'Create homework',
+    promptAr: t => `أنشئ واجباً منزلياً عن: ${t}`, promptEn: t => `Create homework about: ${t}`,
+    toolType: 'homework',
+  },
+};
+
+/**
+ * Composer suggestions from where the lesson actually stands.
+ *
+ * "Done" is this chat's session *or* موادي (`prep.saved`, from
+ * `savedPrepArtifacts`). The chips read the session alone, so a plan saved
+ * yesterday — counted on the board as 1/5 — was still offered as
+ * «حضّر خطة الدرس». The first chip is the step the progress card recommends
+ * (`nextPrepStep`), then the next missing one in preparation order; a row the
+ * teacher marked «غير مطلوب» (`prep.skipped`) is not offered. What this chat
+ * made last gets an improve chip.
  */
 export function buildLessonSuggestions(
   memory: ChatSessionMemory,
   lang: 'ar' | 'en',
   hasDocs: boolean,
+  prep: { saved?: readonly string[]; skipped?: readonly string[] } = {},
 ): LessonSuggestion[] {
-  const topic = lang === 'ar'
+  const isAr = lang === 'ar';
+  const topic = isAr
     ? (memory.activeTopicAr ?? 'الدرس الحالي')
     : (memory.activeTopicEn ?? 'the current lesson');
   const lessonId = memory.activeLessonId ?? undefined;
-  const out: LessonSuggestion[] = [];
+  const saved = prep.saved ?? [];
+  const { first, missing } = prepState(memory, prep);
+  const creates = first
+    ? [first, ...missing.filter(t => t !== first)].slice(0, 2)
+    : [];
 
-  const hasPlan = hasGeneratedResource(memory, 'lesson-plan');
-  const hasWs = hasGeneratedResource(memory, 'worksheet');
-  const hasQuiz = hasGeneratedResource(memory, 'quiz');
-  const hasHw = hasGeneratedResource(memory, 'homework');
-  const hasAct = hasGeneratedResource(memory, 'activity');
+  const out: LessonSuggestion[] = creates.map(step => {
+    const c = CREATE_CHIP[step as SessionArtifact];
+    return {
+      id: c.id, emoji: c.emoji, labelAr: c.labelAr, labelEn: c.labelEn,
+      promptAr: c.promptAr(topic), promptEn: c.promptEn(topic),
+      toolType: c.toolType, lessonId,
+    };
+  });
 
-  if (!hasPlan) {
-    out.push({
-      id: 'create-plan',
-      emoji: '📄',
-      labelAr: 'حضّر خطة الدرس',
-      labelEn: 'Create lesson plan',
-      promptAr: `حضّر خطة درس كاملة عن: ${topic}`,
-      promptEn: `Prepare a full lesson plan about: ${topic}`,
-      toolType: 'lesson-plan',
-      lessonId,
-    });
-  } else {
-    out.push({
-      id: 'refine-plan',
-      emoji: '✏️',
-      labelAr: 'حسّن خطة الدرس',
-      labelEn: 'Improve lesson plan',
-      promptAr: `حسّن خطة الدرس عن «${topic}» واجعلها أوضح للتنفيذ في الحصة القادمة`,
-      promptEn: `Improve the current lesson plan for "${topic}" and make it clearer to run tomorrow`,
-      toolType: 'lesson-plan',
-      lessonId,
-    });
-  }
-
-  if (!hasWs) {
-    out.push({
-      id: 'create-ws',
-      emoji: '📝',
-      labelAr: 'أنشئ ورقة عمل',
-      labelEn: 'Create worksheet',
-      promptAr: `أنشئ ورقة عمل صفية عن: ${topic}`,
-      promptEn: `Create an in-class worksheet about: ${topic}`,
-      toolType: 'worksheet',
-      lessonId,
-    });
-  } else if (!hasQuiz) {
-    out.push({
-      id: 'create-quiz',
-      emoji: '➕',
-      labelAr: 'جهّز اختباراً قصيراً',
-      labelEn: 'Create short quiz',
-      promptAr: `جهّز اختباراً قصيراً عن: ${topic}`,
-      promptEn: `Create a short quiz about: ${topic}`,
-      toolType: 'quiz',
-      lessonId,
-    });
-  }
-
-  if (hasWs && !hasHw) {
-    out.push({
-      id: 'create-hw',
-      emoji: '🏠',
-      labelAr: 'أنشئ واجباً منزلياً',
-      labelEn: 'Create homework',
-      promptAr: `أنشئ واجباً منزلياً عن: ${topic}`,
-      promptEn: `Create homework about: ${topic}`,
-      toolType: 'homework',
-      lessonId,
-    });
-  }
-
-  if (!hasAct && (hasPlan || hasWs)) {
-    out.push({
-      id: 'create-act',
-      emoji: '🎯',
-      labelAr: 'اقترح نشاطاً صفياً',
-      labelEn: 'Class activity',
-      promptAr: `اقترح نشاطاً صفياً عن: ${topic}`,
-      promptEn: `Suggest a classroom activity about: ${topic}`,
-      toolType: 'activity',
-      lessonId,
-    });
-  }
-
-  if (hasQuiz) {
+  const last = memory.lastGeneratedResource;
+  if (last === 'quiz') {
     out.push({
       id: 'harder-quiz',
       emoji: '🔥',
@@ -647,6 +676,17 @@ export function buildLessonSuggestions(
       promptAr: 'اجعل الاختبار أصعب وأضف سؤالين',
       promptEn: 'Make the quiz harder and add two questions',
       toolType: 'quiz',
+      lessonId,
+    });
+  } else if (last === 'lesson-plan' || (!last && saved.includes('lesson-plan') && creates.length === 0)) {
+    out.push({
+      id: 'refine-plan',
+      emoji: '✏️',
+      labelAr: 'حسّن خطة الدرس',
+      labelEn: 'Improve lesson plan',
+      promptAr: `حسّن خطة الدرس عن «${topic}» واجعلها أوضح للتنفيذ في الحصة القادمة`,
+      promptEn: `Improve the current lesson plan for "${topic}" and make it clearer to run tomorrow`,
+      toolType: 'lesson-plan',
       lessonId,
     });
   }
@@ -663,8 +703,7 @@ export function buildLessonSuggestions(
     });
   }
 
-  // Cap to keep the strip calm
-  return out.slice(0, 5);
+  return out;
 }
 
 export function resourceRoute(type: SessionArtifact): string {
