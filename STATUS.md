@@ -677,8 +677,12 @@ The worked-example card and the key's working now render through
 Checked in the browser after the fix: all nine questions, the half-solved one,
 the worked example and the key. **Still visible:** a list marker's parenthesis
 shows mirrored («1)» reads «(1») inside an Arabic line; the order is right and
-it is the platform's own bidi mirroring, so it was left. English mode, the
-projector and the native app were not re-checked.
+it is the platform's own bidi mirroring, so it was left. The projector was
+checked too (worked-example and question slides): equations centred and in
+order. That check caught a regression in this very change — the new Arabic-led
+branch of `MathText` ignored `centered`, which would have left-aligned every
+projected equation with Arabic in it; fixed. English mode and the native app
+were not re-checked.
 
 ## A worksheet opens with a worked example, and its key shows the working, 2026-10-04
 

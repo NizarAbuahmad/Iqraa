@@ -35,7 +35,7 @@ export function MathText({ text, fontSize, color, fontFamily = 'ReadexPro_700Bol
     // Reverse between Arabic phrases and equations only. Each equation stays
     // one left-to-right group, or «3^x = 27» draws back to front.
     return (
-      <View style={[styles.row, { flexDirection: 'row-reverse', justifyContent: 'flex-start' }]}>
+      <View style={[styles.row, { flexDirection: 'row-reverse', justifyContent: centered ? 'center' : 'flex-start' }]}>
         {groupRtlSegments(nodes).map((g, i) =>
           g.kind === 'prose' ? (
             <Text
