@@ -38,6 +38,7 @@ import {
   formatActivityText, formatLessonPlanText, formatQuizText, formatWorksheetText,
   shareAsText,
 } from '@/services/share';
+import { exportFilename } from '@/services/exportFilename';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { allPremade } from '@workspace/curriculum/premade';
@@ -188,12 +189,12 @@ export default function WorkspaceViewScreen() {
   const handleCopy = async () => { await copyToClipboard(getPlainText()); showToast(t('copiedToClipboard')); };
   const handlePDF = async () => {
     setLoadingPDF(true);
-    try { await exportAsPDF(getHTML(), item.title.replace(/[^\w\s]/g, '').trim()); }
+    try { await exportAsPDF(getHTML(), exportFilename(item.title)); }
     catch { showToast(t('error')); } finally { setLoadingPDF(false); }
   };
   const handleWord = async () => {
     setLoadingWord(true);
-    try { await exportAsWord(getPlainText(), item.title.replace(/[^\w\s]/g, '').trim(), isAr); }
+    try { await exportAsWord(getPlainText(), exportFilename(item.title), isAr); }
     catch { showToast(t('error')); } finally { setLoadingWord(false); }
   };
 

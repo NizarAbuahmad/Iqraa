@@ -58,7 +58,7 @@ import {
 } from '@/services/lessonContext';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
-import { DEFAULT_ACTIVE_LESSON_ID } from '@/services/lessonCopilot';
+import { defaultLessonIdFor } from '@/services/lessonCopilot';
 import { buildClassDeck } from '@/services/startClass';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { WORKFLOW } from '@/services/toolCatalog';
@@ -97,6 +97,7 @@ export default function Index() {
 }
 
 function LessonWorkspace() {
+  const { user } = useAuth();
   const colors = useColors();
   const { t, lang, isRTL } = useLanguage();
   const isAr = lang === 'ar';
@@ -148,8 +149,8 @@ function LessonWorkspace() {
     showed «تركيب الاقترانات» would read as a bug in whichever was seen second.
   */
   const fallback = useMemo(
-    () => resolveLessonPrepContext(DEFAULT_ACTIVE_LESSON_ID, lang as 'ar' | 'en'),
-    [lang],
+    () => resolveLessonPrepContext(defaultLessonIdFor(user?.teachingAssignments), lang as 'ar' | 'en'),
+    [lang, user?.teachingAssignments],
   );
   /*
     The lesson the card is about, in order: a lesson the teacher picked by
