@@ -647,7 +647,7 @@ function ContextBanner({
                     setOpen(false);
                     router.push({ pathname: '/setup-subjects', params: { mode: 'edit' } } as any);
                   }}
-                  style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', textDecorationLine: 'underline' }}
+                  style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', textDecorationLine: 'underline' }}
                 >
                   {t('editTeachingTitle')}
                 </Text>
