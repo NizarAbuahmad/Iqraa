@@ -42,7 +42,7 @@ import {
   type GenerationResult,
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
-import { verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
+import { verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
 import { COMPETENCY_KEYS, type CompetencyKey } from "../modules/assessment/competency";
@@ -1011,6 +1011,8 @@ router.patch(
         patch["body"] = nextBody;
         patch["expectedAnswer"] = nextAnswer;
         patch["rubric"] = nextRubric;
+        // The verdict was about the question as generated, not as edited.
+        patch["verification"] = verificationAfterEdit(existing.verification);
       }
 
       // Mark the provenance honestly: this is no longer purely AI output.

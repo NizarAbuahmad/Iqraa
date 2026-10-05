@@ -37,7 +37,7 @@ import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { variationBlock } from "../../lib/variation.ts";
 
 /** Bumped when the prompt changes shape, so usage rows stay comparable. */
-export const GENERATION_PROMPT_VERSION = "exam-gen-5";
+export const GENERATION_PROMPT_VERSION = "exam-gen-6";
 
 export interface LlmGenerationRequest {
   objectives: CurriculumObjective[];
@@ -273,6 +273,12 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     '      the expression and point separated by @ for derivative_at_point ("x^4@2"),',
     '      the equation for an equation topic ("2x + 5 = 13") or a circle ("(x-4)^2 + (y+1)^2 = 9").',
     '    answer is your key in latin form ("3x^2 - 4", "x = 4", "(4, -1)").',
+    // The two statements of the key are now compared. A check whose answer is not
+    // the question's own key is never marked verified, so it earns nothing.
+    '    The check answer must be THE SAME answer as the key you give the class — the correct option, the',
+    '      accepted blank, or the model answer — written in Latin. It is compared with that key; a check that',
+    '      disagrees with it is discarded as unlinked, however correct the maths. State the final answer in',
+    '      the model answer itself (for example "المشتقة هي ٣س² − ٤" for the check answer "3x^2 - 4").',
     // The permission to omit stays, and is deliberately narrow. A model
     // badgered into inventing a check for an essay question would produce a
     // key the verifier then judges — which is a worse outcome than no key.
