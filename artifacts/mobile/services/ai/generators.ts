@@ -953,6 +953,66 @@ export function buildOfflineActivity(req: AIRequest, variant = 0): ActivityOutpu
   });
 }
 
+/**
+ * What this service last handed out for a request, so a Regenerate can be
+ * told apart from "the same thing again". Keyed by the request's identity —
+ * everything except the regeneration fields.
+ */
+const lastServed = new Map<string, string>();
+const MAX_TRACKED_REQUESTS = 200;
+/** A draw that cannot vary (a tiny bank, fixed templates) gives up after this. */
+const MAX_FRESH_ATTEMPTS = 20;
+
+/** A short fingerprint (length + FNV-1a), so the table holds hashes, not whole outputs. */
+function fingerprint(out: unknown): string {
+  const text = JSON.stringify(out);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return `${text.length}:${h.toString(16)}`;
+}
+
+function requestIdentity(kind: string, req: object): string {
+  const { regenerate: _r, avoid: _a, excludeVariantIds: _e, ...rest } = req as Record<string, unknown>;
+  return `${kind}|${JSON.stringify(rest)}`;
+}
+
+/**
+ * Run `produce`, and on a Regenerate keep drawing until the result differs from
+ * what this request was last served.
+ *
+ * The offline generators vary by drawing at random — items from a bank, or one
+ * of a few phrasings — and nothing stopped a draw from landing on exactly what
+ * the teacher was already looking at: over twelve regenerations the lesson plan
+ * repeated its predecessor up to 4 times in 11 and worksheet and homework up
+ * to 5 in 11 (a small bank, like one law-of-sines lesson, makes the odds high),
+ * so «إعادة التوليد» often did nothing visible.
+ *
+ * Bounded: a generator with nothing to vary (fixed templates, a bank with one
+ * possible draw) returns after `MAX_FRESH_ATTEMPTS` rather than looping. A
+ * plain request is never compared — it is free to repeat.
+ */
+async function freshOnRegenerate<T>(kind: string, req: object, produce: () => Promise<T>): Promise<T> {
+  const key = requestIdentity(kind, req);
+  const previous = lastServed.get(key);
+  let out = await produce();
+  let signature = fingerprint(out);
+  if ((req as { regenerate?: boolean }).regenerate === true && previous !== undefined) {
+    for (let attempt = 1; attempt < MAX_FRESH_ATTEMPTS && signature === previous; attempt++) {
+      out = await produce();
+      signature = fingerprint(out);
+    }
+  }
+  lastServed.delete(key); // re-insert last, so the oldest entry is the stalest
+  lastServed.set(key, signature);
+  if (lastServed.size > MAX_TRACKED_REQUESTS) {
+    lastServed.delete(lastServed.keys().next().value as string);
+  }
+  return out;
+}
+
 // ─── Main service class ───────────────────────────────────────────────────────
 
 export class MockAIService extends AIService {
@@ -962,6 +1022,10 @@ export class MockAIService extends AIService {
 
   async generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput> {
     await this.delay();
+    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req));
+  }
+
+  private async lessonPlanOnce(req: AIRequest): Promise<LessonPlanOutput> {
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const docs = docsFromReq(req);
     const rawTopic = req.topic;
@@ -1085,6 +1149,10 @@ export class MockAIService extends AIService {
 
   async generateWorksheet(req: AIRequest): Promise<WorksheetOutput> {
     await this.delay();
+    return freshOnRegenerate('worksheet', req, () => this.worksheetOnce(req));
+  }
+
+  private async worksheetOnce(req: AIRequest): Promise<WorksheetOutput> {
     beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const docs = docsFromReq(req);
@@ -1355,6 +1423,10 @@ export class MockAIService extends AIService {
 
   async generateQuiz(req: AIRequest): Promise<QuizOutput> {
     await this.delay();
+    return freshOnRegenerate('quiz', req, () => this.quizOnce(req));
+  }
+
+  private async quizOnce(req: AIRequest): Promise<QuizOutput> {
     beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const kb = groundedKb(req.topic, lang, req.lessonId);
@@ -1478,6 +1550,10 @@ export class MockAIService extends AIService {
 
   async generateClassroomActivity(req: ClassroomActivityRequest): Promise<ClassroomActivity> {
     await this.delay();
+    return freshOnRegenerate('classroomActivity', req, () => this.classroomActivityOnce(req));
+  }
+
+  private async classroomActivityOnce(req: ClassroomActivityRequest): Promise<ClassroomActivity> {
     beginMathPracticeSession();
     const isAr = req.language === 'arabic';
     const topic = req.topic;
@@ -2570,6 +2646,10 @@ export class MockAIService extends AIService {
 
   async generateHomework(req: AIRequest): Promise<WorksheetOutput> {
     await this.delay();
+    return freshOnRegenerate('homework', req, () => this.homeworkOnce(req));
+  }
+
+  private async homeworkOnce(req: AIRequest): Promise<WorksheetOutput> {
     beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const kb = groundedKb(req.topic, lang, req.lessonId);
