@@ -30,7 +30,7 @@ export default function SuggestFeatureScreen() {
   const [idea, setIdea] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<null | 'network' | 'session'>(null);
 
   const align = isRTL ? 'right' : 'left' as const;
   const rowDir = isRTL ? 'row-reverse' : 'row' as const;
@@ -39,12 +39,18 @@ export default function SuggestFeatureScreen() {
   const send = async () => {
     if (!canSend) return;
     setSending(true);
-    setFailed(false);
+    setFailed(null);
     try {
       const res = await apiFetch('/feedback', {
         method: 'POST',
         body: JSON.stringify({ materialType: 'feature_request', rating: 'idea', comment: idea.trim() }),
       });
+      if (res.status === 401) {
+        // Not a connection problem: the session is gone (apiFetch has already
+        // signed the user out), so "check your connection" would send them hunting.
+        setFailed('session');
+        return;
+      }
       if (!res.ok) throw new Error(`suggestion failed: ${res.status}`);
       trackEvent('feature_suggested', { length: idea.trim().length });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -52,7 +58,7 @@ export default function SuggestFeatureScreen() {
       setIdea('');
     } catch {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-      setFailed(true);
+      setFailed('network');
     } finally {
       setSending(false);
     }
@@ -105,7 +111,7 @@ export default function SuggestFeatureScreen() {
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput
                 value={idea}
-                onChangeText={(v) => { setIdea(v); if (failed) setFailed(false); }}
+                onChangeText={(v) => { setIdea(v); if (failed) setFailed(null); }}
                 placeholder={t('suggestFeaturePlaceholder')}
                 placeholderTextColor={colors.mutedForeground}
                 multiline
@@ -121,7 +127,7 @@ export default function SuggestFeatureScreen() {
               />
               {failed && (
                 <Text style={[styles.failed, { color: colors.destructive, textAlign: align }]}>
-                  {t('suggestFeatureFailed')}
+                  {t(failed === 'session' ? 'suggestFeatureSessionExpired' : 'suggestFeatureFailed')}
                 </Text>
               )}
               <Pressable
