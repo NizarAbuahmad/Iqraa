@@ -319,7 +319,12 @@ export function hasRenderableMath(line: string): boolean {
 // pieces in three different places. Deliberately excluded: `,` (Arabic prose
 // uses the latin comma), and `*` / `_` (markdown emphasis, which would change
 // already-shipped chat rendering to no benefit here).
-const FOREIGN_CHAR = "A-Za-z0-9(){}=+\\-./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞";
+//
+// U+2212 `−` is in the class on purpose: the curriculum data writes every minus
+// as U+2212, not the ASCII hyphen. With only `-` here «y = 2x−5» was cut at the
+// sign, and bidi then reordered the pieces — the worked example
+// «x²−7x+12=0» reached the projector as «7x+12=0−x²».
+const FOREIGN_CHAR = "A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞";
 
 // Reaction and implication arrows. They may sit INSIDE a run but never at its
 // edge. Left out of the run, «N₂ + H₂ → NH₃» became two isolates with the arrow
@@ -349,7 +354,7 @@ const FOREIGN_RUN_RE = new RegExp(
  */
 const HAS_LATIN = /[A-Za-z]/;
 const HAS_DIGIT = /[0-9₀-₉¹²³⁰⁴-⁹]/;
-const HAS_OPERATOR = /[=+\-/^√×÷∘<>≤≥≠≈±∞]/;
+const HAS_OPERATOR = /[=+\-−/^√×÷∘<>≤≥≠≈±∞]/;
 
 function worthIsolating(run: string): boolean {
   if (HAS_LATIN.test(run)) return true;
