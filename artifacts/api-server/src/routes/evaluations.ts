@@ -75,6 +75,7 @@ import { recommendationsFor } from "../modules/assessment/recommend";
 import type { ObjectiveScore } from "../modules/assessment/scoring";
 
 import { resultsReleaseDecision } from "../lib/resultsRelease.ts";
+import { announceResultsRelease } from "../lib/resultsReleaseNotify.ts";
 const router = Router();
 // Path-scoped — see the note in roster.ts. Unscoped, this swallowed every
 // request reaching it, including routes belonging to later routers.
@@ -1260,12 +1261,28 @@ router.post("/evaluations/:id/results-release", async (req: AuthenticatedRequest
       res.status(decision.status).json({ error: decision.error, code: decision.code });
       return;
     }
-    const [updated] = await db
-      .update(evaluations)
-      .set({ releaseResultsToStudent: decision.released, updatedAt: new Date() })
-      .where(eq(evaluations.id, evaluation.id))
-      .returning();
+    // A release is announced at the moment it turns on. Conditional on the
+    // old value so two presses racing each other cannot both see "off" and
+    // announce twice; an un-release, or a release that was already on, falls
+    // through to the plain update and announces nothing.
+    const [turnedOn] = decision.released
+      ? await db
+          .update(evaluations)
+          .set({ releaseResultsToStudent: true, updatedAt: new Date() })
+          .where(and(eq(evaluations.id, evaluation.id), eq(evaluations.releaseResultsToStudent, false)))
+          .returning()
+      : [];
+    const [updated] = turnedOn
+      ? [turnedOn]
+      : await db
+          .update(evaluations)
+          .set({ releaseResultsToStudent: decision.released, updatedAt: new Date() })
+          .where(eq(evaluations.id, evaluation.id))
+          .returning();
     res.json({ evaluation: updated });
+    if (turnedOn) {
+      announceResultsRelease(turnedOn).catch(err => logger.error({ err }, "results release announcement failed"));
+    }
   } catch (err) {
     logger.error({ err }, "results release failed");
     res.status(500).json({ error: "Failed to update result release" });

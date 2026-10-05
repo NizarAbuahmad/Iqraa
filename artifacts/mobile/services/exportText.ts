@@ -87,6 +87,15 @@ export function formatWorksheetText(
   lines.push(SEP);
   if (ws.instructions) lines.push(`\n${ws.instructions}\n`);
 
+  // Studied, not answered, so it stays when the key is left out.
+  if (ws.workedExample) {
+    const ex = ws.workedExample;
+    lines.push(`\n${isAr ? 'مثال محلول' : 'WORKED EXAMPLE'}`);
+    lines.push(ex.problem);
+    ex.steps.forEach((step, i) => lines.push(`${i + 1}. ${step}`));
+    if (ex.selfExplain) lines.push(`\n${ex.selfExplain}`);
+  }
+
   let qNum = 1;
   ws.sections.forEach(sec => {
     lines.push(`\n${sec.title.toUpperCase()}`);
@@ -101,7 +110,10 @@ export function formatWorksheetText(
   if (includeAnswers && ws.answerKey && ws.answerKey.length > 0) {
     lines.push(`\n${SEP}`);
     lines.push(isAr ? 'مفتاح الإجابات' : 'ANSWER KEY');
-    ws.answerKey.forEach(item => lines.push(`${item.num}. ${item.answer}`));
+    ws.answerKey.forEach(item => {
+      lines.push(`${item.num}. ${item.answer}`);
+      item.solution?.forEach((step, i) => lines.push(`   ${i + 1}) ${step}`));
+    });
   }
 
   lines.push('\n' + SEP);
