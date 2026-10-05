@@ -22,6 +22,7 @@ import { blobToDataUrl, formatDuration } from '@/services/readAloudRecorder';
 import { isPlaybackSupported, playPrompt, playsLeft } from '@/services/dictationAudio';
 import { useReadAloudRecorder } from '@/hooks/useReadAloudRecorder';
 import { uploadReadAloud } from '@/services/studentExam';
+import { takeErrorKey } from '@/services/takeErrorKey';
 import { setBlankAt, setMatchPair, type MatchPair, type StudentResponse } from '@/services/studentAnswers';
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
@@ -210,6 +211,7 @@ export function ReadAloudInput({
   const recorder = useReadAloudRecorder({
     micErrorMessage: t('readAloudNoMic'),
     failureMessage: t('readAloudFailed'),
+    messageFor: err => t(takeErrorKey(err, 'readAloudFailed')),
     onRecorded: async (audio, durationMs) => {
       const dataUrl = await blobToDataUrl(audio);
       const result = await uploadReadAloud(token, questionId, dataUrl, durationMs);

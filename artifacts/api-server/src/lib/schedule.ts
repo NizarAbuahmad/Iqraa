@@ -72,7 +72,12 @@ export function parsePeriodInput(body: unknown): PeriodInput {
 export interface SlotInput {
   classGroupId: string | null | undefined;
   notes: string | undefined;
+  /** Which of the class's subjects this period is; '' = not said. Undefined = field omitted. */
+  subjectId: string | undefined;
 }
+
+/** A curriculum id ("mathematics", "islamic"); generous, since it only bounds a text column. */
+const MAX_SUBJECT_ID_LENGTH = 64;
 
 /**
  * Validates a slot upsert body. `classGroupId`'s *ownership* is not checked
@@ -81,7 +86,7 @@ export interface SlotInput {
  */
 export function parseSlotInput(body: unknown): SlotInput {
   if (typeof body !== "object" || body === null) throw "request body must be an object";
-  const { classGroupId, notes } = body as { classGroupId?: unknown; notes?: unknown };
+  const { classGroupId, notes, subjectId } = body as { classGroupId?: unknown; notes?: unknown; subjectId?: unknown };
   if (classGroupId !== undefined && classGroupId !== null && typeof classGroupId !== "string") {
     throw "classGroupId must be a string or null";
   }
@@ -89,5 +94,14 @@ export function parseSlotInput(body: unknown): SlotInput {
   if (typeof notes === "string" && notes.length > MAX_NOTES_LENGTH) {
     throw `notes must be at most ${MAX_NOTES_LENGTH} characters`;
   }
-  return { classGroupId: classGroupId as string | null | undefined, notes: notes as string | undefined };
+  if (subjectId !== undefined && typeof subjectId !== "string") throw "subjectId must be a string";
+  const subject = typeof subjectId === "string" ? subjectId.trim() : undefined;
+  if (subject !== undefined && subject.length > MAX_SUBJECT_ID_LENGTH) {
+    throw `subjectId must be at most ${MAX_SUBJECT_ID_LENGTH} characters`;
+  }
+  return {
+    classGroupId: classGroupId as string | null | undefined,
+    notes: notes as string | undefined,
+    subjectId: subject,
+  };
 }

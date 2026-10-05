@@ -47,6 +47,7 @@ import { openExternal } from '@/services/externalLinks';
 import { buildWorksheetHTML, exportAsPDF } from '@/services/share';
 import { qrResourcesForGrade } from '@/services/bookQrLinks';
 import { getVideoFrameThumbnail } from '@/services/videoThumbnail';
+import { videoCoverFromUrl } from '@/services/resourceThumbnail';
 import {
   buildResourceCatalog,
   filterResources,
@@ -57,6 +58,7 @@ import {
 } from '@/services/resourceCatalog';
 import { allPremade } from '@workspace/curriculum/premade';
 import { getSubjectsForGrade, getVisibleGrades } from '@workspace/curriculum';
+import { ENGLISH_HUB_GRADES } from '@workspace/curriculum/englishHub';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { cellWidthPercent, isVisualKind, libraryColumns, previewCount } from '@/services/libraryLayout';
@@ -134,16 +136,10 @@ const SHELF_COLOR: Record<Shelf, string> = {
 
 const ACCENT = palette.primary;
 
-/** YouTube video ID → thumbnail URL, or null for non-YouTube URLs. */
-function youtubeThumbnail(url: string): string | null {
-  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
-  return m ? `https://img.youtube.com/vi/${m[1]}/mqdefault.jpg` : null;
-}
-
 function itemThumbnail(item: ResourceItem): string | null {
   if (item.thumbnailUrl) return item.thumbnailUrl;
   if (!item.url) return null;
-  if (item.kind === 'video') return youtubeThumbnail(item.url);
+  if (item.kind === 'video') return videoCoverFromUrl(item.url);
   if (item.kind === 'image') return item.url;
   return null;
 }
@@ -467,6 +463,9 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   // are waiting. Best-effort: a failed count shows the plain description, and
   // the screen behind the tile reports its own errors.
   const isStudent = isStudentRole(user?.role);
+  // A parent gets the same tile as «نتائج أبنائي», without the waiting count:
+  // nothing on it is theirs to start.
+  const isParent = user?.role === 'parent';
   const [waitingExams, setWaitingExams] = useState<number | null>(null);
   useFocusEffect(
     useCallback(() => {
@@ -486,7 +485,13 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     () => narrowToSelection(getVisibleGrades(), isTeacher ? user?.gradeIds : undefined),
     [isTeacher, user?.gradeIds],
   );
-  const [grade, setGrade] = useState<string>(gradeId || grades[0]?.id || '');
+  const [pickedGrade, setGrade] = useState<string>(gradeId || grades[0]?.id || '');
+  // The tab stays mounted while the teacher edits their grades on the profile
+  // page, so the initial pick can name a grade they no longer teach — and with
+  // one grade left there is no picker to move off it. Fall back to the first
+  // grade they do teach; an explicit grade param is still honoured.
+  const grade =
+    pickedGrade === gradeId || grades.some(g => g.id === pickedGrade) ? pickedGrade : (grades[0]?.id ?? '');
   // A student has no grade picker of their own, so with no grade param the
   // library opened on the catalog's first grade — Grade 10 for a Grade 9
   // student. Start on the grade their class is in, unless they (or a param)
@@ -736,14 +741,42 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 {t('libraryCurriculumDesc')}
               </Text>
             </Pressable>
-            {isStudent ? (
+            {gradeInfo && (ENGLISH_HUB_GRADES as readonly number[]).includes(gradeInfo.level) ? (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push({ pathname: '/curriculum/english' as never, params: { grade: String(gradeInfo.level) } });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`${t('hubTitle')}, ${t('hubListenDesc')}`}
+                style={({ pressed }) => [
+                  styles.tile,
+                  { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+                  <Ionicons name="headset" size={26} color={ACCENT} />
+                </View>
+                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                  {t('hubTitle')}
+                </Text>
+                <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+                  {t('hubListenDesc')}
+                </Text>
+              </Pressable>
+            ) : null}
+            {isStudent || isParent ? (
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push('/my-exams' as never);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`${t('myExamsTitle')}, ${waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}`}
+                accessibilityLabel={
+                  isParent
+                    ? `${t('childResultsTitle')}, ${t('childResultsTileDesc')}`
+                    : `${t('myExamsTitle')}, ${waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}`
+                }
                 style={({ pressed }) => [
                   styles.tile,
                   { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
@@ -753,7 +786,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                   <Ionicons name="document-text" size={26} color={ACCENT} />
                 </View>
                 <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
-                  {t('myExamsTitle')}
+                  {t(isParent ? 'childResultsTitle' : 'myExamsTitle')}
                 </Text>
                 <Text
                   numberOfLines={2}
@@ -766,7 +799,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                     },
                   ]}
                 >
-                  {waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}
+                  {isParent ? t('childResultsTileDesc') : waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}
                 </Text>
               </Pressable>
             ) : null}
@@ -851,7 +884,6 @@ function FilterChip({
         onPress();
       }}
       accessibilityRole="button"
-      accessibilityState={{ selected: on }}
       aria-selected={on}
       style={state => [
         styles.chip,
@@ -929,7 +961,6 @@ function ShelfTabs({
           onPick(id);
         }}
         accessibilityRole="tab"
-        accessibilityState={{ selected: on }}
         aria-selected={on}
         accessibilityLabel={`${label}, ${count}`}
         style={state => [

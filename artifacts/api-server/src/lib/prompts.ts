@@ -320,6 +320,39 @@ Return JSON in this exact shape:
 }`;
 }
 
+/**
+ * The structure a worksheet follows: a worked example the class studies, one
+ * half-solved question, then independent practice.
+ *
+ * This is the live twin of the offline worksheet in
+ * `artifacts/mobile/services/ai/generators.ts` — change one, change the other,
+ * or a teacher gets a different paper depending on whether live AI was on. The
+ * count rule is the part to keep identical: the example and the half-solved
+ * question are INSIDE the total the teacher picked, so a picker of 10 means
+ * nine questions in the sections, not eleven. Homework does not use it.
+ */
+function workedExampleRuleAr(n: number): string {
+  const q = Math.max(1, n - 1);
+  return `
+البنية المطلوبة (من المثال المحلول إلى العمل المستقل):
+1. "workedExample": مسألة من الدرس نفسه محلولة كاملًا، يدرسها الطلبة ولا يحلّونها. "steps" من 3 إلى 6 خطوات، سطر لكل خطوة، وتُذكر القاعدة عند استعمالها، وآخر خطوة فيها الناتج. "answer" هو الناتج النهائي. "selfExplain" سؤال واحد يطلب من الطالب أن يشرح بجملة لماذا كانت الخطوة الأولى صحيحة. لا تكرّر مسألة المثال في أسئلة الورقة.
+2. أول سؤال في أول قسم تدريب (بعد قسم المراجعة السابقة إن طُلب) سؤال نصف محلول: نص المسألة، ثم الخطوات الأولى مكتوبة، ثم بنود مرقّمة فارغة (__________) يكملها الطالب حتى الناتج.
+3. المثال المحلول والسؤال نصف المحلول يُحسبان ضمن عدد الأسئلة الكلي (${n}): فمجموع الأسئلة في الأقسام ${q} بالضبط (غير أسئلة المراجعة السابقة إن طُلبت)، ويقابلها العدد نفسه في answerKey.
+4. في كل عنصر من answerKey حقل "solution": مصفوفة خطوات الحل بالترتيب، سطر لكل خطوة وآخرها الناتج، ليقارن بها المعلم عمل الطالب.
+5. إن لم يكن في الدرس إجراء متعدد الخطوات يصلح نمذجته (درس تعريفات مثلًا) فاحذف "workedExample" ولا تجعل أي سؤال نصف محلول، وأعطِ ${n} سؤالًا كالمعتاد.`;
+}
+
+function workedExampleRuleEn(n: number): string {
+  const q = Math.max(1, n - 1);
+  return `
+Required structure (worked example, then faded, then independent):
+1. "workedExample": a problem from this same lesson, solved in full for the class to study, not to solve. "steps" is 3 to 6 lines, one per step, naming the rule where it is used, and the last step states the result. "answer" is the final result. "selfExplain" is one question asking the student to say in a sentence why the first step was valid. Do not repeat the example's problem among the worksheet questions.
+2. The first question of the first practice section (after the prior-knowledge review, if one is requested) is half-solved: the problem, then the first steps already written, then numbered blanks (__________) for the student to finish down to the result.
+3. The worked example and the half-solved question both count toward the total of ${n}: the sections hold exactly ${q} questions in all (not counting any prior-knowledge review questions), with the same number of answerKey entries.
+4. Every answerKey entry carries a "solution": an array of the working in order, one line per step, the last being the result, so the teacher can compare the student's work with it.
+5. If the lesson has no multi-step procedure worth modelling (a definitions-only lesson, say), omit "workedExample", make no question half-solved, and give ${n} questions as usual.`;
+}
+
 export function worksheetPromptAr(b: any): string {
   const n = b.numQuestions ?? 8;
   const isHW = b.homework;
@@ -335,10 +368,17 @@ ${difficultyClauseAr(b)}
 ${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
 ${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
+${isHW ? "" : workedExampleRuleAr(n)}
 أعد JSON بالشكل الآتي (بالعربية):
 {
   "title": "عنوان الورقة",
-  "instructions": "تعليمات عامة",
+  "instructions": "تعليمات عامة",${isHW ? "" : `
+  "workedExample": {
+    "problem": "نص مسألة محلولة كاملًا",
+    "steps": ["الخطوة الأولى", "الخطوة الثانية", "الخطوة الأخيرة وفيها الناتج"],
+    "answer": "الناتج النهائي",
+    "selfExplain": "سؤال يطلب من الطالب أن يشرح بجملة لماذا كانت الخطوة الأولى صحيحة"
+  },`}
   "sections": [
     {
       "type": "short_answer",
@@ -349,7 +389,7 @@ ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه 
     }
   ],
   "answerKey": [
-    { "num": 1, "answer": "الإجابة" }
+    { "num": 1, "answer": "الإجابة"${isHW ? "" : `, "solution": ["خطوة", "خطوة", "الناتج"]`} }
   ]
 }
 مهم: كل سؤال يجب أن يقابله عنصر في answerKey (قسم الإجابات).`;
@@ -370,10 +410,17 @@ Question types: ${types.join(", ")}
 ${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
 ${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
+${isHW ? "" : workedExampleRuleEn(n)}
 Return JSON in this exact shape:
 {
   "title": "Worksheet title",
-  "instructions": "General instructions",
+  "instructions": "General instructions",${isHW ? "" : `
+  "workedExample": {
+    "problem": "A problem, solved in full",
+    "steps": ["First step", "Second step", "Last step, ending in the result"],
+    "answer": "The final result",
+    "selfExplain": "One question asking the student to say in a sentence why the first step was valid"
+  },`}
   "sections": [
     {
       "type": "short_answer",
@@ -384,7 +431,7 @@ Return JSON in this exact shape:
     }
   ],
   "answerKey": [
-    { "num": 1, "answer": "Answer" }
+    { "num": 1, "answer": "Answer"${isHW ? "" : `, "solution": ["step", "step", "result"]`} }
   ]
 }
 Important: every question must have a matching answerKey entry.`;
@@ -536,8 +583,8 @@ const ACTIVITY_FORMAT_RULES_AR: Record<string, string> = {
 اشترط أن إجابة المجموعة لا تكتمل بغياب أي جزء — هذا هو الاعتماد المتبادل، وبدونه يعمل طالب واحد ويشاهد ثلاثة.`,
   discussion: `هذا نقاش صفّي، وليس عملًا في مجموعات. يجب أن يتضمن: ادعاءً واحدًا قابلًا للجدل مصاغًا كجملة تقريرية (خطأ شائع معقول، لا عبارة صحيحة يتفق عليها الجميع)، تصويتًا أوليًا، دقيقتَي تفكير فردي صامت يكتب فيهما الطالب موقفه وسببًا واحدًا، مرحلة ثنائية يعيد فيها كل طالب صياغة سبب زميله قبل الرد، نقاشًا صفّيًا تديره بعبارات إدارة الحوار (من يعيد صياغة ما قاله زميله؟ ما دليلك؟ متى يفشل هذا الادعاء؟)، ثم تصويتًا ثانيًا يُقارن بالأول.
 ممنوع: أوراق العمل، الأدوار داخل المجموعة، العروض. لا تكشف الحكم على الادعاء قبل الخطوة الأخيرة.`,
-  "hands-on": `هذا نشاط تطبيقي عملي بمواد ملموسة. يجب أن يُنتج الطلبة شيئًا ماديًا: بناء أو قص أو قياس أو تركيب نموذج. يجب أن يتضمن خطوة يقارن فيها الطالب **القيمة التي قاسها** بالقيمة التي تعطيها القاعدة ويفسّر الفرق بينهما.
-قائمة المواد يجب أن تكون أدوات حقيقية (ورق مقوّى، مقص، مسطرة، منقلة، خيط، آلة حاسبة) لا «أوراق عمل مطبوعة» فقط. نشاط يُحلّ كله على الورق ليس نشاطًا تطبيقيًا.`,
+  "hands-on": `هذا نشاط تطبيقي عملي بمواد ملموسة. يجب أن يُنتج الطلبة شيئًا ماديًا يناسب المادة: في الرياضيات شكلًا يُقاس أو بطاقات تمثّل المسألة، وفي العلوم (الكيمياء والفيزياء والأحياء) نموذجًا مبنيًا من كرات وعيدان أو صلصال، وفي اللغات والمواد الاجتماعية بطاقات من مفاهيم الدرس تُرتَّب أو تُطابَق على لوح. يجب أن يتضمن خطوة يقارن فيها الطلبة ما أنتجوه بما تنص عليه القاعدة أو الصيغة أو **صفحة الكتاب**، ويفسّرون أي فرق أو اختلاف.
+قائمة المواد يجب أن تكون أدوات حقيقية تناسب المادة (ورق مقوّى، مقص، كرات وعيدان، صلصال، بطاقات، شريط لاصق، صفحة الكتاب…) لا «أوراق عمل مطبوعة» فقط. لا تشترط المسطرة أو المنقلة إلا إذا كان الدرس يتضمن قياسًا. نشاط يُحلّ كله على الورق ليس نشاطًا تطبيقيًا.`,
   game: `هذه لعبة تعليمية تنافسية، ولا تكفي تسميتها لعبة. يجب أن تتضمن صراحةً: قواعد مكتوبة تُعلن قبل البدء، فرقًا مسمّاة، جولتين على الأقل بنظام نقاط مختلف بينهما (الثانية بمخاطرة/رهان يعلنه الفريق قبل رؤية السؤال)، لوحة نتائج محدَّثة أمام الجميع، مؤقتًا لكل سؤال، وشرط فوز واضح.
 واختم بخطوة مراجعة للسؤال الذي أخطأت فيه أكثر الفرق — بلا هذه الخطوة تبقى المتعة وتضيع الفائدة.`,
   warmup: `هذه تهيئة قصيرة في بداية الحصة، لا نسخة مصغّرة من نشاط الحصة. ثلاث خطوات فقط: استرجاع من الذاكرة للمعرفة **السابقة** والدفاتر مغلقة، سؤال تحقّق واحد، ثم جملة تربط ما استُرجع بهدف حصة اليوم.
@@ -552,8 +599,8 @@ Materials must be individual tools (notebook, worked-example card, worksheet), n
 Require that the group answer cannot be completed if any part is missing — that interdependence is the point; without it one student works and three watch.`,
   discussion: `This is a whole-class DISCUSSION, not group work. It must contain: one contestable claim written as an assertion (a plausible misconception, not a true statement everyone agrees with); an initial vote; two minutes of silent individual thinking where each student writes a position plus one reason; a paired stage where each student restates their partner's reason before responding; a whole-class discussion run with talk moves (who can restate that? what is your evidence? when does this claim fail?); and a second vote compared with the first.
 Forbidden: worksheets, in-group roles, presentations. Do not settle the claim before the final step.`,
-  "hands-on": `This is a HANDS-ON activity with physical materials. Students must produce something physical: build, cut, measure, or assemble a model. It must contain a step where students compare **the value they measured** with the value the rule predicts and account for the gap.
-The materials list must be real equipment (card stock, scissors, ruler, protractor, string, calculator), not just "printed worksheets". An activity done entirely on paper is not hands-on.`,
+  "hands-on": `This is a HANDS-ON activity with physical materials. Students must produce something physical that suits the subject: in maths a figure to measure, or cards that represent the problem; in the sciences (chemistry, physics, biology) a model built from balls and sticks or clay; in languages and the humanities, cards made from the lesson's concepts, sorted or matched on a board. It must contain a step where students compare what they produced with what the rule, formula or **textbook page** says, and account for any gap or difference.
+The materials list must be real equipment that suits the subject (card stock, scissors, balls and sticks, clay, cards, adhesive tape, the textbook page…), not just "printed worksheets". Do not require a ruler or protractor unless the lesson involves measuring. An activity done entirely on paper is not hands-on.`,
   game: `This is a competitive learning GAME — calling it a game is not enough. It must explicitly contain: written rules announced before play; named teams; at least two rounds scored differently (the second with a wager the team declares before seeing the question); a scoreboard updated in full view; a timer per question; and a clear win condition.
 Close with a review of the question most teams got wrong — without it the fun stays and the learning does not.`,
   warmup: `This is a short lesson-opening WARM-UP, not a miniature version of the lesson activity. Exactly three steps: retrieval of **prior** knowledge from memory with notebooks closed; one quick check question; and a sentence bridging what was retrieved to today's objective.

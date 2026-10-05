@@ -85,3 +85,38 @@ describe('isEnglishSlideContent', () => {
     assert.equal(isEnglishSlideContent('42', '3.14'), false);
   });
 });
+
+import { workingSteps } from '../deckText.ts';
+
+describe('workingSteps', () => {
+  it('splits the book’s working chain into steps and the result', () => {
+    assert.deepEqual(
+      workingSteps('2x−5 = x²−5x+7 → x²−7x+12=0 → x=3 أو x=4'),
+      { steps: ['2x−5 = x²−5x+7', 'x²−7x+12=0'], final: 'x=3 أو x=4' },
+    );
+  });
+
+  it('splits a single arrow too, and on the other arrow spellings', () => {
+    assert.deepEqual(workingSteps('x² = 9 → x = 3'), { steps: ['x² = 9'], final: 'x = 3' });
+    assert.deepEqual(workingSteps('a = 1 ⇒ b = 2'), { steps: ['a = 1'], final: 'b = 2' });
+    assert.deepEqual(workingSteps('a = 1 => b = 2'), { steps: ['a = 1'], final: 'b = 2' });
+  });
+
+  it('leaves an answer with no arrow alone', () => {
+    assert.equal(workingSteps('x=4 أو x=3'), null);
+  });
+
+  it('does not split a chemical reaction — an arrow is not always working', () => {
+    assert.equal(workingSteps('N₂ + 3H₂ → 2NH₃'), null);
+  });
+
+  it('refuses when any part is not itself an equation or inequality', () => {
+    assert.equal(workingSteps('x = 4 → 7'), null);
+    assert.equal(workingSteps('→ x = 4'), null);
+  });
+
+  it('refuses a chain longer than the renderers have room for', () => {
+    assert.equal(workingSteps('a=1 → b=2 → c=3 → d=4 → e=5 → f=6'), null);
+    assert.ok(workingSteps('a=1 → b=2 → c=3 → d=4 → e=5'), 'five parts is the limit');
+  });
+});

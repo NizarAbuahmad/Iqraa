@@ -99,7 +99,7 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
                       key={m}
                       onPress={() => { setCopied(false); setConfig(c => ({ ...c, max: m })); }}
                       accessibilityRole="radio"
-                      accessibilityState={{ selected: on }}
+                      aria-selected={on}
                       style={[styles.pill, { backgroundColor: on ? ACCENT : colors.card, borderColor: on ? ACCENT : colors.border }]}
                     >
                       <Text style={[styles.chipText, { color: on ? '#fff' : colors.foreground }]}>{m}</Text>
@@ -121,7 +121,7 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
                       key={n}
                       onPress={() => toggleTable(n)}
                       accessibilityRole="checkbox"
-                      accessibilityState={{ checked: on }}
+                      aria-checked={on}
                       style={[styles.chip, { backgroundColor: on ? ACCENT : colors.card, borderColor: on ? ACCENT : colors.border }]}
                     >
                       <Text style={[styles.chipText, { color: on ? '#fff' : colors.foreground, writingDirection: 'ltr' }]}>
@@ -143,7 +143,7 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
                   key={s}
                   onPress={() => { setCopied(false); setConfig(c => ({ ...c, seconds: s })); }}
                   accessibilityRole="radio"
-                  accessibilityState={{ selected: on }}
+                  aria-selected={on}
                   style={[styles.pill, { backgroundColor: on ? ACCENT : colors.card, borderColor: on ? ACCENT : colors.border }]}
                 >
                   <Text style={[styles.chipText, { color: on ? '#fff' : colors.foreground }]}>{t('playDrillSecs', s)}</Text>

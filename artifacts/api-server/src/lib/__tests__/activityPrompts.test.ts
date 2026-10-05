@@ -90,6 +90,30 @@ describe("each format's clause names what that format requires", () => {
     assert.match(activityPromptEn({ ...baseBody, activityType: "hands-on" }), /card stock/i);
   });
 
+  // The rule was maths-shaped: «compare the value you MEASURED with the value
+  // the rule gives», with a ruler and protractor as the example kit. A
+  // chemistry or English lesson cannot do that, so the model either forced it
+  // or wrote a paper activity. The offline blueprints were fixed alongside
+  // (services/__tests__/handsOnActivity.test.ts in the mobile app).
+  it("hands-on is subject-neutral: it says what to build for each kind of lesson, and when NOT to measure", () => {
+    const ar = activityPromptAr({ ...baseBody, activityType: "hands-on" });
+    const en = activityPromptEn({ ...baseBody, activityType: "hands-on" });
+    assert.match(ar, /لا تشترط المسطرة أو المنقلة إلا إذا كان الدرس يتضمن قياسًا/);
+    assert.match(en, /Do not require a ruler or protractor unless the lesson involves measuring/);
+    // A kit and a product for each of the other kinds of lesson.
+    assert.match(ar, /كرات وعيدان/);
+    assert.match(ar, /بطاقات/);
+    assert.match(en, /balls and sticks/i);
+    assert.match(en, /cards/i);
+    // The constant part of the format: check the product against the rule or
+    // the book, and explain any mismatch.
+    assert.match(ar, /الكتاب/);
+    assert.match(en, /textbook/i);
+    // And the old maths-only phrasing is gone.
+    assert.doesNotMatch(ar, /القيمة التي قاسها/);
+    assert.doesNotMatch(en, /the value they measured/);
+  });
+
   it("game demands rules, rounds, scoring and a win condition", () => {
     const ar = activityPromptAr({ ...baseBody, activityType: "game" });
     const en = activityPromptEn({ ...baseBody, activityType: "game" });

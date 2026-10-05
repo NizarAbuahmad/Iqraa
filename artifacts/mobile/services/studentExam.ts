@@ -225,6 +225,12 @@ export async function getMyExams(): Promise<import('./myExams.ts').MyExam[]> {
   return data.exams ?? [];
 }
 
+/** A parent's «نتائج أبنائي»: each guardian-linked child's exams. */
+export async function getChildExams(): Promise<import('./myExams.ts').ChildExams[]> {
+  const data = await apiJson<{ children: import('./myExams.ts').ChildExams[] }>('/parent/exams');
+  return data.children ?? [];
+}
+
 /**
  * What the mastery gate needs: which lessons the student has passed and which
  * have a quiz to pass. Never throws — any failure answers "gate off", so a

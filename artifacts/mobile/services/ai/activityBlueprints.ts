@@ -57,6 +57,26 @@ export interface ActivityBlueprintContext {
   practice: PracticeWQ[];
   /** The grounded lesson, when the topic resolved to one. */
   kb: KBLesson | null;
+  /**
+   * The lesson's subject — the catalog id when the lesson resolved to a book,
+   * else the caller's subject name. Only the hands-on format reads it, to
+   * decide what students build and what they check it against.
+   */
+  subject?: string;
+  /**
+   * Which version of the activity this is. 0 — or absent — is the first, and
+   * is what every generation produced before Regenerate existed here. A
+   * regeneration asks for the next one.
+   *
+   * Maths and chemistry vary by themselves, because their items are drawn at
+   * random from a bank. Every other subject has no bank and nothing here was
+   * random, so «إعادة التوليد» returned a byte-identical activity. The
+   * variation therefore has to come from the slots a blueprint fills from the
+   * lesson: which key concepts lead, and which of a few wordings the retrieval
+   * prompt, the claim, the game questions, the jigsaw parts and the hands-on
+   * challenge use. Index 0 of every pool is the original text.
+   */
+  variant?: number;
   /** Total minutes the steps must sum to exactly. */
   duration: number;
 }
@@ -129,14 +149,32 @@ function item(ctx: ActivityBlueprintContext, i: number): PracticeWQ | null {
   return ctx.practice[i] ?? null;
 }
 
+/** The variant, as a safe non-negative integer. */
+function variantOf(ctx: ActivityBlueprintContext): number {
+  const v = Math.floor(ctx.variant ?? 0);
+  return Number.isFinite(v) && v > 0 ? v : 0;
+}
+
+/** `list` rotated left by `by` places — the same items, a different one first. */
+function rotate<T>(list: readonly T[], by: number): T[] {
+  if (list.length === 0) return [];
+  const k = by % list.length;
+  return [...list.slice(k), ...list.slice(0, k)];
+}
+
+/** This variant's entry from a pool whose first entry is the original text. */
+function pick<T>(ctx: ActivityBlueprintContext, pool: readonly T[]): T {
+  return pool[variantOf(ctx) % pool.length]!;
+}
+
 function concepts(ctx: ActivityBlueprintContext, n: number): string[] {
   const list = ctx.lang === 'ar' ? ctx.kb?.keyConceptsAr : ctx.kb?.keyConceptsEn;
-  return (list ?? []).slice(0, n);
+  return rotate(list ?? [], variantOf(ctx)).slice(0, n);
 }
 
 function rules(ctx: ActivityBlueprintContext, n: number): string[] {
   const list = ctx.lang === 'ar' ? ctx.kb?.rulesAr : ctx.kb?.rulesEn;
-  return (list ?? []).slice(0, n);
+  return rotate(list ?? [], variantOf(ctx)).slice(0, n);
 }
 
 /**
@@ -148,26 +186,41 @@ function rules(ctx: ActivityBlueprintContext, n: number): string[] {
  */
 function jigsawParts(ctx: ActivityBlueprintContext): string[] {
   const ar = ctx.lang === 'ar';
-  if (ctx.practice.length >= 2) {
-    return ctx.practice.map(p => (ar ? `حلّ: ${p.text}` : `Solve: ${p.text}`));
-  }
-  const cs = concepts(ctx, 4);
-  if (cs.length >= 2) {
-    return cs.map(c => (ar ? `اشرح «${c}» بمثال من الكتاب` : `Explain “${c}” with a textbook example`));
-  }
-  return ar
+  // Eight parts, the first four being the original set; a variant slides the
+  // window, so a regeneration hands each member of the group a different task.
+  const pool = ar
     ? [
         `عرّف ${ctx.topic} بكلماتك`,
         `أعطِ مثالًا يوضّح ${ctx.topic}`,
         `اذكر خطأً شائعًا في ${ctx.topic}`,
         `اربط ${ctx.topic} بموقف حياتي`,
+        `قارن ${ctx.topic} بفكرة قريبة منه، وبيّن أين يختلفان`,
+        `ما الشرط الذي يجب أن يتحقق حتى تصحّ فكرة ${ctx.topic}؟`,
+        `لخّص ${ctx.topic} في ثلاث جمل لزميل لم يحضر الحصة`,
+        `اكتب سؤال امتحان متوقعًا عن ${ctx.topic} مع إجابته`,
       ]
     : [
         `Define ${ctx.topic} in your own words`,
         `Give a worked example of ${ctx.topic}`,
         `Name one common error in ${ctx.topic}`,
         `Link ${ctx.topic} to a real situation`,
+        `Compare ${ctx.topic} with a nearby idea and say where they differ`,
+        `What must be true for ${ctx.topic} to hold?`,
+        `Summarise ${ctx.topic} in three sentences for a classmate who was absent`,
+        `Write a likely exam question on ${ctx.topic}, with its answer`,
       ];
+  const generic = rotate(pool, variantOf(ctx));
+  const cs = concepts(ctx, 4);
+  const base = ctx.practice.length >= 2
+    ? ctx.practice.map(p => (ar ? `حلّ: ${p.text}` : `Solve: ${p.text}`))
+    : cs.length >= 2
+      ? cs.map(c => (ar ? `اشرح «${c}» بمثال من الكتاب` : `Explain “${c}” with a textbook example`))
+      : generic;
+  // The format is built for groups of four — «a number 1–4», «four task
+  // cards». A lesson that yields only two or three tasks used to leave the
+  // fourth member of every group with nothing, so the answer was complete
+  // without them, which is exactly what the jigsaw exists to prevent.
+  return [...base, ...generic.slice(base.length)].slice(0, 4);
 }
 
 /**
@@ -190,40 +243,199 @@ function contestableClaim(ctx: ActivityBlueprintContext): string {
   }
   const rule = rules(ctx, 1)[0];
   if (rule) {
-    return ar
-      ? `«${rule}» — هل تنطبق هذه القاعدة دائمًا، أم لها شروط؟`
-      : `“${rule}” — Does this always hold, or does it have conditions?`;
+    const askAr = [
+      'هل تنطبق هذه القاعدة دائمًا، أم لها شروط؟',
+      'في أي حالة قد تفشل هذه القاعدة؟',
+      'هل يكفي أن نحفظ هذه القاعدة لنطبّقها صحيحًا؟',
+    ];
+    const askEn = [
+      'Does this always hold, or does it have conditions?',
+      'In what case might this rule fail?',
+      'Is memorising this rule enough to apply it correctly?',
+    ];
+    return ar ? `«${rule}» — ${pick(ctx, askAr)}` : `“${rule}” — ${pick(ctx, askEn)}`;
   }
   const concept = concepts(ctx, 1)[0] ?? ctx.topic;
-  return ar
-    ? `«يمكن تطبيق ${concept} في كل الحالات دون استثناء.» — هل توافق؟`
-    : `“${concept} can be applied in every case without exception.” — Do you agree?`;
+  const claimsAr = [
+    `«يمكن تطبيق ${concept} في كل الحالات دون استثناء.» — هل توافق؟`,
+    `«يكفي أن أحفظ ${concept} حتى أتقنه، ولا حاجة لفهم سببه.» — هل توافق؟`,
+    `«مثال واحد صحيح يكفي لإثبات ${concept} في كل الحالات.» — هل توافق؟`,
+  ];
+  const claimsEn = [
+    `“${concept} can be applied in every case without exception.” — Do you agree?`,
+    `“Memorising ${concept} is enough to master it — there is no need to understand why.” — Do you agree?`,
+    `“One correct example is enough to prove ${concept} in every case.” — Do you agree?`,
+  ];
+  return ar ? pick(ctx, claimsAr) : pick(ctx, claimsEn);
 }
 
-/** What students physically build or measure in the hands-on format. */
-function manipulativeTask(ctx: ActivityBlueprintContext): { task: string; check: string } {
-  const ar = ctx.lang === 'ar';
+/**
+ * What a hands-on activity is built around. The format is constant — students
+ * make something physical, then check it against the lesson's rule or the book
+ * and account for any mismatch — but WHAT they make and check against is not.
+ * It was fixed at «ruler, protractor, string; record measured vs computed»,
+ * which only fits geometry.
+ *
+ *  - `measure`: a geometric item — draw it to scale, measure it, compute it.
+ *  - `tiles`:   maths with no figure to measure — build the expression or
+ *               equation from cards and check the result by the rule.
+ *  - `model`:   the sciences — a particle/structure/process model, checked
+ *               against the formula or the book's diagram.
+ *  - `sort`:    languages, humanities and everything else — cards built from the
+ *               lesson's concepts, ordered or matched on a board, checked
+ *               against the book's order or definition.
+ */
+type HandsOnKind = 'measure' | 'tiles' | 'model' | 'sort';
+
+const GEOMETRY = /مثلث|زاوي|زوايا|دائر|نصف قطر|محيط|مساح|متوازي|مستطيل|مربع|مضلع|قطر|ضلع|رباعي|منشور|مجسم|triangle|angle|circle|radius|perimeter|area\b|rectangle|square|polygon|diagonal|\bside\b|\bcm\b|\bmm\b|\bunits?\b|سم\b/i;
+const SCIENCE_SUBJECT = /chem|physic|biolog|earth|science|كيمياء|فيزياء|أحياء|علوم/i;
+
+function handsOnKind(ctx: ActivityBlueprintContext): HandsOnKind {
+  if (ctx.math) {
+    const first = item(ctx, 0);
+    return first && GEOMETRY.test(first.text) ? 'measure' : 'tiles';
+  }
+  return SCIENCE_SUBJECT.test(ctx.subject ?? '') ? 'model' : 'sort';
+}
+
+interface HandsOnPlan {
+  /** What students make (step 2). */
+  task: string;
+  /** What they check it against (opens step 3). */
+  check: string;
+  /** What the record card holds, as a clause that follows «write on the card:». */
+  record: string;
+  materials: string[];
+  objective: string;
+  tip: string;
+  differentiation: string;
+  assessment: string;
+}
+
+/** The lesson's own concepts, joined for a card list; the topic when the book has none. */
+function conceptList(ctx: ActivityBlueprintContext, n: number): string {
+  const cs = concepts(ctx, n);
+  return (cs.length ? cs : [ctx.topic]).map(c => `«${c}»`).join(isArCtx(ctx) ? '، ' : ', ');
+}
+const isArCtx = (ctx: ActivityBlueprintContext) => ctx.lang === 'ar';
+
+function handsOnPlan(ctx: ActivityBlueprintContext): HandsOnPlan {
+  const isAr = isArCtx(ctx);
+  const kind = handsOnKind(ctx);
   const first = item(ctx, 0);
-  if (ctx.math && first) {
-    return ar
+  const concept = concepts(ctx, 1)[0] ?? ctx.topic;
+  const T = ctx.topic;
+
+  if (kind === 'measure' && first) {
+    return isAr
       ? {
           task: `ارسم الشكل الوارد في المسألة على ورق مقوى بمقياس رسم 1 سم : 1 وحدة، ثم قصّه:\n${first.text}`,
           check: `قِس الناتج على النموذج بالمسطرة/المنقلة، ثم احسبه بالقاعدة. سجّل القيمتين والفرق بينهما (القيمة المحسوبة: ${first.answer}).`,
+          record: 'القيمة المقيسة، القيمة المحسوبة، الفرق بينهما، وسببًا واحدًا محتملًا للفرق (دقة القياس؟ مقياس الرسم؟ التقريب؟)',
+          materials: ['ورق مقوّى ومقص', 'مسطرة ومنقلة', 'خيط أو شريط قياس', 'أقلام تحديد وشريط لاصق', 'آلة حاسبة', 'بطاقة تسجيل القياسات لكل ثنائي'],
+          objective: `أن ينتج الطالب نموذجًا ملموسًا مرتبطًا بـ${T}، وأن يقارن ما قاسه بما تعطيه القاعدة ويفسّر الفرق`,
+          tip: 'الفرق بين القياس والحساب ليس خطأ الطالب — إنه محتوى الحصة. اجعل تفسير الفرق هو السؤال، لا إخفاءه.',
+          differentiation: 'للمتعثرين: امنحهم شكلًا مطبوعًا جاهزًا للقص بدل الرسم من الصفر، فيبدأ عملهم من القياس مباشرة. للمتقدمين: اطلب نموذجًا ثانيًا بمقياس رسم مختلف والتحقق من أن النسبة بقيت ثابتة.',
+          assessment: 'بطاقة التسجيل هي المنتج المقيَّم: دقة القياس، صحة القيمة المحسوبة، ومعقولية تفسير الفرق. النموذج نفسه دليل على المشاركة لا على الفهم — لا تكتفِ به.',
         }
       : {
           task: `Build the figure from this problem on card stock at 1 cm : 1 unit, then cut it out:\n${first.text}`,
           check: `Measure the result on your model with a ruler/protractor, then compute it with the rule. Record both values and the gap (computed value: ${first.answer}).`,
+          record: 'measured value, computed value, the gap, and one plausible cause of the gap (measurement precision? scale? rounding?)',
+          materials: ['Card stock and scissors', 'Ruler and protractor', 'String or tape measure', 'Markers and adhesive tape', 'Calculator', 'Measurement record card per pair'],
+          objective: `Students produce a physical model tied to ${T}, then compare what they measured with what the rule predicts and account for the gap`,
+          tip: 'The gap between measured and computed is not student error — it is the content of the lesson. Make explaining the gap the question rather than hiding it.',
+          differentiation: 'Support: give a pre-printed figure to cut out instead of drawing from scratch, so their work starts at measuring. Stretch: require a second model at a different scale and a check that the ratio held.',
+          assessment: 'The record card is the assessed product: measurement accuracy, correctness of the computed value, and plausibility of the explanation for the gap. The model itself evidences participation, not understanding — do not stop there.',
         };
   }
-  const concept = concepts(ctx, 1)[0] ?? ctx.topic;
-  return ar
+
+  if (kind === 'measure' || kind === 'tiles') {
+    // `measure` without an item has nothing to measure either, so it builds too.
+    return isAr
+      ? {
+          task: first
+            ? `ابنِ المسألة ببطاقات ورقية: اقصّ بطاقة لكل حدّ أو عدد (مثل س²، س، 6) ولوّن كل نوع بلون، ثم رتّبها على لوح العمل لتمثّل:\n${first.text}`
+            : `ابنِ مثالًا من درس «${concept}» ببطاقات ورقية: اقصّ بطاقة لكل حدّ أو عدد أو رمز، ولوّن كل نوع بلون، ثم رتّبها على لوح العمل.`,
+          check: first
+            ? `حرّك البطاقات وفق خطوات القاعدة (جمع الحدود المتشابهة، التحليل، النقل…) حتى يصل نموذجك إلى ناتجه، ثم حلّ المسألة بالقاعدة كتابةً. قارن الناتجين (ناتج القاعدة: ${first.answer}) وسجّل الفرق إن وُجد.`
+            : `حرّك البطاقات وفق القاعدة في الدرس حتى يصل نموذجك إلى ناتجه، ثم حلّ المثال بالقاعدة كتابةً وقارن الناتجين وسجّل الفرق إن وُجد.`,
+          record: 'ناتج النموذج، ناتج القاعدة، الفرق بينهما إن وُجد، وخطوة واحدة بدا فيها تحريك البطاقات مختلفًا عن الحل المكتوب',
+          materials: ['ورق مقوّى ومقص', 'أقلام تحديد بألوان مختلفة (لون لكل نوع من الحدود)', 'لوح عمل أو ورقة كبيرة لكل ثنائي', 'شريط لاصق أو صمغ', 'آلة حاسبة للتحقق', 'بطاقة تسجيل لكل ثنائي'],
+          objective: `أن يبني الطالب نموذجًا ملموسًا لمسألة في ${T}، وأن يقارن ناتجه بناتج القاعدة ويفسّر أي فرق`,
+          tip: 'الفرق بين ناتج النموذج وناتج القاعدة ليس خطأ الطالب — إنه محتوى الحصة. اجعل تفسير الفرق هو السؤال، لا إخفاءه.',
+          differentiation: 'للمتعثرين: امنحهم البطاقات مقصوصة جاهزة ومرقّمة بالترتيب، فيبدأ عملهم من التحريك والتحقق. للمتقدمين: اطلب منهم تغيير عدد واحد في المسألة وتوقّع كيف سيتغير النموذج قبل بنائه.',
+          assessment: 'بطاقة التسجيل هي المنتج المقيَّم: صحة ناتج القاعدة، ومدى تطابق النموذج معه، ومعقولية تفسير أي فرق. النموذج نفسه دليل على المشاركة لا على الفهم — لا تكتفِ به.',
+        }
+      : {
+          task: first
+            ? `Build the problem from paper cards: cut one card per term or number (like x², x, 6) and colour each kind, then arrange them on the work board to represent:\n${first.text}`
+            : `Build an example from the “${concept}” lesson from paper cards: cut one card per term, number or symbol, colour each kind, then arrange them on the work board.`,
+          check: first
+            ? `Move the cards by the steps of the rule (collecting like terms, factorising, transposing…) until your model reaches its result, then solve the problem by the rule in writing. Compare the two results (the rule's result: ${first.answer}) and record the gap, if any.`
+            : `Move the cards by the lesson's rule until your model reaches its result, then solve the example by the rule in writing, compare the two results and record the gap, if any.`,
+          record: 'the model\'s result, the rule\'s result, the gap if there is one, and one step where moving the cards looked different from the written solution',
+          materials: ['Card stock and scissors', 'Markers in different colours (one colour per kind of term)', 'A work board or large sheet per pair', 'Adhesive tape or glue', 'Calculator for checking', 'Record card per pair'],
+          objective: `Students build a physical model of a problem in ${T}, then compare its result with the rule's and account for any gap`,
+          tip: 'A gap between the model\'s result and the rule\'s is not student error — it is the content of the lesson. Make explaining the gap the question rather than hiding it.',
+          differentiation: 'Support: hand over the cards already cut and numbered in order, so their work starts at moving and checking. Stretch: have them change one number in the problem and predict how the model will change before building it.',
+          assessment: 'The record card is the assessed product: correctness of the rule\'s result, how closely the model matched it, and plausibility of any explanation for a gap. The model itself evidences participation, not understanding — do not stop there.',
+        };
+  }
+
+  if (kind === 'model') {
+    return isAr
+      ? {
+          task: first
+            ? `ابنِ نموذجًا ملموسًا للمادة أو الظاهرة الواردة في المسألة (كرات وعيدان، أو صلصال وأعواد أسنان، أو بطاقات، حسب المتاح) ثم استعمله في حلّ المسألة:\n${first.text}`
+            : `ابنِ نموذجًا ملموسًا يمثّل «${concept}» باستخدام المواد المتاحة (كرات وعيدان، أو صلصال وأعواد أسنان، أو بطاقات، أو رسم مجسّم على ورق مقوى).`,
+          check: first
+            ? `استخرج من النموذج ما تطلبه المسألة (عدّ الذرات أو الروابط أو الأجزاء أو الخطوات)، ثم احسبه بالقاعدة كتابةً. قارن الناتجين (ناتج القاعدة: ${first.answer}) وسجّل الفرق إن وُجد.`
+            : `اعرض النموذج وفسّر: أي جزء منه يمثّل أي عنصر في «${concept}»؟ وأين يختلف النموذج عن الواقع؟ ثم قارنه بالشكل أو التعريف في الكتاب وسجّل أي اختلاف.`,
+          record: 'ما يُظهره النموذج، ما تنص عليه القاعدة أو الكتاب، موضع الاختلاف بينهما، وسببًا محتملًا له (حدود النموذج؟ تبسيط؟ خطأ في البناء؟)',
+          materials: ['كرات وعيدان (أو صلصال وأعواد أسنان)', 'بطاقات ملوّنة وأقلام تحديد', 'ورق مقوّى ومقص', 'شريط لاصق', 'صفحة الكتاب المدرسي للمقارنة', 'بطاقة تسجيل لكل ثنائي'],
+          objective: `أن يبني الطالب نموذجًا ملموسًا مرتبطًا بـ${T}، وأن يقارنه بما تنص عليه القاعدة أو الكتاب ويفسّر أي اختلاف`,
+          tip: 'اختلاف النموذج عن القاعدة ليس خطأ الطالب — إنه محتوى الحصة، فكل نموذج يبسّط الواقع. اجعل تفسير الاختلاف هو السؤال.',
+          differentiation: 'للمتعثرين: امنحهم نصف النموذج مبنيًا ليكملوه، فيبدأ عملهم من المقارنة. للمتقدمين: اطلب منهم تغيير شيء واحد في النموذج (ذرة، رابطة، عنصر) وتوقّع أثر ذلك قبل التحقق.',
+          assessment: 'بطاقة التسجيل هي المنتج المقيَّم: صحة ما يُظهره النموذج، ودقة المقارنة بالقاعدة أو الكتاب، ومعقولية تفسير الاختلاف. النموذج نفسه دليل على المشاركة لا على الفهم — لا تكتفِ به.',
+        }
+      : {
+          task: first
+            ? `Build a physical model of the substance or phenomenon in the problem (balls and sticks, clay and toothpicks, or cards — whatever is to hand), then use it to solve the problem:\n${first.text}`
+            : `Build a physical model of “${concept}” from the available materials (balls and sticks, clay and toothpicks, cards, or a card-stock construction).`,
+          check: first
+            ? `Read from the model what the problem asks for (count atoms, bonds, parts or steps), then compute it by the rule in writing. Compare the two results (the rule's result: ${first.answer}) and record the gap, if any.`
+            : `Present the model and explain: which part represents which element of “${concept}”, and where does the model differ from reality? Then compare it with the diagram or definition in the textbook and record any difference.`,
+          record: 'what the model shows, what the rule or textbook says, where they differ, and one plausible reason (limits of the model? simplification? a building error?)',
+          materials: ['Balls and sticks (or clay and toothpicks)', 'Coloured cards and markers', 'Card stock and scissors', 'Adhesive tape', 'The textbook page, for comparing', 'Record card per pair'],
+          objective: `Students build a physical model tied to ${T}, then compare it with what the rule or textbook says and account for any difference`,
+          tip: 'A model that differs from the rule is not student error — it is the content of the lesson, because every model simplifies reality. Make explaining the difference the question.',
+          differentiation: 'Support: hand over a half-built model to finish, so their work starts at comparing. Stretch: have them change one thing in the model (an atom, a bond, a component) and predict the effect before checking.',
+          assessment: 'The record card is the assessed product: correctness of what the model shows, accuracy of the comparison with the rule or textbook, and plausibility of the explanation for any difference. The model itself evidences participation, not understanding — do not stop there.',
+        };
+  }
+
+  // sort — languages, humanities, and any subject without a measurable or a model.
+  return isAr
     ? {
-        task: `ابنِ نموذجًا ملموسًا يمثّل «${concept}» باستخدام المواد المتاحة (كرات وعيدان، بطاقات، أو رسم مجسّم على ورق مقوى).`,
-        check: `اعرض النموذج وفسّر: أي جزء منه يمثّل أي عنصر في «${concept}»؟ وأين يختلف النموذج عن الواقع؟`,
+        task: `حوّلوا ${conceptList(ctx, 5)} من درس «${T}» إلى بطاقات: على كل بطاقة مفهوم أو حدث أو جملة أو مثال من الدرس. ثم رتّبوها ماديًا على لوح الورق المقوى بالطريقة التي يناسبها الدرس (تسلسل زمني، أو خريطة مفاهيم تربطها أسهم ورقية، أو مطابقة مفهوم بمثاله).`,
+        check: 'افتحوا الآن صفحة الكتاب وقارنوا ترتيبكم بما فيه: أين اتفقتم وأين اختلفتم؟ لكل بطاقة وضعتموها في غير موضعها اكتبوا السبب.',
+        record: 'ترتيبنا، ترتيب الكتاب، البطاقات التي اختلف موضعها، وسببًا لكل اختلاف',
+        materials: ['ورق مقوّى ومقص', 'أقلام تحديد ملوّنة', 'ورق لاصق ملوّن وشريط لاصق', 'ورقة كبيرة أو لوح لكل ثنائي لتعليق البطاقات', 'أسهم ورقية لربط المفاهيم', 'صفحة الكتاب المدرسي للمقارنة', 'بطاقة تسجيل لكل ثنائي'],
+        objective: `أن ينتج الطالب بطاقات مرتّبة ماديًا تمثّل ${T}، وأن يقارن ترتيبه بما في الكتاب ويفسّر أي اختلاف`,
+        tip: 'اختلاف ترتيب الطلبة عن الكتاب ليس خطأً بالضرورة — اسأل عن السبب أولًا؛ كثيرًا ما يكشف فهمًا بديلًا يستحق النقاش.',
+        differentiation: 'للمتعثرين: امنحهم البطاقات مكتوبة جاهزة ليركّزوا على الترتيب. للمتقدمين: اطلب منهم إضافة بطاقتين من عندهم تُكمل الصورة، وتبرير موضعهما.',
+        assessment: 'بطاقة التسجيل هي المنتج المقيَّم: دقة المقارنة بالكتاب، ومعقولية تفسير كل اختلاف. اللوح نفسه دليل على المشاركة لا على الفهم — لا تكتفِ به.',
       }
     : {
-        task: `Build a physical model of “${concept}” from the available materials (balls and sticks, cards, or a card-stock construction).`,
-        check: `Present the model and explain: which part represents which element of “${concept}”, and where does the model differ from reality?`,
+        task: `Turn ${conceptList(ctx, 5)} from the “${T}” lesson into cards: one concept, event, sentence or example from the lesson on each card. Then arrange them physically on the card-stock board in the way the lesson calls for (a timeline, a concept map joined with paper arrows, or matching each concept to its example).`,
+        check: 'Now open the textbook page and compare your arrangement with it: where did you agree, and where did you differ? For every card you placed somewhere else, write down why.',
+        record: 'our arrangement, the textbook\'s arrangement, the cards whose place differed, and a reason for each difference',
+        materials: ['Card stock and scissors', 'Coloured markers', 'Coloured sticky notes and adhesive tape', 'A large sheet or board per pair to arrange the cards on', 'Paper arrows for linking concepts', 'The textbook page, for comparing', 'Record card per pair'],
+        objective: `Students produce physically arranged cards representing ${T}, then compare their arrangement with the textbook and account for any difference`,
+        tip: 'A pair arranging differently from the textbook is not necessarily wrong — ask why first; it often exposes an alternative understanding worth discussing.',
+        differentiation: 'Support: hand over the cards already written, so they can concentrate on arranging. Stretch: have them add two cards of their own that complete the picture, and justify where they go.',
+        assessment: 'The record card is the assessed product: accuracy of the comparison with the textbook and plausibility of the reason for each difference. The board itself evidences participation, not understanding — do not stop there.',
       };
 }
 
@@ -235,25 +447,64 @@ function gameQuestions(ctx: ActivityBlueprintContext): string[] {
   }
   const cs = concepts(ctx, 3);
   if (cs.length) {
-    return cs.map(c => (ar ? `ما المقصود بـ«${c}»؟ وأعطِ مثالًا.` : `What is “${c}”? Give an example.`));
+    // One wording per variant for every concept, so a regeneration both leads
+    // with different concepts (see `concepts`) and asks about them differently.
+    const askAr = [
+      (c: string) => `ما المقصود بـ«${c}»؟ وأعطِ مثالًا.`,
+      (c: string) => `اشرح «${c}» بكلماتك مع مثال من عندك.`,
+      (c: string) => `أين يخطئ الطلبة عادةً في «${c}»؟ ولماذا؟`,
+      (c: string) => `ما علاقة «${c}» بموضوع ${ctx.topic}؟`,
+    ];
+    const askEn = [
+      (c: string) => `What is “${c}”? Give an example.`,
+      (c: string) => `Explain “${c}” in your own words, with an example of your own.`,
+      (c: string) => `Where do students usually go wrong with “${c}”, and why?`,
+      (c: string) => `How does “${c}” relate to ${ctx.topic}?`,
+    ];
+    const ask = ar ? pick(ctx, askAr) : pick(ctx, askEn);
+    return cs.map(ask);
   }
-  return ar
-    ? [`عرّف ${ctx.topic}`, `أعطِ مثالًا على ${ctx.topic}`, `ما الخطأ الشائع في ${ctx.topic}؟`]
-    : [`Define ${ctx.topic}`, `Give an example of ${ctx.topic}`, `What is a common error in ${ctx.topic}?`];
+  const pool = ar
+    ? [
+        `عرّف ${ctx.topic}`, `أعطِ مثالًا على ${ctx.topic}`, `ما الخطأ الشائع في ${ctx.topic}؟`,
+        `ما الفرق بين ${ctx.topic} وفكرة قريبة منه؟`, `متى لا تصحّ فكرة ${ctx.topic}؟`, `اشرح ${ctx.topic} لطالب أصغر منك سنًّا.`,
+      ]
+    : [
+        `Define ${ctx.topic}`, `Give an example of ${ctx.topic}`, `What is a common error in ${ctx.topic}?`,
+        `How does ${ctx.topic} differ from a nearby idea?`, `When does ${ctx.topic} not hold?`, `Explain ${ctx.topic} to a younger student.`,
+      ];
+  return rotate(pool, variantOf(ctx)).slice(0, 3);
 }
 
 /** The prior-knowledge prompt a warm-up retrieves — never today's new content. */
 function priorRecallPrompt(ctx: ActivityBlueprintContext): string {
   const ar = ctx.lang === 'ar';
-  const prior = (ctx.kb?.objectives ?? []).slice(0, 1)[0];
+  const objectives = ctx.kb?.objectives ?? [];
+  const prior = objectives.length ? objectives[variantOf(ctx) % objectives.length] : undefined;
   if (prior) {
-    return ar
-      ? `اكتب من ذاكرتك — الدفاتر مغلقة — ما تتذكره عن: ${prior}`
-      : `From memory, notebooks closed — write what you recall about: ${prior}`;
+    return pick(ctx, ar
+      ? [
+          `اكتب من ذاكرتك — الدفاتر مغلقة — ما تتذكره عن: ${prior}`,
+          `دوّن بصمت — الدفاتر مغلقة — كل ما تعرفه عن: ${prior}`,
+          `أجب كتابةً من الذاكرة دون النظر في الكتاب: ماذا تتذكر عن: ${prior}`,
+        ]
+      : [
+          `From memory, notebooks closed — write what you recall about: ${prior}`,
+          `Silently jot down, notebooks closed, everything you know about: ${prior}`,
+          `Answer in writing from memory, without looking at the book: what do you recall about: ${prior}`,
+        ]);
   }
-  return ar
-    ? `اكتب من ذاكرتك — الدفاتر مغلقة — كل ما تتذكره عن ${ctx.topic} من الحصة السابقة (3 نقاط).`
-    : `From memory, notebooks closed — write everything you recall about ${ctx.topic} from last lesson (3 points).`;
+  return pick(ctx, ar
+    ? [
+        `اكتب من ذاكرتك — الدفاتر مغلقة — كل ما تتذكره عن ${ctx.topic} من الحصة السابقة (3 نقاط).`,
+        `دوّن بصمت — الدفاتر مغلقة — ثلاث أفكار تتذكرها عن ${ctx.topic} من الحصة السابقة.`,
+        `أجب كتابةً من الذاكرة: ما أهم ما تعلّمته عن ${ctx.topic} في الحصة السابقة؟ (3 نقاط).`,
+      ]
+    : [
+        `From memory, notebooks closed — write everything you recall about ${ctx.topic} from last lesson (3 points).`,
+        `Silently jot down, notebooks closed, three ideas you remember about ${ctx.topic} from last lesson.`,
+        `Answer in writing from memory: what was the most important thing you learned about ${ctx.topic} last lesson? (3 points).`,
+      ]);
 }
 
 // ─── Blueprints ──────────────────────────────────────────────────────────────
@@ -350,34 +601,54 @@ function discussionAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
   };
 }
 
+/**
+ * A challenge added to the build step on a regeneration — a different thing to
+ * DO with what students make, which is what changes between versions of a
+ * hands-on activity when there is no bank of items to redraw. None for the
+ * first version.
+ */
+function handsOnTwist(ctx: ActivityBlueprintContext): string {
+  const v = variantOf(ctx);
+  if (v === 0) return '';
+  const ar = ctx.lang === 'ar';
+  const pool = ar
+    ? [
+        'تحدٍّ إضافي: بعد البناء، يتبادل الثنائي ما أنتجه مع ثنائي مجاور، ويحدّد الثنائي الآخر موضع أي اختلاف عن القاعدة قبل أن تُفتح بطاقة التسجيل.',
+        'قيد إضافي: قبل البدء، يقرّر الثنائي ما الذي سيبسّطه في ما ينتجه وما الذي لا يجوز تبسيطه، ويكتب القرارين على بطاقة التسجيل.',
+        'تحدٍّ إضافي: يخفي أحد الشريكين جزءًا من الناتج، ويتوقّع الآخر ما يمثّله ذلك الجزء قبل أن يُكشف.',
+        'تحدٍّ إضافي: يضيف الثنائي إلى ما أنتجه عنصرًا واحدًا فيه خطأ شائع مقصود، ثم يتبادل مع ثنائي آخر ليكتشف الخطأ.',
+      ]
+    : [
+        'Extra challenge: after building, swap what you made with a neighbouring pair, who mark where it differs from the rule before the record card is opened.',
+        'Extra constraint: before starting, the pair decide what they will simplify in what they make and what they must not, and write both decisions on the record card.',
+        'Extra challenge: one partner hides a part of the product and the other predicts what that part represents before it is revealed.',
+        'Extra challenge: the pair add one deliberate common error to what they made, then swap with another pair who must find it.',
+      ];
+  return pool[(v - 1) % pool.length]!;
+}
+
 function handsOnAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
-  const { task, check } = manipulativeTask(ctx);
+  const plan = handsOnPlan(ctx);
+  const twist = handsOnTwist(ctx);
   const mins = distributeMinutes(ctx.duration, [1, 3, 2, 1.2]);
   return {
     titleSuffix: 'نشاط تطبيقي عملي',
     groupSize: 'ثنائيات — يد واحدة تبني ويد تسجّل، ثم يتبادلان',
-    objective: `أن ينتج الطالب نموذجًا ملموسًا مرتبطًا بـ${ctx.topic}، وأن يقارن ما قاسه بما تعطيه القاعدة ويفسّر الفرق`,
-    materials: [
-      'ورق مقوّى ومقص',
-      'مسطرة ومنقلة',
-      'خيط أو شريط قياس',
-      'أقلام تحديد وشريط لاصق',
-      'آلة حاسبة',
-      'بطاقة تسجيل القياسات لكل ثنائي',
-    ],
+    objective: plan.objective,
+    materials: plan.materials,
     steps: steps([
       ['جهّزوا المواد ووزّعوا الدورين', 'كل ثنائي يأخذ عدّة كاملة. حدّدا من يبني أولًا ومن يسجّل — ستتبادلان الدورين في منتصف الخطوة التالية. راجع قواعد السلامة في استخدام المقص.'],
-      ['ابنِ / قِس', task],
-      ['من القياس إلى القاعدة', `${check}\nاكتبا على بطاقة التسجيل: القيمة المقيسة، القيمة المحسوبة، الفرق بينهما، وسببًا واحدًا محتملًا للفرق (دقة القياس؟ مقياس الرسم؟ التقريب؟).`],
-      ['اعرضوا وقارنوا', 'علّق الثنائيات نماذجها على الحائط مع بطاقات التسجيل. جولة سريعة: أي ثنائي حصل على أصغر فرق؟ وماذا فعل مختلفًا؟ اختم بالقاعدة مكتوبة على السبورة إلى جانب أحد النماذج.'],
+      ['ابنِ', twist ? `${plan.task}\n${twist}` : plan.task],
+      ['من النموذج إلى القاعدة', `${plan.check}\nاكتبا على بطاقة التسجيل: ${plan.record}.`],
+      ['اعرضوا وقارنوا', 'علّق الثنائيات نماذجها على الحائط مع بطاقات التسجيل. جولة سريعة: أي ثنائي كان نموذجه الأقرب إلى القاعدة؟ وماذا فعل مختلفًا؟ اختم بالقاعدة مكتوبة على السبورة إلى جانب أحد النماذج.'],
     ], mins),
     teacherTips: [
-      'الفرق بين القياس والحساب ليس خطأ الطالب — إنه محتوى الحصة. اجعل تفسير الفرق هو السؤال، لا إخفاءه.',
-      'جهّز عدّتين إضافيتين: قطعة تتمزّق أو قياس يفسد سيوقف ثنائيًا بالكامل عن النشاط.',
+      plan.tip,
+      'جهّز عدّتين إضافيتين: قطعة تتمزّق أو مادة تفسد ستوقف ثنائيًا بالكامل عن النشاط.',
       'صوّر ثلاثة نماذج بالهاتف قبل تفكيكها — تصلح كمرجع بصري في حصة المراجعة.',
     ],
-    differentiation: 'للمتعثرين: امنحهم شكلًا مطبوعًا جاهزًا للقص بدل الرسم من الصفر، فيبدأ عملهم من القياس مباشرة. للمتقدمين: اطلب نموذجًا ثانيًا بمقياس رسم مختلف والتحقق من أن النسبة بقيت ثابتة.',
-    assessment: 'بطاقة التسجيل هي المنتج المقيَّم: دقة القياس، صحة القيمة المحسوبة، ومعقولية تفسير الفرق. النموذج نفسه دليل على المشاركة لا على الفهم — لا تكتفِ به.',
+    differentiation: plan.differentiation,
+    assessment: plan.assessment,
   };
 }
 
@@ -532,33 +803,27 @@ function discussionEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
 }
 
 function handsOnEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
-  const { task, check } = manipulativeTask(ctx);
+  const plan = handsOnPlan(ctx);
+  const twist = handsOnTwist(ctx);
   const mins = distributeMinutes(ctx.duration, [1, 3, 2, 1.2]);
   return {
     titleSuffix: 'Hands-on Build',
     groupSize: 'Pairs — one builds, one records, then swap',
-    objective: `Students produce a physical model tied to ${ctx.topic}, then compare what they measured with what the rule predicts and account for the gap`,
-    materials: [
-      'Card stock and scissors',
-      'Ruler and protractor',
-      'String or tape measure',
-      'Markers and adhesive tape',
-      'Calculator',
-      'Measurement record card per pair',
-    ],
+    objective: plan.objective,
+    materials: plan.materials,
     steps: steps([
       ['Set up and split the roles', 'Each pair takes a full kit. Decide who builds first and who records — you will swap halfway through the next step. Review scissor safety.'],
-      ['Build / measure', task],
-      ['From measurement to rule', `${check}\nOn the record card write: measured value, computed value, the gap, and one plausible cause of the gap (measurement precision? scale? rounding?).`],
-      ['Display and compare', 'Pairs post their models on the wall with their record cards. Quick tour: which pair got the smallest gap, and what did they do differently? Close with the rule written on the board next to one of the models.'],
+      ['Build', twist ? `${plan.task}\n${twist}` : plan.task],
+      ['From model to rule', `${plan.check}\nOn the record card write: ${plan.record}.`],
+      ['Display and compare', 'Pairs post their models on the wall with their record cards. Quick tour: which pair\'s model came closest to the rule, and what did they do differently? Close with the rule written on the board next to one of the models.'],
     ], mins),
     teacherTips: [
-      'The gap between measured and computed is not student error — it is the content of the lesson. Make explaining the gap the question rather than hiding it.',
-      'Prepare two spare kits: one torn piece or one spoiled measurement stops a pair completely.',
+      plan.tip,
+      'Prepare two spare kits: one torn piece or one spoiled material stops a pair completely.',
       'Photograph three models before they are dismantled — they make a useful visual reference in the revision lesson.',
     ],
-    differentiation: 'Support: give a pre-printed figure to cut out instead of drawing from scratch, so their work starts at measuring. Stretch: require a second model at a different scale and a check that the ratio held.',
-    assessment: 'The record card is the assessed product: measurement accuracy, correctness of the computed value, and plausibility of the explanation for the gap. The model itself evidences participation, not understanding — do not stop there.',
+    differentiation: plan.differentiation,
+    assessment: plan.assessment,
   };
 }
 

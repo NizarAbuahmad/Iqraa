@@ -19,14 +19,21 @@
  *   affected template appeared in only about half of runs. A single pass would
  *   be a coin flip; `PASSES` makes a miss vanishingly unlikely across the set.
  */
-import { describe, it } from 'node:test';
+import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { MockAIService } from '../ai/generators.ts';
+import { MockAIService, questionBankPolicy } from '../ai/generators.ts';
 import { getUnitsForSubjectGrade, getLessonsForUnit } from '../knowledgeBase.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 
 const PASSES = 4;
+
+// These lessons are about blank key terms in the TEMPLATE fallbacks, which the
+// service no longer serves for a lesson with no bank (see NoQuestionBankError)
+// — and most of these lessons have none. The policy is lifted for this file so
+// the machinery that still fills a spent family's slots stays covered.
+before(() => { questionBankPolicy.required = false; });
+after(() => { questionBankPolicy.required = true; });
 
 function grade10MathLessons(): KBLesson[] {
   return getUnitsForSubjectGrade('mathematics', 'grade-10').flatMap(unit =>

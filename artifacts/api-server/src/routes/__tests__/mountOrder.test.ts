@@ -407,6 +407,11 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(roster.status, 401, "the roster route keeps its own guard");
   });
 
+  it("guards a parent's view of their children's exams", async () => {
+    const theirs = await fetch(`${base}/parent/exams`);
+    assert.equal(theirs.status, 401, "/parent/exams must require a token");
+  });
+
   it("keeps the class join-code lookup public, and closed while student accounts are off", async () => {
     // The trap this guards: roster.ts mounts
     // `router.use(["/classes","/students"], authMiddleware, …)`, and Express

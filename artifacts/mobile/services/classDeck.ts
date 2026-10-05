@@ -10,6 +10,7 @@
  * renders these decks with no changes: 'question' slides already carry
  * options / correctIndex / verified.
  */
+import { arCountPhrase } from './arCount.ts';
 import type {
   ActivitySlide,
   ClassroomActivity,
@@ -47,12 +48,47 @@ function outcomeFields(
   };
 }
 
-/** Options are stored display-ready; find the correct one by exact text. */
-function indexOfAnswer(options: string[], answer: string): number {
-  const i = options.indexOf(answer);
-  if (i >= 0) return i;
-  const norm = (s: string) => s.trim().replace(/\s+/g, ' ');
-  return Math.max(0, options.findIndex(o => norm(o) === norm(answer)));
+/**
+ * An option letter the model baked into option or key text — «أ) », «B. ».
+ * Letters only: a leading digit is often part of the answer («1.5»), and
+ * stripping it made a wrong key «2.5» match an option «1.5».
+ */
+const LETTER_MARKER = /^\s*(?:هـ|[A-Za-z]|[أابجدهوزحطي])\s*[).\-–—:]\s*/;
+
+/** A key that is nothing but an option's letter — «ب», «ب)», «C.». */
+const BARE_LETTER = /^\s*(هـ|[A-Za-z]|[أابجدهوزحطي])\s*[).\-–—:]?\s*$/;
+
+const LETTER_POSITION: Record<string, number> = {
+  'أ': 0, 'ا': 0, 'ب': 1, 'ج': 2, 'د': 3, 'هـ': 4, 'ه': 4, 'و': 5, 'ز': 6, 'ح': 7, 'ط': 8, 'ي': 9,
+};
+
+/**
+ * Which option the answer key names, or -1 when it names none.
+ *
+ * It used to fall back to `Math.max(0, findIndex(...))`, so a key that matched
+ * no option became «option A is correct» and a class was shown the wrong
+ * answer ticked green. Live AI makes that likely — options come back as
+ * «أ) 3 / ب) 4» and the key as «ب) 4», «4» or just «ب». Resolved in order:
+ * exact text, whitespace-insensitive text, text with option letters ignored on
+ * either side, then a bare option letter by position. A bare NUMBER is not read
+ * as a position: «2» that matches no option is a wrong key.
+ */
+export function indexOfAnswer(options: string[], answer: string | null | undefined): number {
+  if (typeof answer !== 'string' || !answer.trim()) return -1;
+  const exact = options.indexOf(answer);
+  if (exact >= 0) return exact;
+  const norm = (t: string) => t.trim().replace(/\s+/g, ' ');
+  const spaced = options.findIndex(o => norm(o) === norm(answer));
+  if (spaced >= 0) return spaced;
+  const bare = (t: string) => norm(t.replace(LETTER_MARKER, ''));
+  const unlettered = options.findIndex(o => bare(o) === bare(answer));
+  if (unlettered >= 0) return unlettered;
+  const letter = BARE_LETTER.exec(answer)?.[1];
+  if (letter) {
+    const pos = LETTER_POSITION[letter] ?? letter.toUpperCase().charCodeAt(0) - 65;
+    if (pos >= 0 && pos < options.length) return pos;
+  }
+  return -1;
 }
 
 /**
@@ -171,15 +207,19 @@ export function buildDeckFromQuiz(
 
   quiz.questions.forEach((q, i) => {
     const hasOptions = Array.isArray(q.options) && q.options.length >= 2;
+    // A key that names none of the options cannot be ticked: it is shown as
+    // an open question with the key as text, never as option A.
+    const correct = hasOptions ? indexOfAnswer(q.options!, q.correctAnswer) : -1;
+    const asChoice = hasOptions && correct >= 0;
     slides.push({
       slideNumber: slides.length + 1,
-      type: hasOptions ? 'question' : 'challenge',
+      type: asChoice ? 'question' : 'challenge',
       title: isAr ? `سؤال ${i + 1}` : `Question ${i + 1}`,
       content: q.text,
-      ...(hasOptions
+      ...(asChoice
         ? {
             options: q.options,
-            correctIndex: indexOfAnswer(q.options!, q.correctAnswer),
+            correctIndex: correct,
             // Per-question outcome wins when supplied. `verifiedBy: 'bank'`
             // still shows a badge — it says the answer came from the reviewed
             // bank, which is a claim about provenance, not about proof.
@@ -187,10 +227,10 @@ export function buildDeckFromQuiz(
               ? outcomeFields(opts.outcomes[i])
               : { verified: opts?.verified === true }),
           }
-        : { answer: q.correctAnswer }),
+        : { answer: hasOptions ? (q.correctAnswer ?? '') : q.correctAnswer }),
       durationSeconds: THINK_SECONDS,
       teacher: {
-        expectedAnswer: q.correctAnswer,
+        expectedAnswer: q.correctAnswer ?? '',
         teachingTips: isAr
           ? 'الكل يجيب معًا عند انتهاء المؤقت — اقرأ توزيع الإجابات قبل الكشف.'
           : 'Everyone answers together when the timer ends — read the spread before revealing.',
@@ -271,6 +311,21 @@ export function buildDeckFromWorksheet(
   // ever fills in the top-level answerKey, keyed by 1-based position across
   // this same flattened section/question order.
   const answerByPosition = new Map(ws.answerKey.map(a => [a.num, a.answer]));
+  const solutionByPosition = new Map(ws.answerKey.map(a => [a.num, a.solution]));
+
+  // The worked example is studied before anything is asked. An `intro` slide,
+  // not a question: question slides are numbered and verified by flat position
+  // (`outcomes[qNum - 1]`), and an extra one would shift every badge after it.
+  if (ws.workedExample) {
+    const ex = ws.workedExample;
+    slides.push({
+      slideNumber: slides.length + 1,
+      type: 'intro',
+      title: isAr ? '✍️ مثال محلول' : '✍️ Worked example',
+      content: [ex.problem, '', ...ex.steps.map((step, i) => `${i + 1}) ${step}`), ...(ex.selfExplain ? ['', ex.selfExplain] : [])].join('\n'),
+      durationSeconds: 0,
+    });
+  }
 
   let qNum = 0;
   const answers: string[] = [];
@@ -280,15 +335,19 @@ export function buildDeckFromWorksheet(
       const hasOptions = Array.isArray(q.options) && q.options.length >= 2;
       const answer = answerByPosition.get(qNum) ?? '';
       answers.push(isAr ? `سؤال ${qNum}: ${answer}` : `Q${qNum}: ${answer}`);
+      // Same rule as buildDeckFromQuiz: a key naming no option is shown as an
+      // open question carrying the key, never as option A.
+      const correct = hasOptions ? indexOfAnswer(q.options!, answer) : -1;
+      const asChoice = hasOptions && correct >= 0;
       slides.push({
         slideNumber: slides.length + 1,
-        type: hasOptions ? 'question' : 'challenge',
+        type: asChoice ? 'question' : 'challenge',
         title: isAr ? `سؤال ${qNum}` : `Question ${qNum}`,
         content: q.text,
-        ...(hasOptions
+        ...(asChoice
           ? {
               options: q.options,
-              correctIndex: indexOfAnswer(q.options!, answer),
+              correctIndex: correct,
               // Per-question outcome wins when supplied — same rule as
               // buildDeckFromQuiz: 'bank' still shows a badge, since that's a
               // claim about provenance (came from the reviewed bank), not a
@@ -305,9 +364,12 @@ export function buildDeckFromWorksheet(
           ? {
               teacher: {
                 expectedAnswer: answer,
-                teachingTips: isAr
-                  ? 'الكل يجيب معًا عند انتهاء المؤقت.'
-                  : 'Everyone answers together when the timer ends.',
+                teachingTips: [
+                  isAr ? 'الكل يجيب معًا عند انتهاء المؤقت.' : 'Everyone answers together when the timer ends.',
+                  ...(solutionByPosition.get(qNum)?.length
+                    ? [isAr ? 'خطوات الحل:' : 'Working:', ...solutionByPosition.get(qNum)!.map((step, i) => `${i + 1}) ${step}`)]
+                    : []),
+                ].join('\n'),
               },
             }
           : {}),
@@ -421,14 +483,19 @@ export function buildGameDeckFromQuiz(
   },
 ): ClassroomActivity {
   const teamCount = Math.max(2, Math.min(6, Math.floor(opts.teamCount) || 2));
-  const scoreable = quiz.questions.filter(q => Array.isArray(q.options) && q.options.length >= 2);
+  // Only a question whose key names one of its options can be adjudicated; the
+  // rest used to be served with option A ticked, or threw on a missing key.
+  const scoreable = quiz.questions
+    .filter(q => Array.isArray(q.options) && q.options.length >= 2)
+    .map(q => ({ q, correct: indexOfAnswer(q.options!, q.correctAnswer) }))
+    .filter(({ correct }) => correct >= 0);
 
   const slides: ActivitySlide[] = [{
     slideNumber: 1,
     type: 'intro',
     title: isAr ? `🏆 تحدي الصف — ${quiz.title}` : `🏆 Class Challenge — ${quiz.title}`,
     content: isAr
-      ? `${lessonTitle}\n\nالقواعد:\n• الصف مقسوم إلى ${teamCount} فرق\n${sharedThinkingRules(true)}\n• عند انتهاء الوقت: كل فريق يرفع يده للإجابة\n• الفريق المصيب يأخذ ١٠٠ نقطة — والإجابات المتتالية تعطي نقاطًا إضافية`
+      ? `${lessonTitle}\n\nالقواعد:\n• الصف مقسوم إلى ${arCountPhrase(teamCount, 'فريق', 'فريقين', 'فرق')}\n${sharedThinkingRules(true)}\n• عند انتهاء الوقت: كل فريق يرفع يده للإجابة\n• الفريق المصيب يأخذ ١٠٠ نقطة — والإجابات المتتالية تعطي نقاطًا إضافية`
       : `${lessonTitle}\n\nRules:\n• The class is split into ${teamCount} teams\n${sharedThinkingRules(false)}\n• When time ends: each team raises a hand to answer\n• A correct team scores 100 points — consecutive answers earn a bonus`,
     durationSeconds: 0,
   }];
@@ -437,14 +504,14 @@ export function buildGameDeckFromQuiz(
   if (objSlide) slides.push(objSlide);
   pushFigures(slides, opts.lesson?.id, isAr, opts.figureUri);
 
-  scoreable.forEach((q, i) => {
+  scoreable.forEach(({ q, correct }, i) => {
     slides.push({
       slideNumber: slides.length + 1,
       type: 'question',
       title: isAr ? `سؤال ${i + 1}` : `Question ${i + 1}`,
       content: q.text,
       options: q.options,
-      correctIndex: indexOfAnswer(q.options!, q.correctAnswer),
+      correctIndex: correct,
       verified: opts.verified === true,
       questionIndex: i,
       durationSeconds: GAME_THINK_SECONDS,
@@ -466,7 +533,7 @@ export function buildGameDeckFromQuiz(
         type: 'scoreboard',
         title: isAr ? '📊 الترتيب الحالي' : '📊 Standings',
         content: isAr
-          ? `بعد ${i + 1} من ${scoreable.length} أسئلة`
+          ? `بعد ${i + 1} من ${arCountPhrase(scoreable.length, 'سؤال', 'سؤالين', 'أسئلة')}`
           : `After ${i + 1} of ${scoreable.length} questions`,
         durationSeconds: 0,
       });
@@ -497,10 +564,10 @@ export function buildGameDeckFromQuiz(
       ? ['شاشة عرض', 'تقسيم الصف إلى فرق']
       : ['Projector', 'Class split into teams'],
     teacherPreparation: isAr
-      ? `قسّم الصف إلى ${teamCount} فرق قبل البدء.`
+      ? `قسّم الصف إلى ${arCountPhrase(teamCount, 'فريق', 'فريقين', 'فرق')} قبل البدء.`
       : `Split the class into ${teamCount} teams before starting.`,
     teacherNotes: [],
-    answerKey: scoreable.map((q, i) =>
+    answerKey: scoreable.map(({ q }, i) =>
       isAr ? `سؤال ${i + 1}: ${q.correctAnswer}` : `Q${i + 1}: ${q.correctAnswer}`,
     ),
     printables: [],
@@ -508,7 +575,7 @@ export function buildGameDeckFromQuiz(
       ? 'النتيجة تقيس الفريق، لكن توزيع البطاقات المرفوعة هو ما يكشف الخطأ الشائع — انظر إليه قبل الكشف.'
       : 'The score measures the team, but the spread of raised cards is what exposes the common error — read it before revealing.',
     extensionChallenge: '',
-    game: { teamCount, questionCount: scoreable.length },
+    game: { teamCount, questionCount: scoreable.length, isAr },
     slides,
   };
 }
