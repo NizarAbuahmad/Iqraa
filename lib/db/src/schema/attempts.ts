@@ -295,6 +295,32 @@ export const attemptRetakes = pgTable(
   t => [index("attempt_retakes_eval_student_idx").on(t.evaluationId, t.studentId)],
 );
 
+/**
+ * A teacher letting a student through a lesson the quiz would otherwise hold
+ * them behind (mastery gate). Counts as a pass for that student and lesson.
+ *
+ * Keyed on the lesson, not the exam: the gate unlocks lessons, and a lesson
+ * can have more than one quiz. One row per (student, lesson); granting twice
+ * is a no-op and undoing deletes the row.
+ */
+export const masteryOverrides = pgTable(
+  "mastery_overrides",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "cascade" }),
+    /** The catalog lesson id (`kbl-…`), never a title. */
+    lessonId: text("lesson_id").notNull(),
+    teacherId: uuid("teacher_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  t => [unique("mastery_overrides_student_lesson_unique").on(t.studentId, t.lessonId)],
+);
+
+export type MasteryOverride = typeof masteryOverrides.$inferSelect;
 export type AttemptRetake = typeof attemptRetakes.$inferSelect;
 export type EvaluationAssignment = typeof evaluationAssignments.$inferSelect;
 export type Attempt = typeof attempts.$inferSelect;

@@ -31,6 +31,7 @@ import {
   getClassInsights,
   getEvaluation,
   listAttempts,
+  setMasteryUnlock,
   type AttemptListRow,
   type AttemptStatus,
   type ClassInsights,
@@ -119,6 +120,7 @@ export default function ResultsDashboardScreen() {
     isLoading: loading,
     isError,
     error: loadErrorRaw,
+    refetch,
   } = useQuery({
     queryKey: evaluationResultsQueryKey(id ?? ''),
     queryFn: async (): Promise<EvaluationResultsData> => {
@@ -138,6 +140,21 @@ export default function ResultsDashboardScreen() {
     enabled: !!id,
     staleTime: EVALUATION_RESULTS_STALE_MS,
   });
+  const [unlockBusy, setUnlockBusy] = useState<string | null>(null);
+  /** The student whose last unlock attempt failed, so the message sits on their row. */
+  const [unlockFailedFor, setUnlockFailedFor] = useState<string | null>(null);
+  const onUnlock = async (studentId: string, unlocked: boolean) => {
+    setUnlockBusy(studentId);
+    setUnlockFailedFor(null);
+    try {
+      await setMasteryUnlock(id as string, studentId, unlocked);
+      await refetch();
+    } catch {
+      setUnlockFailedFor(studentId);
+    } finally {
+      setUnlockBusy(null);
+    }
+  };
   const evaluation = data?.evaluation ?? null;
   const attempts = data?.attempts ?? [];
   const insights = data?.insights ?? null;
@@ -266,6 +283,7 @@ export default function ResultsDashboardScreen() {
           )
         }
         renderItem={({ item }) => (
+          <View style={{ gap: 6 }}>
           <Pressable
             onPress={() => router.push({ pathname: '/evaluations/[id]/answers/[studentId]', params: { id: id as string, studentId: item.studentId } })}
             style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -293,6 +311,39 @@ export default function ResultsDashboardScreen() {
               </Text>
             </View>
           </Pressable>
+          {/* Beside the row, not inside it: the row is a button, and a button
+              inside a button is invalid on the web build. */}
+          {item.masteryUnlock && item.masteryUnlock !== 'none' ? (
+            <View
+              style={[
+                styles.unlockBar,
+                { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+                {unlockFailedFor === item.studentId
+                  ? t('masteryUnlockFailed')
+                  : item.masteryUnlock === 'granted'
+                    ? t('masteryUnlockGranted')
+                    : t('masteryStudentNotPassed')}
+              </Text>
+              <Pressable
+                onPress={() => void onUnlock(item.studentId, item.masteryUnlock === 'available')}
+                disabled={unlockBusy === item.studentId}
+                accessibilityRole="button"
+                style={[styles.unlockBtn, { backgroundColor: item.masteryUnlock === 'granted' ? colors.muted : ACCENT, opacity: unlockBusy === item.studentId ? 0.6 : 1 }]}
+              >
+                {unlockBusy === item.studentId ? (
+                  <ActivityIndicator size="small" color={item.masteryUnlock === 'granted' ? colors.foreground : '#fff'} />
+                ) : (
+                  <Text style={{ color: item.masteryUnlock === 'granted' ? colors.foreground : '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
+                    {item.masteryUnlock === 'granted' ? t('masteryUnlockUndo') : t('masteryUnlockBtn')}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          ) : null}
+          </View>
         )}
       />
     </View>
@@ -455,6 +506,8 @@ const styles = StyleSheet.create({
   barTrack: { flex: 1, height: 10, borderRadius: 5, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 5 },
   row: { alignItems: 'center', gap: 12, padding: 14, borderRadius: 12, borderWidth: 1 },
+  unlockBar: { alignItems: 'center', gap: 12, borderRadius: 12, borderWidth: 1, paddingVertical: 10, paddingHorizontal: 14 },
+  unlockBtn: { alignSelf: 'center', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
   statusPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17 },

@@ -26,6 +26,7 @@ import {
   classGroups,
   classMemberships,
   evaluations,
+  masteryOverrides,
   rosterLinks,
   students,
 } from "@workspace/db";
@@ -36,7 +37,12 @@ import { masteryGateEnabled, studentAccountsEnabled } from "../lib/features.js";
 import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { studentGradeIds } from "../lib/studentGrades.ts";
-import { MASTERY_PASS_PERCENT, passedLessonIds, quizLessonIds } from "../modules/assessment/lessonProgress.ts";
+import {
+  MASTERY_PASS_PERCENT,
+  passedLessonIds,
+  quizLessonIds,
+  withUnlocks,
+} from "../modules/assessment/lessonProgress.ts";
 import { retakeDecision } from "../modules/assessment/retake.ts";
 import {
   sortStudentExams,
@@ -334,9 +340,26 @@ router.get("/student/progress", async (req: AuthenticatedRequest, res) => {
       logger.error({ err }, "attempt_retakes is missing from this database; offering no retakes");
     }
 
+    // Lessons a teacher has let this student through. If the table has not
+    // been pushed yet there are none to count; the student just stays gated.
+    let unlockedLessonIds: string[] = [];
+    if (studentIds.length > 0) {
+      try {
+        unlockedLessonIds = (
+          await db
+            .select({ lessonId: masteryOverrides.lessonId })
+            .from(masteryOverrides)
+            .where(inArray(masteryOverrides.studentId, studentIds))
+        ).map(o => o.lessonId);
+      } catch (err) {
+        if (!isSchemaMissing(err)) throw err;
+        logger.error({ err }, "mastery_overrides is missing from this database; counting no unlocks");
+      }
+    }
+
     res.json({
       enabled: true,
-      passedLessonIds: passedLessonIds(sittings, lessonIdsForObjectiveIds),
+      passedLessonIds: withUnlocks(passedLessonIds(sittings, lessonIdsForObjectiveIds), unlockedLessonIds),
       quizLessonIds: quizLessonIds(openExams, lessonIdsForObjectiveIds),
       retakeEvaluationIds: [...new Set(retakeEvaluationIds)],
       threshold: MASTERY_PASS_PERCENT,

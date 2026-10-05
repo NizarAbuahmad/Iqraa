@@ -51,6 +51,33 @@ export function quizLessonIds(
   return [...out];
 }
 
+/**
+ * Lessons a teacher has let a student through, counted as passed. A teacher's
+ * unlock is the way out for a student the quiz cannot move on — out of
+ * retakes, or a quiz with a bad question — so it must count exactly like a pass.
+ */
+export function withUnlocks(passed: readonly string[], unlocked: readonly string[]): string[] {
+  return [...new Set([...passed, ...unlocked])];
+}
+
+/**
+ * What a teacher's results row offers for one student's quiz: `available` to
+ * unlock the lesson, `granted` once they have (so it can be undone), `none`
+ * when there is nothing to offer — the gate is off, the exam is not a
+ * one-lesson quiz, or the student already passed on their own.
+ */
+export function unlockState(i: {
+  gateOn: boolean;
+  /** The single lesson the exam covers, or null if it covers none or several. */
+  lessonId: string | null;
+  passed: boolean;
+  granted: boolean;
+}): "none" | "available" | "granted" {
+  if (!i.gateOn || !i.lessonId) return "none";
+  if (i.granted) return "granted";
+  return i.passed ? "none" : "available";
+}
+
 export function passedLessonIds(
   sittings: readonly SittingForProgress[],
   lessonsOf: (objectiveIds: readonly string[] | null | undefined) => string[],
