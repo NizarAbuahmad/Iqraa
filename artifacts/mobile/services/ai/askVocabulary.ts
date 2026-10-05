@@ -75,8 +75,21 @@ const REQUEST = new RegExp(
  * («خطة درس مع اختبار»), the first in this order wins: homework, worksheet,
  * quiz, activity, then a plan — the plan words are the loosest.
  */
+/**
+ * «قبل الاختبار» / "before the test" says *when*, not *what*. «مراجعة قبل
+ * الاختبار» — the review framing the chat offers under an explanation — was
+ * read as a quiz ask: the reply asked about question types, the lesson card
+ * counted a quiz, and none had been made. A quiz asked for *for* the test
+ * («اختبار قبل الاختبار النهائي») keeps its own word and still matches.
+ */
+const BEFORE_THE_TEST = new RegExp(
+  `قبل\\s*(?:ال)?(?:اختبار|امتحان)(?:ات)?(?:\\s*(?:النهائي|القادم|الشهري|الفصلي))?${E}`
+  + '|\\bbefore\\s+(?:the\\s+|an?\\s+|my\\s+|our\\s+|their\\s+)?(?:final\\s+)?(?:tests?|exams?|quiz(?:zes)?)\\b',
+  'gi',
+);
+
 export function artifactFromAsk(query: string): SessionArtifact | null {
-  const q = normaliseAsk(query.trim());
+  const q = normaliseAsk(query.trim()).replace(BEFORE_THE_TEST, ' ');
   if (!q) return null;
   if (CONTENT_QUESTION.test(q) && !REQUEST.test(q)) return null;
   for (const [artifact, patterns] of VOCAB) {

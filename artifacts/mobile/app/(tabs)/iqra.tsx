@@ -70,6 +70,7 @@ import {
   buildPrepProgressView,
   buildTeachingAssistantReply,
   emptyChatSessionMemory,
+  reviewFollowUp,
   isReferentialQuery,
   artifactFromQuery,
   recordGeneratedResource,
@@ -87,7 +88,7 @@ import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { MaterialCanvas } from '@/components/ui/MaterialCanvas';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
-import { buildPrepBoard, prepLessonKey, type PrepRow } from '@/services/lessonBoard';
+import { buildPrepBoard, prepLessonKey, savedPrepArtifacts, type PrepRow } from '@/services/lessonBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { MathParagraph } from '@/components/ui/MathParagraph';
 import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
@@ -134,6 +135,8 @@ import { pinnedResourceNote } from '@/services/mathSupportResources';
 import {
   buildCurrentLessonView,
   buildLessonSuggestions,
+  nextStepActions,
+  withActiveLesson,
   extractQueryGradeId,
   extractQuerySubjectId,
   stripSubjectNames,
@@ -1461,6 +1464,8 @@ export default function IqraScreen() {
   // True while the last thing IQRA said was the clarify question. Answering it
   // with something the router still cannot classify must not re-ask it.
   const awaitingClarifyRef = useRef(false);
+  /** موادي and «غير مطلوب» for the card's lesson, read by `sendMessage` for its follow-ups. */
+  const prepForChipsRef = useRef<{ lessonId?: string; saved?: string[]; skipped?: string[] }>({});
   // The ask behind a "which lesson?" / "what topic?" reply, so the teacher's
   // answer («الصف العاشر», a lesson title, a chip) joins it instead of
   // arriving as a message of its own — see `mergeScopeReply`.
@@ -2167,7 +2172,7 @@ export default function IqraScreen() {
           : null,
       });
       if (!pinnedLessonId && reuseActive && activeLesson) {
-        results = [activeLesson, ...results.filter(r => r.id !== activeLesson.id)].slice(0, 3);
+        results = withActiveLesson(results, activeLesson, q);
       }
 
       // With uploads + soft pin only: clear KB results so generators/TA ground on documents
@@ -2352,11 +2357,16 @@ export default function IqraScreen() {
       let teachingActions: TeachingAction[] | undefined;
       let pedagogicalClarification: ClarificationOption[] | undefined;
       let clarificationQuery: string | undefined;
+      // The explanation assumed «لأول مرة»; offer the review framing after it,
+      // pinned to the lesson it explained (its text alone would be re-searched).
+      let offerReview = false;
+      let taLessonId: string | undefined;
+      let taPatch: Partial<ChatSessionMemory> = {};
       let lessonTopic: string | undefined;
       let quickTopic: string | undefined;
 
-      const runTeachingAssistant = () =>
-        buildTeachingAssistantReply({
+      const runTeachingAssistant = () => {
+        const reply = buildTeachingAssistantReply({
           query: q,
           lessons: results,
           lang: lang as 'ar' | 'en',
@@ -2379,6 +2389,11 @@ export default function IqraScreen() {
               ? route.intent
               : 'teaching',
         });
+        offerReview = Boolean(reply.offerReview);
+        taLessonId = reply.activeLesson?.id;
+        taPatch = reply.memoryPatch;
+        return reply;
+      };
 
       const artifactType =
         artifactFromQuery(q)
@@ -2740,8 +2755,20 @@ export default function IqraScreen() {
       // Composer shortcuts only — never persist as floating chips in the timeline
       const nextEphemeral: EphemeralSuggestion[] = [];
       if (mode === 'teacher' && teachingActions?.length && quickTopic) {
+        // Same rule as the composer chips: drop what is made or not needed,
+        // lead with the next step. موادي only counts for the card's lesson.
+        const prep = prepForChipsRef.current;
+        const replyLessonId = taLessonId ?? sessionMemory.activeLessonId;
         nextEphemeral.push(
-          ...ephemeralFromTeachingActions(teachingActions, quickTopic, lang as 'ar' | 'en'),
+          ...ephemeralFromTeachingActions(
+            nextStepActions(
+              teachingActions,
+              { ...sessionMemory, ...taPatch },
+              prep.lessonId && prep.lessonId === replyLessonId ? prep : {},
+            ),
+            quickTopic,
+            lang as 'ar' | 'en',
+          ),
         );
       }
       if (outOfScopeSuggestions?.length) {
@@ -2753,6 +2780,17 @@ export default function IqraScreen() {
             lessonId: s.lessonId,
           })),
         );
+      }
+      // Guess, then offer: the explanation went ahead as first-time, and the
+      // review framing is one tap away instead of a question asked first.
+      if (offerReview && !artifactData && taLessonId) {
+        const review = reviewFollowUp(q, lang as 'ar' | 'en');
+        nextEphemeral.unshift({
+          id: 'review-framing',
+          label: review.label,
+          prompt: review.prompt,
+          lessonId: taLessonId,
+        });
       }
       if (msgLessonId) {
         nextEphemeral.push({
@@ -3053,7 +3091,15 @@ export default function IqraScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleResourcePress, lang, sessionMemory]);
 
-  const currentLessonView = buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en');
+  // What موادي already holds for the lesson on the card, so the card's count
+  // and the chips say what the board says — not only what this chat made.
+  const baseLessonView = buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en');
+  const savedForLesson = baseLessonView
+    ? savedPrepArtifacts(prepMaterials, baseLessonView.topic, baseLessonView.lessonId)
+    : [];
+  const currentLessonView = savedForLesson.length
+    ? buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en', savedForLesson)
+    : baseLessonView;
 
   // «غير مطلوب» choices for the lesson on the empty-state board — the same
   // store and key as the home board, so a row skipped on one is skipped on both.
@@ -3124,10 +3170,19 @@ export default function IqraScreen() {
     lang,
     t,
   ]);
+  // Saved materials and «غير مطلوب» belong to the card's lesson; they only
+  // apply when that is also the chat's own active lesson, not the default one
+  // the card falls back to.
+  const chipsShareCardLesson = !!sessionMemory.activeLessonId
+    && currentLessonView?.lessonId === sessionMemory.activeLessonId;
+  prepForChipsRef.current = currentLessonView
+    ? { lessonId: currentLessonView.lessonId, saved: savedForLesson, skipped: prepSkips }
+    : {};
   const lessonSuggestions = buildLessonSuggestions(
-      sessionMemory,
-      lang as 'ar' | 'en',
+    sessionMemory,
+    lang as 'ar' | 'en',
     sessionDocs.some(d => d.status === 'ready'),
+    chipsShareCardLesson ? { saved: savedForLesson, skipped: prepSkips } : {},
   );
   const suggestions = lessonSuggestions.length > 0
     ? []
@@ -3261,7 +3316,7 @@ export default function IqraScreen() {
   })();
 
   const livePrepProgress = DEMO_MODE
-    ? buildPrepProgressView(sessionMemory, lang as 'ar' | 'en')
+    ? buildPrepProgressView(sessionMemory, lang as 'ar' | 'en', chipsShareCardLesson ? savedForLesson : [])
     : null;
   const lastPrepMessageId = (() => {
     for (let i = messages.length - 1; i >= 0; i--) {
