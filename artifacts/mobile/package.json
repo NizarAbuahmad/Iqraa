@@ -82,6 +82,8 @@
     "expo-sharing": "~14.0.8",
     "expo-updates": "~29.0.20",
     "expo-video-thumbnails": "~10.0.8",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "posthog-react-native": "^4.63.2",
     "pptxgenjs": "^4.0.1"
   }
