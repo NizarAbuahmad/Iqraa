@@ -519,3 +519,85 @@ describe('buildDeckSlidesHTML — slide layouts', () => {
     assert.doesNotMatch(before, /deck-statement|deck-stat-value|deck-compare-col|deck-step-num/);
   });
 });
+
+import { fitBodyPx } from '../deckSlidesHtml.ts';
+
+describe('buildDeckSlidesHTML — projector legibility', () => {
+  const body = (content: string) => ({
+    slideNumber: 2, type: 'intro' as const, title: '💡 أفكار الدرس', content, durationSeconds: 0,
+  });
+  const render = (content: string) => markup(buildDeckSlidesHTML(deck([titleSlide, body(content)]), true));
+
+  it('prints the footer at a size a projector can resolve', () => {
+    const css = buildDeckSlidesHTML(deck([titleSlide]), true);
+    const size = css.match(/\.deck-footer span \{ font-size:(\d+)px/);
+    assert.ok(size, 'footer span rule not found');
+    assert.ok(Number(size![1]) >= 12, `footer text is ${size![1]}px`);
+  });
+
+  it('sizes a sparse slide up and centres it', () => {
+    const html = render('• طريقة التعويض');
+    assert.match(html, /deck-body deck-fit" style="--fit:36px"/);
+  });
+
+  it('leaves a full slide at the original size', () => {
+    const long = Array.from({ length: 7 }, (_, i) => `• ${'كلمة '.repeat(14)}${i}`).join('\n');
+    const html = render(long);
+    assert.doesNotMatch(html, /deck-fit/);
+  });
+
+  it('does not enlarge a slide that carries a plot', () => {
+    const html = markup(buildDeckSlidesHTML(deck([titleSlide, {
+      slideNumber: 2, type: 'intro', title: 'منحنى', content: '• سطر', durationSeconds: 0,
+      graphCommands: ['f(x)=x^2'],
+    }]), true));
+    // Whether the figure is drawn depends on the visual resolver; the claim is
+    // only that a slide with a plot never takes the sized-up layout.
+    if (/deck-plot/.test(html)) assert.doesNotMatch(html, /deck-fit/);
+  });
+});
+
+describe('fitBodyPx', () => {
+  it('gives a one-liner the largest size', () => {
+    assert.equal(fitBodyPx(['• 0 أو 1 أو 2']), 36);
+  });
+
+  it('steps down as the text grows, never below the original 26', () => {
+    const lines = (n: number, w: number) => Array.from({ length: n }, () => `• ${'ك'.repeat(w)}`);
+    const sizes = [fitBodyPx(lines(2, 40)), fitBodyPx(lines(4, 60)), fitBodyPx(lines(7, 90)), fitBodyPx(lines(30, 120))];
+    for (let i = 1; i < sizes.length; i++) assert.ok(sizes[i]! <= sizes[i - 1]!, `${sizes}`);
+    assert.equal(sizes[sizes.length - 1], 26);
+    assert.ok(sizes.every(s => s >= 26));
+  });
+
+  it('ignores blank lines', () => {
+    assert.equal(fitBodyPx(['', '  ']), 26);
+  });
+});
+
+describe('buildDeckSlidesHTML — a worked example’s answer chain', () => {
+  const example = (answer: string): ActivitySlide => ({
+    slideNumber: 2, type: 'challenge', title: 'مثال 1', content: 'y = 2x−5 و y = x²−5x+7',
+    durationSeconds: 60, answer,
+  });
+  const render = (answer: string) => markup(buildDeckSlidesHTML(deck([titleSlide, example(answer)]), true));
+
+  it('numbers the working one step per row and sets the result apart', () => {
+    const html = render('2x−5 = x²−5x+7 → x²−7x+12=0 → x=3 أو x=4');
+    assert.equal((html.match(/class="deck-working-row"/g) ?? []).length, 2);
+    assert.match(html, /deck-working-num[^>]*>1</);
+    assert.match(html, /deck-working-num[^>]*>2</);
+    assert.match(html, /class="deck-eq deck-final"/);
+    assert.match(stripIsolates(html), /deck-final[^>]*>x=3 أو x=4</);
+  });
+
+  it('keeps an answer with no working as the one line it was', () => {
+    const html = render('x=4 أو x=3');
+    assert.doesNotMatch(html, /deck-working|deck-final/);
+    assert.match(stripIsolates(html), /class="deck-eq">x=4 أو x=3</);
+  });
+
+  it('keeps a reaction on one line — an arrow is not always working', () => {
+    assert.doesNotMatch(render('N₂ + 3H₂ → 2NH₃'), /deck-working-row/);
+  });
+});
