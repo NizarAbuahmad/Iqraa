@@ -684,6 +684,71 @@ branch of `MathText` ignored `centered`, which would have left-aligned every
 projected equation with Arabic in it; fixed. English mode and the native app
 were not re-checked.
 
+## The chat answers before it asks, and knows what موادي already holds, 2026-10-04
+
+Items 2 and 4 of the "make the chat smarter" list, plus two bugs found by
+driving the web build — one of them in #814 as merged.
+
+**Explain first, offer the review after.** An explanation ask stopped to ask
+«قبل أن أبدأ: هل هذا شرح للمفهوم لأول مرة، أم مراجعة قبل الاختبار؟». The two
+answers differed by one framing sentence, and #814 made «علمني» an explanation
+ask, so a teacher who stopped being asked "concept or material?" was asked
+this instead. `buildTeachingAssistantReply` now explains straight away as
+first-time and sets `offerReview`; the screen puts «🔁 مراجعة قبل الاختبار»
+(`reviewFollowUp`) first in the strip, pinned to the explained lesson's id —
+its text alone would be re-searched. Not offered when the teacher already
+said which, nor on a second explanation of the same lesson. Nothing produces
+the old question now, so `pedagogicalClarification` / `handlePedagogicalClarify`
+in `iqra.tsx` are unreachable; left in place rather than widen this change.
+The «أيّ مادة؟» / «أي درس؟» questions are untouched — those guard expensive
+wrong guesses.
+
+**One "what's done" for the lesson.** Three surfaces counted it three ways:
+the card's «0/5» (this session), the empty-state board (موادي), the chips
+(session again), plus the progress card under replies (session) and the
+follow-up strip (all five materials every time). A plan saved yesterday
+showed 1/5 on the board and «حضّر خطة الدرس» on the chips. Now:
+
+- `savedPrepArtifacts` (`services/lessonBoard.ts`) maps موادي to the chat's
+  types — a homework is saved as a worksheet tagged `materialKind: 'homework'`
+  and counts as homework.
+- `buildCurrentLessonView`, `buildPrepProgressView`, `buildLessonSuggestions`
+  and the new `nextStepActions` all take it; «غير مطلوب» rows are not offered.
+- The card's recommendation and the chips share `nextPrepStep` (extracted
+  from `nextPrepRecommendation`, behaviour unchanged), so they name the same
+  next step. Two create chips, then an improve chip for what was made last.
+- موادي only counts when the card's lesson is the chat's active lesson, not the
+  default the card falls back to. Slides have no chat path and are not offered.
+
+**Bug 1 (#814 as merged): «علمني» asked «أيّ مادة تقصد؟».** See the correction
+on the entry below. `withActiveLesson` (`services/lessonCopilot.ts`) answers a
+bare ask from the open lesson alone.
+
+**Bug 2 (older): «مراجعة قبل الاختبار» was a quiz ask.** `artifactFromAsk` read
+the «اختبار» in «قبل الاختبار», so the review answer asked about question
+types, ticked the card to 1/5 and dropped the quiz chip with no quiz made. The
+old question's own answer button sent the same text. `BEFORE_THE_TEST` strips
+"before the test/exam" phrases first; «اختبار قبل الاختبار النهائي» is still a
+quiz. Noticed, not fixed: «اختباراً» with tanween normalises to «اختبارا» and
+fails the vocabulary's word edge, so `artifactFromAsk('جهّز اختباراً قصيراً')`
+is null — routing still works through the router's older verb+noun check.
+
+**Verified in the web build** (Expo web on :8081, `/auth/me` stubbed with a
+grade-10 maths teacher, every other API call aborted, Chromium via
+Playwright), card on «تركيب الاقترانات»:
+
+- «علمني» → the lesson explained, framed first-time; no «قبل أن أبدأ», no
+  «أيّ مادة»; strip «🔁 مراجعة قبل الاختبار · خطة درس · ورقة عمل»; card
+  recommends «حضّر خطة الدرس».
+- Tapping the review chip → «سأعامل هذا كمراجعة قبل الاختبار»; header stays
+  0/5; no question-types follow-up; «اختبار قصير» still offered.
+- With a lesson plan seeded in موادي: header 1/5; progress card ✅ خطة درس and
+  «لنجهّز الآن ورقة عمل»; strip «🔁 مراجعة · ورقة عمل · اختبار قصير».
+
+Not checked on a device, nor with live AI. 41 cases in
+`guessAndNextStep.test.ts` and 3 more in `teachMeAsk.test.ts`, each watched
+failing first.
+
 ## A worksheet opens with a worked example, and its key shows the working, 2026-10-04
 
 Worked example → faded → independent is the best-evidenced order for novices,
@@ -851,6 +916,14 @@ fix would have walked into:
 `شرح` exception. Demo-mode / local path only, like the other router entries.
 **Not checked** in the running app — the router and gate are unit-tested, the
 `iqra.tsx` wiring is typechecked only.
+
+> **Correction, same day: this did not work in the app.** Driving the web build
+> afterwards, «علمني» with the card on «تركيب الاقترانات» got «سؤالك قد يخص
+> أكثر من مادة. أيّ مادة تقصد؟» with Maths / Biology / Islamic chips. The
+> reuse gate did put the open lesson first, but `results` kept the verb's own
+> search hits, and the subject-ambiguity check (which a soft pin does not
+> suppress) counted three subjects. Fixed in the entry above
+> (`withActiveLesson`), and checked in the browser this time.
 
 ## «اقترح ميزة» — teachers can suggest a feature, 2026-10-03
 
