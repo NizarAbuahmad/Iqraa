@@ -19,6 +19,7 @@
 import { visualForSlide, visualToSvg } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet, workingSteps } from './deckText.ts';
 import { resolveSlideLayout } from './slideLayout.ts';
+import { deckIconSvg, iconForGlyph } from './deckIcons.ts';
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { hasRenderableMath, isolateForeignRuns, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
 
@@ -59,8 +60,12 @@ const escUrlText = (s: string) => `\u2066${escAttr(s)}\u2069`;
  */
 function deckHeader(title: string, accent: string): string {
   const [glyph, heading] = splitEmoji(title);
+  // A section icon in the slide's accent where the glyph has one (see
+  // deckIcons.ts); the emoji itself for the playful ones that do not, which are
+  // the picture rather than a marker.
+  const icon = iconForGlyph(glyph);
   return `<div class="deck-header" style="border-color:${accent}44">
-        ${glyph ? `<span class="deck-emoji">${glyph}</span>` : ''}
+        ${glyph ? `<span class="deck-emoji">${icon ? deckIconSvg(icon, accent, 34) : glyph}</span>` : ''}
         <span class="deck-eyebrow" style="color:${accent}">${esc(heading)}</span>
       </div>`;
 }
@@ -592,7 +597,8 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-title-meta { font-size:24px; line-height:1.6; max-width:760px; color:${DECK_MUTED}; margin-bottom:12px; }
 .deck-title-summary { font-size:18px; color:${DECK_MUTED}; max-width:720px; line-height:1.7; }
 .deck-header { position:relative; z-index:2; display:flex; align-items:center; gap:10px; min-height:96px; flex-shrink:0; padding:16px 48px; border-bottom:1.5px solid; }
-.deck-emoji { font-size:32px; }
+.deck-emoji { font-size:32px; display:inline-flex; align-items:center; }
+.deck-icon { display:block; }
 .deck-eyebrow { font-size:36px; line-height:1.35; font-weight:700; }
 .deck-body { position:relative; z-index:2; flex:1; padding:32px 48px; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-start; gap:14px; }
 /* Two columns when the slide carries its own figure. flex-direction:row

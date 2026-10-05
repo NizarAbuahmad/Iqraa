@@ -378,7 +378,10 @@ describe('buildDeckSlidesHTML — a visual on a non-graph slide', () => {
       },
     ]), true);
     assert.match(html, /<svg/);
-    assert.equal((html.match(/<rect/g) ?? []).length, 3);
+    // The 📊 heading now draws a bars icon of its own, so count the bars in the
+    // chart itself rather than every rect on the page.
+    const plot = html.slice(html.indexOf('class="deck-plot"'));
+    assert.equal((plot.match(/<rect/g) ?? []).length, 3);
     assert.match(html, /السكن/);
   });
 

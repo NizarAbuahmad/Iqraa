@@ -74,6 +74,15 @@ export const scheduleSlots = pgTable(
     classGroupId: uuid("class_group_id").references(() => classGroups.id, {
       onDelete: "set null",
     }),
+    /**
+     * Which of the class's subjects this period is. A class teacher's section
+     * takes Arabic first period and maths second; without this the home card
+     * could only guess which subject's plan the period belongs to. '' = not
+     * said (every slot made before this column, and any one-subject class),
+     * read as "any plan on the class" — see `nextPeriodLesson`
+     * (artifacts/mobile/services/scheduleCalendar.ts).
+     */
+    subjectId: text("subject_id").notNull().default(""),
     /** Per-slot note — "أحضر الآلة الحاسبة", a recurring reminder for this
      *  specific day+period, not the class or any one lesson. */
     notes: text("notes").notNull().default(""),

@@ -20,9 +20,10 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 
-import { classifyDocLines, docLineText } from './docxOutline.ts';
+import { buildWordDocument } from './docxBuild.ts';
 import { buildMinistryPlanDocx, type MinistryLessonPage } from './ministryPlan.ts';
 import { trackEvent } from '@/services/analytics';
+import { capturePdf } from './pdfCapture';
 
 // Re-exported here so existing callers (`import { buildDeckSlidesHTML } from
 // '@/services/share'`) don't need to know it actually lives in its own pure
@@ -154,6 +155,16 @@ export async function exportAsPDF(html: string, filename: string): Promise<void>
     // hero over a school connection, short enough that a dead link doesn't
     // look like a hung export. Raise it if teachers report missing photos.
     await Promise.all([waitForImages(doc, 5000), waitForFonts(doc, 2500)]);
+    // Download the PDF directly; the browser print dialog is only the
+    // fallback for when rendering it ourselves throws.
+    try {
+      await capturePdf(iframe, filename);
+      document.body.removeChild(iframe);
+      return;
+    } catch (e) {
+      console.warn('Direct PDF export failed, falling back to print dialog', e);
+    }
+    iframe.style.width = '1123px';
     iframe.contentWindow!.print();
     // Remove the iframe after the dialog has had time to open.
     setTimeout(() => document.body.removeChild(iframe), 3000);
@@ -209,56 +220,8 @@ export async function exportAsWord(
 ): Promise<void> {
   trackEvent('material_exported', { format: 'word' });
   // Dynamic import to avoid startup cost
-  const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType } = await import('docx');
-
-  const align = isAr ? AlignmentType.RIGHT : AlignmentType.LEFT;
-  const lines = text.split('\n');
-  const kinds = classifyDocLines(lines);
-
-  const children = lines.map((line, i) => {
-    const kind = kinds[i]!;
-    const content = docLineText(line, kind);
-
-    switch (kind) {
-      case 'blank':
-        return new Paragraph({ children: [new TextRun('')] });
-      // The underline belonging to the heading above has already done its
-      // job by marking it; printing it would just draw dashes in the doc.
-      case 'rule':
-        return new Paragraph({ children: [new TextRun({ text: '', break: 1 })] });
-      case 'title':
-        return new Paragraph({
-          heading: HeadingLevel.HEADING_1,
-          alignment: align,
-          children: [new TextRun({ text: content, bold: true, size: 32 })],
-        });
-      case 'heading':
-        return new Paragraph({
-          heading: HeadingLevel.HEADING_2,
-          alignment: align,
-          children: [new TextRun({ text: content, bold: true, size: 24 })],
-        });
-      case 'bullet':
-        return new Paragraph({
-          alignment: align,
-          bullet: { level: 0 },
-          children: [new TextRun({ text: content, size: 22 })],
-        });
-      default:
-        return new Paragraph({
-          alignment: align,
-          children: [new TextRun({ text: content, size: 22 })],
-        });
-    }
-  });
-
-  const doc = new Document({
-    sections: [{
-      properties: {},
-      children,
-    }],
-  });
-  await saveDocx(doc, filename);
+  const docx = await import('docx');
+  await saveDocx(buildWordDocument(text, isAr, docx), filename);
 }
 
 /**

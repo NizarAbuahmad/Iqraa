@@ -215,6 +215,20 @@ export async function exportDeckAsPptx(
   for (const [i, slide] of deck.slides.entries()) {
     const s = pptx.addSlide();
     s.background = { color: DECK_BG };
+    // pptxgenjs writes a paragraph's `rtl="1"` only from that text's own
+    // `rtlMode`; the presentation-level flag above reaches the root element and
+    // nothing else. Without it Arabic is right-aligned but laid out LTR —
+    // punctuation, digits, bullets and Latin terms land on the wrong side.
+    // Defaulted here, once, so no individual addText call can be missed. A run
+    // array needs it on each run — the outer options never reach the first one.
+    if (isAr) {
+      const addText = s.addText.bind(s) as (text: unknown, opts?: object) => unknown;
+      s.addText = ((text: unknown, opts?: object) =>
+        addText(
+          Array.isArray(text) ? text.map(r => ({ ...r, options: { rtlMode: true, ...r.options } })) : text,
+          { rtlMode: true, ...opts },
+        )) as typeof s.addText;
+    }
 
     if (i === 0) {
       // Title slide.
