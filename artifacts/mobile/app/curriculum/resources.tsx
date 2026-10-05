@@ -458,7 +458,13 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     () => narrowToSelection(getVisibleGrades(), isTeacher ? user?.gradeIds : undefined),
     [isTeacher, user?.gradeIds],
   );
-  const [grade, setGrade] = useState<string>(gradeId || grades[0]?.id || '');
+  const [pickedGrade, setGrade] = useState<string>(gradeId || grades[0]?.id || '');
+  // The tab stays mounted while the teacher edits their grades on the profile
+  // page, so the initial pick can name a grade they no longer teach — and with
+  // one grade left there is no picker to move off it. Fall back to the first
+  // grade they do teach; an explicit grade param is still honoured.
+  const grade =
+    pickedGrade === gradeId || grades.some(g => g.id === pickedGrade) ? pickedGrade : (grades[0]?.id ?? '');
   // A student has no grade picker of their own, so with no grade param the
   // library opened on the catalog's first grade — Grade 10 for a Grade 9
   // student. Start on the grade their class is in, unless they (or a param)

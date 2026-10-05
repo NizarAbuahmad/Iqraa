@@ -895,6 +895,7 @@ const translations = {
     saveToWorkspace: 'احفظ في موادي',
     savedSuccess: 'حُفظت ✓',
     updatedSuccess: 'حُدّثت ✓',
+    englishMaterialRedone: 'جُهّزت من جديد بالإنجليزية وحلّت محل النسخة العربية ✓',
     updateInWorkspace: 'حدّث',
     searchWorkspace: 'ابحث في موادك…',
     allFilter: 'الكل',
@@ -1692,6 +1693,8 @@ const translations = {
     keysVerifierDownNote: 'لم يُفحص أي مفتاح إجابة، ولم يُحذف أي سؤال. أعد المحاولة بعد قليل.',
     // «غير قابلة للفحص» لا «خاطئة»: أي مفتاح ناقضه المدقّق يُحذف سؤاله عند
     // التوليد ولا يصل إلى هذه الشاشة أصلًا.
+    keysUnlinkedTitle: (n: string) => `لم يُعلَّم أي سؤال «مُتحقَّقًا» — ${n} منها له إجابة تُفحص لكنها ليست مفتاحه`,
+    keysUnlinkedNote: 'فحص البرنامج إجابةً لا تطابق مفتاح الإجابة المعتمد في السؤال، لذلك لا نعلّمه «مُتحقَّقًا». راجع مفتاح السؤال، وتأكّد أن الإجابة النهائية مكتوبة فيه.',
     keysNoneCheckableTitle: 'لا توجد مفاتيح يمكن فحصها آليًا',
     keysNoneCheckableNote: 'أسئلة هذا الاختبار ليس لها إجابات رمزية يفحصها البرنامج (مثل الاشتقاق أو المعادلات) — وهذا لا يعني أنها خاطئة.',
 
@@ -2916,6 +2919,7 @@ const translations = {
     saveToWorkspace: 'Save to my materials',
     savedSuccess: 'Saved ✓',
     updatedSuccess: 'Updated ✓',
+    englishMaterialRedone: 'Prepared again in English and saved over the Arabic copy ✓',
     updateInWorkspace: 'Update',
     searchWorkspace: 'Search your materials…',
     allFilter: 'All',
@@ -3683,6 +3687,8 @@ const translations = {
     keysVerifiedNote: 'The rest have no symbolic answer to check — that does not mean they are wrong.',
     keysVerifierDownTitle: 'The maths verifier could not be reached',
     keysVerifierDownNote: 'No answer key was checked, and no question was removed. Try again shortly.',
+    keysUnlinkedTitle: (n: string) => `No question is marked verified — ${n} had an answer that could be checked, but it was not their key`,
+    keysUnlinkedNote: 'The program checked an answer that does not match the answer key the question is graded with, so it does not mark it verified. Review the question’s key and make sure the final answer is stated in it.',
     keysNoneCheckableTitle: 'No keys here could be checked automatically',
     keysNoneCheckableNote: 'These questions have no symbolic answer the program can check (like derivatives or equations) — that does not mean they are wrong.',
 
