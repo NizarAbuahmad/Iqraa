@@ -22,6 +22,7 @@ import { isStandaloneTurn } from './ai/intentRouter.ts';
 import {
   getBookForLesson,
   getLessonById,
+  getLessonsInScope,
   isConfidentKbHit,
   KB_CONFIDENT_SCORE,
   searchKBSemantic,
@@ -35,6 +36,34 @@ export { isConfidentKbHit, KB_CONFIDENT_SCORE };
 
 /** KB lesson id used as the investor-MVP default active lesson. */
 export const DEFAULT_ACTIVE_LESSON_ID = 'kbl-math-s2-nccd-u5_l3'; // تركيب الاقترانات (NCCD S2)
+
+/**
+ * The lesson to show a teacher who has not picked one yet.
+ *
+ * The demo default is Grade 10 maths, so a teacher who set up Grade 3 Arabic
+ * on `/setup-subjects` opened the app to a lesson in a subject and grade they
+ * never chose. Keep it only when it is inside their teaching assignments (or
+ * they have none); otherwise the first lesson of the first assignment that
+ * has a book.
+ */
+export function defaultLessonIdFor(
+  assignments: { gradeId: string; subjectIds: string[] }[] | undefined,
+): string {
+  if (!assignments?.length) return DEFAULT_ACTIVE_LESSON_ID;
+  const demo = getLessonById(DEFAULT_ACTIVE_LESSON_ID);
+  const demoBook = demo && getBookForLesson(demo);
+  const teachesDemo = assignments.some(
+    a => a.gradeId === demoBook?.gradeId && a.subjectIds.includes(demoBook.subjectId),
+  );
+  if (teachesDemo) return DEFAULT_ACTIVE_LESSON_ID;
+  for (const a of assignments) {
+    for (const subjectId of a.subjectIds) {
+      const first = getLessonsInScope(a.gradeId, subjectId)[0];
+      if (first) return first.id;
+    }
+  }
+  return DEFAULT_ACTIVE_LESSON_ID;
+}
 
 export type LessonSuggestion = {
   id: string;
@@ -106,7 +135,10 @@ export function resolvePickedLesson(
 }
 
 /** Soft-seed the demo default lesson for the card — does not hard-pin retrieval. */
-export function seedDefaultLessonMemory(base?: ChatSessionMemory): ChatSessionMemory {
+export function seedDefaultLessonMemory(
+  base?: ChatSessionMemory,
+  defaultLessonId: string = DEFAULT_ACTIVE_LESSON_ID,
+): ChatSessionMemory {
   const start = base ?? {
     activeLessonId: null,
     activeTopicAr: null,
@@ -122,7 +154,7 @@ export function seedDefaultLessonMemory(base?: ChatSessionMemory): ChatSessionMe
     prepCompleted: [],
     lastCompletedPrepStep: null,
   };
-  const lesson = getLessonById(start.activeLessonId ?? DEFAULT_ACTIVE_LESSON_ID)
+  const lesson = getLessonById(start.activeLessonId ?? defaultLessonId)
     ?? getLessonById(DEFAULT_ACTIVE_LESSON_ID);
   if (!lesson) return { ...start, lessonPin: start.lessonPin ?? 'none' };
   return {

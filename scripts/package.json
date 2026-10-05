@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "library-upload": "tsx ./src/library-upload.ts",
+    "test": "node --experimental-strip-types --test \"src/**/__tests__/**/*.test.ts\""
   },
   "devDependencies": {
     "@types/node": "catalog:",
