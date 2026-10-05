@@ -19,13 +19,18 @@ import {
   beginMathPracticeSession,
   hasMathBank,
   isMathContext,
+  subjectIdFromName,
   takeConcreteMath,
   takeConcreteMathBatch,
+  takeSolvedMath,
+  completionSplit,
   type DiffTier,
 } from './mathPractice.ts';
-import { isChemContext, takeConcreteChem, takeConcreteChemBatch } from './chemPractice.ts';
+import { isChemContext, takeConcreteChem, takeConcreteChemBatch, takeSolvedChem, type SolvedItem } from './chemPractice.ts';
 import { buildActivityBlueprint } from './activityBlueprints.ts';
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
+import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts';
+import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 
 /**
@@ -56,7 +61,13 @@ async function verifyIfPossible(
 
 type Lang = 'ar' | 'en';
 type QType = 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem';
-interface WQ { text: string; options?: string[]; answer: string; points: number }
+interface WQ {
+  text: string; options?: string[]; answer: string; points: number;
+  /** Checked working from the bank; becomes the key's `solution`, never part of the question. */
+  steps?: string[];
+}
+/** A question as stored on the paper: the working belongs to the key, not the student's copy. */
+const withoutSteps = ({ steps: _steps, ...rest }: WQ): WQ => rest;
 
 /**
  * The KB lesson to ground on: the id when the caller supplied one, otherwise
@@ -231,20 +242,50 @@ function takeFromBankOrStop(...args: Parameters<typeof tryMathPractice>): WQ | n
 
 // ─── Lesson Plan helpers (Arabic) ────────────────────────────────────────────
 
-function lpObjectivesAr(topic: string, kb: KBLesson | null, custom?: string): string[] {
+/**
+ * Objectives a lesson of this kind can honestly be given when the curriculum
+ * states none. «أن يحل الطالب مسائل متنوعة» was every subject's fallback, which
+ * is a maths objective on a Quran, art or PE lesson. `null` for mathematics,
+ * which keeps its own.
+ */
+function kindObjectives(kind: LessonKind, topic: string, lang: Lang): string[] | null {
+  const ar: Partial<Record<LessonKind, string[]>> = {
+    science: [`أن يلاحظ الطالب ويصف ما يتصل ${arPrefixed('ب', topic)}`, `أن يفسّر الطالب ظاهرة مرتبطة ${arPrefixed('ب', topic)} مستندًا إلى دليل`, 'أن يوظّف الطالب ما تعلّمه في تفسير موقف جديد'],
+    recitation: ['أن يقرأ الطالب ما تقرّر من آيات أو حديث قراءة سليمة', 'أن يبيّن الطالب معاني المفردات والفكرة الرئيسة', 'أن يربط الطالب القيمة المستفادة بسلوك من حياته'],
+    arabic: ['أن يقرأ الطالب النص قراءة سليمة معبّرة', 'أن يوظّف الطالب المفردات الجديدة في جمل مفيدة', 'أن يكتب الطالب فقرة قصيرة سليمة موظّفًا ما تعلّمه'],
+    english: ['أن يفهم الطالب اللغة المستهدفة في الدرس وينطقها نطقًا سليمًا', 'أن يستعمل الطالب اللغة المستهدفة في حوار قصير مع زميله', 'أن ينتج الطالب جملًا صحيحة عن نفسه أو عن محيطه'],
+    social: [`أن يحدّد الطالب الأحداث أو المعالم الأساسية في «${topic}»`, 'أن يفسّر الطالب الأسباب والنتائج بالاستناد إلى مصدر', 'أن يبدي الطالب رأيًا مدعومًا بدليل من الدرس'],
+    movement: ['أن يؤدي الطالب المهارة بنقاط أدائها الأساسية', 'أن يطبّق الطالب المهارة في لعبة أو موقف أداء مع الالتزام بقواعد السلامة', 'أن يقيّم الطالب أداءه ويحدّد نقطة للتحسين'],
+    making: [`أن يتعرّف الطالب إلى المصطلحات والأدوات الأساسية في «${topic}»`, 'أن ينفّذ الطالب العمل المطلوب بخطواته الأساسية وبما يحقق معايير الجودة', 'أن يقيّم الطالب عمله ويقترح تحسينًا'],
+  };
+  const en: Partial<Record<LessonKind, string[]>> = {
+    science: [`Students will observe and describe what relates to ${topic}`, `Students will explain a phenomenon linked to ${topic} using evidence`, 'Students will use what they learned to explain a new situation'],
+    recitation: ['Students will read the set text correctly', 'Students will explain the meanings of the words and the main idea', 'Students will connect the value learned to their own behaviour'],
+    arabic: ['Students will read the text correctly and expressively', 'Students will use the new vocabulary in meaningful sentences', 'Students will write a short, correct paragraph using what they learned'],
+    english: ['Students will understand and say the target language correctly', 'Students will use the target language in a short pair dialogue', 'Students will produce correct sentences about themselves or their surroundings'],
+    social: [`Students will identify the key events or features in “${topic}”`, 'Students will explain causes and consequences using a source', 'Students will give an opinion supported by evidence from the lesson'],
+    movement: ['Students will perform the skill with its key performance points', 'Students will apply the skill in a game or performance task while following the safety rules', 'Students will assess their own performance and name one point to improve'],
+    making: [`Students will recognise the key terms and tools in “${topic}”`, 'Students will carry out the required work through its main steps to the quality criteria', 'Students will evaluate their own work and suggest an improvement'],
+  };
+  return (lang === 'ar' ? ar : en)[kind] ?? null;
+}
+
+function lpObjectivesAr(topic: string, kb: KBLesson | null, custom?: string, kind: LessonKind = 'calc'): string[] {
   if (custom?.trim()) return custom.trim().split('\n').filter(Boolean);
   // Prefer official curriculum outcomes when present on the KB lesson
   if (kb?.objectives?.length) return [...kb.objectives];
+  const own = kindObjectives(kind, topic, 'ar');
+  if (own && (kind === 'movement' || kind === 'making' || kind === 'recitation')) return own;
   if (kb?.keyConceptsAr.length) {
     const c = kb.keyConceptsAr;
     return [
       `أن يُعرِّف الطالب ${c[0]}`,
-      c[1] ? `أن يشرح الطالب ${c[1]} بأمثلة توضيحية` : `أن يطبق مفهوم ${topic} في حل مسائل متنوعة`,
-      `أن يميّز الطالب بين المفاهيم الأساسية المرتبطة بـ${topic} ويقارن بينها`,
+      c[1] ? `أن يشرح الطالب ${c[1]} بأمثلة توضيحية` : (own?.[1] ?? `أن يطبق مفهوم ${topic} في حل مسائل متنوعة`),
+      `أن يميّز الطالب بين المفاهيم الأساسية المرتبطة ${arPrefixed('ب', topic)} ويقارن بينها`,
     ];
   }
-  return [
-    `أن يُعرِّف الطالب المفاهيم الأساسية لـ${topic}`,
+  return own ?? [
+    `أن يُعرِّف الطالب المفاهيم الأساسية ${arPrefixed('ل', topic)}`,
     `أن يشرح الطالب تطبيقات ${topic} في الحياة اليومية`,
     `أن يحل الطالب مسائل متنوعة حول ${topic} بخطوات منهجية`,
   ];
@@ -272,11 +313,67 @@ function bookFigureCue(kb: KBLesson | null, lang: Lang): string {
     : " Show the student-book figure on the “From the Student Book” slide and discuss what students notice in it.";
 }
 
-function lpIntroAr(topic: string, kb: KBLesson | null): string {
+/**
+ * Openings that suit the lesson. The generic ones — «التنبؤ والاستكشاف: اعرض
+ * موقفًا حياتيًا واطلب التنبؤ بالتفسير» — are a science hook; on a surah or a
+ * relay race they read as the wrong lesson. Science and social studies keep
+ * the generic set, which fits them.
+ */
+function kindIntro(kind: LessonKind, topic: string, lang: Lang): string[] | null {
+  const ar: Partial<Record<LessonKind, string[]>> = {
+    recitation: [
+      `ابدأ بتهيئة هادئة: استمع دقيقتين إلى ما يعرفه الطلبة عن «${topic}»، ثم أعلن هدف الحصة: أن نقرأ قراءة سليمة، ونفهم المعنى، ونعمل بما نتعلّم.`,
+      `اسأل: «لماذا نتعلّم “${topic}”؟ وماذا نتوقع أن يتغيّر في سلوكنا؟» ثم أخبر الطلبة أنهم سيقرؤون ما تقرّر من آيات أو حديث ثم يتأمّلون معناه معًا.`,
+    ],
+    movement: [
+      `ابدأ بسؤال: «أين نستعمل مهارة “${topic}” في الألعاب أو في حياتنا؟» ثم نبّه الطلبة إلى قواعد السلامة قبل الإحماء.`,
+      `اعرض أداءً سريعًا للمهارة (بنفسك أو بطالب متقن) واسأل: «ما أهم ما لاحظتموه في الحركة؟» ثم اربط ملاحظاتهم بأهداف الدرس.`,
+    ],
+    arabic: [
+      `ابدأ بسؤال يهيّئ النص: «ماذا تتوقعون أن يتحدث عنه درس “${topic}”؟» ودوّن توقعات الطلبة ثم اربطها بعنوان الدرس.`,
+      `اقرأ جملة أو عنوانًا من الدرس بصوت معبّر واسأل: «ما الذي لفت انتباهكم؟» ثم اربط إجاباتهم بهدف الحصة.`,
+    ],
+    english: [
+      `ابدأ بإحماء قصير: أسئلة سريعة أو صورة تستثير مفردات «${topic}» قبل تقديم اللغة الجديدة، وشجّع الإجابة بأي لغة يتقنونها.`,
+      `اسأل بالإنجليزية الميسّرة أو بالإشارة: ماذا نعرف عن «${topic}»؟ واكتب ما يعرفونه من كلمات على السبورة ليبني عليه الدرس.`,
+    ],
+    making: [
+      `اعرض عملًا منجزًا يتصل بـ«${topic}» واسأل: «ما الذي يعجبكم فيه؟ وكيف ترون أنه صُنع؟» ثم اربط ملاحظاتهم بأهداف الدرس.`,
+      `اسأل: «أين نرى “${topic}” في حياتنا أو حولنا؟» ودوّن الأمثلة، ثم أعلن ما سيصنعه الطلبة اليوم.`,
+    ],
+  };
+  const en: Partial<Record<LessonKind, string[]>> = {
+    recitation: [
+      `Begin with a calm preparation: listen for two minutes to what students already know about “${topic}”, then state the lesson’s aim: to read well, to understand, and to act on what we learn.`,
+      `Ask: “Why do we learn “${topic}”? What do we expect to change in our behaviour?” Then tell students they will read the set text and then understand it together.`,
+    ],
+    movement: [
+      `Open with: “Where do we use the skill “${topic}” in games or in our lives?” Then remind students of the safety rules before the warm-up.`,
+      `Show a quick performance of the skill (yourself or a skilled student) and ask: “What did you notice most about the movement?” Then tie their observations to the lesson aims.`,
+    ],
+    arabic: [
+      `Prepare the text with a question: “What do you expect the lesson “${topic}” to talk about?” Record students’ predictions and tie them to the lesson title.`,
+      `Read a sentence or a heading from the lesson expressively and ask: “What caught your attention?” Then link their answers to the aim of the lesson.`,
+    ],
+    english: [
+      `Start with a short warm-up: quick questions or a picture that brings out the vocabulary of “${topic}” before the new language is introduced, and welcome answers in any language students have.`,
+      `Ask in simple English or by gesture: what do we know about “${topic}”? Write the words they already have on the board for the lesson to build on.`,
+    ],
+    making: [
+      `Show a finished piece of work linked to “${topic}” and ask: “What do you like about it? How do you think it was made?” Then tie their observations to the lesson aims.`,
+      `Ask: “Where do we see “${topic}” in our lives or around us?” Record the examples, then announce what students will make today.`,
+    ],
+  };
+  return (lang === 'ar' ? ar : en)[kind] ?? null;
+}
+
+function lpIntroAr(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'): string {
+  const own = kindIntro(kind, topic, 'ar');
+  if (own) return pick(own);
   if (kb) return pick([
-    `ابدأ بطرح السؤال: "أين نلتقي بـ${topic} في حياتنا اليومية؟" سجّل إجابات الطلبة على السبورة.${bookFigureCue(kb, 'ar')} ثم اربط إجاباتهم بأهداف الدرس.`,
+    `ابدأ بطرح السؤال: "أين نلتقي ${arPrefixed('ب', topic)} في حياتنا اليومية؟" سجّل إجابات الطلبة على السبورة.${bookFigureCue(kb, 'ar')} ثم اربط إجاباتهم بأهداف الدرس.`,
     `لعبة "ما أعرفه / ما أريد تعلّمه": يكتب الطلبة على ورقة ما يعرفونه عن ${kb.titleAr} (دقيقتان). تُشارك بعض الإجابات ثم يُحدد المعلم ما سنكتشفه معًا.`,
-    `"التنبؤ والاستكشاف": اعرض موقفًا حياتيًا مرتبطًا بـ${topic} واطلب من الطلبة التنبؤ بالتفسير. استخدم تنبؤاتهم كنقطة انطلاق لأهداف الدرس.`,
+    `"التنبؤ والاستكشاف": اعرض موقفًا حياتيًا مرتبطًا ${arPrefixed('ب', topic)} واطلب من الطلبة التنبؤ بالتفسير. استخدم تنبؤاتهم كنقطة انطلاق لأهداف الدرس.`,
   ]);
   return pick([
     `ابدأ بسؤال تحفيزي: "كيف يرتبط ${topic} بحياتنا اليومية؟" استمع لمشاركات 3-4 طلبة وسجّلها على السبورة، ثم ابنِ عليها مدخلًا للدرس.`,
@@ -286,31 +383,35 @@ function lpIntroAr(topic: string, kb: KBLesson | null): string {
 function lpClosureAr(topic: string, dur: number): string {
   const t = Math.round(dur * 0.1);
   return pick([
-    `(${t} دقيقة) بطاقة الخروج:\n• أهم شيء تعلمته اليوم عن ${topic}.\n• سؤال لا يزال يراوده.\nاجمع البطاقات عند الخروج.`,
-    `(${t} دقيقة) "3-2-1":\n• 3 أشياء تعلمتها\n• 2 مفاهيم أريد فهمها أكثر\n• 1 سؤال لديّ عن ${topic}`,
+    `(${arMinutes(t)}) بطاقة الخروج:\n• أهم شيء تعلمته اليوم عن ${topic}.\n• سؤال لا يزال يراوده.\nاجمع البطاقات عند الخروج.`,
+    `(${arMinutes(t)}) "3-2-1":\n• 3 أشياء تعلمتها\n• 2 مفاهيم أريد فهمها أكثر\n• 1 سؤال لديّ عن ${topic}`,
   ]);
 }
 
 // ─── Lesson Plan helpers (English) ───────────────────────────────────────────
 
-function lpObjectivesEn(topic: string, kb: KBLesson | null, custom?: string): string[] {
+function lpObjectivesEn(topic: string, kb: KBLesson | null, custom?: string, kind: LessonKind = 'calc'): string[] {
   if (custom?.trim()) return custom.trim().split('\n').filter(Boolean);
   if (kb?.objectives?.length) return [...kb.objectives];
+  const own = kindObjectives(kind, topic, 'en');
+  if (own && (kind === 'movement' || kind === 'making' || kind === 'recitation')) return own;
   if (kb?.keyConceptsEn.length) {
     const c = kb.keyConceptsEn;
     return [
       `Students will define and explain ${c[0]}`,
-      c[1] ? `Students will describe ${c[1]} with real-world examples` : `Students will apply ${topic} to solve varied problems`,
+      c[1] ? `Students will describe ${c[1]} with real-world examples` : (own?.[1] ?? `Students will apply ${topic} to solve varied problems`),
       `Students will compare and contrast the key concepts related to ${topic}`,
     ];
   }
-  return [
+  return own ?? [
     `Students will define key concepts related to ${topic}`,
     `Students will explain real-world applications of ${topic}`,
     `Students will solve problems involving ${topic} using systematic methods`,
   ];
 }
-function lpIntroEn(topic: string, kb: KBLesson | null): string {
+function lpIntroEn(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'): string {
+  const own = kindIntro(kind, topic, 'en');
+  if (own) return pick(own);
   if (kb) return pick([
     `Open with: "Where do we encounter ${topic} in everyday life?" Record 3-4 student responses on the board.${bookFigureCue(kb, 'en')} Then bridge to today's objectives.`,
     `"Know / Want to Know" activity: Students write what they already know about ${kb.titleEn} (2 min). Share responses, then identify what we'll discover together.`,
@@ -328,7 +429,31 @@ function lpClosureEn(topic: string, dur: number): string {
     `(${t} min) "3-2-1" reflection:\n• 3 things learned\n• 2 concepts to explore further\n• 1 question about ${topic}`,
   ]);
 }
-function lpHomework(topic: string, lang: Lang): string {
+/** Homework a lesson of this kind can honestly be given — «بيّن خطوات الحل» is for maths. */
+function kindHomework(kind: LessonKind, topic: string, lang: Lang): string[] | null {
+  const ar: Partial<Record<LessonKind, string[]>> = {
+    science: [`لاحظ في بيتك أو في الطريق ظاهرة مرتبطة ${arPrefixed('ب', topic)}، وسجّل ملاحظتين وتفسيرًا واحدًا مدعومًا بدليل.`, `ارسم مخططًا مبسّطًا يوضّح الفكرة الرئيسة في ${topic}، وسمِّ أجزاءه واكتب تحته جملتين تشرحانه.`],
+    recitation: [`راجع ما قرأناه في الحصة ثلاث مرات مع أحد أفراد أسرتك، وسجّل موقفًا طبّقت فيه القيمة المستفادة من «${topic}».`, `اكتب جملة مفيدة تستعمل فيها كلمتين جديدتين من درس «${topic}»، ثم اقرأها لأحد أفراد أسرتك.`],
+    arabic: [`اكتب فقرة من خمس جمل عن «${topic}»، مستعملًا ثلاث كلمات جديدة من الدرس.`, 'اقرأ نص الدرس بصوت معبّر لأحد أفراد أسرتك، ثم أخبره بالفكرة الرئيسة بكلماتك.'],
+    english: ['اكتب خمس جمل تستعمل فيها اللغة التي تعلّمتها اليوم عن نفسك أو أسرتك، واقرأها بصوت عالٍ لأحد في البيت.', 'اصنع بطاقات للمفردات الجديدة: كلمة وصورة وجملة لكل بطاقة.'],
+    social: [`اختر حدثًا أو مكانًا من درس «${topic}» واكتب فقرة قصيرة تشرح سببه ونتيجته مستعينًا بالكتاب.`, `اسأل أحد كبار أسرتك سؤالًا يتصل ${arPrefixed('ب', topic)} وسجّل إجابته في ثلاث جمل، ثم قارنها بما في الكتاب.`],
+    movement: ['مارس تمرينين من تمارين اليوم عشر دقائق في البيت أو الحديقة، وسجّل ما شعرت به وما تحسّن.', `علِّم أحد أفراد أسرتك الحركة الأساسية في «${topic}» بأسلوب آمن، ولاحظ نقاط الأداء.`],
+    making: ['أكمل عملك أو حسّنه في البيت مستعينًا ببطاقة المعايير، وأحضره أو صوّره للصف.', `ابحث عن مثال واحد من حياتك أو بيئتك يتصل ${arPrefixed('ب', topic)} وصِفه بجملتين.`],
+  };
+  const en: Partial<Record<LessonKind, string[]>> = {
+    science: [`Observe a phenomenon linked to ${topic} at home or on the way, and record two observations and one explanation backed by evidence.`, `Draw a simple diagram of the main idea in ${topic}, label its parts and write two sentences under it explaining it.`],
+    recitation: [`Review what we read in class three times with a family member, and note a situation where you applied the value learned from “${topic}”.`, `Write a meaningful sentence using two new words from “${topic}”, then read it to a family member.`],
+    arabic: [`Write a five-sentence paragraph about ${topic} using three new words from the lesson.`, 'Read the lesson text expressively to a family member, then tell them the main idea in your own words.'],
+    english: ['Write five sentences in the language you learned today about yourself or your family, and read them aloud to someone at home.', 'Make flashcards for the new vocabulary: a word, a picture and a sentence on each card.'],
+    social: [`Choose an event or place from “${topic}” and write a short paragraph explaining its cause and consequence, using the textbook.`, `Ask an older family member a question about ${topic}, write their answer in three sentences, then compare it with the textbook.`],
+    movement: ['Practise two exercises from the lesson for ten minutes at home or in the park, and note how you felt and what improved.', `Teach a family member the basic movement in “${topic}” safely, and watch the performance points.`],
+    making: ['Finish or improve your work at home using the criteria card, and bring it or a photo of it to class.', `Find one example from your life or surroundings linked to ${topic} and describe it in two sentences.`],
+  };
+  return (lang === 'ar' ? ar : en)[kind] ?? null;
+}
+function lpHomework(topic: string, lang: Lang, kind: LessonKind = 'calc'): string {
+  const own = kindHomework(kind, topic, lang);
+  if (own) return pick(own);
   return pick(lang === 'ar' ? [
     `أجب عن التمارين المحددة من الكتاب المدرسي حول ${topic}. بيّن خطوات الحل كاملة.`,
     `اكتب ملخصًا شخصيًا من 10 جمل عن ${topic}. أضف مثالًا حياتيًا وجدته بنفسك.`,
@@ -840,8 +965,13 @@ export class MockAIService extends AIService {
     const docCtx: LessonDocContext | null = docs.present
       ? { label: fileLabel, concepts: docs.concepts, example: exampleLine || null }
       : null;
+    // What the lesson is MADE of — a recitation, an observation, a source, a
+    // drill — as opposed to how it is taught. The lesson's own book decides;
+    // the caller's subject name is only the fallback for a typed topic.
+    const subjectId = (kb ? getBookForLesson(kb)?.subjectId : subjectIdFromName(req.subject)) ?? undefined;
+    const kind = lessonKindFor(subjectId);
     const styleBlueprint = buildLessonStyleBlueprint(style, {
-      topic, kb, lang, subject: req.subject, duration: dur, doc: docCtx,
+      topic, kb, lang, subject: req.subject, duration: dur, doc: docCtx, kind, subjectId,
     });
 
     // Document-grounded lesson plan (Demo Mode) — prefer uploaded materials over KB soft pin
@@ -850,7 +980,7 @@ export class MockAIService extends AIService {
         return {
           title: `${topic} – خطة درس`,
           grade: req.grade, subject: req.subject, duration: dur,
-          objectives: docObjectives ?? lpObjectivesAr(topic, null, req.objectives),
+          objectives: docObjectives ?? lpObjectivesAr(topic, null, req.objectives, kind),
           materials: [
             fileLabel.replace(/^الملف /, 'الملف المرفوع: ').replace(/^الملف$/, 'المواد المرفوعة'),
             ...styleBlueprint.materials.slice(0, 3),
@@ -865,7 +995,7 @@ export class MockAIService extends AIService {
           guidedPractice: styleBlueprint.guidedPractice,
           independentPractice: styleBlueprint.independentPractice,
           closure: lpClosureAr(topic, dur),
-          assessment: `مرتبط بـ${fileLabel}`
+          assessment: `مرتبط ${arPrefixed('ب', fileLabel)}`
             + (conceptLine ? ` (${docs.concepts.slice(0, 2).join(' / ')})` : '')
             + `.\n${styleBlueprint.assessment}`,
           differentiation: styleBlueprint.differentiation,
@@ -875,7 +1005,7 @@ export class MockAIService extends AIService {
       return {
         title: `${topic} – Lesson Plan`,
         grade: req.grade, subject: req.subject, duration: dur,
-        objectives: docObjectives ?? lpObjectivesEn(topic, null, req.objectives),
+        objectives: docObjectives ?? lpObjectivesEn(topic, null, req.objectives, kind),
         materials: [
           `Uploaded: ${docs.fileNames[0] ?? 'teacher materials'}`,
           ...styleBlueprint.materials.slice(0, 3),
@@ -902,33 +1032,33 @@ export class MockAIService extends AIService {
       return {
         title: `${topic} – خطة درس`,
         grade: req.grade, subject: req.subject, duration: dur,
-        objectives: lpObjectivesAr(topic, kb, req.objectives),
+        objectives: lpObjectivesAr(topic, kb, req.objectives, kind),
         materials: styleBlueprint.materials,
         ...(priorReview ? { priorReview } : {}),
-        introduction: lpIntroAr(topic, kb),
+        introduction: lpIntroAr(topic, kb, kind),
         mainActivity: styleBlueprint.mainActivity,
         guidedPractice: styleBlueprint.guidedPractice,
         independentPractice: styleBlueprint.independentPractice,
         closure: lpClosureAr(topic, dur),
         assessment: styleBlueprint.assessment,
         differentiation: styleBlueprint.differentiation,
-        homework: lpHomework(topic, 'ar'),
+        homework: lpHomework(topic, 'ar', kind),
       };
     }
     return {
       title: `${topic} – Lesson Plan`,
       grade: req.grade, subject: req.subject, duration: dur,
-      objectives: lpObjectivesEn(topic, kb, req.objectives),
+      objectives: lpObjectivesEn(topic, kb, req.objectives, kind),
       materials: styleBlueprint.materials,
       ...(priorReview ? { priorReview } : {}),
-      introduction: lpIntroEn(topic, kb),
+      introduction: lpIntroEn(topic, kb, kind),
       mainActivity: styleBlueprint.mainActivity,
       guidedPractice: styleBlueprint.guidedPractice,
       independentPractice: styleBlueprint.independentPractice,
       closure: lpClosureEn(topic, dur),
       assessment: styleBlueprint.assessment,
       differentiation: styleBlueprint.differentiation,
-      homework: lpHomework(topic, 'en'),
+      homework: lpHomework(topic, 'en', kind),
     };
   }
 
@@ -950,14 +1080,55 @@ export class MockAIService extends AIService {
     if (mainTypes.length === 0) mainTypes.push('short_answer');
 
     // In-class practice: progressive difficulty (easy → medium → hard)
-    const totalQ = Math.min(12, Math.max(6, req.numQuestions ?? 8));
+    //
+    // The count is the picker's own range (5–20, `NUM_Q_OPTIONS` in
+    // `app/ai-tools/worksheet.tsx`), not a private one. This used to be 6–12, so
+    // asking for 5 gave 6 and asking for 15 or 20 gave 12 while the live prompt
+    // honoured the number — the same teacher got a different paper by whether
+    // live AI was on. 5 is also the smallest the bucket split below can fill
+    // exactly (one easy, one hard, the rest middle, plus the word problem).
+    // A lesson whose bank holds fewer items than this still returns fewer: that
+    // limit is `BankSpentError`, not this line.
+    const totalQ = Math.min(20, Math.max(5, req.numQuestions ?? 8));
     const priorConcepts = req.includePriorReview && req.priorKnowledge?.length
       ? req.priorKnowledge
       : [];
     const priorCount = priorConcepts.length > 0
       ? Math.min(3, Math.max(2, Math.min(priorConcepts.length, 3)))
       : 0;
-    const mainTotal = Math.max(1, totalQ - (wantsWordProblem ? 1 : 0));
+    // `req.difficulty` SHIFTS the band; it does not flatten it.
+    //
+    // The easy → medium → hard progression is deliberate (worked example →
+    // fading → independent), so honouring "hard" by making all three sections
+    // hard would throw away the scaffolding. It shifts instead — and before
+    // this, `req.difficulty` was not read at all, so the picker on
+    // `app/ai-tools/worksheet.tsx` moved nothing.
+    const BANDS: Record<'easy' | 'medium' | 'hard', [DiffTier, DiffTier, DiffTier]> = {
+      easy: ['easy', 'easy', 'medium'],
+      medium: ['easy', 'medium', 'hard'],
+      hard: ['medium', 'hard', 'hard'],
+    };
+    const requested = req.difficulty === 'easy' || req.difficulty === 'hard' ? req.difficulty : 'medium';
+    const band = BANDS[requested];
+
+    // The worked example, and the half-solved item that follows it.
+    //
+    // Taken before any practice question so the pass's session set spends them:
+    // what the class studies cannot come back as a question two sections later.
+    // Only where a person wrote and checked the working (`steps.ts`) — a lesson
+    // without any, or a teacher's own document, gets the paper it always did.
+    // They count INSIDE `totalQ`, the number the teacher picked, so the page
+    // does not outgrow the period. Homework is a separate generator.
+    const takeSolved = (tier: DiffTier): SolvedItem | null => {
+      if (docs.present) return null;
+      if (isChemContext(topic, kb, req.subject)) return takeSolvedChem(topic, kb, tier, lang);
+      if (isMathContext(topic, kb, req.subject)) return takeSolvedMath(topic, kb, tier, lang);
+      return null;
+    };
+    const exampleItem = takeSolved(band[0]);
+    const completionItem = exampleItem ? takeSolved(band[1]) : null;
+    const reserved = (exampleItem ? 1 : 0) + (completionItem ? 1 : 0);
+    const mainTotal = Math.max(0, totalQ - reserved - (wantsWordProblem ? 1 : 0));
 
     const answerSpace = lang === 'ar'
       ? '\n\nالإجابة:\n_________________________________\n_________________________________'
@@ -968,6 +1139,8 @@ export class MockAIService extends AIService {
     let qNum = 1;
 
     const usedStems = new Set<string>();
+    if (exampleItem) usedStems.add(questionStemKey(exampleItem.problem));
+    if (completionItem) usedStems.add(questionStemKey(completionItem.problem));
 
     // `allowRepeat: false` — a worksheet is one printed page, not a fresh
     // draw each time like a quiz retake. Once a lesson's concrete-math bank
@@ -1030,24 +1203,39 @@ export class MockAIService extends AIService {
     }
 
     // Distribute main questions across selected types with progressive difficulty
-    const easyN = Math.max(1, Math.floor(mainTotal * 0.35));
-    const hardN = Math.max(1, Math.floor(mainTotal * 0.25));
-    const midN = Math.max(1, mainTotal - easyN - hardN);
-
-    // `req.difficulty` SHIFTS the band; it does not flatten it.
     //
-    // The easy → medium → hard progression is deliberate (worked example →
-    // fading → independent), so honouring "hard" by making all three sections
-    // hard would throw away the scaffolding. It shifts instead — and before
-    // this, `req.difficulty` was not read at all, so the picker on
-    // `app/ai-tools/worksheet.tsx` moved nothing.
-    const BANDS: Record<'easy' | 'medium' | 'hard', [DiffTier, DiffTier, DiffTier]> = {
-      easy: ['easy', 'easy', 'medium'],
-      medium: ['easy', 'medium', 'hard'],
-      hard: ['medium', 'hard', 'hard'],
+    // Below three there is no room for a question in each band, and the old
+    // `Math.max(1, …)` per band overshot the total by up to two. Reserving the
+    // worked example and the half-solved item makes totals that small reachable.
+    const splitCounts = (m: number): [number, number, number] => {
+      if (m >= 3) {
+        const easy = Math.max(1, Math.floor(m * 0.35));
+        const hard = Math.max(1, Math.floor(m * 0.25));
+        return [easy, Math.max(1, m - easy - hard), hard];
+      }
+      return m === 2 ? [1, 0, 1] : m === 1 ? [0, 1, 0] : [0, 0, 0];
     };
-    const requested = req.difficulty === 'easy' || req.difficulty === 'hard' ? req.difficulty : 'medium';
-    const band = BANDS[requested];
+    const [easyN, midN, hardN] = splitCounts(mainTotal);
+
+    // The half-solved item: its first steps written, blanks for the rest.
+    if (completionItem) {
+      const { given, remaining } = completionSplit(completionItem.steps);
+      const blanks = Array.from({ length: remaining }, (_, i) => `${given.length + i + 1}) __________`);
+      const text = [
+        completionItem.problem,
+        '',
+        lang === 'ar' ? 'أكمل الحل:' : 'Complete the solution:',
+        ...given.map((line, i) => `${i + 1}) ${line}`),
+        ...blanks,
+      ].join('\n');
+      sections.push({
+        type: 'short_answer',
+        title: lang === 'ar' ? 'مثال نكمله' : 'Finish the solution',
+        questions: [{ text, answer: completionItem.answer, points: saPts(band[1]) }],
+      });
+      answerKey.push({ num: qNum++, answer: completionItem.answer, solution: completionItem.steps });
+    }
+
 
     // Titles name the tier the section actually contains, so a "hard"
     // worksheet does not head its first section «تمارين تمهيدية (سهل)».
@@ -1090,8 +1278,8 @@ export class MockAIService extends AIService {
           break;
         }
         typesUsed.add(type);
-        questions.push(q);
-        answerKey.push({ num: qNum++, answer: q.answer ?? '—' });
+        questions.push(withoutSteps(q));
+        answerKey.push({ num: qNum++, answer: q.answer ?? '—', ...(q.steps ? { solution: q.steps } : {}) });
       }
       if (questions.length > 0) {
         const sectionType = typesUsed.size === 1 ? [...typesUsed][0] : 'mixed';
@@ -1105,9 +1293,9 @@ export class MockAIService extends AIService {
       sections.push({
         type: 'word_problem',
         title: lang === 'ar' ? 'مسألة حياتية' : 'Real-life word problem',
-        questions: [q],
+        questions: [withoutSteps(q)],
       });
-      answerKey.push({ num: qNum++, answer: q.answer ?? '—' });
+      answerKey.push({ num: qNum++, answer: q.answer ?? '—', ...(q.steps ? { solution: q.steps } : {}) });
     }
     } catch (e) {
       if (!(e instanceof BankSpentError)) throw e;
@@ -1121,11 +1309,26 @@ export class MockAIService extends AIService {
         ? `ورقة عمل صفية – ${topic}`
         : `In-class Worksheet – ${topic}`,
       instructions: lang === 'ar'
-        ? `الاسم: ________________    الصف: ${req.grade}    التاريخ: ________________\n\nمقدمة قصيرة: هذه ورقة تدريب صفية حول «${topic}». اعمل بهدوء، وابدأ بالأسهل ثم انتقل للأصعب.\n\n• أجب في المساحات المخصصة.\n• بيّن خطوات الحل عند الحاجة.\n• لا حاجة لملاحظات المعلم — هذه ورقة للطالب.`
-        : `Name: ________________    Grade: ${req.grade}    Date: ________________\n\nShort intro: This is an in-class practice sheet on “${topic}”. Work quietly and move from easier to harder items.\n\n• Write in the answer spaces provided.\n• Show working where needed.\n• Student sheet only — no teacher notes.`,
+        ? `الاسم: ________________    الصف: ${req.grade}    التاريخ: ________________\n\nمقدمة قصيرة: هذه ورقة تدريب صفية حول «${topic}». اعمل بهدوء، وابدأ بالأسهل ثم انتقل للأصعب.\n\n${exampleItem ? '• ادرس المثال المحلول أولًا، ثم أكمل الحل في السؤال الأول، ثم تابع بقية الأسئلة.\n' : ''}• أجب في المساحات المخصصة.\n• بيّن خطوات الحل عند الحاجة.\n• لا حاجة لملاحظات المعلم — هذه ورقة للطالب.`
+        : `Name: ________________    Grade: ${req.grade}    Date: ________________\n\nShort intro: This is an in-class practice sheet on “${topic}”. Work quietly and move from easier to harder items.\n\n${exampleItem ? '• Study the worked example first, then finish the solution in question 1, then carry on.\n' : ''}• Write in the answer spaces provided.\n• Show working where needed.\n• Student sheet only — no teacher notes.`,
+      ...(exampleItem
+        ? {
+            workedExample: {
+              problem: exampleItem.problem,
+              steps: exampleItem.steps,
+              answer: exampleItem.answer,
+              selfExplain: lang === 'ar'
+                ? 'اشرح بجملة واحدة: لماذا كانت الخطوة الأولى صحيحة؟'
+                : 'In one sentence, explain why the first step was valid.',
+            },
+          }
+        : {}),
       sections,
       answerKey,
-      ...(spent ? { shortfall: { requested: totalQ, produced: qNum - 1 - priorCount } } : {}),
+      // The worked example is one of the `totalQ` items the picker promised, so it
+      // is one of the items produced — without it a three-item paper asked of
+      // twelve would be reported as two.
+      ...(spent ? { shortfall: { requested: totalQ, produced: qNum - 1 - priorCount + (exampleItem ? 1 : 0) } } : {}),
     };
   }
 

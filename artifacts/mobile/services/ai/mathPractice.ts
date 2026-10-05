@@ -19,6 +19,8 @@ import {
   mathBankCovers,
   takeConcreteMath as takeBankMath,
   takeElementaryMath,
+  takeSolvedMath as takeBankSolved,
+  type SolvedItem,
   type DiffTier,
   type Lang,
   type PracticeWQ,
@@ -30,6 +32,8 @@ export {
   lessonTextBlob,
   detectMathFamily,
   matchMathFamily,
+  completionSplit,
+  subjectIdFromName,
 } from '@workspace/math-practice';
 
 export type { Lang, QType, DiffTier, PracticeWQ, PracticeLesson } from '@workspace/math-practice';
@@ -79,6 +83,25 @@ export function takeConcreteMath(
   const book = bookGrade(kb);
   if (book !== null && book >= 7 && book <= 9) return null;
   return takeBankMath(type, topic, kb, diff, lang, points, session, allowRepeat);
+}
+
+/**
+ * A solved maths item, under the same grade rules as `takeConcreteMath`: a
+ * Grade 1–6 lesson is generated arithmetic with no authored working, and a
+ * Grade 7–9 lesson has no bank, so both get nothing rather than a Grade 10
+ * example that is not theirs.
+ */
+export function takeSolvedMath(
+  topic: string,
+  kb: KBLesson | null,
+  diff: DiffTier,
+  lang: Lang,
+  session?: Set<string>,
+): SolvedItem | null {
+  if (primaryGrade(kb)) return null;
+  const book = bookGrade(kb);
+  if (book !== null && book >= 7 && book <= 9) return null;
+  return takeBankSolved(topic, kb, diff, lang, session);
 }
 
 /** Same as the bank's batch, through the grade-aware `takeConcreteMath`. */
