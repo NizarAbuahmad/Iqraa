@@ -149,3 +149,14 @@ export function sortStudentExams(rows: readonly StudentExamRow[]): StudentExamRo
     return (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "");
   });
 }
+
+/**
+ * The same row as a guardian reads it. A parent sees their child's exams and,
+ * once the teacher has released them, the results — the release rule is
+ * `studentExamRow`'s, unchanged. What a parent never gets is the link: the
+ * exam is the child's to sit, and `/take/:code` would let whoever opens it
+ * pick the child's name.
+ */
+export function guardianExamRow(row: StudentExamRow): StudentExamRow {
+  return { ...row, shareCode: null };
+}

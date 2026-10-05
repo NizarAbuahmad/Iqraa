@@ -109,7 +109,7 @@ export function AwardRow({
                 onToggle(team.id);
               }}
               accessibilityRole="checkbox"
-              accessibilityState={{ checked: on }}
+              aria-checked={on}
               accessibilityLabel={team.name}
               style={[
                 award.team,
@@ -139,7 +139,7 @@ export function AwardRow({
             onAll();
           }}
           accessibilityRole="checkbox"
-          accessibilityState={{ checked: allAwarded }}
+          aria-checked={allAwarded}
           style={[
             award.allBtn,
             {
@@ -163,7 +163,7 @@ export function AwardRow({
             onNobody();
           }}
           accessibilityRole="checkbox"
-          accessibilityState={{ checked: nobody }}
+          aria-checked={nobody}
           style={[
             award.allBtn,
             {

@@ -14,6 +14,7 @@ import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbC
 import { pooledVariantId } from '@/services/ai/regeneration';
 import { WorksheetOutput } from '@/services/ai/AIService';
 import { buildDeckFromWorksheet } from '@/services/classDeck';
+import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
@@ -763,7 +764,7 @@ export default function WorksheetScreen() {
                     key={label}
                     onPress={() => showLevel(i)}
                     accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
+                    aria-selected={active}
                     style={[styles.levelTab, { backgroundColor: active ? ACCENT : 'transparent', borderRadius: colors.radius }]}
                   >
                     <Text style={{ color: active ? palette.primaryForeground : ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{label}</Text>
@@ -776,6 +777,8 @@ export default function WorksheetScreen() {
             <Ionicons name="document-text" size={18} color={ACCENT} />
             <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flex: 1, textAlign: outRTL ? 'right' : 'left' }]}>{result.title}</Text>
           </View>
+
+          <ShortPaperNotice shortfall={result.shortfall} />
 
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 16, lineHeight: 20, textAlign: outRTL ? 'right' : 'left' }]}>
             {result.instructions}
@@ -881,7 +884,7 @@ export default function WorksheetScreen() {
                               onPress={() => updateAnswer(si, i, o)}
                               hitSlop={6}
                               accessibilityRole="button"
-                              accessibilityState={{ selected: isCorrect }}
+                              aria-selected={isCorrect}
                               accessibilityLabel={`${o} — ${t('answer')}`}
                             >
                               <Ionicons

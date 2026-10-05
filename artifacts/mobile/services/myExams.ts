@@ -29,6 +29,13 @@ export interface MyExam {
   result: StudentResult | null;
 }
 
+/** One child's list, as `GET /parent/exams` returns it — no row carries a link. */
+export interface ChildExams {
+  studentId: string;
+  displayName: string;
+  exams: MyExam[];
+}
+
 export const MY_EXAM_STATE_KEY = {
   available: 'myExamsStateAvailable',
   in_progress: 'myExamsStateInProgress',

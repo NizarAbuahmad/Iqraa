@@ -948,7 +948,7 @@ export default function DashboardScreen() {
                 <Pressable
                   onPress={() => setMediaOpen(o => !o)}
                   accessibilityRole="button"
-                  accessibilityState={{ expanded: mediaOpen }}
+                  aria-expanded={mediaOpen}
                   style={{
                     flexDirection: isRTL ? 'row-reverse' : 'row',
                     alignItems: 'center',
