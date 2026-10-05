@@ -101,4 +101,5 @@ overrides:
   qs: "^6.16.0"
 
 allowBuilds:
+  core-js: false
   esbuild: true

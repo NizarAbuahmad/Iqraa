@@ -23,6 +23,7 @@ import { File, Paths } from 'expo-file-system';
 import { buildWordDocument } from './docxBuild.ts';
 import { buildMinistryPlanDocx, type MinistryLessonPage } from './ministryPlan.ts';
 import { trackEvent } from '@/services/analytics';
+import { capturePdf } from './pdfCapture';
 
 // Re-exported here so existing callers (`import { buildDeckSlidesHTML } from
 // '@/services/share'`) don't need to know it actually lives in its own pure
@@ -154,6 +155,16 @@ export async function exportAsPDF(html: string, filename: string): Promise<void>
     // hero over a school connection, short enough that a dead link doesn't
     // look like a hung export. Raise it if teachers report missing photos.
     await Promise.all([waitForImages(doc, 5000), waitForFonts(doc, 2500)]);
+    // Download the PDF directly; the browser print dialog is only the
+    // fallback for when rendering it ourselves throws.
+    try {
+      await capturePdf(iframe, filename);
+      document.body.removeChild(iframe);
+      return;
+    } catch (e) {
+      console.warn('Direct PDF export failed, falling back to print dialog', e);
+    }
+    iframe.style.width = '1123px';
     iframe.contentWindow!.print();
     // Remove the iframe after the dialog has had time to open.
     setTimeout(() => document.body.removeChild(iframe), 3000);
