@@ -23,6 +23,7 @@ import { copyToClipboard, shareAsText } from '@/services/share';
 import { StudentPickerSheet } from '@/components/ui/StudentPickerSheet';
 import { confirm } from '@/services/confirm';
 import { SUBJECTS } from '@/services/curriculumData';
+import { classSubjectIds } from '@/services/classSubjects';
 import {
   RosterError, listParentContacts, listStudents, logParentContact, updateStudent,
   type ClassGroup, type ParentContact, type RosterStudent,
@@ -180,7 +181,10 @@ export default function ParentMessageScreen() {
     const known = rosterGender(student.gender);
     if (known) setStudentGender(known);
     setDetails(prev => seedDetailsFromNote(prev, student.teacherNote));
-    const classSubject = SUBJECTS.find(s => s.id === fromClass.subjectId);
+    // A class taking several subjects does not say which one this letter is
+    // about; seeding its primary subject would mislabel it.
+    const ids = classSubjectIds(fromClass);
+    const classSubject = ids.length === 1 ? SUBJECTS.find(s => s.id === ids[0]) : undefined;
     if (classSubject && !subject.trim()) setSubject(isAr ? classSubject.nameAr : classSubject.name);
   };
 

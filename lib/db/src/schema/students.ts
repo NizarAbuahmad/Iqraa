@@ -17,7 +17,7 @@
  * Everything here is owned by a teacher. There is no school or tenant layer
  * yet; add one below `users` when a school actually asks for it.
  */
-import { pgTable, text, timestamp, uuid, index, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, index, unique, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { users } from "./users";
@@ -33,7 +33,16 @@ export const classGroups = pgTable(
     nameAr: text("name_ar").notNull().default(""),
     /** Curriculum ids from `@workspace/curriculum` (e.g. 'grade-10'). */
     gradeId: text("grade_id").notNull().default(""),
+    /** The primary subject — always `subjectIds[0]` (or '') for rows written since subjectIds existed. Kept for every reader of the single field. */
     subjectId: text("subject_id").notNull().default(""),
+    /**
+     * Every subject this teacher teaches this class. A Grade 1–3 class teacher
+     * teaches one section several subjects; one subject per class made them
+     * re-type the roster once per subject. Empty on rows from before this
+     * column — readers fall back to `[subjectId]` (api-server
+     * `lib/classSubjects.ts`) rather than relying on a backfill.
+     */
+    subjectIds: jsonb("subject_ids").$type<string[]>().notNull().default([]),
     academicYear: text("academic_year").notNull().default(""),
     /**
      * One shared code for the whole class: the joiner types it and picks their

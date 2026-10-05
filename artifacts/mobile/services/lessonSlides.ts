@@ -27,6 +27,7 @@ import { buildChartSlide, buildGraphSlide, referencesShownVisual, scanGraphComma
 import { chartForLesson, visualForSlide } from './deckVisuals.ts';
 import { type BookFigure, figuresForLesson } from './bookFigures.ts';
 import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
+import { inlineSteps } from './slideLayout.ts';
 
 /**
  * Split a generated warm-up into what the class sees and what only the
@@ -671,10 +672,16 @@ export function buildLessonDeck(
   const rules = bullets(pickLang(lesson?.rulesAr, lesson?.rulesEn, isAr), 5);
   const ruleFigure = rules.length > 0 ? figures.shift() : undefined;
   if (rules.length > 0) {
+    // One rule that is a procedure written on a single line («الخطوات: 1) …
+    // 2) … 3) …») is a sequence, and the numbered-steps layout shows it as
+    // one. Not when a figure sits beside the rule: the layout branch comes
+    // before that column in every renderer and would cost the slide its image.
+    const procedure = rules.length === 1 && !ruleFigure?.mediaUrl ? inlineSteps(rules[0]!) : null;
     push({
       type: 'intro',
       title: L('📐 القاعدة', '📐 The Rule'),
-      content: rules.map(r => `• ${r}`).join('\n'),
+      content: (procedure ?? rules).map(r => `• ${r}`).join('\n'),
+      ...(procedure ? { layout: 'steps' as const } : {}),
       durationSeconds: 0,
       ...(ruleFigure?.mediaUrl
         ? {

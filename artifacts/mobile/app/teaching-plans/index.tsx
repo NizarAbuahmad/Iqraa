@@ -36,7 +36,7 @@ import {
   type TeachingPlan,
 } from '@/services/teachingPlans';
 import { listClasses, type ClassGroup } from '@/services/roster';
-import { planScopeParts } from '@/services/planScope';
+import { planClassSubjects, planScopeParts, planSubjectId } from '@/services/planScope';
 import {
   autoScheduleEntries,
   dateOf,
@@ -227,6 +227,8 @@ const EMPTY_FORM = {
   title: '',
   schoolName: '',
   classGroupId: null as string | null,
+  /** '' = the class's primary subject; see planSubjectId. */
+  subjectId: '',
   entries: [] as PlanEntry[],
   grades: '',
   topics: '',
@@ -298,6 +300,7 @@ export default function TeachingPlansScreen() {
       title: plan.title,
       schoolName: plan.schoolName,
       classGroupId: plan.classGroupId,
+      subjectId: plan.subjectId ?? '',
       // Straight off a jsonb column — normalize before anything reads it.
       entries: normalizePlanEntries(plan.entries),
       grades: plan.grades,
@@ -316,21 +319,31 @@ export default function TeachingPlansScreen() {
     period. Opens that class's plan, or a new one already on the class, once
     the list has loaded; handled once per id so closing the form sticks.
   */
-  const { classId } = useLocalSearchParams<{ classId?: string }>();
+  const { classId, subjectId: linkSubjectId } = useLocalSearchParams<{ classId?: string; subjectId?: string }>();
   const handledClassId = useRef<string | null>(null);
   useEffect(() => {
-    if (loading || !classId || handledClassId.current === classId) return;
-    handledClassId.current = classId;
-    const existing = plans.find(p => p.classGroupId === classId);
-    if (existing) {
-      openEdit(existing);
-    } else {
+    const key = `${classId ?? ''}:${linkSubjectId ?? ''}`;
+    if (loading || !classId || handledClassId.current === key) return;
+    handledClassId.current = key;
+    // A class taking several subjects can have a plan per subject. When the
+    // timetable period names its subject, open (or start) that subject's
+    // plan. When it does not, open the class's plan only if there is exactly
+    // one — otherwise leave the teacher on the list to choose rather than
+    // opening whichever was made first.
+    const cls = classes.find(c => c.id === classId);
+    const onClass = plans.filter(p => p.classGroupId === classId);
+    const existing = linkSubjectId
+      ? onClass.filter(p => planSubjectId(p, cls) === linkSubjectId)
+      : onClass;
+    if (existing.length === 1) {
+      openEdit(existing[0]!);
+    } else if (existing.length === 0) {
       openCreate();
-      setForm(f => ({ ...f, classGroupId: classId }));
+      setForm(f => ({ ...f, classGroupId: classId, subjectId: linkSubjectId ?? '' }));
     }
     // openCreate/openEdit are plain closures over setters; keyed on the data.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, classId, plans]);
+  }, [loading, classId, linkSubjectId, plans]);
 
   const classNameFor = (id: string | null): string => {
     if (!id) return '';
@@ -353,7 +366,7 @@ export default function TeachingPlansScreen() {
       return s ? (lang === 'ar' ? s.nameAr : s.name) : '';
     },
   };
-  const scopeOf = (plan: { classGroupId: string | null; grades: string }) =>
+  const scopeOf = (plan: { classGroupId: string | null; subjectId?: string; grades: string }) =>
     planScopeParts(plan, classes, naming);
 
   /**
@@ -371,8 +384,36 @@ export default function TeachingPlansScreen() {
    * was nothing to list.
    */
   const planClass = classes.find(c => c.id === form.classGroupId);
+  /**
+   * Which subject's lessons to list. A class teacher's section takes several
+   * subjects; a pacing plan is per subject (one خطة فصلية per subject per
+   * section), so the plan picks one of the class's, defaulting to its first.
+   * The plan's own subject stays offered even if the class has since dropped
+   * it, so opening an old plan never silently changes what it covers.
+   */
+  const formSubjectId = planSubjectId(form, planClass);
+  const subjectChoices = (() => {
+    const list = planClassSubjects(planClass);
+    return formSubjectId && !list.includes(formSubjectId) ? [...list, formSubjectId] : list;
+  })();
+  const onPickSubject = async (subjectId: string) => {
+    if (subjectId === formSubjectId) return;
+    // The scheduled lessons belong to the old subject. Keeping them under a
+    // new subject label would be a maths plan titled Arabic.
+    if (form.entries.length > 0) {
+      const ok = await confirm({
+        title: t('planChangeSubjectTitle'),
+        message: t('planChangeSubjectConfirm'),
+        confirmLabel: t('planChangeSubjectAction'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    setForm(f => ({ ...f, subjectId, entries: [] }));
+  };
   const scheduleUnits = planClass
-    ? getUnitsForSubjectGrade(planClass.subjectId, planClass.gradeId).map(unit => ({
+    ? getUnitsForSubjectGrade(formSubjectId, planClass.gradeId).map(unit => ({
         unit,
         lessons: getLessonsForUnit(unit.id),
       }))
@@ -428,13 +469,13 @@ export default function TeachingPlansScreen() {
     setError('');
     try {
       if (editingId) {
-        const updated = await updateTeachingPlan(editingId, { ...form, title });
+        const updated = await updateTeachingPlan(editingId, { ...form, subjectId: formSubjectId, title });
         queryClient.setQueryData<TeachingPlansData>(TEACHING_PLANS_QUERY_KEY, prev => ({
           plans: (prev?.plans ?? []).map(p => (p.id === editingId ? updated : p)),
           classes: prev?.classes ?? [],
         }));
       } else {
-        const created = await createTeachingPlan({ ...form, title });
+        const created = await createTeachingPlan({ ...form, subjectId: formSubjectId, title });
         queryClient.setQueryData<TeachingPlansData>(TEACHING_PLANS_QUERY_KEY, prev => ({
           plans: [...(prev?.plans ?? []), created],
           classes: prev?.classes ?? [],
@@ -457,11 +498,12 @@ export default function TeachingPlansScreen() {
    */
   const onExportMinistry = async (plan: TeachingPlan) => {
     const cls = classes.find(c => c.id === plan.classGroupId);
+    const subjectId = planSubjectId(plan, cls);
     const entries = normalizePlanEntries(plan.entries).slice().sort((a, b) => a.date.localeCompare(b.date));
     // Curriculum order of the class's own lessons: the previous one is the
     // lesson's «التعلم القبلي».
     const ordered = cls
-      ? getUnitsForSubjectGrade(cls.subjectId, cls.gradeId).flatMap(u => getLessonsForUnit(u.id))
+      ? getUnitsForSubjectGrade(subjectId, cls.gradeId).flatMap(u => getLessonsForUnit(u.id))
       : [];
     const pages: MinistryLessonPage[] = [];
     const lessons: NonNullable<ReturnType<typeof getLessonById>>[] = [];
@@ -471,7 +513,7 @@ export default function TeachingPlansScreen() {
       const idx = ordered.findIndex(l => l.id === lesson.id);
       lessons.push(lesson);
       pages.push({
-        subject: SUBJECTS.find(x => x.id === cls?.subjectId)?.nameAr ?? '',
+        subject: SUBJECTS.find(x => x.id === subjectId)?.nameAr ?? '',
         grade: GRADES.find(x => x.id === cls?.gradeId)?.nameAr ?? '',
         unit: getUnitForLesson(lesson)?.titleAr ?? '',
         lesson: lesson.titleAr,
@@ -509,7 +551,7 @@ export default function TeachingPlansScreen() {
             const g = resolveGeneratorGrounding(lesson.titleAr, 'ar');
             const out = await remoteAIService.generateLessonPlan({
               grade: page.grade,
-              subject: SUBJECTS.find(x => x.id === cls.subjectId)?.name ?? '',
+              subject: SUBJECTS.find(x => x.id === subjectId)?.name ?? '',
               topic: lesson.titleAr,
               duration: 45,
               language: 'arabic',
@@ -771,7 +813,7 @@ export default function TeachingPlansScreen() {
                       return (
                         <Pressable
                           key={c.id}
-                          onPress={() => setForm(f => ({ ...f, classGroupId: c.id }))}
+                          onPress={() => setForm(f => (f.classGroupId === c.id ? f : { ...f, classGroupId: c.id, subjectId: '' }))}
                           style={{
                             paddingHorizontal: 14,
                             paddingVertical: 7,
@@ -788,6 +830,38 @@ export default function TeachingPlansScreen() {
                       );
                     })}
                   </View>
+                  {subjectChoices.length > 1 ? (
+                    <View style={{ gap: 6, marginTop: 4 }}>
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: align }}>
+                        {t('planSubject')}
+                      </Text>
+                      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+                        {subjectChoices.map(sid => {
+                          const active = formSubjectId === sid;
+                          return (
+                            <Pressable
+                              key={sid}
+                              onPress={() => { void onPickSubject(sid); }}
+                              accessibilityRole="button"
+                              aria-selected={active}
+                              style={{
+                                paddingHorizontal: 14,
+                                paddingVertical: 7,
+                                borderRadius: 18,
+                                borderWidth: 1.5,
+                                borderColor: active ? ACCENT : colors.border,
+                                backgroundColor: active ? ACCENT + '16' : colors.card,
+                              }}
+                            >
+                              <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular', fontSize: 13 }}>
+                                {naming.subject(sid) || sid}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  ) : null}
                   {/* Read-only, because it is not this screen's to edit — it
                       is whatever the chosen class says. Shown rather than
                       hidden so a teacher can see the plan picked up the
@@ -818,7 +892,7 @@ export default function TeachingPlansScreen() {
               {form.classGroupId ? (
                 // Keyed by the plan being edited so the rows' drafts do not
                 // survive into the next plan opened from this same modal.
-                <View key={`${editingId ?? 'new'}:${form.classGroupId}`} style={{ gap: 6 }}>
+                <View key={`${editingId ?? 'new'}:${form.classGroupId}:${formSubjectId}`} style={{ gap: 6 }}>
                   <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: align }}>
                     {t('planSchedule')}
                   </Text>

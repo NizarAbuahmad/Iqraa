@@ -1111,3 +1111,33 @@ describe('opening order', () => {
     assert.equal(at(deck, s => s.title.includes('مفردات')), at(deck, s => s.title.includes('تمهيد')) + 1);
   });
 });
+
+describe('buildLessonDeck — a rule written as a one-line procedure', () => {
+  const procedure = 'الخطوات: 1) عزل y من المعادلة الخطية 2) تعويضه في التربيعية 3) حل المعادلة الناتجة';
+  const withProcedure: KBLesson = { ...LESSON, rulesAr: [procedure] };
+
+  it('is drawn as numbered steps, one per line', () => {
+    const rule = buildLessonDeck('نظام معادلات', true, { lesson: withProcedure })
+      .slides.find(s => s.title.includes('القاعدة'))!;
+    assert.equal(rule.layout, 'steps');
+    assert.equal(rule.content, '• عزل y من المعادلة الخطية\n• تعويضه في التربيعية\n• حل المعادلة الناتجة');
+  });
+
+  it('keeps an ordinary rule exactly as before', () => {
+    const plain: KBLesson = { ...LESSON, rulesAr: ['حل النظام يكون بالتعويض', 'يمكن التحقق بيانيًا'] };
+    const rule = buildLessonDeck('نظام معادلات', true, { lesson: plain })
+      .slides.find(s => s.title.includes('القاعدة'))!;
+    assert.equal(rule.layout, undefined);
+    assert.equal(rule.content, '• حل النظام يكون بالتعويض\n• يمكن التحقق بيانيًا');
+  });
+
+  it('does not take the layout when the rule has a figure beside it', () => {
+    const figured: KBLesson = { ...withProcedure, id: 'kbl-math-s1-nccd-u1_l1' };
+    const rule = buildLessonDeck('نظام معادلات', true, {
+      lesson: figured, figureUri: (f: { file: string }) => `asset://${f.file}`,
+    }).slides.find(s => s.title.includes('القاعدة'))!;
+    assert.ok(rule.sideImageUrl, 'the fixture lesson has figures');
+    assert.equal(rule.layout, undefined);
+    assert.match(rule.content, /الخطوات: 1\)/);
+  });
+});

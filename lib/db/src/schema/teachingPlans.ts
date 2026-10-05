@@ -42,6 +42,15 @@ export const teachingPlans = pgTable(
       onDelete: "set null",
     }),
     /**
+     * Which of the class's subjects this plan covers. A class can take several
+     * subjects (`classGroups.subjectIds`), and a pacing plan is per subject —
+     * the ministry's خطة فصلية is written once per subject per section. ''
+     * means the class's primary subject (`classGroups.subjectId`), which is
+     * what every plan written before this column meant; see
+     * `planSubjectId` (artifacts/mobile/services/planScope.ts).
+     */
+    subjectId: text("subject_id").notNull().default(""),
+    /**
      * The schedule: `[{ lessonId, date }]` — one calendar date (`YYYY-MM-DD`)
      * per curriculum lesson. A lesson is held by its **KB id**, never its
      * title; `searchKBSemantic(title)` resolves 16 of 63 picker lessons to a
