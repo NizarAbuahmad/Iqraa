@@ -21,7 +21,7 @@ function SidebarRow({ entry, isIOS, active }: { entry: TabEntry; isIOS: boolean;
     <Pressable
       onPress={() => router.push(tabHref(entry.name) as never)}
       accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
+      aria-selected={active}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       style={[

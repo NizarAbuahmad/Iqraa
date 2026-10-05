@@ -363,10 +363,10 @@ export default function ProfileScreen() {
               (the exact door-to-nowhere pattern the iQra/AI-tools tabs are
               already hidden from these roles to avoid). It now lives only in
               the TEACHING block above, alongside جدول الحصص. */}
-          {user?.role === 'student' && (
+          {(user?.role === 'student' || user?.role === 'parent') && (
             <SettingRow
               icon="document-text-outline"
-              label={t('myExamsTitle')}
+              label={t(user?.role === 'parent' ? 'childResultsTitle' : 'myExamsTitle')}
               onPress={() => router.push('/my-exams' as any)}
               isRTL={isRTL}
               colors={colors}

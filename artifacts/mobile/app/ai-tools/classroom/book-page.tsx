@@ -61,7 +61,7 @@ export default function BookPageScreen() {
           style={[styles.iconBtn, penOn && { borderColor: ACCENT + '50', backgroundColor: ACCENT + '12' }]}
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityState={{ selected: penOn }}
+          aria-selected={penOn}
           accessibilityLabel={t('penTool')}
         >
           <Ionicons name={penOn ? 'brush' : 'brush-outline'} size={20} color={penOn ? ACCENT : TEXT_MUTED} />

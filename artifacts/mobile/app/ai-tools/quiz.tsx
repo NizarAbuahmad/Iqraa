@@ -6,12 +6,15 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { getT } from '@/services/i18n';
+import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
+import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
@@ -74,7 +77,7 @@ const DIFFICULTY_MAP: Record<DifficultyLevel, Difficulty> = {
 export default function QuizScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL, lang } = useLanguage();
+  const { t, isRTL, lang: uiLang } = useLanguage();
   const params = useLocalSearchParams<{
     savedId?: string; gradeIdx?: string; subjectIdx?: string;
     topic?: string; durationIdx?: string; marksIdx?: string; numQIdx?: string; diffIdx?: string; selectedTypes?: string;
@@ -83,7 +86,7 @@ export default function QuizScreen() {
 
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
-  const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
+  const gradeNames = grades.map(g => uiLang === 'ar' ? g.nameAr : g.name);
   const durationLabels = DURATION_OPTIONS.map(d => `${d} ${t('min')}`);
   const marksLabels = MARKS_OPTIONS.map(m => String(m));
   const numQLabels = NUM_Q_OPTIONS.map(n => String(n));
@@ -98,7 +101,7 @@ export default function QuizScreen() {
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en', teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -106,9 +109,14 @@ export default function QuizScreen() {
   // Labels are per-grade too: Grade 6's creative-arts book has no music
   // in it, so it must not be offered under the combined name. Same
   // index alignment as the mask above.
-  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, uiLang);
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
-  const [topic, setTopic] = useState(params.topic ?? '');
+  // The picked subject's material language — English quizzes are in English.
+  const lang = contentLang(subjects[subjectIdx].id, uiLang);
+  const [topic, setTopic] = useState(() => topicInLang(
+    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+  ));
   useWarmGrounding(topic, lang);
   // Persisted with the material (it was not: a reopened «صعب» quiz regenerated
   // as easy), and range-checked like the other positions.
@@ -154,12 +162,17 @@ export default function QuizScreen() {
    * as «اختبار: » and re-grounded the deck from an empty topic.
    */
   const [generated, setGenerated] = useState<GenerationScope | null>(
-    () => (params.savedId ? reopenedGenerationScope(initialScope, params.topic, lang as 'ar' | 'en') : null),
+    () => (params.savedId ? reopenedGenerationScope(initialScope, topic, lang) : null),
   );
   const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
+  // The quiz on screen keeps the language it was generated in, even after the
+  // pickers move on — like everything else read off `scope`.
+  const outLang = contentLang(subjects[scope.subjectIdx].id, uiLang);
+  const outT = getT(outLang);
+  const outRTL = outLang === 'ar';
   const curriculumGrounded: boolean | null = generated ? generated.grounded : null;
   const groundedLesson: string | null = generated?.lesson
-    ? (lang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
+    ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
     : null;
   /** Ids of questions the teacher has changed, so provenance stays honest. */
   const [editedQuestions, setEditedQuestions] = useState<ReadonlySet<string>>(new Set());
@@ -202,11 +215,14 @@ export default function QuizScreen() {
     });
   };
 
-  const TYPE_LABEL: Record<QType, string> = {
-    multiple_choice: t('typeMultipleChoice'),
-    true_false: t('typeTrueFalse'),
-    short_answer: t('typeShortAnswer'),
-  };
+  // The form's checkboxes are chrome; the badges on the quiz are the quiz's.
+  const typeLabels = (tr: typeof t): Record<QType, string> => ({
+    multiple_choice: tr('typeMultipleChoice'),
+    true_false: tr('typeTrueFalse'),
+    short_answer: tr('typeShortAnswer'),
+  });
+  const TYPE_LABEL = typeLabels(t);
+  const OUT_TYPE_LABEL = typeLabels(outT);
   const TYPE_COLOR: Record<QType, string> = {
     multiple_choice: '#B54708',
     true_false: '#1D4ED8',
@@ -318,10 +334,10 @@ export default function QuizScreen() {
     // A topic that grounds to another subject's lesson cannot make an honest
     // paper — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
-    const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id, grades[gradeIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setCancelled(false);
     const controller = new AbortController();
     abortRef.current = controller;
@@ -331,16 +347,16 @@ export default function QuizScreen() {
     await nextFrame();
     try {
       const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: kbScope });
-      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en', { scope: kbScope });
-      const unitId = generatorUnitId(topic.trim(), lang as 'ar' | 'en', kbScope);
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang, { scope: kbScope });
+      const additionalContext = buildGeneratorContext(topic.trim(), lang, { scope: kbScope });
+      const unitId = generatorUnitId(topic.trim(), lang, kbScope);
       const out = await aiService.generateQuiz({
         // Localised: this string is carried into generated content verbatim —
         // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
         // compared anywhere, only displayed and passed through, so translating it
         // is safe. `subject` is deliberately left in English: it feeds
         // isMathContext and ~30 other call sites.
-        grade: gradeNames[gradeIdx]!,
+        grade: lang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
         subject: subjects[subjectIdx].name,
         topic: topic.trim(),
         language: lang === 'ar' ? 'arabic' : 'english',
@@ -351,8 +367,8 @@ export default function QuizScreen() {
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         additionalContext,
         unitId,
-        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en', kbScope),
-        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en', kbScope),
+        lessonId: generatorLessonId(topic.trim(), lang, kbScope),
+        bookFigureCount: generatorFigureCount(topic.trim(), lang, kbScope),
         // Curriculum-derived, so the artifact may be shared with any teacher
         // who asks the same question — see AIRequest.contextSource.
         contextSource: 'curriculum',
@@ -408,7 +424,7 @@ export default function QuizScreen() {
     // Built once: the two branches below used to each spell out the payload.
     const payload = {
       title, subject: subjects[scope.subjectIdx].name, grade: grades[scope.gradeIdx].name,
-      topic: scope.topic, language: lang, content: JSON.stringify(result), formState,
+      topic: scope.topic, language: outLang, content: JSON.stringify(result), formState,
     };
     // `updateItem` answers false when the material is no longer there — the
     // teacher deleted it from موادي while this screen still held its id. The
@@ -429,14 +445,14 @@ export default function QuizScreen() {
 
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
-  const getExportTitle = () => lang === 'ar' ? `اختبار: ${scope.topic}` : `Quiz: ${scope.topic}`;
+  const getExportTitle = () => outLang === 'ar' ? `اختبار: ${scope.topic}` : `Quiz: ${scope.topic}`;
   // Localised, like the picker above it. Taking `.name` straight off the
   // catalog put "Mathematics | Grade 10" at the top of an otherwise Arabic
   // material — the screen showed الرياضيات and the exported file disagreed.
   // Labels are per grade, so they are read against the generated grade.
   const getExportMeta = () => ({
-    subject: subjectPickerLabels(grades[scope.gradeIdx].id, lang as 'ar' | 'en')[scope.subjectIdx]!,
-    grade: gradeNames[scope.gradeIdx]!,
+    subject: subjectPickerLabels(grades[scope.gradeIdx].id, outLang)[scope.subjectIdx]!,
+    grade: outLang === 'ar' ? grades[scope.gradeIdx].nameAr : grades[scope.gradeIdx].name,
   });
 
   const {
@@ -453,7 +469,7 @@ export default function QuizScreen() {
     result,
     topic: scope.topic,
     lessonId: scope.lesson?.id,
-    lang,
+    lang: outLang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
     formatText: formatQuizText,
@@ -496,7 +512,7 @@ export default function QuizScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
-          lang={lang as 'ar' | 'en'}
+          lang={lang}
           isRTL={isRTL}
           colors={colors}
           accent={ACCENT}
@@ -544,7 +560,7 @@ export default function QuizScreen() {
         onRetry={generate}
         colors={colors}
         isRTL={isRTL}
-        lang={lang as 'ar' | 'en'}
+        lang={uiLang}
         accent={ACCENT}
         t={t}
       />
@@ -607,13 +623,15 @@ export default function QuizScreen() {
       {result && (
         <View style={{ paddingHorizontal: 20 }}>
           <View style={[styles.quizHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '40', borderRadius: colors.radius }]}>
-            <Text style={[styles.quizTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
-            <View style={[styles.quizMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <MetaPill icon="time-outline" text={`${result.duration} ${t('min')}`} color={ACCENT} />
-              <MetaPill icon="star-outline" text={`${result.totalPoints} ${t('pts')}`} color={ACCENT} />
-              <MetaPill icon="help-circle-outline" text={t('questionCountPill', result.questions.length)} color={ACCENT} />
+            <Text style={[styles.quizTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: outRTL ? 'right' : 'left' }]}>{result.title}</Text>
+            <View style={[styles.quizMeta, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
+              <MetaPill icon="time-outline" text={`${result.duration} ${outT('min')}`} color={ACCENT} />
+              <MetaPill icon="star-outline" text={`${result.totalPoints} ${outT('pts')}`} color={ACCENT} />
+              <MetaPill icon="help-circle-outline" text={outT('questionCountPill', result.questions.length)} color={ACCENT} />
             </View>
           </View>
+
+          <ShortPaperNotice shortfall={result.shortfall} />
 
           {/* Class Mode: project this quiz as whole-class response slides.
               Phones are banned in class, so students answer from their seats
@@ -622,7 +640,7 @@ export default function QuizScreen() {
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               setPendingClassroomActivity(
-                buildDeckFromQuiz(result, scope.topic, lang === 'ar', {
+                buildDeckFromQuiz(result, scope.topic, outRTL, {
                   // The lesson this quiz was generated for — not one re-derived
                   // from whatever the topic box says now.
                   lesson: scope.lesson,
@@ -668,14 +686,14 @@ export default function QuizScreen() {
             const o = effectiveOutcomes[i];
             return (
               <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-                <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <View style={[styles.qTop, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
                   <View style={[styles.qNumCircle, { backgroundColor: ACCENT_FILL }]}>
                     <Text style={[{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 12 }]}>{i + 1}</Text>
                   </View>
                   <View style={[styles.typeBadge, { backgroundColor: tc + '18' }]}>
-                    <Text style={[{ color: tc, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }]}>{TYPE_LABEL[q.type as QType] ?? q.type}</Text>
+                    <Text style={[{ color: tc, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }]}>{OUT_TYPE_LABEL[q.type as QType] ?? q.type}</Text>
                   </View>
-                  <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
+                  <View style={{ flexDirection: outRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, marginLeft: outRTL ? 0 : 'auto', marginRight: outRTL ? 'auto' : 0 }}>
                     <View style={{ minWidth: 54 }}>
                       <EditableText
                         value={`${q.points}`}
@@ -687,8 +705,8 @@ export default function QuizScreen() {
                           if (n !== null) updateQuestion(i, { points: n });
                         }}
                         colors={colors}
-                        isRTL={isRTL}
-                        placeholder={t('pts')}
+                        isRTL={outRTL}
+                        placeholder={outT('pts')}
                       />
                     </View>
                     <Pressable
@@ -722,7 +740,7 @@ export default function QuizScreen() {
                     value={q.text}
                     onChange={next => updateQuestion(i, { text: next })}
                     colors={colors}
-                    isRTL={isRTL}
+                    isRTL={outRTL}
                     placeholder={t('editPlaceholder')}
                     edited={editedQuestions.has(q.id)}
                   />
@@ -732,16 +750,16 @@ export default function QuizScreen() {
                   const marker = optionMarkerState(showAnswers, opt, q.correctAnswer);
                   const isCorrect = marker === 'selected';
                   return (
-                    <View key={oi} style={[styles.optRow, { backgroundColor: isCorrect ? '#067647' + '15' : colors.muted, borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    <View key={oi} style={[styles.optRow, { backgroundColor: isCorrect ? '#067647' + '15' : colors.muted, borderRadius: 8, flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
                       <Text style={[styles.optLabel, { color: isCorrect ? '#067647' : colors.mutedForeground, fontFamily: isCorrect ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular' }]}>
-                        {optionLetter(oi, lang === 'ar')}.
+                        {optionLetter(oi, outRTL)}.
                       </Text>
                       <View style={{ flex: 1 }}>
                         <EditableText
                           value={opt}
                           onChange={next => updateOption(i, oi, next)}
                           colors={colors}
-                          isRTL={isRTL}
+                          isRTL={outRTL}
                           placeholder={t('editPlaceholder')}
                         />
                       </View>
@@ -756,7 +774,7 @@ export default function QuizScreen() {
                           onPress={() => updateQuestion(i, { correctAnswer: opt })}
                           hitSlop={6}
                           accessibilityRole="button"
-                          accessibilityState={{ selected: isCorrect }}
+                          aria-selected={isCorrect}
                           accessibilityLabel={`${opt} — ${t('answer')}`}
                         >
                           <Ionicons
@@ -771,15 +789,15 @@ export default function QuizScreen() {
                 })}
 
                 {showAnswers && q.type === 'true_false' && (
-                  <View style={[styles.ansBox, { backgroundColor: '#067647' + '15', borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <View style={[styles.ansBox, { backgroundColor: '#067647' + '15', borderRadius: 8, flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
                     <Ionicons name="checkmark-circle" size={14} color="#067647" />
-                    <Text style={[{ color: '#067647', fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('answer')}:</Text>
+                    <Text style={[{ color: '#067647', fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{outT('answer')}:</Text>
                     <View style={{ flex: 1 }}>
                       <EditableText
                         value={q.correctAnswer}
                         onChange={next => updateQuestion(i, { correctAnswer: next })}
                         colors={colors}
-                        isRTL={isRTL}
+                        isRTL={outRTL}
                         placeholder={t('editPlaceholder')}
                       />
                     </View>
@@ -792,7 +810,7 @@ export default function QuizScreen() {
                       value={q.correctAnswer}
                       onChange={next => updateQuestion(i, { correctAnswer: next })}
                       colors={colors}
-                      isRTL={isRTL}
+                      isRTL={outRTL}
                       placeholder={t('editPlaceholder')}
                     />
                   </View>
@@ -804,7 +822,7 @@ export default function QuizScreen() {
                       value={q.explanation}
                       onChange={next => updateQuestion(i, { explanation: next })}
                       colors={colors}
-                      isRTL={isRTL}
+                      isRTL={outRTL}
                       placeholder={t('editPlaceholder')}
                     />
                   </View>

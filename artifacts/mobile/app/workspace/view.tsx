@@ -20,7 +20,7 @@ import { arCountPhrase } from '@/services/arCount';
 // adding a sixth to a private copy is exactly the drift `materialKind.ts` was
 // extracted to stop — a card in موادي and the material it opens must not
 // disagree about what colour an activity is.
-import { MATERIAL_COLOR } from '@/constants/materialKind';
+import { MATERIAL_COLOR, MATERIAL_FILL } from '@/constants/materialKind';
 import { activityTypeLabel } from '@/constants/activityType';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
@@ -210,7 +210,7 @@ export default function WorkspaceViewScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: accent, paddingTop: topPad + 12 }]}>
+      <View style={[styles.header, { backgroundColor: MATERIAL_FILL[kind as keyof typeof MATERIAL_FILL] ?? colors.hero, paddingTop: topPad + 12 }]}>
         <Pressable
           onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
@@ -533,6 +533,20 @@ function WorksheetView({ ws, colors, isRTL, t, accent }: {
       <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 16, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
         {ws.instructions}
       </Text>
+      {ws.workedExample && (
+        <ContentSection title={t('workedExampleTitle')} icon="create-outline" isRTL={isRTL} accent={accent} colors={colors}>
+          <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 6, textAlign: isRTL ? 'right' : 'left' }}>{ws.workedExample.problem}</Text>
+          {ws.workedExample.steps.map((step, i) => (
+            <View key={i} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 4, alignItems: 'flex-start' }}>
+              <Text style={{ color: accent, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, width: 22 }}>{i + 1}.</Text>
+              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>{step}</Text>
+            </View>
+          ))}
+          {!!ws.workedExample.selfExplain && (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>{ws.workedExample.selfExplain}</Text>
+          )}
+        </ContentSection>
+      )}
       {ws.sections.map(sec => (
         <View key={sec.title} style={{ marginBottom: 20 }}>
           <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>{sec.title}</Text>
@@ -558,7 +572,12 @@ function WorksheetView({ ws, colors, isRTL, t, accent }: {
           {ws.answerKey.map(item => (
             <View key={item.num} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 6, alignItems: 'flex-start' }]}>
               <Text style={{ color: accent, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, width: 22 }}>{item.num}.</Text>
-              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>{item.answer}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>{item.answer}</Text>
+                {item.solution?.map((line, li) => (
+                  <Text key={li} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>{`${li + 1}) ${line}`}</Text>
+                ))}
+              </View>
             </View>
           ))}
         </ContentSection>

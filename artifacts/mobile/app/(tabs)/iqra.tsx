@@ -176,7 +176,7 @@ import { bookFigureUri } from '@/services/bookFigureUri';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
 import { describeAttachResult } from '@/services/classAttach';
-import type { Lang } from '@/services/i18n';
+import { getT, type Lang } from '@/services/i18n';
 import { attachToClasses, getItem, saveItem, updateItem } from '@/services/workspace';
 import {
   canPresentArtifact,
@@ -260,7 +260,7 @@ interface Message {
   /** Conversation around a rendered document — shown instead of the full text. */
   artifactProse?: string;
   /** Heading + context, so an edited document exports as edited. */
-  artifactMeta?: { title: string; subject: string; grade: string; duration?: number };
+  artifactMeta?: { title: string; subject: string; grade: string; duration?: number; lang?: 'ar' | 'en' };
   /**
    * Workspace id, once this material has been saved from chat. Held on the
    * message so a second tap updates the same material instead of filing a
@@ -1010,6 +1010,11 @@ function MessageBubble({
   const inlinePlan = onCanvas ? null : planData;
   const infographic =
     message.artifactData?.kind === 'infographic' ? message.artifactData.infographic : null;
+  // The document reads in its own language — an English lesson's plan is
+  // English inside an Arabic chat.
+  const docLang = message.artifactMeta?.lang;
+  const docRTL = docLang ? docLang === 'ar' : isRTL;
+  const docT = docLang ? getT(docLang) : t;
 
   // A rendered document replaces the formatted text it was built from. Showing
   // both put the whole lesson plan on screen twice — once editable, once as the
@@ -1110,8 +1115,8 @@ function MessageBubble({
               <LessonPlanView
                 plan={inlinePlan.plan}
                 colors={colors}
-                isRTL={isRTL}
-                t={t}
+                isRTL={docRTL}
+                t={docT}
                 accent={colors.primary}
                 onEdit={
                   onEditArtifact
@@ -1127,7 +1132,7 @@ function MessageBubble({
           ) : null}
           {infographic ? (
             <View style={{ marginBottom: 8 }}>
-              <InfographicView data={infographic} colors={colors} isRTL={isRTL} />
+              <InfographicView data={infographic} colors={colors} isRTL={docRTL} />
             </View>
           ) : null}
           {lines.map((line, i) => {
@@ -1519,7 +1524,7 @@ export default function IqraScreen() {
     const data = message.artifactData;
     const meta = message.artifactMeta;
     if (!data || !meta) return message.text;
-    const isAr = lang === 'ar';
+    const isAr = (meta.lang ?? lang) === 'ar';
     const m = { subject: meta.subject, grade: meta.grade, duration: meta.duration };
     switch (data.kind) {
       case 'lesson-plan':
@@ -1579,7 +1584,7 @@ export default function IqraScreen() {
       subject: meta.subject,
       grade: meta.grade,
       topic,
-      language: lang as 'ar' | 'en',
+      language: meta.lang ?? (lang as 'ar' | 'en'),
       content: JSON.stringify(materialContentFor(data)),
       formState: materialFormStateFor(topic),
     };
@@ -1688,7 +1693,7 @@ export default function IqraScreen() {
     try {
       const deck = deckForArtifact(data, {
         topic,
-        isAr: lang === 'ar',
+        isAr: (meta.lang ?? lang) === 'ar',
         lesson: message.curriculumLessonId
           ? getLessonById(message.curriculumLessonId) ?? null
           : null,
@@ -2570,6 +2575,7 @@ export default function IqraScreen() {
             subject: generated.meta.subject,
             grade: generated.meta.grade,
             duration: generated.meta.duration,
+            lang: generated.meta.lang,
           };
           lessonTopic = generated.topic;
           quickTopic = generated.topic;
@@ -3828,8 +3834,8 @@ export default function IqraScreen() {
           data={canvasMessage.artifactData}
           text={documentTextFor(canvasMessage)}
           colors={colors}
-          isRTL={isRTL}
-          t={t}
+          isRTL={canvasMessage.artifactMeta?.lang ? canvasMessage.artifactMeta.lang === 'ar' : isRTL}
+          t={canvasMessage.artifactMeta?.lang ? getT(canvasMessage.artifactMeta.lang) : t}
           closeLabel={t('canvasClose')}
           onClose={() => setCanvasMessageId(null)}
           onEditPlan={

@@ -6,12 +6,15 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { getT } from '@/services/i18n';
+import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
 import { pooledVariantId } from '@/services/ai/regeneration';
 import { WorksheetOutput } from '@/services/ai/AIService';
 import { buildDeckFromWorksheet } from '@/services/classDeck';
+import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
@@ -87,7 +90,7 @@ type LevelEntry = {
 export default function WorksheetScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL, lang } = useLanguage();
+  const { t, isRTL, lang: uiLang } = useLanguage();
   const params = useLocalSearchParams<{
     savedId?: string; gradeIdx?: string; subjectIdx?: string;
     topic?: string; diffIdx?: string; numQIdx?: string; selectedTypes?: string;
@@ -97,7 +100,7 @@ export default function WorksheetScreen() {
 
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
-  const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
+  const gradeNames = grades.map(g => uiLang === 'ar' ? g.nameAr : g.name);
   const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult')];
   const numQLabels = NUM_Q_OPTIONS.map(n => String(n));
 
@@ -110,7 +113,7 @@ export default function WorksheetScreen() {
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en', teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -118,9 +121,14 @@ export default function WorksheetScreen() {
   // Labels are per-grade too: Grade 6's creative-arts book has no music
   // in it, so it must not be offered under the combined name. Same
   // index alignment as the mask above.
-  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, uiLang);
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
-  const [topic, setTopic] = useState(params.topic ?? '');
+  // The picked subject's material language — English papers are in English.
+  const lang = contentLang(subjects[subjectIdx].id, uiLang);
+  const [topic, setTopic] = useState(() => topicInLang(
+    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+  ));
   useWarmGrounding(topic, lang);
   const [diffIdx, setDiffIdx] = useState(readIndexParam(params.diffIdx, DIFFICULTY_IDS.length, 0));
 
@@ -154,6 +162,13 @@ export default function WorksheetScreen() {
   /** null = not checked yet (or the check failed); [] onwards = per question. */
   const [outcomes, setOutcomes] = useState<VerifyOutcome[] | null>(null);
   /**
+   * Whether the verifier proved the worked example's own answer. The example is
+   * the one thing on the page students are told to study, so it earns a badge
+   * only on a symbolic proof — never on the bank fallback, and never while the
+   * check is still running.
+   */
+  const [exampleOutcome, setExampleOutcome] = useState<VerifyOutcome | null>(null);
+  /**
    * Flat question positions (0-based, same indexing as `outcomes`) the
    * teacher has hand-edited. A verified badge is dropped for these — the
    * verifier proved the *generated* text, and an edit may have changed the
@@ -178,12 +193,17 @@ export default function WorksheetScreen() {
    * subject as «ورقة عمل: » and re-grounded the deck from an empty topic.
    */
   const [generated, setGenerated] = useState<GenerationScope | null>(
-    () => (params.savedId ? reopenedGenerationScope(initialScope, params.topic, lang as 'ar' | 'en') : null),
+    () => (params.savedId ? reopenedGenerationScope(initialScope, topic, lang) : null),
   );
   const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
+  // The paper on screen keeps the language it was generated in, even after the
+  // pickers move on — like everything else read off `scope`.
+  const outLang = contentLang(subjects[scope.subjectIdx].id, uiLang);
+  const outT = getT(outLang);
+  const outRTL = outLang === 'ar';
   const curriculumGrounded: boolean | null = generated ? generated.grounded : null;
   const groundedLesson: string | null = generated?.lesson
-    ? (lang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
+    ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
     : null;
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
@@ -199,7 +219,7 @@ export default function WorksheetScreen() {
   // Prior-knowledge availability for the currently selected lesson (no fabrication)
   const priorKnowledge = (() => {
     if (!topic.trim()) return [] as string[];
-    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
+    const g = resolveGeneratorGrounding(topic.trim(), lang, { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
     if (!g.lesson) return [] as string[];
     return getUnitPriorKnowledge(g.lesson.id);
   })();
@@ -263,12 +283,16 @@ export default function WorksheetScreen() {
   const verifyKeys = (out: WorksheetOutput) => {
     verifyRef.current.begin(out);
     setOutcomes(null);
+    setExampleOutcome(null);
     void (async () => {
       const { verifyWorksheetAnswers } = await import('@/services/quizVerification');
       const { verifyMathItem } = await import('@/services/ai/verifyMath');
-      const checked = await verifyWorksheetAnswers(out, verifyMathItem);
-      if (verifyRef.current.accepts(out)) setOutcomes(checked);
-    })().catch(() => { if (verifyRef.current.accepts(out)) setOutcomes(null); });
+      const [checked, example] = await Promise.all([
+        verifyWorksheetAnswers(out, verifyMathItem),
+        out.workedExample ? verifyMathItem(out.workedExample.problem, out.workedExample.answer) : Promise.resolve(null),
+      ]);
+      if (verifyRef.current.accepts(out)) { setOutcomes(checked); setExampleOutcome(example); }
+    })().catch(() => { if (verifyRef.current.accepts(out)) { setOutcomes(null); setExampleOutcome(null); } });
   };
 
   /** Swap the paper on screen; everything below reads `result` + `diffIdx`. */
@@ -310,10 +334,10 @@ export default function WorksheetScreen() {
     // A topic that grounds to another subject's lesson cannot make an honest
     // paper — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
-    const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id, grades[gradeIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setCancelled(false);
     const controller = new AbortController();
     abortRef.current = controller;
@@ -328,12 +352,12 @@ export default function WorksheetScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
     try {
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang, { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
       const baseReq = buildWorksheetRequest({
-        gradeName: gradeNames[gradeIdx]!,
+        gradeName: lang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
         subjectName: subjects[subjectIdx].name,
         topic,
-        lang: lang as 'ar' | 'en',
+        lang,
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         numQuestions: NUM_Q_OPTIONS[numQIdx],
         questionTypes: Array.from(selectedTypes),
@@ -406,7 +430,9 @@ export default function WorksheetScreen() {
   };
 
   // Three papers on one topic need three titles in موادي and in the export.
-  const levelSuffix = levels ? ` — ${diffLabels[diffIdx]}` : '';
+  const levelSuffix = levels
+    ? ` — ${[outT('difficultyNormal'), outT('difficultyHigh'), outT('difficultyDifficult')][diffIdx]}`
+    : '';
 
   /**
    * One title for موادي and for every export. The export used to keep its
@@ -414,8 +440,8 @@ export default function WorksheetScreen() {
    * the app as «ورقة عمل».
    */
   const materialTitle = () => (isHomework
-    ? (lang === 'ar' ? `واجب بيتي: ${scope.topic}` : `Homework: ${scope.topic}`)
-    : (lang === 'ar' ? `ورقة عمل: ${scope.topic}` : `Worksheet: ${scope.topic}`)) + levelSuffix;
+    ? (outLang === 'ar' ? `واجب بيتي: ${scope.topic}` : `Homework: ${scope.topic}`)
+    : (outLang === 'ar' ? `ورقة عمل: ${scope.topic}` : `Worksheet: ${scope.topic}`)) + levelSuffix;
 
   const handleSave = async () => {
     if (!result) return;
@@ -429,7 +455,7 @@ export default function WorksheetScreen() {
     // Built once: the two branches below used to each spell out the payload.
     const payload = {
       title, subject: subjects[scope.subjectIdx].name, grade: grades[scope.gradeIdx].name,
-      topic: scope.topic, language: lang, content: JSON.stringify(result), formState,
+      topic: scope.topic, language: outLang, content: JSON.stringify(result), formState,
     };
     // `updateItem` answers false when the material is no longer there — the
     // teacher deleted it from موادي while this screen still held its id. The
@@ -532,8 +558,8 @@ export default function WorksheetScreen() {
   // material — the screen showed الرياضيات and the exported file disagreed.
   // Labels are per grade, so they are read against the generated grade.
   const getExportMeta = () => ({
-    subject: subjectPickerLabels(grades[scope.gradeIdx].id, lang as 'ar' | 'en')[scope.subjectIdx]!,
-    grade: gradeNames[scope.gradeIdx]!,
+    subject: subjectPickerLabels(grades[scope.gradeIdx].id, outLang)[scope.subjectIdx]!,
+    grade: outLang === 'ar' ? grades[scope.gradeIdx].nameAr : grades[scope.gradeIdx].name,
   });
 
   const {
@@ -550,7 +576,7 @@ export default function WorksheetScreen() {
     result,
     topic: scope.topic,
     lessonId: scope.lesson?.id,
-    lang,
+    lang: outLang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
     formatText: (ws, title, meta, isAr) => formatWorksheetText(ws, title, meta, isAr, showAnswers),
@@ -593,7 +619,7 @@ export default function WorksheetScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
-          lang={lang as 'ar' | 'en'}
+          lang={lang}
           isRTL={isRTL}
           colors={colors}
           accent={ACCENT}
@@ -606,6 +632,11 @@ export default function WorksheetScreen() {
             filed it under the wrong level on the next tab tap. */}
         <PickerField label={t('difficultyLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={i => (levels ? showLevel(i) : setDiffIdx(i))} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('numQuestionsLabel')} value={numQLabels[numQIdx]} options={numQLabels} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        {isHomework ? null : (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: -8, marginBottom: 14, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('numQuestionsIncludesExample')}
+          </Text>
+        )}
 
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -677,7 +708,7 @@ export default function WorksheetScreen() {
         onRetry={generate}
         colors={colors}
         isRTL={isRTL}
-        lang={lang as 'ar' | 'en'}
+        lang={uiLang}
         accent={ACCENT}
         t={t}
       />
@@ -749,7 +780,7 @@ export default function WorksheetScreen() {
                     key={label}
                     onPress={() => showLevel(i)}
                     accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
+                    aria-selected={active}
                     style={[styles.levelTab, { backgroundColor: active ? ACCENT : 'transparent', borderRadius: colors.radius }]}
                   >
                     <Text style={{ color: active ? palette.primaryForeground : ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{label}</Text>
@@ -758,12 +789,14 @@ export default function WorksheetScreen() {
               })}
             </View>
           ) : null}
-          <View style={[styles.successBanner, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.successBanner, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="document-text" size={18} color={ACCENT} />
-            <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
+            <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flex: 1, textAlign: outRTL ? 'right' : 'left' }]}>{result.title}</Text>
           </View>
 
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 16, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+          <ShortPaperNotice shortfall={result.shortfall} />
+
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 16, lineHeight: 20, textAlign: outRTL ? 'right' : 'left' }]}>
             {result.instructions}
           </Text>
 
@@ -774,7 +807,7 @@ export default function WorksheetScreen() {
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               setPendingClassroomActivity(
-                buildDeckFromWorksheet(result, scope.topic, lang === 'ar', {
+                buildDeckFromWorksheet(result, scope.topic, outRTL, {
                   // The lesson this paper was generated for — not one re-derived
                   // from whatever the topic box says now.
                   lesson: scope.lesson,
@@ -816,14 +849,51 @@ export default function WorksheetScreen() {
             </Text>
           </Pressable>
 
+          {result.workedExample ? (
+            <View
+              style={[styles.workedCard, { backgroundColor: ACCENT + '0F', borderColor: ACCENT + '40', borderRadius: colors.radius }]}
+              accessible
+              accessibilityLabel={t('workedExampleTitle')}
+            >
+              <View style={[styles.akHeader, { flexDirection: isRTL ? 'row-reverse' : 'row', marginTop: 0 }]}>
+                <Ionicons name="create-outline" size={15} color={ACCENT} />
+                <Text style={[styles.akTitle, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{t('workedExampleTitle')}</Text>
+              </View>
+              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
+                {isolateForeignRuns(result.workedExample.problem)}
+              </Text>
+              {result.workedExample.steps.map((step, i) => (
+                <View key={i} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start' }]}>
+                  <Text style={[styles.optLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{i + 1}.</Text>
+                  <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }}>
+                    {isolateForeignRuns(step)}
+                  </Text>
+                </View>
+              ))}
+              {exampleOutcome?.verifiedBy === 'symbolic' ? (
+                <View style={[styles.verifyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <Ionicons name="shield-checkmark" size={12} color="#067647" />
+                  <Text style={[styles.verifyText, { fontSize: 11, color: '#067647', textAlign: isRTL ? 'right' : 'left' }]}>
+                    {t('verifiedBySymbolic')}
+                  </Text>
+                </View>
+              ) : null}
+              {result.workedExample.selfExplain ? (
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+                  {isolateForeignRuns(result.workedExample.selfExplain)}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+
           {result.sections.map((sec, si) => (
             <View key={sec.title} style={{ marginBottom: 20 }}>
-              <Text style={[styles.secTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{sec.title}</Text>
+              <Text style={[styles.secTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: outRTL ? 'right' : 'left' }]}>{sec.title}</Text>
               {sec.questions.map((q, i) => {
                 const correctAnswer = answerFor(result, si, i);
                 const flatIndex = flatIndexOf(result, si, i);
                 return (
-                <View key={i} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <View key={i} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
                   {/* Numbered straight through, as the answer key and both
                       exports are — per-section numbering made «٣» in the key
                       point at a different question on screen. */}
@@ -833,7 +903,7 @@ export default function WorksheetScreen() {
                       value={q.text}
                       onChange={next => updateQuestionText(si, i, next)}
                       colors={colors}
-                      isRTL={isRTL}
+                      isRTL={outRTL}
                       placeholder={t('editPlaceholder')}
                       edited={editedFlatIndexes.has(flatIndex)}
                     />
@@ -841,16 +911,16 @@ export default function WorksheetScreen() {
                       const marker = optionMarkerState(showAnswers, o, correctAnswer);
                       const isCorrect = marker === 'selected';
                       return (
-                        <View key={oi} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                        <View key={oi} style={[styles.optionRow, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
                           <Text style={[styles.optLabel, { color: isCorrect ? '#067647' : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
-                            {optionLetter(oi, lang === 'ar')}.
+                            {optionLetter(oi, outRTL)}.
                           </Text>
                           <View style={{ flex: 1 }}>
                             <EditableText
                               value={o}
                               onChange={next => updateOption(si, i, oi, next)}
                               colors={colors}
-                              isRTL={isRTL}
+                              isRTL={outRTL}
                               placeholder={t('editPlaceholder')}
                             />
                           </View>
@@ -867,7 +937,7 @@ export default function WorksheetScreen() {
                               onPress={() => updateAnswer(si, i, o)}
                               hitSlop={6}
                               accessibilityRole="button"
-                              accessibilityState={{ selected: isCorrect }}
+                              aria-selected={isCorrect}
                               accessibilityLabel={`${o} — ${t('answer')}`}
                             >
                               <Ionicons
@@ -880,23 +950,23 @@ export default function WorksheetScreen() {
                         </View>
                       );
                     })}
-                    <View style={[styles.qFooter, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    <View style={[styles.qFooter, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
                       <View style={{ minWidth: 54 }}>
                         <EditableText
                           value={`${q.points}`}
                           onChange={next => updateQuestionPoints(si, i, next)}
                           colors={colors}
-                          isRTL={isRTL}
-                          placeholder={t('pts')}
+                          isRTL={outRTL}
+                          placeholder={outT('pts')}
                         />
                       </View>
-                      <Text style={[styles.pts, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>{t('pts')}</Text>
+                      <Text style={[styles.pts, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>{outT('pts')}</Text>
                       <Pressable
                         onPress={() => { void removeQuestion(si, i); }}
                         hitSlop={8}
                         accessibilityRole="button"
                         accessibilityLabel={t('deleteQuestion')}
-                        style={{ marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}
+                        style={{ marginLeft: outRTL ? 0 : 'auto', marginRight: outRTL ? 'auto' : 0 }}
                       >
                         <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
                       </Pressable>
@@ -910,9 +980,9 @@ export default function WorksheetScreen() {
 
           {showAnswers && result.answerKey.length > 0 && (
             <View style={{ marginBottom: 8 }}>
-              <View style={[styles.akHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View style={[styles.akHeader, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
                 <Ionicons name="key-outline" size={15} color={ACCENT} />
-                <Text style={[styles.akTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{t('answerKeyTitle')}</Text>
+                <Text style={[styles.akTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: outRTL ? 'right' : 'left' }]}>{outT('answerKeyTitle')}</Text>
               </View>
               <View style={[styles.akBody, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
                 {/* `item.num` is the same 1-based flat position as `sections[].questions[]`
@@ -928,16 +998,28 @@ export default function WorksheetScreen() {
                   const proved = o?.verifiedBy === 'symbolic';
                   const pos = flatPositions[item.num - 1];
                   return (
-                  <View key={item.num} style={[styles.akRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <View key={item.num} style={[styles.akRow, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
                     <Text style={[styles.akNum, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{item.num}.</Text>
                     <View style={{ flex: 1 }}>
                       <EditableText
                         value={item.answer}
                         onChange={next => { if (pos) updateAnswer(pos.si, pos.qi, next); }}
                         colors={colors}
-                        isRTL={isRTL}
+                        isRTL={outRTL}
                         placeholder={t('editPlaceholder')}
                       />
+                      {item.solution?.length ? (
+                        <View style={{ marginTop: 4 }}>
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 11, textAlign: isRTL ? 'right' : 'left' }}>
+                            {t('workedSolutionTitle')}
+                          </Text>
+                          {item.solution.map((line, li) => (
+                            <Text key={li} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
+                              {`${li + 1}) `}{isolateForeignRuns(line)}
+                            </Text>
+                          ))}
+                        </View>
+                      ) : null}
                       {proved ? (
                         <View style={[styles.verifyRow, { marginTop: 2, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                           <Ionicons name="shield-checkmark" size={12} color="#067647" />
@@ -1058,4 +1140,5 @@ const styles = StyleSheet.create({
   akBody: { borderWidth: 1, padding: 14 },
   akRow: { gap: 8, marginBottom: 6, alignItems: 'flex-start' },
   akNum: { fontSize: 13, width: 22 },
+  workedCard: { borderWidth: 1, padding: 14, marginBottom: 16 },
 });

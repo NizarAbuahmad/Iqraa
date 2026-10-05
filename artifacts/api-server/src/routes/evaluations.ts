@@ -74,6 +74,8 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 import { recommendationsFor } from "../modules/assessment/recommend";
 import type { ObjectiveScore } from "../modules/assessment/scoring";
 
+import { resultsReleaseDecision } from "../lib/resultsRelease.ts";
+import { announceResultsRelease } from "../lib/resultsReleaseNotify.ts";
 const router = Router();
 // Path-scoped — see the note in roster.ts. Unscoped, this swallowed every
 // request reaching it, including routes belonging to later routers.
@@ -251,7 +253,8 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
         difficulty,
         targetQuestionCount: count,
         assessmentTypes: requestedTypes,
-        language: trimmed(req.body?.language) || "ar",
+        // English is examined in English whatever the app's UI language.
+        language: book.subjectId === "english" ? "en" : trimmed(req.body?.language) || "ar",
         levelScaleId: defaultScale.id,
       })
       .returning();
@@ -1239,6 +1242,50 @@ router.post("/evaluations/:id/close", async (req: AuthenticatedRequest, res) => 
   } catch (err) {
     logger.error({ err }, "close failed");
     res.status(500).json({ error: "Failed to close" });
+  }
+});
+
+/**
+ * Release (or take back) this exam's results to its students — see
+ * lib/resultsRelease.ts. The teacher's own button on the exam screen.
+ */
+router.post("/evaluations/:id/results-release", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    const decision = resultsReleaseDecision(evaluation, req.body);
+    if (!decision.ok) {
+      res.status(decision.status).json({ error: decision.error, code: decision.code });
+      return;
+    }
+    // A release is announced at the moment it turns on. Conditional on the
+    // old value so two presses racing each other cannot both see "off" and
+    // announce twice; an un-release, or a release that was already on, falls
+    // through to the plain update and announces nothing.
+    const [turnedOn] = decision.released
+      ? await db
+          .update(evaluations)
+          .set({ releaseResultsToStudent: true, updatedAt: new Date() })
+          .where(and(eq(evaluations.id, evaluation.id), eq(evaluations.releaseResultsToStudent, false)))
+          .returning()
+      : [];
+    const [updated] = turnedOn
+      ? [turnedOn]
+      : await db
+          .update(evaluations)
+          .set({ releaseResultsToStudent: decision.released, updatedAt: new Date() })
+          .where(eq(evaluations.id, evaluation.id))
+          .returning();
+    res.json({ evaluation: updated });
+    if (turnedOn) {
+      announceResultsRelease(turnedOn).catch(err => logger.error({ err }, "results release announcement failed"));
+    }
+  } catch (err) {
+    logger.error({ err }, "results release failed");
+    res.status(500).json({ error: "Failed to update result release" });
   }
 });
 

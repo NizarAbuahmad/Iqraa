@@ -903,7 +903,7 @@ export default function PresentationScreen() {
     const a = getPendingClassroomActivity();
     if (a) {
       setActivity(a);
-      if (a.game) setGame(createGame(a.game.teamCount, a.game.questionCount, lang === 'ar'));
+      if (a.game) setGame(createGame(a.game.teamCount, a.game.questionCount, a.game.isAr ?? lang === 'ar'));
       initSlide(a.slides[0]);
     } else {
       router.replace({
@@ -1438,7 +1438,7 @@ export default function PresentationScreen() {
             style={[styles.actionBtn, penOn && { borderColor: ACCENT + '50', backgroundColor: ACCENT + '12' }]}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityState={{ selected: penOn }}
+            aria-selected={penOn}
             accessibilityLabel={t('penTool')}
           >
             <Ionicons name={penOn ? 'brush' : 'brush-outline'} size={18} color={penOn ? ACCENT : TEXT_MUTED} />
@@ -1455,7 +1455,7 @@ export default function PresentationScreen() {
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel={timerPaused ? t('resumeTimer') : t('pauseTimer')}
-              accessibilityState={{ selected: timerPaused }}
+              aria-selected={timerPaused}
             >
               <Ionicons name={timerPaused ? 'play-outline' : 'pause-outline'} size={18} color={timerPaused ? ACCENT : TEXT_MUTED} />
               <Text numberOfLines={1} style={[styles.actionLabel, timerPaused && { color: ACCENT }, { fontFamily: 'Almarai_400Regular' }]}>
