@@ -120,7 +120,11 @@ describe('a paper shorter than asked for carries the reason', () => {
   it('a worksheet that outruns the bank reports it, counting only the questions that exist', async () => {
     const sheet = await service.generateWorksheet({ ...mathReq(lawOfSines), numQuestions: 12, questionTypes: ['multiple_choice', 'short_answer'] });
     assert.ok(sheet.shortfall, 'no shortfall on a short worksheet');
-    const present = sheet.sections.reduce((n, s) => n + s.questions.length, 0);
+    // A worked example, when the paper opens with one, is one of the items the
+    // picker's total counts — so it is one of the items produced. It is not a
+    // numbered question, which is why it is added here rather than found in
+    // `sections`.
+    const present = sheet.sections.reduce((n, s) => n + s.questions.length, 0) + (sheet.workedExample ? 1 : 0);
     assert.equal(sheet.shortfall!.produced, present);
     assert.equal(sheet.shortfall!.requested, 12);
   });
