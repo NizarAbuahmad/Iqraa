@@ -15,7 +15,9 @@ import assert from 'node:assert/strict';
 import { isBareTeachAsk, isTeachMeAsk } from '../ai/askVocabulary.ts';
 import { classifyChatIntent } from '../ai/intentRouter.ts';
 import { detectIntent, emptyChatSessionMemory, type ChatSessionMemory } from '../ai/teachingAssistant.ts';
-import { shouldReuseActiveLesson } from '../lessonCopilot.ts';
+import { shouldReuseActiveLesson, withActiveLesson } from '../lessonCopilot.ts';
+import { getLessonById, searchKBRanked } from '../knowledgeBase.ts';
+import { deduplicateByUnit, detectSubjectAmbiguity } from '../kbContext.ts';
 
 const LESSON = 'تركيب الاقترانات';
 
@@ -151,4 +153,30 @@ describe('detectIntent explains on "teach me"', () => {
   for (const q of ['علمني', 'فهمني تركيب الاقترانات', 'teach me']) {
     it(`«${q}»`, () => assert.equal(detectIntent(q), 'explain'));
   }
+});
+
+// Found driving the web build after #814 merged: with «تركيب الاقترانات» on the
+// card (soft pin), «علمني» got «أيّ مادة تقصد؟» with Maths / Biology / Islamic
+// chips. The reuse gate did put the open lesson first, but the results kept
+// the verb's own search hits («أسس علم التصنيف», «علم أصول الفقه»), and the
+// subject-ambiguity check — which a soft pin does not suppress — counted them.
+describe('a bare ask is answered from the open lesson alone', () => {
+  const active = getLessonById('kbl-math-s2-nccd-u5_l3')!;
+  const noise = deduplicateByUnit(searchKBRanked('علمني', 'ar').map(r => r.lesson), 3);
+
+  it('the verb really does pull other subjects (the reproduction)', () => {
+    const naive = [active, ...noise.filter(l => l.id !== active.id)].slice(0, 3);
+    assert.ok(detectSubjectAmbiguity(naive), 'precondition: the old results were ambiguous');
+  });
+  it('«علمني» keeps only the open lesson, so no «أيّ مادة؟»', () => {
+    const got = withActiveLesson(noise, active, 'علمني');
+    assert.deepEqual(got.map(l => l.id), [active.id]);
+    assert.equal(detectSubjectAmbiguity(got), null);
+  });
+  it('a topical ask keeps its hits after the open lesson, as before', () => {
+    const hits = deduplicateByUnit(searchKBRanked('المشتقات', 'ar').map(r => r.lesson), 3);
+    const got = withActiveLesson(hits, active, 'اشرح المشتقات');
+    assert.equal(got[0]!.id, active.id);
+    assert.ok(got.length > 1);
+  });
 });
