@@ -50,7 +50,8 @@ import {
 } from '@/services/generationScope';
 import { parseSavedDeck } from '@/services/savedDeck';
 import { readFlagParam } from '@/services/materialParams';
-import { getItem } from '@/services/workspace';
+import { getItem, updateItem } from '@/services/workspace';
+import { useEnglishRefresh } from '@/hooks/useEnglishRefresh';
 import { createVerificationTracker } from '@/services/verificationTracker';
 import { useDeckWorkspace, type DeckWorkspaceSnapshot } from '@/hooks/useDeckWorkspace';
 import { useSlideEditor } from '@/hooks/useSlideEditor';
@@ -250,19 +251,20 @@ export default function SlidesScreen() {
     };
   };
 
+  const deckFormState = () => {
+    const s = deckScope();
+    return {
+      gradeIdx: s.gradeIdx, subjectIdx: s.subjectIdx, topic: s.topic,
+      ...(generated?.options ?? { includeExamples, includePractice, includeAttachments }),
+    };
+  };
   const workspace = useDeckWorkspace({
     deck,
     // Not for the book-only draft: it is replaced within seconds, and its
     // content can never match a stored deck.
     lookupEnabled: !preliminary,
     identity: deckIdentity,
-    formState: () => {
-      const s = deckScope();
-      return {
-        gradeIdx: s.gradeIdx, subjectIdx: s.subjectIdx, topic: s.topic,
-        ...(generated?.options ?? { includeExamples, includePractice, includeAttachments }),
-      };
-    },
+    formState: deckFormState,
     // Named for the lesson it was built from, not whatever the topic box holds now.
     exportName: () => deckScope().topic,
     isAr: outAr,
@@ -787,6 +789,22 @@ export default function SlidesScreen() {
       }
     }
   };
+
+  // An English deck saved in Arabic (before 2026-10-04) is rebuilt in English
+  // as soon as it opens and stored over the old one by its id — `generate`
+  // drops the workspace link, so the save toggle would add a copy instead.
+  useEnglishRefresh({
+    savedId: params.savedId,
+    current: loading ? null : deck,
+    generate: () => generate(),
+    save: async () => {
+      const id = params.savedId;
+      if (!id || !deck) return;
+      await updateItem(id, { ...deckIdentity(deck), content: JSON.stringify(deck), formState: deckFormState() });
+      workspace.adopt(id, deck, deckIdentity(deck));
+      showToast(t('englishMaterialRedone'));
+    },
+  });
 
   /**
    * Withdraw the AI-written explanation from the shared pool, then rebuild.

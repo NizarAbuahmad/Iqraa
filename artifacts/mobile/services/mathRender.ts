@@ -181,10 +181,30 @@ export function parseMathLine(line: string): MathNode[] {
   return nodes;
 }
 
-/** Read an exponent after '^': signed token or parenthesized expression. */
+/** Match a balanced `{...}` group starting at `i` (must be '{'). */
+function matchBrace(s: string, i: number): string | null {
+  if (s[i] !== '{') return null;
+  let depth = 0;
+  for (let j = i; j < s.length; j++) {
+    if (s[j] === '{') depth++;
+    else if (s[j] === '}') {
+      depth--;
+      if (depth === 0) return s.slice(i + 1, j);
+    }
+  }
+  return null;
+}
+
+/**
+ * Read an exponent after '^': signed token, parenthesized expression, or the
+ * bank's own `{...}` form (`3^{2x}`, `2^{x+3}`). An empty or unclosed brace
+ * is not an exponent, so the line stays plain text.
+ */
 function readExponent(s: string, i: number): { text: string; end: number } | null {
   const paren = matchParen(s, i);
   if (paren !== null) return { text: paren, end: i + paren.length + 2 };
+  const brace = matchBrace(s, i);
+  if (brace !== null && brace.trim() !== '') return { text: brace.trim(), end: i + brace.length + 2 };
   let k = i;
   if (s[k] === '+' || s[k] === '-') k++;
   let start = k;
@@ -192,6 +212,78 @@ function readExponent(s: string, i: number): { text: string; end: number } | nul
   if (k === start) return null;
   const text = s.slice(i, k);
   return EXP_TOKEN.test(text) ? { text, end: k } : null;
+}
+
+/**
+ * Does this line READ as Arabic? A leading list marker — «1)», «2.», «(3)»,
+ * «-» — is skipped: «1) نكتب 27 بالأساس 3» is an Arabic sentence that happens
+ * to start with a digit. Judged on the first letter alone it counted as a
+ * left-to-right line and the browser's bidi reordered it.
+ */
+const ARABIC_LED = /^[\s\d٠-٩().\-–•]*[؀-ۿ]/u;
+export function isArabicLed(line: string): boolean {
+  return ARABIC_LED.test(line ?? '');
+}
+
+/** One visual unit of an Arabic-led line: a phrase of prose, or one equation. */
+export type RtlSegment =
+  | { kind: 'prose'; text: string }
+  | { kind: 'math'; nodes: MathNode[] };
+
+/**
+ * An Arabic phrase: Arabic letters (with the spaces and Arabic commas between
+ * them), plus one trailing colon or stop so «المعادلة:» keeps its colon on the
+ * Arabic side of the equation instead of leading it.
+ */
+const ARABIC_PHRASE = /[؀-ۿ](?:[؀-ۿ\s،؛]*[؀-ۿ])?[:،؛؟!]?/gu;
+
+/**
+ * Split an Arabic-led line into prose phrases and whole equations.
+ *
+ * MathText draws such a line with `row-reverse` so the prose reads right to
+ * left. Applied node by node that also reversed the pieces of ONE equation —
+ * «أوجد حل المعادلة: 3^x = 27» came out as «= 27 | 3ˣ | prose», the equation
+ * back to front (seen running the worksheet screen, 2026-10-05). Everything
+ * that is not Arabic prose is gathered into a single group here, so the caller
+ * can reverse between phrases and equations but keep each equation left to
+ * right.
+ *
+ * A group's edge spaces are trimmed: in a left-to-right group a leading space
+ * sits on the wrong side, away from the Arabic it separates from. The caller
+ * spaces groups with a margin instead.
+ */
+export function groupRtlSegments(nodes: MathNode[]): RtlSegment[] {
+  const segs: RtlSegment[] = [];
+  const pushMath = (n: MathNode) => {
+    const last = segs[segs.length - 1];
+    if (last && last.kind === 'math') last.nodes.push(n);
+    else segs.push({ kind: 'math', nodes: [n] });
+  };
+
+  for (const n of nodes) {
+    if (n.kind !== 'text') { pushMath(n); continue; }
+    let at = 0;
+    for (const m of n.text.matchAll(ARABIC_PHRASE)) {
+      const idx = m.index ?? 0;
+      if (idx > at) pushMath({ kind: 'text', text: n.text.slice(at, idx) });
+      segs.push({ kind: 'prose', text: m[0] });
+      at = idx + m[0].length;
+    }
+    if (at < n.text.length) pushMath({ kind: 'text', text: n.text.slice(at) });
+  }
+
+  const out: RtlSegment[] = [];
+  for (const g of segs) {
+    if (g.kind === 'prose') { out.push(g); continue; }
+    const ns = g.nodes.slice();
+    const first = ns[0];
+    if (first && first.kind === 'text') ns[0] = { kind: 'text', text: first.text.replace(/^\s+/, '') };
+    const last = ns[ns.length - 1];
+    if (last && last.kind === 'text') ns[ns.length - 1] = { kind: 'text', text: last.text.replace(/\s+$/, '') };
+    const kept = ns.filter(x => !(x.kind === 'text' && x.text === ''));
+    if (kept.length) out.push({ kind: 'math', nodes: kept });
+  }
+  return out;
 }
 
 /**
@@ -227,7 +319,7 @@ export function hasRenderableMath(line: string): boolean {
 // pieces in three different places. Deliberately excluded: `,` (Arabic prose
 // uses the latin comma), and `*` / `_` (markdown emphasis, which would change
 // already-shipped chat rendering to no benefit here).
-const FOREIGN_CHAR = "A-Za-z0-9()=+\\-./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞";
+const FOREIGN_CHAR = "A-Za-z0-9(){}=+\\-./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞";
 
 // Reaction and implication arrows. They may sit INSIDE a run but never at its
 // edge. Left out of the run, «N₂ + H₂ → NH₃» became two isolates with the arrow
