@@ -133,6 +133,22 @@ describe('the total the teacher picked', () => {
   });
 });
 
+describe('the "shorter than asked" notice counts the worked example', () => {
+  it('reports the example among what was produced, matching the total that was requested', async () => {
+    // «قانون الجيوب» holds three items: one to study, one to finish, one to practise.
+    const w = await make(SINES, { numQuestions: 12 });
+    const delivered = questions(w).length + (w.workedExample ? 1 : 0);
+    assert.ok(w.shortfall, 'a three-item bank cannot fill twelve');
+    assert.equal(w.shortfall!.requested, 12);
+    assert.equal(w.shortfall!.produced, delivered, 'the example is one of the items the total promised');
+  });
+
+  it('is absent when the paper is complete', async () => {
+    const w = await make(EXP, { numQuestions: 8 });
+    assert.equal(w.shortfall, undefined);
+  });
+});
+
 describe('homework is not a worksheet', () => {
   it('has no worked example', async () => {
     const hw = await aiService.generateHomework({ ...EXP, language: 'arabic', difficulty: 'medium' } as AIRequest);

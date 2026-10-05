@@ -33,6 +33,7 @@ export {
   detectMathFamily,
   matchMathFamily,
   completionSplit,
+  subjectIdFromName,
 } from '@workspace/math-practice';
 
 export type { Lang, QType, DiffTier, PracticeWQ, PracticeLesson } from '@workspace/math-practice';

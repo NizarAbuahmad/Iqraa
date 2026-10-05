@@ -1126,6 +1126,9 @@ const translations = {
     quizVerifiedCount: (n: number, total: number) =>
       `تحقّق المُحقِّق الرمزي من ${n} من أصل ${total} إجابة`,
     questionCountPill: (n: number) => arCountPhrase(n, 'سؤال واحد', 'سؤالان', 'أسئلة'),
+    // The paper stops where the lesson's question bank does.
+    shortPaperNotice: (produced: number, requested: number) =>
+      `هذه الورقة أقصر مما طلبت: لا يتوفر لهذا الدرس إلا ${arCountPhrase(produced, 'سؤال واحد', 'سؤالان', 'أسئلة')} من أصل ${requested}، ولم نملأ الباقي بأسئلة عامة لا تخص الدرس.`,
     levelsPartial: 'تعذّر بناء بعض المستويات. المستويات التي اكتملت معروضة؛ جرّب الباقي لاحقًا.',
     quizVerifiedNone: 'لم يتحقّق المُحقِّق الرمزي من أي إجابة — الإجابات من بنك الأسئلة المُراجَع',
     examplesAiUnverified: 'كتب الذكاء الاصطناعي المثال ولم يتحقّق أحد من إجابته — راجعها قبل العرض',
@@ -1781,6 +1784,15 @@ const translations = {
     myExamsSentOn: (date: string) => `أُرسل ${date}`,
     myExamsHandedInOn: (date: string) => `سُلِّم ${date}`,
     myExamsLoadFailed: 'تعذّر تحميل اختباراتك.',
+    // «اختباراتي» as a parent sees it: one section per child (GET /parent/exams).
+    // A teacher may publish without a title; the row used to be blank.
+    myExamsUntitled: (subject: string) => (subject ? `اختبار ${subject}` : 'اختبار'),
+    childResultsTitle: 'نتائج أبنائي',
+    childResultsDesc: 'اختبارات أبنائك، ونتائجهم حين يُعلنها المعلّم.',
+    childResultsTileDesc: 'اختباراتهم ونتائجهم',
+    childResultsEmptyDesc: 'حين يرسل المعلّم اختبارًا إلى شعبة ابنك أو ابنتك سيظهر هنا.',
+    childResultsNone: 'لا اختبارات بعد',
+    childResultsLoadFailed: 'تعذّر تحميل نتائج أبنائك.',
     classGapsTitle: 'ما لم تتقنه الشعبة',
     classGapsHint: (n: string) => `مجموع العلامات عبر ${arCountStudents(Number(n))} صُحّحت أوراقهم — لا متوسّط النسب.`,
     classBelowLine: (below: string, total: string) => `${below} من ${total} طلبة تحت الحد`,
@@ -3118,6 +3130,8 @@ const translations = {
     quizVerifiedCount: (n: number, total: number) =>
       `${n} of ${total} answers symbolically verified`,
     questionCountPill: (n: number) => `${n} ${n === 1 ? 'question' : 'questions'}`,
+    shortPaperNotice: (produced: number, requested: number) =>
+      `This paper is shorter than you asked for: the lesson only has ${produced} ${produced === 1 ? 'question' : 'questions'} out of ${requested}, and we didn't fill the rest with generic questions that aren't about it.`,
     levelsPartial: 'Some levels could not be built. The ones that finished are shown; try the rest again later.',
     quizVerifiedNone: 'No answer was symbolically verified — keys come from the reviewed bank',
     examplesAiUnverified: "The example was written by AI and nobody has checked its answer — review it before class",
@@ -3752,6 +3766,13 @@ const translations = {
     myExamsSentOn: (date: string) => `Sent ${date}`,
     myExamsHandedInOn: (date: string) => `Handed in ${date}`,
     myExamsLoadFailed: 'Could not load your exams.',
+    myExamsUntitled: (subject: string) => (subject ? `${subject} exam` : 'Exam'),
+    childResultsTitle: "My children's results",
+    childResultsDesc: "Your children's exams, and their results once the teacher releases them.",
+    childResultsTileDesc: 'Their exams and results',
+    childResultsEmptyDesc: "When a teacher sends an exam to your child's class, it appears here.",
+    childResultsNone: 'No exams yet',
+    childResultsLoadFailed: "Could not load your children's results.",
     classGapsTitle: 'What the class missed',
     classGapsHint: (n: string) => `Marks summed across ${n} marked students — not an average of percentages.`,
     classBelowLine: (below: string, total: string) => `${below} of ${total} students below the pass mark`,

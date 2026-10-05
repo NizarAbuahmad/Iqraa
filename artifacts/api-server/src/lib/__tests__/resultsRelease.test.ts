@@ -37,6 +37,13 @@ describe("releaseAnnouncement", () => {
     assert.match(a.pushBody, /«اختباراتي»/);
   });
 
+  it("names the child in a parent's push", () => {
+    const p = releaseAnnouncement({ title: "", titleAr: "اختبار الموجات" }).guardianPush("سارة أحمد");
+    assert.equal(p.title, "نتيجة سارة أحمد");
+    assert.match(p.body, /«اختبار الموجات»/);
+    assert.match(p.body, /«نتائج أبنائي»/);
+  });
+
   it("falls back to the latin title, then to no name, never to empty quotes", () => {
     assert.equal(releaseAnnouncement({ title: "Waves quiz", titleAr: "  " }).pushTitle, "نتيجة «Waves quiz»");
     const bare = releaseAnnouncement({ title: "", titleAr: null });
