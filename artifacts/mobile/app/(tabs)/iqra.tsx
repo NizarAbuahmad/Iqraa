@@ -82,6 +82,7 @@ import {
   resolveCurriculumContext,
 } from '@/services/ai/teachingAssistant';
 import { classifyChatIntent, leavesClarificationStanding } from '@/services/ai/intentRouter';
+import { unansweredEventProps, type UnansweredKind } from '@/services/chatUnanswered';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
@@ -1937,6 +1938,13 @@ export default function IqraScreen() {
         activeLessonTitle: openLesson ? (lang === 'ar' ? openLesson.titleAr : openLesson.titleEn) : null,
       });
       awaitingClarifyRef.current = route.intent === 'ambiguous';
+      // Every turn that asks back or gives up instead of answering — so dead
+      // ends are counted, not found one screenshot at a time. Only `shown`,
+      // the teacher's own words this turn; `askSample` decides if they go.
+      const reportUnanswered = (kind: UnansweredKind) => trackEvent(
+        'chat_unanswered',
+        unansweredEventProps({ kind, query: shown, lang: lang as 'ar' | 'en', lessonOpen: !!openLesson }),
+      );
       if (route.intent === 'artifact') {
         setThinkingLabel(
           /خطة|lesson\s*plan/i.test(q) ? t('iqraGeneratingLessonPlan') : t('iqraGeneratingArtifact'),
@@ -2038,6 +2046,7 @@ export default function IqraScreen() {
       }
 
       if (!route.useTeachingPipeline) {
+        if (route.clarify) reportUnanswered(route.clarify);
         const socialMsg: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
@@ -2214,6 +2223,7 @@ export default function IqraScreen() {
             : 'Happy to refine — which lesson or material should I adjust?',
           timestamp: new Date(),
         };
+        reportUnanswered('refine_target');
         awaitingClarifyRef.current = true;
         setMessages(prev => [...prev, clarifyMsg]);
         return;
@@ -2298,6 +2308,7 @@ export default function IqraScreen() {
             clarificationQuery: q,
             timestamp: new Date(),
           };
+          reportUnanswered('which_subject');
           awaitingClarifyRef.current = true;
           // A typed subject («العربي») instead of a chip still joins this ask.
           pendingScopeAskRef.current = q;
@@ -2439,6 +2450,7 @@ export default function IqraScreen() {
         };
         // The `finally` on the enclosing try clears the thinking state, the
         // same way the subject-clarification branch above relies on it.
+        reportUnanswered('did_you_mean');
         awaitingClarifyRef.current = true;
         pendingScopeAskRef.current = q;
         pendingScopeLessonIdsRef.current = lessonGuess.candidates.map(c => c.id);
@@ -2456,6 +2468,7 @@ export default function IqraScreen() {
             : `Which ${scope.gradeEn} ${scope.subjectEn} lesson? Pick one or type its title.`;
           pendingScopeAskRef.current = q;
           pendingScopeLessonIdsRef.current = subjectScopeLessons.slice(0, 4).map(l => l.id);
+          reportUnanswered('which_lesson_in_scope');
           outOfScopeSuggestions = subjectScopeLessons.slice(0, 4).map(l => ({
             text: lang === 'ar' ? l.titleAr : l.titleEn,
             lessonId: l.id,
@@ -2464,15 +2477,18 @@ export default function IqraScreen() {
           // Artifact shortcuts like "خطة" must not die silently — ask for the lesson topic.
           responseText = t('iqraArtifactNeedTopic');
           pendingScopeAskRef.current = q;
+          reportUnanswered('artifact_topic');
         } else if (wasAwaitingClarify) {
           // Short / vague reply to a clarifying question — keep the dialogue open
           // rather than showing the generic out-of-scope message.
           responseText = lang === 'ar'
             ? 'وضّح لي أكثر: ما المادة والدرس الذي تريد التحضير له؟'
             : 'Tell me more — which subject and lesson would you like to prepare for?';
+          reportUnanswered('tell_more');
         } else {
           responseText = t('iqraOutOfScope');
           outOfScopeSuggestions = getTopicSuggestions(3, lang as 'ar' | 'en');
+          reportUnanswered('out_of_scope');
         }
       } else if (
         artifactType
