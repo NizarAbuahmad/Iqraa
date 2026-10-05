@@ -10,6 +10,8 @@ import {
   hasRenderableMath,
   isolateForeignRuns,
   groupRtlSegments,
+  groupLtrSegments,
+  bindOperators,
   isArabicLed,
   normalizeExponents,
   mathLineToHtml,
@@ -372,6 +374,32 @@ describe('normalizeExponents', () => {
   });
 });
 
+// The curriculum data writes every minus as U+2212, not the ASCII hyphen. With
+// only `-` in the run class, «y = 2x−5» was cut at the sign and bidi reordered
+// the pieces, so a worked example reached the projector as «7x+12=0−x²».
+describe('isolateForeignRuns — the U+2212 minus sign', () => {
+  const strip = (s: string) => s.replace(/[⁦⁩]/g, '');
+
+  it('keeps a worked example whole, one isolate per side of the Arabic «و»', () => {
+    const line = 'y = 2x−5 و y = x²−5x+7: 2x−5 = x²−5x+7 → x²−7x+12=0';
+    const out = isolateForeignRuns(line);
+    assert.equal(
+      out,
+      '⁦y = 2x−5⁩ و ⁦y = x²−5x+7⁩: ⁦2x−5 = x²−5x+7 → x²−7x+12=0⁩',
+    );
+    assert.equal(strip(out), line);
+  });
+
+  it('keeps a negative energy expression whole', () => {
+    const out = isolateForeignRuns('طاقة المستوى: E = −13.6 / n² إلكترون فولت');
+    assert.equal(out, 'طاقة المستوى: ⁦E = −13.6 / n²⁩ إلكترون فولت');
+  });
+
+  it('treats a number and a U+2212 minus as notation, like the ASCII hyphen', () => {
+    assert.equal(isolateForeignRuns('الناتج 7−3 هنا'), 'الناتج ⁦7−3⁩ هنا');
+  });
+});
+
 // The bank writes powers as `3^{2x}` and `2^{x+3}`. The parser only knew
 // `^2` and `^(2x)`, so a braced exponent fell through to plain text and
 // printed with its braces on the worksheet screen. (Found by running the app
@@ -487,5 +515,87 @@ describe('isArabicLed — a list marker does not make a line Latin', () => {
     for (const s of ['3^x = 27', 'x = 3 ثم', '12 + 4 = 16', '(x+1)/2', 'f(x) = 2x', '']) {
       assert.equal(isArabicLed(s), false, s);
     }
+  });
+});
+
+// On a phone-width projector «Solve the equation: 2^x = 32» broke between the
+// raised exponent and « = 32» (2ˣ on one line, = 32 on the next), and
+// «Write 32 with base 2: 32 = 2^5» left «2^5» alone on its own line. MathText's
+// left-to-right row wrapped at every node boundary. The fix glues an equation's
+// neighbouring numbers and operators to it, so the row can only break between
+// prose and an equation, never inside one.
+describe('groupLtrSegments — a wrap never lands inside an equation', () => {
+  const shape = (line: string) =>
+    groupLtrSegments(parseMathLine(line)).map(g =>
+      g.kind === 'prose' ? `P:${g.text}` : `M:${flat(g.nodes).replace(/\s+/g, ' ').trim()}`);
+
+  it('keeps « = 32» with the exponent that precedes it', () => {
+    assert.deepEqual(shape('Solve the equation: 2^x = 32'), [
+      'P:Solve the equation:',
+      'M:2^x = 32',
+    ]);
+  });
+
+  it('pulls the numbers before the exponent into the equation', () => {
+    assert.deepEqual(shape('Write 32 with base 2: 32 = 2^5'), [
+      'P:Write 32 with base',
+      'M:2: 32 = 2^5',
+    ]);
+  });
+
+  it('stops at the first prose word after the equation', () => {
+    assert.deepEqual(shape('2^x = 32 is the solution'), ['M:2^x = 32', 'P:is the solution']);
+  });
+
+  it('keeps two exponents on one line as a single equation', () => {
+    assert.deepEqual(shape('Substitute: 4^x = 2^{x+3}'), ['P:Substitute:', 'M:4^x = 2^(x+3)']);
+  });
+
+  it('returns one math group for a pure equation', () => {
+    const segs = groupLtrSegments(parseMathLine('3^x = 27'));
+    assert.deepEqual(segs.map(g => g.kind), ['math']);
+  });
+
+  it('returns plain prose untouched', () => {
+    assert.deepEqual(shape('Read the passage carefully'), ['P:Read the passage carefully']);
+  });
+
+  it('does not treat the article «a» as a variable', () => {
+    assert.deepEqual(shape('Write a 2^x'), ['P:Write a', 'M:2^x']);
+  });
+
+  it('drops nothing: segments reassemble to the original text', () => {
+    const line = 'Then 3^2 + 4^2 = 25 so the triangle is right-angled';
+    const back = groupLtrSegments(parseMathLine(line))
+      .map(g => (g.kind === 'prose' ? g.text : flat(g.nodes))).join('');
+    assert.equal(back.replace(/\s/g, ''), line.replace(/\s/g, '').replace(/\^/g, '^'));
+  });
+});
+
+// «…so the exponents are equal: x = 3» wrapped as «x» / «= 3» on a phone-width
+// slide. A plain-text line has no nodes to group, so the spaces around an
+// operator become non-breaking: the browser may still break the sentence, but
+// not the equation.
+describe('bindOperators — a plain line never breaks around an operator', () => {
+  const NB = '\u00A0';
+  it('binds the spaces around = to their operands', () => {
+    assert.equal(bindOperators('are equal: x = 3'), `are equal: x${NB}=${NB}3`);
+  });
+  it('binds each operator in a chain', () => {
+    assert.equal(bindOperators('2x + 3 = 11'), `2x${NB}+${NB}3${NB}=${NB}11`);
+  });
+  it('covers the comparison and times signs', () => {
+    assert.equal(bindOperators('a ≤ b × c'), `a${NB}≤${NB}b${NB}×${NB}c`);
+  });
+  it('leaves a spaced hyphen or dash alone: that is punctuation', () => {
+    assert.equal(bindOperators('Step one - read the text'), 'Step one - read the text');
+  });
+  it('leaves ordinary spaces between words alone', () => {
+    assert.equal(bindOperators('the bases are equal'), 'the bases are equal');
+  });
+  it('is idempotent and a no-op on empty text', () => {
+    const once = bindOperators('x = 3');
+    assert.equal(bindOperators(once), once);
+    assert.equal(bindOperators(''), '');
   });
 });
