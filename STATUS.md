@@ -826,10 +826,65 @@ two-teacher run above was repeated on this code and passed.
 regenerated manifest can orphan a stored id; the row then opens the viewer's
 not-found screen. Left for piece 2 on the owner's say-so.
 
+**Classes with several subjects.** Merged in after main added subject filters
+to the class screen (2026-10-05). A shelf row carries no subject (the table
+has none, and it is already in production), so a Library item shows under every
+subject filter, not just its own; the teacher's saved materials still follow the
+filter. The picker offers the focused subject's items, or the class's first
+subject on «الكل», so a second subject's items are reached by focusing it first.
+This merge was checked by typecheck and the suites only; the combination (filter
+chip + Library row + picker) was not driven in a browser.
+
 **Not in this change.** Teacher-pasted links (no schema change) and device
 uploads (one more push, private storage, no video under the 8 MB cap) are
 pieces 2 and 3 of the spec. A Library-screen «add to class» button is out of
 scope; it could reuse the same `POST`.
+
+## A class can take several subjects, 2026-10-04
+
+A شعبة is now a group of students, and its subjects are what this teacher
+teaches them. Before this, a class had one subject. A Grade 1–3 class teacher
+(معلم صف) teaches one section Arabic, maths, science and Islamic education, so
+they had to type the same roster once per subject, and got a join code and a
+parent thread for each copy.
+
+- **Schema:** `class_groups.subject_ids` (jsonb, default `[]`). `subject_id`
+  stays and is always `subjectIds[0]`, the primary subject. **This needs
+  `pnpm --filter @workspace/db run push` before the API deploys.** Every
+  `select()` of a whole class row names the new column, so without the push
+  the roster 500s. There is no backfill: an old row with `[]` is read as
+  `[subject_id]` by `withSubjectIds` (`api-server/src/lib/classSubjects.ts`).
+  An app build that only sends `subjectId` still works.
+- **Create / edit:** the subject chips are multi-select. Every subject the
+  teacher teaches that grade (`/setup-subjects`) starts ticked, so a subject
+  teacher with one subject sees no change.
+- **Class list:** shows two subject names, or «3 مواد» for three or more.
+- **Inside a class:** a «كل المواد» / per-subject filter sits over materials
+  and exams when the class has more than one subject. A material's subject is
+  stored as a name, resolved back with `subjectIdFromName`. A material whose
+  subject can't be resolved stays visible under every filter. Writing to a
+  parent from the class card asks «عن أيّ مادة؟» when there is more than one
+  subject.
+- **Teaching plans are per subject:** `teaching_plans.subject_id` (text,
+  default `''`, **a second schema push**). When the class takes more than one
+  subject, the plan form shows «مادة هذه الخطة» and lists that subject's
+  lessons. `''` means the class's primary subject, which is what every older
+  plan meant (`planSubjectId`, `services/planScope.ts`). Changing the subject
+  of a plan that has scheduled lessons asks first, then clears them, because
+  they belong to the old subject.
+- **A timetable period can name its subject:** `schedule_slots.subject_id`
+  (text, default `''`, **a third schema push**). The slot editor shows «مادة
+  هذه الحصة» when the class takes more than one subject. Tapping the selected
+  chip again clears it, and `''` stays a valid answer. Choosing another class
+  clears the subject, on the server too.
+- **The home card follows it.** `nextPeriodLesson` reads only that subject's
+  plans when the period names a subject. A plan with no subject counts as its
+  class's primary subject, using the classes `loadTimetable` now fetches. If
+  that subject has no plan, the period shows no lesson rather than borrowing
+  another subject's. A period that names no subject still pools every plan on
+  the class. The class label on the home card, the calendar and the timetable
+  reads «العاشر أ · الرياضيات». The «أضف الخطة» link carries the subject and
+  opens or starts that subject's plan.
 
 ## A material made from a class files itself into it, 2026-10-04
 
