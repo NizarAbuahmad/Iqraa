@@ -42,6 +42,8 @@ export interface ReleaseAnnouncement {
   pushTitle: string;
   pushBody: string;
   groupLine: string;
+  /** The push a parent gets, naming the child the result belongs to. */
+  guardianPush: (childName: string) => { title: string; body: string };
 }
 
 export function releaseAnnouncement(evaluation: { title: string | null; titleAr: string | null }): ReleaseAnnouncement {
@@ -52,5 +54,11 @@ export function releaseAnnouncement(evaluation: { title: string | null; titleAr:
     groupLine: name
       ? `أُعلنت نتائج «${name}». افتحوا «اختباراتي» لتروا نتائجكم.`
       : "أُعلنت نتائج الاختبار. افتحوا «اختباراتي» لتروا نتائجكم.",
+    guardianPush: childName => ({
+      title: childName.trim() ? `نتيجة ${childName.trim()}` : "نتيجة الاختبار",
+      body: name
+        ? `أعلن المعلّم نتيجة «${name}». افتحها من «نتائج أبنائي».`
+        : "أعلن المعلّم نتيجة الاختبار. افتحها من «نتائج أبنائي».",
+    }),
   };
 }

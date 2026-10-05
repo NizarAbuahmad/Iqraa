@@ -436,6 +436,9 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   // are waiting. Best-effort: a failed count shows the plain description, and
   // the screen behind the tile reports its own errors.
   const isStudent = isStudentRole(user?.role);
+  // A parent gets the same tile as «نتائج أبنائي», without the waiting count:
+  // nothing on it is theirs to start.
+  const isParent = user?.role === 'parent';
   const [waitingExams, setWaitingExams] = useState<number | null>(null);
   useFocusEffect(
     useCallback(() => {
@@ -705,14 +708,18 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 {t('libraryCurriculumDesc')}
               </Text>
             </Pressable>
-            {isStudent ? (
+            {isStudent || isParent ? (
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push('/my-exams' as never);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`${t('myExamsTitle')}, ${waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}`}
+                accessibilityLabel={
+                  isParent
+                    ? `${t('childResultsTitle')}, ${t('childResultsTileDesc')}`
+                    : `${t('myExamsTitle')}, ${waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}`
+                }
                 style={({ pressed }) => [
                   styles.tile,
                   { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
@@ -722,7 +729,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                   <Ionicons name="document-text" size={26} color={ACCENT} />
                 </View>
                 <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
-                  {t('myExamsTitle')}
+                  {t(isParent ? 'childResultsTitle' : 'myExamsTitle')}
                 </Text>
                 <Text
                   numberOfLines={2}
@@ -735,7 +742,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                     },
                   ]}
                 >
-                  {waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}
+                  {isParent ? t('childResultsTileDesc') : waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}
                 </Text>
               </Pressable>
             ) : null}

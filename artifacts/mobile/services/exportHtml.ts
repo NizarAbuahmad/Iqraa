@@ -173,6 +173,10 @@ function htmlBase(
       font-size: 11px; font-weight: 700; flex-shrink: 0;
     }
     .q-text { font-size: 12.5px; color: #111827; line-height: 1.6; flex: 1; }
+    /* A worksheet question that was written on several lines — a half-solved
+       one, steps given then blanks — keeps them. Opt-in per element: quizzes
+       share \`.q-text\` and are laid out as they always were. */
+    .q-break { white-space: pre-line; }
     .q-option {
       display: flex; flex-direction: row; gap: 8px; align-items: flex-start;
       margin-top: 5px; font-size: 12px; color: #4b5563;
@@ -196,6 +200,25 @@ function htmlBase(
     .answer-key .section-title { color: #15803d; border-color: #bbf7d0; }
     .answer-row { display: flex; flex-direction: row; gap: 8px; margin-bottom: 5px; font-size: 12px; }
     .answer-num { font-weight: 700; color: #15803d; min-width: 24px; }
+    .answer-body { flex: 1; }
+    /* A question's working, under its answer — teacher's half only. */
+    .solution { margin-top: 3px; padding-${isRTL ? 'right' : 'left'}: 18px; color: #4b5563; }
+    .solution li { font-size: 11.5px; margin-bottom: 2px; }
+    /* The key starts a fresh page so the paper can be printed without it, and
+       may then run to a second page: with working under every answer it is no
+       longer a block that fits on the end of the last one. */
+    .key-page { break-before: page; page-break-before: always; }
+    .key-page .answer-key { margin-top: 0; break-inside: auto; }
+    /* A worked example: studied, not answered — a tinted card, no number badge. */
+    .worked {
+      background: ${accent}0A; border: 1px solid ${accent}33; border-radius: 8px;
+      padding: 12px 14px; margin-bottom: 16px; break-inside: avoid;
+    }
+    .worked-label { font-family: ${isRTL ? "'Cairo', 'Almarai', Arial" : "'Inter', 'Helvetica Neue', Arial"}, sans-serif; font-weight: 700; font-size: 13px; color: ${accent}; margin-bottom: 6px; }
+    .worked-problem { font-size: 12.5px; color: #111827; margin-bottom: 6px; }
+    .worked-steps { padding-${isRTL ? 'right' : 'left'}: 20px; }
+    .worked-steps li { font-size: 12.5px; margin-bottom: 3px; }
+    .worked-self { font-size: 12px; color: #374151; margin-top: 8px; }
     /* Step cards, for the activity's numbered run-sheet. */
     .step-card {
       display: flex; flex-direction: row; gap: 10px; align-items: flex-start;
@@ -450,6 +473,20 @@ export function buildLessonPlanHTML(
   return htmlBase(content, isAr, title, 'lesson');
 }
 
+/**
+ * A question's text as the worksheet prints it.
+ *
+ * `generateWorksheet` appends «الإجابة:» and two lines of underscores to every
+ * open question so the SCREEN and the shared text have somewhere to write. The
+ * printed page draws its own ruled lines under the question, so the suffix
+ * printed on top of them — and once `.q-break` honours line breaks it would
+ * print as three more lines. Only that exact suffix is removed: the numbered
+ * blanks of a half-solved question are the student's work space, not a suffix.
+ */
+function printableQuestionText(text: string): string {
+  return text.replace(/\n+(?:الإجابة|Answer):\n_{10,}(?:\n_{10,})*\s*$/u, '');
+}
+
 export function buildWorksheetHTML(
   ws: WorksheetOutput,
   title: string,
@@ -473,7 +510,7 @@ export function buildWorksheetHTML(
       // questions that have none.
       const room = q.options ? '' : `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div>`;
       const html = `<div class="q-card">`
-        + `<div class="q-head"><span class="q-num">${qNum}</span><span class="q-text">${esc(q.text)}</span></div>`
+        + `<div class="q-head"><span class="q-num">${qNum}</span><span class="q-text q-break">${esc(printableQuestionText(q.text))}</span></div>`
         + `${options}${room}`
         + `<div class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</div>`
         + `</div>`;
@@ -484,19 +521,35 @@ export function buildWorksheetHTML(
   }).join('');
 
   const akRows = includeAnswers
-    ? ws.answerKey?.map(item =>
-      `<div class="answer-row"><span class="answer-num">${item.num}.</span><span>${esc(item.answer)}</span></div>`
+    ? ws.answerKey?.map(item => item.solution?.length
+      ? `<div class="answer-row"><span class="answer-num">${item.num}.</span><div class="answer-body"><span>${esc(item.answer)}</span>`
+        + `<ol class="solution">${item.solution.map(line => `<li>${esc(line)}</li>`).join('')}</ol></div></div>`
+      : `<div class="answer-row"><span class="answer-num">${item.num}.</span><span>${esc(item.answer)}</span></div>`
     ).join('') ?? ''
     : '';
 
   const answerKey = akRows
-    ? `<div class="answer-key"><div class="section-title">${L('مفتاح الإجابات', 'Answer Key')}</div>${akRows}</div>`
+    ? `<div class="key-page"><div class="answer-key"><div class="section-title">${L('مفتاح الإجابات', 'Answer Key')}</div>${akRows}</div></div>`
+    : '';
+
+  // Studied, not answered: it is on the student copy too. Only the lines for
+  // the student to write their own explanation are ruled.
+  const ex = ws.workedExample;
+  const worked = ex
+    ? `<div class="worked"><div class="worked-label">${L('مثال محلول', 'Worked example')}</div>`
+      + `<div class="worked-problem">${esc(ex.problem)}</div>`
+      + `<ol class="worked-steps">${ex.steps.map(step => `<li>${esc(step)}</li>`).join('')}</ol>`
+      + (ex.selfExplain
+        ? `<div class="worked-self">${esc(ex.selfExplain)}</div><div class="q-lines">${ANSWER_RULES.slice(0, 2).map(() => '<div class="q-rule"></div>').join('')}</div>`
+        : '')
+      + `</div>`
     : '';
 
   const content = `
     <div class="doc-title">${esc(title)}</div>
     <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)}</div>
     ${ws.instructions ? `<div class="callout">${esc(ws.instructions)}</div>` : ''}
+    ${worked}
     ${sections}
     ${answerKey}
     ${figuresSectionHTML(figures, isAr)}
@@ -911,7 +964,7 @@ export function buildWorksheetSlidesHTML(
   // Total: title + (instructions if present: 1) + sections + answer key
   const hasInstructions = !!ws.instructions;
   const showAnswerKey = includeAnswers && !!ws.answerKey && ws.answerKey.length > 0;
-  const TOTAL = 1 + (hasInstructions ? 1 : 0) + ws.sections.length
+  const TOTAL = 1 + (hasInstructions ? 1 : 0) + (ws.workedExample ? 1 : 0) + ws.sections.length
     + (showAnswerKey ? 1 : 0) + (figures.length ? 1 : 0);
 
   const footer = (num: number) => `
@@ -952,6 +1005,18 @@ export function buildWorksheetSlidesHTML(
     </div>
     ${footer(slideNum++)}</div>` : '';
 
+  // The worked example, studied before anything is asked. The key slide below
+  // stays answers-only: a slide is a fixed A4 page and per-question working
+  // does not fit ten answers on it.
+  const workedSlide = ws.workedExample ? `<div class="slide">
+    ${header(L('مثال محلول', 'Worked example'))}
+    <div class="slide-body">
+      ${sBlock('✍️', L('مثال محلول', 'Worked example'),
+        `<p>${e(ws.workedExample.problem)}</p><ol>${ws.workedExample.steps.map(step => `<li>${e(step)}</li>`).join('')}</ol>`
+        + (ws.workedExample.selfExplain ? `<p>${e(ws.workedExample.selfExplain)}</p>` : ''))}
+    </div>
+    ${footer(slideNum++)}</div>` : '';
+
   // One slide per section
   let qCounter = 1;
   const sectionSlides = ws.sections.map(sec => {
@@ -959,7 +1024,7 @@ export function buildWorksheetSlidesHTML(
       const opts = q.options
         ? `<div class="q-opts">${q.options.map((o, oi) => `<div class="q-opt">${e(labelOptionLine(o, oi, isAr))}</div>`).join('')}</div>`
         : '';
-      const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text">${e(q.text)}</span>${opts}<span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span></div>`;
+      const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text q-break">${e(printableQuestionText(q.text))}</span>${opts}<span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span></div>`;
       qCounter++;
       return html;
     }).join('');
@@ -1011,6 +1076,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .q-card { display:flex; flex-wrap:wrap; gap:4px; align-items:baseline; border:1px solid #e5e7eb; border-radius:6px; padding:8px 12px; margin-bottom:7px; font-size:11.5px; }
 .q-num { font-weight:700; color:${ACCENT}; flex-shrink:0; }
 .q-text { flex:1; color:#111827; }
+.q-break { white-space:pre-line; }
 .q-opts { display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; width:100%; padding-${isAr ? 'right' : 'left'}:12px; font-size:10.5px; color:#6b7280; }
 .q-opt { white-space:nowrap; }
 .q-pts { font-size:10px; color:#9ca3af; margin-${isAr ? 'right' : 'left'}:auto; }
@@ -1025,6 +1091,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 <body>
 ${slide1}
 ${instrSlide}
+${workedSlide}
 ${sectionSlides.join('\n')}
 ${akSlide}
 ${figuresSlideHTML(figures, isAr, header, footer(TOTAL))}
@@ -1224,8 +1291,17 @@ export function buildLessonFlowHTML(
   const activityBody = (act: ActivityOutput) =>
     `${act.steps.map((s, i) => stepCard(s, i)).join('')}`;
 
-  /* ── Worksheet questions ── */
-  const wsBody = flow.worksheet.sections.flatMap(s =>
+  /* ── Worksheet: the worked example, then the questions ── */
+  const flowExample = flow.worksheet.workedExample;
+  const wsExample = flowExample
+    ? `<div class="q-block">
+         <div class="q-text"><strong>${isAr ? 'مثال محلول' : 'Worked example'}</strong></div>
+         <div class="q-text">${esc(flowExample.problem)}</div>
+         <ol class="bullets">${flowExample.steps.map(step => `<li>${esc(step)}</li>`).join('')}</ol>
+         ${flowExample.selfExplain ? `<div class="q-text">${esc(flowExample.selfExplain)}</div>` : ''}
+       </div>`
+    : '';
+  const wsBody = wsExample + flow.worksheet.sections.flatMap(s =>
     s.questions.map((q, i) => questionBlock(q, i))
   ).join('');
 
