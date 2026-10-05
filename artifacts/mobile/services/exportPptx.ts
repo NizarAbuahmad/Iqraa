@@ -21,7 +21,7 @@ import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 
 import { visualForSlide } from './deckVisuals.ts';
-import { isBulletLine, looksLikeEquation, stripBullet } from './deckText.ts';
+import { isBulletLine, looksLikeEquation, stripBullet, workingSteps } from './deckText.ts';
 import { resolveSlideLayout } from './slideLayout.ts';
 import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { mathLineToUnicode, prettifySymPy } from '@/services/mathRender';
@@ -540,15 +540,27 @@ export async function exportDeckAsPptx(
       if (slidePlot) addPlotChart(s, slidePlot, { x: 2.4, y: 1.85, w: 5.2, h: 1.7 });
       const answerTop = slidePlot ? 3.65 : 2.4;
       if (slide.answer) {
+        // The book's working-then-result chain, one numbered line per step
+        // with the result beneath — see `workingSteps`. Not under a plot: the
+        // card has no height to give once the curve has taken its share.
+        const working = slidePlot ? null : workingSteps(slide.answer);
+        const stepsH = working ? working.steps.length * 0.3 : 0;
+        // Bottom of the result line; the card and the verified rows hang off it.
+        const lineBottom = answerTop + 0.9 + stepsH;
         s.addShape('roundRect', {
-          x: 2.0, y: answerTop, w: 6.0, h: slide.verified ? 1.6 : 1.1,
+          x: 2.0, y: answerTop, w: 6.0, h: lineBottom - answerTop + (slide.verified ? 0.7 : 0.2),
           fill: { color: DECK_CARD }, line: { color: accent, width: 1.5 }, rectRadius: 0.08,
         });
         s.addText(L('الإجابة', 'Answer'), {
           x: 2.0, y: answerTop + 0.1, w: 6.0, h: 0.3, align: 'center', fontSize: 9, color: accent, bold: true,
         });
-        s.addText(pptxLine(slide.answer, true), {
-          x: 2.0, y: answerTop + 0.4, w: 6.0, h: 0.5, align: 'center', fontSize: 16, color: DECK_TEXT, bold: true,
+        working?.steps.forEach((step, i) => {
+          s.addText(`${i + 1}.  ${pptxLine(step, true)}`, {
+            x: 2.0, y: answerTop + 0.4 + i * 0.3, w: 6.0, h: 0.3, align: 'center', fontSize: 13, color: DECK_TEXT,
+          });
+        });
+        s.addText(pptxLine(working ? working.final : slide.answer, true), {
+          x: 2.0, y: answerTop + 0.4 + stepsH, w: 6.0, h: 0.5, align: 'center', fontSize: 16, color: DECK_TEXT, bold: true,
         });
         if (slide.verified) {
           const verifiedColor = slide.verifiedBy === 'symbolic' ? '22C55E' : DECK_MUTED;
@@ -556,12 +568,12 @@ export async function exportDeckAsPptx(
             ? L('تم التحقق من الإجابة رياضيًا (SymPy)', 'Answer symbolically verified (SymPy)')
             : L('من بنك الأسئلة المُراجَع', 'From the reviewed question bank');
           s.addText(label, {
-            x: 2.0, y: answerTop + 0.95, w: 6.0, h: 0.3, align: 'center', fontSize: 9, color: verifiedColor, bold: true,
+            x: 2.0, y: lineBottom + 0.05, w: 6.0, h: 0.3, align: 'center', fontSize: 9, color: verifiedColor, bold: true,
           });
           if (slide.verifiedBy === 'symbolic' && slide.computedAnswer) {
             s.addText(
               `${L('حسبها المُحقِّق مستقلًّا', 'Verifier computed independently')}: ${mathLineToUnicode(prettifySymPy(slide.computedAnswer))}`,
-              { x: 2.0, y: answerTop + 1.22, w: 6.0, h: 0.3, align: 'center', fontSize: 8, color: DECK_MUTED },
+              { x: 2.0, y: lineBottom + 0.32, w: 6.0, h: 0.3, align: 'center', fontSize: 8, color: DECK_MUTED },
             );
           }
         }
