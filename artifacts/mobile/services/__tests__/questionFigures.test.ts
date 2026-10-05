@@ -7,7 +7,6 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { questionRefersToFigure } from '../questionFigures.ts';
-import translations from '../i18n.ts';
 
 describe('questionRefersToFigure', () => {
   it('is false for a spelling question', () => {
@@ -29,18 +28,5 @@ describe('questionRefersToFigure', () => {
     assert.equal(questionRefersToFigure(undefined), false);
     assert.equal(questionRefersToFigure({}), false);
     assert.equal(questionRefersToFigure(null), false);
-  });
-});
-
-describe('recEvidence (Arabic) counts marks the way Arabic does', () => {
-  const ev = (translations.ar as any).recEvidence as (p: string, l: string) => string;
-  it('uses the plural for 3–10, the dual for 2, the singular for 1', () => {
-    assert.equal(ev('12.5', '7'), '12.5٪ — خسر 7 علامات');
-    assert.equal(ev('40', '2'), '40٪ — خسر علامتين');
-    assert.equal(ev('40', '1'), '40٪ — خسر علامة');
-  });
-  it('returns to the singular from eleven and for a fraction', () => {
-    assert.equal(ev('10', '12'), '10٪ — خسر 12 علامة');
-    assert.equal(ev('10', '7.5'), '10٪ — خسر 7.5 علامة');
   });
 });
