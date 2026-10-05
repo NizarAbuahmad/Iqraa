@@ -143,9 +143,35 @@ an announcement by default» below.
   both languages, with or without a grounded lesson. **What it is not:** the
   offline path has no bank for these subjects, so it re-frames the same lesson;
   it does not invent new items. The live path is unchanged (it already sends
-  `regenerate`/`avoid`/`excludeVariantIds`). Only the activity generator was
-  touched — the other offline generators were not checked for the same
-  sameness. Tests: `activityRegenerate.test.ts`. Not looked at in a browser.
+  `regenerate`/`avoid`/`excludeVariantIds`). The other offline generators were checked in the follow-up below. Tests: `activityRegenerate.test.ts`. Not looked at in a browser.
+- **Offline Regenerate no longer repeats itself for the lesson plan, worksheet,
+  homework or quiz; the classroom activity is still fixed, and is wrong for
+  most subjects** (2026-10-05, follow-up). Measured over twelve regenerations per
+  case: the lesson plan repeated its predecessor up to 4 times in 11, worksheet
+  and homework up to 5 in 11 (a small bank — one law-of-sines lesson — makes the
+  odds high), the quiz never. They vary by random draw and nothing stopped a draw
+  landing on what was already on screen. `MockAIService` now remembers a
+  fingerprint of what it last served for a request (`freshOnRegenerate`,
+  generators.ts) and, when the same request returns with `regenerate`, draws again
+  — at most 20 times, so a generator with nothing to vary still returns. A plain
+  request is never compared. After: 0 in 11 everywhere. Worksheet, quiz and
+  homework still **refuse** offline for subjects with no bank (the recorded
+  `NoQuestionBankError` policy), so they cannot repeat. The infographic is a
+  deterministic digest of the textbook lesson and has no Regenerate; repeating
+  it is correct. **Not fixed, and bigger than sameness:**
+  `generateClassroomActivity` (the classroom builder, which has a Regenerate
+  button) returns the **same output on every Regenerate for all seven types**
+  (only maths/chemistry quick-check varies), because it is ~700 lines of fixed
+  templates — and the templates are maths: the offline escape-challenge for an
+  English or Arabic topic is a quadratics escape room set in «the Math Lab»,
+  the error-detective's cases are quadratic misconceptions whatever the topic,
+  and relay/bingo only use real items when the bank has at least four. It was
+  never brought under the no-question-bank policy that worksheet/quiz/homework
+  follow. Reordering that content would only polish the wrong output; the
+  decision is whether to make it refuse offline for bank-less subjects (the same
+  policy — honest, but the classroom builder would then error in demo mode for
+  those subjects) or to author real per-subject templates. Tests:
+  `offlineRegenerate.test.ts`. Not looked at in a browser.
 - **Interface dates and times are written in Latin digits** (2026-10-03).
   Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
   «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
