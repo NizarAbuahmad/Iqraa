@@ -78,6 +78,7 @@ import {
   assertUsableGeneration,
   deckShortfalls,
   extractJSON,
+  sanitizeWorksheetExtras,
   UnusableGenerationError,
   type GenerationKind,
 } from "../lib/generationShape.ts";
@@ -196,7 +197,10 @@ async function completeOnce(args: {
     // also guards the pool: an unusable artifact stored here would be served
     // to every teacher who asks for that lesson.
     assertUsableGeneration(args.kind, parsed);
-    return { parsed, usage: completion.usage, durationMs };
+    // Optional teaching extras (a worksheet's worked example and key working)
+    // are dropped when malformed rather than failing the generation or being
+    // stored — see `sanitizeWorksheetExtras`.
+    return { parsed: sanitizeWorksheetExtras(args.kind, parsed), usage: completion.usage, durationMs };
   } catch (err) {
     recordUsage(completion.usage, args.model, { ...args.detail, artifactId: null, durationMs });
     throw err;

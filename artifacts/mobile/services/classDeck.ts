@@ -311,6 +311,21 @@ export function buildDeckFromWorksheet(
   // ever fills in the top-level answerKey, keyed by 1-based position across
   // this same flattened section/question order.
   const answerByPosition = new Map(ws.answerKey.map(a => [a.num, a.answer]));
+  const solutionByPosition = new Map(ws.answerKey.map(a => [a.num, a.solution]));
+
+  // The worked example is studied before anything is asked. An `intro` slide,
+  // not a question: question slides are numbered and verified by flat position
+  // (`outcomes[qNum - 1]`), and an extra one would shift every badge after it.
+  if (ws.workedExample) {
+    const ex = ws.workedExample;
+    slides.push({
+      slideNumber: slides.length + 1,
+      type: 'intro',
+      title: isAr ? '✍️ مثال محلول' : '✍️ Worked example',
+      content: [ex.problem, '', ...ex.steps.map((step, i) => `${i + 1}) ${step}`), ...(ex.selfExplain ? ['', ex.selfExplain] : [])].join('\n'),
+      durationSeconds: 0,
+    });
+  }
 
   let qNum = 0;
   const answers: string[] = [];
@@ -349,9 +364,12 @@ export function buildDeckFromWorksheet(
           ? {
               teacher: {
                 expectedAnswer: answer,
-                teachingTips: isAr
-                  ? 'الكل يجيب معًا عند انتهاء المؤقت.'
-                  : 'Everyone answers together when the timer ends.',
+                teachingTips: [
+                  isAr ? 'الكل يجيب معًا عند انتهاء المؤقت.' : 'Everyone answers together when the timer ends.',
+                  ...(solutionByPosition.get(qNum)?.length
+                    ? [isAr ? 'خطوات الحل:' : 'Working:', ...solutionByPosition.get(qNum)!.map((step, i) => `${i + 1}) ${step}`)]
+                    : []),
+                ].join('\n'),
               },
             }
           : {}),

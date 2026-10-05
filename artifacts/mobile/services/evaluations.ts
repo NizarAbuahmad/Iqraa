@@ -95,7 +95,7 @@ export interface EvaluationQuestion {
      * before key checking existed — treat that as "say nothing", never as a
      * verdict.
      */
-    code?: 'verified' | 'no_key' | 'verifier_unreachable' | 'undecided';
+    code?: 'verified' | 'no_key' | 'verifier_unreachable' | 'undecided' | 'key_unlinked' | 'edited';
     computedAnswer?: string | null;
     reason?: string;
     checkedAt?: string;

@@ -762,13 +762,17 @@ function KeyCheckNotice({
     ? t('keysVerifiedSummary', String(summary.verified), String(summary.total))
     : summary.kind === 'verifier-down'
       ? t('keysVerifierDownTitle')
-      : t('keysNoneCheckableTitle');
+      : summary.kind === 'unlinked'
+        ? t('keysUnlinkedTitle', String(summary.unlinked))
+        : t('keysNoneCheckableTitle');
 
   const note = summary.kind === 'verified'
     ? t('keysVerifiedNote')
     : summary.kind === 'verifier-down'
       ? t('keysVerifierDownNote')
-      : t('keysNoneCheckableNote');
+      : summary.kind === 'unlinked'
+        ? t('keysUnlinkedNote')
+        : t('keysNoneCheckableNote');
 
   return (
     <View style={[styles.verifySummary, { backgroundColor: tone.bg, borderColor: tone.border }]}>
