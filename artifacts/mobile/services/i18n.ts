@@ -1123,6 +1123,9 @@ const translations = {
     quizVerifiedCount: (n: number, total: number) =>
       `تحقّق المُحقِّق الرمزي من ${n} من أصل ${total} إجابة`,
     questionCountPill: (n: number) => arCountPhrase(n, 'سؤال واحد', 'سؤالان', 'أسئلة'),
+    // The paper stops where the lesson's question bank does.
+    shortPaperNotice: (produced: number, requested: number) =>
+      `هذه الورقة أقصر مما طلبت: لا يتوفر لهذا الدرس إلا ${arCountPhrase(produced, 'سؤال واحد', 'سؤالان', 'أسئلة')} من أصل ${requested}، ولم نملأ الباقي بأسئلة عامة لا تخص الدرس.`,
     levelsPartial: 'تعذّر بناء بعض المستويات. المستويات التي اكتملت معروضة؛ جرّب الباقي لاحقًا.',
     quizVerifiedNone: 'لم يتحقّق المُحقِّق الرمزي من أي إجابة — الإجابات من بنك الأسئلة المُراجَع',
     examplesAiUnverified: 'كتب الذكاء الاصطناعي المثال ولم يتحقّق أحد من إجابته — راجعها قبل العرض',
@@ -3121,6 +3124,8 @@ const translations = {
     quizVerifiedCount: (n: number, total: number) =>
       `${n} of ${total} answers symbolically verified`,
     questionCountPill: (n: number) => `${n} ${n === 1 ? 'question' : 'questions'}`,
+    shortPaperNotice: (produced: number, requested: number) =>
+      `This paper is shorter than you asked for: the lesson only has ${produced} ${produced === 1 ? 'question' : 'questions'} out of ${requested}, and we didn't fill the rest with generic questions that aren't about it.`,
     levelsPartial: 'Some levels could not be built. The ones that finished are shown; try the rest again later.',
     quizVerifiedNone: 'No answer was symbolically verified — keys come from the reviewed bank',
     examplesAiUnverified: "The example was written by AI and nobody has checked its answer — review it before class",

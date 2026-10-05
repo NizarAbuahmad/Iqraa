@@ -1125,6 +1125,7 @@ export class MockAIService extends AIService {
         : `Name: ________________    Grade: ${req.grade}    Date: ________________\n\nShort intro: This is an in-class practice sheet on “${topic}”. Work quietly and move from easier to harder items.\n\n• Write in the answer spaces provided.\n• Show working where needed.\n• Student sheet only — no teacher notes.`,
       sections,
       answerKey,
+      ...(spent ? { shortfall: { requested: totalQ, produced: qNum - 1 - priorCount } } : {}),
     };
   }
 
@@ -1205,7 +1206,10 @@ export class MockAIService extends AIService {
       bankOnly = false;
     }
     if (questions.length === 0) throw new NoQuestionBankError(topic);
-    if (questions.length < numQuestions) {
+    const shortfall = questions.length < numQuestions
+      ? { requested: numQuestions, produced: questions.length }
+      : undefined;
+    if (shortfall) {
       // Spread the marks over the questions that exist.
       const each = Math.max(1, Math.floor(totalMarks / questions.length));
       questions.forEach(q => { q.points = each; });
@@ -1222,6 +1226,7 @@ export class MockAIService extends AIService {
       duration,
       totalPoints: questions.reduce((s, q) => s + q.points, 0),
       questions,
+      ...(shortfall ? { shortfall } : {}),
     };
   }
 
