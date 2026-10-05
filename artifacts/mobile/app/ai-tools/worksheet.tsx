@@ -863,19 +863,19 @@ export default function WorksheetScreen() {
             <View
               style={[styles.workedCard, { backgroundColor: ACCENT + '0F', borderColor: ACCENT + '40', borderRadius: colors.radius }]}
               accessible
-              accessibilityLabel={t('workedExampleTitle')}
+              accessibilityLabel={outT('workedExampleTitle')}
             >
-              <View style={[styles.akHeader, { flexDirection: isRTL ? 'row-reverse' : 'row', marginTop: 0 }]}>
+              <View style={[styles.akHeader, { flexDirection: outRTL ? 'row-reverse' : 'row', marginTop: 0 }]}>
                 <Ionicons name="create-outline" size={15} color={ACCENT} />
-                <Text style={[styles.akTitle, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{t('workedExampleTitle')}</Text>
+                <Text style={[styles.akTitle, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: outRTL ? 'right' : 'left' }]}>{outT('workedExampleTitle')}</Text>
               </View>
-              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 24, marginBottom: 8, textAlign: outRTL ? 'right' : 'left' }}>
                 {isolateForeignRuns(result.workedExample.problem)}
               </Text>
               {result.workedExample.steps.map((step, i) => (
-                <View key={i} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start' }]}>
+                <View key={i} style={[styles.optionRow, { flexDirection: outRTL ? 'row-reverse' : 'row', alignItems: 'flex-start' }]}>
                   <Text style={[styles.optLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{i + 1}.</Text>
-                  <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }}>
+                  <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 22, textAlign: outRTL ? 'right' : 'left' }}>
                     {isolateForeignRuns(step)}
                   </Text>
                 </View>
@@ -889,7 +889,7 @@ export default function WorksheetScreen() {
                 </View>
               ) : null}
               {result.workedExample.selfExplain ? (
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 8, textAlign: outRTL ? 'right' : 'left' }}>
                   {isolateForeignRuns(result.workedExample.selfExplain)}
                 </Text>
               ) : null}
