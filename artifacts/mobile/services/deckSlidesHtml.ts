@@ -119,6 +119,37 @@ function deckBodyLine(line: string, accent: string): string {
   return `<div class="deck-line">${esc(line)}</div>`;
 }
 
+/**
+ * Type sizes a content slide may use, largest first. 26 is the floor — the size
+ * every slide used before this existed, so a slide that cannot take more keeps
+ * exactly the layout it always had.
+ */
+const FIT_SIZES_PX = [36, 32, 28, 26] as const;
+
+/**
+ * The body size for a slide, from how much it has to say.
+ *
+ * Every content slide was set at 26px whatever it held, so a three-line outcome
+ * list or a one-line rule used the top third of a 794px page and left the rest
+ * blank — fine on a phone, small on a wall. This picks the largest size whose
+ * wrapped text still fits the body, estimating the wrap from character count
+ * (0.55em is a deliberately wide guess for Almarai, so the estimate errs
+ * towards too few characters per line and therefore a smaller size). A text
+ * block that does not fit at any size stays at 26px rather than overflowing:
+ * `.deck-body` clips.
+ */
+export function fitBodyPx(lines: readonly string[]): number {
+  const texts = lines.filter(l => l.trim()).map(stripBullet);
+  if (texts.length === 0) return FIT_SIZES_PX[FIT_SIZES_PX.length - 1];
+  for (const px of FIT_SIZES_PX) {
+    const perRow = Math.floor(940 / (px * 0.55));
+    const rows = texts.reduce((n, t) => n + Math.max(1, Math.ceil(t.length / perRow)), 0);
+    // 46px per line of text = card padding, border and the gap between cards.
+    if (rows * px * 1.7 + texts.length * 46 <= 540) return px;
+  }
+  return FIT_SIZES_PX[FIT_SIZES_PX.length - 1];
+}
+
 /** One content line, math-aware — mirrors MathText.tsx's decision on native. */
 function deckContentLine(line: string, isEquation: boolean): string {
   if (!line.trim()) return '';
@@ -427,9 +458,14 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       </div>
       ${footer(num)}</div>`;
     }
+    // A visual shares the page with the text, so only a text-only slide is
+    // sized up and centred; one with a plot keeps the 26px layout it was
+    // designed around.
+    const fit = slidePlot(slide) ? FIT_SIZES_PX[FIT_SIZES_PX.length - 1] : fitBodyPx(lines);
+    const fitted = fit > FIT_SIZES_PX[FIT_SIZES_PX.length - 1];
     return `<div class="deck-slide">
       ${deckHeader(slide.title, accent)}
-      <div class="deck-body">
+      <div class="deck-body${fitted ? ' deck-fit' : ''}"${fitted ? ` style="--fit:${fit}px"` : ''}>
         ${body}
       </div>
       ${footer(num)}</div>`;
@@ -516,7 +552,7 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 /* A flow child above the footer, not an overlay pinned near it: PhET's required
    credit is ~100 characters and wraps, and a fixed offset would stop clearing
    the footer the moment it did. */
-.deck-hero-credit { position:relative; z-index:2; flex-shrink:0; text-align:center; padding:0 32px 8px; font-size:9px; line-height:1.5; color:rgba(255,255,255,0.72); }
+.deck-hero-credit { position:relative; z-index:2; flex-shrink:0; text-align:center; padding:0 32px 8px; font-size:12px; line-height:1.5; color:rgba(255,255,255,0.85); }
 .deck-title-content { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px; text-align:center; }
 .deck-divider-slide { display:flex; flex-direction:column; }
 /* The projected deck sits on two low-contrast circles; pseudo-elements keep
@@ -551,6 +587,12 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .split-fig img { max-width:100%; max-height:120mm; object-fit:contain; border-radius:10px; }
 .split-fig figcaption { font-size:12px; color:#6b7280; text-align:center; }
 .deck-body-center { align-items:center; justify-content:center; text-align:center; }
+/* A text-only slide with room to spare: --fit is set inline by fitBodyPx and the
+   block is centred in the body instead of hugging the header. */
+.deck-body.deck-fit { justify-content:center; }
+.deck-fit .deck-line, .deck-fit .deck-card-text { font-size:var(--fit); }
+/* A lone plain line is a value or a sentence, not a list: centre it too. */
+.deck-fit .deck-line:only-child { text-align:center; }
 .deck-line { font-size:26px; line-height:1.8; color:${DECK_TEXT}; }
 .deck-card { display:flex; align-items:center; gap:14px; background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:14px; padding:16px 22px; }
 .deck-card-bar { width:5px; align-self:stretch; border-radius:3px; flex-shrink:0; }
@@ -578,8 +620,14 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-video-link { display:inline-block; border:1.5px solid; border-radius:10px; padding:10px 22px; font-size:15px; font-weight:700; text-decoration:none; }
 .deck-video-url { font-size:10px; color:${DECK_MUTED}; margin-top:14px; word-break:break-all; max-width:420px; }
 .deck-video-note { font-size:11px; color:${DECK_MUTED}; margin-top:12px; }
-.deck-footer { position:relative; z-index:2; height:30px; border-top:1px solid ${DECK_BORDER}; display:flex; align-items:center; justify-content:space-between; padding:0 32px; flex-shrink:0; }
-.deck-footer span { font-size:9px; color:${DECK_MUTED}; }
+/* 13px, not the 9px it was: the credit line and page counter are read from the
+   back of a room, and 9px is below what a projector resolves. The two dark
+   surfaces (the photo slides and the flat teal divider) need light text — muted
+   brown on teal was close to invisible. */
+.deck-footer { position:relative; z-index:2; height:40px; border-top:1px solid ${DECK_BORDER}; display:flex; align-items:center; justify-content:space-between; padding:0 32px; flex-shrink:0; }
+.deck-footer span { font-size:13px; color:${DECK_MUTED}; }
+.deck-divider-slide .deck-footer, .deck-on-photo .deck-footer { border-top-color:rgba(255,255,255,0.35); }
+.deck-divider-slide .deck-footer span, .deck-on-photo .deck-footer span { color:rgba(255,255,255,0.9); }
 ${MATH_HTML_STYLES}
 </style>
 </head>
