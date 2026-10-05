@@ -224,6 +224,12 @@ export async function getMyExams(): Promise<import('./myExams.ts').MyExam[]> {
   return data.exams ?? [];
 }
 
+/** A parent's «نتائج أبنائي»: each guardian-linked child's exams. */
+export async function getChildExams(): Promise<import('./myExams.ts').ChildExams[]> {
+  const data = await apiJson<{ children: import('./myExams.ts').ChildExams[] }>('/parent/exams');
+  return data.children ?? [];
+}
+
 /**
  * The grades the signed-in student's classes are in, first one first. The
  * library and the curriculum browser open on it instead of the catalog's
