@@ -8,7 +8,6 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  addToClassPlan,
   buildResourceCatalog,
   filterResources,
   groupIntoShelves,
@@ -91,9 +90,9 @@ describe('building the catalog', () => {
     assert.equal(buildResourceCatalog(input).find(i => i.key === 'uploaded:u4'), undefined);
   });
 
-  it('offers a pre-made sheet for printing and for a class', () => {
+  it('offers a pre-made sheet for printing only — putting it on a class happens inside the class', () => {
     const sheet = buildResourceCatalog(input).find(i => i.source === 'premade-sheet');
-    assert.deepEqual([...(sheet?.actions ?? [])].sort(), ['add-to-class', 'print']);
+    assert.deepEqual([...(sheet?.actions ?? [])].sort(), ['print']);
   });
 
   it('carries the insecure-link flag per book-QR row', () => {
@@ -105,7 +104,6 @@ describe('building the catalog', () => {
   it('never offers an action it cannot carry out', () => {
     for (const item of buildResourceCatalog(input)) {
       if (item.actions.includes('open')) assert.ok(item.url, `${item.key} opens nothing`);
-      if (item.actions.includes('add-to-class')) assert.ok(addToClassPlan(item).length > 0, item.key);
     }
   });
 });
@@ -153,10 +151,3 @@ describe('shelves (one tile per kind)', () => {
   });
 });
 
-describe('what "add to class" has to write', () => {
-  it('materialises a teacher-owned copy of a sheet, and cannot attach shared links', () => {
-    assert.deepEqual(addToClassPlan({ source: 'premade-sheet' }), ['save-material', 'attach-material']);
-    assert.deepEqual(addToClassPlan({ source: 'uploaded' }), []);
-    assert.deepEqual(addToClassPlan({ source: 'book-qr' }), []);
-  });
-});

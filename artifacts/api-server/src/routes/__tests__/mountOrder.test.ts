@@ -236,6 +236,27 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(post.status, 401, "minting a link code must require a token");
   });
 
+  it("mounts the class-resource routes inside the roster's guarded prefix", async () => {
+    // Like the claim-code routes: had these landed outside `router.use(["/classes",
+    // "/students"], …)` they would answer 404 rather than 401, and a teacher's class
+    // shelf would be readable and writable with no token at all. NB this passes
+    // before the routes exist (the prefix guard answers 401 for any /classes/** path)
+    // — it is a guard against someone moving them out, not a test that they exist.
+    const id = "00000000-0000-0000-0000-000000000000";
+    const get = await fetch(`${base}/classes/${id}/resources`);
+    assert.equal(get.status, 401, "listing class resources must require a token");
+
+    const post = await fetch(`${base}/classes/${id}/resources`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+    assert.equal(post.status, 401, "adding a class resource must require a token");
+
+    const del = await fetch(`${base}/classes/${id}/resources/${id}`, { method: "DELETE" });
+    assert.equal(del.status, 401, "removing a class resource must require a token");
+  });
+
   it("mounts account deletion, and refuses it without a token", async () => {
     // Apple 5.1.1(v) and Play both require this route to exist, so the thing
     // worth pinning is that it is *mounted* — a 404 here is a submission

@@ -23,7 +23,9 @@ import {
   chatThreads,
   classGroups,
   classMemberships,
+  classResources,
   evaluations,
+  libraryResources,
   parentContacts,
   rosterLinks,
   students,
@@ -54,6 +56,13 @@ import {
   syncClassGroupThread,
 } from "../lib/classThread.js";
 import { findLiveClass } from "../lib/classOwnership.js";
+import { publicUrl } from "../lib/r2.js";
+import {
+  isUuid,
+  parseClassResourceInput,
+  presentClassResource,
+  uploadedLibraryIds,
+} from "../lib/classResource.js";
 import { subjectColumns, withSubjectIds } from "../lib/classSubjects.js";
 
 const router = Router();
@@ -600,6 +609,182 @@ router.delete("/classes/:id/students/:studentId", async (req: AuthenticatedReque
     res.json({ removed: studentId });
   } catch (err) {
     failRoster(res, err, "remove student", "Failed to remove student");
+  }
+});
+
+// ─── Class resources ─────────────────────────────────────────────────────────
+// What a teacher has put in front of a class from the Library. Rows are a
+// pointer plus a snapshot, except a staff upload's link, which the GET builds
+// from its Library row on every read; see lib/db/src/schema/classResources.ts
+// and docs/superpowers/specs/2026-10-04-class-resources-design.md.
+
+router.get("/classes/:id/resources", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    if (!(await findLiveClass(classId, req.user!.id))) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    let rows: (typeof classResources.$inferSelect)[];
+    try {
+      rows = await db
+        .select()
+        .from(classResources)
+        .where(eq(classResources.classGroupId, classId))
+        .orderBy(desc(classResources.createdAt));
+    } catch (err) {
+      // The table comes from a manual schema push. Until then an empty shelf is
+      // the truth a teacher can act on; a 503 here would blank the class screen.
+      // Say so in the log, though: this branch answers 200, so a missed push
+      // would otherwise leave no trace anywhere.
+      if (isSchemaMissing(err)) {
+        logger.warn(
+          { err },
+          "GET /classes/:id/resources: class_resources is missing from this database — " +
+            "answering an empty shelf. Run `pnpm --filter @workspace/db run push` against DATABASE_URL.",
+        );
+        res.json({ resources: [] });
+        return;
+      }
+      throw err;
+    }
+
+    // A staff upload can be deleted after a teacher added it. One query for all
+    // of them, not one per row. The same query gives each survivor's current
+    // link: it is built here, on every read, the way the POST builds it, so a
+    // moved R2_PUBLIC_BASE_URL does not strand rows stored under the old host.
+    const present = new Set<string>();
+    const liveUrls = new Map<string, string | null>();
+    const ids = uploadedLibraryIds(rows);
+    if (ids.length > 0) {
+      try {
+        const found = await db
+          .select({
+            id: libraryResources.id,
+            r2Key: libraryResources.r2Key,
+            sourceUrl: libraryResources.sourceUrl,
+          })
+          .from(libraryResources)
+          .where(inArray(libraryResources.id, ids));
+        for (const f of found) {
+          present.add(f.id);
+          liveUrls.set(f.id, f.r2Key ? publicUrl(f.r2Key) : f.sourceUrl);
+        }
+      } catch (err) {
+        // Cannot tell, so call every row available rather than all of them gone,
+        // and serve the stored links rather than none.
+        logger.error({ err }, "class resources: library lookup failed");
+        liveUrls.clear();
+        for (const id of ids) present.add(id);
+      }
+    }
+
+    res.json({ resources: rows.map(row => presentClassResource(row, present, liveUrls)) });
+  } catch (err) {
+    failRoster(res, err, "list class resources", "Failed to load class resources");
+  }
+});
+
+router.post("/classes/:id/resources", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    if (!(await findLiveClass(classId, req.user!.id))) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    const input = parseClassResourceInput(req.body);
+    if ("error" in input) {
+      res.status(400).json({ error: input.error });
+      return;
+    }
+
+    let snapshot: { title: string; mediaKind: string; url: string | null; thumbnailUrl: string | null };
+    if (input.source === "uploaded") {
+      // Never trust the app for a staff upload: copy it from the Library's own row.
+      const [item] = await db
+        .select()
+        .from(libraryResources)
+        .where(eq(libraryResources.id, input.nativeId))
+        .limit(1);
+      if (!item) {
+        res.status(404).json({ error: "Library item not found" });
+        return;
+      }
+      snapshot = {
+        title: item.titleAr,
+        mediaKind: item.category,
+        url: item.r2Key ? publicUrl(item.r2Key) : item.sourceUrl,
+        thumbnailUrl: item.thumbnailUrl,
+      };
+    } else {
+      snapshot = {
+        title: input.title,
+        mediaKind: input.mediaKind,
+        url: input.url,
+        thumbnailUrl: input.thumbnailUrl,
+      };
+    }
+
+    const [row] = await db
+      .insert(classResources)
+      .values({
+        classGroupId: classId,
+        teacherId: req.user!.id,
+        kind: "library",
+        librarySource: input.source,
+        libraryNativeId: input.nativeId,
+        ...snapshot,
+      })
+      .onConflictDoNothing()
+      .returning();
+
+    if (!row) {
+      // The partial unique index refused it: this item is already on the shelf.
+      res.status(409).json({ code: "already_added", error: "Already added to this class" });
+      return;
+    }
+    res.status(201).json({ resource: presentClassResource(row, new Set([input.nativeId])) });
+  } catch (err) {
+    failRoster(res, err, "add class resource", "Failed to add the resource");
+  }
+});
+
+router.delete("/classes/:id/resources/:rid", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    const rid = req.params["rid"] as string;
+    if (!(await findLiveClass(classId, req.user!.id))) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+    // A malformed id would be a Postgres cast error (a 500); to the caller it is
+    // simply not there.
+    if (!isUuid(rid)) {
+      res.status(404).json({ error: "Resource not found" });
+      return;
+    }
+
+    const removed = await db
+      .delete(classResources)
+      .where(
+        and(
+          eq(classResources.id, rid),
+          eq(classResources.classGroupId, classId),
+          eq(classResources.teacherId, req.user!.id),
+        ),
+      )
+      .returning({ id: classResources.id });
+
+    if (removed.length === 0) {
+      res.status(404).json({ error: "Resource not found" });
+      return;
+    }
+    // Removes the class's row only; the Library item itself is never touched.
+    res.json({ removed: rid });
+  } catch (err) {
+    failRoster(res, err, "remove class resource", "Failed to remove the resource");
   }
 });
 
