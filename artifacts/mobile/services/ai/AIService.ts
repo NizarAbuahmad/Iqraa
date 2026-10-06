@@ -228,6 +228,13 @@ export interface WorksheetQuestion {
   options?: string[];
   answer?: string;
   points: number;
+  /**
+   * Drawn from the offline question bank, which a person wrote and checked.
+   * Set only where an item is taken from it; live-AI and template questions
+   * leave it absent, and the screens read absent as "nobody reviewed this
+   * answer" — never as «من بنك الأسئلة المُراجَع».
+   */
+  fromBank?: true;
 }
 
 export interface WorksheetAnswerKeyItem {
@@ -261,6 +268,8 @@ export interface QuizQuestion {
   correctAnswer: string;
   points: number;
   explanation: string;
+  /** See `WorksheetQuestion.fromBank`. */
+  fromBank?: true;
 }
 
 export interface ActivityStep {

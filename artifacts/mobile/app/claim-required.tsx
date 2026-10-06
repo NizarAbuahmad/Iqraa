@@ -63,6 +63,13 @@ export default function ClaimRequiredScreen() {
 
   const align = isRTL ? 'right' : 'left';
   const canSubmit = canSubmitCode && !submitting;
+  // What the picker currently points at, applied or not. Everything below the
+  // card reads this rather than `role`, so choosing a type reshapes the screen
+  // at once instead of only after the separate "change type" button is pressed.
+  const pendingRole: SwitchableRole = pickerOpen ? nextRole : role;
+  const roleChanging = pendingRole !== role;
+  // A teacher has no class code to enter, so there is nothing to show for one.
+  const toTeacher = pendingRole === 'teacher';
   const roleLabel = (r: SwitchableRole) =>
     t(r === 'teacher' ? 'roleTeacher' : r === 'student' ? 'roleStudent' : 'roleParent');
 
@@ -91,9 +98,9 @@ export default function ClaimRequiredScreen() {
       : r === 'system_admin' ? 'roleSysAdmin'
       : 'roleTeacher');
 
-  const handleSwitchRole = async () => {
-    if (switching) return;
-    if (nextRole === role) { setPickerOpen(false); return; }
+  const handleSwitchRole = async (): Promise<boolean> => {
+    if (switching) return false;
+    if (nextRole === role) { setPickerOpen(false); return true; }
     setSwitching(true);
     setError('');
     try {
@@ -104,16 +111,23 @@ export default function ClaimRequiredScreen() {
       // a screen they are merely allowed to sit on — so hand them over here.
       // A parent/student stays put: still unlinked, now reading its own wording.
       if (nextRole === 'teacher') router.replace('/(tabs)');
+      return true;
     } catch {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(t('claimRequiredSwitchFailed'));
+      return false;
     } finally {
       setSwitching(false);
     }
   };
 
   const handleSubmit = async () => {
+    // Continue follows the type picked in the card: a teacher just switches,
+    // and a parent/student change is applied before the code is claimed, since
+    // the server reads the stored role.
+    if (toTeacher) { await handleSwitchRole(); return; }
     if (!canSubmit) return;
+    if (roleChanging && !(await handleSwitchRole())) return;
     // A class code is shared: ask once whether the picked name is really theirs.
     if (needsConfirm) { setConfirmed(true); return; }
     setSubmitting(true);
@@ -147,10 +161,10 @@ export default function ClaimRequiredScreen() {
         </View>
 
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
-          {t(role === 'student' ? 'claimRequiredTitleStudent' : 'claimRequiredTitle')}
+          {t(pendingRole === 'student' ? 'claimRequiredTitleStudent' : 'claimRequiredTitle')}
         </Text>
         <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-          {t(role === 'student' ? 'claimRequiredDescStudent' : 'claimRequiredDesc')}
+          {t(pendingRole === 'student' ? 'claimRequiredDescStudent' : 'claimRequiredDesc')}
         </Text>
 
         <View style={[styles.roleCard, { borderColor: colors.border, backgroundColor: colors.muted, borderRadius: colors.radius }]}>
@@ -259,7 +273,7 @@ export default function ClaimRequiredScreen() {
           </View>
         )}
 
-        <RosterCodeClaimForm
+        {toTeacher ? null : <RosterCodeClaimForm
           code={code}
           onChangeCode={setCode}
           roster={roster}
@@ -267,14 +281,14 @@ export default function ClaimRequiredScreen() {
           studentId={studentId}
           onSelectStudent={setStudentId}
           state={state}
-          userRole={user?.role}
+          userRole={pendingRole}
           confirming={confirmed}
           pickedName={pickedName}
           onChangeMind={() => setConfirmed(false)}
           colors={colors}
           isRTL={isRTL}
           t={t}
-        />
+        />}
 
         {error ? (
           <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -286,10 +300,10 @@ export default function ClaimRequiredScreen() {
         ) : null}
 
         <Button
-          label={confirmed ? t('joinConfirmYes') : t('claimRequiredSubmit')}
+          label={confirmed && !toTeacher ? t('joinConfirmYes') : t('claimRequiredSubmit')}
           onPress={handleSubmit}
-          loading={submitting}
-          disabled={!canSubmit}
+          loading={submitting || switching}
+          disabled={toTeacher ? switching : !canSubmit || switching}
           fullWidth
           style={{ marginTop: 24 }}
         />

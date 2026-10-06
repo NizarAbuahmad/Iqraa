@@ -2,8 +2,9 @@
  * Quiz verification provenance.
  *
  * What these guard: a quiz may only claim a key was proved when something
- * proved it, and a verifier that is unavailable must degrade to "from the
- * reviewed bank" rather than to silence or to a claim.
+ * proved it, and a verifier that is unavailable must degrade to where the
+ * answer came from — "from the reviewed bank" only for a bank item, "nobody
+ * reviewed it" for anything else — never to a claim.
  *
  * The unit is the question. A quiz mixes derivative items the verifier can
  * prove with word problems it cannot touch, so the old whole-deck boolean was
@@ -19,6 +20,7 @@ import {
   stripOptionLabel,
   summarizeVerification,
   toVerifiablePair,
+  verificationLines,
   verifyDeckExamples,
   verifyQuizAnswers,
   verifyWorksheetAnswers,
@@ -26,7 +28,9 @@ import {
 } from '../quizVerification.ts';
 import type { ActivitySlide, QuizOutput, WorksheetOutput } from '../ai/AIService.ts';
 
-const quiz = (answers: string[]): QuizOutput => ({
+// `fromBank` defaults on: these fixtures stand for the offline generator's bank
+// items. Pass false for what live AI returns — nothing marks those.
+const quiz = (answers: string[], fromBank = true): QuizOutput => ({
   title: 'اختبار',
   duration: 15,
   totalPoints: answers.length,
@@ -38,20 +42,25 @@ const quiz = (answers: string[]): QuizOutput => ({
     correctAnswer: a,
     points: 1,
     explanation: '',
+    ...(fromBank ? { fromBank: true as const } : {}),
   })),
 });
 
 // The generator never populates a worksheet question's own `answer` field —
 // only the top-level `answerKey`, keyed by 1-based position across the
 // flattened section/question list. Mirror that shape here.
-const worksheet = (answers: string[]): WorksheetOutput => ({
+const worksheet = (answers: string[], fromBank = true): WorksheetOutput => ({
   title: 'ورقة عمل',
   instructions: '',
   sections: [
     {
       type: 'short_answer',
       title: 'القسم الأول',
-      questions: answers.map((_, i) => ({ text: `اشتقاق ${i}`, points: 1 })),
+      questions: answers.map((_, i) => ({
+        text: `اشتقاق ${i}`,
+        points: 1,
+        ...(fromBank ? { fromBank: true as const } : {}),
+      })),
     },
   ],
   answerKey: answers.map((a, i) => ({ num: i + 1, answer: a })),
@@ -150,6 +159,42 @@ describe('verifyWorksheetAnswers', () => {
   });
 });
 
+// «الإجابات من بنك الأسئلة المُراجَع» appeared under a live-AI history
+// worksheet. There is no history bank: the model wrote those answers and
+// nobody reviewed them. `bank` was simply what every unproved answer became.
+describe('an answer not drawn from the bank never claims the bank', () => {
+  const history = ['صح', 'خطأ', 'الإمبراطورية الفارسية'];
+  const declines = async () => BANK_OUTCOME;
+  const down = async (): Promise<VerifyOutcome> => { throw new Error('ECONNREFUSED'); };
+
+  it('leaves a live-AI quiz answer with no outcome, whether the verifier declines or is down', async () => {
+    assert.deepEqual(await verifyQuizAnswers(quiz(history, false), declines), [undefined, undefined, undefined]);
+    assert.deepEqual(await verifyQuizAnswers(quiz(history, false), down), [undefined, undefined, undefined]);
+  });
+
+  it('leaves a live-AI worksheet answer with no outcome, whether the verifier declines or is down', async () => {
+    assert.deepEqual(await verifyWorksheetAnswers(worksheet(history, false), declines), [undefined, undefined, undefined]);
+    assert.deepEqual(await verifyWorksheetAnswers(worksheet(history, false), down), [undefined, undefined, undefined]);
+  });
+
+  it('still credits a live-AI answer the verifier proved', async () => {
+    assert.deepEqual(await verifyQuizAnswers(quiz(['12x^3'], false), async () => proves), [proves]);
+    assert.deepEqual(await verifyWorksheetAnswers(worksheet(['12x^3'], false), async () => proves), [proves]);
+  });
+
+  it('keeps bank items as bank, alongside unmarked ones in the same paper', async () => {
+    const mixed: WorksheetOutput = {
+      ...worksheet(['a', 'b']),
+      sections: [{
+        type: 'short_answer',
+        title: 'القسم الأول',
+        questions: [{ text: 'q1', points: 1, fromBank: true }, { text: 'q2', points: 1 }],
+      }],
+    };
+    assert.deepEqual(await verifyWorksheetAnswers(mixed, declines), [BANK_OUTCOME, undefined]);
+  });
+});
+
 describe('verifyDeckExamples', () => {
   const slide = (type: ActivitySlide['type'], answer?: string): ActivitySlide => ({
     slideNumber: 1,
@@ -234,7 +279,7 @@ describe('toVerifiablePair', () => {
 describe('summarizeVerification', () => {
   it('counts symbolic and bank separately', () => {
     const s = summarizeVerification([proves, BANK_OUTCOME, proves]);
-    assert.deepEqual(s, { total: 3, symbolic: 2, bank: 1, anySymbolic: true });
+    assert.deepEqual(s, { total: 3, symbolic: 2, bank: 1, unreviewed: 0, anySymbolic: true });
   });
 
   it('reports anySymbolic false when nothing was proved', () => {
@@ -247,8 +292,39 @@ describe('summarizeVerification', () => {
 
   it('handles an empty quiz without dividing by zero', () => {
     assert.deepEqual(summarizeVerification([]), {
-      total: 0, symbolic: 0, bank: 0, anySymbolic: false,
+      total: 0, symbolic: 0, bank: 0, unreviewed: 0, anySymbolic: false,
     });
+  });
+
+  it('counts an answer with no outcome as unreviewed, not as bank', () => {
+    const s = summarizeVerification([undefined, BANK_OUTCOME, undefined, proves]);
+    assert.deepEqual(s, { total: 4, symbolic: 1, bank: 1, unreviewed: 2, anySymbolic: true });
+  });
+});
+
+describe('verificationLines', () => {
+  const lines = (o: (VerifyOutcome | undefined)[]) =>
+    verificationLines(summarizeVerification(o)).map(l => l.kind);
+
+  it('a live-AI history paper says only that nobody reviewed it', () => {
+    assert.deepEqual(lines([undefined, undefined]), ['unreviewed']);
+  });
+
+  it('an all-bank paper keeps its bank line', () => {
+    assert.deepEqual(lines([BANK_OUTCOME, BANK_OUTCOME]), ['bank']);
+  });
+
+  it('never captions a paper as bank while any answer is unreviewed', () => {
+    assert.deepEqual(lines([BANK_OUTCOME, undefined]), ['unreviewed']);
+  });
+
+  it('names proofs and the unreviewed rest together', () => {
+    assert.deepEqual(lines([proves, undefined, BANK_OUTCOME]), ['proved', 'unreviewed']);
+    assert.deepEqual(lines([proves, BANK_OUTCOME]), ['proved']);
+  });
+
+  it('says nothing for an empty paper', () => {
+    assert.deepEqual(lines([]), []);
   });
 });
 
