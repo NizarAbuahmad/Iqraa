@@ -33,13 +33,14 @@ import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
-  buildActivityHTML, buildLessonFlowHTML, buildLessonPlanHTML, buildWorksheetHTML,
+  buildActivityHTML, buildLessonFlowHTML, buildLessonPlanHTML,
   copyToClipboard, exportAsPDF, exportAsWord, exportBuiltWord,
-  formatActivityText, formatLessonPlanText, formatWorksheetText,
+  formatActivityText, formatLessonPlanText,
   shareAsText,
 } from '@/services/share';
 import { exportFilename } from '@/services/exportFilename';
 import { quizExports, type QuizCopy } from '@/services/quizExport';
+import { worksheetExports } from '@/services/worksheetExport';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { allPremade } from '@workspace/curriculum/premade';
@@ -63,7 +64,7 @@ export default function WorkspaceViewScreen() {
   const [loadingWord, setLoadingWord] = useState(false);
   // A saved quiz is exported as the student's or the teacher's copy, picked
   // in the export menu — this screen has no answers toggle to decide it.
-  const [quizCopy, setQuizCopy] = useState<QuizCopy>('student');
+  const [docCopy, setDocCopy] = useState<QuizCopy>('student');
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
     useFavorite(item?.id, key => showToast(t(key)));
@@ -157,10 +158,10 @@ export default function WorkspaceViewScreen() {
     const meta = { subject: item.subject, grade: item.grade };
     if (kind === 'lesson') return formatLessonPlanText(content as LessonPlanOutput, item.title, meta, isAr);
     if (kind === 'activity') return formatActivityText(content as ActivityOutput, item.title, meta, isAr);
-    if (kind === 'worksheet') return formatWorksheetText(content as WorksheetOutput, item.title, meta, isAr);
+    if (kind === 'worksheet') return worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy).text;
     if (kind === 'flow') return item.title; // flow exports as PDF only
     if (kind === 'slides' || kind === 'prompt-slides') return formatDeckOutline(content as ClassroomActivity, isAr);
-    return quizExports(content as QuizOutput, item.title, meta, isAr, quizCopy).text;
+    return quizExports(content as QuizOutput, item.title, meta, isAr, docCopy).text;
   };
   /**
    * The book figures for this material's lesson, re-resolved from the saved
@@ -183,10 +184,10 @@ export default function WorkspaceViewScreen() {
     const figures = getExportFigures();
     if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr, figures);
     if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr, figures);
-    if (kind === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr, figures);
+    if (kind === 'worksheet') return worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy, figures).html;
     if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr, figures);
     if (kind === 'slides' || kind === 'prompt-slides') return buildDeckHTML(content as ClassroomActivity, isAr);
-    return quizExports(content as QuizOutput, item.title, meta, isAr, quizCopy, figures).html;
+    return quizExports(content as QuizOutput, item.title, meta, isAr, docCopy, figures).html;
   };
 
   const handleShareText = async () => { await shareAsText(getPlainText(), item.title); };
@@ -199,9 +200,12 @@ export default function WorkspaceViewScreen() {
   const handleWord = async () => {
     setLoadingWord(true);
     try {
-      if (kind === 'quiz' && content) {
-        const quiz = quizExports(content as QuizOutput, item.title, { subject: item.subject, grade: item.grade }, isAr, quizCopy);
-        await exportBuiltWord(quiz.word, exportFilename(item.title));
+      if ((kind === 'quiz' || kind === 'worksheet') && content) {
+        const meta = { subject: item.subject, grade: item.grade };
+        const built = kind === 'worksheet'
+          ? worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy)
+          : quizExports(content as QuizOutput, item.title, meta, isAr, docCopy);
+        await exportBuiltWord(built.word, exportFilename(item.title));
       } else {
         await exportAsWord(getPlainText(), exportFilename(item.title), isAr);
       }
@@ -371,7 +375,7 @@ export default function WorkspaceViewScreen() {
       onCopy={handleCopy}
       onPDF={handlePDF}
       onWord={handleWord}
-      copyChoice={kind === 'quiz' && content ? { value: quizCopy, onChange: setQuizCopy } : undefined}
+      copyChoice={(kind === 'quiz' || kind === 'worksheet') && content ? { value: docCopy, onChange: setDocCopy } : undefined}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}

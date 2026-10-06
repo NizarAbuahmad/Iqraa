@@ -175,6 +175,7 @@ import {
   shareAsText,
 } from '@/services/share';
 import { quizExports, type QuizCopy } from '@/services/quizExport';
+import { worksheetExports } from '@/services/worksheetExport';
 import { buildClassDeck } from '@/services/startClass';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
@@ -1455,12 +1456,14 @@ export default function IqraScreen() {
   const [exportText, setExportText] = useState('');
   const [exportVisible, setExportVisible] = useState(false);
   /**
-   * The quiz behind an export, when the message holds one. A quiz exports as
-   * an exam paper (`quizExports`) in the copy picked in the menu, rather than
-   * as `exportText` — which always carried the key.
+   * The quiz or worksheet behind an export, when the message holds one. Each
+   * exports as a paper (`quizExports` / `worksheetExports`) in the copy picked
+   * in the menu, rather than as `exportText` — which always carried the key.
    */
-  const [exportQuiz, setExportQuiz] = useState<{
-    quiz: Extract<ChatArtifactData, { kind: 'quiz' }>['quiz'];
+  const [exportDoc, setExportDoc] = useState<(
+    | { kind: 'quiz'; quiz: Extract<ChatArtifactData, { kind: 'quiz' }>['quiz'] }
+    | { kind: 'worksheet'; worksheet: Extract<ChatArtifactData, { kind: 'worksheet' }>['worksheet'] }
+  ) & {
     title: string;
     meta: { subject: string; grade: string };
     isAr: boolean;
@@ -1591,17 +1594,23 @@ export default function IqraScreen() {
     setExportText(documentTextFor(message));
     const data = message.artifactData;
     const meta = message.artifactMeta;
-    setExportQuiz(data?.kind === 'quiz' && meta
-      ? { quiz: data.quiz, title: meta.title, meta: { subject: meta.subject, grade: meta.grade }, isAr: (meta.lang ?? lang) === 'ar' }
-      : null);
+    const common = meta && {
+      title: meta.title, meta: { subject: meta.subject, grade: meta.grade }, isAr: (meta.lang ?? lang) === 'ar',
+    };
+    setExportDoc(
+      common && data?.kind === 'quiz' ? { kind: 'quiz', quiz: data.quiz, ...common }
+        : common && data?.kind === 'worksheet' ? { kind: 'worksheet', worksheet: data.worksheet, ...common }
+          : null,
+    );
     setExportCopy('student');
     setExportVisible(true);
   }, [documentTextFor, lang]);
 
-  /** The quiz's exam paper for the export menu — built on press, not per render. */
-  const exportQuizDocs = () => exportQuiz
-    ? quizExports(exportQuiz.quiz, exportQuiz.title, exportQuiz.meta, exportQuiz.isAr, exportCopy)
-    : null;
+  /** The quiz's or worksheet's paper for the export menu — built on press, not per render. */
+  const exportDocs = () => !exportDoc ? null
+    : exportDoc.kind === 'quiz'
+      ? quizExports(exportDoc.quiz, exportDoc.title, exportDoc.meta, exportDoc.isAr, exportCopy)
+      : worksheetExports(exportDoc.worksheet, exportDoc.title, exportDoc.meta, exportDoc.isAr, exportCopy);
 
   const handleEditArtifact = useCallback((messageId: string, next: ChatArtifactData) => {
     setMessages(prev =>
@@ -3947,20 +3956,20 @@ export default function IqraScreen() {
         isRTL={isRTL}
         loadingPDF={loadingPDF}
         loadingWord={loadingWord}
-        copyChoice={exportQuiz ? { value: exportCopy, onChange: setExportCopy } : undefined}
+        copyChoice={exportDoc ? { value: exportCopy, onChange: setExportCopy } : undefined}
         onShare={async () => {
           setExportVisible(false);
-          await shareAsText(exportQuizDocs()?.text ?? exportText, currentLessonView?.topic ?? 'Iqrra');
+          await shareAsText(exportDocs()?.text ?? exportText, currentLessonView?.topic ?? 'Iqrra');
         }}
         onCopy={async () => {
           setExportVisible(false);
-          await copyToClipboard(exportQuizDocs()?.text ?? exportText);
+          await copyToClipboard(exportDocs()?.text ?? exportText);
           showToast(t('copiedToClipboard'));
         }}
         onPDF={async () => {
           setLoadingPDF(true);
           try {
-            const html = exportQuizDocs()?.html
+            const html = exportDocs()?.html
               ?? `<html><body dir="${isRTL ? 'rtl' : 'ltr'}" style="font-family: sans-serif; padding: 24px; white-space: pre-wrap;">${exportText.replace(/</g, '&lt;')}</body></html>`;
             await exportAsPDF(html, `iqra-${Date.now()}.pdf`);
           } finally {
@@ -3971,8 +3980,8 @@ export default function IqraScreen() {
         onWord={async () => {
           setLoadingWord(true);
           try {
-            const quiz = exportQuizDocs();
-            if (quiz) await exportBuiltWord(quiz.word, `iqra-${Date.now()}`);
+            const built = exportDocs();
+            if (built) await exportBuiltWord(built.word, `iqra-${Date.now()}`);
             else await exportAsWord(exportText, `iqra-${Date.now()}`, isRTL);
           } finally {
             setLoadingWord(false);
