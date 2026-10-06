@@ -24,6 +24,7 @@ import {
   savedAgo,
   PREP_ROWS,
   prepSummary,
+  missingPrepView,
   sameTopic,
   withoutBoardTools,
   type MaterialLike,
@@ -186,6 +187,40 @@ describe('rows marked not needed', () => {
     assert.equal(prepLessonKey(TOPIC, 'L1'), 'L1');
     assert.equal(prepLessonKey(' تَرْكِيبُ الاقترانات ', null), prepLessonKey('تركيب الاقترانات', undefined));
     assert.equal(prepLessonKey('', null), null);
+  });
+});
+
+describe('missingPrepView — the chat board shows only what is missing', () => {
+  it('keeps the missing rows in board order and leaves out the made and the skipped', () => {
+    const rows = buildPrepBoard(
+      [material({ type: 'lesson' }), material({ type: 'activity' })],
+      TOPIC,
+      null,
+      ['slides'],
+    );
+    const view = missingPrepView(rows);
+    assert.deepEqual(view.missing.map(r => r.type), ['worksheet', 'quiz']);
+    assert.deepEqual(view.skipped.map(r => r.type), ['slides']);
+    assert.equal(view.readyCount, 2);
+  });
+
+  it('has nothing missing once every needed row is made', () => {
+    const rows = buildPrepBoard(
+      [material({ type: 'lesson' }), material({ type: 'worksheet' }), material({ type: 'quiz' })],
+      TOPIC,
+      null,
+      ['slides', 'activity'],
+    );
+    const view = missingPrepView(rows);
+    assert.equal(view.missing.length, 0);
+    assert.equal(view.readyCount, 3);
+    assert.equal(view.skipped.length, 2);
+  });
+
+  it('lists all five as missing for a lesson with nothing made', () => {
+    const view = missingPrepView(buildPrepBoard([], TOPIC));
+    assert.equal(view.missing.length, 5);
+    assert.equal(view.readyCount, 0);
   });
 });
 

@@ -53,6 +53,23 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **The chat's readiness board folds to one line** (2026-10-06). On a phone the
+  empty chat showed all five «جاهزية الدرس» rows, filling most of the screen
+  before a word was typed. It now opens as one tappable line («جاهزية الدرس ·
+  2 من 5 جاهزة ⌄»); unfolded it lists only the rows still to make
+  (`missingPrepView` in `services/lessonBoard.ts`), a «المواد الجاهزة (n)» link
+  to the library for the made ones, «كل ما يحتاجه الدرس جاهز» when nothing is
+  missing, and a small restore chip per skipped row — the phone has no other
+  board to bring one back from. Open/folded is remembered per user
+  (`@iqra_prep_board_open_v1`, read on `user?.id` because a reload mounts the
+  chat before the session restores — the first version read the unscoped key
+  and forgot). The desktop home board is unchanged: it passes no `fold`.
+  **Verified in the web build** (Expo web, `/auth/me` and `/workspace/items`
+  stubbed, Chromium at 390×844 in Arabic): folded by default; unfolds to
+  worksheet/quiz/slides with a lesson plan and activity saved; reload keeps it
+  open; skipping «عرض الحصة» turns it into a chip and the count to «2 من 4»,
+  the chip restores it; with all five saved it shows the all-ready line and
+  «المواد الجاهزة (5)»; the link opens `/workspace?q=…`. Not checked on a device.
 - **The chat «+» lists only what the chat does itself** (2026-10-06). It used to
   show the whole catalog, so most rows (slides, class hub, class challenge,
   library, evaluations, parent message) left the conversation from a button that
