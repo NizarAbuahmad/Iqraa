@@ -70,12 +70,13 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'civic-education:grade-8',
   'physical-education:grade-8',
   // creative-arts joined MVP_SUBJECT_IDS the same day as its only book
-  // (Grade 8). No Grade 9 book is expected — NCCD does not publish one for
-  // this subject at grade-9, so this one is permanent, not a gap to close.
+  // (Grade 8).
   // creative-arts:grade-10 closed 2026-09-20 — SUBJECTS.grades extended for
   // grade-10 (one book, no semester, 23 lessons not the usual 30) — see
   // g10CreativeArts.ts.
-  'creative-arts:grade-9',
+  // creative-arts:grade-9 closed 2026-10-06 — NCCD does publish one (it was
+  // wrongly assumed absent): 25 lessons (7 + 10 + 8), listed on nccd.gov.jo as
+  // «الفصل الأول» though the book prints no semester — see g9CreativeArts.ts.
   // vocational-education:grade-9 closed 2026-09-20 — SUBJECTS.grades extended
   // for grade-9 (was grade-4/6/7/8 only) — see g9VocationalSem1.ts.
   'vocational-education:grade-10',
