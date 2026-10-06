@@ -1,6 +1,6 @@
 import { Router, type Request } from "express";
 import { signupSource } from "../lib/adminMetrics.js";
-import { termsAcceptance } from "../lib/termsAcceptance.ts";
+import { termsAcceptance, termsReacceptance } from "../lib/termsAcceptance.ts";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -487,6 +487,10 @@ router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, asyn
         subjectIds: verified.subjectIds,
         teachingAssignments: verified.teachingAssignments,
         createdAt: verified.createdAt,
+        // Which wording this account accepted; the app compares it with the
+        // one it carries (`needsTermsAcceptance`). Served at every sign-in, not
+        // only /me, so the gate does not wait for the next cold start.
+        termsVersion: verified.termsVersion,
         // This is the call that hands back the session register used to, so
         // it owes the client the same field login does — without it a
         // freshly verified parent/student arrives with hasRosterLink absent
@@ -1190,6 +1194,7 @@ router.post("/login", loginLimiter, async (req, res) => {
         teachingAssignments: user.teachingAssignments,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
+        termsVersion: user.termsVersion,
         ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
       },
     });
@@ -1444,6 +1449,7 @@ router.post("/google", googleLimiter, async (req, res) => {
         teachingAssignments: user.teachingAssignments,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
+        termsVersion: user.termsVersion,
         ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
       },
     });
@@ -1640,6 +1646,8 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       teachingAssignments: user.teachingAssignments,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
+      termsVersion: user.termsVersion,
+      termsAcceptedAt: user.termsAcceptedAt,
       ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
     });
   } catch (err) {
@@ -1730,6 +1738,7 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
       subjectIds: updated.subjectIds,
       teachingAssignments: updated.teachingAssignments,
       createdAt: updated.createdAt,
+      termsVersion: updated.termsVersion,
     });
   } catch (err) {
     logger.error({ err }, "update profile failed");
@@ -1931,6 +1940,69 @@ router.delete(
     }
   },
 );
+
+/**
+ * POST /auth/accept-terms
+ *
+ * An existing account accepting the current terms of use and privacy policy —
+ * after the wording changed, or because it never had a record (every account
+ * from before 2026-10-03). New accounts accept at sign-up instead, and are
+ * refused without it (`termsAcceptance`).
+ *
+ * The wording lives in the app, so the client says which version it showed;
+ * `termsReacceptance` checks it is a plausible date, not in the future and not
+ * older than what the account already holds, and keeps the first timestamp if
+ * the same version arrives twice. The update is conditional on the version
+ * read a moment ago, so two devices accepting at once record one acceptance.
+ *
+ * Returns the stored record, whether or not it changed, so a client that was
+ * behind learns the version it should be comparing against.
+ */
+router.post("/accept-terms", authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    const [user] = await db
+      .select({ termsVersion: users.termsVersion, termsAcceptedAt: users.termsAcceptedAt })
+      .from(users)
+      .where(eq(users.id, req.user!.id))
+      .limit(1);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const decision = termsReacceptance(req.body, user.termsVersion);
+    if (!decision.ok) {
+      res.status(decision.status).json({ error: decision.error, code: decision.code });
+      return;
+    }
+    if (!decision.changed) {
+      res.json({ termsVersion: user.termsVersion, termsAcceptedAt: user.termsAcceptedAt, changed: false });
+      return;
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({ termsAcceptedAt: decision.termsAcceptedAt, termsVersion: decision.termsVersion })
+      .where(and(eq(users.id, req.user!.id), eq(users.termsVersion, user.termsVersion)))
+      .returning({ termsVersion: users.termsVersion, termsAcceptedAt: users.termsAcceptedAt });
+    if (!updated) {
+      // Another request got there first; report what is stored now.
+      const [now] = await db
+        .select({ termsVersion: users.termsVersion, termsAcceptedAt: users.termsAcceptedAt })
+        .from(users)
+        .where(eq(users.id, req.user!.id))
+        .limit(1);
+      res.json({ termsVersion: now?.termsVersion ?? "", termsAcceptedAt: now?.termsAcceptedAt ?? null, changed: false });
+      return;
+    }
+
+    logger.info({ userId: req.user!.id, from: user.termsVersion, to: updated.termsVersion }, "terms accepted");
+    res.json({ termsVersion: updated.termsVersion, termsAcceptedAt: updated.termsAcceptedAt, changed: true });
+  } catch (err) {
+    logger.error({ err }, "accept terms failed");
+    res.status(500).json({ error: "Failed to record acceptance" });
+  }
+});
 
 /**
  * POST /auth/roster-consent

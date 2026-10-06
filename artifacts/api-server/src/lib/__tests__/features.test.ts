@@ -10,7 +10,7 @@
 import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { studentAccountsEnabled } from "../features.ts";
+import { chatAllowedFor, studentAccountsEnabled, studentChatEnabled } from "../features.ts";
 
 const original = process.env.STUDENT_ACCOUNTS;
 
@@ -43,5 +43,37 @@ describe("studentAccountsEnabled", () => {
     assert.equal(studentAccountsEnabled(), false);
     process.env.STUDENT_ACCOUNTS = "true";
     assert.equal(studentAccountsEnabled(), true);
+  });
+});
+
+describe("student AI chat", () => {
+  const originalChat = process.env.STUDENT_CHAT;
+  afterEach(() => {
+    if (originalChat === undefined) delete process.env.STUDENT_CHAT;
+    else process.env.STUDENT_CHAT = originalChat;
+  });
+
+  it("is off unless STUDENT_CHAT is exactly 'true'", () => {
+    delete process.env.STUDENT_CHAT;
+    assert.equal(studentChatEnabled(), false);
+    for (const value of ["false", "1", "yes", "TRUE", "", " true "]) {
+      process.env.STUDENT_CHAT = value;
+      assert.equal(studentChatEnabled(), false, JSON.stringify(value));
+    }
+    process.env.STUDENT_CHAT = "true";
+    assert.equal(studentChatEnabled(), true);
+  });
+
+  it("refuses a student by default and nobody else", () => {
+    delete process.env.STUDENT_CHAT;
+    assert.equal(chatAllowedFor("student"), false);
+    for (const role of ["teacher", "school_admin", "system_admin", "parent"]) {
+      assert.equal(chatAllowedFor(role), true, role);
+    }
+  });
+
+  it("lets a student back in when it is switched on", () => {
+    process.env.STUDENT_CHAT = "true";
+    assert.equal(chatAllowedFor("student"), true);
   });
 });

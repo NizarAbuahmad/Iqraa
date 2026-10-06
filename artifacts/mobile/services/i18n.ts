@@ -801,6 +801,13 @@ const translations = {
     version: 'الإصدار',
     privacyPolicy: 'سياسة الخصوصية',
     termsOfService: 'شروط الخدمة',
+    // «أوافق» for an account that has to accept the terms again (/accept-terms).
+    acceptTermsTitle: 'تحديث شروط الاستخدام وسياسة الخصوصية',
+    acceptTermsDesc: (updated: string) =>
+      `للمتابعة في اقرأ، راجع شروط الاستخدام وسياسة الخصوصية ووافق عليهما. آخر تحديث: ${updated}.`,
+    acceptTermsTick: 'قرأتُ شروط الاستخدام وسياسة الخصوصية وأوافق عليهما.',
+    acceptTermsButton: 'أوافق وأتابع',
+    acceptTermsFailed: 'تعذّر تسجيل موافقتك. تحقّق من الاتصال وحاول مرة أخرى.',
 
     // Account deletion — Apple 5.1.1(v) and Google Play both require this
     // path to exist inside the app.
@@ -2848,6 +2855,12 @@ const translations = {
     version: 'Version',
     privacyPolicy: 'Privacy Policy',
     termsOfService: 'Terms of Service',
+    acceptTermsTitle: 'Updated terms of use and privacy policy',
+    acceptTermsDesc: (updated: string) =>
+      `To keep using Iqra, review the terms of use and privacy policy and accept them. Last updated: ${updated}.`,
+    acceptTermsTick: 'I have read the terms of use and privacy policy and I accept them.',
+    acceptTermsButton: 'Accept and continue',
+    acceptTermsFailed: 'Could not record your acceptance. Check your connection and try again.',
 
     // Account deletion — Apple 5.1.1(v) and Google Play both require this
     // path to exist inside the app.

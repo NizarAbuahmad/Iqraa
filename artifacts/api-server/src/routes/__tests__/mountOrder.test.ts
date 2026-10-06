@@ -222,6 +222,17 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
   });
 
+  it("guards «أوافق» for an existing account behind a token", async () => {
+    // Not public like /auth/roster-consent: it writes a consent record against
+    // an account, so an anonymous call has nobody to record it for.
+    const res = await fetch(`${base}/auth/accept-terms`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ termsVersion: "2026-10-05" }),
+    });
+    assert.equal(res.status, 401, "/auth/accept-terms must require a token");
+  });
+
   it("mounts both claim-code routes inside the roster's guarded prefix", async () => {
     // The read route is new. Had it landed outside `router.use(["/classes",
     // "/students"], …)` it would answer 404 rather than 401 — and a teacher's

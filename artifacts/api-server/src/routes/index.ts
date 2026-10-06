@@ -1,5 +1,6 @@
-import { Router, type IRouter, type Request } from "express";
-import { authMiddleware, requireRole, TEACHER_ROLES } from "../middlewares/auth.js";
+import { Router, type IRouter, type NextFunction, type Request, type Response } from "express";
+import { authMiddleware, requireRole, TEACHER_ROLES, type AuthenticatedRequest } from "../middlewares/auth.js";
+import { chatAllowedFor } from "../lib/features.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import healthRouter from "./health";
 import chatRouter from "./chat";
@@ -98,7 +99,16 @@ router.use(studentExamsRouter);
 // the middleware at "/" and reproduces the original bug, answering 401 for
 // paths no router owns. The prefixes below cover every route these four
 // declare: /chat, /generate/*, /verify/*, and /media/*.
-router.use("/chat", authMiddleware, chatLimiter);
+router.use("/chat", authMiddleware, (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  // No AI chat for students for now — see studentChatEnabled(). Before the
+  // limiter, so a refused call does not spend a student's rate allowance, and
+  // with a code so the app can say why in Arabic.
+  if (!chatAllowedFor(req.user?.role)) {
+    res.status(403).json({ error: "The assistant is not available for student accounts", code: "student_chat_off" });
+    return;
+  }
+  next();
+}, chatLimiter);
 // /generate produces teacher materials from a teacher's own class/roster
 // context, so — unlike /chat — it also requires the teacher role, not just
 // any authenticated user.
