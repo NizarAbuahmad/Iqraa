@@ -15,6 +15,7 @@ import {
   type SessionArtifact,
   type TeachingAction,
 } from './ai/teachingAssistant.ts';
+import { releasedVirtualLab, type VirtualLabSheet } from '@workspace/curriculum';
 import { DEMO_CONTINUE } from './continueTeaching.ts';
 import { stripScopePhrases, topicFromQuery } from './ai/artifactTopic.ts';
 import { artifactFromAsk, isBareTeachAsk } from './ai/askVocabulary.ts';
@@ -74,6 +75,8 @@ export type LessonSuggestion = {
   promptEn: string;
   toolType?: SessionArtifact;
   lessonId?: string;
+  /** Not a prompt to send: the chip posts something itself (see iqra.tsx). */
+  action?: 'virtual-lab';
 };
 
 export type ResourceChip = {
@@ -677,6 +680,7 @@ export function buildLessonSuggestions(
   lang: 'ar' | 'en',
   hasDocs: boolean,
   prep: { saved?: readonly string[]; skipped?: readonly string[] } = {},
+  opts: { labs?: readonly VirtualLabSheet[]; dev?: boolean } = {},
 ): LessonSuggestion[] {
   const isAr = lang === 'ar';
   const topic = isAr
@@ -697,6 +701,15 @@ export function buildLessonSuggestions(
       toolType: c.toolType, lessonId,
     };
   });
+
+  // Only a lab lesson with a reviewed sheet gets this; it leads because it is
+  // the lesson's own material, not a step in the preparation order.
+  if (releasedVirtualLab(lessonId ?? '', { labs: opts.labs, dev: opts.dev })) {
+    out.unshift({
+      id: 'virtual-lab', emoji: '🔬', labelAr: 'المختبر الافتراضي', labelEn: 'Virtual lab',
+      promptAr: '', promptEn: '', lessonId, action: 'virtual-lab',
+    });
+  }
 
   const last = memory.lastGeneratedResource;
   if (last === 'quiz') {

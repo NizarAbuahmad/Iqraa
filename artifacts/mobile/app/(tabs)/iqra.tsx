@@ -106,6 +106,7 @@ import {
   type ToolDef,
 } from '@/services/toolCatalog';
 import { trackEvent } from '@/services/analytics';
+import { virtualLabChatMessage, virtualLabFor } from '@/services/virtualLab';
 import {
   addAndProcessFiles,
   clearSessionDocuments,
@@ -3039,6 +3040,20 @@ export default function IqraScreen() {
   );
 
   const handleLessonSuggestion = useCallback((s: LessonSuggestion) => {
+    // The lab sheet is reviewed content, not something to generate: post it.
+    if (s.action === 'virtual-lab' && s.lessonId) {
+      const lab = virtualLabFor(s.lessonId, { dev: __DEV__ });
+      const ctx = resolveLessonPrepContext(s.lessonId, 'ar');
+      if (lab && ctx) {
+        const m = virtualLabChatMessage(lab.sheet, lab.resource, ctx);
+        trackEvent('virtual_lab_opened', { lessonId: s.lessonId, surface: 'chat' });
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(), role: 'assistant', text: m.text,
+          artifactData: m.data, artifactProse: m.prose, artifactMeta: m.meta, timestamp: new Date(),
+        }]);
+        return;
+      }
+    }
     const prompt = lang === 'ar' ? s.promptAr : s.promptEn;
     if (s.toolType) {
       // Recording happens after the reply; prompt carries the intent
@@ -3239,6 +3254,7 @@ export default function IqraScreen() {
     lang as 'ar' | 'en',
     sessionDocs.some(d => d.status === 'ready'),
     chipsShareCardLesson ? { saved: savedForLesson, skipped: prepSkips } : {},
+    { dev: __DEV__ },
   );
   const suggestions = lessonSuggestions.length > 0
     ? []

@@ -35,6 +35,25 @@ export function virtualLabFor(lessonId: string, opts: { dev: boolean }): { sheet
 }
 
 /**
+ * The chat message for the lab chip: the worksheet as the card, and the link
+ * and credit in the prose around it, so they survive when the card is not
+ * what gets copied.
+ */
+export function virtualLabChatMessage(
+  sheet: VirtualLabSheet, resource: ExternalResource,
+  ctx: { topic: string; subjectLabel: string; gradeName: string },
+) {
+  const worksheet = virtualLabWorksheet(sheet, resource, ctx.topic);
+  const prose = `هذه ورقة المختبر الافتراضي لدرس «${ctx.topic}». يفتح الطلبة المحاكاة على موقعها:\n${resource.sourceUrl}\n${resource.attribution}`;
+  return {
+    text: prose,
+    prose,
+    data: { kind: 'worksheet' as const, worksheet },
+    meta: { title: worksheet.title, subject: ctx.subjectLabel, grade: ctx.gradeName, lang: 'ar' as const },
+  };
+}
+
+/**
  * What «احفظ في موادي» stores. It is an ordinary worksheet — so view, export,
  * class filing and the student/teacher copy need no new branch — with
  * `materialKind` left in formState to tell it apart, and the `lab` block kept

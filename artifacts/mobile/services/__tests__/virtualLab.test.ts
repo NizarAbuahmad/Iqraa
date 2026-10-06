@@ -1,7 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ExternalResource, VirtualLabSheet } from '@workspace/curriculum';
-import { virtualLabFor, virtualLabSavePayload, virtualLabWorksheet } from '../virtualLab.ts';
+import { virtualLabChatMessage, virtualLabFor, virtualLabSavePayload, virtualLabWorksheet } from '../virtualLab.ts';
+import { buildLessonSuggestions, pinLesson } from '../lessonCopilot.ts';
+import { emptyChatSessionMemory } from '../ai/teachingAssistant.ts';
+import { getLessonById } from '../knowledgeBase.ts';
 
 const sim: ExternalResource = {
   id: 'phet-test', lessonIds: ['kbl-chem-s1-nccd-u1_lab'], gradeIds: ['grade-10'], subjectId: 'chemistry',
@@ -58,5 +61,34 @@ describe('virtualLabSavePayload', () => {
   });
   it('labels it with the lesson, subject and grade', () => {
     assert.deepEqual([p.title, p.topic, p.subject, p.grade, p.language], [ws.title, 'الطيف الذري', 'الكيمياء', 'الصف العاشر', 'ar']);
+  });
+});
+
+describe('the virtual lab chip', () => {
+  const lab = getLessonById('kbl-chem-s1-nccd-u1_lab')!;
+  const onLab = pinLesson(emptyChatSessionMemory(), lab, 'hard');
+  const released = { ...sheet, reviewedBy: 'أ. معلم', reviewedAt: '2026-10-10' };
+  it('leads the chips on a lab lesson with a released sheet', () => {
+    const chips = buildLessonSuggestions(onLab, 'ar', false, {}, { labs: [released] });
+    assert.equal(chips[0]!.action, 'virtual-lab');
+    assert.equal(chips[0]!.lessonId, lab.id);
+  });
+  it('is absent while the sheet is unreviewed', () => {
+    assert.ok(!buildLessonSuggestions(onLab, 'ar', false, {}, { labs: [sheet] }).some(c => c.action === 'virtual-lab'));
+  });
+  it('is absent on an ordinary lesson', () => {
+    const other = pinLesson(emptyChatSessionMemory(), getLessonById('kbl-math-s2-nccd-u5_l4')!, 'hard');
+    assert.ok(!buildLessonSuggestions(other, 'ar', false, {}, { labs: [released] }).some(c => c.action === 'virtual-lab'));
+  });
+});
+
+describe('virtualLabChatMessage', () => {
+  const m = virtualLabChatMessage(sheet, sim, { topic: 'الطيف الذري', subjectLabel: 'الكيمياء', gradeName: 'الصف العاشر' });
+  it('is a worksheet message that carries the lab', () => {
+    assert.equal(m.data.kind, 'worksheet');
+    assert.equal(m.data.worksheet.lab?.url, sim.sourceUrl);
+  });
+  it('puts the link and the credit in the conversation around it', () => {
+    assert.ok(m.prose.includes(sim.sourceUrl) && m.prose.includes(sim.attribution));
   });
 });

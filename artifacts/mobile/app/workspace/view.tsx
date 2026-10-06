@@ -24,6 +24,8 @@ import { MATERIAL_COLOR, MATERIAL_EDIT_ROUTE, MATERIAL_FILL } from '@/constants/
 import { materialSubjectId } from '@/services/contentLanguage';
 import { redoesInEnglish } from '@/hooks/useEnglishRefresh';
 import { getT } from '@/services/i18n';
+import { openExternal } from '@/services/externalLinks';
+import { trackEvent } from '@/services/analytics';
 import { activityTypeLabel } from '@/constants/activityType';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
@@ -570,6 +572,25 @@ function WorksheetView({ ws, colors, isRTL, t, accent }: {
       <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 16, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
         {ws.instructions}
       </Text>
+      {ws.lab && (
+        <ContentSection title={t('virtualLabTitle')} icon="flask-outline" isRTL={isRTL} accent={accent} colors={colors}>
+          <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 6, textAlign: isRTL ? 'right' : 'left' }}>{ws.lab.simName}</Text>
+          <Pressable
+            onPress={() => { trackEvent('virtual_lab_opened', { surface: 'workspace' }); void openExternal(ws.lab!.url); }}
+            accessibilityRole="link"
+            accessibilityLabel={`${t('virtualLabOpen')} — ${ws.lab.attribution}`}
+          >
+            <Text style={{ color: accent, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textDecorationLine: 'underline', textAlign: isRTL ? 'right' : 'left' }}>{ws.lab.url}</Text>
+          </Pressable>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>{ws.lab.attribution}</Text>
+          {ws.lab.steps.map((step, i) => (
+            <View key={i} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 4, alignItems: 'flex-start' }}>
+              <Text style={{ color: accent, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, width: 22 }}>{i + 1}.</Text>
+              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>{step}</Text>
+            </View>
+          ))}
+        </ContentSection>
+      )}
       {ws.workedExample && (
         <ContentSection title={t('workedExampleTitle')} icon="create-outline" isRTL={isRTL} accent={accent} colors={colors}>
           <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 6, textAlign: isRTL ? 'right' : 'left' }}>{ws.workedExample.problem}</Text>
