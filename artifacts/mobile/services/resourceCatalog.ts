@@ -167,7 +167,10 @@ export function filterResources(items: ResourceItem[], filter: ResourceFilter): 
     if (filter.gradeId && item.gradeId && item.gradeId !== filter.gradeId) return false;
     if (filter.subjectId && item.subjectId && item.subjectId !== filter.subjectId) return false;
     if (query) {
-      const haystack = normalizeArabic(`${item.titleAr} ${item.titleEn} ${item.description ?? ''}`);
+      // A book code is located by its printed page, so «صفحة ٣٥», «page 35»
+      // and a bare «35» all find it; digits fold to Latin in `normalizeArabic`.
+      const page = item.page === undefined ? '' : `صفحة ${item.page} page ${item.page}`;
+      const haystack = normalizeArabic(`${item.titleAr} ${item.titleEn} ${item.description ?? ''} ${page}`);
       if (!haystack.includes(query)) return false;
     }
     return true;
