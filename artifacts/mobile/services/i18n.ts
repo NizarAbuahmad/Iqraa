@@ -369,6 +369,9 @@ const translations = {
     resourcesCount: (n: number) => arCountPhrase(n, 'مورد', 'موردان', 'موارد'),
     resourcesEmpty: 'لا توجد موارد تطابق هذا الاختيار. جرّب صفًّا أو مادة أو نوعًا آخر.',
     resourcesAllLessons: 'كل الدروس',
+    resourcesSearchPlaceholder: 'ابحث في المكتبة…',
+    resourcesSearchClear: 'مسح البحث',
+    resourcesSearchEmpty: (q: string) => `لا نتائج لـ «${q}». جرّب كلمة أخرى أو امسح البحث.`,
     sectionPremadeSheets: 'أوراق عمل جاهزة',
     sectionActivities: 'أنشطة وألعاب صفّية',
     sectionCuratedMedia: 'وسائط المنهج',
@@ -1143,6 +1146,11 @@ const translations = {
       `هذه الورقة أقصر مما طلبت: لا يتوفر لهذا الدرس إلا ${arCountPhrase(produced, 'سؤال واحد', 'سؤالان', 'أسئلة')} من أصل ${requested}، ولم نملأ الباقي بأسئلة عامة لا تخص الدرس.`,
     levelsPartial: 'تعذّر بناء بعض المستويات. المستويات التي اكتملت معروضة؛ جرّب الباقي لاحقًا.',
     quizVerifiedNone: 'لم يتحقّق المُحقِّق الرمزي من أي إجابة — الإجابات من بنك الأسئلة المُراجَع',
+    // Live-AI answers, and anything else not drawn from the bank: nothing and
+    // nobody checked them, so the teacher has to.
+    answersUnreviewedAll: 'لم يراجع أحدٌ هذه الإجابات — راجعها بنفسك قبل التوزيع',
+    answersUnreviewedSome: (n: number, total: number) =>
+      `لم يراجع أحدٌ ${n} من أصل ${total} إجابة — راجعها بنفسك قبل التوزيع`,
     examplesAiUnverified: 'كتب الذكاء الاصطناعي المثال ولم يتحقّق أحد من إجابته — راجعها قبل العرض',
     allStudentsAnswer: 'ارفع يدك للإجابة!',
     activityEscapeTitle: 'تحدي الهروب',
@@ -2437,6 +2445,9 @@ const translations = {
     resourcesCount: (n: number) => `${n} resource${n === 1 ? '' : 's'}`,
     resourcesEmpty: 'Nothing matches this selection. Try another grade, subject or type.',
     resourcesAllLessons: 'All lessons',
+    resourcesSearchPlaceholder: 'Search the library…',
+    resourcesSearchClear: 'Clear search',
+    resourcesSearchEmpty: (q: string) => `No results for “${q}”. Try another word or clear the search.`,
     sectionPremadeSheets: 'Ready-made worksheets',
     sectionActivities: 'Class activities and games',
     sectionCuratedMedia: 'Curriculum media',
@@ -3172,6 +3183,9 @@ const translations = {
       `This paper is shorter than you asked for: the lesson only has ${produced} ${produced === 1 ? 'question' : 'questions'} out of ${requested}, and we didn't fill the rest with generic questions that aren't about it.`,
     levelsPartial: 'Some levels could not be built. The ones that finished are shown; try the rest again later.',
     quizVerifiedNone: 'No answer was symbolically verified — keys come from the reviewed bank',
+    answersUnreviewedAll: 'Nobody has reviewed these answers — check them yourself before handing out',
+    answersUnreviewedSome: (n: number, total: number) =>
+      `Nobody has reviewed ${n} of ${total} answers — check them yourself before handing out`,
     examplesAiUnverified: "The example was written by AI and nobody has checked its answer — review it before class",
     allStudentsAnswer: 'Raise your hand to answer',
     activityEscapeTitle: 'Escape Challenge',
