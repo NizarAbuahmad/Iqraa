@@ -3267,8 +3267,19 @@ export default function IqraScreen() {
    * composer once it isn't — the same chips either way, so "حضّر خطة الدرس"
    * does not become a different affordance halfway through a conversation.
    */
-  const starterChips = (variant: 'intro' | 'composer') => {
-    const items = lessonSuggestions.length > 0
+  // The lab chip is the lesson's own material, so it must stay reachable where
+  // the starter row is not shown: under the readiness board, and once a reply's
+  // follow-up chips have replaced the starter row.
+  const labChip = lessonSuggestions.find(s => s.action === 'virtual-lab');
+  const starterChips = (variant: 'intro' | 'composer', labOnly = false) => {
+    if (labOnly && !labChip) return null;
+    const items = labOnly && labChip
+      ? [{
+        key: labChip.id,
+        label: `${labChip.emoji} ${lang === 'ar' ? labChip.labelAr : labChip.labelEn}`,
+        onPress: () => handleLessonSuggestion(labChip),
+      }]
+      : lessonSuggestions.length > 0
       ? lessonSuggestions.map(sug => ({
         key: sug.id,
         label: `${sug.emoji} ${lang === 'ar' ? sug.labelAr : sug.labelEn}`,
@@ -3665,9 +3676,12 @@ export default function IqraScreen() {
             // Only while the thread is still just the intro — otherwise the
             // same three chips appear twice on one screen.
             // Nor the lesson chips under the readiness board: its rows already are
-            // «حضّر خطة الدرس» / «أنشئ ورقة عمل», the same actions twice.
+            // «حضّر خطة الدرس» / «أنشئ ورقة عمل», the same actions twice — but
+            // the lab chip is not one of those rows, so it stays, alone.
             introActions={
-              item.id === 'welcome' && messages.length <= 1 && !(introPrepBoard && lessonSuggestions.length > 0) ? starterChips('intro') : null
+              item.id === 'welcome' && messages.length <= 1
+                ? (introPrepBoard && lessonSuggestions.length > 0 ? starterChips('intro', true) : starterChips('intro'))
+                : null
             }
             introBoard={item.id === 'welcome' ? introPrepBoard : null}
             t={t}
@@ -3744,6 +3758,24 @@ export default function IqraScreen() {
             { flexDirection: isRTL ? 'row-reverse' : 'row' },
           ]}
         >
+          {labChip ? (
+            <Pressable
+              key={labChip.id}
+              onPress={() => handleLessonSuggestion(labChip)}
+              style={({ pressed }) => [
+                styles.docActionChip,
+                {
+                  borderColor: colors.primary + '55',
+                  backgroundColor: colors.secondary,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}
+            >
+              <Text style={{ fontFamily: 'ReadexPro_500Medium', fontSize: 12, color: colors.foreground }}>
+                {`${labChip.emoji} ${lang === 'ar' ? labChip.labelAr : labChip.labelEn}`}
+              </Text>
+            </Pressable>
+          ) : null}
           {ephemeralSuggestions.map(suggestion => (
             <Pressable
               key={suggestion.id}
