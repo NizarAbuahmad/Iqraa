@@ -728,6 +728,70 @@ requests captured: a 6-word message → `out_of_scope`, `words: 6`, no `ask`;
 real PostHog project** — it fills once this deploys; filter on
 `chat_unanswered`, break down by `kind`, and read `ask` for the phrases.
 
+## The Science Lab: a shelf in the library, 2026-10-06
+
+**What a teacher can use today.** `/curriculum/resources` has a «المختبر» card
+opening `/curriculum/lab`: seven first-party items — three interactives
+(periodic table for elements 1–20, mole and molar-mass calculator, vector
+addition) and four law cards (F = m × a, the vector resultant, n = m ÷ Mr,
+N = n × N_A) — plus 8 pointers to curated external resources (5 images, 3
+videos, each filed on a real grade 10 chemistry or physics lesson) and the
+lesson's own book figures. Each opens in a full-screen present mode with a
+copyable link. Student-reachable by the existing `/curriculum` prefix
+allowlist, pinned in `routeGating.test.ts`.
+
+**It is grade 10 only, and the interactives were swapped during planning.** The
+approved design named a pH scale and an Ohm's-law circuit. Neither has a grade
+10 lesson (acids/bases is grade 9 chemistry; no grade 9 or 10 physics lesson
+covers circuits), so they became the periodic table, the mole calculator and
+vector addition, each on a real lesson.
+
+**Nothing Arabic was written from memory.** A law card's Arabic is lesson
+vocabulary copied verbatim and tested against the lesson; element names are
+tested against the printed textbook text (`elements.test.ts`). The calculator's
+parser fails closed — an element past 20 or a malformed formula returns a named
+reason, never a number.
+
+**Data lives in `lib/curriculum`** (`lab.ts`, `elements.ts`, two JSON files), so
+it ships over the air. No table, no native module, no `app.json` version bump,
+no schema push.
+
+### What does not work
+
+- **Nothing in this feature has been seen by a person in a browser.** Every
+  task was built and reviewed by subagents that could not sign in (dev web
+  authenticates against production), so verification was typecheck, unit tests
+  for the pure logic, and code review. Look at `/curriculum/lab` on the web
+  build before telling anyone it works.
+- **Atomic masses are the book's rounded values**, not the precise ones (H 1,
+  C 12, O 16, Na 23, Cl 35.5 ...), taken from the chemistry S2 answer key, so
+  H2O is 18, not 18.015. Seven masses (He 4, Li 7, Be 9, B 11, Ne 20, P 31,
+  Ar 40) are printed in no extracted source; Cl 35.5, S 32, K 39 and F 19 come
+  from the S2 teacher packs, not the student book. The periodic-table panel
+  shows these numbers.
+- **The book is inconsistent in places.** Avogadro's number is 6.022 × 10²³ in
+  S2 p24 and 6.02 × 10²³ in example 8; nitrogen is spelled «النتروجين» in
+  grade 10 S1 and «النيتروجين» in S2 and grade 9 (the dataset uses the latter).
+- **Law-card quantity names are English only.** No Arabic names exist that a
+  test can witness.
+- **The element-name witness test is a substring match**, so a name that occurs
+  only inside a longer word would pass. A whole-word match is a known
+  improvement (a whole-word check run on 2026-10-06 passes for all 20 names
+  today).
+- **The mole calculator reads «1,000» as 1.** A lone comma is the decimal
+  mark, so there is no thousands separator.
+- **No 3D, no games, no experiment cards, no hand-made infographics, no
+  equipment glossary.** Experiment cards wait on vision extraction of the
+  activity books (see «The English lab»); the glossary needs instruments, and
+  lesson vocabulary lists terms.
+- **A lab item cannot be attached to a class.** That needs a `class_resources`
+  kind and the manual production schema push.
+- **Elements 21+ are absent**, and the electron-configuration code stops at 20
+  on purpose (the first Aufbau exception is Z = 24).
+- **Biology has no lab items**, as it has no curated external media.
+
+What was reviewed and deferred is listed in the PR description, not here.
+
 ## A class can hold Library items, 2026-10-04
 
 A class's الموارد tab held one thing — the teacher's own saved materials — so a
