@@ -81,7 +81,9 @@ export function takeConcreteMath(
   // Grades 1–9 are generated per lesson and refuse what they have nothing for;
   // the banked families are Grade 10's and are not theirs.
   if (grade) return takeElementaryMath(type, topic, kb, grade, diff, lang, points, session);
-  return takeBankMath(type, topic, kb, diff, lang, points, session, allowRepeat);
+  const banked = takeBankMath(type, topic, kb, diff, lang, points, session, allowRepeat);
+  // Grade 10: a lesson none of the banked families is about may still have a generator
+  return banked ?? (bookGrade(kb) === 10 ? takeElementaryMath(type, topic, kb, 10, diff, lang, points, session) : null);
 }
 
 /**

@@ -65,7 +65,11 @@ interface WQ {
   text: string; options?: string[]; answer: string; points: number;
   /** Checked working from the bank; becomes the key's `solution`, never part of the question. */
   steps?: string[];
+  /** See `WorksheetQuestion.fromBank`. Set by `tryMathPractice` and nowhere it isn't true. */
+  fromBank?: true;
 }
+/** Carries a bank item's mark onto a quiz question, which copies fields one by one. */
+const bankMark = (q: WQ): { fromBank?: true } => (q.fromBank ? { fromBank: true } : {});
 /** A question as stored on the paper: the working belongs to the key, not the student's copy. */
 const withoutSteps = ({ steps: _steps, ...rest }: WQ): WQ => rest;
 
@@ -213,13 +217,12 @@ function tryMathPractice(
   allowRepeat: boolean = true,
 ): WQ | null {
   const tier: DiffTier = diff === 'easy' || diff === 'hard' ? diff : 'medium';
-  if (isChemContext(topic, kb, subject)) {
-    return takeConcreteChem(type, topic, kb, tier, lang, points, undefined, allowRepeat);
-  }
-  if (isMathContext(topic, kb, subject)) {
-    return takeConcreteMath(type, topic, kb, tier, lang, points, undefined, allowRepeat);
-  }
-  return null;
+  const item = isChemContext(topic, kb, subject)
+    ? takeConcreteChem(type, topic, kb, tier, lang, points, undefined, allowRepeat)
+    : isMathContext(topic, kb, subject)
+      ? takeConcreteMath(type, topic, kb, tier, lang, points, undefined, allowRepeat)
+      : null;
+  return item ? { ...item, fromBank: true } : null;
 }
 
 /**
@@ -817,29 +820,29 @@ function sectionTitleEn(type: QType, pts: number): string {
 // distinct questions out of six. The same measurement gave worksheets 0 in 1,530.
 function makeQuizMCQ_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
   const q = makeMCQ_ar(topic, kb, diff, subject, false);
-  return { id, type: 'multiple_choice', text: q.text, options: q.options, correctAnswer: q.answer, points: pts, explanation: `${q.answer} — راجع ${kb?.titleAr ?? topic} في الكتاب المدرسي.` };
+  return { id, type: 'multiple_choice', text: q.text, options: q.options, correctAnswer: q.answer, points: pts, explanation: `${q.answer} — راجع ${kb?.titleAr ?? topic} في الكتاب المدرسي.`, ...bankMark(q) };
 }
 function makeQuizMCQ_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
   const q = makeMCQ_en(topic, kb, diff, subject, false);
-  return { id, type: 'multiple_choice', text: q.text, options: q.options, correctAnswer: q.answer, points: pts, explanation: `${q.answer} — See ${kb?.titleEn ?? topic} in the textbook.` };
+  return { id, type: 'multiple_choice', text: q.text, options: q.options, correctAnswer: q.answer, points: pts, explanation: `${q.answer} — See ${kb?.titleEn ?? topic} in the textbook.`, ...bankMark(q) };
 }
 
 function makeQuizTF_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
   const q = makeTFQ_ar(topic, kb, diff, subject, false);
-  return { id, type: 'true_false', text: q.text, options: ['صح', 'خطأ'], correctAnswer: q.answer, points: pts, explanation: `الإجابة "${q.answer}" — ${q.text}` };
+  return { id, type: 'true_false', text: q.text, options: ['صح', 'خطأ'], correctAnswer: q.answer, points: pts, explanation: `الإجابة "${q.answer}" — ${q.text}`, ...bankMark(q) };
 }
 function makeQuizTF_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
   const q = makeTFQ_en(topic, kb, diff, subject, false);
-  return { id, type: 'true_false', text: q.text, options: ['True', 'False'], correctAnswer: q.answer, points: pts, explanation: `The answer is "${q.answer}" — ${q.text}` };
+  return { id, type: 'true_false', text: q.text, options: ['True', 'False'], correctAnswer: q.answer, points: pts, explanation: `The answer is "${q.answer}" — ${q.text}`, ...bankMark(q) };
 }
 
 function makeQuizSA_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
   const q = makeSAQ_ar(topic, kb, diff, subject, false);
-  return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `إجابة كاملة: ${q.answer}` };
+  return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `إجابة كاملة: ${q.answer}`, ...bankMark(q) };
 }
 function makeQuizSA_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
   const q = makeSAQ_en(topic, kb, diff, subject, false);
-  return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `Full answer: ${q.answer}` };
+  return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `Full answer: ${q.answer}`, ...bankMark(q) };
 }
 
 // ─── No question bank ─────────────────────────────────────────────────────────
@@ -1320,7 +1323,7 @@ export class MockAIService extends AIService {
       sections.push({
         type: 'short_answer',
         title: lang === 'ar' ? 'مثال نكمله' : 'Finish the solution',
-        questions: [{ text, answer: completionItem.answer, points: saPts(band[1]) }],
+        questions: [{ text, answer: completionItem.answer, points: saPts(band[1]), fromBank: true }],
       });
       answerKey.push({ num: qNum++, answer: completionItem.answer, solution: completionItem.steps });
     }

@@ -24,6 +24,8 @@ export type IntentRouteResult = {
   useTeachingPipeline: boolean;
   /** Prebuilt reply for social / clarify paths (no KB). */
   socialReply?: string;
+  /** Which question an `ambiguous` result asks — for the `chat_unanswered` event. */
+  clarify?: 'generic' | 'lesson_named' | 'which_lesson_bare';
 };
 
 function normalizeQuery(raw: string): string {
@@ -415,12 +417,14 @@ export function classifyChatIntent(
           intent: 'ambiguous',
           useTeachingPipeline: false,
           socialReply: ambiguousReply(isAr, lessonTitle),
+          clarify: lessonTitle ? 'lesson_named' : 'generic',
         };
   if (!q) {
     return {
       intent: 'ambiguous',
       useTeachingPipeline: false,
       socialReply: ambiguousReply(isAr),
+      clarify: 'generic',
     };
   }
 
@@ -477,7 +481,12 @@ export function classifyChatIntent(
     if (lessonTitle || afterClarify || /شرح|explain/i.test(q)) {
       return { intent: 'teaching', useTeachingPipeline: true };
     }
-    return { intent: 'ambiguous', useTeachingPipeline: false, socialReply: lessonAskReply(isAr) };
+    return {
+      intent: 'ambiguous',
+      useTeachingPipeline: false,
+      socialReply: lessonAskReply(isAr),
+      clarify: 'which_lesson_bare',
+    };
   }
 
   // Refinement / artifact / teaching — Teaching Assistant may use lesson context

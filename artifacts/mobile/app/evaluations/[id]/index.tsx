@@ -432,7 +432,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.resultsBtn, { borderColor: colors.border, opacity: busy === 'close' ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="lock-closed-outline" size={18} color={colors.mutedForeground} />
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, lineHeight: 24, flexShrink: 1, textAlign: 'center' }}>
               {t('closeEvaluationBtn')}
             </Text>
           </Pressable>
