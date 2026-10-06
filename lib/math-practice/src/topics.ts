@@ -15,6 +15,7 @@
 import type { ConcreteItem, DiffTier } from './index.ts';
 import { fixedDec, fmtDec, fold, frac } from './elementary.ts';
 import { ALGEBRA_TOPICS } from './algebra.ts';
+import { GEOMETRY_TOPICS } from './geometry.ts';
 import {
   gcd, int, lcm, mixed, nz, numWrongs, numerator, paren, pick, sfrac, signed, sup, tier, valueOf, wrongsFrom,
   type Ctx, type Draft, type Rng, type Topic,
@@ -776,6 +777,7 @@ export const TOPICS: readonly Topic[] = [
   ratCompare, ratOp('rat_addsub', /جمع الاعداد النسبيه/, ['+', '−']), ratOp('rat_muldiv', /ضرب الاعداد النسبيه/, ['×', '÷']),
   repeating, expLaws,
   ...ALGEBRA_TOPICS,
+  ...GEOMETRY_TOPICS,
 ];
 
 /** The generator for a lesson title and grade, or null when none is about it. */
