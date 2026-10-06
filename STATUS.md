@@ -771,7 +771,10 @@ A search field sits under the intro. It narrows on top of the grade, subject
 and lesson chips, matches title, English title, description and a book code's
 book title, and folds Arabic with `normalizeArabic` (hamza, taa marbuta, harakat)
 on both sides — the old `query` filter existed but lower-cased only the title
-and had no UI. It does **not** match a printed page number.
+and had no UI. A book code's printed page is searchable too (2026-10-06,
+follow-up): «صفحة ٣٥», «page 35», «35» and «٣٥» all find it. It is a substring
+match like the rest, so «3» also finds pages 13 and 30–39 — not a page-exact
+lookup.
 
 Verified: `services/__tests__/resourceCatalog.test.ts` (shelf mapping, order,
 search), whole-monorepo `pnpm run typecheck` clean, mobile suite 2982 pass /
