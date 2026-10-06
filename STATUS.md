@@ -775,9 +775,29 @@ a premade sheet into the teacher's materials, nothing ever called it, and the
 viewer is read-only so a copy had no use. Premade sheets advertised an action
 nothing carried out.
 
-**Schema push required before merge.** `docs/schema-push-2026-10-04-class-resources.sql`
-(one table, two indexes, additive). Run it in Neon, then
-`pnpm --filter @workspace/db run verify-schema`.
+**Production does not have the table yet (checked 2026-10-06).** The code
+merged in #844 and deployed (Deploy #420, `d5ce0501`), but `class_resources` was
+not in production when it did: the Schema check that ran on that merge (run #98)
+failed with `MISS classResources.ts … missing table: class_resources`, "45 of 46
+tables present", against the Neon host `ep-bold-bar-asvxvxjr-pooler…eu-central-1`.
+#844's description says `schema-push: done`; that line recorded the owner saying
+they had run the SQL and was never checked against production, and production
+contradicts it. Nothing has since reported the table present — the latest Schema
+check run is still #98. Until the SQL runs on **that** database the feature is
+deployed and inert, not broken: the shelf reads as empty (`GET` answers `[]`,
+logged at `warn`), and adding or removing an item shows the in-app error and
+saves nothing.
+
+The deploy did not stop for this: nothing gates it on a production schema check
+(PR #875 proposes that and is not merged), so the API and web shipped regardless.
+
+To finish: run `docs/schema-push-2026-10-04-class-resources.sql` (one table, two
+indexes, additive; read each statement's result and check the Neon branch and
+database match the host above), re-run the **Schema check** workflow on `main`
+(or `pnpm --filter @workspace/db run verify-schema`), and run `\d
+class_resources` — `verify-schema` checks the table and its columns but not the
+plain index or the foreign keys. Then replace this paragraph with the date the
+check passed.
 
 **Verified against the running system** (local Postgres 16, the real API built
 from this branch, Expo web, headless Chromium at 390×844 in Arabic):
