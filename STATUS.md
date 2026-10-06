@@ -734,10 +734,15 @@ real PostHog project** — it fills once this deploys; filter on
 opening `/curriculum/lab`: seven first-party items — three interactives
 (periodic table for elements 1–20, mole and molar-mass calculator, vector
 addition) and four law cards (F = m × a, the vector resultant, n = m ÷ Mr,
-N = n × N_A) — plus 8 pointers to curated external resources (5 images, 3
+N = n × Nₐ) — plus 8 pointers to curated external resources (5 images, 3
 videos, each filed on a real grade 10 chemistry or physics lesson) and the
-lesson's own book figures. Each opens in a full-screen present mode with a
-copyable link. Student-reachable by the existing `/curriculum` prefix
+lesson's own book figures. Each opens in a present-mode page (an ordinary
+stack page capped at `CONTENT_MAX_WIDTH`, not a full-screen takeover; the vector
+canvas is a fixed 300×300) with a copyable link. The link is built from
+`PROD_ORIGIN` (`labShareUrl` in `services/labLinks.ts`) and copied with
+`copyToClipboard`, so it names the live site on web and Android alike, never the
+browsing host or the app's `mobile://` scheme (`shareLinksOrigin.test.ts` fails
+on `createURL(`). Student-reachable by the existing `/curriculum` prefix
 allowlist, pinned in `routeGating.test.ts`.
 
 **It is grade 10 only, and the interactives were swapped during planning.** The
@@ -746,11 +751,17 @@ approved design named a pH scale and an Ohm's-law circuit. Neither has a grade
 covers circuits), so they became the periodic table, the mole calculator and
 vector addition, each on a real lesson.
 
-**Nothing Arabic was written from memory.** A law card's Arabic is lesson
+**No curriculum Arabic was written from memory.** A law card's Arabic is lesson
 vocabulary copied verbatim and tested against the lesson; element names are
-tested against the printed textbook text (`elements.test.ts`). The calculator's
-parser fails closed — an element past 20 or a malformed formula returns a named
-reason, never a number.
+tested as whole words against the printed text of the grade 10 chemistry S1 and
+S2 books and the grade 9 chemistry S1 book (`elements.test.ts`, `printsAsWord`:
+the name bounded by non-letters, with one optional leading clitic letter, so
+«الأرجون» does not match inside «الأرجونيت»). The interactives' titles and the
+UI strings are our own chrome text, not curriculum. The calculator's parser
+fails closed — an element past 20, a malformed formula, or a count above 10⁶
+(nested multipliers) returns a named reason, never a number. Its particles field
+accepts `6.022e23` or `6.022×10^23`, and an ambiguous «1,000» is refused rather
+than read as 1.
 
 **Data lives in `lib/curriculum`** (`lab.ts`, `elements.ts`, two JSON files), so
 it ships over the air. No table, no native module, no `app.json` version bump,
@@ -764,22 +775,34 @@ no schema push.
   for the pure logic, and code review. Look at `/curriculum/lab` on the web
   build before telling anyone it works.
 - **Atomic masses are the book's rounded values**, not the precise ones (H 1,
-  C 12, O 16, Na 23, Cl 35.5 ...), taken from the chemistry S2 answer key, so
-  H2O is 18, not 18.015. Seven masses (He 4, Li 7, Be 9, B 11, Ne 20, P 31,
-  Ar 40) are printed in no extracted source; Cl 35.5, S 32, K 39 and F 19 come
-  from the S2 teacher packs, not the student book. The periodic-table panel
-  shows these numbers.
+  C 12, O 16, Na 23, Cl 35.5 ...), so H2O is 18, not 18.015. The rounded
+  masses of H, C, N, O, Na, Mg, Al, Si and Ca come from the S2 student book (a
+  table on p21 and the masses given with its examples and questions); Cl 35.5,
+  S 32, K 39 and F 19 come from the S2 teacher packs. Seven (He 4, Li 7, Be 9, B 11, Ne 20, P 31, Ar 40) are
+  printed in no extracted source and are the usual classroom integers. The
+  periodic-table panel shows these numbers.
 - **The book is inconsistent in places.** Avogadro's number is 6.022 × 10²³ in
   S2 p24 and 6.02 × 10²³ in example 8; nitrogen is spelled «النتروجين» in
   grade 10 S1 and «النيتروجين» in S2 and grade 9 (the dataset uses the latter).
-- **Law-card quantity names are English only.** No Arabic names exist that a
-  test can witness.
-- **The element-name witness test is a substring match**, so a name that occurs
-  only inside a longer word would pass. A whole-word match is a known
-  improvement (a whole-word check run on 2026-10-06 passes for all 20 names
-  today).
-- **The mole calculator reads «1,000» as 1.** A lone comma is the decimal
-  mark, so there is no thousands separator.
+- **Law-card quantity names are English only.** None have been added, because
+  none could be witnessed.
+- **The law formulas were compared by hand, not machine-witnessed, and law items
+  carry no `source` field.** Compared with the extracted book text: S1 physics
+  prints `∑F = ma` (p12, p73) against our `F = m × a`, and `Rx = Ax + Bx + Cx`
+  (p26) against our two-vector `Rx = Ax + Bx , Ry = Ay + By`; S2 chemistry prints
+  `n = m / Mr` (p25) and `N = NA × n` (p25–26) against our `n = m ÷ Mr` and
+  `N = n × Nₐ`. The symbols and operators differ in form, not in meaning. The
+  vector formula's `R = √(Rx² + Ry²)` could not be compared: the extraction
+  drops the root sign. No test reads these strings against the book.
+- **The Avogadro card's `Nₐ` (U+2090) is not in Readex Pro Bold**, the card's
+  font (checked against the font file's character map), so it falls back to a
+  system font. Unseen on a device.
+- **Figure captions show the PDF page index («p. N»)**, not the book's printed
+  page number.
+- **Three deviations from the design spec.** The vectors are adjusted with ±
+  steppers, not dragged; external items open the source in a new tab (web) or the in-app
+  browser (native) through `openExternal` instead of going through
+  `LessonMediaPanel`; the per-item chemistry quick checks were not built.
 - **No 3D, no games, no experiment cards, no hand-made infographics, no
   equipment glossary.** Experiment cards wait on vision extraction of the
   activity books (see «The English lab»); the glossary needs instruments, and

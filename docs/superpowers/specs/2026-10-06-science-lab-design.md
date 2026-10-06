@@ -98,6 +98,16 @@ and waves. Acids/bases is grade 9 chemistry and no grade 9 or 10 physics lesson
 covers circuits. They were swapped for interactives that match real grade 10
 lessons, which is what the first slice was scoped to.
 
+**Deviations recorded at final review.**
+
+- The vector-addition interactive is adjusted with ± steppers, not dragged.
+- Videos open the source in a new tab (web) or the in-app browser (native)
+  instead of going through `LessonMediaPanel`.
+- The per-item chemistry quick checks (`lib/math-practice/src/chemistry.ts`)
+  were not built.
+- Law cards have no `source` field, so nothing in the data says which book
+  statement a formula was compared with; the comparison was done by hand.
+
 Structure: each interactive's logic is a pure module under
 `artifacts/mobile/services/`, tested in `services/__tests__/`, and the component
 is a separate file. The mobile test runner is bare `node --test` and cannot load
