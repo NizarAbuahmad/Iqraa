@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ExternalResource, VirtualLabSheet } from '@workspace/curriculum';
-import { virtualLabFor, virtualLabWorksheet } from '../virtualLab.ts';
+import { virtualLabFor, virtualLabSavePayload, virtualLabWorksheet } from '../virtualLab.ts';
 
 const sim: ExternalResource = {
   id: 'phet-test', lessonIds: ['kbl-chem-s1-nccd-u1_lab'], gradeIds: ['grade-10'], subjectId: 'chemistry',
@@ -43,5 +43,20 @@ describe('virtualLabFor', () => {
   // An ordinary lesson, so this stays true after the lab sheets ship and are reviewed.
   it('finds nothing on a lesson with no lab', () => {
     assert.equal(virtualLabFor('kbl-math-s2-nccd-u5_l4', { dev: true }), null);
+  });
+});
+
+describe('virtualLabSavePayload', () => {
+  const ws = virtualLabWorksheet(sheet, sim, 'الطيف الذري');
+  const p = virtualLabSavePayload(ws, sheet.lessonId, { topic: 'الطيف الذري', subjectLabel: 'الكيمياء', gradeName: 'الصف العاشر' });
+  it('files it as a worksheet, marked as a virtual lab, on its lesson', () => {
+    assert.equal(p.type, 'worksheet');
+    assert.deepEqual(p.formState, { lessonId: sheet.lessonId, materialKind: 'virtual-lab' });
+  });
+  it('keeps the lab block in what it stores', () => {
+    assert.deepEqual(JSON.parse(p.content).lab, ws.lab);
+  });
+  it('labels it with the lesson, subject and grade', () => {
+    assert.deepEqual([p.title, p.topic, p.subject, p.grade, p.language], [ws.title, 'الطيف الذري', 'الكيمياء', 'الصف العاشر', 'ar']);
   });
 });

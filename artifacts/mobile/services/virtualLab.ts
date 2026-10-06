@@ -6,6 +6,8 @@
 import type { ExternalResource, VirtualLabSheet } from '@workspace/curriculum';
 import { getExternalResource, releasedVirtualLab } from '@workspace/curriculum';
 import type { WorksheetOutput, WorksheetSection } from './ai/AIService.ts';
+// Type-only: workspace.ts pulls in AsyncStorage, which `node --test` cannot load.
+import type { SavedMaterial } from './workspace.ts';
 
 const SECTIONS = [['predict', 'أتوقّع'], ['observe', 'ألاحظ'], ['explain', 'أفسّر']] as const;
 
@@ -30,4 +32,27 @@ export function virtualLabFor(lessonId: string, opts: { dev: boolean }): { sheet
   const sheet = releasedVirtualLab(lessonId, { dev: opts.dev });
   const resource = sheet ? getExternalResource(sheet.resourceId) : undefined;
   return sheet && resource ? { sheet, resource } : null;
+}
+
+/**
+ * What «احفظ في موادي» stores. It is an ordinary worksheet — so view, export,
+ * class filing and the student/teacher copy need no new branch — with
+ * `materialKind` left in formState to tell it apart, and the `lab` block kept
+ * in `content` so the printed copy still carries the link, credit and QR.
+ */
+export function virtualLabSavePayload(
+  ws: WorksheetOutput,
+  lessonId: string,
+  ctx: { topic: string; subjectLabel: string; gradeName: string },
+): Omit<SavedMaterial, 'id' | 'savedAt' | 'isFavorite'> {
+  return {
+    type: 'worksheet',
+    title: ws.title,
+    subject: ctx.subjectLabel,
+    grade: ctx.gradeName,
+    topic: ctx.topic,
+    language: 'ar',
+    content: JSON.stringify(ws),
+    formState: { lessonId, materialKind: 'virtual-lab' },
+  };
 }

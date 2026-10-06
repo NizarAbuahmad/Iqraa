@@ -15,6 +15,7 @@ import { LessonPrepPanel } from '@/components/ui/LessonPrepPanel';
 import { LessonMediaPanel } from '@/components/ui/LessonMediaPanel';
 import { ReadAloudPracticePanel } from '@/components/ui/ReadAloudPracticePanel';
 import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
+import { VirtualLabCard } from '@/components/ui/VirtualLabCard';
 import { askAboutLessonHandoff } from '@/services/lessonShelf';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookPagesForLesson } from '@/services/bookFigures';
@@ -195,6 +196,10 @@ export default function LessonDetailScreen() {
             curriculum sections because a teacher preparing tomorrow wants the
             worksheets before they want the Bloom's levels. */}
         <LessonShelfPanel lessonId={lesson.id} accent={color} />
+
+        {/* The PhET simulation for a lab lesson, with its predict–observe–explain
+            sheet. Renders nothing on a lesson with no released lab. */}
+        <VirtualLabCard lessonId={lesson.id} accent={color} />
 
         {/* Curated video and images, played and shown in place rather than
             linked. Below the shelf, which lists everything including these:
