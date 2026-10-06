@@ -53,6 +53,16 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **The chat «+» lists only what the chat does itself** (2026-10-06). It used to
+  show the whole catalog, so most rows (slides, class hub, class challenge,
+  library, evaluations, parent message) left the conversation from a button that
+  reads as "add to this message". It now lists lesson plan, worksheet, activity
+  and quiz, which `handleToolSelect` runs inline when the chat has a lesson —
+  `CHAT_MENU_TOOLS` / `CHAT_NATIVE_TOOLS` in `services/toolCatalog.ts`, guarded
+  by `toolCatalog.test.ts`. Everything else stays on the Tools tab and the lesson
+  card. With no lesson open, a chat tool still falls back to its own screen.
+  Upload rows return to the same sheet when `DOCUMENT_UPLOAD_ENABLED` is turned
+  on. Not verified on a running app: tests and a catalog check only.
 - **Class Activity review fixes** (2026-10-04). The offline jigsaw now lists
   four tasks for its groups of four (it drew three items and promised four);
   activities no longer print literal `**bold**` — `services/ai/activityText.ts`
