@@ -1,16 +1,16 @@
 /**
  * The AI-tools pickers offer grade and subject as two independent lists, so a
- * teacher can land on a pair no book covers — الصف العاشر + التربية الرياضية،
- * حيث joined physical-education MVP_SUBJECT_IDS on 2026-09-09 as a brand-new
- * subject with only a Grade 9 book behind it, so SUBJECTS scopes it to
- * grade-9 only but the picker still offers it against every MVP grade.
+ * teacher can land on a pair no book covers — الصف العاشر + التربية المهنية،
+ * where vocational-education joined MVP_SUBJECT_IDS on 2026-09-09 with no
+ * Grade 10 book behind it, so SUBJECTS scopes it to grades 4-9 only but the
+ * picker still offers it against every MVP grade.
  * Unlike the curriculum browser, that pair does not dead-end on an empty
  * list: the topic field is free text, so generation would proceed and invent
  * a Grade 10 paper with no curriculum behind it.
  *
  * The worked example has moved before — english, then islamic, then
- * financial-literacy, then geography, then history, then civic education
- * (each retired the same week its Grade 10 book arrived — see
+ * financial-literacy, then geography, then history, then civic education,
+ * then physical education on 2026-10-06 (each retired the same week its Grade 10 book arrived — see
  * `subjectGradeCoverage.test.ts`'s `KNOWN_BOOKLESS`). That churn is the
  * allowlist doing its job — a pair gaining a book is meant to fail a test and
  * make someone look, and each subject losing this slot the day its Grade 10
@@ -63,9 +63,9 @@ describe('picker scope — grade/subject pairs with no book', () => {
 
   // The reported case, pinned by name: it is the PAIR that fails, so the same
   // subject must stay pickable on the grade whose book does exist.
-  it('hides physical education for grade-10 but not for grade-9', () => {
-    const idx = getPickerSubjects().findIndex(s => s.id === 'physical-education');
-    assert.ok(idx >= 0, 'physical-education is expected in the MVP picker list');
+  it('hides vocational education for grade-10 but not for grade-9', () => {
+    const idx = getPickerSubjects().findIndex(s => s.id === 'vocational-education');
+    assert.ok(idx >= 0, 'vocational-education is expected in the MVP picker list');
     assert.equal(subjectsWithoutCurriculum('grade-10')[idx], true);
     assert.equal(subjectsWithoutCurriculum('grade-9')[idx], false);
   });
@@ -147,20 +147,21 @@ describe('picker scope — the generate-time backstop', () => {
   // The pickers grey the pair out, but gradeIdx/subjectIdx also arrive from
   // formState and bookmarked URLs written before they did.
   it('names the offending pair so the message can say which', () => {
-    const scope = scopeWithoutCurriculum('grade-10', 'physical-education', 'ar');
-    assert.ok(scope, 'grade-10 + physical-education must be refused');
-    assert.equal(scope.subject, 'التربية الرياضية');
+    const scope = scopeWithoutCurriculum('grade-10', 'vocational-education', 'ar');
+    assert.ok(scope, 'grade-10 + vocational-education must be refused');
+    assert.equal(scope.subject, 'التربية المهنية');
     assert.equal(scope.grade, 'الصف العاشر');
   });
 
   it('answers in the display language', () => {
-    const scope = scopeWithoutCurriculum('grade-10', 'physical-education', 'en');
+    const scope = scopeWithoutCurriculum('grade-10', 'vocational-education', 'en');
     assert.ok(scope);
-    assert.equal(scope.subject, 'Physical Education');
+    assert.equal(scope.subject, 'Vocational Education');
   });
 
   it('passes a pair that has a book', () => {
     assert.equal(scopeWithoutCurriculum('grade-9', 'physical-education', 'ar'), null);
+    assert.equal(scopeWithoutCurriculum('grade-10', 'physical-education', 'ar'), null);
     assert.equal(scopeWithoutCurriculum('grade-10', 'geography', 'ar'), null);
     assert.equal(scopeWithoutCurriculum('grade-10', 'history', 'ar'), null);
     assert.equal(scopeWithoutCurriculum('grade-10', 'civic-education', 'ar'), null);
