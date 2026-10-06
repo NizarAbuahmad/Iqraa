@@ -1,7 +1,7 @@
 // artifacts/api-server/src/lib/adminNotify.ts
 import { db, users, devicePushTokens } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
-import { sendExpoPush, deadTokensFrom } from "./pushNotifications.ts";
+import { sendExpoPush, deadTokensFrom, PUSH_CHANNEL } from "./pushNotifications.ts";
 import { sendArtifactReportedEmail } from "./email.ts";
 import { logger } from "./logger.ts";
 
@@ -35,6 +35,7 @@ export async function notifyAdminsOfArtifactReport(args: {
         title: "تقرير محتوى جديد",
         body,
         data: { screen: "artifact-reports" },
+        channelId: PUSH_CHANNEL.admin,
       })),
     );
     // Same pruning as chat pushes: a reinstalled or replaced phone otherwise
