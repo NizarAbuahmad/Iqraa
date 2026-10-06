@@ -135,9 +135,29 @@ jobs:
             echo "web=false" >> "$GITHUB_OUTPUT"
           fi
 
+  # Does production have every table and column this commit's code selects?
+  #
+  # The schema is pushed by hand (see docs/deploying.md), so a merge can ship
+  # code ahead of its DDL. On 2026-10-05 PR #815 did exactly that: its
+  # description said `schema-push: done`, three columns were missing, and class
+  # creation, teaching plans and the timetable answered 503 until the DDL was
+  # run. Checking here — before the API deploys, against THIS commit's schema —
+  # turns that outage into a red run with the old revision still serving. The
+  # fix is to apply the DDL for the columns the failing job names, then re-run
+  # this workflow.
+  #
+  # Same condition as `api`, since lib/db is under lib/** and the API is the
+  # only thing that reads the database.
+  schema:
+    name: production schema
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    uses: ./.github/workflows/schema-check.yml
+    secrets: inherit
+
   api:
     name: iqraa-api
-    needs: changes
+    needs: [changes, schema]
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -266,15 +286,20 @@ jobs:
 
   web:
     name: iqraa-web
-    needs: [changes, api, verifier]
+    needs: [changes, schema, api, verifier]
     # `always()` is load-bearing, not decorative: without it a skipped `api`
     # job would skip `web` too, and most merges do not touch the API. The
     # explicit result checks are what actually enforce server-before-client — a
     # skipped dependency is fine, a failed one is not.
+    #
+    # `schema` is checked separately because a failed schema gate leaves `api`
+    # SKIPPED, not failed — and a skipped api passes the check below, which
+    # would ship the new bundle against the old API.
     if: |
       always()
       && needs.changes.result == 'success'
       && needs.changes.outputs.web == 'true'
+      && needs.schema.result != 'failure' && needs.schema.result != 'cancelled'
       && needs.api.result != 'failure' && needs.api.result != 'cancelled'
       && needs.verifier.result != 'failure' && needs.verifier.result != 'cancelled'
     runs-on: ubuntu-latest

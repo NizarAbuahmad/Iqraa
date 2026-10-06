@@ -181,10 +181,30 @@ export function parseMathLine(line: string): MathNode[] {
   return nodes;
 }
 
-/** Read an exponent after '^': signed token or parenthesized expression. */
+/** Match a balanced `{...}` group starting at `i` (must be '{'). */
+function matchBrace(s: string, i: number): string | null {
+  if (s[i] !== '{') return null;
+  let depth = 0;
+  for (let j = i; j < s.length; j++) {
+    if (s[j] === '{') depth++;
+    else if (s[j] === '}') {
+      depth--;
+      if (depth === 0) return s.slice(i + 1, j);
+    }
+  }
+  return null;
+}
+
+/**
+ * Read an exponent after '^': signed token, parenthesized expression, or the
+ * bank's own `{...}` form (`3^{2x}`, `2^{x+3}`). An empty or unclosed brace
+ * is not an exponent, so the line stays plain text.
+ */
 function readExponent(s: string, i: number): { text: string; end: number } | null {
   const paren = matchParen(s, i);
   if (paren !== null) return { text: paren, end: i + paren.length + 2 };
+  const brace = matchBrace(s, i);
+  if (brace !== null && brace.trim() !== '') return { text: brace.trim(), end: i + brace.length + 2 };
   let k = i;
   if (s[k] === '+' || s[k] === '-') k++;
   let start = k;
@@ -192,6 +212,161 @@ function readExponent(s: string, i: number): { text: string; end: number } | nul
   if (k === start) return null;
   const text = s.slice(i, k);
   return EXP_TOKEN.test(text) ? { text, end: k } : null;
+}
+
+/**
+ * Does this line READ as Arabic? A leading list marker — «1)», «2.», «(3)»,
+ * «-» — is skipped: «1) نكتب 27 بالأساس 3» is an Arabic sentence that happens
+ * to start with a digit. Judged on the first letter alone it counted as a
+ * left-to-right line and the browser's bidi reordered it.
+ */
+const ARABIC_LED = /^[\s\d٠-٩().\-–•]*[؀-ۿ]/u;
+export function isArabicLed(line: string): boolean {
+  return ARABIC_LED.test(line ?? '');
+}
+
+/** One visual unit of a line: a phrase of prose, or one equation. */
+export type LineSegment =
+  | { kind: 'prose'; text: string }
+  | { kind: 'math'; nodes: MathNode[] };
+
+/**
+ * An Arabic phrase: Arabic letters (with the spaces and Arabic commas between
+ * them), plus one trailing colon or stop so «المعادلة:» keeps its colon on the
+ * Arabic side of the equation instead of leading it.
+ */
+const ARABIC_PHRASE = /[؀-ۿ](?:[؀-ۿ\s،؛]*[؀-ۿ])?[:،؛؟!]?/gu;
+
+/**
+ * Split an Arabic-led line into prose phrases and whole equations.
+ *
+ * MathText draws such a line with `row-reverse` so the prose reads right to
+ * left. Applied node by node that also reversed the pieces of ONE equation —
+ * «أوجد حل المعادلة: 3^x = 27» came out as «= 27 | 3ˣ | prose», the equation
+ * back to front (seen running the worksheet screen, 2026-10-05). Everything
+ * that is not Arabic prose is gathered into a single group here, so the caller
+ * can reverse between phrases and equations but keep each equation left to
+ * right.
+ *
+ * A group's edge spaces are trimmed: in a left-to-right group a leading space
+ * sits on the wrong side, away from the Arabic it separates from. The caller
+ * spaces groups with a margin instead.
+ */
+export function groupRtlSegments(nodes: MathNode[]): LineSegment[] {
+  const segs: LineSegment[] = [];
+  const pushMath = (n: MathNode) => {
+    const last = segs[segs.length - 1];
+    if (last && last.kind === 'math') last.nodes.push(n);
+    else segs.push({ kind: 'math', nodes: [n] });
+  };
+
+  for (const n of nodes) {
+    if (n.kind !== 'text') { pushMath(n); continue; }
+    let at = 0;
+    for (const m of n.text.matchAll(ARABIC_PHRASE)) {
+      const idx = m.index ?? 0;
+      if (idx > at) pushMath({ kind: 'text', text: n.text.slice(at, idx) });
+      segs.push({ kind: 'prose', text: m[0] });
+      at = idx + m[0].length;
+    }
+    if (at < n.text.length) pushMath({ kind: 'text', text: n.text.slice(at) });
+  }
+
+  const out: LineSegment[] = [];
+  for (const g of segs) {
+    if (g.kind === 'prose') { out.push(g); continue; }
+    const ns = g.nodes.slice();
+    const first = ns[0];
+    if (first && first.kind === 'text') ns[0] = { kind: 'text', text: first.text.replace(/^\s+/, '') };
+    const last = ns[ns.length - 1];
+    if (last && last.kind === 'text') ns[ns.length - 1] = { kind: 'text', text: last.text.replace(/\s+$/, '') };
+    const kept = ns.filter(x => !(x.kind === 'text' && x.text === ''));
+    if (kept.length) out.push({ kind: 'math', nodes: kept });
+  }
+  return out;
+}
+
+/**
+ * A token that belongs to an equation rather than a sentence: it carries a
+ * digit or an operator («32», «=», «2:», «x+1»), or it is a lone variable.
+ * «a» and «I» are English words, not variables.
+ */
+function isMathToken(tok: string): boolean {
+  if (/[0-9٠-٩]/.test(tok)) return true;
+  if (/^[=+\-×÷<>≤≥≠±:,.()/]+$/.test(tok)) return true;
+  return /^[b-hj-zB-HJ-Z]$/.test(tok);
+}
+
+/**
+ * Split a left-to-right line into prose and whole equations, so a flex-wrap
+ * row can break between the two but never inside an equation.
+ *
+ * `parseMathLine` hands back «Solve the equation: » · 2ˣ · « = 32» — three
+ * nodes, and a wrapping row breaks wherever it runs out of width, so on a
+ * phone-width projector the exponent sat alone with « = 32» on the next line.
+ * The numbers and operators touching a raised exponent, fraction or radical
+ * are part of that equation: they are moved into its group, up to the first
+ * ordinary word. A pure equation comes back as one group.
+ */
+export function groupLtrSegments(nodes: MathNode[]): LineSegment[] {
+  type Piece = { math: boolean; node: MathNode };
+  const pieces: Piece[] = [];
+
+  nodes.forEach((n, k) => {
+    if (n.kind !== 'text') { pieces.push({ math: true, node: n }); return; }
+    const toks = n.text.match(/\s+|\S+/g) ?? [];
+    const isWord = (t: string) => !/^\s+$/.test(t);
+    let lo = 0;
+    let hi = toks.length;
+    if (k > 0 && nodes[k - 1].kind !== 'text') {
+      while (lo < hi && (!isWord(toks[lo]) || isMathToken(toks[lo]))) lo++;
+    }
+    if (k < nodes.length - 1 && nodes[k + 1].kind !== 'text') {
+      while (hi > lo && (!isWord(toks[hi - 1]) || isMathToken(toks[hi - 1]))) hi--;
+    }
+    const head = toks.slice(0, lo).join('');
+    const mid = toks.slice(lo, hi).join('');
+    const tail = toks.slice(hi).join('');
+    if (head) pieces.push({ math: true, node: { kind: 'text', text: head } });
+    if (mid) pieces.push({ math: false, node: { kind: 'text', text: mid } });
+    if (tail) pieces.push({ math: true, node: { kind: 'text', text: tail } });
+  });
+
+  const out: LineSegment[] = [];
+  for (const p of pieces) {
+    const last = out[out.length - 1];
+    if (p.math) {
+      if (last && last.kind === 'math') last.nodes.push(p.node);
+      else out.push({ kind: 'math', nodes: [p.node] });
+    } else {
+      const text = (p.node as { text: string }).text;
+      if (last && last.kind === 'prose') last.text += text;
+      else out.push({ kind: 'prose', text });
+    }
+  }
+
+  return out
+    .map((g): LineSegment => {
+      if (g.kind === 'prose') return { kind: 'prose', text: g.text.trim() };
+      const ns = g.nodes.slice();
+      const first = ns[0];
+      if (first && first.kind === 'text') ns[0] = { kind: 'text', text: first.text.replace(/^\s+/, '') };
+      const last = ns[ns.length - 1];
+      if (last && last.kind === 'text') ns[ns.length - 1] = { kind: 'text', text: last.text.replace(/\s+$/, '') };
+      return { kind: 'math', nodes: ns.filter(x => !(x.kind === 'text' && x.text === '')) };
+    })
+    .filter(g => (g.kind === 'prose' ? g.text !== '' : g.nodes.length > 0));
+}
+
+/**
+ * Make the spaces around an operator non-breaking, so a plain-text line can
+ * wrap between words but not inside «x = 3». Hyphens are left alone — a spaced
+ * hyphen is punctuation in prose. For lines with no structured math to group
+ * (see `groupLtrSegments`), which is where the projector otherwise drew «x» on
+ * one line and «= 3» on the next.
+ */
+export function bindOperators(line: string): string {
+  return (line ?? '').replace(/(\S) ([=+×÷<>≤≥≠≈±−]) (?=\S)/gu, '$1\u00A0$2\u00A0');
 }
 
 /**
@@ -227,7 +402,12 @@ export function hasRenderableMath(line: string): boolean {
 // pieces in three different places. Deliberately excluded: `,` (Arabic prose
 // uses the latin comma), and `*` / `_` (markdown emphasis, which would change
 // already-shipped chat rendering to no benefit here).
-const FOREIGN_CHAR = "A-Za-z0-9()=+\\-./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞";
+//
+// U+2212 `−` is in the class on purpose: the curriculum data writes every minus
+// as U+2212, not the ASCII hyphen. With only `-` here «y = 2x−5» was cut at the
+// sign, and bidi then reordered the pieces — the worked example
+// «x²−7x+12=0» reached the projector as «7x+12=0−x²».
+const FOREIGN_CHAR = "A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞";
 
 // Reaction and implication arrows. They may sit INSIDE a run but never at its
 // edge. Left out of the run, «N₂ + H₂ → NH₃» became two isolates with the arrow
@@ -257,7 +437,7 @@ const FOREIGN_RUN_RE = new RegExp(
  */
 const HAS_LATIN = /[A-Za-z]/;
 const HAS_DIGIT = /[0-9₀-₉¹²³⁰⁴-⁹]/;
-const HAS_OPERATOR = /[=+\-/^√×÷∘<>≤≥≠≈±∞]/;
+const HAS_OPERATOR = /[=+\-−/^√×÷∘<>≤≥≠≈±∞]/;
 
 function worthIsolating(run: string): boolean {
   if (HAS_LATIN.test(run)) return true;

@@ -8,7 +8,7 @@
  * Role-gated client-side for the UI only; the server enforces `system_admin`
  * on every write (api-server routes/library.ts).
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
@@ -87,6 +87,7 @@ export default function LibraryAdminScreen() {
   const [existing, setExisting] = useState<LibraryItem[]>([]);
   /** Item currently being edited — null means "add new". */
   const [editingId, setEditingId] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   const reload = useCallback(() => {
     void listLibrary(gradeId).then(setExisting);
@@ -116,7 +117,9 @@ export default function LibraryAdminScreen() {
     setScope(s === 1 ? 'semester-1' : s === 2 ? 'semester-2' : item.lessonId ? 'lesson' : 'all');
     setMode('link');
     setMessage(null);
-    // Scroll to top handled by the ScrollView ref if needed — omit for now.
+    // The form sits above the list the pencil lives in; without this the form fills
+    // in off-screen and the tap looks like it did nothing.
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
   };
 
   const cancelEdit = () => {
@@ -223,6 +226,7 @@ export default function LibraryAdminScreen() {
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ padding: 20, paddingTop: insets.top + 16, paddingBottom: 60, maxWidth: 720, width: '100%', alignSelf: 'center' }}
     >
@@ -258,7 +262,7 @@ export default function LibraryAdminScreen() {
             key={s}
             onPress={() => setScope(s)}
             accessibilityRole="button"
-            accessibilityState={{ selected: s === scope }}
+            aria-selected={s === scope}
             style={[styles.chip, { backgroundColor: s === scope ? ACCENT : colors.muted }]}
           >
             <Text style={{ color: s === scope ? palette.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
@@ -287,7 +291,7 @@ export default function LibraryAdminScreen() {
             key={c}
             onPress={() => setCategory(c)}
             accessibilityRole="button"
-            accessibilityState={{ selected: c === category }}
+            aria-selected={c === category}
             style={[styles.chip, { backgroundColor: c === category ? ACCENT : colors.muted }]}
           >
             <Text style={{ color: c === category ? palette.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>

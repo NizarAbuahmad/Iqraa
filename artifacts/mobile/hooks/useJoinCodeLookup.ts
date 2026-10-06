@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 import { RosterError, lookupJoinCode, type JoinRosterEntry } from '@/services/roster';
+import { className as classDisplayName } from '@/services/materialClass';
 import { canSubmitClaim, needsNameConfirm, normalizeClaimCode, type JoinCodeState } from '@/services/claimCodeGate';
 
 /**
@@ -20,7 +22,10 @@ export function useJoinCodeLookup() {
   const [code, setCode] = useState('');
   /** The class behind a whole-class code. Null until a lookup resolves one. */
   const [roster, setRoster] = useState<JoinRosterEntry[] | null>(null);
-  const [className, setClassName] = useState('');
+  const { lang } = useLanguage();
+  // Both names, resolved at render: the lookup answers `nameAr` too, and
+  // showing `name` alone put «Grade 10 A» on the Arabic claim screen.
+  const [classNames, setClassNames] = useState<{ name: string; nameAr: string } | null>(null);
   const [studentId, setStudentId] = useState('');
   const [state, setState] = useState<JoinCodeState>('short');
   /** The joiner has been shown the picked name and said "yes, that's me". */
@@ -37,7 +42,7 @@ export function useJoinCodeLookup() {
     const trimmed = normalizeClaimCode(code);
     if (trimmed.length < 6) {
       setRoster(null);
-      setClassName('');
+      setClassNames(null);
       setStudentId('');
       setState('short');
       return;
@@ -51,7 +56,7 @@ export function useJoinCodeLookup() {
       .then(res => {
         if (!live) return;
         setRoster(res.students);
-        setClassName(res.class.name);
+        setClassNames(res.class);
         setStudentId('');
         // A class with a live code but nobody on the roster yet: the joiner
         // cannot fix this, only their teacher can, so the screen says so
@@ -61,7 +66,7 @@ export function useJoinCodeLookup() {
       .catch(err => {
         if (!live) return;
         setRoster(null);
-        setClassName('');
+        setClassNames(null);
         setStudentId('');
         // 404 is not a failure here — it is how a per-student claim code,
         // which names its own student and needs no picker, answers this
@@ -78,7 +83,7 @@ export function useJoinCodeLookup() {
     code,
     setCode,
     roster,
-    className,
+    className: classNames ? classDisplayName(classNames, lang) : '',
     studentId,
     setStudentId,
     state,

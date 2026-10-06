@@ -41,6 +41,27 @@ export function stripBullet(line: string): string {
 }
 
 /**
+ * A worked example's answer, split into the working and the result.
+ *
+ * Book examples are stored `givens: working → … → answer`, and the whole chain
+ * after the colon becomes `slide.answer`. Printed as one line it is a run of
+ * equations the class has to find the end of. Split on the arrows, each step
+ * gets its own line and the last part — the result — can be set apart.
+ *
+ * Fails closed to `null` (draw the answer as one line, as before) unless every
+ * part is itself an equation or inequality: a reaction «N₂ + 3H₂ → 2NH₃» has
+ * an arrow and is not working, and a part with no relation in it («→ 7») is
+ * not something to number. Capped at four steps, because the renderers have a
+ * fixed amount of room under the question.
+ */
+export function workingSteps(answer: string): { steps: string[]; final: string } | null {
+  const parts = (answer ?? '').split(/→|⇒|=>/).map(p => p.trim());
+  if (parts.length < 2 || parts.length > 5) return null;
+  if (!parts.every(p => /[=≤≥<>≠≈]/.test(p))) return null;
+  return { steps: parts.slice(0, -1), final: parts[parts.length - 1]! };
+}
+
+/**
  * Whether a line should be laid out as mathematics (its own boxed, centred,
  * larger block) rather than prose. A bullet never is: a list item that happens
  * to mention `x` is still a list item.

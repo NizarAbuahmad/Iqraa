@@ -160,7 +160,7 @@ export function EditQuestionModal({
               const on = form.correct.includes(i);
               return (
                 <View key={i} style={[row, { alignItems: 'center', gap: 8 }]}>
-                  <Pressable onPress={() => set({ correct: [i] })} hitSlop={8} accessibilityRole="radio" accessibilityState={{ checked: on }}>
+                  <Pressable onPress={() => set({ correct: [i] })} hitSlop={8} accessibilityRole="radio" aria-checked={on}>
                     <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={on ? ACCENT : colors.mutedForeground} />
                   </Pressable>
                   <View style={{ flex: 1 }}>
@@ -304,7 +304,7 @@ export function EditQuestionModal({
                       key={id}
                       onPress={() => setObjectiveId(id)}
                       accessibilityRole="radio"
-                      accessibilityState={{ checked: on }}
+                      aria-checked={on}
                       style={[row, styles.objectiveRow, { borderColor: on ? ACCENT : colors.border, backgroundColor: on ? ACCENT + '12' : colors.card }]}
                     >
                       <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={18} color={on ? ACCENT : colors.mutedForeground} />

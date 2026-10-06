@@ -133,16 +133,26 @@ describe("parseSlotInput", () => {
   it("passes a well-formed slot through", () => {
     assert.deepEqual(
       parseSlotInput({ classGroupId: "c1", notes: "احضر الآلة الحاسبة" }),
-      { classGroupId: "c1", notes: "احضر الآلة الحاسبة" },
+      { classGroupId: "c1", notes: "احضر الآلة الحاسبة", subjectId: undefined },
     );
   });
 
   it("allows clearing a slot with a null classGroupId", () => {
-    assert.deepEqual(parseSlotInput({ classGroupId: null }), { classGroupId: null, notes: undefined });
+    assert.deepEqual(parseSlotInput({ classGroupId: null }), { classGroupId: null, notes: undefined, subjectId: undefined });
   });
 
   it("allows omitting both fields", () => {
-    assert.deepEqual(parseSlotInput({}), { classGroupId: undefined, notes: undefined });
+    assert.deepEqual(parseSlotInput({}), { classGroupId: undefined, notes: undefined, subjectId: undefined });
+  });
+
+  it("carries which of the class's subjects the period is, trimmed", () => {
+    assert.equal(parseSlotInput({ classGroupId: "c1", subjectId: " arabic " }).subjectId, "arabic");
+    assert.equal(parseSlotInput({ subjectId: "" }).subjectId, "");
+  });
+
+  it("rejects a non-string or oversized subjectId", () => {
+    assert.match(rejects(() => parseSlotInput({ subjectId: 3 })), /subjectId/);
+    assert.match(rejects(() => parseSlotInput({ subjectId: "x".repeat(65) })), /subjectId/);
   });
 
   it("rejects a non-object body", () => {

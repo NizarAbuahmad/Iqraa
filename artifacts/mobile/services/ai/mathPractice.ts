@@ -19,6 +19,8 @@ import {
   mathBankCovers,
   takeConcreteMath as takeBankMath,
   takeElementaryMath,
+  takeSolvedMath as takeBankSolved,
+  type SolvedItem,
   type DiffTier,
   type Lang,
   type PracticeWQ,
@@ -30,6 +32,8 @@ export {
   lessonTextBlob,
   detectMathFamily,
   matchMathFamily,
+  completionSplit,
+  subjectIdFromName,
 } from '@workspace/math-practice';
 
 export type { Lang, QType, DiffTier, PracticeWQ, PracticeLesson } from '@workspace/math-practice';
@@ -51,10 +55,10 @@ export function hasMathBank(topic: string, kb: KBLesson | null): boolean {
   return mathBankCovers(topic, kb, bookGrade(kb));
 }
 
-function primaryGrade(kb: KBLesson | null): number | null {
-  const m = kb ? getBookForLesson(kb)?.gradeId?.match(/^grade-(\d+)$/) : null;
-  const n = m ? Number(m[1]) : NaN;
-  return n >= 1 && n <= 6 ? n : null;
+/** 1–9 for a lesson `takeElementaryMath` serves (drills for 1–6, topic generators for 1–9), else null. */
+function computedGrade(kb: KBLesson | null): number | null {
+  const n = bookGrade(kb);
+  return n !== null && n <= 9 ? n : null;
 }
 
 /**
@@ -73,12 +77,32 @@ export function takeConcreteMath(
   session?: Set<string>,
   allowRepeat: boolean = true,
 ): PracticeWQ | null {
-  const grade = primaryGrade(kb);
+  const grade = computedGrade(kb);
+  // Grades 1–9 are generated per lesson and refuse what they have nothing for;
+  // the banked families are Grade 10's and are not theirs.
   if (grade) return takeElementaryMath(type, topic, kb, grade, diff, lang, points, session);
-  // Grades 7–9 have no bank; the Grade 10 one is not theirs.
+  const banked = takeBankMath(type, topic, kb, diff, lang, points, session, allowRepeat);
+  // Grade 10: a lesson none of the banked families is about may still have a generator
+  return banked ?? (bookGrade(kb) === 10 ? takeElementaryMath(type, topic, kb, 10, diff, lang, points, session) : null);
+}
+
+/**
+ * A solved maths item, under the same grade rules as `takeConcreteMath`: a
+ * Grade 1–6 lesson is generated arithmetic with no authored working, and a
+ * Grade 7–9 lesson has no bank, so both get nothing rather than a Grade 10
+ * example that is not theirs.
+ */
+export function takeSolvedMath(
+  topic: string,
+  kb: KBLesson | null,
+  diff: DiffTier,
+  lang: Lang,
+  session?: Set<string>,
+): SolvedItem | null {
+  if (computedGrade(kb) !== null) return null;
   const book = bookGrade(kb);
   if (book !== null && book >= 7 && book <= 9) return null;
-  return takeBankMath(type, topic, kb, diff, lang, points, session, allowRepeat);
+  return takeBankSolved(topic, kb, diff, lang, session);
 }
 
 /** Same as the bank's batch, through the grade-aware `takeConcreteMath`. */

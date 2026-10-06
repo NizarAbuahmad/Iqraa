@@ -25,12 +25,17 @@
  */
 import { CHEM_BANK, detectChemFamily, type ChemFamily } from './chemistry.ts';
 import { subjectIdFromName } from './subjects.ts';
+import { stepsFor } from './steps.ts';
 import { elementaryOpsForTitle, makeElementaryItem } from './elementary.ts';
+import { makeTopicItem, topicFor } from './topics.ts';
 
 export { isChemContext, detectChemFamily, CHEM_BANK } from './chemistry.ts';
 export type { ChemFamily } from './chemistry.ts';
 export { subjectIdFromName } from './subjects.ts';
+export { stepsFor, solvedItemIds, completionSplit } from './steps.ts';
+export type { SolutionSteps } from './steps.ts';
 export { detectElementaryOp, elementaryOpsForTitle } from './elementary.ts';
+export { topicFor } from './topics.ts';
 
 export interface PracticeLesson {
   id: string;
@@ -53,6 +58,13 @@ export interface PracticeWQ {
   options?: string[];
   answer: string;
   points: number;
+  /**
+   * The checked working for this item, in the question's language — present
+   * only when a person wrote and verified it (`steps.ts`). A worksheet shows it
+   * in the teacher's key; absent means the key shows the answer alone, never a
+   * derived solution.
+   */
+  steps?: string[];
 }
 
 /**
@@ -79,7 +91,9 @@ type MathFamily =
   | 'stats'
   | 'algebra'
   /** Grades 1–6, generated per lesson — see `./elementary.ts`. */
-  | 'arith';
+  | 'arith'
+  /** Computed per lesson title for the lessons neither of the above covers — see `./topics.ts`. */
+  | 'topic';
 
 /** A bank family: maths (below) or chemistry (`./chemistry.ts`). */
 export type Family = MathFamily | ChemFamily;
@@ -112,6 +126,19 @@ export function beginMathPracticeSession(): void {
 /** The lesson's name and nothing else — what routing reads. See `elementaryOpsForTitle`. */
 export function lessonTitleBlob(topic: string, kb: KBLesson | null): string {
   return [topic, kb?.titleAr ?? '', kb?.titleEn ?? ''].join(' ');
+}
+
+/**
+ * The topic generator for a lesson. Each name is tried on its own — the
+ * generators' patterns are anchored to a whole title, which the joined blob
+ * above is not.
+ */
+function topicForLesson(topic: string, kb: KBLesson | null, grade: number) {
+  for (const t of [topic, kb?.titleAr ?? ''].filter(Boolean)) {
+    const gen = topicFor(t, grade);
+    if (gen) return gen;
+  }
+  return null;
 }
 
 export function lessonTextBlob(topic: string, kb: KBLesson | null): string {
@@ -242,11 +269,12 @@ export function detectMathFamily(topic: string, kb: KBLesson | null): MathFamily
  * only be matched against the banked families.
  */
 export function mathBankCovers(topic: string, kb: KBLesson | null, grade: number | null): boolean {
-  if (grade !== null && grade >= 1 && grade <= 6) {
-    return elementaryOpsForTitle(lessonTitleBlob(topic, kb)).length > 0;
+  if (grade !== null && grade >= 1 && grade <= 9) {
+    const title = lessonTitleBlob(topic, kb);
+    return (grade <= 6 && elementaryOpsForTitle(title).length > 0) || topicForLesson(topic, kb, grade) !== null;
   }
-  if (grade !== null && grade >= 7 && grade <= 9) return false;
-  return matchMathFamily(topic, kb) !== null;
+  // Grade 10 has the banked families; a lesson none of them is about may still have a generator
+  return matchMathFamily(topic, kb) !== null || (grade === 10 && topicForLesson(topic, kb, grade) !== null);
 }
 
 function placeCorrect(correct: string, wrongs: string[]): string[] {
@@ -290,7 +318,7 @@ function levelOptionShape(
 
 // ─── Concrete banks (real solvable items — not meta prompts) ─────────────────
 
-const BANK: ConcreteItem[] = [
+export const MATH_BANK: ConcreteItem[] = [
   // ── Exponential equations ──
   { id: 'exp-e1', family: 'exp_eq', diff: 'easy', eq: '2^x = 32', answer: 'x = 5', wrongs: ['x = 4', 'x = 6', 'x = 16'] },
   { id: 'exp-e2', family: 'exp_eq', diff: 'easy', eq: '3^x = 27', answer: 'x = 3', wrongs: ['x = 2', 'x = 9', 'x = 4'] },
@@ -423,6 +451,7 @@ const BANK: ConcreteItem[] = [
     wordEn: 'A quantity doubles each day from 1. After how many days is it 16? Write and solve an exponential equation.',
   },
 ];
+const BANK = MATH_BANK;
 
 /**
  * The question as a teacher would write it.
@@ -611,7 +640,8 @@ function takeFromBank(
 
   used.add(item.id);
   const formatted = formatItem(item, lang, type);
-  return { ...formatted, points };
+  const working = stepsFor(item.id);
+  return { ...formatted, ...(working ? { steps: [...working[lang]] } : {}), points };
 }
 
 /**
@@ -674,9 +704,13 @@ export function takeElementaryMath(
   const title = lessonTitleBlob(topic, kb);
   // A lesson none of the generators is about gets no items, not the grade's
   // default mix of arithmetic.
-  if (elementaryOpsForTitle(title).length === 0) return null;
-  const item = makeElementaryItem(title, grade, diff, session ?? usedIds);
-  return { ...formatItem(item, lang, type), points };
+  if (grade <= 6 && elementaryOpsForTitle(title).length > 0) {
+    const item = makeElementaryItem(title, grade, diff, session ?? usedIds);
+    return { ...formatItem(item, lang, type), points };
+  }
+  const gen = topicForLesson(topic, kb, grade);
+  if (!gen) return null;
+  return { ...formatItem(makeTopicItem(gen, grade, diff, session ?? usedIds), lang, type), points };
 }
 
 /**
@@ -707,6 +741,79 @@ export function takeConcreteChem(
     session ?? usedIds,
     allowRepeat,
   );
+}
+
+/**
+ * An item with checked working, for a worksheet to study or to finish half-solved.
+ *
+ * Same bank, same family routing and same per-pass `session` set as the
+ * practice questions, so what a paper studies is spent and cannot come back as
+ * a question. Only items in `steps.ts` qualify; there is no fallback to the
+ * generic family or to a repeat, because a worked example off the lesson's
+ * topic is worse than none and the caller simply omits the section.
+ */
+export interface SolvedItem {
+  id: string;
+  /** The stem as the short-answer question would read. */
+  problem: string;
+  /** One line of working per step, in the requested language; the last states the result. */
+  steps: string[];
+  answer: string;
+  diff: DiffTier;
+}
+
+/** The requested tier first, then the nearest — a worked example leans easier before harder. */
+const TIER_ORDER: Record<DiffTier, DiffTier[]> = {
+  easy: ['easy', 'medium', 'hard'],
+  medium: ['medium', 'easy', 'hard'],
+  hard: ['hard', 'medium', 'easy'],
+};
+
+function takeSolvedFromBank(
+  bank: ConcreteItem[],
+  family: Family,
+  diff: DiffTier,
+  lang: Lang,
+  used: Set<string>,
+): SolvedItem | null {
+  for (const tier of TIER_ORDER[diff]) {
+    const pool = bank.filter(i => i.family === family && i.diff === tier && !used.has(i.id) && stepsFor(i.id));
+    if (pool.length === 0) continue;
+    const item = pool[Math.floor(Math.random() * pool.length)]!;
+    used.add(item.id);
+    return {
+      id: item.id,
+      problem: itemStem(item, lang === 'ar'),
+      steps: [...stepsFor(item.id)![lang]],
+      answer: item.answer,
+      diff: item.diff,
+    };
+  }
+  return null;
+}
+
+/** A solved Grade 10 maths item for this lesson, or null when the lesson has none left. */
+export function takeSolvedMath(
+  topic: string,
+  kb: KBLesson | null,
+  diff: DiffTier,
+  lang: Lang,
+  session?: Set<string>,
+): SolvedItem | null {
+  const family = matchMathFamily(topic, kb);
+  if (!family) return null;
+  return takeSolvedFromBank(MATH_BANK, family, diff, lang, session ?? usedIds);
+}
+
+/** A solved chemistry item for this lesson, or null when the lesson has none left. */
+export function takeSolvedChem(
+  topic: string,
+  kb: KBLesson | null,
+  diff: DiffTier,
+  lang: Lang,
+  session?: Set<string>,
+): SolvedItem | null {
+  return takeSolvedFromBank(CHEM_BANK, detectChemFamily(lessonTextBlob(topic, kb)), diff, lang, session ?? usedIds);
 }
 
 /** Peek several concrete chemistry stems for activity slides (marks them used). */

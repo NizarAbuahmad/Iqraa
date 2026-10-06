@@ -21,6 +21,7 @@ import {
   getEvaluation,
   closeEvaluation,
   publishEvaluation,
+  setResultsReleased,
   setEvaluationClass,
   showBlanks,
   type Evaluation,
@@ -96,6 +97,8 @@ function questionText(q: EvaluationQuestion): string {
     // matching question existed but not what it asked. The left column is what
     // it asks about.
     ?? matchingLeftText(body['left'])
+    // A read-aloud body keeps its text in `passage` and printed as «—».
+    ?? (body['passage'] as string | undefined)
     // A dictation body has none of the above — the prompt is spoken, not
     // written. On the teacher's own screen the dictated text IS what the
     // question asks, and showing it here is what lets a teacher read the list
@@ -138,7 +141,7 @@ export default function EvaluationDetailScreen() {
   /** The question open in the editor; 'new' when writing one from scratch. */
   const [editing, setEditing] = useState<EvaluationQuestion | 'new' | null>(null);
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState<'generate' | 'publish' | 'close' | null>(null);
+  const [busy, setBusy] = useState<'generate' | 'publish' | 'close' | 'release' | null>(null);
   // What the generator said while producing this paper ("2 questions removed:
   // the verifier contradicted their key"). The questions cannot show a
   // question that was dropped, so this is the only place the teacher hears it.
@@ -262,6 +265,35 @@ export default function EvaluationDetailScreen() {
       );
     } catch (err) {
       setError(err instanceof EvaluationError ? err.message : t('evaluationCloseFailed'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Students see nothing of their results until this is on — see
+  // api-server/src/lib/resultsRelease.ts. Releasing asks first; taking it back
+  // does not, because hiding a result is never the harmful direction.
+  const onToggleRelease = async () => {
+    if (!id || busy || !evaluation) return;
+    const release = !evaluation.releaseResultsToStudent;
+    if (release) {
+      const ok = await confirm({
+        title: t('releaseResultsBtn'),
+        message: t('releaseResultsConfirm'),
+        confirmLabel: t('releaseResultsBtn'),
+        cancelLabel: t('cancel'),
+      });
+      if (!ok) return;
+    }
+    setBusy('release');
+    setError('');
+    try {
+      const updated = await setResultsReleased(id, release);
+      queryClient.setQueryData<EvaluationData>(evaluationQueryKey(id), prev =>
+        prev ? { ...prev, evaluation: updated } : prev,
+      );
+    } catch {
+      setError(t('releaseResultsFailed'));
     } finally {
       setBusy(null);
     }
@@ -400,10 +432,40 @@ export default function EvaluationDetailScreen() {
             style={[styles.resultsBtn, { borderColor: colors.border, opacity: busy === 'close' ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="lock-closed-outline" size={18} color={colors.mutedForeground} />
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, lineHeight: 24, flexShrink: 1, textAlign: 'center' }}>
               {t('closeEvaluationBtn')}
             </Text>
           </Pressable>
+        </View>
+      )}
+
+      {(evaluation?.status === 'published' || evaluation?.status === 'closed') && (
+        <View style={{ marginHorizontal: 20, marginTop: 10, gap: 6 }}>
+          <Pressable
+            onPress={onToggleRelease}
+            disabled={busy === 'release'}
+            accessibilityRole="button"
+            style={[
+              styles.resultsBtn,
+              {
+                borderColor: evaluation.releaseResultsToStudent ? colors.border : ACCENT,
+                opacity: busy === 'release' ? 0.6 : 1,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+              },
+            ]}
+          >
+            <Ionicons
+              name={evaluation.releaseResultsToStudent ? 'eye-off-outline' : 'megaphone-outline'}
+              size={18}
+              color={evaluation.releaseResultsToStudent ? colors.mutedForeground : ACCENT}
+            />
+            <Text style={{ color: evaluation.releaseResultsToStudent ? colors.mutedForeground : ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+              {t(evaluation.releaseResultsToStudent ? 'hideResultsBtn' : 'releaseResultsBtn')}
+            </Text>
+          </Pressable>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+            {t(evaluation.releaseResultsToStudent ? 'resultsReleasedNote' : 'resultsNotReleasedNote')}
+          </Text>
         </View>
       )}
 
@@ -700,13 +762,17 @@ function KeyCheckNotice({
     ? t('keysVerifiedSummary', String(summary.verified), String(summary.total))
     : summary.kind === 'verifier-down'
       ? t('keysVerifierDownTitle')
-      : t('keysNoneCheckableTitle');
+      : summary.kind === 'unlinked'
+        ? t('keysUnlinkedTitle', String(summary.unlinked))
+        : t('keysNoneCheckableTitle');
 
   const note = summary.kind === 'verified'
     ? t('keysVerifiedNote')
     : summary.kind === 'verifier-down'
       ? t('keysVerifierDownNote')
-      : t('keysNoneCheckableNote');
+      : summary.kind === 'unlinked'
+        ? t('keysUnlinkedNote')
+        : t('keysNoneCheckableNote');
 
   return (
     <View style={[styles.verifySummary, { backgroundColor: tone.bg, borderColor: tone.border }]}>

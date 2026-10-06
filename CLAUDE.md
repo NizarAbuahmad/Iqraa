@@ -158,6 +158,18 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   (`services/documents/extractMeta.ts`) or it silently exercises the ordinary
   path instead. `introduction`/`closure`/`assessment`/`homework` vary randomly
   via `pick()`, so asserting "the styles differ" on them proves nothing.
+- **A worksheet's structure lives in two places, and its count is the total.**
+  The worked example, the half-solved first question and the key's working are
+  built by `generateWorksheet` (`artifacts/mobile/services/ai/generators.ts`)
+  from `lib/math-practice/src/steps*.ts`, and asked for by
+  `worksheetPromptAr/En` (`artifacts/api-server/src/lib/prompts.ts`). Change one
+  without the other and the paper differs by whether live AI was on. The example
+  and the half-solved question count INSIDE the number the teacher picked, so
+  sections hold n−1 questions when an example is present; a test that counts
+  `sections` alone must add the example back. A new bank item needs working
+  before it can be studied, and `steps.test.ts` fails a family with fewer than
+  two solved items. Working is dropped, not kept, when a teacher edits the
+  question it belongs to (`worksheetEdits.ts`).
 - **A question's difficulty tier lives on the template, and in two prompts.**
   Every non-math question template carries its own `tier`
   (`TieredTemplate` in `artifacts/mobile/services/ai/generators.ts`), and
@@ -252,8 +264,11 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   included. The push is still manual, on purpose, but it is now *checked*: a PR
   touching `lib/db/src/schema` must answer `schema-push:` in its description,
   and `.github/workflows/schema-check.yml` runs `verify-schema` against
-  production daily at 06:00 UTC, on demand, and whenever a schema change
-  reaches `main`. The `DATABASE_URL` repository secret it needs is set.
+  production daily at 06:00 UTC and on demand — and, since 2026-10-05, as a
+  gate in `deploy.yml` before the API deploys, so a merge whose DDL has not been
+  applied fails the deploy instead of shipping a 503 (PR #815 shipped three
+  missing columns under a `schema-push: done` that was wrong). The
+  `DATABASE_URL` repository secret it needs is set.
   The gap in the *process* is narrowed, not closed — nothing runs the push for
   you. And "checked" caught the table but not the column: on 2026-09-16 a PR
   added two columns to `refresh_tokens`, the PR body claimed `schema-push:

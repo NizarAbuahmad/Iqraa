@@ -17,6 +17,7 @@ import { getLessonMedia } from './lessonMedia.ts';
 import { resolveGeneratorGrounding } from './kbContext.ts';
 import { getBookForLesson, getLessonById } from './knowledgeBase.ts';
 import { getPickerSubjects } from './curriculumData.ts';
+import { contentLang } from './contentLanguage.ts';
 import type { ClassroomActivity } from './ai/AIService.ts';
 
 export type StartClassInput = {
@@ -44,15 +45,15 @@ export type StartClassInput = {
  */
 export async function buildClassDeck({
   topic: rawTopic,
-  lang,
+  lang: uiLang,
   subjectId: pickedSubjectId,
   subjectName: pickedSubjectName,
   lessonId,
 }: StartClassInput): Promise<ClassroomActivity> {
-  const topic = rawTopic.trim();
-  const isAr = lang === 'ar';
+  // The topic arrives in the UI language, so that is what it grounds in.
+  const uiTopic = rawTopic.trim();
   const groundedLesson = (lessonId ? getLessonById(lessonId) : null)
-    ?? resolveGeneratorGrounding(topic, lang).lesson;
+    ?? resolveGeneratorGrounding(uiTopic, uiLang).lesson;
   // The subject defaulted to maths whenever the caller held none — a
   // free-typed chemistry title or an uploaded-document pick — and the
   // generator branches on that NAME (CLAUDE.md), so «ابدأ الحصة» on a
@@ -64,6 +65,13 @@ export async function buildClassDeck({
     pickedSubjectName
     ?? getPickerSubjects().find(s => s.id === subjectId)?.name
     ?? 'Mathematics';
+  // The deck's language — English is taught in English — and the topic
+  // restated as the grounded lesson's own title in it.
+  const lang = contentLang(subjectId, uiLang);
+  const isAr = lang === 'ar';
+  const topic = lang !== uiLang && groundedLesson
+    ? (isAr ? groundedLesson.titleAr : groundedLesson.titleEn)
+    : uiTopic;
 
   const activity = await aiService.generateClassroomActivity({
     grade: '10',
@@ -134,7 +142,8 @@ export async function buildClassDeck({
     .slice(0, BOOK_FIGURE_MAX)
     .map(f => buildMediaSlide('image', f.uri, f.caption, isAr, 0));
 
-  const media = await getLessonMedia(topic);
+  // Teacher-added media is stored under the title they saw — the UI one.
+  const media = await getLessonMedia(uiTopic);
   const mediaSlides = media.map(m => buildMediaSlide(m.kind, m.url, m.caption, isAr, 0));
 
   return {

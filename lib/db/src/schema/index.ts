@@ -38,6 +38,9 @@ export * from "./aiArtifactReports";
 
 // Teacher-uploaded lesson attachments (R2-backed) — see routes/lessonMedia.ts
 export * from "./lessonMedia";
+
+// What a teacher put in front of a class from the Library — see classResources.ts
+export * from "./classResources";
 // Staff-uploaded resources library, per grade/subject/lesson — see routes/library.ts
 export * from "./libraryResources";
 

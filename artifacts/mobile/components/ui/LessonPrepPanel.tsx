@@ -26,6 +26,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { contentLang } from '@/services/contentLanguage';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { LessonPlanOutput } from '@/services/ai/AIService';
 import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
@@ -46,11 +47,12 @@ import {
   formatLessonPlanText,
   shareAsText,
 } from '@/services/share';
+import { exportFilename } from '@/services/exportFilename';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { Button } from '@/components/ui/Button';
 import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
 import { describeAttachResult } from '@/services/classAttach';
-import type { Lang } from '@/services/i18n';
+import { getT } from '@/services/i18n';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
@@ -84,9 +86,13 @@ type Props = {
 
 export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props) {
   const colors = useColors();
-  const { t, isRTL, lang } = useLanguage();
+  const { t, isRTL, lang: uiLang } = useLanguage();
+  // The lesson's own subject sets the plan's language — English is planned
+  // in English. The panel's controls stay in the UI language.
+  const lang = contentLang(resolveLessonPrepContext(lessonId, uiLang)?.subjectId, uiLang);
+  const planT = getT(lang);
 
-  const context = resolveLessonPrepContext(lessonId, lang as 'ar' | 'en');
+  const context = resolveLessonPrepContext(lessonId, lang);
 
   const [duration, setDuration] = useState<number>(context?.duration ?? 45);
   const [styleIdx, setStyleIdx] = useState(0);
@@ -233,7 +239,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
     try {
       await exportAsPDF(
         buildLessonPlanHTML(result, exportTitle, exportMeta, lang === 'ar'),
-        exportTitle.replace(/[^\w\s]/g, '').trim(),
+        exportFilename(exportTitle),
       );
     } catch {
       showToast(t('generationFailed'));
@@ -248,7 +254,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
     try {
       await exportAsWord(
         formatLessonPlanText(result, exportTitle, exportMeta, lang === 'ar'),
-        exportTitle.replace(/[^\w\s]/g, '').trim(),
+        exportFilename(exportTitle),
         lang === 'ar',
       );
     } catch {
@@ -264,7 +270,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
     try {
       await exportAsPDF(
         buildLessonPlanSlidesHTML(result, exportTitle, exportMeta, lang === 'ar'),
-        (exportTitle + '-slides').replace(/[^\w\s-]/g, '').trim(),
+        exportFilename(exportTitle, '-slides'),
       );
     } catch {
       showToast(t('generationFailed'));
@@ -467,15 +473,15 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
           <View style={[styles.readyRow, { backgroundColor: accent + '15', borderColor: accent + '30', borderRadius: colors.radius, flexDirection: rowDir }]}>
             <Ionicons name="checkmark-circle" size={18} color={accent} />
             <Text style={[styles.readyText, { color: accent, fontFamily: 'ReadexPro_600SemiBold' }]}>
-              {t('lessonPlanReady')}
+              {planT('lessonPlanReady')}
             </Text>
           </View>
 
           <LessonPlanView
             plan={result}
             colors={colors}
-            isRTL={isRTL}
-            t={t}
+            isRTL={lang === 'ar'}
+            t={planT}
             accent={accent}
             onEdit={applyEdit}
             editedFields={editedFields}
@@ -568,7 +574,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
           if (!materialId || picks.length === 0) return;
           // One column, many classes: the extras become copies.
           void attachToClasses(materialId, picks.map(p => p.id))
-            .then(outcome => showToast(describeAttachResult(outcome, picks, t, lang as Lang)));
+            .then(outcome => showToast(describeAttachResult(outcome, picks, t, uiLang)));
         }}
       />
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />

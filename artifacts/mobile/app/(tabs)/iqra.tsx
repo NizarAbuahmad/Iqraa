@@ -30,7 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAuth } from '@/context/AuthContext';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   KBLesson,
   getBookForLesson,
@@ -70,6 +70,7 @@ import {
   buildPrepProgressView,
   buildTeachingAssistantReply,
   emptyChatSessionMemory,
+  reviewFollowUp,
   isReferentialQuery,
   artifactFromQuery,
   recordGeneratedResource,
@@ -81,13 +82,14 @@ import {
   resolveCurriculumContext,
 } from '@/services/ai/teachingAssistant';
 import { classifyChatIntent, leavesClarificationStanding } from '@/services/ai/intentRouter';
+import { unansweredEventProps, type UnansweredKind } from '@/services/chatUnanswered';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { MaterialCanvas } from '@/components/ui/MaterialCanvas';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
-import { buildPrepBoard, prepLessonKey, type PrepRow } from '@/services/lessonBoard';
+import { buildPrepBoard, prepLessonKey, savedPrepArtifacts, type PrepRow } from '@/services/lessonBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { MathParagraph } from '@/components/ui/MathParagraph';
 import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
@@ -99,11 +101,10 @@ import { DOCUMENT_UPLOAD_ENABLED } from '@/services/features';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { ComposerToolsMenu, type MenuAction, type MenuSection } from '@/components/ui/ComposerToolsMenu';
 import {
-  ALL_TOOLS,
-  LIBRARY_TOOL,
+  CHAT_MENU_TOOLS,
+  CHAT_NATIVE_TOOLS,
   type ToolDef,
 } from '@/services/toolCatalog';
-import { openGeogebraGraphing } from '@/services/geogebra';
 import { trackEvent } from '@/services/analytics';
 import {
   addAndProcessFiles,
@@ -122,6 +123,7 @@ import { formatNextPeriod } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
 import { listClasses, type ClassGroup } from '@/services/roster';
 import { classNameFor } from '@/services/materialClass';
+import { periodClassLabel } from '@/services/classSubjects';
 import { answerAppHelp } from '@/services/appHelp';
 import { TOOL_ASK_TARGETS, toolAskFromQuery, toolAskReply } from '@/services/chatToolAsk';
 import { formatInfographicText, isInfographicAsk } from '@/services/ai/infographic';
@@ -133,6 +135,8 @@ import { pinnedResourceNote } from '@/services/mathSupportResources';
 import {
   buildCurrentLessonView,
   buildLessonSuggestions,
+  nextStepActions,
+  withActiveLesson,
   extractQueryGradeId,
   extractQuerySubjectId,
   stripSubjectNames,
@@ -142,6 +146,7 @@ import {
   pinLesson,
   resolvePickedLesson,
   resourceRoute,
+  defaultLessonIdFor,
   seedDefaultLessonMemory,
   softPinIfUnpinned,
   shouldReuseActiveLesson,
@@ -173,7 +178,7 @@ import { bookFigureUri } from '@/services/bookFigureUri';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
 import { describeAttachResult } from '@/services/classAttach';
-import type { Lang } from '@/services/i18n';
+import { getT, type Lang } from '@/services/i18n';
 import { attachToClasses, getItem, saveItem, updateItem } from '@/services/workspace';
 import {
   canPresentArtifact,
@@ -257,7 +262,7 @@ interface Message {
   /** Conversation around a rendered document — shown instead of the full text. */
   artifactProse?: string;
   /** Heading + context, so an edited document exports as edited. */
-  artifactMeta?: { title: string; subject: string; grade: string; duration?: number };
+  artifactMeta?: { title: string; subject: string; grade: string; duration?: number; lang?: 'ar' | 'en' };
   /**
    * Workspace id, once this material has been saved from chat. Held on the
    * message so a second tap updates the same material instead of filing a
@@ -386,6 +391,7 @@ function ContextBanner({
   const [modalOpen, setModalOpen] = useState(false);
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
+  const { user } = useAuth();
   const [subjIdx, setSubjIdx] = useState(teacherScope.defaultScope.subjectIdx);
   const [gradeId, setGradeId] = useState(teacherScope.defaultIds.gradeId);
   const topic = currentTopic;
@@ -626,6 +632,27 @@ function ContextBanner({
                 );
               })}
             </View>
+
+            {/* Where to go to widen the pills above: they are masked to the
+                teacher's /setup-subjects choice, so a missing grade or subject
+                otherwise looks like a bug. Teacher-only — nobody else has a scope. */}
+            {isTeacherRole(user?.role) ? (
+              <Text style={{
+                marginTop: 14, fontSize: 12, lineHeight: 18, color: colors.mutedForeground,
+                fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left',
+              }}>
+                {t('pickerScopeNote')}{' '}
+                <Text
+                  onPress={() => {
+                    setOpen(false);
+                    router.push({ pathname: '/setup-subjects', params: { mode: 'edit' } } as any);
+                  }}
+                  style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', textDecorationLine: 'underline' }}
+                >
+                  {t('editTeachingTitle')}
+                </Text>
+              </Text>
+            ) : null}
 
             {/* Topic selector — no section header here: TopicSelector renders its
                 own «موضوع الدرس» label, so one field carried two labels. The
@@ -1007,6 +1034,11 @@ function MessageBubble({
   const inlinePlan = onCanvas ? null : planData;
   const infographic =
     message.artifactData?.kind === 'infographic' ? message.artifactData.infographic : null;
+  // The document reads in its own language — an English lesson's plan is
+  // English inside an Arabic chat.
+  const docLang = message.artifactMeta?.lang;
+  const docRTL = docLang ? docLang === 'ar' : isRTL;
+  const docT = docLang ? getT(docLang) : t;
 
   // A rendered document replaces the formatted text it was built from. Showing
   // both put the whole lesson plan on screen twice — once editable, once as the
@@ -1107,8 +1139,8 @@ function MessageBubble({
               <LessonPlanView
                 plan={inlinePlan.plan}
                 colors={colors}
-                isRTL={isRTL}
-                t={t}
+                isRTL={docRTL}
+                t={docT}
                 accent={colors.primary}
                 onEdit={
                   onEditArtifact
@@ -1124,7 +1156,7 @@ function MessageBubble({
           ) : null}
           {infographic ? (
             <View style={{ marginBottom: 8 }}>
-              <InfographicView data={infographic} colors={colors} isRTL={isRTL} />
+              <InfographicView data={infographic} colors={colors} isRTL={docRTL} />
             </View>
           ) : null}
           {lines.map((line, i) => {
@@ -1383,7 +1415,7 @@ export default function IqraScreen() {
   const teachingCtxRef = useRef(teachingCtx);
   /** Session memory for collaborative Demo Mode chat (active lesson + prior asks). */
   const [sessionMemory, setSessionMemory] = useState<ChatSessionMemory>(() =>
-    seedDefaultLessonMemory(emptyChatSessionMemory()),
+    seedDefaultLessonMemory(emptyChatSessionMemory(), defaultLessonIdFor(user?.teachingAssignments)),
   );
   const [sessionDocs, setSessionDocs] = useState<SessionDocument[]>(() => getSessionDocuments());
   /** Composer-only shortcuts — cleared as soon as the teacher taps one or sends a message. */
@@ -1455,6 +1487,8 @@ export default function IqraScreen() {
   // True while the last thing IQRA said was the clarify question. Answering it
   // with something the router still cannot classify must not re-ask it.
   const awaitingClarifyRef = useRef(false);
+  /** موادي and «غير مطلوب» for the card's lesson, read by `sendMessage` for its follow-ups. */
+  const prepForChipsRef = useRef<{ lessonId?: string; saved?: string[]; skipped?: string[] }>({});
   // The ask behind a "which lesson?" / "what topic?" reply, so the teacher's
   // answer («الصف العاشر», a lesson title, a chip) joins it instead of
   // arriving as a message of its own — see `mergeScopeReply`.
@@ -1514,7 +1548,7 @@ export default function IqraScreen() {
     const data = message.artifactData;
     const meta = message.artifactMeta;
     if (!data || !meta) return message.text;
-    const isAr = lang === 'ar';
+    const isAr = (meta.lang ?? lang) === 'ar';
     const m = { subject: meta.subject, grade: meta.grade, duration: meta.duration };
     switch (data.kind) {
       case 'lesson-plan':
@@ -1574,7 +1608,7 @@ export default function IqraScreen() {
       subject: meta.subject,
       grade: meta.grade,
       topic,
-      language: lang as 'ar' | 'en',
+      language: meta.lang ?? (lang as 'ar' | 'en'),
       content: JSON.stringify(materialContentFor(data)),
       formState: materialFormStateFor(topic),
     };
@@ -1683,7 +1717,7 @@ export default function IqraScreen() {
     try {
       const deck = deckForArtifact(data, {
         topic,
-        isAr: lang === 'ar',
+        isAr: (meta.lang ?? lang) === 'ar',
         lesson: message.curriculumLessonId
           ? getLessonById(message.curriculumLessonId) ?? null
           : null,
@@ -1705,7 +1739,7 @@ export default function IqraScreen() {
 
   // Welcome message on mount / language change — reset session, keep one default active lesson
   useEffect(() => {
-    setSessionMemory(seedDefaultLessonMemory(emptyChatSessionMemory()));
+    setSessionMemory(seedDefaultLessonMemory(emptyChatSessionMemory(), defaultLessonIdFor(user?.teachingAssignments)));
     clearSessionDocuments();
     setEphemeralSuggestions([]);
     setLessonCardCollapsed(true);
@@ -1735,7 +1769,7 @@ export default function IqraScreen() {
       setPeriodLine('');
       if (fromSchedule && next) {
         listClasses()
-          .then(classes => classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'))
+          .then(classes => periodClassLabel(classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'), next.subjectId, lang))
           .catch(() => null)
           .then(classLabel => setPeriodLine(formatNextPeriod(next, {
             classLabel, today: todayISO(), lang: lang as 'ar' | 'en',
@@ -1927,6 +1961,13 @@ export default function IqraScreen() {
         activeLessonTitle: openLesson ? (lang === 'ar' ? openLesson.titleAr : openLesson.titleEn) : null,
       });
       awaitingClarifyRef.current = route.intent === 'ambiguous';
+      // Every turn that asks back or gives up instead of answering — so dead
+      // ends are counted, not found one screenshot at a time. Only `shown`,
+      // the teacher's own words this turn; `askSample` decides if they go.
+      const reportUnanswered = (kind: UnansweredKind) => trackEvent(
+        'chat_unanswered',
+        unansweredEventProps({ kind, query: shown, lang: lang as 'ar' | 'en', lessonOpen: !!openLesson }),
+      );
       if (route.intent === 'artifact') {
         setThinkingLabel(
           /خطة|lesson\s*plan/i.test(q) ? t('iqraGeneratingLessonPlan') : t('iqraGeneratingArtifact'),
@@ -2028,6 +2069,7 @@ export default function IqraScreen() {
       }
 
       if (!route.useTeachingPipeline) {
+        if (route.clarify) reportUnanswered(route.clarify);
         const socialMsg: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
@@ -2161,7 +2203,7 @@ export default function IqraScreen() {
           : null,
       });
       if (!pinnedLessonId && reuseActive && activeLesson) {
-        results = [activeLesson, ...results.filter(r => r.id !== activeLesson.id)].slice(0, 3);
+        results = withActiveLesson(results, activeLesson, q);
       }
 
       // With uploads + soft pin only: clear KB results so generators/TA ground on documents
@@ -2204,6 +2246,7 @@ export default function IqraScreen() {
             : 'Happy to refine — which lesson or material should I adjust?',
           timestamp: new Date(),
         };
+        reportUnanswered('refine_target');
         awaitingClarifyRef.current = true;
         setMessages(prev => [...prev, clarifyMsg]);
         return;
@@ -2288,6 +2331,7 @@ export default function IqraScreen() {
             clarificationQuery: q,
             timestamp: new Date(),
           };
+          reportUnanswered('which_subject');
           awaitingClarifyRef.current = true;
           // A typed subject («العربي») instead of a chip still joins this ask.
           pendingScopeAskRef.current = q;
@@ -2346,11 +2390,16 @@ export default function IqraScreen() {
       let teachingActions: TeachingAction[] | undefined;
       let pedagogicalClarification: ClarificationOption[] | undefined;
       let clarificationQuery: string | undefined;
+      // The explanation assumed «لأول مرة»; offer the review framing after it,
+      // pinned to the lesson it explained (its text alone would be re-searched).
+      let offerReview = false;
+      let taLessonId: string | undefined;
+      let taPatch: Partial<ChatSessionMemory> = {};
       let lessonTopic: string | undefined;
       let quickTopic: string | undefined;
 
-      const runTeachingAssistant = () =>
-        buildTeachingAssistantReply({
+      const runTeachingAssistant = () => {
+        const reply = buildTeachingAssistantReply({
           query: q,
           lessons: results,
           lang: lang as 'ar' | 'en',
@@ -2373,6 +2422,11 @@ export default function IqraScreen() {
               ? route.intent
               : 'teaching',
         });
+        offerReview = Boolean(reply.offerReview);
+        taLessonId = reply.activeLesson?.id;
+        taPatch = reply.memoryPatch;
+        return reply;
+      };
 
       const artifactType =
         artifactFromQuery(q)
@@ -2419,6 +2473,7 @@ export default function IqraScreen() {
         };
         // The `finally` on the enclosing try clears the thinking state, the
         // same way the subject-clarification branch above relies on it.
+        reportUnanswered('did_you_mean');
         awaitingClarifyRef.current = true;
         pendingScopeAskRef.current = q;
         pendingScopeLessonIdsRef.current = lessonGuess.candidates.map(c => c.id);
@@ -2436,6 +2491,7 @@ export default function IqraScreen() {
             : `Which ${scope.gradeEn} ${scope.subjectEn} lesson? Pick one or type its title.`;
           pendingScopeAskRef.current = q;
           pendingScopeLessonIdsRef.current = subjectScopeLessons.slice(0, 4).map(l => l.id);
+          reportUnanswered('which_lesson_in_scope');
           outOfScopeSuggestions = subjectScopeLessons.slice(0, 4).map(l => ({
             text: lang === 'ar' ? l.titleAr : l.titleEn,
             lessonId: l.id,
@@ -2444,15 +2500,18 @@ export default function IqraScreen() {
           // Artifact shortcuts like "خطة" must not die silently — ask for the lesson topic.
           responseText = t('iqraArtifactNeedTopic');
           pendingScopeAskRef.current = q;
+          reportUnanswered('artifact_topic');
         } else if (wasAwaitingClarify) {
           // Short / vague reply to a clarifying question — keep the dialogue open
           // rather than showing the generic out-of-scope message.
           responseText = lang === 'ar'
             ? 'وضّح لي أكثر: ما المادة والدرس الذي تريد التحضير له؟'
             : 'Tell me more — which subject and lesson would you like to prepare for?';
+          reportUnanswered('tell_more');
         } else {
           responseText = t('iqraOutOfScope');
           outOfScopeSuggestions = getTopicSuggestions(3, lang as 'ar' | 'en');
+          reportUnanswered('out_of_scope');
         }
       } else if (
         artifactType
@@ -2555,6 +2614,7 @@ export default function IqraScreen() {
             subject: generated.meta.subject,
             grade: generated.meta.grade,
             duration: generated.meta.duration,
+            lang: generated.meta.lang,
           };
           lessonTopic = generated.topic;
           quickTopic = generated.topic;
@@ -2733,8 +2793,20 @@ export default function IqraScreen() {
       // Composer shortcuts only — never persist as floating chips in the timeline
       const nextEphemeral: EphemeralSuggestion[] = [];
       if (mode === 'teacher' && teachingActions?.length && quickTopic) {
+        // Same rule as the composer chips: drop what is made or not needed,
+        // lead with the next step. موادي only counts for the card's lesson.
+        const prep = prepForChipsRef.current;
+        const replyLessonId = taLessonId ?? sessionMemory.activeLessonId;
         nextEphemeral.push(
-          ...ephemeralFromTeachingActions(teachingActions, quickTopic, lang as 'ar' | 'en'),
+          ...ephemeralFromTeachingActions(
+            nextStepActions(
+              teachingActions,
+              { ...sessionMemory, ...taPatch },
+              prep.lessonId && prep.lessonId === replyLessonId ? prep : {},
+            ),
+            quickTopic,
+            lang as 'ar' | 'en',
+          ),
         );
       }
       if (outOfScopeSuggestions?.length) {
@@ -2746,6 +2818,17 @@ export default function IqraScreen() {
             lessonId: s.lessonId,
           })),
         );
+      }
+      // Guess, then offer: the explanation went ahead as first-time, and the
+      // review framing is one tap away instead of a question asked first.
+      if (offerReview && !artifactData && taLessonId) {
+        const review = reviewFollowUp(q, lang as 'ar' | 'en');
+        nextEphemeral.unshift({
+          id: 'review-framing',
+          label: review.label,
+          prompt: review.prompt,
+          lessonId: taLessonId,
+        });
       }
       if (msgLessonId) {
         nextEphemeral.push({
@@ -2960,25 +3043,12 @@ export default function IqraScreen() {
   }, [lang, sendMessage, sessionMemory]);
 
   /**
-   * The "+" menu.
-   *
-   * Tools the conversation can carry out itself run here and the result lands in
-   * the thread — that is the whole point of reaching them from the composer.
-   * Anything chat cannot produce (the projector deck, the flow editor, GeoGebra)
-   * still hands off to its own screen, carrying the current lesson with it.
+   * The "+" menu lists only tools the conversation can carry out itself, and
+   * the result lands in the thread — see `CHAT_MENU_TOOLS`. Everything that
+   * opens another screen lives on the Tools tab and the lesson card.
    */
-  const CHAT_NATIVE_TOOLS: Record<string, SessionArtifact> = {
-    'lesson-plan': 'lesson-plan',
-    worksheet: 'worksheet',
-    quiz: 'quiz',
-    activity: 'activity',
-    homework: 'homework',
-  };
-
-  // One flat list, library first — the same order as the Tools tab, which
-  // dropped its before/during/after headings on 2026-09-25.
   const toolsMenuSections: MenuSection[] = [
-    { id: 'all', title: '', tools: [LIBRARY_TOOL, ...ALL_TOOLS] },
+    { id: 'all', title: '', tools: CHAT_MENU_TOOLS },
   ];
 
   const toolsMenuActions: MenuAction[] = DOCUMENT_UPLOAD_ENABLED
@@ -3018,12 +3088,9 @@ export default function IqraScreen() {
     const topic =
       (lang === 'ar' ? sessionMemory.activeTopicAr : sessionMemory.activeTopicEn) ?? '';
 
-    if (tool.externalAction === 'geogebra-graphing') {
-      void openGeogebraGraphing();
-      return;
-    }
-
     const artifact = CHAT_NATIVE_TOOLS[tool.id];
+    // Without a lesson there is nothing to generate about, so the tool's own
+    // screen opens instead (it has the picker).
     if (artifact && topic) {
       // `false` = generate rather than open: the teacher asked for the tool, not
       // for whatever was made earlier.
@@ -3046,7 +3113,15 @@ export default function IqraScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleResourcePress, lang, sessionMemory]);
 
-  const currentLessonView = buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en');
+  // What موادي already holds for the lesson on the card, so the card's count
+  // and the chips say what the board says — not only what this chat made.
+  const baseLessonView = buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en');
+  const savedForLesson = baseLessonView
+    ? savedPrepArtifacts(prepMaterials, baseLessonView.topic, baseLessonView.lessonId)
+    : [];
+  const currentLessonView = savedForLesson.length
+    ? buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en', savedForLesson)
+    : baseLessonView;
 
   // «غير مطلوب» choices for the lesson on the empty-state board — the same
   // store and key as the home board, so a row skipped on one is skipped on both.
@@ -3117,10 +3192,19 @@ export default function IqraScreen() {
     lang,
     t,
   ]);
+  // Saved materials and «غير مطلوب» belong to the card's lesson; they only
+  // apply when that is also the chat's own active lesson, not the default one
+  // the card falls back to.
+  const chipsShareCardLesson = !!sessionMemory.activeLessonId
+    && currentLessonView?.lessonId === sessionMemory.activeLessonId;
+  prepForChipsRef.current = currentLessonView
+    ? { lessonId: currentLessonView.lessonId, saved: savedForLesson, skipped: prepSkips }
+    : {};
   const lessonSuggestions = buildLessonSuggestions(
-      sessionMemory,
-      lang as 'ar' | 'en',
+    sessionMemory,
+    lang as 'ar' | 'en',
     sessionDocs.some(d => d.status === 'ready'),
+    chipsShareCardLesson ? { saved: savedForLesson, skipped: prepSkips } : {},
   );
   const suggestions = lessonSuggestions.length > 0
     ? []
@@ -3254,7 +3338,7 @@ export default function IqraScreen() {
   })();
 
   const livePrepProgress = DEMO_MODE
-    ? buildPrepProgressView(sessionMemory, lang as 'ar' | 'en')
+    ? buildPrepProgressView(sessionMemory, lang as 'ar' | 'en', chipsShareCardLesson ? savedForLesson : [])
     : null;
   const lastPrepMessageId = (() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -3773,8 +3857,8 @@ export default function IqraScreen() {
           data={canvasMessage.artifactData}
           text={documentTextFor(canvasMessage)}
           colors={colors}
-          isRTL={isRTL}
-          t={t}
+          isRTL={canvasMessage.artifactMeta?.lang ? canvasMessage.artifactMeta.lang === 'ar' : isRTL}
+          t={canvasMessage.artifactMeta?.lang ? getT(canvasMessage.artifactMeta.lang) : t}
           closeLabel={t('canvasClose')}
           onClose={() => setCanvasMessageId(null)}
           onEditPlan={
@@ -3860,7 +3944,7 @@ export default function IqraScreen() {
         onWord={async () => {
           setLoadingWord(true);
           try {
-            await exportAsWord(exportText, `iqra-${Date.now()}.docx`, isRTL);
+            await exportAsWord(exportText, `iqra-${Date.now()}`, isRTL);
           } finally {
             setLoadingWord(false);
             setExportVisible(false);

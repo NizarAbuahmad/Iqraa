@@ -17,8 +17,9 @@
  * so it's directly testable.
  */
 import { visualForSlide, visualToSvg } from './deckVisuals.ts';
-import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet } from './deckText.ts';
+import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet, workingSteps } from './deckText.ts';
 import { resolveSlideLayout } from './slideLayout.ts';
+import { deckIconSvg, iconForGlyph } from './deckIcons.ts';
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { hasRenderableMath, isolateForeignRuns, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
 
@@ -59,8 +60,12 @@ const escUrlText = (s: string) => `\u2066${escAttr(s)}\u2069`;
  */
 function deckHeader(title: string, accent: string): string {
   const [glyph, heading] = splitEmoji(title);
+  // A section icon in the slide's accent where the glyph has one (see
+  // deckIcons.ts); the emoji itself for the playful ones that do not, which are
+  // the picture rather than a marker.
+  const icon = iconForGlyph(glyph);
   return `<div class="deck-header" style="border-color:${accent}44">
-        ${glyph ? `<span class="deck-emoji">${glyph}</span>` : ''}
+        ${glyph ? `<span class="deck-emoji">${icon ? deckIconSvg(icon, accent, 34) : glyph}</span>` : ''}
         <span class="deck-eyebrow" style="color:${accent}">${esc(heading)}</span>
       </div>`;
 }
@@ -117,6 +122,58 @@ function deckBodyLine(line: string, accent: string): string {
     }</div>`;
   }
   return `<div class="deck-line">${esc(line)}</div>`;
+}
+
+/**
+ * Type sizes a content slide may use, largest first. 26 is the floor — the size
+ * every slide used before this existed, so a slide that cannot take more keeps
+ * exactly the layout it always had.
+ */
+const FIT_SIZES_PX = [36, 32, 28, 26] as const;
+
+/**
+ * The body size for a slide, from how much it has to say.
+ *
+ * Every content slide was set at 26px whatever it held, so a three-line outcome
+ * list or a one-line rule used the top third of a 794px page and left the rest
+ * blank — fine on a phone, small on a wall. This picks the largest size whose
+ * wrapped text still fits the body, estimating the wrap from character count
+ * (0.55em is a deliberately wide guess for Almarai, so the estimate errs
+ * towards too few characters per line and therefore a smaller size). A text
+ * block that does not fit at any size stays at 26px rather than overflowing:
+ * `.deck-body` clips.
+ */
+export function fitBodyPx(lines: readonly string[]): number {
+  const texts = lines.filter(l => l.trim()).map(stripBullet);
+  if (texts.length === 0) return FIT_SIZES_PX[FIT_SIZES_PX.length - 1];
+  for (const px of FIT_SIZES_PX) {
+    const perRow = Math.floor(940 / (px * 0.55));
+    const rows = texts.reduce((n, t) => n + Math.max(1, Math.ceil(t.length / perRow)), 0);
+    // 46px per line of text = card padding, border and the gap between cards.
+    if (rows * px * 1.7 + texts.length * 46 <= 540) return px;
+  }
+  return FIT_SIZES_PX[FIT_SIZES_PX.length - 1];
+}
+
+/**
+ * The body of a worked example's answer card.
+ *
+ * The book stores the working and the result as one chain joined by arrows, so
+ * the card used to print «2x−5 = x²−5x+7 → x²−7x+12=0 → x=3 أو x=4» as a single
+ * line. When `workingSteps` can split it, each step gets its own numbered row
+ * and the result is set apart beneath; otherwise it is the one line it always
+ * was.
+ */
+function deckAnswerBody(answer: string, accent: string): string {
+  const working = workingSteps(answer);
+  if (!working) return `<div class="deck-eq">${mathLineToHtml(answer)}</div>`;
+  return `<div class="deck-working">${working.steps.map((step, i) => `
+              <div class="deck-working-row">
+                <span class="deck-working-num" style="background:${accent}">${i + 1}</span>
+                <span class="deck-working-eq">${mathLineToHtml(step)}</span>
+              </div>`).join('')}
+            </div>
+            <div class="deck-eq deck-final" style="border-color:${accent}66">${mathLineToHtml(working.final)}</div>`;
 }
 
 /** One content line, math-aware — mirrors MathText.tsx's decision on native. */
@@ -228,7 +285,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         ${slide.answer ? `
           <div class="deck-answer" style="border-color:${accent}44">
             <div class="deck-answer-label" style="color:${accent}">${L('الإجابة', 'Answer')}</div>
-            <div class="deck-eq">${mathLineToHtml(slide.answer)}</div>
+            ${deckAnswerBody(slide.answer, accent)}
             ${verifiedBadge}
           </div>` : ''}
       </div>
@@ -427,9 +484,14 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       </div>
       ${footer(num)}</div>`;
     }
+    // A visual shares the page with the text, so only a text-only slide is
+    // sized up and centred; one with a plot keeps the 26px layout it was
+    // designed around.
+    const fit = slidePlot(slide) ? FIT_SIZES_PX[FIT_SIZES_PX.length - 1] : fitBodyPx(lines);
+    const fitted = fit > FIT_SIZES_PX[FIT_SIZES_PX.length - 1];
     return `<div class="deck-slide">
       ${deckHeader(slide.title, accent)}
-      <div class="deck-body">
+      <div class="deck-body${fitted ? ' deck-fit' : ''}"${fitted ? ` style="--fit:${fit}px"` : ''}>
         ${body}
       </div>
       ${footer(num)}</div>`;
@@ -516,7 +578,7 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 /* A flow child above the footer, not an overlay pinned near it: PhET's required
    credit is ~100 characters and wraps, and a fixed offset would stop clearing
    the footer the moment it did. */
-.deck-hero-credit { position:relative; z-index:2; flex-shrink:0; text-align:center; padding:0 32px 8px; font-size:9px; line-height:1.5; color:rgba(255,255,255,0.72); }
+.deck-hero-credit { position:relative; z-index:2; flex-shrink:0; text-align:center; padding:0 32px 8px; font-size:12px; line-height:1.5; color:rgba(255,255,255,0.85); }
 .deck-title-content { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px; text-align:center; }
 .deck-divider-slide { display:flex; flex-direction:column; }
 /* The projected deck sits on two low-contrast circles; pseudo-elements keep
@@ -535,7 +597,8 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-title-meta { font-size:24px; line-height:1.6; max-width:760px; color:${DECK_MUTED}; margin-bottom:12px; }
 .deck-title-summary { font-size:18px; color:${DECK_MUTED}; max-width:720px; line-height:1.7; }
 .deck-header { position:relative; z-index:2; display:flex; align-items:center; gap:10px; min-height:96px; flex-shrink:0; padding:16px 48px; border-bottom:1.5px solid; }
-.deck-emoji { font-size:32px; }
+.deck-emoji { font-size:32px; display:inline-flex; align-items:center; }
+.deck-icon { display:block; }
 .deck-eyebrow { font-size:36px; line-height:1.35; font-weight:700; }
 .deck-body { position:relative; z-index:2; flex:1; padding:32px 48px; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-start; gap:14px; }
 /* Two columns when the slide carries its own figure. flex-direction:row
@@ -551,6 +614,12 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .split-fig img { max-width:100%; max-height:120mm; object-fit:contain; border-radius:10px; }
 .split-fig figcaption { font-size:12px; color:#6b7280; text-align:center; }
 .deck-body-center { align-items:center; justify-content:center; text-align:center; }
+/* A text-only slide with room to spare: --fit is set inline by fitBodyPx and the
+   block is centred in the body instead of hugging the header. */
+.deck-body.deck-fit { justify-content:center; }
+.deck-fit .deck-line, .deck-fit .deck-card-text { font-size:var(--fit); }
+/* A lone plain line is a value or a sentence, not a list: centre it too. */
+.deck-fit .deck-line:only-child { text-align:center; }
 .deck-line { font-size:26px; line-height:1.8; color:${DECK_TEXT}; }
 .deck-card { display:flex; align-items:center; gap:14px; background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:14px; padding:16px 22px; }
 .deck-card-bar { width:5px; align-self:stretch; border-radius:3px; flex-shrink:0; }
@@ -559,6 +628,14 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-eq { font-size:32px; font-weight:700; color:${DECK_TEXT}; text-align:center; line-height:1.6; }
 .deck-answer { margin-top:22px; border:1.5px solid; border-radius:12px; padding:16px 24px; background:${DECK_CARD_BG}; min-width:320px; }
 .deck-answer-label { font-size:14px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+/* Worked-example answer: the working one numbered row per step, the result set
+   apart beneath. Row direction is left to the document's own dir — never
+   row-reverse. The equations are LTR runs, so each row's text is start-aligned. */
+.deck-working { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+.deck-working-row { display:flex; flex-direction:row; align-items:center; gap:12px; font-size:24px; line-height:1.6; }
+.deck-working-num { flex-shrink:0; width:34px; height:34px; border-radius:50%; color:#fff; font-size:18px; font-weight:700; display:flex; align-items:center; justify-content:center; font-family:'Cairo','Arial','Tahoma',sans-serif; }
+.deck-working-eq { text-align:start; }
+.deck-final { border-top:1.5px solid; padding-top:10px; }
 .deck-plot { margin:14px auto 0; max-width:660px; }
 .deck-verified { margin-top:12px; font-size:11px; font-weight:600; display:flex; flex-direction:column; align-items:center; gap:4px; }
 .deck-evidence { font-size:10px; color:${DECK_MUTED}; font-weight:400; }
@@ -578,8 +655,14 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-video-link { display:inline-block; border:1.5px solid; border-radius:10px; padding:10px 22px; font-size:15px; font-weight:700; text-decoration:none; }
 .deck-video-url { font-size:10px; color:${DECK_MUTED}; margin-top:14px; word-break:break-all; max-width:420px; }
 .deck-video-note { font-size:11px; color:${DECK_MUTED}; margin-top:12px; }
-.deck-footer { position:relative; z-index:2; height:30px; border-top:1px solid ${DECK_BORDER}; display:flex; align-items:center; justify-content:space-between; padding:0 32px; flex-shrink:0; }
-.deck-footer span { font-size:9px; color:${DECK_MUTED}; }
+/* 13px, not the 9px it was: the credit line and page counter are read from the
+   back of a room, and 9px is below what a projector resolves. The two dark
+   surfaces (the photo slides and the flat teal divider) need light text — muted
+   brown on teal was close to invisible. */
+.deck-footer { position:relative; z-index:2; height:40px; border-top:1px solid ${DECK_BORDER}; display:flex; align-items:center; justify-content:space-between; padding:0 32px; flex-shrink:0; }
+.deck-footer span { font-size:13px; color:${DECK_MUTED}; }
+.deck-divider-slide .deck-footer, .deck-on-photo .deck-footer { border-top-color:rgba(255,255,255,0.35); }
+.deck-divider-slide .deck-footer span, .deck-on-photo .deck-footer span { color:rgba(255,255,255,0.9); }
 ${MATH_HTML_STYLES}
 </style>
 </head>

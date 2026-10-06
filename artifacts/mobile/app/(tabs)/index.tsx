@@ -46,6 +46,7 @@ import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { listClasses } from '@/services/roster';
 import type { ClassGroup } from '@/services/roster';
+import { periodClassLabel } from '@/services/classSubjects';
 import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
 import { loadTimetable } from '@/services/schedule';
@@ -57,7 +58,7 @@ import {
 } from '@/services/lessonContext';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
-import { DEFAULT_ACTIVE_LESSON_ID } from '@/services/lessonCopilot';
+import { defaultLessonIdFor } from '@/services/lessonCopilot';
 import { buildClassDeck } from '@/services/startClass';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { WORKFLOW } from '@/services/toolCatalog';
@@ -96,6 +97,7 @@ export default function Index() {
 }
 
 function LessonWorkspace() {
+  const { user } = useAuth();
   const colors = useColors();
   const { t, lang, isRTL } = useLanguage();
   const isAr = lang === 'ar';
@@ -147,8 +149,8 @@ function LessonWorkspace() {
     showed «تركيب الاقترانات» would read as a bug in whichever was seen second.
   */
   const fallback = useMemo(
-    () => resolveLessonPrepContext(DEFAULT_ACTIVE_LESSON_ID, lang as 'ar' | 'en'),
-    [lang],
+    () => resolveLessonPrepContext(defaultLessonIdFor(user?.teachingAssignments), lang as 'ar' | 'en'),
+    [lang, user?.teachingAssignments],
   );
   /*
     The lesson the card is about, in order: a lesson the teacher picked by
@@ -172,7 +174,7 @@ function LessonWorkspace() {
   // «الحصة القادمة · العاشر ب · 10:15» — only when the card is showing that period's lesson.
   const periodLine = fromSchedule && next
     ? formatNextPeriod(next, {
-        classLabel: classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'),
+        classLabel: periodClassLabel(classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'), next.subjectId, lang),
         today: todayISO(),
         lang: lang as 'ar' | 'en',
         nowLabel: t('homePeriodNow'),
@@ -373,13 +375,16 @@ function LessonWorkspace() {
                 <Text style={[s.nudgeText, { color: colors.foreground, textAlign: align }]}>
                   {setup.step === 'timetable'
                     ? t('homeSetupTimetable')
-                    : t('homeSetupPlan', classNameFor(classes, setup.classGroupId, lang as 'ar' | 'en') ?? '')}
+                    : t('homeSetupPlan', periodClassLabel(classNameFor(classes, setup.classGroupId, lang as 'ar' | 'en'), setup.subjectId, lang) ?? '')}
                 </Text>
                 <Pressable
                   onPress={() =>
                     setup.step === 'timetable'
                       ? router.push('/schedule' as never)
-                      : router.push({ pathname: '/teaching-plans', params: { classId: setup.classGroupId } } as never)
+                      : router.push({
+                          pathname: '/teaching-plans',
+                          params: { classId: setup.classGroupId, ...(setup.subjectId ? { subjectId: setup.subjectId } : {}) },
+                        } as never)
                   }
                   style={({ pressed }) => [s.nudgeBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                   accessibilityRole="button"
