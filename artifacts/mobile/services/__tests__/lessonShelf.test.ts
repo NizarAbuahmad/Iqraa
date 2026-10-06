@@ -208,8 +208,10 @@ describe('subject isolation', () => {
       // and the g9- form appear.
       'civic-education': /^(civ-s[12]|g9-civ-s[12])$/,
       // Grade 9 predates Grade 7 here (no Grade 8 PE book exists at all).
-      // Grade 7 joined 2026-09-12.
-      'physical-education': /^g\d+-pe-s[12]$/,
+      // Grade 7 joined 2026-09-12. Grade 10 joined 2026-10-06 — grade-10 is
+      // `IMPLICIT_GRADE_ID` in curriculumIds.ts, so it carries the bare
+      // `pe-s1` form with no `g10-` prefix, same as arts-s1 below.
+      'physical-education': /^(pe-s[12]|g\d+-pe-s[12])$/,
       // The combined «العلوم» books at Grades 1, 3, 4, 5, 6, 7 and 8, the
       // only ones this subject has. No grade-10 alternative here: Grade 10
       // splits science into the four subjects above, so there is no bare

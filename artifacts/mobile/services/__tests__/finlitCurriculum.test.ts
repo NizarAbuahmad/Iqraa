@@ -29,7 +29,9 @@ const FINLIT_BOOK = 'book-finlit-10';
 // in sync rather than letting this older, narrower check fight a real gap.
 // 'creative-arts' dropped 2026-09-20 once its Grade 10 book landed — see
 // g10CreativeArts.ts and the matching removal in subjectGradeCoverage.test.ts.
-const KNOWN_BOOKLESS_AT_GRADE_10 = new Set(['physical-education', 'vocational-education', 'social', 'science']);
+// 'physical-education' dropped 2026-10-06 once its Grade 10 book landed — see
+// g10PeSem1.ts and the matching removal in subjectGradeCoverage.test.ts.
+const KNOWN_BOOKLESS_AT_GRADE_10 = new Set(['vocational-education', 'social', 'science']);
 
 describe('Financial Literacy G10 S1 — curriculum browser', () => {
   it('every MVP subject resolves to at least one visible book', () => {

@@ -823,6 +823,10 @@ import {
   G5_PE_S2_CURRICULUM_BOOK_ID,
   buildG5PhysicalEducationSem2BrowserCatalog,
 } from './catalogs/g5PhysicalEducationSem2.ts';
+import {
+  G10_PE_S1_CURRICULUM_BOOK_ID,
+  buildG10PeSem1BrowserCatalog,
+} from './catalogs/g10PeSem1.ts';
 
 export interface Grade {
   id: string;
@@ -993,8 +997,10 @@ export const SUBJECTS: Subject[] = [
   // g2PhysicalEducationSem1.ts. Extended to grade-5 on 2026-09-20 once BOTH
   // semester books arrived (the first PE grade with a full year on disk from
   // the start) — same real box shape; see g5PhysicalEducationSem1.ts /
-  // g5PhysicalEducationSem2.ts.
-  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-1', 'grade-2', 'grade-3', 'grade-6', 'grade-7', 'grade-9', 'grade-5'] },
+  // g5PhysicalEducationSem2.ts. Extended to grade-10 on 2026-10-06 once its
+  // Semester 1 book arrived (Semester 2 not attached yet) — the last PE grade
+  // left over from the Grade 9 batch; same real box shape, see g10PeSem1.ts.
+  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-1', 'grade-2', 'grade-3', 'grade-6', 'grade-7', 'grade-9', 'grade-5', 'grade-10'] },
   // Sixth brand-new subject, added 2026-09-09 as part of the Grade 8 batch.
   // Combines three domains (Art, Music, Drama) NCCD prints as one book —
   // see g8CreativeArts.ts. Extended to grade-7 on 2026-09-12 once its book
@@ -1617,6 +1623,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // the SUBJECTS declaration above and g10CreativeArts.ts. Unlike the
   // younger grades' books, this one is 23 lessons (7 + 8 + 8), not 30.
   G10_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  // Grade 10 Physical Education, Semester 1 only (no Semester 2 book attached
+  // yet). 'physical-education' extended to grade-10 in SUBJECTS.grades above.
+  // See g10PeSem1.ts.
+  G10_PE_S1_CURRICULUM_BOOK_ID,
   // Grade 5 Vocational Education, both semesters — found on disk 2026-09-20
   // via a cross-check against the official NCCD textbook list.
   // 'vocational-education' is already in MVP_SUBJECT_IDS, but
@@ -5129,6 +5139,26 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
   },
+  // ── Physical Education Grade 10 – Semester 1 ───────────────────────────────
+  // Extends the subject to grade-10 (SUBJECTS.grades updated), closing the
+  // last `physical-education:grade-10` gap. Real-content layout like
+  // g5PhysicalEducationSem1.ts: main idea + bilingual glossary per lesson.
+  // No teacher guide, so objectives stay empty. 2nd printing (2026) of the
+  // 2025 trial edition. Semester 2 is not attached yet. See g10PeSem1.ts.
+  {
+    id: G10_PE_S1_CURRICULUM_BOOK_ID,
+    title: 'Physical Education – Grade 10, Semester 1',
+    titleAr: 'التربية الرياضية – الصف العاشر – الفصل الأول',
+    subjectId: 'physical-education',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Sport/G10/1/Sport%20G10%20S1%202026%20.pdf',
+  },
   {
     id: 'book-phys-11',
     title: 'Physics – Grade 11',
@@ -6094,6 +6124,7 @@ const _engSem1Browser = buildEngSem1BrowserCatalog();
 const _engSem2Browser = buildEngSem2BrowserCatalog();
 const _g5PhysicalEducationSem1Browser = buildG5PhysicalEducationSem1BrowserCatalog();
 const _g5PhysicalEducationSem2Browser = buildG5PhysicalEducationSem2BrowserCatalog();
+const _g10PeSem1Browser = buildG10PeSem1BrowserCatalog();
 
 // ─── Authored-Bloom's enrichment for NCCD browser rows ───────────────────────
 //
@@ -6393,6 +6424,7 @@ export const UNITS: Unit[] = [
   ..._g7EngSem2Browser.units,
   ..._g5PhysicalEducationSem1Browser.units,
   ..._g5PhysicalEducationSem2Browser.units,
+  ..._g10PeSem1Browser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
@@ -6589,6 +6621,7 @@ export const LESSONS: Lesson[] = [
   ..._g7EngSem2Browser.lessons,
   ..._g5PhysicalEducationSem1Browser.lessons,
   ..._g5PhysicalEducationSem2Browser.lessons,
+  ..._g10PeSem1Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */

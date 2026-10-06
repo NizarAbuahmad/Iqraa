@@ -39,11 +39,11 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // financial-literacy:grade-9 was the last pre-existing gap, closed
   // 2026-09-09, the same day four subjects joined MVP_SUBJECT_IDS brand-new
   // with only a Grade 9 book behind them — so their Grade 10 halves were
-  // bookless by construction, not by omission. Three of the four have since
-  // closed as their Grade 10 books arrived: geography and history that same
-  // week, civic-education on 2026-09-10. physical-education is the last one
-  // still true of that sentence.
-  'physical-education:grade-10',
+  // bookless by construction, not by omission. All four have since closed as
+  // their Grade 10 books arrived: geography and history that same week,
+  // civic-education on 2026-09-10, physical-education on 2026-10-06
+  // (SUBJECTS.grades extended for grade-10, Semester 1 only — see
+  // g10PeSem1.ts).
   // grade-8 joined MVP_GRADE_IDS 2026-09-09 with only financial-literacy
   // built. Grade 8 does not split science or social studies the way Grade
   // 9/10 do — NCCD combines them into single «العلوم» and «الدراسات
