@@ -726,10 +726,24 @@ checked in Chromium (student 2 pages, teacher 3 with the key alone on the
 last). 19 cases in `quizPaper.test.ts` and `quizDocx.test.ts`, watched failing
 first. **Not checked in Microsoft Word itself** — LibreOffice is the proxy.
 
-**Not changed:** a quiz reopened from موادي (`app/workspace/view.tsx`) and the
-chat's quiz artifact still export with the key and as plain-text Word — they
-call the builders with the defaults. The lesson flow's exit ticket has its own
-builder and is untouched.
+**موادي and the chat, same day.** Neither has an answers toggle, so both kept
+exporting the teacher copy as plain text. Their export menus now carry a
+«نسخة الطالب / نسخة المعلم» choice (`copyChoice` on `ExportMenu`, student by
+default), and a quiz exports through `quizExports` (`services/quizExport.ts`):
+the same text, page and Word file as the quiz screen. The chat's quiz PDF used
+to be the share text in a `pre-wrap` page; it is now the exam paper. Verified
+in the web app on both screens: student Word without the key, teacher Word
+with it, both with the head and marks table, and the chat PDF downloads.
+Not changed: the chat bubble's own «نسخ» still copies the teacher text, the
+chat PDF carries no book figures (the message keeps no lesson id), and the
+lesson flow's exit ticket has its own builder.
+
+**Found on the way, not fixed:** `artifactFromAsk` (`services/ai/askVocabulary.ts`)
+does not match the accusative «اختباراً», so the chat's own chip prompt
+«جهّز اختباراً قصيراً عن: …» (`lessonCopilot.ts`) answers in prose instead of
+making a quiz — `artifactFromQuery` returns null for it, checked 2026-10-06.
+«اختبار قصير عن …» works. «نشاطاً صفياً» and «واجباً منزلياً» look exposed to
+the same miss; not checked.
 
 ## The chat counts its own dead ends — `chat_unanswered` in PostHog, 2026-10-05
 
