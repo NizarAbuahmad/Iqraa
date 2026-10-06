@@ -53,6 +53,16 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **The chat «+» lists only what the chat does itself** (2026-10-06). It used to
+  show the whole catalog, so most rows (slides, class hub, class challenge,
+  library, evaluations, parent message) left the conversation from a button that
+  reads as "add to this message". It now lists lesson plan, worksheet, activity
+  and quiz, which `handleToolSelect` runs inline when the chat has a lesson —
+  `CHAT_MENU_TOOLS` / `CHAT_NATIVE_TOOLS` in `services/toolCatalog.ts`, guarded
+  by `toolCatalog.test.ts`. Everything else stays on the Tools tab and the lesson
+  card. With no lesson open, a chat tool still falls back to its own screen.
+  Upload rows return to the same sheet when `DOCUMENT_UPLOAD_ENABLED` is turned
+  on. Not verified on a running app: tests and a catalog check only.
 - **Class Activity review fixes** (2026-10-04). The offline jigsaw now lists
   four tasks for its groups of four (it drew three items and promised four);
   activities no longer print literal `**bold**` — `services/ai/activityText.ts`
@@ -703,6 +713,38 @@ search), whole-monorepo `pnpm run typecheck` clean, mobile suite 2982 pass /
 0 fail, real-manifest distribution above. **Not seen in a browser**: the screen
 sits behind sign-in and this session had no API/Postgres, so the search field's
 look in RTL and the new row subtitle are unviewed.
+
+## «من بنك الأسئلة المُراجَع» only under answers that came from it, 2026-10-06
+
+A live-AI history worksheet (الإمبراطورية الفارسية, true/false) was captioned
+«لم يتحقّق المُحقِّق الرمزي من أي إجابة — الإجابات من بنك الأسئلة المُراجَع».
+There is no history bank, and the offline generator refuses history outright
+(`NoQuestionBankError`), so the model wrote those answers and nobody reviewed
+them. The cause: `verifyItems` turned every unproved answer into
+`{ verifiedBy: 'bank' }`, so "not proved" read as "reviewed by a person". Deck
+examples had already been fixed for this (`aiWritten` in
+`verifyDeckExamples`); quizzes and worksheets had not.
+
+- **Provenance is now marked, not assumed.** `fromBank?: true` on
+  `QuizQuestion` / `WorksheetQuestion`, set in `tryMathPractice` (and on the
+  half-solved item) and nowhere else. Absent means not from the bank, so a
+  path that forgets to mark it under-claims rather than over-claims.
+- An unmarked answer the verifier did not prove gets **no outcome**: no line in
+  the summary saying "bank", and no bank badge in Class Mode
+  (`outcomeFields(undefined)`).
+- The summary row (`components/ui/VerificationSummaryRow.tsx`, shared by
+  quiz and worksheet) now says «لم يراجع أحدٌ هذه الإجابات — راجعها بنفسك قبل
+  التوزيع», or «… n من أصل total …» when only some are. The bank line appears
+  only when every answer came from the bank. Line choice is
+  `verificationLines`, covered in `quizVerification.test.ts`.
+- Saved papers from before this change carry no mark, but a reopened paper is
+  not re-verified, so it shows no row either way.
+
+Covered by `answerProvenance.test.ts` (every maths/chemistry quiz and worksheet
+item is marked; prior-review template items are not) and the new cases in
+`quizVerification.test.ts`, watched failing first. **Not exercised in a
+browser:** the unreviewed line needs a live-AI paper, which the demo build
+does not make.
 
 ## The chat counts its own dead ends — `chat_unanswered` in PostHog, 2026-10-05
 

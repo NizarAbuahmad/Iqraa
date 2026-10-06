@@ -101,11 +101,10 @@ import { DOCUMENT_UPLOAD_ENABLED } from '@/services/features';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { ComposerToolsMenu, type MenuAction, type MenuSection } from '@/components/ui/ComposerToolsMenu';
 import {
-  ALL_TOOLS,
-  LIBRARY_TOOL,
+  CHAT_MENU_TOOLS,
+  CHAT_NATIVE_TOOLS,
   type ToolDef,
 } from '@/services/toolCatalog';
-import { openGeogebraGraphing } from '@/services/geogebra';
 import { trackEvent } from '@/services/analytics';
 import {
   addAndProcessFiles,
@@ -3044,25 +3043,12 @@ export default function IqraScreen() {
   }, [lang, sendMessage, sessionMemory]);
 
   /**
-   * The "+" menu.
-   *
-   * Tools the conversation can carry out itself run here and the result lands in
-   * the thread — that is the whole point of reaching them from the composer.
-   * Anything chat cannot produce (the projector deck, the flow editor, GeoGebra)
-   * still hands off to its own screen, carrying the current lesson with it.
+   * The "+" menu lists only tools the conversation can carry out itself, and
+   * the result lands in the thread — see `CHAT_MENU_TOOLS`. Everything that
+   * opens another screen lives on the Tools tab and the lesson card.
    */
-  const CHAT_NATIVE_TOOLS: Record<string, SessionArtifact> = {
-    'lesson-plan': 'lesson-plan',
-    worksheet: 'worksheet',
-    quiz: 'quiz',
-    activity: 'activity',
-    homework: 'homework',
-  };
-
-  // One flat list, library first — the same order as the Tools tab, which
-  // dropped its before/during/after headings on 2026-09-25.
   const toolsMenuSections: MenuSection[] = [
-    { id: 'all', title: '', tools: [LIBRARY_TOOL, ...ALL_TOOLS] },
+    { id: 'all', title: '', tools: CHAT_MENU_TOOLS },
   ];
 
   const toolsMenuActions: MenuAction[] = DOCUMENT_UPLOAD_ENABLED
@@ -3102,12 +3088,9 @@ export default function IqraScreen() {
     const topic =
       (lang === 'ar' ? sessionMemory.activeTopicAr : sessionMemory.activeTopicEn) ?? '';
 
-    if (tool.externalAction === 'geogebra-graphing') {
-      void openGeogebraGraphing();
-      return;
-    }
-
     const artifact = CHAT_NATIVE_TOOLS[tool.id];
+    // Without a lesson there is nothing to generate about, so the tool's own
+    // screen opens instead (it has the picker).
     if (artifact && topic) {
       // `false` = generate rather than open: the teacher asked for the tool, not
       // for whatever was made earlier.

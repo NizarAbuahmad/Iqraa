@@ -250,3 +250,28 @@ export const ALL_TOOLS: ToolDef[] = [
   ...DURING_CLASS,
   ...AFTER_CLASS,
 ];
+
+/**
+ * The tools the chat can carry out itself: tapping one sends a prompt and the
+ * answer lands in the thread. Value is the artifact type chat generates.
+ * `homework` is generable but parked in the catalog, so it never reaches the
+ * menu — see `CHAT_MENU_TOOLS`.
+ */
+export const CHAT_NATIVE_TOOLS: Record<
+  string,
+  'lesson-plan' | 'worksheet' | 'quiz' | 'homework' | 'activity'
+> = {
+  'lesson-plan': 'lesson-plan',
+  worksheet: 'worksheet',
+  quiz: 'quiz',
+  activity: 'activity',
+  homework: 'homework',
+};
+
+/**
+ * The chat composer's "+" menu. A "+" reads as "add something to this
+ * message", so it lists only what the conversation answers itself. Everything
+ * that opens another screen (slides, the class hub, the library, evaluations…)
+ * lives on the Tools tab and the lesson card instead.
+ */
+export const CHAT_MENU_TOOLS: ToolDef[] = ALL_TOOLS.filter(t => CHAT_NATIVE_TOOLS[t.id]);
