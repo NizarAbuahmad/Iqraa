@@ -93,11 +93,11 @@
       "lessonId": "kbl-chem-s2-nccd-u4_l2",
       "titleAr": "عدد أفوجادرو",
       "titleEn": "Avogadro's Number",
-      "formula": "N = n × N_A",
+      "formula": "N = n × Nₐ",
       "quantities": [
         { "symbol": "N", "nameEn": "Number of particles", "unit": "particles" },
         { "symbol": "n", "nameEn": "Amount of substance", "unit": "mol" },
-        { "symbol": "N_A", "nameEn": "Avogadro's number", "unit": "particles/mol" }
+        { "symbol": "Nₐ", "nameEn": "Avogadro's number", "unit": "particles/mol" }
       ],
       "termsAr": ["المول", "عدد أفوجادرو"]
     },

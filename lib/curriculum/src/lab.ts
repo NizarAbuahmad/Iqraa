@@ -125,6 +125,10 @@ export function validateLabItems(items: readonly LabItem[] = LAB_ITEMS): string[
       if (!getExternalResource(item.externalId)) {
         errors.push(`${item.id}: externalId "${item.externalId}" is not in external_resources.json`);
       }
+    } else {
+      // The JSON is hand-edited and this is its only guard: a typo such as
+      // "laws" would otherwise pass every check above and render nothing.
+      errors.push(`${(item as { id: string }).id}: unknown kind "${(item as { kind: string }).kind}"`);
     }
   }
   return errors;

@@ -22,6 +22,7 @@ import {
 } from '../lab.ts';
 import { lessonKbId } from '../curriculumIds.ts';
 import { GRADES, SUBJECTS } from '../catalog.ts';
+import { getExternalResource } from '../external.ts';
 
 interface CatalogLesson {
   id: string;
@@ -66,6 +67,22 @@ describe('the shipped lab manifest', () => {
     for (const item of LAB_ITEMS) {
       assert.ok(grades.has(item.gradeId), `${item.id}: unknown grade ${item.gradeId}`);
       assert.ok(subjects.has(item.subjectId), `${item.id}: unknown subject ${item.subjectId}`);
+    }
+  });
+
+  it('files every item under grade 10, the only grade the lesson index covers', () => {
+    for (const item of LAB_ITEMS) assert.equal(item.gradeId, 'grade-10', `${item.id}: gradeId`);
+  });
+
+  it('agrees with the external resource it points at', () => {
+    for (const item of LAB_ITEMS) {
+      if (item.kind !== 'external') continue;
+      const res = getExternalResource(item.externalId);
+      assert.ok(res, `${item.id}: ${item.externalId} is not an external resource`);
+      assert.ok(res.lessonIds.includes(item.lessonId), `${item.id}: ${item.lessonId} is not one of the resource's lessons`);
+      assert.equal(item.subjectId, res.subjectId, `${item.id}: subject disagrees with the resource`);
+      assert.equal(item.titleAr, res.titleAr, `${item.id}: titleAr differs from the resource`);
+      assert.equal(item.titleEn, res.titleEn, `${item.id}: titleEn differs from the resource`);
     }
   });
 
@@ -137,6 +154,11 @@ describe('validateLabItems', () => {
     const errors = validateLabItems([{ ...law, formula: ' ', termsAr: [] }]);
     assert.ok(errors.some(e => e.includes('formula')));
     assert.ok(errors.some(e => e.includes('termsAr')));
+  });
+
+  it('flags an item whose kind is not one of the three', () => {
+    const errors = validateLabItems([{ ...law, kind: 'laws' } as unknown as LabItem]);
+    assert.ok(errors.some(e => e.includes('unknown kind "laws"')), errors.join('; '));
   });
 
   it('flags an external item pointing at nothing', () => {

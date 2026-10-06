@@ -27,6 +27,39 @@ function bookText(file: string): string {
   return normalizeArabic(doc.text.map(p => p.text).join('\n'));
 }
 
+/**
+ * Whole-word match for a normalised name in a normalised corpus. A bare
+ * `includes` already produced one false witness: «الأرجون» is a substring of
+ * «الأرجونيت» (aragonite), a mineral, not the gas. The name has to be bounded by
+ * non-letters, with one optional leading clitic (و ب ك ل ف) so «بالصوديوم» and
+ * «والنيتروجين» still count.
+ */
+export function printsAsWord(corpus: string, normalisedName: string): boolean {
+  const escaped = normalisedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?<![\\u0621-\\u064A])[وبكلف]?${escaped}(?![\\u0621-\\u064A])`).test(corpus);
+}
+
+describe('printsAsWord', () => {
+  const argon = normalizeArabic('الأرجون');
+  it('matches a name standing on its own, in a line or a list', () => {
+    assert.ok(printsAsWord(normalizeArabic('غاز الأرجون خامل'), argon));
+    assert.ok(printsAsWord(normalizeArabic('(الأرجون)، النيون'), argon));
+    assert.ok(printsAsWord(normalizeArabic('الأرجون'), argon));
+  });
+  it('matches a name after one clitic letter', () => {
+    assert.ok(printsAsWord(normalizeArabic('يتفاعل مع بالأرجون'), argon));
+    assert.ok(printsAsWord(normalizeArabic('والأرجون'), argon));
+  });
+  it('does not match a fragment inside a longer word', () => {
+    assert.equal(printsAsWord(normalizeArabic('معدن الأرجونيت'), argon), false);
+    assert.equal(printsAsWord(normalizeArabic('الأرجونا'), argon), false);
+  });
+  it('does not match after two letters of a longer word', () => {
+    assert.equal(printsAsWord(normalizeArabic('تالأرجون'), argon), false);
+    assert.equal(printsAsWord(normalizeArabic('كتابالأرجون'), argon), false);
+  });
+});
+
 describe('the element table', () => {
   it('holds elements 1–20 in order, with unique symbols', () => {
     assert.deepEqual(ELEMENTS.map(e => e.z), Array.from({ length: 20 }, (_, i) => i + 1));
@@ -41,8 +74,14 @@ describe('the element table', () => {
   });
 
   it('prints every Arabic name in the grade 10 or grade 9 chemistry book', () => {
-    const corpus = `${bookText('chem-s1-student-book.json')}\n${bookText('g9-chemistry-s1-student-book.json')}`;
-    const missing = ELEMENTS.filter(e => !corpus.includes(normalizeArabic(e.nameAr))).map(
+    const corpus = [
+      'chem-s1-student-book.json',
+      'chem-s2-student-book.json',
+      'g9-chemistry-s1-student-book.json',
+    ]
+      .map(bookText)
+      .join('\n');
+    const missing = ELEMENTS.filter(e => !printsAsWord(corpus, normalizeArabic(e.nameAr))).map(
       e => `${e.symbol} ${e.nameAr}`,
     );
     assert.deepEqual(missing, [], 'these names are not printed in the book — use the book\'s spelling');
