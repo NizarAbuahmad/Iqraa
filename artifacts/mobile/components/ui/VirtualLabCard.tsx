@@ -15,6 +15,7 @@ import { copyToClipboard, exportAsPDF, exportBuiltWord, shareAsText } from '@/se
 import { exportFilename } from '@/services/exportFilename';
 import type { QuizCopy } from '@/services/quizExport';
 import { worksheetExports } from '@/services/worksheetExport';
+import { readableOn } from '@/services/readableColor';
 import { virtualLabFor, virtualLabSavePayload, virtualLabWorksheet } from '@/services/virtualLab';
 
 type Props = {
@@ -105,6 +106,11 @@ export function VirtualLabCard({ lessonId, accent }: Props) {
     cancel: t('cancel'),
   };
 
+  // `accent` is the lesson page's text-on-card colour, lightened in dark mode to
+  // read on the card — as a fill under white text it can fall below AA, so the
+  // solid pill gets its own fill, the same split lesson-detail makes with
+  // `colorFill`.
+  const fill = readableOn(accent, '#FFFFFF');
   const align = isRTL ? 'right' : 'left';
   const rowDir = isRTL ? 'row-reverse' : 'row';
 
@@ -135,7 +141,7 @@ export function VirtualLabCard({ lessonId, accent }: Props) {
             onPress={open}
             accessibilityRole="link"
             accessibilityLabel={`${t('virtualLabOpen')} — ${resource.attribution}`}
-            style={[styles.pill, { backgroundColor: accent, borderColor: accent, flexDirection: rowDir }]}
+            style={[styles.pill, { backgroundColor: fill, borderColor: fill, flexDirection: rowDir }]}
           >
             <Ionicons name="open-outline" size={14} color="#fff" />
             <Text style={[styles.pillText, { color: '#fff', fontFamily: 'ReadexPro_500Medium' }]}>
