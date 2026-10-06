@@ -25,7 +25,12 @@ export function normaliseAsk(s: string): string {
 // carry one clitic in front («والاختبار», «للواجب», «بخطه»).
 const B = '(?<![\\u0621-\\u064A])(?:[وفبلك]|لل|ال|وال|بال|فال)?';
 const E = '(?![\\u0621-\\u064A])';
-const ar = (words: string) => new RegExp(`${B}(?:${words})${E}`);
+// An indefinite accusative keeps an alif once `normaliseAsk` drops its tanween:
+// «اختباراً» arrives as «اختبارا», and the edge above read that alif as more
+// word — so the chat's own chip, «جهّز اختباراً قصيراً», asked for nothing.
+// Not after ه: «ورقةً» takes no alif, and «…ها» there is the pronoun "her".
+const ACC = '(?:(?<!ه)ا)?';
+const ar = (words: string) => new RegExp(`${B}(?:${words})${ACC}${E}`);
 
 const VOCAB: Array<[SessionArtifact, RegExp[]]> = [
   ['homework', [

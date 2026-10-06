@@ -87,10 +87,24 @@ export function labelAnswer(
   correctAnswer: string,
   isAr: boolean,
 ): string {
-  if (!options?.length) return correctAnswer;
+  const { letter, text } = labelAnswerParts(options, correctAnswer, isAr);
+  return letter ? `${letter} ${text}` : text;
+}
+
+/**
+ * `labelAnswer` with the letter kept apart (empty when there is none), for a
+ * renderer that bidi-isolates the answer text: isolating the joined line wraps
+ * the letter's full stop in with any maths, and «ب. x = 2» prints «ب x = 2 .».
+ */
+export function labelAnswerParts(
+  options: string[] | undefined,
+  correctAnswer: string,
+  isAr: boolean,
+): { letter: string; text: string } {
+  if (!options?.length) return { letter: '', text: correctAnswer };
   const target = stripOptionPrefix(correctAnswer);
   const index = options.findIndex(o => stripOptionPrefix(o) === target);
-  return index >= 0 ? labelOptionLine(options[index], index, isAr) : correctAnswer;
+  return index >= 0 ? labelOption(options[index], index, isAr) : { letter: '', text: correctAnswer };
 }
 
 /**

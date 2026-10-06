@@ -686,6 +686,71 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The quiz prints as an exam paper: student copy, name lines, marks table, 2026-10-06
+
+Prompted by a teacher-facing video of a generic AI exam tool (aidocmaker): its
+paper had name/class/date lines, instructions and a «مساحة للمصحح» table, and
+ours had none of them. Ours also had a real bug: **`buildQuizHTML` always
+printed the answer key**, under the last question, so a teacher printing for
+students had to cut it off by hand. The worksheet already gated its key on
+`includeAnswers`; the quiz never had the parameter.
+
+- **The quiz export follows the screen's answers toggle**, as the worksheet's
+  already did: hidden (the default) exports the student copy, shown exports the
+  teacher copy. PDF, Word, slides, share text and copy all follow it. The key
+  now sits on its own page (`.key-page`). The export menu says which copy it
+  is about to produce (`exportStudentCopyNote` / `exportTeacherCopyNote`, a new
+  `note` prop on `ExportMenu`), on the worksheet too, which had the same silent
+  toggle.
+- **The printed quiz has an exam head**: الاسم / الصف والشعبة / التاريخ lines,
+  instructions derived from the question types present (no "circle" line on a
+  paper with nothing to circle), and «جدول العلامات (للمصحّح)»: one row per
+  question type, `____ / n`, and the total. On both copies. The pieces are
+  `services/quizPaper.ts`, shared by the page and the Word file.
+- **The quiz's Word button builds a laid-out document** (`services/quizDocx.ts`)
+  instead of running the share text through `buildWordDocument`: the same head,
+  a real RTL marks table, lettered options, writing lines for short answers,
+  and the key on a new page on the teacher copy only. `useGeneratorExport`
+  takes an optional `buildWord`; the other generators still export text.
+- **A key letter's full stop no longer lands inside the maths isolate.**
+  `isolateForeignRuns` on a whole keyed line «ب. x = 2» wrapped «. x = 2», so
+  the key printed «ب x = 2 .». The printed key and the Word file now isolate
+  the answer text apart from its letter (`labelAnswerParts` in
+  `optionLabels.ts`). Found by rendering the Word file through LibreOffice.
+
+**Verified in the running web app** (local Postgres + API + Expo web, a
+grade-10 maths quiz on «تبسيط المقادير الأسية»): the menu shows the student
+note, the downloaded .docx has the head and marks table and no key; with
+answers shown the note changes and the .docx carries the key. Printed pages
+checked in Chromium (student 2 pages, teacher 3 with the key alone on the
+last). 19 cases in `quizPaper.test.ts` and `quizDocx.test.ts`, watched failing
+first. **Not checked in Microsoft Word itself** — LibreOffice is the proxy.
+
+**موادي and the chat, same day.** Neither has an answers toggle, so both kept
+exporting the teacher copy as plain text. Their export menus now carry a
+«نسخة الطالب / نسخة المعلم» choice (`copyChoice` on `ExportMenu`, student by
+default), and a quiz exports through `quizExports` (`services/quizExport.ts`):
+the same text, page and Word file as the quiz screen. The chat's quiz PDF used
+to be the share text in a `pre-wrap` page; it is now the exam paper. Verified
+in the web app on both screens: student Word without the key, teacher Word
+with it, both with the head and marks table, and the chat PDF downloads.
+Not changed: the chat bubble's own «نسخ» still copies the teacher text, the
+chat PDF carries no book figures (the message keeps no lesson id), and the
+lesson flow's exit ticket has its own builder.
+
+**Three of the chat's five create chips asked for nothing — fixed the same
+day.** `normaliseAsk` strips the tanween, so «اختباراً» reached
+`artifactFromAsk` (`services/ai/askVocabulary.ts`) as «اختبارا», and the
+word-end guard read the accusative alif as more word. The chips' own prompts
+(`CREATE_CHIP` in `lessonCopilot.ts`) — «جهّز اختباراً قصيراً», «اقترح نشاطاً
+صفياً», «أنشئ واجباً منزلياً» — therefore got a prose reply instead of the
+material; plan and worksheet were unaffected. `ar()` now accepts one trailing
+accusative alif (not after ه, where it would be the pronoun «ها»).
+`askVocabulary.test.ts` now builds every create chip with
+`buildLessonSuggestions` and asserts its prompt, both languages, routes to its
+own material — it failed on exactly those three first. Verified in the web app:
+the quiz chip's prompt now makes a quiz.
+
 ## Book codes live on the Library's kind shelves, and the Library is searchable, 2026-10-06
 
 The Library's «مصادر الكتب» shelf is gone. A teacher had to open it, then open
@@ -706,7 +771,10 @@ A search field sits under the intro. It narrows on top of the grade, subject
 and lesson chips, matches title, English title, description and a book code's
 book title, and folds Arabic with `normalizeArabic` (hamza, taa marbuta, harakat)
 on both sides — the old `query` filter existed but lower-cased only the title
-and had no UI. It does **not** match a printed page number.
+and had no UI. A book code's printed page is searchable too (2026-10-06,
+follow-up): «صفحة ٣٥», «page 35», «35» and «٣٥» all find it. It is a substring
+match like the rest, so «3» also finds pages 13 and 30–39 — not a page-exact
+lookup.
 
 Verified: `services/__tests__/resourceCatalog.test.ts` (shelf mapping, order,
 search), whole-monorepo `pnpm run typecheck` clean, mobile suite 2982 pass /
@@ -835,9 +903,34 @@ a premade sheet into the teacher's materials, nothing ever called it, and the
 viewer is read-only so a copy had no use. Premade sheets advertised an action
 nothing carried out.
 
-**Schema push required before merge.** `docs/schema-push-2026-10-04-class-resources.sql`
-(one table, two indexes, additive). Run it in Neon, then
-`pnpm --filter @workspace/db run verify-schema`.
+**The table reached production about nine hours after the code (2026-10-06).**
+The code merged in #844 and deployed (Deploy #420, `d5ce0501`, about 06:09 UTC)
+before `class_resources` existed: the Schema check on that merge (run #98) failed
+with `MISS classResources.ts … missing table: class_resources`, "45 of 46 tables
+present". #844's description said `schema-push: done`; that was not true when the
+PR merged. Until the table existed the shelf read as empty (`GET` answered `[]`,
+logged at `warn`) and adding or removing an item showed the in-app error and
+saved nothing; no data was lost.
+
+The owner then ran the SQL in Neon (query history: «create class resources table
+with indexes», 18:07 local, about 15:07 UTC), and a Schema check dispatched on
+`main` at 15:27 UTC (run #104, `a32da386`) reported **46 of 46 tables present;
+every declared table, column and unique constraint exists**. That covers
+`class_resources`, its columns and the partial unique index
+`class_resources_library_unique`.
+
+**Not checked.** `verify-schema` does not look at the plain index
+`class_resources_class_idx` or the foreign keys; confirm with
+`SELECT indexname FROM pg_indexes WHERE tablename = 'class_resources'` (expect
+three rows, with the primary key) in the Neon console. And nobody has yet added a
+Library item to a class on the live app, so the feature end to end on production
+is unverified; the checks above are about the schema only.
+
+**The deploy gate arrived the same day.** At #844's merge nothing stopped a deploy
+for a missing table. PR #875 (merged 2026-10-06 15:14 UTC) now makes the API
+deploy wait on a production schema check, so this sequence should fail the deploy
+instead of shipping inert code. Its first real run on `main` was not looked at
+here.
 
 **Verified against the running system** (local Postgres 16, the real API built
 from this branch, Expo web, headless Chromium at 390×844 in Arabic):

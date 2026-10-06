@@ -31,6 +31,7 @@ const colors = {
     primaryForeground:   '#FFFFFF',
     secondary:           '#E3F2EF',
     secondaryForeground: '#006A63',
+    selected:            '#CDE9E3',   // a chosen option/row/tab: a fill a projector can't wash out (a 7–10% tint can); primary 4.85:1, muted 4.53:1 on it
     muted:               '#EFEDE7',
     mutedForeground:     '#5C6675',
     accent:              '#34D6C6',   // Soft Aqua — AI element highlights, never text
@@ -58,6 +59,7 @@ const colors = {
     primaryForeground:   '#081B3A',
     secondary:           '#12302F',
     secondaryForeground: '#5EEAD4',
+    selected:            '#14403F',   // primary 6.15:1, foreground 9.79:1, muted 4.78:1 on it
     muted:               '#16243B',
     mutedForeground:     '#9AA9BC',
     accent:              '#34D6C6',
