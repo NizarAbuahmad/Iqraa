@@ -718,6 +718,174 @@ requests captured: a 6-word message → `out_of_scope`, `words: 6`, no `ask`;
 real PostHog project** — it fills once this deploys; filter on
 `chat_unanswered`, break down by `kind`, and read `ask` for the phrases.
 
+## A class can hold Library items, 2026-10-04
+
+A class's الموارد tab held one thing — the teacher's own saved materials — so a
+Library video or a ready-made worksheet could not be put in front of a class.
+The «+» sheet now has **«من المكتبة»**, which opens a picker filtered to the
+class's grade and subject; one tap adds an item and the tab shows it beside the
+teacher's materials, newest first, tagged «المكتبة».
+
+**What a row is.** A pointer plus a snapshot (`class_resources`: which catalogue
+item, and its title / kind / thumbnail / link as they were when added), not a
+copy, with one exception: a staff upload's *link* is built from its Library row
+on every read (see *Staff links are read-time* below). The tab renders without
+downloading the Library. A staff upload deleted afterwards shows
+greyed out as «لم يعد متاحًا» (the list endpoint checks), and ✕ removes only the
+class's row. Premade sheets open in the existing read-only sheet viewer. A
+book-QR row stored over plain `http` carries the Library's «رابط غير آمن (http)»
+line. A failed read of the shelf shows no banner and keeps what was showing; an
+add whose follow-up re-read fails still puts the new row on the shelf.
+
+**Why not `saved_materials`.** A later piece (device uploads) needs a storage
+key, and in an app-written JSON column the server would be signing URLs from
+keys a client supplied. Here the server validates every column and copies a
+staff upload's title, kind and thumbnail from its own row when it is added, and
+builds its link from that row on every read (premade-sheet and book-QR snapshots
+are supplied by the app and validated by the server). Design:
+`docs/superpowers/specs/2026-10-04-class-resources-design.md`; plan:
+`docs/superpowers/plans/2026-10-04-class-resources-piece-1.md`. **Those two files
+are not on this branch yet** — they live in PR #833, so the links resolve only
+once #833 lands.
+
+**API** (`/classes/:id/resources`, inside the roster router so its path-scoped
+auth and consent guards apply): `GET`, `POST` (a repeat is `409 already_added`,
+which the app treats as success), `DELETE /:rid`. Another teacher's class is a
+404. A staff upload is copied from the Library's own row, never from what the
+app sent, and the `url` a read returns is rebuilt from that row each time
+(`r2Key ? publicUrl(r2Key) : sourceUrl`, falling back to the stored `url` when
+the row is gone or yields no link); links are https-only except book-QR codes, which the API also accepts
+over plain http (an `http://` code was added with a `201`, a `javascript:` link
+was refused with a `400`). A missing table reads as an empty shelf (logged at
+`warn`, so a skipped schema push leaves a trace) and writes answer
+`503 roster_storage_unavailable`.
+
+**Retired.** `addToClassPlan` and the `add-to-class` action: the plan was to copy
+a premade sheet into the teacher's materials, nothing ever called it, and the
+viewer is read-only so a copy had no use. Premade sheets advertised an action
+nothing carried out.
+
+**Schema push required before merge.** `docs/schema-push-2026-10-04-class-resources.sql`
+(one table, two indexes, additive). Run it in Neon, then
+`pnpm --filter @workspace/db run verify-schema`.
+
+**Verified against the running system** (local Postgres 16, the real API built
+from this branch, Expo web, headless Chromium at 390×844 in Arabic):
+
+- *Empty class.* A grade-10 maths class with nothing saved still had
+  **«من المكتبة»** in the «+» sheet.
+- *The picker.* For that class it listed the seeded staff video and 28 premade
+  maths sheets (so the class's subject id does match the catalogue's), the video
+  shelf before the worksheet shelf, each row naming its kind. It had no
+  book-QR rows, because the catalogue has none for grade-10 maths — its grade-10
+  codes are Arabic, civics, geography and Islamic studies.
+- *Adding.* One tap showed a spinner, then «مضاف»; the sheet stayed open; tapping
+  an added row again sent no request. The spinner only showed because the test
+  held the `POST` for 1.5 s — locally it answers instantly.
+- *The tab.* «تم» closed the picker; the tab listed «المكتبة · فيديو» and
+  «المكتبة · ورقة عمل», the sheet (added second) above the video, and the tab's
+  count read «موردان». A reload and `SELECT … FROM class_resources` both had
+  both rows.
+- *Opening.* A staff row called `window.open` and the browser requested
+  `https://example.com/v` (the sandbox cannot reach that host, so the new tab
+  was Chromium's error page). A premade row went to
+  `/workspace/view?premade=…` and the sheet rendered read-only. The staff row
+  was **re-driven after the ✕ was made a sibling** and still opened.
+- *Removing.* ✕ removed only that row and did not also open it (re-driven after
+  the restructure: no new tab, no request to its link, still on the class
+  screen); the video was still in `library_resources` and addable again in the
+  picker. After `DELETE FROM library_resources` a reload showed the row greyed
+  out and labelled «لم يعد متاحًا»; its open action was a `disabled` button
+  (opacity 0.6), tapping it opened nothing, and ✕ still removed it.
+- *Book codes.* In a grade-10 civics class the picker had 5 book-QR rows. Two
+  codes from the same book, added, read «… الفصل الأول — صفحة ٢٤» and
+  «… — صفحة ٤٩» on the tab: distinguishable. No reachable code in today's
+  catalogue is `http`, so the picker's per-row http warning was **not seen** in a
+  browser; the shelf row's same line is covered by a unit test of
+  `isInsecureResource` and was seen only in a throwaway server-side render of the
+  row (not in the repo), never in a browser.
+- *Failures are visible.* With `class_resources` dropped and the picker open,
+  tapping an item showed «تعذّر تحديث موارد الشعبة — حاول مرة أخرى» inside the
+  picker (no «مضاف», no spinner; cleared on closing). With a row on the shelf
+  and the table dropped, ✕ showed the same message as a toast on the class
+  screen and the row stayed.
+- *The API, two teachers* (20 checks, a hand-run script against local Postgres;
+  **not committed**, because it hard-codes local credentials, so this line is
+  not reproducible from the repo): the other teacher got 404 on read, add and
+  remove; a repeated add was a 409; a deleted staff upload came back
+  `unavailable`; no token was a 401; with the table dropped a read returned
+  `[]` and a write a 503. What *is* committed: the 24 tests of
+  `classResource.ts` (the validation, and `presentClassResource` including the
+  read-time link) and the 401 guard in `mountOrder.test.ts`. Ownership, the 409,
+  the 503s, `unavailable` and the lookup that feeds the read-time link live in
+  the route handlers and have no committed test.
+- *Nested buttons.* Before the fix a Library row on the tab put a `<button>`
+  inside a `<button>` (React logged «`<button>` cannot be a descendant of
+  `<button>`» on every load). The open action and the ✕ are now siblings.
+  Re-driven in Chromium on Expo web with a hand-run script (not in the repo)
+  that added a video and a premade sheet, reloaded, opened, removed and
+  deleted-from-the-Library them: the DOM had **0** `<button>`s inside a
+  `<button>` with both rows showing (two ✕, each a real `<button>`), and the run
+  logged **0 console errors** apart from the 404/500 answers it injected on
+  purpose.
+- *Failure fallbacks, driven.* With every `GET …/resources` answered 404, the
+  class screen loaded and the Students tab showed no banner. With the add's
+  `POST` succeeding and the re-read after it answered 500, the picker still read
+  «مضاف» with no error, and the shelf listed the new row.
+
+**Not verified.** A native device, or any browser but Chromium (only Expo web
+in Chromium was driven; Firefox and Safari were not, so the nested-`<button>`
+fix is confirmed by the DOM and console in Chromium only). The `warn` log line
+for a missing table was not driven. The http line on a shelf row was never seen
+in a browser (see *Book codes*). The read-time staff link (below) has unit tests
+of `presentClassResource`, and was run against a real API and database (a
+hand-run script, not committed); the route's Library lookup behind it has no
+committed test.
+
+**Staff links are read-time.** Production's `R2_PUBLIC_BASE_URL` is a dev
+`r2.dev` URL that may move, and a staff upload's `url` stored when it was added
+would keep the old host. So `GET /classes/:id/resources` selects `r2Key` and
+`sourceUrl` in the lookup it already makes for `unavailable`, and the link it
+returns for a staff upload whose Library row still exists is built from that row
+(`r2Key ? publicUrl(r2Key) : sourceUrl`, the same expression the add uses). That
+also repairs rows already stored. Everything else stays a snapshot: `title`,
+`mediaKind`, `thumbnailUrl`, and every `premade-sheet` / `book-qr` column. The
+stored `url` is the fallback in three cases: the Library row is gone (the row
+keeps it and is `unavailable`), the computed link is null (`R2_PUBLIC_BASE_URL`
+unset and no `sourceUrl`), and the lookup itself fails (every row is then called
+available and keeps its stored link). The add's response is unchanged: a fresh
+add is already current.
+
+Run against a local API and Postgres (a hand-run script, not committed): a
+Library row with an `r2_key`, added while `R2_PUBLIC_BASE_URL` was
+`https://cdn-a.test`, came back under `https://cdn-b.test` after the API
+restarted with that base, while the stored `url` column still read `cdn-a`;
+changing the Library row's key changed the returned link; deleting the Library
+row returned the stored `cdn-a` link with `unavailable: true`. The 20-check
+two-teacher run above was repeated on this code and passed.
+
+**Open for the owner.** Premade-sheet ids are not validated server-side, so a
+regenerated manifest can orphan a stored id; the row then opens the viewer's
+not-found screen. Left for piece 2 on the owner's say-so.
+
+**Classes with several subjects.** Merged in after main added subject filters
+to the class screen (2026-10-05). A shelf row carries no subject (the table
+has none, and it is already in production), so a Library item shows under every
+subject filter, not just its own; the teacher's saved materials still follow the
+filter. The picker offers the focused subject's items, or the class's first
+subject on «الكل», so a second subject's items are reached by focusing it first.
+Driven in Chromium on a two-subject class (maths + chemistry, local database):
+the chips showed; a maths sheet added from the picker on «الكل» stayed on the
+shelf under the chemistry focus; the chemistry-focused picker did not list that
+sheet (this local Library has no chemistry items, so it showed its empty
+message); the console was clean. Adding a chemistry item under the focus was
+not exercised, for want of one.
+
+**Not in this change.** Teacher-pasted links (no schema change) and device
+uploads (one more push, private storage, no video under the 8 MB cap) are
+pieces 2 and 3 of the spec. A Library-screen «add to class» button is out of
+scope; it could reuse the same `POST`.
+
 ## A class can take several subjects, 2026-10-04
 
 A شعبة is now a group of students, and its subjects are what this teacher
