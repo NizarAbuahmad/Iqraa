@@ -900,9 +900,34 @@ a premade sheet into the teacher's materials, nothing ever called it, and the
 viewer is read-only so a copy had no use. Premade sheets advertised an action
 nothing carried out.
 
-**Schema push required before merge.** `docs/schema-push-2026-10-04-class-resources.sql`
-(one table, two indexes, additive). Run it in Neon, then
-`pnpm --filter @workspace/db run verify-schema`.
+**The table reached production about nine hours after the code (2026-10-06).**
+The code merged in #844 and deployed (Deploy #420, `d5ce0501`, about 06:09 UTC)
+before `class_resources` existed: the Schema check on that merge (run #98) failed
+with `MISS classResources.ts … missing table: class_resources`, "45 of 46 tables
+present". #844's description said `schema-push: done`; that was not true when the
+PR merged. Until the table existed the shelf read as empty (`GET` answered `[]`,
+logged at `warn`) and adding or removing an item showed the in-app error and
+saved nothing; no data was lost.
+
+The owner then ran the SQL in Neon (query history: «create class resources table
+with indexes», 18:07 local, about 15:07 UTC), and a Schema check dispatched on
+`main` at 15:27 UTC (run #104, `a32da386`) reported **46 of 46 tables present;
+every declared table, column and unique constraint exists**. That covers
+`class_resources`, its columns and the partial unique index
+`class_resources_library_unique`.
+
+**Not checked.** `verify-schema` does not look at the plain index
+`class_resources_class_idx` or the foreign keys; confirm with
+`SELECT indexname FROM pg_indexes WHERE tablename = 'class_resources'` (expect
+three rows, with the primary key) in the Neon console. And nobody has yet added a
+Library item to a class on the live app, so the feature end to end on production
+is unverified; the checks above are about the schema only.
+
+**The deploy gate arrived the same day.** At #844's merge nothing stopped a deploy
+for a missing table. PR #875 (merged 2026-10-06 15:14 UTC) now makes the API
+deploy wait on a production schema check, so this sequence should fail the deploy
+instead of shipping inert code. Its first real run on `main` was not looked at
+here.
 
 **Verified against the running system** (local Postgres 16, the real API built
 from this branch, Expo web, headless Chromium at 390×844 in Arabic):
