@@ -5,7 +5,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { formatLabNumber, formatScientific, toArabicDigits } from '../labFormat.ts';
+import { formatLabNumber, formatScientific, parseLabNumber, toArabicDigits } from '../labFormat.ts';
 
 describe('toArabicDigits', () => {
   it('converts digits and the decimal point', () => {
@@ -49,5 +49,27 @@ describe('formatScientific', () => {
   });
   it('has no exponent for zero', () => {
     assert.deepEqual(formatScientific(0, 'en'), { mantissa: '0', exponent: null });
+  });
+});
+
+describe('parseLabNumber', () => {
+  it('reads latin, Arabic-Indic and Persian digits', () => {
+    assert.equal(parseLabNumber('36'), 36);
+    assert.equal(parseLabNumber('٣٦'), 36);
+    assert.equal(parseLabNumber('۳۶'), 36);
+  });
+  it('accepts one decimal separator: . , or ٫', () => {
+    assert.equal(parseLabNumber('١٫٥'), 1.5);
+    assert.equal(parseLabNumber('1,5'), 1.5);
+    assert.equal(parseLabNumber('.5'), 0.5);
+    assert.equal(parseLabNumber('5.'), 5);
+  });
+  it('trims surrounding whitespace', () => {
+    assert.equal(parseLabNumber('  2 '), 2);
+  });
+  it('returns NaN for anything that is not a plain non-negative decimal', () => {
+    for (const bad of ['', 'abc', '1e5', 'Infinity', '-1', '+1', '0x10', '1 2', '1,000.5', '1.2.3', '.', ',']) {
+      assert.ok(Number.isNaN(parseLabNumber(bad)), `expected NaN for ${JSON.stringify(bad)}`);
+    }
   });
 });

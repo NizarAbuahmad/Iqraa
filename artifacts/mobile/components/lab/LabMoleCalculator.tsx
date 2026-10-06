@@ -9,7 +9,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { solveMole, type MoleKnown } from '@/services/labMole';
-import { formatLabNumber, formatScientific } from '@/services/labFormat';
+import { formatLabNumber, formatScientific, parseLabNumber } from '@/services/labFormat';
 import type { TranslationKey } from '@/services/i18n';
 
 const PRESETS = ['H2O', 'CO2', 'NaCl', 'Ca(OH)2'];
@@ -29,9 +29,9 @@ export function LabMoleCalculator() {
   const [raw, setRaw] = useState('36');
 
   const result = useMemo(() => {
-    // Latin only: `Number()` would read Arabic-Indic digits as NaN, which is the
-    // right answer — it reports "enter a number" instead of guessing.
-    const value = raw.trim() === '' ? Number.NaN : Number(raw);
+    // Accepts latin and Arabic-Indic digits and «٫» / "," as the decimal mark;
+    // anything else is NaN, which reports "enter a number" instead of guessing.
+    const value = parseLabNumber(raw);
     return solveMole({ formula, known, value });
   }, [formula, known, raw]);
 

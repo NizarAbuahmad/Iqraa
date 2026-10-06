@@ -13,6 +13,25 @@ export function toArabicDigits(s: string): string {
   return s.replace(/[0-9]/g, d => AR_DIGITS[Number(d)]).replace(/\./g, '٫');
 }
 
+/**
+ * The inverse of `toArabicDigits`, for input: a teacher on an Arabic or
+ * European keyboard types «٣٦», «١٫٥» or "1,5", and all three mean a number.
+ * Arabic-Indic and Persian digits become latin, and one «٫» or «,» becomes ".".
+ *
+ * It is strict on purpose. `Number()` would also accept "1e5", "Infinity",
+ * "0x10" and "" (as 0), and a calculator that quietly reads those prints an
+ * answer for something nobody meant. Anything that is not a plain non-negative
+ * decimal is NaN, which callers report as "enter a number" instead of guessing.
+ */
+export function parseLabNumber(input: string): number {
+  const latin = input
+    .trim()
+    .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/[٫,]/, '.');
+  return /^(\d+\.?\d*|\.\d+)$/.test(latin) ? Number(latin) : Number.NaN;
+}
+
 function localise(s: string, lang: 'ar' | 'en'): string {
   return lang === 'ar' ? toArabicDigits(s) : s;
 }
