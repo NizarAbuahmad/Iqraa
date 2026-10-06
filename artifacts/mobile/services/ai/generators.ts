@@ -28,6 +28,11 @@ import {
 } from './mathPractice.ts';
 import { isChemContext, takeConcreteChem, takeConcreteChemBatch, takeSolvedChem, type SolvedItem } from './chemPractice.ts';
 import { buildActivityBlueprint } from './activityBlueprints.ts';
+import {
+  buildErrorDetective, buildEscape, buildExitTicket, buildGalleryWalk, buildRelay, buildTermBingo,
+  type Challenge, type ErrorCase, type FormatCtx,
+} from './classroomFormats.ts';
+import { lessonTasks, nextVariantFor, termNames, windowOf, type LessonTask } from './classroomTasks.ts';
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
 import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
@@ -867,6 +872,20 @@ export class NoQuestionBankError extends Error {
 /** Tests that exercise the template machinery directly turn this off; nothing else should. */
 export const questionBankPolicy = { required: true };
 
+/** A banked item as an escape/relay challenge — its answer was computed or reviewed. */
+const bankChallenge = (isAr: boolean) => (item: { text: string; answer: string; steps?: string[] }): Challenge => ({
+  prompt: item.text,
+  answer: item.answer,
+  hint: item.steps?.[0] ?? (isAr ? 'ابدأ بما هو معطى ثم طبّق الخطوة الأولى' : 'Start from what is given, then apply the first step'),
+  tip: item.steps?.length ? item.steps.join('\n') : undefined,
+  banked: true,
+});
+
+/** A lesson task as a challenge — the teacher checks the answer against the textbook. */
+const taskChallenge = (t: LessonTask): Challenge => ({
+  prompt: t.prompt, answer: t.check, hint: t.hint, banked: false,
+});
+
 function requireQuestionBank(topic: string, kb: KBLesson | null, subject?: string): void {
   if (!questionBankPolicy.required || isChemContext(topic, kb, subject)) return;
   // A maths lesson is covered only when the bank has items ABOUT it — Grade 7–9
@@ -1574,6 +1593,15 @@ export class MockAIService extends AIService {
           : [];
     const bingoItems = actType === 'bingo' ? batch(8) : [];
     const relayItems = actType === 'relay' ? batch(4) : [];
+    // Version 0 on a first generation, +1 per Regenerate of the same request —
+    // the lesson-derived formats have nothing random to draw, so this is what
+    // makes them show different material the next time.
+    const variant = nextVariantFor(
+      [req.language, actType, req.lessonId ?? '', topic].join('|'),
+      req.regenerate === true,
+    );
+    const ctx: FormatCtx = { req, topic, isAr, dur, slideDuration, variant };
+    const tasks = lessonTasks(topic, kb, isAr ? 'ar' : 'en');
 
     // ── Quick Check (whole-class ABCD response) ────────────────────────────────
     // Every student answers every question (hands raised / mini-whiteboards) —
@@ -1697,7 +1725,7 @@ export class MockAIService extends AIService {
 
       // Non-math (or exhausted bank): open questions from the lesson's
       // objectives — honest discussion prompts, no fabricated options.
-      const objectives = (kb?.objectives ?? []).slice(0, wanted);
+      const objectives = windowOf(kb?.objectives ?? [], wanted, variant);
       const stems = objectives.length > 0 ? objectives : [topic];
       const openSlides = stems.map((obj, i) => ({
         slideNumber: i + 2,
@@ -1767,9 +1795,14 @@ export class MockAIService extends AIService {
     }
 
     // ── Bingo ──────────────────────────────────────────────────────────────────
+    // A banked lesson calls real problems. Any other lesson has term NAMES but
+    // almost never definitions, so the card carries the names and the teacher
+    // reads the clue from the textbook (see `classroomTasks.ts`). A lesson with
+    // fewer than four names has nothing to put on a card, so it is refused
+    // rather than padded with «Term 1 … Term 8».
     if (actType === 'bingo') {
-      if (isAr) {
-        if (math && bingoItems.length >= 4) {
+      if (bingoItems.length >= 4) {
+        if (isAr) {
           const calls = bingoItems.slice(0, 8).map((item, i) => ({
             slideNumber: i + 2,
             type: 'bingo-call' as const,
@@ -1808,38 +1841,6 @@ export class MockAIService extends AIService {
             ],
           };
         }
-        return {
-          activityName: `بينجو – ${topic}`,
-          activityType: 'bingo',
-          grade: req.grade,
-          subject: req.subject,
-          lesson: topic,
-          duration: dur,
-          difficulty: req.difficulty,
-          groupType: req.groupType,
-          learningObjective: `مراجعة مفردات وتعريفات ${topic} بأسلوب تنافسي ممتع`,
-          materials: ['بطاقات بينجو مطبوعة (بطاقة لكل طالب)', 'قصاصات ورقية أو حصص صغيرة للتغطية', 'مؤقت'],
-          teacherPreparation: 'اطبع بطاقات بينجو مختلفة لكل طالب (5×5 مربع). جهّز قائمة الاستدعاء بالمصطلحات والتعريفات.',
-          teacherNotes: ['ناقش الإجابات بعد الانتهاء لتعزيز الفهم', 'يمكن اللعب لجولتين مع تبديل البطاقات'],
-          answerKey: [`المصطلح 1: تعريف ${topic}`, `المصطلح 2: خاصية ${topic}`, `المصطلح 3: تطبيق ${topic}`],
-          printables: ['بطاقات بينجو 5×5 (نسخة مختلفة لكل طالب)', 'قائمة الاستدعاء للمعلم'],
-          assessment: 'قيّم سرعة التعرف على المصطلحات ودقتها. راقب من يحتاج مراجعة إضافية.',
-          extensionChallenge: `اطلب من الفائز شرح 3 مصطلحات من بطاقته بكلماته الخاصة`,
-          slides: [
-            { slideNumber: 1, type: 'intro', title: '🎱 بينجو المصطلحات', content: `مرحبًا بكم في بينجو ${topic}!\nلكل طالب بطاقة 5×5 مليئة بالمصطلحات.\nعندما أستدعي مصطلحًا، غطّ المربع المناسب.\nأول من يكمل صفًا أو عمودًا أو قطرًا يصرخ بينجو!`, durationSeconds: 0 },
-            { slideNumber: 2, type: 'bingo-call', title: 'الاستدعاء 1', content: `تعريف: المفهوم الأساسي الأول في ${topic}`, hint: `فكّر في تعريف ${topic}`, answer: `المصطلح 1`, durationSeconds: 30, teacher: { expectedAnswer: `المصطلح المحدد من وحدة ${topic}`, teachingTips: 'امنح الطلبة 20-30 ثانية للبحث في بطاقاتهم', suggestedQuestions: ['هل تتذكر هذا المصطلح من الدرس؟'] } },
-            { slideNumber: 3, type: 'bingo-call', title: 'الاستدعاء 2', content: `خاصية: ${topic} يُستخدم عندما…`, hint: 'فكّر في حالات التطبيق', answer: 'المصطلح 2', durationSeconds: 30, teacher: { expectedAnswer: `تطبيق مباشر من وحدة ${topic}`, teachingTips: 'ذكّر الطلبة بمثال من الكتاب', suggestedQuestions: ['أين طبّقنا هذا في الدرس؟'] } },
-            { slideNumber: 4, type: 'bingo-call', title: 'الاستدعاء 3', content: `قاعدة: إذا كان … في ${topic}، فإن النتيجة هي…`, hint: 'راجع القواعد الأساسية', answer: 'المصطلح 3', durationSeconds: 30, teacher: { expectedAnswer: `القاعدة المرتبطة بـ${topic}`, teachingTips: 'اربط السؤال بخطوة الحل التي درسناها' } },
-            { slideNumber: 5, type: 'bingo-call', title: 'الاستدعاء 4', content: `مثال: أوجد نتيجة تطبيق مفهوم من ${topic} في موقف حياتي`, hint: 'تذكّر التطبيقات الحياتية', answer: 'المصطلح 4', durationSeconds: 30, teacher: { expectedAnswer: `مثال حياتي على ${topic}`, teachingTips: 'يمكن قبول أكثر من مصطلح إذا كانت الإجابة منطقية' } },
-            { slideNumber: 6, type: 'bingo-call', title: 'الاستدعاء 5', content: `المعادلة: الصيغة الرياضية المرتبطة بـ${topic} هي…`, hint: 'تذكّر صيغ وحدتنا', answer: 'المصطلح 5', durationSeconds: 30, teacher: { expectedAnswer: `الصيغة المرتبطة بـ${topic}`, teachingTips: 'اعرض الصيغة بعد الاستدعاء للتأكيد' } },
-            { slideNumber: 7, type: 'bingo-call', title: 'الاستدعاء 6', content: `ما الفرق بين المفهومين الرئيسيين في ${topic}؟`, hint: 'قارن المفهومين', answer: 'المصطلح 6', durationSeconds: 30, teacher: { expectedAnswer: `الفرق بين مفهومَي ${topic}`, teachingTips: 'ادفع الطلبة للتفكير النقدي هنا' } },
-            { slideNumber: 8, type: 'bingo-call', title: 'الاستدعاء 7', content: `أي خاصية من خصائص ${topic} تنطبق على هذا الموقف: …؟`, hint: 'راجع قائمة الخصائص', answer: 'المصطلح 7', durationSeconds: 30, teacher: { expectedAnswer: `الخاصية المناسبة من ${topic}`, teachingTips: 'أعطِ مثالًا إضافيًا إذا بدا الطلبة متوقفين' } },
-            { slideNumber: 9, type: 'bingo-call', title: 'الاستدعاء 8', content: `الوحدة المستخدمة لقياس كمية مرتبطة بـ${topic} هي…`, hint: 'فكّر في وحدات القياس', answer: 'المصطلح 8', durationSeconds: 30, teacher: { expectedAnswer: `وحدة القياس المرتبطة بـ${topic}`, teachingTips: 'ذكّر الطلبة بجدول الوحدات' } },
-            { slideNumber: 10, type: 'summary', title: '🎉 انتهت الجولة!', content: `أحسنتم جميعًا!\nراجعنا اليوم مفردات ${topic} الأساسية.\n\nناقش مع زميلك:\n• أي مصطلح كان الأصعب؟\n• أي مصطلح تريد مراجعته مجددًا؟`, durationSeconds: 0 },
-          ],
-        };
-      }
-      if (math && bingoItems.length >= 4) {
         const calls = bingoItems.slice(0, 8).map((item, i) => ({
           slideNumber: i + 2,
           type: 'bingo-call' as const,
@@ -1878,773 +1879,45 @@ export class MockAIService extends AIService {
           ],
         };
       }
-      return {
-        activityName: `Math Bingo – ${topic}`,
-        activityType: 'bingo',
-        grade: req.grade,
-        subject: req.subject,
-        lesson: topic,
-        duration: dur,
-        difficulty: req.difficulty,
-        groupType: req.groupType,
-        learningObjective: `Review key vocabulary and definitions of ${topic} in a competitive, fun format`,
-        materials: ['Printed bingo cards (one per student, each unique)', 'Small chips or paper scraps for covering squares', 'Timer'],
-        teacherPreparation: 'Print unique 5×5 bingo cards for each student. Prepare a caller list of terms and definitions.',
-        teacherNotes: ['Discuss answers after the game to reinforce learning', 'Play two rounds with swapped cards for deeper review'],
-        answerKey: [`Term 1: definition of ${topic}`, `Term 2: property of ${topic}`, `Term 3: application of ${topic}`],
-        printables: ['5×5 Bingo cards (unique per student)', "Teacher's caller list"],
-        assessment: 'Observe recognition speed and accuracy. Note students who struggle to find terms.',
-        extensionChallenge: `Ask the winner to explain 3 terms from their card in their own words`,
-        slides: [
-          { slideNumber: 1, type: 'intro', title: '🎱 Vocabulary Bingo', content: `Welcome to ${topic} Bingo!\nEach card has a 5×5 grid of terms.\nWhen I call a clue, cover the matching term.\nFirst to complete a row, column, or diagonal shouts BINGO!`, durationSeconds: 0 },
-          { slideNumber: 2, type: 'bingo-call', title: 'Call 1', content: `Definition: The core concept at the heart of ${topic}`, hint: `Think about the definition of ${topic}`, answer: 'Term 1', durationSeconds: 30, teacher: { expectedAnswer: `The key term from the ${topic} unit`, teachingTips: 'Give students 20-30 seconds to scan their cards', suggestedQuestions: ['Do you remember this term from the lesson?'] } },
-          { slideNumber: 3, type: 'bingo-call', title: 'Call 2', content: `Property: ${topic} is used when…`, hint: 'Think about when we apply this concept', answer: 'Term 2', durationSeconds: 30, teacher: { expectedAnswer: `A direct application from the ${topic} unit`, teachingTips: 'Remind students of the textbook example' } },
-          { slideNumber: 4, type: 'bingo-call', title: 'Call 3', content: `Rule: In ${topic}, when … the result is…`, hint: 'Recall the main rules', answer: 'Term 3', durationSeconds: 30, teacher: { expectedAnswer: `The rule linked to ${topic}`, teachingTips: 'Connect the clue to the solution steps we studied' } },
-          { slideNumber: 5, type: 'bingo-call', title: 'Call 4', content: `Example: Name a real-world application of a concept from ${topic}`, hint: 'Think of everyday applications', answer: 'Term 4', durationSeconds: 30, teacher: { expectedAnswer: `A real-world example of ${topic}`, teachingTips: 'Accept multiple terms if the reasoning is sound' } },
-          { slideNumber: 6, type: 'bingo-call', title: 'Call 5', content: `Formula: The mathematical expression associated with ${topic} is…`, hint: 'Recall the formulas from our unit', answer: 'Term 5', durationSeconds: 30, teacher: { expectedAnswer: `The formula linked to ${topic}`, teachingTips: 'Display the formula after calling to confirm' } },
-          { slideNumber: 7, type: 'bingo-call', title: 'Call 6', content: `What is the main difference between the two key concepts in ${topic}?`, hint: 'Compare the two concepts', answer: 'Term 6', durationSeconds: 30, teacher: { expectedAnswer: `The distinction between the two concepts in ${topic}`, teachingTips: 'Push students toward critical thinking here' } },
-          { slideNumber: 8, type: 'bingo-call', title: 'Call 7', content: `Which property of ${topic} applies to this situation: …?`, hint: 'Review your list of properties', answer: 'Term 7', durationSeconds: 30, teacher: { expectedAnswer: `The appropriate property from ${topic}`, teachingTips: 'Give an extra example if students seem stuck' } },
-          { slideNumber: 9, type: 'bingo-call', title: 'Call 8', content: `The unit used to measure a quantity related to ${topic} is…`, hint: 'Think about units of measurement', answer: 'Term 8', durationSeconds: 30, teacher: { expectedAnswer: `The measurement unit related to ${topic}`, teachingTips: 'Remind students of the units table' } },
-          { slideNumber: 10, type: 'summary', title: '🎉 Round Complete!', content: `Well done everyone!\nWe reviewed key vocabulary from ${topic}.\n\nDiscuss with a partner:\n• Which term was hardest to remember?\n• Which term would you like to revisit?`, durationSeconds: 0 },
-        ],
-      };
+      const names = termNames(kb, isAr ? 'ar' : 'en');
+      if (names.length < 4) throw new NoQuestionBankError(topic);
+      return buildTermBingo(ctx, windowOf(names, 8, variant));
     }
 
     // ── Relay Race ─────────────────────────────────────────────────────────────
     if (actType === 'relay') {
-      if (isAr) {
-        if (math && relayItems.length >= 4) {
-          return {
-            activityName: `سباق التتابع – ${topic}`,
-            activityType: 'relay',
-            grade: req.grade,
-            subject: req.subject,
-            lesson: topic,
-            duration: dur,
-            difficulty: req.difficulty,
-            groupType: req.groupType,
-            learningObjective: `حل أربع مسائل محددة في ${topic} ضمن فرق تنافسية`,
-            materials: ['السبورة', 'أوراق التتابع المطبوعة', 'مؤقت', 'أقلام ملونة'],
-            teacherPreparation: 'قسّم الطلبة إلى فرق. كل فرد يحل مسألة واحدة ثم يمرّر للالتالي.',
-            teacherNotes: ['تحقق من توازن الفرق', 'شجّع التحقق قبل التمرير'],
-            answerKey: relayItems.map((item, i) => `المسألة ${i + 1}: ${item.answer}`),
-            printables: ['أوراق التتابع', 'لوحة النتائج'],
-            assessment: 'قيّم صحة إجابات المسائل الأربع وسرعة الإنجاز.',
-            extensionChallenge: 'اطلب من الفريق الفائز صياغة مسألة خامسة للفريق الآخر',
-            slides: [
-              { slideNumber: 1, type: 'intro', title: '🏃 سباق التتابع', content: `سباق مسائل ${topic}!\nكل فريق يحل 4 مسائل متتالية.\nالفريق الأسرع بإجابات صحيحة يفوز.`, durationSeconds: 0 },
-              ...relayItems.map((item, i) => ({
-                slideNumber: i + 2,
-                type: 'relay-problem' as const,
-                title: `المسألة ${i + 1} من 4`,
-                content: item.text,
-                hint: 'بيّن خطواتك قبل التمرير',
-                answer: item.answer,
-                durationSeconds: slideDuration,
-                teacher: {
-                  expectedAnswer: item.answer,
-                  teachingTips: 'تأكد أن الفريق يكتب الناتج بوضوح',
-                  suggestedQuestions: ['ما خطوتك الأولى؟'],
-                },
-              })),
-              { slideNumber: 6, type: 'summary', title: '🎉 اكتملت السلسلة!', content: `أحسنتم!\nحللتم اليوم مسائل ${topic} الحقيقية.\nتحقق دائمًا قبل التمرير.`, durationSeconds: 0 },
-            ],
-          };
-        }
-        return {
-          activityName: `سباق التتابع – ${topic}`,
-          activityType: 'relay',
-          grade: req.grade,
-          subject: req.subject,
-          lesson: topic,
-          duration: dur,
-          difficulty: req.difficulty,
-          groupType: req.groupType,
-          learningObjective: `تطبيق مهارات ${topic} في سلسلة من المسائل المتصلة ضمن فرق تنافسية`,
-          materials: ['السبورة', 'أوراق التتابع المطبوعة', 'مؤقت', 'أقلام ملونة (لون لكل فريق)'],
-          teacherPreparation: 'قسّم الطلبة إلى فرق من 4-5 أفراد. اطبع ورقة تتابع لكل فريق. اشرح آلية التمرير: كل طالب يحل مسألة ويمرر الإجابة للتالي.',
-          teacherNotes: ['تحقق أن الفرق متوازنة المستوى', 'شجّع التحقق من الإجابة قبل التمرير'],
-          answerKey: [
-            'المسألة 1: الإجابة الأولى (تُمرَّر للمسألة 2)',
-            'المسألة 2: استخدم إجابة 1 + خطوة جديدة',
-            'المسألة 3: استخدم إجابة 2 + خطوة جديدة',
-            'المسألة 4: الإجابة النهائية للتتابع',
-          ],
-          printables: ['أوراق التتابع (نسخة لكل فريق)', 'لوحة النتائج'],
-          assessment: 'قيّم صحة الإجابة النهائية وسرعة إنجاز التتابع. ناقش أين حدثت الأخطاء في السلسلة.',
-          extensionChallenge: `اطلب من الفريق الفائز تصميم سلسلة تتابع جديدة لفريق آخر`,
-          slides: [
-            { slideNumber: 1, type: 'intro', title: '🏃 سباق التتابع', content: `سباق ${topic} التتابعي!\nكل فريق يحل سلسلة من 4 مسائل متصلة.\nإجابة كل مسألة هي المدخل للمسألة التالية.\nالفريق الذي ينتهي أولاً بإجابة صحيحة يفوز!`, durationSeconds: 0 },
-            {
-              slideNumber: 2, type: 'relay-problem', title: 'المسألة 1 من 4',
-              content: `احسب القيمة الأولى:\nطبّق ${topic} على المعطيات التالية وأوجد (أ).\n\nمعطيات: حدّدها من الكتاب المدرسي`,
-              hint: 'ابدأ بتحديد المعطيات وطبّق الخطوة الأولى',
-              answer: 'أ = القيمة الأولى',
-              durationSeconds: slideDuration,
-              teacher: { expectedAnswer: `القيمة الأولى (أ) من تطبيق ${topic}`, commonMisconceptions: 'قد يخطئ الطلبة في تحديد المعطيات', teachingTips: 'تأكد أن كل فريق يكتب إجابته بوضوح قبل التمرير', suggestedQuestions: ['ما المعطى الذي تستخدمه في الخطوة الأولى؟'] },
-            },
-            {
-              slideNumber: 3, type: 'relay-problem', title: 'المسألة 2 من 4',
-              content: `استخدم (أ) من المسألة 1:\nالآن طبّق ${topic} مرة أخرى مع (أ) لإيجاد (ب).`,
-              hint: 'استبدل (أ) في المعادلة الجديدة',
-              answer: 'ب = القيمة الثانية',
-              durationSeconds: slideDuration,
-              teacher: { expectedAnswer: `القيمة الثانية (ب) باستخدام نتيجة (أ)`, commonMisconceptions: 'استخدام قيمة خاطئة من المسألة السابقة', teachingTips: 'اطلب من الفرق التحقق من (أ) قبل الانتقال' },
-            },
-            {
-              slideNumber: 4, type: 'relay-problem', title: 'المسألة 3 من 4',
-              content: `استخدم (ب) من المسألة 2:\nطبّق خاصية ${topic} الثانية مع (ب) لإيجاد (ج).`,
-              hint: 'تذكّر الخاصية الثانية التي درسناها',
-              answer: 'ج = القيمة الثالثة',
-              durationSeconds: slideDuration,
-              teacher: { expectedAnswer: `القيمة الثالثة (ج) باستخدام نتيجة (ب)`, commonMisconceptions: 'الخلط بين الخصائص المختلفة', teachingTips: 'ذكّر بالفرق بين الخاصيتين إذا لزم' },
-            },
-            {
-              slideNumber: 5, type: 'relay-problem', title: 'المسألة الأخيرة 4 من 4',
-              content: `المسألة النهائية!\nاستخدم (ج) من المسألة 3:\nطبّق ${topic} بالكامل لإيجاد الإجابة النهائية (د).`,
-              hint: 'وحّد كل نتائجك لإيجاد الحل الكامل',
-              answer: 'د = الإجابة النهائية',
-              durationSeconds: slideDuration,
-              teacher: { expectedAnswer: `الإجابة النهائية (د) لسلسلة التتابع`, commonMisconceptions: 'أخطاء التراكم من المسائل السابقة', teachingTips: 'ناقش مع الصف كيف تراكمت الأخطاء في السلسلة', suggestedQuestions: ['كيف أثّرت الخطأ في المسألة 1 على النتيجة النهائية؟'] },
-            },
-            { slideNumber: 6, type: 'summary', title: '🎉 اكتملت السلسلة!', content: `أحسنتم!\nاليوم طبّقتم ${topic} في سلسلة متكاملة.\n\nالدرس المهم:\n• كل خطوة تبني على السابقة\n• الدقة في البداية تضمن صحة النهاية\n• تحقق دائمًا قبل التمرير`, durationSeconds: 0 },
-          ],
-        };
-      }
-      return {
-        activityName: `Relay Race – ${topic}`,
-        activityType: 'relay',
-        grade: req.grade,
-        subject: req.subject,
-        lesson: topic,
-        duration: dur,
-        difficulty: req.difficulty,
-        groupType: req.groupType,
-        learningObjective: `Apply ${topic} skills in a chain of connected problems within competing teams`,
-        materials: ['Whiteboard', 'Printed relay sheets (one per team)', 'Timer', 'Coloured markers (one per team)'],
-        teacherPreparation: 'Divide students into teams of 4-5. Print a relay sheet for each team. Explain the relay rule: each student solves a problem and passes their answer to the next.',
-        teacherNotes: ['Balance teams by ability level', 'Encourage students to verify their answer before passing'],
-        answerKey: [
-          'Problem 1: First answer (passed to problem 2)',
-          'Problem 2: Use answer 1 + a new step',
-          'Problem 3: Use answer 2 + a new step',
-          'Problem 4: Final answer for the relay chain',
-        ],
-        printables: ['Relay worksheets (one per team)', 'Scoreboard'],
-        assessment: 'Evaluate the correctness of the final answer and completion speed. Discuss where errors entered the chain.',
-        extensionChallenge: `Challenge the winning team to design their own relay chain for another team to solve`,
-        slides: [
-          { slideNumber: 1, type: 'intro', title: '🏃 Relay Race', content: `${topic} Relay Race!\nEach team solves a chain of 4 connected problems.\nYour answer to each problem feeds the next one.\nThe first team to finish with the correct final answer wins!`, durationSeconds: 0 },
-          {
-            slideNumber: 2, type: 'relay-problem', title: 'Problem 1 of 4',
-            content: `Find the first value:\nApply ${topic} to the given data and find (a).\n\nData: see your printed relay sheet`,
-            hint: 'Start by identifying the given data and apply the first step',
-            answer: 'a = first value',
-            durationSeconds: slideDuration,
-            teacher: { expectedAnswer: `First value (a) from applying ${topic}`, commonMisconceptions: 'Students may misread the given data', teachingTips: 'Make sure each team writes their answer clearly before passing', suggestedQuestions: ['Which piece of data do you use in the first step?'] },
-          },
-          {
-            slideNumber: 3, type: 'relay-problem', title: 'Problem 2 of 4',
-            content: `Use (a) from Problem 1:\nNow apply ${topic} again with (a) to find (b).`,
-            hint: 'Substitute (a) into the new expression',
-            answer: 'b = second value',
-            durationSeconds: slideDuration,
-            teacher: { expectedAnswer: `Second value (b) using the result of (a)`, commonMisconceptions: 'Using a wrong value carried from the previous problem', teachingTips: 'Ask teams to double-check (a) before moving on' },
-          },
-          {
-            slideNumber: 4, type: 'relay-problem', title: 'Problem 3 of 4',
-            content: `Use (b) from Problem 2:\nApply the second property of ${topic} with (b) to find (c).`,
-            hint: 'Recall the second property we studied',
-            answer: 'c = third value',
-            durationSeconds: slideDuration,
-            teacher: { expectedAnswer: `Third value (c) using the result of (b)`, commonMisconceptions: 'Confusing the two main properties', teachingTips: 'Remind students of the distinction if needed' },
-          },
-          {
-            slideNumber: 5, type: 'relay-problem', title: 'Final Problem 4 of 4',
-            content: `FINAL PROBLEM!\nUse (c) from Problem 3:\nApply the full ${topic} process to find the final answer (d).`,
-            hint: 'Combine all your results to reach the complete solution',
-            answer: 'd = final answer',
-            durationSeconds: slideDuration,
-            teacher: { expectedAnswer: `Final answer (d) for the relay chain`, commonMisconceptions: 'Accumulated errors from earlier problems', teachingTips: 'Discuss with the class how early errors propagated through the chain', suggestedQuestions: ['How did an error in Problem 1 affect the final answer?'] },
-          },
-          { slideNumber: 6, type: 'summary', title: '🎉 Chain Complete!', content: `Outstanding!\nToday you applied ${topic} across a full connected chain.\n\nKey takeaways:\n• Each step builds on the previous one\n• Accuracy early guarantees a correct final answer\n• Always verify before passing`, durationSeconds: 0 },
-        ],
-      };
+      if (relayItems.length >= 4) return buildRelay(ctx, relayItems.map(bankChallenge(isAr)));
+      return buildRelay(ctx, windowOf(tasks, 4, variant).map(taskChallenge));
     }
 
     // ── Error Detective ────────────────────────────────────────────────────────
+    // Needs a wrong answer to look at. Only the banked subjects have one — a
+    // real distractor from the item — so any other lesson is refused instead of
+    // being shown another subject's mistakes.
     if (actType === 'error-detective') {
-      if (isAr) {
-        return {
-          activityName: `المحقق الرياضي – ${topic}`,
-          activityType: 'error-detective',
-          grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
-          difficulty: req.difficulty, groupType: req.groupType,
-          learningObjective: `تحديد الأخطاء الشائعة في حل مسائل ${topic} وتصحيحها بمنهجية`,
-          materials: ['السبورة', 'بطاقات الحلول الخاطئة المطبوعة', 'أقلام تصحيح حمراء'],
-          teacherPreparation: 'اطبع 3 حلول خاطئة مسبقًا. اطلب من الطلبة العمل في ثنائيات.',
-          teacherNotes: ['ناقش سبب الخطأ وليس فقط الإجابة الصحيحة', 'استخدم أخطاء حقيقية من اختبارات سابقة'],
-          answerKey: ['الخطأ 1: إشارة سالبة مفقودة', 'الخطأ 2: قسمة على المتغير بدلاً من إخراجه', 'الخطأ 3: نسيان الجذر السالب'],
-          printables: ['بطاقات الحلول الخاطئة', 'نموذج التقرير التحقيقي'],
-          assessment: 'قيّم قدرة الطلبة على تحديد الخطأ وشرح سببه وتقديم الحل الصحيح.',
-          extensionChallenge: `اطلب من الطلبة تصميم خطأ متعمد في حل ${topic} وتبادله مع مجموعة أخرى.`,
-          slides: [
-            { slideNumber: 1, type: 'intro', title: '🔍 المحقق الرياضي', content: `مهمتك: اكشف الخطأ في الحلول التالية!\nكل حل يحتوي على خطأ واحد على الأقل.\nحدّد الخطأ، اشرح سببه، وقدّم الحل الصحيح.\n\nعمل ثنائي – دقيقتان لكل بطاقة`, durationSeconds: 0 },
-            {
-              slideNumber: 2, type: 'challenge',
-              title: '🕵️ الجريمة 1 – أوجد الخطأ',
-              content: `الطالب كتب هذا الحل:\n\nحل معادلة: س² - 9 = 0\nس² = 9\nس = 3\n\n❓ أين الخطأ؟`,
-              hint: 'هل هناك حالتان لـ√9 ؟',
-              answer: 'الخطأ: نسيان الجذر السالب\nالصحيح: س = 3 أو س = -3',
-              durationSeconds: slideDuration,
-              teacher: { expectedAnswer: 'نسيان الجذر السالب ± 3', commonMisconceptions: 'الطلبة يعتقدون أن الجذر التربيعي له قيمة موجبة فقط', teachingTips: 'ذكّر: √9 = ±3 دائمًا عند حل المعادلات', suggestedQuestions: ['ما عدد حلول المعادلة التربيعية؟', 'متى تكون الحلول كلاهما موجبة؟'] },
-            },
-            { slideNumber: 3, type: 'reveal', title: '✅ الحل الصحيح', content: 'الخطأ: أخذ الجذر الموجب فقط\n\nالحل الكامل:\nس² = 9\nس = ±3\n\nإذن: س = 3 أو س = -3\n\n🏅 نقطة لمن اكتشف الخطأ!', durationSeconds: 0 },
-            {
-              slideNumber: 4, type: 'challenge',
-              title: '🕵️ الجريمة 2 – أوجد الخطأ',
-              content: `الطالب كتب هذا الحل:\n\nحل معادلة: 3س² - 6س = 0\n3س² = 6س\nس = 2\n\n❓ أين الخطأ؟`,
-              hint: 'ماذا يحدث عند القسمة على المتغير؟',
-              answer: 'الخطأ: القسمة على (س) تُفقد الحل س = 0\nالصحيح: س(3س - 6) = 0، إذن س = 0 أو س = 2',
-              durationSeconds: slideDuration,
-              teacher: { expectedAnswer: 'قسمة طرفي المعادلة على (س) تُضيّع الحل س = 0', commonMisconceptions: 'الطلبة يقسمون على المتغير ظنًا أنه مبسّط', teachingTips: 'القاعدة الذهبية: لا تقسم على متغير، بل أخرجه عاملاً', suggestedQuestions: ['لماذا لا يجوز القسمة على س؟', 'كيف تتحقق أن س = 0 حل صحيح؟'] },
-            },
-            { slideNumber: 5, type: 'reveal', title: '✅ الحل الصحيح', content: 'الخطأ: القسمة على (س) تُفقد الحل الثاني\n\nالطريقة الصحيحة:\n3س² - 6س = 0\nس(3س - 6) = 0\nس = 0  أو  3س - 6 = 0\nس = 0  أو  س = 2\n\n⚠️ لا تقسم أبدًا على متغير!', durationSeconds: 0 },
-            {
-              slideNumber: 6, type: 'challenge',
-              title: '🕵️ الجريمة 3 – أوجد الخطأ',
-              content: `الطالب كتب هذا الحل:\n\nحل معادلة: س² + 4س + 4 = 0\n(س + 4)(س + 1) = 0\nس = -4 أو س = -1\n\n❓ أين الخطأ؟`,
-              hint: 'ما الأعداد التي حاصل ضربها 4 ومجموعها 4؟',
-              answer: 'الخطأ: التحليل خاطئ\nالصحيح: (س + 2)² = 0، إذن س = -2 (جذر مزدوج)',
-              durationSeconds: slideDuration,
-              teacher: { expectedAnswer: '(س + 2)(س + 2) = 0 وليس (س + 4)(س + 1)', commonMisconceptions: 'اختيار عاملين عشوائيين بدون التحقق', teachingTips: 'تحقق دائمًا: 2 × 2 = 4 و 2 + 2 = 4 ✓', suggestedQuestions: ['ما الفرق بين هذه المعادلة والسابقة؟', 'ما معنى الجذر المزدوج هندسيًا؟'] },
-            },
-            { slideNumber: 7, type: 'reveal', title: '✅ الحل الصحيح', content: 'الخطأ: التحليل غير صحيح\n\nالحل الصحيح:\nس² + 4س + 4 = 0\n(س + 2)² = 0\nس + 2 = 0\nس = -2  (جذر مزدوج)\n\n🔑 تذكّر: المربع التام = جذر مزدوج', durationSeconds: 0 },
-            { slideNumber: 8, type: 'summary', title: '🏆 التحقيق اكتمل!', content: `أحسنتم يا محققون!\n\nالأخطاء الشائعة التي اكتشفناها اليوم في ${topic}:\n\n1️⃣ نسيان الجذر السالب\n2️⃣ القسمة على المتغير\n3️⃣ التحليل الخاطئ\n\n💡 هذه الأخطاء تظهر كثيرًا في الامتحانات — تجنّبها!`, durationSeconds: 0 },
-          ],
-        };
+      const cases: ErrorCase[] = [];
+      const tiers = ['easy', 'medium', 'hard'] as const;
+      for (let i = 0; i < 3 && (math || chem); i++) {
+        const q = math
+          ? takeConcreteMath('multiple_choice', topic, kb, tiers[i]!, isAr ? 'ar' : 'en', 0)
+          : takeConcreteChem('multiple_choice', topic, kb, tiers[i]!, isAr ? 'ar' : 'en', 0);
+        const wrong = q?.options?.find(o => o !== q.answer);
+        if (q && wrong) cases.push({ question: q.text, wrong, right: q.answer });
       }
-      return {
-        activityName: `Error Detective – ${topic}`,
-        activityType: 'error-detective',
-        grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
-        difficulty: req.difficulty, groupType: req.groupType,
-        learningObjective: `Identify and correct common mistakes in ${topic} problems through analytical thinking`,
-        materials: ['Whiteboard', 'Printed error cards', 'Red correction pens'],
-        teacherPreparation: 'Print 3 worked solutions with deliberate errors. Students work in pairs.',
-        teacherNotes: ['Discuss WHY the error occurred, not just what the correct answer is', 'Use real errors from previous tests when possible'],
-        answerKey: ['Error 1: Missing negative root', 'Error 2: Dividing by variable loses a solution', 'Error 3: Incorrect factoring'],
-        printables: ['Error cards (one set per pair)', 'Investigation report template'],
-        assessment: 'Assess whether students can identify the error, explain its cause, and provide the correct solution.',
-        extensionChallenge: `Ask students to deliberately introduce an error into a ${topic} solution and swap with another pair to solve.`,
-        slides: [
-          { slideNumber: 1, type: 'intro', title: '🔍 Error Detective', content: `Your mission: spot the mistake in each worked solution!\nEvery solution contains at least one error.\nIdentify the error, explain why it is wrong, and write the correct solution.\n\nWork in pairs — 2 minutes per card`, durationSeconds: 0 },
-          {
-            slideNumber: 2, type: 'challenge',
-            title: '🕵️ Case 1 – Find the Error',
-            content: `A student wrote this solution:\n\nSolve: x² − 9 = 0\nx² = 9\nx = 3\n\n❓ Where is the error?`,
-            hint: 'Are there two possible values for √9?',
-            answer: 'Error: forgot the negative root\nCorrect: x = 3 or x = −3',
-            durationSeconds: slideDuration,
-            teacher: { expectedAnswer: 'Missing the negative root ±3', commonMisconceptions: 'Students assume the square root only yields a positive value', teachingTips: 'Reinforce: √9 = ±3 when solving equations', suggestedQuestions: ['How many solutions does a quadratic equation have?', 'When are both roots positive?'] },
-          },
-          { slideNumber: 3, type: 'reveal', title: '✅ Correct Solution', content: 'Error: taking only the positive root\n\nFull solution:\nx² = 9\nx = ±3\n\nSo: x = 3 or x = −3\n\n🏅 Point to whoever caught the error!', durationSeconds: 0 },
-          {
-            slideNumber: 4, type: 'challenge',
-            title: '🕵️ Case 2 – Find the Error',
-            content: `A student wrote this solution:\n\nSolve: 3x² − 6x = 0\n3x² = 6x\nx = 2\n\n❓ Where is the error?`,
-            hint: 'What happens when you divide both sides by the variable?',
-            answer: 'Error: dividing by x loses the solution x = 0\nCorrect: x(3x − 6) = 0, so x = 0 or x = 2',
-            durationSeconds: slideDuration,
-            teacher: { expectedAnswer: 'Dividing both sides by x eliminates x = 0', commonMisconceptions: 'Students divide by the variable as if it were a constant', teachingTips: 'Golden rule: never divide by a variable — factor it out instead', suggestedQuestions: ['Why can\'t we divide both sides by x?', 'How do you verify x = 0 is a valid solution?'] },
-          },
-          { slideNumber: 5, type: 'reveal', title: '✅ Correct Solution', content: 'Error: dividing by x loses one solution\n\nCorrect method:\n3x² − 6x = 0\nx(3x − 6) = 0\nx = 0  or  3x − 6 = 0\nx = 0  or  x = 2\n\n⚠️ Never divide both sides by a variable!', durationSeconds: 0 },
-          {
-            slideNumber: 6, type: 'challenge',
-            title: '🕵️ Case 3 – Find the Error',
-            content: `A student wrote this solution:\n\nSolve: x² + 4x + 4 = 0\n(x + 4)(x + 1) = 0\nx = −4 or x = −1\n\n❓ Where is the error?`,
-            hint: 'What two numbers multiply to 4 and add to 4?',
-            answer: 'Error: incorrect factoring\nCorrect: (x + 2)² = 0, so x = −2 (double root)',
-            durationSeconds: slideDuration,
-            teacher: { expectedAnswer: '(x + 2)(x + 2) not (x + 4)(x + 1)', commonMisconceptions: 'Guessing factor pairs without checking', teachingTips: 'Always verify: 2 × 2 = 4 ✓ and 2 + 2 = 4 ✓', suggestedQuestions: ['How is this different from the previous equations?', 'What does a double root mean graphically?'] },
-          },
-          { slideNumber: 7, type: 'reveal', title: '✅ Correct Solution', content: 'Error: wrong factor pair\n\nCorrect solution:\nx² + 4x + 4 = 0\n(x + 2)² = 0\nx + 2 = 0\nx = −2  (double root)\n\n🔑 Perfect square → double root!', durationSeconds: 0 },
-          { slideNumber: 8, type: 'summary', title: '🏆 Investigation Complete!', content: `Outstanding detectives!\n\nCommon ${topic} errors we uncovered today:\n\n1️⃣ Forgetting the negative root\n2️⃣ Dividing by a variable\n3️⃣ Incorrect factoring\n\n💡 These errors appear frequently in exams — now you know how to avoid them!`, durationSeconds: 0 },
-        ],
-      };
+      if (cases.length < 2) throw new NoQuestionBankError(topic);
+      return buildErrorDetective(ctx, cases);
     }
 
-    // ── Gallery Walk ────────────────────────────────────────────────────────────
-    if (actType === 'gallery-walk') {
-      if (isAr) {
-        return {
-          activityName: `جولة المعارض – ${topic}`,
-          activityType: 'gallery-walk',
-          grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
-          difficulty: req.difficulty, groupType: req.groupType,
-          learningObjective: `استكشاف جوانب متعددة من ${topic} من خلال مناقشة جماعية في محطات دوّارة`,
-          materials: ['5 أوراق كبيرة مثبّتة على الجدران', 'أقلام ملونة', 'ملصقات لاصقة'],
-          teacherPreparation: 'اكتب مسألة مختلفة على كل ورقة كبيرة. رتّب المجموعات (4-5 أفراد). كل محطة: 3-4 دقائق.',
-          teacherNotes: ['ابدأ المجموعات في محطات مختلفة لتجنب الازدحام', 'شجّع إضافة ملاحظات على ما كتبته المجموعات السابقة'],
-          answerKey: ['محطة 1: حل المسألة الأولى', 'محطة 2: حل المسألة الثانية', 'محطة 3: تطبيق عملي', 'محطة 4: تحليل الخطأ', 'محطة 5: مسألة إبداعية'],
-          printables: ['بطاقات المحطات (A3)', 'ورقة تتبع المجموعات'],
-          assessment: 'راجع ما كتبته المجموعات على الأوراق. ناقش الإجابات المثيرة في الختام.',
-          extensionChallenge: `اطلب من كل مجموعة إضافة محطة جديدة ومسألة خاصة بها.`,
-          slides: [
-            { slideNumber: 1, type: 'intro', title: '🖼️ جولة المعارض', content: `مرحبًا بكم في معرض ${topic}!\n\n5 محطات تعليمية حول الفصل.\nكل مجموعة تتنقل بين المحطات وتناقش المسألة.\nوقت كل محطة: 3-4 دقائق.\n\nاستعدوا — الجولة تبدأ الآن!`, durationSeconds: 0 },
-            { slideNumber: 2, type: 'challenge', title: '📌 المحطة 1 – الأساس', content: `المسألة الأساسية:\nطبّق التعريف الأساسي لـ${topic} لحل هذه المسألة.\n\nاكتبوا حلّكم الجماعي على الورقة.\nأضيفوا: هل تتفقون مع المجموعة السابقة؟`, hint: 'ابدأ بتحديد ما يُطلب', answer: 'انظر إلى الورقة الكبيرة في المحطة', durationSeconds: slideDuration, teacher: { expectedAnswer: `تطبيق مباشر للتعريف الأساسي لـ${topic}`, teachingTips: 'تأكد أن المجموعات تكتب على الورقة وليس فقط تناقش شفهيًا' } },
-            { slideNumber: 3, type: 'challenge', title: '📌 المحطة 2 – التطبيق', content: `مسألة تطبيقية:\nكيف يُستخدم ${topic} لحل هذا الموقف الحياتي؟\n\nناقش مع مجموعتك وسجّل خطوات الحل.\nما الفرق بين هذه المسألة والمحطة 1؟`, hint: `ابحث عن الرابط بين ${topic} والموقف الحياتي`, answer: 'انظر إلى الورقة الكبيرة في المحطة', durationSeconds: slideDuration, teacher: { expectedAnswer: `ربط ${topic} بسياق حياتي حقيقي`, teachingTips: 'شجّع المجموعات على ذكر أمثلة خاصة بهم' } },
-            { slideNumber: 4, type: 'challenge', title: '📌 المحطة 3 – التحليل', content: `مسألة تحليلية:\nما أوجه التشابه والاختلاف بين مفهومين رئيسيين في ${topic}؟\n\nارسم مخطط فِن (Venn) على الورقة.\nأضف على الأقل 2 تشابه و2 اختلاف.`, hint: 'فكّر في التعريفات والخصائص', answer: 'انظر إلى الورقة الكبيرة في المحطة', durationSeconds: slideDuration, teacher: { expectedAnswer: `مقارنة المفاهيم الرئيسية في ${topic}`, teachingTips: 'ساعد المجموعات على بدء مخطط فِن إذا احتاجوا' } },
-            { slideNumber: 5, type: 'challenge', title: '📌 المحطة 4 – التقييم', content: `مسألة تقييمية:\nهل الحل التالي صحيح أم خاطئ؟ اشرح لماذا.\n\nحل مقترح لمسألة في ${topic}:\n[انظر الورقة الكبيرة]\n\nقيّم الحل وصحّح أي خطأ.`, hint: 'تحقق خطوة بخطوة', answer: 'انظر إلى الورقة الكبيرة في المحطة', durationSeconds: slideDuration, teacher: { expectedAnswer: `تقييم نقدي لحل خاطئ في ${topic}`, teachingTips: 'تعمّد وضع خطأ شائع في الحل المقترح' } },
-            { slideNumber: 6, type: 'challenge', title: '📌 المحطة 5 – الإبداع', content: `تحدي إبداعي:\nصمّم مسألتك الخاصة في ${topic}!\n\nاكتب مسألة جديدة وقدّم حلّها.\nستقرأ المجموعات الأخرى مسألتك!`, hint: 'اختر موقفًا حياتيًا مثيرًا للاهتمام', answer: 'المسائل الإبداعية تختلف لكل مجموعة', durationSeconds: slideDuration, teacher: { expectedAnswer: `مسألة إبداعية ذات صلة بـ${topic}`, teachingTips: 'اطلب من المجموعات قراءة مسائل بعضها في الختام' } },
-            { slideNumber: 7, type: 'summary', title: '🎨 الجولة اكتملت!', content: `أحسنتم! زرتم جميع محطات معرض ${topic}.\n\nلنستعرض أبرز ما كتبتموه:\n• أجمل إجابة في المحطة 1؟\n• أكثر مسألة حياتية في المحطة 2؟\n• أفضل مسألة إبداعية في المحطة 5؟\n\nناقشوا معًا: ما أكثر ما تعلمتم؟`, durationSeconds: 0 },
-          ],
-        };
-      }
-      return {
-        activityName: `Gallery Walk – ${topic}`,
-        activityType: 'gallery-walk',
-        grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
-        difficulty: req.difficulty, groupType: req.groupType,
-        learningObjective: `Explore multiple dimensions of ${topic} through collaborative discussion at rotating stations`,
-        materials: ['5 large sheets of paper posted on walls', 'Coloured markers', 'Sticky notes'],
-        teacherPreparation: 'Write a different problem on each large sheet. Arrange groups of 4-5. Allow 3-4 minutes per station.',
-        teacherNotes: ['Start groups at different stations to avoid crowding', 'Encourage adding comments to previous groups\' answers'],
-        answerKey: ['Station 1: foundational problem solution', 'Station 2: applied problem solution', 'Station 3: analysis', 'Station 4: error evaluation', 'Station 5: creative design'],
-        printables: ['Station cards (A3 format)', 'Group tracking sheet'],
-        assessment: 'Review what groups wrote on the posters. Highlight interesting answers in the debrief.',
-        extensionChallenge: `Ask each group to add a new station with their own original problem.`,
-        slides: [
-          { slideNumber: 1, type: 'intro', title: '🖼️ Gallery Walk', content: `Welcome to the ${topic} Gallery!\n\n5 learning stations around the room.\nEach group rotates and discusses the problem at each stop.\nTime per station: 3–4 minutes.\n\nGet ready — the gallery opens now!`, durationSeconds: 0 },
-          { slideNumber: 2, type: 'challenge', title: '📌 Station 1 – Foundations', content: `Foundational problem:\nApply the core definition of ${topic} to solve this problem.\n\nWrite your group's solution on the poster.\nDo you agree with the previous group?`, hint: 'Start by identifying what is being asked', answer: 'See the large poster at this station', durationSeconds: slideDuration, teacher: { expectedAnswer: `Direct application of the core ${topic} definition`, teachingTips: 'Make sure groups write on the poster, not just discuss verbally' } },
-          { slideNumber: 3, type: 'challenge', title: '📌 Station 2 – Application', content: `Applied problem:\nHow does ${topic} apply to this real-world scenario?\n\nDiscuss and record the solution steps.\nHow does this differ from Station 1?`, hint: `Find the link between ${topic} and the real-world context`, answer: 'See the large poster at this station', durationSeconds: slideDuration, teacher: { expectedAnswer: `Connecting ${topic} to a real-world context`, teachingTips: 'Encourage groups to cite their own examples' } },
-          { slideNumber: 4, type: 'challenge', title: '📌 Station 3 – Analysis', content: `Analytical challenge:\nWhat are the similarities and differences between the two key concepts in ${topic}?\n\nDraw a Venn diagram on the poster.\nAdd at least 2 similarities and 2 differences.`, hint: 'Think about definitions and properties', answer: 'See the large poster at this station', durationSeconds: slideDuration, teacher: { expectedAnswer: `Comparing the main concepts within ${topic}`, teachingTips: 'Help groups start the Venn diagram if needed' } },
-          { slideNumber: 5, type: 'challenge', title: '📌 Station 4 – Evaluate', content: `Evaluation challenge:\nIs the following solution correct or incorrect? Explain why.\n\nProposed solution for a ${topic} problem:\n[See the large poster]\n\nEvaluate the solution and correct any errors.`, hint: 'Check each step one by one', answer: 'See the large poster at this station', durationSeconds: slideDuration, teacher: { expectedAnswer: `Critical evaluation of a flawed ${topic} solution`, teachingTips: 'Deliberately include a common student error in the proposed solution' } },
-          { slideNumber: 6, type: 'challenge', title: '📌 Station 5 – Create', content: `Creative challenge:\nDesign your own ${topic} problem!\n\nWrite a new problem and provide its solution.\nOther groups will read and solve your creation!`, hint: 'Choose an interesting real-world scenario', answer: 'Creative problems will vary per group', durationSeconds: slideDuration, teacher: { expectedAnswer: `A creative, contextually relevant ${topic} problem`, teachingTips: 'Ask groups to read each other\'s problems during the debrief' } },
-          { slideNumber: 7, type: 'summary', title: '🎨 Gallery Walk Complete!', content: `Excellent! You visited all ${topic} stations.\n\nLet's review the highlights:\n• Best answer at Station 1?\n• Most creative real-world example at Station 2?\n• Best original problem at Station 5?\n\nDiscuss: What was your most important takeaway?`, durationSeconds: 0 },
-        ],
-      };
-    }
-
-    // ── Exit Ticket ─────────────────────────────────────────────────────────────
-    if (actType === 'exit-ticket') {
-      if (isAr) {
-        return {
-          activityName: `بطاقة الخروج – ${topic}`,
-          activityType: 'exit-ticket',
-          grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
-          difficulty: req.difficulty, groupType: req.groupType,
-          learningObjective: `التحقق من مستوى فهم الطلبة لـ${topic} في نهاية الحصة`,
-          materials: ['ورقة بطاقة الخروج المطبوعة (1 لكل طالب)', 'قلم'],
-          teacherPreparation: 'اطبع بطاقة الخروج (3-4 أسئلة). خصّص 5-7 دقائق في نهاية الحصة.',
-          teacherNotes: ['اجمع البطاقات عند الباب', 'راجعها قبل الحصة القادمة لتعديل خطة التدريس'],
-          answerKey: ['السؤال 1: التعريف الأساسي', 'السؤال 2: التطبيق', 'السؤال 3: التفكير الناقد', 'السؤال 4: التقييم الذاتي'],
-          printables: ['بطاقة الخروج (نسخة لكل طالب)'],
-          assessment: 'افرز البطاقات إلى 3 مجموعات: فهم كامل / فهم جزئي / يحتاج دعمًا.',
-          extensionChallenge: `استخدم نتائج البطاقة لتصميم نشاط علاجي في بداية الحصة القادمة.`,
-          slides: [
-            { slideNumber: 1, type: 'intro', title: '🎫 بطاقة الخروج', content: `الوقت المتبقي: ${dur} دقائق\n\nقبل أن تغادر الفصل اليوم،\nأثبت ما تعلمته عن ${topic}.\n\n3 أسئلة سريعة — عمل فردي\nاجمع ورقتك عند الباب عند انتهاء الوقت.`, durationSeconds: 0 },
-            {
-              slideNumber: 2, type: 'challenge',
-              title: '❓ السؤال 1 – تذكّر',
-              content: `في كلماتك الخاصة:\nعرّف المفهوم الرئيسي لـ${topic}.\n\n(جملة أو جملتان تكفيان)`,
-              hint: 'فكّر في ما شرحه المعلم في بداية الحصة',
-              answer: 'إجابة مرنة – يُقيَّم الفهم وليس الحفظ الحرفي',
-              durationSeconds: Math.round(dur * 20),
-              teacher: { expectedAnswer: `تعريف دقيق بكلمات الطالب لـ${topic}`, teachingTips: 'ابحث عن الفهم المفاهيمي وليس الحفظ', suggestedQuestions: ['هل يعكس التعريف الفكرة الأساسية؟'] },
-            },
-            {
-              slideNumber: 3, type: 'challenge',
-              title: '❓ السؤال 2 – تطبيق',
-              content: `حل هذه المسألة القصيرة:\nطبّق ${topic} على مثال من الكتاب المدرسي.\n\n(خطوتان أو ثلاث خطوات)`,
-              hint: 'استخدم الخطوات التي درسناها اليوم',
-              answer: 'حل كامل مع خطوات واضحة',
-              durationSeconds: Math.round(dur * 25),
-              teacher: { expectedAnswer: `حل نموذجي لمسألة ${topic} بخطوات منهجية`, teachingTips: 'قيّم الطريقة وليس الإجابة النهائية فقط', suggestedQuestions: ['هل كانت الخطوات منطقية ومرتبة؟'] },
-            },
-            {
-              slideNumber: 4, type: 'challenge',
-              title: '❓ السؤال 3 – تفكير',
-              content: `سؤال التفكير الناقد:\nمتى لا ينجح أسلوب ${topic} الذي درسناه اليوم؟\nأو: اذكر موقفًا حياتيًا يستخدم ${topic}.\n\n(جملتان أو أكثر)`,
-              hint: 'فكّر في الحدود والاستثناءات',
-              answer: 'إجابة مرنة – إجابات متعددة مقبولة',
-              durationSeconds: Math.round(dur * 20),
-              teacher: { expectedAnswer: `تفكير نقدي حول حدود وتطبيقات ${topic}`, teachingTips: 'هذا أصعب الأسئلة الثلاثة — توقع إجابات متنوعة' },
-            },
-            { slideNumber: 5, type: 'summary', title: '🎫 الوقت انتهى!', content: `ضع قلمك وسلّم ورقتك.\n\nشكرًا على عملك الجاد اليوم في ${topic}!\n\nسأراجع إجاباتكم قبل الحصة القادمة.\n\nإذا كان لديك سؤال، أنا هنا بعد الحصة.`, durationSeconds: 0 },
-          ],
-        };
-      }
-      return {
-        activityName: `Exit Ticket – ${topic}`,
-        activityType: 'exit-ticket',
-        grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
-        difficulty: req.difficulty, groupType: req.groupType,
-        learningObjective: `Check student understanding of ${topic} at the end of the lesson`,
-        materials: ['Printed exit ticket (1 per student)', 'Pen'],
-        teacherPreparation: 'Print the exit ticket (3-4 questions). Reserve 5-7 minutes at the end of the lesson.',
-        teacherNotes: ['Collect tickets at the door', 'Review before the next lesson to adjust your teaching plan'],
-        answerKey: ['Q1: Core definition', 'Q2: Application', 'Q3: Critical thinking', 'Q4: Self-assessment'],
-        printables: ['Exit ticket (one per student)'],
-        assessment: 'Sort tickets into 3 piles: full understanding / partial understanding / needs support.',
-        extensionChallenge: `Use the ticket results to design a targeted warm-up for the next lesson.`,
-        slides: [
-          { slideNumber: 1, type: 'intro', title: '🎫 Exit Ticket', content: `Time remaining: ${dur} minutes\n\nBefore you leave today,\nshow me what you learned about ${topic}.\n\n3 quick questions — individual work\nPlace your paper face-down on my desk when done.`, durationSeconds: 0 },
-          {
-            slideNumber: 2, type: 'challenge',
-            title: '❓ Question 1 – Recall',
-            content: `In your own words:\nDefine the main concept of ${topic}.\n\n(One or two sentences is enough)`,
-            hint: 'Think about what we covered at the start of the lesson',
-            answer: 'Flexible answer — assess understanding, not word-for-word recall',
-            durationSeconds: Math.round(dur * 20),
-            teacher: { expectedAnswer: `An accurate student-worded definition of ${topic}`, teachingTips: 'Look for conceptual understanding, not memorised text', suggestedQuestions: ['Does the definition capture the core idea?'] },
-          },
-          {
-            slideNumber: 3, type: 'challenge',
-            title: '❓ Question 2 – Apply',
-            content: `Solve this short problem:\nApply ${topic} to an example from the textbook.\n\n(Two or three steps)`,
-            hint: 'Use the steps we practised today',
-            answer: 'Full solution with clear steps',
-            durationSeconds: Math.round(dur * 25),
-            teacher: { expectedAnswer: `A model solution for a ${topic} problem with logical steps`, teachingTips: 'Assess the method, not only the final answer', suggestedQuestions: ['Were the steps logical and well-ordered?'] },
-          },
-          {
-            slideNumber: 4, type: 'challenge',
-            title: '❓ Question 3 – Think',
-            content: `Critical thinking question:\nWhen does the ${topic} method we learned today NOT work?\nOR: Name a real-world situation that uses ${topic}.\n\n(Two or more sentences)`,
-            hint: 'Think about limitations and exceptions',
-            answer: 'Flexible answer — multiple acceptable responses',
-            durationSeconds: Math.round(dur * 20),
-            teacher: { expectedAnswer: `Critical thinking about the scope and applications of ${topic}`, teachingTips: 'This is the hardest of the three — expect diverse answers' },
-          },
-          { slideNumber: 5, type: 'summary', title: '🎫 Pens down!', content: `Please place your paper on the desk.\n\nThank you for your hard work on ${topic} today!\n\nI will review your tickets before our next lesson.\n\nIf you have a question, I am available after class.`, durationSeconds: 0 },
-        ],
-      };
-    }
+    // ── Gallery Walk / Exit Ticket ─────────────────────────────────────────────
+    // Open formats: students write, the teacher judges. Built from the lesson's
+    // own terms and outcomes whatever the subject, so they never refuse.
+    if (actType === 'gallery-walk') return buildGalleryWalk(ctx, windowOf(tasks, 4, variant));
+    if (actType === 'exit-ticket') return buildExitTicket(ctx, windowOf(tasks, 4, variant));
 
     // ── Escape Challenge (default) ─────────────────────────────────────────────
-    if (isAr) {
-      return {
-        activityName: `تحدي الهروب – ${topic}`,
-        activityType: 'escape-challenge',
-        grade: req.grade,
-        subject: req.subject,
-        lesson: topic,
-        duration: dur,
-        difficulty: req.difficulty,
-        groupType: req.groupType,
-        learningObjective: `حل معادلات ${topic} بأساليب متنوعة ضمن فريق`,
-        materials: ['السبورة', 'أوراق التحديات المطبوعة', 'مؤقت', 'أقلام ملونة'],
-        teacherPreparation: 'اطبع بطاقات التحديات الخمسة مسبقًا. رتّب الطلبة في مجموعات من 3-4 أفراد. اكتب الأكواد على السبورة عند الانتهاء من كل تحدٍّ.',
-        teacherNotes: ['راقب المجموعات وقدّم تلميحات إضافية عند الحاجة', 'شجّع الطلبة على مناقشة أساليب الحل المختلفة'],
-        answerKey: [
-          'التحدي 1: س = -3، س = -4',
-          'التحدي 2: س = 2، س = 3',
-          'التحدي 3: س = ±3',
-          'التحدي 4: س = 0، س = 4',
-          'التحدي 5: س = 2 (جذر مزدوج)',
-        ],
-        printables: ['بطاقات التحديات', 'مفتاح الإجابات', 'شهادات الإنجاز'],
-        assessment: 'راقب دقة الحلول وسرعة الإنجاز. ناقش الأخطاء الشائعة مع الصف في الختام.',
-        extensionChallenge: 'صمّم معادلة تربيعية خاصة بك بحيث يكون مجموع الجذرين 5 وحاصل ضربهما 6.',
-        slides: [
-          {
-            slideNumber: 1, type: 'intro',
-            title: '🔐 مهمتكم',
-            content: 'فريقك محاصر في مختبر الرياضيات!\nعليكم حل 5 تحديات للهروب في غضون ' + dur + ' دقيقة.\nكل تحدٍّ صحيح يمنحكم كودًا سريًا.',
-            durationSeconds: 0,
-          },
-          {
-            slideNumber: 2, type: 'intro',
-            title: '🧭 كيف نلعب؟',
-            content: '• تعملون في مجموعات، ولكل مجموعة ورقة واحدة تسجّلون فيها الأرقام.\n• أمامكم 5 تحديات، لكل تحدٍّ وقت محدّد يظهر على الشاشة.\n• كل تحدٍّ تحلّونه حلًّا صحيحًا يكشف رقمًا سريًا واحدًا — اكتبوه فورًا بالترتيب.\n• لا تُدخلون الأرقام في أي مكان: الكود يُجمع على ورقتكم أنتم.\n• في النهاية تقرؤون الأرقام الخمسة بالترتيب نفسه، فيكتمل كود الهروب.',
-            durationSeconds: 0,
-          },
-          {
-            slideNumber: 3, type: 'challenge',
-            title: 'التحدي 1 من 5',
-            content: 'حلّ المعادلة:\nس² + 7س + 12 = 0',
-            hint: 'حاول تحليل المعادلة: (س + ؟)(س + ؟) = 0',
-            answer: 'س = -3، س = -4',
-            unlockCode: '8',
-            durationSeconds: slideDuration,
-            teacher: {
-              expectedAnswer: 'س² + 7س + 12 = (س + 3)(س + 4) = 0، إذن س = -3 أو س = -4',
-              commonMisconceptions: 'قد ينسى الطلبة الإشارة السالبة عند كتابة الجذور',
-              teachingTips: 'ذكّر الطلبة بأن حاصل ضرب العاملين = 12 ومجموعهما = 7',
-              suggestedQuestions: ['ما العاملان اللذان حاصل ضربهما 12 ومجموعهما 7؟', 'كيف نتحقق من الإجابة؟'],
-              differentiationTips: 'للطلبة المتقدمين: استخدم القانون العام للتحقق',
-            },
-          },
-          {
-            slideNumber: 4, type: 'reveal',
-            title: '🔓 الكود 8 مفتوح!',
-            content: 'أحسنتم! حصلتم على الكود الأول: 8\nسجّلوه في ورقتكم.',
-            unlockCode: '8',
-            durationSeconds: 0,
-          },
-          {
-            slideNumber: 5, type: 'challenge',
-            title: 'التحدي 2 من 5',
-            content: 'حلّ المعادلة:\nس² - 5س + 6 = 0',
-            hint: 'أوجد عددين حاصل ضربهما 6 ومجموعهما -5',
-            answer: 'س = 2، س = 3',
-            unlockCode: '4',
-            durationSeconds: slideDuration,
-            teacher: {
-              expectedAnswer: '(س - 2)(س - 3) = 0، إذن س = 2 أو س = 3',
-              commonMisconceptions: 'خلط الإشارات عند التحليل',
-              teachingTips: 'اطلب من الطلبة رسم جدول بسيط للعاملين المحتملة',
-              suggestedQuestions: ['ما علامة الجذرين هنا ولماذا؟'],
-              differentiationTips: 'للطلبة الأقل تقدمًا: ارسم الدالة التربيعية وحدد نقاط التقاطع مع المحور السيني',
-            },
-          },
-          {
-            slideNumber: 6, type: 'reveal',
-            title: '🔓 الكود 4 مفتوح!',
-            content: 'رائع! الكود الثاني: 4',
-            unlockCode: '4',
-            durationSeconds: 0,
-          },
-          {
-            slideNumber: 7, type: 'challenge',
-            title: 'التحدي 3 من 5',
-            content: 'حلّ المعادلة:\nس² - 9 = 0',
-            hint: 'تذكّر قانون الفرق بين مربعين: أ² - ب² = (أ+ب)(أ-ب)',
-            answer: 'س = 3، س = -3',
-            unlockCode: '7',
-            durationSeconds: slideDuration,
-            teacher: {
-              expectedAnswer: '(س-3)(س+3) = 0، إذن س = ±3',
-              commonMisconceptions: 'نسيان الجذر السالب',
-              teachingTips: 'وضّح أن ±3 تعني جذرين مختلفين',
-              suggestedQuestions: ['لماذا توجد إجابتان؟', 'كيف نوثق الإجابة بشكل صحيح؟'],
-              differentiationTips: 'يمكن حلّها أيضًا بإضافة 9 للطرفين ثم أخذ الجذر',
-            },
-          },
-          {
-            slideNumber: 8, type: 'reveal',
-            title: '🔓 الكود 7 مفتوح!',
-            content: 'ممتاز! الكود الثالث: 7',
-            unlockCode: '7',
-            durationSeconds: 0,
-          },
-          {
-            slideNumber: 9, type: 'challenge',
-            title: 'التحدي 4 من 5',
-            content: 'حلّ المعادلة:\n2س² - 8س = 0',
-            hint: 'أخرج العامل المشترك أولًا',
-            answer: 'س = 0، س = 4',
-            unlockCode: '3',
-            durationSeconds: slideDuration,
-            teacher: {
-              expectedAnswer: '2س(س - 4) = 0، إذن س = 0 أو س = 4',
-              commonMisconceptions: 'قسمة طرفي المعادلة على س وإهمال الحل س = 0',
-              teachingTips: 'نبّه الطلبة إلى خطأ القسمة على المجهول',
-              suggestedQuestions: ['لماذا لا يمكن القسمة على س مباشرةً؟'],
-              differentiationTips: 'للمتقدمين: طبّق القانون العام وقارن النتائج',
-            },
-          },
-          {
-            slideNumber: 10, type: 'reveal',
-            title: '🔓 الكود 3 مفتوح!',
-            content: 'عظيم! الكود الرابع: 3',
-            unlockCode: '3',
-            durationSeconds: 0,
-          },
-          {
-            slideNumber: 11, type: 'challenge',
-            title: 'التحدي الأخير 5 من 5',
-            content: 'التحدي النهائي!\nحلّ المعادلة:\nس² - 4س + 4 = 0',
-            hint: 'هل هذا مربع كامل؟ (س - ؟)² = 0',
-            answer: 'س = 2 (جذر مزدوج)',
-            unlockCode: '6',
-            durationSeconds: slideDuration,
-            teacher: {
-              expectedAnswer: '(س - 2)² = 0، إذن س = 2 (جذر مزدوج)',
-              commonMisconceptions: 'توقع جذرين مختلفين دائمًا',
-              teachingTips: 'اشرح مفهوم الجذر المزدوج وعلاقته بالمميّز = صفر',
-              suggestedQuestions: ['ما قيمة المميّز في هذه المعادلة؟', 'ماذا يعني الجذر المزدوج هندسيًا؟'],
-              differentiationTips: 'للمتقدمين: ارسم الدالة وتحقق من أن القطع المكافئ يلمس المحور السيني في نقطة واحدة',
-            },
-          },
-          {
-            slideNumber: 12, type: 'reveal',
-            title: '🔓 الكود 6 مفتوح!',
-            content: 'التحدي الأخير انتهى! الكود الخامس: 6',
-            unlockCode: '6',
-            durationSeconds: 0,
-          },
-          {
-            slideNumber: 13, type: 'summary',
-            title: '🎉 لقد هربتم!',
-            content: 'أحسنتم! فريقكم نجح في الهروب!\nالكود الكامل: 8 – 4 – 7 – 3 – 6\n\nحللتم اليوم:\n• التحليل إلى عوامل\n• الفرق بين مربعين\n• إخراج العامل المشترك\n• المربع الكامل',
-            durationSeconds: 0,
-          },
-        ],
-      };
-    }
-
-    // English mock
-    return {
-      activityName: `Escape Challenge – ${topic}`,
-      activityType: 'escape-challenge',
-      grade: req.grade,
-      subject: req.subject,
-      lesson: topic,
-      duration: dur,
-      difficulty: req.difficulty,
-      groupType: req.groupType,
-      learningObjective: `Solve ${topic} equations using multiple techniques as a team`,
-      materials: ['Whiteboard', 'Printed challenge cards', 'Timer', 'Coloured markers'],
-      teacherPreparation: 'Print the five challenge cards in advance. Arrange students into groups of 3-4. Reveal each code on the board as groups complete each challenge.',
-      teacherNotes: ['Monitor groups and provide extra hints if needed', 'Encourage discussion of different solution methods'],
-      answerKey: [
-        'Challenge 1: x = -3, x = -4',
-        'Challenge 2: x = 2, x = 3',
-        'Challenge 3: x = ±3',
-        'Challenge 4: x = 0, x = 4',
-        'Challenge 5: x = 2 (double root)',
-      ],
-      printables: ['Challenge cards', 'Answer key', 'Completion certificates'],
-      assessment: 'Monitor solution accuracy and speed. Discuss common mistakes with the class at the end.',
-      extensionChallenge: 'Design your own quadratic equation where the sum of roots is 5 and the product is 6.',
-      slides: [
-        {
-          slideNumber: 1, type: 'intro',
-          title: '🔐 Your Mission',
-          content: 'Your team is trapped in the Math Lab!\nSolve 5 challenges to escape within ' + dur + ' minutes.\nEach correct answer unlocks a secret code.',
-          durationSeconds: 0,
-        },
-        {
-          slideNumber: 2, type: 'intro',
-          title: '🧭 How to Play',
-          content: '• Work in groups. One sheet per group — that is where the digits go.\n• There are 5 challenges, each with its own timer on screen.\n• Solve a challenge correctly and one secret digit is revealed — write it down straight away, in order.\n• There is nothing to type the digits into: the code is collected on your own sheet.\n• At the end, read your five digits back in the same order to complete the escape code.',
-          durationSeconds: 0,
-        },
-        {
-          slideNumber: 3, type: 'challenge',
-          title: 'Challenge 1 of 5',
-          content: 'Solve the equation:\nx² + 7x + 12 = 0',
-          hint: 'Try factoring: (x + ?)(x + ?) = 0',
-          answer: 'x = -3 and x = -4',
-          unlockCode: '8',
-          durationSeconds: slideDuration,
-          teacher: {
-            expectedAnswer: 'x² + 7x + 12 = (x + 3)(x + 4) = 0, so x = -3 or x = -4',
-            commonMisconceptions: 'Students may forget the negative signs when writing the roots',
-            teachingTips: 'Remind students: two numbers that multiply to 12 and add to 7',
-            suggestedQuestions: ['What two numbers multiply to 12 and add to 7?', 'How do we verify the answer?'],
-            differentiationTips: 'Advanced: use the quadratic formula to verify',
-          },
-        },
-        {
-          slideNumber: 4, type: 'reveal',
-          title: '🔓 Code 8 Unlocked!',
-          content: 'Great work! You got the first code: 8\nWrite it down on your sheet.',
-          unlockCode: '8',
-          durationSeconds: 0,
-        },
-        {
-          slideNumber: 5, type: 'challenge',
-          title: 'Challenge 2 of 5',
-          content: 'Solve the equation:\nx² − 5x + 6 = 0',
-          hint: 'Find two numbers with product 6 and sum −5',
-          answer: 'x = 2 and x = 3',
-          unlockCode: '4',
-          durationSeconds: slideDuration,
-          teacher: {
-            expectedAnswer: '(x − 2)(x − 3) = 0, so x = 2 or x = 3',
-            commonMisconceptions: 'Mixing up signs during factoring',
-            teachingTips: 'Ask students to draw a quick factor table',
-            suggestedQuestions: ['What is the sign of the roots and why?'],
-            differentiationTips: 'For lower ability: graph the parabola and identify x-intercepts',
-          },
-        },
-        {
-          slideNumber: 6, type: 'reveal',
-          title: '🔓 Code 4 Unlocked!',
-          content: 'Excellent! Second code: 4',
-          unlockCode: '4',
-          durationSeconds: 0,
-        },
-        {
-          slideNumber: 7, type: 'challenge',
-          title: 'Challenge 3 of 5',
-          content: 'Solve the equation:\nx² − 9 = 0',
-          hint: 'Recall the difference of squares: a² − b² = (a+b)(a−b)',
-          answer: 'x = 3 and x = −3',
-          unlockCode: '7',
-          durationSeconds: slideDuration,
-          teacher: {
-            expectedAnswer: '(x − 3)(x + 3) = 0, so x = ±3',
-            commonMisconceptions: 'Forgetting the negative root',
-            teachingTips: 'Emphasise that ±3 means two distinct solutions',
-            suggestedQuestions: ['Why are there two answers?'],
-            differentiationTips: 'Can also be solved by adding 9 to both sides, then taking the square root',
-          },
-        },
-        {
-          slideNumber: 8, type: 'reveal',
-          title: '🔓 Code 7 Unlocked!',
-          content: 'Brilliant! Third code: 7',
-          unlockCode: '7',
-          durationSeconds: 0,
-        },
-        {
-          slideNumber: 9, type: 'challenge',
-          title: 'Challenge 4 of 5',
-          content: 'Solve the equation:\n2x² − 8x = 0',
-          hint: 'Factor out the common term first',
-          answer: 'x = 0 and x = 4',
-          unlockCode: '3',
-          durationSeconds: slideDuration,
-          teacher: {
-            expectedAnswer: '2x(x − 4) = 0, so x = 0 or x = 4',
-            commonMisconceptions: 'Dividing both sides by x and losing x = 0',
-            teachingTips: 'Warn students: never divide both sides by the variable',
-            suggestedQuestions: ['Why can\'t we divide both sides by x?'],
-            differentiationTips: 'Advanced: apply the quadratic formula and compare',
-          },
-        },
-        {
-          slideNumber: 10, type: 'reveal',
-          title: '🔓 Code 3 Unlocked!',
-          content: 'Amazing! Fourth code: 3',
-          unlockCode: '3',
-          durationSeconds: 0,
-        },
-        {
-          slideNumber: 11, type: 'challenge',
-          title: 'Final Challenge 5 of 5',
-          content: 'FINAL CHALLENGE!\nSolve the equation:\nx² − 4x + 4 = 0',
-          hint: 'Is this a perfect square? (x − ?)² = 0',
-          answer: 'x = 2 (double root)',
-          unlockCode: '6',
-          durationSeconds: slideDuration,
-          teacher: {
-            expectedAnswer: '(x − 2)² = 0, so x = 2 (double root)',
-            commonMisconceptions: 'Expecting two different roots every time',
-            teachingTips: 'Explain the double root concept and its relation to discriminant = 0',
-            suggestedQuestions: ['What is the discriminant here?', 'What does a double root mean graphically?'],
-            differentiationTips: 'Advanced: sketch the parabola and verify it touches the x-axis at one point',
-          },
-        },
-        {
-          slideNumber: 12, type: 'reveal',
-          title: '🔓 Code 6 Unlocked!',
-          content: 'Last challenge solved! Fifth code: 6',
-          unlockCode: '6',
-          durationSeconds: 0,
-        },
-        {
-          slideNumber: 13, type: 'summary',
-          title: '🎉 You Escaped!',
-          content: 'Outstanding! Your team escaped the Math Lab!\nFull code: 8 – 4 – 7 – 3 – 6\n\nToday you practised:\n• Factoring quadratics\n• Difference of squares\n• Common factor extraction\n• Perfect square trinomials',
-          durationSeconds: 0,
-        },
-      ],
-    };
+    const banked = batch(5);
+    if (banked.length >= 3) return buildEscape(ctx, banked.map(bankChallenge(isAr)));
+    return buildEscape(ctx, windowOf(tasks, 5, variant).map(taskChallenge));
   }
 
   async generateHomework(req: AIRequest): Promise<WorksheetOutput> {
