@@ -686,6 +686,34 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Book codes live on the Library's kind shelves, and the Library is searchable, 2026-10-06
+
+The Library's «مصادر الكتب» shelf is gone. A teacher had to open it, then open
+each book's accordion, to find a row titled only «صفحة ٣٥» — and nothing about
+it responded to the grade/subject chips the other shelves answered to. Each
+book code now sits on the shelf of what it opens (video → فيديوهات, audio →
+تسجيلات صوتية, image → صور, PDF → مستندات), after staff uploads and ready-made
+sheets, and is titled by its book with the printed page and, for a web page,
+«صفحة ويب» underneath. **A web-page code has no shelf of its own and is filed
+under مستندات** — 11 of the 17 reachable grade 9–10 codes are exactly that.
+Checked against the real manifest: grade 10's 15 codes land as 4 videos + 11
+documents, and **all 15 are Arabic / civics / Islamic / geography — none is
+maths or chemistry**, so a maths or chemistry teacher's subject chip shows no
+book codes at all. A lesson chip also hides them (only 12 of 186 carry a lesson
+id), which is correct but can look like they vanished.
+
+A search field sits under the intro. It narrows on top of the grade, subject
+and lesson chips, matches title, English title, description and a book code's
+book title, and folds Arabic with `normalizeArabic` (hamza, taa marbuta, harakat)
+on both sides — the old `query` filter existed but lower-cased only the title
+and had no UI. It does **not** match a printed page number.
+
+Verified: `services/__tests__/resourceCatalog.test.ts` (shelf mapping, order,
+search), whole-monorepo `pnpm run typecheck` clean, mobile suite 2982 pass /
+0 fail, real-manifest distribution above. **Not seen in a browser**: the screen
+sits behind sign-in and this session had no API/Postgres, so the search field's
+look in RTL and the new row subtitle are unviewed.
+
 ## «من بنك الأسئلة المُراجَع» only under answers that came from it, 2026-10-06
 
 A live-AI history worksheet (الإمبراطورية الفارسية, true/false) was captioned
