@@ -145,8 +145,9 @@ describe('the Grade 10 families come from the title', () => {
 });
 
 describe('mathBankCovers', () => {
-  it('Grades 7–9 have no bank, whatever the title says', () => {
-    for (const g of [7, 8, 9]) assert.equal(mathBankCovers('التناسب', null, g), false);
+  it('Grades 7–9 are covered only by a generator for that lesson, never by the Grade 10 bank', () => {
+    assert.equal(mathBankCovers('التناسب', null, 7), true);
+    assert.equal(mathBankCovers('التناسب', null, 8), false);
     assert.equal(mathBankCovers('المعادلات الأسية', null, 9), false);
   });
 
