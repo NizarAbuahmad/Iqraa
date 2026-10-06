@@ -171,8 +171,10 @@ import {
   copyToClipboard,
   exportAsPDF,
   exportAsWord,
+  exportBuiltWord,
   shareAsText,
 } from '@/services/share';
+import { quizExports, type QuizCopy } from '@/services/quizExport';
 import { buildClassDeck } from '@/services/startClass';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
@@ -1453,6 +1455,18 @@ export default function IqraScreen() {
   const [exportText, setExportText] = useState('');
   const [exportVisible, setExportVisible] = useState(false);
   /**
+   * The quiz behind an export, when the message holds one. A quiz exports as
+   * an exam paper (`quizExports`) in the copy picked in the menu, rather than
+   * as `exportText` — which always carried the key.
+   */
+  const [exportQuiz, setExportQuiz] = useState<{
+    quiz: Extract<ChatArtifactData, { kind: 'quiz' }>['quiz'];
+    title: string;
+    meta: { subject: string; grade: string };
+    isAr: boolean;
+  } | null>(null);
+  const [exportCopy, setExportCopy] = useState<QuizCopy>('student');
+  /**
    * Workspace id waiting for a class, or null. Set right after a material's
    * first save — the same "which class is this for?" moment the tool screens
    * have, and the reason the sheet is opened on an id rather than on a message.
@@ -1575,8 +1589,19 @@ export default function IqraScreen() {
 
   const handleExportMessage = useCallback((message: Message) => {
     setExportText(documentTextFor(message));
+    const data = message.artifactData;
+    const meta = message.artifactMeta;
+    setExportQuiz(data?.kind === 'quiz' && meta
+      ? { quiz: data.quiz, title: meta.title, meta: { subject: meta.subject, grade: meta.grade }, isAr: (meta.lang ?? lang) === 'ar' }
+      : null);
+    setExportCopy('student');
     setExportVisible(true);
-  }, [documentTextFor]);
+  }, [documentTextFor, lang]);
+
+  /** The quiz's exam paper for the export menu — built on press, not per render. */
+  const exportQuizDocs = () => exportQuiz
+    ? quizExports(exportQuiz.quiz, exportQuiz.title, exportQuiz.meta, exportQuiz.isAr, exportCopy)
+    : null;
 
   const handleEditArtifact = useCallback((messageId: string, next: ChatArtifactData) => {
     setMessages(prev =>
@@ -3922,19 +3947,21 @@ export default function IqraScreen() {
         isRTL={isRTL}
         loadingPDF={loadingPDF}
         loadingWord={loadingWord}
+        copyChoice={exportQuiz ? { value: exportCopy, onChange: setExportCopy } : undefined}
         onShare={async () => {
           setExportVisible(false);
-          await shareAsText(exportText, currentLessonView?.topic ?? 'Iqrra');
+          await shareAsText(exportQuizDocs()?.text ?? exportText, currentLessonView?.topic ?? 'Iqrra');
         }}
         onCopy={async () => {
           setExportVisible(false);
-          await copyToClipboard(exportText);
+          await copyToClipboard(exportQuizDocs()?.text ?? exportText);
           showToast(t('copiedToClipboard'));
         }}
         onPDF={async () => {
           setLoadingPDF(true);
           try {
-            const html = `<html><body dir="${isRTL ? 'rtl' : 'ltr'}" style="font-family: sans-serif; padding: 24px; white-space: pre-wrap;">${exportText.replace(/</g, '&lt;')}</body></html>`;
+            const html = exportQuizDocs()?.html
+              ?? `<html><body dir="${isRTL ? 'rtl' : 'ltr'}" style="font-family: sans-serif; padding: 24px; white-space: pre-wrap;">${exportText.replace(/</g, '&lt;')}</body></html>`;
             await exportAsPDF(html, `iqra-${Date.now()}.pdf`);
           } finally {
             setLoadingPDF(false);
@@ -3944,7 +3971,9 @@ export default function IqraScreen() {
         onWord={async () => {
           setLoadingWord(true);
           try {
-            await exportAsWord(exportText, `iqra-${Date.now()}`, isRTL);
+            const quiz = exportQuizDocs();
+            if (quiz) await exportBuiltWord(quiz.word, `iqra-${Date.now()}`);
+            else await exportAsWord(exportText, `iqra-${Date.now()}`, isRTL);
           } finally {
             setLoadingWord(false);
             setExportVisible(false);
