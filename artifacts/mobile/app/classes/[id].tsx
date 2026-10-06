@@ -1091,12 +1091,16 @@ export default function ClassDetailScreen() {
                     <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium' }}>{t('messagingCopyCode')}</Text>
                   </Pressable>
                   <Pressable
-                    // shareAsText falls back to the clipboard where the OS share
-                    // sheet does not exist (react-native-web), so this is never
-                    // a dead button — it just tells the truth about what it did.
+                    // The Windows/Chrome share sheet has no Copy entry, so the code
+                    // goes to the clipboard first and the sheet opens on top of it.
                     onPress={async () => {
-                      const how = await shareAsText(`${t('joinCodeTitle')}: ${group.joinCode}`, title);
-                      if (how === 'copied') setToast(t('messagingCodeCopied'));
+                      await copyToClipboard(group.joinCode!);
+                      setToast(t('messagingCodeCopied'));
+                      try {
+                        await shareAsText(`${t('joinCodeTitle')}: ${group.joinCode}`, title);
+                      } catch {
+                        // closing the share sheet rejects on web; the code is already copied
+                      }
                     }}
                     style={[styles.pickRow, { borderColor: colors.border, flex: 1, justifyContent: 'center', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                   >
