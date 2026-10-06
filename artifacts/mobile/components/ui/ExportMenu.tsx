@@ -34,6 +34,9 @@ interface ExportMenuProps {
   onSlides?: () => void;
   /** The Ministry lesson-plan form — only the lesson-plan page offers it. */
   onMinistry?: () => void;
+  /** One line under the title — e.g. which copy (student/teacher) the
+   *  exports below will produce. */
+  note?: string;
   isRTL: boolean;
   loadingPDF?: boolean;
   loadingWord?: boolean;
@@ -66,6 +69,7 @@ export function ExportMenu({
   onWord,
   onSlides,
   onMinistry,
+  note,
   isRTL,
   loadingPDF,
   loadingWord,
@@ -145,6 +149,11 @@ export function ExportMenu({
           <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
             {labels.title}
           </Text>
+          {note ? (
+            <Text style={[styles.note, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+              {note}
+            </Text>
+          ) : null}
 
           {/* Options */}
           {options.map(opt => (
@@ -208,6 +217,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center', marginBottom: 16,
   },
   title: { fontSize: 16, marginBottom: 12 },
+  note: { fontSize: 13, lineHeight: 21, marginTop: -8, marginBottom: 8 },
   row: {
     alignItems: 'center', gap: 14,
     paddingVertical: 14, borderBottomWidth: 1,

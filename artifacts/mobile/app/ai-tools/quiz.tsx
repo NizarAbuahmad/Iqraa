@@ -51,6 +51,7 @@ import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { buildQuizHTML, buildQuizSlidesHTML, formatQuizText } from '@/services/share';
+import { buildQuizDocx } from '@/services/quizDocx';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
@@ -482,9 +483,12 @@ export default function QuizScreen() {
     lang: outLang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
-    formatText: formatQuizText,
-    buildHTML: buildQuizHTML,
-    buildSlidesHTML: buildQuizSlidesHTML,
+    // The paper follows the answers toggle, as the worksheet's does: hidden
+    // (the default) prints the student copy, shown prints the teacher's.
+    formatText: (quiz, title, meta, isAr) => formatQuizText(quiz, title, meta, isAr, showAnswers),
+    buildHTML: (quiz, title, meta, isAr, figures) => buildQuizHTML(quiz, title, meta, isAr, figures, showAnswers),
+    buildSlidesHTML: (quiz, title, meta, isAr, figures) => buildQuizSlidesHTML(quiz, title, meta, isAr, figures, showAnswers),
+    buildWord: (quiz, title, meta, isAr, docx) => buildQuizDocx(quiz, title, meta, isAr, showAnswers, docx),
     onError: key => showToast(t(key)),
     onCopied: key => showToast(t(key)),
   });
@@ -869,6 +873,7 @@ export default function QuizScreen() {
       onPDF={handlePDF}
       onWord={handleWord}
       onSlides={handleSlides}
+      note={t(showAnswers ? 'exportTeacherCopyNote' : 'exportStudentCopyNote')}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}
