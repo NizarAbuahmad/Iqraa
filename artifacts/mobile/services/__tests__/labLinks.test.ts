@@ -5,7 +5,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { LAB_ROUTE, labItemPath, resolveLabParam } from '../labLinks.ts';
+import { LAB_ROUTE, labItemPath, labShareUrl, resolveLabParam } from '../labLinks.ts';
 
 describe('labItemPath', () => {
   it('builds the present-mode path', () => {
@@ -14,6 +14,13 @@ describe('labItemPath', () => {
   });
   it('encodes an id that is not url-safe', () => {
     assert.equal(labItemPath('a b/c'), '/curriculum/lab/a%20b%2Fc');
+  });
+});
+
+describe('labShareUrl', () => {
+  it('is the live site plus the present-mode path, never a dev or app-scheme link', () => {
+    assert.equal(labShareUrl('lab-periodic-table'), 'https://app.iqrra.com/curriculum/lab/lab-periodic-table');
+    assert.doesNotMatch(labShareUrl('lab-periodic-table'), /localhost|^mobile:/);
   });
 });
 

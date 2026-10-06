@@ -3,19 +3,19 @@
  *
  * The id in the URL is shareable and untrusted: it resolves through
  * `resolveLabParam` or the screen says it could not find the item. The share
- * button copies a link built by `Linking.createURL`, which is the app's own
- * scheme on native and the site origin on web.
+ * button copies `labShareUrl` (the production origin plus the item path), so
+ * the pasted link opens the web app on every platform, whichever host the
+ * teacher was browsing.
  */
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import * as Linking from 'expo-linking';
-import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { getLessonById } from '@/services/knowledgeBase';
-import { labItemPath, resolveLabParam } from '@/services/labLinks';
+import { labShareUrl, resolveLabParam } from '@/services/labLinks';
+import { copyToClipboard } from '@/services/share';
 import { LabFrame } from '@/components/lab/LabFrame';
 import { LabLawCard } from '@/components/lab/LabLawCard';
 import { LabExternalCard } from '@/components/lab/LabExternalCard';
@@ -44,7 +44,7 @@ export default function LabPresentScreen() {
 
   const copyLink = async () => {
     try {
-      await Clipboard.setStringAsync(Linking.createURL(labItemPath(item.id)));
+      await copyToClipboard(labShareUrl(item.id));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
