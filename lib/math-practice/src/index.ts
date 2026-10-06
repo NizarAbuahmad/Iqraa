@@ -273,7 +273,8 @@ export function mathBankCovers(topic: string, kb: KBLesson | null, grade: number
     const title = lessonTitleBlob(topic, kb);
     return (grade <= 6 && elementaryOpsForTitle(title).length > 0) || topicForLesson(topic, kb, grade) !== null;
   }
-  return matchMathFamily(topic, kb) !== null;
+  // Grade 10 has the banked families; a lesson none of them is about may still have a generator
+  return matchMathFamily(topic, kb) !== null || (grade === 10 && topicForLesson(topic, kb, grade) !== null);
 }
 
 function placeCorrect(correct: string, wrongs: string[]): string[] {

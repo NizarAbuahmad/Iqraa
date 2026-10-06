@@ -164,6 +164,10 @@ import {
   buildG5CreativeArtsBrowserCatalog,
 } from './catalogs/g5CreativeArts.ts';
 import {
+  G9_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  buildG9CreativeArtsBrowserCatalog,
+} from './catalogs/g9CreativeArts.ts';
+import {
   G4_MATH_S1_CURRICULUM_BOOK_ID,
   buildG4MathSem1BrowserCatalog,
 } from './catalogs/g4MathSem1.ts';
@@ -658,6 +662,10 @@ import {
   buildG9VocSem1BrowserCatalog,
 } from './catalogs/g9VocationalSem1.ts';
 import {
+  G9_VOC_S2_CURRICULUM_BOOK_ID,
+  buildG9VocSem2BrowserCatalog,
+} from './catalogs/g9VocationalSem2.ts';
+import {
   G4_VOC_S1_CURRICULUM_BOOK_ID,
   buildG4VocSem1BrowserCatalog,
 } from './catalogs/g4VocationalSem1.ts';
@@ -1017,7 +1025,10 @@ export const SUBJECTS: Subject[] = [
   // Extended to grade-5 the same day once its book arrived (found via a
   // cross-check against the official NCCD textbook list), same one-book
   // shape as every other grade below grade-10; see g5CreativeArts.ts.
-  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-1', 'grade-2', 'grade-3', 'grade-4', 'grade-6', 'grade-7', 'grade-8', 'grade-10', 'grade-5'] },
+  // Extended to grade-9 on 2026-10-06 once its book was found on the NCCD site
+  // (listed there as «الفصل الأول» though the book itself prints no semester):
+  // 25 lessons (7 + 10 + 8); see g9CreativeArts.ts.
+  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-1', 'grade-2', 'grade-3', 'grade-4', 'grade-6', 'grade-7', 'grade-8', 'grade-10', 'grade-5', 'grade-9'] },
   // Seventh brand-new subject, added 2026-09-09 as part of the Grade 8
   // batch. Seven vocational tracks packed into one book per semester
   // (life skills, home economics, agriculture, health/safety, industry,
@@ -1412,6 +1423,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // SUBJECTS.grades needed extending for grade-5 — see the SUBJECTS
   // declaration above and g5CreativeArts.ts.
   G5_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  // Grade 9 Art, Music and Drama Education — one book, no semester split, same
+  // shape as g10CreativeArts.ts. 'creative-arts' is already in
+  // MVP_SUBJECT_IDS, but SUBJECTS.grades needed extending for grade-9 — see the
+  // SUBJECTS declaration above and g9CreativeArts.ts. 25 lessons (7 + 10 + 8).
+  G9_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
   // Grade 4 Mathematics, both semesters — the first Grade 4 book, and the
   // book that brings grade-4 into MVP_GRADE_IDS above. 'mathematics' is
   // already in MVP_SUBJECT_IDS, so no subject append is needed.
@@ -1635,10 +1651,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   G5_VOC_S1_CURRICULUM_BOOK_ID,
   G5_VOC_S2_CURRICULUM_BOOK_ID,
   // Grade 9 Vocational Education, Semester 1 (source PDF supplied directly by
-  // the user; no Semester 2 book found on disk — see the JSON's known_gaps).
-  // 'vocational-education' extended to grade-9 in SUBJECTS.grades above (was
-  // grade-4/6/7/8/5 before this). See g9VocationalSem1.ts.
+  // the user) and Semester 2 (downloaded from NCCD) — see the JSONs'
+  // known_gaps. 'vocational-education' extended to grade-9 in SUBJECTS.grades
+  // above (was grade-4/6/7/8/5 before this). See g9VocationalSem1.ts and
+  // g9VocationalSem2.ts.
   G9_VOC_S1_CURRICULUM_BOOK_ID,
+  G9_VOC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -2808,6 +2826,23 @@ export const BOOKS: Book[] = [
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
+  },
+  // Grade 9 Art, Music and Drama Education — one book for the whole year (no
+  // semester field on the book itself; nccd.gov.jo lists it as «الفصل الأول»).
+  // 25 lessons (7 art + 10 music + 8 drama), objectives from each lesson's
+  // closing «أُقيِّمُ تعلُّمي» box — see g9CreativeArts.ts.
+  {
+    id: G9_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+    title: 'Art, Music and Drama Education – Grade 9',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف التاسع',
+    subjectId: 'creative-arts',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Mm/G9/%D9%81%D9%86%20%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%AA%D8%A7%D8%B3%D8%B9%202026%20.pdf',
   },
   // Grade 5 Vocational Education — both semesters, found on disk 2026-09-20
   // via a cross-check against the official NCCD textbook list (the book had
@@ -4402,8 +4437,8 @@ export const BOOKS: Book[] = [
   // ── Vocational Education Grade 9 – Semester 1 ─────────────────────────────
   // Eight units across six vocational tracks (life skills, home economics
   // ×3, entrepreneurship, agriculture, security/health/safety, tourism).
-  // Source PDF supplied directly by the user; no Semester 2 book found on
-  // disk yet — see g9VocationalSem1.ts and the JSON's known_gaps.
+  // Source PDF supplied directly by the user — see g9VocationalSem1.ts and
+  // the JSON's known_gaps. Semester 2 follows below.
   {
     id: G9_VOC_S1_CURRICULUM_BOOK_ID,
     title: 'Vocational Education – Grade 9, Semester 1',
@@ -4416,6 +4451,26 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // ── Vocational Education Grade 9 – Semester 2 ─────────────────────────────
+  // Nine units across seven printed tracks (home economics, life skills,
+  // entrepreneurship, agriculture, security/health/safety, industry, tourism
+  // and hospitality); the book's own unit numbers run 1–9. First trial
+  // edition (2025), in force from the 2025/2026 school year. Source PDF
+  // downloaded from NCCD — see g9VocationalSem2.ts and the JSON's known_gaps.
+  {
+    id: G9_VOC_S2_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 9, Semester 2',
+    titleAr: 'التربية المهنية – الصف التاسع – الفصل الثاني',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%D8%A9/9/2/%D9%85%D9%87%D9%86%D9%8A%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%202025%20.pdf',
   },
   // ── Social Studies Grade 8 – Semesters 1 and 2 ────────────────────────────
   // First real book behind the pre-existing 'social' subject (declared
@@ -6024,6 +6079,7 @@ const _g2PhysicalEducationSem1Browser = buildG2PhysicalEducationSem1BrowserCatal
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g9VocSem1Browser = buildG9VocSem1BrowserCatalog();
+const _g9VocSem2Browser = buildG9VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
 const _g8SocialSem2Browser = buildG8SocialSem2BrowserCatalog();
 const _g8MathSem2Browser = buildG8MathSem2BrowserCatalog();
@@ -6047,6 +6103,7 @@ const _g5SocialSem1Browser = buildG5SocialSem1BrowserCatalog();
 const _g5SocialSem2Browser = buildG5SocialSem2BrowserCatalog();
 const _g5DigitalSem1Browser = buildG5DigitalSem1BrowserCatalog();
 const _g5CreativeArtsBrowser = buildG5CreativeArtsBrowserCatalog();
+const _g9CreativeArtsBrowser = buildG9CreativeArtsBrowserCatalog();
 const _g5VocSem1Browser = buildG5VocSem1BrowserCatalog();
 const _g5VocSem2Browser = buildG5VocSem2BrowserCatalog();
 const _g4MathSem1Browser = buildG4MathSem1BrowserCatalog();
@@ -6331,6 +6388,7 @@ export const UNITS: Unit[] = [
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g9VocSem1Browser.units,
+  ..._g9VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
   ..._g8SocialSem2Browser.units,
   ..._g8MathSem2Browser.units,
@@ -6374,6 +6432,7 @@ export const UNITS: Unit[] = [
   ..._g5SocialSem2Browser.units,
   ..._g5DigitalSem1Browser.units,
   ..._g5CreativeArtsBrowser.units,
+  ..._g9CreativeArtsBrowser.units,
   ..._g5VocSem1Browser.units,
   ..._g5VocSem2Browser.units,
   ..._g4MathSem1Browser.units,
@@ -6528,6 +6587,7 @@ export const LESSONS: Lesson[] = [
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g9VocSem1Browser.lessons,
+  ..._g9VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
   ..._g8SocialSem2Browser.lessons,
   ..._g8MathSem2Browser.lessons,
@@ -6571,6 +6631,7 @@ export const LESSONS: Lesson[] = [
   ..._g5SocialSem2Browser.lessons,
   ..._g5DigitalSem1Browser.lessons,
   ..._g5CreativeArtsBrowser.lessons,
+  ..._g9CreativeArtsBrowser.lessons,
   ..._g5VocSem1Browser.lessons,
   ..._g5VocSem2Browser.lessons,
   ..._g4MathSem1Browser.lessons,
