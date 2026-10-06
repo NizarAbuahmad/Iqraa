@@ -77,6 +77,11 @@ export interface ResourceFilter {
   gradeId?: string;
   /** Keeps rows for this subject, plus rows with no subject. */
   subjectId?: string;
+  /**
+   * Keeps rows for any of these subjects, plus rows with no subject. For a
+   * class that teaches several; empty or absent means no subject filter.
+   */
+  subjectIds?: readonly string[];
   query?: string;
 }
 
@@ -166,6 +171,7 @@ export function filterResources(items: ResourceItem[], filter: ResourceFilter): 
     if (filter.lessonId && item.lessonId !== filter.lessonId) return false;
     if (filter.gradeId && item.gradeId && item.gradeId !== filter.gradeId) return false;
     if (filter.subjectId && item.subjectId && item.subjectId !== filter.subjectId) return false;
+    if (filter.subjectIds?.length && item.subjectId && !filter.subjectIds.includes(item.subjectId)) return false;
     if (query) {
       const haystack = normalizeArabic(`${item.titleAr} ${item.titleEn} ${item.description ?? ''}`);
       if (!haystack.includes(query)) return false;
