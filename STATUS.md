@@ -676,6 +676,38 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## «من بنك الأسئلة المُراجَع» only under answers that came from it, 2026-10-06
+
+A live-AI history worksheet (الإمبراطورية الفارسية, true/false) was captioned
+«لم يتحقّق المُحقِّق الرمزي من أي إجابة — الإجابات من بنك الأسئلة المُراجَع».
+There is no history bank, and the offline generator refuses history outright
+(`NoQuestionBankError`), so the model wrote those answers and nobody reviewed
+them. The cause: `verifyItems` turned every unproved answer into
+`{ verifiedBy: 'bank' }`, so "not proved" read as "reviewed by a person". Deck
+examples had already been fixed for this (`aiWritten` in
+`verifyDeckExamples`); quizzes and worksheets had not.
+
+- **Provenance is now marked, not assumed.** `fromBank?: true` on
+  `QuizQuestion` / `WorksheetQuestion`, set in `tryMathPractice` (and on the
+  half-solved item) and nowhere else. Absent means not from the bank, so a
+  path that forgets to mark it under-claims rather than over-claims.
+- An unmarked answer the verifier did not prove gets **no outcome**: no line in
+  the summary saying "bank", and no bank badge in Class Mode
+  (`outcomeFields(undefined)`).
+- The summary row (`components/ui/VerificationSummaryRow.tsx`, shared by
+  quiz and worksheet) now says «لم يراجع أحدٌ هذه الإجابات — راجعها بنفسك قبل
+  التوزيع», or «… n من أصل total …» when only some are. The bank line appears
+  only when every answer came from the bank. Line choice is
+  `verificationLines`, covered in `quizVerification.test.ts`.
+- Saved papers from before this change carry no mark, but a reopened paper is
+  not re-verified, so it shows no row either way.
+
+Covered by `answerProvenance.test.ts` (every maths/chemistry quiz and worksheet
+item is marked; prior-review template items are not) and the new cases in
+`quizVerification.test.ts`, watched failing first. **Not exercised in a
+browser:** the unreviewed line needs a live-AI paper, which the demo build
+does not make.
+
 ## The chat counts its own dead ends — `chat_unanswered` in PostHog, 2026-10-05
 
 Item 6 of the "make the chat smarter" list. Dead ends reached us one
