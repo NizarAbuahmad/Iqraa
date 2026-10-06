@@ -20,7 +20,10 @@ import { arCountPhrase } from '@/services/arCount';
 // adding a sixth to a private copy is exactly the drift `materialKind.ts` was
 // extracted to stop — a card in موادي and the material it opens must not
 // disagree about what colour an activity is.
-import { MATERIAL_COLOR, MATERIAL_FILL } from '@/constants/materialKind';
+import { MATERIAL_COLOR, MATERIAL_EDIT_ROUTE, MATERIAL_FILL } from '@/constants/materialKind';
+import { materialSubjectId } from '@/services/contentLanguage';
+import { redoesInEnglish } from '@/hooks/useEnglishRefresh';
+import { getT } from '@/services/i18n';
 import { activityTypeLabel } from '@/constants/activityType';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
@@ -35,6 +38,7 @@ import {
   formatActivityText, formatLessonPlanText, formatQuizText, formatWorksheetText,
   shareAsText,
 } from '@/services/share';
+import { exportFilename } from '@/services/exportFilename';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { allPremade } from '@workspace/curriculum/premade';
@@ -81,6 +85,13 @@ export default function WorkspaceViewScreen() {
       setLoading(false);
     } else if (id) {
       getItem(id).then(m => {
+        // An English material saved in Arabic opens in its tool instead, which
+        // redoes it in English over this copy (see useEnglishRefresh).
+        const redo = m && redoesInEnglish(m) ? MATERIAL_EDIT_ROUTE[viewKind(m, parseContent(m.content))] : undefined;
+        if (m && redo) {
+          router.replace({ pathname: redo as any, params: { savedId: m.id, ...m.formState } });
+          return;
+        }
         setItem(m);
         setFavorited(m?.isFavorite ?? false);
         setLoading(false);
@@ -110,22 +121,16 @@ export default function WorkspaceViewScreen() {
     );
   }
 
-  let content:
+  const content = parseContent(item.content) as
     | LessonPlanOutput | WorksheetOutput | QuizOutput | ClassroomActivity | ActivityOutput
-    | null = null;
-  try { content = JSON.parse(item.content); } catch { /* noop */ }
+    | null;
 
-  /**
-   * The kind this material is rendered, exported and edited as.
-   *
-   * Normally just `item.type`. The exception is every activity saved before
-   * the workspace could render one: those went in as `'lesson'` because the
-   * honest type crashed the viewer. They are still in teachers' workspaces, so
-   * the shape decides when the stored type says lesson — see materialShape.ts.
-   */
-  const kind = item.type === 'lesson' && looksLikeActivityContent(content)
-    ? 'activity'
-    : item.type;
+  const kind = viewKind(item, content);
+  // The material reads in its own language: English is prepared in English
+  // whatever the UI, and its stored language says which copy this is.
+  const docLang = materialSubjectId(item) === 'english' ? item.language : lang;
+  const docRTL = docLang === 'ar';
+  const docT = getT(docLang);
 
   const accent = MATERIAL_COLOR[kind as keyof typeof MATERIAL_COLOR] ?? colors.primary;
 
@@ -142,7 +147,7 @@ export default function WorkspaceViewScreen() {
               : kind === 'prompt-slides' ? '/ai-tools/prompt-slides'
                 : '/ai-tools/quiz';
 
-  const isAr = lang === 'ar';
+  const isAr = docRTL;
   const getPlainText = () => {
     if (!content) return item.title;
     const meta = { subject: item.subject, grade: item.grade };
@@ -166,7 +171,7 @@ export default function WorkspaceViewScreen() {
    * because a saved material predates the field and would have none.
    */
   const getExportFigures = () =>
-    bookFigureRefsForLesson(resolveGeneratorGrounding(item.topic ?? '', lang).lesson?.id, isAr);
+    bookFigureRefsForLesson(resolveGeneratorGrounding(item.topic ?? '', docLang).lesson?.id, isAr);
 
   const getHTML = () => {
     if (!content) return '<p></p>';
@@ -184,12 +189,12 @@ export default function WorkspaceViewScreen() {
   const handleCopy = async () => { await copyToClipboard(getPlainText()); showToast(t('copiedToClipboard')); };
   const handlePDF = async () => {
     setLoadingPDF(true);
-    try { await exportAsPDF(getHTML(), item.title.replace(/[^\w\s]/g, '').trim()); }
+    try { await exportAsPDF(getHTML(), exportFilename(item.title)); }
     catch { showToast(t('error')); } finally { setLoadingPDF(false); }
   };
   const handleWord = async () => {
     setLoadingWord(true);
-    try { await exportAsWord(getPlainText(), item.title.replace(/[^\w\s]/g, '').trim(), isAr); }
+    try { await exportAsWord(getPlainText(), exportFilename(item.title), isAr); }
     catch { showToast(t('error')); } finally { setLoadingWord(false); }
   };
 
@@ -313,17 +318,17 @@ export default function WorkspaceViewScreen() {
             {t('noContentAvailable')}
           </Text>
         ) : kind === 'lesson' ? (
-          <LessonView plan={content as LessonPlanOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} />
+          <LessonView plan={content as LessonPlanOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
         ) : kind === 'activity' ? (
-          <ActivityView activity={content as ActivityOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} isAr={isAr} />
+          <ActivityView activity={content as ActivityOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} isAr={isAr} />
         ) : kind === 'worksheet' ? (
-          <WorksheetView ws={content as WorksheetOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} />
+          <WorksheetView ws={content as WorksheetOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
         ) : kind === 'flow' ? (
-          <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={isRTL} lang={lang} accent={accent} />
+          <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={docRTL} lang={docLang} accent={accent} />
         ) : kind === 'slides' || kind === 'prompt-slides' ? (
-          <SlidesDeckView deck={content as ClassroomActivity} colors={colors} isRTL={isRTL} isAr={isAr} accent={accent} />
+          <SlidesDeckView deck={content as ClassroomActivity} colors={colors} isRTL={docRTL} isAr={isAr} accent={accent} />
         ) : (
-          <QuizView quiz={content as QuizOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} lang={lang} />
+          <QuizView quiz={content as QuizOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} lang={docLang} />
         )}
 
         {/* The same «من الكتاب المدرسي» figures the export appendix prints,
@@ -363,6 +368,22 @@ export default function WorkspaceViewScreen() {
     <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
   );
+}
+
+function parseContent(raw: string): unknown {
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+/**
+ * The kind a material is rendered, exported and edited as.
+ *
+ * Normally just `item.type`. The exception is every activity saved before
+ * the workspace could render one: those went in as `'lesson'` because the
+ * honest type crashed the viewer. They are still in teachers' workspaces, so
+ * the shape decides when the stored type says lesson — see materialShape.ts.
+ */
+function viewKind(item: SavedMaterial, content: unknown): SavedMaterial['type'] {
+  return item.type === 'lesson' && looksLikeActivityContent(content) ? 'activity' : item.type;
 }
 
 // ─── Lesson Plan renderer ─────────────────────────────────────────────────────

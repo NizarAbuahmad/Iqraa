@@ -53,6 +53,16 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **The chat «+» lists only what the chat does itself** (2026-10-06). It used to
+  show the whole catalog, so most rows (slides, class hub, class challenge,
+  library, evaluations, parent message) left the conversation from a button that
+  reads as "add to this message". It now lists lesson plan, worksheet, activity
+  and quiz, which `handleToolSelect` runs inline when the chat has a lesson —
+  `CHAT_MENU_TOOLS` / `CHAT_NATIVE_TOOLS` in `services/toolCatalog.ts`, guarded
+  by `toolCatalog.test.ts`. Everything else stays on the Tools tab and the lesson
+  card. With no lesson open, a chat tool still falls back to its own screen.
+  Upload rows return to the same sheet when `DOCUMENT_UPLOAD_ENABLED` is turned
+  on. Not verified on a running app: tests and a catalog check only.
 - **Class Activity review fixes** (2026-10-04). The offline jigsaw now lists
   four tasks for its groups of four (it drew three items and promised four);
   activities no longer print literal `**bold**` — `services/ai/activityText.ts`
@@ -143,9 +153,35 @@ an announcement by default» below.
   both languages, with or without a grounded lesson. **What it is not:** the
   offline path has no bank for these subjects, so it re-frames the same lesson;
   it does not invent new items. The live path is unchanged (it already sends
-  `regenerate`/`avoid`/`excludeVariantIds`). Only the activity generator was
-  touched — the other offline generators were not checked for the same
-  sameness. Tests: `activityRegenerate.test.ts`. Not looked at in a browser.
+  `regenerate`/`avoid`/`excludeVariantIds`). The other offline generators were checked in the follow-up below. Tests: `activityRegenerate.test.ts`. Not looked at in a browser.
+- **Offline Regenerate no longer repeats itself for the lesson plan, worksheet,
+  homework or quiz; the classroom activity is still fixed, and is wrong for
+  most subjects** (2026-10-05, follow-up). Measured over twelve regenerations per
+  case: the lesson plan repeated its predecessor up to 4 times in 11, worksheet
+  and homework up to 5 in 11 (a small bank — one law-of-sines lesson — makes the
+  odds high), the quiz never. They vary by random draw and nothing stopped a draw
+  landing on what was already on screen. `MockAIService` now remembers a
+  fingerprint of what it last served for a request (`freshOnRegenerate`,
+  generators.ts) and, when the same request returns with `regenerate`, draws again
+  — at most 20 times, so a generator with nothing to vary still returns. A plain
+  request is never compared. After: 0 in 11 everywhere. Worksheet, quiz and
+  homework still **refuse** offline for subjects with no bank (the recorded
+  `NoQuestionBankError` policy), so they cannot repeat. The infographic is a
+  deterministic digest of the textbook lesson and has no Regenerate; repeating
+  it is correct. **Not fixed, and bigger than sameness:**
+  `generateClassroomActivity` (the classroom builder, which has a Regenerate
+  button) returns the **same output on every Regenerate for all seven types**
+  (only maths/chemistry quick-check varies), because it is ~700 lines of fixed
+  templates — and the templates are maths: the offline escape-challenge for an
+  English or Arabic topic is a quadratics escape room set in «the Math Lab»,
+  the error-detective's cases are quadratic misconceptions whatever the topic,
+  and relay/bingo only use real items when the bank has at least four. It was
+  never brought under the no-question-bank policy that worksheet/quiz/homework
+  follow. Reordering that content would only polish the wrong output; the
+  decision is whether to make it refuse offline for bank-less subjects (the same
+  policy — honest, but the classroom builder would then error in demo mode for
+  those subjects) or to author real per-subject templates. Tests:
+  `offlineRegenerate.test.ts`. Not looked at in a browser.
 - **Interface dates and times are written in Latin digits** (2026-10-03).
   Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
   «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
@@ -650,6 +686,520 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Book codes live on the Library's kind shelves, and the Library is searchable, 2026-10-06
+
+The Library's «مصادر الكتب» shelf is gone. A teacher had to open it, then open
+each book's accordion, to find a row titled only «صفحة ٣٥» — and nothing about
+it responded to the grade/subject chips the other shelves answered to. Each
+book code now sits on the shelf of what it opens (video → فيديوهات, audio →
+تسجيلات صوتية, image → صور, PDF → مستندات), after staff uploads and ready-made
+sheets, and is titled by its book with the printed page and, for a web page,
+«صفحة ويب» underneath. **A web-page code has no shelf of its own and is filed
+under مستندات** — 11 of the 17 reachable grade 9–10 codes are exactly that.
+Checked against the real manifest: grade 10's 15 codes land as 4 videos + 11
+documents, and **all 15 are Arabic / civics / Islamic / geography — none is
+maths or chemistry**, so a maths or chemistry teacher's subject chip shows no
+book codes at all. A lesson chip also hides them (only 12 of 186 carry a lesson
+id), which is correct but can look like they vanished.
+
+A search field sits under the intro. It narrows on top of the grade, subject
+and lesson chips, matches title, English title, description and a book code's
+book title, and folds Arabic with `normalizeArabic` (hamza, taa marbuta, harakat)
+on both sides — the old `query` filter existed but lower-cased only the title
+and had no UI. It does **not** match a printed page number.
+
+Verified: `services/__tests__/resourceCatalog.test.ts` (shelf mapping, order,
+search), whole-monorepo `pnpm run typecheck` clean, mobile suite 2982 pass /
+0 fail, real-manifest distribution above. **Not seen in a browser**: the screen
+sits behind sign-in and this session had no API/Postgres, so the search field's
+look in RTL and the new row subtitle are unviewed.
+
+## «من بنك الأسئلة المُراجَع» only under answers that came from it, 2026-10-06
+
+A live-AI history worksheet (الإمبراطورية الفارسية, true/false) was captioned
+«لم يتحقّق المُحقِّق الرمزي من أي إجابة — الإجابات من بنك الأسئلة المُراجَع».
+There is no history bank, and the offline generator refuses history outright
+(`NoQuestionBankError`), so the model wrote those answers and nobody reviewed
+them. The cause: `verifyItems` turned every unproved answer into
+`{ verifiedBy: 'bank' }`, so "not proved" read as "reviewed by a person". Deck
+examples had already been fixed for this (`aiWritten` in
+`verifyDeckExamples`); quizzes and worksheets had not.
+
+- **Provenance is now marked, not assumed.** `fromBank?: true` on
+  `QuizQuestion` / `WorksheetQuestion`, set in `tryMathPractice` (and on the
+  half-solved item) and nowhere else. Absent means not from the bank, so a
+  path that forgets to mark it under-claims rather than over-claims.
+- An unmarked answer the verifier did not prove gets **no outcome**: no line in
+  the summary saying "bank", and no bank badge in Class Mode
+  (`outcomeFields(undefined)`).
+- The summary row (`components/ui/VerificationSummaryRow.tsx`, shared by
+  quiz and worksheet) now says «لم يراجع أحدٌ هذه الإجابات — راجعها بنفسك قبل
+  التوزيع», or «… n من أصل total …» when only some are. The bank line appears
+  only when every answer came from the bank. Line choice is
+  `verificationLines`, covered in `quizVerification.test.ts`.
+- Saved papers from before this change carry no mark, but a reopened paper is
+  not re-verified, so it shows no row either way.
+
+Covered by `answerProvenance.test.ts` (every maths/chemistry quiz and worksheet
+item is marked; prior-review template items are not) and the new cases in
+`quizVerification.test.ts`, watched failing first. **Not exercised in a
+browser:** the unreviewed line needs a live-AI paper, which the demo build
+does not make.
+
+## The chat counts its own dead ends — `chat_unanswered` in PostHog, 2026-10-05
+
+Item 6 of the "make the chat smarter" list. Dead ends reached us one
+screenshot at a time («علمني» → «وضّح لي أكثر», then «أيّ مادة تقصد؟»). Every
+turn that asks back or gives up instead of answering now sends
+`chat_unanswered` with a `kind`:
+
+| kind | reply |
+| --- | --- |
+| `generic` | «وضّح لي أكثر: شرح مفهوم، أم مادة؟» |
+| `lesson_named` | the same, naming the open lesson |
+| `which_lesson_bare` | «ماذا نتعلّم؟» — a bare «علمني» with nothing open |
+| `refine_target` | «أي درس أو مادة تريد أن نعدّل فيها؟» |
+| `which_subject` | «أيّ مادة تقصد؟» |
+| `did_you_mean` | «هل تقصد…؟» / «أي درس؟» with lesson chips |
+| `which_lesson_in_scope` | «أي درس من … لـ…؟» |
+| `artifact_topic` | a material asked for with no topic |
+| `tell_more` | «وضّح لي أكثر: ما المادة والدرس؟» |
+| `out_of_scope` | nothing in the curriculum matched |
+
+plus `lang`, `lessonOpen`, `words`, `chars`. Off-topic declines, greetings and
+«من انت» are deliberate answers and are not counted.
+
+**The teacher's words, decided by the owner:** sent as `ask` only when the
+message is **4 words or fewer** (and ≤ 60 characters), with digits (Latin and
+Arabic-Indic), emails, @handles and links masked. A longer message sends only
+`words` and `chars` — no `ask` key at all. This is the first event to carry
+any typed text; `feature_suggested` still sends only a length. The rule lives
+in `askSample` (`services/chatUnanswered.ts`); the event reports `shown`, what
+the teacher typed this turn, never `q`, which can carry an earlier pending ask.
+
+The router's three questions say which they are via a new `clarify` field on
+`classifyChatIntent`'s result; the other seven are reported where the screen
+builds them in `iqra.tsx`.
+
+**Verified in the web build** with a dummy PostHog key and the PostHog
+requests captured: a 6-word message → `out_of_scope`, `words: 6`, no `ask`;
+«نعم» with a lesson open → `lesson_named`, `ask: "نعم"`. 16 cases in
+`chatUnanswered.test.ts`, watched failing first. **Not yet looked at in the
+real PostHog project** — it fills once this deploys; filter on
+`chat_unanswered`, break down by `kind`, and read `ask` for the phrases.
+
+## A class can hold Library items, 2026-10-04
+
+A class's الموارد tab held one thing — the teacher's own saved materials — so a
+Library video or a ready-made worksheet could not be put in front of a class.
+The «+» sheet now has **«من المكتبة»**, which opens a picker filtered to the
+class's grade and subject; one tap adds an item and the tab shows it beside the
+teacher's materials, newest first, tagged «المكتبة».
+
+**What a row is.** A pointer plus a snapshot (`class_resources`: which catalogue
+item, and its title / kind / thumbnail / link as they were when added), not a
+copy, with one exception: a staff upload's *link* is built from its Library row
+on every read (see *Staff links are read-time* below). The tab renders without
+downloading the Library. A staff upload deleted afterwards shows
+greyed out as «لم يعد متاحًا» (the list endpoint checks), and ✕ removes only the
+class's row. Premade sheets open in the existing read-only sheet viewer. A
+book-QR row stored over plain `http` carries the Library's «رابط غير آمن (http)»
+line. A failed read of the shelf shows no banner and keeps what was showing; an
+add whose follow-up re-read fails still puts the new row on the shelf.
+
+**Why not `saved_materials`.** A later piece (device uploads) needs a storage
+key, and in an app-written JSON column the server would be signing URLs from
+keys a client supplied. Here the server validates every column and copies a
+staff upload's title, kind and thumbnail from its own row when it is added, and
+builds its link from that row on every read (premade-sheet and book-QR snapshots
+are supplied by the app and validated by the server). Design:
+`docs/superpowers/specs/2026-10-04-class-resources-design.md`; plan:
+`docs/superpowers/plans/2026-10-04-class-resources-piece-1.md`. **Those two files
+are not on this branch yet** — they live in PR #833, so the links resolve only
+once #833 lands.
+
+**API** (`/classes/:id/resources`, inside the roster router so its path-scoped
+auth and consent guards apply): `GET`, `POST` (a repeat is `409 already_added`,
+which the app treats as success), `DELETE /:rid`. Another teacher's class is a
+404. A staff upload is copied from the Library's own row, never from what the
+app sent, and the `url` a read returns is rebuilt from that row each time
+(`r2Key ? publicUrl(r2Key) : sourceUrl`, falling back to the stored `url` when
+the row is gone or yields no link); links are https-only except book-QR codes, which the API also accepts
+over plain http (an `http://` code was added with a `201`, a `javascript:` link
+was refused with a `400`). A missing table reads as an empty shelf (logged at
+`warn`, so a skipped schema push leaves a trace) and writes answer
+`503 roster_storage_unavailable`.
+
+**Retired.** `addToClassPlan` and the `add-to-class` action: the plan was to copy
+a premade sheet into the teacher's materials, nothing ever called it, and the
+viewer is read-only so a copy had no use. Premade sheets advertised an action
+nothing carried out.
+
+**Schema push required before merge.** `docs/schema-push-2026-10-04-class-resources.sql`
+(one table, two indexes, additive). Run it in Neon, then
+`pnpm --filter @workspace/db run verify-schema`.
+
+**Verified against the running system** (local Postgres 16, the real API built
+from this branch, Expo web, headless Chromium at 390×844 in Arabic):
+
+- *Empty class.* A grade-10 maths class with nothing saved still had
+  **«من المكتبة»** in the «+» sheet.
+- *The picker.* For that class it listed the seeded staff video and 28 premade
+  maths sheets (so the class's subject id does match the catalogue's), the video
+  shelf before the worksheet shelf, each row naming its kind. It had no
+  book-QR rows, because the catalogue has none for grade-10 maths — its grade-10
+  codes are Arabic, civics, geography and Islamic studies.
+- *Adding.* One tap showed a spinner, then «مضاف»; the sheet stayed open; tapping
+  an added row again sent no request. The spinner only showed because the test
+  held the `POST` for 1.5 s — locally it answers instantly.
+- *The tab.* «تم» closed the picker; the tab listed «المكتبة · فيديو» and
+  «المكتبة · ورقة عمل», the sheet (added second) above the video, and the tab's
+  count read «موردان». A reload and `SELECT … FROM class_resources` both had
+  both rows.
+- *Opening.* A staff row called `window.open` and the browser requested
+  `https://example.com/v` (the sandbox cannot reach that host, so the new tab
+  was Chromium's error page). A premade row went to
+  `/workspace/view?premade=…` and the sheet rendered read-only. The staff row
+  was **re-driven after the ✕ was made a sibling** and still opened.
+- *Removing.* ✕ removed only that row and did not also open it (re-driven after
+  the restructure: no new tab, no request to its link, still on the class
+  screen); the video was still in `library_resources` and addable again in the
+  picker. After `DELETE FROM library_resources` a reload showed the row greyed
+  out and labelled «لم يعد متاحًا»; its open action was a `disabled` button
+  (opacity 0.6), tapping it opened nothing, and ✕ still removed it.
+- *Book codes.* In a grade-10 civics class the picker had 5 book-QR rows. Two
+  codes from the same book, added, read «… الفصل الأول — صفحة ٢٤» and
+  «… — صفحة ٤٩» on the tab: distinguishable. No reachable code in today's
+  catalogue is `http`, so the picker's per-row http warning was **not seen** in a
+  browser; the shelf row's same line is covered by a unit test of
+  `isInsecureResource` and was seen only in a throwaway server-side render of the
+  row (not in the repo), never in a browser.
+- *Failures are visible.* With `class_resources` dropped and the picker open,
+  tapping an item showed «تعذّر تحديث موارد الشعبة — حاول مرة أخرى» inside the
+  picker (no «مضاف», no spinner; cleared on closing). With a row on the shelf
+  and the table dropped, ✕ showed the same message as a toast on the class
+  screen and the row stayed.
+- *The API, two teachers* (20 checks, a hand-run script against local Postgres;
+  **not committed**, because it hard-codes local credentials, so this line is
+  not reproducible from the repo): the other teacher got 404 on read, add and
+  remove; a repeated add was a 409; a deleted staff upload came back
+  `unavailable`; no token was a 401; with the table dropped a read returned
+  `[]` and a write a 503. What *is* committed: the 24 tests of
+  `classResource.ts` (the validation, and `presentClassResource` including the
+  read-time link) and the 401 guard in `mountOrder.test.ts`. Ownership, the 409,
+  the 503s, `unavailable` and the lookup that feeds the read-time link live in
+  the route handlers and have no committed test.
+- *Nested buttons.* Before the fix a Library row on the tab put a `<button>`
+  inside a `<button>` (React logged «`<button>` cannot be a descendant of
+  `<button>`» on every load). The open action and the ✕ are now siblings.
+  Re-driven in Chromium on Expo web with a hand-run script (not in the repo)
+  that added a video and a premade sheet, reloaded, opened, removed and
+  deleted-from-the-Library them: the DOM had **0** `<button>`s inside a
+  `<button>` with both rows showing (two ✕, each a real `<button>`), and the run
+  logged **0 console errors** apart from the 404/500 answers it injected on
+  purpose.
+- *Failure fallbacks, driven.* With every `GET …/resources` answered 404, the
+  class screen loaded and the Students tab showed no banner. With the add's
+  `POST` succeeding and the re-read after it answered 500, the picker still read
+  «مضاف» with no error, and the shelf listed the new row.
+
+**Not verified.** A native device, or any browser but Chromium (only Expo web
+in Chromium was driven; Firefox and Safari were not, so the nested-`<button>`
+fix is confirmed by the DOM and console in Chromium only). The `warn` log line
+for a missing table was not driven. The http line on a shelf row was never seen
+in a browser (see *Book codes*). The read-time staff link (below) has unit tests
+of `presentClassResource`, and was run against a real API and database (a
+hand-run script, not committed); the route's Library lookup behind it has no
+committed test.
+
+**Staff links are read-time.** Production's `R2_PUBLIC_BASE_URL` is a dev
+`r2.dev` URL that may move, and a staff upload's `url` stored when it was added
+would keep the old host. So `GET /classes/:id/resources` selects `r2Key` and
+`sourceUrl` in the lookup it already makes for `unavailable`, and the link it
+returns for a staff upload whose Library row still exists is built from that row
+(`r2Key ? publicUrl(r2Key) : sourceUrl`, the same expression the add uses). That
+also repairs rows already stored. Everything else stays a snapshot: `title`,
+`mediaKind`, `thumbnailUrl`, and every `premade-sheet` / `book-qr` column. The
+stored `url` is the fallback in three cases: the Library row is gone (the row
+keeps it and is `unavailable`), the computed link is null (`R2_PUBLIC_BASE_URL`
+unset and no `sourceUrl`), and the lookup itself fails (every row is then called
+available and keeps its stored link). The add's response is unchanged: a fresh
+add is already current.
+
+Run against a local API and Postgres (a hand-run script, not committed): a
+Library row with an `r2_key`, added while `R2_PUBLIC_BASE_URL` was
+`https://cdn-a.test`, came back under `https://cdn-b.test` after the API
+restarted with that base, while the stored `url` column still read `cdn-a`;
+changing the Library row's key changed the returned link; deleting the Library
+row returned the stored `cdn-a` link with `unavailable: true`. The 20-check
+two-teacher run above was repeated on this code and passed.
+
+**Open for the owner.** Premade-sheet ids are not validated server-side, so a
+regenerated manifest can orphan a stored id; the row then opens the viewer's
+not-found screen. Left for piece 2 on the owner's say-so.
+
+**Classes with several subjects.** Merged in after main added subject filters
+to the class screen (2026-10-05). A shelf row carries no subject (the table
+has none, and it is already in production), so a Library item shows under every
+subject filter, not just its own; the teacher's saved materials still follow the
+filter. The picker offers the focused subject's items, or the class's first
+subject on «الكل», so a second subject's items are reached by focusing it first.
+Driven in Chromium on a two-subject class (maths + chemistry, local database):
+the chips showed; a maths sheet added from the picker on «الكل» stayed on the
+shelf under the chemistry focus; the chemistry-focused picker did not list that
+sheet (this local Library has no chemistry items, so it showed its empty
+message); the console was clean. Adding a chemistry item under the focus was
+not exercised, for want of one.
+
+**Not in this change.** Teacher-pasted links (no schema change) and device
+uploads (one more push, private storage, no video under the 8 MB cap) are
+pieces 2 and 3 of the spec. A Library-screen «add to class» button is out of
+scope; it could reuse the same `POST`.
+
+## A class can take several subjects, 2026-10-04
+
+A شعبة is now a group of students, and its subjects are what this teacher
+teaches them. Before this, a class had one subject. A Grade 1–3 class teacher
+(معلم صف) teaches one section Arabic, maths, science and Islamic education, so
+they had to type the same roster once per subject, and got a join code and a
+parent thread for each copy.
+
+- **Schema:** `class_groups.subject_ids` (jsonb, default `[]`). `subject_id`
+  stays and is always `subjectIds[0]`, the primary subject. **This needs
+  `pnpm --filter @workspace/db run push` before the API deploys.** Every
+  `select()` of a whole class row names the new column, so without the push
+  the roster 500s. There is no backfill: an old row with `[]` is read as
+  `[subject_id]` by `withSubjectIds` (`api-server/src/lib/classSubjects.ts`).
+  An app build that only sends `subjectId` still works.
+- **Create / edit:** the subject chips are multi-select. Every subject the
+  teacher teaches that grade (`/setup-subjects`) starts ticked, so a subject
+  teacher with one subject sees no change.
+- **Class list:** shows two subject names, or «3 مواد» for three or more.
+- **Inside a class:** a «كل المواد» / per-subject filter sits over materials
+  and exams when the class has more than one subject. A material's subject is
+  stored as a name, resolved back with `subjectIdFromName`. A material whose
+  subject can't be resolved stays visible under every filter. Writing to a
+  parent from the class card asks «عن أيّ مادة؟» when there is more than one
+  subject.
+- **Teaching plans are per subject:** `teaching_plans.subject_id` (text,
+  default `''`, **a second schema push**). When the class takes more than one
+  subject, the plan form shows «مادة هذه الخطة» and lists that subject's
+  lessons. `''` means the class's primary subject, which is what every older
+  plan meant (`planSubjectId`, `services/planScope.ts`). Changing the subject
+  of a plan that has scheduled lessons asks first, then clears them, because
+  they belong to the old subject.
+- **A timetable period can name its subject:** `schedule_slots.subject_id`
+  (text, default `''`, **a third schema push**). The slot editor shows «مادة
+  هذه الحصة» when the class takes more than one subject. Tapping the selected
+  chip again clears it, and `''` stays a valid answer. Choosing another class
+  clears the subject, on the server too.
+- **The home card follows it.** `nextPeriodLesson` reads only that subject's
+  plans when the period names a subject. A plan with no subject counts as its
+  class's primary subject, using the classes `loadTimetable` now fetches. If
+  that subject has no plan, the period shows no lesson rather than borrowing
+  another subject's. A period that names no subject still pools every plan on
+  the class. The class label on the home card, the calendar and the timetable
+  reads «العاشر أ · الرياضيات». The «أضف الخطة» link carries the subject and
+  opens or starts that subject's plan.
+
+## A material made from a class files itself into it, 2026-10-04
+
+Reported from the الموارد tab: «أنشئ مادة جديدة» sent a teacher to the tools
+hub with no memory of where they came from. The hub opened on its defaults
+(index 0 = Mathematics, so a chemistry class got a maths worksheet), the saved
+material had to be filed into the class by hand through a picker the teacher
+had already answered by starting there, and nothing led back.
+
+**What happens now.** The class screen sends `classId` plus its own grade and
+subject as picker indices (`classToolParams`, built on `scopePickerParams`). The
+hub forwards them to whichever tool opens; with a class present it skips the
+global «current lesson» prefill, which can belong to another subject. On the
+first save `MaterialClassField` files the material into that class **without
+asking**, toasts «حُفظت في …», and shows «العودة إلى …», which unwinds to the
+existing class screen (`router.dismissTo`) rather than stacking a second one.
+`MaterialClassField` is the one place all three save paths already share
+(`GeneratorResultActions`, lesson-flow, `DeckActions`), so the change is there,
+not in each tool.
+
+**It fails open to the old behaviour, deliberately.** A `classId` the roster
+cannot resolve (deleted class, offline roster) opens the picker instead of
+claiming a filing nobody confirmed; no `classId` is exactly the old flow. The
+return button disappears if the material is moved to another class.
+
+**Verified against the running system**, not just tests: local Postgres, the
+real API and Expo web, driven with headless Chromium. Chemistry class → الموارد
+→ «+» → «أنشئ مادة جديدة» → hub URL carried `classId`, `gradeIdx=0`,
+`subjectIdx=1` → ورقة عمل opened on الصف العاشر + الكيمياء → saved → the
+database row had `class_group_id` set to that class → «العودة إلى …» landed on
+`/classes/<id>` with history length unchanged, browser back then went to
+`/classes` and `/profile` (the path actually walked), and opening «الأدوات» from
+the tab bar afterwards had no `classId`. Also checked by deep link: no class →
+picker opens as before; a nonexistent class → picker, no return button.
+Typecheck clean; mobile suite 2377 tests, 0 failures. No schema change, so
+`schema-push:` is not applicable.
+
+**Not done.** Library (المكتبة) items still cannot be attached to a class — they
+are a separate catalogue, not saved materials, and have no class link. That
+wants its own design. Also noticed, left alone: the tools hub's top banner still
+shows the global current lesson (Mathematics · Grade 10 by default) even when
+opened from a chemistry class; the tool itself opens on the class's scope.
+
+**For the next person verifying in a browser:** every tab and the class screen
+stay mounted underneath, so text queries match hidden copies — «ورقة عمل» alone
+matches the class's own material row and the chat tab's readiness list. Filter
+to visible elements.
+
+## Maths on the worksheet screen read back to front, 2026-10-05
+
+Found by running the worksheet screen for the first time (headless Chromium
+against a local API; the PR for the worked example listed the screen as "not
+verified"). Three display bugs, all pre-existing, all more visible once the
+worksheet carried more working:
+
+- **An equation in an Arabic line drew reversed.** «أوجد حل المعادلة: 3^x = 27»
+  showed as «= 27 | 3ˣ | prose». `MathText` laid Arabic-led lines out with
+  `row-reverse` node by node, which reversed the pieces of one equation too.
+  `groupRtlSegments` (`services/mathRender.ts`) now splits such a line into
+  Arabic phrases and whole equations; `MathText` reverses between them and keeps
+  each equation a left-to-right group. The Arabic colon stays with the Arabic.
+- **A numbered step was judged left-to-right.** «1) نكتب 27 بالأساس 3: …» does
+  not *start* with Arabic, so it took the Latin path and the browser's bidi
+  scrambled it. `isArabicLed` skips a leading marker («1)», «2.», «(3)», «-»).
+- **Braced exponents printed their braces.** The bank writes `3^{2x}` and
+  `2^{x+3}`; the parser only knew `^2` and `^(2x)`. `readExponent` takes
+  `{...}`, and `isolateForeignRuns` keeps braces inside the run (it used to cut
+  «3^{2x}» into three isolates). The printed worksheet was already right because
+  it runs `normalizeExponents`.
+
+The worked-example card and the key's working now render through
+`MathParagraph` like the questions do, so exponents are raised there too.
+Checked in the browser after the fix: all nine questions, the half-solved one,
+the worked example and the key. **Still visible:** a list marker's parenthesis
+shows mirrored («1)» reads «(1») inside an Arabic line; the order is right and
+it is the platform's own bidi mirroring, so it was left. The projector was
+checked too (worked-example and question slides): equations centred and in
+order. That check caught a regression in this very change — the new Arabic-led
+branch of `MathText` ignored `centered`, which would have left-aligned every
+projected equation with Arabic in it; fixed. English mode and the native app
+were not re-checked.
+
+## Old English materials are redone in English when opened, 2026-10-05
+
+Follow-up to the entry below, Nizar's call: an English material saved before
+2026-10-04 is Arabic (`language: 'ar'`), and opening it now redoes it in
+English and saves the English copy **over** the Arabic one (chosen over
+keeping both; any edits to the Arabic copy go with it).
+
+`isPreEnglishMaterial` (`services/contentLanguage.ts`, tested) recognises
+one: English subject — from `formState.subjectIdx`, else the stored subject
+name — saved as `'ar'`, and a kind whose tool rebuilds it from the subject
+(lesson, worksheet, quiz, activity, slides; not flows, which cannot be
+reopened, nor prompt decks, whose language follows the teacher). موادي's
+viewer sends such an item to its tool; `hooks/useEnglishRefresh.ts` there
+waits for the old copy to load, regenerates once, and saves only a finished
+new result — a failed or cancelled run restores the old object, which is
+never saved. Slides store over the item by id (`generate` drops the
+workspace link, so the toggle would have added a copy). The list's «تعديل»
+lands on the same tool, so both ways in are covered. Not on demo builds
+(`!DEMO_MODE`): the web's templates would overwrite a real copy made on a
+phone.
+
+Also fixed: the viewer rendered every material in the UI language, so an
+English plan saved after #831 still opened with Arabic headings there. It now
+reads English-subject materials in their stored language.
+
+Verified locally (live AI is unreachable from this machine — the local key
+has no model access — so the demo gate was lifted for the run only, then
+restored): an Arabic «خطة درس: التربة» opened from the viewer came back as
+"Lesson Plan: Soil", stored as `en` over the same item, and reopening it
+stayed in the viewer with English headings; an Arabic deck came back as 14
+English slides over the same item. Mobile suite 2664 pass / 0 fail.
+
+## The chat answers before it asks, and knows what موادي already holds, 2026-10-04
+
+Items 2 and 4 of the "make the chat smarter" list, plus two bugs found by
+driving the web build — one of them in #814 as merged.
+
+**Explain first, offer the review after.** An explanation ask stopped to ask
+«قبل أن أبدأ: هل هذا شرح للمفهوم لأول مرة، أم مراجعة قبل الاختبار؟». The two
+answers differed by one framing sentence, and #814 made «علمني» an explanation
+ask, so a teacher who stopped being asked "concept or material?" was asked
+this instead. `buildTeachingAssistantReply` now explains straight away as
+first-time and sets `offerReview`; the screen puts «🔁 مراجعة قبل الاختبار»
+(`reviewFollowUp`) first in the strip, pinned to the explained lesson's id —
+its text alone would be re-searched. Not offered when the teacher already
+said which, nor on a second explanation of the same lesson. Nothing produces
+the old question now, so `pedagogicalClarification` / `handlePedagogicalClarify`
+in `iqra.tsx` are unreachable; left in place rather than widen this change.
+The «أيّ مادة؟» / «أي درس؟» questions are untouched — those guard expensive
+wrong guesses.
+
+**One "what's done" for the lesson.** Three surfaces counted it three ways:
+the card's «0/5» (this session), the empty-state board (موادي), the chips
+(session again), plus the progress card under replies (session) and the
+follow-up strip (all five materials every time). A plan saved yesterday
+showed 1/5 on the board and «حضّر خطة الدرس» on the chips. Now:
+
+- `savedPrepArtifacts` (`services/lessonBoard.ts`) maps موادي to the chat's
+  types — a homework is saved as a worksheet tagged `materialKind: 'homework'`
+  and counts as homework.
+- `buildCurrentLessonView`, `buildPrepProgressView`, `buildLessonSuggestions`
+  and the new `nextStepActions` all take it; «غير مطلوب» rows are not offered.
+- The card's recommendation and the chips share `nextPrepStep` (extracted
+  from `nextPrepRecommendation`, behaviour unchanged), so they name the same
+  next step. Two create chips, then an improve chip for what was made last.
+- موادي only counts when the card's lesson is the chat's active lesson, not the
+  default the card falls back to. Slides have no chat path and are not offered.
+
+**Bug 1 (#814 as merged): «علمني» asked «أيّ مادة تقصد؟».** See the correction
+on the entry below. `withActiveLesson` (`services/lessonCopilot.ts`) answers a
+bare ask from the open lesson alone.
+
+**Bug 2 (older): «مراجعة قبل الاختبار» was a quiz ask.** `artifactFromAsk` read
+the «اختبار» in «قبل الاختبار», so the review answer asked about question
+types, ticked the card to 1/5 and dropped the quiz chip with no quiz made. The
+old question's own answer button sent the same text. `BEFORE_THE_TEST` strips
+"before the test/exam" phrases first; «اختبار قبل الاختبار النهائي» is still a
+quiz. Noticed, not fixed: «اختباراً» with tanween normalises to «اختبارا» and
+fails the vocabulary's word edge, so `artifactFromAsk('جهّز اختباراً قصيراً')`
+is null — routing still works through the router's older verb+noun check.
+
+**Verified in the web build** (Expo web on :8081, `/auth/me` stubbed with a
+grade-10 maths teacher, every other API call aborted, Chromium via
+Playwright), card on «تركيب الاقترانات»:
+
+- «علمني» → the lesson explained, framed first-time; no «قبل أن أبدأ», no
+  «أيّ مادة»; strip «🔁 مراجعة قبل الاختبار · خطة درس · ورقة عمل»; card
+  recommends «حضّر خطة الدرس».
+- Tapping the review chip → «سأعامل هذا كمراجعة قبل الاختبار»; header stays
+  0/5; no question-types follow-up; «اختبار قصير» still offered.
+- With a lesson plan seeded in موادي: header 1/5; progress card ✅ خطة درس and
+  «لنجهّز الآن ورقة عمل»; strip «🔁 مراجعة · ورقة عمل · اختبار قصير».
+
+Not checked on a device, nor with live AI. 41 cases in
+`guessAndNextStep.test.ts` and 3 more in `teachMeAsk.test.ts`, each watched
+failing first.
+
+## The English projector split an equation across two lines, 2026-10-05
+
+Found by checking the worksheet in English on a phone-width projector (the
+follow-up the previous entry left open). «Solve the equation: 2ˣ = 32» broke
+between the raised exponent and « = 32»; «Write 32 with base 2: 32 = 2⁵» left
+«2⁵» alone on a line; «…are equal: x = 3» wrapped as «x» / «= 3».
+
+- `MathText`'s left-to-right row wrapped at every node boundary. `groupLtrSegments`
+  (`services/mathRender.ts`) now moves the numbers and operators that touch a
+  raised exponent, fraction or radical into that equation's group, up to the
+  first ordinary word, so a wrap can fall between prose and an equation but
+  never inside one. A pure equation keeps the old node-level wrap, so a very
+  long one can still break.
+- A plain-text slide line has no nodes to group. `bindOperators` makes the spaces
+  around `= + × ÷ < > ≤ ≥ ≠ ≈ ± −` non-breaking (a spaced hyphen is left alone:
+  it is punctuation), applied after `isolateForeignRuns` on the projector's body
+  lines. Arabic lines get it too.
+- Checked in the browser, English and Arabic projector: every equation whole.
+  Mobile suite 2808 pass / 0 fail / 10 skipped. Not re-checked: the native app.
+
 ## A worksheet opens with a worked example, and its key shows the working, 2026-10-04
 
 Worked example → faded → independent is the best-evidenced order for novices,
@@ -717,8 +1267,7 @@ added in #837 now says so. It counts the worked example among the items
 produced, because the example is one of the items the picker's total promised
 (`shortfall.produced` is questions plus the example). Bank answers are Arabic
 even in an English worksheet's key; only the working is English. The worked example is not editable on the
-screen. Not verified: the React Native screen itself (no screen tests exist),
-and a real model's reply to the new prompt — the live path is covered by prompt
+screen. Not verified: a real model's reply to the new prompt — the live path is covered by prompt
 and sanitizer tests only.
 
 Mobile 2706 pass / 0 fail / 10 skipped, api-server 1123, math-practice 142,
@@ -775,8 +1324,8 @@ Supersedes «Every slide heading is bilingual for the English subject» below:
 `buildLessonDeck` no longer composes «مفردات الدرس · Key Vocabulary» — an
 English deck is built in English, so its headings are English only.
 
-Known limits: materials saved before this reopen with English chrome over
-their old Arabic text (regenerate them); resources a teacher pinned under an
+Known limits: materials saved before this were Arabic — redone in English
+when opened since 2026-10-05, see the entry above; resources a teacher pinned under an
 English lesson's Arabic title are not found under its English one; AI slides
 from a free prompt are English only for a teacher whose sole subject is
 English (nothing else says what the prompt is about); exams created before
@@ -818,6 +1367,14 @@ fix would have walked into:
 `شرح` exception. Demo-mode / local path only, like the other router entries.
 **Not checked** in the running app — the router and gate are unit-tested, the
 `iqra.tsx` wiring is typechecked only.
+
+> **Correction, same day: this did not work in the app.** Driving the web build
+> afterwards, «علمني» with the card on «تركيب الاقترانات» got «سؤالك قد يخص
+> أكثر من مادة. أيّ مادة تقصد؟» with Maths / Biology / Islamic chips. The
+> reuse gate did put the open lesson first, but `results` kept the verb's own
+> search hits, and the subject-ambiguity check (which a soft pin does not
+> suppress) counted three subjects. Fixed in the entry above
+> (`withActiveLesson`), and checked in the browser this time.
 
 ## «اقترح ميزة» — teachers can suggest a feature, 2026-10-03
 

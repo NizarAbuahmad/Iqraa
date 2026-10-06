@@ -15,6 +15,12 @@ export interface TeachingPlan {
   /** The class this plan is for. Null only on plans predating the anchor. */
   classGroupId: string | null;
   /**
+   * Which of the class's subjects this plan covers. '' (or absent, from a
+   * server older than the field) = the class's primary subject — read it
+   * through `planSubjectId` (services/planScope.ts), never directly.
+   */
+  subjectId?: string;
+  /**
    * The schedule — lesson id against week. Comes off a `jsonb` column, so it
    * is `unknown` until `normalizePlanEntries` (services/planEntries.ts) has
    * had it: an older client wrote whatever it wrote, and nothing here can
@@ -76,6 +82,7 @@ export async function createTeachingPlan(input: {
   title: string;
   schoolName?: string;
   classGroupId?: string | null;
+  subjectId?: string;
   entries?: PlanEntry[];
   grades?: string;
   topics?: string;
@@ -97,6 +104,7 @@ export async function updateTeachingPlan(
     title?: string;
     schoolName?: string;
     classGroupId?: string | null;
+    subjectId?: string;
     entries?: PlanEntry[];
     grades?: string;
     topics?: string;

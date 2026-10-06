@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useEnglishRefresh } from '@/hooks/useEnglishRefresh';
 import { getT } from '@/services/i18n';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
@@ -17,6 +18,7 @@ import { buildDeckFromWorksheet } from '@/services/classDeck';
 import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
+import { VerificationSummaryRow } from '@/components/ui/VerificationSummaryRow';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
@@ -41,6 +43,7 @@ import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { buildWorksheetHTML, buildWorksheetSlidesHTML, formatWorksheetText } from '@/services/share';
 import { EditableText } from '@/components/ui/Editable';
+import { MathParagraph } from '@/components/ui/MathParagraph';
 import { optionLetter } from '@/services/optionLabels';
 import { confirm } from '@/services/confirm';
 import { ToolHeader } from '@/components/ui/ToolHeader';
@@ -81,7 +84,7 @@ type Level = 'easy' | 'medium' | 'hard';
 const LEVELS: Level[] = ['easy', 'medium', 'hard'];
 type LevelEntry = {
   result: WorksheetOutput;
-  outcomes: VerifyOutcome[] | null;
+  outcomes: (VerifyOutcome | undefined)[] | null;
   savedId?: string;
   /** Flat question positions the teacher has hand-edited on this level's paper. */
   editedFlatIndexes: Set<number>;
@@ -160,7 +163,7 @@ export default function WorksheetScreen() {
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<WorksheetOutput | null>(null);
   /** null = not checked yet (or the check failed); [] onwards = per question. */
-  const [outcomes, setOutcomes] = useState<VerifyOutcome[] | null>(null);
+  const [outcomes, setOutcomes] = useState<(VerifyOutcome | undefined)[] | null>(null);
   /**
    * Whether the verifier proved the worked example's own answer. The example is
    * the one thing on the page students are told to study, so it earns a badge
@@ -268,8 +271,11 @@ export default function WorksheetScreen() {
     outcomes && result
       ? outcomes.map((o, i) => (editedFlatIndexes.has(i) ? undefined : o))
       : [];
+  // Edited questions leave the summary altogether: the teacher wrote what is
+  // there now, so it is neither proved nor unreviewed. An `undefined` that
+  // stays in counts as "nobody reviewed this" — see `summarizeVerification`.
   const verification = summarizeVerification(
-    effectiveOutcomes.filter((o): o is VerifyOutcome => !!o),
+    outcomes && result ? outcomes.filter((_, i) => !editedFlatIndexes.has(i)) : [],
   );
 
   /**
@@ -550,6 +556,15 @@ export default function WorksheetScreen() {
     word_problem: t('typeWordProblem'),
   };
 
+  // An English material saved in Arabic (before 2026-10-04) is redone in
+  // English as soon as it opens, and the English copy replaces it.
+  useEnglishRefresh({
+    savedId: params.savedId,
+    current: result,
+    generate: () => generate(),
+    save: async () => { await handleSave(); showToast(t('englishMaterialRedone')); },
+  });
+
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const getExportTitle = materialTitle;
@@ -742,28 +757,7 @@ export default function WorksheetScreen() {
               the check resolves: saying nothing is honest, saying "not
               verified" while a request is still in flight is not. */}
           {outcomes && verification.total > 0 && (
-            <View
-              style={[styles.verifyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-            >
-              <Ionicons
-                name={verification.anySymbolic ? 'shield-checkmark' : 'library-outline'}
-                size={14}
-                color={verification.anySymbolic ? '#067647' : colors.mutedForeground}
-              />
-              <Text
-                style={[
-                  styles.verifyText,
-                  {
-                    color: verification.anySymbolic ? '#067647' : colors.mutedForeground,
-                    textAlign: isRTL ? 'right' : 'left',
-                  },
-                ]}
-              >
-                {verification.anySymbolic
-                  ? t('quizVerifiedCount', verification.symbolic, verification.total)
-                  : t('quizVerifiedNone')}
-              </Text>
-            </View>
+            <VerificationSummaryRow summary={verification} />
           )}
         </View>
       )}
@@ -853,21 +847,27 @@ export default function WorksheetScreen() {
             <View
               style={[styles.workedCard, { backgroundColor: ACCENT + '0F', borderColor: ACCENT + '40', borderRadius: colors.radius }]}
               accessible
-              accessibilityLabel={t('workedExampleTitle')}
+              accessibilityLabel={outT('workedExampleTitle')}
             >
-              <View style={[styles.akHeader, { flexDirection: isRTL ? 'row-reverse' : 'row', marginTop: 0 }]}>
+              <View style={[styles.akHeader, { flexDirection: outRTL ? 'row-reverse' : 'row', marginTop: 0 }]}>
                 <Ionicons name="create-outline" size={15} color={ACCENT} />
-                <Text style={[styles.akTitle, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{t('workedExampleTitle')}</Text>
+                <Text style={[styles.akTitle, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: outRTL ? 'right' : 'left' }]}>{outT('workedExampleTitle')}</Text>
               </View>
-              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
-                {isolateForeignRuns(result.workedExample.problem)}
-              </Text>
+              <MathParagraph
+                text={result.workedExample.problem}
+                isRTL={outRTL}
+                containerStyle={{ marginBottom: 8 }}
+                style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 24, textAlign: outRTL ? 'right' : 'left' }}
+              />
               {result.workedExample.steps.map((step, i) => (
-                <View key={i} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start' }]}>
+                <View key={i} style={[styles.optionRow, { flexDirection: outRTL ? 'row-reverse' : 'row', alignItems: 'flex-start' }]}>
                   <Text style={[styles.optLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{i + 1}.</Text>
-                  <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }}>
-                    {isolateForeignRuns(step)}
-                  </Text>
+                  <MathParagraph
+                    text={step}
+                    isRTL={outRTL}
+                    containerStyle={{ flex: 1 }}
+                    style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 22, textAlign: outRTL ? 'right' : 'left' }}
+                  />
                 </View>
               ))}
               {exampleOutcome?.verifiedBy === 'symbolic' ? (
@@ -879,7 +879,7 @@ export default function WorksheetScreen() {
                 </View>
               ) : null}
               {result.workedExample.selfExplain ? (
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 8, textAlign: outRTL ? 'right' : 'left' }}>
                   {isolateForeignRuns(result.workedExample.selfExplain)}
                 </Text>
               ) : null}
@@ -1014,9 +1014,12 @@ export default function WorksheetScreen() {
                             {t('workedSolutionTitle')}
                           </Text>
                           {item.solution.map((line, li) => (
-                            <Text key={li} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
-                              {`${li + 1}) `}{isolateForeignRuns(line)}
-                            </Text>
+                            <MathParagraph
+                              key={li}
+                              text={`${li + 1}) ${line}`}
+                              isRTL={isRTL}
+                              style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}
+                            />
                           ))}
                         </View>
                       ) : null}

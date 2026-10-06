@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useEnglishRefresh } from '@/hooks/useEnglishRefresh';
 import { getT } from '@/services/i18n';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
@@ -17,6 +18,7 @@ import { buildDeckFromQuiz } from '@/services/classDeck';
 import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
+import { VerificationSummaryRow } from '@/components/ui/VerificationSummaryRow';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
@@ -152,7 +154,7 @@ export default function QuizScreen() {
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<QuizOutput | null>(null);
   /** null = not checked yet (or the check failed); [] onwards = per question. */
-  const [outcomes, setOutcomes] = useState<VerifyOutcome[] | null>(null);
+  const [outcomes, setOutcomes] = useState<(VerifyOutcome | undefined)[] | null>(null);
   /**
    * The scope the quiz on screen was generated under — pickers, topic and
    * the grounded lesson, frozen at generation time (or re-derived from the
@@ -240,8 +242,13 @@ export default function QuizScreen() {
           editedQuestions.has(result.questions[i]?.id ?? '') ? undefined : o,
         )
       : [];
+  // Edited questions leave the summary altogether: the teacher wrote what is
+  // there now, so it is neither proved nor unreviewed. An `undefined` that
+  // stays in counts as "nobody reviewed this" — see `summarizeVerification`.
   const verification = summarizeVerification(
-    effectiveOutcomes.filter((o): o is VerifyOutcome => !!o),
+    outcomes && result
+      ? outcomes.filter((_, i) => !editedQuestions.has(result.questions[i]?.id ?? ''))
+      : [],
   );
 
   /** Marks the paper dirty and records which question was touched. */
@@ -443,6 +450,15 @@ export default function QuizScreen() {
   };
 
 
+  // An English material saved in Arabic (before 2026-10-04) is redone in
+  // English as soon as it opens, and the English copy replaces it.
+  useEnglishRefresh({
+    savedId: params.savedId,
+    current: result,
+    generate: () => generate(),
+    save: async () => { await handleSave(); showToast(t('englishMaterialRedone')); },
+  });
+
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const getExportTitle = () => outLang === 'ar' ? `اختبار: ${scope.topic}` : `Quiz: ${scope.topic}`;
@@ -594,28 +610,7 @@ export default function QuizScreen() {
               the check resolves: saying nothing is honest, saying "not
               verified" while a request is still in flight is not. */}
           {outcomes && verification.total > 0 && (
-            <View
-              style={[styles.verifyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-            >
-              <Ionicons
-                name={verification.anySymbolic ? 'shield-checkmark' : 'library-outline'}
-                size={14}
-                color={verification.anySymbolic ? '#067647' : colors.mutedForeground}
-              />
-              <Text
-                style={[
-                  styles.verifyText,
-                  {
-                    color: verification.anySymbolic ? '#067647' : colors.mutedForeground,
-                    textAlign: isRTL ? 'right' : 'left',
-                  },
-                ]}
-              >
-                {verification.anySymbolic
-                  ? t('quizVerifiedCount', verification.symbolic, verification.total)
-                  : t('quizVerifiedNone')}
-              </Text>
-            </View>
+            <VerificationSummaryRow summary={verification} />
           )}
         </View>
       )}

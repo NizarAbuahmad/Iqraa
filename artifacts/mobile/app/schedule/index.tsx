@@ -42,6 +42,7 @@ import {
   visibleWeekdays,
 } from '@/services/scheduleCalendar';
 import { listClasses, type ClassGroup } from '@/services/roster';
+import { classSubjectIds, periodClassLabel, subjectLabel } from '@/services/classSubjects';
 import { confirm } from '@/services/confirm';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
@@ -335,7 +336,7 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
   current: ScheduleSlot | null;
   period: SchedulePeriod;
   onClose: () => void;
-  onSave: (patch: { classGroupId: string | null; notes: string }) => void;
+  onSave: (patch: { classGroupId: string | null; subjectId: string; notes: string }) => void;
   onSavePeriod: (periodNumber: number, input: { startTime: string; durationMinutes: number }) => void;
   isRTL: boolean;
   lang: string;
@@ -343,6 +344,20 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
   t: T;
 }) {
   const [selected, setSelected] = useState<string | null>(current?.classGroupId ?? null);
+  /**
+   * Which of the class's subjects this period is — only asked when the class
+   * takes more than one. A class teacher's section is Arabic one period and
+   * maths the next; this is what lets the home card show the right subject's
+   * lesson. '' = not said, and stays a valid answer.
+   */
+  const [subjectId, setSubjectId] = useState(current?.subjectId ?? '');
+  const selectedClass = classes.find(c => c.id === selected);
+  const subjectChoices = classSubjectIds(selectedClass);
+  const pickClass = (id: string | null) => {
+    // Another class's subject means nothing for this one.
+    if (id !== selected) setSubjectId('');
+    setSelected(id);
+  };
   const [notes, setNotes] = useState(current?.notes ?? '');
   const align = isRTL ? 'right' : 'left';
 
@@ -360,7 +375,7 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
                   key={c.id ?? '__none'}
                   label={lang === 'ar' && c.nameAr ? c.nameAr : c.name}
                   active={selected === c.id}
-                  onPress={() => setSelected(c.id)}
+                  onPress={() => pickClass(c.id)}
                   colors={colors}
                 />
               ))}
@@ -374,6 +389,24 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
                 </Pressable>
               ) : null}
             </View>
+            {subjectChoices.length > 1 ? (
+              <View style={{ gap: 6 }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
+                  {t('scheduleSlotSubject')}
+                </Text>
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+                  {subjectChoices.map(sid => (
+                    <Chip
+                      key={sid}
+                      label={subjectLabel(sid, lang) || sid}
+                      active={subjectId === sid}
+                      onPress={() => setSubjectId(prev => (prev === sid ? '' : sid))}
+                      colors={colors}
+                    />
+                  ))}
+                </View>
+              </View>
+            ) : null}
             <TextInput
               value={notes}
               onChangeText={setNotes}
@@ -393,7 +426,9 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
               <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>{t('cancel')}</Text>
             </Pressable>
             <Pressable
-              onPress={() => onSave({ classGroupId: selected, notes })}
+              // A one-subject class sends '' — there is nothing for the
+              // period to choose between, and a stale value must not linger.
+              onPress={() => onSave({ classGroupId: selected, subjectId: subjectChoices.length > 1 ? subjectId : '', notes })}
               style={[styles.modalBtn, styles.modalPrimary, { backgroundColor: ACCENT_FILL }]}
             >
               <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>{t('save')}</Text>
@@ -449,12 +484,13 @@ function SlotContent({ className, notes, compact, colors }: {
   );
 }
 
-function TableView({ periods, weekdays, today, slotAt, classNameFor, onCell, isRTL, colors, t }: {
+function TableView({ periods, weekdays, today, slotAt, labelFor, onCell, isRTL, colors, t }: {
   periods: SchedulePeriod[];
   weekdays: number[];
   today: number;
   slotAt: (day: number, period: number) => ScheduleSlot | undefined;
-  classNameFor: (id: string | null) => string;
+  /** The cell's label: the class, plus the subject when the period names one. */
+  labelFor: (slot: { classGroupId: string | null; subjectId?: string } | null | undefined) => string;
   onCell: (day: number, period: number) => void;
   isRTL: boolean;
   colors: Colors;
@@ -489,7 +525,7 @@ function TableView({ periods, weekdays, today, slotAt, classNameFor, onCell, isR
             </View>
             {weekdays.map(d => {
               const slot = slotAt(d, p.periodNumber);
-              const className = classNameFor(slot?.classGroupId ?? null);
+              const className = labelFor(slot);
               return (
                 <Pressable
                   key={d}
@@ -514,14 +550,15 @@ function TableView({ periods, weekdays, today, slotAt, classNameFor, onCell, isR
   );
 }
 
-function DayView({ day, setDay, weekdays, today, periods, slots, classNameFor, multiSchool, schoolLabel, onRow, isRTL, colors, t }: {
+function DayView({ day, setDay, weekdays, today, periods, slots, labelFor, multiSchool, schoolLabel, onRow, isRTL, colors, t }: {
   day: number;
   setDay: (d: number) => void;
   weekdays: number[];
   today: number;
   periods: SchedulePeriod[];
   slots: ScheduleSlot[];
-  classNameFor: (id: string | null) => string;
+  /** The cell's label: the class, plus the subject when the period names one. */
+  labelFor: (slot: { classGroupId: string | null; subjectId?: string } | null | undefined) => string;
   multiSchool: boolean;
   schoolLabel: (name: string) => string;
   onRow: (cell: Cell) => void;
@@ -549,7 +586,7 @@ function DayView({ day, setDay, weekdays, today, periods, slots, classNameFor, m
       </View>
       <View style={{ gap: 8 }}>
         {rows.map(r => {
-          const className = classNameFor(r.classGroupId);
+          const className = labelFor(r);
           const live = day === today && isHappeningNow(r.startTime, r.durationMinutes, now);
           return (
             <Pressable
@@ -604,12 +641,13 @@ function DayView({ day, setDay, weekdays, today, periods, slots, classNameFor, m
   );
 }
 
-function CardsView({ periods, weekdays, today, slotAt, classNameFor, onCell, isRTL, colors, t }: {
+function CardsView({ periods, weekdays, today, slotAt, labelFor, onCell, isRTL, colors, t }: {
   periods: SchedulePeriod[];
   weekdays: number[];
   today: number;
   slotAt: (day: number, period: number) => ScheduleSlot | undefined;
-  classNameFor: (id: string | null) => string;
+  /** The cell's label: the class, plus the subject when the period names one. */
+  labelFor: (slot: { classGroupId: string | null; subjectId?: string } | null | undefined) => string;
   onCell: (day: number, period: number) => void;
   isRTL: boolean;
   colors: Colors;
@@ -630,7 +668,7 @@ function CardsView({ periods, weekdays, today, slotAt, classNameFor, onCell, isR
             <View style={{ flex: 1, flexDirection: row, gap: 8 }}>
               {periods.map(p => {
                 const slot = slotAt(d, p.periodNumber);
-                const className = classNameFor(slot?.classGroupId ?? null);
+                const className = labelFor(slot);
                 return (
                   <Pressable
                     key={p.periodNumber}
@@ -750,6 +788,8 @@ export default function ScheduleScreen() {
     const found = classes.find(c => c.id === id);
     return found ? (lang === 'ar' && found.nameAr ? found.nameAr : found.name) : '';
   };
+  const labelFor = (slot: { classGroupId: string | null; subjectId?: string } | null | undefined): string =>
+    periodClassLabel(classNameFor(slot?.classGroupId ?? null) || null, slot?.subjectId, lang) ?? '';
   const openCell = (dayOfWeek: number, periodNumber: number) => setEditingCell({ schoolName: school, dayOfWeek, periodNumber });
 
   const onSavePeriod = async (periodNumber: number, input: { startTime: string; durationMinutes: number }) => {
@@ -825,7 +865,7 @@ export default function ScheduleScreen() {
     }
   };
 
-  const onSaveSlot = async (cell: Cell, patch: { classGroupId: string | null; notes: string }) => {
+  const onSaveSlot = async (cell: Cell, patch: { classGroupId: string | null; subjectId: string; notes: string }) => {
     try {
       const saved = await setScheduleSlot(cell.schoolName, cell.dayOfWeek, cell.periodNumber, patch);
       queryClient.setQueryData<ScheduleData>(SCHEDULE_QUERY_KEY, prev => {
@@ -925,7 +965,7 @@ export default function ScheduleScreen() {
                   today={today}
                   periods={periods}
                   slots={slots}
-                  classNameFor={classNameFor}
+                  labelFor={labelFor}
                   multiSchool={multiSchool}
                   schoolLabel={schoolLabel}
                   onRow={setEditingCell}
@@ -939,7 +979,7 @@ export default function ScheduleScreen() {
                   weekdays={weekdays}
                   today={today}
                   slotAt={slotAt}
-                  classNameFor={classNameFor}
+                  labelFor={labelFor}
                   onCell={openCell}
                   isRTL={isRTL}
                   colors={colors}
@@ -951,7 +991,7 @@ export default function ScheduleScreen() {
                   weekdays={weekdays}
                   today={today}
                   slotAt={slotAt}
-                  classNameFor={classNameFor}
+                  labelFor={labelFor}
                   onCell={openCell}
                   isRTL={isRTL}
                   colors={colors}

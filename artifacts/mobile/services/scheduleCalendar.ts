@@ -21,6 +21,8 @@ export interface AgendaPeriod {
   startTime: string;
   durationMinutes: number;
   classGroupId: string;
+  /** Which of the class's subjects this period is; '' or absent = not said. */
+  subjectId?: string;
 }
 
 export interface AgendaLesson {
@@ -48,6 +50,8 @@ export interface ScheduleSlotLike {
   dayOfWeek: number;
   periodNumber: number;
   classGroupId: string | null;
+  /** Which of the class's subjects the period is; absent or '' = not said. */
+  subjectId?: string;
   notes?: string;
 }
 
@@ -74,6 +78,8 @@ export interface PlanLike {
   id: string;
   title: string;
   entries: unknown;
+  /** The plan's subject; '' or absent = its class's primary subject. */
+  subjectId?: string;
 }
 
 /** Everything scheduled on one calendar date: this weekday's recurring
@@ -97,6 +103,7 @@ export function buildDayAgenda(
         startTime: period?.startTime ?? '',
         durationMinutes: period?.durationMinutes ?? 0,
         classGroupId: s.classGroupId as string,
+        subjectId: s.subjectId ?? '',
       };
     })
     .sort(byClock);
@@ -117,6 +124,7 @@ export interface DayRow {
   durationMinutes: number;
   /** null for a free period — unlike the agenda, the day list shows those, so they can be filled. */
   classGroupId: string | null;
+  subjectId: string;
   notes: string;
 }
 
@@ -137,6 +145,7 @@ export function dayRows(
         startTime: p.startTime,
         durationMinutes: p.durationMinutes,
         classGroupId: slot?.classGroupId ?? null,
+        subjectId: slot?.subjectId ?? '',
         notes: slot?.notes ?? '',
       };
     })
@@ -174,7 +183,7 @@ export interface NextPeriodLesson extends AgendaPeriod {
   /** ISO date of the period. */
   date: string;
   happeningNow: boolean;
-  /** From this class's pacing plan; null when the class has no plan or it is empty. */
+  /** From this class's pacing plans (one per subject); null when it has none or they are empty. */
   lessonId: string | null;
 }
 
@@ -193,6 +202,8 @@ export function nextPeriodLesson(
   periods: readonly SchedulePeriodLike[],
   slots: readonly ScheduleSlotLike[],
   plans: readonly (PlanLike & { classGroupId?: string | null })[],
+  /** For resolving a plan with no subject of its own to its class's primary one. Optional: without it such a plan matches any period of its class. */
+  classes: readonly { id: string; subjectId: string }[] = [],
 ): NextPeriodLesson | null {
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   for (let offset = 0; offset < 7; offset++) {
@@ -205,8 +216,21 @@ export function nextPeriodLesson(
     });
     if (!period) continue;
 
-    const plan = plans.find(p => p.classGroupId === period.classGroupId);
-    const entries = plan ? normalizePlanEntries(plan.entries) : [];
+    // A class taking several subjects has one plan per subject. A period
+    // that names its subject reads only that subject's plan — borrowing
+    // another subject's lesson would put maths on the card for an Arabic
+    // period. A period that names none (older slots, one-subject classes)
+    // pools every plan on the class and lets today's lesson win.
+    const primary = classes.find(c => c.id === period.classGroupId)?.subjectId ?? '';
+    const entries = plans
+      .filter(p => p.classGroupId === period.classGroupId)
+      .filter(p => {
+        if (!period.subjectId) return true;
+        const planSubject = p.subjectId || primary;
+        // Unresolvable (no subject, class not loaded): pool it rather than hide it.
+        return !planSubject || planSubject === period.subjectId;
+      })
+      .flatMap(p => normalizePlanEntries(p.entries));
     const before = entries.filter(e => e.date <= date).sort((a, b) => b.date.localeCompare(a.date));
     const lessonId = (before[0] ?? nextEntry(entries, date))?.lessonId ?? null;
     return {
@@ -219,7 +243,10 @@ export function nextPeriodLesson(
   return null;
 }
 
-export type TimetableSetupStep = { step: 'timetable' } | { step: 'plan'; classGroupId: string };
+export type TimetableSetupStep =
+  | { step: 'timetable' }
+  /** `subjectId` '' when the period does not name one. */
+  | { step: 'plan'; classGroupId: string; subjectId: string };
 
 /**
  * What stops the home card from following the timetable, as the one next
@@ -233,7 +260,7 @@ export function timetableSetupStep(
   next: NextPeriodLesson | null,
 ): TimetableSetupStep | null {
   if (!slots.some(s => s.classGroupId)) return { step: 'timetable' };
-  if (next && !next.lessonId) return { step: 'plan', classGroupId: next.classGroupId };
+  if (next && !next.lessonId) return { step: 'plan', classGroupId: next.classGroupId, subjectId: next.subjectId ?? '' };
   return null;
 }
 

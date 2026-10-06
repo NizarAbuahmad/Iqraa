@@ -27,6 +27,7 @@ import { CHEM_BANK, detectChemFamily, type ChemFamily } from './chemistry.ts';
 import { subjectIdFromName } from './subjects.ts';
 import { stepsFor } from './steps.ts';
 import { elementaryOpsForTitle, makeElementaryItem } from './elementary.ts';
+import { makeTopicItem, topicFor } from './topics.ts';
 
 export { isChemContext, detectChemFamily, CHEM_BANK } from './chemistry.ts';
 export type { ChemFamily } from './chemistry.ts';
@@ -34,6 +35,7 @@ export { subjectIdFromName } from './subjects.ts';
 export { stepsFor, solvedItemIds, completionSplit } from './steps.ts';
 export type { SolutionSteps } from './steps.ts';
 export { detectElementaryOp, elementaryOpsForTitle } from './elementary.ts';
+export { topicFor } from './topics.ts';
 
 export interface PracticeLesson {
   id: string;
@@ -89,7 +91,9 @@ type MathFamily =
   | 'stats'
   | 'algebra'
   /** Grades 1–6, generated per lesson — see `./elementary.ts`. */
-  | 'arith';
+  | 'arith'
+  /** Computed per lesson title for the lessons neither of the above covers — see `./topics.ts`. */
+  | 'topic';
 
 /** A bank family: maths (below) or chemistry (`./chemistry.ts`). */
 export type Family = MathFamily | ChemFamily;
@@ -122,6 +126,19 @@ export function beginMathPracticeSession(): void {
 /** The lesson's name and nothing else — what routing reads. See `elementaryOpsForTitle`. */
 export function lessonTitleBlob(topic: string, kb: KBLesson | null): string {
   return [topic, kb?.titleAr ?? '', kb?.titleEn ?? ''].join(' ');
+}
+
+/**
+ * The topic generator for a lesson. Each name is tried on its own — the
+ * generators' patterns are anchored to a whole title, which the joined blob
+ * above is not.
+ */
+function topicForLesson(topic: string, kb: KBLesson | null, grade: number) {
+  for (const t of [topic, kb?.titleAr ?? ''].filter(Boolean)) {
+    const gen = topicFor(t, grade);
+    if (gen) return gen;
+  }
+  return null;
 }
 
 export function lessonTextBlob(topic: string, kb: KBLesson | null): string {
@@ -252,11 +269,12 @@ export function detectMathFamily(topic: string, kb: KBLesson | null): MathFamily
  * only be matched against the banked families.
  */
 export function mathBankCovers(topic: string, kb: KBLesson | null, grade: number | null): boolean {
-  if (grade !== null && grade >= 1 && grade <= 6) {
-    return elementaryOpsForTitle(lessonTitleBlob(topic, kb)).length > 0;
+  if (grade !== null && grade >= 1 && grade <= 9) {
+    const title = lessonTitleBlob(topic, kb);
+    return (grade <= 6 && elementaryOpsForTitle(title).length > 0) || topicForLesson(topic, kb, grade) !== null;
   }
-  if (grade !== null && grade >= 7 && grade <= 9) return false;
-  return matchMathFamily(topic, kb) !== null;
+  // Grade 10 has the banked families; a lesson none of them is about may still have a generator
+  return matchMathFamily(topic, kb) !== null || (grade === 10 && topicForLesson(topic, kb, grade) !== null);
 }
 
 function placeCorrect(correct: string, wrongs: string[]): string[] {
@@ -686,9 +704,13 @@ export function takeElementaryMath(
   const title = lessonTitleBlob(topic, kb);
   // A lesson none of the generators is about gets no items, not the grade's
   // default mix of arithmetic.
-  if (elementaryOpsForTitle(title).length === 0) return null;
-  const item = makeElementaryItem(title, grade, diff, session ?? usedIds);
-  return { ...formatItem(item, lang, type), points };
+  if (grade <= 6 && elementaryOpsForTitle(title).length > 0) {
+    const item = makeElementaryItem(title, grade, diff, session ?? usedIds);
+    return { ...formatItem(item, lang, type), points };
+  }
+  const gen = topicForLesson(topic, kb, grade);
+  if (!gen) return null;
+  return { ...formatItem(makeTopicItem(gen, grade, diff, session ?? usedIds), lang, type), points };
 }
 
 /**

@@ -65,7 +65,11 @@ interface WQ {
   text: string; options?: string[]; answer: string; points: number;
   /** Checked working from the bank; becomes the key's `solution`, never part of the question. */
   steps?: string[];
+  /** See `WorksheetQuestion.fromBank`. Set by `tryMathPractice` and nowhere it isn't true. */
+  fromBank?: true;
 }
+/** Carries a bank item's mark onto a quiz question, which copies fields one by one. */
+const bankMark = (q: WQ): { fromBank?: true } => (q.fromBank ? { fromBank: true } : {});
 /** A question as stored on the paper: the working belongs to the key, not the student's copy. */
 const withoutSteps = ({ steps: _steps, ...rest }: WQ): WQ => rest;
 
@@ -213,13 +217,12 @@ function tryMathPractice(
   allowRepeat: boolean = true,
 ): WQ | null {
   const tier: DiffTier = diff === 'easy' || diff === 'hard' ? diff : 'medium';
-  if (isChemContext(topic, kb, subject)) {
-    return takeConcreteChem(type, topic, kb, tier, lang, points, undefined, allowRepeat);
-  }
-  if (isMathContext(topic, kb, subject)) {
-    return takeConcreteMath(type, topic, kb, tier, lang, points, undefined, allowRepeat);
-  }
-  return null;
+  const item = isChemContext(topic, kb, subject)
+    ? takeConcreteChem(type, topic, kb, tier, lang, points, undefined, allowRepeat)
+    : isMathContext(topic, kb, subject)
+      ? takeConcreteMath(type, topic, kb, tier, lang, points, undefined, allowRepeat)
+      : null;
+  return item ? { ...item, fromBank: true } : null;
 }
 
 /**
@@ -316,11 +319,22 @@ function bookFigureCue(kb: KBLesson | null, lang: Lang): string {
 /**
  * Openings that suit the lesson. The generic ones — «التنبؤ والاستكشاف: اعرض
  * موقفًا حياتيًا واطلب التنبؤ بالتفسير» — are a science hook; on a surah or a
- * relay race they read as the wrong lesson. Science and social studies keep
- * the generic set, which fits them.
+ * relay race they read as the wrong lesson. Science and social studies had been
+ * left on the generic set; their own openers start from an observation or a
+ * source instead of asking where the topic turns up in daily life.
  */
 function kindIntro(kind: LessonKind, topic: string, lang: Lang): string[] | null {
   const ar: Partial<Record<LessonKind, string[]>> = {
+    science: [
+      `ابدأ بظاهرة قصيرة أو صورة مثيرة مرتبطة بـ«${topic}» دون أن تفسّرها، واسأل: «ماذا ترون؟ وماذا تتوقعون أن يحدث بعد ذلك؟» وسجّل التوقعات على السبورة لنعود إليها في نهاية الحصة.`,
+      `اسأل الطلبة: «أين صادفتم “${topic}” في بيتكم أو في الطبيعة؟» ثم اختر مثالًا واحدًا وحوّله إلى سؤال يبحث عنه الدرس: «لماذا يحدث هذا؟»`,
+      `اعرض شيئًا أو صورة مرتبطة بـ«${topic}» واطلب من كل طالب أن يكتب سؤالًا واحدًا يريد أن يعرف جوابه، ثم اجمع الأسئلة وأعلن أن الحصة ستجيب عن بعضها.`,
+    ],
+    social: [
+      `اعرض صورة أو خريطة أو سطرًا قصيرًا من مصدر الدرس عن «${topic}»، واسأل: «ماذا نلاحظ؟ وما الذي يثير تساؤلكم؟» ودوّن أسئلة الطلبة لنحاول الإجابة عنها خلال الحصة.`,
+      `اطرح موقفًا قريبًا من حياة الطلبة له علاقة بـ«${topic}» واسأل: «ماذا كنتم ستفعلون؟ ولماذا؟» ثم اربط إجاباتهم بما سندرسه اليوم.`,
+      `اسأل: «ماذا نعرف عن “${topic}”؟ ومن أين عرفنا ذلك؟» ثم ميّز مع الطلبة بين ما نعرفه بدليل وما سمعناه فقط، وأعلن أننا سنتحقّق منه بالمصدر.`,
+    ],
     recitation: [
       `ابدأ بتهيئة هادئة: استمع دقيقتين إلى ما يعرفه الطلبة عن «${topic}»، ثم أعلن هدف الحصة: أن نقرأ قراءة سليمة، ونفهم المعنى، ونعمل بما نتعلّم.`,
       `اسأل: «لماذا نتعلّم “${topic}”؟ وماذا نتوقع أن يتغيّر في سلوكنا؟» ثم أخبر الطلبة أنهم سيقرؤون ما تقرّر من آيات أو حديث ثم يتأمّلون معناه معًا.`,
@@ -343,6 +357,16 @@ function kindIntro(kind: LessonKind, topic: string, lang: Lang): string[] | null
     ],
   };
   const en: Partial<Record<LessonKind, string[]>> = {
+    science: [
+      `Start with a short phenomenon or a striking picture linked to “${topic}”, without explaining it, and ask: “What do you see? What do you expect to happen next?” Record the predictions on the board so we can return to them at the end of the lesson.`,
+      `Ask: “Where have you come across “${topic}” at home or in nature?” Then pick one example and turn it into the question the lesson will look into: “Why does this happen?”`,
+      `Show an object or picture linked to “${topic}” and have each student write one question they want answered, then collect them and say the lesson will answer some of them.`,
+    ],
+    social: [
+      `Show a picture, a map or a short line from the lesson’s source about “${topic}” and ask: “What do we notice? What makes you wonder?” Record the students’ questions to try to answer during the lesson.`,
+      `Pose a situation close to students’ lives that relates to “${topic}” and ask: “What would you do, and why?” Then link their answers to what we will study today.`,
+      `Ask: “What do we know about “${topic}”, and how do we know it?” Then separate with students what we know from evidence and what we have only heard, and say we will check it against the source.`,
+    ],
     recitation: [
       `Begin with a calm preparation: listen for two minutes to what students already know about “${topic}”, then state the lesson’s aim: to read well, to understand, and to act on what we learn.`,
       `Ask: “Why do we learn “${topic}”? What do we expect to change in our behaviour?” Then tell students they will read the set text and then understand it together.`,
@@ -369,7 +393,7 @@ function kindIntro(kind: LessonKind, topic: string, lang: Lang): string[] | null
 
 function lpIntroAr(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'): string {
   const own = kindIntro(kind, topic, 'ar');
-  if (own) return pick(own);
+  if (own) return pick(own) + bookFigureCue(kb, 'ar');
   if (kb) return pick([
     `ابدأ بطرح السؤال: "أين نلتقي ${arPrefixed('ب', topic)} في حياتنا اليومية؟" سجّل إجابات الطلبة على السبورة.${bookFigureCue(kb, 'ar')} ثم اربط إجاباتهم بأهداف الدرس.`,
     `لعبة "ما أعرفه / ما أريد تعلّمه": يكتب الطلبة على ورقة ما يعرفونه عن ${kb.titleAr} (دقيقتان). تُشارك بعض الإجابات ثم يُحدد المعلم ما سنكتشفه معًا.`,
@@ -411,7 +435,7 @@ function lpObjectivesEn(topic: string, kb: KBLesson | null, custom?: string, kin
 }
 function lpIntroEn(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'): string {
   const own = kindIntro(kind, topic, 'en');
-  if (own) return pick(own);
+  if (own) return pick(own) + bookFigureCue(kb, 'en');
   if (kb) return pick([
     `Open with: "Where do we encounter ${topic} in everyday life?" Record 3-4 student responses on the board.${bookFigureCue(kb, 'en')} Then bridge to today's objectives.`,
     `"Know / Want to Know" activity: Students write what they already know about ${kb.titleEn} (2 min). Share responses, then identify what we'll discover together.`,
@@ -796,29 +820,29 @@ function sectionTitleEn(type: QType, pts: number): string {
 // distinct questions out of six. The same measurement gave worksheets 0 in 1,530.
 function makeQuizMCQ_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
   const q = makeMCQ_ar(topic, kb, diff, subject, false);
-  return { id, type: 'multiple_choice', text: q.text, options: q.options, correctAnswer: q.answer, points: pts, explanation: `${q.answer} — راجع ${kb?.titleAr ?? topic} في الكتاب المدرسي.` };
+  return { id, type: 'multiple_choice', text: q.text, options: q.options, correctAnswer: q.answer, points: pts, explanation: `${q.answer} — راجع ${kb?.titleAr ?? topic} في الكتاب المدرسي.`, ...bankMark(q) };
 }
 function makeQuizMCQ_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
   const q = makeMCQ_en(topic, kb, diff, subject, false);
-  return { id, type: 'multiple_choice', text: q.text, options: q.options, correctAnswer: q.answer, points: pts, explanation: `${q.answer} — See ${kb?.titleEn ?? topic} in the textbook.` };
+  return { id, type: 'multiple_choice', text: q.text, options: q.options, correctAnswer: q.answer, points: pts, explanation: `${q.answer} — See ${kb?.titleEn ?? topic} in the textbook.`, ...bankMark(q) };
 }
 
 function makeQuizTF_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
   const q = makeTFQ_ar(topic, kb, diff, subject, false);
-  return { id, type: 'true_false', text: q.text, options: ['صح', 'خطأ'], correctAnswer: q.answer, points: pts, explanation: `الإجابة "${q.answer}" — ${q.text}` };
+  return { id, type: 'true_false', text: q.text, options: ['صح', 'خطأ'], correctAnswer: q.answer, points: pts, explanation: `الإجابة "${q.answer}" — ${q.text}`, ...bankMark(q) };
 }
 function makeQuizTF_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
   const q = makeTFQ_en(topic, kb, diff, subject, false);
-  return { id, type: 'true_false', text: q.text, options: ['True', 'False'], correctAnswer: q.answer, points: pts, explanation: `The answer is "${q.answer}" — ${q.text}` };
+  return { id, type: 'true_false', text: q.text, options: ['True', 'False'], correctAnswer: q.answer, points: pts, explanation: `The answer is "${q.answer}" — ${q.text}`, ...bankMark(q) };
 }
 
 function makeQuizSA_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
   const q = makeSAQ_ar(topic, kb, diff, subject, false);
-  return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `إجابة كاملة: ${q.answer}` };
+  return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `إجابة كاملة: ${q.answer}`, ...bankMark(q) };
 }
 function makeQuizSA_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
   const q = makeSAQ_en(topic, kb, diff, subject, false);
-  return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `Full answer: ${q.answer}` };
+  return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `Full answer: ${q.answer}`, ...bankMark(q) };
 }
 
 // ─── No question bank ─────────────────────────────────────────────────────────
@@ -932,6 +956,66 @@ export function buildOfflineActivity(req: AIRequest, variant = 0): ActivityOutpu
   });
 }
 
+/**
+ * What this service last handed out for a request, so a Regenerate can be
+ * told apart from "the same thing again". Keyed by the request's identity —
+ * everything except the regeneration fields.
+ */
+const lastServed = new Map<string, string>();
+const MAX_TRACKED_REQUESTS = 200;
+/** A draw that cannot vary (a tiny bank, fixed templates) gives up after this. */
+const MAX_FRESH_ATTEMPTS = 20;
+
+/** A short fingerprint (length + FNV-1a), so the table holds hashes, not whole outputs. */
+function fingerprint(out: unknown): string {
+  const text = JSON.stringify(out);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return `${text.length}:${h.toString(16)}`;
+}
+
+function requestIdentity(kind: string, req: object): string {
+  const { regenerate: _r, avoid: _a, excludeVariantIds: _e, ...rest } = req as Record<string, unknown>;
+  return `${kind}|${JSON.stringify(rest)}`;
+}
+
+/**
+ * Run `produce`, and on a Regenerate keep drawing until the result differs from
+ * what this request was last served.
+ *
+ * The offline generators vary by drawing at random — items from a bank, or one
+ * of a few phrasings — and nothing stopped a draw from landing on exactly what
+ * the teacher was already looking at: over twelve regenerations the lesson plan
+ * repeated its predecessor up to 4 times in 11 and worksheet and homework up
+ * to 5 in 11 (a small bank, like one law-of-sines lesson, makes the odds high),
+ * so «إعادة التوليد» often did nothing visible.
+ *
+ * Bounded: a generator with nothing to vary (fixed templates, a bank with one
+ * possible draw) returns after `MAX_FRESH_ATTEMPTS` rather than looping. A
+ * plain request is never compared — it is free to repeat.
+ */
+async function freshOnRegenerate<T>(kind: string, req: object, produce: () => Promise<T>): Promise<T> {
+  const key = requestIdentity(kind, req);
+  const previous = lastServed.get(key);
+  let out = await produce();
+  let signature = fingerprint(out);
+  if ((req as { regenerate?: boolean }).regenerate === true && previous !== undefined) {
+    for (let attempt = 1; attempt < MAX_FRESH_ATTEMPTS && signature === previous; attempt++) {
+      out = await produce();
+      signature = fingerprint(out);
+    }
+  }
+  lastServed.delete(key); // re-insert last, so the oldest entry is the stalest
+  lastServed.set(key, signature);
+  if (lastServed.size > MAX_TRACKED_REQUESTS) {
+    lastServed.delete(lastServed.keys().next().value as string);
+  }
+  return out;
+}
+
 // ─── Main service class ───────────────────────────────────────────────────────
 
 export class MockAIService extends AIService {
@@ -941,6 +1025,10 @@ export class MockAIService extends AIService {
 
   async generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput> {
     await this.delay();
+    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req));
+  }
+
+  private async lessonPlanOnce(req: AIRequest): Promise<LessonPlanOutput> {
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const docs = docsFromReq(req);
     const rawTopic = req.topic;
@@ -1064,6 +1152,10 @@ export class MockAIService extends AIService {
 
   async generateWorksheet(req: AIRequest): Promise<WorksheetOutput> {
     await this.delay();
+    return freshOnRegenerate('worksheet', req, () => this.worksheetOnce(req));
+  }
+
+  private async worksheetOnce(req: AIRequest): Promise<WorksheetOutput> {
     beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const docs = docsFromReq(req);
@@ -1231,7 +1323,7 @@ export class MockAIService extends AIService {
       sections.push({
         type: 'short_answer',
         title: lang === 'ar' ? 'مثال نكمله' : 'Finish the solution',
-        questions: [{ text, answer: completionItem.answer, points: saPts(band[1]) }],
+        questions: [{ text, answer: completionItem.answer, points: saPts(band[1]), fromBank: true }],
       });
       answerKey.push({ num: qNum++, answer: completionItem.answer, solution: completionItem.steps });
     }
@@ -1334,6 +1426,10 @@ export class MockAIService extends AIService {
 
   async generateQuiz(req: AIRequest): Promise<QuizOutput> {
     await this.delay();
+    return freshOnRegenerate('quiz', req, () => this.quizOnce(req));
+  }
+
+  private async quizOnce(req: AIRequest): Promise<QuizOutput> {
     beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const kb = groundedKb(req.topic, lang, req.lessonId);
@@ -1457,6 +1553,10 @@ export class MockAIService extends AIService {
 
   async generateClassroomActivity(req: ClassroomActivityRequest): Promise<ClassroomActivity> {
     await this.delay();
+    return freshOnRegenerate('classroomActivity', req, () => this.classroomActivityOnce(req));
+  }
+
+  private async classroomActivityOnce(req: ClassroomActivityRequest): Promise<ClassroomActivity> {
     beginMathPracticeSession();
     const isAr = req.language === 'arabic';
     const topic = req.topic;
@@ -2549,6 +2649,10 @@ export class MockAIService extends AIService {
 
   async generateHomework(req: AIRequest): Promise<WorksheetOutput> {
     await this.delay();
+    return freshOnRegenerate('homework', req, () => this.homeworkOnce(req));
+  }
+
+  private async homeworkOnce(req: AIRequest): Promise<WorksheetOutput> {
     beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const kb = groundedKb(req.topic, lang, req.lessonId);

@@ -40,12 +40,15 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   RosterError,
+  addClassResource,
   addStudents,
   generateJoinCode,
   getClass,
   getClassMastery,
   listClassParentContacts,
+  listClassResources,
   parseStudentNames,
+  removeClassResource,
   removeStudentFromClass,
   updateClass,
   updateStudent,
@@ -56,6 +59,7 @@ import {
 } from '@/services/roster';
 import { SUBJECTS, getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { narrowSubjectsForGrade } from '@/services/teacherCatalogFilter';
+import { classSubjectIds, filterBySubject, inOptionOrder, subjectIdFromName, subjectLabel, toggleId } from '@/services/classSubjects';
 import { useAuth } from '@/context/AuthContext';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { copyToClipboard, shareAsText } from '@/services/share';
@@ -72,6 +76,20 @@ import { confirm } from '@/services/confirm';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
+import { ClassResourceRow } from '@/components/classes/ClassResourceRow';
+import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
+import {
+  addBodyFor,
+  addedKeys,
+  mergeClassShelf,
+  openTargetFor,
+  withAddedResource,
+  type ClassResource,
+} from '@/services/classResources';
+import { openExternal } from '@/services/externalLinks';
+import { trackEvent } from '@/services/analytics';
+import type { ResourceItem } from '@/services/resourceCatalog';
+import { classToolParams } from '@/services/classToolParams';
 import { summarizeClassContacts, type ClassContactSummary } from '@/services/parentMessage';
 import { palette } from '@/constants/colors';
 import { CLASSES_QUERY_KEY, classQueryKey as CLASS_QUERY_KEY } from '@/services/rosterQueryKeys';
@@ -122,6 +140,10 @@ export default function ClassDetailScreen() {
   const [showAttach, setShowAttach] = useState(false);
   const [attachable, setAttachable] = useState<SavedMaterial[]>([]);
   const [attachingId, setAttachingId] = useState<string | null>(null);
+  const [resources, setResources] = useState<ClassResource[]>([]);
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [addingKey, setAddingKey] = useState<string | null>(null);
+  const [pickerError, setPickerError] = useState('');
   const [savedCount, setSavedCount] = useState(0);
   const [mastery, setMastery] = useState<ClassMastery | null>(null);
   /** Null until loaded, or when the log can't be read — the card then hides. */
@@ -135,7 +157,14 @@ export default function ClassDetailScreen() {
   const [showEdit, setShowEdit] = useState(false);
   const [editName, setEditName] = useState('');
   const [editGradeId, setEditGradeId] = useState('grade-10');
-  const [editSubjectId, setEditSubjectId] = useState('');
+  const [editSubjectIds, setEditSubjectIds] = useState<string[]>([]);
+  /**
+   * Which of the class's subjects the materials and exams tabs show, '' for
+   * all. One roster can take several subjects (a class teacher's section), and
+   * its arabic worksheets and maths quizzes in one undifferentiated list was
+   * the cost of not duplicating the roster.
+   */
+  const [subjectFocus, setSubjectFocus] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
   const {
@@ -152,6 +181,12 @@ export default function ClassDetailScreen() {
   });
   const group = data?.group ?? null;
   const students = data?.students ?? [];
+  const subjectIds = classSubjectIds(group);
+  // A focus left over from before an edit removed that subject would filter
+  // to nothing, with no pill on screen to say why.
+  const focus = subjectIds.includes(subjectFocus) ? subjectFocus : '';
+  const shownMaterials = filterBySubject(materials, focus, m => subjectIdFromName(m.subject));
+  const shownExams = filterBySubject(exams, focus, e => e.subjectId);
 
   // The teacher's own grades (/setup-subjects), plus whatever grade this
   // class already has so editing never hides its current value.
@@ -161,7 +196,7 @@ export default function ClassDetailScreen() {
   /**
    * Subject choices for the edit sheet: what this teacher teaches to the
    * chosen grade (same narrowing as class creation), plus the class's current
-   * subject so editing never hides it. A class made before subjects were
+   * subjects so editing never hides one. A class made before subjects were
    * stored has none — this is how it gets one, which the teaching-plan
    * schedule needs to list any lessons.
    */
@@ -170,8 +205,8 @@ export default function ClassDetailScreen() {
     const narrowed = narrowSubjectsForGrade(
       getPickerSubjects(editGradeId), editGradeId, user?.teachingAssignments, user?.subjectIds,
     );
-    const current = SUBJECTS.find(x => x.id === group?.subjectId);
-    return current && !narrowed.some(x => x.id === current.id) ? [...narrowed, current] : narrowed;
+    const extra = SUBJECTS.filter(x => subjectIds.includes(x.id) && !narrowed.some(n => n.id === x.id));
+    return [...narrowed, ...extra];
   })();
 
   /** Server errors arrive in English; this screen is Arabic-first. */
@@ -202,6 +237,16 @@ export default function ClassDetailScreen() {
     // Materials are a separate store with its own offline fallback, so a
     // roster failure must not blank the materials tab and vice versa.
     setMaterials(await getItems({ classId: id }));
+    // The shelf's second source. Library items are an extra on this screen, not
+    // a reason to fail it: the server's own list already reads a missing table
+    // as an empty shelf, so a failure here is not worth a banner (which would
+    // also sit on the Students tab, in the server's English). Keep whatever was
+    // showing — an empty shelf on first load — and never blank the materials.
+    try {
+      setResources(await listClassResources(id));
+    } catch {
+      // Deliberately silent; see above.
+    }
     // The exams list has no fallback and throws on any non-2xx. Say so in the
     // banner and keep whatever was shown before rather than blanking the tab.
     try {
@@ -221,6 +266,9 @@ export default function ClassDetailScreen() {
     () => (parentContacts ? summarizeClassContacts(students, parentContacts, new Date()) : null),
     [students, parentContacts],
   );
+
+  const shelf = useMemo(() => mergeClassShelf(shownMaterials, resources), [shownMaterials, resources]);
+  const shelfKeys = useMemo(() => addedKeys(resources), [resources]);
 
   // Who has actually claimed their roster row, split out once here rather than
   // filtered inline in JSX twice (the count line and the chip row both need it).
@@ -307,7 +355,7 @@ export default function ClassDetailScreen() {
     if (!group) return;
     setEditName(group.name);
     setEditGradeId(group.gradeId || 'grade-10');
-    setEditSubjectId(group.subjectId || '');
+    setEditSubjectIds(classSubjectIds(group));
     setError('');
     setShowEdit(true);
   };
@@ -321,7 +369,14 @@ export default function ClassDetailScreen() {
       const updated = await updateClass(id, {
         name,
         gradeId: editGradeId,
-        ...(editSubjectId ? { subjectId: editSubjectId } : {}),
+        // Only what is still offered for the (possibly changed) grade; the
+        // first, in picker order, becomes the primary subject. A single
+        // option has no visible row, so it is submitted as class creation
+        // submits it — otherwise a grade change could clear the subject with
+        // nothing on screen to say so.
+        subjectIds: pickerSubjects.length === 1
+          ? [pickerSubjects[0]!.id]
+          : inOptionOrder(pickerSubjects, editSubjectIds.filter(x => pickerSubjects.some(o => o.id === x))),
       });
       queryClient.setQueryData<ClassQueryData>(CLASS_QUERY_KEY(id), prev =>
         prev ? { ...prev, group: { ...prev.group, ...updated } } : prev,
@@ -485,6 +540,54 @@ export default function ClassDetailScreen() {
     setMaterials(prev => prev.filter(m => m.id !== material.id));
   };
 
+  const onAddResource = async (item: ResourceItem) => {
+    if (!id || addingKey) return;
+    setAddingKey(item.key);
+    setPickerError('');
+    let added: ClassResource | null;
+    try {
+      added = await addClassResource(id, addBodyFor(item, lang));
+    } catch {
+      // Shown inside the picker: a toast on this screen would sit behind its Modal.
+      setPickerError(t('classResourceFailed'));
+      setAddingKey(null);
+      return;
+    }
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // `null` is the 409 "already there": nothing was created, so nothing to count.
+    if (added) trackEvent('class_resource_added', { source: item.source, mediaKind: item.kind });
+    // Re-read rather than splice: the server owns the snapshot.
+    try {
+      setResources(await listClassResources(id));
+    } catch {
+      // The add landed, so this is not an error. If the re-read failed, put the
+      // row the server handed back on the shelf rather than leave the teacher
+      // looking at a shelf that seems to have ignored the tap.
+      if (added) setResources(prev => withAddedResource(prev, added));
+    }
+    setAddingKey(null);
+  };
+
+  const onRemoveResource = async (resource: ClassResource) => {
+    if (!id) return;
+    try {
+      await removeClassResource(id, resource.id);
+      // Only drop it once the delete persisted, as onDetach does.
+      setResources(prev => prev.filter(r => r.id !== resource.id));
+    } catch {
+      setToast(t('classResourceFailed'));
+    }
+  };
+
+  const onOpenResource = (resource: ClassResource) => {
+    const target = openTargetFor(resource);
+    if (target.kind === 'url') void openExternal(target.url);
+    // `as never`: the typed route has no `premade` param, as in the Library screen.
+    else if (target.kind === 'premade') {
+      router.push({ pathname: '/workspace/view' as never, params: { premade: target.id } });
+    }
+  };
+
   const align = isRTL ? 'right' : 'left';
   const title = group ? (lang === 'ar' && group.nameAr ? group.nameAr : group.name) : '';
 
@@ -525,6 +628,48 @@ export default function ClassDetailScreen() {
         ]}
       >
         {t(descKey)}
+      </Text>
+    </View>
+  );
+
+  /**
+   * «الكل» plus one pill per subject, over the materials and exams lists.
+   * Absent for a one-subject class — there is nothing to narrow.
+   */
+  const subjectFilter = subjectIds.length > 1 ? (
+    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
+      {['', ...subjectIds].map(sid => {
+        const active = focus === sid;
+        return (
+          <Pressable
+            key={sid || 'all'}
+            onPress={() => setSubjectFocus(sid)}
+            accessibilityRole="button"
+            aria-selected={active}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 16,
+              borderWidth: 1.5,
+              borderColor: active ? ACCENT : colors.border,
+              backgroundColor: active ? ACCENT + '16' : colors.card,
+            }}
+          >
+            <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular', fontSize: 13 }}>
+              {sid ? subjectLabel(sid, lang) || sid : t('allSubjects')}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  ) : null;
+
+  /** The tab has items, just none in the focused subject — «لا موارد بعد» would be a lie. */
+  const emptyForSubject = (
+    <View style={styles.empty}>
+      <Ionicons name="filter-outline" size={36} color={colors.mutedForeground} />
+      <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+        {t('nothingForSubject', subjectLabel(focus, lang))}
       </Text>
     </View>
   );
@@ -631,7 +776,7 @@ export default function ClassDetailScreen() {
         </View>
         <View style={[styles.tabs, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {renderTab('students', t('classTabStudents'), countStudents(students.length, lang))}
-          {renderTab('materials', t('classTabMaterials'), countMaterials(materials.length, lang))}
+          {renderTab('materials', t('classTabMaterials'), countMaterials(materials.length + resources.length, lang))}
           {renderTab('exams', t('classTabExams'), t('countExams', exams.length))}
         </View>
       </View>
@@ -661,7 +806,7 @@ export default function ClassDetailScreen() {
                 />
               )}
               {students.length > 0 && (
-                <ParentContactSection summary={contactSummary} subjectId={group?.subjectId} colors={colors} isRTL={isRTL} align={align} t={t} />
+                <ParentContactSection summary={contactSummary} subjectIds={subjectIds} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
               )}
             </View>
           }
@@ -763,12 +908,24 @@ export default function ClassDetailScreen() {
         />
       ) : tab === 'materials' ? (
         <FlatList
-          data={materials}
-          keyExtractor={m => m.id}
+          data={shelf}
+          keyExtractor={e => e.key}
           contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={empty('folder-open-outline', 'noMaterialsYet', 'noMaterialsDesc')}
-          renderItem={({ item }) => (
+          ListHeaderComponent={subjectFilter}
+          ListEmptyComponent={materials.length > 0 ? emptyForSubject : empty('folder-open-outline', 'noMaterialsYet', 'noMaterialsDesc')}
+          renderItem={({ item: entry }) => {
+            if (entry.type === 'resource') {
+              return (
+                <ClassResourceRow
+                  resource={entry.resource}
+                  onOpen={() => onOpenResource(entry.resource)}
+                  onRemove={() => { void onRemoveResource(entry.resource); }}
+                />
+              );
+            }
+            const item = entry.material;
+            return (
             <Pressable
               onPress={() => router.push({ pathname: '/workspace/view', params: { id: item.id } })}
               style={[
@@ -812,16 +969,18 @@ export default function ClassDetailScreen() {
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
               </Pressable>
             </Pressable>
-          )}
+            );
+          }}
         />
       ) : (
         <FlatList
-          data={exams}
+          data={shownExams}
           keyExtractor={e => e.id}
           contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={{ gap: 10, marginBottom: 10 }}>
+              {subjectFilter}
               <Pressable
                 onPress={() => router.push({ pathname: '/evaluations/mini', params: { classId: id } })}
                 style={[
@@ -848,7 +1007,7 @@ export default function ClassDetailScreen() {
               <MasterySection mastery={mastery} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
             </View>
           }
-          ListEmptyComponent={empty('clipboard-outline', 'noExamsYet', 'noExamsDesc')}
+          ListEmptyComponent={exams.length > 0 ? emptyForSubject : empty('clipboard-outline', 'noExamsYet', 'noExamsDesc')}
           renderItem={({ item }) => {
             const title = (lang === 'ar' ? item.titleAr : item.title) || t('newEvaluation');
             const draft = item.status !== 'published';
@@ -997,19 +1156,27 @@ export default function ClassDetailScreen() {
             />
             {/* Same grade and subject pills as class creation
                 (classes/index.tsx) — only worth showing once there is a real
-                choice. */}
+                choice. Grade is pick-one; subjects are pick-any. */}
             {([
-              [pickerGrades, editGradeId, setEditGradeId],
-              [pickerSubjects, editSubjectId, setEditSubjectId],
+              [pickerGrades, [editGradeId], setEditGradeId],
+              [pickerSubjects, editSubjectIds, (sid: string) => setEditSubjectIds(prev => toggleId(prev, sid))],
             ] as const).map(([options, selected, onSelect], row) =>
               options.length > 1 ? (
-                <View key={row} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+                <View key={row} style={{ gap: 6 }}>
+                {row === 1 ? (
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12, textAlign: align }}>
+                    {t('classSubjects')}
+                  </Text>
+                ) : null}
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
                   {options.map(o => {
-                    const active = selected === o.id;
+                    const active = selected.includes(o.id);
                     return (
                       <Pressable
                         key={o.id}
                         onPress={() => onSelect(o.id)}
+                        accessibilityRole="button"
+                        aria-selected={active}
                         style={{
                           paddingHorizontal: 14,
                           paddingVertical: 7,
@@ -1031,6 +1198,7 @@ export default function ClassDetailScreen() {
                       </Pressable>
                     );
                   })}
+                </View>
                 </View>
               ) : null,
             )}
@@ -1305,13 +1473,45 @@ export default function ClassDetailScreen() {
                 </Pressable>
               )}
             />
+            <Pressable
+              onPress={() => {
+                setShowAttach(false);
+                setPickerError('');
+                setShowLibrary(true);
+              }}
+              accessibilityRole="button"
+              style={[
+                styles.createRow,
+                { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' },
+              ]}
+            >
+              <Ionicons name="library-outline" size={18} color={ACCENT} />
+              <Text
+                style={{
+                  color: ACCENT,
+                  fontFamily: 'ReadexPro_600SemiBold',
+                  flex: 1,
+                  textAlign: align,
+                }}
+              >
+                {t('fromLibrary')}
+              </Text>
+            </Pressable>
+
             {/* The sheet offered one way out — pick something that exists.
                 A teacher with nothing saved, or nothing left to attach, was
                 shown a dead end and a Cancel button. */}
             <Pressable
               onPress={() => {
                 setShowAttach(false);
-                router.push('/(tabs)/ai-tools');
+                // The class travels with the teacher: the tool opens on this
+                // class's grade and subject, and what they save is filed here.
+                router.push({
+                  pathname: '/(tabs)/ai-tools',
+                  // The subject the teacher has filtered to, on a class taking several;
+                  // otherwise the class's primary subject.
+                  params: group ? classToolParams({ ...group, subjectId: focus || group.subjectId }) : {},
+                });
               }}
               style={[
                 styles.createRow,
@@ -1341,6 +1541,19 @@ export default function ClassDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      <LibraryPickerSheet
+        visible={showLibrary}
+        group={{ gradeId: group?.gradeId ?? '', subjectId: focus || group?.subjectId || '' }}
+        added={shelfKeys}
+        busyKey={addingKey}
+        error={pickerError}
+        onAdd={item => { void onAddResource(item); }}
+        onClose={() => {
+          setPickerError('');
+          setShowLibrary(false);
+        }}
+      />
 
       <Modal
         visible={showAttachExam}
@@ -1608,28 +1821,42 @@ function JoinStatusSection({
  * family it starts on «إشادة وتقدير», because that is the letter that's missing.
  */
 function ParentContactSection({
-  summary, subjectId, colors, isRTL, align, t,
+  summary, subjectIds, colors, isRTL, align, lang, t,
 }: {
   summary: ClassContactSummary | null;
-  /** The class's subject, so the letter opens naming it — the picker path seeds this from the class too. */
-  subjectId?: string;
+  /**
+   * The class's subjects, so the letter opens naming one. With one subject it
+   * is simply passed; with several the teacher is asked which — the letter is
+   * about one subject, and guessing the first would mislabel it.
+   */
+  subjectIds: string[];
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   align: 'left' | 'right';
+  lang: string;
   t: (key: any, ...args: any[]) => string;
 }) {
+  const [pending, setPending] = useState<{ id: string; displayName: string; kind?: string } | null>(null);
   if (!summary) return null;
   const MAX_NAMES = 8;
+
+  const openLetter = (s: { id: string; displayName: string }, kind: string | undefined, subjectId: string | undefined) => {
+    router.push({
+      pathname: '/ai-tools/parent-message',
+      params: { studentId: s.id, studentName: s.displayName, ...(subjectId ? { subjectId } : {}), ...(kind ? { kind } : {}) },
+    });
+  };
+  const onName = (s: { id: string; displayName: string }, kind?: string) => {
+    if (subjectIds.length > 1) setPending({ ...s, kind });
+    else openLetter(s, kind, subjectIds[0]);
+  };
 
   const names = (list: { id: string; displayName: string }[], kind?: string) => (
     <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6 }}>
       {list.slice(0, MAX_NAMES).map(s => (
         <Pressable
           key={s.id}
-          onPress={() => router.push({
-            pathname: '/ai-tools/parent-message',
-            params: { studentId: s.id, studentName: s.displayName, ...(subjectId ? { subjectId } : {}), ...(kind ? { kind } : {}) },
-          })}
+          onPress={() => onName(s, kind)}
           style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, borderWidth: 1, borderColor: colors.border }}
         >
           <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{s.displayName}</Text>
@@ -1686,6 +1913,37 @@ function ParentContactSection({
           </Text>
         </>
       )}
+
+      <Modal visible={pending !== null} transparent animationType="fade" onRequestClose={() => setPending(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
+              {t('whichSubject')}
+            </Text>
+            {[...subjectIds, ''].map(sid => (
+              <Pressable
+                key={sid || 'none'}
+                onPress={() => {
+                  const p = pending;
+                  setPending(null);
+                  if (p) openLetter(p, p.kind, sid || undefined);
+                }}
+                accessibilityRole="button"
+                style={{ paddingVertical: 12, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}
+              >
+                <Text style={{ color: sid ? colors.foreground : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 14, textAlign: align }}>
+                  {sid ? subjectLabel(sid, lang) || sid : t('noSubject')}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => setPending(null)} style={{ paddingVertical: 10 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }}>
+                {t('cancel')}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

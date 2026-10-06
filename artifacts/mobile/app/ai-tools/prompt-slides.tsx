@@ -44,6 +44,7 @@ import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import type { ClassroomActivity, PromptSlidesQuestion, PromptSlidesRequest } from '@/services/ai/AIService';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { narrowToSelection } from '@/services/teacherCatalogFilter';
+import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { MAX_SOURCE_CHARS, foldAnswersIntoPrompt, foldSourceIntoPrompt } from '@/services/promptSlidesAnswers';
 import { attachDrawnVisuals, attachSearchedMedia, deckSearchQueries } from '@/services/promptSlidesMedia';
 import { polishDeck } from '@/services/promptSlidesPolish';
@@ -78,12 +79,14 @@ export default function PromptSlidesScreen() {
 
   // Grade and subject used to be two pill rows on this screen, which is exactly
   // the tapping-through a "just describe it" tool exists to avoid. They come
-  // from the teacher's own profile now — the same `narrowToSelection` the
-  // curriculum browser uses, with its fall-back-to-everything behaviour — and
-  // they reach the model as a HINT. A description naming another grade wins.
-  const teacherGrade = narrowToSelection(getPickerGrades(), user?.gradeIds)[0];
+  // from the teacher's own profile now — the first grade they teach and the
+  // first subject taught in *that* grade (a flat narrowing could pair grade 3
+  // with a subject they only teach in grade 7) — and they reach the model as
+  // a HINT. A description naming another grade wins.
+  const { defaultIds } = useTeacherScope();
+  const teacherGrade = getPickerGrades().find(g => g.id === defaultIds.gradeId);
+  const teacherSubject = getPickerSubjects().find(s => s.id === defaultIds.subjectId);
   const teacherSubjects = narrowToSelection(getPickerSubjects(), user?.subjectIds);
-  const teacherSubject = teacherSubjects[0];
   // An English-only teacher's decks are built in English. With other subjects
   // too, nothing here says which one the prompt is about, so the UI decides.
   const isAr = contentLang(teacherSubjects.length === 1 ? teacherSubject?.id : null, uiLang) === 'ar';

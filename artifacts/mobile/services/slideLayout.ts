@@ -108,5 +108,49 @@ export function resolveSlideLayout(slide: ActivitySlide): ResolvedLayout | null 
   }
 }
 
+/** Arabic-Indic digits to a number, so «١) … ٢)» numbers like «1) … 2)». */
+function markerValue(raw: string): number {
+  return Number(raw.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))));
+}
+
+/** The longest lead-in («الخطوات:») that is a label rather than a first step. */
+const MAX_STEPS_LEAD_CHARS = 24;
+
+/** Three is a process; two numbered clauses are just a sentence with a list in it. */
+const MIN_INLINE_STEPS = 3;
+
+/**
+ * A procedure the book wrote on ONE line — «الخطوات: 1) عزل y 2) تعويضه
+ * 3) حل المعادلة» — as its steps, or `null` when the line is not one.
+ *
+ * Strict on purpose, because the answer to "no" is the ordinary rendering and
+ * the answer to a wrong "yes" is a slide numbered wrongly in front of a class:
+ * the markers must count 1, 2, 3… in order with nothing skipped, there must be
+ * at least three, every step must have text, and anything before the first
+ * marker must be a short label. A marker is a number and `)` or `.` standing
+ * after whitespace or a colon and followed by whitespace, so «13.6 / n²» and
+ * «f(2) = 5» are not read as steps.
+ */
+export function inlineSteps(text: string): string[] | null {
+  const line = stripBullet(text ?? '');
+  const markers = [...line.matchAll(/(?:^|[\s:：])([0-9٠-٩]{1,2})\s*[).](?=\s)/g)];
+  if (markers.length < MIN_INLINE_STEPS) return null;
+  if (!markers.every((m, i) => markerValue(m[1]!) === i + 1)) return null;
+
+  // The match may have eaten the whitespace or colon before the digits, so the
+  // number's own position is found inside it; a step's text runs from the end
+  // of its marker to where the next number begins.
+  const numberAt = markers.map(m => m.index! + m[0].indexOf(m[1]!));
+  const lead = line.slice(0, numberAt[0]!).replace(/[:：\s]+$/, '').trim();
+  if (lead.length > MAX_STEPS_LEAD_CHARS) return null;
+
+  const steps = markers.map((m, i) => {
+    const from = m.index! + m[0].length;
+    const to = i + 1 < numberAt.length ? numberAt[i + 1]! : line.length;
+    return line.slice(from, to).replace(/[\s;,،؛]+$/, '').trim();
+  });
+  return steps.every(Boolean) ? steps : null;
+}
+
 /** Every layout a generator may ask for — the prompt and the tests share this. */
 export const SLIDE_LAYOUTS = ['statement', 'stat', 'compare', 'steps'] as const;
