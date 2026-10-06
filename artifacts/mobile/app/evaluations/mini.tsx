@@ -223,7 +223,7 @@ export default function MiniEvalScreen() {
                       styles.row,
                       {
                         borderColor: selected ? ACCENT : colors.border,
-                        backgroundColor: selected ? ACCENT + '12' : colors.card,
+                        backgroundColor: selected ? palette.selected : colors.card,
                       },
                     ]}
                   >
@@ -269,7 +269,7 @@ export default function MiniEvalScreen() {
                     styles.row,
                     {
                       borderColor: selected ? ACCENT : colors.border,
-                      backgroundColor: selected ? ACCENT + '12' : colors.card,
+                      backgroundColor: selected ? palette.selected : colors.card,
                       flexDirection: isRTL ? 'row-reverse' : 'row',
                       alignItems: 'center',
                       gap: 10,
