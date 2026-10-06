@@ -9,6 +9,8 @@ import {
   MASTERY_PASS_PERCENT,
   passedLessonIds,
   quizLessonIds,
+  unlockState,
+  withUnlocks,
   type SittingForProgress,
 } from "../lessonProgress.ts";
 
@@ -19,6 +21,32 @@ const lessonsOf = (ids: readonly string[] | null | undefined) =>
 function sitting(over: Partial<SittingForProgress> = {}): SittingForProgress {
   return { objectiveIds: ["o1"], percent: "85.00", isProvisional: false, ...over };
 }
+
+describe("unlockState", () => {
+  const base = { gateOn: true, lessonId: "l1" as string | null, passed: false, granted: false };
+
+  it("offers an unlock for a quiz the student has not passed", () => {
+    assert.equal(unlockState(base), "available");
+  });
+
+  it("shows a granted unlock, so the teacher can undo it", () => {
+    assert.equal(unlockState({ ...base, granted: true }), "granted");
+    assert.equal(unlockState({ ...base, granted: true, passed: true }), "granted");
+  });
+
+  it("offers nothing for a passed quiz, with the gate off, or when the exam is not a one-lesson quiz", () => {
+    assert.equal(unlockState({ ...base, passed: true }), "none");
+    assert.equal(unlockState({ ...base, gateOn: false }), "none");
+    assert.equal(unlockState({ ...base, lessonId: null }), "none");
+  });
+});
+
+describe("withUnlocks", () => {
+  it("adds teacher-unlocked lessons to the passed ones, once each", () => {
+    assert.deepEqual(withUnlocks(["l1"], ["l1", "l2"]).sort(), ["l1", "l2"]);
+    assert.deepEqual(withUnlocks([], []), []);
+  });
+});
 
 describe("quizLessonIds", () => {
   it("lists only lessons an exam covers on its own, once each", () => {
