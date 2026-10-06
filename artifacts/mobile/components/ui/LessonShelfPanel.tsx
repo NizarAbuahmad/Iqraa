@@ -192,7 +192,7 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
             <Text
               style={[styles.rowAuthor, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
             >
-              {t(policy === 'embed-only' ? 'shelfEmbedOnly' : 'shelfNoReprint')}
+              {t(policy === 'link-only' ? 'shelfLinkOnly' : policy === 'embed-only' ? 'shelfEmbedOnly' : 'shelfNoReprint')}
             </Text>
           ) : null}
         </View>
