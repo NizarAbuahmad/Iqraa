@@ -852,7 +852,7 @@ export default function DashboardScreen() {
                           borderRadius: 20,
                           borderWidth: 1.5,
                           borderColor: active ? TEAL : colors.border,
-                          backgroundColor: active ? TEAL + '16' : colors.card,
+                          backgroundColor: active ? palette.selected : colors.card,
                         }}
                       >
                         <Text
@@ -901,7 +901,7 @@ export default function DashboardScreen() {
                       borderRadius: 20,
                       borderWidth: 1.5,
                       borderColor: active ? TEAL : colors.border,
-                      backgroundColor: active ? TEAL + '16' : colors.card,
+                      backgroundColor: active ? palette.selected : colors.card,
                     }}
                   >
                     <Text

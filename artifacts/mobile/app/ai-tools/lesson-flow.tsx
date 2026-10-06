@@ -476,7 +476,7 @@ export default function LessonFlowScreen() {
             <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8 }]}>
               {durationLabels.map((d, i) => (
                 <Pressable key={i} onPress={() => setDurationIdx(i)}
-                  style={[styles.chip, { flex: 1, justifyContent: 'center', backgroundColor: durationIdx === i ? ACCENT + '22' : colors.muted, borderColor: durationIdx === i ? ACCENT : colors.border }]}>
+                  style={[styles.chip, { flex: 1, justifyContent: 'center', backgroundColor: durationIdx === i ? palette.selected : colors.muted, borderColor: durationIdx === i ? ACCENT : colors.border }]}>
                   <Text style={[styles.chipText, { color: durationIdx === i ? ACCENT : colors.foreground, fontFamily: durationIdx === i ? 'ReadexPro_700Bold' : 'ReadexPro_500Medium', textAlign: 'center' }]}>{d}</Text>
                 </Pressable>
               ))}

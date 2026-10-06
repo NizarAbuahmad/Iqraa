@@ -356,7 +356,7 @@ export default function NewEvaluationScreen() {
                     styles.bookRow,
                     {
                       borderColor: selected ? ACCENT : colors.border,
-                      backgroundColor: selected ? ACCENT + '12' : colors.card,
+                      backgroundColor: selected ? palette.selected : colors.card,
                       opacity: b.evaluable ? 1 : 0.5,
                       flexDirection: isRTL ? 'row-reverse' : 'row',
                     },
@@ -559,7 +559,7 @@ function PaperRowEditor({
             <Pressable
               key={key}
               onPress={() => onChange({ competencyKey: key })}
-              style={[styles.compChip, { borderColor: active ? ACCENT : colors.border, backgroundColor: active ? ACCENT + '18' : 'transparent' }]}
+              style={[styles.compChip, { borderColor: active ? ACCENT : colors.border, backgroundColor: active ? palette.selected : 'transparent' }]}
             >
               <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                 {t(COMPETENCY_KEY[key])}
