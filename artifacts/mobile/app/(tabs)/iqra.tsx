@@ -1645,7 +1645,7 @@ export default function IqraScreen() {
       topic,
       language: meta.lang ?? (lang as 'ar' | 'en'),
       content: JSON.stringify(materialContentFor(data)),
-      formState: materialFormStateFor(topic),
+      formState: materialFormStateFor(topic, data, message.curriculumLessonId),
     };
     try {
       if (message.savedMaterialId) {
@@ -3049,7 +3049,8 @@ export default function IqraScreen() {
         trackEvent('virtual_lab_opened', { lessonId: s.lessonId, surface: 'chat' });
         setMessages(prev => [...prev, {
           id: Date.now().toString(), role: 'assistant', text: m.text,
-          artifactData: m.data, artifactProse: m.prose, artifactMeta: m.meta, timestamp: new Date(),
+          artifactData: m.data, artifactProse: m.prose, artifactMeta: m.meta,
+          lessonTopic: ctx.topic, curriculumLessonId: s.lessonId, timestamp: new Date(),
         }]);
         return;
       }
