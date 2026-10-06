@@ -676,6 +676,48 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The chat counts its own dead ends — `chat_unanswered` in PostHog, 2026-10-05
+
+Item 6 of the "make the chat smarter" list. Dead ends reached us one
+screenshot at a time («علمني» → «وضّح لي أكثر», then «أيّ مادة تقصد؟»). Every
+turn that asks back or gives up instead of answering now sends
+`chat_unanswered` with a `kind`:
+
+| kind | reply |
+| --- | --- |
+| `generic` | «وضّح لي أكثر: شرح مفهوم، أم مادة؟» |
+| `lesson_named` | the same, naming the open lesson |
+| `which_lesson_bare` | «ماذا نتعلّم؟» — a bare «علمني» with nothing open |
+| `refine_target` | «أي درس أو مادة تريد أن نعدّل فيها؟» |
+| `which_subject` | «أيّ مادة تقصد؟» |
+| `did_you_mean` | «هل تقصد…؟» / «أي درس؟» with lesson chips |
+| `which_lesson_in_scope` | «أي درس من … لـ…؟» |
+| `artifact_topic` | a material asked for with no topic |
+| `tell_more` | «وضّح لي أكثر: ما المادة والدرس؟» |
+| `out_of_scope` | nothing in the curriculum matched |
+
+plus `lang`, `lessonOpen`, `words`, `chars`. Off-topic declines, greetings and
+«من انت» are deliberate answers and are not counted.
+
+**The teacher's words, decided by the owner:** sent as `ask` only when the
+message is **4 words or fewer** (and ≤ 60 characters), with digits (Latin and
+Arabic-Indic), emails, @handles and links masked. A longer message sends only
+`words` and `chars` — no `ask` key at all. This is the first event to carry
+any typed text; `feature_suggested` still sends only a length. The rule lives
+in `askSample` (`services/chatUnanswered.ts`); the event reports `shown`, what
+the teacher typed this turn, never `q`, which can carry an earlier pending ask.
+
+The router's three questions say which they are via a new `clarify` field on
+`classifyChatIntent`'s result; the other seven are reported where the screen
+builds them in `iqra.tsx`.
+
+**Verified in the web build** with a dummy PostHog key and the PostHog
+requests captured: a 6-word message → `out_of_scope`, `words: 6`, no `ask`;
+«نعم» with a lesson open → `lesson_named`, `ask: "نعم"`. 16 cases in
+`chatUnanswered.test.ts`, watched failing first. **Not yet looked at in the
+real PostHog project** — it fills once this deploys; filter on
+`chat_unanswered`, break down by `kind`, and read `ask` for the phrases.
+
 ## A class can hold Library items, 2026-10-04
 
 A class's الموارد tab held one thing — the teacher's own saved materials — so a
