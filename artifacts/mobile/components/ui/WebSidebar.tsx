@@ -27,7 +27,7 @@ function SidebarRow({ entry, isIOS, active }: { entry: TabEntry; isIOS: boolean;
       style={[
         styles.row,
         {
-          backgroundColor: active ? colors.primary + '1a' : hovered ? colors.muted : 'transparent',
+          backgroundColor: active ? colors.selected : hovered ? colors.muted : 'transparent',
           borderRadius: colors.radius,
         },
       ]}
@@ -71,7 +71,7 @@ function SuggestFeatureLink({ active }: { active: boolean }) {
         styles.suggest,
         {
           borderColor: active || hovered ? colors.primary + '55' : colors.border,
-          backgroundColor: active ? colors.primary + '1a' : 'transparent',
+          backgroundColor: active ? colors.selected : 'transparent',
           borderRadius: colors.radius,
         },
       ]}

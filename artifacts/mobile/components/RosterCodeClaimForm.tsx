@@ -110,7 +110,7 @@ export function RosterCodeClaimForm({
                     styles.nameChip,
                     {
                       borderColor: picked ? colors.primary : colors.border,
-                      backgroundColor: picked ? colors.primary + '18' : 'transparent',
+                      backgroundColor: picked ? colors.selected : 'transparent',
                       opacity: blocked ? 0.45 : 1,
                     },
                   ]}
