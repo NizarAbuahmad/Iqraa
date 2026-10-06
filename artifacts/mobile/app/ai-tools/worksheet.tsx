@@ -18,6 +18,7 @@ import { buildDeckFromWorksheet } from '@/services/classDeck';
 import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
+import { VerificationSummaryRow } from '@/components/ui/VerificationSummaryRow';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
@@ -83,7 +84,7 @@ type Level = 'easy' | 'medium' | 'hard';
 const LEVELS: Level[] = ['easy', 'medium', 'hard'];
 type LevelEntry = {
   result: WorksheetOutput;
-  outcomes: VerifyOutcome[] | null;
+  outcomes: (VerifyOutcome | undefined)[] | null;
   savedId?: string;
   /** Flat question positions the teacher has hand-edited on this level's paper. */
   editedFlatIndexes: Set<number>;
@@ -162,7 +163,7 @@ export default function WorksheetScreen() {
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<WorksheetOutput | null>(null);
   /** null = not checked yet (or the check failed); [] onwards = per question. */
-  const [outcomes, setOutcomes] = useState<VerifyOutcome[] | null>(null);
+  const [outcomes, setOutcomes] = useState<(VerifyOutcome | undefined)[] | null>(null);
   /**
    * Whether the verifier proved the worked example's own answer. The example is
    * the one thing on the page students are told to study, so it earns a badge
@@ -270,8 +271,11 @@ export default function WorksheetScreen() {
     outcomes && result
       ? outcomes.map((o, i) => (editedFlatIndexes.has(i) ? undefined : o))
       : [];
+  // Edited questions leave the summary altogether: the teacher wrote what is
+  // there now, so it is neither proved nor unreviewed. An `undefined` that
+  // stays in counts as "nobody reviewed this" — see `summarizeVerification`.
   const verification = summarizeVerification(
-    effectiveOutcomes.filter((o): o is VerifyOutcome => !!o),
+    outcomes && result ? outcomes.filter((_, i) => !editedFlatIndexes.has(i)) : [],
   );
 
   /**
@@ -753,28 +757,7 @@ export default function WorksheetScreen() {
               the check resolves: saying nothing is honest, saying "not
               verified" while a request is still in flight is not. */}
           {outcomes && verification.total > 0 && (
-            <View
-              style={[styles.verifyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-            >
-              <Ionicons
-                name={verification.anySymbolic ? 'shield-checkmark' : 'library-outline'}
-                size={14}
-                color={verification.anySymbolic ? '#067647' : colors.mutedForeground}
-              />
-              <Text
-                style={[
-                  styles.verifyText,
-                  {
-                    color: verification.anySymbolic ? '#067647' : colors.mutedForeground,
-                    textAlign: isRTL ? 'right' : 'left',
-                  },
-                ]}
-              >
-                {verification.anySymbolic
-                  ? t('quizVerifiedCount', verification.symbolic, verification.total)
-                  : t('quizVerifiedNone')}
-              </Text>
-            </View>
+            <VerificationSummaryRow summary={verification} />
           )}
         </View>
       )}
@@ -1091,6 +1074,7 @@ export default function WorksheetScreen() {
       onPDF={handlePDF}
       onWord={handleWord}
       onSlides={handleSlides}
+      note={t(showAnswers ? 'exportTeacherCopyNote' : 'exportStudentCopyNote')}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}

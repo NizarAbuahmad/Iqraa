@@ -18,6 +18,7 @@ import { buildDeckFromQuiz } from '@/services/classDeck';
 import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
+import { VerificationSummaryRow } from '@/components/ui/VerificationSummaryRow';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
@@ -51,6 +52,7 @@ import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { buildQuizHTML, buildQuizSlidesHTML, formatQuizText } from '@/services/share';
+import { buildQuizDocx } from '@/services/quizDocx';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
@@ -153,7 +155,7 @@ export default function QuizScreen() {
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<QuizOutput | null>(null);
   /** null = not checked yet (or the check failed); [] onwards = per question. */
-  const [outcomes, setOutcomes] = useState<VerifyOutcome[] | null>(null);
+  const [outcomes, setOutcomes] = useState<(VerifyOutcome | undefined)[] | null>(null);
   /**
    * The scope the quiz on screen was generated under — pickers, topic and
    * the grounded lesson, frozen at generation time (or re-derived from the
@@ -241,8 +243,13 @@ export default function QuizScreen() {
           editedQuestions.has(result.questions[i]?.id ?? '') ? undefined : o,
         )
       : [];
+  // Edited questions leave the summary altogether: the teacher wrote what is
+  // there now, so it is neither proved nor unreviewed. An `undefined` that
+  // stays in counts as "nobody reviewed this" — see `summarizeVerification`.
   const verification = summarizeVerification(
-    effectiveOutcomes.filter((o): o is VerifyOutcome => !!o),
+    outcomes && result
+      ? outcomes.filter((_, i) => !editedQuestions.has(result.questions[i]?.id ?? ''))
+      : [],
   );
 
   /** Marks the paper dirty and records which question was touched. */
@@ -482,9 +489,12 @@ export default function QuizScreen() {
     lang: outLang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
-    formatText: formatQuizText,
-    buildHTML: buildQuizHTML,
-    buildSlidesHTML: buildQuizSlidesHTML,
+    // The paper follows the answers toggle, as the worksheet's does: hidden
+    // (the default) prints the student copy, shown prints the teacher's.
+    formatText: (quiz, title, meta, isAr) => formatQuizText(quiz, title, meta, isAr, showAnswers),
+    buildHTML: (quiz, title, meta, isAr, figures) => buildQuizHTML(quiz, title, meta, isAr, figures, showAnswers),
+    buildSlidesHTML: (quiz, title, meta, isAr, figures) => buildQuizSlidesHTML(quiz, title, meta, isAr, figures, showAnswers),
+    buildWord: (quiz, title, meta, isAr, docx) => buildQuizDocx(quiz, title, meta, isAr, showAnswers, docx),
     onError: key => showToast(t(key)),
     onCopied: key => showToast(t(key)),
   });
@@ -604,28 +614,7 @@ export default function QuizScreen() {
               the check resolves: saying nothing is honest, saying "not
               verified" while a request is still in flight is not. */}
           {outcomes && verification.total > 0 && (
-            <View
-              style={[styles.verifyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-            >
-              <Ionicons
-                name={verification.anySymbolic ? 'shield-checkmark' : 'library-outline'}
-                size={14}
-                color={verification.anySymbolic ? '#067647' : colors.mutedForeground}
-              />
-              <Text
-                style={[
-                  styles.verifyText,
-                  {
-                    color: verification.anySymbolic ? '#067647' : colors.mutedForeground,
-                    textAlign: isRTL ? 'right' : 'left',
-                  },
-                ]}
-              >
-                {verification.anySymbolic
-                  ? t('quizVerifiedCount', verification.symbolic, verification.total)
-                  : t('quizVerifiedNone')}
-              </Text>
-            </View>
+            <VerificationSummaryRow summary={verification} />
           )}
         </View>
       )}
@@ -869,6 +858,7 @@ export default function QuizScreen() {
       onPDF={handlePDF}
       onWord={handleWord}
       onSlides={handleSlides}
+      note={t(showAnswers ? 'exportTeacherCopyNote' : 'exportStudentCopyNote')}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}

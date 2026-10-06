@@ -134,7 +134,7 @@ describe('shelves (one tile per kind)', () => {
   it('puts every item on exactly one shelf, in display order, dropping empty shelves', () => {
     const items = buildResourceCatalog(input);
     const shelves = groupIntoShelves(items);
-    assert.deepEqual(shelves.map(s => s.shelf), ['infographic', 'image', 'video', 'audio', 'worksheet', 'book-qr']);
+    assert.deepEqual(shelves.map(s => s.shelf), ['infographic', 'image', 'video', 'audio', 'worksheet']);
     const total = shelves.reduce((n, s) => n + s.items.length, 0);
     assert.equal(total, items.length, 'an item fell off every shelf');
   });
@@ -145,9 +145,69 @@ describe('shelves (one tile per kind)', () => {
     assert.deepEqual(ws.items.map(i => i.source).sort(), ['premade-sheet', 'uploaded']);
   });
 
-  it('keeps book codes together on their own shelf whatever their kind', () => {
-    assert.equal(shelfOf({ source: 'book-qr', kind: 'video' }), 'book-qr');
+  it('files a book code on the shelf of what it opens, not on a shelf of its own', () => {
+    assert.equal(shelfOf({ source: 'book-qr', kind: 'video' }), 'video');
+    assert.equal(shelfOf({ source: 'book-qr', kind: 'audio' }), 'audio');
+    assert.equal(shelfOf({ source: 'book-qr', kind: 'image' }), 'image');
+    assert.equal(shelfOf({ source: 'book-qr', kind: 'document' }), 'document');
     assert.equal(shelfOf({ source: 'uploaded', kind: 'video' }), 'video');
+  });
+
+  it('files a web-page book code under documents — it has no shelf of its own', () => {
+    assert.equal(shelfOf({ source: 'book-qr', kind: 'page' }), 'document');
+  });
+
+  it('lists book codes after the staff uploads of the same shelf', () => {
+    const videos = groupIntoShelves(buildResourceCatalog(input)).find(s => s.shelf === 'video')!;
+    assert.deepEqual(videos.items.map(i => i.source), ['uploaded', 'book-qr']);
   });
 });
 
+describe('searching', () => {
+  const items = buildResourceCatalog(input);
+  const keys = (query: string) => filterResources(items, { query }).map(i => i.key);
+
+  it('matches a title regardless of hamza, taa marbuta and harakat', () => {
+    assert.deepEqual(keys('شبكة غذائية'), ['uploaded:u1', 'uploaded:u2', 'uploaded:u3', 'uploaded:u5']);
+    assert.ok(keys('شَبَكَة').includes('uploaded:u1'));
+    const hamza = buildResourceCatalog({
+      ...input,
+      uploaded: [upload({ id: 'h1', titleAr: 'الاقترانات' })],
+    });
+    assert.deepEqual(filterResources(hamza, { query: 'الإقترانات', gradeId: 'grade-5' }).map(i => i.key), ['uploaded:h1']);
+  });
+
+  it('matches the book a code is printed in, since that is the only name it has', () => {
+    assert.deepEqual(keys('الفصل الأول'), ['book-qr:12:https://example.invalid/v1', 'book-qr:31:http://example.invalid/a1']);
+  });
+
+  it('matches the description, which is where a staff upload says what it is for', () => {
+    const withNote = buildResourceCatalog({
+      ...input,
+      uploaded: [upload({ id: 'n1', titleAr: 'عرض', description: 'مراجعة قبل الاختبار' })],
+    });
+    assert.deepEqual(filterResources(withNote, { query: 'مراجعه' }).map(i => i.key), ['uploaded:n1']);
+  });
+
+  it('matches the printed page of a book code, in Arabic or Latin digits, with or without the word', () => {
+    const page12 = ['book-qr:12:https://example.invalid/v1'];
+    const page31 = ['book-qr:31:http://example.invalid/a1'];
+    assert.deepEqual(keys('12'), page12);
+    assert.deepEqual(keys('١٢'), page12);
+    assert.deepEqual(keys('صفحة 12'), page12);
+    assert.deepEqual(keys('صفحة ٣١'), page31);
+    assert.deepEqual(keys('page 31'), page31);
+  });
+
+  it('does not give an upload or a sheet a page it never had', () => {
+    assert.deepEqual(keys('صفحة'), ['book-qr:12:https://example.invalid/v1', 'book-qr:31:http://example.invalid/a1']);
+  });
+
+  it('ignores a blank query and combines with the other filters', () => {
+    assert.equal(filterResources(items, { query: '   ' }).length, items.length);
+    assert.deepEqual(
+      filterResources(items, { query: 'شبكة', kinds: ['video'] }).map(i => i.key),
+      ['uploaded:u2'],
+    );
+  });
+});

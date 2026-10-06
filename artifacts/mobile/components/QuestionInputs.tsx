@@ -388,7 +388,7 @@ export function DictationInput({
                     // Selected, never correct. There is no correctness to show
                     // a student mid-exam.
                     borderColor: on ? ACCENT : colors.border,
-                    backgroundColor: on ? ACCENT + '12' : 'transparent',
+                    backgroundColor: on ? palette.selected : 'transparent',
                   },
                 ]}
               >

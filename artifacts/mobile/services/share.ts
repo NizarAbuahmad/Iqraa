@@ -225,6 +225,20 @@ export async function exportAsWord(
 }
 
 /**
+ * A generator's own Word layout — the quiz's exam paper (`quizDocx.ts`) —
+ * rather than its share text run through `buildWordDocument`. `build` gets
+ * the lazily imported `docx` module, as `buildMinistryPlanDocx` does.
+ */
+export async function exportBuiltWord(
+  build: (docx: typeof import('docx')) => import('docx').Document,
+  filename: string,
+): Promise<void> {
+  trackEvent('material_exported', { format: 'word' });
+  const docx = await import('docx');
+  await saveDocx(build(docx), filename);
+}
+
+/**
  * The Ministry lesson-plan form as an editable Word file — see
  * `ministryPlan.ts`. Word because teachers fill the form in after exporting.
  */

@@ -462,6 +462,16 @@ say `schema-push: done` or `schema-push: n/a` in its description
 (`.github/workflows/ci.yml`), and `schema-check.yml` verifies production
 against the schema daily.
 
+**The deploy is gated on it.** `deploy.yml` runs `schema-check.yml` before the
+API deploys, against the merged commit's schema. If production is missing a
+table or column, the `production schema` job fails, the API and web jobs are
+skipped, and the old revision keeps serving. The job output names the missing
+columns; apply that DDL (Neon console, branch `production`, database `neondb`),
+then re-run the workflow. Before this existed, the claim in a PR description
+was the only thing standing between a merge and a 503 — and `schema-push: done`
+was wrong on 2026-09-16, 2026-09-17 and 2026-10-05. The verifier deploys
+independently and is not gated.
+
 Two things about that line, both of which have cost a CI cycle:
 
 - **It is matched literally, at the start of a line, with nothing between the

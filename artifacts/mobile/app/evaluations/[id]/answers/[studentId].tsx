@@ -837,7 +837,7 @@ function MultipleChoiceInput({
             <Pressable
               key={o.id}
               onPress={() => toggle(o.id)}
-              style={[styles.optRow, { borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? ACCENT + '12' : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              style={[styles.optRow, { borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? palette.selected : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name={selected ? (multi ? 'checkbox' : 'radio-button-on') : (multi ? 'square-outline' : 'radio-button-off')} size={18} color={selected ? ACCENT : colors.mutedForeground} />
               <Text
