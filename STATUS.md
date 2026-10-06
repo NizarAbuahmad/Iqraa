@@ -16085,3 +16085,51 @@ through the class code: the released exam shows its result, an unreleased one
 `/student/exams`. The release's recipients include both the student's own
 account and the guardian. The push itself was not sent locally.
 
+
+## Push: asked for in context, one Android channel per kind, an app-icon count, 2026-10-06
+
+**Sign-in no longer asks for notification permission.** `registerPushToken`
+used to call `requestPermissionsAsync()` on every sign-in, before the user had
+any reason to agree, and Android 13+ stops showing that prompt after a refusal
+or two. Sign-in now registers a token only if permission is already granted.
+The prompt comes from `askForPushPermission` (`services/pushTokens.ts`). It
+shows our own explanation («تفعيل الإشعارات؟») first, and only after "yes" the
+OS prompt. When to ask is decided by `pushPromptDecision`
+(`services/pushPolicy.ts`, tested): once on its own, after the user sends a
+message or joins a class, and after that only from Settings. Settings has a
+new «إشعارات الجهاز» row that shows on/off and taps through to the prompt, or
+to system settings once Android will no longer prompt.
+
+**Android channels.** Every push used to land in Android's single catch-all
+channel, so muting one kind muted all of them. There are now `messages`,
+`results`, `reminders`, and `admin` (system admins only). They are created and
+named in the app's language by the tab layout. The server names a channel on
+every push (`PUSH_CHANNEL` in `lib/pushNotifications.ts`), and the English
+Hub's local reminder names `reminders`. `pushPolicy.test.ts` reads the
+server's `PUSH_CHANNEL` and fails if the app never creates one of its ids.
+If a device has not created a channel yet (an app running the older bundle),
+the push still arrives in the catch-all channel. Checked in
+expo-notifications' `BaseNotificationBuilder.kt`, which falls back rather than
+dropping it.
+
+**App-icon count.** A chat push now carries `badge`: the recipient's
+whole-inbox unread count, from `unreadTotals` (`lib/inboxSummary.ts`), one
+grouped query for all recipients. While the app is open,
+`syncAppBadge(unread)` keeps the icon equal to the bell, and sign-out clears
+it. Checked against a local Postgres with a teacher, two parents and a
+student, covering an archived thread, an archived message, a parent who
+blocked a sender and a teacher who blocked one. For every user,
+`unreadTotals` matched the sum of `unreadCounts` the inbox shows. The icon
+shows the number on iOS. On Android it depends on the launcher: a number on
+Samsung and some others, a dot elsewhere.
+
+No native module was added, so `app.json` `version` stays the same
+(expo-notifications, AsyncStorage and `Linking` were already in the binary).
+`schema-push:` none.
+
+**Still not verified on a device:** that a push arrives at all (see the
+2026-09-28 entry), and now also the channel names in system settings and the
+icon count. Things to check on the next device test: the Settings row, the
+explanation after the first message is sent, the four channels under App
+info → Notifications, and the icon count after a message arrives while the
+app is closed.
