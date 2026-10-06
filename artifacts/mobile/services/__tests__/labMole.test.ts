@@ -94,8 +94,30 @@ describe('solveMole', () => {
     }
   });
 
+  it('rejects a value whose result overflows instead of printing Infinity', () => {
+    // 1e300 mol is finite on its own; times Avogadro it is not.
+    assert.deepEqual(solveMole({ formula: 'H2O', known: 'moles', value: 1e300 }), { ok: false, reason: 'bad-value' });
+    // 1e308 g / 18 g/mol is finite, but the particle count is not.
+    assert.deepEqual(solveMole({ formula: 'H2O', known: 'grams', value: 1e308 }), { ok: false, reason: 'bad-value' });
+  });
+
   it('passes a formula failure through unchanged', () => {
     const r = solveMole({ formula: 'Fe', known: 'grams', value: 1 });
     assert.deepEqual(r, { ok: false, reason: 'unknown-element', detail: 'Fe' });
+  });
+});
+
+describe('parseFormula overflow guard', () => {
+  it('rejects deeply nested multipliers that overflow to Infinity', () => {
+    const formula = '('.repeat(110) + 'H' + ')1000'.repeat(110);
+    assert.deepEqual(parseFormula(formula), { ok: false, reason: 'syntax' });
+    assert.deepEqual(solveMole({ formula, known: 'grams', value: 1 }), { ok: false, reason: 'syntax' });
+  });
+  it('rejects a count above one million but allows exactly one million', () => {
+    assert.deepEqual(parseFormula('(H1000)1001'), { ok: false, reason: 'syntax' });
+    assert.deepEqual(counts('(H1000)1000'), { H: 1e6 });
+  });
+  it('rejects a count that is only too large after merging two groups', () => {
+    assert.deepEqual(parseFormula('(H1000)1000(H)1000'), { ok: false, reason: 'syntax' });
   });
 });

@@ -21,6 +21,8 @@ export type FormulaResult =
 export const AVOGADRO = 6.022e23;
 
 const MAX_COUNT = 1000;
+/** Largest atom count of one element in a formula; nested multipliers multiply, so this bounds them. */
+const MAX_TOTAL = 1e6;
 
 const SYNTAX: FormulaResult = { ok: false, reason: 'syntax' };
 
@@ -53,7 +55,11 @@ export function parseFormula(input: string): FormulaResult {
       const group = stack.pop() as Record<string, number>;
       if (Object.keys(group).length === 0) return SYNTAX;
       const top = stack[stack.length - 1];
-      for (const [symbol, c] of Object.entries(group)) top[symbol] = (top[symbol] ?? 0) + c * mult;
+      for (const [symbol, c] of Object.entries(group)) {
+        const total = (top[symbol] ?? 0) + c * mult;
+        if (!Number.isFinite(total) || total > MAX_TOTAL) return SYNTAX;
+        top[symbol] = total;
+      }
     } else if (ch >= 'A' && ch <= 'Z') {
       let symbol = ch;
       i++;
@@ -65,7 +71,9 @@ export function parseFormula(input: string): FormulaResult {
       const c = readCount();
       if (c === null) return SYNTAX;
       const top = stack[stack.length - 1];
-      top[symbol] = (top[symbol] ?? 0) + c;
+      const total = (top[symbol] ?? 0) + c;
+      if (total > MAX_TOTAL) return SYNTAX;
+      top[symbol] = total;
     } else {
       return SYNTAX;
     }
@@ -100,5 +108,11 @@ export function solveMole(input: { formula: string; known: MoleKnown; value: num
   else if (input.known === 'moles') moles = input.value;
   else moles = input.value / AVOGADRO;
 
-  return { ok: true, molarMass: mm, grams: moles * mm, moles, particles: moles * AVOGADRO };
+  const grams = moles * mm;
+  const particles = moles * AVOGADRO;
+  // A 1e300 input is finite on its own and Infinity by the time it is
+  // multiplied through; print "enter a valid number", never "Infinity g".
+  if (![mm, grams, moles, particles].every(Number.isFinite)) return { ok: false, reason: 'bad-value' };
+
+  return { ok: true, molarMass: mm, grams, moles, particles };
 }

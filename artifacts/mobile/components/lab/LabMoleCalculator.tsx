@@ -9,7 +9,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { solveMole, type MoleKnown } from '@/services/labMole';
-import { formatLabNumber, formatScientific, parseLabNumber } from '@/services/labFormat';
+import { formatLabNumber, formatLabQuantity, parseLabNumber } from '@/services/labFormat';
 import type { TranslationKey } from '@/services/i18n';
 
 const PRESETS = ['H2O', 'CO2', 'NaCl', 'Ca(OH)2'];
@@ -29,8 +29,9 @@ export function LabMoleCalculator() {
   const [raw, setRaw] = useState('36');
 
   const result = useMemo(() => {
-    // Accepts latin and Arabic-Indic digits and «٫» / "," as the decimal mark;
-    // anything else is NaN, which reports "enter a number" instead of guessing.
+    // Accepts latin and Arabic-Indic digits, «٫» / "," as the decimal mark and
+    // `6.022e23` / `6.022×10^23`; anything else (including "1,000", which could
+    // be a thousand or one) is NaN, which reports "enter a number".
     const value = parseLabNumber(raw);
     return solveMole({ formula, known, value });
   }, [formula, known, raw]);
@@ -44,7 +45,15 @@ export function LabMoleCalculator() {
       }[result.reason] as string)
     : null;
 
-  const particles = result.ok ? formatScientific(result.particles, lang) : null;
+  // One path for all three rows: tiny and huge values go scientific instead of
+  // printing "0" (1000 particles is 1.66e-21 mol).
+  const quantities = result.ok
+    ? {
+        grams: formatLabQuantity(result.grams, lang, 3),
+        moles: formatLabQuantity(result.moles, lang, 4),
+        particles: formatLabQuantity(result.particles, lang, 3),
+      }
+    : null;
 
   return (
     <View style={styles.wrap}>
@@ -89,27 +98,32 @@ export function LabMoleCalculator() {
 
       {error ? (
         <Text style={{ color: colors.destructive, textAlign: align, fontFamily: 'Almarai_400Regular' }}>{error}</Text>
-      ) : result.ok && particles ? (
+      ) : result.ok && quantities ? (
         <View style={[styles.results, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <ResultRow label={t('labMoleMolarMass')} colors={colors} align={align}>
             <Text style={styles.value}>{formatLabNumber(result.molarMass, lang, 3)}</Text>
           </ResultRow>
           <ResultRow label={t('labMoleGrams')} colors={colors} align={align}>
-            <Text style={styles.value}>{formatLabNumber(result.grams, lang, 3)}</Text>
+            <Quantity q={quantities.grams} />
           </ResultRow>
           <ResultRow label={t('labMoleMoles')} colors={colors} align={align}>
-            <Text style={styles.value}>{formatLabNumber(result.moles, lang, 4)}</Text>
+            <Quantity q={quantities.moles} />
           </ResultRow>
           <ResultRow label={t('labMoleParticles')} colors={colors} align={align}>
-            <Text style={styles.value}>
-              {particles.mantissa}
-              {particles.exponent !== null ? (lang === 'ar' ? ' × ١٠' : ' × 10') : ''}
-            </Text>
-            {particles.exponent !== null ? <Text style={styles.exp}>{particles.exponent}</Text> : null}
+            <Quantity q={quantities.particles} />
           </ResultRow>
         </View>
       ) : null}
     </View>
+  );
+}
+
+function Quantity({ q }: { q: { text: string; exponent: string | null } }) {
+  return (
+    <>
+      <Text style={styles.value}>{q.text}</Text>
+      {q.exponent !== null ? <Text style={styles.exp}>{q.exponent}</Text> : null}
+    </>
   );
 }
 
