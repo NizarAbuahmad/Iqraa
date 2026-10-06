@@ -183,6 +183,18 @@ export interface WorksheetWorkedExample {
   selfExplain?: string;
 }
 
+/**
+ * A virtual lab: the simulation the student opens on its own site. Absent on
+ * every generated worksheet.
+ */
+export interface WorksheetLab {
+  url: string;
+  simName: string;
+  attribution: string;
+  /** What to do in the simulation, one step each, in order. */
+  steps: string[];
+}
+
 export interface WorksheetOutput {
   title: string;
   instructions: string;
@@ -200,6 +212,7 @@ export interface WorksheetOutput {
    *  count, so the paper is shorter than asked for. The screen says so — a
    *  short paper with no explanation reads as a bug. */
   shortfall?: { requested: number; produced: number };
+  lab?: WorksheetLab;
 }
 
 export interface WorksheetSection {
