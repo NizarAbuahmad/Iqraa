@@ -738,12 +738,18 @@ Not changed: the chat bubble's own «نسخ» still copies the teacher text, the
 chat PDF carries no book figures (the message keeps no lesson id), and the
 lesson flow's exit ticket has its own builder.
 
-**Found on the way, not fixed:** `artifactFromAsk` (`services/ai/askVocabulary.ts`)
-does not match the accusative «اختباراً», so the chat's own chip prompt
-«جهّز اختباراً قصيراً عن: …» (`lessonCopilot.ts`) answers in prose instead of
-making a quiz — `artifactFromQuery` returns null for it, checked 2026-10-06.
-«اختبار قصير عن …» works. «نشاطاً صفياً» and «واجباً منزلياً» look exposed to
-the same miss; not checked.
+**Three of the chat's five create chips asked for nothing — fixed the same
+day.** `normaliseAsk` strips the tanween, so «اختباراً» reached
+`artifactFromAsk` (`services/ai/askVocabulary.ts`) as «اختبارا», and the
+word-end guard read the accusative alif as more word. The chips' own prompts
+(`CREATE_CHIP` in `lessonCopilot.ts`) — «جهّز اختباراً قصيراً», «اقترح نشاطاً
+صفياً», «أنشئ واجباً منزلياً» — therefore got a prose reply instead of the
+material; plan and worksheet were unaffected. `ar()` now accepts one trailing
+accusative alif (not after ه, where it would be the pronoun «ها»).
+`askVocabulary.test.ts` now builds every create chip with
+`buildLessonSuggestions` and asserts its prompt, both languages, routes to its
+own material — it failed on exactly those three first. Verified in the web app:
+the quiz chip's prompt now makes a quiz.
 
 ## Book codes live on the Library's kind shelves, and the Library is searchable, 2026-10-06
 
