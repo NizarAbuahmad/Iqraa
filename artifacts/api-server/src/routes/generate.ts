@@ -82,6 +82,7 @@ import {
   UnusableGenerationError,
   type GenerationKind,
 } from "../lib/generationShape.ts";
+import { checkDeck } from "../lib/deckChecks.ts";
 
 const generateRouter = Router();
 
@@ -813,6 +814,12 @@ generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest,
     const shortfalls = deckShortfalls(finalized);
     if (shortfalls.length > 0) {
       logger.warn({ shortfalls, model: getPromptSlidesModel() }, "prompt-slides deck below quality bars");
+    }
+    // The prompt's own contract read back (option count, correctIndex, teacher
+    // blocks, photo prompts). Log-only for the same reason as above.
+    const deckIssues = checkDeck(finalized);
+    if (deckIssues.length > 0) {
+      logger.warn({ deckIssues, model: getPromptSlidesModel() }, "prompt-slides deck broke its prompt contract");
     }
     res.json(
       withMeta({ ...result, content: stripUnearnedVerification(finalized) }, null),
