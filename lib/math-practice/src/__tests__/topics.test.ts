@@ -66,6 +66,7 @@ describe('every generator, every grade, every tier', () => {
         assert.equal(new Set([item.answer, ...item.wrongs]).size, sign ? 3 : 4, `options not distinct: ${where}`);
         for (const s of [item.answer, ...item.wrongs, item.promptAr!, item.promptEn!, item.eq]) {
           assert.ok(!/NaN|undefined|Infinity|\[object/.test(s), `bad text: ${where}`);
+          assert.ok(!/(^|[^\w])-\d/.test(s), `hyphen-minus instead of −: ${s}`);
         }
         assert.ok(item.wrongs.every(w => w.trim() === w && w.length > 0), where);
         // A wrong option that is the same VALUE as the answer is a second right answer.
