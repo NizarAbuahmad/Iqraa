@@ -25,25 +25,41 @@ export type VerifyFn = (
 
 export const BANK_OUTCOME: VerifyOutcome = { verifiedBy: 'bank' };
 
-type VerifiableItem = { text: string; answer: string; options?: string[] | undefined };
+type VerifiableItem = {
+  text: string;
+  answer: string;
+  options?: string[] | undefined;
+  fromBank?: true | undefined;
+};
 
 /**
- * One outcome per item, positionally aligned with the input array.
+ * One outcome per item, positionally aligned with the input array. `undefined`
+ * means nothing proved the key AND it did not come from the bank: nobody has
+ * reviewed it, which the screens say in those words.
+ *
+ * `bank` used to be what every unproved answer became, so a history worksheet
+ * the live model wrote was captioned «الإجابات من بنك الأسئلة المُراجَع». It is
+ * a claim about where an answer came from, and only `fromBank` can make it.
  *
  * Alignment is the contract: callers index into the result by question
  * number, so a failed verification must still occupy its slot. Never filter
  * the result.
  */
-async function verifyItems(items: VerifiableItem[], verify: VerifyFn): Promise<VerifyOutcome[]> {
+async function verifyItems(
+  items: VerifiableItem[],
+  verify: VerifyFn,
+): Promise<(VerifyOutcome | undefined)[]> {
   return Promise.all(
     items.map(async item => {
+      // What an unproved answer can honestly say about itself.
+      const unproved = item.fromBank ? BANK_OUTCOME : undefined;
       const answer = stripOptionLabel(item.answer);
       // Nothing to prove a key against — asking would waste a round trip and
       // the honest answer is already known.
-      if (!answer) return BANK_OUTCOME;
+      if (!answer) return unproved;
       // A صح/خطأ verdict is not a mathematical answer, so no verifier can
-      // ever confirm it. Say "from the bank" without asking.
-      if (isTrueFalseAnswer(answer)) return BANK_OUTCOME;
+      // ever confirm it. Say where it came from without asking.
+      if (isTrueFalseAnswer(answer)) return unproved;
       // Strip both sides before comparing: the label is part of the option
       // string, so an unstripped `options` entry never equals a stripped key
       // and the correct answer would ride along as its own distractor —
@@ -58,12 +74,15 @@ async function verifyItems(items: VerifiableItem[], verify: VerifyFn): Promise<V
       // identical item inside a class deck verified.
       const pair = toVerifiablePair(item.text, answer);
       try {
-        return await verify(pair.question, pair.answer, distractors);
+        const outcome = await verify(pair.question, pair.answer, distractors);
+        // The verifier answers 'bank' whenever it cannot prove a key. That is
+        // "not proved", not "reviewed" — provenance comes from the item.
+        return outcome.verifiedBy === 'symbolic' ? outcome : unproved;
       } catch {
         // A verifier that is down must never downgrade into a claim. Falling
-        // back to 'bank' says where the answer came from without asserting
-        // that anything checked it.
-        return BANK_OUTCOME;
+        // back to the item's own provenance says where the answer came from
+        // without asserting that anything checked it.
+        return unproved;
       }
     }),
   );
@@ -72,12 +91,13 @@ async function verifyItems(items: VerifiableItem[], verify: VerifyFn): Promise<V
 export async function verifyQuizAnswers(
   quiz: QuizOutput,
   verify: VerifyFn,
-): Promise<VerifyOutcome[]> {
+): Promise<(VerifyOutcome | undefined)[]> {
   return verifyItems(
     quiz.questions.map(q => ({
       text: q.text,
       answer: typeof q.correctAnswer === 'string' ? q.correctAnswer : '',
       options: q.options,
+      fromBank: q.fromBank,
     })),
     verify,
   );
@@ -96,7 +116,7 @@ export async function verifyQuizAnswers(
 export async function verifyWorksheetAnswers(
   worksheet: WorksheetOutput,
   verify: VerifyFn,
-): Promise<VerifyOutcome[]> {
+): Promise<(VerifyOutcome | undefined)[]> {
   const answerByPosition = new Map(worksheet.answerKey.map(a => [a.num, a.answer]));
   const flatQuestions = worksheet.sections.flatMap(s => s.questions);
   return verifyItems(
@@ -104,6 +124,7 @@ export async function verifyWorksheetAnswers(
       text: q.text,
       answer: answerByPosition.get(i + 1) ?? '',
       options: q.options,
+      fromBank: q.fromBank,
     })),
     verify,
   );
@@ -218,16 +239,49 @@ export type VerificationSummary = {
   total: number;
   symbolic: number;
   bank: number;
+  /** Neither proved nor from the bank — see `verifyItems`. */
+  unreviewed: number;
   /** True only when at least one key was actually proved. */
   anySymbolic: boolean;
 };
 
-export function summarizeVerification(outcomes: VerifyOutcome[]): VerificationSummary {
-  const symbolic = outcomes.filter(o => o.verifiedBy === 'symbolic').length;
+/**
+ * `undefined` entries count as unreviewed, so a caller must drop the slots it
+ * means to leave out of the summary entirely (a question the teacher edited)
+ * rather than map them to `undefined`.
+ */
+export function summarizeVerification(
+  outcomes: readonly (VerifyOutcome | undefined)[],
+): VerificationSummary {
+  const symbolic = outcomes.filter(o => o?.verifiedBy === 'symbolic').length;
+  const bank = outcomes.filter(o => o?.verifiedBy === 'bank').length;
   return {
     total: outcomes.length,
     symbolic,
-    bank: outcomes.length - symbolic,
+    bank,
+    unreviewed: outcomes.length - symbolic - bank,
     anySymbolic: symbolic > 0,
   };
+}
+
+/**
+ * What the summary row under a quiz or worksheet says, top to bottom.
+ *
+ * Unreviewed answers are always named — that is the line a teacher has to act
+ * on — and the "from the reviewed bank" line appears only when every answer
+ * did come from it. Captioning a paper «الإجابات من بنك الأسئلة المُراجَع»
+ * while some of its answers were model-written would be the very claim this
+ * exists to stop.
+ */
+export type VerificationLine =
+  | { kind: 'proved'; symbolic: number; total: number }
+  | { kind: 'bank' }
+  | { kind: 'unreviewed'; unreviewed: number; total: number };
+
+export function verificationLines(s: VerificationSummary): VerificationLine[] {
+  const lines: VerificationLine[] = [];
+  if (s.symbolic > 0) lines.push({ kind: 'proved', symbolic: s.symbolic, total: s.total });
+  if (s.unreviewed > 0) lines.push({ kind: 'unreviewed', unreviewed: s.unreviewed, total: s.total });
+  else if (s.symbolic === 0 && s.bank > 0) lines.push({ kind: 'bank' });
+  return lines;
 }

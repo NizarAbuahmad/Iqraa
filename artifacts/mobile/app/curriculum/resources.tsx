@@ -1,11 +1,14 @@
 /**
  * The library (المكتبة) — ready-made resources per grade, in one place.
  *
- * Three shelves: what Iqrra staff upload per grade/subject/lesson, grouped by
- * category (infographics, videos, audio, games, worksheets, templates…); the
- * ready-made practice sheets; and the QR codes printed in the NCCD books.
- * Filterable by grade, subject, category and lesson, because a teacher is
- * preparing ONE lesson. Nothing here opens a generator — since 2026-09-25 the
+ * One shelf per kind of resource (infographics, videos, audio, games,
+ * worksheets, templates…), filled from three places: what Iqrra staff upload
+ * per grade/subject/lesson, the ready-made practice sheets, and the QR codes
+ * printed in the NCCD books. A book code sits on the shelf of what it opens —
+ * there is no «book sources» shelf: it hid them behind a per-book accordion,
+ * away from the grade/subject filters a teacher is already using.
+ * Filterable by grade, subject, category and lesson, and searchable, because a
+ * teacher is preparing ONE lesson. Nothing here opens a generator — since 2026-09-25 the
  * library is ready-made material only. A system_admin sees «إضافة مورد»,
  * which opens `/admin/library`.
  *
@@ -26,10 +29,12 @@
  * `services/bookQrLinks.ts` for why the ministry's own https host is unusable
  * and what that forces. The note under each insecure row says so per row: on a
  * list where one link is insecure and the rest are not, a single header note
- * tells a student nothing about the one they are about to tap.
+ * tells a student nothing about the one they are about to tap. A book row is
+ * titled by its book and located by its printed page, since a bare «صفحة ٣٥»
+ * means nothing once it sits among the other videos.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -53,7 +58,6 @@ import {
   filterResources,
   groupIntoShelves,
   type ResourceItem,
-  type ResourceKind,
   type Shelf,
 } from '@/services/resourceCatalog';
 import { allPremade } from '@workspace/curriculum/premade';
@@ -64,34 +68,9 @@ import { goBack } from '@/services/navigation';
 import { cellWidthPercent, isVisualKind, libraryColumns, previewCount } from '@/services/libraryLayout';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { RESOURCE_KIND_ICON as KIND_ICON, RESOURCE_KIND_LABEL as KIND_LABEL } from '@/constants/resourceKind';
 
 type Cols = 1 | 2 | 3;
-
-const KIND_LABEL: Record<ResourceKind, TranslationKey> = {
-  infographic: 'libraryCatInfographic',
-  video: 'libraryCatVideo',
-  audio: 'libraryCatAudio',
-  game: 'libraryCatGame',
-  worksheet: 'libraryCatWorksheet',
-  template: 'libraryCatTemplate',
-  presentation: 'libraryCatPresentation',
-  document: 'libraryCatDocument',
-  image: 'qrKindImage',
-  page: 'qrKindPage',
-};
-
-const KIND_ICON: Record<ResourceKind, React.ComponentProps<typeof Ionicons>['name']> = {
-  infographic: 'bar-chart-outline',
-  video: 'play-circle-outline',
-  audio: 'musical-notes-outline',
-  game: 'game-controller-outline',
-  worksheet: 'document-text-outline',
-  template: 'copy-outline',
-  presentation: 'easel-outline',
-  document: 'document-outline',
-  image: 'image-outline',
-  page: 'globe-outline',
-};
 
 /** One tile per shelf: its plural name, icon and colour. */
 const SHELF_LABEL: Record<Shelf, TranslationKey> = {
@@ -104,7 +83,6 @@ const SHELF_LABEL: Record<Shelf, TranslationKey> = {
   template: 'librarySecTemplate',
   presentation: 'librarySecPresentation',
   document: 'librarySecDocument',
-  'book-qr': 'qrLibraryTitle',
 };
 
 const SHELF_ICON: Record<Shelf, React.ComponentProps<typeof Ionicons>['name']> = {
@@ -117,7 +95,6 @@ const SHELF_ICON: Record<Shelf, React.ComponentProps<typeof Ionicons>['name']> =
   template: 'copy',
   presentation: 'easel',
   document: 'folder-open',
-  'book-qr': 'qr-code',
 };
 
 /** Icon colours, each dark enough to read on its own 12% tint. */
@@ -131,7 +108,6 @@ const SHELF_COLOR: Record<Shelf, string> = {
   template: '#4F46E5',
   presentation: '#C2410C',
   document: '#475569',
-  'book-qr': '#0369A1',
 };
 
 const ACCENT = palette.primary;
@@ -178,8 +154,8 @@ function interactionStyle(state: PressState, restBorder: string) {
 }
 
 /**
- * One result. `showKind` is off inside a single-kind section: a heading that
- * already says «أوراق عمل» does not need every row underneath repeating it.
+ * One result. Rows always sit under a single-kind heading, so none repeats
+ * its kind: a heading that already says «أوراق عمل» does not need it again.
  *
  * Three shapes, by what the item is and how much room there is:
  *  - a **card** — 16:9 cover over the text — for videos, infographics and
@@ -192,12 +168,10 @@ function interactionStyle(state: PressState, restBorder: string) {
 function ResourceRow({
   item,
   accent,
-  showKind = true,
   cols = 1,
 }: {
   item: ResourceItem;
   accent: string;
-  showKind?: boolean;
   /** Cards per row in the surrounding track. */
   cols?: Cols;
 }) {
@@ -237,6 +211,11 @@ function ResourceRow({
   // A sheet's note says what a teacher gets before printing; a title alone
   // does not tell «12 questions with a key» from «a blank page».
   const note = item.description ?? (sheet ? t('premadeSheetMeta', questionCount) : null);
+  // A book code's only locator: the printed page, plus what a link opens when
+  // that is not obvious from the shelf (a web page filed under documents).
+  const bookNote = page
+    ? [t('qrOnPage', page), item.kind === 'page' ? t(KIND_LABEL.page) : null].filter(Boolean).join(' · ')
+    : null;
 
   // A frozen sheet has no URL: it is rendered on the spot and handed to the
   // print/share sheet, the same path the worksheet generator's PDF export takes.
@@ -268,15 +247,15 @@ function ResourceRow({
     else if (printable) printSheet();
   };
 
-  // A picture-first kind inside a single-kind section. Book-QR rows (showKind
-  // on) keep the plain row: their "image" is a code target, not a cover.
-  const visual = !showKind && isVisualKind(item.kind);
+  // A picture-first kind: videos, infographics and photos are recognised by
+  // their picture.
+  const visual = isVisualKind(item.kind);
   const asCard = visual && cols >= 2;
   const isVideo = item.kind === 'video';
 
   // Subject, not kind, is what tells two videos in one shelf apart.
   const subject =
-    !showKind && item.subjectId
+    item.subjectId
       ? getSubjectsForGrade(item.gradeId ?? '').find(s => s.id === item.subjectId)
       : undefined;
   const subjectName = subject ? (isAr ? subject.nameAr : subject.name) : null;
@@ -293,11 +272,12 @@ function ResourceRow({
         { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' },
       ]}
     >
-      {page ? t('qrOnPage', page) : title}
+      {title}
     </Text>
   );
   const notes = (
     <>
+      {bookNote ? <Text numberOfLines={2} style={noteStyle}>{bookNote}</Text> : null}
       {note ? <Text numberOfLines={2} style={noteStyle}>{note}</Text> : null}
       {item.insecure ? <Text numberOfLines={2} style={noteStyle}>{t('qrInsecureRow')}</Text> : null}
     </>
@@ -341,7 +321,7 @@ function ResourceRow({
     <Pressable
       onPress={onPress}
       accessibilityRole={item.url ? 'link' : 'button'}
-      accessibilityLabel={`${t(KIND_LABEL[item.kind])} — ${page ? t('qrOnPage', page) : (title ?? '')}`}
+      accessibilityLabel={`${t(KIND_LABEL[item.kind])} — ${title ?? ''}${bookNote ? ` — ${bookNote}` : ''}`}
       android_ripple={{ color: ACCENT + '22' }}
       style={state => [
         styles.row,
@@ -388,14 +368,6 @@ function ResourceRow({
         </View>
       ) : (
         <>
-          {showKind ? (
-            <View style={[styles.kindPill, { backgroundColor: accent + '15', borderColor: accent + '30' }]}>
-              <Ionicons name={KIND_ICON[item.kind]} size={14} color={accent} />
-              <Text style={[styles.kindText, { color: accent, fontFamily: 'ReadexPro_500Medium' }]}>
-                {t(KIND_LABEL[item.kind])}
-              </Text>
-            </View>
-          ) : null}
           {visual ? (
             cover(false)
           ) : showThumb ? (
@@ -510,7 +482,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   const [subjectId, setSubjectId] = useState<string | null>(null);
   const [shelf, setShelf] = useState<Shelf | null>(null);
   const [lessonId, setLessonId] = useState<string | null>(null);
-  const [openBook, setOpenBook] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   const gradeInfo = getVisibleGrades().find(g => g.id === grade);
   const gradeName = gradeInfo ? (lang === 'ar' ? gradeInfo.nameAr : gradeInfo.name) : '';
@@ -583,9 +555,10 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     return [...seen.entries()];
   }, [items, lang]);
 
+  // Search narrows on top of the chips, like every other filter here.
   const shown = useMemo(
-    () => filterResources(items, { lessonId: lessonId ?? undefined }),
-    [items, lessonId],
+    () => filterResources(items, { lessonId: lessonId ?? undefined, query }),
+    [items, lessonId, query],
   );
 
   const shelves = useMemo(() => groupIntoShelves(shown), [shown]);
@@ -645,6 +618,49 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
           {t('resourcesIntro')}
         </Text>
 
+        <View
+          style={[
+            styles.search,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              borderRadius: colors.radius,
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+            },
+          ]}
+        >
+          <Ionicons name="search" size={18} color={colors.mutedForeground} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('resourcesSearchPlaceholder')}
+            placeholderTextColor={colors.mutedForeground}
+            accessibilityLabel={t('resourcesSearchPlaceholder')}
+            returnKeyType="search"
+            autoCorrect={false}
+            style={[
+              styles.searchInput,
+              {
+                color: colors.foreground,
+                fontFamily: 'Almarai_400Regular',
+                textAlign: isRTL ? 'right' : 'left',
+                writingDirection: isRTL ? 'rtl' : 'ltr',
+              },
+              Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null,
+            ]}
+          />
+          {query ? (
+            <Pressable
+              onPress={() => setQuery('')}
+              accessibilityRole="button"
+              accessibilityLabel={t('resourcesSearchClear')}
+              hitSlop={10}
+            >
+              <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
+            </Pressable>
+          ) : null}
+        </View>
+
         {grades.length > 1 ? (
           <ChipRow
             isRTL={isRTL}
@@ -703,15 +719,11 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
           // The tab above already names the shelf and counts it, so the list
           // starts straight away: there is no separate shelf page to get out of.
           <View style={styles.section}>
-            {openShelf.shelf === 'book-qr' ? (
-              <BookShelf items={openShelf.items} openBook={openBook} setOpenBook={setOpenBook} cols={cols} />
-            ) : (
-              <View style={[styles.rows, cols > 1 && styles.rowsGrid, cols > 1 && isRTL && { flexDirection: 'row-reverse' }]}>
-                {openShelf.items.map(item => (
-                  <ResourceRow key={item.key} item={item} accent={SHELF_COLOR[openShelf.shelf]} showKind={false} cols={cols} />
-                ))}
-              </View>
-            )}
+            <View style={[styles.rows, cols > 1 && styles.rowsGrid, cols > 1 && isRTL && { flexDirection: 'row-reverse' }]}>
+              {openShelf.items.map(item => (
+                <ResourceRow key={item.key} item={item} accent={SHELF_COLOR[openShelf.shelf]} cols={cols} />
+              ))}
+            </View>
           </View>
         ) : (
           <>
@@ -808,7 +820,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
               This replaces the grid of shelf tiles, which led to a page of its
               own and a «back» button to get out of it. */}
           {shelves.map(({ shelf: id, items: rows }) => {
-            const preview = id === 'book-qr' ? [] : rows.slice(0, previewCount(cols, isVisualKind(id)));
+            const preview = rows.slice(0, previewCount(cols, isVisualKind(id)));
             return (
               <View key={id} style={styles.section}>
                 <View style={[styles.shelfHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -836,7 +848,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 {preview.length > 0 ? (
                   <View style={[styles.rows, cols > 1 && styles.rowsGrid, cols > 1 && isRTL && { flexDirection: 'row-reverse' }]}>
                     {preview.map(item => (
-                      <ResourceRow key={item.key} item={item} accent={SHELF_COLOR[id]} showKind={false} cols={cols} />
+                      <ResourceRow key={item.key} item={item} accent={SHELF_COLOR[id]} cols={cols} />
                     ))}
                   </View>
                 ) : null}
@@ -849,7 +861,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
               <Text
                 style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}
               >
-                {t('resourcesEmpty')}
+                {query.trim() ? t('resourcesSearchEmpty', query.trim()) : t('resourcesEmpty')}
               </Text>
             </View>
           ) : null}
@@ -1000,93 +1012,6 @@ function ShelfTabs({
   );
 }
 
-/**
- * The book shelf keeps its own grouping.
- *
- * Collapsed by default: one book can print 45 codes, and a teacher arrives
- * looking for their own subject, not a list of everything.
- */
-function BookShelf({
-  items,
-  openBook,
-  setOpenBook,
-  cols,
-}: {
-  items: ResourceItem[];
-  openBook: string | null;
-  setOpenBook: (title: string | null) => void;
-  cols: Cols;
-}) {
-  const colors = useColors();
-  const { isRTL, lang } = useLanguage();
-
-  const books = useMemo(() => {
-    const grouped = new Map<string, ResourceItem[]>();
-    for (const item of items) {
-      const list = grouped.get(item.titleAr) ?? [];
-      list.push(item);
-      grouped.set(item.titleAr, list);
-    }
-    return [...grouped.entries()];
-  }, [items]);
-
-  return (
-    <>
-      {books.map(([title, rows]) => {
-        const expanded = openBook === title;
-        const count = lang === 'ar' ? rows.length.toLocaleString('ar-EG') : String(rows.length);
-        return (
-          <View key={title} style={styles.bookBlock}>
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                setOpenBook(expanded ? null : title);
-              }}
-              accessibilityRole="button"
-              style={[
-                styles.bookHeader,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  borderRadius: colors.radius,
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                },
-              ]}
-            >
-              <Ionicons
-                name={expanded ? 'chevron-down' : isRTL ? 'chevron-back' : 'chevron-forward'}
-                size={16}
-                color={colors.mutedForeground}
-              />
-              <Text
-                numberOfLines={2}
-                style={[
-                  styles.bookTitle,
-                  { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' },
-                ]}
-              >
-                {title}
-              </Text>
-              <View style={[styles.countPill, { backgroundColor: ACCENT + '15' }]}>
-                <Text style={[styles.countText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>
-                  {count}
-                </Text>
-              </View>
-            </Pressable>
-            {expanded ? (
-              <View style={[styles.rows, cols > 1 && styles.rowsGrid, cols > 1 && isRTL && { flexDirection: 'row-reverse' }]}>
-                {rows.map(row => (
-                  <ResourceRow key={row.key} item={row} accent={ACCENT} cols={cols} />
-                ))}
-              </View>
-            ) : null}
-          </View>
-        );
-      })}
-    </>
-  );
-}
-
 const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 16, gap: 4 },
   heroRow: { alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' },
@@ -1104,6 +1029,8 @@ const styles = StyleSheet.create({
   },
   addBtnText: { fontSize: 14 },
   intro: { fontSize: 15, lineHeight: 23, paddingHorizontal: 20, paddingTop: 14 },
+  search: { alignItems: 'center', gap: 10, borderWidth: 1, marginHorizontal: 20, marginTop: 12, paddingHorizontal: 14, minHeight: 48 },
+  searchInput: { flex: 1, fontSize: 15, paddingVertical: 10 },
   chipRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 8 },
   chipRowWrap: { flexWrap: 'wrap' },
   chip: {
@@ -1135,10 +1062,6 @@ const styles = StyleSheet.create({
   shelfHeader: { alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 20, flexWrap: 'wrap' },
   shelfTitleRow: { alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 17, paddingHorizontal: 20 },
-  bookBlock: { paddingHorizontal: 20, marginBottom: 10, gap: 8 },
-  bookHeader: { alignItems: 'center', gap: 10, borderWidth: 1, padding: 12 },
-  bookTitle: { flex: 1, fontSize: 14, lineHeight: 20 },
-  countPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   countText: { fontSize: 13 },
   rows: { gap: 10, paddingHorizontal: 20 },
   rowsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
@@ -1166,16 +1089,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   actionText: { fontSize: 13 },
-  kindPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  kindText: { fontSize: 12 },
   rowTitle: { fontSize: 16, lineHeight: 25 },
   rowNote: { fontSize: 14, lineHeight: 22, marginTop: 2 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 48, paddingHorizontal: 40 },
