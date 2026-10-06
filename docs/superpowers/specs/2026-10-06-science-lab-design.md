@@ -49,9 +49,19 @@ Constraints recorded in `STATUS.md`:
   `external_resources.json` and `external.ts`.
 - Item kinds: `law`, `instrument`, `infographic`, `figure`, `video`,
   `interactive`.
-- Each item carries: grade, subject, a `kbl-*` lesson id, a licence and
-  `licenseCheckedAt` (closed licence set that fails closed, as in `bank.ts`),
-  and a source.
+- Item kinds in phase 1: `interactive` (the three below), `law` (formula card)
+  and `external` (a pointer to an entry in `external_resources.json`, so a
+  licence is recorded in one place only). Book figures are not listed in the
+  JSON; they are joined at render time from `figuresForLesson`, and are the
+  phase-1 «infographics». An equipment glossary and hand-made infographics are
+  deferred: the lesson vocabulary lists terms, not instruments.
+- Each item carries: grade, subject and a `kbl-*` lesson id. First-party items
+  (`interactive`, `law`) say `origin: "original"`; `external` items inherit the
+  licence and `licenseCheckedAt` of the resource they point at.
+- A law card holds the formula in latin, its quantities and units, and the
+  lesson's own vocabulary terms verbatim (a test checks each term is in that
+  lesson's `vocabulary`). It carries no Arabic prose written by us. A printed
+  statement of the law is added only once it can be witnessed against the book.
 - The lesson id comes from the grounding already resolved for the item, never
   from re-grounding a title (titles repeat across grades and drift under
   semantic search). Lookups pass a `KbScope`.
@@ -70,12 +80,23 @@ Constraints recorded in `STATUS.md`:
 
 ### The three interactives
 
-1. **Periodic table explorer.** Needs a new element dataset with Arabic names;
-   no such data exists in the repo. Names and groupings are checked against the
-   grade 10 chemistry textbook, not written from memory.
-2. **pH scale.** A slider over concentration showing colour and the
-   acid / base / neutral classification.
-3. **Ohm's law circuit.** Sliders for V and R, with I computed.
+1. **Periodic table explorer** (chemistry S1, `u2_l1` / `u2_l2`). Needs a new
+   element dataset with Arabic names; no such data exists in the repo. Phase 1
+   covers elements 1–20, and every Arabic name must appear in the printed
+   textbook text (a witness test), not be written from memory.
+2. **Mole and molar-mass calculator** (chemistry S2, `u4_l2`). Type a formula
+   such as `Ca(OH)2`, get the molar mass, then convert between moles, grams and
+   particles.
+3. **Vector addition** (physics S1, `u1_l2`, the resultant-of-two-forces
+   experiment's lesson). Two draggable vectors, resultant by components.
+
+**Correction made while planning (2026-10-06).** The approved discussion named a
+pH scale and an Ohm's-law circuit. The grade 10 catalog has no lesson for
+either: grade 10 chemistry is atom, electron configuration, bonding, reactions,
+the mole and energy; grade 10 physics is vectors, motion, Newton's laws, fluids
+and waves. Acids/bases is grade 9 chemistry and no grade 9 or 10 physics lesson
+covers circuits. They were swapped for interactives that match real grade 10
+lessons, which is what the first slice was scoped to.
 
 Structure: each interactive's logic is a pure module under
 `artifacts/mobile/services/`, tested in `services/__tests__/`, and the component
@@ -91,7 +112,9 @@ and converted to Arabic digits / `س` only at display time.
   `source` field says how a statement was established.
 - No licensed item is added from memory of what a provider "is". Every entry
   needs a live licence check and a `licenseCheckedAt`.
-- Biology is a known content gap and is flagged in the UI shelf, not hidden.
+- Biology is a known content gap (no lab items, no curated media). Phase 1 is
+  grade 10 chemistry and physics, so the gap is recorded in `STATUS.md` rather
+  than shown in the UI.
 - Interactive and law items show attribution wherever a licence requires it, on
   every render path.
 
