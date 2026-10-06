@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import type { BookFigureRef } from '@/services/exportHtml';
+import { exportFilename } from '@/services/exportFilename';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { copyToClipboard, exportAsPDF, exportAsWord, shareAsText } from '@/services/share';
@@ -46,8 +47,7 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
     return bookFigureRefsForLesson(lessonId ?? resolveGeneratorGrounding(topic.trim(), lang).lesson?.id, isAr);
   }, [lessonId, topic, lang, isAr]);
 
-  const filenameOf = (title: string, suffix = '') =>
-    (title + suffix).replace(suffix ? /[^\w\s-]/g : /[^\w\s]/g, '').trim();
+  const filenameOf = exportFilename;
 
   const handleShareText = useCallback(async () => {
     if (!result) return;

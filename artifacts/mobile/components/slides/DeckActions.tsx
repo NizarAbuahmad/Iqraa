@@ -40,7 +40,7 @@ export function DeckActions({ workspace, onPresent, showToast, isRTL, colors, t 
           onPress={toggleSave}
           disabled={savingBusy}
           accessibilityRole="button"
-          accessibilityState={{ selected: saved, disabled: savingBusy }}
+          aria-selected={saved} aria-disabled={savingBusy}
           accessibilityLabel={saved ? t('savedLabel') : t('save')}
           style={({ pressed }) => [
             styles.secondaryBtn,

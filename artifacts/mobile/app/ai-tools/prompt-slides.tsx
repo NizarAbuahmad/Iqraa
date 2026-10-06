@@ -33,6 +33,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { contentLang } from '@/services/contentLanguage';
 import { useAuth } from '@/context/AuthContext';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { Button } from '@/components/ui/Button';
@@ -43,6 +44,7 @@ import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import type { ClassroomActivity, PromptSlidesQuestion, PromptSlidesRequest } from '@/services/ai/AIService';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { narrowToSelection } from '@/services/teacherCatalogFilter';
+import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { MAX_SOURCE_CHARS, foldAnswersIntoPrompt, foldSourceIntoPrompt } from '@/services/promptSlidesAnswers';
 import { attachDrawnVisuals, attachSearchedMedia, deckSearchQueries } from '@/services/promptSlidesMedia';
 import { polishDeck } from '@/services/promptSlidesPolish';
@@ -69,8 +71,7 @@ type PromptForm = { prompt: string; slideCountText: string; source: string };
 export default function PromptSlidesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL, lang } = useLanguage();
-  const isAr = lang === 'ar';
+  const { t, isRTL, lang: uiLang } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
@@ -78,11 +79,17 @@ export default function PromptSlidesScreen() {
 
   // Grade and subject used to be two pill rows on this screen, which is exactly
   // the tapping-through a "just describe it" tool exists to avoid. They come
-  // from the teacher's own profile now — the same `narrowToSelection` the
-  // curriculum browser uses, with its fall-back-to-everything behaviour — and
-  // they reach the model as a HINT. A description naming another grade wins.
-  const teacherGrade = narrowToSelection(getPickerGrades(), user?.gradeIds)[0];
-  const teacherSubject = narrowToSelection(getPickerSubjects(), user?.subjectIds)[0];
+  // from the teacher's own profile now — the first grade they teach and the
+  // first subject taught in *that* grade (a flat narrowing could pair grade 3
+  // with a subject they only teach in grade 7) — and they reach the model as
+  // a HINT. A description naming another grade wins.
+  const { defaultIds } = useTeacherScope();
+  const teacherGrade = getPickerGrades().find(g => g.id === defaultIds.gradeId);
+  const teacherSubject = getPickerSubjects().find(s => s.id === defaultIds.subjectId);
+  const teacherSubjects = narrowToSelection(getPickerSubjects(), user?.subjectIds);
+  // An English-only teacher's decks are built in English. With other subjects
+  // too, nothing here says which one the prompt is about, so the UI decides.
+  const isAr = contentLang(teacherSubjects.length === 1 ? teacherSubject?.id : null, uiLang) === 'ar';
   const gradeLabel = teacherGrade ? (isAr ? teacherGrade.nameAr : teacherGrade.name) : '';
   const subjectLabel = teacherSubject ? (isAr ? teacherSubject.nameAr : teacherSubject.name) : '';
 
@@ -211,12 +218,13 @@ export default function PromptSlidesScreen() {
         // call, and 6000 characters of it would cost more than the answers are
         // worth. Its existence is, so the model stops asking what the deck
         // should be based on when the teacher has already said.
+        // The questions are asked of the teacher, so in the UI language.
         prompt: source.trim()
-          ? `${trimmed}\n\n${isAr ? '(ألصق المعلّم نصًا مصدريًا سيُبنى العرض منه.)' : '(The teacher has pasted a source text for the deck to be built from.)'}`
+          ? `${trimmed}\n\n${uiLang === 'ar' ? '(ألصق المعلّم نصًا مصدريًا سيُبنى العرض منه.)' : '(The teacher has pasted a source text for the deck to be built from.)'}`
           : trimmed,
         grade: gradeLabel || undefined,
         subject: subjectLabel || undefined,
-        language: isAr ? 'arabic' : 'english',
+        language: uiLang === 'ar' ? 'arabic' : 'english',
       }, { signal: controller.signal });
       // The call swallows every failure into `[]`, the abort included, so a
       // Cancel would otherwise read as "nothing to ask" and build the deck.
@@ -479,7 +487,7 @@ export default function PromptSlidesScreen() {
             value={slideCountText}
             onChangeText={v => setSlideCountText(normalizeSlideCountText(v))}
             keyboardType="number-pad"
-            placeholder={isAr ? 'تلقائي' : 'Auto'}
+            placeholder={uiLang === 'ar' ? 'تلقائي' : 'Auto'}
             placeholderTextColor={colors.mutedForeground}
             style={[styles.slideCountInput, {
               color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius,
@@ -514,7 +522,7 @@ export default function PromptSlidesScreen() {
                             setAnswers(cur => ({ ...cur, [q.id]: opt.label }));
                           }}
                           accessibilityRole="radio"
-                          accessibilityState={{ selected: on }}
+                          aria-selected={on}
                           style={[styles.answerChip, {
                             borderColor: on ? ACCENT : colors.border,
                             backgroundColor: on ? ACCENT : 'transparent',
@@ -567,7 +575,7 @@ export default function PromptSlidesScreen() {
           onRetry={() => { void generate(); }}
           colors={colors}
           isRTL={isRTL}
-          lang={lang as 'ar' | 'en'}
+          lang={uiLang}
           accent={ACCENT}
           t={t}
         />

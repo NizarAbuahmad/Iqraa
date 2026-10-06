@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PillSelector } from '@/components/ui/PillSelector';
@@ -56,8 +57,7 @@ const QUESTION_COUNTS = [5, 8, 10, 12];
 export default function ClassGameScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL, lang } = useLanguage();
-  const isAr = lang === 'ar';
+  const { t, isRTL, lang: uiLang } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
@@ -74,7 +74,7 @@ export default function ClassGameScreen() {
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en', teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -82,9 +82,16 @@ export default function ClassGameScreen() {
   // Labels are per-grade too: Grade 6's creative-arts book has no music in
   // it, so it must not be offered under the combined name. Same index
   // alignment as the mask above.
-  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, isAr ? 'ar' : 'en');
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, uiLang);
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
-  const [topic, setTopic] = useState(params.topic ?? '');
+  // The picked subject's material language — an English game is played in
+  // English. A subject change clears the deck, so the deck always shares it.
+  const lang = contentLang(subjects[subjectIdx].id, uiLang);
+  const isAr = lang === 'ar';
+  const [topic, setTopic] = useState(() => topicInLang(
+    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+  ));
   useWarmGrounding(topic, lang);
   const [teamCount, setTeamCount] = useState(4);
   // Read at the moment a deck is built, not when generation was tapped: the
@@ -141,10 +148,10 @@ export default function ClassGameScreen() {
     // A topic that grounds to another subject's lesson cannot make an honest
     // game — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
-    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(trimmed, lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', isAr ? conflict.nameAr : conflict.name)); return; }
+    const conflict = groundedSubjectConflict(trimmed, lang, subjects[subjectIdx].id, grades[gradeIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setCancelled(false); setLoading(true); setDeck(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
@@ -206,7 +213,7 @@ export default function ClassGameScreen() {
         verified: false,
         figureUri: bookFigureUri,
         grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
-        subject: subjectNames[subjectIdx],
+        subject: subjectPickerLabels(grades[gradeIdx].id, lang)[subjectIdx],
       });
 
       // A deck with no scoreable questions is a game that cannot be played —
@@ -297,7 +304,7 @@ export default function ClassGameScreen() {
         <View style={styles.form}>
           <PillSelector
             label={t('grade')}
-            options={grades.map((g, i) => ({ value: i, label: isAr ? g.nameAr : g.name })).filter(o => !teacherScope.gradeHidden[o.value])}
+            options={grades.map((g, i) => ({ value: i, label: uiLang === 'ar' ? g.nameAr : g.name })).filter(o => !teacherScope.gradeHidden[o.value])}
             value={gradeIdx}
             onChange={setGradeIdx}
             colors={colors}
@@ -433,7 +440,7 @@ export default function ClassGameScreen() {
             </View>
 
             <View style={[styles.readyCard, { backgroundColor: colors.card, borderColor: ACCENT + '40', borderRadius: colors.radius }]}>
-              <Text style={[styles.readyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.readyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isAr ? 'right' : 'left' }]}>
                 {deck.activityName}
               </Text>
               <View style={[styles.statsRow, { flexDirection: isRTL ? 'row-reverse' : 'row', borderTopColor: colors.border }]}>
@@ -446,11 +453,11 @@ export default function ClassGameScreen() {
             {/* Materials — the one thing that must
                 exist in the room before the game starts. */}
             <View style={[styles.materialsCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-              <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: isAr ? 'right' : 'left' }]}>
                 {isAr ? 'قبل أن تبدأ' : 'Before you start'}
               </Text>
               {deck.materials.map((m, i) => (
-                <View key={i} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', marginTop: 5 }}>
+                <View key={i} style={{ flexDirection: isAr ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', marginTop: 5 }}>
                   <View style={[styles.dot, { backgroundColor: ACCENT_FILL }]} />
                   <Text
                     style={{
@@ -459,8 +466,8 @@ export default function ClassGameScreen() {
                       fontFamily: 'Almarai_400Regular',
                       fontSize: 15,
                       lineHeight: 23,
-                      textAlign: isRTL ? 'right' : 'left',
-                      writingDirection: isRTL ? 'rtl' : 'ltr',
+                      textAlign: isAr ? 'right' : 'left',
+                      writingDirection: isAr ? 'rtl' : 'ltr',
                     }}
                   >
                     {isolateForeignRuns(m)}

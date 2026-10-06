@@ -29,6 +29,7 @@
  * common case and costs it nothing.
  */
 import type { GeneratedQuestion } from "./mockGenerator.ts";
+import { linkCheck } from "./keyLinking.ts";
 import { isVerifierUnreachable } from "../../lib/derivativeVerified.ts";
 import type { KeyRelationResult } from "../../lib/mathVerifierClient.ts";
 
@@ -62,7 +63,11 @@ export type KeyVerificationCode =
   | "verified"
   | "no_key"
   | "verifier_unreachable"
-  | "undecided";
+  | "undecided"
+  /** The verifier was not asked: the answer it would have checked is not the answer this question is graded against. */
+  | "key_unlinked"
+  /** Was verified, then the teacher changed the question — the verdict no longer describes it. */
+  | "edited";
 
 export type KeyVerification = {
   verified: boolean;
@@ -98,6 +103,7 @@ export async function verifyAnswerKeys(
   const checkedAt = new Date().toISOString();
   let checked = 0;
   let verified = 0;
+  let unlinked = 0;
   // Set on the first unreachable answer. Everything after it is kept
   // unverified without another 2.5s wait — thirty questions against a sleeping
   // verifier would otherwise stall a generation for over a minute.
@@ -113,6 +119,25 @@ export async function verifyAnswerKeys(
           source: "unchecked",
           code: "no_key",
           reason: NOT_CHECKABLE,
+          checkedAt,
+        },
+      });
+      continue;
+    }
+
+    // The verifier judges `check.answer`; the grader uses `expectedAnswer`. A
+    // verdict on the first says nothing about the second unless they are the
+    // same answer — see `keyLinking.ts`.
+    const link = linkCheck(question);
+    if (!link.linked) {
+      unlinked += 1;
+      kept.push({
+        question,
+        verification: {
+          verified: false,
+          source: "unchecked",
+          code: "key_unlinked",
+          reason: `the answer that could be checked is not the answer this question is graded against (${link.why})`,
           checkedAt,
         },
       });
@@ -193,6 +218,13 @@ export async function verifyAnswerKeys(
     });
   }
 
+  if (unlinked > 0) {
+    warnings.push(
+      `${unlinked} question(s) carry a checked answer that is not their own answer key, ` +
+        "so they are not marked verified.",
+    );
+  }
+
   if (verifierDown) {
     warnings.push(
       "The maths verifier could not be reached, so no answer key was checked. "
@@ -206,4 +238,26 @@ export async function verifyAnswerKeys(
   }
 
   return { kept, dropped, warnings, checked, verified };
+}
+
+/**
+ * What a question's stored verdict becomes when its body or answer is changed.
+ *
+ * The verdict was about the question as generated. A teacher who edits the
+ * stem or the key has made a different question, and a green «verified» chip on
+ * it would be the exact claim this module exists not to make. Questions that
+ * were never checked stay as they are.
+ */
+export function verificationAfterEdit(
+  existing: Record<string, unknown> | null,
+  now: Date = new Date(),
+): KeyVerification | null {
+  if (!existing || existing["verified"] !== true) return existing as KeyVerification | null;
+  return {
+    verified: false,
+    source: "unchecked",
+    code: "edited",
+    reason: "the question was edited after its answer was checked",
+    checkedAt: now.toISOString(),
+  };
 }

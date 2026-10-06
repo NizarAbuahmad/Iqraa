@@ -42,6 +42,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, useAuth } from '@/context/AuthContext';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookFigureRefsForLessons } from '@/services/bookFigureUri';
+import { questionRefersToFigure } from '@/services/questionFigures';
 import {
   StudentExamError,
   claimEvaluationAsSelf,
@@ -124,6 +125,10 @@ export default function TakeExamScreen() {
   // refuses late writes and that refusal hands in).
   const clockOffsetMs = useRef(0);
   const [notice, setNotice] = useState('');
+  // Its own flag, not a `notice`: «تابعنا من حيث توقّفت» is about the
+  // questions, and as a notice it carried over to «تم التسليم» — on a paper
+  // reopened after hand-in, and on one resumed and then handed in.
+  const [showResumed, setShowResumed] = useState(false);
 
   /**
    * Enter the paper with a sitting the server just handed over — a fresh
@@ -145,7 +150,8 @@ export default function TakeExamScreen() {
     }
     setChosen({ id: claimed.student.id, displayName: claimed.student.displayName, taken: true });
     if (code) await saveExamSession(code, { token: claimed.token, studentName: claimed.student.displayName });
-    setNotice(resumed ? t('takeResumed') : '');
+    setNotice('');
+    setShowResumed(resumed && !state.submittedAt);
     setPhase(state.submittedAt ? 'done' : 'answering');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
@@ -501,8 +507,15 @@ export default function TakeExamScreen() {
                   <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 16 }}>{t('takeYesStart')}</Text>
                 )}
               </Pressable>
-              <Pressable onPress={() => { setChosen(null); setPhase('pick'); }} hitSlop={8}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>
+              {/* Grey caption text read as a label, not a control, and a child who
+                  tapped the wrong name never found the way back. */}
+              <Pressable
+                onPress={() => { setChosen(null); setPhase('pick'); }}
+                hitSlop={8}
+                accessibilityRole="button"
+                style={[styles.navBtn, { borderColor: colors.border, minWidth: 200 }]}
+              >
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>
                   {t('takeNotMe')}
                 </Text>
               </Pressable>
@@ -601,7 +614,12 @@ export default function TakeExamScreen() {
   }
 
   const question = questions[index];
-  const examFigures = bookFigureRefsForLessons(lessonIds, lang === 'ar');
+  // Lesson-level, so on its own it sat under every question — a spelling item in a
+  // maths paper got the maths lesson's compass rose. Show it only where the
+  // question itself points at a figure.
+  const examFigures = question && questionRefersToFigure(question.body)
+    ? bookFigureRefsForLessons(lessonIds, lang === 'ar')
+    : [];
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {header}
@@ -611,7 +629,7 @@ export default function TakeExamScreen() {
             {t('takeProgress', String(index + 1), String(questions.length))}
           </Text>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
-            {t('marksAbbrev', question?.marks ?? '')}
+            {t('takeQuestionMarks', question?.marks ?? '')}
           </Text>
           {unsavedCount > 0 && (
             <Pressable
@@ -627,9 +645,9 @@ export default function TakeExamScreen() {
           )}
         </View>
 
-        {notice ? (
+        {notice || showResumed ? (
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
-            {notice}
+            {notice || t('takeResumed')}
           </Text>
         ) : null}
 

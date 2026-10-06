@@ -119,7 +119,7 @@ export default function EnglishHubScreen() {
               key={g}
               onPress={() => setGrade(g)}
               accessibilityRole="button"
-              accessibilityState={{ selected: on }}
+              aria-selected={on}
               style={[styles.chip, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primary : colors.card }]}
             >
               <Text style={{ color: on ? '#fff' : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>

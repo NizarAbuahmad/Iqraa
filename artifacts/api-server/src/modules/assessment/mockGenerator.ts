@@ -410,7 +410,7 @@ function bankMultipleChoice(
   // would otherwise reach the maths bank's family detection and come back
   // with a quadratic.
   const primary = Number(gradeId?.match(/^grade-(\d+)$/)?.[1]);
-  const item = subjectId !== "chemistry" && primary >= 1 && primary <= 6
+  const banked = subjectId !== "chemistry" && primary >= 1 && primary <= 9
     ? takeElementaryMath("multiple_choice", topic, null, primary, BANK_TIER[difficulty], "ar", marks, session)
     : (subjectId === "chemistry" ? takeConcreteChem : takeConcreteMath)(
       "multiple_choice",
@@ -421,6 +421,10 @@ function bankMultipleChoice(
       marks,
       session,
     );
+  // Grade 10: a lesson none of the banked families is about may still have a generator
+  const item = banked ?? (subjectId !== "chemistry" && primary === 10
+    ? takeElementaryMath("multiple_choice", topic, null, 10, BANK_TIER[difficulty], "ar", marks, session)
+    : null);
   if (!item?.options || item.options.length < 3) return null;
 
   const texts = item.options.map(o => o.trim()).filter(Boolean);

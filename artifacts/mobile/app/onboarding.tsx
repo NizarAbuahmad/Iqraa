@@ -195,7 +195,7 @@ export default function OnboardingScreen() {
               onPress={() => { Haptics.selectionAsync(); setIndex(i); }}
               accessibilityRole="button"
               accessibilityLabel={t('onboardingSlideLabel', i + 1, SLIDES.length)}
-              accessibilityState={{ selected: i === index }}
+              aria-selected={i === index}
               aria-current={i === index ? 'step' : undefined}
               style={styles.dotTarget}
             >

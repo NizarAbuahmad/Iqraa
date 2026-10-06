@@ -22,11 +22,12 @@ import type {
   LessonPlanOutput,
   LessonTeachingOutput,
 } from './ai/AIService.ts';
-import { getBookForLesson, type KBLesson } from './knowledgeBase.ts';
+import type { KBLesson } from './knowledgeBase.ts';
 import { buildChartSlide, buildGraphSlide, referencesShownVisual, scanGraphCommands } from './classMedia.ts';
 import { chartForLesson, visualForSlide } from './deckVisuals.ts';
 import { type BookFigure, figuresForLesson } from './bookFigures.ts';
 import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
+import { inlineSteps } from './slideLayout.ts';
 
 /**
  * Split a generated warm-up into what the class sees and what only the
@@ -420,27 +421,10 @@ export function buildLessonDeck(
   let aiWritten = false;
   const includeExamples = opts.includeExamples !== false;
   const includePractice = opts.includePractice !== false;
+  // One language per deck. English-subject decks used to carry bilingual
+  // headings («مفردات الدرس · Key Vocabulary»); they are now built in English
+  // end to end (`contentLang`), so the caller's `isAr` alone decides.
   const L = (ar: string, en: string) => (isAr ? ar : en);
-  // Both languages in one title, for `T` below. The check titles (Quick
-  // Check / Exit Ticket) used this unconditionally, because an English-subject
-  // lesson's checks come back in English even in an Arabic deck — but `T`
-  // already covers exactly that case, and every other Arabic deck projected
-  // «تحقّق سريع 1 · Quick Check 1» over an Arabic question.
-  const BL = (ar: string, en: string) => `${ar} · ${en}`;
-
-  // Whether this deck teaches the English subject itself — Grade 10's
-  // vocational tracks (Commerce, Agriculture, Hospitality, Industrial). Those
-  // lessons are read by an Arabic-medium class, so every slide heading needs
-  // both languages, not just the numbered check titles above: a teacher and
-  // students who read «مفردات الدرس» alone still need "Key Vocabulary" next
-  // to it to know this is the English lesson's vocabulary section, not a
-  // translation exercise. The book is the source of truth when a curriculum
-  // lesson is attached; `opts.subject` (localised — "English" or «اللغة
-  // الإنجليزية» depending on `isAr`) is the fallback for a plan-only deck.
-  const isEnglishSubject =
-    (lesson ? getBookForLesson(lesson)?.subjectId === 'english' : undefined)
-    ?? /^(english|اللغة الإنجليزية)$/i.test((opts.subject ?? '').trim());
-  const T = (ar: string, en: string) => (isEnglishSubject ? BL(ar, en) : L(ar, en));
 
   const title = nonEmpty(lessonTitle)
     || nonEmpty(pickLang(lesson?.titleAr, lesson?.titleEn, isAr))
@@ -482,30 +466,14 @@ export function buildLessonDeck(
   if (objectives.length > 0) {
     push({
       type: 'intro',
-      title: T('🎯 نتاجات التعلم', '🎯 Learning Outcomes'),
+      title: L('🎯 نتاجات التعلم', '🎯 Learning Outcomes'),
       content: objectives.map(o => `• ${o}`).join('\n'),
       durationSeconds: 0,
     });
   }
 
-  // ── 3. Vocabulary (المفردات) ────────────────────────────────────────────
-  const terms = (lesson?.keyTerms ?? []).slice(0, 6);
-  if (terms.length > 0) {
-    push({
-      type: 'intro',
-      title: T('📖 مفردات الدرس', '📖 Key Vocabulary'),
-      content: terms
-        .map(term => {
-          const word = isAr ? term.ar : term.en;
-          const def = isAr ? term.definitionAr : term.definitionEn;
-          return def ? `• ${word} — ${def}` : `• ${word}`;
-        })
-        .join('\n'),
-      durationSeconds: 0,
-    });
-  }
-
-  // ── 4. Hook / introduction ──────────────────────────────────────────────
+  // ── 3. Hook / introduction ──────────────────────────────────────────────
+  // (Vocabulary is §4c, after the section break — see there.)
   const intro = nonEmpty(plan?.introduction);
   const warm = intro ? splitWarmup(intro) : null;
   // splitWarmup only lifts a clean line when the model quoted a question or
@@ -531,7 +499,7 @@ export function buildLessonDeck(
       'Ask, then wait five silent seconds before taking any answer.');
     push({
       type: 'intro',
-      title: T('✨ تمهيد', '✨ Warm-up'),
+      title: L('✨ تمهيد', '✨ Warm-up'),
       content: hook.question,
       durationSeconds: 0,
       ...(hook.generated ? { aiWritten: true } : {}),
@@ -544,8 +512,9 @@ export function buildLessonDeck(
   }
 
   // ── 4b. Section divider — a pacing break before the dense part starts ────
-  // Everything so far has been short orientation slides; the explanation
-  // that follows is where the deck gets read-heavy. A full-bleed "chapter
+  // Everything so far has been short orientation slides (title, outcomes,
+  // warm-up); the vocabulary and explanation that follow are where the deck
+  // gets read-heavy. A full-bleed "chapter
   // title" moment here is cheap (no content to author, just the topic name)
   // and breaks up what would otherwise be one visually uniform deck from
   // start to finish.
@@ -553,7 +522,7 @@ export function buildLessonDeck(
   // vocabulary list (index terms with no extracted definition — the G9 NCCD
   // data does this deliberately rather than invent one). A concept slide for
   // one of those projects a heading and nothing else, so it is dropped here:
-  // it is already shown in the vocabulary slide above, and this file's own
+  // it is already shown in the vocabulary slide below, and this file's own
   // rule is that an empty slide costs the class more than a shorter deck.
   // A concept with a real definition attached gets it appended below; a
   // concept that matches no `keyTerms` entry at all is assumed to already be
@@ -574,12 +543,51 @@ export function buildLessonDeck(
     })
     .filter(concept => !ruleTexts.some(rule => rule.includes(squash(concept))));
   if (concepts.length > 0 || teaching.concepts.length > 0) {
+    // The section name is the big line and the lesson the small one. It was the
+    // other way round, so the lesson title filled the screen a second time three
+    // slides after the cover and «لنبدأ الشرح» was a caption under it — a chapter
+    // break that did not say which chapter it was. The exit-ticket divider (§9b)
+    // follows the same shape.
     push({
       type: 'divider',
-      title,
-      content: L('لنبدأ الشرح', "Let's dig in"),
+      title: L('لنبدأ الشرح', "Let's dig in"),
+      content: title,
       durationSeconds: 0,
     });
+  }
+
+  // ── 4c. Vocabulary (المفردات) ───────────────────────────────────────────
+  // After the warm-up and the section break, not before them. The terms are the
+  // explanation's own vocabulary: shown first they were definitions handed to a
+  // class that had not yet been asked anything. And with the section break
+  // after them, the deck said "orientation" for three slides, "now we begin",
+  // and then went on defining terms — the break sat in the middle of the
+  // preamble instead of at the end of it.
+  const terms = (lesson?.keyTerms ?? []).slice(0, 6);
+  if (terms.length >= 2) {
+    push({
+      type: 'intro',
+      title: L('📖 مفردات الدرس', '📖 Key Vocabulary'),
+      content: terms
+        .map(term => {
+          const word = isAr ? term.ar : term.en;
+          const def = isAr ? term.definitionAr : term.definitionEn;
+          return def ? `• ${word} — ${def}` : `• ${word}`;
+        })
+        .join('\n'),
+      durationSeconds: 0,
+    });
+  } else if (terms.length === 1) {
+    // One term is not a vocabulary list — a heading over a single bullet. With
+    // a definition it is a concept like any other and gets a slide titled by
+    // its name; without one there is nothing to show. Skipped when the concept
+    // loop below already draws it under that name.
+    const word = isAr ? terms[0]!.ar : terms[0]!.en;
+    const def = nonEmpty(isAr ? terms[0]!.definitionAr : terms[0]!.definitionEn);
+    const drawnAsConcept = teaching.concepts.length === 0 && concepts.includes(word);
+    if (def && !drawnAsConcept) {
+      push({ type: 'intro', title: word, content: def, durationSeconds: 0 });
+    }
   }
 
   // ── 5. The explanation ──────────────────────────────────────────────────
@@ -641,7 +649,7 @@ export function buildLessonDeck(
     for (let i = 0; i < bareConcepts.length; i += 4) {
       push({
         type: 'intro',
-        title: T('💡 أفكار الدرس', '💡 Key Ideas'),
+        title: L('💡 أفكار الدرس', '💡 Key Ideas'),
         content: bareConcepts.slice(i, i + 4).map(c => `• ${c}`).join('\n'),
         durationSeconds: 0,
       });
@@ -664,10 +672,16 @@ export function buildLessonDeck(
   const rules = bullets(pickLang(lesson?.rulesAr, lesson?.rulesEn, isAr), 5);
   const ruleFigure = rules.length > 0 ? figures.shift() : undefined;
   if (rules.length > 0) {
+    // One rule that is a procedure written on a single line («الخطوات: 1) …
+    // 2) … 3) …») is a sequence, and the numbered-steps layout shows it as
+    // one. Not when a figure sits beside the rule: the layout branch comes
+    // before that column in every renderer and would cost the slide its image.
+    const procedure = rules.length === 1 && !ruleFigure?.mediaUrl ? inlineSteps(rules[0]!) : null;
     push({
       type: 'intro',
-      title: T('📐 القاعدة', '📐 The Rule'),
-      content: rules.map(r => `• ${r}`).join('\n'),
+      title: L('📐 القاعدة', '📐 The Rule'),
+      content: (procedure ?? rules).map(r => `• ${r}`).join('\n'),
+      ...(procedure ? { layout: 'steps' as const } : {}),
       durationSeconds: 0,
       ...(ruleFigure?.mediaUrl
         ? {
@@ -749,7 +763,7 @@ export function buildLessonDeck(
   // "did you follow me".
   const firstCheckCount = Math.floor(midChecks.length / 2);
   midChecks.slice(0, firstCheckCount).forEach((check, i) => {
-    push(asCheckSlide(check, T(`✋ تحقّق سريع ${i + 1}`, `Quick Check ${i + 1}`)));
+    push(asCheckSlide(check, L(`✋ تحقّق سريع ${i + 1}`, `Quick Check ${i + 1}`)));
   });
 
   // ── 7. Worked examples — attempted before they are shown ────────────────
@@ -766,7 +780,7 @@ export function buildLessonDeck(
     const [problem, answer] = splitExample(example);
     push({
       type: 'challenge',
-      title: T(`مثال ${i + 1}`, `Example ${i + 1}`),
+      title: L(`مثال ${i + 1}`, `Example ${i + 1}`),
       content: problem,
       durationSeconds: EXAMPLE_THINK_SECONDS,
       ...(answer ? { answer } : {}),
@@ -788,7 +802,7 @@ export function buildLessonDeck(
     push({
       aiWritten: true,
       type: 'challenge',
-      title: T('مثال 1', 'Example 1'),
+      title: L('مثال 1', 'Example 1'),
       content: generatedExample.problem,
       durationSeconds: EXAMPLE_THINK_SECONDS,
       answer: generatedExample.answer,
@@ -805,7 +819,7 @@ export function buildLessonDeck(
   laterChecks.forEach((check, i) => {
     push(asCheckSlide(
       check,
-      T(`✋ تحقّق سريع ${firstCheckCount + i + 1}`, `Quick Check ${firstCheckCount + i + 1}`),
+      L(`✋ تحقّق سريع ${firstCheckCount + i + 1}`, `Quick Check ${firstCheckCount + i + 1}`),
     ));
   });
 
@@ -829,7 +843,7 @@ export function buildLessonDeck(
       push({
         aiWritten: true,
         type: 'intro',
-        title: T('🤝 تدريب موجّه', '🤝 Guided Practice'),
+        title: L('🤝 تدريب موجّه', '🤝 Guided Practice'),
         content: problem,
         durationSeconds: 0,
         teacher: {
@@ -842,7 +856,7 @@ export function buildLessonDeck(
     } else if (guided) {
       push({
         type: 'intro',
-        title: T('🤝 تدريب موجّه', '🤝 Guided Practice'),
+        title: L('🤝 تدريب موجّه', '🤝 Guided Practice'),
         content: L('لنحلّ هذا معًا خطوة بخطوة.', "Let's work through this together, step by step."),
         durationSeconds: 0,
         // The prompt above is the whole slide, by design. Say so, or the
@@ -860,7 +874,7 @@ export function buildLessonDeck(
     if (independent) {
       push({
         type: 'intro',
-        title: T('✍️ تدريب مستقل', '✍️ Independent Practice'),
+        title: L('✍️ تدريب مستقل', '✍️ Independent Practice'),
         content: L('حان دوركم — حاولوا بمفردكم.', "Now it's your turn — try it on your own."),
         durationSeconds: 0,
         teacherLed: true,
@@ -898,7 +912,7 @@ export function buildLessonDeck(
     : L(`أنهينا درس «${title}».`, `We finished “${title}”.`);
   push({
     type: 'summary',
-    title: T('🎉 ملخص الدرس', '🎉 Lesson Summary'),
+    title: L('🎉 ملخص الدرس', '🎉 Lesson Summary'),
     content: closureSummary,
     durationSeconds: 0,
     teacher: closure ? {
@@ -916,14 +930,14 @@ export function buildLessonDeck(
   if (exitChecks.length > 0) {
     push({
       type: 'divider',
-      title,
-      content: T('🎫 تذكرة الخروج', 'Exit Ticket'),
+      title: L('تذكرة الخروج', 'Exit Ticket'),
+      content: title,
       durationSeconds: 0,
     });
     exitChecks.forEach((check, i) => {
       push(asCheckSlide(
         check,
-        T(`🎫 تذكرة الخروج ${i + 1}`, `Exit Ticket ${i + 1}`),
+        L(`🎫 تذكرة الخروج ${i + 1}`, `Exit Ticket ${i + 1}`),
       ));
     });
   }
@@ -943,7 +957,7 @@ export function buildLessonDeck(
   if (homework || bookLine) {
     push({
       type: 'intro',
-      title: T('🏠 الواجب', '🏠 Homework'),
+      title: L('🏠 الواجب', '🏠 Homework'),
       content: [homework, bookLine].filter(Boolean).join('\n\n'),
       durationSeconds: 0,
     });

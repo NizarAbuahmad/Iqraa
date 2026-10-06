@@ -170,7 +170,7 @@ describe('word problems are not invented', () => {
     // sentence in front of it, not a word problem.
     let sawFallback = false;
     for (let i = 0; i < 8; i++) {
-      const q = takeConcreteMath('word_problem', 'معادلات', null, 'easy', 'ar', 0);
+      const q = takeConcreteMath('word_problem', 'المعادلات الأسية', null, 'easy', 'ar', 0);
       if (!q) break;
       assert.doesNotMatch(q.text, /يحتاج طالب إلى حل/);
       if (/اكتب الحل موضّحًا الخطوات/.test(q.text)) sawFallback = true;

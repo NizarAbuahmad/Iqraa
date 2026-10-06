@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 
 import { MockAIService } from '../ai/generators.ts';
 import { KB_LESSONS, getBookForLesson, getUnitForLesson } from '../knowledgeBase.ts';
-import { detectMathFamily } from '../ai/mathPractice.ts';
+import { matchMathFamily } from '../ai/mathPractice.ts';
 import { detectChemFamily } from '../ai/chemPractice.ts';
 
 const svc = new MockAIService();
@@ -31,7 +31,7 @@ function lessonIn(subjectId: 'mathematics' | 'chemistry', family: string) {
     if (getBookForLesson(l)?.subjectId !== subjectId) return false;
     const f = subjectId === 'chemistry'
       ? detectChemFamily(`${l.titleAr} ${l.id}`)
-      : detectMathFamily(l.titleAr, l);
+      : matchMathFamily(l.titleAr, l);
     return f === family;
   });
   assert.ok(hit, `no ${subjectId} lesson resolves to family «${family}» — the catalog changed`);
@@ -48,15 +48,15 @@ const request = (lesson: (typeof KB_LESSONS)[number], numQuestions?: number) => 
   numQuestions,
 });
 
-// The small families were the worst offenders; `algebra` is the large pool that
-// never repeated, kept as the control that the fix did not break it.
+// The small families were the worst offenders. (`algebra` was the large control
+// pool, but no Grade 10 lesson is about it any more — lessons are routed by
+// title now — so it is no longer reachable from a catalog lesson.)
 const CASES: Array<['mathematics' | 'chemistry', string]> = [
   ['mathematics', 'trig_apps'],
   ['mathematics', 'functions'],
   ['mathematics', 'vectors'],
   ['mathematics', 'stats'],
   ['mathematics', 'circle'],
-  ['mathematics', 'algebra'],
   ['chemistry', 'thermochem'],
   ['chemistry', 'redox'],
   ['chemistry', 'bonding'],
@@ -79,14 +79,18 @@ describe('a quiz never prints the same question twice', () => {
     });
   }
 
-  it('still delivers the number of questions that was asked for', async () => {
-    // The trade for no repeats is a topic-template question in a spent
-    // family's slot — never a shorter quiz.
+  it('gives a shorter quiz, not a padded one, when the lesson has fewer items than were asked for', async () => {
+    // The trade for no repeats used to be a topic-template question in a spent
+    // family's slot — a sentence that reads like a question and tests nothing.
+    // `trig_apps` holds three items, so asking for more returns those three.
     const lesson = lessonIn('mathematics', 'trig_apps');
     for (const n of [4, 6, 8, 10]) {
       const quiz = await svc.generateQuiz(request(lesson, n) as never);
-      assert.equal(quiz.questions.length, n, `asked for ${n}`);
+      assert.ok(quiz.questions.length >= 1 && quiz.questions.length <= n, `asked for ${n}, got ${quiz.questions.length}`);
+      assert.ok(!quiz.questions.some(q => /الوصف الصحيح لـ|يختلفان في الآلية/.test(JSON.stringify(q))));
     }
+    const asked = await svc.generateQuiz(request(lesson, 3) as never);
+    assert.equal(asked.questions.length, 3, 'a lesson with enough items still gets exactly the count asked for');
   });
 
   it('keeps the points summing to the total, as before', async () => {
