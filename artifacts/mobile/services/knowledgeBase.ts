@@ -175,6 +175,10 @@ import {
   buildG9VocSem1Catalog,
 } from './curriculumG9VocationalSem1.ts';
 import {
+  G9_VOC_S2_BOOK_ID,
+  buildG9VocSem2Catalog,
+} from './curriculumG9VocationalSem2.ts';
+import {
   G8_SOCIAL_S1_BOOK_ID,
   buildG8SocialSem1Catalog,
 } from './curriculumG8SocialSem1.ts';
@@ -1349,6 +1353,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Vocational Education – Grade 9 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g9_vocational_sem1.json (NCCD)',
+  },
+  {
+    id: G9_VOC_S2_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف التاسع – الفصل الثاني',
+    titleEn: 'Vocational Education – Grade 9 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g9_vocational_sem2.json (NCCD)',
   },
   {
     id: G8_SOCIAL_S1_BOOK_ID,
@@ -3605,6 +3618,7 @@ const _g2PhysicalEducationSem1 = buildG2PhysicalEducationSem1Catalog();
 const _g8VocSem1 = buildG8VocSem1Catalog();
 const _g8VocSem2 = buildG8VocSem2Catalog();
 const _g9VocSem1 = buildG9VocSem1Catalog();
+const _g9VocSem2 = buildG9VocSem2Catalog();
 const _g8SocialSem1 = buildG8SocialSem1Catalog();
 const _g8SocialSem2 = buildG8SocialSem2Catalog();
 const _g8MathSem2 = buildG8MathSem2Catalog();
@@ -3929,6 +3943,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g8VocSem1.units,
   ..._g8VocSem2.units,
   ..._g9VocSem1.units,
+  ..._g9VocSem2.units,
   ..._g8SocialSem1.units,
   ..._g8SocialSem2.units,
   ..._g8MathSem2.units,
@@ -4132,6 +4147,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g8VocSem1.lessons,
   ..._g8VocSem2.lessons,
   ..._g9VocSem1.lessons,
+  ..._g9VocSem2.lessons,
   ..._g8SocialSem1.lessons,
   ..._g8SocialSem2.lessons,
   ..._g8MathSem2.lessons,

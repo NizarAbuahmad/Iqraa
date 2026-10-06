@@ -662,6 +662,10 @@ import {
   buildG9VocSem1BrowserCatalog,
 } from './catalogs/g9VocationalSem1.ts';
 import {
+  G9_VOC_S2_CURRICULUM_BOOK_ID,
+  buildG9VocSem2BrowserCatalog,
+} from './catalogs/g9VocationalSem2.ts';
+import {
   G4_VOC_S1_CURRICULUM_BOOK_ID,
   buildG4VocSem1BrowserCatalog,
 } from './catalogs/g4VocationalSem1.ts';
@@ -1637,10 +1641,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   G5_VOC_S1_CURRICULUM_BOOK_ID,
   G5_VOC_S2_CURRICULUM_BOOK_ID,
   // Grade 9 Vocational Education, Semester 1 (source PDF supplied directly by
-  // the user; no Semester 2 book found on disk — see the JSON's known_gaps).
-  // 'vocational-education' extended to grade-9 in SUBJECTS.grades above (was
-  // grade-4/6/7/8/5 before this). See g9VocationalSem1.ts.
+  // the user) and Semester 2 (downloaded from NCCD) — see the JSONs'
+  // known_gaps. 'vocational-education' extended to grade-9 in SUBJECTS.grades
+  // above (was grade-4/6/7/8/5 before this). See g9VocationalSem1.ts and
+  // g9VocationalSem2.ts.
   G9_VOC_S1_CURRICULUM_BOOK_ID,
+  G9_VOC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -4421,8 +4427,8 @@ export const BOOKS: Book[] = [
   // ── Vocational Education Grade 9 – Semester 1 ─────────────────────────────
   // Eight units across six vocational tracks (life skills, home economics
   // ×3, entrepreneurship, agriculture, security/health/safety, tourism).
-  // Source PDF supplied directly by the user; no Semester 2 book found on
-  // disk yet — see g9VocationalSem1.ts and the JSON's known_gaps.
+  // Source PDF supplied directly by the user — see g9VocationalSem1.ts and
+  // the JSON's known_gaps. Semester 2 follows below.
   {
     id: G9_VOC_S1_CURRICULUM_BOOK_ID,
     title: 'Vocational Education – Grade 9, Semester 1',
@@ -4435,6 +4441,26 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // ── Vocational Education Grade 9 – Semester 2 ─────────────────────────────
+  // Nine units across seven printed tracks (home economics, life skills,
+  // entrepreneurship, agriculture, security/health/safety, industry, tourism
+  // and hospitality); the book's own unit numbers run 1–9. First trial
+  // edition (2025), in force from the 2025/2026 school year. Source PDF
+  // downloaded from NCCD — see g9VocationalSem2.ts and the JSON's known_gaps.
+  {
+    id: G9_VOC_S2_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 9, Semester 2',
+    titleAr: 'التربية المهنية – الصف التاسع – الفصل الثاني',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%D8%A9/9/2/%D9%85%D9%87%D9%86%D9%8A%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%202025%20.pdf',
   },
   // ── Social Studies Grade 8 – Semesters 1 and 2 ────────────────────────────
   // First real book behind the pre-existing 'social' subject (declared
@@ -6023,6 +6049,7 @@ const _g2PhysicalEducationSem1Browser = buildG2PhysicalEducationSem1BrowserCatal
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g9VocSem1Browser = buildG9VocSem1BrowserCatalog();
+const _g9VocSem2Browser = buildG9VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
 const _g8SocialSem2Browser = buildG8SocialSem2BrowserCatalog();
 const _g8MathSem2Browser = buildG8MathSem2BrowserCatalog();
@@ -6330,6 +6357,7 @@ export const UNITS: Unit[] = [
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
   ..._g9VocSem1Browser.units,
+  ..._g9VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
   ..._g8SocialSem2Browser.units,
   ..._g8MathSem2Browser.units,
@@ -6527,6 +6555,7 @@ export const LESSONS: Lesson[] = [
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
   ..._g9VocSem1Browser.lessons,
+  ..._g9VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
   ..._g8SocialSem2Browser.lessons,
   ..._g8MathSem2Browser.lessons,
