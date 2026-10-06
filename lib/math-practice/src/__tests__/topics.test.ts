@@ -353,7 +353,7 @@ describe('routing', () => {
     // a title no generator is about, and a grade outside a generator's range
     ['خطة حل المسألة: الرسم', 7, null],
     ['العوامل', 8, null],
-    ['الدوران', 7, null],
+    ['التطابق', 7, null],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {

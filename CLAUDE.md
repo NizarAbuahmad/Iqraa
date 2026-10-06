@@ -264,8 +264,11 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   included. The push is still manual, on purpose, but it is now *checked*: a PR
   touching `lib/db/src/schema` must answer `schema-push:` in its description,
   and `.github/workflows/schema-check.yml` runs `verify-schema` against
-  production daily at 06:00 UTC, on demand, and whenever a schema change
-  reaches `main`. The `DATABASE_URL` repository secret it needs is set.
+  production daily at 06:00 UTC and on demand — and, since 2026-10-05, as a
+  gate in `deploy.yml` before the API deploys, so a merge whose DDL has not been
+  applied fails the deploy instead of shipping a 503 (PR #815 shipped three
+  missing columns under a `schema-push: done` that was wrong). The
+  `DATABASE_URL` repository secret it needs is set.
   The gap in the *process* is narrowed, not closed — nothing runs the push for
   you. And "checked" caught the table but not the column: on 2026-09-16 a PR
   added two columns to `refresh_tokens`, the PR body claimed `schema-push:
