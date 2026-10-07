@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
 import { NATIVE_DRIVER } from '@/constants/animation';
+import { useColors } from '@/hooks/useColors';
 
 interface ToastProps {
   visible: boolean;
@@ -20,6 +21,7 @@ interface ToastProps {
   second tap say «أزلتها من المفضلة».
 */
 export function Toast({ visible, message, duration = 2000, onHide }: ToastProps) {
+  const colors = useColors();
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -39,8 +41,22 @@ export function Toast({ visible, message, duration = 2000, onHide }: ToastProps)
   if (!visible) return null;
 
   return (
-    <Animated.View style={[styles.toast, { opacity }]} pointerEvents="none">
-      <Text style={styles.text}>{message}</Text>
+    <Animated.View
+      style={[
+        styles.toast,
+        {
+          opacity,
+          // The inverse of the screen — navy on light, pale on dark — so it
+          // reads as a layer above the page in both themes.
+          backgroundColor: colors.foreground,
+          transform: [{ translateY: opacity.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
+        },
+      ]}
+      pointerEvents="none"
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+    >
+      <Text style={[styles.text, { color: colors.background }]}>{message}</Text>
     </Animated.View>
   );
 }
@@ -50,15 +66,23 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 100,
     alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.78)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 24,
+    // A long message (a partial-send report names several parents) wraps
+    // inside the screen instead of running off both edges.
+    maxWidth: '90%',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 16,
     zIndex: 999,
+    shadowColor: '#000',
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
   },
   text: {
-    color: '#fff',
     fontSize: 14,
-    fontFamily: 'ReadexPro_500Medium',
+    lineHeight: 22,
+    textAlign: 'center',
+    fontFamily: 'Cairo_500Medium',
   },
 });
