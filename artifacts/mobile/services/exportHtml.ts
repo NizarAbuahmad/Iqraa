@@ -27,6 +27,7 @@ import { dateLocale } from './dateLabels.ts';
 import { quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
 import { labQrSvg } from './labQr.ts';
+import { displayObjective } from './objectiveDisplay.ts';
 import type {
   ActivityOutput,
   LessonFlowOutput,
@@ -483,7 +484,7 @@ export function buildLessonPlanHTML(
   const content = `
     <div class="doc-title">${esc(title)}</div>
     <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)}${meta.duration ? ` • ${L(arCountPhrase(meta.duration, 'دقيقة', 'دقيقتان', 'دقائق'), `${meta.duration} min`)}` : ''}</div>
-    ${bullets(L('الأهداف', 'Objectives'), '🎯', '#081B3A', plan.objectives)}
+    ${bullets(L('الأهداف', 'Objectives'), '🎯', '#081B3A', plan.objectives.map(displayObjective))}
     ${bullets(L('المواد اللازمة', 'Materials Needed'), '🧰', '#6B7280', plan.materials)}
     ${plan.priorReview?.trim() ? section(L('مراجعة سابقة', 'Prior Knowledge Review'), '🔁', '#0EA5E9', plan.priorReview) : ''}
     ${section(L('التمهيد', 'Introduction'), '🔥', '#E67E22', plan.introduction)}
@@ -773,7 +774,7 @@ export function buildLessonPlanSlidesHTML(
   const slide2 = `${slideOpen()}
     ${header(L('الأهداف والمواد', 'Objectives & Materials'))}
     <div class="slide-body two-col">
-      ${sectionBlock('🎯', L('الأهداف التعليمية', 'Learning Objectives'), `<ul>${bullets(plan.objectives)}</ul>`)}
+      ${sectionBlock('🎯', L('الأهداف التعليمية', 'Learning Objectives'), `<ul>${bullets(plan.objectives.map(displayObjective))}</ul>`)}
       ${sectionBlock('🎒', L('المواد اللازمة', 'Materials'), `<ul>${bullets(plan.materials)}</ul>`)}
     </div>`;
 
