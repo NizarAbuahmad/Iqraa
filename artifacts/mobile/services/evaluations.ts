@@ -308,6 +308,15 @@ export async function closeEvaluation(id: string): Promise<Evaluation> {
   return data.evaluation;
 }
 
+/**
+ * Remove an exam from the teacher's lists. A draft or a closed exam only — the
+ * server answers 409 for a published one. Students' marks and results are kept.
+ */
+export async function archiveEvaluation(id: string): Promise<void> {
+  const res = await apiFetch(`/evaluations/${id}`, { method: 'DELETE' });
+  await readJson<{ archived: string }>(res, 'Removing evaluation');
+}
+
 /** Release (true) or take back (false) this exam's results for its students. */
 export async function setResultsReleased(id: string, released: boolean): Promise<Evaluation> {
   const res = await apiFetch(`/evaluations/${id}/results-release`, {
