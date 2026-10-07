@@ -12,6 +12,8 @@
  * side needed the same 7 activity-type branches as the English side.
  */
 
+import { lessonKindClauseAr, lessonKindClauseEn } from "./lessonKinds.ts";
+
 // ─── System prompts ──────────────────────────────────────────────────────────
 /**
  * Why the figure rule is in the SYSTEM prompt and not one builder
@@ -238,6 +240,10 @@ ${LESSON_STYLE_RULES_EN[key]}`;
 }
 
 // ─── Prompt builders ─────────────────────────────────────────────────────────
+/** The subject-kind clause on its own lines, or nothing for maths and unknown subjects. */
+const kindBlockAr = (b: any) => { const c = lessonKindClauseAr(b); return c ? `\n${c}` : ""; };
+const kindBlockEn = (b: any) => { const c = lessonKindClauseEn(b); return c ? `\n${c}` : ""; };
+
 export function lessonPlanPromptAr(b: any): string {
   const priorConcepts = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
     ? b.priorKnowledge
@@ -247,7 +253,7 @@ export function lessonPlanPromptAr(b: any): string {
   return `أنشئ خطة درس كاملة لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}"، مدتها ${b.duration ?? 45} دقيقة.
 ${b.objectives ? `الأهداف المحددة:\n${b.objectives}` : ""}
 ${b.additionalContext ? `سياق إضافي: ${b.additionalContext}` : ""}
-${lessonStyleClauseAr(b)}
+${lessonStyleClauseAr(b)}${kindBlockAr(b)}
 ${hasPriorReview ? `
 خصّص 5-10 دقائق في بداية الحصة لمراجعة معارف سابقة قد لا يتقنها بعض الطلبة، واكتب خطة هذه المراجعة في حقل "priorReview". هذه مراجعة تمهيدية وليست من أهداف هذا الدرس، فلا تُدرجها ضمن "objectives".
 ${priorConcepts ? `مفاهيم من المنهج يجب مراجعتها حرفيًا (لا تختلق غيرها):\n- ${priorConcepts.join("\n- ")}` : ""}
@@ -288,7 +294,7 @@ export function lessonPlanPromptEn(b: any): string {
   return `Create a complete lesson plan for ${b.subject}, ${b.grade}, on the topic "${b.topic}", duration ${b.duration ?? 45} minutes.
 ${b.objectives ? `Specified objectives:\n${b.objectives}` : ""}
 ${b.additionalContext ? `Additional context: ${b.additionalContext}` : ""}
-${lessonStyleClauseEn(b)}
+${lessonStyleClauseEn(b)}${kindBlockEn(b)}
 ${hasPriorReview ? `
 Set aside 5-10 minutes at the start of the lesson to review prior material some students may not have fully grasped, and put that review plan in a "priorReview" field. This is a warm-up review, not one of this lesson's own objectives — do not list it under "objectives".
 ${priorConcepts ? `Curriculum concepts to review verbatim (do not invent others):\n- ${priorConcepts.join("\n- ")}` : ""}
