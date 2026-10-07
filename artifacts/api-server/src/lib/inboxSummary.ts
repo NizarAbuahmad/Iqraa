@@ -13,8 +13,8 @@
  * moderation, and not from a sender the viewer blocked (the caller passes an
  * empty list for a teacher, who never filters — see routes/messaging.ts).
  */
-import { db, chatMessages, chatParticipants } from "@workspace/db";
-import { and, eq, gt, inArray, isNull, ne, notInArray, or, sql } from "drizzle-orm";
+import { db, chatBlocks, chatMessages, chatParticipants, chatThreads } from "@workspace/db";
+import { and, eq, gt, inArray, isNull, ne, notExists, notInArray, or, sql } from "drizzle-orm";
 
 function visibleIn(threadIds: string[], blockedSenderIds: readonly string[]) {
   return and(
@@ -81,4 +81,49 @@ export async function unreadCounts(
     )
     .groupBy(chatMessages.threadId);
   return new Map(rows.map(r => [r.threadId, r.unread]));
+}
+
+/**
+ * Each user's unread total across their whole inbox — the number the app's
+ * bell shows, sent on a chat push as the app-icon badge. One grouped query
+ * for every recipient of a message, not a `GET /messaging/threads` replayed
+ * per person: a class group can push to dozens of parents at once.
+ *
+ * Counts what `unreadCounts` counts, over the threads that route lists (not
+ * archived). Messages from a sender the user blocked are left out, except
+ * for `unfilteredUserIds` — teachers, who never filter (routes/messaging.ts).
+ * Users with nothing unread are absent.
+ */
+export async function unreadTotals(
+  userIds: readonly string[],
+  unfilteredUserIds: readonly string[],
+): Promise<Map<string, number>> {
+  if (userIds.length === 0) return new Map();
+  const blockedSender = db
+    .select({ one: sql`1` })
+    .from(chatBlocks)
+    .where(and(eq(chatBlocks.blockerUserId, chatParticipants.userId), eq(chatBlocks.blockedUserId, chatMessages.senderId)));
+  const rows = await db
+    .select({ userId: chatParticipants.userId, unread: sql<number>`count(*)::int` })
+    .from(chatParticipants)
+    .innerJoin(chatThreads, and(eq(chatThreads.id, chatParticipants.threadId), isNull(chatThreads.archivedAt)))
+    .innerJoin(
+      chatMessages,
+      and(
+        eq(chatMessages.threadId, chatParticipants.threadId),
+        isNull(chatMessages.archivedAt),
+        ne(chatMessages.senderId, chatParticipants.userId),
+        or(isNull(chatParticipants.lastReadAt), gt(chatMessages.createdAt, chatParticipants.lastReadAt)),
+      ),
+    )
+    .where(
+      and(
+        inArray(chatParticipants.userId, [...userIds]),
+        unfilteredUserIds.length
+          ? or(inArray(chatParticipants.userId, [...unfilteredUserIds]), notExists(blockedSender))
+          : notExists(blockedSender),
+      ),
+    )
+    .groupBy(chatParticipants.userId);
+  return new Map(rows.map(r => [r.userId, r.unread]));
 }
