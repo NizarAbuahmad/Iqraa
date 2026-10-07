@@ -296,6 +296,39 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
   });
 
+  it("refuses a malformed address before an account exists for it", async () => {
+    // «info@zarya.gate@gmail.com» used to pass a bare includes("@") check: the
+    // account was created, the app said "code sent", and no mail could ever be
+    // delivered. Both entry points must answer invalid_email — and do so
+    // before the database, which this suite cannot supply, so a pass here
+    // also proves the check runs first.
+    const bad = "info@zarya.gate@gmail.com";
+    const post = (path: string, body: unknown) =>
+      fetch(`${base}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+    const register = await post("/auth/register", {
+      firstName: "A",
+      lastName: "B",
+      email: bad,
+      password: "Sufficiently1Strong!",
+      acceptedTerms: true,
+    });
+    assert.equal(register.status, 400);
+    assert.equal(((await register.json()) as { code: string }).code, "invalid_email");
+
+    const change = await post("/auth/change-unverified-email", {
+      email: "someone@example.com",
+      password: "Sufficiently1Strong!",
+      newEmail: bad,
+    });
+    assert.equal(change.status, 400);
+    assert.equal(((await change.json()) as { code: string }).code, "invalid_email");
+  });
+
   it("reports that student accounts are off, and refuses one", async () => {
     // v1 is teacher-only, and the app reads this endpoint rather than a
     // build-time copy so the two cannot disagree about which doors to show.
