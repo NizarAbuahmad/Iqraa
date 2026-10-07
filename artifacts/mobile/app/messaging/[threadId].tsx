@@ -30,6 +30,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { REPORT_REASON_KEYS } from '@/services/reportReasons';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
+import { askForPushPermission, pushAskCopy } from '@/services/pushTokens';
 import {
   addGroupMembers,
   blockUser,
@@ -205,6 +206,10 @@ export default function ThreadScreen() {
       // and a bare prepend would show it twice.
       setMessages(prev => mergeNewMessages(prev, [message]));
       setError('');
+      // Having just written to someone is when a reply notification plainly
+      // helps — the one moment besides joining a class that offers push
+      // unasked. Quiet after the first time (services/pushPolicy.ts).
+      void askForPushPermission({ explicit: false, copy: pushAskCopy(t) });
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setInput(body);

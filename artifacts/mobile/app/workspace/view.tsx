@@ -33,12 +33,13 @@ import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
-  buildActivityHTML, buildLessonFlowHTML, buildLessonPlanHTML, buildQuizHTML, buildWorksheetHTML,
-  copyToClipboard, exportAsPDF, exportAsWord,
-  formatActivityText, formatLessonPlanText, formatQuizText, formatWorksheetText,
+  buildActivityHTML, buildLessonFlowHTML, buildLessonPlanHTML, buildWorksheetHTML,
+  copyToClipboard, exportAsPDF, exportAsWord, exportBuiltWord,
+  formatActivityText, formatLessonPlanText, formatWorksheetText,
   shareAsText,
 } from '@/services/share';
 import { exportFilename } from '@/services/exportFilename';
+import { quizExports, type QuizCopy } from '@/services/quizExport';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { allPremade } from '@workspace/curriculum/premade';
@@ -60,6 +61,9 @@ export default function WorkspaceViewScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
+  // A saved quiz is exported as the student's or the teacher's copy, picked
+  // in the export menu — this screen has no answers toggle to decide it.
+  const [quizCopy, setQuizCopy] = useState<QuizCopy>('student');
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
     useFavorite(item?.id, key => showToast(t(key)));
@@ -156,7 +160,7 @@ export default function WorkspaceViewScreen() {
     if (kind === 'worksheet') return formatWorksheetText(content as WorksheetOutput, item.title, meta, isAr);
     if (kind === 'flow') return item.title; // flow exports as PDF only
     if (kind === 'slides' || kind === 'prompt-slides') return formatDeckOutline(content as ClassroomActivity, isAr);
-    return formatQuizText(content as QuizOutput, item.title, meta, isAr);
+    return quizExports(content as QuizOutput, item.title, meta, isAr, quizCopy).text;
   };
   /**
    * The book figures for this material's lesson, re-resolved from the saved
@@ -182,7 +186,7 @@ export default function WorkspaceViewScreen() {
     if (kind === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr, figures);
     if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr, figures);
     if (kind === 'slides' || kind === 'prompt-slides') return buildDeckHTML(content as ClassroomActivity, isAr);
-    return buildQuizHTML(content as QuizOutput, item.title, meta, isAr, figures);
+    return quizExports(content as QuizOutput, item.title, meta, isAr, quizCopy, figures).html;
   };
 
   const handleShareText = async () => { await shareAsText(getPlainText(), item.title); };
@@ -194,7 +198,14 @@ export default function WorkspaceViewScreen() {
   };
   const handleWord = async () => {
     setLoadingWord(true);
-    try { await exportAsWord(getPlainText(), exportFilename(item.title), isAr); }
+    try {
+      if (kind === 'quiz' && content) {
+        const quiz = quizExports(content as QuizOutput, item.title, { subject: item.subject, grade: item.grade }, isAr, quizCopy);
+        await exportBuiltWord(quiz.word, exportFilename(item.title));
+      } else {
+        await exportAsWord(getPlainText(), exportFilename(item.title), isAr);
+      }
+    }
     catch { showToast(t('error')); } finally { setLoadingWord(false); }
   };
 
@@ -360,6 +371,7 @@ export default function WorkspaceViewScreen() {
       onCopy={handleCopy}
       onPDF={handlePDF}
       onWord={handleWord}
+      copyChoice={kind === 'quiz' && content ? { value: quizCopy, onChange: setQuizCopy } : undefined}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}

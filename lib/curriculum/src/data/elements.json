@@ -1,0 +1,25 @@
+{
+  "note": "Elements 1-20. Arabic names must appear in the printed textbook text (elements.test.ts); use the book's own spelling, and grade 10's element rows win over grade 9 prose where they differ. atomicMass is the rounded value the grade 10 chemistry book (S2) calculates with, because a teacher compares the calculator against the book's answer key: H 1, C 12, N 14, O 16, Na 23, Mg 24, Al 27, Si 28, Ca 40 are printed in the S2 student book; Cl 35.5, S 32, K 39, F 19 are printed in the S2 teacher packs; He, Li, Be, B, Ne, P and Ar are the standard classroom integers and are not printed in any extracted source. The book also lists H 1.008, N 14.007, O 15.999, Na 22.989 as relative atomic masses (S2 p21, table 1) but says to use the approximations.",
+  "elements": [
+    { "z": 1, "symbol": "H", "nameAr": "الهيدروجين", "nameEn": "Hydrogen", "atomicMass": 1, "period": 1, "group": 1 },
+    { "z": 2, "symbol": "He", "nameAr": "الهيليوم", "nameEn": "Helium", "atomicMass": 4, "period": 1, "group": 18 },
+    { "z": 3, "symbol": "Li", "nameAr": "الليثيوم", "nameEn": "Lithium", "atomicMass": 7, "period": 2, "group": 1 },
+    { "z": 4, "symbol": "Be", "nameAr": "البريليوم", "nameEn": "Beryllium", "atomicMass": 9, "period": 2, "group": 2 },
+    { "z": 5, "symbol": "B", "nameAr": "البورون", "nameEn": "Boron", "atomicMass": 11, "period": 2, "group": 13 },
+    { "z": 6, "symbol": "C", "nameAr": "الكربون", "nameEn": "Carbon", "atomicMass": 12, "period": 2, "group": 14 },
+    { "z": 7, "symbol": "N", "nameAr": "النيتروجين", "nameEn": "Nitrogen", "atomicMass": 14, "period": 2, "group": 15 },
+    { "z": 8, "symbol": "O", "nameAr": "الأكسجين", "nameEn": "Oxygen", "atomicMass": 16, "period": 2, "group": 16 },
+    { "z": 9, "symbol": "F", "nameAr": "الفلور", "nameEn": "Fluorine", "atomicMass": 19, "period": 2, "group": 17 },
+    { "z": 10, "symbol": "Ne", "nameAr": "النيون", "nameEn": "Neon", "atomicMass": 20, "period": 2, "group": 18 },
+    { "z": 11, "symbol": "Na", "nameAr": "الصوديوم", "nameEn": "Sodium", "atomicMass": 23, "period": 3, "group": 1 },
+    { "z": 12, "symbol": "Mg", "nameAr": "المغنيسيوم", "nameEn": "Magnesium", "atomicMass": 24, "period": 3, "group": 2 },
+    { "z": 13, "symbol": "Al", "nameAr": "الألمنيوم", "nameEn": "Aluminium", "atomicMass": 27, "period": 3, "group": 13 },
+    { "z": 14, "symbol": "Si", "nameAr": "السليكون", "nameEn": "Silicon", "atomicMass": 28, "period": 3, "group": 14 },
+    { "z": 15, "symbol": "P", "nameAr": "الفوسفور", "nameEn": "Phosphorus", "atomicMass": 31, "period": 3, "group": 15 },
+    { "z": 16, "symbol": "S", "nameAr": "الكبريت", "nameEn": "Sulfur", "atomicMass": 32, "period": 3, "group": 16 },
+    { "z": 17, "symbol": "Cl", "nameAr": "الكلور", "nameEn": "Chlorine", "atomicMass": 35.5, "period": 3, "group": 17 },
+    { "z": 18, "symbol": "Ar", "nameAr": "الآرغون", "nameEn": "Argon", "atomicMass": 40, "period": 3, "group": 18 },
+    { "z": 19, "symbol": "K", "nameAr": "البوتاسيوم", "nameEn": "Potassium", "atomicMass": 39, "period": 4, "group": 1 },
+    { "z": 20, "symbol": "Ca", "nameAr": "الكالسيوم", "nameEn": "Calcium", "atomicMass": 40, "period": 4, "group": 2 }
+  ]
+}

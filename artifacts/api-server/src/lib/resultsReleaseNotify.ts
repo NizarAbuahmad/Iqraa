@@ -30,7 +30,7 @@ import {
 } from "@workspace/db";
 import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { syncClassGroupThread } from "./classThread.ts";
-import { deadTokensFrom, sendExpoPush } from "./pushNotifications.ts";
+import { deadTokensFrom, PUSH_CHANNEL, sendExpoPush } from "./pushNotifications.ts";
 import { releaseAnnouncement } from "./resultsRelease.ts";
 
 export async function announceResultsRelease(evaluation: {
@@ -62,7 +62,7 @@ export async function announceResultsRelease(evaluation: {
           : { title: text.pushTitle, body: text.pushBody };
       return tokens
         .filter(t => t.userId === link.userId)
-        .map(t => ({ to: t.expoPushToken, title, body, data: { screen: "my-exams" } }));
+        .map(t => ({ to: t.expoPushToken, title, body, data: { screen: "my-exams" }, channelId: PUSH_CHANNEL.results }));
     });
     if (messages.length > 0) {
       const results = await sendExpoPush(messages);

@@ -8,7 +8,9 @@ import assert from 'node:assert/strict';
 
 import { classifyChatIntent } from '../ai/intentRouter.ts';
 import { artifactFromQuery } from '../ai/teachingAssistant.ts';
-import { mergeScopeReply, ordinalChoice } from '../lessonCopilot.ts';
+import { buildLessonSuggestions, mergeScopeReply, ordinalChoice, pinLesson } from '../lessonCopilot.ts';
+import { emptyChatSessionMemory } from '../ai/teachingAssistant.ts';
+import { getLessonById } from '../knowledgeBase.ts';
 
 const ASKS: Record<string, string[]> = {
   'lesson-plan': [
@@ -117,4 +119,35 @@ describe('an ordinal picks the offered lesson', () => {
   for (const [reply, want] of cases) {
     it(JSON.stringify(reply), () => assert.equal(ordinalChoice(reply), want));
   }
+});
+
+// Found 2026-10-06: the chat's own create chips ask «جهّز اختباراً قصيراً عن: …»
+// and «أنشئ واجباً منزلياً عن: …». `normaliseAsk` strips the tanween, leaving
+// «اختبارا» — and the word-end guard read that accusative alif as more word,
+// so the chip the chat offered for a quiz got a prose answer instead of one.
+describe('every create chip the chat offers asks for its own material', () => {
+  const lesson = getLessonById('kbl-math-s2-nccd-u5_l4')!;
+  const memory = pinLesson(emptyChatSessionMemory(), lesson, 'hard');
+  const all = ['lesson-plan', 'worksheet', 'quiz', 'activity', 'homework'];
+  for (const want of all) {
+    // Mark every other step as made, so this one is the chip offered.
+    const prep = { saved: all.filter(a => a !== want) };
+    for (const lang of ['ar', 'en'] as const) {
+      it(`${want} (${lang})`, () => {
+        const chip = buildLessonSuggestions(memory, lang, false, prep).find(s => s.toolType === want);
+        assert.ok(chip, `no ${want} chip offered`);
+        const prompt = lang === 'ar' ? chip.promptAr : chip.promptEn;
+        assert.equal(artifactFromQuery(prompt), want, `«${prompt}» was not read as ${want}`);
+        assert.equal(classifyChatIntent(prompt, lang).intent, 'artifact');
+      });
+    }
+  }
+
+  it('an accusative a teacher types, with or without the tanween mark', () => {
+    for (const q of ['جهز اختباراً', 'جهز اختبارا قصيرا', 'اقترح نشاطاً', 'اعطني واجباً']) {
+      assert.notEqual(artifactFromQuery(q), null, q);
+    }
+    assert.equal(artifactFromQuery('جهز اختبارا قصيرا'), 'quiz');
+    assert.equal(artifactFromQuery('اعطني واجباً'), 'homework');
+  });
 });

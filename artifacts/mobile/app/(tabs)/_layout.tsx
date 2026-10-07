@@ -18,6 +18,7 @@ import { NotificationBell } from '@/components/ui/NotificationBell';
 import { listThreads } from '@/services/messaging';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { badgeLabel, setUnreadMessages, useUnreadMessages } from '@/services/unreadMessages';
+import { ensureNotificationChannels, syncAppBadge } from '@/services/pushTokens';
 import { TranslationKey } from '@/services/i18n';
 import { HomeLessonPick, loadLessonPick, subscribeLessonPick } from '@/services/lessonContext';
 import { defaultLessonIdFor } from '@/services/lessonCopilot';
@@ -218,6 +219,16 @@ function ClassicTabLayout() {
     void loadUnread();
   }, [loadUnread]);
   usePollingRefresh(loadUnread);
+  // The app icon shows the same number as the bell, so reading a thread here
+  // clears it there too (a chat push sets it while the app is closed).
+  useEffect(() => {
+    if (user) syncAppBadge(unread);
+  }, [user, unread]);
+  // Android channels, named in the app's language — see services/pushPolicy.ts.
+  const isSystemAdmin = user?.role === 'system_admin';
+  useEffect(() => {
+    if (user) void ensureNotificationChannels(lang, isSystemAdmin);
+  }, [user, lang, isSystemAdmin]);
 
   const tabEntries = buildTabEntries(isTeacher, isDesktop, unread);
 
