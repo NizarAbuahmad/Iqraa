@@ -21,6 +21,17 @@ export function driveThumbnail(url: string): string | null {
   return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w640` : null;
 }
 
+/**
+ * An uploaded picture is its own cover — an infographic is usually a PNG or
+ * JPG, and showing the file itself beats a generic icon tile. Judged by the
+ * stored MIME type first, then by the extension (a link has no MIME type).
+ * A PDF has no cover this way: that needs a rendered first page.
+ */
+export function imageCoverFromUrl(url: string, mimeType?: string | null): string | null {
+  if (mimeType) return mimeType.toLowerCase().startsWith('image/') ? url : null;
+  return /\.(png|jpe?g|webp|gif)$/i.test(url.split(/[?#]/)[0]) ? url : null;
+}
+
 export function videoCoverFromUrl(url: string): string | null {
   return youtubeThumbnail(url) ?? driveThumbnail(url);
 }
