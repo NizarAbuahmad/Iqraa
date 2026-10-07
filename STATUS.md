@@ -16476,3 +16476,31 @@ icon count. Things to check on the next device test: the Settings row, the
 explanation after the first message is sent, the four channels under App
 info → Notifications, and the icon count after a message arrives while the
 app is closed.
+
+## Signup refuses a malformed email instead of "sending" a code to it, 2026-10-07
+
+A teacher typed `info@zarya.gate@gmail.com` (two `@`). `/auth/register` only
+asked for an `@`, so it created the account, answered 201 «check your email»,
+and the verification mail could not be delivered — the verify screen sat there
+with no code coming. `/auth/change-unverified-email` had the same bare check,
+so the «البريد الإلكتروني غير صحيح؟» recovery path would have accepted another
+bad address.
+
+**Fix.** `lib/emailAddress.ts` → `isValidEmailAddress`: one `@`, a dotted-atom
+local part (≤64), a domain of ≥2 ASCII labels with a letters-only TLD, ≤254
+overall, judged on the trimmed value. Both routes now answer
+`400 invalid_email` (the app already translates that code) before any database
+work. ASCII only on purpose: Resend does not deliver to Arabic-script local
+parts, so accepting one would reproduce the same silent failure.
+`mountOrder.test.ts` pins both routes (the register case failed with a 500
+before the fix, i.e. it got as far as the database).
+
+**Not changed, and still true.** `sendVerificationEmail` returning `false`
+(missing `RESEND_API_KEY`, an unverified sender domain, a provider rejection)
+is only logged — the account is still created and the caller still gets 201.
+So a delivery failure that is not a bad address looks identical to success.
+The app's own pre-checks (`includes('@')` in `register.tsx`, `verify-email.tsx`)
+are unchanged; the server is the boundary.
+
+**Not verified:** that a real address receives the code in production.
+`schema-push:` none.

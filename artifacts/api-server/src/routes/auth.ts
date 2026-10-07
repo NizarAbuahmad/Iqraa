@@ -37,6 +37,7 @@ import {
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
 import { sanitizeCatalogIds, sanitizeTeachingAssignments } from "../lib/catalogIds.js";
 import { GRADES, SUBJECTS } from "@workspace/curriculum";
+import { isValidEmailAddress } from "../lib/emailAddress.js";
 import { sendGoogleAccountNoticeEmail, sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
 import {
   generateVerificationCode,
@@ -310,7 +311,7 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
       res.status(400).json({ error: "Last name is required", code: "missing_fields" });
       return;
     }
-    if (typeof email !== "string" || !email.includes("@")) {
+    if (!isValidEmailAddress(email)) {
       res.status(400).json({ error: "Valid email is required", code: "invalid_email" });
       return;
     }
@@ -558,8 +559,12 @@ router.post("/change-unverified-email", changeEmailLimiter, changeEmailAddressLi
       newEmail?: string;
     };
 
-    if (!email || !password || !newEmail?.includes("@")) {
+    if (!email || !password || !newEmail) {
       res.status(400).json({ error: "Current email, password and a valid new email are required", code: "missing_fields" });
+      return;
+    }
+    if (!isValidEmailAddress(newEmail)) {
+      res.status(400).json({ error: "Valid email is required", code: "invalid_email" });
       return;
     }
 
