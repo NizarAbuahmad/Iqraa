@@ -92,7 +92,7 @@ import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
 import { buildPrepBoard, prepLessonKey, savedDeckFor, savedPrepArtifacts, type PrepRow } from '@/services/lessonBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { MathParagraph } from '@/components/ui/MathParagraph';
-import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
+import { hasRenderableMath, isLatinProseLine, isolateForeignRuns } from '@/services/mathRender';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
 import { NotificationBell } from '@/components/ui/NotificationBell';
@@ -106,7 +106,7 @@ import {
   type ToolDef,
 } from '@/services/toolCatalog';
 import { trackEvent } from '@/services/analytics';
-import { virtualLabChatMessage, virtualLabFor } from '@/services/virtualLab';
+import { hasLabSheetMessage, virtualLabChatMessage, virtualLabFor } from '@/services/virtualLab';
 import {
   addAndProcessFiles,
   clearSessionDocuments,
@@ -127,7 +127,7 @@ import { classNameFor } from '@/services/materialClass';
 import { periodClassLabel } from '@/services/classSubjects';
 import { answerAppHelp } from '@/services/appHelp';
 import { TOOL_ASK_TARGETS, toolAskFromQuery, toolAskReply } from '@/services/chatToolAsk';
-import { formatInfographicText, isInfographicAsk } from '@/services/ai/infographic';
+import { isInfographicAsk } from '@/services/ai/infographic';
 import { topicFromQuery } from '@/services/ai/artifactTopic';
 import { InfographicView } from '@/components/ui/InfographicView';
 import type { TranslationKey } from '@/services/i18n';
@@ -165,10 +165,6 @@ import {
   type DrillConfig,
 } from '@/services/publicGames/mathDrill';
 import {
-  formatActivityText,
-  formatLessonPlanText,
-  formatQuizText,
-  formatWorksheetText,
   copyToClipboard,
   exportAsPDF,
   exportAsWord,
@@ -187,6 +183,7 @@ import { attachToClasses, getItem, saveItem, updateItem } from '@/services/works
 import {
   canPresentArtifact,
   canSaveArtifact,
+  chatDocumentText,
   deckForArtifact,
   materialContentFor,
   materialFormStateFor,
@@ -1216,6 +1213,14 @@ function MessageBubble({
                 </Text>
               );
             }
+            if (isLatinProseLine(line)) {
+              // A link or an English credit: right-to-left layout reordered it.
+              return (
+                <Text key={i} style={[styles.bubbleText, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: 'ltr' }]}>
+                  {line}
+                </Text>
+              );
+            }
             return (
               <MathParagraph
                 key={i}
@@ -1562,30 +1567,13 @@ export default function IqraScreen() {
    * both complete and current — exporting `message.text` after an edit would
    * quietly ship the plan as first written.
    */
-  const documentTextFor = useCallback((message: Message): string => {
-    const data = message.artifactData;
-    const meta = message.artifactMeta;
-    if (!data || !meta) return message.text;
-    const isAr = (meta.lang ?? lang) === 'ar';
-    const m = { subject: meta.subject, grade: meta.grade, duration: meta.duration };
-    switch (data.kind) {
-      case 'lesson-plan':
-        return formatLessonPlanText(data.plan, meta.title, m, isAr);
-      case 'worksheet':
-        return formatWorksheetText(data.worksheet, meta.title, m, isAr);
-      case 'quiz':
-        return formatQuizText(data.quiz, meta.title, m, isAr);
-      case 'activity':
-        return formatActivityText(data.activity, meta.title, m, isAr);
-      case 'infographic':
-        return formatInfographicText(data.infographic, isAr);
-      default:
-        return message.text;
-    }
-  }, [lang]);
+  const documentTextFor = useCallback((message: Message, includeAnswers = true): string =>
+    chatDocumentText(message.artifactData, message.artifactMeta, message.text, lang, { includeAnswers }),
+  [lang]);
 
   const handleCopyMessage = useCallback(async (message: Message) => {
-    await copyToClipboard(documentTextFor(message));
+    // The one-tap copy is the student copy; the export menu offers the teacher's.
+    await copyToClipboard(documentTextFor(message, false));
     void Haptics.selectionAsync().catch(() => {});
     showToast(t('copiedToClipboard'));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3042,6 +3030,11 @@ export default function IqraScreen() {
   const handleLessonSuggestion = useCallback((s: LessonSuggestion) => {
     // The lab sheet is reviewed content, not something to generate: post it.
     if (s.action === 'virtual-lab' && s.lessonId) {
+      // The chip stays after a tap; a second one should not post it again.
+      if (hasLabSheetMessage(messages, s.lessonId)) {
+        showToast(t('virtualLabAlreadyPosted'));
+        return;
+      }
       const lab = virtualLabFor(s.lessonId, { dev: __DEV__ });
       const ctx = resolveLessonPrepContext(s.lessonId, 'ar');
       if (lab && ctx) {
@@ -3060,7 +3053,8 @@ export default function IqraScreen() {
       // Recording happens after the reply; prompt carries the intent
     }
     sendMessage(prompt, s.lessonId ?? sessionMemory.activeLessonId ?? undefined);
-  }, [lang, sendMessage, sessionMemory.activeLessonId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, messages, sendMessage, sessionMemory.activeLessonId, t]);
 
 
   const handleResourcePress = useCallback((type: SessionArtifact, done: boolean) => {
