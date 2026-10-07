@@ -17,6 +17,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -408,6 +409,7 @@ function ClassesList() {
       </Pressable>
 
       <Modal visible={showNew} transparent animationType="fade" onRequestClose={() => setShowNew(false)}>
+        <KeyboardSafeView>
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
             <Text
@@ -507,6 +509,7 @@ function ClassesList() {
             </View>
           </View>
         </View>
+        </KeyboardSafeView>
       </Modal>
     </View>
   );

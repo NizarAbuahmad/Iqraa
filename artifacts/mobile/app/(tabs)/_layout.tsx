@@ -236,6 +236,11 @@ function ClassicTabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // The Tabs navigator now sits above the keyboard (root Stack's
+        // KeyboardSafeView), so an absolutely-positioned bar would ride up and
+        // eat the space the keyboard just left. Chat's composer drops its
+        // tab-bar padding to match (useKeyboardVisible in iqra.tsx).
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
         tabBarStyle: {

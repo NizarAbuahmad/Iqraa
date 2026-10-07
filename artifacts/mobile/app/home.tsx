@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -773,6 +774,7 @@ export default function DashboardScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setPickerOpen(false)}
       >
+        <KeyboardSafeView>
         <View style={{ flex: 1, backgroundColor: colors.background }}>
           <View
             style={[
@@ -1137,6 +1139,7 @@ export default function DashboardScreen() {
             </Pressable>
           </ScrollView>
         </View>
+        </KeyboardSafeView>
       </Modal>
     </ScrollView>
   );
