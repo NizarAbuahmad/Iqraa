@@ -56,17 +56,24 @@ export function validateVirtualLabs(
     else {
       if (r.kind !== 'simulation') errors.push(`${l.lessonId}: ${l.resourceId} is not a simulation`);
       if (!r.lessonIds.includes(l.lessonId)) errors.push(`${l.lessonId}: ${l.resourceId} is not filed on this lesson`);
+      // Every procedure names a PhET simulation's own controls, and link-only
+      // was decided by reading PhET's terms; another provider needs both redone.
+      if (r.provider !== 'phet') errors.push(`${l.lessonId}: ${l.resourceId} is not a PhET simulation`);
     }
     if (!l.aimAr.trim()) errors.push(`${l.lessonId}: aim is empty`);
     for (const part of ['predict', 'procedure', 'observe', 'explain'] as const) {
-      if (!l[part].length || l[part].some(s => !s.trim())) errors.push(`${l.lessonId}: ${part} is empty`);
+      if (!l[part].length) errors.push(`${l.lessonId}: ${part} is empty`);
+      if (l[part].some(s => !s.trim())) errors.push(`${l.lessonId}: ${part} has a blank entry`);
     }
     for (const part of ['predict', 'observe', 'explain'] as const) {
       if (l.teacherKey[part].length !== l[part].length) {
         errors.push(`${l.lessonId}: ${part}: ${l[part].length} questions but ${l.teacherKey[part].length} key`);
       }
+      if (l.teacherKey[part].some(s => !s.trim())) errors.push(`${l.lessonId}: teacherKey.${part} has a blank answer`);
     }
+    // A review is a person and a date together; either alone is not a record of one.
     if (l.reviewedAt && !l.reviewedBy?.trim()) errors.push(`${l.lessonId}: reviewedAt without reviewedBy`);
+    if (l.reviewedBy && !l.reviewedAt?.trim()) errors.push(`${l.lessonId}: reviewedBy without reviewedAt`);
   }
   return errors;
 }

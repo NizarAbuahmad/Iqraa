@@ -50,6 +50,29 @@ describe('validateVirtualLabs', () => {
   it('refuses a review date without a reviewer', () => {
     assert.ok(validateVirtualLabs([{ ...sheet, reviewedAt: '2026-10-10' }], [sim]).some(e => /reviewedAt without reviewedBy/.test(e)));
   });
+  it('refuses a reviewer without a review date', () => {
+    assert.ok(validateVirtualLabs([{ ...sheet, reviewedBy: 'أ. معلم' }], [sim]).some(e => /reviewedBy without reviewedAt/.test(e)));
+  });
+  it('refuses a simulation that is not from PhET', () => {
+    // Every sheet's procedure is written against a PhET simulation's controls,
+    // and the link-only licence model was read for PhET's terms.
+    assert.ok(validateVirtualLabs([sheet], [{ ...sim, provider: 'wikimedia' }]).some(e => /phet-test.*not a PhET simulation/.test(e)));
+  });
+  it('refuses a blank aim', () => {
+    assert.ok(validateVirtualLabs([{ ...sheet, aimAr: '  ' }], [sim]).some(e => /aim is empty/.test(e)));
+  });
+  for (const part of ['predict', 'procedure', 'observe', 'explain'] as const) {
+    it(`refuses a blank entry in ${part}`, () => {
+      const blanked = { ...sheet, [part]: [...sheet[part], ' '] };
+      assert.ok(validateVirtualLabs([blanked], [sim]).some(e => new RegExp(`${part} has a blank entry`).test(e)));
+    });
+  }
+  for (const part of ['predict', 'observe', 'explain'] as const) {
+    it(`refuses a blank answer in teacherKey.${part}`, () => {
+      const key = { ...sheet.teacherKey, [part]: sheet.teacherKey[part].map((a, i) => (i === 0 ? '' : a)) };
+      assert.ok(validateVirtualLabs([{ ...sheet, teacherKey: key }], [sim]).some(e => new RegExp(`teacherKey\\.${part} has a blank answer`).test(e)));
+    });
+  }
   it('the shipped sheets are all valid against the shipped catalog', () => {
     assert.deepEqual(validateVirtualLabs(VIRTUAL_LABS, EXTERNAL_RESOURCES), []);
   });
