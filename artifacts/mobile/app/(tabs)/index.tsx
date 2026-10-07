@@ -41,7 +41,7 @@ import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { JordanFlag } from '@/components/ui/JordanFlag';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
-import { buildPrepBoard, prepLessonKey, prepSummary, withoutBoardTools, type PrepRow } from '@/services/lessonBoard';
+import { buildPrepBoard, prepLessonKey, prepSummary, savedDeckFor, withoutBoardTools, type PrepRow } from '@/services/lessonBoard';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { listClasses } from '@/services/roster';
@@ -232,6 +232,15 @@ function LessonWorkspace() {
     setStartingClass(true);
     setStartClassError('');
     try {
+      // A «عرض الحصة» the teacher already made for this lesson is the deck
+      // they meant to teach from — present it instead of building a new one.
+      const saved = savedDeckFor(materials, topic, active?.lessonId);
+      if (saved) {
+        setPendingClassroomActivity(saved);
+        trackEvent('class_started', { source: 'workspace', deck: 'saved' });
+        router.push('/ai-tools/classroom/presentation' as never);
+        return;
+      }
       // The lesson's own subject, not the deck builder's maths default —
       // `isMathContext` reads the subject *name*, so a chemistry lesson
       // announced as "Mathematics" comes back as a deck of algebra questions
@@ -241,17 +250,18 @@ function LessonWorkspace() {
         lang: lang as 'ar' | 'en',
         subjectId: active?.subjectId ?? undefined,
         subjectName: subject?.name,
+        gradeId: active?.gradeId ?? undefined,
         lessonId: active?.lessonId ?? null,
       });
       setPendingClassroomActivity(activity);
-      trackEvent('class_started', { source: 'workspace' });
+      trackEvent('class_started', { source: 'workspace', deck: 'built' });
       router.push('/ai-tools/classroom/presentation' as never);
     } catch {
       setStartClassError(t('startClassFailed'));
     } finally {
       setStartingClass(false);
     }
-  }, [startingClass, topic, lang, active?.subjectId, active?.lessonId, subject?.name, t]);
+  }, [startingClass, topic, lang, materials, active?.subjectId, active?.gradeId, active?.lessonId, subject?.name, t]);
 
   // ⌘K → «ابدأ الحصة» arrives as a nonce param, so pressing it twice fires
   // twice (a plain flag would have been swallowed the second time).
