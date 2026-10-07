@@ -281,9 +281,19 @@ async function hasLiveRosterLink(userId: string): Promise<boolean> {
   return !!row;
 }
 
-/** Any class or student owned by this teacher — see hasTeachingData in lib/roleSwitch.ts. Archived ones count. */
+/**
+ * Any live class or any student owned by this teacher — see hasTeachingData in
+ * lib/roleSwitch.ts. An archived class does not count: «حذف الصف» only archives
+ * (routes/roster.ts), so counting it left a teacher who had made one class by
+ * mistake with no way out. Students still count, archived class or not — they
+ * are what join codes, roster links and guardians hang off.
+ */
 async function hasAnyTeachingData(userId: string): Promise<boolean> {
-  const [cls] = await db.select({ id: classGroups.id }).from(classGroups).where(eq(classGroups.teacherId, userId)).limit(1);
+  const [cls] = await db
+    .select({ id: classGroups.id })
+    .from(classGroups)
+    .where(and(eq(classGroups.teacherId, userId), isNull(classGroups.archivedAt)))
+    .limit(1);
   if (cls) return true;
   const [stu] = await db.select({ id: students.id }).from(students).where(eq(students.teacherId, userId)).limit(1);
   return !!stu;
