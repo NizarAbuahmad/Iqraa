@@ -26,7 +26,7 @@
  */
 import React, { useState } from 'react';
 import {
-  KeyboardAvoidingView,
+  
   Pressable,
   ScrollView,
   StyleSheet,
@@ -183,9 +183,8 @@ export default function SetupSubjectsScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior="padding"
     >
       <ScrollView
         contentContainerStyle={[
@@ -325,7 +324,7 @@ export default function SetupSubjectsScreen() {
           style={{ marginTop: 24 }}
         />
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

@@ -29,6 +29,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -118,6 +119,7 @@ export function AddReadAloudModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardSafeView>
       <View style={styles.backdrop}>
         <View style={[styles.sheet, { backgroundColor: colors.background }]}>
           <View style={[styles.header, { flexDirection: isRTL ? 'row-reverse' : 'row', borderColor: colors.border }]}>
@@ -266,6 +268,7 @@ export function AddReadAloudModal({
           </ScrollView>
         </View>
       </View>
+      </KeyboardSafeView>
     </Modal>
   );
 }
