@@ -143,7 +143,7 @@ interface AuthContextType {
    * Returns the email the code was sent to, for the caller to carry to the
    * verify screen (the trimmed/lowercased form the server actually used).
    */
-  register: (data: RegisterData) => Promise<{ email: string }>;
+  register: (data: RegisterData) => Promise<{ email: string; emailSent?: boolean }>;
   /** Submits the 6-digit code from the verification email. Signs the user in on success, same as login. */
   verifyEmail: (email: string, code: string) => Promise<void>;
   /** Requests a fresh code for an unverified account. Always resolves — the server never confirms whether the email exists. */
@@ -154,7 +154,7 @@ interface AuthContextType {
    * that is the only proof it belongs to whoever is asking. Returns the
    * address the new code went to.
    */
-  changeUnverifiedEmail: (email: string, password: string, newEmail: string) => Promise<{ email: string }>;
+  changeUnverifiedEmail: (email: string, password: string, newEmail: string) => Promise<{ email: string; emailSent?: boolean }>;
   /**
    * Always resolves when the request was accepted, whether or not that address
    * has an account — the server refuses to say, so the UI must not imply it
@@ -503,7 +503,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (payload.confirmPassword && payload.confirmPassword !== payload.password)
       throw new ApiError('Passwords do not match', 'passwords_mismatch');
 
-    const data = await apiJson<{ email: string; message: string }>(
+    const data = await apiJson<{ email: string; message: string; emailSent?: boolean }>(
       '/auth/register',
       {
         method: 'POST',
@@ -521,7 +521,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     trackEvent('signup_started', { method: 'email', role: payload.role ?? 'unspecified' });
-    return { email: data.email };
+    return { email: data.email, emailSent: data.emailSent };
   }, []);
 
   const verifyEmail = useCallback(async (email: string, code: string) => {
@@ -549,7 +549,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const changeUnverifiedEmail = useCallback(
     async (email: string, password: string, newEmail: string) => {
-      const data = await apiJson<{ email: string; message: string }>(
+      const data = await apiJson<{ email: string; message: string; emailSent?: boolean }>(
         '/auth/change-unverified-email',
         {
           method: 'POST',
@@ -560,7 +560,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }),
         },
       );
-      return { email: data.email };
+      return { email: data.email, emailSent: data.emailSent };
     },
     [],
   );

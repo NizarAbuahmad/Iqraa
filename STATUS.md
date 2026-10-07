@@ -16487,12 +16487,44 @@ parts, so accepting one would reproduce the same silent failure.
 `mountOrder.test.ts` pins both routes (the register case failed with a 500
 before the fix, i.e. it got as far as the database).
 
-**Not changed, and still true.** `sendVerificationEmail` returning `false`
-(missing `RESEND_API_KEY`, an unverified sender domain, a provider rejection)
-is only logged — the account is still created and the caller still gets 201.
-So a delivery failure that is not a bad address looks identical to success.
-The app's own pre-checks (`includes('@')` in `register.tsx`, `verify-email.tsx`)
-are unchanged; the server is the boundary.
+**No longer true (fixed the same day, see «A failed code email is now
+visible»).** `sendVerificationEmail` returning `false` (missing
+`RESEND_API_KEY`, an unverified sender domain, a provider rejection) used to be
+only logged, so a delivery failure that was not a bad address looked identical
+to success. The app's own pre-checks (`includes('@')` in `register.tsx`,
+`verify-email.tsx`) are unchanged; the server is the boundary.
 
 **Not verified:** that a real address receives the code in production.
 `schema-push:` none.
+
+## A failed code email is now visible, 2026-10-07
+
+Until now `/auth/register`, `/auth/resend-verification` and
+`/auth/change-unverified-email` answered success whether or not the code email
+went out. A missing `RESEND_API_KEY`, an unverified sender domain or a provider
+refusal reached only the log, and the teacher waited on the code screen for a
+message that was never sent.
+
+**Server.** `issueVerificationCode` now returns whether the send succeeded
+(`lib/verificationDelivery.ts` decides the answers).
+- `register` and `change-unverified-email` keep their status — the account
+  exists and the teacher can recover — and add `emailSent: boolean`; the message
+  no longer says "check your email" when nothing was sent.
+- `resend-verification` answers **503 `email_unavailable`** when the address
+  belongs to an unverified account and the send failed. An unknown or already
+  verified address still gets the same 200 as a success. A failed send is only
+  reported for an account that exists, which `register`'s 409 `email_taken`
+  already reveals, so this adds no new way to learn which emails are registered.
+
+**App.** `register` and `changeUnverifiedEmail` pass `emailSent` through. If it
+is `=== false` (an older server that omits the field reads as sent) the verify
+screen opens with «تعذّر إرسال رمز التأكيد…», and a resend that gets
+`email_unavailable` shows the same line (`errEmailNotSent`). After a failed
+send the resend cooldown is not started. JS only, so `app.json` `version` stays.
+
+**Verified:** `emailSent` / 503 decisions and the `sendVerificationEmail` false
+paths (no key, provider 403, network error) under `node --test`; the code→key
+mapping; typecheck; the full api-server and mobile suites.
+**Not verified:** the route handlers themselves — they need a database the suite
+does not have, so their wiring is covered by typecheck and review, not a test —
+and the screen on a device. `schema-push:` none.
