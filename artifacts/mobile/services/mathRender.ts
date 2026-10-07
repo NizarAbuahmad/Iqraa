@@ -225,6 +225,19 @@ export function isArabicLed(line: string): boolean {
   return ARABIC_LED.test(line ?? '');
 }
 
+/**
+ * A line with no Arabic in it that is not maths — a URL, an English credit —
+ * reads left to right even inside an Arabic bubble. Laid out right-to-left it
+ * reordered: «https:» moved to the end of a link, and a credit's
+ * comma-separated parts came out in reverse. Maths is excluded because it has
+ * its own layout (`MathParagraph`).
+ */
+const ARABIC_LETTER = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/u;
+export function isLatinProseLine(line: string): boolean {
+  const s = line ?? '';
+  return HAS_LATIN.test(s) && !ARABIC_LETTER.test(s) && !hasRenderableMath(s);
+}
+
 /** One visual unit of a line: a phrase of prose, or one equation. */
 export type LineSegment =
   | { kind: 'prose'; text: string }
