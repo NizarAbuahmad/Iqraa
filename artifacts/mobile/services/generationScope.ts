@@ -78,3 +78,20 @@ export function materialScope(generated: GenerationScope | null, form: FormScope
   if (generated) return generated;
   return { gradeIdx: form.gradeIdx, subjectIdx: form.subjectIdx, topic: form.topic.trim(), lesson: null, grounded: false };
 }
+
+/**
+ * Which saved material the screen is attached to once a generation lands.
+ *
+ * A regenerate is the teacher asking for a replacement to compare against what
+ * they saved, so it detaches: the button goes back to «حفظ» and saving creates
+ * a new material. It used to keep the id, so a reopened activity said
+ * «تحديث» over the replacement and overwrote the saved version. A plain
+ * generation keeps it — `useEnglishRefresh` redoes a material and saves over
+ * the old copy on purpose.
+ */
+export function savedIdAfterGeneration(
+  savedId: string | undefined,
+  opts?: { regenerate?: boolean },
+): string | undefined {
+  return opts?.regenerate === true ? undefined : savedId;
+}
