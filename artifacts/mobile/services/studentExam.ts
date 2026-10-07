@@ -17,6 +17,7 @@
  */
 import { apiFetch, apiJson, getApiBaseUrl } from './apiClient.ts';
 import { fetchWithTimeout } from './fetchWithTimeout.ts';
+import { NO_PROGRESS, type MasteryProgress } from './lessonLock.ts';
 import type { StudentResponse } from './studentAnswers.ts';
 import type { CompetencyKey, CompetencyScore, LevelKey } from './evaluations.ts';
 
@@ -228,6 +229,40 @@ export async function getMyExams(): Promise<import('./myExams.ts').MyExam[]> {
 export async function getChildExams(): Promise<import('./myExams.ts').ChildExams[]> {
   const data = await apiJson<{ children: import('./myExams.ts').ChildExams[] }>('/parent/exams');
   return data.children ?? [];
+}
+
+/**
+ * What the mastery gate needs: which lessons the student has passed and which
+ * have a quiz to pass. Never throws — any failure answers "gate off", so a
+ * lookup that cannot complete locks nothing (see `lessonLock.ts`).
+ */
+export async function getMyProgress(): Promise<MasteryProgress> {
+  try {
+    const data = await apiJson<Partial<MasteryProgress>>('/student/progress');
+    if (!data.enabled) return NO_PROGRESS;
+    return {
+      enabled: true,
+      passedLessonIds: Array.isArray(data.passedLessonIds) ? data.passedLessonIds : [],
+      quizLessonIds: Array.isArray(data.quizLessonIds) ? data.quizLessonIds : [],
+      retakeEvaluationIds: Array.isArray(data.retakeEvaluationIds) ? data.retakeEvaluationIds : [],
+    };
+  } catch {
+    return NO_PROGRESS;
+  }
+}
+
+/**
+ * Throw away a failed lesson-quiz sitting so it can be sat again. Resolves with
+ * the exam's share code, which the screen opens straight away — `/take/:code`
+ * then starts a fresh sitting for the signed-in student. Throws an `ApiError`
+ * carrying the server's refusal `code`.
+ */
+export async function retakeExam(evaluationId: string): Promise<{ shareCode: string | null }> {
+  const data = await apiJson<{ shareCode?: string | null }>(
+    `/student/exams/${encodeURIComponent(evaluationId)}/retake`,
+    { method: 'POST' },
+  );
+  return { shareCode: data.shareCode ?? null };
 }
 
 /**
