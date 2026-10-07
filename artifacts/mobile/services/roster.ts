@@ -9,7 +9,7 @@
  */
 import { apiFetch } from './apiClient.ts';
 import { trackEvent } from './analytics.ts';
-import type { AddResourceBody, ClassResource } from './classResources.ts';
+import type { AddLabResourceBody, AddResourceBody, ClassResource } from './classResources.ts';
 
 export interface ClassGroup {
   id: string;
@@ -241,7 +241,7 @@ export async function listClassResources(classId: string): Promise<ClassResource
  */
 export async function addClassResource(
   classId: string,
-  body: AddResourceBody,
+  body: AddResourceBody | AddLabResourceBody,
 ): Promise<ClassResource | null> {
   const res = await apiFetch(`/classes/${classId}/resources`, {
     method: 'POST',
