@@ -834,6 +834,9 @@ const translations = {
     notificationsTitle: 'الرسائل',
     markAllRead: 'علّم الكل مقروءًا',
     noNotifications: 'لا توجد محادثات بعد',
+    bellTitle: 'الإشعارات',
+    bellEmpty: 'لا توجد رسائل جديدة',
+    bellViewAll: 'كل الرسائل',
     unread: (n: number) => arCountPhrase(n, 'رسالة غير مقروءة', 'رسالتان غير مقروءتين', 'رسائل غير مقروءة'),
 
     // Settings screen sections
@@ -3006,6 +3009,9 @@ const translations = {
     notificationsTitle: 'Messages',
     markAllRead: 'Mark all as read',
     noNotifications: 'No conversations yet',
+    bellTitle: 'Notifications',
+    bellEmpty: 'No new messages',
+    bellViewAll: 'All messages',
     unread: (n: number) => `${n} unread`,
 
     languageSection: 'LANGUAGE',
