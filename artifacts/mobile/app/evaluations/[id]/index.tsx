@@ -19,6 +19,7 @@ import {
   deleteEvaluationQuestion,
   generateEvaluation,
   getEvaluation,
+  archiveEvaluation,
   closeEvaluation,
   publishEvaluation,
   setResultsReleased,
@@ -141,7 +142,7 @@ export default function EvaluationDetailScreen() {
   /** The question open in the editor; 'new' when writing one from scratch. */
   const [editing, setEditing] = useState<EvaluationQuestion | 'new' | null>(null);
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState<'generate' | 'publish' | 'close' | 'release' | null>(null);
+  const [busy, setBusy] = useState<'generate' | 'publish' | 'close' | 'release' | 'archive' | null>(null);
   // What the generator said while producing this paper ("2 questions removed:
   // the verifier contradicted their key"). The questions cannot show a
   // question that was dropped, so this is the only place the teacher hears it.
@@ -265,6 +266,33 @@ export default function EvaluationDetailScreen() {
       );
     } catch (err) {
       setError(err instanceof EvaluationError ? err.message : t('evaluationCloseFailed'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Removes the exam from the teacher's lists; marks and results are kept. Only
+  // offered on a draft or a closed exam, and the server enforces the same.
+  const onArchive = async () => {
+    if (!id || busy) return;
+    const ok = await confirm({
+      title: t('archiveEvaluationBtn'),
+      message: t('archiveEvaluationConfirm'),
+      confirmLabel: t('archiveEvaluationBtn'),
+      cancelLabel: t('cancel'),
+    });
+    if (!ok) return;
+
+    setBusy('archive');
+    setError('');
+    try {
+      await archiveEvaluation(id);
+      // Every list of exams — «تقييماتي», a class's exams, the attach sheet.
+      await queryClient.invalidateQueries({ queryKey: ['evaluations'] });
+      queryClient.removeQueries({ queryKey: evaluationQueryKey(id) });
+      goBack();
+    } catch (err) {
+      setError(err instanceof EvaluationError ? err.message : t('archiveEvaluationFailed'));
     } finally {
       setBusy(null);
     }
@@ -491,6 +519,22 @@ export default function EvaluationDetailScreen() {
             <Ionicons name="lock-open-outline" size={18} color={colors.mutedForeground} />
             <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('publishEvaluationBtn')}
+            </Text>
+          </Pressable>
+        </View>
+      )}
+
+      {(evaluation?.status === 'draft' || evaluation?.status === 'closed') && (
+        <View style={{ marginHorizontal: 20, marginTop: 10, gap: 6 }}>
+          <Pressable
+            onPress={onArchive}
+            disabled={busy === 'archive'}
+            accessibilityRole="button"
+            style={[styles.resultsBtn, { borderColor: colors.destructive, opacity: busy === 'archive' ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+            <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+              {t('archiveEvaluationBtn')}
             </Text>
           </Pressable>
         </View>
