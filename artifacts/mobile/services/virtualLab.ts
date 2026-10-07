@@ -54,6 +54,20 @@ export function virtualLabChatMessage(
 }
 
 /**
+ * Whether the thread already holds this lesson's lab sheet. The chip stays
+ * after it is tapped, and a second tap should not post the sheet twice.
+ */
+export function hasLabSheetMessage(
+  messages: ReadonlyArray<{ curriculumLessonId?: string; artifactData?: { kind: string; worksheet?: WorksheetOutput } }>,
+  lessonId: string,
+): boolean {
+  return messages.some(msg =>
+    msg.curriculumLessonId === lessonId
+    && msg.artifactData?.kind === 'worksheet'
+    && Boolean(msg.artifactData.worksheet?.lab));
+}
+
+/**
  * What «احفظ في موادي» stores. It is an ordinary worksheet — so view, export,
  * class filing and the student/teacher copy need no new branch — with
  * `materialKind` left in formState to tell it apart (and `topic` beside it, so

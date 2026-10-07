@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -60,6 +60,10 @@ export function VirtualLabCard({ lessonId, accent }: Props) {
   const [copy, setCopy] = useState<QuizCopy>('student');
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
+  // A ref, not only state: two taps inside one frame both read the old state
+  // and saved two rows.
+  const savingRef = useRef(false);
+  const [saving, setSaving] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
 
@@ -91,10 +95,14 @@ export function VirtualLabCard({ lessonId, accent }: Props) {
   const handleShare = async () => { await shareAsText(docs().text, ws!.title); };
   const handleCopy = async () => { await copyToClipboard(docs().text); showToast(t('copiedToClipboard')); };
   const handleSave = async () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
     try {
       await saveItem(virtualLabSavePayload(ws!, lessonId, ctx!));
       showToast(t('savedSuccess'));
     } catch { showToast(t('error')); }
+    finally { savingRef.current = false; setSaving(false); }
   };
 
   const exportLabels = {
@@ -163,8 +171,11 @@ export function VirtualLabCard({ lessonId, accent }: Props) {
               </Pressable>
               <Pressable
                 onPress={handleSave}
+                disabled={saving}
                 accessibilityRole="button"
-                style={[styles.pill, { backgroundColor: accent + '15', borderColor: accent + '30', flexDirection: rowDir }]}
+                aria-disabled={saving}
+                aria-busy={saving}
+                style={[styles.pill, { backgroundColor: accent + '15', borderColor: accent + '30', flexDirection: rowDir, opacity: saving ? 0.6 : 1 }]}
               >
                 <Ionicons name="bookmark-outline" size={14} color={accent} />
                 <Text style={[styles.pillText, { color: accent, fontFamily: 'ReadexPro_500Medium' }]}>

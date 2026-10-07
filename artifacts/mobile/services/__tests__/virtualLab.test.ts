@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ExternalResource, VirtualLabSheet } from '@workspace/curriculum';
-import { virtualLabChatMessage, virtualLabFor, virtualLabSavePayload, virtualLabWorksheet } from '../virtualLab.ts';
+import { hasLabSheetMessage, virtualLabChatMessage, virtualLabFor, virtualLabSavePayload, virtualLabWorksheet } from '../virtualLab.ts';
 import { buildLessonSuggestions, pinLesson } from '../lessonCopilot.ts';
 import { emptyChatSessionMemory } from '../ai/teachingAssistant.ts';
 import { getLessonById } from '../knowledgeBase.ts';
@@ -97,5 +97,27 @@ describe('virtualLabChatMessage', () => {
   });
   it('puts the link and the credit in the conversation around it', () => {
     assert.ok(m.prose.includes(sim.sourceUrl) && m.prose.includes(sim.attribution));
+  });
+});
+
+/**
+ * The lab chip stays on screen after it is tapped, so every further tap used to
+ * append the same sheet again. The chat checks for it first.
+ */
+describe('hasLabSheetMessage', () => {
+  const ctx = { topic: 'تجربة استهلالية: المعادلة الكيميائية', subjectLabel: 'الكيمياء', gradeName: 'الصف العاشر' };
+  const m = virtualLabChatMessage(sheet, sim, ctx);
+  const labMsg = { curriculumLessonId: sheet.lessonId, artifactData: m.data };
+
+  it('finds the sheet already posted for that lesson', () => {
+    assert.equal(hasLabSheetMessage([{}, labMsg], sheet.lessonId), true);
+  });
+  it('ignores another lesson, and an ordinary worksheet for the same lesson', () => {
+    assert.equal(hasLabSheetMessage([labMsg], 'kbl-chem-s2-nccd-u4_lab'), false);
+    const plain = { curriculumLessonId: sheet.lessonId, artifactData: { kind: 'worksheet' as const, worksheet: { ...m.data.worksheet, lab: undefined } } };
+    assert.equal(hasLabSheetMessage([plain], sheet.lessonId), false);
+  });
+  it('is false on an empty thread', () => {
+    assert.equal(hasLabSheetMessage([], sheet.lessonId), false);
   });
 });

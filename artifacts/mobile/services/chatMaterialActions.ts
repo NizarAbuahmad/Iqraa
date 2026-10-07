@@ -19,6 +19,13 @@ import type { BookFigure } from './bookFigures.ts';
 import type { MaterialType } from './workspace.ts';
 import { buildDeckFromQuiz, buildDeckFromWorksheet } from './classDeck.ts';
 import { buildLessonDeck } from './lessonSlides.ts';
+import {
+  formatActivityText,
+  formatLessonPlanText,
+  formatQuizText,
+  formatWorksheetText,
+} from './exportText.ts';
+import { formatInfographicText } from './ai/infographic.ts';
 
 /**
  * Kinds the workspace can store. An infographic is not one yet:
@@ -156,5 +163,42 @@ export function deckForArtifact(
     case 'activity':
     case 'infographic':
       return null;
+  }
+}
+
+/** The heading and context a chat material was generated with. */
+export type ChatDocumentMeta = { title: string; subject: string; grade: string; duration?: number; lang?: 'ar' | 'en' };
+
+/**
+ * A chat material as text, re-serialised from its structured data so an edited
+ * document copies as edited. `includeAnswers` decides the quiz's and the
+ * worksheet's key: the bubble's «نسخ» asks for the student copy, like every
+ * export menu's default, and the canvas and export keep the teacher text.
+ * Without data or meta there is nothing to re-serialise, so the message text
+ * stands — chat only keeps meta for the kinds it can rebuild.
+ */
+export function chatDocumentText(
+  data: ChatArtifactData | undefined,
+  meta: ChatDocumentMeta | undefined,
+  fallback: string,
+  lang: 'ar' | 'en',
+  opts: { includeAnswers: boolean },
+): string {
+  if (!data || !meta) return fallback;
+  const isAr = (meta.lang ?? lang) === 'ar';
+  const m = { subject: meta.subject, grade: meta.grade, duration: meta.duration };
+  switch (data.kind) {
+    case 'lesson-plan':
+      return formatLessonPlanText(data.plan, meta.title, m, isAr);
+    case 'worksheet':
+      return formatWorksheetText(data.worksheet, meta.title, m, isAr, opts.includeAnswers);
+    case 'quiz':
+      return formatQuizText(data.quiz, meta.title, m, isAr, opts.includeAnswers);
+    case 'activity':
+      return formatActivityText(data.activity, meta.title, m, isAr);
+    case 'infographic':
+      return formatInfographicText(data.infographic, isAr);
+    default:
+      return fallback;
   }
 }
