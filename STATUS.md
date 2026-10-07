@@ -686,6 +686,33 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A Deploy GitHub stalls is re-run once, 2026-10-06
+
+On 2026-10-05 two Deploy runs (#417 at 20:26 UTC and #418 at 20:59) were
+cancelled after about 15 minutes in their first job, `what changed`: no step was
+recorded and no log exists, though the job has a 5-minute `timeout-minutes`. The
+job was assigned to a runner that never started it, which that timeout does not
+cover. Nothing deployed; the next merge's Deploy (#419) carried both commits
+about an hour later (checked: both are ancestors of its commit). Nothing was lost.
+
+`.github/workflows/deploy-rerun-stalled.yml` now re-runs such a Deploy once. It
+re-runs only a **push to `main`, on its first attempt, whose commit is still the
+head of `main`, with a job cancelled that has no steps**. The narrowness is the
+point: the `web` job's `cancel-in-progress: true` cancels older web deploys on
+purpose, and a re-run of one of those would put older code live over newer. A
+second stall is left alone for a person. The manual path is in
+`docs/deploying.md` (*A Deploy that was cancelled before it ran*).
+
+**Verified:** the YAML parses, and the decision script was run against a
+stand-in `gh` with fixtures shaped like the jobs API, seven cases: a stall
+re-runs; main having moved, a second attempt, a run cancelled mid-flight (steps
+recorded), and a run with nothing cancelled do not; the stall is found when it
+is on the second page of jobs only. **Not verified:** a real run. `workflow_run`
+workflows execute only from the default branch, so this could not be tried before
+merge; the first real test is the next stall. It is also not known whether a
+cancelled-never-started job always has no `steps` key in the live API: it did in
+#417 and #418, and the check treats an absent key and an empty list the same.
+
 ## The quiz prints as an exam paper: student copy, name lines, marks table, 2026-10-06
 
 Prompted by a teacher-facing video of a generic AI exam tool (aidocmaker): its
