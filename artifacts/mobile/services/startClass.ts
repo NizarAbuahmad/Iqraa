@@ -16,7 +16,7 @@ import { BOOK_FIGURE_MAX } from './lessonSlides.ts';
 import { getLessonMedia } from './lessonMedia.ts';
 import { resolveGeneratorGrounding } from './kbContext.ts';
 import { getBookForLesson, getLessonById } from './knowledgeBase.ts';
-import { getPickerSubjects } from './curriculumData.ts';
+import { getPickerGrades, getPickerSubjects } from './curriculumData.ts';
 import { contentLang } from './contentLanguage.ts';
 import type { ClassroomActivity } from './ai/AIService.ts';
 
@@ -25,6 +25,11 @@ export type StartClassInput = {
   lang: 'ar' | 'en';
   subjectId?: string;
   subjectName?: string;
+  /**
+   * The picked grade (`grade-5`). Omitted, it is read off the grounded
+   * lesson's book — the request used to say Grade 10 whatever the lesson was.
+   */
+  gradeId?: string;
   /**
    * The KB id of the lesson to ground on, when the caller knows it.
    *
@@ -48,6 +53,7 @@ export async function buildClassDeck({
   lang: uiLang,
   subjectId: pickedSubjectId,
   subjectName: pickedSubjectName,
+  gradeId: pickedGradeId,
   lessonId,
 }: StartClassInput): Promise<ClassroomActivity> {
   // The topic arrives in the UI language, so that is what it grounds in.
@@ -73,8 +79,14 @@ export async function buildClassDeck({
     ? (isAr ? groundedLesson.titleAr : groundedLesson.titleEn)
     : uiTopic;
 
+  // Grade 10 only when nothing says otherwise: an ungrounded free-typed topic
+  // with no picked grade has no better answer than the product's first grade.
+  const gradeId = pickedGradeId ?? groundedBook?.gradeId;
+  const pickedGrade = gradeId ? getPickerGrades().find(g => g.id === gradeId) : undefined;
+  const grade = pickedGrade ? (isAr ? pickedGrade.nameAr : pickedGrade.name) : '10';
+
   const activity = await aiService.generateClassroomActivity({
-    grade: '10',
+    grade,
     subject: subjectName,
     topic,
     activityType: 'quick-check',
