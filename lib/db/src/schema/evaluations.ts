@@ -171,6 +171,12 @@ export const evaluations = pgTable(
 
     publishedAt: timestamp("published_at", { withTimezone: true }),
     closedAt: timestamp("closed_at", { withTimezone: true }),
+    /**
+     * Soft delete from the teacher's lists. Only a draft or a closed exam can be
+     * archived (`canArchiveEvaluation`), so the student link is already dead; the
+     * attempts, results and what students and parents see are untouched.
+     */
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
@@ -236,6 +242,7 @@ export const insertEvaluationSchema = createInsertSchema(evaluations).omit({
   updatedAt: true,
   publishedAt: true,
   closedAt: true,
+  archivedAt: true,
 });
 
 export const insertEvaluationQuestionSchema = createInsertSchema(evaluationQuestions).omit({

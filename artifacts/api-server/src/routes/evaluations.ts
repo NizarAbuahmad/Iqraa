@@ -42,6 +42,7 @@ import { masteryGateEnabled } from "../lib/features.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { passedLessonIds, unlockState } from "../modules/assessment/lessonProgress.ts";
 import { findLiveClass } from "../lib/classOwnership.js";
+import { archiveDecision } from "../lib/evaluationArchive";
 import {
   bankContextFor,
   generateMockEvaluation,
@@ -320,6 +321,8 @@ router.get("/evaluations", async (req: AuthenticatedRequest, res) => {
       .where(
         and(
           eq(evaluations.teacherId, req.user!.id),
+          // Removed from the teacher's lists; the row and its results stay.
+          isNull(evaluations.archivedAt),
           // `?classId=` filters to one class; `?classId=none` is how the attach
           // sheet asks for exams that belong to no class yet. Without the
           // second form the sheet would have to fetch everything and filter
@@ -1146,6 +1149,10 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
       res.status(404).json({ error: "Evaluation not found" });
       return;
     }
+    if (evaluation.archivedAt) {
+      res.status(409).json({ error: "This evaluation was removed from your list", code: "archived" });
+      return;
+    }
     const questions = await liveQuestions(evaluation.id);
     const total = questions.reduce((s, q) => s + Number(q.marks), 0);
 
@@ -1250,6 +1257,36 @@ router.post("/evaluations/:id/close", async (req: AuthenticatedRequest, res) => 
   } catch (err) {
     logger.error({ err }, "close failed");
     res.status(500).json({ error: "Failed to close" });
+  }
+});
+
+/**
+ * Remove an exam from the teacher's lists (soft delete — see
+ * lib/evaluationArchive.ts). Draft or closed only; students' attempts and
+ * results are untouched.
+ */
+router.delete("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    const decision = archiveDecision(evaluation);
+    if (!decision.ok) {
+      res.status(decision.status).json({ error: decision.error, code: decision.code });
+      return;
+    }
+    if (!decision.alreadyArchived) {
+      await db
+        .update(evaluations)
+        .set({ archivedAt: new Date(), updatedAt: new Date() })
+        .where(eq(evaluations.id, evaluation.id));
+    }
+    res.json({ archived: evaluation.id });
+  } catch (err) {
+    logger.error({ err }, "archive evaluation failed");
+    res.status(500).json({ error: "Failed to remove the evaluation" });
   }
 });
 
