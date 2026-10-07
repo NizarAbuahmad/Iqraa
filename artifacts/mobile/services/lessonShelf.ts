@@ -61,7 +61,8 @@ export type LessonShelf = {
   semester: ShelfGroup[];
   /**
    * Openly-licensed third-party material curated onto this specific lesson —
-   * a public-domain listening passage, a NASA photograph, a simulation.
+   * a public-domain listening passage, a NASA photograph, a video. Never a
+   * simulation: those belong to the virtual lab card, behind its release gate.
    *
    * A separate list rather than a third `ShelfGroup`, because these are not
    * bank documents and must not be counted as if they were. They attach to a
@@ -169,7 +170,10 @@ export function buildLessonShelf(lessonId: string, lang: 'ar' | 'en' = 'ar'): Le
     unitTags,
     unit: group(unitItems),
     semester: group(semesterItems),
-    external: externalResourcesForLesson(lessonId),
+    // A simulation never shows here. `VirtualLabCard` is the one place a sim
+    // link appears, and it is gated by `releasedVirtualLab`; listing it on the
+    // shelf as well bypassed that gate in production and doubled it in dev.
+    external: externalResourcesForLesson(lessonId).filter(r => r.kind !== 'simulation'),
     total: all.length,
     referenceOnly: all.filter(r => r.usePolicy === 'reference-only').length,
   };
