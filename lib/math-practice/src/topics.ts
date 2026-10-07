@@ -18,6 +18,7 @@ import { ALGEBRA_TOPICS } from './algebra.ts';
 import { GEOMETRY_TOPICS } from './geometry.ts';
 import { STATS_TOPICS } from './stats.ts';
 import { PROPORTION_TOPICS } from './proportion.ts';
+import { EARLY_TOPICS } from './early.ts';
 import {
   gcd, int, lcm, mixed, nz, numWrongs, numerator, paren, pick, sfrac, signed, sup, tier, valueOf, wrongsFrom,
   type Ctx, type Draft, type Rng, type Topic,
@@ -32,9 +33,9 @@ const roundTo = (n: number, place: number) => Math.round(n / place) * place;
 const lead = (n: number) => { const p = 10 ** (String(Math.round(n)).length - 1); return p === 1 ? n : roundTo(n, p); };
 
 const roundWhole: Topic = {
-  id: 'round_whole', match: /تقريب(?!.*عشري)/, grades: [3, 6],
+  id: 'round_whole', match: /تقريب(?!.*عشري)/, grades: [2, 6],
   make({ rng, diff, grade }) {
-    const place = pick(rng, diff === 'easy' ? [10] : diff === 'medium' || grade <= 4 ? [10, 100] : [10, 100, 1000]);
+    const place = pick(rng, diff === 'easy' || grade <= 2 ? [10] : diff === 'medium' || grade <= 4 ? [10, 100] : [10, 100, 1000]);
     const n = int(rng, place * 3 + 1, place * (diff === 'easy' ? 30 : 90) + place - 1);
     if (n % place === 0) return roundWhole.make({ rng, diff, grade });
     const a = roundTo(n, place);
@@ -73,9 +74,9 @@ const roundDec: Topic = {
 
 /** «تقدير ناتج الجمع» estimates sums only, «…الطرح» differences only, «المجموع والفرق» either. */
 const estSum = (id: string, match: RegExp, mode: 'add' | 'sub' | 'both'): Topic => ({
-  id, match, grades: [3, 6],
-  make({ rng, diff }) {
-    const digits = diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4;
+  id, match, grades: [2, 6],
+  make({ rng, diff, grade }) {
+    const digits = Math.min(grade <= 2 ? 3 : 4, diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4);
     let a = 0, b = 0, add = true;
     do {
       a = int(rng, 10 ** (digits - 1) + 1, 10 ** digits - 1);
@@ -115,10 +116,10 @@ const estSumDec: Topic = {
 };
 
 const estProd: Topic = {
-  id: 'est_prod', match: /تقدير.*ضرب/, grades: [4, 6],
-  make({ rng, diff }) {
-    const a = int(rng, diff === 'easy' ? 11 : 101, diff === 'easy' ? 99 : 899);
-    const b = int(rng, 11, diff === 'hard' ? 99 : 59);
+  id: 'est_prod', match: /تقدير.*ضرب/, grades: [3, 6],
+  make({ rng, diff, grade }) {
+    const a = grade <= 3 ? int(rng, 11, 99) : int(rng, diff === 'easy' ? 11 : 101, diff === 'easy' ? 99 : 899);
+    const b = grade <= 3 ? int(rng, 2, 9) : int(rng, 11, diff === 'hard' ? 99 : 59);
     const est = lead(a) * lead(b);
     return {
       eq: `${a} × ${b}`, answer: String(est),
@@ -130,11 +131,11 @@ const estProd: Topic = {
 };
 
 const estQuot: Topic = {
-  id: 'est_quot', match: /تقدير.*قسم/, grades: [4, 6],
-  make({ rng, diff }) {
+  id: 'est_quot', match: /تقدير.*قسم/, grades: [3, 6],
+  make({ rng, diff, grade }) {
     const d = int(rng, 2, 9);
     const q = int(rng, 2, 9);
-    const m = diff === 'easy' ? 1 : pick(rng, [1, 2]);
+    const m = diff === 'easy' || grade <= 3 ? 1 : pick(rng, [1, 2]);
     const unit = 10 ** m;
     const noise = int(rng, -(unit / 2 - 1), unit / 2 - 1);
     const n = d * q * unit + noise;
@@ -516,7 +517,7 @@ const intOp = (id: string, match: RegExp, op: '+' | '−' | '×÷'): Topic => ({
 // ─── fractions, decimals, percent, ratio ────────────────────────────────────
 
 const equivFrac: Topic = {
-  id: 'equiv_frac', match: /الكسور المتكافئه/, grades: [4, 5],
+  id: 'equiv_frac', match: /الكسور المتكافئه/, grades: [3, 5],
   make({ rng, diff }) {
     const d = pick(rng, [2, 3, 4, 5, 6, 8]);
     let n = int(rng, 1, d - 1);
@@ -782,6 +783,7 @@ export const TOPICS: readonly Topic[] = [
   ...GEOMETRY_TOPICS,
   ...STATS_TOPICS,
   ...PROPORTION_TOPICS,
+  ...EARLY_TOPICS,
 ];
 
 /** The generator for a lesson title and grade, or null when none is about it. */
