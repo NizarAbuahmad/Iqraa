@@ -19,6 +19,7 @@ export const RESOURCE_KIND_LABEL: Record<ResourceKind, TranslationKey> = {
   document: 'libraryCatDocument',
   image: 'qrKindImage',
   page: 'qrKindPage',
+  lab: 'resourceKindLab',
 };
 
 export const RESOURCE_KIND_ICON: Record<ResourceKind, keyof typeof Ionicons.glyphMap> = {
@@ -32,4 +33,5 @@ export const RESOURCE_KIND_ICON: Record<ResourceKind, keyof typeof Ionicons.glyp
   document: 'document-outline',
   image: 'image-outline',
   page: 'globe-outline',
+  lab: 'flask-outline',
 };

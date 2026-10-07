@@ -26,7 +26,9 @@ export type ResourceSource = 'uploaded' | 'premade-sheet' | 'book-qr';
 export type ResourceKind =
   | LibraryCategory
   | 'image'
-  | 'page';
+  | 'page'
+  /** A Science Lab item. Only ever a class-shelf row; the Library catalogue never produces one. */
+  | 'lab';
 
 /**
  * What a row lets a teacher do on the Library screen. `print` renders a frozen
