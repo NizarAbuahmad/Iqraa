@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView, Platform, Pressable, ScrollView,
+  KeyboardAvoidingView, Pressable, ScrollView,
   StyleSheet, Text, View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -109,7 +109,7 @@ export default function VerifyEmailScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
     >
       <ScrollView
         contentContainerStyle={[

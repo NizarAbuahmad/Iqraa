@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useLanguage } from '@/context/LanguageContext';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 import { DESKTOP_BREAKPOINT } from '@/constants/layout';
 
 const NAVY = '#081B3A';
@@ -27,6 +28,12 @@ export function useAuthLayout() {
 export function AuthBrandPanel({ isWide }: { isWide: boolean }) {
   const insets = useSafeAreaInsets();
   const { t, lang, isRTL, toggleLang } = useLanguage();
+  const keyboardVisible = useKeyboardVisible();
+
+  // On a phone this panel is ~a third of the screen and sits outside the form's
+  // ScrollView, so with the keyboard open only one field was left visible.
+  // Typing is the only thing happening then; the branding can wait.
+  if (!isWide && keyboardVisible) return null;
 
   return (
     <LinearGradient

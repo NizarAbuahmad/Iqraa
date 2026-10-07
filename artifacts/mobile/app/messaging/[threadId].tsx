@@ -18,7 +18,7 @@
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable,
+  ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Pressable,
   StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -320,7 +320,7 @@ export default function ThreadScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
     >
       <View
         style={[
