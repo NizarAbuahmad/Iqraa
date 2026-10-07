@@ -116,6 +116,10 @@ describe('isNonTeacherRoute', () => {
       // pinned here so converting it to exact matching fails loudly instead of
       // quietly ejecting a student to /notifications.
       '/curriculum/resources',
+      // The Science Lab shelf and its present mode (a shareable URL). Same
+      // prefix rule as the library above.
+      '/curriculum/lab',
+      '/curriculum/lab/lab-periodic-table',
       '/settings',
       '/faq',
       '/delete-account',
