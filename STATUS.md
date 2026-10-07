@@ -90,12 +90,20 @@ an announcement by default» below.
   guessed from a title 107 lessons share; Save stores the type, length and
   objective the activity was **built** with, not the live pickers; the
   evaluation-gap warm-up is saved with a group/20-min form, which is what
-  Regenerate really builds. Not changed, found in the same review: Regenerate keeps
-  `savedId`, so Update overwrites the saved version; and typing «أنشئ نشاطًا»
-  on `/home` opens the lesson plan, because `buildGeneratorNav` redirects the
-  disabled `activity`/`homework` tools — part of the recorded `homeAiTools`
-  decision, not touched. Tests: `activityOutput.test.ts`. Not looked at in a
-  browser.
+  Regenerate really builds. Tests: `activityOutput.test.ts`. Not looked at in a
+  browser. **The two found in the same review and left open were fixed
+  2026-10-07** (`activityHomeFlow.test.ts`; typecheck and the mobile suite pass,
+  **not looked at in a browser**): Regenerate now detaches the saved id
+  (`savedIdAfterGeneration`, `generationScope.ts`), so the button says «حفظ» and
+  creates a new material instead of overwriting the saved one, and clears the
+  favourite star; a plain generation keeps the id, which `useEnglishRefresh`
+  relies on. And typing «أنشئ نشاطًا» on `/home` opens the activity generator:
+  `activity` gained `navigable: true` in `homeAiTools.ts`, so
+  `buildGeneratorNav` no longer redirects it, while `enabled: false` still keeps
+  it out of the chips, templates and related-tools panel — that suggestion
+  decision is unchanged, and `homework` is still redirected. Routing it exposed
+  a second defect, now fixed: `extractLessonTopic` left the tanween of «نشاطًا»
+  behind, so the topic arrived as «ًا»; it also stripped the front of «نشاطات».
 - **Class Challenge (game) review fixes** (2026-10-04, same PR as the activity
   fixes above). `game.tsx` now grounds the lesson once, scoped to the picked
   grade and subject, and carries `lessonId`/`unitId`/figures from that grounding
@@ -16468,3 +16476,31 @@ icon count. Things to check on the next device test: the Settings row, the
 explanation after the first message is sent, the four channels under App
 info → Notifications, and the icon count after a message arrives while the
 app is closed.
+
+## Signup refuses a malformed email instead of "sending" a code to it, 2026-10-07
+
+A teacher typed `info@zarya.gate@gmail.com` (two `@`). `/auth/register` only
+asked for an `@`, so it created the account, answered 201 «check your email»,
+and the verification mail could not be delivered — the verify screen sat there
+with no code coming. `/auth/change-unverified-email` had the same bare check,
+so the «البريد الإلكتروني غير صحيح؟» recovery path would have accepted another
+bad address.
+
+**Fix.** `lib/emailAddress.ts` → `isValidEmailAddress`: one `@`, a dotted-atom
+local part (≤64), a domain of ≥2 ASCII labels with a letters-only TLD, ≤254
+overall, judged on the trimmed value. Both routes now answer
+`400 invalid_email` (the app already translates that code) before any database
+work. ASCII only on purpose: Resend does not deliver to Arabic-script local
+parts, so accepting one would reproduce the same silent failure.
+`mountOrder.test.ts` pins both routes (the register case failed with a 500
+before the fix, i.e. it got as far as the database).
+
+**Not changed, and still true.** `sendVerificationEmail` returning `false`
+(missing `RESEND_API_KEY`, an unverified sender domain, a provider rejection)
+is only logged — the account is still created and the caller still gets 201.
+So a delivery failure that is not a bad address looks identical to success.
+The app's own pre-checks (`includes('@')` in `register.tsx`, `verify-email.tsx`)
+are unchanged; the server is the boundary.
+
+**Not verified:** that a real address receives the code in production.
+`schema-push:` none.

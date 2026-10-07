@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView, Pressable, ScrollView,
+  Pressable, ScrollView,
   StyleSheet, Text, View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -107,9 +107,8 @@ export default function VerifyEmailScreen() {
   const canChangeEmail = newEmail.includes('@') && password.length > 0;
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior="padding"
     >
       <ScrollView
         contentContainerStyle={[
@@ -234,7 +233,7 @@ export default function VerifyEmailScreen() {
           </Pressable>
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

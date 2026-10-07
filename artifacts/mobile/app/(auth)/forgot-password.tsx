@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  KeyboardAvoidingView, Pressable, ScrollView,
+  Pressable, ScrollView,
   StyleSheet, Text, View,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -74,9 +74,8 @@ export default function ForgotPasswordScreen() {
   const canReset = /^\d{6}$/.test(code) && password.length >= 8;
 
   const formPanel = (
-    <KeyboardAvoidingView
+    <View
       style={[styles.formPanel, isWide && styles.formPanelWide]}
-      behavior="padding"
     >
       <ScrollView
         contentContainerStyle={[
@@ -182,7 +181,7 @@ export default function ForgotPasswordScreen() {
           )}
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 
   return (

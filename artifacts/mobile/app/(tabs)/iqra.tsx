@@ -86,6 +86,8 @@ import { unansweredEventProps, type UnansweredKind } from '@/services/chatUnansw
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { MaterialCanvas } from '@/components/ui/MaterialCanvas';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
@@ -548,6 +550,7 @@ function ContextBanner({
         presentationStyle="pageSheet"
         onRequestClose={handleCancel}
       >
+        <KeyboardSafeView>
         <View style={[ctxStyles.modal, { backgroundColor: colors.background }]}>
           {/* Modal header */}
           <View style={[ctxStyles.modalHeader, { borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -701,6 +704,7 @@ function ContextBanner({
             </Pressable>
           </View>
         </View>
+        </KeyboardSafeView>
       </Modal>
     </>
   );
@@ -1383,6 +1387,7 @@ export default function IqraScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useSafeTabBarHeight();
+  const keyboardVisible = useKeyboardVisible();
   const { t, lang, isRTL } = useLanguage();
   const { user } = useAuth();
   const params = useLocalSearchParams<{
@@ -3839,7 +3844,10 @@ export default function IqraScreen() {
             // The tab bar is display:none on desktop but still measures 84px,
             // which is the band of dead space that sat under the composer.
             borderTopWidth: isDesktop ? 0 : 1,
-            paddingBottom: isDesktop ? 22 : tabBarHeight + Math.max(insets.bottom, 8),
+            // With the keyboard open the tab bar is hidden and the screen ends
+            // at the keyboard's top edge, so neither the tab bar's height nor
+            // the home-indicator inset belongs under the composer any more.
+            paddingBottom: isDesktop ? 22 : keyboardVisible ? 8 : tabBarHeight + Math.max(insets.bottom, 8),
             paddingHorizontal: isDesktop ? 16 : 12,
           },
         ]}
