@@ -21,6 +21,7 @@ const BY_CODE = {
   password_policy: 'errPasswordPolicy',
   passwords_mismatch: 'passwordsDoNotMatch',
   invalid_code: 'invalidVerificationCode',
+  email_unavailable: 'errEmailNotSent',
   already_verified: 'errAlreadyVerified',
   same_email: 'errSameEmail',
   invalid_google_credential: 'errGoogleFailed',
