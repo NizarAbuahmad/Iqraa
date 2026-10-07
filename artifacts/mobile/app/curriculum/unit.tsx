@@ -12,6 +12,9 @@ import {
   isBrowserLessonTitleOnly,
   isCurriculumBookVisible,
 } from '@/services/curriculumData';
+import { confirm } from '@/services/confirm';
+import { lockState } from '@/services/lessonLock';
+import { useMasteryProgress } from '@/hooks/useMasteryProgress';
 import { goBack } from '@/services/navigation';
 import { readableOn } from '@/services/readableColor';
 
@@ -32,6 +35,7 @@ export default function UnitLessonsScreen() {
   const color = readableOn(subjectColor ?? colors.primary, colors.card);
   const bookAllowed = isCurriculumBookVisible(bookId ?? '');
   const unit = unitId ? getUnitById(unitId) : undefined;
+  const masteryProgress = useMasteryProgress();
 
   useEffect(() => {
     if (!bookAllowed || !unit) router.replace('/curriculum/browse' as never);
@@ -42,6 +46,7 @@ export default function UnitLessonsScreen() {
   }
 
   const lessons = getLessonsForUnit(unit.id);
+  const { locked } = lockState(lessons.map(l => l.id), masteryProgress);
   const unitName = lang === 'ar' ? (unit.nameAr || unit.name) : unit.name;
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -76,11 +81,24 @@ export default function UnitLessonsScreen() {
         renderItem={({ item: lesson }) => {
           const lessonTitle = lang === 'ar' ? (lesson.titleAr || lesson.title) : lesson.title;
           const objectivesArr = lang === 'ar' ? (lesson.objectivesAr || lesson.objectives) : lesson.objectives;
+          const isLocked = locked.has(lesson.id);
 
           return (
             <Pressable
+              aria-disabled={isLocked}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (isLocked) {
+                  confirm({
+                    title: t('masteryLockedTitle'),
+                    message: t('masteryLockedBody'),
+                    confirmLabel: t('masteryGoToExams'),
+                    cancelLabel: t('masteryClose'),
+                  }).then(go => {
+                    if (go) router.push('/my-exams' as never);
+                  });
+                  return;
+                }
                 router.push({
                   pathname: '/curriculum/lesson-detail',
                   params: { lessonId: lesson.id, subjectColor: color },
@@ -92,7 +110,7 @@ export default function UnitLessonsScreen() {
                   backgroundColor: colors.card,
                   borderColor: colors.border,
                   borderRadius: colors.radius,
-                  opacity: pressed ? 0.85 : 1,
+                  opacity: isLocked ? 0.6 : pressed ? 0.85 : 1,
                   flexDirection: isRTL ? 'row-reverse' : 'row',
                 },
               ]}
@@ -134,7 +152,11 @@ export default function UnitLessonsScreen() {
                   </Text>
                 </View>
               </View>
-              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
+              {isLocked ? (
+                <Ionicons name="lock-closed" size={16} color={colors.mutedForeground} accessibilityLabel={t('masteryLockedBadge')} />
+              ) : (
+                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
+              )}
             </Pressable>
           );
         }}
