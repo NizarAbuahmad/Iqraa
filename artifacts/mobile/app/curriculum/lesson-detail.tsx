@@ -9,8 +9,11 @@ import { useLanguage } from '@/context/LanguageContext';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   getLessonById,
+  getLessonsForUnit,
   isBrowserLessonTitleOnly,
 } from '@/services/curriculumData';
+import { lockState } from '@/services/lessonLock';
+import { useMasteryProgress } from '@/hooks/useMasteryProgress';
 import { LessonPrepPanel } from '@/components/ui/LessonPrepPanel';
 import { LessonMediaPanel } from '@/components/ui/LessonMediaPanel';
 import { ReadAloudPracticePanel } from '@/components/ui/ReadAloudPracticePanel';
@@ -69,10 +72,42 @@ export default function LessonDetailScreen() {
     if (openLessonPlan === '1' && lesson) setPrepOpen(true);
   }, [openLessonPlan, lesson]);
 
+  // A locked lesson can also be reached by a deep link or the back stack, so
+  // the lock is enforced here as well as on the unit list.
+  const masteryProgress = useMasteryProgress();
+  const lessonLocked = lesson
+    ? lockState(getLessonsForUnit(lesson.unitId).map(l => l.id), masteryProgress).locked.has(lesson.id)
+    : false;
+
   if (!lesson) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }}>{t('lessonNotFound')}</Text>
+      </View>
+    );
+  }
+
+  if (lessonLocked) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 14 }}>
+        <Ionicons name="lock-closed" size={40} color={colors.mutedForeground} />
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17, textAlign: 'center' }}>
+          {t('masteryLockedTitle')}
+        </Text>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
+          {t('masteryLockedBody')}
+        </Text>
+        <Pressable
+          onPress={() => router.replace('/my-exams' as never)}
+          style={{ backgroundColor: colors.primary, paddingHorizontal: 22, paddingVertical: 12, borderRadius: colors.radius }}
+        >
+          <Text style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+            {t('masteryGoToExams')}
+          </Text>
+        </Pressable>
+        <Pressable onPress={() => goBack()} hitSlop={10}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>{t('masteryClose')}</Text>
+        </Pressable>
       </View>
     );
   }

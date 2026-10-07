@@ -266,6 +266,62 @@ export const gradingJobs = pgTable(
   t => [index("grading_jobs_status_idx").on(t.status)],
 );
 
+/**
+ * One row per time a student threw away a failed sitting to try again.
+ *
+ * A retake deletes the `attempts` row (and with it the answers and result), so
+ * the next claim gets a fresh sitting through the ordinary path and nothing
+ * that reads "the attempt for this student and exam" has to know retakes
+ * exist. What would otherwise be lost lives here: the mark that was thrown
+ * away, for the teacher, and the row count, for the cap.
+ *
+ * The `attempts` unique key on (evaluation, student) is deliberately left
+ * alone — swapping a constraint on a live table is the riskier migration.
+ */
+export const attemptRetakes = pgTable(
+  "attempt_retakes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    evaluationId: uuid("evaluation_id")
+      .notNull()
+      .references(() => evaluations.id, { onDelete: "cascade" }),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "cascade" }),
+    /** The percent on the sitting that was discarded. */
+    failedPercent: numeric("failed_percent", { precision: 5, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  t => [index("attempt_retakes_eval_student_idx").on(t.evaluationId, t.studentId)],
+);
+
+/**
+ * A teacher letting a student through a lesson the quiz would otherwise hold
+ * them behind (mastery gate). Counts as a pass for that student and lesson.
+ *
+ * Keyed on the lesson, not the exam: the gate unlocks lessons, and a lesson
+ * can have more than one quiz. One row per (student, lesson); granting twice
+ * is a no-op and undoing deletes the row.
+ */
+export const masteryOverrides = pgTable(
+  "mastery_overrides",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "cascade" }),
+    /** The catalog lesson id (`kbl-…`), never a title. */
+    lessonId: text("lesson_id").notNull(),
+    teacherId: uuid("teacher_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  t => [unique("mastery_overrides_student_lesson_unique").on(t.studentId, t.lessonId)],
+);
+
+export type MasteryOverride = typeof masteryOverrides.$inferSelect;
+export type AttemptRetake = typeof attemptRetakes.$inferSelect;
 export type EvaluationAssignment = typeof evaluationAssignments.$inferSelect;
 export type Attempt = typeof attempts.$inferSelect;
 export type AttemptAnswer = typeof attemptAnswers.$inferSelect;

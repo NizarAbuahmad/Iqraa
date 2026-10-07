@@ -1,0 +1,88 @@
+# Re-run a Deploy that GitHub itself stalled.
+#
+# On 2026-10-05 two Deploy runs (#417 and #418) were cancelled after about 15
+# minutes, both in their first job, "what changed" — a checkout and a filter
+# script that has a 5-minute `timeout-minutes` of its own. No step was ever
+# recorded and no log exists: the job was handed to a runner that never started
+# it, which `timeout-minutes` does not cover. Everything downstream was skipped,
+# so nothing deployed until the next merge, about an hour later.
+#
+# GitHub has no setting that shortens that wait, and no native retry. So this
+# watches for the symptom and re-runs the Deploy once.
+#
+# It is deliberately narrow, because "cancelled" also describes a Deploy that
+# was cancelled ON PURPOSE: the `web` job has `cancel-in-progress: true`, so a
+# newer push cancels the older web deploy by design, and a person can cancel a
+# run by hand. A blanket "re-run anything cancelled" would put older code live
+# over newer code. So a re-run happens only when ALL of these hold:
+#
+#   1. The Deploy was a push to main (not a hand-dispatched one).
+#   2. It was the first attempt. A re-run is attempt 2, so a second stall is
+#      left alone: that is a real problem for a person, not for a loop.
+#   3. Its commit is still the head of main. If main has moved, a newer Deploy
+#      owns the job — and the cancellation may have been that Deploy's doing.
+#   4. At least one job was cancelled with NO steps recorded, i.e. it never
+#      started. A run cancelled mid-flight has steps and is left alone.
+#
+# Not verifiable before merge: `workflow_run` workflows only run from the
+# default branch, so the first real test is the next stall. The decision logic
+# was checked against a stand-in `gh` (see STATUS.md), not against GitHub.
+name: Re-run stalled deploy
+
+on:
+  workflow_run:
+    workflows: [Deploy]
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  rerun:
+    name: re-run if stalled
+    if: >-
+      github.event.workflow_run.conclusion == 'cancelled' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # One decision per cancelled run, even if the event is delivered twice.
+    concurrency:
+      group: rerun-stalled-deploy-${{ github.event.workflow_run.id }}
+      cancel-in-progress: false
+    steps:
+      - name: Decide, and re-run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          if [ "$RUN_ATTEMPT" != "1" ]; then
+            echo "Run $RUN_ID is attempt $RUN_ATTEMPT, already a re-run. Not retrying again."
+            exit 0
+          fi
+
+          MAIN_SHA=$(gh api "repos/$REPO/commits/main" --jq .sha)
+          if [ "$MAIN_SHA" != "$HEAD_SHA" ]; then
+            echo "main has moved on to $MAIN_SHA; a newer Deploy owns this. Not re-running $HEAD_SHA."
+            exit 0
+          fi
+
+          # One number per page of jobs; add them up.
+          STALLED=$(gh api --paginate "repos/$REPO/actions/runs/$RUN_ID/jobs" \
+            --jq '[.jobs[] | select(.conclusion == "cancelled" and ((.steps // []) | length) == 0)] | length' \
+            | awk '{ s += $1 } END { print s + 0 }')
+          if [ "$STALLED" -eq 0 ]; then
+            echo "Run $RUN_ID was cancelled, but every cancelled job had started. Looks deliberate. Not re-running."
+            exit 0
+          fi
+
+          MSG="Run $RUN_ID ($HEAD_SHA) was cancelled with $STALLED job(s) that never started, and main has not moved. Re-running it once."
+          echo "$MSG"
+          echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
+          gh run rerun "$RUN_ID" --repo "$REPO"

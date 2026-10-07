@@ -39,11 +39,11 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // financial-literacy:grade-9 was the last pre-existing gap, closed
   // 2026-09-09, the same day four subjects joined MVP_SUBJECT_IDS brand-new
   // with only a Grade 9 book behind them — so their Grade 10 halves were
-  // bookless by construction, not by omission. Three of the four have since
-  // closed as their Grade 10 books arrived: geography and history that same
-  // week, civic-education on 2026-09-10. physical-education is the last one
-  // still true of that sentence.
-  'physical-education:grade-10',
+  // bookless by construction, not by omission. All four have since closed as
+  // their Grade 10 books arrived: geography and history that same week,
+  // civic-education on 2026-09-10, physical-education on 2026-10-06
+  // (SUBJECTS.grades extended for grade-10, Semester 1 only — see
+  // g10PeSem1.ts).
   // grade-8 joined MVP_GRADE_IDS 2026-09-09 with only financial-literacy
   // built. Grade 8 does not split science or social studies the way Grade
   // 9/10 do — NCCD combines them into single «العلوم» and «الدراسات
@@ -70,12 +70,13 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'civic-education:grade-8',
   'physical-education:grade-8',
   // creative-arts joined MVP_SUBJECT_IDS the same day as its only book
-  // (Grade 8). No Grade 9 book is expected — NCCD does not publish one for
-  // this subject at grade-9, so this one is permanent, not a gap to close.
+  // (Grade 8).
   // creative-arts:grade-10 closed 2026-09-20 — SUBJECTS.grades extended for
   // grade-10 (one book, no semester, 23 lessons not the usual 30) — see
   // g10CreativeArts.ts.
-  'creative-arts:grade-9',
+  // creative-arts:grade-9 closed 2026-10-06 — NCCD does publish one (it was
+  // wrongly assumed absent): 25 lessons (7 + 10 + 8), listed on nccd.gov.jo as
+  // «الفصل الأول» though the book prints no semester — see g9CreativeArts.ts.
   // vocational-education:grade-9 closed 2026-09-20 — SUBJECTS.grades extended
   // for grade-9 (was grade-4/6/7/8 only) — see g9VocationalSem1.ts.
   'vocational-education:grade-10',

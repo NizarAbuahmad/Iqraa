@@ -15,11 +15,32 @@ import { logger } from "./logger.ts";
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 const CHUNK_SIZE = 100;
 
+/**
+ * The Android notification channel each kind of push goes to, so a user can
+ * mute one kind in system settings without losing the others. The app
+ * creates these (PUSH_CHANNELS in artifacts/mobile/services/pushPolicy.ts,
+ * whose test reads this object — keep it a flat literal of string values).
+ * An id the device has not created still arrives, in Android's catch-all
+ * channel, so an older app version is not cut off.
+ */
+export const PUSH_CHANNEL = {
+  messages: "messages",
+  results: "results",
+  admin: "admin",
+} as const;
+
 export interface ExpoPushMessage {
   to: string;
   title: string;
   body: string;
   data?: Record<string, unknown>;
+  channelId?: (typeof PUSH_CHANNEL)[keyof typeof PUSH_CHANNEL];
+  /**
+   * The app-icon count to show: the recipient's unread messages. Only sent
+   * when it is that number — a push about something else would otherwise
+   * overwrite a correct count with an unrelated one.
+   */
+  badge?: number;
 }
 
 export interface ExpoPushResult {

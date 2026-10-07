@@ -357,6 +357,12 @@ export interface AttemptListRow {
   submittedAt: string | null;
   gradedAt: string | null;
   result: AttemptResult | null;
+  /**
+   * What the mastery gate lets the teacher do for this student on this quiz:
+   * `available` to unlock the next lesson, `granted` once they have. Absent or
+   * `none` when the gate is off or there is nothing to offer.
+   */
+  masteryUnlock?: 'none' | 'available' | 'granted';
 }
 
 export interface AttemptAnswer {
@@ -468,6 +474,17 @@ export async function listAttempts(evaluationId: string): Promise<AttemptListRow
   const res = await apiFetch(`/evaluations/${evaluationId}/attempts`);
   const data = await readJson<{ attempts: AttemptListRow[] }>(res, 'Loading attempts');
   return data.attempts;
+}
+
+/**
+ * Let a student through the lesson this quiz covers (or take it back). The
+ * server refuses anything but a one-lesson quiz.
+ */
+export async function setMasteryUnlock(evaluationId: string, studentId: string, unlocked: boolean): Promise<void> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/students/${studentId}/unlock`, {
+    method: unlocked ? 'PUT' : 'DELETE',
+  });
+  await readJson<{ ok: boolean }>(res, 'Updating the unlock');
 }
 
 /** Find-or-create: safe to call every time a teacher opens a student's entry screen. */

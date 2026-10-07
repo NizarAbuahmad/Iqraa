@@ -190,6 +190,23 @@ export function prepSummary(rows: PrepRow[]): { done: number; total: number } {
 }
 
 /**
+ * The chat's board, folded to what is still missing.
+ *
+ * On a phone the chat's empty state carries the board, and five full rows
+ * filled most of the screen before a word was typed — two of them often
+ * already made. There it lists only the rows still to make; a made row is
+ * reached through the library, and a skipped one stays as a small «أعِده»
+ * chip because the phone has no other board to restore it from.
+ */
+export function missingPrepView(rows: PrepRow[]): { missing: PrepRow[]; skipped: PrepRow[]; readyCount: number } {
+  return {
+    missing: rows.filter(r => !r.done && !r.skipped),
+    skipped: rows.filter(r => r.skipped),
+    readyCount: rows.filter(r => r.done).length,
+  };
+}
+
+/**
  * When a material was saved, the way a teacher says it: «اليوم», «أمس»,
  * «قبل 3 أيام», then a date past a week. Calendar days in local time, not
  * 24-hour spans — last night at 23:30 is «أمس» at 10:00 this morning.

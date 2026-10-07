@@ -134,3 +134,58 @@ describe('section glyphs the builders write', () => {
     }
   });
 });
+
+describe('inline icons in the HTML export', () => {
+  const GLYPHS = [0x1F6E1, 0x1F4DA, 0x25B6, 0x1F4C4, 0x2713].map(c => String.fromCodePoint(c));
+  const deck = (slides: ActivitySlide[]): ClassroomActivity => ({
+    activityName: 'x', activityType: 'lesson-slides', grade: '', subject: '', lesson: '', duration: 45,
+    difficulty: 'standard', groupType: 'whole-class', learningObjective: '', materials: [],
+    teacherPreparation: '', teacherNotes: [], answerKey: [], printables: [], assessment: '',
+    extensionChallenge: '', slides,
+  });
+  const cover: ActivitySlide = { slideNumber: 1, type: 'intro', title: 'درس', content: 'م', durationSeconds: 0 };
+  const html = (slides: ActivitySlide[]) => {
+    const full = buildDeckSlidesHTML(deck([cover, ...slides]), true);
+    return full.slice(full.lastIndexOf('</style>'));
+  };
+  const media = (kind: 'video' | 'audio' | 'document'): ActivitySlide => ({
+    slideNumber: 2, type: 'media', mediaKind: kind, title: 'وسائط', content: '', mediaUrl: 'https://example.com/a', durationSeconds: 0,
+  });
+
+  it('draws the video, audio and document links with an icon, not a glyph', () => {
+    for (const kind of ['video', 'audio', 'document'] as const) {
+      const out = html([media(kind)]);
+      assert.match(out, /<a class="deck-video-link"[^>]*><svg class="deck-icon-inline"/, kind);
+      for (const g of GLYPHS) assert.ok(!out.includes(g), `${kind} still prints ${g}`);
+    }
+  });
+
+  it('draws the verified badge with an icon in the badge colour, for both ways of being verified', () => {
+    const challenge = (verifiedBy: 'symbolic' | 'bank'): ActivitySlide => ({
+      slideNumber: 2, type: 'challenge', title: 'مثال', content: 'x = 1', answer: 'x = 1',
+      verified: true, verifiedBy, durationSeconds: 0,
+    } as ActivitySlide);
+    const symbolic = html([challenge('symbolic')]);
+    assert.match(symbolic, /class="deck-verified"[^>]*>\s*<svg class="deck-icon-inline"[^>]*stroke="#22C55E"/);
+    const bank = html([challenge('bank')]);
+    assert.match(bank, /class="deck-verified"[^>]*>\s*<svg class="deck-icon-inline"/);
+    assert.doesNotMatch(bank, /stroke="#22C55E"/);
+    for (const g of GLYPHS) assert.ok(!symbolic.includes(g) && !bank.includes(g), `badge still prints ${g}`);
+  });
+
+  it('marks the correct option with an icon tick', () => {
+    const q: ActivitySlide = {
+      slideNumber: 2, type: 'question', title: 'سؤال', content: 'ما الناتج؟', options: ['1', '2'], correctIndex: 1, durationSeconds: 0,
+    };
+    const out = html([q]);
+    assert.match(out, /class="deck-option-tick"[^>]*><svg class="deck-icon-inline"/);
+    assert.equal((out.match(/class="deck-option-tick"/g) ?? []).length, 1, 'only the correct option is ticked');
+    assert.ok(!out.includes(String.fromCodePoint(0x2713)));
+  });
+
+  it('only names icons the table can draw', () => {
+    for (const name of ['shield', 'play', 'file', 'tick', 'books'] as const) {
+      assert.ok(DECK_ICON_SHAPES[name].length > 0, name);
+    }
+  });
+});
