@@ -59,10 +59,10 @@ import {
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
-import { sendExpoPush, deadTokensFrom } from "../lib/pushNotifications.js";
+import { sendExpoPush, deadTokensFrom, PUSH_CHANNEL } from "../lib/pushNotifications.js";
 import { UUID } from "../lib/adminMetrics.js";
 import { visibleGroupMembers } from "../lib/groupMemberView.ts";
-import { latestVisibleMessages, unreadCounts } from "../lib/inboxSummary.ts";
+import { latestVisibleMessages, unreadCounts, unreadTotals } from "../lib/inboxSummary.ts";
 import { isR2Configured, newChatMediaKey, presignedGetUrl, putObject } from "../lib/r2.js";
 import { syncClassGroupThread } from "../lib/classThread.js";
 import { pairKey, studentNamesByPair } from "../lib/chatThreadContext.js";
@@ -256,10 +256,16 @@ async function notifyThreadParticipants(threadId: string, senderId: string, body
   if (notifiable.length === 0) return;
 
   const tokenRows = await db
-    .select({ expoPushToken: devicePushTokens.expoPushToken })
+    .select({ userId: devicePushTokens.userId, expoPushToken: devicePushTokens.expoPushToken })
     .from(devicePushTokens)
     .where(inArray(devicePushTokens.userId, notifiable));
   if (tokenRows.length === 0) return;
+
+  // The app-icon badge: each recipient's whole-inbox unread count, this
+  // message included — the number their bell will show once the app opens.
+  const withDevices = [...new Set(tokenRows.map(t => t.userId))];
+  const teacherIds = participants.filter(p => withDevices.includes(p.userId) && isTeacherRole(p.role)).map(p => p.userId);
+  const unread = await unreadTotals(withDevices, teacherIds);
 
   const [sender] = await db
     .select({ firstName: users.firstName, lastName: users.lastName })
@@ -270,7 +276,14 @@ async function notifyThreadParticipants(threadId: string, senderId: string, body
   const preview = body.length > PUSH_BODY_PREVIEW_LENGTH ? `${body.slice(0, PUSH_BODY_PREVIEW_LENGTH - 1)}…` : body;
 
   const results = await sendExpoPush(
-    tokenRows.map(t => ({ to: t.expoPushToken, title: senderName, body: preview, data: { threadId } })),
+    tokenRows.map(t => ({
+      to: t.expoPushToken,
+      title: senderName,
+      body: preview,
+      data: { threadId },
+      channelId: PUSH_CHANNEL.messages,
+      badge: unread.get(t.userId) ?? 0,
+    })),
   );
   await pruneDeadTokens(results);
 }
@@ -1265,6 +1278,7 @@ router.post("/messaging/device-tokens/test", testPushLimiter, async (req: Authen
         title: "Iqrra",
         body: "Test notification — if you see this, push works.",
         data: { test: true },
+        channelId: PUSH_CHANNEL.messages,
       })),
     );
     await pruneDeadTokens(results);

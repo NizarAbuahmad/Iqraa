@@ -36,6 +36,18 @@ describe('shared links point at the live site', () => {
     assert.deepEqual(offenders.map(f => relative(MOBILE_ROOT, f)), []);
   });
 
+  it('no screen or service builds a link with Linking.createURL', () => {
+    // expo-linking builds from window.location.origin on web (the bug above)
+    // and from the app's bare dev scheme on native (`mobile:///…`), which opens
+    // nothing when pasted into a chat. Links come from PROD_ORIGIN.
+    const offenders = [
+      ...sourceFiles(join(MOBILE_ROOT, 'app')),
+      ...sourceFiles(join(MOBILE_ROOT, 'components')),
+      ...sourceFiles(join(MOBILE_ROOT, 'services')),
+    ].filter(file => /\bcreateURL\(/.test(readFileSync(file, 'utf8')));
+    assert.deepEqual(offenders.map(f => relative(MOBILE_ROOT, f)), []);
+  });
+
   it('the parent invite names the live site', () => {
     const message = composeClaimCodeMessage(
       { studentName: 'نزار', code: '4U6DN6', expiresOn: '11/2/2026', origin: PROD_ORIGIN, fieldLabel: 'رمز الربط' },

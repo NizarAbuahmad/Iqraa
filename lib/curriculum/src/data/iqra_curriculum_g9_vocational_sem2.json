@@ -1,0 +1,401 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "التربية المهنية",
+    "subject_en": "Vocational Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة التربية المهنية - الصف التاسع - الفصل الدراسي الثاني - المركز الوطني لتطوير المناهج (الطبعة الأولى التجريبية، 2025)"
+    },
+    "provenance_note": "نُقلت الوحدات التسع ودروسها الخمسة عشر من كتاب الطالب (160 صفحة) في 2026-10-06، بقراءة قائمة المحتويات وصفحة افتتاح كل وحدة وصفحة افتتاح كل درس مباشرة من الصور المُصيَّرة للـ PDF (لا من النص المستخرج، لأن عربية الـ PDF تخرج مشوّهة). ترقيم الوحدات مطبوع في الكتاب نفسه من 1 إلى 9 داخل هذا الفصل (الوحدة الأولى ... الوحدة التاسعة)، ولا يتابع ترقيم الفصل الأول، فحقل number هنا 1–9 كما في كتب الصف الثامن؛ والمعرّفات مقيّدة بالفصل فلا تصطدم بمعرّفات الفصل الأول. كل وحدة تنتمي إلى مسار مهني مطبوع على صفحة افتتاحها (الاقتصاد المنزلي، المهارات الحياتية، ريادة الأعمال، الزراعة، الأمن والصحة والسلامة، الصناعة، السياحة والفندقة) — عدة مسارات في كتاب واحد وهي سمة هذه المادة. يطبع الكتاب صندوق «الفكرة الرئيسة» (main_idea_ar) وصندوق «ماذا سأتعلم؟» (objectives) وصندوق «المفاهيم والمصطلحات» الثنائي اللغة (vocabulary) لكل درس. نصوص الكتاب منقولة دون تشكيل.",
+    "known_gaps": [
+      "لا دليل معلم لهذه المادة على القرص، فحقل periods وtotal_periods = null لكل درس ووحدة.",
+      "الكتاب لا يطبع عناوين إنجليزية للوحدات ولا للدروس؛ حقلا title_en للوحدات والدروس ترجمة مباشرة للعنوان العربي المطبوع وليست منقولة عن الكتاب (المطلوب منها حقل نصي غير فارغ لعرض الواجهة الإنجليزية).",
+      "يطبع كل درس أيضا صندوق «القيم والاتجاهات» — سمات وجدانية لا مصطلحات معرّفة، فلم تُنقل.",
+      "لا يطبع أي افتتاح وحدة صندوق «تعلمت سابقا»، فحقل prior_knowledge فارغ لكل الوحدات.",
+      "المصطلح «نظم المعلومات الجغرافية (GIS)» في الدرس u6_l1 مطبوع بالعربية وبين قوسين (GIS) ولا يطبع الكتاب مقابله الإنجليزي الكامل؛ سُجّل حقل en فيه GIS كما طُبع.",
+      "قائمة المحتويات تضع الوحدة 4 (المهارات الوظيفية والمهنية) تحت مسار «المهارات الحياتية» مع الوحدة 3، بينما تطبع صفحة افتتاح الوحدة 4 نفسها شارة «الاقتصاد المنزلي»؛ لا يُنقل المسار كحقل في هذا الملف فلم يُحسم الخلاف.",
+      "عنوان الوحدة 8 مطبوع «التعبئة والتغليف الكيميائي» في قائمة المحتويات و«التعبئة والتغليف الكيماوي» على صفحة افتتاحها وفي مصطلحات الدرس؛ نُقل عنوان صفحة الافتتاح."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "نمو اليافعين وصحتهم",
+      "title_en": "Adolescent Growth and Health",
+      "general_idea_ar": "فئة اليافعين تمثل مرحلة عمرية تتسم بعدم الاستقرار؛ لما تشهده من تغيرات جسدية واجتماعية وعقلية وانفعالية. تتجلى أهمية هذه المرحلة كونها فرصة للتدخلات التنموية التي تؤدي إلى رفع وعي اليافعين واليافعات بأسلوب حياة صحي وسليم وتشجعهم على ممارسته.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box «الفكرة الرئيسة», objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "الخصائص النمائية لليافعين",
+          "title_en": "Developmental Characteristics of Adolescents",
+          "main_idea_ar": "يسهم دعم اليافعين واليافعات وتمكينهم، عن طريق تزويدهم بالمعلومات والمعارف المرتبطة بخصائصهم النمائية، في صقل مهاراتهم الحياتية، ومساعدتهم على تحقيق التوازن النفسي والاجتماعي والصحي في جميع جوانب حياتهم.",
+          "periods": null,
+          "objectives": [
+            "الوعي بالخصائص النمائية والتغيرات التي ترافق مرحلة اليافعين.",
+            "التعامل بإيجابية مع التغييرات التي يمر بها اليافعون واليافعات."
+          ],
+          "vocabulary": [
+            { "ar": "اليافعون", "en": "Teenagers" },
+            { "ar": "مضاد التعرق", "en": "Antiperspirant" },
+            { "ar": "مزيل رائحة العرق", "en": "Deodorant" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "تغذية اليافعين",
+          "title_en": "Adolescent Nutrition",
+          "main_idea_ar": "تعد التغذية السليمة والنمط الصحي في مرحلة اليفاعة أساسا لنمو بدني وعقلي سليم، إذ تؤثر العادات الغذائية والصحية في هذه المرحلة تأثيرا مباشرا على الصحة العامة والحياة المستقبلية لليافعين واليافعات.",
+          "periods": null,
+          "objectives": [
+            "تعرف مفهوم الغذاء الصحي.",
+            "تطوير اتجاهات وعادات غذائية سليمة.",
+            "التزام النمط الغذائي الصحي في الحياة اليومية."
+          ],
+          "vocabulary": [
+            { "ar": "الطبق الصحي", "en": "MyPlate" },
+            { "ar": "الحبوب", "en": "Grains" },
+            { "ar": "منتجات الألبان", "en": "Dairy" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "الصناعات التقليدية",
+      "title_en": "Traditional Industries",
+      "general_idea_ar": "للحرف اليدوية والصناعات التقليدية أهمية كبيرة بوصفها جزءا مهما من التراث الثقافي والهوية الوطنية، كما أن لها دورا في الحفاظ على الموروثات الثقافية وتنمية الاقتصاد المحلي.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box «الفكرة الرئيسة», objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "فن الصناعات التقليدية",
+          "title_en": "The Art of Traditional Industries",
+          "main_idea_ar": "تمثل الصناعات التقليدية الأردنية تراثا حيا يعبر عن تنوع البيئة الأردنية (الريف، والبادية، والمدن)، وهي اليوم مصدر دخل للعديد من الصناع والحرفيين/ الحرفيات، ودعامة مهمة للسياحة الثقافية.",
+          "periods": null,
+          "objectives": [
+            "توضيح مفهوم الصناعات التقليدية.",
+            "معرفة أهمية الصناعات التقليدية.",
+            "تنفيذ نماذج لبعض الصناعات التقليدية باستخدام موارد البيئة المحلية.",
+            "توظيف التكنولوجيا الحديثة في استثمار الصناعات التقليدية والاهتمام بها."
+          ],
+          "vocabulary": [
+            { "ar": "الصناعات التقليدية", "en": "Traditional Industries" },
+            { "ar": "فن الفسيفساء", "en": "Mosaic Art" },
+            { "ar": "الحرف اليدوية", "en": "Handicrafts" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "التخطيط لمساري المستقبلي",
+      "title_en": "Planning for My Future Paths",
+      "general_idea_ar": "يسهم التخطيط المهني في تمكين الطلبة من فهم قدراتهم وميولهم، واستكشاف الخيارات المهنية المتاحة، مما يساعدهم على اتخاذ قرارات مدروسة تحدد مساراتهم المستقبلية بثقة ووعي.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box «الفكرة الرئيسة», objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "التخطيط المهني",
+          "title_en": "Career Planning",
+          "main_idea_ar": "يعد اختيار مهنة المستقبل من أهم القرارات التي يتخذها الطلبة في حياتهم؛ لذا فإن البدء بجمع المعلومات حول الذات والفرص المهنية المتاحة في وقت مبكر يشكل خطوة أساسية في التخطيط للمسارين الأكاديمي والمهني.",
+          "periods": null,
+          "objectives": [
+            "توضيح مفهوم التخطيط المهني وأهميته.",
+            "تصنيف الشخصية المهنية وفق مقياس هولاند للميول المهنية.",
+            "إدراك أهمية الميول والقدرات الشخصية في اتخاذ قرارات تتعلق بالمسارين الأكاديمي والمهني."
+          ],
+          "vocabulary": [
+            { "ar": "التخطيط المهني", "en": "Career Planning" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "مسارات التعليم في الأردن",
+          "title_en": "Education Pathways in Jordan",
+          "main_idea_ar": "يهدف النظام التعليمي الأردني الحديث إلى تمكين الطلبة من اختيار المسار التعليمي المناسب لميولهم وقدراتهم، سواء كان أكاديميا أو مهنيا، ابتداء من الصف العاشر.",
+          "periods": null,
+          "objectives": [
+            "التمييز بين المسار الأكاديمي والمسار المهني (BTEC).",
+            "الربط بين الميول الشخصية وفرص المسارات والتخصصات المختلفة المتاحة."
+          ],
+          "vocabulary": [
+            { "ar": "النجاح", "en": "Pass" },
+            { "ar": "التفوق", "en": "Merit" },
+            { "ar": "الامتياز", "en": "Distinction" },
+            { "ar": "مجلس التعليم في الأعمال والتكنولوجيا", "en": "BTEC" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "المهارات الوظيفية والمهنية",
+      "title_en": "Job and Professional Skills",
+      "general_idea_ar": "تساعد المهارات الوظيفية الأساسية الطلبة على الاستعداد لسوق العمل، بدءا من كتابة السيرة الذاتية بأسلوب منظم، وصولا إلى إتقان مهارات إجراء مقابلات العمل، مع تعزيز المصداقية المهنية؛ مما يعزز جاهزيتهم الوظيفية، ويزيد فرص نجاحهم المهني مستقبلا.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box «الفكرة الرئيسة», objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "كتابة السيرة الذاتية",
+          "title_en": "Writing a CV",
+          "main_idea_ar": "تعد السيرة الذاتية أداة أساسية للتعريف بالمؤهلات والمهارات والخبرات أمام جهات التوظيف، يتمكن الطلبة من تقديم أنفسهم بشكل احترافي ومنظم، مما يعزز من فرصهم في الحصول على الوظائف أو البرامج التدريبية.",
+          "periods": null,
+          "objectives": [
+            "تعرف مفهوم السيرة الذاتية وأهميتها في الحصول على فرص العمل.",
+            "خطوات كتابة سيرة ذاتية تتوافق مع المواصفات المطلوبة."
+          ],
+          "vocabulary": [
+            { "ar": "السيرة الذاتية", "en": "Curriculum Vitae (CV)" },
+            { "ar": "المؤهلات الأكاديمية", "en": "Academic Qualifications" },
+            { "ar": "الخبرات العملية", "en": "Work Experience" },
+            { "ar": "المهارات", "en": "Skills" },
+            { "ar": "الإنجازات", "en": "Achievements" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "مقابلات العمل",
+          "title_en": "Job Interviews",
+          "main_idea_ar": "تعد مقابلة العمل خطوة حاسمة في طريق الحصول على وظيفة، ما يتطلب الاستعداد الجيد لها.",
+          "periods": null,
+          "objectives": [
+            "الاستعداد لمقابلة العمل باحترافية.",
+            "استخدام لغة الجسد لترك انطباع إيجابي وعرض المهارات بشكل مقنع."
+          ],
+          "vocabulary": [
+            { "ar": "مقابلة العمل", "en": "Job Interview" },
+            { "ar": "لغة الجسد", "en": "Body Language" },
+            { "ar": "الانطباع الأول", "en": "First Impression" },
+            { "ar": "مهارات التواصل", "en": "Communication Skills" },
+            { "ar": "الثقة بالنفس", "en": "Self-confidence" }
+          ]
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "المصداقية المهنية",
+          "title_en": "Professional Credibility",
+          "main_idea_ar": "المصداقية من أهم القيم الإيجابية في بيئة العمل، وتسهم في بناء بيئة عمل إيجابية.",
+          "periods": null,
+          "objectives": [
+            "تعرف مفهوم المصداقية المهنية.",
+            "تعرف أهمية المصداقية المهنية وتأثيرها على العمل."
+          ],
+          "vocabulary": [
+            { "ar": "المصداقية المهنية", "en": "Professional Credibility" },
+            { "ar": "أخلاقيات مهنية", "en": "Professional Ethics" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "المشاريع الريادية",
+      "title_en": "Entrepreneurial Projects",
+      "general_idea_ar": "إن تعرف الطلبة مهارات تحليل المشكلات في المشاريع الريادية، ومسبباتها وطرائق التعامل معها؛ يسهم في حل التحديات التي تعيق تنفيذ المشاريع الريادية، ويعزز التفكير التحليلي وروح المبادرة في مجال ريادة الأعمال.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box «الفكرة الرئيسة», objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "تحليل المشكلات في المشاريع الريادية",
+          "title_en": "Analyzing Problems in Entrepreneurial Projects",
+          "main_idea_ar": "يواجه كل مشروع ريادي تحديات قد تعيق نجاحه، مثل انخفاض المبيعات أو مشكلات في الإدارة والتسويق. وباكتساب مهارات تحليل هذه المشكلات، نتمكن من فهم الأسباب الحقيقية وراءها، ونصبح قادرين على التفكير المنطقي لإيجاد حلول فعالة.",
+          "periods": null,
+          "objectives": [
+            "استخدام أدوات بسيطة لتمثيل المشكلة وتحليلها (مثل مخطط السمكة).",
+            "تقديم وصف واضح للمشكلة، ومناقشتها مع الزملاء/ الزميلات."
+          ],
+          "vocabulary": [
+            { "ar": "المشكلة الريادية", "en": "Entrepreneurial Problem" },
+            { "ar": "أسباب المشكلة", "en": "Causes of the Problem" },
+            { "ar": "مخطط السمكة", "en": "Fishbone Diagram" },
+            { "ar": "التحليل", "en": "Analysis" },
+            { "ar": "الأسباب الجذرية", "en": "Root Causes" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "الزراعة في الأردن",
+      "title_en": "Agriculture in Jordan",
+      "general_idea_ar": "يشكل الاستثمار في القطاع الزراعي ركيزة أساسية لتحقيق الأمن الغذائي وتعزيز التنمية المستدامة، ومع تطور هذا القطاع برزت تخصصات ومهن جديدة قائمة على التكنولوجيا والابتكار، مما يفتح آفاقا واعدة أمام الشباب في مجالات الزراعة المختلفة.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box «الفكرة الرئيسة», objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "التخصصات والمهن الزراعية المستقبلية",
+          "title_en": "Future Agricultural Specializations and Professions",
+          "main_idea_ar": "يشهد قطاع الزراعة تحولا نحو التكنولوجيا والاستدامة؛ مما أدى إلى نشوء تخصصات ومهن جديدة تجمع بين العلوم الزراعية والذكاء الاصطناعي؛ وذلك بهدف تعزيز كفاءة الإنتاج الزراعي.",
+          "periods": null,
+          "objectives": [
+            "تعرف التخصصات والمهن الزراعية."
+          ],
+          "vocabulary": [
+            { "ar": "البستنة", "en": "Gardening" },
+            { "ar": "تنسيق الحدائق", "en": "Landscaping" },
+            { "ar": "الزراعة الرقمية", "en": "Digital Agriculture" },
+            { "ar": "نظم المعلومات الجغرافية (GIS)", "en": "GIS" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "آلات زراعية حديثة",
+          "title_en": "Modern Agricultural Machinery",
+          "main_idea_ar": "تسهم الآلات الزراعية الحديثة في زيادة الإنتاج الزراعي عن طريق تسهيل العمليات الزراعية، وتوفير الوقت والجهد، بفضل اعتمادها على التكنولوجيا المتقدمة والأنظمة الذكية.",
+          "periods": null,
+          "objectives": [
+            "تعرف آلات زراعية حديثة."
+          ],
+          "vocabulary": [
+            { "ar": "آلات الحراثة", "en": "Tillage Machines" },
+            { "ar": "آلات البذار والغرس", "en": "Seeding and Planting Machines" },
+            { "ar": "آلات التسميد", "en": "Fertilization Machines" },
+            { "ar": "آلات الحصاد", "en": "Harvester Machines" }
+          ]
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "الاستثمار الزراعي في الأردن",
+          "title_en": "Agricultural Investment in Jordan",
+          "main_idea_ar": "يسهم الاستثمار الزراعي في الأردن في تحقيق الأمن الغذائي، وتنمية الاقتصاد الوطني خاصة في ظل التحديات البيئية والمائية، وتوفير فرص عمل للشباب والشابات في هذا القطاع الحيوي.",
+          "periods": null,
+          "objectives": [
+            "تعرف المؤسسات ذات العلاقة بالاستثمار الزراعي وكيفية الاستفادة من خدماتها.",
+            "تعرف المحاصيل الزراعية الرئيسة التي ينتجها الأردن وفرص تصديرها.",
+            "تعرف مبادئ إنشاء المشروع الزراعي."
+          ],
+          "vocabulary": [
+            { "ar": "الاستثمار", "en": "Investment" },
+            { "ar": "الاستثمار الزراعي", "en": "Agricultural Investment" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "السلامة المهنية",
+      "title_en": "Occupational Safety",
+      "general_idea_ar": "معرفة مصادر الضجيج الصناعي ومخاطره أمر مهم للحفاظ على صحة العاملين والعاملات. وذلك خلال تطبيق قواعد الصحة والسلامة المهنية باستخدام وسائل الحماية الشخصية والجماعية، مما يعزز من الأمان في أماكن العمل.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box «الفكرة الرئيسة», objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "الوقاية من الضجيج الصناعي",
+          "title_en": "Protection from Industrial Noise",
+          "main_idea_ar": "يعد الضجيج الصناعي من المخاطر الشائعة في بيئة العمل، وقد يؤدي إلى آثار سلبية على صحة العاملين والعاملات، مثل: ضعف السمع، أو التوتر، أو قلة التركيز. بفهم مصادر الضجيج ومخاطره، وتعلم قواعد الوقاية وأساليب الحماية الشخصية، نتمكن من العمل بأمان وكفاءة داخل المصانع وورش الإنتاج.",
+          "periods": null,
+          "objectives": [
+            "مفهوم الضجيج الصناعي وخطورته على الصحة.",
+            "أساليب الوقاية من الضجيج باستخدام الوسائل المناسبة.",
+            "قواعد السلامة الواجب اتباعها في أماكن الضجيج المرتفع."
+          ],
+          "vocabulary": [
+            { "ar": "الضجيج الصناعي", "en": "Industrial Noise" },
+            { "ar": "العتبة السمعية", "en": "Hearing Threshold" },
+            { "ar": "وسائل الوقاية", "en": "Protective Equipment" },
+            { "ar": "شدة الصوت", "en": "Sound Intensity" },
+            { "ar": "قواعد السلامة", "en": "Safety Rules" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "التعبئة والتغليف الكيماوي",
+      "title_en": "Chemical Packaging and Wrapping",
+      "general_idea_ar": "تعد التعبئة والتغليف في الصناعات الكيماوية عنصرا أساسيا للحفاظ على جودة المنتجات وسلامة العاملين والعاملات والبيئة، ومعرفة أنواع التعبئة والتغليف المناسبة للمواد الكيماوية مع التزام قواعد السلامة المهنية يعزز مهارات الطلبة وقدرتهم على العمل بدقة وأمان في البيئات الصناعية مستقبلا.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box «الفكرة الرئيسة», objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "مهارات التعبئة والتغليف",
+          "title_en": "Packaging and Wrapping Skills",
+          "main_idea_ar": "تعد التعبئة والتغليف الكيماوي من المهارات الأساسية في مجال الصناعات الكيماوية، إذ تسهم في الحفاظ على جودة المواد الكيماوية وسلامة العاملين والعاملات والبيئة المحيطة.",
+          "periods": null,
+          "objectives": [
+            "مفهوم التعبئة والتغليف الكيماوي وأهميته في الصناعات الكيماوية.",
+            "إجراءات الوقاية والسلامة أثناء التعبئة والتغليف.",
+            "الحفاظ على بيئة العمل نظيفة وآمنة بعد الانتهاء من التعبئة."
+          ],
+          "vocabulary": [
+            { "ar": "التعبئة والتغليف الكيماوي", "en": "Chemical Packaging" },
+            { "ar": "العبوات المناسبة", "en": "Suitable Containers" },
+            { "ar": "التغليف اليدوي والآلي", "en": "Manual & Automated Packaging" },
+            { "ar": "تصنيف المواد الكيماوية", "en": "Chemical Classification" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_ar": "مشاريع مهنية",
+      "title_en": "Professional Projects",
+      "general_idea_ar": "ينمي التعلم القائم على المشاريع في مجال الفندقة والسياحة مهارات الطلبة عن طريق أنشطة عملية تربط المعرفة بالواقع السياحي الأردني، وتعزز التعاون والإبداع والعمل الجماعي.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box «الفكرة الرئيسة», objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_ar": "مشروع عملي في السفر والسياحة",
+          "title_en": "A Practical Project in Travel and Tourism",
+          "main_idea_ar": "التعلم القائم على المشاريع يربط التعلم بالواقع، ويكسب الطلبة مهارات البحث والتخطيط والعمل الجماعي.",
+          "periods": null,
+          "objectives": [
+            "أهمية التعلم القائم على المشاريع.",
+            "تنفيذ مشروع عملي في المجال السياحي."
+          ],
+          "vocabulary": [
+            { "ar": "المشروع", "en": "Project" },
+            { "ar": "التعلم القائم على المشاريع", "en": "Project-Based Learning" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -198,6 +198,20 @@ describe('searching', () => {
     assert.deepEqual(filterResources(withNote, { query: 'مراجعه' }).map(i => i.key), ['uploaded:n1']);
   });
 
+  it('matches the printed page of a book code, in Arabic or Latin digits, with or without the word', () => {
+    const page12 = ['book-qr:12:https://example.invalid/v1'];
+    const page31 = ['book-qr:31:http://example.invalid/a1'];
+    assert.deepEqual(keys('12'), page12);
+    assert.deepEqual(keys('١٢'), page12);
+    assert.deepEqual(keys('صفحة 12'), page12);
+    assert.deepEqual(keys('صفحة ٣١'), page31);
+    assert.deepEqual(keys('page 31'), page31);
+  });
+
+  it('does not give an upload or a sheet a page it never had', () => {
+    assert.deepEqual(keys('صفحة'), ['book-qr:12:https://example.invalid/v1', 'book-qr:31:http://example.invalid/a1']);
+  });
+
   it('ignores a blank query and combines with the other filters', () => {
     assert.equal(filterResources(items, { query: '   ' }).length, items.length);
     assert.deepEqual(
