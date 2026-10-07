@@ -141,7 +141,7 @@ export function EditQuestionModal({
     <Pressable
       key={key}
       onPress={onPress}
-      style={[styles.chip, { borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? ACCENT + '12' : colors.card }]}
+      style={[styles.chip, { borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? palette.selected : colors.card }]}
     >
       <Text style={{ color: selected ? ACCENT : colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{text}</Text>
     </Pressable>
@@ -305,7 +305,7 @@ export function EditQuestionModal({
                       onPress={() => setObjectiveId(id)}
                       accessibilityRole="radio"
                       aria-checked={on}
-                      style={[row, styles.objectiveRow, { borderColor: on ? ACCENT : colors.border, backgroundColor: on ? ACCENT + '12' : colors.card }]}
+                      style={[row, styles.objectiveRow, { borderColor: on ? ACCENT : colors.border, backgroundColor: on ? palette.selected : colors.card }]}
                     >
                       <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={18} color={on ? ACCENT : colors.mutedForeground} />
                       <Text numberOfLines={2} style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>

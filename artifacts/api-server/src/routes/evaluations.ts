@@ -13,10 +13,12 @@ import { db } from "@workspace/db";
 import {
   attemptResults,
   attempts,
+  classMemberships,
   evaluations,
   evaluationQuestions,
   levelBands,
   levelScales,
+  masteryOverrides,
   students,
 } from "@workspace/db";
 import type { Difficulty, QuestionType } from "@workspace/db";
@@ -25,6 +27,7 @@ import {
   getBookById,
   getEvaluableBookIds,
   getObjectivesForBook,
+  lessonIdsForObjectiveIds,
   objectivesAreWithinBook,
   resolveObjectiveIds,
 } from "@workspace/curriculum";
@@ -35,6 +38,9 @@ import {
   type AuthenticatedRequest,
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
+import { masteryGateEnabled } from "../lib/features.js";
+import { isSchemaMissing } from "../lib/schemaMissing.js";
+import { passedLessonIds, unlockState } from "../modules/assessment/lessonProgress.ts";
 import { findLiveClass } from "../lib/classOwnership.js";
 import { archiveDecision } from "../lib/evaluationArchive";
 import {
@@ -1371,10 +1377,132 @@ router.get("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) =
       : [];
     const byAttempt = new Map(results.map(r => [r.attemptId, r]));
 
-    res.json({ attempts: rows.map(r => ({ ...r, result: byAttempt.get(r.id) ?? null })) });
+    // What the mastery gate lets a teacher do about each student. Only a
+    // one-lesson quiz with the gate on has anything to offer; if the unlock
+    // table has not been pushed yet, offer nothing rather than fail the screen.
+    const lessons = lessonIdsForObjectiveIds(evaluation.objectiveIds);
+    const gateLesson = masteryGateEnabled() && lessons.length === 1 ? lessons[0]! : null;
+    let granted = new Set<string>();
+    if (gateLesson && rows.length > 0) {
+      try {
+        const g = await db
+          .select({ studentId: masteryOverrides.studentId })
+          .from(masteryOverrides)
+          .where(
+            and(
+              eq(masteryOverrides.lessonId, gateLesson),
+              inArray(masteryOverrides.studentId, rows.map(r => r.studentId)),
+            ),
+          );
+        granted = new Set(g.map(x => x.studentId));
+      } catch (err) {
+        if (!isSchemaMissing(err)) throw err;
+        logger.error({ err }, "mastery_overrides is missing from this database; offering no unlocks");
+      }
+    }
+
+    res.json({
+      attempts: rows.map(r => {
+        const result = byAttempt.get(r.id) ?? null;
+        const passed =
+          result !== null &&
+          passedLessonIds([{ objectiveIds: evaluation.objectiveIds, percent: result.percent, isProvisional: result.isProvisional }], lessonIdsForObjectiveIds).length > 0;
+        return {
+          ...r,
+          result,
+          masteryUnlock: unlockState({
+            gateOn: gateLesson !== null,
+            lessonId: gateLesson,
+            passed,
+            granted: granted.has(r.studentId),
+          }),
+        };
+      }),
+    });
   } catch (err) {
     logger.error({ err }, "list attempts failed");
     res.status(500).json({ error: "Failed to load attempts" });
+  }
+});
+
+/**
+ * Let a student through (or take it back) on the lesson this quiz covers.
+ *
+ * The mastery gate holds a student behind a quiz until they pass it; this is
+ * the teacher's way out for one the quiz cannot move on — out of retakes, or
+ * stuck on a question that was wrong. It writes a `mastery_overrides` row,
+ * which `/student/progress` counts as a pass. Refused unless the exam is a
+ * one-lesson quiz, because the unlock is for a lesson, and a term test spanning
+ * six of them has no single lesson to open.
+ */
+async function masteryUnlockTarget(
+  req: AuthenticatedRequest,
+  res: Parameters<Parameters<typeof router.put>[1]>[1],
+): Promise<{ lessonId: string; studentId: string } | null> {
+  const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+  if (!evaluation) {
+    res.status(404).json({ error: "Evaluation not found" });
+    return null;
+  }
+  const studentId = req.params["studentId"] as string;
+  const student = await ownedStudent(studentId, req.user!.id);
+  if (!student) {
+    res.status(404).json({ error: "Student not found" });
+    return null;
+  }
+  if (evaluation.classGroupId) {
+    const [member] = await db
+      .select({ id: classMemberships.studentId })
+      .from(classMemberships)
+      .where(and(eq(classMemberships.classGroupId, evaluation.classGroupId), eq(classMemberships.studentId, studentId)))
+      .limit(1);
+    if (!member) {
+      res.status(404).json({ error: "Student not found" });
+      return null;
+    }
+  }
+  const lessons = lessonIdsForObjectiveIds(evaluation.objectiveIds);
+  if (lessons.length !== 1) {
+    res.status(409).json({ code: "not_a_quiz", error: "Only a one-lesson quiz can unlock a lesson." });
+    return null;
+  }
+  return { lessonId: lessons[0]!, studentId };
+}
+
+function failMasteryUnlock(res: Parameters<Parameters<typeof router.put>[1]>[1], err: unknown): void {
+  if (isSchemaMissing(err)) {
+    logger.error({ err }, "mastery unlock failed — mastery_overrides table is missing from this database");
+    res.status(503).json({ code: "mastery_unlock_unavailable", error: "Unlocking is not set up on this server yet." });
+    return;
+  }
+  logger.error({ err }, "mastery unlock failed");
+  res.status(500).json({ error: "Failed to update this student's unlock" });
+}
+
+router.put("/evaluations/:id/students/:studentId/unlock", async (req: AuthenticatedRequest, res) => {
+  try {
+    const target = await masteryUnlockTarget(req, res);
+    if (!target) return;
+    await db
+      .insert(masteryOverrides)
+      .values({ studentId: target.studentId, lessonId: target.lessonId, teacherId: req.user!.id })
+      .onConflictDoNothing();
+    res.json({ ok: true, unlocked: true });
+  } catch (err) {
+    failMasteryUnlock(res, err);
+  }
+});
+
+router.delete("/evaluations/:id/students/:studentId/unlock", async (req: AuthenticatedRequest, res) => {
+  try {
+    const target = await masteryUnlockTarget(req, res);
+    if (!target) return;
+    await db
+      .delete(masteryOverrides)
+      .where(and(eq(masteryOverrides.studentId, target.studentId), eq(masteryOverrides.lessonId, target.lessonId)));
+    res.json({ ok: true, unlocked: false });
+  } catch (err) {
+    failMasteryUnlock(res, err);
   }
 });
 

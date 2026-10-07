@@ -54,6 +54,8 @@ export interface ResourceItem {
   url?: string;
   /** Cover image URL: set by admin, or auto-derived from a YouTube URL. */
   thumbnailUrl?: string;
+  /** The uploaded file's MIME type, so a picture can be its own cover. */
+  mimeType?: string;
   /** 1 or 2 when the resource covers one semester only. */
   semester?: 1 | 2;
   /** The printed page a book-QR code sits on. */
@@ -77,6 +79,11 @@ export interface ResourceFilter {
   gradeId?: string;
   /** Keeps rows for this subject, plus rows with no subject. */
   subjectId?: string;
+  /**
+   * Keeps rows for any of these subjects, plus rows with no subject. For a
+   * class that teaches several; empty or absent means no subject filter.
+   */
+  subjectIds?: readonly string[];
   query?: string;
 }
 
@@ -96,6 +103,7 @@ function fromUploaded(item: LibraryItem): ResourceItem | null {
     description: item.description || undefined,
     url: item.url,
     thumbnailUrl: item.thumbnailUrl ?? undefined,
+    mimeType: item.mimeType ?? undefined,
     semester: item.semester ?? undefined,
     actions: ['open'],
   };
@@ -166,8 +174,12 @@ export function filterResources(items: ResourceItem[], filter: ResourceFilter): 
     if (filter.lessonId && item.lessonId !== filter.lessonId) return false;
     if (filter.gradeId && item.gradeId && item.gradeId !== filter.gradeId) return false;
     if (filter.subjectId && item.subjectId && item.subjectId !== filter.subjectId) return false;
+    if (filter.subjectIds?.length && item.subjectId && !filter.subjectIds.includes(item.subjectId)) return false;
     if (query) {
-      const haystack = normalizeArabic(`${item.titleAr} ${item.titleEn} ${item.description ?? ''}`);
+      // A book code is located by its printed page, so «صفحة ٣٥», «page 35»
+      // and a bare «35» all find it; digits fold to Latin in `normalizeArabic`.
+      const page = item.page === undefined ? '' : `صفحة ${item.page} page ${item.page}`;
+      const haystack = normalizeArabic(`${item.titleAr} ${item.titleEn} ${item.description ?? ''} ${page}`);
       if (!haystack.includes(query)) return false;
     }
     return true;

@@ -1074,6 +1074,7 @@ export default function WorksheetScreen() {
       onPDF={handlePDF}
       onWord={handleWord}
       onSlides={handleSlides}
+      note={t(showAnswers ? 'exportTeacherCopyNote' : 'exportStudentCopyNote')}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}

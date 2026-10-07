@@ -1183,7 +1183,7 @@ export default function ClassDetailScreen() {
                           borderRadius: 18,
                           borderWidth: 1.5,
                           borderColor: active ? ACCENT : colors.border,
-                          backgroundColor: active ? ACCENT + '16' : colors.card,
+                          backgroundColor: active ? palette.selected : colors.card,
                         }}
                       >
                         <Text
@@ -1544,7 +1544,7 @@ export default function ClassDetailScreen() {
 
       <LibraryPickerSheet
         visible={showLibrary}
-        group={{ gradeId: group?.gradeId ?? '', subjectId: focus || group?.subjectId || '' }}
+        group={{ gradeId: group?.gradeId ?? '', subjectIds: focus ? [focus] : subjectIds }}
         added={shelfKeys}
         busyKey={addingKey}
         error={pickerError}

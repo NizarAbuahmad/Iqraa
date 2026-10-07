@@ -9,7 +9,7 @@
 import { test, afterEach, mock } from "node:test";
 import assert from "node:assert/strict";
 
-import { sendExpoPush, deadTokensFrom } from "../pushNotifications.ts";
+import { sendExpoPush, deadTokensFrom, PUSH_CHANNEL } from "../pushNotifications.ts";
 
 const originalFetch = globalThis.fetch;
 
@@ -91,4 +91,24 @@ test("sendExpoPush batches in chunks of 100", async () => {
   assert.equal(fetchMock.mock.callCount(), 2);
   assert.equal(results.length, 150);
   assert.ok(results.every(r => r.status === "ok"));
+});
+
+// The Android channel and the app-icon count ride on the message itself;
+// Expo forwards them to the device, where expo-notifications reads both.
+test("sendExpoPush passes channelId and badge through to Expo", async () => {
+  let sent: unknown[] = [];
+  globalThis.fetch = mock.fn(async (_url: string, init: RequestInit) => {
+    sent = JSON.parse(init.body as string) as unknown[];
+    return jsonResponse(200, { data: sent.map(() => ({ status: "ok" })) });
+  }) as unknown as typeof fetch;
+
+  await sendExpoPush([
+    { to: "ExponentPushToken[aaa]", title: "t", body: "b", channelId: PUSH_CHANNEL.messages, badge: 4 },
+    { to: "ExponentPushToken[bbb]", title: "t", body: "b", channelId: PUSH_CHANNEL.results },
+  ]);
+
+  assert.deepEqual(sent, [
+    { to: "ExponentPushToken[aaa]", title: "t", body: "b", channelId: "messages", badge: 4 },
+    { to: "ExponentPushToken[bbb]", title: "t", body: "b", channelId: "results" },
+  ]);
 });

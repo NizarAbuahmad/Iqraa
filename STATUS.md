@@ -53,6 +53,23 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **The chat's readiness board folds to one line** (2026-10-06). On a phone the
+  empty chat showed all five «جاهزية الدرس» rows, filling most of the screen
+  before a word was typed. It now opens as one tappable line («جاهزية الدرس ·
+  2 من 5 جاهزة ⌄»); unfolded it lists only the rows still to make
+  (`missingPrepView` in `services/lessonBoard.ts`), a «المواد الجاهزة (n)» link
+  to the library for the made ones, «كل ما يحتاجه الدرس جاهز» when nothing is
+  missing, and a small restore chip per skipped row — the phone has no other
+  board to bring one back from. Open/folded is remembered per user
+  (`@iqra_prep_board_open_v1`, read on `user?.id` because a reload mounts the
+  chat before the session restores — the first version read the unscoped key
+  and forgot). The desktop home board is unchanged: it passes no `fold`.
+  **Verified in the web build** (Expo web, `/auth/me` and `/workspace/items`
+  stubbed, Chromium at 390×844 in Arabic): folded by default; unfolds to
+  worksheet/quiz/slides with a lesson plan and activity saved; reload keeps it
+  open; skipping «عرض الحصة» turns it into a chip and the count to «2 من 4»,
+  the chip restores it; with all five saved it shows the all-ready line and
+  «المواد الجاهزة (5)»; the link opens `/workspace?q=…`. Not checked on a device.
 - **The chat «+» lists only what the chat does itself** (2026-10-06). It used to
   show the whole catalog, so most rows (slides, class hub, class challenge,
   library, evaluations, parent message) left the conversation from a button that
@@ -686,6 +703,98 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A Deploy GitHub stalls is re-run once, 2026-10-06
+
+On 2026-10-05 two Deploy runs (#417 at 20:26 UTC and #418 at 20:59) were
+cancelled after about 15 minutes in their first job, `what changed`: no step was
+recorded and no log exists, though the job has a 5-minute `timeout-minutes`. The
+job was assigned to a runner that never started it, which that timeout does not
+cover. Nothing deployed; the next merge's Deploy (#419) carried both commits
+about an hour later (checked: both are ancestors of its commit). Nothing was lost.
+
+`.github/workflows/deploy-rerun-stalled.yml` now re-runs such a Deploy once. It
+re-runs only a **push to `main`, on its first attempt, whose commit is still the
+head of `main`, with a job cancelled that has no steps**. The narrowness is the
+point: the `web` job's `cancel-in-progress: true` cancels older web deploys on
+purpose, and a re-run of one of those would put older code live over newer. A
+second stall is left alone for a person. The manual path is in
+`docs/deploying.md` (*A Deploy that was cancelled before it ran*).
+
+**Verified:** the YAML parses, and the decision script was run against a
+stand-in `gh` with fixtures shaped like the jobs API, seven cases: a stall
+re-runs; main having moved, a second attempt, a run cancelled mid-flight (steps
+recorded), and a run with nothing cancelled do not; the stall is found when it
+is on the second page of jobs only. **Not verified:** a real run. `workflow_run`
+workflows execute only from the default branch, so this could not be tried before
+merge; the first real test is the next stall. It is also not known whether a
+cancelled-never-started job always has no `steps` key in the live API: it did in
+#417 and #418, and the check treats an absent key and an empty list the same.
+
+## The quiz prints as an exam paper: student copy, name lines, marks table, 2026-10-06
+
+Prompted by a teacher-facing video of a generic AI exam tool (aidocmaker): its
+paper had name/class/date lines, instructions and a «مساحة للمصحح» table, and
+ours had none of them. Ours also had a real bug: **`buildQuizHTML` always
+printed the answer key**, under the last question, so a teacher printing for
+students had to cut it off by hand. The worksheet already gated its key on
+`includeAnswers`; the quiz never had the parameter.
+
+- **The quiz export follows the screen's answers toggle**, as the worksheet's
+  already did: hidden (the default) exports the student copy, shown exports the
+  teacher copy. PDF, Word, slides, share text and copy all follow it. The key
+  now sits on its own page (`.key-page`). The export menu says which copy it
+  is about to produce (`exportStudentCopyNote` / `exportTeacherCopyNote`, a new
+  `note` prop on `ExportMenu`), on the worksheet too, which had the same silent
+  toggle.
+- **The printed quiz has an exam head**: الاسم / الصف والشعبة / التاريخ lines,
+  instructions derived from the question types present (no "circle" line on a
+  paper with nothing to circle), and «جدول العلامات (للمصحّح)»: one row per
+  question type, `____ / n`, and the total. On both copies. The pieces are
+  `services/quizPaper.ts`, shared by the page and the Word file.
+- **The quiz's Word button builds a laid-out document** (`services/quizDocx.ts`)
+  instead of running the share text through `buildWordDocument`: the same head,
+  a real RTL marks table, lettered options, writing lines for short answers,
+  and the key on a new page on the teacher copy only. `useGeneratorExport`
+  takes an optional `buildWord`; the other generators still export text.
+- **A key letter's full stop no longer lands inside the maths isolate.**
+  `isolateForeignRuns` on a whole keyed line «ب. x = 2» wrapped «. x = 2», so
+  the key printed «ب x = 2 .». The printed key and the Word file now isolate
+  the answer text apart from its letter (`labelAnswerParts` in
+  `optionLabels.ts`). Found by rendering the Word file through LibreOffice.
+
+**Verified in the running web app** (local Postgres + API + Expo web, a
+grade-10 maths quiz on «تبسيط المقادير الأسية»): the menu shows the student
+note, the downloaded .docx has the head and marks table and no key; with
+answers shown the note changes and the .docx carries the key. Printed pages
+checked in Chromium (student 2 pages, teacher 3 with the key alone on the
+last). 19 cases in `quizPaper.test.ts` and `quizDocx.test.ts`, watched failing
+first. **Not checked in Microsoft Word itself** — LibreOffice is the proxy.
+
+**موادي and the chat, same day.** Neither has an answers toggle, so both kept
+exporting the teacher copy as plain text. Their export menus now carry a
+«نسخة الطالب / نسخة المعلم» choice (`copyChoice` on `ExportMenu`, student by
+default), and a quiz exports through `quizExports` (`services/quizExport.ts`):
+the same text, page and Word file as the quiz screen. The chat's quiz PDF used
+to be the share text in a `pre-wrap` page; it is now the exam paper. Verified
+in the web app on both screens: student Word without the key, teacher Word
+with it, both with the head and marks table, and the chat PDF downloads.
+Not changed: the chat bubble's own «نسخ» still copies the teacher text, the
+chat PDF carries no book figures (the message keeps no lesson id), and the
+lesson flow's exit ticket has its own builder.
+
+**Three of the chat's five create chips asked for nothing — fixed the same
+day.** `normaliseAsk` strips the tanween, so «اختباراً» reached
+`artifactFromAsk` (`services/ai/askVocabulary.ts`) as «اختبارا», and the
+word-end guard read the accusative alif as more word. The chips' own prompts
+(`CREATE_CHIP` in `lessonCopilot.ts`) — «جهّز اختباراً قصيراً», «اقترح نشاطاً
+صفياً», «أنشئ واجباً منزلياً» — therefore got a prose reply instead of the
+material; plan and worksheet were unaffected. `ar()` now accepts one trailing
+accusative alif (not after ه, where it would be the pronoun «ها»).
+`askVocabulary.test.ts` now builds every create chip with
+`buildLessonSuggestions` and asserts its prompt, both languages, routes to its
+own material — it failed on exactly those three first. Verified in the web app:
+the quiz chip's prompt now makes a quiz.
+
 ## Book codes live on the Library's kind shelves, and the Library is searchable, 2026-10-06
 
 The Library's «مصادر الكتب» shelf is gone. A teacher had to open it, then open
@@ -706,7 +815,10 @@ A search field sits under the intro. It narrows on top of the grade, subject
 and lesson chips, matches title, English title, description and a book code's
 book title, and folds Arabic with `normalizeArabic` (hamza, taa marbuta, harakat)
 on both sides — the old `query` filter existed but lower-cased only the title
-and had no UI. It does **not** match a printed page number.
+and had no UI. A book code's printed page is searchable too (2026-10-06,
+follow-up): «صفحة ٣٥», «page 35», «35» and «٣٥» all find it. It is a substring
+match like the rest, so «3» also finds pages 13 and 30–39 — not a page-exact
+lookup.
 
 Verified: `services/__tests__/resourceCatalog.test.ts` (shelf mapping, order,
 search), whole-monorepo `pnpm run typecheck` clean, mobile suite 2982 pass /
@@ -788,6 +900,93 @@ requests captured: a 6-word message → `out_of_scope`, `words: 6`, no `ask`;
 real PostHog project** — it fills once this deploys; filter on
 `chat_unanswered`, break down by `kind`, and read `ask` for the phrases.
 
+## The Science Lab: a shelf in the library, 2026-10-06
+
+**What a teacher can use today.** `/curriculum/resources` has a «المختبر» card
+opening `/curriculum/lab`: seven first-party items — three interactives
+(periodic table for elements 1–20, mole and molar-mass calculator, vector
+addition) and four law cards (F = m × a, the vector resultant, n = m ÷ Mr,
+N = n × Nₐ) — plus 8 pointers to curated external resources (5 images, 3
+videos, each filed on a real grade 10 chemistry or physics lesson) and the
+lesson's own book figures. Each opens in a present-mode page (an ordinary
+stack page capped at `CONTENT_MAX_WIDTH`, not a full-screen takeover; the vector
+canvas is a fixed 300×300) with a copyable link. The link is built from
+`PROD_ORIGIN` (`labShareUrl` in `services/labLinks.ts`) and copied with
+`copyToClipboard`, so it names the live site on web and Android alike, never the
+browsing host or the app's `mobile://` scheme (`shareLinksOrigin.test.ts` fails
+on `createURL(`). Student-reachable by the existing `/curriculum` prefix
+allowlist, pinned in `routeGating.test.ts`.
+
+**It is grade 10 only, and the interactives were swapped during planning.** The
+approved design named a pH scale and an Ohm's-law circuit. Neither has a grade
+10 lesson (acids/bases is grade 9 chemistry; no grade 9 or 10 physics lesson
+covers circuits), so they became the periodic table, the mole calculator and
+vector addition, each on a real lesson.
+
+**No curriculum Arabic was written from memory.** A law card's Arabic is lesson
+vocabulary copied verbatim and tested against the lesson; element names are
+tested as whole words against the printed text of the grade 10 chemistry S1 and
+S2 books and the grade 9 chemistry S1 book (`elements.test.ts`, `printsAsWord`:
+the name bounded by non-letters, with one optional leading clitic letter, so
+«الأرجون» does not match inside «الأرجونيت»). The interactives' titles and the
+UI strings are our own chrome text, not curriculum. The calculator's parser
+fails closed — an element past 20, a malformed formula, or a count above 10⁶
+(nested multipliers) returns a named reason, never a number. Its particles field
+accepts `6.022e23` or `6.022×10^23`, and an ambiguous «1,000» is refused rather
+than read as 1.
+
+**Data lives in `lib/curriculum`** (`lab.ts`, `elements.ts`, two JSON files), so
+it ships over the air. No table, no native module, no `app.json` version bump,
+no schema push.
+
+### What does not work
+
+- **Nothing in this feature has been seen by a person in a browser.** Every
+  task was built and reviewed by subagents that could not sign in (dev web
+  authenticates against production), so verification was typecheck, unit tests
+  for the pure logic, and code review. Look at `/curriculum/lab` on the web
+  build before telling anyone it works.
+- **Atomic masses are the book's rounded values**, not the precise ones (H 1,
+  C 12, O 16, Na 23, Cl 35.5 ...), so H2O is 18, not 18.015. The rounded
+  masses of H, C, N, O, Na, Mg, Al, Si and Ca come from the S2 student book (a
+  table on p21 and the masses given with its examples and questions); Cl 35.5,
+  S 32, K 39 and F 19 come from the S2 teacher packs. Seven (He 4, Li 7, Be 9, B 11, Ne 20, P 31, Ar 40) are
+  printed in no extracted source and are the usual classroom integers. The
+  periodic-table panel shows these numbers.
+- **The book is inconsistent in places.** Avogadro's number is 6.022 × 10²³ in
+  S2 p24 and 6.02 × 10²³ in example 8; nitrogen is spelled «النتروجين» in
+  grade 10 S1 and «النيتروجين» in S2 and grade 9 (the dataset uses the latter).
+- **Law-card quantity names are English only.** None have been added, because
+  none could be witnessed.
+- **The law formulas were compared by hand, not machine-witnessed, and law items
+  carry no `source` field.** Compared with the extracted book text: S1 physics
+  prints `∑F = ma` (p12, p73) against our `F = m × a`, and `Rx = Ax + Bx + Cx`
+  (p26) against our two-vector `Rx = Ax + Bx , Ry = Ay + By`; S2 chemistry prints
+  `n = m / Mr` (p25) and `N = NA × n` (p25–26) against our `n = m ÷ Mr` and
+  `N = n × Nₐ`. The symbols and operators differ in form, not in meaning. The
+  vector formula's `R = √(Rx² + Ry²)` could not be compared: the extraction
+  drops the root sign. No test reads these strings against the book.
+- **The Avogadro card's `Nₐ` (U+2090) is not in Readex Pro Bold**, the card's
+  font (checked against the font file's character map), so it falls back to a
+  system font. Unseen on a device.
+- **Figure captions show the PDF page index («p. N»)**, not the book's printed
+  page number.
+- **Three deviations from the design spec.** The vectors are adjusted with ±
+  steppers, not dragged; external items open the source in a new tab (web) or the in-app
+  browser (native) through `openExternal` instead of going through
+  `LessonMediaPanel`; the per-item chemistry quick checks were not built.
+- **No 3D, no games, no experiment cards, no hand-made infographics, no
+  equipment glossary.** Experiment cards wait on vision extraction of the
+  activity books (see «The English lab»); the glossary needs instruments, and
+  lesson vocabulary lists terms.
+- **A lab item cannot be attached to a class.** That needs a `class_resources`
+  kind and the manual production schema push.
+- **Elements 21+ are absent**, and the electron-configuration code stops at 20
+  on purpose (the first Aufbau exception is Z = 24).
+- **Biology has no lab items**, as it has no curated external media.
+
+What was reviewed and deferred is listed in the PR description, not here.
+
 ## A class can hold Library items, 2026-10-04
 
 A class's الموارد tab held one thing — the teacher's own saved materials — so a
@@ -835,9 +1034,34 @@ a premade sheet into the teacher's materials, nothing ever called it, and the
 viewer is read-only so a copy had no use. Premade sheets advertised an action
 nothing carried out.
 
-**Schema push required before merge.** `docs/schema-push-2026-10-04-class-resources.sql`
-(one table, two indexes, additive). Run it in Neon, then
-`pnpm --filter @workspace/db run verify-schema`.
+**The table reached production about nine hours after the code (2026-10-06).**
+The code merged in #844 and deployed (Deploy #420, `d5ce0501`, about 06:09 UTC)
+before `class_resources` existed: the Schema check on that merge (run #98) failed
+with `MISS classResources.ts … missing table: class_resources`, "45 of 46 tables
+present". #844's description said `schema-push: done`; that was not true when the
+PR merged. Until the table existed the shelf read as empty (`GET` answered `[]`,
+logged at `warn`) and adding or removing an item showed the in-app error and
+saved nothing; no data was lost.
+
+The owner then ran the SQL in Neon (query history: «create class resources table
+with indexes», 18:07 local, about 15:07 UTC), and a Schema check dispatched on
+`main` at 15:27 UTC (run #104, `a32da386`) reported **46 of 46 tables present;
+every declared table, column and unique constraint exists**. That covers
+`class_resources`, its columns and the partial unique index
+`class_resources_library_unique`.
+
+**Not checked.** `verify-schema` does not look at the plain index
+`class_resources_class_idx` or the foreign keys; confirm with
+`SELECT indexname FROM pg_indexes WHERE tablename = 'class_resources'` (expect
+three rows, with the primary key) in the Neon console. And nobody has yet added a
+Library item to a class on the live app, so the feature end to end on production
+is unverified; the checks above are about the schema only.
+
+**The deploy gate arrived the same day.** At #844's merge nothing stopped a deploy
+for a missing table. PR #875 (merged 2026-10-06 15:14 UTC) now makes the API
+deploy wait on a production schema check, so this sequence should fail the deploy
+instead of shipping inert code. Its first real run on `main` was not looked at
+here.
 
 **Verified against the running system** (local Postgres 16, the real API built
 from this branch, Expo web, headless Chromium at 390×844 in Arabic):
@@ -15992,3 +16216,51 @@ through the class code: the released exam shows its result, an unreleased one
 `/student/exams`. The release's recipients include both the student's own
 account and the guardian. The push itself was not sent locally.
 
+
+## Push: asked for in context, one Android channel per kind, an app-icon count, 2026-10-06
+
+**Sign-in no longer asks for notification permission.** `registerPushToken`
+used to call `requestPermissionsAsync()` on every sign-in, before the user had
+any reason to agree, and Android 13+ stops showing that prompt after a refusal
+or two. Sign-in now registers a token only if permission is already granted.
+The prompt comes from `askForPushPermission` (`services/pushTokens.ts`). It
+shows our own explanation («تفعيل الإشعارات؟») first, and only after "yes" the
+OS prompt. When to ask is decided by `pushPromptDecision`
+(`services/pushPolicy.ts`, tested): once on its own, after the user sends a
+message or joins a class, and after that only from Settings. Settings has a
+new «إشعارات الجهاز» row that shows on/off and taps through to the prompt, or
+to system settings once Android will no longer prompt.
+
+**Android channels.** Every push used to land in Android's single catch-all
+channel, so muting one kind muted all of them. There are now `messages`,
+`results`, `reminders`, and `admin` (system admins only). They are created and
+named in the app's language by the tab layout. The server names a channel on
+every push (`PUSH_CHANNEL` in `lib/pushNotifications.ts`), and the English
+Hub's local reminder names `reminders`. `pushPolicy.test.ts` reads the
+server's `PUSH_CHANNEL` and fails if the app never creates one of its ids.
+If a device has not created a channel yet (an app running the older bundle),
+the push still arrives in the catch-all channel. Checked in
+expo-notifications' `BaseNotificationBuilder.kt`, which falls back rather than
+dropping it.
+
+**App-icon count.** A chat push now carries `badge`: the recipient's
+whole-inbox unread count, from `unreadTotals` (`lib/inboxSummary.ts`), one
+grouped query for all recipients. While the app is open,
+`syncAppBadge(unread)` keeps the icon equal to the bell, and sign-out clears
+it. Checked against a local Postgres with a teacher, two parents and a
+student, covering an archived thread, an archived message, a parent who
+blocked a sender and a teacher who blocked one. For every user,
+`unreadTotals` matched the sum of `unreadCounts` the inbox shows. The icon
+shows the number on iOS. On Android it depends on the launcher: a number on
+Samsung and some others, a dot elsewhere.
+
+No native module was added, so `app.json` `version` stays the same
+(expo-notifications, AsyncStorage and `Linking` were already in the binary).
+`schema-push:` none.
+
+**Still not verified on a device:** that a push arrives at all (see the
+2026-09-28 entry), and now also the channel names in system settings and the
+icon count. Things to check on the next device test: the Settings row, the
+explanation after the first message is sent, the four channels under App
+info → Notifications, and the icon count after a message arrives while the
+app is closed.

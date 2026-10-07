@@ -212,6 +212,27 @@ answered `ok` from the *old* revision), and changes assumed undeployed that had
 shipped hours earlier from another session. In both cases a green health check
 looked identical to the truth and to its opposite.
 
+## A Deploy that was cancelled before it ran
+
+A Deploy can sit at "cancelled" with nothing deployed and no step ever run. It
+happened on 2026-10-05 (runs #417 and #418, 20:26 and 20:59 UTC): the first job,
+`what changed`, was cancelled after about 15 minutes with no steps recorded and no
+log, even though it has a 5-minute `timeout-minutes`. GitHub had assigned it to a
+runner that never started it, and `timeout-minutes` only counts a job that has
+started. Everything downstream was skipped, so the merge was not deployed until
+the next one.
+
+`.github/workflows/deploy-rerun-stalled.yml` re-runs such a Deploy **once**, and
+only when the run was a push to `main`, was its first attempt, is still the head
+of `main`, and had a job cancelled with no steps. Each condition is there because
+"cancelled" is also what a deliberate cancellation looks like: the `web` job
+cancels an older web deploy when a newer push arrives, and a person can cancel by
+hand. Re-running either of those would put older code live over newer code.
+
+If it does not fire (or a second attempt stalls too), re-run by hand: Actions,
+then the Deploy run, then *Re-run all jobs*; or dispatch Deploy with a `target`.
+Check the run is for the commit you want live, as above.
+
 ## Rotating a secret
 
 Same shape every time: **create the new credential, install it, prove it works
@@ -461,6 +482,16 @@ CI enforces the reminder, not the push: a PR touching `lib/db/src/schema` must
 say `schema-push: done` or `schema-push: n/a` in its description
 (`.github/workflows/ci.yml`), and `schema-check.yml` verifies production
 against the schema daily.
+
+**The deploy is gated on it.** `deploy.yml` runs `schema-check.yml` before the
+API deploys, against the merged commit's schema. If production is missing a
+table or column, the `production schema` job fails, the API and web jobs are
+skipped, and the old revision keeps serving. The job output names the missing
+columns; apply that DDL (Neon console, branch `production`, database `neondb`),
+then re-run the workflow. Before this existed, the claim in a PR description
+was the only thing standing between a merge and a 503 — and `schema-push: done`
+was wrong on 2026-09-16, 2026-09-17 and 2026-10-05. The verifier deploys
+independently and is not gated.
 
 Two things about that line, both of which have cost a CI cycle:
 

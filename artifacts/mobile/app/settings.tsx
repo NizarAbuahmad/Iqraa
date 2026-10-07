@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +19,8 @@ import { Toast } from '@/components/ui/Toast';
 import { AccountRow } from '@/components/ui/AccountRow';
 import { confirm } from '@/services/confirm';
 import { dateLocale } from '@/services/dateLabels';
+import { askForPushPermission, getPushPermissionState, pushAskCopy, type PushPermissionState } from '@/services/pushTokens';
+import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 
 type AiUsage = { spentUsd: number | null; limitUsd: number; resetsAt: string };
 
@@ -39,6 +41,25 @@ export default function SettingsScreen() {
   const [typeError, setTypeError] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
   const [toast, setToast] = useState('');
+
+  // Whether this device will get pushes at all. Re-read when the app comes
+  // back to the foreground (usePollingRefresh), which is how a user returns
+  // from system settings after changing it there.
+  const [pushState, setPushState] = useState<PushPermissionState | null>(null);
+  const loadPushState = useCallback(async () => setPushState(await getPushPermissionState()), []);
+  useEffect(() => { void loadPushState(); }, [loadPushState]);
+  usePollingRefresh(loadPushState);
+
+  // Off: our explanation, then the OS prompt — or system settings once
+  // Android no longer prompts. On: system settings, where the per-kind
+  // channels (messages, results, reminders) can be muted one by one.
+  const handlePushRow = async () => {
+    if (pushState === 'granted') {
+      void Linking.openSettings();
+      return;
+    }
+    setPushState(await askForPushPermission({ explicit: true, copy: pushAskCopy(t) }));
+  };
 
   // Verifies real Expo push delivery without a second account to message you
   // — see POST /messaging/device-tokens/test. Native only: web never
@@ -252,13 +273,28 @@ export default function SettingsScreen() {
             component state wired to nothing: no server preference, no email
             digest to opt out of, and the unread badge ignored them. They reset
             on every visit. A control that lies is worse than none, so the
-            section now holds only the row that does something, and that row is
-            native-only (web never registers a push token), so web has no
-            section at all. */}
+            section holds only rows backed by something real: the OS
+            permission (pushState) and the test send. Both are native-only
+            (web never registers a push token), so web has no section at all. */}
         {Platform.OS !== 'web' && (
           <>
             <SectionLabel label={t('notificationsSection')} isRTL={isRTL} colors={colors} top />
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+              <SettingRow
+                icon={pushState === 'granted' ? 'notifications-outline' : 'notifications-off-outline'}
+                label={t('pushStatusLabel')}
+                isRTL={isRTL}
+                colors={colors}
+                onPress={handlePushRow}
+                right={
+                  pushState ? (
+                    <Text style={{ color: pushState === 'granted' ? colors.primary : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
+                      {pushState === 'granted' ? t('pushStatusOn') : t('pushStatusOff')}
+                    </Text>
+                  ) : <View />
+                }
+              />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
               <SettingRow
                 icon="paper-plane-outline"
                 label={t('sendTestNotification')}

@@ -121,6 +121,15 @@ describe('filtering', () => {
     assert.ok(!sci.includes('uploaded:u3'));
   });
 
+  it('filters by a list of subjects, keeping rows with no subject', () => {
+    const keys = (subjectIds: string[]) =>
+      filterResources(buildResourceCatalog(input), { subjectIds }).map(i => i.key);
+    const both = keys(['science', 'arabic']);
+    assert.ok(both.includes('uploaded:u1') && both.includes('uploaded:u3'), 'a class teaching both lost one');
+    assert.ok(!keys(['arabic']).includes('uploaded:u1'));
+    assert.deepEqual(keys([]), filterResources(buildResourceCatalog(input), {}).map(i => i.key), 'empty list must mean no filter');
+  });
+
   it('filters by category and by lesson', () => {
     const items = buildResourceCatalog(input);
     assert.deepEqual(filterResources(items, { kinds: ['video'], sources: ['uploaded'] }).map(i => i.key), ['uploaded:u2']);
@@ -187,6 +196,20 @@ describe('searching', () => {
       uploaded: [upload({ id: 'n1', titleAr: 'عرض', description: 'مراجعة قبل الاختبار' })],
     });
     assert.deepEqual(filterResources(withNote, { query: 'مراجعه' }).map(i => i.key), ['uploaded:n1']);
+  });
+
+  it('matches the printed page of a book code, in Arabic or Latin digits, with or without the word', () => {
+    const page12 = ['book-qr:12:https://example.invalid/v1'];
+    const page31 = ['book-qr:31:http://example.invalid/a1'];
+    assert.deepEqual(keys('12'), page12);
+    assert.deepEqual(keys('١٢'), page12);
+    assert.deepEqual(keys('صفحة 12'), page12);
+    assert.deepEqual(keys('صفحة ٣١'), page31);
+    assert.deepEqual(keys('page 31'), page31);
+  });
+
+  it('does not give an upload or a sheet a page it never had', () => {
+    assert.deepEqual(keys('صفحة'), ['book-qr:12:https://example.invalid/v1', 'book-qr:31:http://example.invalid/a1']);
   });
 
   it('ignores a blank query and combines with the other filters', () => {
