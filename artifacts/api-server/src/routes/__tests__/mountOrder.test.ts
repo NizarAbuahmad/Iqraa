@@ -420,6 +420,10 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(mine.status, 401, "/student/exams must require a token");
     const grades = await fetch(`${base}/student/grades`);
     assert.equal(grades.status, 401, "/student/grades must require a token");
+    const progress = await fetch(`${base}/student/progress`);
+    assert.equal(progress.status, 401, "/student/progress must require a token");
+    const retake = await fetch(`${base}/student/exams/00000000-0000-0000-0000-000000000000/retake`, { method: "POST" });
+    assert.equal(retake.status, 401, "/student/exams/:id/retake must require a token");
     const roster = await fetch(`${base}/students/00000000-0000-0000-0000-000000000000`);
     assert.equal(roster.status, 401, "the roster route keeps its own guard");
   });
