@@ -3,13 +3,15 @@
  * materials once Library items can be put in front of a class.
  *
  * Pure on purpose: no `react-native` and no `expo-*`, directly or through
- * anything it imports at runtime (today only `./i18n.ts`, a plain string
- * catalogue), so the bare `node --test` runner can load it. The other imports
- * are type-only.
+ * anything it imports at runtime (`./i18n.ts`, a plain string catalogue,
+ * `./labLinks.ts` and `@workspace/curriculum/lab`), so the bare `node --test`
+ * runner can load it. The other imports are type-only.
  *
  * Spec: docs/superpowers/specs/2026-10-04-class-resources-design.md
  */
+import { filterLabItems, type LabItem } from '@workspace/curriculum/lab';
 import { getT } from './i18n.ts';
+import { labItemPath } from './labLinks.ts';
 import type { ResourceItem, ResourceKind, ResourceSource } from './resourceCatalog.ts';
 import type { SavedMaterial } from './workspace.ts';
 
@@ -19,8 +21,9 @@ import type { SavedMaterial } from './workspace.ts';
  */
 export interface ClassResource {
   id: string;
-  kind: 'library';
-  source: ResourceSource;
+  /** `lab` is a Science Lab item; `source` is null for it and `nativeId` is the lab item id. */
+  kind: 'library' | 'lab';
+  source: ResourceSource | null;
   nativeId: string;
   /** The title the item had when it was added. */
   title: string;
@@ -41,6 +44,12 @@ export interface AddResourceBody {
   mediaKind?: ResourceKind;
   url?: string;
   thumbnailUrl?: string;
+}
+
+/** The body of `POST /classes/:id/resources` for a Science Lab item. */
+export interface AddLabResourceBody {
+  kind: 'lab';
+  itemId: string;
 }
 
 export type ClassShelfEntry =
@@ -98,8 +107,17 @@ export function withAddedResource(
  * `<source>:<nativeId>` for every resource already on the shelf — the same key
  * `ResourceItem.key` carries, so "already added" is one Set lookup in the picker.
  */
+/** `lab:<itemId>` — how a lab item is keyed in the shelf's "already added" set. */
+export function labShelfKey(itemId: string): string {
+  return `lab:${itemId}`;
+}
+
 export function addedKeys(resources: ClassResource[]): Set<string> {
-  return new Set(resources.map(resource => `${resource.source}:${resource.nativeId}`));
+  return new Set(
+    resources.map(resource =>
+      resource.kind === 'lab' ? labShelfKey(resource.nativeId) : `${resource.source}:${resource.nativeId}`,
+    ),
+  );
 }
 
 /**
@@ -129,14 +147,32 @@ export function addBodyFor(item: ResourceItem, lang: 'ar' | 'en'): AddResourceBo
   };
 }
 
+/** A lab item goes by id alone: the server checks it and writes the title. */
+export function addLabBodyFor(itemId: string): AddLabResourceBody {
+  return { kind: 'lab', itemId };
+}
+
+/**
+ * The lab items a class can be offered: its grade and any of its subjects
+ * (an empty list means any), as the Library picker does. No grade, no items.
+ */
+export function labItemsForClass(gradeId: string, subjectIds: readonly string[]): LabItem[] {
+  if (!gradeId) return [];
+  return filterLabItems({ gradeId }).filter(
+    item => subjectIds.length === 0 || subjectIds.includes(item.subjectId),
+  );
+}
+
 export type OpenTarget =
   | { kind: 'url'; url: string }
   | { kind: 'premade'; id: string }
+  | { kind: 'lab'; path: string }
   | { kind: 'none' };
 
 /** Where a tap on a resource row goes. */
 export function openTargetFor(resource: ClassResource): OpenTarget {
   if (resource.unavailable) return { kind: 'none' };
+  if (resource.kind === 'lab') return { kind: 'lab', path: labItemPath(resource.nativeId) };
   if (resource.source === 'premade-sheet') return { kind: 'premade', id: resource.nativeId };
   return resource.url ? { kind: 'url', url: resource.url } : { kind: 'none' };
 }

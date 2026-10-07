@@ -979,13 +979,68 @@ no schema push.
   equipment glossary.** Experiment cards wait on vision extraction of the
   activity books (see «The English lab»); the glossary needs instruments, and
   lesson vocabulary lists terms.
-- **A lab item cannot be attached to a class.** That needs a `class_resources`
-  kind and the manual production schema push.
+- ~~**A lab item cannot be attached to a class.** That needs a `class_resources`
+  kind and the manual production schema push.~~ **Wrong on both counts, and
+  built 2026-10-07** (see «Lab in the class workflow» below): `class_resources.kind`
+  is plain `text` with no CHECK or enum, so a `lab` row needs no schema change
+  and no push. Only code ever rejected it.
 - **Elements 21+ are absent**, and the electron-configuration code stops at 20
   on purpose (the first Aufbau exception is Z = 24).
 - **Biology has no lab items**, as it has no curated external media.
 
 What was reviewed and deferred is listed in the PR description, not here.
+
+### Lab in the class workflow, 2026-10-07
+
+A teacher can put a lab item on a class's shelf and tick lab items into a deck.
+Spec `docs/superpowers/specs/2026-10-07-lab-class-workflow-design.md`, plan
+`docs/superpowers/plans/2026-10-07-lab-class-workflow.md`.
+
+- **Shelf.** `POST /classes/:id/resources` with `{kind: 'lab', itemId}` stores
+  `kind='lab'`, `library_source=null`, `library_native_id=<lab item id>`,
+  `media_kind='lab'`, `url=null`. **No DDL, no schema push.** The server checks
+  the id against the catalogue (unknown id is a 400) and writes the title from
+  it (`titleAr`); the app cannot choose the title. A row whose id has left the
+  catalogue is returned `unavailable`. Tapping a row opens `/curriculum/lab/<id>`
+  in the app. The class add sheet has a «من المختبر» picker (shown only when the
+  class's grade and subjects have lab items).
+- **Duplicates** are refused by a route check (409 `already_added`), not by a
+  unique index, because an index is DDL and `verify-schema` would then fail the
+  deploy until it was applied by hand. Two near-simultaneous taps can therefore
+  create two rows.
+- **Deck.** A «من المختبر» section on the slides screen lists the lesson's lab
+  items that can produce a slide; nothing is ticked by default. Picked items are
+  built by `services/labSlides.ts` and inserted client-side after generation
+  (`insertLabSlides`, same slot as attachments, never slide 0), so they never
+  enter an `AIRequest` or the shared artifact pool. A law is an `intro` slide
+  (one equation per line, bullet quantity lines, lesson terms in Arabic decks);
+  an external image or video is a `media` slide with the credit in both
+  `content` and `mediaCaption`; an interactive is a `media` slide of kind
+  `document` carrying the share link. An external item with no attribution, or
+  whose licence does not allow showing it, makes no slide.
+- **Notation.** A bare `m/s²` (alone or after a colon) parses as a stacked
+  fraction in the deck's formula helpers, and `ₐ` falls outside the right-to-left
+  isolation. Units with a slash are written `m·s⁻²` and `Nₐ` as `NA` on slides;
+  `labSlides.test.ts` runs every shipped law through the real helpers. (Inside
+  «a — Acceleration (m/s²)» the raw unit does not stack; the conversion is
+  defence, and the per-unit test is what fails if it regresses.)
+
+**Not seen, not done.**
+- Nothing here has been seen in a browser, and the PDF and PowerPoint output of
+  lab slides has not been looked at by a person.
+- The POST route's lab branch has no database test (tests have no database); it
+  is covered by typecheck and build only.
+- The slide editor's `applyMediaEdit` can strip a lab slide's credit when its
+  caption is left blank, and blocks editing audio and document slides
+  (pre-existing).
+- Image media slides are cropped (`object-fit: cover`) in the HTML and PPTX
+  exports, so a labelled diagram can lose its edges there.
+- A deck's lab slides do not update if the lab item changes after the deck is
+  saved.
+- A client built before this release shows a lab row with no icon or label
+  (its kind maps have no `lab` entry).
+- The add-to-class action is not on the lab present page (it would need a class
+  picker). Lab rows show the Arabic title whatever the UI language.
 
 ## A class can hold Library items, 2026-10-04
 

@@ -222,3 +222,47 @@ describe("shaping a row for the app", () => {
     });
   });
 });
+
+describe("presentClassResource — lab rows", () => {
+  const labRow = (libraryNativeId: string | null) => ({
+    id: "11111111-1111-4111-8111-111111111111",
+    kind: "lab",
+    librarySource: null,
+    libraryNativeId,
+    title: "القانون الثاني لنيوتن",
+    mediaKind: "lab",
+    url: null,
+    thumbnailUrl: null,
+    createdAt: new Date("2026-10-07T08:00:00.000Z"),
+  });
+
+  it("is available while the item is in the catalogue", () => {
+    const r = presentClassResource(labRow("law-newton-second"), new Set());
+    assert.equal(r.unavailable, false);
+    assert.equal(r.kind, "lab");
+    assert.equal(r.source, null);
+    assert.equal(r.nativeId, "law-newton-second");
+  });
+
+  it("is unavailable once the item has left the catalogue", () => {
+    assert.equal(presentClassResource(labRow("law-removed-later"), new Set()).unavailable, true);
+  });
+
+  it("is unavailable with no id at all", () => {
+    assert.equal(presentClassResource(labRow(null), new Set()).unavailable, true);
+  });
+
+  it("does not change how a library row is judged", () => {
+    const uploaded = {
+      ...labRow("3f2b8c1e-9d4a-4e6b-8a57-0c1d2e3f4a5b"),
+      kind: "library",
+      librarySource: "uploaded",
+      mediaKind: "video",
+    };
+    assert.equal(presentClassResource(uploaded, new Set()).unavailable, true);
+    assert.equal(
+      presentClassResource(uploaded, new Set(["3f2b8c1e-9d4a-4e6b-8a57-0c1d2e3f4a5b"])).unavailable,
+      false,
+    );
+  });
+});
