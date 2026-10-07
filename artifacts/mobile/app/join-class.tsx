@@ -28,6 +28,7 @@ import { RosterCodeClaimForm } from '@/components/RosterCodeClaimForm';
 import { RosterError, claimRosterCode } from '@/services/roster';
 import { claimErrorKey } from '@/services/claimCodeGate';
 import { goBack } from '@/services/navigation';
+import { askForPushPermission, pushAskCopy } from '@/services/pushTokens';
 
 export default function JoinClassScreen() {
   const colors = useColors();
@@ -54,6 +55,9 @@ export default function JoinClassScreen() {
       await claimRosterCode(code.trim(), roster ? studentId : undefined);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setJoined(true);
+      // A class is where the teacher's messages and released results come
+      // from — a natural moment to offer push (services/pushPolicy.ts).
+      void askForPushPermission({ explicit: false, copy: pushAskCopy(t) });
     } catch (err) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(t(err instanceof RosterError ? claimErrorKey(err.code) : 'joinAnotherClassFailed'));

@@ -176,7 +176,7 @@ export function ClassPickerSheet({
                     styles.row,
                     {
                       borderColor: (multiple ? on : current) ? ACCENT : colors.border,
-                      backgroundColor: (multiple ? on : current) ? ACCENT + '12' : 'transparent',
+                      backgroundColor: (multiple ? on : current) ? palette.selected : 'transparent',
                       flexDirection: isRTL ? 'row-reverse' : 'row',
                     },
                   ]}

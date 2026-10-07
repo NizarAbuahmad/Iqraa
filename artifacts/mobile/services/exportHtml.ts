@@ -21,9 +21,10 @@
  * and note this is the opposite of the rule in React Native components, where
  * `row-reverse` is correct because RN has no document direction to inherit.
  */
-import { labelAnswer, labelOption, labelOptionLine } from './optionLabels.ts';
+import { labelAnswerParts, labelOption, labelOptionLine } from './optionLabels.ts';
 import { arCountPhrase } from './arCount.ts';
 import { dateLocale } from './dateLabels.ts';
+import { quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
 import type {
   ActivityOutput,
@@ -233,6 +234,19 @@ function htmlBase(
     .step-body { flex: 1; }
     .step-title { font-size: 12.5px; font-weight: 700; color: #111827; margin-bottom: 3px; }
     .step-desc { font-size: 11.5px; color: #6b7280; line-height: 1.55; white-space: pre-line; }
+    /* The exam paper's head: the lines a student writes on, and the table the
+       teacher totals the paper in. */
+    .exam-fields { display: flex; flex-direction: row; gap: 18px; margin-bottom: 14px; font-size: 12.5px; color: #111827; }
+    .exam-field { flex: 1; display: flex; flex-direction: row; gap: 6px; align-items: flex-end; }
+    .exam-blank { flex: 1; border-bottom: 1px solid #9ca3af; height: 18px; }
+    .callout ul { margin: 0; }
+    .callout li { margin-bottom: 2px; }
+    .marks-wrap { margin-bottom: 16px; break-inside: avoid; }
+    .marks-table { width: 65%; border-collapse: collapse; font-size: 12px; }
+    .marks-table th, .marks-table td { border: 1px solid #d1d5db; padding: 5px 8px; text-align: start; }
+    .marks-table th { background: #f3f4f6; font-weight: 700; color: #374151; }
+    .marks-score { white-space: nowrap; }
+    .marks-total td { font-weight: 700; }
     /* A tinted callout for the one line that matters most on the page. */
     .callout {
       background: ${accent}0F; border-radius: 8px; padding: 12px 14px;
@@ -557,18 +571,38 @@ export function buildWorksheetHTML(
   return htmlBase(content, isAr, title, 'worksheet');
 }
 
+/**
+ * What makes the printed quiz an exam paper rather than a list of questions:
+ * the student's name/class/date lines, the instructions, and the marks table
+ * the teacher totals it in. On both copies — the teacher marks the student's.
+ */
+function examPaperHTML(quiz: QuizOutput, isAr: boolean): string {
+  const L = (ar: string, en: string) => isAr ? ar : en;
+  const fields = quizStudentFields(isAr)
+    .map(f => `<div class="exam-field"><span>${esc(f)}:</span><span class="exam-blank"></span></div>`)
+    .join('');
+  const instructions = quizInstructions(quiz.questions, isAr).map(l => `<li>${esc(l)}</li>`).join('');
+  const rows = quizMarkRows(quiz.questions, isAr);
+  const markRows = rows
+    .map(r => `<tr><td>${esc(r.label)}</td><td>${r.count}</td><td class="marks-score"><bdi dir="ltr">____ / ${r.points}</bdi></td></tr>`)
+    .join('');
+  return `<div class="exam-fields">${fields}</div>`
+    + `<div class="callout"><div class="section-title">${L('التعليمات', 'Instructions')}</div><ul>${instructions}</ul></div>`
+    + `<div class="marks-wrap"><div class="section-title">${L('جدول العلامات (للمصحّح)', 'Marks (for the marker)')}</div>`
+    + `<table class="marks-table"><thead><tr><th>${L('الأسئلة', 'Questions')}</th><th>${L('العدد', 'Count')}</th><th>${L('العلامة', 'Score')}</th></tr></thead>`
+    + `<tbody>${markRows}<tr class="marks-total"><td>${L('المجموع', 'Total')}</td><td>${quiz.questions.length}</td><td class="marks-score"><bdi dir="ltr">____ / ${quizMarksTotal(rows)}</bdi></td></tr></tbody></table></div>`;
+}
+
 export function buildQuizHTML(
   quiz: QuizOutput,
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
   figures: readonly BookFigureRef[] = [],
+  includeAnswers = true,
 ): string {
   const L = (ar: string, en: string) => isAr ? ar : en;
-  const typeLabel = (t: string) =>
-    t === 'multiple_choice' ? L('اختيار متعدد', 'MCQ')
-      : t === 'true_false' ? L('صح/خطأ', 'True/False')
-        : L('إجابة قصيرة', 'Short Answer');
+  const typeLabel = (t: QuizOutput['questions'][number]['type']) => quizTypeLabel(t, isAr);
 
   const questions = quiz.questions.map((q, i) => {
     const options = q.options
@@ -588,16 +622,24 @@ export function buildQuizHTML(
     </div>`;
   }).join('');
 
-  const akRows = quiz.questions.map((q, i) =>
-    `<div class="answer-row"><span class="answer-num">${i + 1}.</span><span>${esc(labelAnswer(q.options, q.correctAnswer, isAr))}</span></div>`
-  ).join('');
+  // The key goes on its own page, and only on the teacher's copy: it used to
+  // sit under the last question on every print, so a student copy meant
+  // cutting it off by hand.
+  const akRows = quiz.questions.map((q, i) => {
+    const { letter, text } = labelAnswerParts(q.options, q.correctAnswer, isAr);
+    return `<div class="answer-row"><span class="answer-num">${i + 1}.</span><span>${letter ? `${letter} ` : ''}${esc(text)}</span></div>`;
+  }).join('');
+  const answerKey = includeAnswers
+    ? `<div class="key-page"><div class="answer-key"><div class="section-title">${L('مفتاح الإجابات', 'Answer Key')}</div>${akRows}</div></div>`
+    : '';
 
   const content = `
     <div class="doc-title">${esc(title)}</div>
     <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)} • ${L(arCountPhrase(quiz.duration, 'دقيقة', 'دقيقتان', 'دقائق'), `${quiz.duration} min`)} • ${L(arCountPhrase(quiz.totalPoints, 'نقطة', 'نقطتان', 'نقاط'), `${quiz.totalPoints} pts`)}</div>
+    ${examPaperHTML(quiz, isAr)}
     ${sectionBand(L('الأسئلة', 'Questions'), '📋', DOC_ACCENT.quiz, isAr)}
     ${questions}
-    <div class="answer-key"><div class="section-title">${L('مفتاح الإجابات', 'Answer Key')}</div>${akRows}</div>
+    ${answerKey}
     ${figuresSectionHTML(figures, isAr)}
   `;
   return htmlBase(content, isAr, title, 'quiz');
@@ -1112,6 +1154,7 @@ export function buildQuizSlidesHTML(
    * exactly what this builder rendered before.
    */
   figures: readonly BookFigureRef[] = [],
+  includeAnswers = true,
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = DOC_ACCENT.quiz;
@@ -1130,8 +1173,9 @@ export function buildQuizSlidesHTML(
     questionGroups.push(quiz.questions.slice(i, i + GROUP_SIZE));
   }
 
-  // title + groups + answer key + the optional book-figures slide
-  const TOTAL = 1 + questionGroups.length + 1 + (figures.length ? 1 : 0);
+  // title + groups + the answer key (teacher's copy only) + the optional
+  // book-figures slide
+  const TOTAL = 1 + questionGroups.length + (includeAnswers ? 1 : 0) + (figures.length ? 1 : 0);
   let slideNum = 1;
 
   const footer = (num: number) => `
@@ -1183,14 +1227,14 @@ export function buildQuizSlidesHTML(
   });
 
   // Answer key slide
-  const akSlide = `<div class="slide">
+  const akSlide = includeAnswers ? `<div class="slide">
     ${header(L('مفتاح الإجابات', 'Answer Key'))}
     <div class="slide-body">
       <div class="ak-grid">
         ${quiz.questions.map((q, i) => `<div class="ak-row"><span class="ak-num">${i + 1}.</span><span class="ak-ans">${e(q.correctAnswer)}</span></div>`).join('')}
       </div>
     </div>
-    ${footer(slideNum++)}</div>`;
+    ${footer(slideNum++)}</div>` : '';
 
   return `<!DOCTYPE html>
 <html dir="${dir}" lang="${isAr ? 'ar' : 'en'}">

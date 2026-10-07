@@ -76,7 +76,13 @@ export async function syncDailyReminder(title: string, body: string, practicedTo
   try {
     const id = await Notifications.scheduleNotificationAsync({
       content: { title, body },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: nextReminderTime(new Date()) },
+      // Its own Android channel (services/pushPolicy.ts), so it can be muted
+      // without muting messages; ignored on iOS.
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: nextReminderTime(new Date()),
+        channelId: 'reminders',
+      },
     });
     await AsyncStorage.setItem(SCHEDULED_ID_KEY, id);
   } catch {

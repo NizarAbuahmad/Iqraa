@@ -790,7 +790,7 @@ function QuestionCard({
                   {
                     // Selected, never correct. There is no correctness to show.
                     borderColor: on ? ACCENT : colors.border,
-                    backgroundColor: on ? ACCENT + '12' : 'transparent',
+                    backgroundColor: on ? palette.selected : 'transparent',
                     flexDirection: isRTL ? 'row-reverse' : 'row',
                   },
                 ]}
