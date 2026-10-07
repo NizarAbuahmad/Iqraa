@@ -44,7 +44,7 @@ import {
 import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
 import { AR_LATIN } from '@/services/dateLabels';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
-import { loadLessonPick, loadPrepSkips, saveLessonPick, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
+import { loadLessonPick, loadPrepBoardOpen, loadPrepSkips, saveLessonPick, savePrepBoardOpen, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
   deduplicateByUnit,
@@ -3162,6 +3162,22 @@ export default function IqraScreen() {
     void setPrepSkip(prepSkipKey, row.type, !row.skipped).then(setPrepSkips);
   }, [prepSkipKey]);
 
+  // The board opens folded to one line; unfolded is remembered across launches.
+  // Keyed on `user?.id` like the lesson pick: the flag is stored per user, and
+  // a reload mounts this screen before the session is restored.
+  const [prepBoardOpen, setPrepBoardOpen] = useState(false);
+  useEffect(() => {
+    let live = true;
+    loadPrepBoardOpen().then(open => { if (live) setPrepBoardOpen(open); });
+    return () => { live = false; };
+  }, [user?.id]);
+  const togglePrepBoard = useCallback(() => {
+    setPrepBoardOpen(open => {
+      void savePrepBoardOpen(!open);
+      return !open;
+    });
+  }, []);
+
   /**
    * Class Mode entry, carried over from the retired home screen: build a deck
    * for the current lesson straight from the curriculum book and go to the
@@ -3299,11 +3315,15 @@ export default function IqraScreen() {
    * repeating it here would be the same five rows twice on one window. Hidden
    * once the conversation starts — it answers "what is missing", which stops
    * being the question the moment the teacher has asked one.
+   *
+   * Folded to one line by default, and unfolded it lists only what is still
+   * missing: five full rows used to fill the phone before a word was typed.
    */
   const introPrepBoard = (() => {
     if (isDesktop || messages.length > 1) return null;
     const topic = currentLessonView?.topic?.trim() ?? '';
     const rows = buildPrepBoard(prepMaterials, topic, currentLessonView?.lessonId, prepSkips);
+    const readyCount = rows.filter(r => r.done).length;
     // The lesson's own grade and subject, never the picker's index 0 — see the
     // subjectIdx trap in CLAUDE.md. `topicPickerParams` grounds a free-typed
     // topic; both return null when the lesson is unknown, and then the tool
@@ -3357,6 +3377,14 @@ export default function IqraScreen() {
           classLabelFor={(id) => classNameFor(prepClasses, id, lang as 'ar' | 'en')}
           onOpenAll={() => router.push({ pathname: '/workspace', params: { q: topic } })}
           allCopiesLabel={t('homePrepAllCopies')}
+          fold={{
+            open: prepBoardOpen,
+            onToggle: togglePrepBoard,
+            toggleLabel: t('homePrepFoldHint'),
+            allReadyLabel: t('homePrepAllReady'),
+            showReadyLabel: topic ? t('homePrepShowReady', readyCount) : '',
+            onShowReady: () => router.push({ pathname: '/workspace', params: { q: topic } }),
+          }}
         />
       </View>
     );

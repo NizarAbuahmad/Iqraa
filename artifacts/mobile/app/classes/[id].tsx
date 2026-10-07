@@ -1544,7 +1544,7 @@ export default function ClassDetailScreen() {
 
       <LibraryPickerSheet
         visible={showLibrary}
-        group={{ gradeId: group?.gradeId ?? '', subjectId: focus || group?.subjectId || '' }}
+        group={{ gradeId: group?.gradeId ?? '', subjectIds: focus ? [focus] : subjectIds }}
         added={shelfKeys}
         busyKey={addingKey}
         error={pickerError}

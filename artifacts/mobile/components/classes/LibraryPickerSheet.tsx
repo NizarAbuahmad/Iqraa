@@ -102,8 +102,8 @@ export function LibraryPickerSheet({
   onClose,
 }: {
   visible: boolean;
-  /** The class's grade and subject. An empty subject means "any". */
-  group: { gradeId: string; subjectId: string };
+  /** The class's grade and the subjects to show. An empty list means "any". */
+  group: { gradeId: string; subjectIds: readonly string[] };
   /** `<source>:<nativeId>` of every item already on the class's shelf. */
   added: ReadonlySet<string>;
   /** The item currently being added, so its row can show a spinner. */
@@ -140,10 +140,12 @@ export function LibraryPickerSheet({
     });
     const scoped = filterResources(all, {
       gradeId: group.gradeId,
-      subjectId: group.subjectId || undefined,
+      subjectIds: group.subjectIds,
     });
     return groupIntoShelves(scoped).flatMap(shelf => shelf.items);
-  }, [uploaded, group.gradeId, group.subjectId]);
+    // The array is rebuilt each render by the caller; its contents are the key.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploaded, group.gradeId, group.subjectIds.join(',')]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
