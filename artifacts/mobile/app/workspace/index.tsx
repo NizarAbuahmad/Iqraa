@@ -11,6 +11,7 @@ import { confirm } from '@/services/confirm';
 import { listClasses, type ClassGroup } from '@/services/roster';
 import { classNameFor } from '@/services/materialClass';
 import { arCountPhrase } from '@/services/arCount';
+import { isEditableMaterial } from '@/services/materialShape';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
@@ -144,8 +145,9 @@ export default function WorkspaceScreen() {
   const menuActions = (item: SavedMaterial) => {
     // A chain of ternaries ending in `: '/ai-tools/quiz'` sent activities and
     // decks to the quiz builder, which cannot rebuild either. Kinds with no
-    // form-driven editor simply do not offer Edit.
-    const editRoute = MATERIAL_EDIT_ROUTE[item.type];
+    // form-driven editor simply do not offer Edit — and neither does a saved
+    // virtual-lab sheet, which is fixed reviewed content (see isEditableMaterial).
+    const editRoute = isEditableMaterial(item) ? MATERIAL_EDIT_ROUTE[item.type] : undefined;
     return [
       {
         key: 'open',

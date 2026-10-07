@@ -54,7 +54,14 @@ describe('virtualLabSavePayload', () => {
   const p = virtualLabSavePayload(ws, sheet.lessonId, { topic: 'الطيف الذري', subjectLabel: 'الكيمياء', gradeName: 'الصف العاشر' });
   it('files it as a worksheet, marked as a virtual lab, on its lesson', () => {
     assert.equal(p.type, 'worksheet');
-    assert.deepEqual(p.formState, { lessonId: sheet.lessonId, materialKind: 'virtual-lab' });
+    assert.equal(p.formState.lessonId, sheet.lessonId);
+    assert.equal(p.formState.materialKind, 'virtual-lab');
+  });
+  it('carries the lesson title in formState too, which is what an edit route reads', () => {
+    // «تعديل» is hidden for these, but anything that does reopen one reads
+    // `topic` from formState — without it the worksheet screen falls back to
+    // the teacher's default scope and re-files the sheet under the wrong subject.
+    assert.equal(p.formState.topic, 'الطيف الذري');
   });
   it('keeps the lab block in what it stores', () => {
     assert.deepEqual(JSON.parse(p.content).lab, ws.lab);

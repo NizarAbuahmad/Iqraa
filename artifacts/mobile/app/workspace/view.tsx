@@ -14,7 +14,7 @@ import {
   ActivityOutput, ActivityStep, ClassroomActivity, LessonFlowOutput, LessonPlanOutput,
   QuizOutput, WorksheetOutput,
 } from '@/services/ai/AIService';
-import { looksLikeActivityContent } from '@/services/materialShape';
+import { isEditableMaterial, looksLikeActivityContent } from '@/services/materialShape';
 import { arCountPhrase } from '@/services/arCount';
 // One map, not two. This screen kept its own copy of the same five colours;
 // adding a sixth to a private copy is exactly the drift `materialKind.ts` was
@@ -254,7 +254,7 @@ export default function WorkspaceViewScreen() {
 
       {/* Action bar */}
       <View style={[styles.actionBar, { backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {!premade && (
+        {!premade && isEditableMaterial(item) && (
         <Pressable
           onPress={() => router.push({ pathname: editRoute as any, params: { savedId: item.id, ...item.formState } })}
           style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -339,7 +339,7 @@ export default function WorkspaceViewScreen() {
         ) : kind === 'activity' ? (
           <ActivityView activity={content as ActivityOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} isAr={isAr} />
         ) : kind === 'worksheet' ? (
-          <WorksheetView ws={content as WorksheetOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
+          <WorksheetView ws={content as WorksheetOutput} lessonId={item.formState?.lessonId} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
         ) : kind === 'flow' ? (
           <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={docRTL} lang={docLang} accent={accent} />
         ) : kind === 'slides' || kind === 'prompt-slides' ? (
@@ -564,8 +564,8 @@ function ActivityView({ activity, colors, isRTL, t, accent, isAr }: {
 
 // ─── Worksheet renderer ───────────────────────────────────────────────────────
 
-function WorksheetView({ ws, colors, isRTL, t, accent }: {
-  ws: WorksheetOutput; colors: any; isRTL: boolean; t: any; accent: string;
+function WorksheetView({ ws, lessonId, colors, isRTL, t, accent }: {
+  ws: WorksheetOutput; lessonId?: string; colors: any; isRTL: boolean; t: any; accent: string;
 }) {
   return (
     <>
@@ -576,7 +576,7 @@ function WorksheetView({ ws, colors, isRTL, t, accent }: {
         <ContentSection title={t('virtualLabTitle')} icon="flask-outline" isRTL={isRTL} accent={accent} colors={colors}>
           <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 6, textAlign: isRTL ? 'right' : 'left' }}>{ws.lab.simName}</Text>
           <Pressable
-            onPress={() => { trackEvent('virtual_lab_opened', { surface: 'workspace' }); void openExternal(ws.lab!.url); }}
+            onPress={() => { trackEvent('virtual_lab_opened', { ...(lessonId ? { lessonId } : {}), surface: 'workspace' }); void openExternal(ws.lab!.url); }}
             accessibilityRole="link"
             accessibilityLabel={`${t('virtualLabOpen')} — ${ws.lab.attribution}`}
           >

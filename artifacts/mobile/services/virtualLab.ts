@@ -56,7 +56,8 @@ export function virtualLabChatMessage(
 /**
  * What «احفظ في موادي» stores. It is an ordinary worksheet — so view, export,
  * class filing and the student/teacher copy need no new branch — with
- * `materialKind` left in formState to tell it apart, and the `lab` block kept
+ * `materialKind` left in formState to tell it apart (and `topic` beside it, so
+ * nothing reopening it can fall back to the teacher's default scope), and the `lab` block kept
  * in `content` so the printed copy still carries the link, credit and QR.
  */
 export function virtualLabSavePayload(
@@ -72,6 +73,6 @@ export function virtualLabSavePayload(
     topic: ctx.topic,
     language: 'ar',
     content: JSON.stringify(ws),
-    formState: { lessonId, materialKind: 'virtual-lab' },
+    formState: { lessonId, topic: ctx.topic, materialKind: 'virtual-lab' },
   };
 }
