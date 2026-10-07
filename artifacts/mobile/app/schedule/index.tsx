@@ -14,6 +14,7 @@
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -295,6 +296,7 @@ function SchoolNameModal({ title, initial, taken, onClose, onSubmit, isRTL, colo
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <KeyboardSafeView>
       <View style={styles.modalBackdrop}>
         <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
           <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
@@ -326,6 +328,7 @@ function SchoolNameModal({ title, initial, taken, onClose, onSubmit, isRTL, colo
           </View>
         </View>
       </View>
+      </KeyboardSafeView>
     </Modal>
   );
 }
@@ -363,6 +366,7 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <KeyboardSafeView>
       <View style={styles.modalBackdrop}>
         <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
           <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
@@ -436,6 +440,7 @@ function SlotEditorModal({ title, classes, current, period, onClose, onSave, onS
           </View>
         </View>
       </View>
+      </KeyboardSafeView>
     </Modal>
   );
 }

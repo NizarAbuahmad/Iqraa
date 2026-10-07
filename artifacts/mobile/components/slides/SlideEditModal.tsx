@@ -8,6 +8,7 @@
  */
 import React from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { Ionicons } from '@expo/vector-icons';
 import type { SlideEditor } from '@/hooks/useSlideEditor';
 import type { TranslationKey } from '@/services/i18n';
@@ -36,6 +37,7 @@ export function SlideEditModal({ editor, onSuggestVideo, loadingSuggestion = fal
 
   return (
     <Modal visible={editor.editIdx !== null} transparent animationType="fade" onRequestClose={editor.close}>
+      <KeyboardSafeView>
       <View style={styles.modalOverlay}>
         <View style={[styles.modalCard, { backgroundColor: colors.card, borderRadius: colors.radius }]}>
           <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
@@ -140,6 +142,7 @@ export function SlideEditModal({ editor, onSuggestVideo, loadingSuggestion = fal
           </View>
         </View>
       </View>
+      </KeyboardSafeView>
     </Modal>
   );
 }

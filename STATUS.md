@@ -797,9 +797,33 @@ does not move when b does) and it was fixed before this entry.
   existed — and the browser check caught it.
 - **Every worksheet in موادي and the chat now has the «نسخة الطالب / نسخة
   المعلم» choice**, which PR #883 gave only to quizzes, so a lab key does not
-  reach students by default. Exception, as for quizzes: the chat bubble's own
-  «نسخ» still copies the text with the key.
+  reach students by default. The chat bubble's own «نسخ» copies the student
+  copy too since the follow-ups below.
 - Analytics: `virtual_lab_opened { lessonId, surface }`.
+
+**Follow-ups, same day** (the four left open by PR #892):
+- **The chat bubble's «نسخ» copies the student copy** — quiz and worksheet,
+  lab or not — via `chatDocumentText` (`services/chatMaterialActions.ts`). It
+  used to copy the teacher text with the key while every export menu already
+  defaulted to the student copy, so the one-tap path was the one that leaked
+  the answers. The export menu still offers the teacher copy.
+- **«احفظ في موادي» on the card ignores a second tap while saving** — a ref,
+  not only state, because two taps in one frame both read the old state.
+  Checked in the browser: a double tap saved 2 rows without the guard, 1 with.
+- **A second tap on the lab chip posts nothing** and says «ورقة المختبر موجودة
+  في المحادثة أعلاه» (`hasLabSheetMessage`, `services/virtualLab.ts`).
+- **A link or an English credit in a chat bubble reads left to right.** Found
+  while checking the above: the lab message showed its URL as
+  «//phet.colorado.edu/…:https» and the credit's parts in reverse order, because
+  the bubble laid every line out right-to-left. A line with no Arabic that is
+  not maths now renders `ltr` (`isLatinProseLine`, `services/mathRender.ts`);
+  maths keeps `MathParagraph`.
+- **`GET /media/external/:id` is unchanged, on purpose.** It answers a guessed
+  `phet-*` id with the simulation's URL — but the whole catalog, and every sheet
+  with its key, is already in the public web bundle, because the lesson page
+  imports `@workspace/curriculum`. The release gate decides what a teacher is
+  *shown*; it does not keep the content secret, and gating one endpoint would
+  not change that.
 
 **Not the Science Lab shelf.** «The Science Lab: a shelf in the library»
 (same week, PR #886) is a separate, first-party feature: interactives, law
@@ -900,7 +924,8 @@ the same text, page and Word file as the quiz screen. The chat's quiz PDF used
 to be the share text in a `pre-wrap` page; it is now the exam paper. Verified
 in the web app on both screens: student Word without the key, teacher Word
 with it, both with the head and marks table, and the chat PDF downloads.
-Not changed: the chat bubble's own «نسخ» still copies the teacher text, the
+Not changed then: the chat bubble's own «نسخ» still copied the teacher text
+(it copies the student copy since 2026-10-07, see «Virtual labs»), the
 chat PDF carries no book figures (the message keeps no lesson id), and the
 lesson flow's exit ticket has its own builder.
 

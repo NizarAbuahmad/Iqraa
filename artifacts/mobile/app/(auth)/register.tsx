@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  KeyboardAvoidingView, Platform, Pressable, ScrollView,
+  Pressable, ScrollView,
   StyleSheet, Text, View,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -127,9 +127,8 @@ export default function RegisterScreen() {
     termsAccepted;
 
   const formPanel = (
-    <KeyboardAvoidingView
+    <View
       style={[styles.formPanel, isWide && styles.formPanelWide]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={[
@@ -359,7 +358,7 @@ export default function RegisterScreen() {
         </View>
 
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 
   return (

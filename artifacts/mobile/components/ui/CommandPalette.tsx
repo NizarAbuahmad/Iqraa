@@ -14,6 +14,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useColors } from '@/hooks/useColors';
@@ -139,6 +140,7 @@ export function CommandPalette({
 
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      <KeyboardSafeView>
       <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
         {/* Swallows the backdrop press so a click inside the card does not close it. */}
         <Pressable
@@ -229,6 +231,7 @@ export function CommandPalette({
           </View>
         </Pressable>
       </Pressable>
+      </KeyboardSafeView>
     </Modal>
   );
 }
