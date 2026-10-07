@@ -16,6 +16,7 @@ import type {
   WorksheetOutput,
 } from './ai/AIService.ts';
 import type { AttemptResult, CompetencyKey, LevelKey } from './evaluations.ts';
+import { displayObjective } from './objectiveDisplay.ts';
 
 export function formatLessonPlanText(
   plan: LessonPlanOutput,
@@ -32,7 +33,7 @@ export function formatLessonPlanText(
   lines.push(SEP);
 
   lines.push(H(isAr ? 'الأهداف' : 'Objectives'));
-  plan.objectives.forEach(o => lines.push(`• ${o}`));
+  plan.objectives.forEach(o => lines.push(`• ${displayObjective(o)}`));
 
   lines.push(H(isAr ? 'المواد اللازمة' : 'Materials Needed'));
   plan.materials.forEach(m => lines.push(`• ${m}`));
