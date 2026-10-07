@@ -1413,7 +1413,7 @@ export function LessonLabItems({ lessonId, isAr, picks, onChange }: Props) {
             key={item.id}
             onPress={() => toggle(item.id)}
             accessibilityRole="checkbox"
-            accessibilityState={{ checked: on }}
+            aria-checked={on}
             style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }}
           >
             <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={on ? colors.primary : colors.mutedForeground} />
