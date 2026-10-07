@@ -703,6 +703,33 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A Deploy GitHub stalls is re-run once, 2026-10-06
+
+On 2026-10-05 two Deploy runs (#417 at 20:26 UTC and #418 at 20:59) were
+cancelled after about 15 minutes in their first job, `what changed`: no step was
+recorded and no log exists, though the job has a 5-minute `timeout-minutes`. The
+job was assigned to a runner that never started it, which that timeout does not
+cover. Nothing deployed; the next merge's Deploy (#419) carried both commits
+about an hour later (checked: both are ancestors of its commit). Nothing was lost.
+
+`.github/workflows/deploy-rerun-stalled.yml` now re-runs such a Deploy once. It
+re-runs only a **push to `main`, on its first attempt, whose commit is still the
+head of `main`, with a job cancelled that has no steps**. The narrowness is the
+point: the `web` job's `cancel-in-progress: true` cancels older web deploys on
+purpose, and a re-run of one of those would put older code live over newer. A
+second stall is left alone for a person. The manual path is in
+`docs/deploying.md` (*A Deploy that was cancelled before it ran*).
+
+**Verified:** the YAML parses, and the decision script was run against a
+stand-in `gh` with fixtures shaped like the jobs API, seven cases: a stall
+re-runs; main having moved, a second attempt, a run cancelled mid-flight (steps
+recorded), and a run with nothing cancelled do not; the stall is found when it
+is on the second page of jobs only. **Not verified:** a real run. `workflow_run`
+workflows execute only from the default branch, so this could not be tried before
+merge; the first real test is the next stall. It is also not known whether a
+cancelled-never-started job always has no `steps` key in the live API: it did in
+#417 and #418, and the check treats an absent key and an empty list the same.
+
 ## The quiz prints as an exam paper: student copy, name lines, marks table, 2026-10-06
 
 Prompted by a teacher-facing video of a generic AI exam tool (aidocmaker): its
@@ -872,6 +899,93 @@ requests captured: a 6-word message → `out_of_scope`, `words: 6`, no `ask`;
 `chatUnanswered.test.ts`, watched failing first. **Not yet looked at in the
 real PostHog project** — it fills once this deploys; filter on
 `chat_unanswered`, break down by `kind`, and read `ask` for the phrases.
+
+## The Science Lab: a shelf in the library, 2026-10-06
+
+**What a teacher can use today.** `/curriculum/resources` has a «المختبر» card
+opening `/curriculum/lab`: seven first-party items — three interactives
+(periodic table for elements 1–20, mole and molar-mass calculator, vector
+addition) and four law cards (F = m × a, the vector resultant, n = m ÷ Mr,
+N = n × Nₐ) — plus 8 pointers to curated external resources (5 images, 3
+videos, each filed on a real grade 10 chemistry or physics lesson) and the
+lesson's own book figures. Each opens in a present-mode page (an ordinary
+stack page capped at `CONTENT_MAX_WIDTH`, not a full-screen takeover; the vector
+canvas is a fixed 300×300) with a copyable link. The link is built from
+`PROD_ORIGIN` (`labShareUrl` in `services/labLinks.ts`) and copied with
+`copyToClipboard`, so it names the live site on web and Android alike, never the
+browsing host or the app's `mobile://` scheme (`shareLinksOrigin.test.ts` fails
+on `createURL(`). Student-reachable by the existing `/curriculum` prefix
+allowlist, pinned in `routeGating.test.ts`.
+
+**It is grade 10 only, and the interactives were swapped during planning.** The
+approved design named a pH scale and an Ohm's-law circuit. Neither has a grade
+10 lesson (acids/bases is grade 9 chemistry; no grade 9 or 10 physics lesson
+covers circuits), so they became the periodic table, the mole calculator and
+vector addition, each on a real lesson.
+
+**No curriculum Arabic was written from memory.** A law card's Arabic is lesson
+vocabulary copied verbatim and tested against the lesson; element names are
+tested as whole words against the printed text of the grade 10 chemistry S1 and
+S2 books and the grade 9 chemistry S1 book (`elements.test.ts`, `printsAsWord`:
+the name bounded by non-letters, with one optional leading clitic letter, so
+«الأرجون» does not match inside «الأرجونيت»). The interactives' titles and the
+UI strings are our own chrome text, not curriculum. The calculator's parser
+fails closed — an element past 20, a malformed formula, or a count above 10⁶
+(nested multipliers) returns a named reason, never a number. Its particles field
+accepts `6.022e23` or `6.022×10^23`, and an ambiguous «1,000» is refused rather
+than read as 1.
+
+**Data lives in `lib/curriculum`** (`lab.ts`, `elements.ts`, two JSON files), so
+it ships over the air. No table, no native module, no `app.json` version bump,
+no schema push.
+
+### What does not work
+
+- **Nothing in this feature has been seen by a person in a browser.** Every
+  task was built and reviewed by subagents that could not sign in (dev web
+  authenticates against production), so verification was typecheck, unit tests
+  for the pure logic, and code review. Look at `/curriculum/lab` on the web
+  build before telling anyone it works.
+- **Atomic masses are the book's rounded values**, not the precise ones (H 1,
+  C 12, O 16, Na 23, Cl 35.5 ...), so H2O is 18, not 18.015. The rounded
+  masses of H, C, N, O, Na, Mg, Al, Si and Ca come from the S2 student book (a
+  table on p21 and the masses given with its examples and questions); Cl 35.5,
+  S 32, K 39 and F 19 come from the S2 teacher packs. Seven (He 4, Li 7, Be 9, B 11, Ne 20, P 31, Ar 40) are
+  printed in no extracted source and are the usual classroom integers. The
+  periodic-table panel shows these numbers.
+- **The book is inconsistent in places.** Avogadro's number is 6.022 × 10²³ in
+  S2 p24 and 6.02 × 10²³ in example 8; nitrogen is spelled «النتروجين» in
+  grade 10 S1 and «النيتروجين» in S2 and grade 9 (the dataset uses the latter).
+- **Law-card quantity names are English only.** None have been added, because
+  none could be witnessed.
+- **The law formulas were compared by hand, not machine-witnessed, and law items
+  carry no `source` field.** Compared with the extracted book text: S1 physics
+  prints `∑F = ma` (p12, p73) against our `F = m × a`, and `Rx = Ax + Bx + Cx`
+  (p26) against our two-vector `Rx = Ax + Bx , Ry = Ay + By`; S2 chemistry prints
+  `n = m / Mr` (p25) and `N = NA × n` (p25–26) against our `n = m ÷ Mr` and
+  `N = n × Nₐ`. The symbols and operators differ in form, not in meaning. The
+  vector formula's `R = √(Rx² + Ry²)` could not be compared: the extraction
+  drops the root sign. No test reads these strings against the book.
+- **The Avogadro card's `Nₐ` (U+2090) is not in Readex Pro Bold**, the card's
+  font (checked against the font file's character map), so it falls back to a
+  system font. Unseen on a device.
+- **Figure captions show the PDF page index («p. N»)**, not the book's printed
+  page number.
+- **Three deviations from the design spec.** The vectors are adjusted with ±
+  steppers, not dragged; external items open the source in a new tab (web) or the in-app
+  browser (native) through `openExternal` instead of going through
+  `LessonMediaPanel`; the per-item chemistry quick checks were not built.
+- **No 3D, no games, no experiment cards, no hand-made infographics, no
+  equipment glossary.** Experiment cards wait on vision extraction of the
+  activity books (see «The English lab»); the glossary needs instruments, and
+  lesson vocabulary lists terms.
+- **A lab item cannot be attached to a class.** That needs a `class_resources`
+  kind and the manual production schema push.
+- **Elements 21+ are absent**, and the electron-configuration code stops at 20
+  on purpose (the first Aufbau exception is Z = 24).
+- **Biology has no lab items**, as it has no curated external media.
+
+What was reviewed and deferred is listed in the PR description, not here.
 
 ## A class can hold Library items, 2026-10-04
 
@@ -16102,3 +16216,51 @@ through the class code: the released exam shows its result, an unreleased one
 `/student/exams`. The release's recipients include both the student's own
 account and the guardian. The push itself was not sent locally.
 
+
+## Push: asked for in context, one Android channel per kind, an app-icon count, 2026-10-06
+
+**Sign-in no longer asks for notification permission.** `registerPushToken`
+used to call `requestPermissionsAsync()` on every sign-in, before the user had
+any reason to agree, and Android 13+ stops showing that prompt after a refusal
+or two. Sign-in now registers a token only if permission is already granted.
+The prompt comes from `askForPushPermission` (`services/pushTokens.ts`). It
+shows our own explanation («تفعيل الإشعارات؟») first, and only after "yes" the
+OS prompt. When to ask is decided by `pushPromptDecision`
+(`services/pushPolicy.ts`, tested): once on its own, after the user sends a
+message or joins a class, and after that only from Settings. Settings has a
+new «إشعارات الجهاز» row that shows on/off and taps through to the prompt, or
+to system settings once Android will no longer prompt.
+
+**Android channels.** Every push used to land in Android's single catch-all
+channel, so muting one kind muted all of them. There are now `messages`,
+`results`, `reminders`, and `admin` (system admins only). They are created and
+named in the app's language by the tab layout. The server names a channel on
+every push (`PUSH_CHANNEL` in `lib/pushNotifications.ts`), and the English
+Hub's local reminder names `reminders`. `pushPolicy.test.ts` reads the
+server's `PUSH_CHANNEL` and fails if the app never creates one of its ids.
+If a device has not created a channel yet (an app running the older bundle),
+the push still arrives in the catch-all channel. Checked in
+expo-notifications' `BaseNotificationBuilder.kt`, which falls back rather than
+dropping it.
+
+**App-icon count.** A chat push now carries `badge`: the recipient's
+whole-inbox unread count, from `unreadTotals` (`lib/inboxSummary.ts`), one
+grouped query for all recipients. While the app is open,
+`syncAppBadge(unread)` keeps the icon equal to the bell, and sign-out clears
+it. Checked against a local Postgres with a teacher, two parents and a
+student, covering an archived thread, an archived message, a parent who
+blocked a sender and a teacher who blocked one. For every user,
+`unreadTotals` matched the sum of `unreadCounts` the inbox shows. The icon
+shows the number on iOS. On Android it depends on the launcher: a number on
+Samsung and some others, a dot elsewhere.
+
+No native module was added, so `app.json` `version` stays the same
+(expo-notifications, AsyncStorage and `Linking` were already in the binary).
+`schema-push:` none.
+
+**Still not verified on a device:** that a push arrives at all (see the
+2026-09-28 entry), and now also the channel names in system settings and the
+icon count. Things to check on the next device test: the Settings row, the
+explanation after the first message is sent, the four channels under App
+info → Notifications, and the icon count after a message arrives while the
+app is closed.

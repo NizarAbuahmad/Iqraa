@@ -660,6 +660,27 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
             </Pressable>
           ) : null}
         </View>
+        <Pressable
+          onPress={() => router.push('/curriculum/lab' as never)}
+          accessibilityRole="button"
+          style={[
+            styles.labCard,
+            { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
+          ]}
+        >
+          <View style={[styles.labCardIcon, { backgroundColor: colors.secondary }]}>
+            <Ionicons name="flask-outline" size={24} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('labEntryTitle')}
+            </Text>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('labEntryHint')}
+            </Text>
+          </View>
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+        </Pressable>
 
         {grades.length > 1 ? (
           <ChipRow
@@ -1014,6 +1035,16 @@ function ShelfTabs({
 
 const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 16, gap: 4 },
+  labCard: {
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  labCardIcon: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   heroRow: { alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' },
   backBtn: { padding: 4 },
   heroTitle: { color: '#fff', fontSize: 24, lineHeight: 34 },
