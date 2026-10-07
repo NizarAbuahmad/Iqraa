@@ -717,7 +717,11 @@ predict–observe–explain sheet** that does the teaching. Spec
 `reviewedAt`, or in a dev build (`__DEV__`). None does. To release one, a
 chemistry or physics teacher reviews it and both `reviewedBy` and `reviewedAt`
 are filled in; `validateVirtualLabs` refuses one without the other. Until then
-a teacher in production sees no card, no chip and no sheet.
+a teacher in production sees no card, no chip and no sheet — and no link: the
+lesson shelf never lists a `simulation` entry (`buildLessonShelf`,
+`lessonShelf.ts`), so the card is the only place a simulation appears. The
+shelf did list them until the final review caught it, which would have put six
+unopened PhET links in front of every user, students included.
 
 **Licence position: link only.** PhET relicensed to CC BY-NC on 2026-03-29.
 Iqraa embeds nothing, copies nothing, shows no screenshot and sends nothing to
@@ -750,7 +754,10 @@ is gone»: a link is an ordinary visit to a free site. In code: licence
   `phet.published: true`, and the `babel` repo has its Arabic strings, which
   give the exact title above. **No link has been opened in a browser.** The
   URLs follow PhET's standard `…/sims/html/<sim>/latest/<sim>_ar.html` shape;
-  the teacher review will be the first click.
+  the teacher review will be the first click. The entries'
+  `licenseCheckedAt: 2026-10-07` records that GitHub check and the CC BY-NC
+  relicensing (found by web search), **not** a read of PhET's licensing page,
+  which is blocked here too — the reviewer should open it.
 - **The procedures name the simulations' real controls**, read from the source
   and the translation files. PhET's Arabic translations are partial (Vector
   Addition has 14 of its strings in Arabic), so some steps quote an English
@@ -777,15 +784,21 @@ does not move when b does) and it was fixed before this entry.
   survives a photocopy), a QR code of it (`qrcode-generator`, pure JS, so no
   native module and no `app.json` bump), the credit and the steps. Word gets the
   same content without the QR.
-- **Saved to موادي** as a worksheet with `formState: { lessonId, materialKind:
-  'virtual-lab' }`; the موادي viewer shows the simulation block.
+- **Saved to موادي** as a worksheet with `formState: { lessonId, topic,
+  materialKind: 'virtual-lab' }`; the موادي viewer shows the simulation block.
+  **A saved sheet has no «تعديل»** (`isEditableMaterial`,
+  `services/materialShape.ts`, in the viewer and the موادي row menu): the
+  worksheet editor reads no lesson id, so editing fell back to the teacher's
+  default scope and saved the sheet back as maths — and an edited sheet would no
+  longer be the one a teacher reviewed.
 - **A chat chip, «🔬 المختبر الافتراضي»**, first in the chips when the open
   lesson is a released lab; tapping posts the sheet with no generation. It
   first shipped invisible — lesson chips only rendered when no reply chips
   existed — and the browser check caught it.
 - **Every worksheet in موادي and the chat now has the «نسخة الطالب / نسخة
   المعلم» choice**, which PR #883 gave only to quizzes, so a lab key does not
-  reach students by default.
+  reach students by default. Exception, as for quizzes: the chat bubble's own
+  «نسخ» still copies the text with the key.
 - Analytics: `virtual_lab_opened { lessonId, surface }`.
 
 **Not the Science Lab shelf.** «The Science Lab: a shelf in the library»
