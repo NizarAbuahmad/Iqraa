@@ -89,7 +89,7 @@ import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { MaterialCanvas } from '@/components/ui/MaterialCanvas';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
-import { buildPrepBoard, prepLessonKey, savedPrepArtifacts, type PrepRow } from '@/services/lessonBoard';
+import { buildPrepBoard, prepLessonKey, savedDeckFor, savedPrepArtifacts, type PrepRow } from '@/services/lessonBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { MathParagraph } from '@/components/ui/MathParagraph';
 import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
@@ -3195,6 +3195,15 @@ export default function IqraScreen() {
     setStartClassError('');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
+      // A «عرض الحصة» already saved for this lesson is the deck the teacher
+      // meant to teach from; build a warm-up only when there is none.
+      const saved = savedDeckFor(prepMaterials, topic, sessionMemory.activeLessonId);
+      if (saved) {
+        setPendingClassroomActivity(saved);
+        trackEvent('class_started', { source: 'chat', deck: 'saved' });
+        router.push('/ai-tools/classroom/presentation' as any);
+        return;
+      }
       // The lesson's OWN subject, not the deck builder's maths default. That
       // default was silent and wrong: `isMathContext` reads the subject name,
       // so a chemistry lesson announced as "Mathematics" came back as a deck
@@ -3211,7 +3220,7 @@ export default function IqraScreen() {
         lessonId: sessionMemory.activeLessonId,
       });
       setPendingClassroomActivity(activity);
-      trackEvent('class_started', { source: 'chat' });
+      trackEvent('class_started', { source: 'chat', deck: 'built' });
       router.push('/ai-tools/classroom/presentation' as any);
     } catch {
       // Surfacing this as a chat message would still be wrong — the teacher
@@ -3230,6 +3239,7 @@ export default function IqraScreen() {
     currentLessonView?.subjectId,
     currentLessonView?.subjectName,
     sessionMemory.activeLessonId,
+    prepMaterials,
     lang,
     t,
   ]);
