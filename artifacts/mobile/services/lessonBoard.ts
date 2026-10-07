@@ -11,6 +11,8 @@
  * screen renders it, this decides it, and `node --test` can run it.
  */
 
+import type { ClassroomActivity } from './ai/AIService.ts';
+
 /** The five materials the product actually pushes, in the order a teacher prepares them. */
 export type PrepType = 'lesson-plan' | 'worksheet' | 'quiz' | 'slides' | 'activity';
 
@@ -151,6 +153,32 @@ export function buildPrepBoard(
     const done = hits.length > 0;
     return { ...meta, done, material: hits[0] ?? null, count: hits.length, skipped: !done && skipped.includes(meta.type) };
   });
+}
+
+/**
+ * The class deck already saved for this lesson, ready to project — or null.
+ *
+ * «ابدأ الحصة» builds a throwaway warm-up deck from the book. A teacher who has
+ * already made «عرض الحصة» for the lesson (the row the board ticks) meant to
+ * teach from THAT deck, so the button presents it instead and only builds
+ * when there is nothing saved. Newest first, and a deck whose JSON no longer
+ * parses or has no slides is skipped rather than ending in a blank projector.
+ */
+export function savedDeckFor<T extends MaterialLike & { content: string }>(
+  materials: T[],
+  topic: string,
+  lessonId?: string | null,
+): ClassroomActivity | null {
+  for (const m of materialsForTopic(materials, topic, lessonId)) {
+    if (rowTypeOf(m.type) !== 'slides') continue;
+    try {
+      const deck = JSON.parse(m.content) as ClassroomActivity;
+      if (Array.isArray(deck?.slides) && deck.slides.length > 0) return deck;
+    } catch {
+      // unreadable — fall through to the next older deck
+    }
+  }
+  return null;
 }
 
 /** What the chat calls the materials it can make (`SessionArtifact`). */
