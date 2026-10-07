@@ -27,7 +27,7 @@ type Props = {
 };
 
 /**
- * The Iqrra lockup: the leaf mark beside the اقرأ wordmark. Drawn as vector, so
+ * The Iqrra lockup: the leaf mark beside the إقرأ wordmark. Drawn as vector, so
  * it is crisp at any size and needs no font.
  */
 export function BrandLogo({ onDark = false, width = 96, style, accessibilityLabel = 'Iqrra' }: Props) {
