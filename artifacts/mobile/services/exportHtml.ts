@@ -26,6 +26,7 @@ import { arCountPhrase } from './arCount.ts';
 import { dateLocale } from './dateLabels.ts';
 import { quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
+import { labQrSvg } from './labQr.ts';
 import type {
   ActivityOutput,
   LessonFlowOutput,
@@ -220,6 +221,17 @@ function htmlBase(
     .worked-steps { padding-${isRTL ? 'right' : 'left'}: 20px; }
     .worked-steps li { font-size: 12.5px; margin-bottom: 3px; }
     .worked-self { font-size: 12px; color: #374151; margin-top: 8px; }
+    /* A virtual lab: the link as text (a photocopy still carries it) beside a QR of it. */
+    .lab-box { border: 1px solid ${accent}55; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; break-inside: avoid; }
+    .lab-head { display: flex; flex-direction: row; gap: 12px; align-items: center; }
+    .lab-text { flex: 1; }
+    .lab-url { direction: ltr; text-align: left; font-family: monospace; font-size: 11px; color: #1d4ed8; word-break: break-all; margin: 4px 0; }
+    /* The credit is Latin prose: laid out LTR so its words keep their order on an RTL page. */
+    .lab-credit { direction: ltr; text-align: ${isRTL ? 'right' : 'left'}; font-size: 10.5px; color: #6b7280; }
+    .lab-qr { width: 84px; height: 84px; flex-shrink: 0; }
+    .lab-qr svg { width: 100%; height: 100%; }
+    .lab-steps { padding-${isRTL ? 'right' : 'left'}: 20px; margin-top: 8px; }
+    .lab-steps li { font-size: 12.5px; margin-bottom: 3px; }
     /* Step cards, for the activity's numbered run-sheet. */
     .step-card {
       display: flex; flex-direction: row; gap: 10px; align-items: flex-start;
@@ -559,10 +571,22 @@ export function buildWorksheetHTML(
       + `</div>`
     : '';
 
+  // The link is printed as text and as a QR. The text goes through `escAttr`,
+  // not `esc`: `esc` adds bidi isolates, which would corrupt a copied link.
+  const lab = ws.lab
+    ? `<div class="lab-box"><div class="lab-head"><div class="lab-text">`
+      + `<div class="worked-label">${L('المحاكاة', 'Simulation')}: ${esc(ws.lab.simName)}</div>`
+      + `<div class="lab-url">${escAttr(ws.lab.url)}</div>`
+      + `<div class="lab-credit">${esc(ws.lab.attribution)}</div></div>`
+      + `<div class="lab-qr">${labQrSvg(ws.lab.url)}</div></div>`
+      + `<ol class="lab-steps">${ws.lab.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>`
+    : '';
+
   const content = `
     <div class="doc-title">${esc(title)}</div>
     <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)}</div>
     ${ws.instructions ? `<div class="callout">${esc(ws.instructions)}</div>` : ''}
+    ${lab}
     ${worked}
     ${sections}
     ${answerKey}

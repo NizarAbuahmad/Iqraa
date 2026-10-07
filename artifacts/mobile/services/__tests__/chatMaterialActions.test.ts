@@ -145,6 +145,17 @@ describe('materialFormStateFor', () => {
   it('carries the topic, so re-opening a saved chat material is not a blank form', () => {
     assert.deepEqual(materialFormStateFor('تركيب الاقترانات'), { topic: 'تركيب الاقترانات' });
   });
+  const lab = { url: 'https://phet.colorado.edu/x', simName: 'تجربة', attribution: 'PhET', steps: ['خطوة'] };
+  it('marks a worksheet that carries a lab, and names its lesson, as the card does', () => {
+    const data: ChatArtifactData = { kind: 'worksheet', worksheet: { title: 't', instructions: '', sections: [], answerKey: [], lab } };
+    assert.deepEqual(materialFormStateFor('الطيف الذري', data, 'kbl-chem-s1-nccd-u1_lab'),
+      { topic: 'الطيف الذري', lessonId: 'kbl-chem-s1-nccd-u1_lab', materialKind: 'virtual-lab' });
+  });
+  it('leaves every other material as the topic alone, a lesson id or not', () => {
+    const plain: ChatArtifactData = { kind: 'worksheet', worksheet: { title: 't', instructions: '', sections: [], answerKey: [] } };
+    assert.deepEqual(materialFormStateFor('س', plain, 'kbl-x'), { topic: 'س' });
+    assert.deepEqual(materialFormStateFor('س', { kind: 'lesson-plan', plan: PLAN }, 'kbl-x'), { topic: 'س' });
+  });
 });
 
 describe('canPresentArtifact', () => {

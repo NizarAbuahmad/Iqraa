@@ -11,6 +11,7 @@
     "./sources": "./src/sources.ts",
     "./bank": "./src/bank.ts",
     "./external": "./src/external.ts",
+    "./virtual-labs": "./src/virtualLabs.ts",
     "./lab": "./src/lab.ts",
     "./elements": "./src/elements.ts",
     "./practice": "./src/practice.ts",
