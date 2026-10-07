@@ -703,6 +703,115 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Virtual labs: a PhET link and a predict–observe–explain sheet, hidden until a teacher reviews it, 2026-10-07
+
+Grade 10's «تجربة استهلالية» lessons had no content (the book's labs are
+parked, below), and public schools often have no equipment. Six of the seven
+lab lessons now carry **a link to a free PhET simulation and a fixed
+predict–observe–explain sheet** that does the teaching. Spec
+`docs/superpowers/specs/2026-10-06-virtual-lab-design.md`, plan
+`docs/superpowers/plans/2026-10-06-virtual-lab.md`.
+
+**All six sheets are unreviewed and hidden in production.** `releasedVirtualLab`
+(`lib/curriculum/src/virtualLabs.ts`) returns a sheet only when it records
+`reviewedAt`, or in a dev build (`__DEV__`). None does. To release one, a
+chemistry or physics teacher reviews it and both `reviewedBy` and `reviewedAt`
+are filled in; `validateVirtualLabs` refuses one without the other. Until then
+a teacher in production sees no card, no chip and no sheet.
+
+**Licence position: link only.** PhET relicensed to CC BY-NC on 2026-03-29.
+Iqraa embeds nothing, copies nothing, shows no screenshot and sends nothing to
+a model; the student or teacher opens the simulation on PhET's own site, with
+PhET's credit printed beside every link. Same reasoning as «The GeoGebra embed
+is gone»: a link is an ordinary visit to a free site. In code: licence
+`CC-BY-NC-4.0` maps to a new use policy `link-only`
+(`lib/curriculum/src/bank.ts`), and `validateExternalResources` refuses a
+`simulation` entry that is anything else.
+
+| Lab lesson | Simulation (Arabic title as PhET shows it) |
+| --- | --- |
+| `kbl-chem-s1-nccd-u1_lab` الطيف الذري | models-of-the-hydrogen-atom «نماذج ذرة الهيدروجين» |
+| `kbl-chem-s1-nccd-u2_lab` نمذجة التوزيع الإلكتروني | build-an-atom «بناء الذرة» |
+| `kbl-chem-s1-nccd-u3_lab` الروابط في المركبات التساهمية | molecule-shapes «أشكال الجزيئات» |
+| `kbl-chem-s2-nccd-u4_lab` المعادلة الكيميائية | balancing-chemical-equations «موازنة المعادلات الكيميائية» |
+| `kbl-phys-s1-nccd-u1_lab` ناتج جمع قوتين عمليًا | vector-addition «جمع المتجهات» |
+| `kbl-phys-s1-nccd-u2_lab` وصف الحركة باستخدام المدرج الهوائي | forces-and-motion-basics «القوى و الحركة : الاوليات» |
+
+- **`kbl-chem-s2-nccd-u5_lab` (الطاقة المرافقة للتفاعل) is skipped on purpose**,
+  not forgotten: PhET has no HTML5 simulation for it (Reactions & Rates is Java
+  only). Decided 2026-10-07.
+- **The motion lab uses Forces and Motion: Basics**, chosen 2026-10-07 because
+  The Moving Man is Java only. It is a forces simulation, so the sheet models
+  the air track with friction off and asks about speed under a constant force;
+  it does not ask for a position–time graph, which the simulation does not draw.
+- **How the simulations were confirmed: from PhET's GitHub, not a browser.**
+  `phet.colorado.edu` is blocked from the cloud environment.
+  `raw.githubusercontent.com` is not: each repo's `package.json` has
+  `phet.published: true`, and the `babel` repo has its Arabic strings, which
+  give the exact title above. **No link has been opened in a browser.** The
+  URLs follow PhET's standard `…/sims/html/<sim>/latest/<sim>_ar.html` shape;
+  the teacher review will be the first click.
+- **The procedures name the simulations' real controls**, read from the source
+  and the translation files. PhET's Arabic translations are partial (Vector
+  Addition has 14 of its strings in Arabic), so some steps quote an English
+  label as the simulation shows it, e.g. "Stopwatch".
+
+**For the reviewing teacher**, beyond reading each sheet: whether NH₃'s angle
+on screen matches the key's «نحو 107°»; whether molecular polarity and
+lone-pair angle narrowing in the u3 sheet sit above the Grade 10 bonding unit;
+the reaction-type terms «اتحاد / تحلل (تفكك) / احتراق» against the book;
+whether Forces and Motion starts with a crate on the stack. A task review
+caught one key that contradicted the simulation (Vector Addition's sum vector
+does not move when b does) and it was fixed before this entry.
+
+**What the teacher gets, in dev builds today:**
+- **A card on the lesson page** (`components/ui/VirtualLabCard.tsx`), under
+  the resource shelf: the simulation, PhET's credit and «افتح المحاكاة» for
+  everyone; «ورقة العمل» (export with the student/teacher copy choice) and
+  «احفظ في موادي» for teachers only. A student never sees the key or the
+  export.
+- **The sheet is a `WorksheetOutput`** with one new optional field, `lab`
+  (`services/virtualLab.ts`): sections أتوقّع / ألاحظ / أفسّر, the key numbered
+  across them. Same sheet with live AI on or off — it is never generated.
+- **The printed sheet carries a simulation box**: the URL as plain text (it
+  survives a photocopy), a QR code of it (`qrcode-generator`, pure JS, so no
+  native module and no `app.json` bump), the credit and the steps. Word gets the
+  same content without the QR.
+- **Saved to موادي** as a worksheet with `formState: { lessonId, materialKind:
+  'virtual-lab' }`; the موادي viewer shows the simulation block.
+- **A chat chip, «🔬 المختبر الافتراضي»**, first in the chips when the open
+  lesson is a released lab; tapping posts the sheet with no generation. It
+  first shipped invisible — lesson chips only rendered when no reply chips
+  existed — and the browser check caught it.
+- **Every worksheet in موادي and the chat now has the «نسخة الطالب / نسخة
+  المعلم» choice**, which PR #883 gave only to quizzes, so a lab key does not
+  reach students by default.
+- Analytics: `virtual_lab_opened { lessonId, surface }`.
+
+**Not the Science Lab shelf.** «The Science Lab: a shelf in the library»
+(same week, PR #886) is a separate, first-party feature: interactives, law
+cards and image/video pointers under `/curriculum/lab`. This feature lives on
+the lab *lesson* page and in the chat, and links out to PhET. Both are filed
+on grade 10 lab lessons — the Science Lab points `kbl-chem-s1-nccd-u1_lab` and
+`kbl-phys-s1-nccd-u1_lab` at Wikimedia images — so a teacher can meet both on
+the same lesson. They share only the catalog
+(`external_resources.json`), where each entry's licence decides how it may be
+used.
+
+**Verified in the running web app** (local Postgres + API + Expo web, dev
+build, the shipped data), on all six lab lessons: the card renders; the
+student PDF has the simulation box and no key, and **its QR, decoded from the
+exported PDF, is the exact simulation URL** (six of six); the teacher Word file
+has the key and the URL. On the motion lab: the chat chip comes first, tapping
+it posts the sheet, the export offers the copy choice, and the student Word
+file has no key. Save to موادي and reopen were checked on the equations lab
+with a temporary sheet the day before the content landed (same code path). A
+student account (role and roster link set by hand in the local database, then
+reverted) sees the link and the credit, no sheet and no save. The reaction
+energy lab and an ordinary maths lesson show no card and no chip.
+**Not verified:** the PhET pages themselves (blocked here); Microsoft Word
+itself; a native build.
+
 ## A Deploy GitHub stalls is re-run once, 2026-10-06
 
 On 2026-10-05 two Deploy runs (#417 at 20:26 UTC and #418 at 20:59) were
@@ -2854,8 +2963,10 @@ fixed offset, because PhET's ~100-character credit wraps.
   (the assessment route, shipped earlier) is present, so the probe works and the
   gap is real. Read-aloud **assessment** is live on the web; practice is not.
 - **No lawfully embeddable simulation exists.** PhET is CC BY-NC; GeoGebra needs
-  a commercial agreement (see «The GeoGebra embed is gone»). The interactive
-  half of the original plan has no source.
+  a commercial agreement (see «The GeoGebra embed is gone»). **Linking does
+  ship since 2026-10-07:** six Grade 10 lab lessons link to a PhET simulation
+  with a predict–observe–explain sheet, hidden until a teacher reviews each one
+  (see «Virtual labs»). Embedding still has no source.
 - **The book's 71 labs are parked.** Auto-parsing Arabic activity-book text into
   safety-critical lab cards is not safe — those books sit outside the repair
   wordlist's witness coverage for the `pdf-parse` lam contamination. Vision
