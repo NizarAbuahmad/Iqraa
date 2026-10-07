@@ -121,6 +121,15 @@ describe('filtering', () => {
     assert.ok(!sci.includes('uploaded:u3'));
   });
 
+  it('filters by a list of subjects, keeping rows with no subject', () => {
+    const keys = (subjectIds: string[]) =>
+      filterResources(buildResourceCatalog(input), { subjectIds }).map(i => i.key);
+    const both = keys(['science', 'arabic']);
+    assert.ok(both.includes('uploaded:u1') && both.includes('uploaded:u3'), 'a class teaching both lost one');
+    assert.ok(!keys(['arabic']).includes('uploaded:u1'));
+    assert.deepEqual(keys([]), filterResources(buildResourceCatalog(input), {}).map(i => i.key), 'empty list must mean no filter');
+  });
+
   it('filters by category and by lesson', () => {
     const items = buildResourceCatalog(input);
     assert.deepEqual(filterResources(items, { kinds: ['video'], sources: ['uploaded'] }).map(i => i.key), ['uploaded:u2']);
