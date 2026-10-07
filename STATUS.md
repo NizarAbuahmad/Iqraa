@@ -90,12 +90,20 @@ an announcement by default» below.
   guessed from a title 107 lessons share; Save stores the type, length and
   objective the activity was **built** with, not the live pickers; the
   evaluation-gap warm-up is saved with a group/20-min form, which is what
-  Regenerate really builds. Not changed, found in the same review: Regenerate keeps
-  `savedId`, so Update overwrites the saved version; and typing «أنشئ نشاطًا»
-  on `/home` opens the lesson plan, because `buildGeneratorNav` redirects the
-  disabled `activity`/`homework` tools — part of the recorded `homeAiTools`
-  decision, not touched. Tests: `activityOutput.test.ts`. Not looked at in a
-  browser.
+  Regenerate really builds. Tests: `activityOutput.test.ts`. Not looked at in a
+  browser. **The two found in the same review and left open were fixed
+  2026-10-07** (`activityHomeFlow.test.ts`; typecheck and the mobile suite pass,
+  **not looked at in a browser**): Regenerate now detaches the saved id
+  (`savedIdAfterGeneration`, `generationScope.ts`), so the button says «حفظ» and
+  creates a new material instead of overwriting the saved one, and clears the
+  favourite star; a plain generation keeps the id, which `useEnglishRefresh`
+  relies on. And typing «أنشئ نشاطًا» on `/home` opens the activity generator:
+  `activity` gained `navigable: true` in `homeAiTools.ts`, so
+  `buildGeneratorNav` no longer redirects it, while `enabled: false` still keeps
+  it out of the chips, templates and related-tools panel — that suggestion
+  decision is unchanged, and `homework` is still redirected. Routing it exposed
+  a second defect, now fixed: `extractLessonTopic` left the tanween of «نشاطًا»
+  behind, so the topic arrived as «ًا»; it also stripped the front of «نشاطات».
 - **Class Challenge (game) review fixes** (2026-10-04, same PR as the activity
   fixes above). `game.tsx` now grounds the lesson once, scoped to the picked
   grade and subject, and carries `lessonId`/`unitId`/figures from that grounding
