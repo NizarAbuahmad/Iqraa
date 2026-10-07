@@ -744,6 +744,126 @@
       "attribution": "Tony Webster, CC BY 2.0, via Wikimedia Commons",
       "licenseCheckedAt": "2026-09-25",
       "authority": "third-party"
+    },
+    {
+      "id": "phet-models-of-the-hydrogen-atom",
+      "lessonIds": [
+        "kbl-chem-s1-nccd-u1_lab"
+      ],
+      "gradeIds": [
+        "grade-10"
+      ],
+      "subjectId": "chemistry",
+      "kind": "simulation",
+      "titleEn": "Models of the Hydrogen Atom",
+      "titleAr": "نماذج ذرة الهيدروجين",
+      "provider": "phet",
+      "license": "CC-BY-NC-4.0",
+      "licenseUrl": "https://phet.colorado.edu/en/licensing",
+      "sourceUrl": "https://phet.colorado.edu/sims/html/models-of-the-hydrogen-atom/latest/models-of-the-hydrogen-atom_ar.html",
+      "attribution": "PhET Interactive Simulations, University of Colorado Boulder — phet.colorado.edu (CC BY-NC 4.0)",
+      "licenseCheckedAt": "2026-10-07",
+      "authority": "third-party"
+    },
+    {
+      "id": "phet-build-an-atom",
+      "lessonIds": [
+        "kbl-chem-s1-nccd-u2_lab"
+      ],
+      "gradeIds": [
+        "grade-10"
+      ],
+      "subjectId": "chemistry",
+      "kind": "simulation",
+      "titleEn": "Build an Atom",
+      "titleAr": "بناء الذرة",
+      "provider": "phet",
+      "license": "CC-BY-NC-4.0",
+      "licenseUrl": "https://phet.colorado.edu/en/licensing",
+      "sourceUrl": "https://phet.colorado.edu/sims/html/build-an-atom/latest/build-an-atom_ar.html",
+      "attribution": "PhET Interactive Simulations, University of Colorado Boulder — phet.colorado.edu (CC BY-NC 4.0)",
+      "licenseCheckedAt": "2026-10-07",
+      "authority": "third-party"
+    },
+    {
+      "id": "phet-molecule-shapes",
+      "lessonIds": [
+        "kbl-chem-s1-nccd-u3_lab"
+      ],
+      "gradeIds": [
+        "grade-10"
+      ],
+      "subjectId": "chemistry",
+      "kind": "simulation",
+      "titleEn": "Molecule Shapes",
+      "titleAr": "أشكال الجزيئات",
+      "provider": "phet",
+      "license": "CC-BY-NC-4.0",
+      "licenseUrl": "https://phet.colorado.edu/en/licensing",
+      "sourceUrl": "https://phet.colorado.edu/sims/html/molecule-shapes/latest/molecule-shapes_ar.html",
+      "attribution": "PhET Interactive Simulations, University of Colorado Boulder — phet.colorado.edu (CC BY-NC 4.0)",
+      "licenseCheckedAt": "2026-10-07",
+      "authority": "third-party"
+    },
+    {
+      "id": "phet-balancing-chemical-equations",
+      "lessonIds": [
+        "kbl-chem-s2-nccd-u4_lab"
+      ],
+      "gradeIds": [
+        "grade-10"
+      ],
+      "subjectId": "chemistry",
+      "kind": "simulation",
+      "titleEn": "Balancing Chemical Equations",
+      "titleAr": "موازنة المعادلات الكيميائية",
+      "provider": "phet",
+      "license": "CC-BY-NC-4.0",
+      "licenseUrl": "https://phet.colorado.edu/en/licensing",
+      "sourceUrl": "https://phet.colorado.edu/sims/html/balancing-chemical-equations/latest/balancing-chemical-equations_ar.html",
+      "attribution": "PhET Interactive Simulations, University of Colorado Boulder — phet.colorado.edu (CC BY-NC 4.0)",
+      "licenseCheckedAt": "2026-10-07",
+      "authority": "third-party"
+    },
+    {
+      "id": "phet-vector-addition",
+      "lessonIds": [
+        "kbl-phys-s1-nccd-u1_lab"
+      ],
+      "gradeIds": [
+        "grade-10"
+      ],
+      "subjectId": "physics",
+      "kind": "simulation",
+      "titleEn": "Vector Addition",
+      "titleAr": "جمع المتجهات",
+      "provider": "phet",
+      "license": "CC-BY-NC-4.0",
+      "licenseUrl": "https://phet.colorado.edu/en/licensing",
+      "sourceUrl": "https://phet.colorado.edu/sims/html/vector-addition/latest/vector-addition_ar.html",
+      "attribution": "PhET Interactive Simulations, University of Colorado Boulder — phet.colorado.edu (CC BY-NC 4.0)",
+      "licenseCheckedAt": "2026-10-07",
+      "authority": "third-party"
+    },
+    {
+      "id": "phet-forces-and-motion-basics",
+      "lessonIds": [
+        "kbl-phys-s1-nccd-u2_lab"
+      ],
+      "gradeIds": [
+        "grade-10"
+      ],
+      "subjectId": "physics",
+      "kind": "simulation",
+      "titleEn": "Forces and Motion: Basics",
+      "titleAr": "القوى و الحركة : الاوليات",
+      "provider": "phet",
+      "license": "CC-BY-NC-4.0",
+      "licenseUrl": "https://phet.colorado.edu/en/licensing",
+      "sourceUrl": "https://phet.colorado.edu/sims/html/forces-and-motion-basics/latest/forces-and-motion-basics_ar.html",
+      "attribution": "PhET Interactive Simulations, University of Colorado Boulder — phet.colorado.edu (CC BY-NC 4.0)",
+      "licenseCheckedAt": "2026-10-07",
+      "authority": "third-party"
     }
   ]
 }

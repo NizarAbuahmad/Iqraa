@@ -28,3 +28,17 @@ export function looksLikeActivityContent(content: unknown): boolean {
   if (typeof c.objective !== 'string') return false;
   return Array.isArray(c.steps);
 }
+
+/**
+ * Whether «تعديل» may be offered for a saved material.
+ *
+ * A virtual-lab sheet is fixed, reviewed content filed as an ordinary
+ * worksheet. Its edit route is the worksheet generator, which reads neither
+ * `lessonId` nor `materialKind`: opening it falls back to the teacher's default
+ * scope, and saving there rewrites the subject, blanks the topic and replaces
+ * `materialKind` — a corrupted sheet, and a way round the review that made it
+ * releasable. So it is viewed, exported and filed, but never edited.
+ */
+export function isEditableMaterial(item: { formState?: Record<string, any> | null }): boolean {
+  return item.formState?.materialKind !== 'virtual-lab';
+}

@@ -87,6 +87,13 @@ export function formatWorksheetText(
   lines.push(SEP);
   if (ws.instructions) lines.push(`\n${ws.instructions}\n`);
 
+  if (ws.lab) {
+    lines.push(`\n${isAr ? 'المحاكاة' : 'SIMULATION'}: ${ws.lab.simName}`);
+    lines.push(ws.lab.url);
+    lines.push(ws.lab.attribution);
+    ws.lab.steps.forEach((s, i) => lines.push(`${i + 1}. ${s}`));
+  }
+
   // Studied, not answered, so it stays when the key is left out.
   if (ws.workedExample) {
     const ex = ws.workedExample;

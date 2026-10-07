@@ -80,7 +80,17 @@ export function materialContentFor(data: ChatArtifactData): unknown {
  * Storing nothing would open the generator blank, which reads as the material
  * having been lost.
  */
-export function materialFormStateFor(topic: string): Record<string, string> {
+export function materialFormStateFor(
+  topic: string,
+  data?: ChatArtifactData,
+  lessonId?: string,
+): Record<string, string> {
+  // A virtual-lab sheet stores the same identity «احفظ في موادي» on the lesson
+  // card does (`virtualLabSavePayload`), so it files and reopens the same way
+  // whichever door it was saved from.
+  if (data?.kind === 'worksheet' && data.worksheet.lab && lessonId) {
+    return { topic, lessonId, materialKind: 'virtual-lab' };
+  }
   return { topic };
 }
 
