@@ -54,6 +54,8 @@ export interface ResourceItem {
   url?: string;
   /** Cover image URL: set by admin, or auto-derived from a YouTube URL. */
   thumbnailUrl?: string;
+  /** The uploaded file's MIME type, so a picture can be its own cover. */
+  mimeType?: string;
   /** 1 or 2 when the resource covers one semester only. */
   semester?: 1 | 2;
   /** The printed page a book-QR code sits on. */
@@ -101,6 +103,7 @@ function fromUploaded(item: LibraryItem): ResourceItem | null {
     description: item.description || undefined,
     url: item.url,
     thumbnailUrl: item.thumbnailUrl ?? undefined,
+    mimeType: item.mimeType ?? undefined,
     semester: item.semester ?? undefined,
     actions: ['open'],
   };
