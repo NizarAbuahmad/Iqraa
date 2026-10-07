@@ -282,6 +282,18 @@ export function insertVideoSlide(
   return next.map((s, i) => ({ ...s, slideNumber: i + 1 }));
 }
 
+/**
+ * Where hand-added slides (teacher attachments, lab items) go: after the
+ * teaching, before the worked examples, else before the summary, else at the
+ * end — and never at index 0, which every export draws as the title slide.
+ */
+function slotForResources(slides: readonly ActivitySlide[]): number {
+  const beforeExamples = slides.findIndex(s => s.type === 'challenge');
+  const beforeSummary = slides.findIndex(s => s.type === 'summary');
+  const at = beforeExamples >= 0 ? beforeExamples : beforeSummary >= 0 ? beforeSummary : slides.length;
+  return Math.max(at, Math.min(1, slides.length));
+}
+
 /** What a teacher pinned to a lesson — the shape `lessonMedia` stores. */
 export type AttachedResource = { kind: 'image' | 'video' | 'audio' | 'document'; url: string; caption: string };
 
@@ -300,12 +312,24 @@ export function insertLessonResources(
   isAr: boolean,
 ): ActivitySlide[] {
   if (items.length === 0) return [...slides];
-  const beforeExamples = slides.findIndex(s => s.type === 'challenge');
-  const beforeSummary = slides.findIndex(s => s.type === 'summary');
-  const at = beforeExamples >= 0 ? beforeExamples : beforeSummary >= 0 ? beforeSummary : slides.length;
+  const at = slotForResources(slides);
   const built = items.map(m => buildMediaSlide(m.kind, m.url, m.caption, isAr, 0));
   return [...slides.slice(0, at), ...built, ...slides.slice(at)]
     .map((s, i) => ({ ...s, slideNumber: i + 1 }));
+}
+
+/**
+ * Put already-built lab slides into a deck, as one batch in the order given,
+ * at the same slot `insertLessonResources` uses. Called after it, so the
+ * teacher's own attachments sit ahead of the lab slides.
+ */
+export function insertLabSlides(
+  slides: readonly ActivitySlide[],
+  labSlides: readonly ActivitySlide[],
+): ActivitySlide[] {
+  if (labSlides.length === 0) return [...slides];
+  const at = slotForResources(slides);
+  return [...slides.slice(0, at), ...labSlides, ...slides.slice(at)].map((s, i) => ({ ...s, slideNumber: i + 1 }));
 }
 
 /**

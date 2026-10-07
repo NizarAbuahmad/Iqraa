@@ -10,8 +10,11 @@ import assert from 'node:assert/strict';
 
 import {
   addBodyFor,
+  addLabBodyFor,
   addedKeys,
   isInsecureResource,
+  labItemsForClass,
+  labShelfKey,
   mergeClassShelf,
   openTargetFor,
   withAddedResource,
@@ -316,5 +319,70 @@ describe('withAddedResource', () => {
     const list = [resource({ id: 'a' })];
     withAddedResource(list, resource({ id: 'b' }));
     assert.deepEqual(list.map(r => r.id), ['a']);
+  });
+});
+
+describe('lab rows on the shelf', () => {
+  const labRow = (patch: Partial<ClassResource> = {}): ClassResource =>
+    resource({
+      id: 'l1',
+      kind: 'lab',
+      source: null,
+      nativeId: 'law-newton-second',
+      mediaKind: 'lab',
+      url: null,
+      ...patch,
+    });
+
+  it('keys a lab row by its item id, matching labShelfKey', () => {
+    assert.ok(addedKeys([labRow()]).has(labShelfKey('law-newton-second')));
+    assert.equal(labShelfKey('law-newton-second'), 'lab:law-newton-second');
+  });
+
+  it('does not let a lab id collide with a library key', () => {
+    const keys = addedKeys([labRow(), resource({ id: 'u', nativeId: 'law-newton-second' })]);
+    assert.equal(keys.size, 2);
+  });
+
+  it('sends a lab item by id alone — the server writes the title', () => {
+    assert.deepEqual(addLabBodyFor('law-newton-second'), { kind: 'lab', itemId: 'law-newton-second' });
+  });
+
+  it('opens a lab row in the app, at the lab route', () => {
+    assert.deepEqual(openTargetFor(labRow()), { kind: 'lab', path: '/curriculum/lab/law-newton-second' });
+  });
+
+  it('opens nothing for a lab row whose item has gone', () => {
+    assert.deepEqual(openTargetFor(labRow({ unavailable: true })), { kind: 'none' });
+  });
+
+  it('is never flagged insecure', () => {
+    assert.equal(isInsecureResource(labRow()), false);
+  });
+});
+
+describe('labItemsForClass', () => {
+  it('narrows to the class grade and subject', () => {
+    const items = labItemsForClass('grade-10', ['chemistry']);
+    assert.ok(items.length > 0);
+    assert.ok(items.every(i => i.gradeId === 'grade-10' && i.subjectId === 'chemistry'));
+  });
+
+  it('takes any of several subjects', () => {
+    const both = labItemsForClass('grade-10', ['chemistry', 'physics']);
+    assert.ok(both.some(i => i.subjectId === 'chemistry'));
+    assert.ok(both.some(i => i.subjectId === 'physics'));
+  });
+
+  it('treats an empty subject list as any subject, as the Library picker does', () => {
+    assert.ok(labItemsForClass('grade-10', []).length >= labItemsForClass('grade-10', ['chemistry']).length);
+  });
+
+  it('is empty for a class with no lab items', () => {
+    assert.deepEqual(labItemsForClass('grade-1', ['arabic']), []);
+  });
+
+  it('is empty without a grade, rather than listing everything', () => {
+    assert.deepEqual(labItemsForClass('', ['chemistry']), []);
   });
 });

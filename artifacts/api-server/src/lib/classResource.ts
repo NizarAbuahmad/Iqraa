@@ -6,6 +6,7 @@
  *
  * Spec: docs/superpowers/specs/2026-10-04-class-resources-design.md
  */
+import { getLabItem } from "@workspace/curriculum/lab";
 import { LIBRARY_CATEGORIES, type LibraryCategory } from "./libraryResource.ts";
 
 export const LIBRARY_SOURCES = ["uploaded", "premade-sheet", "book-qr"] as const;
@@ -140,7 +141,7 @@ export interface ClientClassResource {
   url: string | null;
   thumbnailUrl: string | null;
   createdAt: string;
-  /** A staff upload the Library has since deleted. Premade sheets and book codes ship with the app and cannot vanish. */
+  /** A staff upload the Library has since deleted, or a lab item a later release removed. Premade sheets and book codes ship with the app and cannot vanish. */
   unavailable: boolean;
 }
 
@@ -164,6 +165,8 @@ export function presentClassResource(
 ): ClientClassResource {
   const isUpload = row.librarySource === "uploaded" && !!row.libraryNativeId;
   const gone = isUpload && !presentLibraryIds.has(row.libraryNativeId!);
+  // A lab item lives in code, so "gone" means a later release removed it.
+  const labGone = row.kind === "lab" && !getLabItem(row.libraryNativeId ?? "");
   const live = isUpload && !gone ? liveUrls?.get(row.libraryNativeId!) : undefined;
   return {
     id: row.id,
@@ -175,6 +178,6 @@ export function presentClassResource(
     url: typeof live === "string" ? live : row.url,
     thumbnailUrl: row.thumbnailUrl,
     createdAt: row.createdAt.toISOString(),
-    unavailable: gone,
+    unavailable: gone || labGone,
   };
 }
