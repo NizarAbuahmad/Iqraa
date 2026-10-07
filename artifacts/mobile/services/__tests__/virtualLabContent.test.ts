@@ -35,8 +35,9 @@ describe('the shipped virtual labs', () => {
     );
   });
 
-  it('has no sheet for the lab with no HTML5 simulation', () => {
+  it('has no sheet, and no catalog entry, for the lab with no HTML5 simulation', () => {
     assert.equal(VIRTUAL_LABS.find(l => l.lessonId === 'kbl-chem-s2-nccd-u5_lab'), undefined);
+    assert.ok(!EXTERNAL_RESOURCES.some(r => r.lessonIds.includes('kbl-chem-s2-nccd-u5_lab')));
   });
 
   it('is valid against the catalog', () => {
