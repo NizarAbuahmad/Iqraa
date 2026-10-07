@@ -40,7 +40,7 @@ export type ResolvedLayout =
 export const MAX_STATEMENT_CHARS = 140;
 
 /** A figure has to stay legible at display size. */
-const MAX_STAT_VALUE_CHARS = 12;
+export const MAX_STAT_VALUE_CHARS = 12;
 
 /** Two steps are a pair, not a process; below this the numbering is noise. */
 const MIN_STEPS = 2;
