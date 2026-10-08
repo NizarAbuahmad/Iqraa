@@ -312,10 +312,11 @@ export default function ClassDetailScreen() {
       void queryClient.invalidateQueries({ queryKey: CLASSES_QUERY_KEY });
       // Say so when names were skipped. A teacher who pastes 30 and gets 27
       // needs to know the 3 were already on the roster, not lost.
+      // Information, not a failure, so not the red banner.
       if (result.skipped.length > 0) {
-        setError(t('skippedExisting', result.skipped.join('، ')));
+        setToast(t('skippedExisting', result.skipped.join('، ')));
       } else if (result.added === 0) {
-        setError(t('noNewStudents'));
+        setToast(t('noNewStudents'));
       }
     } catch (err) {
       setError(describe(err));
@@ -646,6 +647,14 @@ export default function ClassDetailScreen() {
     </View>
   ) : null;
 
+  // The same error inside a modal: the banner sits behind the backdrop, so a
+  // failed add or note save used to look like a button that did nothing.
+  const modalError = error ? (
+    <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: align }}>
+      {error}
+    </Text>
+  ) : null;
+
   const empty = (
     icon: keyof typeof Ionicons.glyphMap,
     titleKey: 'noStudentsYet' | 'noMaterialsYet' | 'noExamsYet',
@@ -956,7 +965,12 @@ export default function ClassDetailScreen() {
           keyExtractor={e => e.key}
           contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={subjectFilter}
+          ListHeaderComponent={
+            <View style={{ gap: 10 }}>
+              {errorBanner}
+              {subjectFilter}
+            </View>
+          }
           ListEmptyComponent={materials.length > 0 ? emptyForSubject : empty('folder-open-outline', 'noMaterialsYet', 'noMaterialsDesc')}
           renderItem={({ item: entry }) => {
             if (entry.type === 'resource') {
@@ -1024,6 +1038,7 @@ export default function ClassDetailScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={{ gap: 10, marginBottom: 10 }}>
+              {errorBanner}
               {subjectFilter}
               <Pressable
                 onPress={() => router.push({ pathname: '/evaluations/mini', params: { classId: id } })}
@@ -1342,6 +1357,7 @@ export default function ClassDetailScreen() {
                 {t('addStudentsCodeHint')}
               </Text>
             ) : null}
+            {modalError}
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowAdd(false)} style={styles.modalBtn}>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
@@ -1417,6 +1433,7 @@ export default function ClassDetailScreen() {
                 },
               ]}
             />
+            {modalError}
             <View style={styles.modalActions}>
               <Pressable onPress={() => setNoteStudent(null)} style={styles.modalBtn}>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
