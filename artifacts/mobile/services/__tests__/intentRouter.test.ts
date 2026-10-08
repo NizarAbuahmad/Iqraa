@@ -223,7 +223,7 @@ describe('questions about Iqrra itself are answered, not clarified or taught', (
       const route = classifyChatIntent(q, lang);
       assert.equal(route.intent, 'about');
       assert.equal(route.useTeachingPipeline, false);
-      assert.match(route.socialReply ?? '', lang === 'ar' ? /اقرأ/ : /Iqrra/);
+      assert.match(route.socialReply ?? '', lang === 'ar' ? /إقرأ/ : /Iqrra/);
     });
   }
 

@@ -45,6 +45,13 @@ export type HomeToolDef = {
   topicHintAr?: string;
   topicHintEn?: string;
   homework?: boolean;
+  /**
+   * A teacher who types this tool's name still lands on it, though `enabled`
+   * is false. `enabled` keeps a tool out of the chips, templates and
+   * related-tools panel — it is a suggestion switch — while the screen itself
+   * is live and offered on the tools tab and in the chat «+» (2026-10-07).
+   */
+  navigable?: boolean;
 };
 
 /** Primary tools in teaching-workflow order (before → during → after). */
@@ -65,7 +72,7 @@ export const HOME_AI_TOOLS: HomeToolDef[] = [
   // ── During class ────────────────────────────────────────────────────────
   {
     id: 'activity', emoji: '🎯', labelAr: 'نشاط صفي', labelEn: 'Class activity',
-    route: '/ai-tools/activity', status: 'enabled', enabled: false,
+    route: '/ai-tools/activity', status: 'enabled', enabled: false, navigable: true,
   },
   {
     id: 'worksheet', emoji: '📝', labelAr: 'ورقة عمل', labelEn: 'Worksheet',
@@ -273,7 +280,7 @@ export function inferToolFromPrompt(prompt: string): HomeToolId {
 export function extractLessonTopic(prompt: string, fallback: string): string {
   const cleaned = prompt
     .replace(/^(أنشئ|انشئ|اصنع|اعمل|create|make|generate|build)\s+/i, '')
-    .replace(/^(خطة\s*درس|ورقة\s*عمل|اختبار(?:اً|ا)?\s*قصيرا?|واجبا?(?:\s*منزليا?)?|نشاطا?(?:\s*صفيا?)?|lesson\s*plan|worksheet|quiz|homework|activity)\s*(عن|حول|on|about|for)?\s*/i, '')
+    .replace(/^(خطة\s*درس|ورقة\s*عمل|اختبار(?:اً|ا)?\s*قصيرا?|واجبا?(?:\s*منزليا?)?|نشاط(?:ًا|اً|ا|ً)?(?:\s*صفي(?:ًا|اً|ا|ً)?)?(?![\u0621-\u064A])|lesson\s*plan|worksheet|quiz|homework|activity)\s*(عن|حول|on|about|for)?\s*/i, '')
     .trim();
   return cleaned || fallback;
 }
@@ -290,7 +297,7 @@ export function buildGeneratorNav(
 ): GeneratorNav {
   const tool = getToolById(toolId);
   // Never navigate to a coming_soon tool from the investor UI
-  const resolved = tool.enabled ? tool : getToolById('lesson-plan');
+  const resolved = tool.enabled || tool.navigable ? tool : getToolById('lesson-plan');
   const topic = buildTopicForTool(lessonTopic, resolved, lang);
   const params: Record<string, string> = {};
   if (topic) params.topic = topic;

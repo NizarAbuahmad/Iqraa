@@ -332,7 +332,7 @@ export function formatSupportResourcesBlock(
   if (!resources.length) return '';
   const isAr = lang === 'ar';
   const header = isAr
-    ? '📎 مواد مساندة متوفرة في مكتبة اقرأ (للمعلم):'
+    ? '📎 مواد مساندة متوفرة في مكتبة إقرأ (للمعلم):'
     : '📎 Support materials in the Iqra library:';
   const pinnedPresent = !!pinnedResourceId && resources.some(r => r.id === pinnedResourceId);
   const lines = resources.map(r => {

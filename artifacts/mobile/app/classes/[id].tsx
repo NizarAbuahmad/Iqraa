@@ -31,6 +31,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -1172,6 +1173,7 @@ export default function ClassDetailScreen() {
       </Modal>
 
       <Modal visible={showEdit} transparent animationType="fade" onRequestClose={() => setShowEdit(false)}>
+        <KeyboardSafeView>
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
             <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
@@ -1265,9 +1267,11 @@ export default function ClassDetailScreen() {
             </View>
           </View>
         </View>
+        </KeyboardSafeView>
       </Modal>
 
       <Modal visible={showAdd} transparent animationType="fade" onRequestClose={() => setShowAdd(false)}>
+        <KeyboardSafeView>
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
             <Text
@@ -1358,6 +1362,7 @@ export default function ClassDetailScreen() {
             </View>
           </View>
         </View>
+        </KeyboardSafeView>
       </Modal>
 
       <Modal
@@ -1366,6 +1371,7 @@ export default function ClassDetailScreen() {
         animationType="fade"
         onRequestClose={() => setNoteStudent(null)}
       >
+        <KeyboardSafeView>
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
             <Text
@@ -1428,6 +1434,7 @@ export default function ClassDetailScreen() {
             </View>
           </View>
         </View>
+        </KeyboardSafeView>
       </Modal>
 
       <Modal

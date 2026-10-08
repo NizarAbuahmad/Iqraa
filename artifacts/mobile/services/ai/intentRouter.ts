@@ -222,7 +222,7 @@ function greetingReply(isAr: boolean, name?: string): string {
     return [
       salutation,
       '',
-      'أنا اقرأ، رفيقك في تحضير الحصص.',
+      'أنا إقرأ، رفيقك في تحضير الحصص.',
       '',
       'أستطيع أن أساعدك في:',
       ...capabilityLines(true),
@@ -246,7 +246,7 @@ function greetingReply(isAr: boolean, name?: string): string {
 function offTopicReply(isAr: boolean): string {
   if (isAr) {
     return [
-      'أنا اقرأ، مساعد تدريس مختص بالمنهاج الوطني الأردني.',
+      'أنا إقرأ، مساعد تدريس مختص بالمنهاج الوطني الأردني.',
       'هذا السؤال خارج مجال عملي، فلا أتابع الأخبار أو المواضيع العامة.',
       '',
       'لكن يسعدني مساعدتك في:',
@@ -344,7 +344,7 @@ function aboutAsk(q: string): AboutAsk | null {
 function aboutReply(ask: AboutAsk, isAr: boolean): string {
   if (isAr) {
     const opening = ask === 'identity'
-      ? ['أنا اقرأ 🌿 مساعد تدريس بالذكاء الاصطناعي، مبنيّ على المنهاج الوطني الأردني.', '', 'أستطيع أن أساعدك في:']
+      ? ['أنا إقرأ 🌿 مساعد تدريس بالذكاء الاصطناعي، مبنيّ على المنهاج الوطني الأردني.', '', 'أستطيع أن أساعدك في:']
       : ['أساعدك في تحضير حصصك على المنهاج الوطني الأردني:'];
     return [
       ...opening,

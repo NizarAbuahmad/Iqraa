@@ -46,7 +46,7 @@ export interface RoleSwitchInput {
   /** Asked at most once, and only on the path that can still say yes. */
   hasRosterLink: () => Promise<boolean>;
   /**
-   * Whether a teacher owns a class or a student — the rows other accounts
+   * Whether a teacher owns a live (unarchived) class or any student — the rows other accounts
    * hang off (join codes, roster links, guardians). Personal work (plans,
    * generations, schedule) does not count: it is still there if they switch
    * back, which an unlinked parent/student may. Asked only for a teacher.

@@ -219,6 +219,22 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   local and EAS fingerprints never matched and every build failed at
   `CONFIGURE_EXPO_UPDATES`. In a pnpm monorepo that policy is not usable
   without excluding the very inputs it exists to watch.
+- **On Android nothing lifts content above the keyboard unless a view asks.**
+  Expo SDK 54 draws edge-to-edge and `KeyboardProvider` (root layout) forces
+  `navigationBarTranslucent`, so the window is never resized for the keyboard —
+  on screens and inside `<Modal>` windows alike. Sign-up, sign-in and chat all
+  had their lower fields (or the composer) hidden behind it, while
+  `behavior={Platform.OS === 'ios' ? 'padding' : undefined}` — the copy-pasted
+  idiom — is a no-op on Android. The fix lives in two places only: the root
+  Stack's `screenLayout` wraps **every screen** in `KeyboardSafeView`, and every
+  `<Modal>` that holds a text input wraps its own body in one (a Modal is a
+  separate window the Stack cannot reach). **Do not add a
+  `KeyboardAvoidingView` inside a screen**: both react to the same event with
+  the same stale frame and the content lifts twice. A new Modal with an input
+  needs `<KeyboardSafeView>` inside it; a new screen needs nothing. Chat's
+  composer and the tab bar are the exception that proves it — the bar hides on
+  keyboard (`tabBarHideOnKeyboard`) and the composer drops its tab-bar padding
+  (`useKeyboardVisible`), or a ~84px gap sits above the keyboard.
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes
