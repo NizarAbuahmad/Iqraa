@@ -239,9 +239,7 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // PERMANENT — the subject is not declared at grade-4 in SUBJECTS.grades at
   // all, same reasoning as grade-5 above (physics/chemistry/biology/
   // earth-science/financial-literacy start at grade-7 or SPECIALISED_FROM;
-  // geography/history/civic-education start at grade-9; physical-education
-  // is declared for grade-6/7/9 only — no Grade 4 PE book exists, unlike Art
-  // and Vocational Education).
+  // geography/history/civic-education start at grade-9).
   'chemistry:grade-4',
   'physics:grade-4',
   'biology:grade-4',
@@ -250,14 +248,19 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'geography:grade-4',
   'history:grade-4',
   'civic-education:grade-4',
-  'physical-education:grade-4',
-  // No ORDINARY GAPS remain for grade-4 — all nine subjects now have
+  // physical-education:grade-4 closed 2026-10-07 — it had been listed above
+  // as PERMANENT on the assumption that no Grade 4 PE book exists, but the
+  // NCCD Semester 1 student book was on the textbook list all along.
+  // SUBJECTS.grades extended for grade-4 (Semester 1 only; Semester 2 not
+  // attached yet) — see g4PhysicalEducationSem1.ts.
+  // No ORDINARY GAPS remain for grade-4 — all ten subjects now have
   // catalogs. The seven that mirror Grade 5's set (mathematics, science,
   // islamic, digital-literacy, social, arabic, english) closed first;
   // creative-arts:grade-4 and vocational-education:grade-4 closed
   // 2026-09-17 by extending SUBJECTS.grades (both were previously
   // grade-6..8 only) and building g4CreativeArts.ts / g4VocationalSem1.ts —
-  // see those files. Grade 4's MVP rollout is complete.
+  // see those files; physical-education:grade-4 followed on 2026-10-07.
+  // Grade 4's MVP rollout is complete.
   //
   // grade-3 joined MVP_GRADE_IDS 2026-09-17 with only Mathematics built —
   // a staged rollout like grade-4/5's. mathematics:grade-3 closed the same
