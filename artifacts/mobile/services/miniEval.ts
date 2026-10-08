@@ -71,3 +71,19 @@ export const MINI_EVAL_DIFFICULTY = 'standard' as const;
 export function isSelfMarking(type: QuestionType): boolean {
   return MINI_EVAL_TYPES.includes(type);
 }
+
+/**
+ * The student record's «تحقق سريع» opens here with an objective already chosen.
+ * Only when its book is among the ones offered: a preset the screen cannot show
+ * would leave a selected objective the teacher cannot see.
+ */
+export function miniEvalPreset(
+  objectiveId: string | undefined,
+  bookIds: readonly string[],
+  lookup: (id: string) => { bookId: string } | undefined,
+): { bookId: string; objectiveId: string } | null {
+  if (!objectiveId) return null;
+  const objective = lookup(objectiveId);
+  if (!objective || !bookIds.includes(objective.bookId)) return null;
+  return { bookId: objective.bookId, objectiveId };
+}
