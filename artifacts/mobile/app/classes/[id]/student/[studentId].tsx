@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextStyle } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +20,7 @@ const ACCENT = palette.primary;
 const ACCENT_FILL = palette.hero;
 
 type Target = { pathname: string; params: Record<string, string> } | null;
+type ActionKind = 'worksheet' | 'recheck' | 'lesson' | 'parent' | 'paper';
 
 const isNotFound = (err: unknown) => err instanceof RosterError && err.status === 404;
 
@@ -36,7 +37,7 @@ function ObjectiveCard({
 }: {
   o: StudentRecordObjective;
   classId: string;
-  go: (kind: string, target: Target) => void;
+  go: (kind: ActionKind, target: Target) => void;
 }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
@@ -83,10 +84,27 @@ export default function StudentRecordScreen() {
   const [savingNote, setSavingNote] = useState(false);
   const [noteFailed, setNoteFailed] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  useEffect(() => { if (data) setNote(data.student.teacherNote); }, [data]);
+  // The draft follows the server only while the teacher has not edited it: a
+  // refetch landing mid-typing must not overwrite what they are writing.
+  const serverNote = data?.student.teacherNote;
+  const syncedNote = useRef<string | null>(null);
+  useEffect(() => {
+    if (serverNote === undefined) return;
+    setNote(current => (syncedNote.current === null || current === syncedNote.current ? serverNote : current));
+    syncedNote.current = serverNote;
+  }, [serverNote]);
+  // Coming back from marking a paper or the quick check: the percentages moved.
+  // The first focus is the mount, which useQuery already fetches.
+  const focusedOnce = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (focusedOnce.current) void refetch();
+      focusedOnce.current = true;
+    }, [refetch]),
+  );
   useEffect(() => { trackEvent('student_record_opened', { classId: id }); }, [id]);
 
-  const go = (kind: string, target: Target) => {
+  const go = (kind: ActionKind, target: Target) => {
     if (!target) return;
     trackEvent('student_record_action', { kind });
     router.push(target as never);
@@ -97,7 +115,10 @@ export default function StudentRecordScreen() {
     setSavingNote(true);
     setNoteFailed(false);
     try {
-      await updateStudent(data.student.id, { teacherNote: note });
+      const saved = await updateStudent(data.student.id, { teacherNote: note });
+      // The server trims; keep the draft equal to what it stored so the button settles.
+      const stored = typeof saved?.teacherNote === 'string' ? saved.teacherNote : note.trim();
+      setNote(current => (current === note ? stored : current));
       void queryClient.invalidateQueries({ queryKey: classQueryKey(id) });
       void refetch();
     } catch {
@@ -115,7 +136,7 @@ export default function StudentRecordScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
       <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => goBack()} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }} hitSlop={10} accessibilityRole="button">
+        <Pressable onPress={() => goBack()} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('back')}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={[styles.headerTitle, { textAlign: align }]}>{data?.student.displayName ?? t('studentRecordTitle')}</Text>
@@ -127,7 +148,7 @@ export default function StudentRecordScreen() {
       </View>
 
       {isLoading ? <ActivityIndicator color={ACCENT} style={{ marginTop: 40 }} /> : null}
-      {error ? (
+      {error && !data ? (
         <View style={{ padding: 20, gap: 10 }}>
           <Text style={[styles.empty, { color: colors.destructive, textAlign: align }]}>
             {isNotFound(error) ? t('studentRecordNotFound') : t('studentRecordLoadFailed')}
