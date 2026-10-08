@@ -90,7 +90,9 @@ export default function StudentRecordScreen() {
   const syncedNote = useRef<string | null>(null);
   useEffect(() => {
     if (serverNote === undefined) return;
-    setNote(current => (syncedNote.current === null || current === syncedNote.current ? serverNote : current));
+    // Captured now: React may run the updater later, after the ref has moved on.
+    const prev = syncedNote.current;
+    setNote(current => (prev === null || current === prev ? serverNote : current));
     syncedNote.current = serverNote;
   }, [serverNote]);
   // Coming back from marking a paper or the quick check: the percentages moved.
