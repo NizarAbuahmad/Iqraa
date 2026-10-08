@@ -342,9 +342,10 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // grade-1 (one book, no semester, same shape as g3CreativeArts.ts) — see
   // g1CreativeArts.ts.
   // physical-education:grade-1 closed 2026-09-19 — SUBJECTS.grades extended
-  // for grade-1, Semester 2 only (opposite gap from grade-3/6's PE), real
+  // for grade-1, Semester 2 first (opposite gap from grade-3/6's PE), real
   // content box shape same as g3PhysicalEducationSem1.ts — see
-  // g1PhysicalEducationSem2.ts.
+  // g1PhysicalEducationSem2.ts. Semester 1 added 2026-10-07, completing the
+  // grade — see g1PhysicalEducationSem1.ts.
   //
   // Digital Skills has no student book at all — flagged to the user
   // 2026-09-19 via AskUserQuestion; user chose "Keep waiting", same as
