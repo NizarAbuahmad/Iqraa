@@ -64,6 +64,31 @@ export function eraseAt(strokes: Stroke[], x: number, y: number, radius: number 
   return kept.length === strokes.length ? strokes : kept;
 }
 
+/**
+ * Erase along the straight path from (x0, y0) to (x1, y1). A fast drag reports
+ * positions farther apart than the eraser's reach, so testing only the end
+ * points would skip any stroke lying between them; this samples the path at
+ * most every half-radius, which keeps the swept area continuous. The start
+ * point is NOT tested — the previous call already covered it. Returns the SAME
+ * array when nothing was hit, like `eraseAt`.
+ */
+export function eraseAlong(
+  strokes: Stroke[],
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  radius: number = ERASER_RADIUS,
+): Stroke[] {
+  const steps = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / Math.max(radius / 2, 1)));
+  let current = strokes;
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    current = eraseAt(current, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, radius);
+  }
+  return current;
+}
+
 /** The strokes on the board plus snapshots to undo back to. */
 export type BoardState = { strokes: Stroke[]; past: Stroke[][] };
 

@@ -9,6 +9,7 @@ import {
   canUndo,
   clearBoard,
   commitStrokes,
+  eraseAlong,
   eraseAt,
   gridLines,
   hasInk,
@@ -192,5 +193,31 @@ describe('localizeDigits / BOARD_BACKGROUNDS', () => {
 
   it('offers blank, grid and axes in that order', () => {
     assert.deepEqual([...BOARD_BACKGROUNDS], ['blank', 'grid', 'axes']);
+  });
+});
+
+describe('eraseAlong', () => {
+  const wall = line('100,0 100,100'); // a vertical stroke at x = 100
+
+  it('catches a stroke that lies between two far-apart pointer samples', () => {
+    // Neither end point is within reach of the stroke...
+    assert.equal(eraseAt([wall], 0, 50, 16).length, 1);
+    assert.equal(eraseAt([wall], 200, 50, 16).length, 1);
+    // ...but the sweep between them crosses it.
+    assert.deepEqual(eraseAlong([wall], 0, 50, 200, 50, 16), []);
+  });
+
+  it('returns the same array when the sweep touches nothing', () => {
+    const strokes = [wall];
+    assert.equal(eraseAlong(strokes, 0, 300, 200, 300, 16), strokes);
+  });
+
+  it('still tests the end point when the pointer has not moved', () => {
+    assert.deepEqual(eraseAlong([wall], 100, 50, 100, 50, 16), []);
+  });
+
+  it('removes only the strokes the sweep crosses', () => {
+    const far = line('0,300 50,300');
+    assert.deepEqual(eraseAlong([wall, far], 0, 50, 200, 50, 16), [far]);
   });
 });

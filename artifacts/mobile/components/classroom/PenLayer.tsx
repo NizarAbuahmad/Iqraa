@@ -1,51 +1,125 @@
-import React, { useMemo, useRef } from 'react';
+import React, { memo, useMemo, useRef, useState } from 'react';
 import { PanResponder, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Polyline } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { DECK_ACCENT, DECK_BORDER, DECK_CARD_BG, DECK_MUTED, DECK_TEXT, TIMER_RED } from '@/services/deckTheme';
+import { DEFAULT_STROKE_WIDTH, ERASER_RADIUS, eraseAlong, eraseAt, type Stroke } from '@/services/whiteboardModel';
 
 // Ink over a projected slide — the teacher circles a term, underlines a step,
-// sketches a quick arrow. Deliberately not a whiteboard: no shapes, no eraser,
-// no saving. Strokes live only as long as the presentation.
+// sketches a quick arrow. The slide pen stays deliberately simple: three
+// colours, undo, clear, nothing saved. The full board (eraser, widths, grid)
+// is `app/ai-tools/whiteboard.tsx`, which drives this same canvas.
 
-export type Stroke = { color: string; points: string };
+export type { Stroke };
 
 export const PEN_COLORS = [TIMER_RED, DECK_ACCENT, DECK_TEXT];
+
+/** Committed strokes. Memoised so a touch-move that only changes the draft never re-renders them. */
+const StrokeLines = memo(function StrokeLines({ strokes }: { strokes: Stroke[] }) {
+  return (
+    <>
+      {strokes.map((s, i) => (
+        <Polyline
+          key={i}
+          points={s.points}
+          fill="none"
+          stroke={s.color}
+          strokeWidth={s.width ?? DEFAULT_STROKE_WIDTH}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
+    </>
+  );
+});
 
 /**
  * Transparent drawing surface. Sits inside the slide's ScrollView content so
  * ink scrolls with what it marks. When `active` is false it neither draws nor
  * takes touches, so reveal buttons under the ink still work.
+ *
+ * The stroke being drawn (or the list left after erasing) lives in this
+ * component while the finger is down and is handed to `onChange` once, on
+ * release — so a long board does not rebuild every polyline on every touch event.
  */
-export function PenCanvas({ strokes, color, active, onChange }: {
+export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_STROKE_WIDTH, erase = false }: {
   strokes: Stroke[];
   color: string;
   active: boolean;
   onChange: (next: Stroke[]) => void;
+  /** Stroke width in pixels. Slides leave this alone. */
+  width?: number;
+  /** Touches remove strokes instead of drawing. */
+  erase?: boolean;
 }) {
   // PanResponder is built once; read the latest props through a ref.
-  const latest = useRef({ strokes, color, onChange });
-  latest.current = { strokes, color, onChange };
+  const latest = useRef({ strokes, color, width, erase, onChange });
+  latest.current = { strokes, color, width, erase, onChange };
 
-  const responder = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderTerminationRequest: () => false,
-    onPanResponderGrant: e => {
-      const { locationX: x, locationY: y } = e.nativeEvent;
-      const { strokes: s, color: c, onChange: set } = latest.current;
-      // A single point would draw nothing; start with a zero-length segment
-      // so a tap leaves a dot.
-      set([...s, { color: c, points: `${x},${y} ${x},${y}` }]);
-    },
-    onPanResponderMove: e => {
-      const { locationX: x, locationY: y } = e.nativeEvent;
-      const { strokes: s, onChange: set } = latest.current;
-      const last = s[s.length - 1];
-      if (!last) return;
-      set([...s.slice(0, -1), { ...last, points: `${last.points} ${x},${y}` }]);
-    },
-  }), []);
+  const [draft, setDraft] = useState<Stroke | null>(null);
+  const [erased, setErased] = useState<Stroke[] | null>(null);
+  const draftRef = useRef<Stroke | null>(null);
+  const erasedRef = useRef<Stroke[] | null>(null);
+  /** The committed strokes at the moment the finger went down. */
+  const base = useRef<Stroke[]>([]);
+  /** Where the eraser was last applied, so a fast drag is swept rather than sampled. */
+  const lastErase = useRef<{ x: number; y: number } | null>(null);
+
+  const responder = useMemo(() => {
+    const finish = () => {
+      const d = draftRef.current;
+      const e = erasedRef.current;
+      draftRef.current = null;
+      erasedRef.current = null;
+      lastErase.current = null;
+      setDraft(null);
+      setErased(null);
+      const { onChange: set } = latest.current;
+      if (d) set([...base.current, d]);
+      else if (e && e !== base.current) set(e); // identity: erasing nothing is not a change
+    };
+
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderGrant: ev => {
+        const { locationX: x, locationY: y } = ev.nativeEvent;
+        const cur = latest.current;
+        base.current = cur.strokes;
+        if (cur.erase) {
+          const next = eraseAt(cur.strokes, x, y, ERASER_RADIUS);
+          lastErase.current = { x, y };
+          erasedRef.current = next;
+          setErased(next);
+        } else {
+          // A single point would draw nothing; start with a zero-length
+          // segment so a tap leaves a dot.
+          const s: Stroke = { color: cur.color, width: cur.width, points: `${x},${y} ${x},${y}` };
+          draftRef.current = s;
+          setDraft(s);
+        }
+      },
+      onPanResponderMove: ev => {
+        const { locationX: x, locationY: y } = ev.nativeEvent;
+        if (erasedRef.current) {
+          const from = lastErase.current ?? { x, y };
+          const next = eraseAlong(erasedRef.current, from.x, from.y, x, y, ERASER_RADIUS);
+          lastErase.current = { x, y };
+          if (next !== erasedRef.current) {
+            erasedRef.current = next;
+            setErased(next);
+          }
+        } else if (draftRef.current) {
+          const s: Stroke = { ...draftRef.current, points: `${draftRef.current.points} ${x},${y}` };
+          draftRef.current = s;
+          setDraft(s);
+        }
+      },
+      onPanResponderRelease: finish,
+      onPanResponderTerminate: finish,
+    });
+  }, []);
 
   return (
     <View
@@ -57,17 +131,8 @@ export function PenCanvas({ strokes, color, active, onChange }: {
       style={[StyleSheet.absoluteFill, active && Platform.OS === 'web' && ({ touchAction: 'none', cursor: 'crosshair' } as any)]}
     >
       <Svg width="100%" height="100%">
-        {strokes.map((s, i) => (
-          <Polyline
-            key={i}
-            points={s.points}
-            fill="none"
-            stroke={s.color}
-            strokeWidth={4}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        ))}
+        <StrokeLines strokes={erased ?? strokes} />
+        {draft && <StrokeLines strokes={[draft]} />}
       </Svg>
     </View>
   );
