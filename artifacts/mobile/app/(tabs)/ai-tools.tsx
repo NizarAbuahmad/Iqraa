@@ -1,7 +1,6 @@
 import React from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
@@ -170,9 +169,11 @@ function ToolCard({
 
 export default function AIToolsScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
-  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
+  // Not insets.top: the tab layout's lesson bar (or the slim bell header a
+  // parent/student gets) sits above this screen and already pays for the
+  // status bar, so adding it again left a blank band under that bar.
+  const topPad = 16;
   const viewportW = useViewportWidth();
   const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
   // Set only when the teacher tapped «أنشئ مادة جديدة» inside a class.
