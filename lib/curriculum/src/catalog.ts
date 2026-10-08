@@ -282,6 +282,10 @@ import {
   buildG1CreativeArtsBrowserCatalog,
 } from './catalogs/g1CreativeArts.ts';
 import {
+  G1_PE_S1_CURRICULUM_BOOK_ID,
+  buildG1PhysicalEducationSem1BrowserCatalog,
+} from './catalogs/g1PhysicalEducationSem1.ts';
+import {
   G1_PE_S2_CURRICULUM_BOOK_ID,
   buildG1PhysicalEducationSem2BrowserCatalog,
 } from './catalogs/g1PhysicalEducationSem2.ts';
@@ -998,8 +1002,10 @@ export const SUBJECTS: Subject[] = [
   // g6PhysicalEducationSem1.ts (title-only), Grade 3's book prints a real
   // main-idea box and bilingual glossary per lesson; see
   // g3PhysicalEducationSem1.ts. Extended to grade-1 on 2026-09-19 once its
-  // book arrived — Semester 2 only (opposite gap from grade-3/6), same real
-  // box shape; see g1PhysicalEducationSem2.ts. Extended to grade-2 on
+  // Semester 2 book arrived (the opposite gap from grade-3/6), same real box
+  // shape; see g1PhysicalEducationSem2.ts. Its Semester 1 book followed on
+  // 2026-10-07, completing the grade; see g1PhysicalEducationSem1.ts.
+  // Extended to grade-2 on
   // 2026-09-19 once its book arrived — Semester 1 only (same gap as
   // grade-3/6, opposite of grade-1), same real box shape; see
   // g2PhysicalEducationSem1.ts. Extended to grade-5 on 2026-09-20 once BOTH
@@ -1575,11 +1581,13 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // already in MVP_SUBJECT_IDS, but SUBJECTS.grades needed extending for
   // grade-1 — see the SUBJECTS declaration above and g1CreativeArts.ts.
   G1_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
-  // Grade 1 Physical Education, Semester 2 only. 'physical-education' is
+  // Grade 1 Physical Education, both semesters. 'physical-education' is
   // already in MVP_SUBJECT_IDS, but SUBJECTS.grades needed extending for
   // grade-1 — see the SUBJECTS declaration above and
-  // g1PhysicalEducationSem2.ts. Same real-content box shape as
-  // g3PhysicalEducationSem1.ts, opposite semester gap.
+  // g1PhysicalEducationSem2.ts (catalogued first, units 4-6) and
+  // g1PhysicalEducationSem1.ts (units 1-3). Same real-content box shape as
+  // g3PhysicalEducationSem1.ts.
+  G1_PE_S1_CURRICULUM_BOOK_ID,
   G1_PE_S2_CURRICULUM_BOOK_ID,
   // Grade 2 Mathematics, both semesters — the first Grade 2 book in this
   // repo. 'mathematics' is already declared for every grade in
@@ -3799,11 +3807,30 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
   },
+  // ── Physical Education Grade 1 – Semester 1 ─────────────────────────────
+  // Added 2026-10-07 once the Semester 1 book was found, completing Grade 1
+  // PE. Real-content layout like g1PhysicalEducationSem2.ts: main idea +
+  // bilingual glossary per lesson; units 1-3 (Semester 2 carries 4-6). No
+  // teacher guide, so objectives stay empty. See g1PhysicalEducationSem1.ts.
+  {
+    id: G1_PE_S1_CURRICULUM_BOOK_ID,
+    title: 'Physical Education – Grade 1, Semester 1',
+    titleAr: 'التربية الرياضية – الصف الأول – الفصل الأول',
+    subjectId: 'physical-education',
+    gradeId: 'grade-1',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Sport/G1/1/Sport%20G1%20P1%202026%20.pdf',
+  },
   // ── Physical Education Grade 1 – Semester 2 ─────────────────────────────
-  // Twelfth and last Grade 1 book in this repo, required extending
-  // SUBJECTS.grades for physical-education (previously grade-3/6/7/9 only).
-  // Semester 2 only — no Semester 1 book exists in the supplied set, the
-  // opposite gap from g3PhysicalEducationSem1.ts/g6PhysicalEducationSem1.ts.
+  // Twelfth and last Grade 1 book in this repo at the time, required
+  // extending SUBJECTS.grades for physical-education (previously grade-3/6/7/9
+  // only). Catalogued before the Semester 1 book (above) was available —
+  // the opposite gap from g3PhysicalEducationSem1.ts/g6PhysicalEducationSem1.ts.
   {
     id: G1_PE_S2_CURRICULUM_BOOK_ID,
     title: 'Physical Education – Grade 1, Semester 2',
@@ -6061,6 +6088,7 @@ const _g1ArabicSem2Browser = buildG1ArabicSem2BrowserCatalog();
 const _g1SocialSem1Browser = buildG1SocialSem1BrowserCatalog();
 const _g1SocialSem2Browser = buildG1SocialSem2BrowserCatalog();
 const _g1CreativeArtsBrowser = buildG1CreativeArtsBrowserCatalog();
+const _g1PhysicalEducationSem1Browser = buildG1PhysicalEducationSem1BrowserCatalog();
 const _g1PhysicalEducationSem2Browser = buildG1PhysicalEducationSem2BrowserCatalog();
 const _g2MathSem1Browser = buildG2MathSem1BrowserCatalog();
 const _g2MathSem2Browser = buildG2MathSem2BrowserCatalog();
@@ -6370,6 +6398,7 @@ export const UNITS: Unit[] = [
   ..._g1SocialSem1Browser.units,
   ..._g1SocialSem2Browser.units,
   ..._g1CreativeArtsBrowser.units,
+  ..._g1PhysicalEducationSem1Browser.units,
   ..._g1PhysicalEducationSem2Browser.units,
   ..._g2MathSem1Browser.units,
   ..._g2MathSem2Browser.units,
@@ -6569,6 +6598,7 @@ export const LESSONS: Lesson[] = [
   ..._g1SocialSem1Browser.lessons,
   ..._g1SocialSem2Browser.lessons,
   ..._g1CreativeArtsBrowser.lessons,
+  ..._g1PhysicalEducationSem1Browser.lessons,
   ..._g1PhysicalEducationSem2Browser.lessons,
   ..._g2MathSem1Browser.lessons,
   ..._g2MathSem2Browser.lessons,

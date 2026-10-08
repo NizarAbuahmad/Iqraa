@@ -13,9 +13,10 @@
  * it — it had been declared for grade-3/6/7/9 alone, which would have left
  * the book catalogued and permanently unreachable. See catalog.ts.
  *
- * Semester 2 only — no Semester 1 book exists in the supplied set, the
- * opposite gap from g3PhysicalEducationSem1.ts/g6PhysicalEducationSem1.ts.
- * Units are numbered 4-6, continuing the book's own whole-year numbering.
+ * Catalogued before the Semester 1 book was available (the opposite gap from
+ * g3PhysicalEducationSem1.ts/g6PhysicalEducationSem1.ts); Semester 1 was added
+ * later as g1PhysicalEducationSem1.ts. Units are numbered 4-6, continuing the
+ * book's own whole-year numbering.
  */
 
 import raw from '../data/iqra_curriculum_g1_physical_education_sem2.json' with { type: 'json' };
