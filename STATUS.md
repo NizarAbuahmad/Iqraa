@@ -722,6 +722,28 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A parent or student picks their class, and sees only that, 2026-10-08
+
+Until now only teachers could narrow the curriculum (`/setup-subjects`); a
+parent saw grades 1–10 and a student got a roster-derived grade only once a
+teacher had linked them to a class.
+
+- **`/setup-grade`** (`artifacts/mobile/app/setup-grade.tsx`): a student picks
+  one class, a parent one per child. Saved to the existing `users.gradeIds`
+  through `PATCH /users/profile` — **no schema change** (`schema-push: not
+  needed`). The server keeps a student to one grade (`limitGradesForRole`).
+- **Onboarding**: `needsGradeSetup` (`routeGating.ts`) routes a parent/student
+  with no grade to the picker on sign-in and on every boot. It waits behind the
+  roster-claim gate, so the order is sign up → claim code → pick class. The
+  pre-login intro (`onboarding.tsx`) is unchanged.
+- **Settings**: a «الصف» / «صفوف أبنائي» row opens the same screen in edit mode.
+- **Shown**: `curriculum/browse.tsx` and `curriculum/resources.tsx` now narrow
+  grades by `gradeIds` for every role (it was teachers only). A student's pick
+  wins over the roster grade, which stays the fallback. **Not** narrowed:
+  exams, messages and anything server-scoped by roster — a parent with
+  children in two classes must not lose results to a display preference.
+- Not run on a device or the web build; covered by unit tests and typecheck.
+
 ## Virtual labs: a PhET link and a predict–observe–explain sheet, hidden until a teacher reviews it, 2026-10-07
 
 Grade 10's «تجربة استهلالية» lessons had no content (the book's labs are

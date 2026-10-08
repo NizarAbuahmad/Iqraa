@@ -75,6 +75,8 @@ const NON_TEACHER_ROUTES = [
   '/join-class',
   '/claim-required',
   '/settings',
+  // The class picker, reached from first sign-in and from settings.
+  '/setup-grade',
   '/faq',
   // «اقترح ميزة» is linked from the profile tab for every role, like /faq.
   '/suggest-feature',
@@ -135,6 +137,27 @@ export function needsRosterClaim(
   // "not yet answered" (an older cached shape) — either must not trigger the
   // gate. Only an explicit false, from a server that has actually checked, does.
   return (user.role === 'parent' || user.role === 'student') && user.hasRosterLink === false;
+}
+
+/** Where a parent or student picks their class — first sign-in, and from settings. */
+export const GRADE_SETUP_ROUTE = '/setup-grade';
+
+/**
+ * A parent or student who has not said which class they are in sees the whole
+ * catalog, grades 1–10 — the screen the class picker exists to narrow.
+ *
+ * Waits behind `needsRosterClaim`: an unlinked account has to enter its claim
+ * code first, and the boot effect checks that gate before this one. `=== false`
+ * on the link for the same reason `needsRosterClaim` uses it — `undefined` is
+ * "not answered yet", and must not strand the account on a second screen.
+ * Teachers and admins are never gated; they pick on `/setup-subjects`.
+ */
+export function needsGradeSetup(
+  user: { role: string; gradeIds?: string[]; hasRosterLink?: boolean } | null | undefined,
+): boolean {
+  if (!user || (user.role !== 'parent' && user.role !== 'student')) return false;
+  if (user.hasRosterLink === false) return false;
+  return (user.gradeIds?.length ?? 0) === 0;
 }
 
 /** The mandatory screen a brand-new teacher picks their grades/subjects on. */

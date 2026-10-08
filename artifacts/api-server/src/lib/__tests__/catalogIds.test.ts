@@ -8,7 +8,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { sanitizeCatalogIds, sanitizeTeachingAssignments } from "../catalogIds.ts";
+import { limitGradesForRole, sanitizeCatalogIds, sanitizeTeachingAssignments } from "../catalogIds.ts";
 
 const VALID = new Set(["grade-9", "grade-10", "mathematics"]);
 const VALID_GRADES = new Set(["grade-9", "grade-10"]);
@@ -105,5 +105,24 @@ describe("sanitizeTeachingAssignments", () => {
   it("returns undefined for anything that isn't an array", () => {
     assert.equal(sanitizeTeachingAssignments(undefined, VALID_GRADES, VALID_SUBJECTS), undefined);
     assert.equal(sanitizeTeachingAssignments(null, VALID_GRADES, VALID_SUBJECTS), undefined);
+  });
+});
+
+describe("limitGradesForRole", () => {
+  it("keeps one grade for a student — a student is in one class", () => {
+    assert.deepEqual(limitGradesForRole("student", ["grade-9", "grade-10"]), ["grade-9"]);
+  });
+
+  it("keeps every grade for a parent — one per child", () => {
+    assert.deepEqual(limitGradesForRole("parent", ["grade-9", "grade-10"]), ["grade-9", "grade-10"]);
+  });
+
+  it("leaves a teacher's list alone", () => {
+    assert.deepEqual(limitGradesForRole("teacher", ["grade-9", "grade-10"]), ["grade-9", "grade-10"]);
+  });
+
+  it("passes an empty selection and 'not sent' through", () => {
+    assert.deepEqual(limitGradesForRole("student", []), []);
+    assert.equal(limitGradesForRole("student", undefined), undefined);
   });
 });

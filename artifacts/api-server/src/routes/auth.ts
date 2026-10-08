@@ -35,7 +35,7 @@ import {
   ROSTER_CONSENT_VERSION,
 } from "../lib/rosterConsent.js";
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
-import { sanitizeCatalogIds, sanitizeTeachingAssignments } from "../lib/catalogIds.js";
+import { limitGradesForRole, sanitizeCatalogIds, sanitizeTeachingAssignments } from "../lib/catalogIds.js";
 import { GRADES, SUBJECTS } from "@workspace/curriculum";
 import { isValidEmailAddress } from "../lib/emailAddress.js";
 import { changeEmailResponse, registerResponse, resendResponse } from "../lib/verificationDelivery.js";
@@ -1717,7 +1717,9 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
     } else {
       // Older client build sending the flat lists directly.
       const sanitizedGradeIds = sanitizeCatalogIds(gradeIds, VALID_GRADE_IDS);
-      if (sanitizedGradeIds) updates.gradeIds = sanitizedGradeIds;
+      // A parent or student picks their class(es) here too (/setup-grade); a
+      // student is in one, so the cap is applied by role rather than trusted.
+      if (sanitizedGradeIds) updates.gradeIds = limitGradesForRole(req.user!.role, sanitizedGradeIds);
       const sanitizedSubjectIds = sanitizeCatalogIds(subjectIds, VALID_SUBJECT_IDS);
       if (sanitizedSubjectIds) updates.subjectIds = sanitizedSubjectIds;
     }
