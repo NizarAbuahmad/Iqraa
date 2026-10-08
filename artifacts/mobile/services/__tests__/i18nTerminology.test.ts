@@ -44,9 +44,10 @@ const BANNED: Array<{ term: string; use: string; why: string; exact?: boolean }>
     why: 'the English label is "Link code"; "class code" also excludes the per-student case',
   },
   {
-    term: 'إقرأ',
-    use: 'اقرأ',
-    why: 'hamzat wasl — the brand is «اقرأ», spelled that way in 27 other strings',
+    term: 'اقرأ',
+    use: 'إقرأ',
+    exact: true,
+    why: 'hamzat qatʿ — Nizar settled the brand as «إقرأ» on 2026-10-07 (site first, then the app). The verb «read» is written with its fatha, «اقرَأ», so an imperative in copy does not trip this',
   },
   // The 2026-09-16 Jordanian-register pass. Each of these had both spellings
   // live in this table at once, so the app told a teacher one name and the

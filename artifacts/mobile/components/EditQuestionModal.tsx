@@ -18,6 +18,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -254,6 +255,7 @@ export function EditQuestionModal({
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardSafeView>
       <View style={styles.backdrop}>
         <View style={[styles.sheet, { backgroundColor: colors.background }]}>
           <View style={[styles.header, row, { borderColor: colors.border }]}>
@@ -342,6 +344,7 @@ export function EditQuestionModal({
           </ScrollView>
         </View>
       </View>
+      </KeyboardSafeView>
     </Modal>
   );
 }

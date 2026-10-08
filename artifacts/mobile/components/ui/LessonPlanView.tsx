@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { LessonPlanOutput } from '@/services/ai/AIService';
 import { EditableList, EditableText } from '@/components/ui/Editable';
 import { MathParagraph } from '@/components/ui/MathParagraph';
+import { displayObjective } from '@/services/objectiveDisplay';
 
 type Colors = {
   foreground: string;
@@ -68,10 +69,14 @@ export function LessonPlanView({
   const edited = editedFields ?? new Set<string>();
   const align = isRTL ? 'right' : 'left';
 
+  // Objectives are rewritten for reading only (see objectiveDisplay.ts); the
+  // plan keeps the curriculum's wording until the teacher edits the list.
+  const shown = (field: 'objectives' | 'materials') =>
+    field === 'objectives' ? plan.objectives.map(displayObjective) : plan[field];
   const list = (field: 'objectives' | 'materials') =>
     onEdit ? (
       <EditableList
-        items={plan[field]}
+        items={shown(field)}
         onChange={next => onEdit(field, next)}
         colors={colors}
         isRTL={isRTL}
@@ -80,7 +85,7 @@ export function LessonPlanView({
       />
     ) : (
       <>
-        {plan[field].map((item, i) => (
+        {shown(field).map((item, i) => (
           <View key={i} style={[styles.bulletRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <View style={[styles.bulletDot, { backgroundColor: accent }]} />
             <MathParagraph

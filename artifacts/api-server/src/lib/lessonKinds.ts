@@ -120,6 +120,59 @@ const KIND_EN: Record<Exclude<LessonKind, "calc">, string> = {
 - "materials": real tools and materials, with a safety note where needed. "assessment": judge the product against clear criteria, not a written test.`,
 };
 
+/**
+ * Does a worksheet for this subject carry a worked example, a half-solved
+ * question and a `solution` on every answer-key row?
+ *
+ * Only where there is a calculation to model: maths, physics and chemistry —
+ * and a subject we cannot place, so a free-typed topic gets the paper it
+ * always did. The offline worksheet is stricter (maths and chemistry only,
+ * where a person wrote and checked the working); every other subject there
+ * gets a plain paper, and the live prompt used to ask them all for the
+ * structure anyway.
+ */
+export function usesWorkedExample(b: { subject?: string; subjectId?: string }): boolean {
+  const id = subjectIdOf(b);
+  if (id === null) return true;
+  return (KIND_BY_SUBJECT[id] ?? "calc") === "calc" || id === "physics" || id === "chemistry";
+}
+
+const WS_END_AR = (n: number) => `\nلا تُدرج "workedExample" ولا سؤالًا نصف محلول، ولا حقل "solution" في answerKey: في كل عنصر منه "answer" إجابة نموذجية مختصرة أو معايير الإجابة. أعطِ ${n} سؤالًا في الأقسام.`;
+const WS_END_EN = (n: number) => `\nDo not include "workedExample" or a half-solved question, and no "solution" field in answerKey: each entry has an "answer" that is a short model answer or the answer criteria. Give ${n} questions in the sections.`;
+
+const WORKSHEET_AR: Record<Exclude<LessonKind, "calc">, string> = {
+  recitation: `طبيعة المادة: تربية إسلامية — اجعل الأسئلة قراءةً وفهمًا وتطبيقًا: معاني المفردات، والفكرة الرئيسة، والقيمة المستفادة، وموقفًا من حياة الطالب يطبّق فيه ما تعلّم، وبندًا أو اثنين للقراءة أو التسميع يقيّمها المعلّم مباشرة. لا تكتب نصّ آية أو حديث من ذاكرتك ولا تستشهد بما لم يرد في سياق الكتاب.`,
+  science: `طبيعة المادة: علوم — اجعل الأسئلة ملاحظةً وتفسيرًا وتنبؤًا: موقف أو تجربة قصيرة يصفها السؤال نفسه ثم يُطلب التفسير بدليل، وقراءة بيانات أو نتائج مكتوبة في نص السؤال، وتصنيفًا أو مقارنة. أبقِ المصطلحات ضمن الكتاب.`,
+  arabic: `طبيعة المادة: لغة عربية — اجعل الأسئلة قائمة على نص قصير يرد داخل السؤال نفسه: فهم وتحليل، ومفردات في جمل، وتطبيق القاعدة على أمثلة، وبندًا للتعبير الكتابي القصير تُقيَّم إجابته بمعايير يذكرها المفتاح.`,
+  english: `طبيعة المادة: لغة إنجليزية — اكتب الأسئلة والتعليمات بالإنجليزية: ملء فراغ، وترتيب كلمات في جملة، وفهم نص قصير يرد في السؤال، وإنتاج جملة أو فقرة قصيرة يُقيَّم بمعايير في المفتاح.`,
+  social: `طبيعة المادة: اجتماعيات — اجعل الأسئلة قائمة على مصدر قصير يرد داخل السؤال (نص أو جدول أو سطر زمني): استخراج معلومة، وسبب ونتيجة، ومقارنة، ورأي مدعوم بدليل من الدرس. استعمل الأسماء والتواريخ والأرقام الواردة في سياق الكتاب فقط.`,
+  movement: `طبيعة المادة: تربية رياضية — الورقة مكمّلة للأداء: أسئلة عن خطوات المهارة وقواعد السلامة وقواعد اللعبة، ومهمة أداء تُسجَّل ملاحظتها على قائمة نقاط، لا حلّ مسائل.`,
+  making: `طبيعة المادة: عملية (فنون أو مهنية أو رقمية) — أسئلة عن الأدوات والمواد والخطوات والسلامة، ومهمة إنتاج أو تخطيط يُقيَّم ناتجها بمعايير جودة يذكرها المفتاح.`,
+};
+
+const WORKSHEET_EN: Record<Exclude<LessonKind, "calc">, string> = {
+  recitation: `Nature of the subject: Islamic education — make the questions about reading, understanding and applying: word meanings, the main idea, the value learned, a situation from the student's life where they apply it, and one or two read-aloud items the teacher assesses directly. Do not write out a verse or hadith from memory or cite anything the book context does not contain.`,
+  science: `Nature of the subject: science — make the questions about observing, explaining and predicting: a situation or short experiment described in the question itself, then an explanation with evidence; reading data or results written into the question; classifying or comparing. Keep to the book's terms.`,
+  arabic: `Nature of the subject: Arabic language — base the questions on a short text that appears inside the question: comprehension and analysis, vocabulary in sentences, applying the rule to examples, and one short writing task assessed against criteria the key states.`,
+  english: `Nature of the subject: English language — write the questions and instructions in English: gap fill, reordering words into a sentence, comprehension of a short text given in the question, and producing a sentence or short paragraph assessed against criteria in the key.`,
+  social: `Nature of the subject: social studies — base the questions on a short source given inside the question (a text, table or timeline): pulling out a fact, cause and effect, comparison, and an opinion backed by evidence from the lesson. Use only the names, dates and figures in the book context.`,
+  movement: `Nature of the subject: physical education — the sheet supports the performance: questions on the skill's steps, the safety rules and the rules of the game, and a performance task whose observation is recorded against a checklist; no problem solving.`,
+  making: `Nature of the subject: practical (arts, vocational or digital) — questions on tools, materials, steps and safety, and a making or planning task whose product is assessed against quality criteria the key states.`,
+};
+
+/** The worksheet's subject rule, or "" when the subject uses the worked-example structure. */
+export function worksheetKindRuleAr(b: { subject?: string; subjectId?: string }, n: number): string {
+  if (usesWorkedExample(b)) return "";
+  const kind = lessonKindOf(b);
+  return kind ? `\n${WORKSHEET_AR[kind]}${WS_END_AR(n)}` : "";
+}
+
+export function worksheetKindRuleEn(b: { subject?: string; subjectId?: string }, n: number): string {
+  if (usesWorkedExample(b)) return "";
+  const kind = lessonKindOf(b);
+  return kind ? `\n${WORKSHEET_EN[kind]}${WS_END_EN(n)}` : "";
+}
+
 /** Physics and chemistry lessons carry calculations, which a science plan should still work through. */
 const CALC_SCIENCES = new Set(["physics", "chemistry"]);
 const CALC_AR = "\n- هذه المادة فيها حسابات: اعرض داخل التفسير مثالًا حسابيًا محلولًا بخطواته الكاملة مرّة واحدة على الأقل، ثم اجعل الطلبة يحلّون مثله.";

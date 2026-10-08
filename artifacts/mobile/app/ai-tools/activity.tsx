@@ -36,7 +36,7 @@ import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
-import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
+import { captureGenerationScope, materialScope, reopenedGenerationScope, savedIdAfterGeneration, type GenerationScope } from '@/services/generationScope';
 import { readIndexParam } from '@/services/materialParams';
 import { buildActivityRequest } from '@/services/generatorRequests';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
@@ -231,6 +231,10 @@ export default function ActivityScreen() {
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
       setBuiltWith({ activityTypeIdx, durationIdx, objective });
       setResult(out);
+      // A regenerated activity is a new copy: leave the saved one alone, and
+      // let «حفظ» create it. The star belonged to the saved material.
+      if (opts?.regenerate === true && savedId) setFavorited(false);
+      setSavedId(prev => savedIdAfterGeneration(prev, opts));
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (e) {
       // A cancel is the teacher's own doing, so it is reported as a stop, not

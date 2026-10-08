@@ -26,6 +26,11 @@ describe('apiErrorKey', () => {
     assert.equal(apiErrorKey(err('terms_required', 400), 'fb'), 'errTermsRequired');
   });
 
+  it('says the code email could not be sent, rather than the generic resend failure', () => {
+    // The server answers 503 email_unavailable when the mail provider refused the send.
+    assert.equal(apiErrorKey(err('email_unavailable', 503), 'fb'), 'errEmailNotSent');
+  });
+
   it('maps the messaging refusals', () => {
     assert.equal(apiErrorKey(err('not_connected', 403), 'fb'), 'errNotConnected');
     assert.equal(apiErrorKey(err('group_read_only', 403), 'fb'), 'messagingReadOnlyGroup');

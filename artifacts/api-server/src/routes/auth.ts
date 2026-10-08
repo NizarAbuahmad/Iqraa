@@ -37,6 +37,8 @@ import {
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
 import { sanitizeCatalogIds, sanitizeTeachingAssignments } from "../lib/catalogIds.js";
 import { GRADES, SUBJECTS } from "@workspace/curriculum";
+import { isValidEmailAddress } from "../lib/emailAddress.js";
+import { changeEmailResponse, registerResponse, resendResponse } from "../lib/verificationDelivery.js";
 import { sendGoogleAccountNoticeEmail, sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
 import {
   generateVerificationCode,
@@ -226,7 +228,7 @@ function pruneExpiredRefreshTokens(userId: string): void {
  * account at all; /auth/resend-verification is the recovery path once the
  * outage clears.
  */
-async function issueVerificationCode(userId: string, email: string): Promise<void> {
+async function issueVerificationCode(userId: string, email: string): Promise<boolean> {
   const code = generateVerificationCode();
   await db.insert(emailVerificationTokens).values({
     userId,
@@ -237,6 +239,7 @@ async function issueVerificationCode(userId: string, email: string): Promise<voi
   if (!sent) {
     logger.error({ userId, email }, "verification email not sent — account created unverified with no code delivered");
   }
+  return sent;
 }
 
 /** An empty or whitespace-only picked name is "none given", not a name that fails to match. */
@@ -280,9 +283,19 @@ async function hasLiveRosterLink(userId: string): Promise<boolean> {
   return !!row;
 }
 
-/** Any class or student owned by this teacher — see hasTeachingData in lib/roleSwitch.ts. Archived ones count. */
+/**
+ * Any live class or any student owned by this teacher — see hasTeachingData in
+ * lib/roleSwitch.ts. An archived class does not count: «حذف الصف» only archives
+ * (routes/roster.ts), so counting it left a teacher who had made one class by
+ * mistake with no way out. Students still count, archived class or not — they
+ * are what join codes, roster links and guardians hang off.
+ */
 async function hasAnyTeachingData(userId: string): Promise<boolean> {
-  const [cls] = await db.select({ id: classGroups.id }).from(classGroups).where(eq(classGroups.teacherId, userId)).limit(1);
+  const [cls] = await db
+    .select({ id: classGroups.id })
+    .from(classGroups)
+    .where(and(eq(classGroups.teacherId, userId), isNull(classGroups.archivedAt)))
+    .limit(1);
   if (cls) return true;
   const [stu] = await db.select({ id: students.id }).from(students).where(eq(students.teacherId, userId)).limit(1);
   return !!stu;
@@ -310,7 +323,7 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
       res.status(400).json({ error: "Last name is required", code: "missing_fields" });
       return;
     }
-    if (typeof email !== "string" || !email.includes("@")) {
+    if (!isValidEmailAddress(email)) {
       res.status(400).json({ error: "Valid email is required", code: "invalid_email" });
       return;
     }
@@ -384,12 +397,9 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
     // proves the address at POST /auth/verify-email, which is what hands
     // back the session. Google accounts skip all of this — they set
     // emailVerified: true and log in immediately, further down this file.
-    await issueVerificationCode(user.id, user.email);
+    const emailSent = await issueVerificationCode(user.id, user.email);
 
-    res.status(201).json({
-      email: user.email,
-      message: "Account created. Check your email for a 6-digit verification code.",
-    });
+    res.status(201).json(registerResponse(user.email, emailSent));
   } catch (err: any) {
     if (err.code === "23505") {
       res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });
@@ -517,14 +527,15 @@ router.post("/resend-verification", resendVerificationLimiter, resendVerificatio
       .where(eq(users.email, email.toLowerCase().trim()))
       .limit(1);
 
-    // Same response either way — an unknown address, an already-verified
-    // account, and a fresh code all answer identically so this cannot be
-    // used to probe which emails are registered.
-    if (user && !user.emailVerified) {
-      await issueVerificationCode(user.id, user.email);
-    }
+    // Same response whether a code was sent, the address is unknown, or the
+    // account is already verified — so this cannot probe which emails are
+    // registered. The one exception is a send that failed for an account that
+    // needed it: see resendResponse.
+    const needsCode = !!user && !user.emailVerified;
+    const emailSent = needsCode ? await issueVerificationCode(user.id, user.email) : false;
 
-    res.json({ ok: true, message: "If that email needs verifying, a new code was sent." });
+    const { status, body } = resendResponse(needsCode, emailSent);
+    res.status(status).json(body);
   } catch (err) {
     logger.error({ err }, "resend verification failed");
     res.status(500).json({ error: "Failed to resend code" });
@@ -558,8 +569,12 @@ router.post("/change-unverified-email", changeEmailLimiter, changeEmailAddressLi
       newEmail?: string;
     };
 
-    if (!email || !password || !newEmail?.includes("@")) {
+    if (!email || !password || !newEmail) {
       res.status(400).json({ error: "Current email, password and a valid new email are required", code: "missing_fields" });
+      return;
+    }
+    if (!isValidEmailAddress(newEmail)) {
+      res.status(400).json({ error: "Valid email is required", code: "invalid_email" });
       return;
     }
 
@@ -611,10 +626,10 @@ router.post("/change-unverified-email", changeEmailLimiter, changeEmailAddressLi
         ),
       );
 
-    await issueVerificationCode(updated.id, updated.email);
+    const emailSent = await issueVerificationCode(updated.id, updated.email);
 
     logger.info({ userId: updated.id }, "pending signup repointed to a new email");
-    res.json({ email: updated.email, message: "A new code was sent to that address." });
+    res.json(changeEmailResponse(updated.email, emailSent));
   } catch (err: any) {
     if (err.code === "23505") {
       res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });

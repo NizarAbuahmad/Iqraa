@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  KeyboardAvoidingView, Pressable, ScrollView,
+  Pressable, ScrollView,
   StyleSheet, Text, View,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/Input';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { useStudentAccountsStatus } from '@/services/features';
 import { apiErrorMessage } from '@/services/apiErrorKey';
+import { emailNotSent } from '@/services/emailDelivery';
 import { Ionicons } from '@expo/vector-icons';
 import { goBack } from '@/services/navigation';
 
@@ -87,7 +88,7 @@ export default function RegisterScreen() {
     setError('');
     setLoading(true);
     try {
-      const { email: registeredEmail } = await register({
+      const registered = await register({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
@@ -104,7 +105,12 @@ export default function RegisterScreen() {
       // No session yet — a password account is unverified until it proves
       // the address it just typed. Google's "Continue with" button above
       // still signs straight in via handleGoogleCredential, unaffected.
-      router.replace({ pathname: '/(auth)/verify-email', params: { email: registeredEmail } });
+      // The account exists either way; if the code email could not be sent the
+      // verify screen says so rather than waiting on a message that won't come.
+      router.replace({
+        pathname: '/(auth)/verify-email',
+        params: { email: registered.email, ...(emailNotSent(registered) ? { sendFailed: '1' } : {}) },
+      });
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(apiErrorMessage(e, 'errRegisterFailed', t));
@@ -127,9 +133,8 @@ export default function RegisterScreen() {
     termsAccepted;
 
   const formPanel = (
-    <KeyboardAvoidingView
+    <View
       style={[styles.formPanel, isWide && styles.formPanelWide]}
-      behavior="padding"
     >
       <ScrollView
         contentContainerStyle={[
@@ -359,7 +364,7 @@ export default function RegisterScreen() {
         </View>
 
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 
   return (

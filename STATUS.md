@@ -90,12 +90,20 @@ an announcement by default» below.
   guessed from a title 107 lessons share; Save stores the type, length and
   objective the activity was **built** with, not the live pickers; the
   evaluation-gap warm-up is saved with a group/20-min form, which is what
-  Regenerate really builds. Not changed, found in the same review: Regenerate keeps
-  `savedId`, so Update overwrites the saved version; and typing «أنشئ نشاطًا»
-  on `/home` opens the lesson plan, because `buildGeneratorNav` redirects the
-  disabled `activity`/`homework` tools — part of the recorded `homeAiTools`
-  decision, not touched. Tests: `activityOutput.test.ts`. Not looked at in a
-  browser.
+  Regenerate really builds. Tests: `activityOutput.test.ts`. Not looked at in a
+  browser. **The two found in the same review and left open were fixed
+  2026-10-07** (`activityHomeFlow.test.ts`; typecheck and the mobile suite pass,
+  **not looked at in a browser**): Regenerate now detaches the saved id
+  (`savedIdAfterGeneration`, `generationScope.ts`), so the button says «حفظ» and
+  creates a new material instead of overwriting the saved one, and clears the
+  favourite star; a plain generation keeps the id, which `useEnglishRefresh`
+  relies on. And typing «أنشئ نشاطًا» on `/home` opens the activity generator:
+  `activity` gained `navigable: true` in `homeAiTools.ts`, so
+  `buildGeneratorNav` no longer redirects it, while `enabled: false` still keeps
+  it out of the chips, templates and related-tools panel — that suggestion
+  decision is unchanged, and `homework` is still redirected. Routing it exposed
+  a second defect, now fixed: `extractLessonTopic` left the tanween of «نشاطًا»
+  behind, so the topic arrived as «ًا»; it also stripped the front of «نشاطات».
 - **Class Challenge (game) review fixes** (2026-10-04, same PR as the activity
   fixes above). `game.tsx` now grounds the lesson once, scoped to the picked
   grade and subject, and carries `lessonId`/`unitId`/figures from that grounding
@@ -1093,6 +1101,12 @@ no schema push.
   authenticates against production), so verification was typecheck, unit tests
   for the pure logic, and code review. Look at `/curriculum/lab` on the web
   build before telling anyone it works.
+- **The periodic table is wider than a phone, and that was invisible.** The grid
+  is 18 columns in a horizontal scroll with the bar hidden, so a phone showed
+  only H, Li, Be, Na, Mg, K, Ca (found from a screenshot, 2026-10-07). It now
+  shows the scroll bar, a right-edge fade and a hint while more is off-screen,
+  and the electron configuration renders its exponents raised. Both are
+  typechecked, not yet seen on a device.
 - **Atomic masses are the book's rounded values**, not the precise ones (H 1,
   C 12, O 16, Na 23, Cl 35.5 ...), so H2O is 18, not 18.015. The rounded
   masses of H, C, N, O, Na, Mg, Al, Si and Ca come from the S2 student book (a
@@ -16468,3 +16482,63 @@ icon count. Things to check on the next device test: the Settings row, the
 explanation after the first message is sent, the four channels under App
 info → Notifications, and the icon count after a message arrives while the
 app is closed.
+
+## Signup refuses a malformed email instead of "sending" a code to it, 2026-10-07
+
+A teacher typed `info@zarya.gate@gmail.com` (two `@`). `/auth/register` only
+asked for an `@`, so it created the account, answered 201 «check your email»,
+and the verification mail could not be delivered — the verify screen sat there
+with no code coming. `/auth/change-unverified-email` had the same bare check,
+so the «البريد الإلكتروني غير صحيح؟» recovery path would have accepted another
+bad address.
+
+**Fix.** `lib/emailAddress.ts` → `isValidEmailAddress`: one `@`, a dotted-atom
+local part (≤64), a domain of ≥2 ASCII labels with a letters-only TLD, ≤254
+overall, judged on the trimmed value. Both routes now answer
+`400 invalid_email` (the app already translates that code) before any database
+work. ASCII only on purpose: Resend does not deliver to Arabic-script local
+parts, so accepting one would reproduce the same silent failure.
+`mountOrder.test.ts` pins both routes (the register case failed with a 500
+before the fix, i.e. it got as far as the database).
+
+**No longer true (fixed the same day, see «A failed code email is now
+visible»).** `sendVerificationEmail` returning `false` (missing
+`RESEND_API_KEY`, an unverified sender domain, a provider rejection) used to be
+only logged, so a delivery failure that was not a bad address looked identical
+to success. The app's own pre-checks (`includes('@')` in `register.tsx`,
+`verify-email.tsx`) are unchanged; the server is the boundary.
+
+**Not verified:** that a real address receives the code in production.
+`schema-push:` none.
+
+## A failed code email is now visible, 2026-10-07
+
+Until now `/auth/register`, `/auth/resend-verification` and
+`/auth/change-unverified-email` answered success whether or not the code email
+went out. A missing `RESEND_API_KEY`, an unverified sender domain or a provider
+refusal reached only the log, and the teacher waited on the code screen for a
+message that was never sent.
+
+**Server.** `issueVerificationCode` now returns whether the send succeeded
+(`lib/verificationDelivery.ts` decides the answers).
+- `register` and `change-unverified-email` keep their status — the account
+  exists and the teacher can recover — and add `emailSent: boolean`; the message
+  no longer says "check your email" when nothing was sent.
+- `resend-verification` answers **503 `email_unavailable`** when the address
+  belongs to an unverified account and the send failed. An unknown or already
+  verified address still gets the same 200 as a success. A failed send is only
+  reported for an account that exists, which `register`'s 409 `email_taken`
+  already reveals, so this adds no new way to learn which emails are registered.
+
+**App.** `register` and `changeUnverifiedEmail` pass `emailSent` through. If it
+is `=== false` (an older server that omits the field reads as sent) the verify
+screen opens with «تعذّر إرسال رمز التأكيد…», and a resend that gets
+`email_unavailable` shows the same line (`errEmailNotSent`). After a failed
+send the resend cooldown is not started. JS only, so `app.json` `version` stays.
+
+**Verified:** `emailSent` / 503 decisions and the `sendVerificationEmail` false
+paths (no key, provider 403, network error) under `node --test`; the code→key
+mapping; typecheck; the full api-server and mobile suites.
+**Not verified:** the route handlers themselves — they need a database the suite
+does not have, so their wiring is covered by typecheck and review, not a test —
+and the screen on a device. `schema-push:` none.
