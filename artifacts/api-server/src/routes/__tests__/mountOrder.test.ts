@@ -423,6 +423,8 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       const res = await fetch(`${base}${route}`);
       assert.equal(res.status, 401, `${route} must require a token`);
     }
+    const readAll = await fetch(`${base}/messaging/threads/read-all`, { method: "POST" });
+    assert.equal(readAll.status, 401, "/messaging/threads/read-all must require a token");
   });
 
   it("keeps the student exam link public, and only the link", async () => {
