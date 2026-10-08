@@ -96,6 +96,7 @@
       "pdfPage": 11,
       "printedUrl": "https://drive.google.com/file/d/1ZMjJOtNyzle8FFy-DSLRW6YS-6i8_Z5u/view?usp=drivesdk",
       "kind": "page",
+      "title": "بناء الحجة",
       "decodedAtDpi": 200,
       "workingUrl": "https://drive.google.com/file/d/1ZMjJOtNyzle8FFy-DSLRW6YS-6i8_Z5u/view?usp=drivesdk",
       "httpStatus": "200"
@@ -107,6 +108,7 @@
       "pdfPage": 35,
       "printedUrl": "https://youtu.be/Esht5saSwhg",
       "kind": "video",
+      "title": "من أروع ما قيل في الحنين والبعد عن الوطن | وقفت على باب الأحبة باكيا",
       "decodedAtDpi": 150,
       "workingUrl": "https://youtu.be/Esht5saSwhg",
       "httpStatus": "200"
@@ -118,6 +120,7 @@
       "pdfPage": 41,
       "printedUrl": "https://archive.org/details/3300pdf_202001/page/n9/mode/2up",
       "kind": "page",
+      "title": "ديوان البحتري",
       "decodedAtDpi": 200,
       "workingUrl": "https://archive.org/details/3300pdf_202001/page/n9/mode/2up",
       "httpStatus": "200"
@@ -340,6 +343,7 @@
       "pdfPage": 24,
       "printedUrl": "https://kingabdullah.jo/",
       "kind": "page",
+      "title": "الموقع الرسمي لجلالة الملك عبدالله الثاني",
       "decodedAtDpi": 150,
       "workingUrl": "https://kingabdullah.jo/",
       "httpStatus": "200"
@@ -374,6 +378,7 @@
       "pdfPage": 49,
       "printedUrl": "https://www.memr.gov.jo/EBV4.0/Root_Storage/AR/EB_Info_Page/%D8%A7%D9%84%D8%AF%D8%B3%D8%AA%D9%88%D8%B1_2022.pdf",
       "kind": "document",
+      "title": "الدستور الأردني (٢٠٢٢)",
       "decodedAtDpi": 200,
       "workingUrl": "https://www.memr.gov.jo/EBV4.0/Root_Storage/AR/EB_Info_Page/%D8%A7%D9%84%D8%AF%D8%B3%D8%AA%D9%88%D8%B1_2022.pdf",
       "httpStatus": "200"
@@ -385,6 +390,7 @@
       "pdfPage": 52,
       "printedUrl": "https://kingabdullah.jo/",
       "kind": "page",
+      "title": "الموقع الرسمي لجلالة الملك عبدالله الثاني",
       "decodedAtDpi": 150,
       "workingUrl": "https://kingabdullah.jo/",
       "httpStatus": "200"
@@ -396,6 +402,7 @@
       "pdfPage": 65,
       "printedUrl": "https://pm.gov.jo/Ar/Pages/NewsPaperDetails/5782",
       "kind": "page",
+      "title": "الجريدة الرسمية (العدد ٥٧٨٢): قانون الانتخاب لمجلس النواب",
       "decodedAtDpi": 150,
       "workingUrl": "https://pm.gov.jo/Ar/Pages/NewsPaperDetails/5782",
       "httpStatus": "200"
@@ -407,6 +414,7 @@
       "pdfPage": 73,
       "printedUrl": "https://pm.gov.jo/Ar/Pages/NewsPaperDetails/5784",
       "kind": "page",
+      "title": "الجريدة الرسمية (العدد ٥٧٨٤): قانون الأحزاب السياسية",
       "decodedAtDpi": 150,
       "workingUrl": "https://pm.gov.jo/Ar/Pages/NewsPaperDetails/5784",
       "httpStatus": "200"
@@ -599,6 +607,7 @@
       "pdfPage": 37,
       "printedUrl": "https://youtu.be/c0TiHMTZVjM?si=5hebti7VhJtlHbES",
       "kind": "video",
+      "title": "أهداف التنمية المستدامة",
       "decodedAtDpi": 150,
       "sourceId": "geo-s2-student-book",
       "kbLessonId": "kbl-geo-s2-nccd-u5_l1",
@@ -839,6 +848,7 @@
       "pdfPage": 10,
       "printedUrl": "https://jas.org.jo/",
       "kind": "page",
+      "title": "الجمعية الفلكية الأردنية",
       "decodedAtDpi": 150,
       "workingUrl": "https://jas.org.jo/",
       "httpStatus": "200"
@@ -916,6 +926,7 @@
       "pdfPage": 70,
       "printedUrl": "https://sunnah.one",
       "kind": "page",
+      "title": "الباحث الحديثي",
       "decodedAtDpi": 150,
       "workingUrl": "https://sunnah.one",
       "httpStatus": "200"
@@ -1127,6 +1138,7 @@
       "pdfPage": 163,
       "printedUrl": "https://jhco.org.jo/%D8%A8%D9%86%D9%83-%D8%A7%D9%84%D9%85%D9%84%D8%A7%D8%A8%D8%B3-%D8%A7%D9%84%D8%AE%D9%8A%D8%B1%D9%8A-%D8%A7%D8%AA%D8%B5%D9%84",
       "kind": "page",
+      "title": "بنك الملابس الخيري",
       "decodedAtDpi": 200,
       "workingUrl": "https://jhco.org.jo/%D8%A8%D9%86%D9%83-%D8%A7%D9%84%D9%85%D9%84%D8%A7%D8%A8%D8%B3-%D8%A7%D9%84%D8%AE%D9%8A%D8%B1%D9%8A-%D8%A7%D8%AA%D8%B5%D9%84",
       "httpStatus": "200"
@@ -1290,6 +1302,7 @@
       "pdfPage": 71,
       "printedUrl": "https://share.google/s6mvDICcJvAu5rycV",
       "kind": "page",
+      "title": "دراسة محلية توصي بتحويل الأردن إلى أسرع مراكز التجارة الإلكترونية في المنطقة",
       "decodedAtDpi": 200,
       "workingUrl": "https://share.google/s6mvDICcJvAu5rycV",
       "httpStatus": "200"
@@ -2149,6 +2162,7 @@
       "pdfPage": 91,
       "printedUrl": "https://www.youtube.com/watch?v=2aBSUyATMxI",
       "kind": "video",
+      "title": "How to make catapult with popsicle sticks",
       "decodedAtDpi": 150,
       "workingUrl": "https://www.youtube.com/watch?v=2aBSUyATMxI",
       "httpStatus": "200"
