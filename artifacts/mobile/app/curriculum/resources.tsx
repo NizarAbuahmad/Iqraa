@@ -211,11 +211,12 @@ function ResourceRow({
   // A sheet's note says what a teacher gets before printing; a title alone
   // does not tell «12 questions with a key» from «a blank page».
   const note = item.description ?? (sheet ? t('premadeSheetMeta', questionCount) : null);
-  // A book code reads «what it is» (the headline), «which page» beside it, and
-  // «which book» underneath — the headline is what a student recognises, the
-  // page and book are where to find the printed code.
+  // A book code reads «which book» (the headline, like every other row), with
+  // «what it is» and «which page» on a line underneath. The kind used to be the
+  // headline, which made every code in a book read «صفحة ويب» and left nothing
+  // to tell one row from the next.
   const isBook = item.source === 'book-qr';
-  const bookHeadline = isBook ? t(KIND_LABEL[item.kind]) : null;
+  const bookKind = isBook ? t(KIND_LABEL[item.kind]) : null;
   const bookPage = isBook && page ? t('qrOnPage', page) : null;
 
   // A frozen sheet has no URL: it is rendered on the spot and handed to the
@@ -265,21 +266,7 @@ function ResourceRow({
     styles.rowNote,
     { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' } as const,
   ];
-  const titleText = isBook ? (
-    <View style={[styles.bookHeadline, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-      <Text
-        numberOfLines={1}
-        style={[styles.rowTitle, { flexShrink: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}
-      >
-        {bookHeadline}
-      </Text>
-      {bookPage ? (
-        <View style={[styles.pagePill, { backgroundColor: ACCENT + '14' }]}>
-          <Text style={[styles.pageText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{bookPage}</Text>
-        </View>
-      ) : null}
-    </View>
-  ) : (
+  const titleText = (
     <Text
       numberOfLines={2}
       style={[
@@ -292,7 +279,16 @@ function ResourceRow({
   );
   const notes = (
     <>
-      {isBook ? <Text numberOfLines={2} style={noteStyle}>{title}</Text> : null}
+      {isBook ? (
+        <View style={[styles.bookHeadline, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Text numberOfLines={1} style={[noteStyle, { flexShrink: 1 }]}>{bookKind}</Text>
+          {bookPage ? (
+            <View style={[styles.pagePill, { backgroundColor: ACCENT + '14' }]}>
+              <Text style={[styles.pageText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{bookPage}</Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
       {note ? <Text numberOfLines={2} style={noteStyle}>{note}</Text> : null}
       {item.insecure ? <Text numberOfLines={2} style={noteStyle}>{t('qrInsecureRow')}</Text> : null}
     </>

@@ -1101,6 +1101,12 @@ no schema push.
   authenticates against production), so verification was typecheck, unit tests
   for the pure logic, and code review. Look at `/curriculum/lab` on the web
   build before telling anyone it works.
+- **The periodic table is wider than a phone, and that was invisible.** The grid
+  is 18 columns in a horizontal scroll with the bar hidden, so a phone showed
+  only H, Li, Be, Na, Mg, K, Ca (found from a screenshot, 2026-10-07). It now
+  shows the scroll bar, a right-edge fade and a hint while more is off-screen,
+  and the electron configuration renders its exponents raised. Both are
+  typechecked, not yet seen on a device.
 - **Atomic masses are the book's rounded values**, not the precise ones (H 1,
   C 12, O 16, Na 23, Cl 35.5 ...), so H2O is 18, not 18.015. The rounded
   masses of H, C, N, O, Na, Mg, Al, Si and Ca come from the S2 student book (a
