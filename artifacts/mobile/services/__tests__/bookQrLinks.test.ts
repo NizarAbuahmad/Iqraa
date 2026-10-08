@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { SUBJECTS } from '@workspace/curriculum';
 import QR_LINKS from '../../../../knowledge-base/book-qr-links.json' with { type: 'json' };
 
-type RawEntry = { workingUrl?: string; httpStatus?: string | number; kind?: string };
+type RawEntry = { workingUrl?: string; httpStatus?: string | number; kind?: string; title?: string };
 
 import {
   gradesWithQrResources,
@@ -79,6 +79,20 @@ describe('the reachable rows', () => {
     // Three rows are declared `video` and their url has no extension at all,
     // so deriving from the extension alone would file them as pages.
     assert.ok(allRows().filter(r => r.kind === 'video' && !/\.\w{2,4}$/.test(r.url)).length >= 3);
+  });
+});
+
+describe('titles', () => {
+  it('carries a manifest title to its row and never invents one', () => {
+    // A title is only ever read off the destination by a person, so a row
+    // either has the manifest's words verbatim or none at all — a blank string
+    // would render as an empty headline instead of falling back to the book.
+    const reachable = (QR_LINKS as { entries: RawEntry[] }).entries.filter(
+      e => e.workingUrl && ['200', '206'].includes(String(e.httpStatus)),
+    );
+    const titled = allRows().filter(r => r.title !== undefined);
+    assert.equal(titled.length, reachable.filter(e => e.title?.trim()).length);
+    for (const r of titled) assert.ok(r.title!.trim().length > 0 && r.title === r.title!.trim());
   });
 });
 

@@ -62,6 +62,8 @@ export interface ResourceItem {
   semester?: 1 | 2;
   /** The printed page a book-QR code sits on. */
   page?: number;
+  /** The book a book-QR code is printed in, when `titleAr` names what it opens instead. */
+  bookTitle?: string;
   /** The row opens over plain http — warned per row, not once per screen. */
   insecure?: boolean;
   actions: ResourceAction[];
@@ -137,8 +139,11 @@ function fromQrBook(book: QrResourceBook): ResourceItem[] {
     source: 'book-qr' as const,
     nativeId: `${resource.pdfPage}:${resource.url}`,
     kind: resource.kind,
-    titleAr: book.title,
-    titleEn: book.title,
+    // A row says what it opens when we know, and which book it is from when
+    // we do not. Naming only the book left every code in it reading the same.
+    titleAr: resource.title ?? book.title,
+    titleEn: resource.title ?? book.title,
+    bookTitle: book.title,
     subjectId: book.subjectId,
     url: resource.url,
     page: resource.pdfPage,
