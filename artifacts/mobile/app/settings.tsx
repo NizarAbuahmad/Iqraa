@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
 import { AccountRow } from '@/components/ui/AccountRow';
 import { confirm } from '@/services/confirm';
+import { getPickerGrades } from '@/services/curriculumData';
 import { dateLocale } from '@/services/dateLabels';
 import { askForPushPermission, getPushPermissionState, pushAskCopy, type PushPermissionState } from '@/services/pushTokens';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
@@ -83,6 +84,11 @@ export default function SettingsScreen() {
   // to, or 'add' — one at a time, and every other row is inert meanwhile.
   const [accountBusy, setAccountBusy] = useState<string | null>(null);
   const [accountError, setAccountError] = useState('');
+  // The class(es) a parent or student picked, as the row's right-hand text.
+  const classSummary = getPickerGrades()
+    .filter(g => user?.gradeIds?.includes(g.id))
+    .map(g => (lang === 'ar' ? g.nameAr : g.name))
+    .join(lang === 'ar' ? '، ' : ', ');
   const roleLabelFor = (role: string) =>
     t(role === 'parent' ? 'roleParent'
       : role === 'student' ? 'roleStudent'
@@ -248,6 +254,23 @@ export default function SettingsScreen() {
         )}
 
         {/* Language */}
+        {/* A parent or student picks which class(es) the curriculum shows. */}
+        {user && (user.role === 'parent' || user.role === 'student') && (
+          <>
+            <SectionLabel label={t(user.role === 'parent' ? 'classSettingRowParent' : 'classSettingRow')} isRTL={isRTL} colors={colors} top />
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+              <SettingRow
+                icon="school-outline"
+                label={t(user.role === 'parent' ? 'classSettingRowParent' : 'classSettingRow')}
+                isRTL={isRTL}
+                colors={colors}
+                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{classSummary}</Text>}
+                onPress={() => router.push({ pathname: '/setup-grade', params: { mode: 'edit' } } as any)}
+              />
+            </View>
+          </>
+        )}
+
         <SectionLabel label={t('languageSection')} isRTL={isRTL} colors={colors} top={!!user} />
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <SettingRow
