@@ -88,3 +88,48 @@ export function clearBoard(state: BoardState): BoardState {
 
 export const hasInk = (state: BoardState): boolean => state.strokes.length > 0;
 export const canUndo = (state: BoardState): boolean => state.past.length > 0;
+
+export type BoardBackground = 'blank' | 'grid' | 'axes';
+export const BOARD_BACKGROUNDS: readonly BoardBackground[] = ['blank', 'grid', 'axes'];
+/** Grid square size in view pixels; one axis unit is one square. */
+export const BOARD_STEP = 40;
+
+export type Segment = { x1: number; y1: number; x2: number; y2: number };
+
+export function gridLines(width: number, height: number, step: number): Segment[] {
+  if (!(width > 0) || !(height > 0) || !(step > 0)) return [];
+  const lines: Segment[] = [];
+  for (let x = step; x < width; x += step) lines.push({ x1: x, y1: 0, x2: x, y2: height });
+  for (let y = step; y < height; y += step) lines.push({ x1: 0, y1: y, x2: width, y2: y });
+  return lines;
+}
+
+export type AxisTick = { x: number; y: number; value: string; axis: 'x' | 'y' };
+
+/**
+ * Axes through the centre, with the origin snapped to a grid line so every tick
+ * lands on one. Tick values are Latin strings ("-1", "2"); the component shows
+ * them through `localizeDigits`. The origin and the edges get no tick.
+ */
+export function axesGeometry(
+  width: number,
+  height: number,
+  step: number,
+): { xAxis: Segment; yAxis: Segment; ticks: AxisTick[] } {
+  const cx = step > 0 ? Math.round(width / 2 / step) * step : width / 2;
+  const cy = step > 0 ? Math.round(height / 2 / step) * step : height / 2;
+  const xAxis: Segment = { x1: 0, y1: cy, x2: width, y2: cy };
+  const yAxis: Segment = { x1: cx, y1: 0, x2: cx, y2: height };
+  const ticks: AxisTick[] = [];
+  if (!(width > 0) || !(height > 0) || !(step > 0)) return { xAxis, yAxis, ticks };
+  for (let k = 1; cx + k * step < width; k++) ticks.push({ axis: 'x', x: cx + k * step, y: cy, value: String(k) });
+  for (let k = 1; cx - k * step > 0; k++) ticks.push({ axis: 'x', x: cx - k * step, y: cy, value: String(-k) });
+  for (let k = 1; cy - k * step > 0; k++) ticks.push({ axis: 'y', x: cx, y: cy - k * step, value: String(k) });
+  for (let k = 1; cy + k * step < height; k++) ticks.push({ axis: 'y', x: cx, y: cy + k * step, value: String(-k) });
+  return { xAxis, yAxis, ticks };
+}
+
+/** Display-time digit conversion: Arabic-Indic for `ar`, untouched otherwise. */
+export function localizeDigits(text: string, lang: string): string {
+  return lang === 'ar' ? text.replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]!) : text;
+}

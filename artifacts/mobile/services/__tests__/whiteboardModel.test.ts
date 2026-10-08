@@ -2,13 +2,17 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  BOARD_BACKGROUNDS,
   EMPTY_BOARD,
   HISTORY_LIMIT,
+  axesGeometry,
   canUndo,
   clearBoard,
   commitStrokes,
   eraseAt,
+  gridLines,
   hasInk,
+  localizeDigits,
   parsePoints,
   strokeHit,
   undoBoard,
@@ -125,5 +129,68 @@ describe('board state', () => {
     for (let i = 0; i < HISTORY_LIMIT; i++) s = undoBoard(s);
     assert.equal(s.strokes.length, total - HISTORY_LIMIT);
     assert.equal(undoBoard(s), s);
+  });
+});
+
+describe('gridLines', () => {
+  it('draws a vertical at every step inside the width and a horizontal inside the height', () => {
+    const lines = gridLines(100, 60, 20);
+    const verticals = lines.filter(l => l.x1 === l.x2);
+    const horizontals = lines.filter(l => l.y1 === l.y2);
+    assert.deepEqual(verticals.map(l => l.x1), [20, 40, 60, 80]);
+    assert.deepEqual(horizontals.map(l => l.y1), [20, 40]);
+    assert.equal(lines.length, 6);
+    for (const v of verticals) assert.deepEqual([v.y1, v.y2], [0, 60]);
+    for (const h of horizontals) assert.deepEqual([h.x1, h.x2], [0, 100]);
+  });
+
+  it('returns nothing for a degenerate size or step', () => {
+    assert.deepEqual(gridLines(0, 60, 20), []);
+    assert.deepEqual(gridLines(100, 60, 0), []);
+    assert.deepEqual(gridLines(100, -1, 20), []);
+  });
+});
+
+describe('axesGeometry', () => {
+  it('puts the axes through the centre, on a grid line', () => {
+    const g = axesGeometry(200, 120, 20);
+    assert.deepEqual(g.xAxis, { x1: 0, y1: 60, x2: 200, y2: 60 });
+    assert.deepEqual(g.yAxis, { x1: 100, y1: 0, x2: 100, y2: 120 });
+  });
+
+  it('snaps the origin to the grid so ticks sit on grid lines', () => {
+    const g = axesGeometry(230, 130, 20);
+    assert.equal(g.yAxis.x1 % 20, 0);
+    assert.equal(g.xAxis.y1 % 20, 0);
+  });
+
+  it('ticks every step, skips the origin and the edges, y grows upward', () => {
+    const g = axesGeometry(200, 120, 20);
+    assert.equal(g.ticks.length, 12);
+    const xs = g.ticks.filter(t => t.axis === 'x');
+    const ys = g.ticks.filter(t => t.axis === 'y');
+    assert.equal(xs.length, 8);
+    assert.equal(ys.length, 4);
+    assert.deepEqual(xs.find(t => t.x === 120), { axis: 'x', x: 120, y: 60, value: '1' });
+    assert.deepEqual(xs.find(t => t.x === 80), { axis: 'x', x: 80, y: 60, value: '-1' });
+    assert.deepEqual(ys.find(t => t.y === 40), { axis: 'y', x: 100, y: 40, value: '1' });
+    assert.deepEqual(ys.find(t => t.y === 80), { axis: 'y', x: 100, y: 80, value: '-1' });
+    assert.equal(g.ticks.some(t => t.value === '0'), false);
+  });
+
+  it('returns no ticks for a degenerate size or step', () => {
+    assert.deepEqual(axesGeometry(0, 0, 20).ticks, []);
+    assert.deepEqual(axesGeometry(200, 120, 0).ticks, []);
+  });
+});
+
+describe('localizeDigits / BOARD_BACKGROUNDS', () => {
+  it('shows Arabic-Indic digits only for Arabic', () => {
+    assert.equal(localizeDigits('-12', 'ar'), '-١٢');
+    assert.equal(localizeDigits('-12', 'en'), '-12');
+  });
+
+  it('offers blank, grid and axes in that order', () => {
+    assert.deepEqual([...BOARD_BACKGROUNDS], ['blank', 'grid', 'axes']);
   });
 });
