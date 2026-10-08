@@ -160,6 +160,8 @@ export default function VerifyEmailScreen() {
             onChangeText={text => setCode(toLatinDigits(text).replace(/\D/g, '').slice(0, 6))}
             leftIcon="key-outline"
             keyboardType="number-pad"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
             maxLength={6}
             isRTL={isRTL}
             autoFocus
@@ -199,6 +201,7 @@ export default function VerifyEmailScreen() {
               onChangeText={setNewEmail}
               leftIcon="mail-outline"
               keyboardType="email-address"
+              autoComplete="email"
               autoCapitalize="none"
               isRTL={isRTL}
             />
@@ -211,6 +214,7 @@ export default function VerifyEmailScreen() {
               onChangeText={setPassword}
               leftIcon="lock-closed-outline"
               secureTextEntry
+              autoComplete="current-password"
               isRTL={isRTL}
             />
 

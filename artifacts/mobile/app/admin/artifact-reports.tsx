@@ -118,7 +118,7 @@ export default function ArtifactReportsScreen() {
         <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, marginTop: 12, textAlign: 'center' }}>
           {ar ? 'هذه الصفحة للإدارة فقط' : 'This page is for admins only'}
         </Text>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={{ marginTop: 16 }}>
+        <Pressable accessibilityRole="button" onPress={() => goBack()} hitSlop={10} style={{ marginTop: 16 }}>
           <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }}>{ar ? 'رجوع' : 'Go back'}</Text>
         </Pressable>
       </View>
@@ -128,7 +128,7 @@ export default function ArtifactReportsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'رجوع' : 'Back'} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>

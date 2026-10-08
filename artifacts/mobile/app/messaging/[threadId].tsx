@@ -354,7 +354,7 @@ export default function ThreadScreen() {
           { paddingTop: topPad, backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
         ]}
       >
-        <Pressable onPress={() => goBack()} hitSlop={10}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
         {isGroup ? (
@@ -407,12 +407,12 @@ export default function ThreadScreen() {
           hand-edited (see routes/messaging.ts's syncClassGroupThread).
         */}
         {isOwnerOfGroup ? (
-          <Pressable onPress={() => setAddMembersOpen(true)} hitSlop={10}>
+          <Pressable onPress={() => setAddMembersOpen(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('messagingPickMembers')}>
             <Ionicons name="person-add-outline" size={20} color={colors.foreground} />
           </Pressable>
         ) : null}
         {(!isGroup && thread?.otherParticipant) || thread?.type === 'custom_group' || (isGroup && thread?.isOwner) ? (
-          <Pressable onPress={() => setMenuOpen(true)} hitSlop={10}>
+          <Pressable onPress={() => setMenuOpen(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('moreOptions')}>
             <Ionicons name="ellipsis-vertical" size={20} color={colors.foreground} />
           </Pressable>
         ) : null}
@@ -496,13 +496,13 @@ export default function ThreadScreen() {
         {attachment ? (
           <View style={[styles.attachmentPreview, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Image source={{ uri: attachment }} style={styles.attachmentThumb} resizeMode="cover" />
-            <Pressable onPress={() => setAttachment(null)} hitSlop={10}>
+            <Pressable onPress={() => setAttachment(null)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('removeAttachment')}>
               <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
             </Pressable>
           </View>
         ) : null}
         <View style={[styles.inputWrap, { backgroundColor: colors.muted, borderRadius: 24 }, isRTL && { flexDirection: 'row-reverse' }]}>
-          <Pressable onPress={handlePickImage} hitSlop={10} style={{ paddingBottom: 6 }}>
+          <Pressable onPress={handlePickImage} hitSlop={10} style={{ paddingBottom: 6 }} accessibilityRole="button" accessibilityLabel={t('attachImage')}>
             <Ionicons name="image-outline" size={22} color={colors.mutedForeground} />
           </Pressable>
           <TextInput
@@ -517,13 +517,19 @@ export default function ThreadScreen() {
           <Pressable
             onPress={handleSend}
             disabled={(!input.trim() && !attachment) || sending}
+            accessibilityRole="button"
+            accessibilityLabel={t('iqraSend')}
             style={[styles.sendBtn, { backgroundColor: input.trim() || attachment ? colors.primary : colors.muted, borderRadius: 20 }]}
           >
+            {sending ? (
+              <ActivityIndicator size="small" color={colors.mutedForeground} />
+            ) : (
             <Ionicons
               name={isRTL ? 'arrow-back' : 'arrow-forward'}
               size={18}
               color={input.trim() || attachment ? colors.primaryForeground : colors.mutedForeground}
             />
+            )}
           </Pressable>
         </View>
       </View>
@@ -609,7 +615,7 @@ export default function ThreadScreen() {
               <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align, flex: 1 }]}>
                 {t('messagingManageMembers')}
               </Text>
-              <Pressable onPress={() => setManageOpen(false)} hitSlop={10}>
+              <Pressable onPress={() => setManageOpen(false)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('close')}>
                 <Ionicons name="close" size={22} color={colors.mutedForeground} />
               </Pressable>
             </View>
@@ -688,10 +694,10 @@ export default function ThreadScreen() {
       <Modal visible={!!viewerUrl} transparent animationType="fade" onRequestClose={() => setViewerUrl(null)}>
         <View style={styles.viewerBackdrop}>
           <View style={[styles.viewerBar, { paddingTop: insets.top + 8 }]}>
-            <Pressable onPress={() => setViewerUrl(null)} hitSlop={12} style={styles.viewerBtn}>
+            <Pressable onPress={() => setViewerUrl(null)} hitSlop={12} style={styles.viewerBtn} accessibilityRole="button" accessibilityLabel={t('close')}>
               <Ionicons name="close" size={26} color="#fff" />
             </Pressable>
-            <Pressable onPress={saveViewedImage} disabled={savingImage} hitSlop={12} style={styles.viewerBtn}>
+            <Pressable onPress={saveViewedImage} disabled={savingImage} hitSlop={12} style={styles.viewerBtn} accessibilityRole="button" accessibilityLabel={t('saveImage')}>
               {savingImage ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (

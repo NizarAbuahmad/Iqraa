@@ -9,12 +9,14 @@ interface InputProps extends TextInputProps {
   leftIcon?: keyof typeof Ionicons.glyphMap;
   rightIcon?: keyof typeof Ionicons.glyphMap;
   onRightIconPress?: () => void;
+  /** Screen-reader name for the right icon button, e.g. «إظهار كلمة المرور». */
+  rightIconLabel?: string;
   hint?: string;
   isRTL?: boolean;
 }
 
 export function Input({
-  label, error, leftIcon, rightIcon, onRightIconPress,
+  label, error, leftIcon, rightIcon, onRightIconPress, rightIconLabel,
   hint, style, isRTL = false, ...props
 }: InputProps) {
   const colors = useColors();
@@ -63,10 +65,19 @@ export function Input({
 
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
+          // The visible label is a sibling Text, which a screen reader does not
+          // tie to the field; name the field with it unless the caller did.
+          accessibilityLabel={label}
           {...props}
         />
         {rightIcon && (
-          <Pressable onPress={onRightIconPress} style={isRTL ? styles.leftIconBtn : styles.rightIconBtn}>
+          <Pressable
+            onPress={onRightIconPress}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={rightIconLabel}
+            style={isRTL ? styles.leftIconBtn : styles.rightIconBtn}
+          >
             <Ionicons name={rightIcon} size={18} color={colors.mutedForeground} />
           </Pressable>
         )}

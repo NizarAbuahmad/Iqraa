@@ -1,12 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text } from 'react-native';
+import { AccessibilityInfo, Animated, Platform, StyleSheet, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NATIVE_DRIVER } from '@/constants/animation';
 import { useColors } from '@/hooks/useColors';
 
 interface ToastProps {
   visible: boolean;
   message: string;
-  /** Duration before auto-hide, ms. Default: 2000 */
+  /** Duration before auto-hide, ms. Default: 3000 — two seconds was too short to read a full Arabic sentence. */
   duration?: number;
   onHide?: () => void;
 }
@@ -20,12 +21,16 @@ interface ToastProps {
   confirmation. Restarting the sequence for a new message is what makes the
   second tap say «أزلتها من المفضلة».
 */
-export function Toast({ visible, message, duration = 2000, onHide }: ToastProps) {
+export function Toast({ visible, message, duration = 3000, onHide }: ToastProps) {
   const colors = useColors();
   const opacity = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!visible) return;
+    // A screen reader user never sees it fade in. Android and web read the
+    // live region below; iOS has no live regions, so it is announced.
+    if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(message);
     opacity.setValue(0);
     const seq = Animated.sequence([
       Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: NATIVE_DRIVER }),
@@ -46,6 +51,7 @@ export function Toast({ visible, message, duration = 2000, onHide }: ToastProps)
         styles.toast,
         {
           opacity,
+          bottom: 100 + insets.bottom,
           // The inverse of the screen — navy on light, pale on dark — so it
           // reads as a layer above the page in both themes.
           backgroundColor: colors.foreground,
@@ -64,7 +70,6 @@ export function Toast({ visible, message, duration = 2000, onHide }: ToastProps)
 const styles = StyleSheet.create({
   toast: {
     position: 'absolute',
-    bottom: 100,
     alignSelf: 'center',
     // A long message (a partial-send report names several parents) wraps
     // inside the screen instead of running off both edges.

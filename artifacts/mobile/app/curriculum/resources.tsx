@@ -581,6 +581,8 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
       <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         {asTab ? null : (
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('back')}
             onPress={() => goBack()} hitSlop={10}
             style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
           >

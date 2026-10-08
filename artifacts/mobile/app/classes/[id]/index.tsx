@@ -98,6 +98,7 @@ import { summarizeClassContacts, type ClassContactSummary } from '@/services/par
 import { palette } from '@/constants/colors';
 import { CLASSES_QUERY_KEY, classQueryKey as CLASS_QUERY_KEY } from '@/services/rosterQueryKeys';
 import { AR_LATIN } from '@/services/dateLabels';
+import { Button } from '@/components/ui/Button';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -659,6 +660,7 @@ export default function ClassDetailScreen() {
     icon: keyof typeof Ionicons.glyphMap,
     titleKey: 'noStudentsYet' | 'noMaterialsYet' | 'noExamsYet',
     descKey: 'noStudentsDesc' | 'noMaterialsDesc' | 'noExamsDesc',
+    action?: { label: string; onPress: () => void },
   ) => (
     <View style={styles.empty}>
       <Ionicons name={icon} size={40} color={colors.mutedForeground} />
@@ -673,6 +675,7 @@ export default function ClassDetailScreen() {
       >
         {t(descKey)}
       </Text>
+      {action ? <Button label={action.label} onPress={action.onPress} style={{ marginTop: 8 }} /> : null}
     </View>
   );
 
@@ -757,7 +760,7 @@ export default function ClassDetailScreen() {
             justifyContent: 'space-between',
           }}
         >
-          <Pressable onPress={() => goBack()} hitSlop={12}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={12}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           {/* The name and grade set at creation and never editable again —
@@ -855,7 +858,7 @@ export default function ClassDetailScreen() {
             </View>
           }
           ListEmptyComponent={
-            displayError ? null : empty('person-add-outline', 'noStudentsYet', 'noStudentsDesc')
+            displayError ? null : empty('person-add-outline', 'noStudentsYet', 'noStudentsDesc', { label: t('addStudents'), onPress: () => setShowAdd(true) })
           }
           renderItem={({ item }) => (
             <Pressable
@@ -953,7 +956,7 @@ export default function ClassDetailScreen() {
                   <Ionicons name="key-outline" size={18} color={colors.mutedForeground} />
                 </Pressable>
               ) : null}
-              <Pressable onPress={() => { void onRemove(item); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('remove')}>
+              <Pressable onPress={() => { void onRemove(item); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={`${t('removeStudentA11y')}: ${item.displayName}`}>
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
               </Pressable>
             </Pressable>
@@ -971,7 +974,7 @@ export default function ClassDetailScreen() {
               {subjectFilter}
             </View>
           }
-          ListEmptyComponent={materials.length > 0 ? emptyForSubject : empty('folder-open-outline', 'noMaterialsYet', 'noMaterialsDesc')}
+          ListEmptyComponent={materials.length > 0 ? emptyForSubject : empty('folder-open-outline', 'noMaterialsYet', 'noMaterialsDesc', { label: t('attachMaterial'), onPress: () => { void openAttach(); } })}
           renderItem={({ item: entry }) => {
             if (entry.type === 'resource') {
               return (
@@ -1066,7 +1069,7 @@ export default function ClassDetailScreen() {
               <MasterySection mastery={mastery} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
             </View>
           }
-          ListEmptyComponent={exams.length > 0 ? emptyForSubject : empty('clipboard-outline', 'noExamsYet', 'noExamsDesc')}
+          ListEmptyComponent={exams.length > 0 ? emptyForSubject : empty('clipboard-outline', 'noExamsYet', 'noExamsDesc', { label: t('attachExam'), onPress: () => { void openAttachExam(); } })}
           renderItem={({ item }) => {
             const title = (lang === 'ar' ? item.titleAr : item.title) || t('newEvaluation');
             const draft = item.status !== 'published';
@@ -1085,7 +1088,7 @@ export default function ClassDetailScreen() {
                   <Text style={[styles.rowName, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]} numberOfLines={1}>
                     {title}
                   </Text>
-                  <Text style={[styles.rowRef, { color: draft ? '#B54708' : colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                  <Text style={[styles.rowRef, { color: draft ? palette.warning : colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                     {draft
                       ? t('examNotPublished')
                       : t('examMarkedCount', String(item.markedCount ?? 0), String(students.length))}
@@ -1843,7 +1846,7 @@ function MasterySection({
                   style={{
                     width: `${Math.max(0, Math.min(100, o.percent))}%`,
                     height: '100%',
-                    backgroundColor: o.percent < 60 ? '#DC2626' : o.percent < 80 ? '#B54708' : '#067647',
+                    backgroundColor: o.percent < 60 ? '#DC2626' : o.percent < 80 ? palette.warning : palette.success,
                   }}
                 />
               </View>

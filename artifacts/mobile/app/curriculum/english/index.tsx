@@ -78,7 +78,7 @@ export default function EnglishHubScreen() {
         {/* Public page: with no history, `goBack()`'s fallback is `/`, which
             sends a visitor with no account to the login screen. `/play` is where
             they came from, or where they'd want to go. */}
-        <Pressable onPress={() => (router.canGoBack() ? goBack() : router.replace('/play' as never))} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => (router.canGoBack() ? goBack() : router.replace('/play' as never))} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={[styles.title, { textAlign: align }]}>{t('hubTitle')}</Text>
