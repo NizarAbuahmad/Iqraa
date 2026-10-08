@@ -172,7 +172,10 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
 
   // Prior-knowledge availability for this lesson (no fabrication)
   const priorKnowledge = (() => {
-    const g = resolveGeneratorGrounding(context.topic, lang as 'ar' | 'en');
+    const g = resolveGeneratorGrounding(context.topic, lang as 'ar' | 'en', {
+      lessonId: context.lessonId,
+      scope: { gradeId: context.gradeId, subjectId: context.subjectId },
+    });
     return g.lesson ? getUnitPriorKnowledge(g.lesson.id) : [];
   })();
   const priorReviewAvailable = priorKnowledge.length > 0;

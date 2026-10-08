@@ -30,10 +30,8 @@ import { getBookForLesson } from './knowledgeBase.ts';
 import type { AIRequest } from './ai/AIService.ts';
 import {
   buildAdaptationsDirective,
-  buildGeneratorContext,
-  generatorLessonId,
-  generatorUnitId,
   getUnitPriorKnowledge,
+  nccdUnitId,
   resolveGeneratorGrounding,
 } from './kbContext.ts';
 
@@ -392,8 +390,12 @@ export function buildLessonPrepRequest(args: {
   const context = resolveLessonPrepContext(args.lessonId, args.lang);
   if (!context) return null;
 
+  // Grounded on the lesson in hand, not its title: 571 of 679 lessons with a
+  // repeated title used to resolve to another one (G10 «النسب المثلثية» → G9).
   const grounding = resolveGeneratorGrounding(context.topic, args.lang, {
     teacherObjectives: context.objectives || undefined,
+    lessonId: context.lessonId,
+    scope: { gradeId: context.gradeId, subjectId: context.subjectId },
   });
   const additionalContext = [
     grounding.grounded ? grounding.context : grounding.ungroundedNote,
@@ -452,6 +454,10 @@ export function buildGapWarmupRequest(
   if (!objective || !context) return null;
   const objectiveText =
     (lang === 'ar' ? objective.descriptionAr : objective.description) || objective.description;
+  const grounding = resolveGeneratorGrounding(context.topic, lang, {
+    lessonId: context.lessonId,
+    scope: { gradeId: context.gradeId, subjectId: context.subjectId },
+  });
   return {
     context,
     objectiveText,
@@ -464,9 +470,9 @@ export function buildGapWarmupRequest(
       duration: 8,
       activityVariant: 'warmup',
       objectives: objectiveText,
-      additionalContext: buildGeneratorContext(context.topic, lang),
-      unitId: generatorUnitId(context.topic, lang),
-      lessonId: generatorLessonId(context.topic, lang),
+      additionalContext: grounding.grounded ? grounding.context : grounding.ungroundedNote,
+      unitId: nccdUnitId(grounding.lesson?.unitId),
+      lessonId: grounding.lesson?.id,
       contextSource: 'curriculum',
     },
   };

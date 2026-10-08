@@ -137,6 +137,10 @@ async function refreshAccessToken(): Promise<string | null> {
         // token, and clearing on it logged a teacher out of a working
         // session because the network blinked.
         if (res.status === 400 || res.status === 401 || res.status === 403) {
+          // On web every tab shares one token store. If another tab rotated
+          // this token meanwhile (the server refuses the loser inside its
+          // grace window), the stored pair is fresh — keep it, don't wipe it.
+          if ((await getRefreshToken()) !== refreshToken) return getAccessToken();
           await clearTokens();
           _onRefreshFailed?.();
         }
