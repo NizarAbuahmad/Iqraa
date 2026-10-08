@@ -7,6 +7,7 @@
  * summing a class across students (see masteryRollup.test.ts), and it keeps
  * this number comparable with the class view's.
  */
+import type { AttemptStatus } from "@workspace/db";
 import { aggregateClass } from "./classInsights.ts";
 import type { ObjectiveScore } from "./scoring.ts";
 
@@ -18,7 +19,7 @@ export interface RecordExamRow {
   titleAr: string;
   createdAt: Date;
   attemptId: string | null;
-  attemptStatus: string | null;
+  attemptStatus: AttemptStatus | null;
   teacherComment: string | null;
   submittedAt: Date | null;
   /** Numeric columns arrive as strings («2.00»). */
@@ -62,18 +63,28 @@ export interface RecordObjective {
   lastSeenAt: string;
 }
 
-export function examStatus(attemptStatus: string | null): RecordExamStatus {
+export function examStatus(attemptStatus: AttemptStatus | null): RecordExamStatus {
   switch (attemptStatus) {
     case null:
     case "not_started":
+    case "abandoned":
       return "not_sat";
     case "in_progress":
       return "in_progress";
-    case "graded":
-      return "marked";
-    default:
-      // submitted, grading, needs_review: the paper is in, the marks are not.
+    case "submitted":
+    case "grading":
+      // The paper is in; the marks are not yet.
       return "submitted";
+    case "graded":
+    case "needs_review":
+      // needs_review is provisional marking: a score exists and the exam's
+      // `provisional` flag carries the caveat.
+      return "marked";
+    default: {
+      const unreachable: never = attemptStatus;
+      void unreachable;
+      return "submitted";
+    }
   }
 }
 
@@ -84,7 +95,8 @@ export function studentRecord(
   describe: (objectiveId: string) => ObjectiveInfo | null,
 ): { exams: RecordExam[]; objectives: RecordObjective[]; provisionalCount: number } {
   const exams = [...rows]
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+      || a.evaluationId.localeCompare(b.evaluationId))
     .map((r): RecordExam => {
       const status = r.attemptId ? examStatus(r.attemptStatus) : "not_sat";
       const hasResult = r.total !== null;
@@ -140,7 +152,8 @@ export function studentRecord(
         lastSeenAt: evidence.last.toISOString(),
       };
     })
-    .sort((a, b) => a.percent - b.percent || b.marksLost - a.marksLost);
+    .sort((a, b) => a.percent - b.percent || b.marksLost - a.marksLost
+      || a.objectiveId.localeCompare(b.objectiveId));
 
   return {
     exams,

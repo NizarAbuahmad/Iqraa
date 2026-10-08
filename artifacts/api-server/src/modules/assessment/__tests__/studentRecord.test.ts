@@ -31,9 +31,10 @@ describe("examStatus", () => {
   it("maps attempt states to what the teacher reads", () => {
     assert.equal(examStatus(null), "not_sat");
     assert.equal(examStatus("not_started"), "not_sat");
+    assert.equal(examStatus("abandoned"), "not_sat");
     assert.equal(examStatus("in_progress"), "in_progress");
-    for (const s of ["submitted", "grading", "needs_review"]) assert.equal(examStatus(s), "submitted");
-    assert.equal(examStatus("graded"), "marked");
+    for (const s of ["submitted", "grading"] as const) assert.equal(examStatus(s), "submitted");
+    for (const s of ["graded", "needs_review"] as const) assert.equal(examStatus(s), "marked");
   });
 });
 
@@ -79,6 +80,22 @@ describe("studentRecord", () => {
       teacherComment: null, submittedAt: null,
     });
     assert.equal(r.objectives.length, 0);
+  });
+
+  it("shows a provisionally marked paper as marked, with its score and the provisional flag", () => {
+    const r = studentRecord([row({ attemptStatus: "needs_review", isProvisional: true,
+      earned: "1.00", total: "2.00", percent: "50.00", objectiveScores: [o("o-known", 1, 2)] })], describeKnown);
+    assert.equal(r.exams[0]!.status, "marked");
+    assert.equal(r.exams[0]!.provisional, true);
+    assert.equal(r.exams[0]!.percent, 50);
+    assert.equal(r.provisionalCount, 1);
+  });
+
+  it("gives a paper the student never started no attempt, even if one row exists", () => {
+    const r = studentRecord([row({ attemptId: "a-stale", attemptStatus: "not_started", submittedAt: null,
+      earned: null, total: null, percent: null, isProvisional: null, objectiveScores: null })], describeKnown);
+    assert.equal(r.exams[0]!.status, "not_sat");
+    assert.equal(r.exams[0]!.attemptId, null);
   });
 
   it("keeps an unmarked paper out of the rollup but in the exam list", () => {
