@@ -26,6 +26,7 @@ import {
   MINI_EVAL_COUNT,
   MINI_EVAL_TYPES,
   isSelfMarking,
+  miniEvalPreset,
 } from '../miniEval.ts';
 
 /** The types the server has no deterministic grader for — a teacher marks these by hand. */
@@ -74,5 +75,17 @@ describe('mini-evaluation preset', () => {
   it('isSelfMarking agrees with the list', () => {
     assert.equal(isSelfMarking('multiple_choice'), true);
     assert.equal(isSelfMarking('open_ended'), false);
+  });
+});
+
+describe('miniEvalPreset', () => {
+  const lookup = (id: string) => (id === 'o1' ? { bookId: 'book-chem-10' } : undefined);
+  it('opens on the objective and its book when the book is on offer', () => {
+    assert.deepEqual(miniEvalPreset('o1', ['book-chem-10', 'book-math-10'], lookup), { bookId: 'book-chem-10', objectiveId: 'o1' });
+  });
+  it('presets nothing for an unknown objective, an absent one, or a book the class does not offer', () => {
+    assert.equal(miniEvalPreset('nope', ['book-chem-10'], lookup), null);
+    assert.equal(miniEvalPreset(undefined, ['book-chem-10'], lookup), null);
+    assert.equal(miniEvalPreset('o1', ['book-math-10'], lookup), null);
   });
 });
