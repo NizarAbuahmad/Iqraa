@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 
 import {
   BOARD_BACKGROUNDS,
+  BOARD_DEFAULT_WIDTH,
   EMPTY_BOARD,
   HISTORY_LIMIT,
+  STROKE_WIDTHS,
   axesGeometry,
   canUndo,
   clearBoard,
@@ -66,6 +68,20 @@ describe('strokeHit / eraseAt', () => {
 
   it('never hits, and never throws on, a stroke with no readable points', () => {
     assert.equal(strokeHit(line(''), 0, 0, 1000), false);
+  });
+
+  it('rejects a point just outside the stroke\'s reach and accepts one just inside, repeatably', () => {
+    const s = line('0,0 100,0'); // default width 4, radius 10 -> reach 12
+    for (let pass = 0; pass < 2; pass++) {
+      assert.equal(strokeHit(s, 111, 0, 10), true);
+      assert.equal(strokeHit(s, 113, 0, 10), false);
+    }
+  });
+
+  it('measures a diagonal stroke by its line, not its bounding box', () => {
+    const s = line('0,0 100,100'); // reach = 1 + 2
+    assert.equal(strokeHit(s, 50, 50, 1), true);
+    assert.equal(strokeHit(s, 50, 62, 1), false); // inside the box, ~8.5 from the line
   });
 
   it('removes only the strokes that were hit', () => {
@@ -189,6 +205,11 @@ describe('localizeDigits / BOARD_BACKGROUNDS', () => {
   it('shows Arabic-Indic digits only for Arabic', () => {
     assert.equal(localizeDigits('-12', 'ar'), '-١٢');
     assert.equal(localizeDigits('-12', 'en'), '-12');
+    assert.equal(localizeDigits('0123456789', 'ar'), '٠١٢٣٤٥٦٧٨٩');
+  });
+
+  it('defaults the board to a width the toolbar actually offers', () => {
+    assert.ok(STROKE_WIDTHS.includes(BOARD_DEFAULT_WIDTH));
   });
 
   it('offers blank, grid and axes in that order', () => {
@@ -214,6 +235,14 @@ describe('eraseAlong', () => {
 
   it('still tests the end point when the pointer has not moved', () => {
     assert.deepEqual(eraseAlong([wall], 100, 50, 100, 50, 16), []);
+  });
+
+  it('samples densely enough to catch a thin stroke between far-apart samples', () => {
+    const thin = line('25,0 25,100', { width: 3 }); // reach = 16 + 1.5
+    assert.equal(eraseAt([thin], 0, 50, 16).length, 1);
+    assert.equal(eraseAt([thin], 100, 50, 16).length, 1);
+    // A 2-sample sweep (ends only) would miss it; the half-radius steps do not.
+    assert.deepEqual(eraseAlong([thin], 0, 50, 100, 50, 16), []);
   });
 
   it('removes only the strokes the sweep crosses', () => {

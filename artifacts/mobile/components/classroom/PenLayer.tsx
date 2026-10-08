@@ -60,7 +60,7 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
   const [erased, setErased] = useState<Stroke[] | null>(null);
   const draftRef = useRef<Stroke | null>(null);
   const erasedRef = useRef<Stroke[] | null>(null);
-  /** The committed strokes at the moment the finger went down. */
+  /** The committed strokes at the moment the finger went down — the identity reference for "erased nothing". */
   const base = useRef<Stroke[]>([]);
   /** Where the eraser was last applied, so a fast drag is swept rather than sampled. */
   const lastErase = useRef<{ x: number; y: number } | null>(null);
@@ -74,9 +74,11 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
       lastErase.current = null;
       setDraft(null);
       setErased(null);
-      const { onChange: set } = latest.current;
-      if (d) set([...base.current, d]);
-      else if (e && e !== base.current) set(e); // identity: erasing nothing is not a change
+      // Commit against the LATEST strokes, not the pen-down snapshot: an undo or
+      // a clear during the gesture must not be overwritten by the old list.
+      const { onChange: set, strokes: now } = latest.current;
+      if (d) set([...now, d]);
+      else if (e && e !== base.current && now === base.current) set(e); // only if the list did not change under the gesture
     };
 
     return PanResponder.create({

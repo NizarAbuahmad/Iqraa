@@ -110,11 +110,15 @@ an announcement by default» below.
     clear. It is opened only from the presentation's action row — there is
     deliberately no Tools-tab card, because the pilot tools list is pinned by
     `toolCatalog.test.ts`. Nothing is saved yet, so clearing and leaving with
-    ink both ask first; the browser's own back button and closing the tab are
-    not intercepted. The logic lives in `services/whiteboardModel.ts` (tested,
+    ink both ask first; on web, Escape also asks (the board binds it), but the
+    browser's own back button and closing the tab are not intercepted. The logic lives in `services/whiteboardModel.ts` (tested,
     including `eraseAlong`, which sweeps the eraser between pointer samples so a
     fast drag cannot skip a stroke). `PenCanvas` now commits a stroke on
-    pen-up, which also changes the slide pen and `book-page.tsx`.
+    pen-up, which also changes the slide pen and `book-page.tsx`. The
+    presentation's countdown keeps running while the board is open (its timer
+    cleanup now runs on unmount, not on blur — opening the book page used to
+    freeze it the same way), and the deck's keyboard shortcuts are ignored while
+    the board is on top.
     Verified 2026-10-08: monorepo typecheck clean, mobile suite 2349 pass /
     0 fail / 10 skipped, and the board, the slide pen and the book-page pen
     driven in Chromium against a local app (Postgres, API and Expo web, a
@@ -127,7 +131,9 @@ an announcement by default» below.
     labels with an LTR layout, and the toolbar wraps between groups at
     390/360/320px. Not verified: touch on a real phone, Android hardware back,
     native SVG text on a device, whether a slide still scrolls while the pen is
-    off and locks while it is on, and the board on a projector.
+    off and locks while it is on, the board on a projector, erasing on a full
+    board on a phone (the hit test is cached and bounds-checked and was only
+    benchmarked in node), and the presentation's action row at phone width.
     Still to build: B (saving, pages, export) and C (AI solve — only the 7
     `VERIFIABLE_TOPICS` may ever be marked verified). Spec and plan:
     `docs/superpowers/specs/2026-10-08-whiteboard-board-design.md`,

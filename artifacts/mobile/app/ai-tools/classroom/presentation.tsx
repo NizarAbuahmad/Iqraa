@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -859,6 +859,7 @@ export default function PresentationScreen() {
   // do not fit. Tablets (768dp+) keep the labels, every phone drops to icons.
   const compactBar = viewportW < 600;
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
 
   const [activity, setActivity] = useState<ClassroomActivity | null>(null);
   // Non-null only for Class Challenge decks (`activity.game` present). Kept
@@ -906,17 +907,24 @@ export default function PresentationScreen() {
     }
   }, []);
 
-  // Hide status bar while in presentation mode
+  // Hide status bar while in presentation mode. Only the status bar follows
+  // focus: the whiteboard and the book page are pushed OVER this screen, which
+  // blurs it, and tearing the timer down on blur froze a running countdown for
+  // good — the tick effect never re-ran on return. Timer and pending-activity
+  // cleanup is unmount-only, just below.
   useFocusEffect(
     useCallback(() => {
       StatusBar.setHidden(true, 'fade');
       return () => {
         StatusBar.setHidden(false, 'fade');
-        clearIntervalIfRunning();
-        clearClassroomActivity();
       };
     }, []),
   );
+
+  useEffect(() => () => {
+    clearIntervalIfRunning();
+    clearClassroomActivity();
+  }, []);
 
   const clearIntervalIfRunning = () => {
     if (timerRef.current) {
@@ -1051,6 +1059,7 @@ export default function PresentationScreen() {
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     const onKey = (e: KeyboardEvent) => {
+      if (!navigation.isFocused()) return;
       const action = keyboardAction(
         {
           key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey,
@@ -1345,7 +1354,7 @@ export default function PresentationScreen() {
           {/* Last child, absolute over the whole content: ink scrolls with the
               slide it marks. While the pen is on it takes every touch, so the
               slide cannot scroll — turning the pen off gives scrolling back. */}
-          <PenCanvas strokes={slideInk} color={penColor} active={penOn} onChange={setSlideInk} />
+          <PenCanvas key={slideIndex} strokes={slideInk} color={penColor} active={penOn} onChange={setSlideInk} />
         </ScrollView>
         {penOn && (
           <PenPalette

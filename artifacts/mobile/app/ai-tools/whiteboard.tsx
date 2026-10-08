@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { confirm } from '@/services/confirm';
 import { goBack } from '@/services/navigation';
+import { DECK_CARD_BG } from '@/services/deckTheme';
 import { PEN_COLORS, PenCanvas } from '@/components/classroom/PenLayer';
 import { BoardBackground } from '@/components/classroom/BoardBackground';
 import { BoardToolbar } from '@/components/classroom/BoardToolbar';
@@ -42,19 +43,29 @@ export default function WhiteboardScreen() {
   const boardRef = useRef(board);
   boardRef.current = board;
 
+  // One confirm dialog at a time, shared by leave and clear: a held Escape key
+  // repeats, and each repeat would otherwise stack another dialog.
+  const busy = useRef(false);
+
   const leave = useCallback(async () => {
+    if (busy.current) return;
     if (!hasInk(boardRef.current)) {
       goBack();
       return;
     }
-    const ok = await confirm({
-      title: t('boardLeaveTitle'),
-      message: t('boardLeaveMessage'),
-      confirmLabel: t('boardLeaveConfirm'),
-      cancelLabel: t('cancel'),
-      destructive: true,
-    });
-    if (ok) goBack();
+    busy.current = true;
+    try {
+      const ok = await confirm({
+        title: t('boardLeaveTitle'),
+        message: t('boardLeaveMessage'),
+        confirmLabel: t('boardLeaveConfirm'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      });
+      if (ok) goBack();
+    } finally {
+      busy.current = false;
+    }
   }, [t]);
 
   useEffect(() => {
@@ -66,16 +77,35 @@ export default function WhiteboardScreen() {
     return () => sub.remove();
   }, [leave]);
 
+  // Esc is a reflex key on web; without this it would fall through to the
+  // presentation's handler and drop the board's ink unasked.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      void leave();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [leave]);
+
   const onClear = useCallback(async () => {
+    if (busy.current) return;
     if (!hasInk(boardRef.current)) return;
-    const ok = await confirm({
-      title: t('boardClearTitle'),
-      message: t('boardClearMessage'),
-      confirmLabel: t('boardClearConfirm'),
-      cancelLabel: t('cancel'),
-      destructive: true,
-    });
-    if (ok) setBoard(b => clearBoard(b));
+    busy.current = true;
+    try {
+      const ok = await confirm({
+        title: t('boardClearTitle'),
+        message: t('boardClearMessage'),
+        confirmLabel: t('boardClearConfirm'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      });
+      if (ok) setBoard(b => clearBoard(b));
+    } finally {
+      busy.current = false;
+    }
   }, [t]);
 
   return (
@@ -127,5 +157,5 @@ export default function WhiteboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: DECK_CARD_BG },
 });

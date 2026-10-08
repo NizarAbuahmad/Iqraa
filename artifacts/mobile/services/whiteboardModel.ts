@@ -41,11 +41,41 @@ function distanceToSegment(px: number, py: number, a: Point, b: Point): number {
   return Math.hypot(px - (a.x + t * dx), py - (a.y + t * dy));
 }
 
+type Parsed = { pts: Point[]; minX: number; maxX: number; minY: number; maxY: number };
+
+// Strokes are immutable by convention (PenCanvas builds a new object for every
+// change), so the parsed form can be cached by object identity. Never mutate
+// `points` in place — the cache would go stale.
+const parsedCache = new WeakMap<Stroke, Parsed>();
+
+function parsedOf(stroke: Stroke): Parsed {
+  let cached = parsedCache.get(stroke);
+  if (!cached) {
+    const pts = parsePoints(stroke.points);
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const p of pts) {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    }
+    cached = { pts, minX, maxX, minY, maxY };
+    parsedCache.set(stroke, cached);
+  }
+  return cached;
+}
+
 /** Does an eraser of `radius` centred on (x, y) touch this stroke? */
 export function strokeHit(stroke: Stroke, x: number, y: number, radius: number): boolean {
-  const pts = parsePoints(stroke.points);
+  const { pts, minX, maxX, minY, maxY } = parsedOf(stroke);
   if (pts.length === 0) return false;
   const reach = radius + (stroke.width ?? DEFAULT_STROKE_WIDTH) / 2;
+  // Cheap reject: a point farther than `reach` outside the bounding box cannot
+  // be within `reach` of any segment inside it.
+  if (x < minX - reach || x > maxX + reach || y < minY - reach || y > maxY + reach) return false;
   if (pts.length === 1) return Math.hypot(x - pts[0]!.x, y - pts[0]!.y) <= reach;
   for (let i = 1; i < pts.length; i++) {
     // Distance to the segment, not to its endpoints: a fast stroke records few

@@ -1,6 +1,6 @@
 # Whiteboard (سبورة), sub-project A: the blank board
 
-Status: **draft for review** — nothing here is built. Written 2026-10-08.
+Status: **built** 2026-10-08 (PR #928, sub-project A). Kept as the record of the design.
 
 ## Context
 
