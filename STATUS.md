@@ -53,16 +53,19 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
-- **The schema deploys as migrations** (2026-10-08, not yet live until
-  production is baselined). `lib/db/migrations/0000_baseline.sql` is the whole
+- **The schema deploys as migrations** (2026-10-08, #925, live).
+  `lib/db/migrations/0000_baseline.sql` is the whole
   48-table schema; `deploy.yml` runs `migrate` before `verify-schema` and the
   API. CI rejects a schema edit without its migration, applies every migration
   to an empty Postgres, and holds destructive SQL for `destructive-migration:
   ok`. Verified locally against throwaway databases: fresh migrate (48/48 by
   `verify-schema`), re-run is a no-op, a push-built database is refused, then
   baselined (idempotent), then a follow-up `ADD COLUMN` migration applies on
-  top. Not verified: the CI jobs themselves and production — that needs
-  `gh workflow run db-baseline.yml` once after merge. See *Schema* in
+  top. In production: the first deploy refused as designed, production was
+  baselined in Actions (48/48 verified, 0000 recorded), and the re-run went
+  green end to end — migrations, schema, API (`6d81f83`, revision
+  iqraa-api-00282-9vd) and web. Not yet exercised: a real follow-up migration
+  in production, and the destructive-SQL check. See *Schema* in
   `docs/deploying.md`.
 - **The chat's readiness board folds to one line** (2026-10-06). On a phone the
   empty chat showed all five «جاهزية الدرس» rows, filling most of the screen
