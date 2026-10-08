@@ -838,6 +838,7 @@ const translations = {
     bellTitle: 'الإشعارات',
     bellEmpty: 'لا توجد رسائل جديدة',
     bellViewAll: 'كل الرسائل',
+    bellMarkFailed: 'تعذّر تعليمها مقروءة، حاول مرة أخرى',
     unread: (n: number) => arCountPhrase(n, 'رسالة غير مقروءة', 'رسالتان غير مقروءتين', 'رسائل غير مقروءة'),
 
     // Settings screen sections
@@ -3038,6 +3039,7 @@ const translations = {
     bellTitle: 'Notifications',
     bellEmpty: 'No new messages',
     bellViewAll: 'All messages',
+    bellMarkFailed: 'Could not mark as read, try again',
     unread: (n: number) => `${n} unread`,
 
     languageSection: 'LANGUAGE',
