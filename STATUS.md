@@ -720,10 +720,10 @@ turned up five defects that each corrupted output today, all fixed in one PR:
   photo was `DECK_BG` at 75% — written when the deck was near-black, left in
   place when the palette went cream (2026-10-05), so white text sat on a cream
   wash. `exportPptx.ts` now has its own dark `HERO_SCRIM`.
-- **The prompt sent control characters.** `rac`, `	heta`, `	imes` sat
+- **The prompt sent control characters.** `\frac`, `\theta`, `\times` sat
   unescaped in the template literal, so the model read a form feed and tabs
-  where the LaTeX ban named its examples. Pinned by a test that rejects ``
-  and `	` in the built prompt.
+  where the LaTeX ban named its examples. Pinned by a test that rejects a form feed
+  and a tab in the built prompt.
 - **The projector drew every chart as unlabeled bars.** `presentation.tsx` had
   a private bar loop that ignored `chartType` and labelled nothing, while the
   PDF of the same deck drew a pie. Both now draw from `chartGeometry()` in
