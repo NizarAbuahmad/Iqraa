@@ -33,19 +33,7 @@ import { setUnreadMessages } from '@/services/unreadMessages';
 import { filterThreads, THREAD_FILTERS, type ThreadFilter } from '@/services/threadFilter';
 import { Avatar } from '@/components/ui/Avatar';
 import { LoadError } from '@/components/ui/LoadError';
-
-function relativeTime(iso: string, lang: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return lang === 'ar' ? 'الآن' : 'now';
-  if (mins < 60) return lang === 'ar' ? `${mins}د` : `${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return lang === 'ar' ? `${hrs}س` : `${hrs}h`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return lang === 'ar' ? `${days}ي` : `${days}d`;
-  const wks = Math.floor(days / 7);
-  return lang === 'ar' ? `${wks}أ` : `${wks}w`;
-}
+import { relativeTime } from '@/services/relativeTime';
 
 interface Contact {
   userId: string;

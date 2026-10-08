@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { Ionicons } from '@expo/vector-icons';
 import { toLatinDigits } from '@/services/latinDigits';
 import { apiErrorMessage } from '@/services/apiErrorKey';
+import { emailNotSent } from '@/services/emailDelivery';
 
 /** Cooldown between resend taps — enough for the email to plausibly arrive before offering another one. */
 const RESEND_COOLDOWN_S = 30;
@@ -23,7 +24,7 @@ export default function VerifyEmailScreen() {
   const insets = useSafeAreaInsets();
   const { verifyEmail, resendVerification, changeUnverifiedEmail } = useAuth();
   const { t, isRTL } = useLanguage();
-  const params = useLocalSearchParams<{ email: string }>();
+  const params = useLocalSearchParams<{ email: string; sendFailed?: string }>();
 
   // Held in state, not read from the route param directly: changing the
   // address below has to move what this screen says the code went to, and the
@@ -33,7 +34,9 @@ export default function VerifyEmailScreen() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
-  const [error, setError] = useState('');
+  // Signup tells this screen when the server could not send the code, so the
+  // teacher is not left waiting on an email that does not exist.
+  const [error, setError] = useState(() => (params.sendFailed === '1' ? t('errEmailNotSent') : ''));
   const [notice, setNotice] = useState('');
 
   const [editingEmail, setEditingEmail] = useState(false);
@@ -85,16 +88,19 @@ export default function VerifyEmailScreen() {
     setNotice('');
     setChanging(true);
     try {
-      const { email: changed } = await changeUnverifiedEmail(email, password, newEmail);
+      const result = await changeUnverifiedEmail(email, password, newEmail);
+      const changed = result.email;
       setEmail(changed);
-      setNotice(t('emailChanged', changed));
+      if (emailNotSent(result)) setError(t('errEmailNotSent'));
+      else setNotice(t('emailChanged', changed));
       // The code that was just sent belongs to the new address, so clear the
       // one typed against the old one rather than leaving it to fail.
       setCode('');
       setEditingEmail(false);
       setNewEmail('');
       setPassword('');
-      setCooldown(RESEND_COOLDOWN_S);
+      // Nothing was sent, so there is nothing to wait for: leave resend open.
+      setCooldown(emailNotSent(result) ? 0 : RESEND_COOLDOWN_S);
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(apiErrorMessage(e, 'errChangeEmailFailed', t));

@@ -34,7 +34,7 @@ import { apiJson } from '@/services/apiClient';
  */
 const STATEMENT = {
   ar:
-    'أُقرّ بأنّ مدرستي حصلت على موافقة وليّ الأمر اللازمة لإدخال بيانات طلبتي في «اقرأ»، ' +
+    'أُقرّ بأنّ مدرستي حصلت على موافقة وليّ الأمر اللازمة لإدخال بيانات طلبتي في «إقرأ»، ' +
     'وبأنّني لن أُدخل إلّا ما تقتضيه الحاجة التعليمية.',
   en:
     'I confirm that my school has obtained the parental or guardian consent required for me ' +
