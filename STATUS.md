@@ -111,15 +111,16 @@ an announcement by default» below.
     deliberately no Tools-tab card, because the pilot tools list is pinned by
     `toolCatalog.test.ts`. Nothing is saved yet, so clearing and leaving with
     ink both ask first; on web, Escape also asks (the board binds it), but the
-    browser's own back button and closing the tab are not intercepted. The logic lives in `services/whiteboardModel.ts` (tested,
-    including `eraseAlong`, which sweeps the eraser between pointer samples so a
-    fast drag cannot skip a stroke). `PenCanvas` now commits a stroke on
-    pen-up, which also changes the slide pen and `book-page.tsx`. The
-    presentation's countdown keeps running while the board is open (its timer
-    cleanup now runs on unmount, not on blur — opening the book page used to
-    freeze it the same way), and the deck's keyboard shortcuts are ignored while
-    the board is on top.
-    Verified 2026-10-08: monorepo typecheck clean, mobile suite 2349 pass /
+    browser's own back button and closing the tab are not intercepted. The
+    logic lives in `services/whiteboardModel.ts` (tested, including
+    `eraseAlong`, which sweeps the eraser between pointer samples so a fast
+    drag cannot skip a stroke). `PenCanvas` now commits a stroke on pen-up,
+    which also changes the slide pen and `book-page.tsx`. The presentation's
+    countdown keeps running while the board is open (its timer cleanup now runs
+    on unmount, not on blur — opening the book page used to freeze it the same
+    way), and the deck's keyboard shortcuts are ignored while the board is on
+    top.
+    Verified 2026-10-08: monorepo typecheck clean, mobile suite 2354 pass /
     0 fail / 10 skipped, and the board, the slide pen and the book-page pen
     driven in Chromium against a local app (Postgres, API and Expo web, a
     signed-in teacher). Passed: draw, tap-dot, widths 3/6/12, colours, eraser
@@ -128,12 +129,20 @@ an announcement by default» below.
     Arabic, Latin in English; all 24 negative labels render the minus left of
     the digit), clear and leave each ask first, leaving returns to the same
     slide with its ink untouched, closing an empty board does not ask, English
-    labels with an LTR layout, and the toolbar wraps between groups at
-    390/360/320px. Not verified: touch on a real phone, Android hardware back,
-    native SVG text on a device, whether a slide still scrolls while the pen is
-    off and locks while it is on, the board on a projector, erasing on a full
-    board on a phone (the hit test is cached and bounds-checked and was only
-    benchmarked in node), and the presentation's action row at phone width.
+    labels with an LTR layout, the toolbar wrapping between groups at
+    390/360/320px, Escape (an empty board leaves at once and lands on the
+    presentation; with ink it asks, the dialog survives the key release, and a
+    held Escape opens only one dialog), Space / PageDown / arrow keys doing
+    nothing under the board, and the countdown still running after the board
+    was open (00:43 → 00:36 over about seven seconds). The browser pass also
+    caught a real regression in the first fix for this — Escape popped the
+    presentation as well as the board — which is fixed and re-checked.
+    Not verified: touch on a real phone, Android hardware back, native SVG text
+    on a device, whether a slide still scrolls while the pen is off and locks
+    while it is on, the board on a projector, erasing on a full board on a
+    phone (the hit test is cached and bounds-checked; its cost was measured
+    only in node, before the cache, at about 39 ms for a 400-stroke sweep),
+    and the presentation's action row at phone width.
     Still to build: B (saving, pages, export) and C (AI solve — only the 7
     `VERIFIABLE_TOPICS` may ever be marked verified). Spec and plan:
     `docs/superpowers/specs/2026-10-08-whiteboard-board-design.md`,
