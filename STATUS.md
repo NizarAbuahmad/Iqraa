@@ -1202,9 +1202,17 @@ Spec `docs/superpowers/specs/2026-10-07-lab-class-workflow-design.md`, plan
   lab slides has not been looked at by a person.
 - The POST route's lab branch has no database test (tests have no database); it
   is covered by typecheck and build only.
-- The slide editor's `applyMediaEdit` can strip a lab slide's credit when its
-  caption is left blank, and blocks editing audio and document slides
-  (pre-existing).
+- ~~The slide editor's `applyMediaEdit` can strip a lab slide's credit when its
+  caption is left blank, and blocks editing audio and document slides.~~
+  **Fixed 2026-10-08** (found by reproducing it on real lab slides, three
+  defects): a blank caption on unchanged media now keeps the existing caption
+  (it is the credit the PDF and PPTX print; a teacher can replace it but not
+  blank it); an unchanged link on a slide whose link is not an image or YouTube
+  URL (an interactive lab item's share link, an uploaded voice note) no longer
+  blocks saving; and swapping the media drops the old credit from the slide body
+  as well as from `mediaCaption` (`contentAfterMediaEdit`), where the presenter
+  used to keep crediting the old picture. A NEW link the app cannot embed is
+  still refused. `classMediaCredits.test.ts`.
 - Image media slides are cropped (`object-fit: cover`) in the HTML and PPTX
   exports, so a labelled diagram can lose its edges there.
 - A deck's lab slides do not update if the lab item changes after the deck is
