@@ -403,6 +403,10 @@ import {
   buildG3PhysicalEducationSem1Catalog,
 } from './curriculumG3PhysicalEducationSem1.ts';
 import {
+  G3_PE_S2_BOOK_ID,
+  buildG3PhysicalEducationSem2Catalog,
+} from './curriculumG3PhysicalEducationSem2.ts';
+import {
   G1_MATH_S1_BOOK_ID,
   buildG1MathSem1Catalog,
 } from './curriculumG1MathSem1.ts';
@@ -1900,6 +1904,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Physical Education – Grade 3 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g3_physical_education_sem1.json (NCCD)',
+  },
+  {
+    id: G3_PE_S2_BOOK_ID,
+    gradeId: 'grade-3',
+    subjectId: 'physical-education',
+    titleAr: 'التربية الرياضية – الصف الثالث – الفصل الثاني',
+    titleEn: 'Physical Education – Grade 3 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g3_physical_education_sem2.json (NCCD)',
   },
   {
     id: G1_MATH_S1_BOOK_ID,
@@ -3600,6 +3613,7 @@ const _g3EnglishSem1 = buildG3EnglishSem1Catalog();
 const _g3EnglishSem2 = buildG3EnglishSem2Catalog();
 const _g3CreativeArts = buildG3CreativeArtsCatalog();
 const _g3PhysicalEducationSem1 = buildG3PhysicalEducationSem1Catalog();
+const _g3PhysicalEducationSem2 = buildG3PhysicalEducationSem2Catalog();
 const _g1MathSem1 = buildG1MathSem1Catalog();
 const _g1MathSem2 = buildG1MathSem2Catalog();
 const _g1ScienceSem1 = buildG1ScienceSem1Catalog();
@@ -3926,6 +3940,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g3EnglishSem2.units,
   ..._g3CreativeArts.units,
   ..._g3PhysicalEducationSem1.units,
+  ..._g3PhysicalEducationSem2.units,
   ..._g1MathSem1.units,
   ..._g1MathSem2.units,
   ..._g1ScienceSem1.units,
@@ -4131,6 +4146,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g3EnglishSem2.lessons,
   ..._g3CreativeArts.lessons,
   ..._g3PhysicalEducationSem1.lessons,
+  ..._g3PhysicalEducationSem2.lessons,
   ..._g1MathSem1.lessons,
   ..._g1MathSem2.lessons,
   ..._g1ScienceSem1.lessons,
