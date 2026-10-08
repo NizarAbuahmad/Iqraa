@@ -357,6 +357,7 @@ router.get("/classes/:id/students/:studentId/record", async (req: AuthenticatedR
         title: evaluations.title,
         titleAr: evaluations.titleAr,
         createdAt: evaluations.createdAt,
+        archivedAt: evaluations.archivedAt,
         attemptId: attempts.id,
         attemptStatus: attempts.status,
         teacherComment: attempts.teacherComment,
@@ -373,7 +374,9 @@ router.get("/classes/:id/students/:studentId/record", async (req: AuthenticatedR
       .where(
         and(
           eq(evaluations.classGroupId, classId),
-          isNull(evaluations.archivedAt),
+          // Archived rows are kept on purpose: they still count in the
+          // objectives, as in /classes/:id/mastery (studentRecord() hides them
+          // from the exam list).
           ne(evaluations.status, "draft"),
         ),
       );
@@ -391,20 +394,19 @@ router.get("/classes/:id/students/:studentId/record", async (req: AuthenticatedR
       .orderBy(desc(parentContacts.createdAt))
       .limit(1);
 
-    const record = studentRecord(rows, objectiveId => {
+    const record = studentRecord(rows.map(({ archivedAt, ...r }) => ({ ...r, archived: archivedAt !== null })), objectiveId => {
       const o = getObjectiveById(objectiveId);
       return o
         ? { titleAr: o.descriptionAr || o.description, lessonId: o.lessonId, lessonTitleAr: o.lessonTitleAr || o.lessonTitle }
         : null;
     });
 
-    const linked = Boolean(guardian);
     res.json({
-      student: { ...student, linked },
+      student,
       className: group.nameAr || group.name,
       ...record,
       parent: {
-        linked,
+        linked: Boolean(guardian),
         lastContact: lastContact
           ? { kind: lastContact.kind, channel: lastContact.channel, at: lastContact.at.toISOString() }
           : null,

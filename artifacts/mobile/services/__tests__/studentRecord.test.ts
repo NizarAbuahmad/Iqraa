@@ -1,10 +1,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  WEAK_PERCENT, examStatusKey, focusObjectives, formatDay, lessonAction, paperAction,
+  WEAK_PERCENT, displayPercent, examStatusKey, focusObjectives, lessonAction, paperAction,
   recheckAction, sittingsLine, worksheetAction,
   type StudentRecordExam, type StudentRecordObjective,
 } from '../studentRecord.ts';
+import { formatListDate } from '../evaluationRow.ts';
 import { lessonPickerParams, resolveLessonPrepContext } from '../lessonPrep.ts';
 
 const CHEM = 'kbl-chem-s1-nccd-u1_l1';
@@ -33,6 +34,16 @@ describe('student record — weak line', () => {
   });
 });
 
+describe('student record — displayed percentage', () => {
+  it('never rounds a weak value up to the weak line', () => {
+    assert.equal(displayPercent(59.6), 59);
+    assert.equal(displayPercent(59.4), 59);
+    assert.equal(displayPercent(60), 60);
+    assert.equal(displayPercent(80.4), 80);
+    assert.equal(displayPercent(0), 0);
+  });
+});
+
 describe('student record — exams', () => {
   it('names each status', () => {
     assert.equal(examStatusKey('not_sat'), 'studentRecordNotSat');
@@ -46,13 +57,15 @@ describe('student record — exams', () => {
       pathname: '/evaluations/[id]/answers/[studentId]', params: { id: 'e1', studentId: 's1' },
     });
   });
-  it('formats a day as the teacher writes it', () => {
-    assert.equal(formatDay('2026-10-02T09:00:00.000Z'), '2026/10/02');
-  });
-  it('says how much evidence an objective rests on', () => {
-    assert.equal(sittingsLine(obj({ sittings: 1 }), 'ar'), 'في ورقة · آخرها 2026/10/02');
-    assert.equal(sittingsLine(obj({ sittings: 3 }), 'ar'), 'في 3 أوراق · آخرها 2026/10/02');
-    assert.equal(sittingsLine(obj({ sittings: 2 }), 'en'), 'In 2 papers · latest 2026/10/02');
+  it('says how much evidence an objective rests on, dated as the exam lists are', () => {
+    const iso = obj({}).lastSeenAt;
+    // Intl output varies by Node ICU, so compare against the shared formatter.
+    const ar = formatListDate(iso, 'ar')!;
+    const en = formatListDate(iso, 'en')!;
+    assert.ok(ar && en);
+    assert.equal(sittingsLine(obj({ sittings: 1 }), 'ar'), `في ورقة · آخرها ${ar}`);
+    assert.equal(sittingsLine(obj({ sittings: 3 }), 'ar'), `في 3 أوراق · آخرها ${ar}`);
+    assert.equal(sittingsLine(obj({ sittings: 2 }), 'en'), `In 2 papers · latest ${en}`);
   });
 });
 

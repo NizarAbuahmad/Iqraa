@@ -17,7 +17,7 @@ function o(objectiveId: string, earned: number, total: number): ObjectiveScore {
 
 function row(over: Partial<RecordExamRow>): RecordExamRow {
   return {
-    evaluationId: "e1", title: "Quiz", titleAr: "", createdAt: new Date("2026-09-01T08:00:00Z"),
+    evaluationId: "e1", title: "Quiz", titleAr: "", createdAt: new Date("2026-09-01T08:00:00Z"), archived: false,
     attemptId: "a1", attemptStatus: "graded", teacherComment: "", submittedAt: new Date("2026-09-01T09:00:00Z"),
     earned: "1.00", total: "2.00", percent: "50.00", isProvisional: false, objectiveScores: [],
     ...over,
@@ -133,5 +133,25 @@ describe("studentRecord", () => {
     assert.equal(r.exams[0]!.earned, 1.5);
     assert.equal(r.exams[0]!.percent, 75);
     assert.equal(r.exams[0]!.teacherComment, null);
+  });
+
+  it("counts an archived exam's marks in the objectives but does not list it", () => {
+    const r = studentRecord([
+      row({ evaluationId: "live", objectiveScores: [o("o-known", 1, 2)] }),
+      row({ evaluationId: "old", attemptId: "a2", archived: true, submittedAt: new Date("2026-09-20T09:00:00Z"),
+        objectiveScores: [o("o-known", 1, 2)] }),
+    ], describeKnown);
+    assert.deepEqual(r.exams.map(e => e.evaluationId), ["live"]);
+    assert.equal(r.objectives[0]!.sittings, 2);
+    assert.equal(r.objectives[0]!.total, 4);
+    assert.equal(r.objectives[0]!.lastSeenAt, "2026-09-20T09:00:00.000Z");
+  });
+
+  it("counts an archived provisional paper in provisionalCount", () => {
+    const r = studentRecord([
+      row({ archived: true, isProvisional: true, objectiveScores: [o("o-known", 1, 2)] }),
+    ], describeKnown);
+    assert.equal(r.exams.length, 0);
+    assert.equal(r.provisionalCount, 1);
   });
 });

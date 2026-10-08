@@ -6,6 +6,13 @@
  * unchanged — summing one student across papers is the same operation as
  * summing a class across students (see masteryRollup.test.ts), and it keeps
  * this number comparable with the class view's.
+ *
+ * Archived evaluations are left out of `exams` (archive is a tidy-away from
+ * lists) but still count in `objectives`, `sittings`, `lastSeenAt` and
+ * `provisionalCount`, exactly as `/classes/:id/mastery` counts them: archiving
+ * September's closed exam must not silently remove that evidence from a
+ * student's objectives or make the record disagree with the class gaps. So
+ * «في N أوراق» can exceed the papers listed.
  */
 import type { AttemptStatus } from "@workspace/db";
 import { aggregateClass } from "./classInsights.ts";
@@ -18,6 +25,8 @@ export interface RecordExamRow {
   title: string;
   titleAr: string;
   createdAt: Date;
+  /** Archived: hidden from the exam list, still evidence for the objectives. */
+  archived: boolean;
   attemptId: string | null;
   attemptStatus: AttemptStatus | null;
   teacherComment: string | null;
@@ -94,7 +103,8 @@ export function studentRecord(
   rows: readonly RecordExamRow[],
   describe: (objectiveId: string) => ObjectiveInfo | null,
 ): { exams: RecordExam[]; objectives: RecordObjective[]; provisionalCount: number } {
-  const exams = [...rows]
+  const exams = rows
+    .filter(r => !r.archived)
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()
       || a.evaluationId.localeCompare(b.evaluationId))
     .map((r): RecordExam => {

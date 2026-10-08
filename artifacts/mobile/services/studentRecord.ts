@@ -3,6 +3,7 @@
  * load it (CLAUDE.md: the mobile runner has no RN transform).
  */
 import { arCountPhrase } from './arCount.ts';
+import { formatListDate } from './evaluationRow.ts';
 import { lessonPickerParams, resolveLessonPrepContext } from './lessonPrep.ts';
 
 /**
@@ -42,7 +43,7 @@ export interface StudentRecordObjective {
 }
 
 export interface StudentRecord {
-  student: { id: string; displayName: string; teacherNote: string; gender: string; linked: boolean };
+  student: { id: string; displayName: string; teacherNote: string; gender: string };
   className: string;
   exams: StudentRecordExam[];
   /** Weakest first. */
@@ -70,12 +71,23 @@ export function examStatusKey(status: RecordExamStatus) {
   }
 }
 
-export function formatDay(iso: string): string {
-  return iso.slice(0, 10).replace(/-/g, '/');
+/**
+ * An objective's percentage as displayed. A value under the weak line must
+ * never round up to read as the weak line itself (59.6 → «60%» under «يحتاج
+ * دعمًا»), so it tops out one below.
+ */
+export function displayPercent(p: number): number {
+  return p < WEAK_PERCENT ? Math.min(Math.round(p), WEAK_PERCENT - 1) : Math.round(p);
 }
 
 export function sittingsLine(o: StudentRecordObjective, lang: 'ar' | 'en'): string {
-  const day = formatDay(o.lastSeenAt);
+  // Device-local, like the «تقييماتي» rows; a null date drops the clause.
+  const day = formatListDate(o.lastSeenAt, lang);
+  if (!day) {
+    return lang === 'ar'
+      ? `في ${arCountPhrase(o.sittings, 'ورقة', 'ورقتين', 'أوراق')}`
+      : `In ${o.sittings} ${o.sittings === 1 ? 'paper' : 'papers'}`;
+  }
   if (lang === 'ar') return `في ${arCountPhrase(o.sittings, 'ورقة', 'ورقتين', 'أوراق')} · آخرها ${day}`;
   return `In ${o.sittings} ${o.sittings === 1 ? 'paper' : 'papers'} · latest ${day}`;
 }

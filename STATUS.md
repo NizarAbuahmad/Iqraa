@@ -732,13 +732,16 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 | Parent | Links to the existing parent-message screen, with no marks pulled into it |
 
 - **Route.** `GET /classes/:id/students/:studentId/record` sits in
-  `routes/roster.ts`, under the router's existing `/classes` guard. Any of
-  these answers 404 «Student not found», which does not say whether the
-  student exists:
-  - a class that isn't live or isn't the teacher's;
+  `routes/roster.ts`, under the router's existing `/classes` guard. A class
+  that isn't live or isn't the teacher's answers 404 «Class not found». The
+  student cases answer 404 «Student not found»:
   - a student not in the class;
   - an archived student;
   - malformed ids.
+  Neither message says whether the student exists.
+  Draft evaluations are excluded. Archived evaluations are left out of the exams
+  list but still count in the objectives, as `/classes/:id/mastery` does, so
+  «في N أوراق» can exceed the papers listed.
   The pure core is `studentRecord()` (`modules/assessment/studentRecord.ts`).
   It builds the per-objective rollup with `aggregateClass`, unchanged, so it is
   marks-weighted (sum earned ÷ sum total), not a mean of percentages. Each
@@ -751,7 +754,8 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
   the line with its own `WEAK_PERCENT = 60` (`services/studentRecord.ts`),
   because it cannot import the server module. The server constant is not
   exported, so the pin is a comment plus a test of the literal: change one,
-  change both.
+  change both. Displayed objective percentages go through `displayPercent`, so
+  a value under 60 never reads as «60%» (59.6 shows 59).
 - **Actions.**
   - «ورقة علاجية» opens the worksheet screen with the lesson's own grade and
     subject (`lessonPickerParams`). It is hidden when the lesson can't be
@@ -764,8 +768,10 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
   - A paper row opens the marking screen. **A not-sat row is not tappable**,
     because that screen creates an attempt on mount.
 - **The note** saves in place. The class roster query is invalidated so the
-  class screen shows it. A failed save says so rather than failing silently.
-  The record refetches when the teacher comes back from marking or a quick
+  class screen shows it. A failed save says so rather than failing silently,
+  and a teacher who hasn't confirmed the roster-consent statement gets the
+  consent message in the same slot. Dates use the device-local
+  `formatListDate`, as «تقييماتي» does. The record refetches when the teacher comes back from marking or a quick
   check, and a draft being typed survives that refetch.
 - **The class screen moved** from `app/classes/[id].tsx` to
   `app/classes/[id]/index.tsx` so the record can nest under it. Links to
@@ -774,7 +780,7 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
   `student_record_action { kind }`. Neither event carries a student name or id.
 
 **Verified:**
-- api-server `studentRecord.test.ts` 11/11, and a mountOrder case (an
+- api-server `studentRecord.test.ts` 13/13, and a mountOrder case (an
   unauthenticated request to the new path is 401).
 - mobile 3275 pass / 0 fail; root typecheck 0 errors.
 - In the running web app (local Postgres + API + Expo web, a seeded chemistry
@@ -802,15 +808,9 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - the screen against production data.
 
 **Known gaps:**
-- A teacher who has not confirmed the roster-consent statement gets the
-  generic «لم تُحفظ الملاحظة» on save, not the consent message.
-  `parent-message.tsx` has the consent-specific toast and this screen
-  doesn't.
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
-- Dates are the UTC day, so a paper submitted after 21:00 UTC shows the
-  previous day in Jordan.
 
 ## Virtual labs: a PhET link and a predict–observe–explain sheet, hidden until a teacher reviews it, 2026-10-07
 

@@ -10,9 +10,10 @@ import { getStudentRecord, RosterError, updateStudent } from '@/services/roster'
 import { classQueryKey } from '@/services/rosterQueryKeys';
 import { trackEvent } from '@/services/analytics';
 import { goBack } from '@/services/navigation';
+import { formatListDate } from '@/services/evaluationRow';
 import { palette } from '@/constants/colors';
 import {
-  examStatusKey, focusObjectives, formatDay, lessonAction, paperAction, recheckAction,
+  WEAK_PERCENT, displayPercent, examStatusKey, focusObjectives, lessonAction, paperAction, recheckAction,
   sittingsLine, worksheetAction, type StudentRecordObjective,
 } from '@/services/studentRecord';
 
@@ -49,11 +50,11 @@ function ObjectiveCard({
     <View style={[styles.card, { borderColor: colors.border, backgroundColor: colors.card }]}>
       <Text style={[styles.cardTitle, { color: colors.foreground, textAlign: align }]}>{o.titleAr}</Text>
       {o.lessonTitleAr ? <Text style={[styles.meta, { color: colors.mutedForeground, textAlign: align }]}>{o.lessonTitleAr}</Text> : null}
-      <View style={[styles.barTrack, { backgroundColor: colors.muted }]} aria-label={`${Math.round(o.percent)}%`}>
-        <View style={[styles.barFill, { width: `${Math.max(2, Math.min(100, o.percent))}%`, backgroundColor: o.percent < 60 ? colors.destructive : ACCENT, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
+      <View style={[styles.barTrack, { backgroundColor: colors.muted }]} aria-label={`${displayPercent(o.percent)}%`}>
+        <View style={[styles.barFill, { width: `${Math.max(2, Math.min(100, o.percent))}%`, backgroundColor: o.percent < WEAK_PERCENT ? colors.destructive : ACCENT, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
       </View>
       <Text style={[styles.meta, { color: colors.mutedForeground, textAlign: align }]}>
-        {Math.round(o.percent)}% · {sittingsLine(o, lang)}
+        {displayPercent(o.percent)}% · {sittingsLine(o, lang)}
       </Text>
       <View style={[styles.actions, { flexDirection: row }]}>
         {ws ? <Pill label={t('studentRecordWorksheet')} onPress={() => go('worksheet', ws)} /> : null}
@@ -67,7 +68,7 @@ function ObjectiveCard({
 export default function StudentRecordScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
   const row = isRTL ? 'row-reverse' : 'row';
   const { id, studentId } = useLocalSearchParams<{ id: string; studentId: string }>();
@@ -82,7 +83,7 @@ export default function StudentRecordScreen() {
 
   const [note, setNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
-  const [noteFailed, setNoteFailed] = useState(false);
+  const [noteFailed, setNoteFailed] = useState<false | 'generic' | 'consent'>(false);
   const [showAll, setShowAll] = useState(false);
   // The draft follows the server only while the teacher has not edited it: a
   // refetch landing mid-typing must not overwrite what they are writing.
@@ -123,8 +124,10 @@ export default function StudentRecordScreen() {
       setNote(current => (current === note ? stored : current));
       void queryClient.invalidateQueries({ queryKey: classQueryKey(id) });
       void refetch();
-    } catch {
-      setNoteFailed(true);
+    } catch (e) {
+      // A guardian-less roster write is refused for consent, not for a fault;
+      // say so in the same slot instead of the generic failure.
+      setNoteFailed(e instanceof RosterError && e.code === 'roster_consent_required' ? 'consent' : 'generic');
     } finally {
       setSavingNote(false);
     }
@@ -193,12 +196,13 @@ export default function StudentRecordScreen() {
               {showAll ? data.objectives.map(o => (
                 <View key={o.objectiveId} style={[styles.listRow, { flexDirection: row, borderColor: colors.border }]}>
                   <Text style={{ flex: 1, color: colors.foreground, textAlign: align, fontFamily: 'Almarai_400Regular' }}>{o.titleAr}</Text>
-                  <Text style={{ color: o.percent < 60 ? colors.destructive : colors.foreground, fontFamily: 'ReadexPro_500Medium' }}>{Math.round(o.percent)}%</Text>
+                  <Text style={{ color: o.percent < WEAK_PERCENT ? colors.destructive : colors.foreground, fontFamily: 'ReadexPro_500Medium' }}>{displayPercent(o.percent)}%</Text>
                 </View>
               )) : null}
             </View>
           )}
 
+          {data.exams.length > 0 ? (
           <View style={{ gap: 8 }}>
             <Text style={sectionStyle}>{t('studentRecordExams')}</Text>
             {data.exams.map(e => {
@@ -212,7 +216,7 @@ export default function StudentRecordScreen() {
                     </Text>
                   </View>
                   <Text style={[styles.meta, { color: colors.mutedForeground, textAlign: align }]}>
-                    {formatDay(e.createdAt)} · {t(examStatusKey(e.status))}{e.provisional ? ` · ${t('studentRecordProvisional')}` : ''}
+                    {[formatListDate(e.createdAt, lang), t(examStatusKey(e.status))].filter(Boolean).join(' · ')}{e.provisional ? ` · ${t('studentRecordProvisional')}` : ''}
                   </Text>
                   {e.teacherComment ? <Text style={[styles.comment, { color: colors.foreground, textAlign: align, borderColor: colors.border }]}>{e.teacherComment}</Text> : null}
                 </View>
@@ -224,6 +228,7 @@ export default function StudentRecordScreen() {
               );
             })}
           </View>
+          ) : null}
 
           <View style={{ gap: 8 }}>
             <Text style={sectionStyle}>{t('studentRecordNote')}</Text>
@@ -245,7 +250,7 @@ export default function StudentRecordScreen() {
               <Text style={{ color: '#fff', fontFamily: 'ReadexPro_500Medium' }}>{t('studentRecordSaveNote')}</Text>
             </Pressable>
             {noteFailed ? (
-              <Text style={[styles.meta, { color: colors.destructive, textAlign: align }]}>{t('studentRecordNoteFailed')}</Text>
+              <Text style={[styles.meta, { color: colors.destructive, textAlign: align }]}>{noteFailed === 'consent' ? t('parentMsgConsentNeeded') : t('studentRecordNoteFailed')}</Text>
             ) : null}
           </View>
         </View>
