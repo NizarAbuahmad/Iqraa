@@ -8,6 +8,8 @@
     "./schema": "./src/schema/index.ts"
   },
   "scripts": {
+    "generate": "drizzle-kit generate",
+    "migrate": "node ./scripts/migrate.mjs",
     "push": "node ./scripts/push.mjs",
     "verify-schema": "node ./scripts/verify-schema.mjs",
     "push-force": "node ./scripts/push.mjs --force",
