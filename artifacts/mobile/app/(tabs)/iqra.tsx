@@ -2889,6 +2889,9 @@ export default function IqraScreen() {
         };
         setMessages(prev => [...prev, errMsg]);
         showToast(t('iqraChatError'));
+        // The box was cleared on send; put the question back so trying again
+        // is one tap, not retyping it. Never over something typed since.
+        if (shown) setInput(prev => prev || shown);
       } finally {
         thinkingRef.current = false;
         setIsThinking(false);

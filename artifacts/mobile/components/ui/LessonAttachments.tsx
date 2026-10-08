@@ -138,7 +138,7 @@ export function LessonAttachments({ lessonId, onChange }: Props) {
           ))}
 
           {error ? (
-            <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
           ) : null}

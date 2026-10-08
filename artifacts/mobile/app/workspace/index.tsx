@@ -26,6 +26,7 @@ import {
 } from '@/constants/materialKind';
 import { goBack } from '@/services/navigation';
 import { AR_LATIN } from '@/services/dateLabels';
+import { palette } from '@/constants/colors';
 
 const TABS: Array<{ key: MaterialType | 'all'; labelKey: string }> = [
   { key: 'all', labelKey: 'allFilter' },
@@ -267,7 +268,7 @@ export default function WorkspaceScreen() {
             <Ionicons
               name={item.isFavorite ? 'star' : 'star-outline'}
               size={20}
-              color={item.isFavorite ? '#B54708' : colors.mutedForeground}
+              color={item.isFavorite ? palette.warning : colors.mutedForeground}
             />
           </Pressable>
           <Pressable
@@ -289,6 +290,8 @@ export default function WorkspaceScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
           onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
         >
@@ -354,14 +357,14 @@ export default function WorkspaceScreen() {
           style={[
             styles.filterBtn,
             {
-              backgroundColor: favoritesOnly ? '#B54708' + '22' : colors.muted,
+              backgroundColor: favoritesOnly ? palette.warning + '22' : colors.muted,
               borderRadius: 20,
               flexDirection: isRTL ? 'row-reverse' : 'row',
             },
           ]}
         >
-          <Ionicons name={favoritesOnly ? 'star' : 'star-outline'} size={14} color={favoritesOnly ? '#B54708' : colors.mutedForeground} />
-          <Text style={[styles.filterText, { color: favoritesOnly ? '#B54708' : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
+          <Ionicons name={favoritesOnly ? 'star' : 'star-outline'} size={14} color={favoritesOnly ? palette.warning : colors.mutedForeground} />
+          <Text style={[styles.filterText, { color: favoritesOnly ? palette.warning : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
             {t('favoritesFilter')}
           </Text>
         </Pressable>

@@ -1033,10 +1033,10 @@ export default function SlidesScreen() {
                     <Ionicons
                       name={v.anySymbolic ? 'shield-checkmark' : 'library-outline'}
                       size={14}
-                      color={v.anySymbolic ? '#067647' : colors.mutedForeground}
+                      color={v.anySymbolic ? palette.success : colors.mutedForeground}
                     />
                     <Text style={[styles.verifyText, {
-                      color: v.anySymbolic ? '#067647' : colors.mutedForeground,
+                      color: v.anySymbolic ? palette.success : colors.mutedForeground,
                       textAlign: isRTL ? 'right' : 'left',
                     }]}>
                       {v.anySymbolic

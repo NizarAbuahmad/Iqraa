@@ -231,7 +231,7 @@ export default function LibraryAdminScreen() {
       contentContainerStyle={{ padding: 20, paddingTop: insets.top + 16, paddingBottom: 60, maxWidth: 720, width: '100%', alignSelf: 'center' }}
     >
       <View style={[styles.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
         <Text style={[styles.title, { color: colors.foreground, textAlign: align }]}>{t('libraryAdminTitle')}</Text>
