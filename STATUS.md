@@ -53,6 +53,17 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **The schema deploys as migrations** (2026-10-08, not yet live until
+  production is baselined). `lib/db/migrations/0000_baseline.sql` is the whole
+  48-table schema; `deploy.yml` runs `migrate` before `verify-schema` and the
+  API. CI rejects a schema edit without its migration, applies every migration
+  to an empty Postgres, and holds destructive SQL for `destructive-migration:
+  ok`. Verified locally against throwaway databases: fresh migrate (48/48 by
+  `verify-schema`), re-run is a no-op, a push-built database is refused, then
+  baselined (idempotent), then a follow-up `ADD COLUMN` migration applies on
+  top. Not verified: the CI jobs themselves and production — that needs
+  `gh workflow run db-baseline.yml` once after merge. See *Schema* in
+  `docs/deploying.md`.
 - **The chat's readiness board folds to one line** (2026-10-06). On a phone the
   empty chat showed all five «جاهزية الدرس» rows, filling most of the screen
   before a word was typed. It now opens as one tappable line («جاهزية الدرس ·
@@ -1134,8 +1145,8 @@ no schema push.
   is 18 columns in a horizontal scroll with the bar hidden, so a phone showed
   only H, Li, Be, Na, Mg, K, Ca (found from a screenshot, 2026-10-07). It now
   shows the scroll bar, a right-edge fade and a hint while more is off-screen,
-  and the electron configuration renders its exponents raised. Both are
-  typechecked, not yet seen on a device.
+  and the electron configuration renders its exponents raised (PR #913).
+  Both were checked on a device after it deployed (2026-10-08).
 - **Atomic masses are the book's rounded values**, not the precise ones (H 1,
   C 12, O 16, Na 23, Cl 35.5 ...), so H2O is 18, not 18.015. The rounded
   masses of H, C, N, O, Na, Mg, Al, Si and Ca come from the S2 student book (a
@@ -1220,9 +1231,17 @@ Spec `docs/superpowers/specs/2026-10-07-lab-class-workflow-design.md`, plan
   lab slides has not been looked at by a person.
 - The POST route's lab branch has no database test (tests have no database); it
   is covered by typecheck and build only.
-- The slide editor's `applyMediaEdit` can strip a lab slide's credit when its
-  caption is left blank, and blocks editing audio and document slides
-  (pre-existing).
+- ~~The slide editor's `applyMediaEdit` can strip a lab slide's credit when its
+  caption is left blank, and blocks editing audio and document slides.~~
+  **Fixed 2026-10-08** (found by reproducing it on real lab slides, three
+  defects): a blank caption on unchanged media now keeps the existing caption
+  (it is the credit the PDF and PPTX print; a teacher can replace it but not
+  blank it); an unchanged link on a slide whose link is not an image or YouTube
+  URL (an interactive lab item's share link, an uploaded voice note) no longer
+  blocks saving; and swapping the media drops the old credit from the slide body
+  as well as from `mediaCaption` (`contentAfterMediaEdit`), where the presenter
+  used to keep crediting the old picture. A NEW link the app cannot embed is
+  still refused. `classMediaCredits.test.ts`.
 - Image media slides are cropped (`object-fit: cover`) in the HTML and PPTX
   exports, so a labelled diagram can lose its edges there.
 - A deck's lab slides do not update if the lab item changes after the deck is
