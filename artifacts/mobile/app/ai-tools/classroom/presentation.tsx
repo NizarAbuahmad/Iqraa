@@ -1059,7 +1059,9 @@ export default function PresentationScreen() {
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     const onKey = (e: KeyboardEvent) => {
-      if (!navigation.isFocused()) return;
+      // `defaultPrevented`: the whiteboard handles Escape on this same event and
+      // pops itself first, which would make this screen look focused here.
+      if (e.defaultPrevented || !navigation.isFocused()) return;
       const action = keyboardAction(
         {
           key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey,

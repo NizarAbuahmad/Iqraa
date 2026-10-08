@@ -84,6 +84,22 @@ describe('strokeHit / eraseAt', () => {
     assert.equal(strokeHit(s, 50, 62, 1), false); // inside the box, ~8.5 from the line
   });
 
+  it('pins the bounding-box early-out on all four sides', () => {
+    const s = line('50,50 150,150'); // default width 4, radius 10 -> reach 12; box edges at 50 and 150
+    // min-X: left of the first point, on its row (distance to the vertex is 50 - x)
+    assert.equal(strokeHit(s, 39, 50, 10), true); // 11 <= 12
+    assert.equal(strokeHit(s, 37, 50, 10), false); // 13 > 12
+    // min-Y: above the first point
+    assert.equal(strokeHit(s, 50, 39, 10), true);
+    assert.equal(strokeHit(s, 50, 37, 10), false);
+    // max-Y: below the last point (150,150)
+    assert.equal(strokeHit(s, 150, 161, 10), true);
+    assert.equal(strokeHit(s, 150, 163, 10), false);
+    // max-X: right of the last point
+    assert.equal(strokeHit(s, 161, 150, 10), true);
+    assert.equal(strokeHit(s, 163, 150, 10), false);
+  });
+
   it('removes only the strokes that were hit', () => {
     const a = line('0,0 100,0');
     const b = line('0,200 100,200');
