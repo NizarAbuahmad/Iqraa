@@ -2310,6 +2310,12 @@ const translations = {
     iqraDrillReady: (title: string, detail: string, secs: number) =>
       `جهّزت لك ${title}: ${detail}، لمدة ${secs} ثانية.\n\nافتحه لتجرّبه، أو شارك رابطه مع طلبتك — يعمل دون تسجيل دخول.`,
     iqraDrillOpen: (title: string) => `🎮 افتح ${title}`,
+    messagingBlockConfirmTitle: 'حظر هذا الشخص؟',
+    messagingBlockConfirmDesc: 'لن يستطيع مراسلتك بعد الآن. يمكنك إلغاء الحظر لاحقًا من القائمة نفسها.',
+    messagingLeaveConfirmTitle: 'مغادرة المجموعة؟',
+    messagingLeaveConfirmDesc: 'لن تصلك رسائل هذه المجموعة بعد مغادرتها.',
+    messagingRemoveMemberConfirmTitle: 'إزالة هذا العضو من المجموعة؟',
+    messagingRemoveMember: 'إزالة',
   },
 
   en: {
@@ -4441,6 +4447,12 @@ const translations = {
     iqraDrillReady: (title: string, detail: string, secs: number) =>
       `Ready: ${title} — ${detail}, ${secs} seconds.\n\nOpen it to try it, or share the link with your students — no sign-in needed.`,
     iqraDrillOpen: (title: string) => `🎮 Open ${title}`,
+    messagingBlockConfirmTitle: 'Block this person?',
+    messagingBlockConfirmDesc: "They won't be able to message you. You can unblock them later from this menu.",
+    messagingLeaveConfirmTitle: 'Leave this group?',
+    messagingLeaveConfirmDesc: "You'll stop receiving this group's messages.",
+    messagingRemoveMemberConfirmTitle: 'Remove this member from the group?',
+    messagingRemoveMember: 'Remove',
   },
 } as const;
 
