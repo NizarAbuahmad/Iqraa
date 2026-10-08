@@ -83,6 +83,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
     textAlign: 'center',
-    fontFamily: 'Cairo_500Medium',
+    fontFamily: 'ReadexPro_500Medium',
   },
 });
