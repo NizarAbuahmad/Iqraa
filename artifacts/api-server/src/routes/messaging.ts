@@ -636,6 +636,25 @@ const MAX_CUSTOM_GROUP_MEMBERS = 100;
  * for every membership-management route below; it is a permanent member and
  * this is the only route that adds them (see removeParticipant's guard).
  */
+/**
+ * The bell panel's «علّم الكل مقروءًا». Moves `lastReadAt` — the unread-count
+ * mechanism — on every thread I am in, and nothing else: it deliberately
+ * writes no per-message receipts (POST /messaging/threads/:id/read), so a
+ * parent letter is never reported as seen by someone who only cleared a badge.
+ */
+router.post("/messaging/threads/read-all", async (req: AuthenticatedRequest, res) => {
+  try {
+    const updated = await db
+      .update(chatParticipants)
+      .set({ lastReadAt: new Date() })
+      .where(eq(chatParticipants.userId, req.user!.id))
+      .returning({ threadId: chatParticipants.threadId });
+    res.json({ threads: updated.length });
+  } catch (err) {
+    failMessaging(res, err, "mark all threads read", "Failed to mark messages read");
+  }
+});
+
 router.post("/messaging/threads/custom", async (req: AuthenticatedRequest, res) => {
   try {
     if (!isTeacherRole(req.user!.role)) {
