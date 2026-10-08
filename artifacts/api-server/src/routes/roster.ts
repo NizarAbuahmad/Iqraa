@@ -32,8 +32,9 @@ import {
   chatMessageReads,
   type ParentContactChannel,
 } from "@workspace/db";
-import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
-import { resolveObjectiveIds } from "@workspace/curriculum";
+import { and, asc, count, desc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { getObjectiveById, resolveObjectiveIds } from "@workspace/curriculum";
+import { studentRecord } from "../modules/assessment/studentRecord.ts";
 import { aggregateClass } from "../modules/assessment/classInsights.ts";
 import type { ObjectiveScore } from "../modules/assessment/scoring.ts";
 import {
@@ -307,6 +308,112 @@ router.get("/classes/:id/mastery", async (req: AuthenticatedRequest, res) => {
     });
   } catch (err) {
     failRoster(res, err, "class mastery", "Failed to load class mastery");
+  }
+});
+
+/**
+ * One student's record in this class — the per-student view STATUS.md listed as
+ * "deliberately not built". Scoped to this class's evaluations, so a subject's
+ * objectives stay together. Every refusal is 404, for the reason the rest of
+ * this router gives: "exists but not yours" must not be distinguishable.
+ */
+router.get("/classes/:id/students/:studentId/record", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    const studentId = req.params["studentId"] as string;
+    const teacherId = req.user!.id;
+    if (!isUuid(classId) || !isUuid(studentId)) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+    const group = await findLiveClass(classId, teacherId);
+    if (!group) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    const [student] = await db
+      .select({
+        id: students.id,
+        displayName: students.displayName,
+        teacherNote: students.teacherNote,
+        gender: students.gender,
+      })
+      .from(students)
+      .innerJoin(
+        classMemberships,
+        and(eq(classMemberships.studentId, students.id), eq(classMemberships.classGroupId, classId)),
+      )
+      .where(and(eq(students.id, studentId), eq(students.teacherId, teacherId), isNull(students.archivedAt)))
+      .limit(1);
+    if (!student) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        evaluationId: evaluations.id,
+        title: evaluations.title,
+        titleAr: evaluations.titleAr,
+        createdAt: evaluations.createdAt,
+        archivedAt: evaluations.archivedAt,
+        attemptId: attempts.id,
+        attemptStatus: attempts.status,
+        teacherComment: attempts.teacherComment,
+        submittedAt: attempts.submittedAt,
+        earned: attemptResults.earnedMarks,
+        total: attemptResults.totalMarks,
+        percent: attemptResults.percent,
+        isProvisional: attemptResults.isProvisional,
+        objectiveScores: attemptResults.objectiveScores,
+      })
+      .from(evaluations)
+      .leftJoin(attempts, and(eq(attempts.evaluationId, evaluations.id), eq(attempts.studentId, studentId)))
+      .leftJoin(attemptResults, eq(attemptResults.attemptId, attempts.id))
+      .where(
+        and(
+          eq(evaluations.classGroupId, classId),
+          // Archived rows are kept on purpose: they still count in the
+          // objectives, as in /classes/:id/mastery (studentRecord() hides them
+          // from the exam list).
+          ne(evaluations.status, "draft"),
+        ),
+      );
+
+    const [guardian] = await db
+      .select({ id: rosterLinks.id })
+      .from(rosterLinks)
+      .where(and(eq(rosterLinks.studentId, studentId), eq(rosterLinks.relation, "guardian")))
+      .limit(1);
+
+    const [lastContact] = await db
+      .select({ kind: parentContacts.kind, channel: parentContacts.channel, at: parentContacts.createdAt })
+      .from(parentContacts)
+      .where(and(eq(parentContacts.studentId, studentId), eq(parentContacts.teacherId, teacherId)))
+      .orderBy(desc(parentContacts.createdAt))
+      .limit(1);
+
+    const record = studentRecord(rows.map(({ archivedAt, ...r }) => ({ ...r, archived: archivedAt !== null })), objectiveId => {
+      const o = getObjectiveById(objectiveId);
+      return o
+        ? { titleAr: o.descriptionAr || o.description, lessonId: o.lessonId, lessonTitleAr: o.lessonTitleAr || o.lessonTitle }
+        : null;
+    });
+
+    res.json({
+      student,
+      className: group.nameAr || group.name,
+      ...record,
+      parent: {
+        linked: Boolean(guardian),
+        lastContact: lastContact
+          ? { kind: lastContact.kind, channel: lastContact.channel, at: lastContact.at.toISOString() }
+          : null,
+      },
+    });
+  } catch (err) {
+    failRoster(res, err, "student record", "Failed to load student record");
   }
 });
 

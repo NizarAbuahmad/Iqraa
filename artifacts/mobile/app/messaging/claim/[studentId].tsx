@@ -50,7 +50,7 @@ export default function ClaimCodeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
-  // The entry point in classes/[id].tsx is hidden while this is false, but a
+  // The entry point in classes/[id]/index.tsx is hidden while this is false, but a
   // deep link, a back gesture or a stale history entry can still land here.
   const studentAccounts = useStudentAccountsEnabled();
 
