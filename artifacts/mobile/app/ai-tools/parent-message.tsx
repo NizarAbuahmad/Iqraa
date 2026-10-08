@@ -416,9 +416,8 @@ export default function ParentMessageScreen() {
     try {
       for (const [i, g] of guardians.entries()) {
         const thread = await startThread(g.userId);
-        const sent = await sendMessage(thread.id, message);
+        const sent = await sendMessage(thread.id, letter.text, attachment ?? undefined);
         sentIds.push(sent.id);
-        await sendMessage(thread.id, letter.text, attachment ?? undefined);
         reached.push(names[i]);
       }
       recordContact('in_app', sentIds);

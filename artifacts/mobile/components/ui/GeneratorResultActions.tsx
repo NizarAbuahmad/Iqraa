@@ -36,7 +36,7 @@ export interface GeneratorResultActionsProps {
   savedId: string | null | undefined;
   onToast: (message: string) => void;
   saveState: SaveState;
-  onSave: () => void;
+  onSave: () => void | Promise<void>;
   /** Omit entirely for a screen with no favouriting (activity has none). */
   favorite?: { favorited: boolean; onToggle: () => void };
   /** Opens the screen's own ExportMenu. */
@@ -78,6 +78,18 @@ export function GeneratorResultActions({
   const colors = useColors();
   const { t, isRTL } = useLanguage();
   const [reporting, setReporting] = React.useState(false);
+  // A second tap while the first save's POST is in flight would create a
+  // second copy in موادي — every screen's `savedId` is only set once it returns.
+  const saving = React.useRef(false);
+  const handleSavePress = async () => {
+    if (saving.current) return;
+    saving.current = true;
+    try {
+      await onSave();
+    } finally {
+      saving.current = false;
+    }
+  };
   const [reported, setReported] = React.useState(false);
 
   // A new variantId means onRegenerate() already swapped in a fresh,
@@ -137,7 +149,7 @@ export function GeneratorResultActions({
         <MaterialClassField materialId={savedId} onToast={onToast} />
 
         <Pressable
-          onPress={onSave}
+          onPress={handleSavePress}
           style={({ pressed }) => [
             styles.actionBtn,
             {

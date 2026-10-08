@@ -164,6 +164,8 @@ async function participantOf(
   userId: string,
   opts: { includeArchived?: boolean } = {},
 ) {
+  // A malformed id is "not a participant" (404), not a uuid cast error (500).
+  if (!UUID.test(threadId)) return null;
   const [row] = await db
     .select({ participant: chatParticipants })
     .from(chatParticipants)
@@ -604,11 +606,13 @@ router.get("/messaging/threads/class/:classGroupId", async (req: AuthenticatedRe
         .select({ id: rosterLinks.id })
         .from(rosterLinks)
         .innerJoin(classMemberships, eq(classMemberships.studentId, rosterLinks.studentId))
+        .innerJoin(students, eq(students.id, rosterLinks.studentId))
         .where(
           and(
             eq(rosterLinks.userId, req.user!.id),
             eq(rosterLinks.relation, "self"),
             eq(classMemberships.classGroupId, classGroupId),
+            isNull(students.archivedAt),
           ),
         )
         .limit(1);
@@ -620,8 +624,16 @@ router.get("/messaging/threads/class/:classGroupId", async (req: AuthenticatedRe
     }
 
     const thread = await syncClassGroupThread(classGroupId, group.teacherId, group.name, group.nameAr);
-    const participants = await participantsOf(thread.id);
-    res.json({ thread, participants, isOwner: group.teacherId === req.user!.id });
+    const isOwner = group.teacherId === req.user!.id;
+    // Same view as GET /messaging/threads/:id — not the whole class to every child.
+    const participants = visibleGroupMembers({
+      members: await participantsOf(thread.id),
+      viewerId: req.user!.id,
+      viewerIsOwner: isOwner,
+      studentPostingEnabled: thread.studentPostingEnabled,
+      isStaff: isTeacherRole,
+    });
+    res.json({ thread, participants, isOwner });
   } catch (err) {
     failMessaging(res, err, "get class thread", "Failed to load class thread");
   }
@@ -913,7 +925,8 @@ router.get("/messaging/threads/:id/messages", async (req: AuthenticatedRequest, 
       return;
     }
 
-    const requestedLimit = Number(req.query["limit"]);
+    // Floored: a fractional limit reaches Postgres as a bigint parameter and 500s.
+    const requestedLimit = Math.floor(Number(req.query["limit"]));
     const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
       ? Math.min(requestedLimit, MAX_MESSAGE_LIMIT)
       : DEFAULT_MESSAGE_LIMIT;

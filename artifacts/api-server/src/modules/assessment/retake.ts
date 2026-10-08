@@ -14,6 +14,8 @@
  * - **`provisional`** — a paper with an unmarked open-ended question has no
  *   final mark yet, so there is nothing to call a fail.
  * - **`already_passed`** — a pass stands.
+ * - **`teacher_entry`** — a paper the teacher typed in is the teacher's record,
+ *   not the student's sitting (resume refuses it for the same reason).
  */
 
 /** ponytail: a flat cap, no cooldown; add a wait between tries if guessing shows up. */
@@ -21,6 +23,8 @@ export const MAX_RETAKES = 3;
 
 export interface RetakeInput {
   submitted: boolean;
+  /** The student sat it through their own link, not a teacher-typed paper. */
+  studentSitting: boolean;
   isProvisional: boolean;
   percent: unknown;
   threshold: number;
@@ -33,6 +37,7 @@ export interface RetakeInput {
 
 export type RetakeRefusal =
   | "not_submitted"
+  | "teacher_entry"
   | "provisional"
   | "not_a_quiz"
   | "closed"
@@ -41,6 +46,7 @@ export type RetakeRefusal =
 
 export function retakeDecision(i: RetakeInput): { ok: true } | { ok: false; code: RetakeRefusal } {
   if (!i.submitted) return { ok: false, code: "not_submitted" };
+  if (!i.studentSitting) return { ok: false, code: "teacher_entry" };
   if (i.isProvisional) return { ok: false, code: "provisional" };
   if (!i.singleLesson) return { ok: false, code: "not_a_quiz" };
   if (!i.open) return { ok: false, code: "closed" };
