@@ -850,7 +850,9 @@ export default function ClassDetailScreen() {
           }
           renderItem={({ item }) => (
             <Pressable
-              onPress={() => openNote(item)}
+              onPress={() =>
+                router.push({ pathname: '/classes/[id]/student/[studentId]', params: { id, studentId: item.id } })
+              }
               style={[
                 styles.row,
                 {
@@ -901,11 +903,18 @@ export default function ClassDetailScreen() {
                   </Text>
                 ) : null}
               </View>
-              <Ionicons
-                name={item.teacherNote ? 'create' : 'create-outline'}
-                size={18}
-                color={item.teacherNote ? ACCENT : colors.mutedForeground}
-              />
+              <Pressable
+                onPress={() => openNote(item)}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={t('studentRecordNote')}
+              >
+                <Ionicons
+                  name={item.teacherNote ? 'create' : 'create-outline'}
+                  size={18}
+                  color={item.teacherNote ? ACCENT : colors.mutedForeground}
+                />
+              </Pressable>
               {/* Who has actually signed up — the question a shared join code
                   immediately creates, and the one nothing on this screen used
                   to answer. Only shown once somebody has joined: thirty grey
