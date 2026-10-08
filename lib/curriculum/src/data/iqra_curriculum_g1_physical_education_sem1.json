@@ -1,0 +1,253 @@
+{
+  "meta": {
+    "grade": "الصف الأول",
+    "grade_en": "Grade 1",
+    "subject": "التربية الرياضية",
+    "subject_en": "Physical Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب لمادة التربية الرياضية للصف الأول الفصل الدراسي الأول (g1-pe-s1-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ ودروسُها الأربعةَ عشرَ من كتاب الطالب (الطبعة الأولى التجريبية 2024، أُعيدت طباعته 2025–2026؛ 43 صفحة) في 2026-10-07، بقراءةِ صفحاتِ الكتابِ كصورٍ (نصُّ الـ PDF مشوَّهُ الحروفِ عندَ الاستخراجِ المباشرِ بـ PyMuPDF — تسقطُ منهُ اللامُ في «لا» و«ال»): صفحتَي قائمةِ المحتوياتِ لعناوينِ الوحداتِ والدروسِ، ثمَّ صفحةِ افتتاحِ كلِّ وحدةٍ (لِـ«الفِكْرَةُ الْعامَّةُ») وصفحةِ افتتاحِ كلِّ درسٍ (لِـ«الْفِكْرَةُ الرَّئيسَةُ» و«الْمَفاهيمُ وَالْمُصْطَلَحاتُ الأَساسِيَّةُ»). مثلَ g1PhysicalEducationSem2.ts وg3PhysicalEducationSem1.ts، يطبَعُ هذا الكتابُ الصندوقينِ في افتتاحيّةِ كلِّ درسٍ، فنُقِلا حرفيًّا لكلِّ الدروسِ الأربعةَ عشرَ. الوحداتُ مُرَقَّمةٌ 1-3 كما يطبعُها الكتابُ نفسُهُ (ويحملُ الفصلُ الثاني الوحداتِ 4-6). العناوينُ الإنجليزيّةُ للوحداتِ والدروسِ ليستْ مطبوعةً في الكتابِ، وضعَها الناقلُ ترجمةً لعناوينِها العربيّةِ، أمّا المصطلحاتُ الإنجليزيّةُ في vocabulary فهي حرفيّةٌ منَ الكتابِ.",
+    "known_gaps": [
+      "objectives فارغةٌ لكلِّ الدروسِ: لا يطبَعُ هذا الكتابُ صندوقَ «نَتاجاتُ التَّعَلُّمِ» الخاصَّ بكلِّ درسٍ، ولا دليلَ معلمٍ لهذه المادةِ على القرصِ.",
+      "periods وtotal_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ في الكتابِ.",
+      "الباقي منْ كلِّ درسٍ — «الإحماء» و«الأنشطة» و«التهدئة» والأسئلةُ التمهيديّةُ في المربّعِ الأصفرِ وعباراتُ السلوكِ في فقاعةِ الكلامِ — نشاطاتٌ حركيّةٌ وصوريّةٌ لا حقلَ لها في هذا المخطَّطِ ولمْ تُنقَلْ؛ وكذلكَ صفحاتُ «مراجعةُ الوحدةِ» في آخرِ كلِّ وحدةٍ.",
+      "لا يطبَعُ الكتابُ عنوانًا ثانيًا لأيِّ درسٍ؛ عناوينُ الدروسِ العربيّةُ منقولةٌ من قائمةِ المحتوياتِ (ص4-5) وتطابقُ ما على صفحةِ كلِّ درسٍ.",
+      "عبارةُ «الفِكْرَةُ الْعامَّةُ» للوحدةِ الثانيةِ مطبوعةٌ «اللَّياقَةِ» بفتحةٍ على اللامِ (خطأُ تشكيلٍ في الطباعةِ) فنُقِلَتْ «اللِّياقَةِ» بكسرٍ.",
+      "مصطلحُ «أَدَواتٌ رِياضِيَّةٌ» (الوحدةُ 2، الدرسُ 5) هو المصطلحُ الوحيدُ في ذلك الدرسِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "التَّشْكيلاتُ وَالأَوْضاعُ الأَساسِيَّةُ",
+      "title_en": "Formations and Basic Positions",
+      "general_idea_ar": "الرِّياضَةُ صِحَّةٌ وَنِظامٌ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (NCCD student book: main idea from «الْفِكْرَةُ الرَّئيسَةُ», vocabulary from «الْمَفاهيمُ وَالْمُصْطَلَحاتُ الأَساسِيَّةُ»; no objectives/outcomes box printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "التَّشْكيلاتُ الرِّياضِيَّةُ",
+          "title_en": "Sports Formations",
+          "main_idea_ar": "الوُقوفُ في تَشْكيلاتٍ رِياضِيَّةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الرِّياضَةُ", "en": "Sport" },
+            { "ar": "انْضِباطٌ", "en": "Discipline" },
+            { "ar": "تَشْكيلاتٌ رِياضِيَّةٌ", "en": "Sports formations" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "أَجْزاءُ الْجِسْمِ",
+          "title_en": "Body Parts",
+          "main_idea_ar": "تَأْدِيَةُ تَمْريناتٍ تُنَمِّي عَضَلاتِ أَجْزاءِ الجِسْمِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الرَّأْسُ", "en": "Head" },
+            { "ar": "الرَّقَبَةُ", "en": "Neck" },
+            { "ar": "الجِذْعُ", "en": "Trunk" },
+            { "ar": "الذِّراعُ", "en": "Arm" },
+            { "ar": "السّاقُ", "en": "Leg" }
+          ]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "أَوْضاعُ الْجِسْمِ الأَساسِيَّةُ",
+          "title_en": "Basic Body Positions",
+          "main_idea_ar": "تَأْدِيَةُ تَمْريناتٍ مِنْ أَوْضاعٍ مُخْتَلِفَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الوُقوفُ", "en": "Standing" },
+            { "ar": "جُلوسُ التَّرْبيعِ", "en": "Criss-Cross" },
+            { "ar": "الرُّقودُ", "en": "Supine" },
+            { "ar": "الجَثْوُ (الارْتِكازُ عَلى الرُّكْبَتَيْنِ)", "en": "Kneeling" }
+          ]
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "الْجُلوسُ الصَّحيحُ",
+          "title_en": "Correct Sitting",
+          "main_idea_ar": "الجُلوسُ بِشَكْلٍ صَحيحٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الجُلوسُ", "en": "Sitting" },
+            { "ar": "الجُلوسُ الصَّحيحُ", "en": "Correct Sitting" },
+            { "ar": "تَمْريناتُ الإِطالَةِ", "en": "Stretching exercises" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "أَلْعابُ الْجَرْيِ",
+      "title_en": "Running Games",
+      "general_idea_ar": "لِلْجَرْيِ أَهَمِّيَّةٌ كَبيرَةٌ في تَنْمِيَةِ اللِّياقَةِ البَدَنِيَّةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (NCCD student book: main idea from «الْفِكْرَةُ الرَّئيسَةُ», vocabulary from «الْمَفاهيمُ وَالْمُصْطَلَحاتُ الأَساسِيَّةُ»; no objectives/outcomes box printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "الْمَشْيُ",
+          "title_en": "Walking",
+          "main_idea_ar": "المَشْيُ الصَّحيحُ بِاتِّجاهاتٍ وَارْتِفاعاتٍ مُخْتَلِفَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "أَمامَ", "en": "Front" },
+            { "ar": "خَلْفَ", "en": "Behind" },
+            { "ar": "أَعْلى", "en": "Up" },
+            { "ar": "أَسْفَلُ", "en": "Down" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "الْجَرْيُ",
+          "title_en": "Running",
+          "main_idea_ar": "الجَرْيُ بِاتِّجاهاتٍ وَمَساراتٍ مُخْتَلِفَةٍ بِشَكْلٍ صَحيحٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "يَمينٌ", "en": "Right" },
+            { "ar": "يَسارٌ", "en": "Left" },
+            { "ar": "مُسْتَقيمٌ", "en": "Straight" },
+            { "ar": "مُتَعَرِّجٌ", "en": "Zigzag" }
+          ]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "أَلْعابُ الْمُطارَدَةِ",
+          "title_en": "Chasing Games",
+          "main_idea_ar": "الجَرْيُ في مِساحاتٍ وَسُرُعاتٍ مُخْتَلِفَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "واسِعٌ", "en": "Wide" },
+            { "ar": "ضَيِّقٌ", "en": "Narrow" }
+          ]
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "الْكُرَةُ الأَسْرَعُ",
+          "title_en": "The Fastest Ball",
+          "main_idea_ar": "المُشارَكَةُ في أَلْعابٍ صَغيرَةٍ بِاسْتِخْدامِ الكُراتِ؛ لِتَحْسينِ مُسْتَوى اللِّياقَةِ البَدَنِيَّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "صَغيرٌ", "en": "Small" },
+            { "ar": "كَبيرٌ", "en": "Big" },
+            { "ar": "ثَقيلٌ", "en": "Heavy" },
+            { "ar": "خَفيفٌ", "en": "Light" }
+          ]
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "الْفَريقُ الْمُتَعاوِنُ",
+          "title_en": "The Cooperative Team",
+          "main_idea_ar": "تَعْزيزُ روحِ التَّعاوُنِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "أَدَواتٌ رِياضِيَّةٌ", "en": "Sports Tools" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "أَلْعابُ التَّوازُنِ",
+      "title_en": "Balance Games",
+      "general_idea_ar": "أُوازِنُ جِسْمي في الحَرَكَةِ وَالثَّباتِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (NCCD student book: main idea from «الْفِكْرَةُ الرَّئيسَةُ», vocabulary from «الْمَفاهيمُ وَالْمُصْطَلَحاتُ الأَساسِيَّةُ»; no objectives/outcomes box printed — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "التَّوازُنُ الثّابِتُ",
+          "title_en": "Static Balance",
+          "main_idea_ar": "تَأْدِيَةُ تَمْريناتٍ تُنَمِّي التَّوازُنَ مِنَ الثَّباتِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التَّوازُنُ", "en": "Balance" },
+            { "ar": "التَّوازُنُ الثّابِتُ", "en": "Static Balance" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "التَّوازُنُ الْمُتَحَرِّكُ",
+          "title_en": "Dynamic Balance",
+          "main_idea_ar": "تَأْدِيَةُ تَمْريناتٍ تُنَمِّي التَّوازُنَ مِنَ الحَرَكَةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التَّوازُنُ المُتَحَرِّكُ", "en": "Dynamic Balance" }
+          ]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "أَلْعابُ التَّوازُنِ",
+          "title_en": "Balance Games",
+          "main_idea_ar": "اسْتِخْدامُ مَهارَةِ التَّوازُنِ في أَثْناءِ النَّشاطِ الحَرَكِيِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "قَواعِدُ", "en": "Rules" },
+            { "ar": "قَواعِدُ اللَّعِبِ", "en": "Game Rules" }
+          ]
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "الْحَجْلُ",
+          "title_en": "Hopscotch",
+          "main_idea_ar": "القَفْزُ وَالهُبوطُ عَلى القَدَمِ نَفْسِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الحَجْلُ", "en": "Hopscotch" }
+          ]
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "تَمْريناتٌ بَدَنِيَّةٌ تَمْثيلِيَّةٌ",
+          "title_en": "Physical Acting Exercises",
+          "main_idea_ar": "تَأْدِيَةُ تَمْريناتٍ عَنْ طَريقِ تَمْثيلِ حَرَكَةِ الأَشْياءِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "تَمْريناتٌ بَدَنِيَّةٌ", "en": "Physical Exercises" },
+            { "ar": "تَمْريناتٌ تَمْثيلِيَّةٌ", "en": "Acting Exercises" }
+          ]
+        }
+      ]
+    }
+  ]
+}

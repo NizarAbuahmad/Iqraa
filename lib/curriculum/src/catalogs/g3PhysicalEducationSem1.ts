@@ -12,8 +12,7 @@
  * it — it had been declared for grade-6/7/9 alone, which would have left the
  * book catalogued and permanently unreachable. See catalog.ts.
  *
- * Semester 1 only — no Semester 2 book exists in the supplied set, same gap
- * as g6PhysicalEducationSem1.ts.
+ * Semester 2 (units 4-5) is in g3PhysicalEducationSem2.ts.
  */
 
 import raw from '../data/iqra_curriculum_g3_physical_education_sem1.json' with { type: 'json' };

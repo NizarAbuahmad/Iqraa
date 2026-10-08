@@ -135,22 +135,53 @@ jobs:
             echo "web=false" >> "$GITHUB_OUTPUT"
           fi
 
-  # Does production have every table and column this commit's code selects?
+  # Apply this commit's migrations to production before its API ships.
   #
-  # The schema is pushed by hand (see docs/deploying.md), so a merge can ship
-  # code ahead of its DDL. On 2026-10-05 PR #815 did exactly that: its
-  # description said `schema-push: done`, three columns were missing, and class
-  # creation, teaching plans and the timetable answered 503 until the DDL was
-  # run. Checking here — before the API deploys, against THIS commit's schema —
-  # turns that outage into a red run with the old revision still serving. The
-  # fix is to apply the DDL for the columns the failing job names, then re-run
-  # this workflow.
+  # The schema used to be pushed by hand, so a merge could ship code ahead of
+  # its DDL — 2026-08-19, 2026-09-16, 2026-09-26 and 2026-10-05 (PR #815: class
+  # creation, teaching plans and the timetable answered 503). Migrations are
+  # reviewed SQL, checked against an empty database in ci.yml, and applied here
+  # in one transaction; if one fails nothing is applied and the old revision
+  # keeps serving. Additive-first ordering is enforced in ci.yml, since the old
+  # revision serves against the new schema until `api` finishes.
   #
   # Same condition as `api`, since lib/db is under lib/** and the API is the
-  # only thing that reads the database.
+  # only thing that reads the database. Never cancelled mid-run, like `api`.
+  migrate:
+    name: production migrations
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: deploy-migrate
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      - name: Install
+        run: pnpm install --frozen-lockfile --filter @workspace/db...
+
+      - name: Migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm --filter @workspace/db run migrate -- --from-env
+
+  # Then confirm production has every table and column this commit's code
+  # selects — the backstop for anything a migration did not cover (a table
+  # dropped by hand, a restored backup).
   schema:
     name: production schema
-    needs: changes
+    needs: [changes, migrate]
     if: needs.changes.outputs.api == 'true'
     uses: ./.github/workflows/schema-check.yml
     secrets: inherit
