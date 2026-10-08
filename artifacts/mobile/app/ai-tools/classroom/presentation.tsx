@@ -400,7 +400,7 @@ function TeacherPanel({
         <View style={[panelStyles.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name="school-outline" size={18} color={ACCENT} />
           <Text style={[panelStyles.headerText, { fontFamily: 'ReadexPro_700Bold' }]}>{t('teacherPanelTitle')}</Text>
-          <Pressable onPress={close} style={panelStyles.closeBtn} hitSlop={12}>
+          <Pressable onPress={close} style={panelStyles.closeBtn} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('close')}>
             <Ionicons name="close" size={20} color={TEXT_MUTED} />
           </Pressable>
         </View>

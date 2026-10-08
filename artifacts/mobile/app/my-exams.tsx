@@ -58,9 +58,9 @@ const ACCENT_FILL = palette.hero;
 
 const STATE_COLOR: Record<MyExamState, string> = {
   available: ACCENT,
-  in_progress: '#B54708',
+  in_progress: palette.warning,
   submitted: '#475467',
-  result: '#067647',
+  result: palette.success,
   closed: '#667085',
 };
 
@@ -167,9 +167,10 @@ export default function MyExamsScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
           onPress={() => goBack()}
           hitSlop={10}
-          accessibilityRole="button"
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />

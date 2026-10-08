@@ -86,7 +86,10 @@ router.post("/teaching-plans", async (req: AuthenticatedRequest, res) => {
       classGroupId = await resolveClassGroupId(req.body?.classGroupId, req.user!.id);
       entries = parsePlanEntries(req.body?.entries);
     } catch (msg) {
-      res.status(400).json({ error: String(msg) });
+      // Only the plain-string refusals are the caller's fault; a driver error
+      // (malformed uuid, outage) goes to the 500 path, not back as raw SQL.
+      if (typeof msg !== "string") throw msg;
+      res.status(400).json({ error: msg });
       return;
     }
 
@@ -131,7 +134,10 @@ router.patch("/teaching-plans/:id", async (req: AuthenticatedRequest, res) => {
       const entries = parsePlanEntries(req.body?.entries);
       if (entries !== undefined) patch["entries"] = entries;
     } catch (msg) {
-      res.status(400).json({ error: String(msg) });
+      // Only the plain-string refusals are the caller's fault; a driver error
+      // (malformed uuid, outage) goes to the 500 path, not back as raw SQL.
+      if (typeof msg !== "string") throw msg;
+      res.status(400).json({ error: msg });
       return;
     }
 

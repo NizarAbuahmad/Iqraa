@@ -20,7 +20,7 @@ type Props = {
 
 export function LabFrame({ title, subtitle, children }: Props) {
   const colors = useColors();
-  const { isRTL } = useLanguage();
+  const { isRTL, t } = useLanguage();
   const insets = useSafeAreaInsets();
   const align = isRTL ? 'right' : 'left';
 
@@ -28,9 +28,10 @@ export function LabFrame({ title, subtitle, children }: Props) {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: colors.hero, paddingTop: insets.top + 12 }]}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
           onPress={() => goBack()}
           hitSlop={10}
-          accessibilityRole="button"
           style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginBottom: 8 }}
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />

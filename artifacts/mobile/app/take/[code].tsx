@@ -60,9 +60,9 @@ import {
   type StudentResponse,
   type StudentResult,
 } from '@/services/studentExam';
-import { createSaveQueue, type SaveQueue, type SaveQueueState } from '@/services/answerSaveQueue';
+import { createSaveQueue, mergeUnsavedAnswers, type SaveQueue, type SaveQueueState } from '@/services/answerSaveQueue';
 import { takeErrorKey } from '@/services/takeErrorKey';
-import { clearExamSession, loadExamSession, saveExamSession } from '@/services/examSession';
+import { clearExamSession, loadExamSession, loadUnsavedAnswers, saveExamSession, saveUnsavedAnswers } from '@/services/examSession';
 import { formatMarks } from '@/services/studentAnswers';
 import { StudentResultCard } from '@/components/StudentResultCard';
 import { DictationInput, FillBlankInput, MatchingInput, ReadAloudInput } from '@/components/QuestionInputs';
@@ -129,6 +129,9 @@ export default function TakeExamScreen() {
   // questions, and as a notice it carried over to «تم التسليم» — on a paper
   // reopened after hand-in, and on one resumed and then handed in.
   const [showResumed, setShowResumed] = useState(false);
+  // Answers kept on this device that the server did not have when the paper
+  // was re-entered; the save queue sends them as soon as it exists.
+  const resendRef = useRef<Record<string, StudentResponse>>({});
 
   /**
    * Enter the paper with a sitting the server just handed over — a fresh
@@ -139,7 +142,17 @@ export default function TakeExamScreen() {
     const state = await getExamState(claimed.token);
     setToken(claimed.token);
     setQuestions(state.questions.length ? state.questions : claimed.questions);
-    setAnswers(Object.fromEntries(state.answers.map(a => [a.questionId, a.response])));
+    const serverAnswers: Record<string, StudentResponse> = Object.fromEntries(
+      state.answers.map(a => [a.questionId, a.response]),
+    );
+    if (code && !state.submittedAt) {
+      const local = (await loadUnsavedAnswers(code)) as Record<string, StudentResponse>;
+      const { answers: merged, resend } = mergeUnsavedAnswers(serverAnswers, local);
+      resendRef.current = Object.fromEntries(resend.map(id => [id, local[id]]));
+      setAnswers(merged);
+    } else {
+      setAnswers(serverAnswers);
+    }
     // Resume wins over claim: an older API answers neither and the panel
     // simply stays empty, which is what this screen did before figures.
     setLessonIds(state.lessonIds ?? claimed.lessonIds ?? []);
@@ -266,12 +279,32 @@ export default function TakeExamScreen() {
       },
     });
     queueRef.current = queue;
+    for (const [id, response] of Object.entries(resendRef.current)) queue.set(id, response, { immediate: true });
+    resendRef.current = {};
     return () => {
       queue.dispose();
       queueRef.current = null;
     };
   }, [token]);
   const unsavedCount = saveState.failed.length;
+
+  // Mirror every answer the server has not confirmed into storage, so a
+  // reload or a killed app mid-paper does not take them with it.
+  useEffect(() => {
+    if (!code || !token) return;
+    if (phase === 'done') {
+      void saveUnsavedAnswers(code, {});
+      return;
+    }
+    // The queue's own state, not `saveState`: on re-entry the resent answers
+    // are in the queue a render before `saveState` hears of them, and writing
+    // the stale empty list would wipe them from storage in between.
+    const pending = queueRef.current?.state().pending ?? saveState.pending;
+    const unsaved = Object.fromEntries(
+      pending.filter(id => answers[id] !== undefined).map(id => [id, answers[id]]),
+    );
+    void saveUnsavedAnswers(code, unsaved);
+  }, [code, token, phase, saveState, answers]);
 
   const retryUnsaved = useCallback(async () => {
     return queueRef.current ? queueRef.current.flush() : true;
@@ -467,7 +500,7 @@ export default function TakeExamScreen() {
           accessibilityLiveRegion="polite"
           style={[
             styles.headerSub,
-            { fontFamily: 'ReadexPro_600SemiBold', textAlign: align, color: remainingMs < 60_000 ? '#FDE68A' : 'rgba(255,255,255,0.95)' },
+            { fontFamily: 'ReadexPro_600SemiBold', textAlign: align, color: remainingMs < 5 * 60_000 ? '#FDE68A' : 'rgba(255,255,255,0.95)' },
           ]}
         >
           {t('takeTimeLeft', formatCountdown(remainingMs))}
@@ -591,7 +624,7 @@ export default function TakeExamScreen() {
           </View>
 
           {/* Name the number. "Are you sure?" is not information. */}
-          <Text style={{ color: unanswered > 0 ? '#B54708' : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
+          <Text style={{ color: unanswered > 0 ? palette.warning : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
             {unanswered > 0 ? t('takeUnansweredWarning', String(unanswered)) : t('takeAllAnswered')}
           </Text>
           {error ? (
@@ -623,6 +656,20 @@ export default function TakeExamScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {header}
+      <View
+        style={{ height: 4, backgroundColor: colors.muted }}
+        accessibilityRole="progressbar"
+        accessibilityValue={{ min: 0, max: questions.length, now: questions.length - unanswered }}
+      >
+        <View
+          style={{
+            height: 4,
+            width: `${questions.length ? ((questions.length - unanswered) / questions.length) * 100 : 0}%`,
+            backgroundColor: colors.primary,
+            alignSelf: isRTL ? 'flex-end' : 'flex-start',
+          }}
+        />
+      </View>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 16 }} keyboardShouldPersistTaps="handled">
         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
@@ -922,5 +969,5 @@ const styles = StyleSheet.create({
   navBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10, paddingVertical: 14, paddingHorizontal: 18 },
   retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8, marginTop: 4 },
   primaryBtn: { alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 16, paddingHorizontal: 24, minWidth: 200 },
-  reviewDot: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10 },
+  reviewDot: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10 },
 });

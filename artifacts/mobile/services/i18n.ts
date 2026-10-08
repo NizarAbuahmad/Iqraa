@@ -838,6 +838,7 @@ const translations = {
     bellTitle: 'الإشعارات',
     bellEmpty: 'لا توجد رسائل جديدة',
     bellViewAll: 'كل الرسائل',
+    bellMarkFailed: 'تعذّر تعليمها مقروءة، حاول مرة أخرى',
     unread: (n: number) => arCountPhrase(n, 'رسالة غير مقروءة', 'رسالتان غير مقروءتين', 'رسائل غير مقروءة'),
 
     // Settings screen sections
@@ -2342,6 +2343,25 @@ const translations = {
     iqraDrillReady: (title: string, detail: string, secs: number) =>
       `جهّزت لك ${title}: ${detail}، لمدة ${secs} ثانية.\n\nافتحه لتجرّبه، أو شارك رابطه مع طلبتك — يعمل دون تسجيل دخول.`,
     iqraDrillOpen: (title: string) => `🎮 افتح ${title}`,
+    onboardingStudentParentLink: "أنا طالب أو وليّ أمر",
+    chatSetupTitle: "أكمل الإعداد ليعرف «إقرأ» حصصك ودروس يومك",
+    chatSetupClass: "أنشئ شعبتك",
+    chatSetupSchedule: "أضف جدولك",
+    showPasswordA11y: "إظهار كلمة المرور",
+    hidePasswordA11y: "إخفاء كلمة المرور",
+    passwordResetDone: "تم تغيير كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.",
+    moreOptions: "خيارات أخرى",
+    removeAttachment: "إزالة المرفق",
+    attachImage: "إرفاق صورة",
+    saveImage: "حفظ الصورة",
+    editProfilePhoto: "تغيير الصورة الشخصية",
+    removeStudentA11y: "إزالة الطالب من الشعبة",
+    messagingBlockConfirmTitle: 'حظر هذا الشخص؟',
+    messagingBlockConfirmDesc: 'لن يستطيع مراسلتك بعد الآن. يمكنك إلغاء الحظر لاحقًا من القائمة نفسها.',
+    messagingLeaveConfirmTitle: 'مغادرة المجموعة؟',
+    messagingLeaveConfirmDesc: 'لن تصلك رسائل هذه المجموعة بعد مغادرتها.',
+    messagingRemoveMemberConfirmTitle: 'إزالة هذا العضو من المجموعة؟',
+    messagingRemoveMember: 'إزالة',
   },
 
   en: {
@@ -3046,6 +3066,7 @@ const translations = {
     bellTitle: 'Notifications',
     bellEmpty: 'No new messages',
     bellViewAll: 'All messages',
+    bellMarkFailed: 'Could not mark as read, try again',
     unread: (n: number) => `${n} unread`,
 
     languageSection: 'LANGUAGE',
@@ -4505,6 +4526,25 @@ const translations = {
     iqraDrillReady: (title: string, detail: string, secs: number) =>
       `Ready: ${title} — ${detail}, ${secs} seconds.\n\nOpen it to try it, or share the link with your students — no sign-in needed.`,
     iqraDrillOpen: (title: string) => `🎮 Open ${title}`,
+    onboardingStudentParentLink: "I'm a student or a parent",
+    chatSetupTitle: "Finish setting up so Iqrra knows your periods and today's lessons",
+    chatSetupClass: "Create your class",
+    chatSetupSchedule: "Add your timetable",
+    showPasswordA11y: "Show password",
+    hidePasswordA11y: "Hide password",
+    passwordResetDone: "Your password was changed. Sign in with the new one.",
+    moreOptions: "More options",
+    removeAttachment: "Remove attachment",
+    attachImage: "Attach a photo",
+    saveImage: "Save photo",
+    editProfilePhoto: "Change profile photo",
+    removeStudentA11y: "Remove student from class",
+    messagingBlockConfirmTitle: 'Block this person?',
+    messagingBlockConfirmDesc: "They won't be able to message you. You can unblock them later from this menu.",
+    messagingLeaveConfirmTitle: 'Leave this group?',
+    messagingLeaveConfirmDesc: "You'll stop receiving this group's messages.",
+    messagingRemoveMemberConfirmTitle: 'Remove this member from the group?',
+    messagingRemoveMember: 'Remove',
   },
 } as const;
 

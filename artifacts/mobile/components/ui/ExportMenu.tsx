@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import type { QuizCopy } from '@/services/quizExport';
+import { palette } from '@/constants/colors';
 
 interface ExportOption {
   id: string;
@@ -90,7 +91,7 @@ export function ExportMenu({
       icon: 'share-outline',
       label: labels.shareLabel,
       sublabel: labels.shareSub,
-      color: '#1D4ED8',
+      color: palette.info,
       onPress: onShare,
     },
     {
@@ -106,7 +107,7 @@ export function ExportMenu({
       icon: 'document-outline',
       label: labels.pdfLabel,
       sublabel: labels.pdfSub,
-      color: '#D92D20',
+      color: palette.destructive,
       loading: loadingPDF,
       onPress: onPDF,
     },

@@ -11,6 +11,7 @@ import { MAX_RETAKES, retakeDecision, type RetakeInput } from "../retake.ts";
 function input(over: Partial<RetakeInput> = {}): RetakeInput {
   return {
     submitted: true,
+    studentSitting: true,
     isProvisional: false,
     percent: "40.00",
     threshold: 80,
@@ -28,6 +29,10 @@ describe("retakeDecision", () => {
 
   it("refuses a sitting that was never handed in", () => {
     assert.deepEqual(retakeDecision(input({ submitted: false })), { ok: false, code: "not_submitted" });
+  });
+
+  it("refuses a paper the teacher typed in — it is not the student's to throw away", () => {
+    assert.deepEqual(retakeDecision(input({ studentSitting: false })), { ok: false, code: "teacher_entry" });
   });
 
   it("refuses a provisional paper — its mark is not final, so it is not a fail yet", () => {

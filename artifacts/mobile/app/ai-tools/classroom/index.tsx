@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
+  Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import { arCountPhrase } from '@/services/arCount';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { readableOn } from '@/services/readableColor';
 import { palette } from '@/constants/colors';
+import { Toast } from '@/components/ui/Toast';
 
 const ACCENT = palette.primary;
 
@@ -34,11 +35,14 @@ export default function ClassroomHubScreen() {
 
   const [query,  setQuery]  = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [toast, setToast] = useState('');
 
   useFocusEffect(
     useCallback(() => {
       if (params.noActivity === '1') {
-        Alert.alert('', t('buildActivityFirst' as any));
+        // A toast, not Alert.alert: react-native-web draws nothing for it, so
+        // on the web build this message never appeared.
+        setToast(t('buildActivityFirst' as any));
         router.setParams({ noActivity: undefined } as any);
       }
     }, [params.noActivity]),
@@ -206,6 +210,7 @@ export default function ClassroomHubScreen() {
           )}
         </View>
       </ScrollView>
+      <Toast visible={!!toast} message={toast} onHide={() => setToast('')} />
     </View>
   );
 }

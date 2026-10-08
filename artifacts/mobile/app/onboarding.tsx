@@ -222,6 +222,16 @@ export default function OnboardingScreen() {
             style={styles.nextBtn}
           />
         </View>
+        {/* Students and parents sign up too, and seven slides about preparing
+            lessons are not about them. This skips to the one that is. */}
+        {index === 0 && (
+          <Button
+            label={t('onboardingStudentParentLink')}
+            onPress={() => { Haptics.selectionAsync(); setIndex(SLIDES.length - 1); }}
+            variant="ghost"
+            size="md"
+          />
+        )}
       </View>
     </View>
   );
