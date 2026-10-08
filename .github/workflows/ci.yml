@@ -52,16 +52,25 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
-      # i18nTerminology.test.ts bans the misspelling «إقرأ», but it only reads
-      # i18n.ts — so the name still reached verification emails, the chat
-      # system prompt and the Play listing. Same ban, over the files that
-      # actually ship copy. Book text under lib/curriculum quotes ministry
-      # PDFs verbatim and is deliberately out of scope.
-      - name: Brand is «اقرأ», never «إقرأ»
+      # The brand is «إقرأ» (hamzat qatʿ) — Nizar, 2026-10-07, site first, then
+      # the app. The verb «اقرأ» (read) is legitimate copy — reading activities,
+      # lab steps, slide steps, prompt guidance — so this is not a blanket ban:
+      # it checks the files that carry the product's name (none of them uses the
+      # verb) and the quoted form «اقرأ» anywhere copy ships from. i18n copy is
+      # also covered by i18nTerminology.test.ts. Book text under lib/curriculum
+      # quotes ministry PDFs verbatim, and the marketing renders keep the text
+      # they were produced with; both are out of scope.
+      - name: Brand is «إقرأ», never «اقرأ»
         run: |
-          paths=(artifacts/*/src artifacts/mobile/app artifacts/mobile/components artifacts/mobile/services marketing ':!*i18nTerminology.test.ts')
-          if git grep -nI 'إقرأ' -- "${paths[@]}"; then
-            echo "::error::«إقرأ» is hamzat qatʿ — the brand is «اقرأ» (hamzat wasl)."
+          named=(artifacts/api-server/src/lib/email.ts artifacts/api-server/src/lib/chatPrompts.ts
+                 artifacts/mobile/app.json artifacts/mobile/public/manifest.webmanifest artifacts/mobile/scripts/inject-pwa.mjs
+                 artifacts/mobile/services/i18n.ts artifacts/mobile/services/ai/intentRouter.ts
+                 artifacts/mobile/services/exportHtml.ts artifacts/mobile/services/exportText.ts artifacts/mobile/services/deckSlidesHtml.ts
+                 artifacts/mobile/services/commandPalette.ts artifacts/mobile/services/claimCodeMessage.ts artifacts/mobile/services/mathSupportResources.ts
+                 artifacts/mobile/components/RosterConsentGate.tsx artifacts/mobile/components/ui/IqraaMark.tsx)
+          paths=(artifacts/*/src artifacts/mobile/app artifacts/mobile/components artifacts/mobile/services ':!*i18nTerminology.test.ts')
+          if git grep -nI 'اقرأ' -- "${named[@]}" || git grep -nI '«اقرأ»' -- "${paths[@]}"; then
+            echo "::error::«اقرأ» is the old spelling — the brand is «إقرأ» (hamzat qatʿ). The verb «read» is fine, but not in a file that names the product, and never in guillemets."
             exit 1
           fi
 
