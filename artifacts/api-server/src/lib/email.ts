@@ -16,10 +16,10 @@ function renderEmailShell(bodyHtml: string): string {
               <table role="presentation" cellpadding="0" cellspacing="0" dir="rtl">
                 <tr>
                   <td style="padding-inline-end:10px;vertical-align:middle;">
-                    <img src="https://www.iqrra.com/icon-192.png" width="36" height="36" alt="اقرأ" style="display:block;border-radius:8px;" />
+                    <img src="https://www.iqrra.com/icon-192.png" width="36" height="36" alt="إقرأ" style="display:block;border-radius:8px;" />
                   </td>
                   <td style="vertical-align:middle;">
-                    <div style="font-size:17px;font-weight:bold;color:#FFFFFF;line-height:1.3;">اقرأ <span style="font-weight:normal;color:#94A3B8;font-size:13px;">Iqrra</span></div>
+                    <div style="font-size:17px;font-weight:bold;color:#FFFFFF;line-height:1.3;">إقرأ <span style="font-weight:normal;color:#94A3B8;font-size:13px;">Iqrra</span></div>
                     <div style="font-size:12px;color:#94A3B8;line-height:1.4;">رفيقك في تحضير الحصص · AI Teaching Assistant</div>
                   </td>
                 </tr>
@@ -69,7 +69,7 @@ export async function sendVerificationEmail(to: string, code: string): Promise<b
       body: JSON.stringify({
         from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
         to,
-        subject: "رمز تأكيد بريدك الإلكتروني في اقرأ / Your Iqrra verification code",
+        subject: "رمز تأكيد بريدك الإلكتروني في إقرأ / Your Iqrra verification code",
         html: renderVerificationEmailHtml(code),
       }),
     });
@@ -88,9 +88,9 @@ function renderVerificationEmailHtml(code: string): string {
   return renderEmailShell(`
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">
       <p>مرحبًا،</p>
-      <p>رمز تأكيد بريدك الإلكتروني في اقرأ هو:</p>
+      <p>رمز تأكيد بريدك الإلكتروني في إقرأ هو:</p>
       <p style="font-size:28px;font-weight:bold;letter-spacing:4px;background:#F1F5F9;border-radius:8px;padding:12px;text-align:center;">${code}</p>
-      <p>يصلح هذا الرمز لمدة 15 دقيقة. إذا لم تطلب إنشاء حساب في اقرأ، يمكنك تجاهل هذه الرسالة.</p>
+      <p>يصلح هذا الرمز لمدة 15 دقيقة. إذا لم تطلب إنشاء حساب في إقرأ، يمكنك تجاهل هذه الرسالة.</p>
     </div>
     <hr style="border:none;border-top:1px solid #E2E8F0;" />
     <div dir="ltr" style="font-family:Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-top:24px;">
@@ -129,7 +129,7 @@ export async function sendPasswordResetEmail(to: string, code: string): Promise<
       body: JSON.stringify({
         from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
         to,
-        subject: "رمز إعادة تعيين كلمة المرور في اقرأ / Your Iqrra password reset code",
+        subject: "رمز إعادة تعيين كلمة المرور في إقرأ / Your Iqrra password reset code",
         html: renderPasswordResetEmailHtml(code),
       }),
     });
@@ -186,7 +186,7 @@ function renderGoogleAccountNoticeHtml(): string {
   return renderEmailShell(`
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">
       <p>مرحبًا،</p>
-      <p>طلب أحدهم (على الأرجح أنت) رمز إعادة تعيين كلمة مرور لهذا البريد، لكن حسابك في اقرأ لا يستخدم كلمة مرور — إنه مرتبط بحساب جوجل.</p>
+      <p>طلب أحدهم (على الأرجح أنت) رمز إعادة تعيين كلمة مرور لهذا البريد، لكن حسابك في إقرأ لا يستخدم كلمة مرور — إنه مرتبط بحساب جوجل.</p>
       <p>سجّل الدخول من زر «المتابعة عبر جوجل» بدلاً من ذلك.</p>
     </div>
     <hr style="border:none;border-top:1px solid #E2E8F0;" />
@@ -202,7 +202,7 @@ function renderPasswordResetEmailHtml(code: string): string {
   return renderEmailShell(`
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">
       <p>مرحبًا،</p>
-      <p>رمز إعادة تعيين كلمة المرور في اقرأ هو:</p>
+      <p>رمز إعادة تعيين كلمة المرور في إقرأ هو:</p>
       <p style="font-size:28px;font-weight:bold;letter-spacing:4px;background:#F1F5F9;border-radius:8px;padding:12px;text-align:center;">${code}</p>
       <p>يصلح هذا الرمز لمدة 15 دقيقة. إذا لم تطلب إعادة تعيين كلمة المرور فلا حاجة إلى فعل شيء، وكلمة مرورك الحالية تبقى كما هي.</p>
     </div>

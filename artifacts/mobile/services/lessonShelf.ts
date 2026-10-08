@@ -217,7 +217,7 @@ export function askAboutResourceMessage(
 /**
  * Everything a jump into chat needs to answer about the right thing.
  *
- * The two entry points on the lesson page — the «اسأل اقرأ» button and every
+ * The two entry points on the lesson page — the «اسأل إقرأ» button and every
  * shelf row — used to assemble these params inline, and both omitted anything
  * the chat screen could pin retrieval to. The lesson id was passed but only
  * ever used to draw an "open lesson" chip, so a reply came back about whatever
