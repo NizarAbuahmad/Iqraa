@@ -121,7 +121,7 @@ import {
   type SessionDocument,
 } from '@/services/documents';
 import { lessonPickerParams, resolveLessonPrepContext, subjectPickerLabels, topicPickerParams } from '@/services/lessonPrep';
-import { loadNextPeriod } from '@/services/schedule';
+import { loadNextPeriod, loadTimetable } from '@/services/schedule';
 import { formatNextPeriod } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
 import { listClasses, type ClassGroup } from '@/services/roster';
@@ -1462,6 +1462,9 @@ export default function IqraScreen() {
   const [prepMaterials, setPrepMaterials] = useState<SavedMaterial[]>([]);
   /** For the board's «جاهزة · أمس · العاشر أ» — which class a material is filed under. */
   const [prepClasses, setPrepClasses] = useState<ClassGroup[]>([]);
+  // What a new teacher still has to set up before the lesson card can follow
+  // their week: null until known, so the card never flashes on a slow load.
+  const [setupNeed, setSetupNeed] = useState<'class' | 'timetable' | null>(null);
   /** «الحصة القادمة · العاشر ب · 10:15» when the chat's lesson came from the timetable. */
   const [periodLine, setPeriodLine] = useState('');
   const [exportText, setExportText] = useState('');
@@ -1534,7 +1537,15 @@ export default function IqraScreen() {
   */
   const loadPrepMaterials = useCallback(() => {
     getAllItems().then(setPrepMaterials).catch(() => {});
-    listClasses().then(setPrepClasses).catch(() => {});
+    listClasses()
+      .then(list => {
+        setPrepClasses(list);
+        if (list.length === 0) { setSetupNeed('class'); return; }
+        // Same rule as the desktop Today nudge: a timetable step only once
+        // there is a class to put in it.
+        return loadTimetable().then(tt => setSetupNeed(tt?.setup?.step === 'timetable' ? 'timetable' : null));
+      })
+      .catch(() => {});
   }, []);
   useFocusEffect(useCallback(() => { loadPrepMaterials(); }, [loadPrepMaterials]));
 
@@ -3143,7 +3154,11 @@ export default function IqraScreen() {
     const artifact = CHAT_NATIVE_TOOLS[tool.id];
     // Without a lesson there is nothing to generate about, so the tool's own
     // screen opens instead (it has the picker).
-    if (artifact && topic) {
+    //
+    // The worksheet always opens its own screen: the in-chat paper had no
+    // difficulty levels and no answer checking, so "+ → ورقة عمل" and the
+    // board's «اصنع» gave a teacher two different worksheets for one lesson.
+    if (artifact && topic && tool.id !== 'worksheet') {
       // `false` = generate rather than open: the teacher asked for the tool, not
       // for whatever was made earlier.
       handleResourcePress(artifact, false);
@@ -3383,6 +3398,35 @@ export default function IqraScreen() {
     const toolParams = { ...(topic ? { topic } : {}), ...(idx ?? {}) };
     return (
       <View style={{ width: '100%', marginTop: 14, gap: 8 }}>
+        {/* A phone was never asked to set up a class or a timetable: the
+            only prompt lived on the desktop Today screen, and Classes and
+            Schedule sit under Profile. */}
+        {setupNeed ? (
+          <View
+            style={{
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+              alignItems: 'center',
+              gap: 10,
+              padding: 12,
+              borderRadius: 12,
+              backgroundColor: colors.secondary,
+            }}
+          >
+            <Ionicons name={setupNeed === 'class' ? 'people-outline' : 'calendar-outline'} size={18} color={colors.primary} />
+            <Text style={{ flex: 1, fontSize: 14, lineHeight: 22, fontFamily: 'Almarai_400Regular', color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('chatSetupTitle')}
+            </Text>
+            <Pressable
+              onPress={() => router.push((setupNeed === 'class' ? '/classes' : '/schedule') as never)}
+              accessibilityRole="button"
+              style={({ pressed }) => ({ backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, opacity: pressed ? 0.85 : 1 })}
+            >
+              <Text style={{ color: colors.primaryForeground, fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' }}>
+                {t(setupNeed === 'class' ? 'chatSetupClass' : 'chatSetupSchedule')}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
         {periodLine ? (
           <View
             style={{

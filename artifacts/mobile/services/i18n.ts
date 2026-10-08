@@ -2335,6 +2335,10 @@ const translations = {
     iqraDrillReady: (title: string, detail: string, secs: number) =>
       `جهّزت لك ${title}: ${detail}، لمدة ${secs} ثانية.\n\nافتحه لتجرّبه، أو شارك رابطه مع طلبتك — يعمل دون تسجيل دخول.`,
     iqraDrillOpen: (title: string) => `🎮 افتح ${title}`,
+    onboardingStudentParentLink: "أنا طالب أو وليّ أمر",
+    chatSetupTitle: "أكمل الإعداد ليعرف «إقرأ» حصصك ودروس يومك",
+    chatSetupClass: "أنشئ شعبتك",
+    chatSetupSchedule: "أضف جدولك",
     showPasswordA11y: "إظهار كلمة المرور",
     hidePasswordA11y: "إخفاء كلمة المرور",
     passwordResetDone: "تم تغيير كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.",
@@ -4506,6 +4510,10 @@ const translations = {
     iqraDrillReady: (title: string, detail: string, secs: number) =>
       `Ready: ${title} — ${detail}, ${secs} seconds.\n\nOpen it to try it, or share the link with your students — no sign-in needed.`,
     iqraDrillOpen: (title: string) => `🎮 Open ${title}`,
+    onboardingStudentParentLink: "I'm a student or a parent",
+    chatSetupTitle: "Finish setting up so Iqrra knows your periods and today's lessons",
+    chatSetupClass: "Create your class",
+    chatSetupSchedule: "Add your timetable",
     showPasswordA11y: "Show password",
     hidePasswordA11y: "Hide password",
     passwordResetDone: "Your password was changed. Sign in with the new one.",

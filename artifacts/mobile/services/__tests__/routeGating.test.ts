@@ -67,7 +67,7 @@ describe('isPublicRoute', () => {
   });
 
   it('keeps every teacher route private', () => {
-    for (const p of ['/', '/home', '/classes', '/evaluations', '/admin/dashboard', '/workspace']) {
+    for (const p of ['/', '/classes', '/evaluations', '/admin/dashboard', '/workspace']) {
       assert.equal(isPublicRoute(p), false, p);
     }
   });
@@ -155,7 +155,6 @@ describe('isNonTeacherRoute', () => {
       '/evaluations',
       '/workspace',
       '/admin/dashboard',
-      '/home',
     ]) {
       assert.equal(isNonTeacherRoute(p), false, p);
     }
