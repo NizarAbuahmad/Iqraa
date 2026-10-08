@@ -31,9 +31,9 @@ import {
   canTogglePause, slideIsRTL, tickTimer, timerColor, timerSecondsForSlide, timerShouldTick, toggleFullscreen,
 } from '@/services/presentationUtils';
 import { openExternal } from '@/services/externalLinks';
-import Svg, { Circle, Line, Path, Polyline, Rect } from 'react-native-svg';
+import Svg, { Circle, G, Line, Path, Polyline, Rect, Text as SvgText } from 'react-native-svg';
 import { DECK_ICON_SHAPES, iconForGlyph, type DeckIconName } from '@/services/deckIcons';
-import { plotGeometry, visualForSlide } from '@/services/deckVisuals';
+import { chartGeometry, plotGeometry, seriesColor, visualForSlide } from '@/services/deckVisuals';
 // Shared with both exports so the projected slide and the exported one cannot
 // disagree about what a bullet, an equation or a section glyph is.
 import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet, workingSteps } from '@/services/deckText';
@@ -83,31 +83,32 @@ function VisualView({ slide }: { slide: ActivitySlide }) {
   const H = 320;
 
   if (visual.kind === 'chart') {
-    const { categories, values } = visual;
-    const max = Math.max(...values, 0);
-    if (!categories.length || max <= 0) return null;
-    const pad = 30;
-    const w = W - pad * 2;
-    const h = H - pad * 2;
-    const slot = w / categories.length;
-    const barW = slot * 0.6;
+    // The same geometry the PDF draws. This used to be a private bar loop that
+    // ignored `chartType` and drew no labels, so a pie projected as unlabeled
+    // bars — a different picture from the one in the exported file.
+    const g = chartGeometry(visual, W, H);
+    if (!g) return null;
     return (
       <View style={styles.visualWrap}>
         <Svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H}>
-          {values.map((v, i) => {
-            const bh = (Math.max(0, v) / max) * h;
-            return (
-              <Rect
-                key={i}
-                x={pad + i * slot + (slot - barW) / 2}
-                y={pad + h - bh}
-                width={barW}
-                height={bh}
-                rx={3}
-                fill={VISUAL_COLORS[i % VISUAL_COLORS.length]}
-              />
-            );
-          })}
+          {g.kind === 'pie' ? (
+            <>
+              {g.slices.map((s, i) => <Path key={i} d={s.d} fill={s.fill} opacity={0.9} />)}
+              {g.legend.map((l, i) => (
+                <G key={i}>
+                  <Rect x={l.x} y={l.y - 11} width={12} height={12} rx={2} fill={l.fill} />
+                  <SvgText x={l.x + 18} y={l.y} fontSize={13} fill="#4B5563">{l.label}</SvgText>
+                </G>
+              ))}
+            </>
+          ) : (
+            g.bars.map((b, i) => (
+              <G key={i}>
+                <Rect x={b.x} y={b.y} width={b.w} height={b.h} rx={3} fill={b.fill} />
+                <SvgText x={b.labelX} y={b.labelY} fontSize={11} textAnchor="middle" fill="#6B7280">{b.label}</SvgText>
+              </G>
+            ))
+          )}
         </Svg>
       </View>
     );
@@ -125,18 +126,20 @@ function VisualView({ slide }: { slide: ActivitySlide }) {
             key={i}
             points={sr.points.map(pt => `${pt.x},${pt.y}`).join(' ')}
             fill="none"
-            stroke={VISUAL_COLORS[i % VISUAL_COLORS.length]}
+            stroke={seriesColor(i)}
             strokeWidth={2.5}
             strokeLinejoin="round"
             strokeLinecap="round"
           />
         ))}
+        {/* Which curve is which, when there is more than one — as the PDF does. */}
+        {g.series.length > 1 && g.series.map((sr, i) => (
+          <SvgText key={`l${i}`} x={12} y={18 + i * 16} fontSize={12} fill={seriesColor(i)}>{sr.label}</SvgText>
+        ))}
       </Svg>
     </View>
   );
 }
-
-const VISUAL_COLORS = ['#007C74', '#C2410C', '#4F46E5', '#B91C1C'];
 
 // ─── Graph slide ──────────────────────────────────────────────────────────────
 // The curve is drawn from the slide's own commands as react-native-svg — the

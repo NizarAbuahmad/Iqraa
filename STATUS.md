@@ -711,6 +711,35 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Five deck-rendering defects fixed, 2026-10-08
+
+A read of the whole slides pipeline on main (prompt → three renderers)
+turned up five defects that each corrupted output today, all fixed in one PR:
+
+- **PPTX cover/divider text was unreadable on a photo.** The scrim under a hero
+  photo was `DECK_BG` at 75% — written when the deck was near-black, left in
+  place when the palette went cream (2026-10-05), so white text sat on a cream
+  wash. `exportPptx.ts` now has its own dark `HERO_SCRIM`.
+- **The prompt sent control characters.** `rac`, `	heta`, `	imes` sat
+  unescaped in the template literal, so the model read a form feed and tabs
+  where the LaTeX ban named its examples. Pinned by a test that rejects ``
+  and `	` in the built prompt.
+- **The projector drew every chart as unlabeled bars.** `presentation.tsx` had
+  a private bar loop that ignored `chartType` and labelled nothing, while the
+  PDF of the same deck drew a pie. Both now draw from `chartGeometry()` in
+  `deckVisuals.ts`, and both pie renderings gained a legend naming each share.
+- **Exports named a heading face the app never loads.** The 2026-08-18 entry
+  below says Cairo; the app moved to Readex Pro since, and the PDF and PPTX had
+  not. Both now name Readex Pro, and the PDF test refuses the old name.
+- **Edits made while photos loaded were lost.** Prompt Slides swapped in a
+  whole enriched copy of the deck when Unsplash and YouTube came back.
+  `searchDeckMedia` now returns a patch keyed by slide object and
+  `applyDeckMedia` merges it into the deck as it stands — an edited slide keeps
+  its edit, a deleted one stays deleted, a regenerated deck is left alone.
+
+3282 mobile tests and 49 prompt tests green; mobile typecheck clean against
+the worktree's own libs.
+
 ## Virtual labs: a PhET link and a predict–observe–explain sheet, hidden until a teacher reviews it, 2026-10-07
 
 Grade 10's «تجربة استهلالية» lessons had no content (the book's labs are
