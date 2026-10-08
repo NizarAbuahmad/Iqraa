@@ -58,6 +58,7 @@ import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { saveRemoteImage } from '@/services/share';
 import { goBack } from '@/services/navigation';
+import { confirm } from '@/services/confirm';
 
 
 export default function ThreadScreen() {
@@ -248,6 +249,13 @@ export default function ThreadScreen() {
 
   const handleRemoveMember = async (userId: string) => {
     if (!threadId || memberActionUserId) return;
+    const ok = await confirm({
+      title: t('messagingRemoveMemberConfirmTitle'),
+      confirmLabel: t('messagingRemoveMember'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
     setMemberActionUserId(userId);
     try {
       await removeGroupMember(threadId, userId);
@@ -261,6 +269,14 @@ export default function ThreadScreen() {
 
   const handleLeaveGroup = async () => {
     if (!threadId || !user || leaving) return;
+    const ok = await confirm({
+      title: t('messagingLeaveConfirmTitle'),
+      message: t('messagingLeaveConfirmDesc'),
+      confirmLabel: t('messagingLeaveGroup'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
     setLeaving(true);
     try {
       await removeGroupMember(threadId, user.id);
@@ -274,6 +290,17 @@ export default function ThreadScreen() {
   const toggleBlock = async () => {
     if (!thread?.otherParticipant || blocking) return;
     setMenuOpen(false);
+    // Blocking cuts a conversation off, so it asks; unblocking only restores it.
+    if (!thread.isBlocked) {
+      const ok = await confirm({
+        title: t('messagingBlockConfirmTitle'),
+        message: t('messagingBlockConfirmDesc'),
+        confirmLabel: t('messagingBlock'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
     setBlocking(true);
     try {
       if (thread.isBlocked) await unblockUser(thread.otherParticipant.userId);
@@ -604,7 +631,13 @@ export default function ThreadScreen() {
                     {item.firstName} {item.lastName}
                   </Text>
                   {item.userId !== thread?.createdBy ? (
-                    <Pressable onPress={() => handleRemoveMember(item.userId)} disabled={memberActionUserId === item.userId} hitSlop={10}>
+                    <Pressable
+                      onPress={() => handleRemoveMember(item.userId)}
+                      disabled={memberActionUserId === item.userId}
+                      hitSlop={10}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t('messagingRemoveMember')} ${item.firstName} ${item.lastName}`}
+                    >
                       <Ionicons name="close-circle" size={20} color={colors.destructive} />
                     </Pressable>
                   ) : null}

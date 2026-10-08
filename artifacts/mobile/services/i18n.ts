@@ -2344,6 +2344,12 @@ const translations = {
     saveImage: "حفظ الصورة",
     editProfilePhoto: "تغيير الصورة الشخصية",
     removeStudentA11y: "إزالة الطالب من الشعبة",
+    messagingBlockConfirmTitle: 'حظر هذا الشخص؟',
+    messagingBlockConfirmDesc: 'لن يستطيع مراسلتك بعد الآن. يمكنك إلغاء الحظر لاحقًا من القائمة نفسها.',
+    messagingLeaveConfirmTitle: 'مغادرة المجموعة؟',
+    messagingLeaveConfirmDesc: 'لن تصلك رسائل هذه المجموعة بعد مغادرتها.',
+    messagingRemoveMemberConfirmTitle: 'إزالة هذا العضو من المجموعة؟',
+    messagingRemoveMember: 'إزالة',
   },
 
   en: {
@@ -4509,6 +4515,12 @@ const translations = {
     saveImage: "Save photo",
     editProfilePhoto: "Change profile photo",
     removeStudentA11y: "Remove student from class",
+    messagingBlockConfirmTitle: 'Block this person?',
+    messagingBlockConfirmDesc: "They won't be able to message you. You can unblock them later from this menu.",
+    messagingLeaveConfirmTitle: 'Leave this group?',
+    messagingLeaveConfirmDesc: "You'll stop receiving this group's messages.",
+    messagingRemoveMemberConfirmTitle: 'Remove this member from the group?',
+    messagingRemoveMember: 'Remove',
   },
 } as const;
 

@@ -104,6 +104,16 @@ type GradeDraft = { marks: string; note: string; saved: string; grader?: Grader 
  * that in the teacher's box would make them the author of a line they never
  * wrote the moment they saved anything else on that question.
  */
+/**
+ * A mark sitting in its box that the server has not accepted: a scan
+ * proposal, or a typed mark whose box never lost focus. Compared as numbers
+ * so «٥» against a saved "5" is not dirty.
+ */
+function isUnsavedMark(d: GradeDraft | undefined): boolean {
+  if (!d || d.marks.trim() === '') return false;
+  return d.saved === '' || Number(toLatinDigits(d.marks.trim())) !== Number(d.saved);
+}
+
 function gradeDrafts(rows: AttemptQuestionGrade[]): Record<string, GradeDraft> {
   return Object.fromEntries(
     rows.map(g => [
@@ -194,8 +204,8 @@ export default function AnswerEntryScreen() {
    */
   const commitGrade = useCallback(
     async (question: EvaluationQuestion, marks: string, note: string) => {
-      if (!attemptId) return;
-      if (marks.trim() === '') return;
+      if (!attemptId) return false;
+      if (marks.trim() === '') return true;
       const max = Number(question.marks);
       const value = Number(toLatinDigits(marks.trim()));
       if (!Number.isFinite(value) || value < 0 || value > max) {
@@ -206,15 +216,17 @@ export default function AnswerEntryScreen() {
           const current = prev[question.id];
           return current ? { ...prev, [question.id]: { ...current, marks: current.saved } } : prev;
         });
-        return;
+        return false;
       }
       try {
         const res = await setQuestionGrade(attemptId, question.id, { awardedMarks: value, note });
         setGradeField(question.id, { grader: 'teacher', saved: String(value) });
         setResult(res.result);
         setNextSteps(res.recommendations ?? []);
+        return true;
       } catch {
         showToast(t('markSaveFailed'));
+        return false;
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -297,6 +309,13 @@ export default function AnswerEntryScreen() {
     setSubmitting(true);
     setError('');
     try {
+      // Submit re-reads every mark from the server, so a mark still only in
+      // its box — every scan proposal, or a box that never lost focus — would
+      // be wiped. Save those first; if one is refused, stop with it on screen.
+      for (const q of questions) {
+        const d = grades[q.id];
+        if (isUnsavedMark(d) && !(await commitGrade(q, d!.marks, d!.note))) return;
+      }
       await submitAttempt(attemptId);
       // Re-read rather than patching state from the response: submit returns
       // only the marks it produced, and the machine may have just replaced a
@@ -312,7 +331,7 @@ export default function AnswerEntryScreen() {
       showToast(t('attemptGradedToast'));
       scrollRef.current?.scrollTo({ y: 0, animated: true });
     } catch (err) {
-      setError(err instanceof EvaluationError ? err.message : t('attemptSubmitFailed'));
+      setError(t('attemptSubmitFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -761,6 +780,7 @@ function GradeRow({
   const marks = grade?.marks ?? '';
   const note = grade?.note ?? '';
   const byTeacher = grade?.grader === 'teacher';
+  const unsaved = isUnsavedMark(grade);
 
   return (
     <View style={[styles.gradeRow, { borderTopColor: colors.border }]}>
@@ -773,7 +793,7 @@ function GradeRow({
           onChangeText={v => onChange({ marks: v })}
           onBlur={() => onCommit(marks, note)}
           keyboardType="decimal-pad"
-          style={[styles.markInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+          style={[styles.markInput, { color: colors.foreground, borderColor: unsaved ? colors.warning : colors.border, borderWidth: unsaved ? 2 : 1, backgroundColor: colors.background }]}
         />
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
           {t('markOutOf', question.marks)}
