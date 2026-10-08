@@ -11,6 +11,7 @@
 import { db } from "@workspace/db";
 import { classGroups, type ClassGroup } from "@workspace/db";
 import { and, eq, isNull } from "drizzle-orm";
+import { isUuid } from "./classResource.ts";
 
 /**
  * The class row for `classId` if this teacher owns it AND it is not archived;
@@ -29,6 +30,8 @@ export async function findLiveClass(
   classId: string,
   teacherId: string,
 ): Promise<ClassGroup | undefined> {
+  // A malformed id would reach Postgres as a uuid cast error — a 500, not 404.
+  if (!isUuid(classId)) return undefined;
   const [group] = await db
     .select()
     .from(classGroups)

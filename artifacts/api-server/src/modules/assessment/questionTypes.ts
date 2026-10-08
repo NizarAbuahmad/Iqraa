@@ -220,11 +220,16 @@ const matching: TypeModule = {
 
     // Per-pair credit: getting four of five links right is not the same as
     // getting none, and an all-or-nothing mark would report it as none.
-    let hits = 0;
+    // One answer per left item (the last, as the exam screen supersedes): a
+    // response listing every left→right combination must not score them all.
+    const answer = new Map<string, string>();
     for (const p of given) {
       const pair = p as Record<string, unknown>;
-      const expected = key.get(str(pair["left"]));
-      if (expected !== undefined && expected === str(pair["right"])) hits++;
+      answer.set(str(pair["left"]), str(pair["right"]));
+    }
+    let hits = 0;
+    for (const [left, right] of answer) {
+      if (key.get(left) === right) hits++;
     }
     return scored(hits / key.size, true);
   },

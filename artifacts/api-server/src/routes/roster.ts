@@ -34,7 +34,7 @@ import {
 } from "@workspace/db";
 import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
 import { resolveObjectiveIds } from "@workspace/curriculum";
-import { aggregateClass } from "../modules/assessment/classInsights.ts";
+import { aggregateClass, finishedAttempts } from "../modules/assessment/classInsights.ts";
 import type { ObjectiveScore } from "../modules/assessment/scoring.ts";
 import {
   authMiddleware,
@@ -53,7 +53,7 @@ import {
   archiveClassThread,
   renameClassGroupThread,
   resyncClassGroupThreadIfExists,
-  syncClassGroupThread,
+  syncClassThreadsForStudent,
 } from "../lib/classThread.js";
 import { findLiveClass } from "../lib/classOwnership.js";
 import { publicUrl } from "../lib/r2.js";
@@ -245,6 +245,7 @@ router.get("/classes/:id/mastery", async (req: AuthenticatedRequest, res) => {
     const rows = await db
       .select({
         objectiveScores: attemptResults.objectiveScores,
+        isProvisional: attemptResults.isProvisional,
         studentId: attempts.studentId,
         evaluationId: attempts.evaluationId,
         displayName: students.displayName,
@@ -259,7 +260,9 @@ router.get("/classes/:id/mastery", async (req: AuthenticatedRequest, res) => {
     // carries an empty breakdown, and letting those in would drag the term
     // average toward zero as the roster grows — "the class is at 31%" would
     // quietly mean "you have not finished marking".
-    const marked = rows
+    // A provisional paper is scored over its machine-marked questions only,
+    // so it is held back too, as `finishedAttempts` does for the insights.
+    const marked = finishedAttempts(rows)
       .map(r => ({ ...r, objectiveScores: (r.objectiveScores as ObjectiveScore[]) ?? [] }))
       .filter(r => r.objectiveScores.length > 0);
 
@@ -1208,7 +1211,7 @@ router.post("/classes/:id/join-code", async (req: AuthenticatedRequest, res) => 
  *     live, so the person disappears from both immediately — no new thread or
  *     group can include them.
  *   - Class-group chat membership is derived from the roster, so
- *     syncClassGroupThread is called below to rebuild it now rather than
+ *     syncClassThreadsForStudent is called below to rebuild it now rather than
  *     leaving the wrong adult in a thread full of children until the next time
  *     somebody happens to open it.
  *   - Custom groups and any existing direct thread are NOT touched. Those
@@ -1243,23 +1246,11 @@ router.delete("/students/:id/links/:userId", async (req: AuthenticatedRequest, r
       return;
     }
 
-    // Rebuild every class thread this student sits in, so the unlinked account
-    // loses its place in them now. One derivation rule, one implementation —
-    // hand-writing the delete here would be a second copy that gets it wrong
-    // when the same user is self-linked to another child in the same class.
-    const memberships = await db
-      .select({
-        classGroupId: classMemberships.classGroupId,
-        teacherId: classGroups.teacherId,
-        name: classGroups.name,
-        nameAr: classGroups.nameAr,
-      })
-      .from(classMemberships)
-      .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
-      .where(and(eq(classMemberships.studentId, studentId), isNull(classGroups.archivedAt)));
-    for (const m of memberships) {
-      await syncClassGroupThread(m.classGroupId, m.teacherId, m.name, m.nameAr);
-    }
+    // Rebuild every existing class thread this student sits in, so the
+    // unlinked account loses its place in them now. One derivation rule, one
+    // implementation — and it is a no-op where no chat exists yet, so an
+    // unlink does not conjure empty class chats into the teacher's inbox.
+    await syncClassThreadsForStudent(studentId);
 
     res.json({ removedUserId: linkedUserId });
   } catch (err) {
