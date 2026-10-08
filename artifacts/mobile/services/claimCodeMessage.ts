@@ -58,7 +58,7 @@ export function composeClaimCodeMessage(input: ClaimCodeMessageInput, isAr: bool
   if (isAr) {
     return paragraphs([
       'السلام عليكم ورحمة الله وبركاته،',
-      `يمكنكم متابعة أخبار ${studentName} والتواصل معي داخل تطبيق اقرأ.`,
+      `يمكنكم متابعة أخبار ${studentName} والتواصل معي داخل تطبيق إقرأ.`,
       // The code sits alone on its line, unpunctuated, so a long-press in
       // WhatsApp selects it and nothing else.
       `${fieldLabel}:\n${code}`,

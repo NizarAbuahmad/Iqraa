@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Iqrra | اقرأ",
+    "name": "Iqrra | إقرأ",
     "slug": "mobile",
     "version": "1.2.0",
     "orientation": "portrait",
@@ -53,7 +53,7 @@
     "web": {
       "favicon": "./assets/images/favicon.png",
       "backgroundColor": "#081B3A",
-      "name": "Iqrra | اقرأ",
+      "name": "Iqrra | إقرأ",
       "shortName": "Iqrra",
       "themeColor": "#081B3A"
     },
