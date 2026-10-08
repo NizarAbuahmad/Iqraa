@@ -1397,6 +1397,20 @@ export default function PresentationScreen() {
               </Text>
             )}
           </Pressable>
+          <Pressable
+            onPress={() => router.push('/ai-tools/whiteboard' as never)}
+            style={styles.actionBtn}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('whiteboardTool')}
+          >
+            <Ionicons name="easel-outline" size={18} color={TEXT_MUTED} />
+            {compactBar ? null : (
+              <Text numberOfLines={1} style={[styles.actionLabel, { fontFamily: 'Almarai_400Regular' }]}>
+                {t('whiteboardTool')}
+              </Text>
+            )}
+          </Pressable>
           {hasTimer && (
             <Pressable
               onPress={restartTimer}

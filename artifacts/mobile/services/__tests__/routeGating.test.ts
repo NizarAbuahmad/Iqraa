@@ -240,3 +240,14 @@ describe('needsTeacherSetup', () => {
     assert.equal(needsTeacherSetup(undefined), false);
   });
 });
+
+describe('the whiteboard route', () => {
+  // The board is reached from the presentation, so it must follow the same
+  // teacher-only default as every other /ai-tools screen. This pins existing
+  // behaviour (it passes without any gating change); it fails if someone adds
+  // the route to a non-teacher or public allowlist.
+  it('is neither a public nor a non-teacher route', () => {
+    assert.equal(isPublicRoute('/ai-tools/whiteboard'), false);
+    assert.equal(isNonTeacherRoute('/ai-tools/whiteboard'), false);
+  });
+});
