@@ -71,46 +71,54 @@ export function BoardToolbar({
         </View>
       </View>
 
+      {/* Wrapping happens BETWEEN these groups, never inside one. There are no
+          dividers on purpose: a divider between wrapping groups can end up
+          dangling at the end of a row. */}
       <View style={[styles.palette, { bottom: bottomInset + 12 }]}>
-        {PEN_COLORS.map((c, i) => (
-          <Pressable
-            key={c}
-            onPress={() => { onColor(c); onErase(false); }}
-            hitSlop={6}
-            accessibilityRole="button"
-            accessibilityLabel={labels.colors[i]}
-            accessibilityState={{ selected: !erase && c === color }}
-            style={[styles.swatch, { backgroundColor: c }, !erase && c === color && styles.swatchOn]}
-          />
-        ))}
-        <View style={styles.divider} />
-        {STROKE_WIDTHS.map((w, i) => (
-          <Pressable
-            key={w}
-            onPress={() => onWidth(w)}
-            hitSlop={6}
-            accessibilityRole="button"
-            accessibilityLabel={labels.widths[i]}
-            accessibilityState={{ selected: w === width }}
-            style={styles.widthSlot}
-          >
-            <View style={{ width: w + 6, height: w + 6, borderRadius: (w + 6) / 2, backgroundColor: w === width ? DECK_ACCENT : DECK_MUTED }} />
+        <View style={styles.group}>
+          {PEN_COLORS.map((c, i) => (
+            <Pressable
+              key={c}
+              onPress={() => { onColor(c); onErase(false); }}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={labels.colors[i]}
+              accessibilityState={{ selected: !erase && c === color }}
+              style={[styles.swatch, { backgroundColor: c }, !erase && c === color && styles.swatchOn]}
+            />
+          ))}
+        </View>
+        <View style={styles.group}>
+          {STROKE_WIDTHS.map((w, i) => (
+            <Pressable
+              key={w}
+              onPress={() => onWidth(w)}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={labels.widths[i]}
+              accessibilityState={{ selected: w === width }}
+              style={styles.widthSlot}
+            >
+              <View style={{ width: w + 6, height: w + 6, borderRadius: (w + 6) / 2, backgroundColor: w === width ? DECK_ACCENT : DECK_MUTED }} />
+            </Pressable>
+          ))}
+        </View>
+        <View style={styles.group}>
+          <Pressable onPress={() => onErase(false)} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.pen} accessibilityState={{ selected: !erase }}>
+            <Ionicons name={erase ? 'brush-outline' : 'brush'} size={20} color={erase ? DECK_MUTED : DECK_ACCENT} />
           </Pressable>
-        ))}
-        <View style={styles.divider} />
-        <Pressable onPress={() => onErase(false)} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.pen} accessibilityState={{ selected: !erase }}>
-          <Ionicons name={erase ? 'brush-outline' : 'brush'} size={20} color={erase ? DECK_MUTED : DECK_ACCENT} />
-        </Pressable>
-        <Pressable onPress={() => onErase(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.eraser} accessibilityState={{ selected: erase }}>
-          <MaterialCommunityIcons name="eraser" size={22} color={erase ? DECK_ACCENT : DECK_MUTED} />
-        </Pressable>
-        <View style={styles.divider} />
-        <Pressable onPress={onUndo} disabled={!canUndo} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.undo} style={{ opacity: canUndo ? 1 : 0.35 }}>
-          <Ionicons name="arrow-undo-outline" size={20} color={DECK_MUTED} />
-        </Pressable>
-        <Pressable onPress={onClear} disabled={!hasInk} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.clear} style={{ opacity: hasInk ? 1 : 0.35 }}>
-          <Ionicons name="trash-outline" size={20} color={DECK_MUTED} />
-        </Pressable>
+          <Pressable onPress={() => onErase(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.eraser} accessibilityState={{ selected: erase }}>
+            <MaterialCommunityIcons name="eraser" size={22} color={erase ? DECK_ACCENT : DECK_MUTED} />
+          </Pressable>
+        </View>
+        <View style={styles.group}>
+          <Pressable onPress={onUndo} disabled={!canUndo} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.undo} style={{ opacity: canUndo ? 1 : 0.35 }}>
+            <Ionicons name="arrow-undo-outline" size={20} color={DECK_MUTED} />
+          </Pressable>
+          <Pressable onPress={onClear} disabled={!hasInk} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.clear} style={{ opacity: hasInk ? 1 : 0.35 }}>
+            <Ionicons name="trash-outline" size={20} color={DECK_MUTED} />
+          </Pressable>
+        </View>
       </View>
     </>
   );
@@ -131,12 +139,12 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 13, color: DECK_MUTED },
   palette: {
     position: 'absolute', alignSelf: 'center', maxWidth: '96%',
-    flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 14,
+    flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', columnGap: 22, rowGap: 10,
     paddingHorizontal: 16, paddingVertical: 10, borderRadius: 24,
     backgroundColor: DECK_CARD_BG, borderWidth: 1, borderColor: DECK_BORDER,
   },
   swatch: { width: 24, height: 24, borderRadius: 12 },
   swatchOn: { borderWidth: 3, borderColor: DECK_BORDER, transform: [{ scale: 1.2 }] },
   widthSlot: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
-  divider: { width: 1, height: 20, backgroundColor: DECK_BORDER },
+  group: { flexDirection: 'row', alignItems: 'center', gap: 14 },
 });
