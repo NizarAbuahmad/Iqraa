@@ -176,6 +176,8 @@ export default function MiniEvalScreen() {
     >
       <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
           onPress={() => goBack()}
           style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
           hitSlop={10}

@@ -873,7 +873,7 @@ export default function WorksheetScreen() {
               {exampleOutcome?.verifiedBy === 'symbolic' ? (
                 <View style={[styles.verifyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <Ionicons name="shield-checkmark" size={12} color="#067647" />
-                  <Text style={[styles.verifyText, { fontSize: 11, color: '#067647', textAlign: isRTL ? 'right' : 'left' }]}>
+                  <Text style={[styles.verifyText, { fontSize: 11, color: palette.success, textAlign: isRTL ? 'right' : 'left' }]}>
                     {t('verifiedBySymbolic')}
                   </Text>
                 </View>
@@ -912,7 +912,7 @@ export default function WorksheetScreen() {
                       const isCorrect = marker === 'selected';
                       return (
                         <View key={oi} style={[styles.optionRow, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
-                          <Text style={[styles.optLabel, { color: isCorrect ? '#067647' : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
+                          <Text style={[styles.optLabel, { color: isCorrect ? palette.success : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
                             {optionLetter(oi, outRTL)}.
                           </Text>
                           <View style={{ flex: 1 }}>
@@ -943,7 +943,7 @@ export default function WorksheetScreen() {
                               <Ionicons
                                 name={isCorrect ? 'checkmark-circle' : 'ellipse-outline'}
                                 size={16}
-                                color={isCorrect ? '#067647' : colors.mutedForeground}
+                                color={isCorrect ? palette.success : colors.mutedForeground}
                               />
                             </Pressable>
                           )}
@@ -1026,7 +1026,7 @@ export default function WorksheetScreen() {
                       {proved ? (
                         <View style={[styles.verifyRow, { marginTop: 2, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                           <Ionicons name="shield-checkmark" size={12} color="#067647" />
-                          <Text style={[styles.verifyText, { fontSize: 11, color: '#067647', textAlign: isRTL ? 'right' : 'left' }]}>
+                          <Text style={[styles.verifyText, { fontSize: 11, color: palette.success, textAlign: isRTL ? 'right' : 'left' }]}>
                             {t('verifiedBySymbolic')}
                           </Text>
                         </View>

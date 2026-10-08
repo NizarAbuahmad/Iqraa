@@ -558,7 +558,7 @@ function LessonWorkspace() {
             </Pressable>
           </View>
           <Pressable onPress={() => router.push('/iqra')} style={{ paddingTop: 10 }}>
-            <Text style={[s.openChat, { color: colors.primary, textAlign: align }]}>{t('homeOpenChat')} ←</Text>
+            <Text style={[s.openChat, { color: colors.primary, textAlign: align }]}>{t('homeOpenChat')} {align === 'right' ? '←' : '→'}</Text>
           </Pressable>
         </View>
       </View>

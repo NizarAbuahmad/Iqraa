@@ -34,11 +34,11 @@ const STATUS_KEY: Record<AttemptStatus, TranslationKey> = {
 };
 const STATUS_COLOR: Record<AttemptStatus, string> = {
   not_started: '#6B7280',
-  in_progress: '#B54708',
-  submitted: '#1D4ED8',
-  grading: '#1D4ED8',
-  graded: '#067647',
-  needs_review: '#D92D20',
+  in_progress: palette.warning,
+  submitted: palette.info,
+  grading: palette.info,
+  graded: palette.success,
+  needs_review: palette.destructive,
   abandoned: '#6B7280',
 };
 
@@ -109,6 +109,8 @@ export default function PickStudentScreen() {
       <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <View style={styles.heroNav}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('back')}
             onPress={() => (classId ? setClassId(null) : goBack())}
             hitSlop={12}
           >

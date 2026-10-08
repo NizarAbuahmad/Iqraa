@@ -185,6 +185,9 @@ export default function ProfileScreen() {
             {avatarBusy ? null : (
               <Pressable
                 onPress={handleChangePhoto}
+                accessibilityRole="button"
+                accessibilityLabel={t('editProfilePhoto')}
+                hitSlop={8}
                 style={[
                   styles.avatarEditBadge,
                   { backgroundColor: '#FFFFFF', borderColor: colors.hero },

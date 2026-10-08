@@ -1,11 +1,12 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text } from 'react-native';
+import { AccessibilityInfo, Animated, Platform, StyleSheet, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NATIVE_DRIVER } from '@/constants/animation';
 
 interface ToastProps {
   visible: boolean;
   message: string;
-  /** Duration before auto-hide, ms. Default: 2000 */
+  /** Duration before auto-hide, ms. Default: 3000 — two seconds was too short to read a full Arabic sentence. */
   duration?: number;
   onHide?: () => void;
 }
@@ -19,11 +20,15 @@ interface ToastProps {
   confirmation. Restarting the sequence for a new message is what makes the
   second tap say «أزلتها من المفضلة».
 */
-export function Toast({ visible, message, duration = 2000, onHide }: ToastProps) {
+export function Toast({ visible, message, duration = 3000, onHide }: ToastProps) {
   const opacity = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!visible) return;
+    // A screen reader user never sees it fade in. Android and web read the
+    // live region below; iOS has no live regions, so it is announced.
+    if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(message);
     opacity.setValue(0);
     const seq = Animated.sequence([
       Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: NATIVE_DRIVER }),
@@ -39,7 +44,11 @@ export function Toast({ visible, message, duration = 2000, onHide }: ToastProps)
   if (!visible) return null;
 
   return (
-    <Animated.View style={[styles.toast, { opacity }]} pointerEvents="none">
+    <Animated.View
+      style={[styles.toast, { opacity, bottom: 100 + insets.bottom }]}
+      pointerEvents="none"
+      accessibilityLiveRegion="polite"
+    >
       <Text style={styles.text}>{message}</Text>
     </Animated.View>
   );
@@ -48,7 +57,6 @@ export function Toast({ visible, message, duration = 2000, onHide }: ToastProps)
 const styles = StyleSheet.create({
   toast: {
     position: 'absolute',
-    bottom: 100,
     alignSelf: 'center',
     backgroundColor: 'rgba(0,0,0,0.78)',
     paddingHorizontal: 20,

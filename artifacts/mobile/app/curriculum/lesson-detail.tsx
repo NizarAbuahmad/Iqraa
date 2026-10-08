@@ -27,14 +27,15 @@ import { hubLesson } from '@workspace/curriculum/englishHub';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { goBack } from '@/services/navigation';
 import { readableOn } from '@/services/readableColor';
+import { palette } from '@/constants/colors';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
-  Understand: '#1D4ED8',
-  Apply: '#067647',
-  Analyze: '#B54708',
+  Understand: palette.info,
+  Apply: palette.success,
+  Analyze: palette.warning,
   Evaluate: '#F97316',
-  Create: '#D92D20',
+  Create: palette.destructive,
 };
 
 export default function LessonDetailScreen() {
@@ -105,7 +106,7 @@ export default function LessonDetailScreen() {
             {t('masteryGoToExams')}
           </Text>
         </Pressable>
-        <Pressable onPress={() => goBack()} hitSlop={10}>
+        <Pressable accessibilityRole="button" onPress={() => goBack()} hitSlop={10}>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>{t('masteryClose')}</Text>
         </Pressable>
       </View>
@@ -124,7 +125,7 @@ export default function LessonDetailScreen() {
     >
       {/* Hero */}
       <View style={[styles.hero, { backgroundColor: colorFill, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>

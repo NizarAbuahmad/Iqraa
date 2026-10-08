@@ -68,11 +68,11 @@ const STATUS_KEY: Record<AttemptStatus, TranslationKey> = {
 };
 const STATUS_COLOR: Record<AttemptStatus, string> = {
   not_started: '#6B7280',
-  in_progress: '#B54708',
-  submitted: '#1D4ED8',
-  grading: '#1D4ED8',
-  graded: '#067647',
-  needs_review: '#D92D20',
+  in_progress: palette.warning,
+  submitted: palette.info,
+  grading: palette.info,
+  graded: palette.success,
+  needs_review: palette.destructive,
   abandoned: '#6B7280',
 };
 const LEVEL_ORDER: LevelKey[] = ['advanced', 'proficient', 'developing', 'beginner'];
@@ -83,10 +83,10 @@ const LEVEL_KEY: Record<LevelKey, TranslationKey> = {
   advanced: 'levelAdvanced',
 };
 const LEVEL_COLOR: Record<LevelKey, string> = {
-  beginner: '#D92D20',
-  developing: '#B54708',
-  proficient: '#067647',
-  advanced: '#067647',
+  beginner: palette.destructive,
+  developing: palette.warning,
+  proficient: palette.success,
+  advanced: palette.success,
 };
 
 /** Keyed on the evaluation id: each evaluation's results are cached separately. */
@@ -182,7 +182,7 @@ export default function ResultsDashboardScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]} numberOfLines={1}>
@@ -218,7 +218,7 @@ export default function ResultsDashboardScreen() {
                       the machine wrote over the questions it could mark, and
                       averaging that in would flatter the class. */}
                   {provisionalCount > 0 && (
-                    <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 2 }}>
+                    <Text style={{ color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 2 }}>
                       {t('provisionalCountLabel', provisionalCount)}
                     </Text>
                   )}
@@ -445,7 +445,7 @@ function ClassGaps({
         return (
           <View key={o.objectiveId} style={{ gap: 4 }}>
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ color: weak ? '#D92D20' : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
+              <Text style={{ color: weak ? palette.destructive : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
                 {t('resultPercentLabel', String(o.percent))}
               </Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>

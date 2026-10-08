@@ -467,7 +467,7 @@ export default function TakeExamScreen() {
           accessibilityLiveRegion="polite"
           style={[
             styles.headerSub,
-            { fontFamily: 'ReadexPro_600SemiBold', textAlign: align, color: remainingMs < 60_000 ? '#FDE68A' : 'rgba(255,255,255,0.95)' },
+            { fontFamily: 'ReadexPro_600SemiBold', textAlign: align, color: remainingMs < 5 * 60_000 ? '#FDE68A' : 'rgba(255,255,255,0.95)' },
           ]}
         >
           {t('takeTimeLeft', formatCountdown(remainingMs))}
@@ -591,7 +591,7 @@ export default function TakeExamScreen() {
           </View>
 
           {/* Name the number. "Are you sure?" is not information. */}
-          <Text style={{ color: unanswered > 0 ? '#B54708' : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
+          <Text style={{ color: unanswered > 0 ? palette.warning : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
             {unanswered > 0 ? t('takeUnansweredWarning', String(unanswered)) : t('takeAllAnswered')}
           </Text>
           {error ? (
@@ -623,6 +623,20 @@ export default function TakeExamScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {header}
+      <View
+        style={{ height: 4, backgroundColor: colors.muted }}
+        accessibilityRole="progressbar"
+        accessibilityValue={{ min: 0, max: questions.length, now: questions.length - unanswered }}
+      >
+        <View
+          style={{
+            height: 4,
+            width: `${questions.length ? ((questions.length - unanswered) / questions.length) * 100 : 0}%`,
+            backgroundColor: colors.primary,
+            alignSelf: isRTL ? 'flex-end' : 'flex-start',
+          }}
+        />
+      </View>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 16 }} keyboardShouldPersistTaps="handled">
         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
@@ -922,5 +936,5 @@ const styles = StyleSheet.create({
   navBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10, paddingVertical: 14, paddingHorizontal: 18 },
   retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8, marginTop: 4 },
   primaryBtn: { alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 16, paddingHorizontal: 24, minWidth: 200 },
-  reviewDot: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10 },
+  reviewDot: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10 },
 });

@@ -916,7 +916,7 @@ export default function ScheduleScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <View style={{ flexDirection: row, justifyContent: 'space-between', alignItems: 'center' }}>
-          <Pressable onPress={() => goBack()} hitSlop={12}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={12}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <View style={{ flexDirection: row, gap: 18 }}>

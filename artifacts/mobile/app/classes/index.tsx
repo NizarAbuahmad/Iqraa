@@ -40,6 +40,7 @@ import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { LoadError } from '@/components/ui/LoadError';
 import { CLASSES_QUERY_KEY } from '@/services/rosterQueryKeys';
+import { Button } from '@/components/ui/Button';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -280,7 +281,7 @@ function ClassesList() {
           >
             <Ionicons name="add" size={20} color="#fff" />
           </Pressable>
-          <Pressable onPress={() => goBack()} hitSlop={12}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={12}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
         </View>
@@ -338,6 +339,7 @@ function ClassesList() {
                 >
                   {t('noClassesDesc')}
                 </Text>
+                <Button label={t('newClass')} onPress={() => setShowNew(true)} style={{ marginTop: 8 }} />
               </View>
             )
           }
@@ -399,6 +401,9 @@ function ClassesList() {
         />
       )}
 
+      {/* Hidden while the list is empty: the empty state carries the same
+          button where the eye already is, and two read as two actions. */}
+      {classes.length > 0 && (
       <Pressable
         onPress={() => setShowNew(true)}
         accessibilityRole="button"
@@ -407,6 +412,7 @@ function ClassesList() {
         <Ionicons name="add" size={22} color="#fff" />
         <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>{t('newClass')}</Text>
       </Pressable>
+      )}
 
       <Modal visible={showNew} transparent animationType="fade" onRequestClose={() => setShowNew(false)}>
         <KeyboardSafeView>

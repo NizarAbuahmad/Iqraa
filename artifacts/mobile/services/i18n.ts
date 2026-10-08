@@ -2310,6 +2310,15 @@ const translations = {
     iqraDrillReady: (title: string, detail: string, secs: number) =>
       `جهّزت لك ${title}: ${detail}، لمدة ${secs} ثانية.\n\nافتحه لتجرّبه، أو شارك رابطه مع طلبتك — يعمل دون تسجيل دخول.`,
     iqraDrillOpen: (title: string) => `🎮 افتح ${title}`,
+    showPasswordA11y: "إظهار كلمة المرور",
+    hidePasswordA11y: "إخفاء كلمة المرور",
+    passwordResetDone: "تم تغيير كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.",
+    moreOptions: "خيارات أخرى",
+    removeAttachment: "إزالة المرفق",
+    attachImage: "إرفاق صورة",
+    saveImage: "حفظ الصورة",
+    editProfilePhoto: "تغيير الصورة الشخصية",
+    removeStudentA11y: "إزالة الطالب من الشعبة",
   },
 
   en: {
@@ -4441,6 +4450,15 @@ const translations = {
     iqraDrillReady: (title: string, detail: string, secs: number) =>
       `Ready: ${title} — ${detail}, ${secs} seconds.\n\nOpen it to try it, or share the link with your students — no sign-in needed.`,
     iqraDrillOpen: (title: string) => `🎮 Open ${title}`,
+    showPasswordA11y: "Show password",
+    hidePasswordA11y: "Hide password",
+    passwordResetDone: "Your password was changed. Sign in with the new one.",
+    moreOptions: "More options",
+    removeAttachment: "Remove attachment",
+    attachImage: "Attach a photo",
+    saveImage: "Save photo",
+    editProfilePhoto: "Change profile photo",
+    removeStudentA11y: "Remove student from class",
   },
 } as const;
 

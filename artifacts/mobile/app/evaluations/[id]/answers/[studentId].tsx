@@ -75,10 +75,10 @@ const LEVEL_KEY: Record<LevelKey, TranslationKey> = {
   advanced: 'levelAdvanced',
 };
 const LEVEL_COLOR: Record<LevelKey, string> = {
-  beginner: '#D92D20',
-  developing: '#B54708',
-  proficient: '#067647',
-  advanced: '#067647',
+  beginner: palette.destructive,
+  developing: palette.warning,
+  proficient: palette.success,
+  advanced: palette.success,
 };
 const COMPETENCY_ORDER: CompetencyKey[] = ['knowledge', 'understanding', 'application', 'critical_thinking'];
 const COMPETENCY_KEY: Record<CompetencyKey, TranslationKey> = {
@@ -344,7 +344,7 @@ export default function AnswerEntryScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-          <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>{studentName}</Text>
@@ -521,7 +521,7 @@ function ResultCard({
               </Text>
             </View>
             {result.isProvisional && (
-              <Text style={[{ color: '#B54708', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 8, textAlign: align }]}>
+              <Text style={[{ color: palette.warning, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 8, textAlign: align }]}>
                 {t('provisionalResultNote')}
               </Text>
             )}
