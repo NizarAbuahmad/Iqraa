@@ -66,7 +66,7 @@ export default function ThreadScreen() {
   const insets = useSafeAreaInsets();
   const { t, lang, isRTL } = useLanguage();
   const { user } = useAuth();
-  // Same gate as the roster's own key icon on classes/[id].tsx — see
+  // Same gate as the roster's own key icon on classes/[id]/index.tsx — see
   // services/features.ts. Both doors lead to the same v1-refused route.
   const studentAccounts = useStudentAccountsEnabled();
 
