@@ -90,12 +90,20 @@ an announcement by default» below.
   guessed from a title 107 lessons share; Save stores the type, length and
   objective the activity was **built** with, not the live pickers; the
   evaluation-gap warm-up is saved with a group/20-min form, which is what
-  Regenerate really builds. Not changed, found in the same review: Regenerate keeps
-  `savedId`, so Update overwrites the saved version; and typing «أنشئ نشاطًا»
-  on `/home` opens the lesson plan, because `buildGeneratorNav` redirects the
-  disabled `activity`/`homework` tools — part of the recorded `homeAiTools`
-  decision, not touched. Tests: `activityOutput.test.ts`. Not looked at in a
-  browser.
+  Regenerate really builds. Tests: `activityOutput.test.ts`. Not looked at in a
+  browser. **The two found in the same review and left open were fixed
+  2026-10-07** (`activityHomeFlow.test.ts`; typecheck and the mobile suite pass,
+  **not looked at in a browser**): Regenerate now detaches the saved id
+  (`savedIdAfterGeneration`, `generationScope.ts`), so the button says «حفظ» and
+  creates a new material instead of overwriting the saved one, and clears the
+  favourite star; a plain generation keeps the id, which `useEnglishRefresh`
+  relies on. And typing «أنشئ نشاطًا» on `/home` opens the activity generator:
+  `activity` gained `navigable: true` in `homeAiTools.ts`, so
+  `buildGeneratorNav` no longer redirects it, while `enabled: false` still keeps
+  it out of the chips, templates and related-tools panel — that suggestion
+  decision is unchanged, and `homework` is still redirected. Routing it exposed
+  a second defect, now fixed: `extractLessonTopic` left the tanween of «نشاطًا»
+  behind, so the topic arrived as «ًا»; it also stripped the front of «نشاطات».
 - **Class Challenge (game) review fixes** (2026-10-04, same PR as the activity
   fixes above). `game.tsx` now grounds the lesson once, scoped to the picked
   grade and subject, and carries `lessonId`/`unitId`/figures from that grounding
@@ -703,6 +711,152 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Virtual labs: a PhET link and a predict–observe–explain sheet, hidden until a teacher reviews it, 2026-10-07
+
+Grade 10's «تجربة استهلالية» lessons had no content (the book's labs are
+parked, below), and public schools often have no equipment. Six of the seven
+lab lessons now carry **a link to a free PhET simulation and a fixed
+predict–observe–explain sheet** that does the teaching. Spec
+`docs/superpowers/specs/2026-10-06-virtual-lab-design.md`, plan
+`docs/superpowers/plans/2026-10-06-virtual-lab.md`.
+
+**All six sheets are unreviewed and hidden in production.** `releasedVirtualLab`
+(`lib/curriculum/src/virtualLabs.ts`) returns a sheet only when it records
+`reviewedAt`, or in a dev build (`__DEV__`). None does. To release one, a
+chemistry or physics teacher reviews it and both `reviewedBy` and `reviewedAt`
+are filled in; `validateVirtualLabs` refuses one without the other. Until then
+a teacher in production sees no card, no chip and no sheet — and no link: the
+lesson shelf never lists a `simulation` entry (`buildLessonShelf`,
+`lessonShelf.ts`), so the card is the only place a simulation appears. The
+shelf did list them until the final review caught it, which would have put six
+unopened PhET links in front of every user, students included.
+
+**Licence position: link only.** PhET relicensed to CC BY-NC on 2026-03-29.
+Iqraa embeds nothing, copies nothing, shows no screenshot and sends nothing to
+a model; the student or teacher opens the simulation on PhET's own site, with
+PhET's credit printed beside every link. Same reasoning as «The GeoGebra embed
+is gone»: a link is an ordinary visit to a free site. In code: licence
+`CC-BY-NC-4.0` maps to a new use policy `link-only`
+(`lib/curriculum/src/bank.ts`), and `validateExternalResources` refuses a
+`simulation` entry that is anything else.
+
+| Lab lesson | Simulation (Arabic title as PhET shows it) |
+| --- | --- |
+| `kbl-chem-s1-nccd-u1_lab` الطيف الذري | models-of-the-hydrogen-atom «نماذج ذرة الهيدروجين» |
+| `kbl-chem-s1-nccd-u2_lab` نمذجة التوزيع الإلكتروني | build-an-atom «بناء الذرة» |
+| `kbl-chem-s1-nccd-u3_lab` الروابط في المركبات التساهمية | molecule-shapes «أشكال الجزيئات» |
+| `kbl-chem-s2-nccd-u4_lab` المعادلة الكيميائية | balancing-chemical-equations «موازنة المعادلات الكيميائية» |
+| `kbl-phys-s1-nccd-u1_lab` ناتج جمع قوتين عمليًا | vector-addition «جمع المتجهات» |
+| `kbl-phys-s1-nccd-u2_lab` وصف الحركة باستخدام المدرج الهوائي | forces-and-motion-basics «القوى و الحركة : الاوليات» |
+
+- **`kbl-chem-s2-nccd-u5_lab` (الطاقة المرافقة للتفاعل) is skipped on purpose**,
+  not forgotten: PhET has no HTML5 simulation for it (Reactions & Rates is Java
+  only). Decided 2026-10-07.
+- **The motion lab uses Forces and Motion: Basics**, chosen 2026-10-07 because
+  The Moving Man is Java only. It is a forces simulation, so the sheet models
+  the air track with friction off and asks about speed under a constant force;
+  it does not ask for a position–time graph, which the simulation does not draw.
+- **How the simulations were confirmed: from PhET's GitHub, not a browser.**
+  `phet.colorado.edu` is blocked from the cloud environment.
+  `raw.githubusercontent.com` is not: each repo's `package.json` has
+  `phet.published: true`, and the `babel` repo has its Arabic strings, which
+  give the exact title above. **No link has been opened in a browser.** The
+  URLs follow PhET's standard `…/sims/html/<sim>/latest/<sim>_ar.html` shape;
+  the teacher review will be the first click. The entries'
+  `licenseCheckedAt: 2026-10-07` records that GitHub check and the CC BY-NC
+  relicensing (found by web search), **not** a read of PhET's licensing page,
+  which is blocked here too — the reviewer should open it.
+- **The procedures name the simulations' real controls**, read from the source
+  and the translation files. PhET's Arabic translations are partial (Vector
+  Addition has 14 of its strings in Arabic), so some steps quote an English
+  label as the simulation shows it, e.g. "Stopwatch".
+
+**For the reviewing teacher**, beyond reading each sheet: whether NH₃'s angle
+on screen matches the key's «نحو 107°»; whether molecular polarity and
+lone-pair angle narrowing in the u3 sheet sit above the Grade 10 bonding unit;
+the reaction-type terms «اتحاد / تحلل (تفكك) / احتراق» against the book;
+whether Forces and Motion starts with a crate on the stack. A task review
+caught one key that contradicted the simulation (Vector Addition's sum vector
+does not move when b does) and it was fixed before this entry.
+
+**What the teacher gets, in dev builds today:**
+- **A card on the lesson page** (`components/ui/VirtualLabCard.tsx`), under
+  the resource shelf: the simulation, PhET's credit and «افتح المحاكاة» for
+  everyone; «ورقة العمل» (export with the student/teacher copy choice) and
+  «احفظ في موادي» for teachers only. A student never sees the key or the
+  export.
+- **The sheet is a `WorksheetOutput`** with one new optional field, `lab`
+  (`services/virtualLab.ts`): sections أتوقّع / ألاحظ / أفسّر, the key numbered
+  across them. Same sheet with live AI on or off — it is never generated.
+- **The printed sheet carries a simulation box**: the URL as plain text (it
+  survives a photocopy), a QR code of it (`qrcode-generator`, pure JS, so no
+  native module and no `app.json` bump), the credit and the steps. Word gets the
+  same content without the QR.
+- **Saved to موادي** as a worksheet with `formState: { lessonId, topic,
+  materialKind: 'virtual-lab' }`; the موادي viewer shows the simulation block.
+  **A saved sheet has no «تعديل»** (`isEditableMaterial`,
+  `services/materialShape.ts`, in the viewer and the موادي row menu): the
+  worksheet editor reads no lesson id, so editing fell back to the teacher's
+  default scope and saved the sheet back as maths — and an edited sheet would no
+  longer be the one a teacher reviewed.
+- **A chat chip, «🔬 المختبر الافتراضي»**, first in the chips when the open
+  lesson is a released lab; tapping posts the sheet with no generation. It
+  first shipped invisible — lesson chips only rendered when no reply chips
+  existed — and the browser check caught it.
+- **Every worksheet in موادي and the chat now has the «نسخة الطالب / نسخة
+  المعلم» choice**, which PR #883 gave only to quizzes, so a lab key does not
+  reach students by default. The chat bubble's own «نسخ» copies the student
+  copy too since the follow-ups below.
+- Analytics: `virtual_lab_opened { lessonId, surface }`.
+
+**Follow-ups, same day** (the four left open by PR #892):
+- **The chat bubble's «نسخ» copies the student copy** — quiz and worksheet,
+  lab or not — via `chatDocumentText` (`services/chatMaterialActions.ts`). It
+  used to copy the teacher text with the key while every export menu already
+  defaulted to the student copy, so the one-tap path was the one that leaked
+  the answers. The export menu still offers the teacher copy.
+- **«احفظ في موادي» on the card ignores a second tap while saving** — a ref,
+  not only state, because two taps in one frame both read the old state.
+  Checked in the browser: a double tap saved 2 rows without the guard, 1 with.
+- **A second tap on the lab chip posts nothing** and says «ورقة المختبر موجودة
+  في المحادثة أعلاه» (`hasLabSheetMessage`, `services/virtualLab.ts`).
+- **A link or an English credit in a chat bubble reads left to right.** Found
+  while checking the above: the lab message showed its URL as
+  «//phet.colorado.edu/…:https» and the credit's parts in reverse order, because
+  the bubble laid every line out right-to-left. A line with no Arabic that is
+  not maths now renders `ltr` (`isLatinProseLine`, `services/mathRender.ts`);
+  maths keeps `MathParagraph`.
+- **`GET /media/external/:id` is unchanged, on purpose.** It answers a guessed
+  `phet-*` id with the simulation's URL — but the whole catalog, and every sheet
+  with its key, is already in the public web bundle, because the lesson page
+  imports `@workspace/curriculum`. The release gate decides what a teacher is
+  *shown*; it does not keep the content secret, and gating one endpoint would
+  not change that.
+
+**Not the Science Lab shelf.** «The Science Lab: a shelf in the library»
+(same week, PR #886) is a separate, first-party feature: interactives, law
+cards and image/video pointers under `/curriculum/lab`. This feature lives on
+the lab *lesson* page and in the chat, and links out to PhET. Both are filed
+on grade 10 lab lessons — the Science Lab points `kbl-chem-s1-nccd-u1_lab` and
+`kbl-phys-s1-nccd-u1_lab` at Wikimedia images — so a teacher can meet both on
+the same lesson. They share only the catalog
+(`external_resources.json`), where each entry's licence decides how it may be
+used.
+
+**Verified in the running web app** (local Postgres + API + Expo web, dev
+build, the shipped data), on all six lab lessons: the card renders; the
+student PDF has the simulation box and no key, and **its QR, decoded from the
+exported PDF, is the exact simulation URL** (six of six); the teacher Word file
+has the key and the URL. On the motion lab: the chat chip comes first, tapping
+it posts the sheet, the export offers the copy choice, and the student Word
+file has no key. Save to موادي and reopen were checked on the equations lab
+with a temporary sheet the day before the content landed (same code path). A
+student account (role and roster link set by hand in the local database, then
+reverted) sees the link and the credit, no sheet and no save. The reaction
+energy lab and an ordinary maths lesson show no card and no chip.
+**Not verified:** the PhET pages themselves (blocked here); Microsoft Word
+itself; a native build.
+
 ## A Deploy GitHub stalls is re-run once, 2026-10-06
 
 On 2026-10-05 two Deploy runs (#417 at 20:26 UTC and #418 at 20:59) were
@@ -778,7 +932,8 @@ the same text, page and Word file as the quiz screen. The chat's quiz PDF used
 to be the share text in a `pre-wrap` page; it is now the exam paper. Verified
 in the web app on both screens: student Word without the key, teacher Word
 with it, both with the head and marks table, and the chat PDF downloads.
-Not changed: the chat bubble's own «نسخ» still copies the teacher text, the
+Not changed then: the chat bubble's own «نسخ» still copied the teacher text
+(it copies the student copy since 2026-10-07, see «Virtual labs»), the
 chat PDF carries no book figures (the message keeps no lesson id), and the
 lesson flow's exit ticket has its own builder.
 
@@ -946,6 +1101,12 @@ no schema push.
   authenticates against production), so verification was typecheck, unit tests
   for the pure logic, and code review. Look at `/curriculum/lab` on the web
   build before telling anyone it works.
+- **The periodic table is wider than a phone, and that was invisible.** The grid
+  is 18 columns in a horizontal scroll with the bar hidden, so a phone showed
+  only H, Li, Be, Na, Mg, K, Ca (found from a screenshot, 2026-10-07). It now
+  shows the scroll bar, a right-edge fade and a hint while more is off-screen,
+  and the electron configuration renders its exponents raised. Both are
+  typechecked, not yet seen on a device.
 - **Atomic masses are the book's rounded values**, not the precise ones (H 1,
   C 12, O 16, Na 23, Cl 35.5 ...), so H2O is 18, not 18.015. The rounded
   masses of H, C, N, O, Na, Mg, Al, Si and Ca come from the S2 student book (a
@@ -979,13 +1140,68 @@ no schema push.
   equipment glossary.** Experiment cards wait on vision extraction of the
   activity books (see «The English lab»); the glossary needs instruments, and
   lesson vocabulary lists terms.
-- **A lab item cannot be attached to a class.** That needs a `class_resources`
-  kind and the manual production schema push.
+- ~~**A lab item cannot be attached to a class.** That needs a `class_resources`
+  kind and the manual production schema push.~~ **Wrong on both counts, and
+  built 2026-10-07** (see «Lab in the class workflow» below): `class_resources.kind`
+  is plain `text` with no CHECK or enum, so a `lab` row needs no schema change
+  and no push. Only code ever rejected it.
 - **Elements 21+ are absent**, and the electron-configuration code stops at 20
   on purpose (the first Aufbau exception is Z = 24).
 - **Biology has no lab items**, as it has no curated external media.
 
 What was reviewed and deferred is listed in the PR description, not here.
+
+### Lab in the class workflow, 2026-10-07
+
+A teacher can put a lab item on a class's shelf and tick lab items into a deck.
+Spec `docs/superpowers/specs/2026-10-07-lab-class-workflow-design.md`, plan
+`docs/superpowers/plans/2026-10-07-lab-class-workflow.md`.
+
+- **Shelf.** `POST /classes/:id/resources` with `{kind: 'lab', itemId}` stores
+  `kind='lab'`, `library_source=null`, `library_native_id=<lab item id>`,
+  `media_kind='lab'`, `url=null`. **No DDL, no schema push.** The server checks
+  the id against the catalogue (unknown id is a 400) and writes the title from
+  it (`titleAr`); the app cannot choose the title. A row whose id has left the
+  catalogue is returned `unavailable`. Tapping a row opens `/curriculum/lab/<id>`
+  in the app. The class add sheet has a «من المختبر» picker (shown only when the
+  class's grade and subjects have lab items).
+- **Duplicates** are refused by a route check (409 `already_added`), not by a
+  unique index, because an index is DDL and `verify-schema` would then fail the
+  deploy until it was applied by hand. Two near-simultaneous taps can therefore
+  create two rows.
+- **Deck.** A «من المختبر» section on the slides screen lists the lesson's lab
+  items that can produce a slide; nothing is ticked by default. Picked items are
+  built by `services/labSlides.ts` and inserted client-side after generation
+  (`insertLabSlides`, same slot as attachments, never slide 0), so they never
+  enter an `AIRequest` or the shared artifact pool. A law is an `intro` slide
+  (one equation per line, bullet quantity lines, lesson terms in Arabic decks);
+  an external image or video is a `media` slide with the credit in both
+  `content` and `mediaCaption`; an interactive is a `media` slide of kind
+  `document` carrying the share link. An external item with no attribution, or
+  whose licence does not allow showing it, makes no slide.
+- **Notation.** A bare `m/s²` (alone or after a colon) parses as a stacked
+  fraction in the deck's formula helpers, and `ₐ` falls outside the right-to-left
+  isolation. Units with a slash are written `m·s⁻²` and `Nₐ` as `NA` on slides;
+  `labSlides.test.ts` runs every shipped law through the real helpers. (Inside
+  «a — Acceleration (m/s²)» the raw unit does not stack; the conversion is
+  defence, and the per-unit test is what fails if it regresses.)
+
+**Not seen, not done.**
+- Nothing here has been seen in a browser, and the PDF and PowerPoint output of
+  lab slides has not been looked at by a person.
+- The POST route's lab branch has no database test (tests have no database); it
+  is covered by typecheck and build only.
+- The slide editor's `applyMediaEdit` can strip a lab slide's credit when its
+  caption is left blank, and blocks editing audio and document slides
+  (pre-existing).
+- Image media slides are cropped (`object-fit: cover`) in the HTML and PPTX
+  exports, so a labelled diagram can lose its edges there.
+- A deck's lab slides do not update if the lab item changes after the deck is
+  saved.
+- A client built before this release shows a lab row with no icon or label
+  (its kind maps have no `lab` entry).
+- The add-to-class action is not on the lab present page (it would need a class
+  picker). Lab rows show the Arabic title whatever the UI language.
 
 ## A class can hold Library items, 2026-10-04
 
@@ -2854,8 +3070,10 @@ fixed offset, because PhET's ~100-character credit wraps.
   (the assessment route, shipped earlier) is present, so the probe works and the
   gap is real. Read-aloud **assessment** is live on the web; practice is not.
 - **No lawfully embeddable simulation exists.** PhET is CC BY-NC; GeoGebra needs
-  a commercial agreement (see «The GeoGebra embed is gone»). The interactive
-  half of the original plan has no source.
+  a commercial agreement (see «The GeoGebra embed is gone»). **Linking does
+  ship since 2026-10-07:** six Grade 10 lab lessons link to a PhET simulation
+  with a predict–observe–explain sheet, hidden until a teacher reviews each one
+  (see «Virtual labs»). Embedding still has no source.
 - **The book's 71 labs are parked.** Auto-parsing Arabic activity-book text into
   safety-critical lab cards is not safe — those books sit outside the repair
   wordlist's witness coverage for the `pdf-parse` lam contamination. Vision
@@ -16264,3 +16482,63 @@ icon count. Things to check on the next device test: the Settings row, the
 explanation after the first message is sent, the four channels under App
 info → Notifications, and the icon count after a message arrives while the
 app is closed.
+
+## Signup refuses a malformed email instead of "sending" a code to it, 2026-10-07
+
+A teacher typed `info@zarya.gate@gmail.com` (two `@`). `/auth/register` only
+asked for an `@`, so it created the account, answered 201 «check your email»,
+and the verification mail could not be delivered — the verify screen sat there
+with no code coming. `/auth/change-unverified-email` had the same bare check,
+so the «البريد الإلكتروني غير صحيح؟» recovery path would have accepted another
+bad address.
+
+**Fix.** `lib/emailAddress.ts` → `isValidEmailAddress`: one `@`, a dotted-atom
+local part (≤64), a domain of ≥2 ASCII labels with a letters-only TLD, ≤254
+overall, judged on the trimmed value. Both routes now answer
+`400 invalid_email` (the app already translates that code) before any database
+work. ASCII only on purpose: Resend does not deliver to Arabic-script local
+parts, so accepting one would reproduce the same silent failure.
+`mountOrder.test.ts` pins both routes (the register case failed with a 500
+before the fix, i.e. it got as far as the database).
+
+**No longer true (fixed the same day, see «A failed code email is now
+visible»).** `sendVerificationEmail` returning `false` (missing
+`RESEND_API_KEY`, an unverified sender domain, a provider rejection) used to be
+only logged, so a delivery failure that was not a bad address looked identical
+to success. The app's own pre-checks (`includes('@')` in `register.tsx`,
+`verify-email.tsx`) are unchanged; the server is the boundary.
+
+**Not verified:** that a real address receives the code in production.
+`schema-push:` none.
+
+## A failed code email is now visible, 2026-10-07
+
+Until now `/auth/register`, `/auth/resend-verification` and
+`/auth/change-unverified-email` answered success whether or not the code email
+went out. A missing `RESEND_API_KEY`, an unverified sender domain or a provider
+refusal reached only the log, and the teacher waited on the code screen for a
+message that was never sent.
+
+**Server.** `issueVerificationCode` now returns whether the send succeeded
+(`lib/verificationDelivery.ts` decides the answers).
+- `register` and `change-unverified-email` keep their status — the account
+  exists and the teacher can recover — and add `emailSent: boolean`; the message
+  no longer says "check your email" when nothing was sent.
+- `resend-verification` answers **503 `email_unavailable`** when the address
+  belongs to an unverified account and the send failed. An unknown or already
+  verified address still gets the same 200 as a success. A failed send is only
+  reported for an account that exists, which `register`'s 409 `email_taken`
+  already reveals, so this adds no new way to learn which emails are registered.
+
+**App.** `register` and `changeUnverifiedEmail` pass `emailSent` through. If it
+is `=== false` (an older server that omits the field reads as sent) the verify
+screen opens with «تعذّر إرسال رمز التأكيد…», and a resend that gets
+`email_unavailable` shows the same line (`errEmailNotSent`). After a failed
+send the resend cooldown is not started. JS only, so `app.json` `version` stays.
+
+**Verified:** `emailSent` / 503 decisions and the `sendVerificationEmail` false
+paths (no key, provider 403, network error) under `node --test`; the code→key
+mapping; typecheck; the full api-server and mobile suites.
+**Not verified:** the route handlers themselves — they need a database the suite
+does not have, so their wiring is covered by typecheck and review, not a test —
+and the screen on a device. `schema-push:` none.

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView, Platform, Pressable,
+  Pressable,
   ScrollView, StyleSheet, Text, View,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -100,9 +100,8 @@ export default function LoginScreen() {
   };
 
   const formPanel = (
-    <KeyboardAvoidingView
+    <View
       style={[styles.formPanel, isWide && styles.formPanelWide]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={[
@@ -308,7 +307,7 @@ export default function LoginScreen() {
         />
 
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 
   return (

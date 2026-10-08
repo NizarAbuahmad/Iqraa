@@ -26,7 +26,7 @@ describe('resolveDeepLinkSend', () => {
   });
 
   it('leaves the resource pin unset when no document was tapped', () => {
-    // The «اسأل اقرأ» button: a lesson, no file.
+    // The «اسأل إقرأ» button: a lesson, no file.
     const send = resolveDeepLinkSend({ initialMessage: 'س', lessonId: 'kbl-x' });
     assert.equal(send?.pinnedResourceId, undefined);
   });

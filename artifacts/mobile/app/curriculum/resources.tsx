@@ -52,7 +52,7 @@ import { openExternal } from '@/services/externalLinks';
 import { buildWorksheetHTML, exportAsPDF } from '@/services/share';
 import { qrResourcesForGrade } from '@/services/bookQrLinks';
 import { getVideoFrameThumbnail } from '@/services/videoThumbnail';
-import { videoCoverFromUrl } from '@/services/resourceThumbnail';
+import { imageCoverFromUrl, videoCoverFromUrl } from '@/services/resourceThumbnail';
 import {
   buildResourceCatalog,
   filterResources,
@@ -116,8 +116,8 @@ function itemThumbnail(item: ResourceItem): string | null {
   if (item.thumbnailUrl) return item.thumbnailUrl;
   if (!item.url) return null;
   if (item.kind === 'video') return videoCoverFromUrl(item.url);
-  if (item.kind === 'image') return item.url;
-  return null;
+  // A picture file is its own cover: infographics, photos, any uploaded image.
+  return imageCoverFromUrl(item.url, item.mimeType) ?? (item.kind === 'image' ? item.url : null);
 }
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
@@ -211,11 +211,13 @@ function ResourceRow({
   // A sheet's note says what a teacher gets before printing; a title alone
   // does not tell «12 questions with a key» from «a blank page».
   const note = item.description ?? (sheet ? t('premadeSheetMeta', questionCount) : null);
-  // A book code's only locator: the printed page, plus what a link opens when
-  // that is not obvious from the shelf (a web page filed under documents).
-  const bookNote = page
-    ? [t('qrOnPage', page), item.kind === 'page' ? t(KIND_LABEL.page) : null].filter(Boolean).join(' · ')
-    : null;
+  // A book code reads «which book» (the headline, like every other row), with
+  // «what it is» and «which page» on a line underneath. The kind used to be the
+  // headline, which made every code in a book read «صفحة ويب» and left nothing
+  // to tell one row from the next.
+  const isBook = item.source === 'book-qr';
+  const bookKind = isBook ? t(KIND_LABEL[item.kind]) : null;
+  const bookPage = isBook && page ? t('qrOnPage', page) : null;
 
   // A frozen sheet has no URL: it is rendered on the spot and handed to the
   // print/share sheet, the same path the worksheet generator's PDF export takes.
@@ -277,7 +279,16 @@ function ResourceRow({
   );
   const notes = (
     <>
-      {bookNote ? <Text numberOfLines={2} style={noteStyle}>{bookNote}</Text> : null}
+      {isBook ? (
+        <View style={[styles.bookHeadline, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Text numberOfLines={1} style={[noteStyle, { flexShrink: 1 }]}>{bookKind}</Text>
+          {bookPage ? (
+            <View style={[styles.pagePill, { backgroundColor: ACCENT + '14' }]}>
+              <Text style={[styles.pageText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{bookPage}</Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
       {note ? <Text numberOfLines={2} style={noteStyle}>{note}</Text> : null}
       {item.insecure ? <Text numberOfLines={2} style={noteStyle}>{t('qrInsecureRow')}</Text> : null}
     </>
@@ -321,7 +332,7 @@ function ResourceRow({
     <Pressable
       onPress={onPress}
       accessibilityRole={item.url ? 'link' : 'button'}
-      accessibilityLabel={`${t(KIND_LABEL[item.kind])} — ${title ?? ''}${bookNote ? ` — ${bookNote}` : ''}`}
+      accessibilityLabel={`${t(KIND_LABEL[item.kind])} — ${title ?? ''}${bookPage ? ` — ${bookPage}` : ''}`}
       android_ripple={{ color: ACCENT + '22' }}
       style={state => [
         styles.row,
@@ -660,27 +671,6 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
             </Pressable>
           ) : null}
         </View>
-        <Pressable
-          onPress={() => router.push('/curriculum/lab' as never)}
-          accessibilityRole="button"
-          style={[
-            styles.labCard,
-            { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
-          ]}
-        >
-          <View style={[styles.labCardIcon, { backgroundColor: colors.secondary }]}>
-            <Ionicons name="flask-outline" size={24} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }}>
-              {t('labEntryTitle')}
-            </Text>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
-              {t('labEntryHint')}
-            </Text>
-          </View>
-          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
-        </Pressable>
 
         {grades.length > 1 ? (
           <ChipRow
@@ -798,6 +788,28 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 </Text>
               </Pressable>
             ) : null}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/curriculum/lab' as never);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('labEntryTitle')}, ${t('labEntryHint')}`}
+              style={({ pressed }) => [
+                styles.tile,
+                { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+                <Ionicons name="flask-outline" size={26} color={ACCENT} />
+              </View>
+              <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                {t('labEntryTitle')}
+              </Text>
+              <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+                {t('labEntryHint')}
+              </Text>
+            </Pressable>
             {isStudent || isParent ? (
               <Pressable
                 onPress={() => {
@@ -1035,16 +1047,6 @@ function ShelfTabs({
 
 const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 16, gap: 4 },
-  labCard: {
-    alignItems: 'center',
-    gap: 12,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  labCardIcon: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   heroRow: { alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' },
   backBtn: { padding: 4 },
   heroTitle: { color: '#fff', fontSize: 24, lineHeight: 34 },
@@ -1121,6 +1123,9 @@ const styles = StyleSheet.create({
   },
   actionText: { fontSize: 13 },
   rowTitle: { fontSize: 16, lineHeight: 25 },
+  bookHeadline: { alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  pagePill: { paddingHorizontal: 10, paddingVertical: 2, borderRadius: 999 },
+  pageText: { fontSize: 13 },
   rowNote: { fontSize: 14, lineHeight: 22, marginTop: 2 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 48, paddingHorizontal: 40 },
   emptyText: { fontSize: 15, textAlign: 'center', lineHeight: 23 },

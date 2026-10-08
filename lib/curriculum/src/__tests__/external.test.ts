@@ -242,3 +242,18 @@ describe('licence staleness', () => {
     assert.equal(isLicenseCheckStale(at('not-a-date'), now), true);
   });
 });
+
+describe('a simulation is only ever a link', () => {
+  const sim: ExternalResource = { ...base, id: 'sim', kind: 'simulation', provider: 'phet', license: 'CC-BY-NC-4.0' };
+  it('accepts a link-only simulation', () => {
+    assert.deepEqual(validateExternalResources([sim]), []);
+  });
+  it('refuses a simulation under any other policy', () => {
+    const errs = validateExternalResources([{ ...sim, license: 'embed-terms' }]);
+    assert.ok(errs.some(e => /sim: a simulation must be link-only/.test(e)), errs.join('\n'));
+  });
+  it('refuses a copy of a simulation', () => {
+    const errs = validateExternalResources([{ ...sim, ingest: { r2Key: 'x', sha256: 'y', bytes: 1, ingestedAt: '2026-10-06' } }]);
+    assert.ok(errs.some(e => /grants no redistribution right/.test(e)));
+  });
+});

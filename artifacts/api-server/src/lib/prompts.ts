@@ -12,6 +12,10 @@
  * side needed the same 7 activity-type branches as the English side.
  */
 
+import {
+  lessonKindClauseAr, lessonKindClauseEn, usesWorkedExample, worksheetKindRuleAr, worksheetKindRuleEn,
+} from "./lessonKinds.ts";
+
 // ─── System prompts ──────────────────────────────────────────────────────────
 /**
  * Why the figure rule is in the SYSTEM prompt and not one builder
@@ -238,6 +242,10 @@ ${LESSON_STYLE_RULES_EN[key]}`;
 }
 
 // ─── Prompt builders ─────────────────────────────────────────────────────────
+/** The subject-kind clause on its own lines, or nothing for maths and unknown subjects. */
+const kindBlockAr = (b: any) => { const c = lessonKindClauseAr(b); return c ? `\n${c}` : ""; };
+const kindBlockEn = (b: any) => { const c = lessonKindClauseEn(b); return c ? `\n${c}` : ""; };
+
 export function lessonPlanPromptAr(b: any): string {
   const priorConcepts = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
     ? b.priorKnowledge
@@ -247,7 +255,7 @@ export function lessonPlanPromptAr(b: any): string {
   return `أنشئ خطة درس كاملة لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}"، مدتها ${b.duration ?? 45} دقيقة.
 ${b.objectives ? `الأهداف المحددة:\n${b.objectives}` : ""}
 ${b.additionalContext ? `سياق إضافي: ${b.additionalContext}` : ""}
-${lessonStyleClauseAr(b)}
+${lessonStyleClauseAr(b)}${kindBlockAr(b)}
 ${hasPriorReview ? `
 خصّص 5-10 دقائق في بداية الحصة لمراجعة معارف سابقة قد لا يتقنها بعض الطلبة، واكتب خطة هذه المراجعة في حقل "priorReview". هذه مراجعة تمهيدية وليست من أهداف هذا الدرس، فلا تُدرجها ضمن "objectives".
 ${priorConcepts ? `مفاهيم من المنهج يجب مراجعتها حرفيًا (لا تختلق غيرها):\n- ${priorConcepts.join("\n- ")}` : ""}
@@ -288,7 +296,7 @@ export function lessonPlanPromptEn(b: any): string {
   return `Create a complete lesson plan for ${b.subject}, ${b.grade}, on the topic "${b.topic}", duration ${b.duration ?? 45} minutes.
 ${b.objectives ? `Specified objectives:\n${b.objectives}` : ""}
 ${b.additionalContext ? `Additional context: ${b.additionalContext}` : ""}
-${lessonStyleClauseEn(b)}
+${lessonStyleClauseEn(b)}${kindBlockEn(b)}
 ${hasPriorReview ? `
 Set aside 5-10 minutes at the start of the lesson to review prior material some students may not have fully grasped, and put that review plan in a "priorReview" field. This is a warm-up review, not one of this lesson's own objectives — do not list it under "objectives".
 ${priorConcepts ? `Curriculum concepts to review verbatim (do not invent others):\n- ${priorConcepts.join("\n- ")}` : ""}
@@ -358,6 +366,8 @@ export function worksheetPromptAr(b: any): string {
   const isHW = b.homework;
   const types = b.questionTypes ?? ["short_answer"];
   const wantsWP = types.includes("word_problem");
+  // Worked example, half-solved question and `solution` rows only where there is a calculation to model.
+  const example = !isHW && usesWorkedExample(b);
   const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
     ? b.priorKnowledge
     : null;
@@ -368,17 +378,17 @@ ${difficultyClauseAr(b)}
 ${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
 ${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
-${isHW ? "" : workedExampleRuleAr(n)}
+${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}
 أعد JSON بالشكل الآتي (بالعربية):
 {
   "title": "عنوان الورقة",
-  "instructions": "تعليمات عامة",${isHW ? "" : `
+  "instructions": "تعليمات عامة",${example ? `
   "workedExample": {
     "problem": "نص مسألة محلولة كاملًا",
     "steps": ["الخطوة الأولى", "الخطوة الثانية", "الخطوة الأخيرة وفيها الناتج"],
     "answer": "الناتج النهائي",
     "selfExplain": "سؤال يطلب من الطالب أن يشرح بجملة لماذا كانت الخطوة الأولى صحيحة"
-  },`}
+  },` : ""}
   "sections": [
     {
       "type": "short_answer",
@@ -389,7 +399,7 @@ ${isHW ? "" : workedExampleRuleAr(n)}
     }
   ],
   "answerKey": [
-    { "num": 1, "answer": "الإجابة"${isHW ? "" : `, "solution": ["خطوة", "خطوة", "الناتج"]`} }
+    { "num": 1, "answer": "الإجابة"${example ? `, "solution": ["خطوة", "خطوة", "الناتج"]` : ""} }
   ]
 }
 مهم: كل سؤال يجب أن يقابله عنصر في answerKey (قسم الإجابات).`;
@@ -400,6 +410,7 @@ export function worksheetPromptEn(b: any): string {
   const isHW = b.homework;
   const types = b.questionTypes ?? ["short_answer"];
   const wantsWP = types.includes("word_problem");
+  const example = !isHW && usesWorkedExample(b);
   const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
     ? b.priorKnowledge
     : null;
@@ -410,17 +421,17 @@ Question types: ${types.join(", ")}
 ${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
 ${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
-${isHW ? "" : workedExampleRuleEn(n)}
+${example ? workedExampleRuleEn(n) : isHW ? "" : worksheetKindRuleEn(b, n)}
 Return JSON in this exact shape:
 {
   "title": "Worksheet title",
-  "instructions": "General instructions",${isHW ? "" : `
+  "instructions": "General instructions",${example ? `
   "workedExample": {
     "problem": "A problem, solved in full",
     "steps": ["First step", "Second step", "Last step, ending in the result"],
     "answer": "The final result",
     "selfExplain": "One question asking the student to say in a sentence why the first step was valid"
-  },`}
+  },` : ""}
   "sections": [
     {
       "type": "short_answer",
@@ -431,7 +442,7 @@ Return JSON in this exact shape:
     }
   ],
   "answerKey": [
-    { "num": 1, "answer": "Answer"${isHW ? "" : `, "solution": ["step", "step", "result"]`} }
+    { "num": 1, "answer": "Answer"${example ? `, "solution": ["step", "step", "result"]` : ""} }
   ]
 }
 Important: every question must have a matching answerKey entry.`;

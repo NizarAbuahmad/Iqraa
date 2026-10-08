@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AppSplash } from '@/components/ui/AppSplash';
 import { ConfirmHost } from '@/components/ui/ConfirmDialog';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 /**
  * Arabic type. Inter has no Arabic glyphs, so every Arabic string — which is
  * nearly the whole product — was being drawn by whatever fallback each device
@@ -167,7 +168,14 @@ function RootLayoutNav() {
 
   return (
     <>
-    <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+    <Stack
+      screenOptions={{ headerShown: false, animation: 'fade' }}
+      // Every screen's content sits above the keyboard — see KeyboardSafeView
+      // for why nothing does that on its own. Headers are all custom (inside
+      // the screen), so this wrapper starts at the top of the window and its
+      // frame is exact. A screen must NOT add its own KeyboardAvoidingView.
+      screenLayout={({ children }) => <KeyboardSafeView>{children}</KeyboardSafeView>}
+    >
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

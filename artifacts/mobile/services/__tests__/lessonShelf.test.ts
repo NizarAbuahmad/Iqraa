@@ -293,6 +293,39 @@ describe('external resources on the shelf', () => {
     assert.deepEqual(orphans, [], 'these resources name lessons that do not exist');
   });
 
+  it('never lists a simulation — the virtual lab card is the one place a sim link shows', () => {
+    // A PhET link on the shelf bypassed `releasedVirtualLab`, so production
+    // showed tappable simulations nobody had reviewed, and in dev the same sim
+    // appeared twice (shelf row and card). The card is gated; the shelf is not.
+    const sims = EXTERNAL_RESOURCES.filter(r => r.kind === 'simulation');
+    assert.ok(sims.length > 0, 'no simulation in the catalog — this test proves nothing');
+    for (const sim of sims) {
+      for (const lessonId of sim.lessonIds) {
+        const shelf = buildLessonShelf(lessonId);
+        assert.ok(shelf, `no lesson found for ${lessonId}`);
+        assert.equal(
+          shelf.external.some(r => r.kind === 'simulation'),
+          false,
+          `${lessonId} lists ${sim.id} on the shelf`,
+        );
+      }
+    }
+    // The chemistry equations lab holds only a simulation, so its shelf has
+    // no external material left to show.
+    assert.deepEqual(buildLessonShelf('kbl-chem-s2-nccd-u4_lab')!.external, []);
+  });
+
+  it('keeps the other kinds on a lesson that also carries a simulation', () => {
+    // The hydrogen-spectrum lab has an image, a video and a simulation filed.
+    const lessonId = 'kbl-chem-s1-nccd-u1_lab';
+    const expected = EXTERNAL_RESOURCES
+      .filter(r => r.lessonIds.includes(lessonId) && r.kind !== 'simulation')
+      .map(r => r.id);
+    assert.ok(expected.length >= 2, 'fixture lesson lost its image/video — pick another');
+    const shelf = buildLessonShelf(lessonId)!;
+    assert.deepEqual(shelf.external.map(r => r.id).sort(), expected.sort());
+  });
+
   it('gives a lesson with no curated material an empty list, not a missing one', () => {
     // The panel reads `.length`, so `undefined` here would crash a lesson page
     // rather than render nothing.

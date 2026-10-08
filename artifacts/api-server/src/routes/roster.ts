@@ -63,6 +63,7 @@ import {
   presentClassResource,
   uploadedLibraryIds,
 } from "../lib/classResource.js";
+import { labClassResourceSnapshot, parseLabClassResourceInput } from "../lib/labClassResource.js";
 import { subjectColumns, withSubjectIds } from "../lib/classSubjects.js";
 
 const router = Router();
@@ -691,6 +692,45 @@ router.post("/classes/:id/resources", async (req: AuthenticatedRequest, res) => 
     const classId = req.params["id"] as string;
     if (!(await findLiveClass(classId, req.user!.id))) {
       res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    // A Science Lab item: validated and titled from the catalogue, not the app.
+    if (req.body && typeof req.body === "object" && (req.body as Record<string, unknown>)["kind"] === "lab") {
+      const lab = parseLabClassResourceInput(req.body);
+      if ("error" in lab) {
+        res.status(400).json({ error: lab.error });
+        return;
+      }
+      const snap = labClassResourceSnapshot(lab.itemId)!;
+      // No unique index covers lab rows (that would be DDL), so the route checks.
+      const [existing] = await db
+        .select({ id: classResources.id })
+        .from(classResources)
+        .where(
+          and(
+            eq(classResources.classGroupId, classId),
+            eq(classResources.kind, "lab"),
+            eq(classResources.libraryNativeId, lab.itemId),
+          ),
+        )
+        .limit(1);
+      if (existing) {
+        res.status(409).json({ code: "already_added", error: "Already added to this class" });
+        return;
+      }
+      const [row] = await db
+        .insert(classResources)
+        .values({
+          classGroupId: classId,
+          teacherId: req.user!.id,
+          kind: "lab",
+          librarySource: null,
+          libraryNativeId: lab.itemId,
+          ...snap,
+        })
+        .returning();
+      res.status(201).json({ resource: presentClassResource(row!, new Set()) });
       return;
     }
 

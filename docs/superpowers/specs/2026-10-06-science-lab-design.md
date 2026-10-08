@@ -131,8 +131,10 @@ and converted to Arabic digits / `س` only at display time.
 ## Out of scope (later phases)
 
 Games, 3D models, experiment / lab cards (needs vision extraction), attaching
-lab items to a class (a `class_resources` `lab` kind needs a schema change and
-the manual production schema push), and AI-generated infographics.
+lab items to a class (a `class_resources` `lab` kind needs **no** schema change
+or push, since `kind` is plain text; this was wrongly recorded here first and was
+built in `2026-10-07-lab-class-workflow-design.md`), and AI-generated
+infographics.
 
 ## Verification plan
 

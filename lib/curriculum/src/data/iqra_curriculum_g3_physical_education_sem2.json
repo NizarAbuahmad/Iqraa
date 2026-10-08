@@ -1,0 +1,299 @@
+{
+  "meta": {
+    "grade": "الصف الثالث",
+    "grade_en": "Grade 3",
+    "subject": "التربية الرياضية",
+    "subject_en": "Physical Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "source_books": [
+      "كتاب الطالب التربية الرياضية الصف الثالث الفصل الثاني (g3-pe-s2-student-book)"
+    ],
+    "provenance_note": "نُقلت الوحدتانِ ودروسُهما الأربعةَ عشرَ من كتاب الطالب (الطبعة الأولى التجريبية، 2024؛ 42 صفحة) في 2026-10-07، بقراءةِ صفحاتِ الكتابِ كصورٍ والتحقّقِ منها مقابلَ طبقةِ نصِّ الـ PDF (التي تأتي مشوَّهةَ الترتيبِ في أماكنَ): صفحتَي قائمةِ المحتوياتِ لعناوينِ الوحداتِ والدروسِ، ثمَّ صفحةِ افتتاحِ كلِّ وحدةٍ (لِـ«الفِكْرَةُ العامَّةُ») وصفحةِ افتتاحِ كلِّ درسٍ (لِـ«الفِكْرَةُ الرَّئيسَةُ» و«المَفاهيمُ وَالمُصْطَلَحاتُ الأَساسِيَّةُ»). هذا الكتابُ يُكْمِلُ ترقيمَ وحداتِ الفصلِ الأولِ (الوحدةُ الرابعةُ ثمَّ الخامسةُ، مطبوعةً هكذا في الكتابِ نفسِهِ)، فلا إعادةَ ترقيمٍ مِنَ الواحدِ هنا. العناوينُ الإنجليزيّةُ للوحداتِ والدروسِ ليستْ مطبوعةً في الكتابِ، وضعَها الناقلُ ترجمةً لعناوينِها العربيّةِ؛ أمّا المصطلحاتُ الإنجليزيّةُ في vocabulary فهي منَ الكتابِ.",
+    "known_gaps": [
+      "objectives فارغةٌ لكلِّ الدروسِ الأربعةَ عشرَ: لا دليلَ معلمٍ لهذه المادةِ على القرصِ، ولا يطبَعُ هذا الكتابُ صندوقَ «نَتاجاتُ التَّعَلُّمِ» مستقلًّا؛ نصوصُ «الإحماء/الأنشطة/التهدئة» تصفُ أنشطةَ الحصّةِ لا نتاجاتِ تعلُّمٍ رسميّةً.",
+      "periods و total_periods فارغتانِ: عددُ الحصصِ غيرُ مطبوعٍ في الكتابِ.",
+      "لا تُنقَلُ صناديقُ «الإحماء» و«الأنشطة» (النشاط رقم 1 و2) و«التهدئة» في كلِّ درسٍ، ولا صفحتا «مراجعةُ الوحدةِ» و«مشروعُ الوحدةِ (أنا أستطيع)» في آخرِ كلِّ وحدةٍ، ولا صفحةُ «جائزةُ الملكِ عبدِ اللهِ الثاني للياقةِ البدنيّةِ» (روابطُ QR) في آخرِ الكتابِ — لا حقلَ لها في هذا المخطَّطِ.",
+      "العناوينُ الإنجليزيّةُ للوحداتِ والدروسِ منْ وضعِ الناقلِ (ترجمةٌ)، ليستْ مطبوعةً في الكتابِ.",
+      "خطأٌ مطبعيٌّ في الكتابِ: مصطلحُ الدرسِ الثالثِ (الوحدةُ 4) مطبوعٌ بالإنجليزيّةِ «Bady Rotation» و«Bady Twist»؛ صُحِّحَ هنا إلى «Body Rotation» و«Body Twist». ومصطلحُ الدرسِ السابعِ (الوحدةُ 5) مطبوعٌ «نَشيدٌ وَطَنِيٌّ» (بالنونِ) فنُقلَ كما هوَ.",
+      "general_idea_ar لكلِّ وحدةٍ منقولٌ من فقرةِ «الفِكْرَةُ العامَّةُ» المطبوعةِ في افتتاحيّةِ كلِّ وحدةٍ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "أَلْعابُ التَّوافُقِ",
+      "title_en": "Coordination Games",
+      "general_idea_ar": "نُمارِسُ التَّوافُقَ الْحَرَكِيَّ في حَياتِنا بِصورَةٍ يَوْمِيَّةٍ؛ لِإِنْجازِ الْأَعْمالِ الْمَطْلوبَةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المفاهيم والمصطلحات الأساسية» box; no teacher guide on disk, so no objectives or periods; the activity boxes are not carried over — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "التَّوافُقُ الْحَرَكِيُّ",
+          "title_en": "Motor Coordination",
+          "main_idea_ar": "تَأْدِيَةُ حَرَكَتَيْنِ أَوْ أَكْثَرَ في الْوَقْتِ نَفْسِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "تَوافُقٌ",
+              "en": "Coordination"
+            },
+            {
+              "ar": "حَرَكِيٌّ",
+              "en": "Motor"
+            }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "قَذْفُ الْكُرَةِ إِلى الْأَعْلى وَلَقْفُها",
+          "title_en": "Throwing the Ball Upward and Catching It",
+          "main_idea_ar": "قَذْفُ الْكُرَةِ فَوْقَ الرَّأْسِ وَالتَّصْفيقُ، ثُمَّ مَسْكُها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "قَذْفُ الْكُرَةِ",
+              "en": "Throw the ball"
+            },
+            {
+              "ar": "لَقْفُ الْكُرَةِ",
+              "en": "Catch the ball"
+            }
+          ]
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "الدَّوَرانُ وَاللَّفُّ",
+          "title_en": "Rotating and Twisting",
+          "main_idea_ar": "تَأْدِيَةُ دَوَرانٍ كامِلٍ أَوْ نِصْفِ دَوَرانٍ لِلْجِسْمِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "دَوَرانُ الْجِسْمِ",
+              "en": "Body Rotation"
+            },
+            {
+              "ar": "لَفُّ الْجِسْمِ",
+              "en": "Body Twist"
+            }
+          ]
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "الْجَرْيُ مَعَ تَنْطيطِ الْكُرَةِ",
+          "title_en": "Running While Dribbling the Ball",
+          "main_idea_ar": "الْجَرْيُ مَعَ تَنْطيطِ الْكُرَةِ بِارْتِفاعاتٍ وَمَساراتٍ مُخْتَلِفَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "تَنْطيطٌ",
+              "en": "Dribbling"
+            },
+            {
+              "ar": "تَنْطيطُ الْكُرَةِ",
+              "en": "Dribbling the ball"
+            }
+          ]
+        },
+        {
+          "id": "u4_l5",
+          "order": 5,
+          "title_ar": "الْجَرْيُ مَعَ دَحْرَجَةِ الْكُرَةِ بِالْيَدِ",
+          "title_en": "Running While Rolling the Ball by Hand",
+          "main_idea_ar": "دَحْرَجَةُ الْكُرَةِ بِالْيَدِ عَلى الْأَرْضِ بِاتِّجاهاتٍ مُخْتَلِفَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "دَحْرَجَةٌ",
+              "en": "Rolling"
+            },
+            {
+              "ar": "دَحْرَجَةُ الْكُرَةِ",
+              "en": "Rolling the ball"
+            }
+          ]
+        },
+        {
+          "id": "u4_l6",
+          "order": 6,
+          "title_ar": "الْمَشْيُ مَعَ دَحْرَجَةِ الْكُرَةِ بِالْقَدَمِ",
+          "title_en": "Walking While Rolling the Ball with the Foot",
+          "main_idea_ar": "دَحْرَجَةُ الْكُرَةِ بِالْقَدَمِ بِاتِّجاهاتٍ وَمَساراتٍ مُخْتَلِفَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "دَحْرَجَةُ الْكُرَةِ بِالْقَدَمِ",
+              "en": "Rolling the ball with foot"
+            }
+          ]
+        },
+        {
+          "id": "u4_l7",
+          "order": 7,
+          "title_ar": "التَّصْويبُ عَلى الْهَدَفِ",
+          "title_en": "Shooting at the Target",
+          "main_idea_ar": "التَّصْويبُ بِدِقَّةٍ نَحْوَ أَهْدافٍ مُخْتَلِفَةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "التَّصْويبُ",
+              "en": "Shooting"
+            },
+            {
+              "ar": "الْهَدَفُ",
+              "en": "Target"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "الْحَرَكاتُ التَّمْثيلِيَّةُ الْإِنْشادِيَّةُ",
+      "title_en": "Acting and Chanting Movements",
+      "general_idea_ar": "تَأْدِيَةُ حَرَكاتٍ تَمْثيلِيَّةٍ مُتَرافِقَةٍ مَعَ الْأَناشيدِ الْهادِفَةِ، عَنْ طَريقِ رَبْطِ الْحَرَكَةِ بِالصَّوْتِ، وَالتَّحَرُّكِ بِشَكْلٍ فَرْدِيٍّ أَوْ جَماعِيٍّ؛ ما يَزيدُ الْمُتْعَةَ وَالسُّرورَ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المفاهيم والمصطلحات الأساسية» box; no teacher guide on disk, so no objectives or periods; the activity boxes are not carried over — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "الْحَرَكَةُ مَعَ الْمُوسيقى",
+          "title_en": "Movement with Music",
+          "main_idea_ar": "الرَّبْطُ بَيْنَ الْإيقاعِ الْحَرَكِيِّ وَالْمُوسيقِيِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "الْإيقاعُ الْحَرَكِيُّ",
+              "en": "Kinetic rhythm"
+            },
+            {
+              "ar": "سُرْعَةُ الْإيقاعِ",
+              "en": "Rhythm speed"
+            }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "حَرَكاتٌ تَمْثيلِيَّةٌ فَرْدِيَّةٌ",
+          "title_en": "Individual Acting Movements",
+          "main_idea_ar": "تَأْدِيَةُ حَرَكاتٍ مُخْتَلِفَةٍ مَعَ الْأَناشيدِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "نَشيدٌ",
+              "en": "Ode"
+            }
+          ]
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "حَرَكاتٌ تَمْثيلِيَّةٌ جَماعِيَّةٌ",
+          "title_en": "Group Acting Movements",
+          "main_idea_ar": "تَأْدِيَةُ الْحَرَكاتِ مَعَ الزُّمَلاءِ/ الزَّميلاتِ بِالتَّوافُقِ مَعَ الْأَناشيدِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "الْعَمَلُ الْجَماعِيُّ",
+              "en": "Group Work"
+            },
+            {
+              "ar": "أَداءٌ",
+              "en": "Performance"
+            }
+          ]
+        },
+        {
+          "id": "u5_l4",
+          "order": 4,
+          "title_ar": "الْحَرَكَةُ مَعَ الْعَدِّ",
+          "title_en": "Movement with Counting",
+          "main_idea_ar": "تَكْرارُ تَأْدِيَةِ الْحَرَكاتِ مَعَ الْعَدِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "التَّكْرارُ",
+              "en": "Repetition"
+            },
+            {
+              "ar": "الْعَدُّ",
+              "en": "Count"
+            }
+          ]
+        },
+        {
+          "id": "u5_l5",
+          "order": 5,
+          "title_ar": "الْحَرَكَةُ مَعَ الْأَطْواقِ",
+          "title_en": "Movement with Hoops",
+          "main_idea_ar": "اسْتِخْدامُ الْأَطْواقِ في أَثْناءِ تَأْدِيَةِ الْحَرَكاتِ الرِّياضِيَّةِ بِمُرافَقَةِ الْأَناشيدِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "الْحَرَكَةُ مَعَ الْأَطْواقِ",
+              "en": "Movements with hoops"
+            }
+          ]
+        },
+        {
+          "id": "u5_l6",
+          "order": 6,
+          "title_ar": "حَرَكاتٌ تَمْثيلِيَّةٌ (1)",
+          "title_en": "Acting Movements (1)",
+          "main_idea_ar": "تَأْدِيَةُ حَرَكاتٍ تَمْثيلِيَّةٍ مُتَوافِقَةٍ مَعَ أُنْشودَةٍ رِياضِيَّةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "أُنْشودَةٌ رِياضِيَّةٌ",
+              "en": "Sport Ode"
+            },
+            {
+              "ar": "اللَّجْنَةُ الْأُولُمْبِيَّةُ",
+              "en": "Olympic Committee"
+            }
+          ]
+        },
+        {
+          "id": "u5_l7",
+          "order": 7,
+          "title_ar": "حَرَكاتٌ تَمْثيلِيَّةٌ (2)",
+          "title_en": "Acting Movements (2)",
+          "main_idea_ar": "تَأْدِيَةُ حَرَكاتٍ تَمْثيلِيَّةٍ مُتَوافِقَةٍ مَعَ أُنْشودَةٍ وَطَنِيَّةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "نَشيدٌ وَطَنِيٌّ",
+              "en": "National Ode"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

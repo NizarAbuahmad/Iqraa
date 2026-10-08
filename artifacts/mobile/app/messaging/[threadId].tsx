@@ -18,7 +18,7 @@
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable,
+  ActivityIndicator, FlatList, Modal, Pressable,
   StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -318,9 +318,8 @@ export default function ThreadScreen() {
   const canPost = !!thread && (!isGroup || isTeacher || thread.studentPostingEnabled);
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View
         style={[
@@ -672,7 +671,7 @@ export default function ThreadScreen() {
           ) : null}
         </View>
       </Modal>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

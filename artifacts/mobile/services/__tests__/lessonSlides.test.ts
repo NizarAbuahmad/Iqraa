@@ -1141,3 +1141,36 @@ describe('buildLessonDeck — a rule written as a one-line procedure', () => {
     assert.match(rule.content, /الخطوات: 1\)/);
   });
 });
+
+import { resolveSlideLayout } from '../slideLayout.ts';
+
+describe('a short figure with a name', () => {
+  const lesson = (concepts: string[]): KBLesson => ({
+    ...LESSON, keyConceptsAr: concepts, keyConceptsEn: concepts, keyTerms: [], rulesAr: [], rulesEn: [],
+  });
+  const slideTitled = (concepts: string[], title: string) =>
+    buildLessonDeck('درس', true, { lesson: lesson(concepts), plan: PLAN }).slides.find(s => s.title === title);
+
+  it('is drawn as a stat — the figure large, its name beneath', () => {
+    const s = slideTitled(['الحلول الممكنة: 0 أو 1 أو 2', 'فكرة ثانية: شرح طويل لا يصلح أن يكون رقمًا'], 'الحلول الممكنة')!;
+    assert.equal(s.layout, 'stat');
+    assert.deepEqual(s.stat, { value: '0 أو 1 أو 2', label: 'الحلول الممكنة' });
+    assert.equal(resolveSlideLayout(s)?.kind, 'stat', 'every renderer can draw it');
+  });
+
+  it('also takes a short formula', () => {
+    const s = slideTitled(['معادلة الدائرة: x²+y²=r²', 'فكرة ثانية: شرح طويل لا يصلح أن يكون رقمًا'], 'معادلة الدائرة')!;
+    assert.equal(s.layout, 'stat');
+  });
+
+  it('leaves a short plain word alone — display type would be a heading with nothing to say', () => {
+    const s = slideTitled(['النوع: متغير', 'فكرة ثانية: شرح طويل لا يصلح أن يكون رقمًا'], 'النوع')!;
+    assert.equal(s.layout, undefined);
+    assert.equal(s.content, 'متغير');
+  });
+
+  it('leaves a long value alone even when it holds digits', () => {
+    const s = slideTitled(['الشرط: يجب أن يكون المميز أكبر من 0 حتى يوجد حلان', 'فكرة ثانية: شرح طويل لا يصلح أن يكون رقمًا'], 'الشرط')!;
+    assert.equal(s.layout, undefined);
+  });
+});

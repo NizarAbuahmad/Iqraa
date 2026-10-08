@@ -14,7 +14,7 @@ import {
   ActivityOutput, ActivityStep, ClassroomActivity, LessonFlowOutput, LessonPlanOutput,
   QuizOutput, WorksheetOutput,
 } from '@/services/ai/AIService';
-import { looksLikeActivityContent } from '@/services/materialShape';
+import { isEditableMaterial, looksLikeActivityContent } from '@/services/materialShape';
 import { arCountPhrase } from '@/services/arCount';
 // One map, not two. This screen kept its own copy of the same five colours;
 // adding a sixth to a private copy is exactly the drift `materialKind.ts` was
@@ -24,6 +24,8 @@ import { MATERIAL_COLOR, MATERIAL_EDIT_ROUTE, MATERIAL_FILL } from '@/constants/
 import { materialSubjectId } from '@/services/contentLanguage';
 import { redoesInEnglish } from '@/hooks/useEnglishRefresh';
 import { getT } from '@/services/i18n';
+import { openExternal } from '@/services/externalLinks';
+import { trackEvent } from '@/services/analytics';
 import { activityTypeLabel } from '@/constants/activityType';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
@@ -33,13 +35,14 @@ import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
-  buildActivityHTML, buildLessonFlowHTML, buildLessonPlanHTML, buildWorksheetHTML,
+  buildActivityHTML, buildLessonFlowHTML, buildLessonPlanHTML,
   copyToClipboard, exportAsPDF, exportAsWord, exportBuiltWord,
-  formatActivityText, formatLessonPlanText, formatWorksheetText,
+  formatActivityText, formatLessonPlanText,
   shareAsText,
 } from '@/services/share';
 import { exportFilename } from '@/services/exportFilename';
 import { quizExports, type QuizCopy } from '@/services/quizExport';
+import { worksheetExports } from '@/services/worksheetExport';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { allPremade } from '@workspace/curriculum/premade';
@@ -63,7 +66,7 @@ export default function WorkspaceViewScreen() {
   const [loadingWord, setLoadingWord] = useState(false);
   // A saved quiz is exported as the student's or the teacher's copy, picked
   // in the export menu — this screen has no answers toggle to decide it.
-  const [quizCopy, setQuizCopy] = useState<QuizCopy>('student');
+  const [docCopy, setDocCopy] = useState<QuizCopy>('student');
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
     useFavorite(item?.id, key => showToast(t(key)));
@@ -157,10 +160,10 @@ export default function WorkspaceViewScreen() {
     const meta = { subject: item.subject, grade: item.grade };
     if (kind === 'lesson') return formatLessonPlanText(content as LessonPlanOutput, item.title, meta, isAr);
     if (kind === 'activity') return formatActivityText(content as ActivityOutput, item.title, meta, isAr);
-    if (kind === 'worksheet') return formatWorksheetText(content as WorksheetOutput, item.title, meta, isAr);
+    if (kind === 'worksheet') return worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy).text;
     if (kind === 'flow') return item.title; // flow exports as PDF only
     if (kind === 'slides' || kind === 'prompt-slides') return formatDeckOutline(content as ClassroomActivity, isAr);
-    return quizExports(content as QuizOutput, item.title, meta, isAr, quizCopy).text;
+    return quizExports(content as QuizOutput, item.title, meta, isAr, docCopy).text;
   };
   /**
    * The book figures for this material's lesson, re-resolved from the saved
@@ -183,10 +186,10 @@ export default function WorkspaceViewScreen() {
     const figures = getExportFigures();
     if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr, figures);
     if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr, figures);
-    if (kind === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr, figures);
+    if (kind === 'worksheet') return worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy, figures).html;
     if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr, figures);
     if (kind === 'slides' || kind === 'prompt-slides') return buildDeckHTML(content as ClassroomActivity, isAr);
-    return quizExports(content as QuizOutput, item.title, meta, isAr, quizCopy, figures).html;
+    return quizExports(content as QuizOutput, item.title, meta, isAr, docCopy, figures).html;
   };
 
   const handleShareText = async () => { await shareAsText(getPlainText(), item.title); };
@@ -199,9 +202,12 @@ export default function WorkspaceViewScreen() {
   const handleWord = async () => {
     setLoadingWord(true);
     try {
-      if (kind === 'quiz' && content) {
-        const quiz = quizExports(content as QuizOutput, item.title, { subject: item.subject, grade: item.grade }, isAr, quizCopy);
-        await exportBuiltWord(quiz.word, exportFilename(item.title));
+      if ((kind === 'quiz' || kind === 'worksheet') && content) {
+        const meta = { subject: item.subject, grade: item.grade };
+        const built = kind === 'worksheet'
+          ? worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy)
+          : quizExports(content as QuizOutput, item.title, meta, isAr, docCopy);
+        await exportBuiltWord(built.word, exportFilename(item.title));
       } else {
         await exportAsWord(getPlainText(), exportFilename(item.title), isAr);
       }
@@ -248,7 +254,7 @@ export default function WorkspaceViewScreen() {
 
       {/* Action bar */}
       <View style={[styles.actionBar, { backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {!premade && (
+        {!premade && isEditableMaterial(item) && (
         <Pressable
           onPress={() => router.push({ pathname: editRoute as any, params: { savedId: item.id, ...item.formState } })}
           style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -333,7 +339,7 @@ export default function WorkspaceViewScreen() {
         ) : kind === 'activity' ? (
           <ActivityView activity={content as ActivityOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} isAr={isAr} />
         ) : kind === 'worksheet' ? (
-          <WorksheetView ws={content as WorksheetOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
+          <WorksheetView ws={content as WorksheetOutput} lessonId={item.formState?.lessonId} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
         ) : kind === 'flow' ? (
           <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={docRTL} lang={docLang} accent={accent} />
         ) : kind === 'slides' || kind === 'prompt-slides' ? (
@@ -371,7 +377,7 @@ export default function WorkspaceViewScreen() {
       onCopy={handleCopy}
       onPDF={handlePDF}
       onWord={handleWord}
-      copyChoice={kind === 'quiz' && content ? { value: quizCopy, onChange: setQuizCopy } : undefined}
+      copyChoice={(kind === 'quiz' || kind === 'worksheet') && content ? { value: docCopy, onChange: setDocCopy } : undefined}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}
@@ -558,14 +564,33 @@ function ActivityView({ activity, colors, isRTL, t, accent, isAr }: {
 
 // ─── Worksheet renderer ───────────────────────────────────────────────────────
 
-function WorksheetView({ ws, colors, isRTL, t, accent }: {
-  ws: WorksheetOutput; colors: any; isRTL: boolean; t: any; accent: string;
+function WorksheetView({ ws, lessonId, colors, isRTL, t, accent }: {
+  ws: WorksheetOutput; lessonId?: string; colors: any; isRTL: boolean; t: any; accent: string;
 }) {
   return (
     <>
       <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 16, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
         {ws.instructions}
       </Text>
+      {ws.lab && (
+        <ContentSection title={t('virtualLabTitle')} icon="flask-outline" isRTL={isRTL} accent={accent} colors={colors}>
+          <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 6, textAlign: isRTL ? 'right' : 'left' }}>{ws.lab.simName}</Text>
+          <Pressable
+            onPress={() => { trackEvent('virtual_lab_opened', { ...(lessonId ? { lessonId } : {}), surface: 'workspace' }); void openExternal(ws.lab!.url); }}
+            accessibilityRole="link"
+            accessibilityLabel={`${t('virtualLabOpen')} — ${ws.lab.attribution}`}
+          >
+            <Text style={{ color: accent, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textDecorationLine: 'underline', textAlign: isRTL ? 'right' : 'left' }}>{ws.lab.url}</Text>
+          </Pressable>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>{ws.lab.attribution}</Text>
+          {ws.lab.steps.map((step, i) => (
+            <View key={i} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 4, alignItems: 'flex-start' }}>
+              <Text style={{ color: accent, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, width: 22 }}>{i + 1}.</Text>
+              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>{step}</Text>
+            </View>
+          ))}
+        </ContentSection>
+      )}
       {ws.workedExample && (
         <ContentSection title={t('workedExampleTitle')} icon="create-outline" isRTL={isRTL} accent={accent} colors={colors}>
           <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 6, textAlign: isRTL ? 'right' : 'left' }}>{ws.workedExample.problem}</Text>

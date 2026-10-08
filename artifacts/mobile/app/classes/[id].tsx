@@ -31,6 +31,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -78,9 +79,12 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
 import { ClassResourceRow } from '@/components/classes/ClassResourceRow';
 import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
+import { LabPickerSheet } from '@/components/classes/LabPickerSheet';
 import {
   addBodyFor,
+  addLabBodyFor,
   addedKeys,
+  labItemsForClass,
   mergeClassShelf,
   openTargetFor,
   withAddedResource,
@@ -142,6 +146,8 @@ export default function ClassDetailScreen() {
   const [attachingId, setAttachingId] = useState<string | null>(null);
   const [resources, setResources] = useState<ClassResource[]>([]);
   const [showLibrary, setShowLibrary] = useState(false);
+  const [showLab, setShowLab] = useState(false);
+  const [addingLabId, setAddingLabId] = useState<string | null>(null);
   const [addingKey, setAddingKey] = useState<string | null>(null);
   const [pickerError, setPickerError] = useState('');
   const [savedCount, setSavedCount] = useState(0);
@@ -185,6 +191,8 @@ export default function ClassDetailScreen() {
   // A focus left over from before an edit removed that subject would filter
   // to nothing, with no pill on screen to say why.
   const focus = subjectIds.includes(subjectFocus) ? subjectFocus : '';
+  const labGroup = { gradeId: group?.gradeId ?? '', subjectIds: focus ? [focus] : subjectIds };
+  const hasLabItems = labItemsForClass(labGroup.gradeId, labGroup.subjectIds).length > 0;
   const shownMaterials = filterBySubject(materials, focus, m => subjectIdFromName(m.subject));
   const shownExams = filterBySubject(exams, focus, e => e.subjectId);
 
@@ -568,6 +576,30 @@ export default function ClassDetailScreen() {
     setAddingKey(null);
   };
 
+  const onAddLabItem = async (itemId: string) => {
+    if (!id || addingLabId) return;
+    setAddingLabId(itemId);
+    setPickerError('');
+    let added: ClassResource | null;
+    try {
+      added = await addClassResource(id, addLabBodyFor(itemId));
+    } catch {
+      // Shown inside the sheet: a toast on this screen would sit behind its Modal.
+      setPickerError(t('classResourceFailed'));
+      setAddingLabId(null);
+      return;
+    }
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // `null` is the 409 "already there": nothing was created, so nothing to count.
+    if (added) trackEvent('class_resource_added', { source: 'lab', mediaKind: 'lab' });
+    try {
+      setResources(await listClassResources(id));
+    } catch {
+      if (added) setResources(prev => withAddedResource(prev, added));
+    }
+    setAddingLabId(null);
+  };
+
   const onRemoveResource = async (resource: ClassResource) => {
     if (!id) return;
     try {
@@ -585,6 +617,9 @@ export default function ClassDetailScreen() {
     // `as never`: the typed route has no `premade` param, as in the Library screen.
     else if (target.kind === 'premade') {
       router.push({ pathname: '/workspace/view' as never, params: { premade: target.id } });
+    } else if (target.kind === 'lab') {
+      // `as never`: the lab routes are typed per-id, as the premade branch above is.
+      router.push(target.path as never);
     }
   };
 
@@ -1138,6 +1173,7 @@ export default function ClassDetailScreen() {
       </Modal>
 
       <Modal visible={showEdit} transparent animationType="fade" onRequestClose={() => setShowEdit(false)}>
+        <KeyboardSafeView>
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
             <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
@@ -1231,9 +1267,11 @@ export default function ClassDetailScreen() {
             </View>
           </View>
         </View>
+        </KeyboardSafeView>
       </Modal>
 
       <Modal visible={showAdd} transparent animationType="fade" onRequestClose={() => setShowAdd(false)}>
+        <KeyboardSafeView>
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
             <Text
@@ -1324,6 +1362,7 @@ export default function ClassDetailScreen() {
             </View>
           </View>
         </View>
+        </KeyboardSafeView>
       </Modal>
 
       <Modal
@@ -1332,6 +1371,7 @@ export default function ClassDetailScreen() {
         animationType="fade"
         onRequestClose={() => setNoteStudent(null)}
       >
+        <KeyboardSafeView>
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
             <Text
@@ -1394,6 +1434,7 @@ export default function ClassDetailScreen() {
             </View>
           </View>
         </View>
+        </KeyboardSafeView>
       </Modal>
 
       <Modal
@@ -1497,6 +1538,32 @@ export default function ClassDetailScreen() {
                 {t('fromLibrary')}
               </Text>
             </Pressable>
+            {hasLabItems ? (
+              <Pressable
+                onPress={() => {
+                  setShowAttach(false);
+                  setPickerError('');
+                  setShowLab(true);
+                }}
+                accessibilityRole="button"
+                style={[
+                  styles.createRow,
+                  { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' },
+                ]}
+              >
+                <Ionicons name="flask-outline" size={18} color={ACCENT} />
+                <Text
+                  style={{
+                    color: ACCENT,
+                    fontFamily: 'ReadexPro_600SemiBold',
+                    flex: 1,
+                    textAlign: align,
+                  }}
+                >
+                  {t('fromLab')}
+                </Text>
+              </Pressable>
+            ) : null}
 
             {/* The sheet offered one way out — pick something that exists.
                 A teacher with nothing saved, or nothing left to attach, was
@@ -1552,6 +1619,19 @@ export default function ClassDetailScreen() {
         onClose={() => {
           setPickerError('');
           setShowLibrary(false);
+        }}
+      />
+
+      <LabPickerSheet
+        visible={showLab}
+        group={labGroup}
+        added={shelfKeys}
+        busyId={addingLabId}
+        error={pickerError}
+        onAdd={itemId => { void onAddLabItem(itemId); }}
+        onClose={() => {
+          setPickerError('');
+          setShowLab(false);
         }}
       />
 

@@ -30,7 +30,10 @@ export type IconShape =
 
 export type DeckIconName =
   | 'target' | 'book' | 'books' | 'bulb' | 'ruler' | 'flag' | 'home' | 'users'
-  | 'help' | 'pencil' | 'ticket' | 'sparkles' | 'trophy' | 'bars' | 'trend' | 'check';
+  | 'help' | 'pencil' | 'ticket' | 'sparkles' | 'trophy' | 'bars' | 'trend' | 'check'
+  // Inline marks rather than section markers — they sit in a line of text (a
+  // link, a badge, a correct-answer tick), not in a heading chip.
+  | 'shield' | 'play' | 'file' | 'tick';
 
 const path = (d: string): IconShape => ({ t: 'path', d });
 const circle = (cx: number, cy: number, r: number): IconShape => ({ t: 'circle', cx, cy, r });
@@ -75,6 +78,10 @@ export const DECK_ICON_SHAPES: Record<DeckIconName, readonly IconShape[]> = {
   bars: [path('M4 20h16'), rect(5, 11, 3, 9), rect(10.5, 5, 3, 15), rect(16, 14, 3, 6)],
   trend: [path('M3 17l6-6 4 4 8-8'), path('M15 7h6v6')],
   check: [circle(12, 12, 10), path('M8 12.5l2.7 2.7L16.5 9.5')],
+  shield: [path('M12 3l8 3v5.5c0 4.7-3.2 8.4-8 9.5-4.8-1.1-8-4.8-8-9.5V6z'), path('M8.5 12l2.5 2.5L15.5 10')],
+  play: [path('M7 4.5v15l12-7.5z')],
+  file: [path('M6 3h8l4 4v14H6z'), path('M14 3v4h4M9 12h6M9 16h6')],
+  tick: [path('M5 12.5l4.5 4.5L19 7.5')],
 };
 
 /**
@@ -122,11 +129,11 @@ export function iconForGlyph(glyph: string): DeckIconName | null {
  * document, and the stroke is stated outright so a print stylesheet cannot
  * lose it.
  */
-export function deckIconSvg(name: DeckIconName, color: string, size = 32): string {
+export function deckIconSvg(name: DeckIconName, color: string, size = 32, className = 'deck-icon'): string {
   const body = DECK_ICON_SHAPES[name].map(s => {
     if (s.t === 'path') return `<path d="${s.d}"/>`;
     if (s.t === 'circle') return `<circle cx="${s.cx}" cy="${s.cy}" r="${s.r}"/>`;
     return `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}"/>`;
   }).join('');
-  return `<svg class="deck-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
+  return `<svg class="${className}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
 }

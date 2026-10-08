@@ -19,8 +19,7 @@
  */
 import React, { useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
+  
   Pressable,
   ScrollView,
   StyleSheet,
@@ -145,9 +144,8 @@ export default function ClaimRequiredScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={[
@@ -318,7 +316,7 @@ export default function ClaimRequiredScreen() {
           </Text>
         </Pressable>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

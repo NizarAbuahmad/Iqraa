@@ -13,6 +13,7 @@ import {
   groupLtrSegments,
   bindOperators,
   isArabicLed,
+  isLatinProseLine,
   normalizeExponents,
   mathLineToHtml,
   mathLineToUnicode,
@@ -597,5 +598,25 @@ describe('bindOperators — a plain line never breaks around an operator', () =>
     const once = bindOperators('x = 3');
     assert.equal(bindOperators(once), once);
     assert.equal(bindOperators(''), '');
+  });
+});
+
+/**
+ * A chat bubble laid a URL or an English credit out right-to-left, so the
+ * lab sheet's link read «//phet.colorado.edu/…:https» and the credit's words
+ * came out in reverse order. A line with no Arabic in it that is not maths is
+ * shown left-to-right; maths keeps its own layout.
+ */
+describe('isLatinProseLine', () => {
+  it('takes a URL and an English credit', () => {
+    assert.equal(isLatinProseLine('https://phet.colorado.edu/sims/html/vector-addition/latest/vector-addition_ar.html'), true);
+    assert.equal(isLatinProseLine('PhET Interactive Simulations, University of Colorado Boulder — phet.colorado.edu (CC BY-NC 4.0)'), true);
+  });
+  it('leaves Arabic, mixed and maths lines alone', () => {
+    assert.equal(isLatinProseLine('هذه ورقة المختبر الافتراضي'), false);
+    assert.equal(isLatinProseLine('افتح الرابط https://phet.colorado.edu'), false);
+    assert.equal(isLatinProseLine('x^2 + 3 = 7'), false);
+    assert.equal(isLatinProseLine('٢٠ ÷ ٤ = ٥'), false);
+    assert.equal(isLatinProseLine('   '), false);
   });
 });

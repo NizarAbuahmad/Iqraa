@@ -33,9 +33,11 @@ import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generat
 import { buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX } from '@/services/lessonSlides';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import {
-  extractGraphCommands, insertLessonResources, nextVideoSuggestion,
+  extractGraphCommands, insertLabSlides, insertLessonResources, nextVideoSuggestion,
   shouldSearchForVideo, videoCaption } from '@/services/classMedia';
 import type { AttachedResource } from '@/services/classMedia';
+import { labSlidesFor } from '@/services/labSlides';
+import { LessonLabItems } from '@/components/ui/LessonLabItems';
 import { LessonResources } from '@/components/ui/LessonResources';
 import { LessonAttachments } from '@/components/ui/LessonAttachments';
 import type { LessonMediaItem } from '@/services/lessonMedia';
@@ -130,6 +132,15 @@ export default function SlidesScreen() {
    * as the generator inventing media it did not make. They go in when asked.
    */
   const [includeAttachments, setIncludeAttachments] = useState(() => readFlagParam(params.includeAttachments, false));
+  /**
+   * Lab items picked for this deck. Nothing is picked by default, so nothing is
+   * inserted until a teacher asks. They are built and inserted client-side after
+   * generation — never in a request body — so they cannot reach the shared
+   * generation cache. Cleared when the lesson changes: an id from another
+   * lesson's lab must not ride into this deck.
+   */
+  const [labPicks, setLabPicks] = useState<string[]>([]);
+  useEffect(() => { setLabPicks([]); }, [groundedLessonId]);
   const [loading, setLoading] = useState(false);
   /**
    * Held across renders so Cancel can reach the in-flight requests — plural
@@ -483,7 +494,13 @@ export default function SlidesScreen() {
           ].join(' \n ')),
           figureUri: bookFigureUri,
         });
-        prelim = { ...base, slides: insertLessonResources(base.slides, attachedResources, isAr) };
+        prelim = {
+          ...base,
+          slides: insertLabSlides(
+            insertLessonResources(base.slides, attachedResources, isAr),
+            labSlidesFor(labPicks, isAr),
+          ),
+        };
         setDeck(prelim);
         setPreliminary(true);
         setVerifyDone(false);
@@ -641,7 +658,10 @@ export default function SlidesScreen() {
       // nothing to wait for and no reason to make the deck flicker.
       const built = {
         ...builtBase,
-        slides: insertLessonResources(builtBase.slides, attachedResources, isAr),
+        slides: insertLabSlides(
+          insertLessonResources(builtBase.slides, attachedResources, isAr),
+          labSlidesFor(labPicks, isAr),
+        ),
       };
       builtRef.current = built;
       deckRunRef.current.begin(built);
@@ -909,6 +929,7 @@ export default function SlidesScreen() {
               read this store all along. */}
           <LessonResources topic={topic.trim()} onChange={setAttached} />
           <LessonAttachments lessonId={groundedLessonId} onChange={setUploadedAttachments} />
+          <LessonLabItems lessonId={groundedLessonId} isAr={isAr} picks={labPicks} onChange={setLabPicks} />
 
           <View style={{ gap: 10, marginBottom: 18 }}>
             <Toggle label={t('slidesIncludeExamples')} value={includeExamples} onChange={setIncludeExamples} />

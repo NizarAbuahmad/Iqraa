@@ -8,9 +8,9 @@
  * wrong side. The Arabic labels inside keep their own direction.
  */
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { type NativeScrollEvent, type NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { ELEMENTS, formatConfiguration, shellCounts, type Element } from '@workspace/curriculum/elements';
+import { ELEMENTS, electronConfiguration, formatConfiguration, shellCounts, type Element } from '@workspace/curriculum/elements';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatLabNumber } from '@/services/labFormat';
@@ -19,6 +19,8 @@ const CELL = 44;
 const GAP = 4;
 const COLS = 18;
 const ROWS = 4;
+// Right-edge fade, drawn as stacked strips: a gradient would need expo-linear-gradient.
+const FADE_STEPS = [0.15, 0.3, 0.5, 0.7, 0.9];
 
 export function LabPeriodicTable() {
   const colors = useColors();
@@ -26,6 +28,18 @@ export function LabPeriodicTable() {
   const [z, setZ] = useState(11);
   const selected = ELEMENTS.find(e => e.z === z) as Element;
   const align = isRTL ? 'right' : 'left';
+  // The table is wider than a phone and the scroll bar is hidden, so without a
+  // cue it reads as a seven-element table. Show the cue only while there is
+  // more to the right.
+  const [viewW, setViewW] = useState(0);
+  const [contentW, setContentW] = useState(0);
+  const [atEnd, setAtEnd] = useState(false);
+  const overflows = viewW > 0 && contentW > viewW + 1;
+  const moreRight = overflows && !atEnd;
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    setAtEnd(contentOffset.x + layoutMeasurement.width >= contentSize.width - 4);
+  };
 
   const byCell = useMemo(() => {
     const m = new Map<string, Element>();
@@ -39,7 +53,16 @@ export function LabPeriodicTable() {
         {t('labPtSelect')}
       </Text>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ direction: 'ltr' as const }}>
+      <View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={overflows}
+        contentContainerStyle={{ direction: 'ltr' as const }}
+        onLayout={e => setViewW(e.nativeEvent.layout.width)}
+        onContentSizeChange={w => setContentW(w)}
+        onScroll={onScroll}
+        scrollEventThrottle={32}
+      >
         <View style={{ width: COLS * (CELL + GAP), direction: 'ltr' }}>
           {Array.from({ length: ROWS }, (_, r) => (
             <View key={r} style={{ flexDirection: 'row', direction: 'ltr' }}>
@@ -69,6 +92,19 @@ export function LabPeriodicTable() {
           ))}
         </View>
       </ScrollView>
+      {moreRight && (
+        <View pointerEvents="none" style={styles.fade}>
+          {FADE_STEPS.map(o => (
+            <View key={o} style={{ width: 6, backgroundColor: colors.background, opacity: o }} />
+          ))}
+        </View>
+      )}
+      </View>
+      {moreRight && (
+        <Text style={[styles.hint, { color: colors.mutedForeground, textAlign: align, fontFamily: 'Almarai_400Regular' }]}>
+          {t('labPtScrollHint')}
+        </Text>
+      )}
 
       <View style={[styles.detail, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <ShellDiagram z={selected.z} color={colors.primary} muted={colors.border} />
@@ -83,9 +119,18 @@ export function LabPeriodicTable() {
           <Text style={{ color: colors.mutedForeground, fontSize: 12, textAlign: align, marginTop: 6, fontFamily: 'Almarai_400Regular' }}>
             {t('labPtConfig')}
           </Text>
-          <Text style={{ color: colors.foreground, fontSize: 16, writingDirection: 'ltr', textAlign: align }}>
-            {formatConfiguration(selected.z)}
-          </Text>
+          <View
+            accessible
+            accessibilityLabel={formatConfiguration(selected.z)}
+            style={{ flexDirection: 'row', flexWrap: 'wrap', direction: 'ltr', justifyContent: isRTL ? 'flex-end' : 'flex-start', columnGap: 8 }}
+          >
+            {electronConfiguration(selected.z).map(c => (
+              <View key={`${c.n}${c.sub}`} style={{ flexDirection: 'row' }}>
+                <Text style={{ color: colors.foreground, fontSize: 16 }}>{c.n}{c.sub}</Text>
+                <Text style={{ color: colors.foreground, fontSize: 10, marginTop: 1 }}>{c.electrons}</Text>
+              </View>
+            ))}
+          </View>
         </View>
       </View>
     </View>
@@ -138,6 +183,7 @@ function ShellDiagram({ z, color, muted }: { z: number; color: string; muted: st
 const styles = StyleSheet.create({
   wrap: { padding: 16, gap: 12 },
   hint: { fontSize: 13 },
+  fade: { position: 'absolute', right: 0, top: 0, bottom: 0, flexDirection: 'row' },
   cell: {
     width: CELL,
     height: CELL,

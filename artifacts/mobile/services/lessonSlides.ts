@@ -27,7 +27,7 @@ import { buildChartSlide, buildGraphSlide, referencesShownVisual, scanGraphComma
 import { chartForLesson, visualForSlide } from './deckVisuals.ts';
 import { type BookFigure, figuresForLesson } from './bookFigures.ts';
 import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
-import { inlineSteps } from './slideLayout.ts';
+import { inlineSteps, MAX_STAT_VALUE_CHARS } from './slideLayout.ts';
 
 /**
  * Split a generated warm-up into what the class sees and what only the
@@ -613,7 +613,16 @@ export function buildLessonDeck(
     if (definition) {
       conceptSlides.push({ type: 'intro', title: concept, content: definition, durationSeconds: 0 });
     } else if (label && rest && label.length <= LABEL_MAX) {
-      conceptSlides.push({ type: 'intro', title: label, content: rest, durationSeconds: 0 });
+      // «الحلول الممكنة: 0 أو 1 أو 2» is a figure with a name, not a sentence. As a
+      // plain slide it was one small line in the corner of an otherwise empty
+      // page; as a stat the value fills it and the name sits beneath. Only for a
+      // value that is itself maths or a number: a short plain word («النوع: متغير»)
+      // set in display type would be a heading with nothing to say.
+      const asStat = rest.length <= MAX_STAT_VALUE_CHARS && /[0-9٠-٩=+×÷^²³√%−-]/.test(rest);
+      conceptSlides.push({
+        type: 'intro', title: label, content: rest, durationSeconds: 0,
+        ...(asStat ? { layout: 'stat' as const, stat: { value: rest, label } } : {}),
+      });
     } else {
       if (bareConcepts.length === 0) conceptSlides.push('bare');
       bareConcepts.push(concept);
