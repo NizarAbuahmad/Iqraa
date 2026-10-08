@@ -8,7 +8,7 @@
  */
 import React, { useState } from 'react';
 import {
-  KeyboardAvoidingView,
+  
   Pressable,
   ScrollView,
   StyleSheet,
@@ -80,9 +80,8 @@ export default function JoinClassScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior="padding"
     >
       <View
         style={[
@@ -144,7 +143,7 @@ export default function JoinClassScreen() {
           style={{ marginTop: 24 }}
         />
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

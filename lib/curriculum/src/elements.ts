@@ -62,7 +62,7 @@ export function electronConfiguration(z: number): SubshellFill[] {
   return out;
 }
 
-/** `"1s2 2s2 2p6 3s1"` — latin, exponents as plain digits. The screen renders them raised. */
+/** `"1s2 2s2 2p6 3s1"` — latin, exponents as plain digits. Plain text for labels and tests; the periodic-table panel raises the exponents from `electronConfiguration` itself. */
 export function formatConfiguration(z: number): string {
   return electronConfiguration(z)
     .map(c => `${c.n}${c.sub}${c.electrons}`)

@@ -12,7 +12,9 @@
  * side needed the same 7 activity-type branches as the English side.
  */
 
-import { lessonKindClauseAr, lessonKindClauseEn } from "./lessonKinds.ts";
+import {
+  lessonKindClauseAr, lessonKindClauseEn, usesWorkedExample, worksheetKindRuleAr, worksheetKindRuleEn,
+} from "./lessonKinds.ts";
 
 // ─── System prompts ──────────────────────────────────────────────────────────
 /**
@@ -364,6 +366,8 @@ export function worksheetPromptAr(b: any): string {
   const isHW = b.homework;
   const types = b.questionTypes ?? ["short_answer"];
   const wantsWP = types.includes("word_problem");
+  // Worked example, half-solved question and `solution` rows only where there is a calculation to model.
+  const example = !isHW && usesWorkedExample(b);
   const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
     ? b.priorKnowledge
     : null;
@@ -374,17 +378,17 @@ ${difficultyClauseAr(b)}
 ${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
 ${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
-${isHW ? "" : workedExampleRuleAr(n)}
+${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}
 أعد JSON بالشكل الآتي (بالعربية):
 {
   "title": "عنوان الورقة",
-  "instructions": "تعليمات عامة",${isHW ? "" : `
+  "instructions": "تعليمات عامة",${example ? `
   "workedExample": {
     "problem": "نص مسألة محلولة كاملًا",
     "steps": ["الخطوة الأولى", "الخطوة الثانية", "الخطوة الأخيرة وفيها الناتج"],
     "answer": "الناتج النهائي",
     "selfExplain": "سؤال يطلب من الطالب أن يشرح بجملة لماذا كانت الخطوة الأولى صحيحة"
-  },`}
+  },` : ""}
   "sections": [
     {
       "type": "short_answer",
@@ -395,7 +399,7 @@ ${isHW ? "" : workedExampleRuleAr(n)}
     }
   ],
   "answerKey": [
-    { "num": 1, "answer": "الإجابة"${isHW ? "" : `, "solution": ["خطوة", "خطوة", "الناتج"]`} }
+    { "num": 1, "answer": "الإجابة"${example ? `, "solution": ["خطوة", "خطوة", "الناتج"]` : ""} }
   ]
 }
 مهم: كل سؤال يجب أن يقابله عنصر في answerKey (قسم الإجابات).`;
@@ -406,6 +410,7 @@ export function worksheetPromptEn(b: any): string {
   const isHW = b.homework;
   const types = b.questionTypes ?? ["short_answer"];
   const wantsWP = types.includes("word_problem");
+  const example = !isHW && usesWorkedExample(b);
   const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
     ? b.priorKnowledge
     : null;
@@ -416,17 +421,17 @@ Question types: ${types.join(", ")}
 ${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
 ${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
-${isHW ? "" : workedExampleRuleEn(n)}
+${example ? workedExampleRuleEn(n) : isHW ? "" : worksheetKindRuleEn(b, n)}
 Return JSON in this exact shape:
 {
   "title": "Worksheet title",
-  "instructions": "General instructions",${isHW ? "" : `
+  "instructions": "General instructions",${example ? `
   "workedExample": {
     "problem": "A problem, solved in full",
     "steps": ["First step", "Second step", "Last step, ending in the result"],
     "answer": "The final result",
     "selfExplain": "One question asking the student to say in a sentence why the first step was valid"
-  },`}
+  },` : ""}
   "sections": [
     {
       "type": "short_answer",
@@ -437,7 +442,7 @@ Return JSON in this exact shape:
     }
   ],
   "answerKey": [
-    { "num": 1, "answer": "Answer"${isHW ? "" : `, "solution": ["step", "step", "result"]`} }
+    { "num": 1, "answer": "Answer"${example ? `, "solution": ["step", "step", "result"]` : ""} }
   ]
 }
 Important: every question must have a matching answerKey entry.`;
