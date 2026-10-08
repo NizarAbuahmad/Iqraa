@@ -85,6 +85,9 @@ Additive; the slide call site passes none of the new props and behaves as before
   slide pen, `onChange` now fires once per stroke instead of once per move.
   `presentation.tsx` only stores the array, so it is unaffected, but this is the
   one behaviour change to slides and must be checked in the browser.
+  **There are two existing consumers, not one:** `presentation.tsx` and
+  `app/ai-tools/classroom/book-page.tsx` (found while writing the plan). Both
+  must be checked.
 - Coordinates remain view-relative pixels (`locationX/Y`), as today. See
   *Open points for B*.
 
