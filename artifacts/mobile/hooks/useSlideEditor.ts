@@ -1,7 +1,7 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { rebuildAnswerKey, withoutSlide } from '@/services/lessonSlides';
-import { applyMediaEdit } from '@/services/classMedia';
+import { applyMediaEdit, contentAfterMediaEdit } from '@/services/classMedia';
 import { applySlideTextEdit } from '@/services/slideEdit';
 import { confirm } from '@/services/confirm';
 import type { TranslationKey } from '@/services/i18n';
@@ -63,7 +63,7 @@ export function useSlideEditor(config: {
     }
 
     const applyToSlide = (s: ActivitySlide): ActivitySlide => (swapped
-      ? { ...swapped, title: title.trim() || s.title, content }
+      ? { ...swapped, title: title.trim() || s.title, content: contentAfterMediaEdit(editing, swapped, content) }
       : applySlideTextEdit(s, { title, content, answer }));
     // By identity, not index — see removeSlide.
     setDeck(cur => {
