@@ -169,8 +169,8 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
   bar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 8 },
   btn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  stage: { flex: 1, overflow: 'hidden' },
+  stage: { flex: 1, overflow: 'hidden', padding: 16 },
   image: { flex: 1, width: '100%' },
-  white: { backgroundColor: '#fff', margin: 16, borderRadius: 12 },
+  white: { backgroundColor: '#fff', borderRadius: 12 },
   note: { color: '#E6E3DB', textAlign: 'center', fontSize: 14, paddingHorizontal: 16, paddingTop: 8 },
 });
