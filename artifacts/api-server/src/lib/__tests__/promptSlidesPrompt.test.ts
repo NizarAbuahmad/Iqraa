@@ -296,3 +296,17 @@ describe("mediaPrompt is a requirement, not a permission", () => {
     assert.match(promptSlidesPromptAr(body), /الطريقة الوحيدة لوصول صورة إلى شريحة محتوى/);
   });
 });
+
+describe("the LaTeX ban reaches the model as text, not control characters", () => {
+  // `\frac`, `\theta`, `\times` sat unescaped inside the template literal, so
+  // JavaScript read `\f` as a form feed and `\t` as a tab: the model was told
+  // not to write «(␌rac, ␉heta, ␉imes)». Found 2026-10-08.
+  for (const [name, build] of [["arabic", promptSlidesPromptAr], ["english", promptSlidesPromptEn]] as const) {
+    it(`${name}: names the backslash commands literally`, () => {
+      const prompt = build(baseBody);
+      assert.ok(prompt.includes("\\frac"), "expected the literal \\frac");
+      assert.ok(prompt.includes("\\theta") && prompt.includes("\\times"));
+      assert.doesNotMatch(prompt, /[\f\t]/, "a form feed or tab means an escape was swallowed");
+    });
+  }
+});

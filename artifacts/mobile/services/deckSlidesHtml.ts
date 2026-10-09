@@ -543,7 +543,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Cairo:wght@500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Readex+Pro:wght@500;600;700&display=swap" rel="stylesheet"/>
 <style>
 @page { size: A4 landscape; margin: 0; }
 /* Chrome and Safari drop every background colour, gradient and background
@@ -551,15 +551,17 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
    printed as white pages with near-invisible white text on them — the export
    looked nothing like what the teacher saw on screen. */
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-/* Almarai carries body copy, Cairo every heavier weight — the same split
+/* Almarai carries body copy, Readex Pro every heavier weight — the same split
    app/_layout.tsx makes for the on-screen UI, so an exported deck reads as
-   the same product as the projector. Arial stays as the offline fallback. */
+   the same product as the projector. (Until 2026-10-08 it named a heading face
+   the app never loads, so the PDF's headings were in a different typeface from
+   the projected deck's.) Arial stays as the offline fallback. */
 body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BORDER}; }
 .deck-title-badge, .deck-title-main, .deck-divider-title, .deck-eyebrow,
 .deck-eq, .deck-answer-label, .deck-chip, .deck-video-link,
 .deck-option-letter, .deck-title-meta,
 .deck-statement-text, .deck-stat-value, .deck-stat-label, .deck-compare-head,
-.deck-step-num { font-family: 'Cairo','Arial','Tahoma',sans-serif; }
+.deck-step-num { font-family: 'Readex Pro','Arial','Tahoma',sans-serif; }
 /* ─── Layout shapes (services/slideLayout.ts) ───────────────────────────────
    Sizes run above the presenter's: this page is a fixed 297mm projected
    full-screen, where the presenter's 21pt body is sized for a phone that also
@@ -635,7 +637,7 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-card { display:flex; align-items:center; gap:14px; background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:14px; padding:16px 22px; }
 .deck-card-bar { width:5px; align-self:stretch; border-radius:3px; flex-shrink:0; }
 .deck-card-text { flex:1; font-size:26px; line-height:1.7; }
-.deck-formula { background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:16px; padding:18px 20px; text-align:center; font-size:32px; font-weight:700; color:${DECK_TEXT}; font-family:'Cairo','Arial','Tahoma',sans-serif; }
+.deck-formula { background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:16px; padding:18px 20px; text-align:center; font-size:32px; font-weight:700; color:${DECK_TEXT}; font-family:'Readex Pro','Arial','Tahoma',sans-serif; }
 .deck-eq { font-size:32px; font-weight:700; color:${DECK_TEXT}; text-align:center; line-height:1.6; }
 .deck-answer { margin-top:22px; border:1.5px solid; border-radius:12px; padding:16px 24px; background:${DECK_CARD_BG}; min-width:320px; }
 .deck-answer-label { font-size:14px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
@@ -644,7 +646,7 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
    row-reverse. The equations are LTR runs, so each row's text is start-aligned. */
 .deck-working { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
 .deck-working-row { display:flex; flex-direction:row; align-items:center; gap:12px; font-size:24px; line-height:1.6; }
-.deck-working-num { flex-shrink:0; width:34px; height:34px; border-radius:50%; color:#fff; font-size:18px; font-weight:700; display:flex; align-items:center; justify-content:center; font-family:'Cairo','Arial','Tahoma',sans-serif; }
+.deck-working-num { flex-shrink:0; width:34px; height:34px; border-radius:50%; color:#fff; font-size:18px; font-weight:700; display:flex; align-items:center; justify-content:center; font-family:'Readex Pro','Arial','Tahoma',sans-serif; }
 .deck-working-eq { text-align:start; }
 .deck-final { border-top:1.5px solid; padding-top:10px; }
 .deck-plot { margin:14px auto 0; max-width:660px; }
