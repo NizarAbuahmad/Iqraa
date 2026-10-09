@@ -19,6 +19,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
@@ -237,7 +238,81 @@ export function GeneratorResultActions({
   );
 }
 
+/**
+ * Save and export pinned to the bottom while a fresh result is unsaved.
+ *
+ * The full action row sits after the whole paper and its answer key, so on a
+ * phone the one thing a teacher came to do — keep it — was a long scroll
+ * away. The bar goes once the material is saved; the row below still has
+ * every action, including the ones that do not belong in a bar.
+ */
+export function GeneratorSaveBar({
+  accent,
+  savedId,
+  saveState,
+  onSave,
+  onExport,
+}: Pick<GeneratorResultActionsProps, 'accent' | 'savedId' | 'saveState' | 'onSave' | 'onExport'>) {
+  const colors = useColors();
+  const { t, isRTL } = useLanguage();
+  const insets = useSafeAreaInsets();
+  const saving = React.useRef(false);
+  const [busy, setBusy] = React.useState(false);
+  if (savedId || saveState !== 'save') return null;
+  const save = async () => {
+    if (saving.current) return;
+    saving.current = true;
+    setBusy(true);
+    try {
+      await onSave();
+    } finally {
+      saving.current = false;
+      setBusy(false);
+    }
+  };
+  return (
+    <View
+      style={[
+        styles.bar,
+        {
+          paddingBottom: 12 + insets.bottom,
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
+          flexDirection: isRTL ? 'row-reverse' : 'row',
+        },
+      ]}
+    >
+      <Pressable
+        onPress={save}
+        disabled={busy}
+        accessibilityRole="button"
+        style={({ pressed }) => [
+          styles.barPrimary,
+          { backgroundColor: accent, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: busy ? 0.6 : pressed ? 0.85 : 1 },
+        ]}
+      >
+        <Ionicons name="bookmark-outline" size={16} color={textOn(accent)} />
+        <Text style={[styles.actionText, { color: textOn(accent), fontFamily: 'ReadexPro_600SemiBold' }]}>{t('saveToWorkspace')}</Text>
+      </Pressable>
+      <Pressable
+        onPress={onExport}
+        accessibilityRole="button"
+        accessibilityLabel={t('exportBtn')}
+        style={({ pressed }) => [
+          styles.barSecondary,
+          { borderColor: accent, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 },
+        ]}
+      >
+        <Ionicons name="share-outline" size={18} color={accent} />
+      </Pressable>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   actionBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },
   actionText: { fontSize: 14 },
+  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, gap: 12, paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1 },
+  barPrimary: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 48 },
+  barSecondary: { width: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },
 });

@@ -121,61 +121,112 @@ export function getPricing(model: string): { input: number; output: number } {
 const AUDIO_USD_PER_MINUTE = 0.01;
 
 /**
- * Add a transcription's cost to the running total, and to the ledger.
- *
- * Separate from `recordUsage` because that function returns immediately when
- * `usage` is falsy — and a transcription response carries no token usage at
- * all, so routing audio through it would record the spend as zero and leave
- * the budget blind to the one workload a stranger with a link can trigger.
- *
- * **`userId` is what makes the per-user cap real.** Until this wrote a row,
- * `assertUserQuotaAvailable` — which reads `ai_generations` — could not see
- * audio at all, so `AI_USER_BUDGET_USD` bounded every workload except the one
- * a caller can trigger without an account. The global `spentUsd` was the only
- * thing standing behind transcription.
- *
- * Pass `null` where there is genuinely no user to bill: a student sitting an
- * exam has no account, and the exam's teacher is the right owner there.
+ * Add a transcription's cost to the running total, and to the ledger — see
+ * `recordFixedCost`. Pass `null` for `userId` only where there is genuinely no
+ * one to bill (a student sitting an exam has no account; bill the exam's teacher).
  */
 export function recordAudioUsage(
   seconds: number,
   model: string,
   userId?: string | null,
 ): void {
-  rollPeriodIfNeeded();
   // Negative or non-finite duration bills as zero rather than crediting the
   // budget: a bad number must never buy someone more spend.
   const safeSeconds = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
-  const cost = (safeSeconds / 60) * AUDIO_USD_PER_MINUTE;
+  recordFixedCost((safeSeconds / 60) * AUDIO_USD_PER_MINUTE, "transcription", model, "audio-v1", userId);
+}
+
+/**
+ * One generated image, at a ceiling rather than a quoted rate: gpt-image-1 at
+ * 1024² and high quality is ~$0.17. Same direction as the audio ceiling — an
+ * over-estimate can only trip a cap early.
+ */
+const IMAGE_USD_EACH = 0.25;
+
+/** Add generated images to the running total and the ledger. */
+export function recordImageUsage(count: number, model: string, userId?: string | null): void {
+  const safe = Number.isFinite(count) && count > 0 ? count : 0;
+  if (safe === 0) return;
+  recordFixedCost(safe * IMAGE_USD_EACH, "image", model, "image-v1", userId);
+}
+
+/**
+ * Spend that is not priced by tokens — billed as a cost, with zero tokens.
+ *
+ * Separate from `recordUsage` because that function returns immediately when
+ * `usage` is falsy, and neither a transcription nor an image response carries
+ * token usage — routing them through it would record the spend as zero.
+ *
+ * **`userId` is what makes the per-user cap real**: `assertUserQuotaAvailable`
+ * reads `ai_generations`, so spend without a row is invisible to it. Pass
+ * `null` where there is genuinely no user to bill.
+ */
+function recordFixedCost(
+  cost: number,
+  kind: string,
+  model: string,
+  promptVersion: string,
+  userId?: string | null,
+): void {
+  rollPeriodIfNeeded();
   spentUsd += cost;
   logger.info(
-    { spentUsd: Number(spentUsd.toFixed(4)), limitUsd: getBudgetLimitUsd(), model, seconds: safeSeconds },
-    "ai audio spend updated",
+    { spentUsd: Number(spentUsd.toFixed(4)), limitUsd: getBudgetLimitUsd(), model, kind, costUsd: cost },
+    "ai fixed-cost spend updated",
   );
-
-  // Not awaited, for the reason `recordUsage` gives: the transcription is
-  // already paid for, and making a student wait on a metrics insert — or
-  // failing their recording when it errors — trades something that matters for
-  // something that does not. `recordGeneration` never rejects.
+  // Not awaited, for the reason `recordUsage` gives. `recordGeneration`
+  // never rejects.
   void recordGeneration({
     userId: userId ?? null,
-    kind: "transcription",
+    kind,
     model,
-    promptVersion: "audio-v1",
-    // No cache key: a recording is never served from the variant pool, and a
-    // constant key here would read as a 100% hit rate on a workload that can
-    // never hit — the exact trap GenerationDetail's own comment describes.
+    promptVersion,
+    // No cache key: neither is ever served from the variant pool, and a
+    // constant key would read as a 100% hit rate on a workload that never hits.
     coarseKey: "",
     strictKey: "",
     hasContext: false,
     cacheStatus: "miss",
     artifactId: null,
-    // Billed by duration, not tokens. Zeroes are honest here; the cost column
-    // is the one that carries the meaning.
     promptTokens: 0,
     completionTokens: 0,
     costUsd: cost,
   });
+}
+
+/**
+ * Live calls one user may have in flight at once.
+ *
+ * The per-user allowance is read before a call and written after it, so N
+ * calls fired together all passed a check that only the first should have:
+ * fifteen 16k-token slide decks against one teacher at 99% of their cap. This
+ * bounds the overrun to the calls already in flight.
+ * ponytail: per process — Cloud Run instances each allow this many; move the
+ * counter into the rate-limit store if that ever matters.
+ */
+const MAX_LIVE_CALLS_PER_USER = 2;
+const liveCalls = new Map<string, number>();
+
+export class AiUserBusyError extends Error {
+  constructor() {
+    super("Another generation is still running. Wait for it to finish, then try again.");
+    this.name = "AiUserBusyError";
+  }
+}
+
+/** Run `fn` holding one of this user's live-call slots; refuse when none is free. */
+export async function withUserAiSlot<T>(userId: string | null | undefined, fn: () => Promise<T>): Promise<T> {
+  if (!userId) return fn();
+  const inFlight = liveCalls.get(userId) ?? 0;
+  if (inFlight >= MAX_LIVE_CALLS_PER_USER) throw new AiUserBusyError();
+  liveCalls.set(userId, inFlight + 1);
+  try {
+    return await fn();
+  } finally {
+    const left = (liveCalls.get(userId) ?? 1) - 1;
+    if (left > 0) liveCalls.set(userId, left);
+    else liveCalls.delete(userId);
+  }
 }
 
 /** Every model the guard prices, for the same test. */

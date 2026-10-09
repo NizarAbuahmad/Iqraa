@@ -16,9 +16,9 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch, apiJson } from '@/services/apiClient';
-import { goBack } from '@/services/navigation';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
+import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -103,9 +103,7 @@ export default function AdminSignupsScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}>
         <View style={[styles.header, { paddingTop: insets.top + 20, backgroundColor: ACCENT }]}>
-          <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'رجوع' : 'Back'} onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginBottom: 8 }}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
+          <BackButton color="#fff" style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginBottom: 8 }} />
           <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: align }}>
             {ar ? 'البريد المجمّع من iqrra.com' : 'Emails collected on iqrra.com'}
           </Text>

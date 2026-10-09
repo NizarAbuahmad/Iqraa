@@ -129,7 +129,7 @@ router.post("/practice/read-aloud", async (req: AuthenticatedRequest, res) => {
     // down on any deploy missing OPENAI_API_KEY.
     const { speechToText } = await import("@workspace/integrations-openai-ai-server/audio");
     const transcript = await speechToText(parsed.buffer, verdict.transcribeAs);
-    recordAudioUsage(verdict.durationMs / 1000, "gpt-4o-mini-transcribe", userId);
+    recordAudioUsage(verdict.billedSeconds, "gpt-4o-mini-transcribe", userId);
 
     // `scoreReading` directly, not `readAloud.grade`: that keys "attempted" on
     // an `audioKey`, and there is deliberately no stored object here.
