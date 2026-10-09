@@ -27,6 +27,7 @@ import { dateLocale } from './dateLabels.ts';
 import { quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
 import { labQrSvg } from './labQr.ts';
+import { printStyleCss, type PrintStyle } from './printStyle.ts';
 import { blankLine, hasOwnBlanks, optionColumns, worksheetInstructions, worksheetPointsTotal } from './worksheetPaper.ts';
 import { displayObjective } from './objectiveDisplay.ts';
 import type {
@@ -96,6 +97,7 @@ function htmlBase(
   isRTL: boolean,
   title: string,
   kind: DocKind = 'lesson',
+  style: PrintStyle = 'colour',
 ): string {
   const dir = isRTL ? 'rtl' : 'ltr';
   const align = isRTL ? 'right' : 'left';
@@ -284,7 +286,7 @@ function htmlBase(
     .footer {
       margin-top: 28px; padding-top: 12px; border-top: 1px solid #e5e7eb;
       font-size: 10.5px; color: #9ca3af; text-align: center;
-    }
+    }${printStyleCss(style)}
   </style>
 </head>
 <body>
@@ -337,9 +339,26 @@ function esc(s: string): string {
  * attribute takes `escAttr`.
  */
 function raiseExponents(html: string): string {
-  return html
-    .replace(/\^\(([^()]+)\)/g, '<sup>$1</sup>')
-    .replace(/\^([+\-\u2212]?[A-Za-z0-9]+)/g, '<sup>$1</sup>');
+  // A bracketed exponent is matched to ITS closing bracket, so «2^(2(x+1))»
+  // raises «2(x+1)» whole; an unclosed one is left as written.
+  let out = '';
+  for (let i = 0; i < html.length; i++) {
+    if (html[i] === '^' && html[i + 1] === '(') {
+      let depth = 0;
+      let j = i + 1;
+      for (; j < html.length; j++) {
+        if (html[j] === '(') depth++;
+        else if (html[j] === ')' && --depth === 0) break;
+      }
+      if (j < html.length) {
+        out += `<sup>${html.slice(i + 2, j)}</sup>`;
+        i = j;
+        continue;
+      }
+    }
+    out += html[i];
+  }
+  return out.replace(/\^([+\-\u2212]?[A-Za-z0-9]+)/g, '<sup>$1</sup>');
 }
 
 /**
@@ -577,6 +596,7 @@ export function buildWorksheetHTML(
   isAr: boolean,
   figures: readonly BookFigureRef[] = [],
   includeAnswers = true,
+  style: PrintStyle = 'colour',
 ): string {
   const L = (ar: string, en: string) => isAr ? ar : en;
   let qNum = 1;
@@ -667,7 +687,7 @@ export function buildWorksheetHTML(
     ${answerKey}
     ${figuresSectionHTML(figures, isAr)}
   `;
-  return htmlBase(content, isAr, title, 'worksheet');
+  return htmlBase(content, isAr, title, 'worksheet', style);
 }
 
 /**
@@ -699,6 +719,7 @@ export function buildQuizHTML(
   isAr: boolean,
   figures: readonly BookFigureRef[] = [],
   includeAnswers = true,
+  style: PrintStyle = 'colour',
 ): string {
   const L = (ar: string, en: string) => isAr ? ar : en;
   const typeLabel = (t: QuizOutput['questions'][number]['type']) => quizTypeLabel(t, isAr);
@@ -741,7 +762,7 @@ export function buildQuizHTML(
     ${answerKey}
     ${figuresSectionHTML(figures, isAr)}
   `;
-  return htmlBase(content, isAr, title, 'quiz');
+  return htmlBase(content, isAr, title, 'quiz', style);
 }
 export function buildActivityHTML(
   activity: ActivityOutput,

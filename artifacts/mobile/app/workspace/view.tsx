@@ -23,6 +23,7 @@ import { arCountPhrase } from '@/services/arCount';
 import { MATERIAL_COLOR, MATERIAL_EDIT_ROUTE, MATERIAL_FILL } from '@/constants/materialKind';
 import { materialSubjectId } from '@/services/contentLanguage';
 import { redoesInEnglish } from '@/hooks/useEnglishRefresh';
+import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { getT } from '@/services/i18n';
 import { openExternal } from '@/services/externalLinks';
 import { trackEvent } from '@/services/analytics';
@@ -68,6 +69,7 @@ export default function WorkspaceViewScreen() {
   // A saved quiz is exported as the student's or the teacher's copy, picked
   // in the export menu — this screen has no answers toggle to decide it.
   const [docCopy, setDocCopy] = useState<QuizCopy>('student');
+  const [printStyle, setPrintStyle] = usePrintStyle();
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
     useFavorite(item?.id, key => showToast(t(key)));
@@ -187,10 +189,10 @@ export default function WorkspaceViewScreen() {
     const figures = getExportFigures();
     if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr, figures);
     if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr, figures);
-    if (kind === 'worksheet') return worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy, figures).html;
+    if (kind === 'worksheet') return worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy, figures, printStyle).html;
     if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr, figures);
     if (kind === 'slides' || kind === 'prompt-slides') return buildDeckHTML(content as ClassroomActivity, isAr);
-    return quizExports(content as QuizOutput, item.title, meta, isAr, docCopy, figures).html;
+    return quizExports(content as QuizOutput, item.title, meta, isAr, docCopy, figures, printStyle).html;
   };
 
   const handleShareText = async () => { await shareAsText(getPlainText(), item.title); };
@@ -374,6 +376,7 @@ export default function WorkspaceViewScreen() {
       onPDF={handlePDF}
       onWord={handleWord}
       copyChoice={(kind === 'quiz' || kind === 'worksheet') && content ? { value: docCopy, onChange: setDocCopy } : undefined}
+      printStyle={(kind === 'quiz' || kind === 'worksheet') && content ? { value: printStyle, onChange: setPrintStyle } : undefined}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}
